@@ -1,0 +1,85 @@
+{
+  "120363420983283091@g.us": {
+    "date": "24 Februari 2026",
+    "keterangan": "Absen Harian",
+    "peserta": [
+      {
+        "id": "79019846051@s.whatsapp.net",
+        "waktu": "14:14"
+      },
+      {
+        "id": "6285965895036@s.whatsapp.net",
+        "waktu": "14:15"
+      },
+      {
+        "id": "62881025754812@s.whatsapp.net",
+        "waktu": "14:19"
+      }
+    ]
+  },
+  "120363419400166547@g.us": {
+    "date": "21 Maret 2026",
+    "keterangan": "Absen Harian",
+    "peserta": [
+      {
+        "id": "79019846051@s.whatsapp.net",
+        "waktu": "10:22"
+      }
+    ]
+  },
+  "120363422607119223@g.us": {
+    "date": "12 April 2026",
+    "keterangan": "Absen Harian",
+    "peserta": [
+      {
+        "id": "6283153277326@s.whatsapp.net",
+        "waktu": "12:57"
+      },
+      {
+        "id": "6283168345577@s.whatsapp.net",
+        "waktu": "12:58"
+      },
+      {
+        "id": "6285602635183@s.whatsapp.net",
+        "waktu": "14:04"
+      },
+      {
+        "id": "79019846051@s.whatsapp.net",
+        "waktu": "14:17"
+      },
+      {
+        "id": "144195641733319@lid",
+        "waktu": "14:17"
+      },
+      {
+        "id": "6285123151866@s.whatsapp.net",
+        "waktu": "14:19"
+      },
+      {
+        "id": "6285934518597@s.whatsapp.net",
+        "waktu": "14:27"
+      },
+      {
+        "id": "6287849398175@s.whatsapp.net",
+        "waktu": "14:30"
+      }
+    ]
+  },
+  "120363021973635533@g.us": {
+    "date": "30 Juli 2026",
+    "keterangan": "hai",
+    "peserta": []
+  },
+  "120363037804846679@g.us": {
+    "date": "01 Agustus 2026",
+    "keterangan": "Absen Kehadiran Anggota Grup",
+    "annMsgId": "3EB0EA226A0D8504E75C9C",
+    "peserta": [
+      {
+        "id": "237507463651454@lid",
+        "waktu": "00:07",
+        "status": "HADIR"
+      }
+    ]
+  }
+}
