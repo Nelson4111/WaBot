@@ -48,6 +48,11 @@ User @${m.sender.split('@')[0]} telah kembali dari AFK!
 
     for (const jid of jids) {
         if (jid === m.sender) continue;
+        
+        // Jangan peringatkan kalau yang di-reply adalah Bot itu sendiri
+        let botJid = conn.decodeJid ? conn.decodeJid(conn.user.id) : conn.user.id;
+        if (jid === botJid) continue;
+
         const taggedUser = DB[jid];
         if (!taggedUser || taggedUser.afk < 0) continue;
 

@@ -125,7 +125,7 @@ let handler = async (m, { conn, usedPrefix, command, text, isAdmin, isOwner }) =
         return m.reply(`❌ Sesi absen hari ini belum dibuka.\nAdmin dapat membuka sesi baru dengan ketik *${usedPrefix}mulaiabsen <judul>*.`);
     }
 
-    let selectedStatus = STATUS_MAP[inputCmd] || STATUS_MAP[cleanText] || 'HADIR';
+    let selectedStatus = STATUS_MAP[inputCmd.toUpperCase()] || STATUS_MAP[cleanText] || 'HADIR';
 
     if (!db[id].peserta) db[id].peserta = [];
     let existingIndex = db[id].peserta.findIndex(p => p.id === m.sender);
