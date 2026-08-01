@@ -72,6 +72,9 @@ global.snh = '-'
 global.qris = '_'
 global.psaweria = '_'
 
+/*============= GRUP RESMI =============*/
+global.linkGroup = 'https://chat.whatsapp.com/GantiDenganLinkGrupAsli'
+
 /*============= MONEYTRACK + NENELCRAFT STORE =============*/
 global.moneytrack = {
     webAppUrl: 'https://script.google.com/macros/s/AKfycbzojQdRLNtnvZ6BPa41Xw7e_c97n8PevgbIEEZ29pPvFZiw-W34yCFDqsfZOZ1jk6U/exec',

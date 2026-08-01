@@ -414,6 +414,10 @@ export async function handler(chatUpdate) {
                 else if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
                 else if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
                 if (plugin.private && m.isGroup) { fail('private', m, this); continue }
+                if (plugin.tags && (plugin.tags.includes('game') || plugin.tags.includes('rpg')) && !m.isGroup) {
+                    this.reply(m.chat, `🎮 *Fitur Game & RPG Terkunci*\n\nMaaf, semua fitur permainan hanya dapat dimainkan di dalam grup resmi bot!\n\nSilakan bergabung ke grup resmi kami untuk bermain:\n${global.linkGroup || 'Tanyakan link grup ke Owner'}`, m)
+                    continue
+                }
                 if (plugin.register == true && _user?.registered !== true) {
                     _user = global.db.data.users[m.sender] || (global.db.data.users[m.sender] = {})
                     _user.registered = true
