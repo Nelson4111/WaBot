@@ -50,8 +50,8 @@ User @${m.sender.split('@')[0]} telah kembali dari AFK!
         if (jid === m.sender) continue;
         
         // Jangan peringatkan kalau yang di-reply adalah Bot itu sendiri
-        let botJid = conn.decodeJid ? conn.decodeJid(conn.user.id) : conn.user.id;
-        if (jid === botJid) continue;
+        let botNumber = conn.user.id.split(':')[0].split('@')[0];
+        if (jid.startsWith(botNumber)) continue;
 
         const taggedUser = DB[jid];
         if (!taggedUser || taggedUser.afk < 0) continue;
