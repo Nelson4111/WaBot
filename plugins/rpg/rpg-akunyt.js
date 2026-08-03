@@ -1,4 +1,4 @@
-import { loadDB } from '../../lib/waifuHelper.js'
+import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import axios from 'axios'
 import FormData from 'form-data'
 
@@ -35,19 +35,7 @@ let handler = async (m, { conn }) => {
   caption += `│ Total *Likes*: ${(userYT.likes || 0).toLocaleString()}\n`
   caption += `└ *Subscribers*: ${userYT.subs.toLocaleString()}\n`
 
-  conn.sendMessage(m.chat, {
-    text: caption.trim(),
-    contextInfo: {
-      externalAdReply: {
-        title: "",
-        body: `Channel: ${userYT.name}`,
-        thumbnailUrl: ppUrl,
-        mediaType: 1,
-        renderLargerThumbnail: true,
-        sourceUrl: ""
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, caption.trim(), ppUrl)
 }
 
 handler.help = ['akunyt']

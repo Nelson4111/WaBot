@@ -1,4 +1,4 @@
-import { loadDB } from '../../lib/waifuHelper.js'
+import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -22,20 +22,7 @@ let handler = async (m, { conn }) => {
     caption += `   *Likes*: ${u.likes.toLocaleString()}\n\n`
   })
 
-  conn.sendMessage(m.chat, {
-    text: caption.trim(),
-    contextInfo: {
-      externalAdReply: {
-        title: "",
-        body: "Peringkat Channel Terpopuler",
-        thumbnailUrl: "https://c.termai.cc/i174/Uwc",
-        mediaType: 1,
-        previewType: "PHOTO",
-        renderLargerThumbnail: true,
-        sourceUrl: ""
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i174/Uwc')
 }
 
 handler.help = ['topyt']

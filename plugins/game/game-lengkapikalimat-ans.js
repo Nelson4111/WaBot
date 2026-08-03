@@ -7,7 +7,8 @@ export async function before(m) {
     this.lengkapikalimat = this.lengkapikalimat ? this.lengkapikalimat : {}
     if (!(id in this.lengkapikalimat))
         return conn.reply(m.chat, 'Soal itu telah berakhir', m)
-    if (m.quoted.id == this.lengkapikalimat[id][0].id) {
+    let msgId = this.lengkapikalimat[id][0]?.key?.id || this.lengkapikalimat[id][0]?.id
+    if (m.quoted.id == msgId) {
         let isSurrender = /^((me)?nyerah|surr?ender)$/i.test(m.text)
         if (isSurrender) {
             clearTimeout(this.lengkapikalimat[id][3])

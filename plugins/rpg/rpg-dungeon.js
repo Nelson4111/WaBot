@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -122,18 +122,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   winMsg += `• 🌟 XP: +${earnedExp.toLocaleString()}\n`
   if (selected.reward.diamond) winMsg += `• 💎 Diamond: +${selected.reward.diamond}\n`
 
-  return conn.sendMessage(m.chat, {
-    text: winMsg,
-    contextInfo: {
-      externalAdReply: {
-        title: "MISSION ACCOMPLISHED",
-        body: `Guild: ${myGuild ? myGuild.name : 'No Guild'}`,
-        thumbnailUrl: 'https://c.termai.cc/i187/iFxwQG',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, winMsg, 'https://c.termai.cc/i187/iFxwQG')
 }
 
 handler.help = ['dungeon']

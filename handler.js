@@ -8,6 +8,7 @@ import fetch from 'node-fetch'
 import knights from 'knights-canvas'
 import similarity from 'similarity'
 import { addChat } from './lib/totalchat.js'
+import { generateWelcomeCard, generateGoodbyeCard } from './lib/cardGenerator.js'
 
 /**
  * @type {import('@adiwajshing/baileys')}
@@ -414,10 +415,7 @@ export async function handler(chatUpdate) {
                 else if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
                 else if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
                 if (plugin.private && m.isGroup) { fail('private', m, this); continue }
-                if (plugin.tags && (plugin.tags.includes('game') || plugin.tags.includes('rpg')) && !m.isGroup) {
-                    this.reply(m.chat, `🎮 *Fitur Game & RPG Terkunci*\n\nMaaf, semua fitur permainan hanya dapat dimainkan di dalam grup resmi bot!\n\nSilakan bergabung ke grup resmi kami untuk bermain:\n${global.linkGroup || 'Tanyakan link grup ke Owner'}`, m)
-                    continue
-                }
+                // Game & RPG sekarang bisa dimainkan di private chat maupun grup
                 if (plugin.register == true && _user?.registered !== true) {
                     _user = global.db.data.users[m.sender] || (global.db.data.users[m.sender] = {})
                     _user.registered = true
@@ -552,12 +550,22 @@ export async function participantsUpdate({ id, participants, action }) {
                 let username = dbName || waName || user.split('@')[0]
                 let gcname = await this.getName(id)
                 let memberCount = groupMetadata.participants ? groupMetadata.participants.length : '0'
-                let bg = 'https://api.deline.web.id/8wNQoavbJ6.jpg'
-                let canvasUrl = `https://api.siputzx.my.id/api/canvas/welcomev1?username=${encodeURIComponent(username)}&guildName=${encodeURIComponent(gcname)}&guildIcon=${encodeURIComponent(ppgc)}&memberCount=${memberCount}&avatar=${encodeURIComponent(pp)}&background=${encodeURIComponent(bg)}&quality=80`
                 let text = (chat.sWelcome || this.welcome || conn.welcome || 'Welcome, @user!').replace('@subject', gcname).replace('@desc', groupMetadata.desc?.toString() || 'no description').replace('@user', '@' + user.split('@')[0])               
-                await this.sendFile(id, canvasUrl, 'welcome.jpg', text, null, false, { mentions: [user] }).catch(e => {  
-                    this.sendMessage(id, { text, mentions: [user] })  
-                })  
+                let cardBuf
+                try {
+                    cardBuf = await generateWelcomeCard({ avatarUrl: pp, username, groupName: gcname, memberCount })
+                } catch (e) {
+                    console.error('[WelcomeCard] Error generating card:', e.message)
+                }
+
+                if (cardBuf) {
+                    await this.sendMessage(id, { image: cardBuf, caption: text, mentions: [user] })
+                } else {
+                    let canvasUrl = `https://api.siputzx.my.id/api/canvas/welcomev1?username=${encodeURIComponent(username)}&guildName=${encodeURIComponent(gcname)}&guildIcon=${encodeURIComponent(ppgc)}&memberCount=${memberCount}&avatar=${encodeURIComponent(pp)}&background=https://api.deline.web.id/8wNQoavbJ6.jpg&quality=80`
+                    await this.sendFile(id, canvasUrl, 'welcome.jpg', text, null, false, { mentions: [user] }).catch(e => {  
+                        this.sendMessage(id, { text, mentions: [user] })  
+                    })  
+                }
             } catch (e) {  
                 console.error(e)  
             }  
@@ -578,12 +586,22 @@ export async function participantsUpdate({ id, participants, action }) {
                 let username = dbName || waName || user.split('@')[0]       
                 let gcname = await this.getName(id)
                 let memberCount = groupMetadata.participants ? groupMetadata.participants.length : '0'
-                let bg = 'https://api.deline.web.id/49irsGbWmB.jpg'              
-                let canvasUrl = `https://api.siputzx.my.id/api/canvas/goodbyev1?username=${encodeURIComponent(username)}&guildName=${encodeURIComponent(gcname)}&guildIcon=${encodeURIComponent(gcIcon)}&memberCount=${memberCount}&avatar=${encodeURIComponent(pp)}&background=${encodeURIComponent(bg)}&quality=80`           
                 let text = (chat.sBye || this.bye || conn.bye || 'Bye, @user!').replace('@user', '@' + user.split('@')[0])           
-                await this.sendFile(id, canvasUrl, 'goodbye.jpg', text, null, false, { mentions: [user] }).catch(e => {
-                    this.sendMessage(id, { text, mentions: [user] })
-                })
+                let cardBuf
+                try {
+                    cardBuf = await generateGoodbyeCard({ avatarUrl: pp, username, groupName: gcname, memberCount })
+                } catch (e) {
+                    console.error('[GoodbyeCard] Error generating card:', e.message)
+                }
+
+                if (cardBuf) {
+                    await this.sendMessage(id, { image: cardBuf, caption: text, mentions: [user] })
+                } else {
+                    let canvasUrl = `https://api.siputzx.my.id/api/canvas/goodbyev1?username=${encodeURIComponent(username)}&guildName=${encodeURIComponent(gcname)}&guildIcon=${encodeURIComponent(gcIcon)}&memberCount=${memberCount}&avatar=${encodeURIComponent(pp)}&background=https://api.deline.web.id/49irsGbWmB.jpg&quality=80`
+                    await this.sendFile(id, canvasUrl, 'goodbye.jpg', text, null, false, { mentions: [user] }).catch(e => {  
+                        this.sendMessage(id, { text, mentions: [user] })  
+                    })  
+                }
             } catch (e) {
                 console.error(e)
             }

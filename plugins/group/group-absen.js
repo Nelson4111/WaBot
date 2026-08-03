@@ -159,16 +159,8 @@ handler.all = async function (m) {
     let textClean = m.text.trim().toLowerCase();
     let selectedStatus = null;
 
-    // Deteksi jika user mereply (balas) pesan pengumuman absen dengan angka 1, 2, 3, 4 atau kata status
+    // Hanya respon jika user me-reply pesan pengumuman absen secara spesifik
     if (m.quoted && db[id].annMsgId && m.quoted.id === db[id].annMsgId) {
-        if (['1', 'hadir'].includes(textClean)) selectedStatus = 'HADIR';
-        else if (['2', 'sakit'].includes(textClean)) selectedStatus = 'SAKIT';
-        else if (['3', 'izin'].includes(textClean)) selectedStatus = 'IZIN';
-        else if (['4', 'alpha'].includes(textClean)) selectedStatus = 'ALPHA';
-    }
-
-    // Deteksi jika user membalas pesan absen tanpa prefix
-    if (!selectedStatus && m.quoted) {
         if (['1', 'hadir'].includes(textClean)) selectedStatus = 'HADIR';
         else if (['2', 'sakit'].includes(textClean)) selectedStatus = 'SAKIT';
         else if (['3', 'izin'].includes(textClean)) selectedStatus = 'IZIN';

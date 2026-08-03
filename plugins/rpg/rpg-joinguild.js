@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -17,18 +17,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   guild.contribution[m.sender] = 0
   saveDB(wdb)
 
-  return conn.sendMessage(m.chat, {
-    text: `✅ Berhasil bergabung dengan Guild *${text}*!`,
-    contextInfo: {
-      externalAdReply: {
-        title: "NEW MEMBER JOINED",
-        body: `Welcome to ${text}`,
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, `✅ Berhasil bergabung dengan Guild *${text}*!`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
 }
 
 handler.help = ['joinguild']

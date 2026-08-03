@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -22,18 +22,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `• ${usedPrefix}${command} tarik [jumlah]\n`
     cap += `• ${usedPrefix}${command} all (Simpan semua uang)`
 
-    return conn.sendMessage(m.chat, {
-      text: cap,
-      contextInfo: {
-        externalAdReply: {
-          title: "CENTRAL BANK",
-          body: "Simpan uangmu agar aman dari rampok!",
-          thumbnailUrl: 'https://c.termai.cc/i187/11piK9',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
   }
 
   let userMoney = wdb.money[m.sender] || 0

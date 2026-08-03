@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -45,18 +45,7 @@ let handler = async (m, { conn }) => {
 
   cap += `_Ketik .jual [item] untuk menukar barang dengan uang._`
 
-  conn.sendMessage(m.chat, {
-    text: cap,
-    contextInfo: {
-      externalAdReply: {
-        title: "USER RPG DASHBOARD",
-        body: `Max HP: ${maxHP} (Armor Lv.${armorLvl})`,
-        thumbnailUrl: pp,
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, cap, pp)
 }
 
 handler.help = ['inventory']

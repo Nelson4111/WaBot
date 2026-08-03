@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -47,18 +47,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   saveDB(wdb)
   
-  return conn.sendMessage(m.chat, {
-    text: `*───「 TRADE SUCCESS 」───*\n\n✅ Berhasil mengirimkan:\n\n┌ *Dari*: ${sender.split('@')[0]}\n├ *Ke*: ${receiver.split('@')[0]}\n├ *Item*: ${type.toUpperCase()}\n└ *Jumlah*: ${count.toLocaleString()}`,
-    contextInfo: {
-      externalAdReply: {
-        title: "ZETA TRADE",
-        body: "Transaksi Berhasil",
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, `*───「 TRADE SUCCESS 」───*\n\n✅ Berhasil mengirimkan:\n\n┌ *Dari*: ${sender.split('@')[0]}\n├ *Ke*: ${receiver.split('@')[0]}\n├ *Item*: ${type.toUpperCase()}\n└ *Jumlah*: ${count.toLocaleString()}`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
 }
 
 handler.help = ['trade']

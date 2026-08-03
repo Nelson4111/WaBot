@@ -24,7 +24,8 @@ export async function before(m) {
         return m.reply('Soal itu telah berakhir')
     }
 
-    if (m.quoted.id && m.quoted.id === this.tebakmakanan[id][0].id) {
+    let msgId = this.tebakmakanan[id][0]?.key?.id || this.tebakmakanan[id][0]?.id
+    if (m.quoted.id && m.quoted.id === msgId) {
         let isSurrender = /^((me)?nyerah|surr?ender)$/i.test(m.text)
 
         if (isSurrender) {

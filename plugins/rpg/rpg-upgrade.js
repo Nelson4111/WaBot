@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -46,18 +46,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       }
     }
     
-    return conn.sendMessage(m.chat, {
-      text: listUpgrade + `*Contoh:* Ketik ${usedPrefix}${command} sword`,
-      contextInfo: {
-        externalAdReply: {
-          title: "ZETA BLACKSMITH",
-          body: "Upgrade perlengkapanmu untuk bertahan hidup!",
-          thumbnailUrl: 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, listUpgrade + `*Contoh:* Ketik ${usedPrefix}${command} sword`, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
   }
 
   if (!user[item] || user[item] < 1) return m.reply(`❌ Kamu belum memiliki ${item.toUpperCase()}! Ketik .craft ${item} dulu.`)
@@ -110,18 +99,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   capSuccess += `• ⛓️ Iron: ${totalIron}\n`
   if (totalDiamond > 0) capSuccess += `• 💎 Diamond: ${totalDiamond}\n`
 
-  return conn.sendMessage(m.chat, {
-    text: capSuccess,
-    contextInfo: {
-      externalAdReply: {
-        title: "EQUIPMENT EVOLVED",
-        body: `New Level: ${item.toUpperCase()} (Lv.${user[item]})`,
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, capSuccess, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
 }
 
 handler.help = ['upgrade <item>']

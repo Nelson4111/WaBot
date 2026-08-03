@@ -73,7 +73,7 @@ global.qris = '_'
 global.psaweria = '_'
 
 /*============= GRUP RESMI =============*/
-global.linkGroup = 'https://chat.whatsapp.com/GantiDenganLinkGrupAsli'
+global.linkGroup = 'https://chat.whatsapp.com/BFFKYGNsvrk9iOLyjrkIib'
 
 /*============= MONEYTRACK + NENELCRAFT STORE =============*/
 global.moneytrack = {

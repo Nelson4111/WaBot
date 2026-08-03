@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -13,18 +13,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `1. *Buff Attack* (500 Pts)\n2. *Buff Defense* (500 Pts)\n\n`
     cap += `_Gunakan ${usedPrefix}${command} [angka]_`
     
-    return conn.sendMessage(m.chat, {
-      text: cap,
-      contextInfo: {
-        externalAdReply: {
-          title: "GUILD MERCHANT",
-          body: "Tukarkan kontribusi dengan Buff Guild",
-          thumbnailUrl: 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
   }
 
   if (totalPoints < 500) return m.reply('❌ Poin tidak cukup.')

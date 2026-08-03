@@ -1,6 +1,31 @@
 {
-  "users": {},
-  "money": {},
+  "users": {
+    "226804522590211@lid": {
+      "rpg": {
+        "level": 1,
+        "exp": 99,
+        "darah": 83,
+        "lastAdventure": 1785773136326,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 2,
+        "stone": 0,
+        "wood": 12,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        }
+      }
+    }
+  },
+  "money": {
+    "226804522590211@lid": 5728
+  },
   "couples": {},
   "chars": {},
   "status": {},

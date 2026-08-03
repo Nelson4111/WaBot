@@ -1,4 +1,5 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { generateFishingCard } from '../../lib/cardGenerator.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -27,11 +28,24 @@ let handler = async (m, { conn }) => {
   if (user.exp >= user.level * 500) { user.level++; user.exp = 0 }
   saveDB(wdb)
 
-  let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
-  conn.sendMessage(m.chat, {
-    text: `*───「 FISHING 」───*\n\n🎣 Kamu mendapatkan: *1 ${ikan.toUpperCase()}*\n✨ XP: +${exp}\n\nLevel Pancingan: ${rodLvl}`,
-    contextInfo: { externalAdReply: { title: "ZETA FISHING", body: `Angler: ${m.pushName}`, thumbnailUrl: pp, mediaType: 1, renderLargerThumbnail: true }}
-  }, { quoted: m })
+  let pp = 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+  try {
+    pp = await conn.profilePictureUrl(m.sender, 'image')
+  } catch {}
+
+  let caption = `*───「 FISHING 」───*\n\n🎣 Kamu mendapatkan: *1 ${ikan.toUpperCase()}*\n✨ XP: +${exp}\n\nLevel Pancingan: ${rodLvl}`
+  let username = conn.getName(m.sender) || m.pushName || 'Player'
+
+  try {
+    let cardBuf = await generateFishingCard({ avatarUrl: pp, username, ikan, exp, rodLevel: rodLvl })
+    if (cardBuf) {
+      return conn.sendMessage(m.chat, { image: cardBuf, caption, mentions: [m.sender] }, { quoted: m })
+    }
+  } catch (e) {
+    console.error('[FishingCard] Error generating card:', e.message)
+  }
+
+  return sendRpgMsg(conn, m, caption, pp)
 }
 
 handler.help = ['mancing']

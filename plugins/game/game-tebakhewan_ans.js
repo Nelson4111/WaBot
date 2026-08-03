@@ -7,7 +7,8 @@ export async function before(m) {
     this.tebakhewan = this.tebakhewan ? this.tebakhewan : {}
     if (!(id in this.tebakhewan)) return m.reply('Soal itu telah berakhir')
     
-    if (m.quoted.id == this.tebakhewan[id][0].id) {
+    let msgId = this.tebakhewan[id][0]?.key?.id || this.tebakhewan[id][0]?.id
+    if (m.quoted.id == msgId) {
         let json = JSON.parse(JSON.stringify(this.tebakhewan[id][1]))
         if (m.text.toLowerCase() == json.jawaban.toLowerCase().trim()) {
             global.db.data.users[m.sender].exp += this.tebakhewan[id][2]

@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -37,18 +37,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
     listHarga += `*Contoh:* Ketik ${usedPrefix}${command} sword`
 
-    return conn.sendMessage(m.chat, {
-      text: listHarga,
-      contextInfo: {
-        externalAdReply: {
-          title: "ZETA BLACKSMITH SHOP",
-          body: "Bawa materialmu dan tempa senjatamu!",
-          thumbnailUrl: 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, listHarga, 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg')
   }
 
   if (user[choice] && user[choice] > 0) {
@@ -73,18 +62,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
 
-  conn.sendMessage(m.chat, {
-    text: `✅ *CRAFTING SUCCESS!*\n\nSelamat! Kamu telah berhasil menempa *${choice.toUpperCase()}* Lv.1.\nSekarang item ini bisa ditingkatkan di menu .upgrade.`,
-    contextInfo: {
-      externalAdReply: {
-        title: "SUCCESSFUL FORGING",
-        body: `New Item: ${choice.toUpperCase()} (Lv.1)`,
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, `✅ *CRAFTING SUCCESS!*\n\nSelamat! Kamu telah berhasil menempa *${choice.toUpperCase()}* Lv.1.\nSekarang item ini bisa ditingkatkan di menu .upgrade.`, 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg')
 }
 
 handler.help = ['craft <item>']

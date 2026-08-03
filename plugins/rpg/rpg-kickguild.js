@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -24,19 +24,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   
   saveDB(wdb)
 
-  return conn.sendMessage(m.chat, {
-    text: `✅ Berhasil mengeluarkan @${target.split('@')[0]} dari Guild *${myGuild.name}*`,
-    contextInfo: {
-      mentionedJid: [target],
-      externalAdReply: {
-        title: "GUILD KICK",
-        body: `A member has been removed from ${myGuild.name}`,
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, `✅ Berhasil mengeluarkan @${target.split('@')[0]} dari Guild *${myGuild.name}*`, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [target] } })
 }
 
 handler.help = ['kickguild <nomor/reply>']

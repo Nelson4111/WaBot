@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -48,18 +48,7 @@ let handler = async (m, { conn }) => {
   // Notifikasi khusus jika dapat Diamond
   let statusDiamond = diamond > 0 ? `\n💎 *Diamond: +${diamond}* (Hoki!)` : ''
 
-  conn.sendMessage(m.chat, {
-    text: `*───「 MINING 」───*\n\n┌ ✨ Gold: +${gold}\n│ 🪨 Stone: +${stone}${statusDiamond}\n└ 🌟 XP: +${expDapat}\n\nLvl Pickaxe: ${user.pickaxe || 0}`,
-    contextInfo: { 
-      externalAdReply: { 
-        title: "MINING", 
-        body: `Miner: ${m.pushName}`, 
-        thumbnailUrl: 'https://c.termai.cc/i140/srjE7x6',
-        mediaType: 1, 
-        renderLargerThumbnail: true 
-      } 
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, `*───「 MINING 」───*\n\n┌ ✨ Gold: +${gold}\n│ 🪨 Stone: +${stone}${statusDiamond}\n└ 🌟 XP: +${expDapat}\n\nLvl Pickaxe: ${user.pickaxe || 0}`, 'https://c.termai.cc/i140/srjE7x6')
 }
 
 handler.help = ['mining']

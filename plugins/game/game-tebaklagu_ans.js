@@ -7,7 +7,8 @@ export async function before(m) {
     this.tebaklagu = this.tebaklagu || {}
 
     if (!(id in this.tebaklagu)) return !0
-    if (!m.quoted || !m.quoted.fromMe || m.quoted.id !== this.tebaklagu[id][0].id) return !0
+    let msgId = this.tebaklagu[id][0]?.key?.id || this.tebaklagu[id][0]?.id
+    if (!m.quoted || !m.quoted.fromMe || m.quoted.id !== msgId) return !0
 
     let json = this.tebaklagu[id][1]
     let jawaban = json.jawaban.toLowerCase().trim()

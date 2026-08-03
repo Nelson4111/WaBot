@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -27,18 +27,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     })
     list += `*Cara Pilih:* ${usedPrefix}${command} [nomor]`
     
-    return conn.sendMessage(m.chat, {
-      text: list,
-      contextInfo: {
-        externalAdReply: {
-          title: "GUILD MISSIONS",
-          body: `Guild: ${myGuild.name} | Level: ${myGuild.level}`,
-          thumbnailUrl: 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
   }
 
   let index = parseInt(text) - 1
@@ -98,19 +87,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   cap += `• 💰 Money: +Rp ${msn.reward.money.toLocaleString()}\n`
   if (msn.reward.diamond) cap += `• 💎 Diamond: +${msn.reward.diamond}`
 
-  return conn.sendMessage(m.chat, {
-    text: cap,
-    contextInfo: {
-      mentionedJid: [m.sender],
-      externalAdReply: {
-        title: "MISSION SUCCESS",
-        body: `Guild: ${myGuild.name} | Exp & Hadiah dibagikan!`,
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [m.sender] } })
 }
 
 handler.help = ['misiguild']

@@ -27,6 +27,8 @@ handler.all = async function (m) {
         // Di Private Chat: Abaikan jika pesan diawali simbol command resmi (seperti . / ! # $)
         let isSymbolCommand = /^[\.\/!#\$%=>\+\-_~&\*]/.test(text);
         if (isSymbolCommand) return;
+        // Jika pesan adalah reply ke pesan lain, skip (kemungkinan jawaban ke bot/game)
+        if (m.quoted) return;
     }
 
     if (!text) return; // Jika pesan kosong setelah dibersihkan

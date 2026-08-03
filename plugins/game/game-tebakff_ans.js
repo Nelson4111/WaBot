@@ -9,7 +9,8 @@ export async function before(m) {
     if (!(id in this.tebakff)) return !0
     
     // WAJIB REPLY SOAL
-    if (!m.quoted || !m.quoted.fromMe || m.quoted.id !== this.tebakff[id][0].id) return !0
+    let msgId = this.tebakff[id][0]?.key?.id || this.tebakff[id][0]?.id
+    if (!m.quoted || !m.quoted.fromMe || m.quoted.id !== msgId) return !0
 
     let json = this.tebakff[id][1]
     let jawaban = json.jawaban.toLowerCase().trim()

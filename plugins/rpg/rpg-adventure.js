@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -64,18 +64,7 @@ let handler = async (m, { conn }) => {
   cap += `• 🌟 XP: +${exp}\n\n`
   cap += `❤️ *Sisa Darah:* ${user.darah}`
 
-  conn.sendMessage(m.chat, {
-    text: cap,
-    contextInfo: {
-      externalAdReply: {
-        title: "ZETA EXPLORATION",
-        body: `Explorer: ${m.pushName} | Lvl: ${user.level}`,
-        thumbnailUrl: 'https://c.termai.cc/i166/r7V1',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')
 }
 
 handler.help = ['adventure']

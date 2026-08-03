@@ -58,18 +58,18 @@ User @${m.sender.split('@')[0]} telah kembali dari AFK!
 
         const duration = formatDuration(Date.now() - taggedUser.afk);
         const reason = taggedUser.afkReason || 'Tanpa Alasan';
-        let name = await conn.getName(jid);
+        let name = (await conn.getName(jid)) || `@${jid.split('@')[0]}`;
 
         let warningCaption = `
 ⚠️ *SSTT... JANGAN TAG DIA!* ⚠️
 
-User *${name}* sedang *AFK*!
+User *@${jid.split('@')[0]}* sedang *AFK*!
 📝 *Alasan:* _${reason}_
 ⏱️ *Sejak:* ${duration} yang lalu.
 
 _Harap tidak mengganggu sampai dia kembali online._
 `.trim();
-        await conn.sendMessage(m.chat, { text: warningCaption }, { quoted: m });
+        await conn.sendMessage(m.chat, { text: warningCaption, mentions: [jid] }, { quoted: m });
     }
 
     return false;

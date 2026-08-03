@@ -7,7 +7,8 @@ export async function before(m) {
     this.game = this.game ? this.game : {}
     if (!(id in this.game))
         return m.reply('Soal itu telah berakhir')
-    if (m.quoted.id == this.game[id][0].id) {
+    let msgId = this.game[id][0]?.key?.id || this.game[id][0]?.id
+    if (m.quoted.id == msgId) {
         let isSurrender = /^((me)?nyerah|surr?ender)$/i.test(m.text)
         if (isSurrender) {
             clearTimeout(this.game[id][3])

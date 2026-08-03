@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -55,18 +55,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }).join('\n')
     cap += listJual
 
-    return conn.sendMessage(m.chat, {
-      text: cap,
-      contextInfo: {
-        externalAdReply: {
-          title: "SHOP & MARKET",
-          body: "Diskon Premium 20% & Bonus Jual 10%",
-          thumbnailUrl: 'https://c.termai.cc/i108/l3q',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
   let args = text.toLowerCase().split(' ')

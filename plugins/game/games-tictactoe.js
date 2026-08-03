@@ -40,11 +40,13 @@ ${arr.slice(6).join('')}
 Menunggu @${room.game.currentTurn.split('@')[0]}
 Ketik *nyerah* untuk nyerah
 `.trim()
+        // Mention hanya pemain aktif, bukan parseMention(str) yang bisa pick up angka timestamp Room ID
+        let mentionList = [room.game.playerX, room.game.playerO].filter(Boolean)
         if (room.x !== room.o) await conn.reply(room.x, str, m, {
-            mentions: conn.parseMention(str)
+            mentions: mentionList
         })
         await conn.reply(room.o, str, m, {
-            mentions: conn.parseMention(str)
+            mentions: mentionList
         })
     } else {
         room = {
@@ -61,10 +63,13 @@ ${usedPrefix}${command} ${text}` : ''))
     
     
     }
-    setTimeout(() => {
-    m.reply('waktu telah berakhir')
-    delete conn.game[room.id]
-    }, 30000)
+    // Timeout 5 menit, ref disimpan agar bisa dibatalkan saat game selesai
+    room.timeout = setTimeout(() => {
+        if (conn.game && conn.game[room.id]) {
+            m.reply('⏰ Waktu habis! Game TicTacToe dibatalkan karena terlalu lama.')
+            delete conn.game[room.id]
+        }
+    }, 300000)
 }
 
 handler.help = ['tictactoe']

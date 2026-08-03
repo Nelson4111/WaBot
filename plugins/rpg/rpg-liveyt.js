@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text }) => {
   const wdb = loadDB()
@@ -47,20 +47,7 @@ let handler = async (m, { conn, text }) => {
   caption += `└ *Exp*: +${xpGain.toLocaleString()}\n\n`
   caption += `Live selesai pada ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`
 
-  conn.sendMessage(m.chat, {
-    text: caption.trim(),
-    contextInfo: {
-      externalAdReply: {
-        title: "Laporan Hasil Live Streaming",
-        body: "",
-        thumbnailUrl: "https://c.termai.cc/i174/Uwc",
-        mediaType: 1,
-        previewType: "PHOTO",
-        renderLargerThumbnail: true,
-        sourceUrl: ""
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i174/Uwc')
 }
 
 handler.help = ['liveyt <judul>']

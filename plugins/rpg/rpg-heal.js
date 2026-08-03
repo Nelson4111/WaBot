@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 let handler = async (m, { conn, usedPrefix, command }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
@@ -36,18 +36,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
   let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
 
-  return conn.sendMessage(m.chat, {
-    text: cap,
-    contextInfo: {
-      externalAdReply: {
-        title: "ZETA MEDICAL CENTER",
-        body: "Pemulihan Instan Berhasil",
-        thumbnailUrl: pp,
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, cap, pp)
 }
 
 handler.help = ['heal']

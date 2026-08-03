@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
   let guildName = Object.keys(wdb.guilds || {}).find(name => wdb.guilds[name].members.includes(m.sender))
@@ -16,18 +16,7 @@ let handler = async (m, { conn }) => {
   delete guild.contribution[m.sender]
   saveDB(wdb)
 
-  return conn.sendMessage(m.chat, {
-    text: `✅ Kamu berhasil keluar dari Guild *${guildName}*.`,
-    contextInfo: {
-      externalAdReply: {
-        title: "GUILD DEPARTURE",
-        body: `Good luck on your next journey!`,
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, `✅ Kamu berhasil keluar dari Guild *${guildName}*.`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
 }
 
 handler.help = ['leaveguild']

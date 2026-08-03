@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -31,18 +31,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       cap += `• ${usedPrefix}${command} release (Lepaskan Pet)`
     }
 
-    return conn.sendMessage(m.chat, {
-      text: cap,
-      contextInfo: {
-        externalAdReply: {
-          title: "ZETA PET SYSTEM",
-          body: user.pet.tipe !== 'none' ? `Status: ${user.pet.tipe} Level ${user.pet.level}` : "Pilih pet impianmu!",
-          thumbnailUrl: 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg')
   }
 
   // 2. ADOPSI PET (Harga Baru)

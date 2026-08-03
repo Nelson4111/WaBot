@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -54,18 +54,7 @@ let handler = async (m, { conn }) => {
 
   let pp = 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg'
   
-  conn.sendMessage(m.chat, {
-    text: text,
-    contextInfo: {
-      externalAdReply: {
-        title: "RPG HALL OF FAME",
-        body: "Daftar Petualang Paling Berpengaruh",
-        thumbnailUrl: 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg',
-        mediaType: 1,
-        renderLargerThumbnail: true
-      }
-    }
-  }, { quoted: m })
+  return sendRpgMsg(conn, m, text, 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg')
 }
 
 handler.help = ['toprpg']

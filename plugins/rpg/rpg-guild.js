@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -36,19 +36,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       cap += `${i + 1}. @${v.split('@')[0]} [ ${contrib.toLocaleString()} Pts ]\n`
     })
 
-    return conn.sendMessage(m.chat, { 
-      text: cap, 
-      contextInfo: { 
-        mentionedJid: members,
-        externalAdReply: {
-          title: `GUILD: ${myGuild.name}`,
-          body: `Level: ${myGuild.level} | Exp: ${myGuild.exp.toLocaleString()}`,
-          thumbnailUrl: 'https://c.termai.cc/i142/XU7iEW',
-          mediaType: 1,
-          renderLargerThumbnail: true
-        }
-      } 
-    }, { quoted: m })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i142/XU7iEW', { contextInfo: { mentionedJid: members } })
   }
 
   if (action === 'create') {

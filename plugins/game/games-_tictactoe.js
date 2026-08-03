@@ -72,12 +72,15 @@ Room ID: ${room.id}
         let users = global.db.data.users
         if ((room.game._currentTurn ^ isSurrender ? room.x : room.o) !== m.chat)
             room[room.game._currentTurn ^ isSurrender ? 'x' : 'o'] = m.chat
+        // Mention hanya playerX dan playerO secara eksplisit, bukan parseMention(str)
+        // (parseMention bisa mengambil angka timestamp dari Room ID sebagai mention palsu)
+        let mentionList = [room.game.playerX, room.game.playerO].filter(Boolean)
         if (room.x !== room.o)
             await this.reply(room.x, str, m, {
-                mentions: this.parseMention(str)
+                mentions: mentionList
             })
         await this.reply(room.o, str, m, {
-            mentions: this.parseMention(str)
+            mentions: mentionList
         })
         if (isTie || isWin) {
             users[room.game.playerX].exp += playScore
@@ -86,6 +89,8 @@ Room ID: ${room.id}
                 users[winner].exp += winScore - playScore
             if (debugMode)
                 m.reply('[DEBUG]\n' + format(room))
+            // Batalkan timeout agar tidak muncul pesan 'waktu habis' setelah game selesai
+            if (room.timeout) clearTimeout(room.timeout)
             delete this.game[room.id]
         }
     }
