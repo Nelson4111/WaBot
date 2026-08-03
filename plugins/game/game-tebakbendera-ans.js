@@ -1,10 +1,3 @@
-/*
-wa.me/6282285357346
-github: https://github.com/sadxzyq
-Instagram: https://instagram.com/tulisan.ku.id
-ini wm gw cok jan di hapus
-*/
-
 import similarity from 'similarity'
 const threshold = 0.72
 
@@ -15,21 +8,23 @@ function cleanText(str = '') {
 let handler = m => m
 
 handler.before = async function (m) {
-  if (!m.text) return true
-  if (/^[./#!]\w+/.test(m.text.trim())) return true
+  if (!m.text) return false
+  if (/^[./#!]\w+/.test(m.text.trim())) return false
 
   let id = m.chat
   this.tebakbendera = this.tebakbendera || {}
-  if (!(id in this.tebakbendera)) return true
+  if (!(id in this.tebakbendera)) return false
 
   const session = this.tebakbendera[id]
-  if (!session || !session[1]) return true
+  if (!session || !session[1]) return false
 
   const json = session[1]
   const jawab = (json.name || json.jawaban || '').trim()
-  if (!jawab) return true
+  if (!jawab) return false
 
-  const isQuotedFromBot = m.quoted && m.quoted.fromMe
+  const msgId = session[0]?.key?.id || session[0]?.id
+  const isQuotedFromBot = m.quoted && m.quoted.fromMe && (m.quoted.id === msgId || !msgId)
+
   const isCorrect = cleanText(m.text) === cleanText(jawab)
   const isSimilar = similarity(cleanText(m.text), cleanText(jawab)) >= threshold
   const isSurrender = /^((me)?nyerah|surr?ender)$/i.test(m.text.trim())
@@ -58,7 +53,7 @@ handler.before = async function (m) {
     return true
   }
 
-  return true
+  return false
 }
 
 export default handler

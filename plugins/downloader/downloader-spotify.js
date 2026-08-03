@@ -1,142 +1,132 @@
-/*
-Jangan Hapus Wm Bang 
+import axios from 'axios'
+import yts from 'yt-search'
 
-*Play Sportify Di  uptodown Plugins Esm*
-
-*[Sumber]*
-https://whatsapp.com/channel/0029Vb3u2awADTOCXVsvia28
-
-*[Sumber Scrape]*
-https://whatsapp.com/channel/0029Vaf07jKCBtxAsekFFk3i
-*/
-
-import axios from "axios";
-
-async function convert(ms) {
-   var minutes = Math.floor(ms / 60000);
-   var seconds = ((ms % 60000) / 1000).toFixed(0);
-   return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+const headers = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': '*/*',
+  'Content-Type': 'application/x-www-form-urlencoded',
+  'Origin': 'https://iframe.y2meta-uk.com',
+  'Referer': 'https://iframe.y2meta-uk.com/'
 }
 
-async function down(url) {
-   const BASEURL = "https://api.fabdl.com";
-   const headers = {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json",
-      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-   };
+const sleep = ms => new Promise(r => setTimeout(r, ms))
 
-   try {
-      const { data: info } = await axios.get(`${BASEURL}/spotify/get?url=${url}`, { headers });
-      const { gid, id } = info.result;
+async function getMp3Url(videoUrl) {
+  try {
+    const keyRes = await axios.get('https://cnv.cx/v2/sanity/key', { headers, timeout: 10000 })
+    const key = keyRes.data?.key
+    if (!key) throw new Error('No key from cnv.cx')
 
-      const { data: download } = await axios.get(`${BASEURL}/spotify/mp3-convert-task/${gid}/${id}`, { headers });
-      if (download.result.download_url) {
-         return `${BASEURL}${download.result.download_url}`;
+    const convRes = await axios.post('https://cnv.cx/v2/converter',
+      new URLSearchParams({
+        link: videoUrl,
+        format: 'mp3',
+        audioBitrate: '320',
+        videoQuality: '720',
+        filenameStyle: 'pretty',
+        vCodec: 'h264'
+      }),
+      { headers: { ...headers, key }, timeout: 15000 }
+    )
+
+    let job = convRes.data
+    if (job.status === 'tunnel' && job.url) return { url: job.url, title: job.filename }
+    if (job.status === 'processing' && job.jobId) {
+      for (let i = 0; i < 20; i++) {
+        await sleep(1500)
+        const st = await axios.get(`https://cnv.cx/v2/status/${job.jobId}`, { headers, timeout: 10000 })
+        if (st.data?.status === 'completed' && st.data?.url) {
+          return { url: st.data.url, title: st.data.filename }
+        }
       }
-   } catch (error) {
-      console.error("Error downloading Spotify track:", error.message);
-      throw new Error(error.message);
-   }
+    }
+  } catch (e) {}
+
+  // Fallback API jika cnv.cx fail
+  try {
+    const res = await axios.get(`https://api.deline.web.id/downloader/ytplay?q=${encodeURIComponent(videoUrl)}`, { timeout: 15000 })
+    if (res.data?.status && res.data?.result?.dlink) {
+      return { url: res.data.result.dlink, title: res.data.result.title }
+    }
+  } catch (e) {}
+
+  throw new Error('Gagal mengambil file audio MP3.')
 }
 
-async function spotifyCreds() {
-   return new Promise(async (resolve) => {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text) return m.reply(`🎧 *Contoh Penggunaan:*\n• ${usedPrefix + command} https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT\n• ${usedPrefix + command} Alan Walker Faded`)
+
+  await m.react('🎧')
+
+  try {
+    let isSpotifyUrl = /spotify\.com\/track\/|spotify\.link\//i.test(text)
+    let title = ''
+    let thumbnail = ''
+    let spotifyUrl = isSpotifyUrl ? text : ''
+
+    if (isSpotifyUrl) {
       try {
-         const json = await axios.post(
-            "https://accounts.spotify.com/api/token",
-            "grant_type=client_credentials",
-            {
-               headers: {
-                  Authorization:
-                     "Basic " +
-                     Buffer.from("4c4fc8c3496243cbba99b39826e2841f" + ":" + "d598f89aba0946e2b85fb8aefa9ae4c8").toString("base64"),
-               },
-            }
-         );
-         if (!json.data.access_token) {
-            return resolve({ status: false, msg: "Can't generate token!" });
-         }
-         resolve({ status: true, data: json.data });
-      } catch (e) {
-         resolve({ status: false, msg: e.message });
-      }
-   });
+        const oe = await axios.get(`https://open.spotify.com/oembed?url=${encodeURIComponent(text)}`, { timeout: 8000 })
+        if (oe.data?.title) {
+          title = oe.data.title
+          thumbnail = oe.data.thumbnail_url || ''
+        }
+      } catch (e) {}
+    }
+
+    let searchQuery = title || text
+    let search = await yts(searchQuery)
+    let videos = search.videos
+
+    if (!Array.isArray(videos) || videos.length === 0) {
+      return m.reply(`❌ *Lagu "${text}" tidak ditemukan.*`)
+    }
+
+    let video = videos[0]
+    let trackTitle = title || video.title
+    let coverArt = thumbnail || video.thumbnail
+    let duration = video.timestamp || '-'
+    let channel = video.author?.name || '-'
+
+    let caption = `
+🎧 *SPOTIFY PLAY / DOWNLOADER*
+
+📌 *Judul:* ${trackTitle}
+👤 *Artis / Channel:* ${channel}
+🍜 *Durasi:* ${duration}
+🔗 *Link:* ${spotifyUrl || video.url}
+
+─────────────────
+🎵 *Sedang mengunduh audio (320kbps MP3)...*
+`.trim()
+
+    // 1. Kirim kartu informasi Spotify
+    await conn.sendMessage(m.chat, {
+      image: { url: coverArt },
+      caption: caption
+    }, { quoted: m })
+
+    // 2. Unduh dan kirim file audio MP3
+    let mp3Data = await getMp3Url(video.url)
+
+    await conn.sendMessage(m.chat, {
+      audio: { url: mp3Data.url },
+      mimetype: 'audio/mp4',
+      fileName: `${trackTitle}.mp3`
+    }, { quoted: m })
+
+    await m.react('✅')
+
+  } catch (e) {
+    console.error('Spotify Downloader Error:', e)
+    await m.react('❌')
+    m.reply('❌ *Terjadi kesalahan saat memproses Spotify:* ' + (e.message || e))
+  }
 }
 
-async function play(query) {
-   return new Promise(async (resolve) => {
-      try {
-         const creds = await spotifyCreds();
-         if (!creds.status) return resolve(creds);
+handler.help = ['spotify <url/judul>', 'plays <judul>']
+handler.tags = ['downloader']
+handler.command = /^(spotify|plays)$/i
+handler.limit = false
 
-         const json = await axios.get(`https://api.spotify.com/v1/search?query=${query}&type=track&offset=0&limit=1`, {
-            headers: {
-               Authorization: "Bearer " + creds.data.access_token,
-            },
-         });
-         if (!json.data.tracks.items || json.data.tracks.items.length < 1) {
-            return resolve({ status: false, msg: "Music not found!" });
-         }
-
-         let v = json.data.tracks.items[0];
-         let url = await down(v.external_urls.spotify);
-
-         const metadata = {
-            title: `${v.album.artists[0].name} - ${v.name}`,
-            artist: v.album.artists[0].name,
-            name: v.name,
-            duration: await convert(v.duration_ms),
-            popularity: `${v.popularity}%`,
-            preview: v.preview_url || "No preview audio available",
-            thumbnail: v.album.images[0].url,
-            url: v.external_urls.spotify,
-         };
-
-         resolve({
-            status: true,
-            metadata,
-            audio: { url },
-         });
-      } catch (e) {
-         resolve({ status: false, msg: e.message });
-      }
-   });
-}
-
-const handler = async (m, { text }) => {
-   if (!text) {
-      return m.reply("Masukkan nama lagu atau artis untuk dicari!");
-   }
-
-   const result = await play(text);
-
-   if (!result.status) {
-      return m.reply(`Error: ${result.msg}`);
-   }
-
-   const { metadata, audio } = result;
-   const message = `
-*Judul:* ${metadata.title}
-*Artis:* ${metadata.artist}
-*Durasi:* ${metadata.duration}
-*Popularitas:* ${metadata.popularity}
-*Preview:* ${metadata.preview}
-*Spotify URL:* ${metadata.url}
-`;
-
-   m.reply(message);
-
-   if (audio.url) {
-      conn.sendMessage(m.chat, { audio: { url: audio.url }, mimetype: "audio/mpeg" }, { quoted: m });
-   } else {
-      m.reply("Tidak ada audio yang tersedia untuk diunduh.");
-   }
-};
-
-handler.help = ["spotify"].map((v) => v + " <lagu>");
-handler.tags = ["search","downloader"]
-handler.command = /^(plays|spotify)$/i;
-handler.limit = false;
-
-export default handler;
+export default handler

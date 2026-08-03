@@ -65,7 +65,7 @@ global.timestamp = {
 const __dirname = global.__dirname(import.meta.url)
 
 global.opts = new Object(yargs(process.argv.slice(2)).exitProcess(false).parse())
-global.prefix = new RegExp('^[' + (opts['prefix'] || '‎xzXZ/i!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']')
+global.prefix = new RegExp('^[' + (opts['prefix'] || '‎!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']')
 
 global.db = new Low(
   /https?:\/\//.test(opts['db'] || '') ?
@@ -599,6 +599,18 @@ const pluginDirs = (dir = pluginFolder) => readdirSync(dir, { withFileTypes: tru
 let pluginWatchers = []
 let pluginWatchRefreshTimeout
 
+function formatPluginModule(module) {
+  let loaded = module.default || module
+  if (loaded && (typeof loaded === 'function' || typeof loaded === 'object')) {
+    for (let key in module) {
+      if (key !== 'default' && !(key in loaded)) {
+        try { loaded[key] = module[key] } catch {}
+      }
+    }
+  }
+  return loaded
+}
+
 global.plugins = {}
 async function filesInit() {
   for (let filePath of pluginFiles()) {
@@ -606,7 +618,7 @@ async function filesInit() {
     try {
       let file = global.__filename(filePath)
       const module = await import(file)
-      global.plugins[filename] = module.default || module
+      global.plugins[filename] = formatPluginModule(module)
     } catch (e) {
       conn.logger.error(e)
       delete global.plugins[filename]
@@ -634,7 +646,7 @@ global.reload = async (_ev, filename) => {
     if (err) conn.logger.error(`syntax error while loading '${filename}'\n${format(err)}`)
     else try {
       const module = (await import(`${global.__filename(dir)}?update=${Date.now()}`))
-      global.plugins[filename] = module.default || module
+      global.plugins[filename] = formatPluginModule(module)
     } catch (e) {
       conn.logger.error(`error require plugin '${filename}\n${format(e)}'`)
     } finally {

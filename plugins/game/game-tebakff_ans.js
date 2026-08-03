@@ -2,38 +2,38 @@ import similarity from 'similarity'
 const threshold = 0.72
 
 export async function before(m) {
-    if (!m.text) return !0
+    if (!m.text) return false
     let id = m.chat
     this.tebakff = this.tebakff || {}
 
-    if (!(id in this.tebakff)) return !0
+    if (!(id in this.tebakff)) return false
     
-    // WAJIB REPLY SOAL
     let msgId = this.tebakff[id][0]?.key?.id || this.tebakff[id][0]?.id
-    if (!m.quoted || !m.quoted.fromMe || m.quoted.id !== msgId) return !0
+    if (!m.quoted || !m.quoted.fromMe || m.quoted.id !== msgId) return false
 
     let json = this.tebakff[id][1]
     let jawaban = json.jawaban.toLowerCase().trim()
     let text = m.text.toLowerCase().trim()
 
-    if (/^\.?hff$/i.test(text)) return !0
+    if (/^\.?hff$/i.test(text)) return false
 
     if (/^((me)?nyerah|surr?ender)$/i.test(text)) {
         clearTimeout(this.tebakff[id][3])
         delete this.tebakff[id]
-        return m.reply('*Yah menyerah 😔*')
+        await m.reply('*Yah menyerah 😔*')
+        return true
     }
 
     if (text === jawaban) {
         global.db.data.users[m.sender].exp += this.tebakff[id][2]
-        m.reply(`✅ *Benar!*\n+${this.tebakff[id][2]} XP`)
+        await m.reply(`✅ *Benar!*\n+${this.tebakff[id][2]} XP`)
         clearTimeout(this.tebakff[id][3])
         delete this.tebakff[id]
     } else if (similarity(text, jawaban) >= threshold) {
-        m.reply('*Dikit lagi!*')
+        await m.reply('*Dikit lagi!*')
     } else {
-        m.reply('*Salah!*')
+        await m.reply('*Salah!*')
     }
 
-    return !0
+    return true
 }

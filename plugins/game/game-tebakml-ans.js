@@ -1,36 +1,48 @@
 import similarity from 'similarity'
 const threshold = 0.72
 
-export async function before(m) {
-  if (!m.text) return !0
+let handler = m => m
+
+handler.before = async function (m) {
+  if (!m.text) return false
 
   let id = 'tebakml-' + m.chat
   this.game = this.game || {}
 
-  if (!(id in this.game)) return !0
+  if (!(id in this.game)) return false
 
-  let json = this.game[id][1]
-  let jawaban = json.jawaban.toLowerCase().trim()
-  let text = m.text.toLowerCase().trim()
+  const session = this.game[id]
+  const json = session[1]
+  const jawaban = json.jawaban.toLowerCase().trim()
+  const text = m.text.toLowerCase().trim()
 
-  if (/^\.?hgml$/i.test(text)) return !0
+  const msgId = session[0]?.key?.id || session[0]?.id
+  const isQuotedFromBot = m.quoted && m.quoted.fromMe && (m.quoted.id === msgId || !msgId)
+
+  if (/^\.?hgml$/i.test(text)) return false
 
   if (/^((me)?nyerah|surr?ender)$/i.test(text)) {
     clearTimeout(this.game[id][3])
     delete this.game[id]
-    return m.reply('*Yah menyerah 😔*')
+    await m.reply('*Yah menyerah 😔*')
+    return true
   }
 
   if (text === jawaban) {
     global.db.data.users[m.sender].exp += this.game[id][2]
-    m.reply(`✅ *Benar!*\n+${this.game[id][2]} XP`)
+    await m.reply(`✅ *Benar!*\n+${this.game[id][2]} XP`)
     clearTimeout(this.game[id][3])
     delete this.game[id]
+    return true
   } else if (similarity(text, jawaban) >= threshold) {
-    m.reply('*Dikit lagi!*')
+    await m.reply('*Dikit lagi!*')
+    return true
+  } else if (isQuotedFromBot) {
+    await m.reply('*Salah!*')
+    return true
   }
 
-  return !0
+  return false
 }
 
-export const exp = 0
+export default handler

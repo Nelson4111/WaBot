@@ -1,79 +1,44 @@
-/*
-Jangan Hapus Wm Bang 
-
-*Yts Button  Plugins Esm*
-
-Kayak Gini aj Di jual Fefek
-
-*[Sumber]*
-https://whatsapp.com/channel/0029Vb3u2awADTOCXVsvia28
-
-*[Sumber Scrape]*
-
-Tak ada 
-*/
-
 import yts from 'yt-search'
 
-let handler = async (m, { conn, text }) => {
-  if (!text) throw 'Cari apa?'
-  await conn.reply(m.chat, global.wait, m)
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text) throw `Cari apa?\nContoh: *${usedPrefix + command} Alan Walker Faded*`
+  await conn.reply(m.chat, global.wait || '⏳ Sedang mencari...', m)
 
   let results = await yts(text)
   let videos = results.all.filter(v => v.type === 'video') 
   
   if (videos.length === 0) throw 'Video tidak ditemukan!'
 
-  let index = 0 
-  let video = videos[index] 
+  let video = videos[0] 
 
-  let bella = `
-° *${video.title}*\n
-↳ *Link :* ${video.url}\n
-↳ *Duration :* ${video.timestamp}\n
-↳ *Uploaded :* ${video.ago}\n
-↳ *Views :* ${video.views}`
+  let caption = `
+🍙 *YOUTUBE SEARCH*
 
-  await conn.sendMessage(
-    m.chat,
-    {
-      image: { url: video.thumbnail },
-      caption: bella,
-      title: "YouTube Search By Takashi G4",
-      subtitle: "YouTube Search",
-      footer: "Takashi - 2025",
-      media: true,
-      interactiveButtons: [
-        {
-          name: "quick_reply",
-          buttonParamsJson: JSON.stringify({
-            display_text: "Download Video",
-            id: `.ytmp4 ${video.url}`
-          })
-        },
-        {
-          name: "quick_reply",
-          buttonParamsJson: JSON.stringify({
-            display_text: "Download Audio",
-            id: `.play ${video.url}`
-          })
-        },
-        {
-          name: "quick_reply",
-          buttonParamsJson: JSON.stringify({
-            display_text: "Cari Lagi",
-            id: `.yts ${text} ${index + 1}`
-          })
-        }
-      ]
-    },
-    { quoted: m }
-  )
+📌 *Judul:* ${video.title}
+🔗 *Link:* ${video.url}
+🍜 *Durasi:* ${video.timestamp}
+🍡 *Views:* ${video.views ? video.views.toLocaleString('id-ID') : '-'}
+🍵 *Uploaded:* ${video.ago}
+
+─────────────────
+🔻 *Pilih Format Download:*
+🎵 *Audio (MP3):*
+${usedPrefix}ytmp3 ${video.url}
+
+🎬 *Video (MP4):*
+${usedPrefix}ytmp4 ${video.url}
+─────────────────
+`.trim()
+
+  await conn.sendMessage(m.chat, {
+    image: { url: video.thumbnail },
+    caption: caption
+  }, { quoted: m })
 }
 
 handler.help = ['yts <query>']
-handler.tags = ['tools']
-handler.command = /^yts(earch)?(\s\d+)?$/i
-handler.limit = true;
+handler.tags = ['tools', 'downloader']
+handler.command = /^yts(earch)?$/i
+handler.limit = true
 
 export default handler

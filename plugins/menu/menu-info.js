@@ -63,6 +63,8 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 │ ⟡ .runtime  
 │ ⟡ .tflimit  
 │ ⟡ .toplimit  
+│ ⟡ .topmoney  
+│ ⟡ .topexp
 │ ⟡ .totalfitur  
 │ ⟡ .undefined  
 ╰──

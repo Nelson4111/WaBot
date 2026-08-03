@@ -5,22 +5,26 @@ function cleanText(str = '') {
     return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
 }
 
-export async function before(m) {
-    if (!m.text) return true
-    if (/^[./#!]\w+/.test(m.text.trim())) return true
+let handler = m => m
+
+handler.before = async function (m) {
+    if (!m.text) return false
+    if (/^[./#!]\w+/.test(m.text.trim())) return false
 
     let id = m.chat
     this.caklontong = this.caklontong || {}
-    if (!(id in this.caklontong)) return true
+    if (!(id in this.caklontong)) return false
 
     const session = this.caklontong[id]
-    if (!session || !session[1]) return true
+    if (!session || !session[1]) return false
 
     const json = session[1]
     const jawab = (json.jawaban || '').trim()
-    if (!jawab) return true
+    if (!jawab) return false
 
-    const isQuotedFromBot = m.quoted && m.quoted.fromMe
+    const msgId = session[0]?.key?.id || session[0]?.id
+    const isQuotedFromBot = m.quoted && m.quoted.fromMe && (m.quoted.id === msgId || !msgId)
+
     const isCorrect = cleanText(m.text) === cleanText(jawab)
     const isSimilar = similarity(cleanText(m.text), cleanText(jawab)) >= threshold
     const isSurrender = /^((me)?nyerah|surr?ender)$/i.test(m.text.trim())
@@ -49,6 +53,7 @@ export async function before(m) {
         return true
     }
 
-    return true
+    return false
 }
-export const exp = 0
+
+export default handler

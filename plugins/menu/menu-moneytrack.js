@@ -43,26 +43,26 @@ let handler = async (m, { conn }) => {
 ╰──
 
 ╭──「 *ᴍᴇɴᴜ • ᴍᴏɴᴇʏᴛʀᴀᴄᴋ* 」─✦
-│ 💸 .addtransaksi keluar | makan | 25000 | Cash | catatan
-│ 💸 .edittransaksi <id> | keluar | makan | 25000 | Cash | catatan
-│ 💸 .hapustransaksi <id>
+│ 𖥔  .addtransaksi keluar | makan | 25000 | Cash | catatan
+│ 𖥔  .edittransaksi <id> | keluar | makan | 25000 | Cash | catatan
+│ 𖥔  .hapustransaksi <id>
 │
-│ 🧾 .scanstruk
-│ 🧾 .scanstruk --akun Cash
-│ 🧾 .simpanstruk <draft>
-│ 🧾 .detailstruk <draft>
-│ 🧾 .batalstruk <draft>
+│ 𖥔  .scanstruk
+│ 𖥔  .scanstruk --akun Cash
+│ 𖥔  .simpanstruk <draft>
+│ 𖥔  .detailstruk <draft>
+│ 𖥔  .batalstruk <draft>
 │
-│ 🛒 .order 62812xxxx | Item|1|10000 --metode QRIS --nama Nama
-│ ✅ .done 62812xxxx | Nama | 10000 | QRIS | catatan
-│ 💳 .veriforder <invoice>
-│ 💳 .lunasorder <invoice>
-│ ❌ .tolakorder <invoice> <alasan>
-│ 📞 .hubungiorder <invoice>
+│ 𖥔  .order 62812xxxx | Item|1|10000 --metode QRIS --nama Nama
+│ 𖥔  .done 62812xxxx | Nama | 10000 | QRIS | catatan
+│ 𖥔  .veriforder <invoice>
+│ 𖥔  .lunasorder <invoice>
+│ 𖥔  .tolakorder <invoice> <alasan>
+│ 𖥔  .hubungiorder <invoice>
 │
-│ 📄 .detailorder <invoice>
-│ 💳 .bayar <invoice>
-│ 💬 .komplain <invoice>
+│ 𖥔  .detailorder <invoice>
+│ 𖥔  .bayar <invoice>
+│ 𖥔  .komplain <invoice>
 ╰──
 
 _Terima kasih sudah menggunakan ${global.namebot}_

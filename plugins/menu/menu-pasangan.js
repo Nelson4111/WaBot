@@ -42,25 +42,27 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 │ 𖥔  ᴊᴀᴍ : ${jam} WIB
 ╰──
 
-╭──「 *ᴍᴇɴᴜ • ᴘᴀsᴀɴɢᴀɴ & ʀᴏᴍᴀɴsᴀ* 」✦
-│ 💍 ${_p}lamar @user
-│ 💍 ${_p}nikah @user
-│ 💍 ${_p}tembak @user
-│ ✅ ${_p}terima
-│ ❌ ${_p}tolak
-│ 💔 ${_p}cerai @user
-│ 💕 ${_p}pasangan / ${_p}ceknikah
-│ 🍿 ${_p}kencan
-│ 🛒 ${_p}belicincin
-│ 🎁 ${_p}hadiah @user <jumlah>
-│ 🖼️ ${_p}kartunikah / ${_p}bukunikah
-│
-│ 💘 ${_p}jodoh / ${_p}jodohku (Tag Random Jodoh)
-│ 💖 ${_p}cekisihati @user
-│ 👩‍❤️‍👨 ${_p}jodohin @u1 @u2 / ${_p}cekjodoh
-│ 🤫 ${_p}selingkuh @user
-│ 🔮 ${_p}pelet @user
-│ 💬 ${_p}bucin
+╭──「 *ᴘᴀsᴀɴɢᴀɴ ᴍᴇɴᴜ* 」✦
+│ 𖥔  ${_p}lamar @user
+│ 𖥔  ${_p}nikah @user
+│ 𖥔  ${_p}tembak @user
+│ 𖥔  ${_p}terima
+│ 𖥔  ${_p}tolak
+│ 𖥔  ${_p}cerai @user
+│ 𖥔  ${_p}pasangan / ${_p}ceknikah
+│ 𖥔  ${_p}kencan
+│ 𖥔  ${_p}belicincin
+│ 𖥔  ${_p}hadiah @user <jumlah>
+│ 𖥔  ${_p}kartunikah / ${_p}bukunikah
+╰──
+
+╭──「 *ʀᴏᴍᴀɴsᴀ ᴍᴇɴᴜ* 」✦
+│ 𖥔  ${_p}jodoh / ${_p}jodohku (Tag Random Jodoh)
+│ 𖥔  ${_p}cekisihati @user
+│ 𖥔  ${_p}jodohin @u1 @u2 / ${_p}cekjodoh
+│ 𖥔  ${_p}selingkuh @user
+│ 𖥔  ${_p}pelet @user
+│ 𖥔  ${_p}bucin
 ╰──
 
 _Terima kasih sudah menggunakan ${global.namebot}_

@@ -1,47 +1,33 @@
 let handler = async (m, { conn }) => {
-  if (!global.owner || global.owner.length === 0) return m.reply('❌ Belum ada owner terdaftar.');
-  
-  await conn.sendMessage(m.chat, { react: { text: "👑", key: m.key } });
+  let ownNum = (global.nomorown || '6281241100804').replace(/[^0-9]/g, '')
+  let ownName = global.author || 'Nenel'
 
-  let contacts = [];
-  let caption = `👑 *DEVELOPER / OWNER LIST*\n\nBerikut adalah kontak owner bot yang resmi:\n\n`;
+  await conn.sendMessage(m.chat, { react: { text: "👑", key: m.key } })
 
-  for (let [number, name, isDev] of global.owner) {
-    let cleanNumber = number.replace(/[^0-9]/g, '');
-    let jid = cleanNumber + '@s.whatsapp.net';
-    let ownerName = name || global.author || 'Owner';
+  let caption = `👑 *DEVELOPER / OWNER BOT*
 
-    caption += `• *Nama:* ${ownerName}\n`;
-    caption += `• *Nomor:* +${cleanNumber}\n`;
-    caption += `• *Role:* ${isDev ? 'Developer Utama' : 'Admin Owner'}\n`;
-    caption += `• *Wa:* https://wa.me/${cleanNumber}\n\n`;
+• *Nama:* ${ownName}
+• *Nomor:* +${ownNum}
+• *WhatsApp:* https://wa.me/${ownNum}
 
-    contacts.push({
-      displayName: ownerName,
-      vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;${ownerName};;;\nFN:${ownerName}\nORG:${global.namebot || 'NelBot-MD'}\nTITLE:Developer\nTEL;type=CELL;type=VOICE;waid=${cleanNumber}:+${cleanNumber}\nEND:VCARD`
-    });
-  }
+_Silakan hubungi owner jika ada kendala atau keperluan penting._`.trim()
 
-  caption += `_Silakan hubungi owner jika ada kendala atau keperluan penting._`;
+  let vcard = `BEGIN:VCARD\nVERSION:3.0\nN:;${ownName};;;\nFN:${ownName}\nORG:${global.namebot || 'NelBot-MD'}\nTITLE:Owner & Developer\nTEL;type=CELL;type=VOICE;waid=${ownNum}:+${ownNum}\nEND:VCARD`
 
-  // Kirim vCard Kontak
+  // Kirim vCard Kontak Owner
   await conn.sendMessage(m.chat, {
     contacts: {
-      displayName: `${contacts.length} Owner`,
-      contacts: contacts
+      displayName: ownName,
+      contacts: [{ displayName: ownName, vcard }]
     }
-  }, { quoted: m });
+  }, { quoted: m })
 
   // Kirim Pesan Detail
-  if (global.ftoko) {
-    await conn.sendMessage(m.chat, { text: caption }, { quoted: global.ftoko });
-  } else {
-    await conn.reply(m.chat, caption, m);
-  }
-};
+  await conn.sendMessage(m.chat, { text: caption }, { quoted: m })
+}
 
-handler.help = ['listowner', 'owner'];
-handler.tags = ['owner'];
-handler.command = /^(listowner|owner)$/i;
+handler.help = ['owner', 'creator']
+handler.tags = ['info', 'owner']
+handler.command = /^(owner|creator|listowner)$/i
 
-export default handler;
+export default handler

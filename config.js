@@ -29,16 +29,15 @@ const readMore = more.repeat(4001)
 
 /*============= MAIN INFO =============*/
 global.owner = [
-    ['226804522590211', 'Nenel Main ID', true],
-    ['160859846357027', 'Nenel LID 2', true],
-    ['6281242432747', 'Nenel', true],
-    ['6281241100804', 'Nenel 2', true],
-    ['62812411100804', 'Admin NenelCraft', true]
+    ['226804522590211', 'Nenel Main ID', false],
+    ['160859846357027', 'Nenel LID 2', false],
+    ['6281242432747', 'Nenel', false],
+    ['6281241100804', 'Nenel 2', true]
 ]  // ubah pake no kalian
 global.mods = []
 global.prems = []
 global.nomorbot = '6281242432747' // ubah pake no kalian
-global.nomorown = '6281242432747' // ubah pake no kalian
+global.nomorown = '6281241100804' // ubah pake no kalian
 global.autotyping = false // default mati
 global.autorecording = false // default mati
 

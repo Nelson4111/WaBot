@@ -1,27 +1,51 @@
 import similarity from 'similarity'
 const threshold = 0.72
 
-export async function before(m) {
+let handler = m => m
+
+handler.before = async function (m) {
     let id = m.chat
-    if (!m.quoted || !m.quoted.fromMe || !m.quoted.isBaileys || !/TEBAK GENSHIN/i.test(m.quoted.text)) return !0
-    this.tebakgenshin = this.tebakgenshin ? this.tebakgenshin : {}
-    if (!(id in this.tebakgenshin)) return m.reply('Soal itu telah berakhir')
-    
-    let msgId = this.tebakgenshin[id][0]?.key?.id || this.tebakgenshin[id][0]?.id
-    if (m.quoted.id == msgId) {
-        let json = JSON.parse(JSON.stringify(this.tebakgenshin[id][1]))
-        if (m.text.toLowerCase() == json.jawaban.toLowerCase().trim()) {
-            global.db.data.users[m.sender].exp += this.tebakgenshin[id][2]
-            await this.reply(m.chat, `*Selamat!* Jawaban kamu benar!\n\n✨ *Jawaban:* ${json.jawaban}\n🎁 *Hadiah:* +${this.tebakgenshin[id][2]} XP`, m)
-            clearTimeout(this.tebakgenshin[id][3])
-            delete this.tebakgenshin[id]
-        } else if (similarity(m.text.toLowerCase(), json.jawaban.toLowerCase().trim()) >= threshold) {
-            m.reply(`*Dikit lagi!*`)
-        } else {
-            m.reply(`*Salah!*`)
-        }
+    this.tebakgenshin = this.tebakgenshin || {}
+    if (!(id in this.tebakgenshin)) return false
+    if (!m.text) return false
+
+    if (/^[./#!]\w+/.test(m.text.trim())) return false
+
+    const session = this.tebakgenshin[id]
+    if (!session || !session[1]) return false
+
+    const json = session[1]
+    const jawaban = (json.jawaban || '').toLowerCase().trim()
+    const text = m.text.toLowerCase().trim()
+    if (!jawaban) return false
+
+    const msgId = session[0]?.key?.id || session[0]?.id
+    const isQuotedFromBot = m.quoted && m.quoted.fromMe && (m.quoted.id === msgId || !msgId)
+
+    if (/^((me)?nyerah|surr?ender)$/i.test(text)) {
+        clearTimeout(session[3])
+        delete this.tebakgenshin[id]
+        await this.reply(m.chat, `*Yah Menyerah! :(*\nJawabannya: *${json.jawaban}*`, m)
+        return true
     }
-    return !0
+
+    if (text === jawaban) {
+        global.db.data.users[m.sender] = global.db.data.users[m.sender] || {}
+        global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + session[2]
+
+        await this.reply(m.chat, `🎉 *BENAR!* Jawaban kamu benar!\n\n✨ *Jawaban:* ${json.jawaban}\n🎁 *Hadiah:* +${session[2]} XP`, m)
+        clearTimeout(session[3])
+        delete this.tebakgenshin[id]
+        return true
+    } else if (similarity(text, jawaban) >= threshold) {
+        await this.reply(m.chat, `🔍 *Dikit lagi!*`, m)
+        return true
+    } else if (isQuotedFromBot) {
+        await this.reply(m.chat, `❌ *Salah!*`, m)
+        return true
+    }
+
+    return false
 }
 
-export const exp = 0
+export default handler
