@@ -63,7 +63,7 @@ User @${m.sender.split('@')[0]} telah kembali dari AFK!
         let warningCaption = `
 ⚠️ *SSTT... JANGAN TAG DIA!* ⚠️
 
-User *@${jid.split('@')[0]}* sedang *AFK*!
+Dia sedang *AFK*!
 📝 *Alasan:* _${reason}_
 ⏱️ *Sejak:* ${duration} yang lalu.
 

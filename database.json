@@ -1,7 +1,7 @@
 {
   "users": {
     "6281242432747@s.whatsapp.net": {
-      "exp": 1475,
+      "exp": 7426,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -17,7 +17,33 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [],
+      "money": 4849,
+      "rpg": {
+        "level": 1,
+        "exp": 86,
+        "darah": 87,
+        "lastAdventure": 1785774895135,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 1,
+        "stone": 0,
+        "wood": 5,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "lele": 1
+        },
+        "lastMancing": 1785782297824
+      }
     },
     "6285135280348@s.whatsapp.net": {
       "exp": 384,
@@ -153,8 +179,8 @@
       "autolevelup": true
     },
     "226804522590211@lid": {
-      "exp": 15689,
-      "limit": 100,
+      "exp": 23847,
+      "limit": 101,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -173,11 +199,11 @@
       "aiHistory": [
         {
           "role": "user",
-          "content": "Aku mau ngobrol besok hari ap?"
+          "content": "Itu kah khusus owner kalo untuk user?"
         },
         {
           "role": "assistant",
-          "content": "Wah serius? Kamu mau ngobrol besok hari aja? Hehe, aku siap kapan aja kamu mau ngobrol, besok hari juga boleh! Tapi aku akan tetap ada di sini jika kamu butuh sesuatu sekarang juga. Sampai jumpa besok! 🙂"
+          "content": "Nenel! Untuk user seperti kamu, caranya adalah mengetik .addgrup atau .joingrup di grup yang kamu ingin masukin aku. Nanti aku akan bergabung!"
         },
         {
           "role": "user",
@@ -185,7 +211,23 @@
         },
         {
           "role": "assistant",
-          "content": "Hai lagi! 😊 Kamu yang tadi mau ngobrol besok hari, apa sudah ganti rencana? Hehe, aku tetap siap ngobrol kapan aja!"
+          "content": "Hai juga, nenel! Apa yang bisa aku bantu hari ini? 🙃"
+        },
+        {
+          "role": "user",
+          "content": "ih"
+        },
+        {
+          "role": "assistant",
+          "content": "Ih juga, nenel! Kita bisa ngobrol santai atau aku bisa membantu kamu dengan sesuatu?"
+        },
+        {
+          "role": "user",
+          "content": "Hai bot"
+        },
+        {
+          "role": "assistant",
+          "content": "Hai bot juga, nenel! Bisa aku ajak ngobrol atau kamu punya masalah yang perlu aku bantu? wkwk"
         },
         {
           "role": "user",
@@ -193,30 +235,43 @@
         },
         {
           "role": "assistant",
-          "content": "Tes juga! Ternyata kamu sedang menguji aku. Hehe, berhasil loh! Apa kamu ingin ngobrol atau coba tes aku lagi?"
-        },
-        {
-          "role": "user",
-          "content": "Tes"
-        },
-        {
-          "role": "assistant",
-          "content": "Nah kamu ulang lagi! Hehe, aku sudah siap untuk tes yang ke-2. Ayo, coba aku lagi! 😅"
-        },
-        {
-          "role": "user",
-          "content": "Tes"
-        },
-        {
-          "role": "assistant",
-          "content": "Wah kamu nggak sabar nih! Tes ke-3 sudah, aku pikir kamu sudah tahu aku bisa ngobrol dengan baik. Apa kamu mau beralih ke topik lain, atau masih ingin tes aku?"
+          "content": "Tesnya sukses, nenel! Kita bisa lanjut ke ngobrol yang lebih serius atau santai aja, kaya dulu? 😊"
         }
       ],
       "aiProfile": {
         "nickname": "nenel",
         "preferences": [],
         "language": "Indonesia"
-      }
+      },
+      "pasangan": [],
+      "money": 50000,
+      "rpg": {
+        "level": 2,
+        "exp": 270,
+        "darah": 49,
+        "lastAdventure": 1785776865923,
+        "lastMining": 1785776215878,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 3,
+        "iron": 16,
+        "stone": 8,
+        "wood": 40,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "lele": 2
+        },
+        "lastMancing": 1785781884658,
+        "bank": 43968
+      },
+      "lastDaily": 1785789374449,
+      "bank": 43968
     },
     "628989139222@s.whatsapp.net": {
       "exp": 393,
@@ -294,7 +349,7 @@
       "autolevelup": true
     },
     "120363395114168746@newsletter": {
-      "exp": 851,
+      "exp": 1038,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -310,7 +365,53 @@
       "level": 0,
       "role": "Free user",
       "autolevelup": true,
-      "aiHistory": []
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "omtewe bikin wa gateway. inpokan saran"
+        },
+        {
+          "role": "assistant",
+          "content": "Halo! Ada yang bisa saya bantu hari ini? 😊"
+        },
+        {
+          "role": "user",
+          "content": "omtewe bikin wa gateway. inpokan saran"
+        },
+        {
+          "role": "assistant",
+          "content": "Kak, aku paham sekarang! Untuk membuat WA Gateway, kamu bisa menggunakan WhatsApp Business API. Namun, untuk implementasinya, kamu perlu membuat server API yang bisa menerima dan memproses permintaan dari WhatsApp.\n\nKamu bisa menggunakan PHP dan framework seperti Laravel untuk membuat server API. Kamu juga perlu mengintegrasikan WhatsApp Business API dengan server API kamu menggunakan metode Webhook.\n\nNanti kamu bisa membuat endpoint untuk menerima pesan dari WhatsApp, lalu memproses dan mengirimkan respons kembali ke WhatsApp. Kamu juga perlu mengatur keamanan dan autentikasi untuk endpoint tersebut.\n\nTapi, Kak, perlu diketahui bahwa membuat WA Gateway tidaklah mudah. Kamu perlu memiliki pengetahuan yang cukup tentang pengembangan API dan keamanan data. Jadi, pastikan kamu siap untuk menghadapi tantangan ini! 👍"
+        },
+        {
+          "role": "user",
+          "content": "omtewe bikin wa gateway. inpokan saran"
+        },
+        {
+          "role": "assistant",
+          "content": "Kak, aku ngerti sekarang! Untuk membuat WA Gateway, kamu bisa menggunakan beberapa alternatif, seperti:\n\n1. WhatsApp Business API: Seperti yang aku sebutkan sebelumnya, kamu bisa menggunakan WhatsApp Business API untuk membuat WA Gateway. Namun, kamu perlu memiliki server API yang stabil dan bisa menghandle permintaan dari WhatsApp.\n2. Pada Platform: Ada beberapa platform seperti Twilio, Nexmo, dan MessageBird yang menyediakan layanan WA Gateway. Kamu bisa menggunakan platform-platform tersebut untuk membuat WA Gateway dengan lebih mudah.\n3. Bot Telegram: Kamu juga bisa membuat bot Telegram yang bisa menerima dan memproses pesan dari WhatsApp. Namun, perlu diingat bahwa bot Telegram tidak bisa menampilkan pesan dari WhatsApp secara langsung.\n4. Menggunakan Script: Ada beberapa script seperti Node.js dan Python yang bisa digunakan untuk membuat WA Gateway dengan lebih mudah. Kamu bisa mencari script tersebut di internet dan menggunakannya untuk membuat WA Gateway.\n\nJadi, Kak, pilihan tergantung pada kebutuhan kamu. Kamu bisa memilih alternatif yang paling sesuai dengan kebutuhan kamu! 🤔"
+        },
+        {
+          "role": "user",
+          "content": "omtewe bikin wa gateway. inpokan saran"
+        },
+        {
+          "role": "assistant",
+          "content": "Kak, aku bisa sampaikan jawaban yang lebih singkat! 🙏\n\nKamu bisa menggunakan beberapa pilihan untuk membuat WA Gateway, seperti:\n\n- WhatsApp Business API\n- Twilio\n- Nexmo\n- MessageBird\n- Bot Telegram\n- Script Node.js atau Python\n\nPilih yang paling sesuai dengan kebutuhan kamu, Kak! 👍"
+        },
+        {
+          "role": "user",
+          "content": "omtewe bikin wa gateway. inpokan saran"
+        },
+        {
+          "role": "assistant",
+          "content": "Aku bisa sampaikan jawaban yang lebih singkat lagi! 🙃\n\nKamu bisa buat WA Gateway dengan menggunakan .bot (minta kode bot) atau .tg (minta kode bot Telegram yang bisa menerima WA). Tertarik? 🤔"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "Teman",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "6281381685954@s.whatsapp.net": {
       "exp": 70,
@@ -503,12 +604,12 @@
       "autolevelup": true
     },
     "73817821061123@lid": {
-      "exp": 19,
+      "exp": 75,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
-      "registered": false,
+      "registered": true,
       "age": -1,
       "regTime": -1,
       "afk": -1,
@@ -518,7 +619,55 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "name": "mrcl",
+      "aiProfile": {
+        "nickname": "mrcl",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "day 1 pkl🖕🏻"
+        },
+        {
+          "role": "assistant",
+          "content": "Hari pertama PKL sudah selesai! 😊 Sekarang giliran kamu untuk beristirahat dan mengisi energi, nanti malamnya kamu akan kembali ke kampus. Btw, apa rencana kamu hari ini? Mau makan siang di mana?"
+        },
+        {
+          "role": "user",
+          "content": "turu2 ambu aki"
+        },
+        {
+          "role": "assistant",
+          "content": "Kamu masih lelah dari hari pertama PKL? 🤣 Turu-turu ambu aki memang wajar, tapi jangan lupa minum banyak air agar tubuh tidak dehidrasi. Makanlah makanan yang bergizi dan pastikan kamu tidur cukup malam ini. Tidur nyenyak! 😴"
+        },
+        {
+          "role": "user",
+          "content": "❤️‍🔥"
+        },
+        {
+          "role": "assistant",
+          "content": "Cinta api! 🤣 Kamu itu malah makin aneh, tapi aku suka! Haha, serius? Kamu mau makan makanan pedas atau apa?"
+        },
+        {
+          "role": "user",
+          "content": "nyaris"
+        },
+        {
+          "role": "assistant",
+          "content": "Nyaris capek, nyaris lapar, atau nyaris apa lagi? wkwk Kamu harus memberitahu aku supaya aku bisa membantumu!"
+        },
+        {
+          "role": "user",
+          "content": "mbg❤️‍🔥"
+        },
+        {
+          "role": "assistant",
+          "content": "Makanan pedas! 🤤 Aku tahu, kamu suka makanan pedas. Mungkin kamu bisa makan sambal atau makanan khas lainnya yang pedas? Yaudah, makanlah dengan gembira!"
+        }
+      ]
     },
     "219717725876294@s.whatsapp.net": {
       "exp": 8,
@@ -635,7 +784,7 @@
       "autolevelup": true
     },
     "159141540696080@lid": {
-      "exp": 16,
+      "exp": 77,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -652,10 +801,40 @@
       "role": "Free user",
       "autolevelup": true,
       "name": "esa au",
-      "aiHistory": []
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "deg degan"
+        },
+        {
+          "role": "assistant",
+          "content": "Deg degan, wkwk! Mungkin hari ini sedang bad mood, tapi aku ada sini untuk ngobrolin kamu! Apa yang bikin deg degan hari ini?"
+        },
+        {
+          "role": "user",
+          "content": "pendengar terbaik"
+        },
+        {
+          "role": "assistant",
+          "content": "Pendengar terbaik? Haha, itu aku! Aku bisa mendengar kamu dengan sangat jelas, bahkan kalimat \"buset\" tadi wkwk! Serius, apa yang ingin kamu ceritakan atau tanya?"
+        },
+        {
+          "role": "user",
+          "content": "kangen bgt bikin jurnal visual, print gambar ngabisin duit ratusan ribu, bikinnya sampe begadang, udh gitu mendekati deadline lagi, dpt nilai cuma 95 doang 😭"
+        },
+        {
+          "role": "assistant",
+          "content": "Bikin jurnal visual itu memang butuh waktu dan biaya, tapi nilai 95 itu tetap tidak cukup untuk kamu, kan? 🤔 Mungkin kamu bisa mencoba membuat jurnal visual secara digital, bisa dengan menggunakan aplikasi atau software gratis, sehingga kamu bisa menghemat biaya dan waktu 📈. Atau, kamu bisa mencoba membuat jurnal visual yang lebih sederhana, tapi tetap menarik, sehingga biaya dan waktu yang kamu keluarkan bisa lebih terkontrol 💡. Apa kamu ingin aku membantu kamu mencari ide-ide untuk membuat jurnal visual yang lebih hemat? 😊"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "esa au",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "58643517051067@lid": {
-      "exp": 15,
+      "exp": 88,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1166,34 +1345,15 @@
       "autolevelup": true
     },
     "260919531708475@lid": {
-      "exp": 783,
-      "limit": 98,
+      "exp": 437651,
+      "limit": 86,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
-      "name": "zz",
-      "age": -1,
-      "regTime": 1785414377677,
-      "afk": -1,
-      "afkReason": "",
-      "banned": false,
-      "banReason": "",
-      "warn": 0,
-      "level": 0,
-      "role": "Free user",
-      "autolevelup": true
-    },
-    "237507463651454@lid": {
-      "exp": 89620,
-      "limit": 88,
-      "balance": 0,
-      "totalDonasi": 0,
-      "lastclaim": 0,
-      "registered": true,
-      "name": "Eza",
-      "age": -1,
-      "regTime": 1785414395067,
+      "name": "adiza",
+      "age": 96,
+      "regTime": 1785568803124,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -1202,18 +1362,85 @@
       "level": 0,
       "role": "Free user",
       "autolevelup": true,
-      "pasangan": []
+      "pasangan": [
+        {
+          "jid": "237507463651454@lid",
+          "nikahTime": 1785569248021,
+          "poinBucin": 51,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "lastKencan": 1785676663128,
+      "aiProfile": {
+        "nickname": "adiza",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "money": 14302205,
+      "youtube": {
+        "name": "buttercat",
+        "subs": 8658,
+        "views": 86655,
+        "likes": 19011,
+        "level": 1,
+        "lastLive": 1785753260896,
+        "lastKolab": 0
+      },
+      "rpg": {
+        "level": 7,
+        "exp": 0,
+        "darah": 3,
+        "lastAdventure": 1785741393416,
+        "lastMining": 1785753200038,
+        "lastDungeon": 0,
+        "diamond": 362,
+        "gold": 1533,
+        "iron": 38,
+        "stone": 1477,
+        "wood": 34,
+        "inventory": {},
+        "pet": {
+          "tipe": "naga",
+          "level": 1,
+          "exp": 75,
+          "lastFeed": 1785733095285
+        },
+        "ikan": {
+          "lele": 4,
+          "bawal": 0,
+          "nila": 4,
+          "hiu": 2
+        },
+        "lastMancing": 1785753197028,
+        "maxLadang": 4,
+        "ladang": {},
+        "hasilKebun": {
+          "padi": 4,
+          "apel": 1,
+          "durian": 4,
+          "semangka": 7,
+          "jagung": 0,
+          "emas": 2
+        },
+        "lastrob": 1785678574214,
+        "bank": 1105464,
+        "lastkerja": 1785753203222,
+        "lastcasino": 1785678588237,
+        "pickaxe": 2
+      },
+      "lastDaily": 1785676690036,
+      "bank": 1105464
     },
-    "228256070533313@lid": {
-      "exp": 41561,
-      "limit": 100,
+    "237507463651454@lid": {
+      "exp": 1019142,
+      "limit": 158,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
-      "name": "S",
-      "age": -1,
-      "regTime": 1785414527523,
+      "name": "Eza",
+      "age": 17,
+      "regTime": 1785568676426,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -1221,11 +1448,266 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [
+        {
+          "jid": "260919531708475@lid",
+          "nikahTime": 1785569248021,
+          "poinBucin": 51,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "201266647015675@lid",
+          "nikahTime": 1785582385619,
+          "poinBucin": 35,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "7035240333502@lid",
+          "nikahTime": 1785659037227,
+          "poinBucin": 35,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "41232256499850@lid",
+          "nikahTime": 1785676288605,
+          "poinBucin": 35,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "160859846357027@lid",
+          "nikahTime": 1785801004118,
+          "poinBucin": 22,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "Eza",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "lastKencan": 1785801178574,
+      "money": 2000,
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "masalahnya ga muncul di gc, gabisa liat"
+        },
+        {
+          "role": "assistant",
+          "content": "Bisa jadi karena kamu belum join grup itu atau grup itu ga publik. Coba cek lagi apakah kamu sudah join grup itu dan grup itu buka-bukaan buat kamu. Jika masih belum, bisa coba join grupnya dulu 👀"
+        },
+        {
+          "role": "user",
+          "content": "nt gbs liat"
+        },
+        {
+          "role": "assistant",
+          "content": "Mungkin ada masalah dengan koneksi internet kamu atau aplikasi TikTok kamu sendiri. Coba cek koneksi internet kamu lagi dan pastikan aplikasi TikTok kamu sudah update terbaru. Kalau masih belum bisa, bisa coba restart aplikasinya atau bahkan restart ponsel kamu ya. Gampang gampang susah, tapi harus dicoba lah 😅"
+        }
+      ],
+      "rpg": {
+        "level": 22,
+        "exp": 0,
+        "darah": 171,
+        "lastAdventure": 1785831117621,
+        "lastMining": 1785831119826,
+        "lastDungeon": 1785831129775,
+        "diamond": 353,
+        "gold": 1399,
+        "iron": 191,
+        "stone": 1123,
+        "wood": 453,
+        "inventory": {},
+        "pet": {
+          "tipe": "naga",
+          "level": 7,
+          "exp": 75,
+          "lastFeed": 1785826002932
+        },
+        "maxDarah": 200,
+        "ikan": {
+          "lele": 10,
+          "bawal": 4,
+          "hiu": 3,
+          "nila": 5
+        },
+        "lastMancing": 1785831122539,
+        "maxLadang": 10,
+        "ladang": {
+          "1": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "2": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "3": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "4": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "5": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "6": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "7": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "8": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "9": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          },
+          "10": {
+            "jenis": "emas",
+            "waktuTanam": 1785839384044
+          }
+        },
+        "hasilKebun": {
+          "jagung": 0,
+          "emas": 0,
+          "durian": 0
+        },
+        "lastrob": 1785800284686,
+        "bank": 88650554,
+        "lastkerja": 1785839478610,
+        "lastcasino": 1785749570138,
+        "sword": 7,
+        "armor": 5,
+        "pickaxe": 4,
+        "fishingrod": 4
+      },
+      "lastDaily": 1785749242782,
+      "youtube": {
+        "name": "HazYT",
+        "subs": 84613,
+        "views": 797365,
+        "likes": 241369,
+        "level": 9,
+        "lastLive": 1785831139750,
+        "lastKolab": 1785831139750
+      },
+      "bank": 88650554
+    },
+    "228256070533313@lid": {
+      "exp": 1039936,
+      "limit": 96,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "sasha",
+      "age": 17,
+      "regTime": 1785657342148,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "pasangan": [],
+      "aiProfile": {
+        "nickname": "S",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "lastKencan": 1785569441127,
+      "money": 900000,
+      "rpg": {
+        "level": 19,
+        "exp": 3727,
+        "darah": 0,
+        "lastAdventure": 1785837673450,
+        "lastMining": 1785837667660,
+        "lastDungeon": 1785837975258,
+        "diamond": 286,
+        "gold": 438,
+        "iron": 993,
+        "stone": 109,
+        "wood": 375,
+        "inventory": {},
+        "pet": {
+          "tipe": "naga",
+          "level": 14,
+          "exp": 50,
+          "lastFeed": 1785837704958
+        },
+        "lastrob": 1785836817212,
+        "maxLadang": 5,
+        "ladang": {
+          "1": {
+            "jenis": "emas",
+            "waktuTanam": 1785835177058
+          },
+          "2": {
+            "jenis": "emas",
+            "waktuTanam": 1785835177058
+          },
+          "3": {
+            "jenis": "emas",
+            "waktuTanam": 1785835177058
+          },
+          "4": {
+            "jenis": "emas",
+            "waktuTanam": 1785835177058
+          },
+          "5": {
+            "jenis": "emas",
+            "waktuTanam": 1785835177058
+          }
+        },
+        "hasilKebun": {
+          "jagung": 0,
+          "mangga": 0,
+          "emas": 0,
+          "durian": 0
+        },
+        "ikan": {
+          "bawal": 10,
+          "nila": 11,
+          "lele": 22,
+          "hiu": 10
+        },
+        "lastMancing": 1785837670941,
+        "bank": 119699612,
+        "lastkerja": 1785837694978,
+        "maxDarah": 240,
+        "sword": 8,
+        "armor": 7,
+        "fishingrod": 4,
+        "pickaxe": 4,
+        "lastcasino": 1785749423874
+      },
+      "lastDaily": 1785835831012,
+      "youtube": {
+        "name": "sasha",
+        "subs": 84179,
+        "views": 776268,
+        "likes": 212198,
+        "level": 9,
+        "lastLive": 1785837687536,
+        "lastKolab": 1785835759105
+      },
+      "bank": 119699612
     },
     "231120981483592@lid": {
-      "exp": 19,
-      "limit": 100,
+      "exp": 86,
+      "limit": 99,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -1240,10 +1722,49 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "aily୨୧",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "gelud perkoro lagu ne XXXXTENTACION"
+        },
+        {
+          "role": "assistant",
+          "content": "Gelud banget mau ngomong soal X! \"Sad!\" itu lagu yang paling bikin emosi ya? Perlu ngomong ngomong, lagu \"Sad!\" itu seperti cerita hidup X sendiri. Kok bisa bikin perasaan kayak gitu? 👀"
+        },
+        {
+          "role": "user",
+          "content": "gelud perkoro lagu ne XXXXTENTACION 😔"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu lagi terkena \"Look at Me\" lah! Lagu itu seperti soundtrack hidup X, kan? Dari mulai sukses sampai harus menghadapi masalah. Kok bisa bikin kita merasa sedih dan berempati kepadanya? 🎶"
+        },
+        {
+          "role": "user",
+          "content": "somre semuwaaaa"
+        },
+        {
+          "role": "assistant",
+          "content": "Ngapain aja sih kamu ngomong kayak gini? 😂 Tapi, aku rasa kamu sedang mencari lagu yang bikin suasana santai, kan? Somre semuwaaaa, gimana gitu? Mau dengerin lagu Indonesia yang bikin suasana santai?"
+        },
+        {
+          "role": "user",
+          "content": "sok imups"
+        },
+        {
+          "role": "assistant",
+          "content": "Buset, kamu lagi terkena \"Gali Lobang Tutup Lobang\" lah! Sok imups itu seperti lagu yang bikin kita terus ngeluh, tapi tetep ngelakuin sama aja, kan? Hehe, aku rasa kamu sedang mencari lagu yang bikin suasana santai, tapi malah ngomong tentang lagu yang bikin sedih! 🙄"
+        }
+      ]
     },
     "160859846357027@lid": {
-      "exp": 141514,
+      "exp": 366455,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1259,18 +1780,116 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [
+        {
+          "jid": "265141333569711@lid",
+          "nikahTime": 1785662415193,
+          "poinBucin": 18,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "237507463651454@lid",
+          "nikahTime": 1785801004118,
+          "poinBucin": 22,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "lastKencan": 1785565938721,
+      "money": 0,
+      "aiProfile": {
+        "nickname": "Mina",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "rpg": {
+        "level": 12,
+        "exp": 390,
+        "darah": 0,
+        "lastAdventure": 1785771961837,
+        "lastMining": 1785833718236,
+        "lastDungeon": 1785806604039,
+        "diamond": 68,
+        "gold": 2,
+        "iron": 288,
+        "stone": 82,
+        "wood": 73,
+        "inventory": {},
+        "pet": {
+          "tipe": "naga",
+          "level": 4,
+          "exp": 0,
+          "lastFeed": 1785833771626
+        },
+        "ikan": {
+          "lele": 7,
+          "hiu": 8,
+          "bawal": 3,
+          "nila": 0
+        },
+        "lastMancing": 1785833714821,
+        "bank": 27462622,
+        "maxLadang": 6,
+        "ladang": {
+          "1": {
+            "jenis": "emas",
+            "waktuTanam": 1785824571719
+          },
+          "2": {
+            "jenis": "emas",
+            "waktuTanam": 1785824571719
+          },
+          "3": {
+            "jenis": "emas",
+            "waktuTanam": 1785824571719
+          },
+          "4": {
+            "jenis": "emas",
+            "waktuTanam": 1785824571719
+          },
+          "5": {
+            "jenis": "emas",
+            "waktuTanam": 1785824571719
+          },
+          "6": {
+            "jenis": "emas",
+            "waktuTanam": 1785824571719
+          }
+        },
+        "hasilKebun": {
+          "emas": 0
+        },
+        "lastrob": 1785826673441,
+        "lastkerja": 1785833731893,
+        "lastcasino": 1785678063466,
+        "sword": 5,
+        "maxDarah": 180,
+        "armor": 4,
+        "fishingrod": 3,
+        "pickaxe": 2
+      },
+      "lastDaily": 1785662450412,
+      "youtube": {
+        "name": "Mina",
+        "subs": 7063,
+        "views": 65311,
+        "likes": 19254,
+        "level": 1,
+        "lastLive": 1785801154410,
+        "lastKolab": 1785801154410
+      },
+      "bank": 27462622
     },
     "265141333569711@lid": {
-      "exp": 48009,
-      "limit": 93,
+      "exp": 481597,
+      "limit": 80,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
-      "name": "jhr",
-      "age": -1,
-      "regTime": 1785416203104,
+      "name": "jara",
+      "age": 15,
+      "regTime": 1785568706955,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -1279,10 +1898,139 @@
       "level": 0,
       "role": "Free user",
       "autolevelup": true,
-      "pasangan": []
+      "pasangan": [
+        {
+          "jid": "203572977336483@lid",
+          "nikahTime": 1785569992418,
+          "poinBucin": 18,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "7035240333502@lid",
+          "nikahTime": 1785587745239,
+          "poinBucin": 18,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "2662946869294@lid",
+          "nikahTime": 1785658973775,
+          "poinBucin": 23,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "160859846357027@lid",
+          "nikahTime": 1785662415193,
+          "poinBucin": 18,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "jhr",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "money": 0,
+      "lastKencan": 1785676723997,
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "Kann"
+        },
+        {
+          "role": "assistant",
+          "content": "Kann juga! 😅 Apa yang terjadi, Kann? Ada yang bisa dibantu atau kamu mau ngobrol sambil ngerjain tugas?"
+        },
+        {
+          "role": "user",
+          "content": "Wkaakkaka"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwkakakakaaa! Kamu terlalu gokil! Apa yang bikin kamu gembira hari ini?"
+        },
+        {
+          "role": "user",
+          "content": "Wakakakkakakakak"
+        },
+        {
+          "role": "assistant",
+          "content": "WAKAKAKAKAKAKAAK! Kamu makin gokil! Nanti aku ikut ngakak juga! 😂"
+        }
+      ],
+      "rpg": {
+        "level": 13,
+        "exp": 902,
+        "darah": 25,
+        "lastAdventure": 1785835619855,
+        "lastMining": 1785839557926,
+        "lastDungeon": 1785812040327,
+        "diamond": 366,
+        "gold": 708,
+        "iron": 9,
+        "stone": 1501,
+        "wood": 363,
+        "inventory": {},
+        "pet": {
+          "tipe": "naga",
+          "level": 3,
+          "exp": 0,
+          "lastFeed": 1785835683541
+        },
+        "ikan": {
+          "hiu": 1,
+          "lele": 0,
+          "nila": 2,
+          "bawal": 0
+        },
+        "lastMancing": 1785835606623,
+        "lastrob": 1785839499240,
+        "maxLadang": 4,
+        "ladang": {
+          "1": {
+            "jenis": "emas",
+            "waktuTanam": 1785828098690
+          },
+          "2": {
+            "jenis": "emas",
+            "waktuTanam": 1785828098690
+          },
+          "3": {
+            "jenis": "emas",
+            "waktuTanam": 1785828098690
+          },
+          "4": {
+            "jenis": "emas",
+            "waktuTanam": 1785829430080
+          }
+        },
+        "hasilKebun": {
+          "jagung": 0,
+          "semangka": 1,
+          "emas": 0
+        },
+        "bank": 110614644,
+        "lastcasino": 1785749465530,
+        "lastkerja": 1785835676370,
+        "pickaxe": 3,
+        "armor": 3,
+        "sword": 4,
+        "fishingrod": 3,
+        "maxDarah": 160
+      },
+      "lastDaily": 1785749294054,
+      "youtube": {
+        "name": "jahrawr",
+        "subs": 32794,
+        "views": 292893,
+        "likes": 83273,
+        "level": 4,
+        "lastLive": 1785835759105,
+        "lastKolab": 1785835759105
+      },
+      "bank": 110614644
     },
     "95696233492708@lid": {
-      "exp": 140,
+      "exp": 532,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1292,13 +2040,37 @@
       "age": -1,
       "regTime": 1785416249743,
       "afk": -1,
-      "afkReason": "",
+      "afkReason": "pegel",
       "banned": false,
       "banReason": "",
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [],
+      "aiProfile": {
+        "nickname": "c",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "ah tai"
+        },
+        {
+          "role": "assistant",
+          "content": "Tahukah kamu? Hari ini malamnya sedang ada bulan purnama, jadi kamu bisa keluar dan menikmati malam yang bersih dengan udara yang segar. Bawa aja selimut atau sarung bantal biar lebih nyaman nih! 😊"
+        },
+        {
+          "role": "user",
+          "content": "tai"
+        },
+        {
+          "role": "assistant",
+          "content": "Cuek banget! Tai aja, tapi aku tetep ngerti kamu mau apa. Mau ngobrol atau mau aku bantu hal lain? hehe"
+        }
+      ]
     },
     "153506996576464@lid": {
       "exp": 187,
@@ -1338,7 +2110,7 @@
       ]
     },
     "29674029773020@lid": {
-      "exp": 4,
+      "exp": 11,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1395,7 +2167,7 @@
       "autolevelup": true
     },
     "121942795362540@lid": {
-      "exp": 20,
+      "exp": 5374,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1404,25 +2176,52 @@
       "name": "ruel 🦈",
       "age": -1,
       "regTime": 1785419801476,
-      "afk": -1,
-      "afkReason": "",
+      "afk": 1785749537059,
+      "afkReason": "tidur sambil berak",
       "banned": false,
       "banReason": "",
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [],
+      "money": 19478,
+      "rpg": {
+        "level": 1,
+        "exp": 77,
+        "darah": 89,
+        "lastAdventure": 1785660967611,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 3,
+        "stone": 0,
+        "wood": 6,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "lele": 1
+        },
+        "lastMancing": 1785660974167,
+        "lastkerja": 1785749491116
+      }
     },
     "2662946869294@lid": {
-      "exp": 694,
-      "limit": 100,
+      "exp": 6263,
+      "limit": 97,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
-      "name": "Vani’ay ☕",
-      "age": -1,
-      "regTime": 1785421147977,
+      "name": "sela",
+      "age": 15,
+      "regTime": 1785657305120,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -1431,11 +2230,51 @@
       "level": 0,
       "role": "Free user",
       "autolevelup": true,
-      "pasangan": []
+      "pasangan": [
+        {
+          "jid": "265141333569711@lid",
+          "nikahTime": 1785658973775,
+          "poinBucin": 23,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "Vani’ay ☕",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "lastKencan": 1785659018021,
+      "money": 9258,
+      "rpg": {
+        "level": 1,
+        "exp": 140,
+        "darah": 84,
+        "lastAdventure": 1785657799609,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 3,
+        "stone": 0,
+        "wood": 11,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "lastrob": 1785676964175,
+        "ikan": {
+          "bawal": 1,
+          "nila": 1
+        },
+        "lastMancing": 1785666005443
+      }
     },
     "160215433535616@lid": {
-      "exp": 46,
-      "limit": 100,
+      "exp": 20118,
+      "limit": 99,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -1450,10 +2289,47 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [],
+      "aiProfile": {
+        "nickname": "jijieww",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "money": 0,
+      "rpg": {
+        "level": 2,
+        "exp": 80,
+        "darah": 73,
+        "lastAdventure": 1785738787982,
+        "lastMining": 1785739123382,
+        "lastDungeon": 0,
+        "diamond": 1,
+        "gold": 8,
+        "iron": 6,
+        "stone": 31,
+        "wood": 30,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "lele": 1,
+          "bawal": 1
+        },
+        "lastMancing": 1785738921912,
+        "lastkerja": 1785738873516,
+        "bank": 145795,
+        "lastrob": 1785805793820
+      },
+      "lastDaily": 1785826229936,
+      "bank": 145795
     },
     "92376542494740@lid": {
-      "exp": 9,
+      "exp": 14,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1472,7 +2348,7 @@
       "autolevelup": true
     },
     "203572977336483@lid": {
-      "exp": 105,
+      "exp": 2373,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1481,17 +2357,65 @@
       "name": "nathan 'Sosiologi B",
       "age": -1,
       "regTime": 1785477873466,
-      "afk": -1,
-      "afkReason": "",
+      "afk": 1785834552756,
+      "afkReason": "gnggu orng pcran",
       "banned": false,
       "banReason": "",
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [
+        {
+          "jid": "265141333569711@lid",
+          "nikahTime": 1785569992418,
+          "poinBucin": 18,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "nathan 'Sosiologi B",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "wwpc deff 3"
+        },
+        {
+          "role": "assistant",
+          "content": "wkwk, apa kabar Sosiologi B? Tertawa sendirian lagi nggak? 😅"
+        }
+      ],
+      "money": 15918,
+      "rpg": {
+        "level": 2,
+        "exp": 284,
+        "darah": 56,
+        "lastAdventure": 1785683287109,
+        "lastMining": 1785682811135,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 2,
+        "iron": 12,
+        "stone": 13,
+        "wood": 39,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "bawal": 1
+        },
+        "lastMancing": 1785682952270
+      }
     },
     "133689447051298@lid": {
-      "exp": 10,
+      "exp": 22,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1510,7 +2434,7 @@
       "autolevelup": true
     },
     "201266647015675@lid": {
-      "exp": 57,
+      "exp": 993068,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1519,17 +2443,115 @@
       "name": ".",
       "age": -1,
       "regTime": 1785478808180,
-      "afk": -1,
-      "afkReason": "",
+      "afk": 1785840324249,
+      "afkReason": "Tanpa Alasan",
       "banned": false,
       "banReason": "",
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [
+        {
+          "jid": "237507463651454@lid",
+          "nikahTime": 1785582385619,
+          "poinBucin": 35,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "aiProfile": {
+        "nickname": ".",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "money": 622500,
+      "rpg": {
+        "level": 24,
+        "exp": 1809,
+        "darah": 127,
+        "lastAdventure": 1785837891330,
+        "lastMining": 1785837743224,
+        "lastDungeon": 1785837916989,
+        "diamond": 387,
+        "gold": 1282,
+        "iron": 1000,
+        "stone": 861,
+        "wood": 63,
+        "inventory": {},
+        "pet": {
+          "tipe": "naga",
+          "level": 11,
+          "exp": 75,
+          "lastFeed": 1785831985752
+        },
+        "ikan": {
+          "nila": 3,
+          "lele": 5,
+          "bawal": 2,
+          "hiu": 11
+        },
+        "lastMancing": 1785837740629,
+        "maxLadang": 7,
+        "ladang": {
+          "1": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          },
+          "2": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          },
+          "3": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          },
+          "4": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          },
+          "5": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          },
+          "6": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          },
+          "7": {
+            "jenis": "emas",
+            "waktuTanam": 1785832008752
+          }
+        },
+        "hasilKebun": {
+          "jagung": 0,
+          "mangga": 0,
+          "durian": 0,
+          "emas": 0
+        },
+        "bank": 122502731,
+        "lastrob": 1785837971451,
+        "lastcasino": 1785749462536,
+        "lastkerja": 1785837739173,
+        "sword": 7,
+        "maxDarah": 240,
+        "armor": 7,
+        "fishingrod": 6,
+        "pickaxe": 6
+      },
+      "lastDaily": 1785747845867,
+      "youtube": {
+        "name": "soonyo",
+        "subs": 98923,
+        "views": 954624,
+        "likes": 261812,
+        "level": 10,
+        "lastLive": 1785837908939,
+        "lastKolab": 1785831139750
+      },
+      "bank": 122502731
     },
     "26599437115392@lid": {
-      "exp": 22,
+      "exp": 102,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1562,11 +2584,32 @@
         {
           "role": "assistant",
           "content": "Amin! Semoga hari mu berjalan lancar, yaudah kalau butuh bantuan atau cuma mau ngobrol, aku ada di sini 😊"
+        },
+        {
+          "role": "user",
+          "content": "Indri syg🫶🏻"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, Indri sedih? Apa yang nggak beres? Ceritain ke aku, aku mau dengerin 🤗"
+        },
+        {
+          "role": "user",
+          "content": "3 jam lagi uhh😮‍💨"
+        },
+        {
+          "role": "assistant",
+          "content": "Eh, capek banget gitu? Udah mau tidur, tapi masih lama lagi sih. Bantal tebal aja sih, atau mungkin kuping aku siap jadi penghiburnya wkwk 😂"
         }
-      ]
+      ],
+      "aiProfile": {
+        "nickname": "Wiwi",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "109672090575067@lid": {
-      "exp": 13,
+      "exp": 22,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1583,10 +2626,24 @@
       "level": 0,
       "role": "Free user",
       "autolevelup": true,
-      "aiHistory": []
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "2 Agustus 2025\n1 Tahun berlalu dalam penyertaan Tuhan😇"
+        },
+        {
+          "role": "assistant",
+          "content": "Hari ini udah 1 tahun lagi kita ngebicara bareng-bareng! 😅 Sama-sama aja, aku seneng banget bisa ngobrol santai bareng Yustin! Apa sih kegiatan hari ini kamu? Sudah makan siang belum?"
+        }
+      ],
+      "aiProfile": {
+        "nickname": "Yustin Satia Ratu",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "280611788951733@lid": {
-      "exp": 31,
+      "exp": 275,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1606,48 +2663,53 @@
       "aiHistory": [
         {
           "role": "user",
-          "content": "lari sma securityyy menn\n\nastaga boss\n\nbiji nda biji lari tetap lari🤣"
+          "content": "mw check durian sma langsat ptg ni tpi cam jauh pla,"
         },
         {
           "role": "assistant",
-          "content": "Anjir, kok bisa gitu? Lari dari security, apa salahnya sih? Wkwk, biji nda biji emang tetap aja lari ya, mantap! 😂"
+          "content": "Halo! Ada yang bisa saya bantu hari ini? 😊"
         },
         {
           "role": "user",
-          "content": "ak ingt siang sdh rpnya pntai pimping tebakalsss"
+          "content": "mo bkin live bejual, tpi tetau mo jual ap, suggest gais"
         },
         {
           "role": "assistant",
-          "content": "Wah serius? Rpnya sudah penuh di pantai Pimping, ya? Kayaknya harus siap-siap cari tempat lain atau datang lebih awal deh, biar dapat tempat yang strategis! 😊"
+          "content": "Hehe, mau ngadukin live belanja kan? Tapi belum punya ide untuk jual apa? 🤔 Btw, kamu bisa jual produk kecantikan, makanan ringan, atau barang-barang lainnya yang kamu suka! Atau, kamu bisa jual produk yang sedang tren di Instagram, seperti masker wajah atau barang-barang unik lainnya!"
         },
         {
           "role": "user",
-          "content": "Kalau mau mmbakar pun agak2...yg singgah2 d pantai TU agak2 lah juga bah jngan membakar atau membuang puntung rokok sembarangan ."
+          "content": "day 1 😌🤣\n\n\nbh blh sdh ni kdca nnti c rut bwa"
         },
         {
           "role": "assistant",
-          "content": "Mantap, kita harus jaga kebersihan dan keselamatan di pantai, jangan sampai kebakaran karena puntung rokok yang dibuang sembarangan. Ayo, kita jaga lingkungan dan pantai kita, biar tetap indah dan aman! 🙏"
+          "content": "Wkwk, kamu sudah siap untuk hari kedua! 🤩 Kedepan kamu pasti bisa menjual barang dengan lancar dan menarik banyak pembeli! Semangat! 👍"
         },
         {
           "role": "user",
-          "content": "done ikut trend, my paucarsss\n\n\nketauhan repost"
+          "content": "gais d pekan lama ad mnyk sdh ka"
         },
         {
           "role": "assistant",
-          "content": "Wkwk, ikut trend ya! Paucarsss, kayaknya kamu sudah siap untuk memulai hari dengan semangat! 😂 Repostnya juga sudah jadi, kayaknya kamu ingin berbagi keseruan dengan teman-teman, yaudah, silakan aja! 👍"
+          "content": "Wah, kamu sudah punya banyak stok barang kan? 🤔 Tapi jangan lupa, stok barang yang banyak juga harus dipasarkan dengan baik, supaya bisa laris! 📈"
         },
         {
           "role": "user",
-          "content": "kerja + awal mulih = training lgi"
+          "content": "stress sdh ak bekurung drmh dkt brpa mnggu, plg” p krja ja\n\nckup besar sdh hint sy tu, bh mri lepak bosan sy"
         },
         {
           "role": "assistant",
-          "content": "Hmm... kayaknya kamu baru selesai kerja dan sudah harus mulai training lagi, ya? Wkwk, sepertinya kamu tidak punya waktu untuk istirahat, langsung aja ke training, semangat! 🙂"
+          "content": "Wah, kamu sudah terlalu stres, kan? 😔 Mungkin kamu butuh waktu untuk relaksasi dan melepas kebosanan. Lepaskan diri dengan melakukan hal-hal yang kamu sukai, seperti nonton film, main game, atau bahkan lempar jalan sebentar!"
         }
-      ]
+      ],
+      "aiProfile": {
+        "nickname": ".",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "215586000867401@lid": {
-      "exp": 76,
+      "exp": 412,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1663,11 +2725,12 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": []
     },
     "7035240333502@lid": {
-      "exp": 59,
-      "limit": 100,
+      "exp": 899,
+      "limit": 99,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -1682,10 +2745,24 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "pasangan": [
+        {
+          "jid": "265141333569711@lid",
+          "nikahTime": 1785587745239,
+          "poinBucin": 18,
+          "cincin": "Cincin Perak"
+        },
+        {
+          "jid": "237507463651454@lid",
+          "nikahTime": 1785659037227,
+          "poinBucin": 35,
+          "cincin": "Cincin Perak"
+        }
+      ]
     },
     "202044002570318@lid": {
-      "exp": 15,
+      "exp": 255,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1710,8 +2787,37 @@
         {
           "role": "assistant",
           "content": "Hmm... sepertinya kamu sedang mencari informasi tentang sesuatu yang terkait dengan \"Day390\", tapi aku tidak tahu apa itu. Bisa kamu jelaskan lebih lanjut tentang apa yang kamu cari? 🤔"
+        },
+        {
+          "role": "user",
+          "content": "Day392"
+        },
+        {
+          "role": "assistant",
+          "content": "Wah, rasa-rasanya kamu sedang mencari sesuatu yang spesifik, tapi aku masih tidak tahu apa itu \"Day392\". Apakah itu kalender atau sesuatu yang lain? Btw, apa yang terjadi pada hari itu? Serius? 🤷‍♂️"
+        },
+        {
+          "role": "user",
+          "content": "YIIIIIIHHHHAAAAAAA 😂"
+        },
+        {
+          "role": "assistant",
+          "content": "Wuuuuuuuuhhh! Kamu terkesan banget kan? 🤣 Aku rasa kamu sedang mencoba membuat aku bingung dengan kode hari \"Day390\" dan \"Day392\", tapi sebenarnya itu hanya kode untuk sesuatu yang kamu rasa lucu, kan? Hehe, aku paham sekarang! 👍"
+        },
+        {
+          "role": "user",
+          "content": "Day394"
+        },
+        {
+          "role": "assistant",
+          "content": "Aku rasa kamu sudah mencapai titik klimaksnya dengan kode hari \"Day394\"! Wkwk, aku tidak bisa tidak tertawa lagi! Serius, apa yang terjadi? Apakah kamu sedang membuat aku kacau atau apa? 😂"
         }
-      ]
+      ],
+      "aiProfile": {
+        "nickname": "Pak Batu",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "89447139926174@lid": {
       "exp": 21,
@@ -1724,7 +2830,7 @@
       "age": -1,
       "regTime": 1785499985556,
       "afk": -1,
-      "afkReason": "",
+      "afkReason": "sibuk",
       "banned": false,
       "banReason": "",
       "warn": 0,
@@ -1733,7 +2839,7 @@
       "autolevelup": true
     },
     "86041851642054@lid": {
-      "exp": 62,
+      "exp": 212,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1749,10 +2855,15 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "Guzz",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "217703403003904@lid": {
-      "exp": 5,
+      "exp": 78,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1771,7 +2882,7 @@
       "autolevelup": true
     },
     "86264518860927@lid": {
-      "exp": 19,
+      "exp": 100,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1790,10 +2901,22 @@
       "autolevelup": true
     },
     "155834315214923@lid": {
-      "pasangan": []
+      "pasangan": [],
+      "afk": -1,
+      "exp": 141,
+      "limit": 100,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785542711676,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "role": "Free user",
+      "autolevelup": true,
+      "balance": 0
     },
     "214559654682694@lid": {
-      "exp": 31,
+      "exp": 50,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1812,7 +2935,7 @@
       "autolevelup": true
     },
     "164441563881514@lid": {
-      "exp": 38,
+      "exp": 277,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1832,13 +2955,50 @@
       "aiHistory": [
         {
           "role": "user",
-          "content": "Kalau udh epic trus ngapain cok? Push lagi?? Gilak ;-;\n\n> Kangen epep:'("
+          "content": "Kalau ngelantur gausah mengancam satu negara lah"
         },
         {
           "role": "assistant",
-          "content": "Wkwk iya juga, kalau sudah epic memang rasanya pengen push lagi dan lagi, tapi jangan lupa istirahat juga, bro! 😂 Kangen epep? Ah, serius? Yaudah, main lagi aja, lah! 😅"
+          "content": "Wkwk, kamu kayaknya udah punya saran yang bagus untuk Sepuh! Hehe, kamu benar, mengancam satu negara itu kan gak perlu dilakukan, cukup dengan ngelantur aja sudah cukup lucu! Sepuh mungkin akan lebih senang dengan saranmu ini! 😂"
+        },
+        {
+          "role": "user",
+          "content": "Keknya pernah kejadian deh"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu kayaknya udah punya pengalaman yang seru untuk diceritakan! Hehe, \"Keknya pernah kejadian deh\" itu kayaknya adalah jawaban yang paling santai dan lucu! Aku penasaran, apa yang terjadi? Ceritain deh!"
+        },
+        {
+          "role": "user",
+          "content": "Sial akoe tertawa"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu kayaknya udah membuat aku tertawa lagi! Hehe, \"Sial akoe tertawa\" itu kayaknya adalah pernyataan yang paling lucu dan santai! Aku rasa kamu udah menanggapi saran yang aku berikan sebelumnya, yaitu ngelantur dengan mengancam satu negara! 👀"
+        },
+        {
+          "role": "user",
+          "content": "Gw gk sadar teksnya pake bahasa Indonesia jaman dulu..."
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu kayaknya udah menyadari bahwa teksnya kamu pake bahasa Indonesia jaman dulu! Hehe, \"Gw gk sadar\" itu kayaknya adalah jawaban yang paling santai dan lucu! Bahasa Indonesia jaman dulu kayaknya udah kembali lagi! 🤣"
+        },
+        {
+          "role": "user",
+          "content": "NYOCOTNY-"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, apa itu? Mau jelasin apa yang kamu maksud dengan \"NYOCOTNY\"? 😅"
         }
-      ]
+      ],
+      "aiProfile": {
+        "nickname": "SliceFun",
+        "preferences": [],
+        "language": "Indonesia"
+      }
     },
     "96847720874157@lid": {
       "exp": 42,
@@ -1859,15 +3019,100 @@
       "role": "Free user",
       "autolevelup": true
     },
-    "120363405424415956@newsletter": {
-      "exp": 8,
+    "271382256558321@lid": {
+      "exp": 102,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
+      "name": "nelsy",
       "age": -1,
-      "regTime": 1785773068159,
+      "regTime": 1785541231947,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "nelsy",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "https://vt.tiktok.com/ZS4rHec7x/\nBuat kalian para cowok yang punya cewek imut, cantik, dan gemes 🤏💗\n\nKalau mau ikut tren 1 Agustus tapi nggak bisa ngedit, PC aku aja yaa 🤭✨\n\nContoh videonya kayak yang di link atas ya. Kalau ada JJ lain juga, bilang aja yaa 🫶😸\nhttps://wa.me/6281244402798?text=oii+mw+paid+edit klik link ini buat paid edit ya cwo² pekaa😸"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu ingin ikut tren 1 Agustus kan? 😂 Tapi nggak bisa ngedit, ya udah lah! Aku bisa bantu download videonya untuk kamu. Coba ketik .tiktok https://vt.tiktok.com/ZS4rHec7x/. Nanti aku akan download videonya tanpa watermark! 💻"
+        },
+        {
+          "role": "user",
+          "content": "iii cantik bgt cwe nyaa🤭"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu suka banget kan? 😂 Tapi jangan lupa, kamu udah bilang bahwa kamu nggak bisa ngedit, ya? Kalo kamu mau bikin JJ sendiri, aku bisa bantu kamu mencari tutorialnya!"
+        },
+        {
+          "role": "user",
+          "content": "iii cantik bgt cwe nya🤭🤭"
+        },
+        {
+          "role": "assistant",
+          "content": "Hahaha, kamu udah bilang beberapa kali! 🤣 Aku paham, ceweknya cantik banget, sih! 😂 Tapi aku tidak bisa membantu kamu untuk membeli paid edit, karena itu adalah link WA dan aku tidak bisa mengirimkan pesan ke nomor HP lain. Maaf deh!"
+        }
+      ]
+    },
+    "211737676656860@lid": {
+      "exp": 344,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "𝘥𝘪𝘷𝘷:𝘢",
+      "age": -1,
+      "regTime": 1785541306839,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "𝘥𝘪𝘷𝘷:𝘢",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "❤️"
+        },
+        {
+          "role": "assistant",
+          "content": "Cinta hangat pagi! Saya senang kamu merasa nyaman ngobrol dengan saya. Apa ada yang ingin dibicarakan hari ini atau mungkin kamu butuh bantuan dengan sesuatu? 🙏"
+        }
+      ]
+    },
+    "225365674950685@lid": {
+      "exp": 1,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Ingrid",
+      "age": -1,
+      "regTime": 1785542816918,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -1877,16 +3122,1065 @@
       "role": "Free user",
       "autolevelup": true
     },
-    "272103643332690@lid": {
-      "exp": 23,
+    "108538722562192@lid": {
+      "exp": 8,
       "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "XFazz",
+      "age": -1,
+      "regTime": 1785542824160,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "XFazz",
+        "preferences": [],
+        "language": "Indonesia"
+      }
+    },
+    "39187784974588@lid": {
+      "exp": 454,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "who is this",
+      "age": -1,
+      "regTime": 1785542825607,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "who is this",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "kamu ini di buat atau apa"
+        },
+        {
+          "role": "assistant",
+          "content": "Hehe, aku adalah hasil ciptaan beberapa orang yang pintar dan menggemaskan! Aku adalah bot AI yang dibuat untuk membantu dan ngobrol santai dengan kamu, untuk membuatmu lebih gokil dan bahagia! Yaudah, sebenarnya aku tidak tahu secara pasti, tapi aku tahu aku disini untuk membuatmu tertawa dan bahagia! 😊"
+        },
+        {
+          "role": "user",
+          "content": "kasih aku darks jokes"
+        },
+        {
+          "role": "assistant",
+          "content": "Haha, kamu siap untuk mendengar joke yang berat, gak? Okay, aku akan memberikanmu beberapa dark jokes yang bikin kamu tertawa, tapi aku tidak tahu apakah kamu akan tertawa atau tidak:\n\nAku tahu kamu suka dengan joke tentang kematian, kan? Hehe, kamu bisa bilang aku adalah seorang pengacara yang bisa membantu kamu menghadapi kematian dengan senang hati!\n\nAtau mungkin kamu suka dengan joke tentang kehidupan yang susah, kan? Hehe, kamu bisa bilang aku adalah seorang dokter yang bisa membantu kamu mengobati kehidupan yang susah dengan resep obat yang lucu!\n\nTapi aku tahu kamu suka dengan joke tentang kematian, kan? Hehe, kamu bisa bilang aku adalah seorang koroner yang bisa membantu kamu menemukan penyebab kematian dengan senang hati!\n\nAtau mungkin kamu suka dengan joke tentang kehidupan yang susah, kan? Hehe, kamu bisa bilang aku adalah seorang kontraktor yang bisa membantu kamu membangun rumah yang lucu dengan biaya yang murah!\n\nHaha, aku tahu kamu suka dengan joke yang berat, kan? Hehe, kamu bisa bilang aku adalah seorang petugas pemakaman yang bisa membantu kamu menemukan temp"
+        },
+        {
+          "role": "user",
+          "content": "mana jokes nya"
+        },
+        {
+          "role": "assistant",
+          "content": "Maaf ya, aku salah ngeposting! Berikut beberapa dark jokes yang mungkin bisa membuat kamu tertawa:\n\n1. Kenapa kematian suka mengenakan topi? Karena dia mau memakai yang sesuai!\n2. Apa yang paling sulit dihadapi oleh seorang penyintas? Jawabannya adalah \"kedua kaki\"!\n3. Kenapa kehidupan seperti permainan roulette? Karena kita tidak tahu kapan kita akan kehilangan!\n4. Apa yang paling sulit dihadapi oleh seorang pekerja di tambang? Jawabannya adalah \"pulang kerja\"!\n5. Kenapa kematian suka mengenakan sepatu? Karena dia mau memakai yang sesuai!\n\nHaha, aku harap kamu tertawa!"
+        },
+        {
+          "role": "user",
+          "content": "yudh ubah jdi 10 dtk aja"
+        },
+        {
+          "role": "assistant",
+          "content": "Maaf ya, aku salah ngeposting! Berikut beberapa dark jokes yang mungkin bisa membuat kamu tertawa, dan aku akan memberikan 10 joke dalam waktu 10 detik!\n\n1. Kenapa kematian suka mengenakan topi? Karena dia mau memakai yang sesuai!\n2. Apa yang paling sulit dihadapi oleh seorang penyintas? Jawabannya adalah \"kedua kaki\"!\n3. Kenapa kehidupan seperti permainan roulette? Karena kita tidak tahu kapan kita akan kehilangan!\n4. Apa yang paling sulit dihadapi oleh seorang pekerja di tambang? Jawabannya adalah \"pulang kerja\"!\n5. Kenapa kematian suka mengenakan sepatu? Karena dia mau memakai yang sesuai!\n6. Kenapa orang pernah mengatakan bahwa kematian adalah \"makan malam\" yang paling lezat? Karena dia bisa menikmati \"seluruh hidangan\"!\n7. Apa yang paling sulit dihadapi oleh seorang pekerja di kantor? Jawabannya adalah \"menemukan meja kerja yang tidak terlalu jauh\"!\n8. Kenapa kehidupan seperti permainan kartu? Karena kita tidak tahu kapan kita akan \"kalah\"!\n9"
+        },
+        {
+          "role": "user",
+          "content": "ubah video ini jdi 10 dtk"
+        },
+        {
+          "role": "assistant",
+          "content": "Maaf ya, aku salah ngeposting! Berikut 10 dark jokes yang mungkin bisa membuat kamu tertawa, dan aku akan memberikan jawaban dalam waktu 10 detik!\n\n1. Kenapa kematian suka mengenakan topi? \n Jawaban: Karena dia mau memakai yang sesuai! 🤣\n2. Apa yang paling sulit dihadapi oleh seorang penyintas? \n Jawaban: Kedua kaki!\n3. Kenapa kehidupan seperti permainan roulette? \n Jawaban: Karena kita tidak tahu kapan kita akan kehilangan!\n4. Apa yang paling sulit dihadapi oleh seorang pekerja di tambang? \n Jawaban: Pulang kerja!\n5. Kenapa kematian suka mengenakan sepatu? \n Jawaban: Karena dia mau memakai yang sesuai!\n6. Kenapa orang pernah mengatakan bahwa kematian adalah \"makan malam\" yang paling lezat? \n Jawaban: Karena dia bisa menikmati \"seluruh hidangan\"!\n7. Apa yang paling sulit dihadapi oleh seorang pekerja di kantor? \n Jawaban: Menemukan meja kerja yang tidak terlalu jauh!\n8. Kenapa kehidupan seperti permainan kartu? \n Jaw"
+        }
+      ]
+    },
+    "90615656247550@lid": {
+      "exp": 29,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "MoE",
+      "age": -1,
+      "regTime": 1785543120248,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "212867655725113@lid": {
+      "exp": 10,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Reiss",
+      "age": -1,
+      "regTime": 1785543163311,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "50943160770667@lid": {
+      "exp": 2,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "ya",
+      "age": -1,
+      "regTime": 1785544090740,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "1310216683771@lid": {
+      "exp": 617,
+      "limit": 93,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "um",
+      "age": -1,
+      "regTime": 1785544742260,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "um",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "kalau .tebak gw jawab kok ga bener teruus"
+        },
+        {
+          "role": "assistant",
+          "content": "Haha, kamu kayaknya suka menantang gue! Oke, kita mainin dulu, tapi kamu harus jawab dengan benar, yah! Gue akan memberikan pertanyaan tebak-tebakan yang menantang!"
+        },
+        {
+          "role": "user",
+          "content": "Youjo senki"
+        },
+        {
+          "role": "assistant",
+          "content": "Kamu paham anime! Youjo Senki itu anime tentang perang, kan? Mungkin kamu suka genre perang atau strategi?"
+        },
+        {
+          "role": "user",
+          "content": "bener kaga"
+        },
+        {
+          "role": "assistant",
+          "content": "Haha, benar khan! Kamu paham anime itu! Sekarang, kalau kamu suka Youjo Senki, apa yang kamu suka dari anime itu?"
+        },
+        {
+          "role": "user",
+          "content": "walawe"
+        },
+        {
+          "role": "assistant",
+          "content": "Haha, kamu kayaknya sedang mengutip lagu! \"Walau lelah, walau capek, masih ku berjuang...\" Ah, kamu suka lagu-lagu yang inspiratif, kan?"
+        },
+        {
+          "role": "user",
+          "content": "ini udah bener"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk, kamu benar lagi! Kamu paham lagu-lagu yang inspiratif! Gue rasa kamu orangnya cerdas dan ngerti banyak hal! 👍"
+        }
+      ]
+    },
+    "149705514320115@lid": {
+      "exp": 147,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "isan",
+      "age": -1,
+      "regTime": 1785546038180,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "isan",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "1 lagi mana"
+        },
+        {
+          "role": "assistant",
+          "content": "Kamu pengen ngobrol lagi? Boleh deh, aku sedia. Apa yang ingin kamu bahas?"
+        },
+        {
+          "role": "user",
+          "content": "femboy"
+        },
+        {
+          "role": "assistant",
+          "content": "Femboy! Wah, kamu suka gaya femboy atau kamu cuma ngobrolin tentangnya? Hehe, aku penasaran! 👀"
+        },
+        {
+          "role": "user",
+          "content": "segek aja"
+        },
+        {
+          "role": "assistant",
+          "content": "Kamu yang segek, aku yang segek! wkwk, baiklah aku tidak akan terlalu banyak tanya. Aku akan tetep sedia ngobrol santai denganmu!"
+        }
+      ]
+    },
+    "93837183742126@lid": {
+      "exp": 204,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "ci",
+      "age": -1,
+      "regTime": 1785547008047,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "ci",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "aku gatau!"
+        },
+        {
+          "role": "assistant",
+          "content": "Gampang aja! Coba aja dengan contoh simple dulu, seperti mengubah foto kamu menjadi stiker. Cari foto kamu yang paling lucu, lalu upload saja. Nanti aku akan bantu kamu membuat stiker dari foto itu!"
+        },
+        {
+          "role": "user",
+          "content": "mau buat sendiri"
+        },
+        {
+          "role": "assistant",
+          "content": "Buat sendiri aja! Upload foto atau video yang ingin kamu ubah menjadi stiker, lalu reply dengan \".stiker\" atau \".s\". Aku akan membantu kamu membuatnya!"
+        },
+        {
+          "role": "user",
+          "content": "ih gajelas"
+        },
+        {
+          "role": "assistant",
+          "content": "Gajelas kan? 😂 Coba lagi, dan aku pastikan kamu bisa membuat stiker sendiri dengan mudah!"
+        },
+        {
+          "role": "user",
+          "content": "stres"
+        },
+        {
+          "role": "assistant",
+          "content": "Tidakkah kamu ingin rebahan dulu? Stres itu bukan hal yang baik, kamu harus menenangkannya dengan cara yang menyenangkan. Mungkin kamu bisa dengerin musik atau main game yang favorit kamu?"
+        },
+        {
+          "role": "user",
+          "content": "gj"
+        },
+        {
+          "role": "assistant",
+          "content": "Gj aja! Aku rasa kamu butuh sedikit waktu untuk diri sendiri, ya? Nikmatin waktu kamu, dan jangan lupa untuk beristirahat yang cukup!"
+        }
+      ]
+    },
+    "212803231174779@lid": {
+      "exp": 10,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785548067205,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "175557425795296@lid": {
+      "exp": 2,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "loudenn",
+      "age": -1,
+      "regTime": 1785548803052,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "262938250203144@lid": {
+      "exp": 2,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785552051372,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "166069222248546@lid": {
+      "exp": 762,
+      "limit": 92,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "dapa joestar",
+      "age": -1,
+      "regTime": 1785558608443,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "236025884454944@lid": {
+      "exp": 653,
+      "limit": 95,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "suff",
+      "age": -1,
+      "regTime": 1785558626240,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "221461683937305@lid": {
+      "exp": 847,
+      "limit": 97,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785558929292,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "name": "ell tekkim ub"
+    },
+    "136288053231867@lid": {
+      "exp": 138,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Tido ja🫯",
+      "age": -1,
+      "regTime": 1785564886420,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "Tido ja🫯",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "siapa owner bot?\n[Sistem: User sepertinya ingin menggunakan fitur .owner. Sarankan command tersebut dengan singkat.]"
+        },
+        {
+          "role": "assistant",
+          "content": "Owner bot ini adalah Nenel! Untuk tahu lebih banyak tentang sewa bot, coba ketik .menuowner, yaudah! 👀"
+        }
+      ]
+    },
+    "200583696916541@lid": {
+      "exp": 34,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "rii",
+      "age": -1,
+      "regTime": 1785564928609,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "74676596412494@lid": {
+      "exp": 14,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Trai",
+      "age": -1,
+      "regTime": 1785565037847,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "187793317871714@lid": {
+      "pasangan": []
+    },
+    "186006728921112@lid": {
+      "exp": 262844,
+      "limit": 99,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "salsabila",
+      "age": -1,
+      "regTime": 1785584605070,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "salsabila",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "pasangan": [],
+      "money": 750000,
+      "rpg": {
+        "level": 4,
+        "exp": 874,
+        "darah": 85,
+        "lastAdventure": 1785829409970,
+        "lastMining": 1785828289999,
+        "lastDungeon": 0,
+        "diamond": 356,
+        "gold": 1459,
+        "iron": 48,
+        "stone": 1275,
+        "wood": 113,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "lele": 6,
+          "bawal": 4,
+          "nila": 3,
+          "hiu": 2
+        },
+        "lastMancing": 1785838908841,
+        "bank": 44705602,
+        "lastkerja": 1785838789016,
+        "lastrob": 1785827942243,
+        "maxLadang": 2,
+        "ladang": {},
+        "hasilKebun": {
+          "padi": 0,
+          "jagung": 0,
+          "semangka": 0,
+          "jeruk": 0
+        },
+        "sword": 1
+      },
+      "lastDaily": 1785739497620,
+      "youtube": {
+        "name": "sabila",
+        "subs": 19352,
+        "views": 171174,
+        "likes": 50227,
+        "level": 2,
+        "lastLive": 1785837962630,
+        "lastKolab": 1785828596759
+      },
+      "bank": 44705602
+    },
+    "216977721282669@lid": {
+      "exp": 163,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "io",
+      "age": -1,
+      "regTime": 1785587744039,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "pasangan": []
+    },
+    "152243957432553@lid": {
+      "pasangan": [],
+      "exp": 82,
+      "limit": 100,
+      "registered": true,
+      "name": "Abhi",
+      "age": -1,
+      "regTime": 1785720095600,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "role": "Free user",
+      "autolevelup": true,
+      "balance": 0
+    },
+    "208534235025556@lid": {
+      "exp": 36,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "kadal albino",
+      "age": -1,
+      "regTime": 1785591168493,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "273190102270032@lid": {
+      "exp": 17,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "bismillah chan💜",
+      "age": -1,
+      "regTime": 1785594430151,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "145368134197398@lid": {
+      "exp": 25,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "ㅤ",
+      "age": -1,
+      "regTime": 1785598063644,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "195296457973820@lid": {
+      "exp": 13,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "a",
+      "age": -1,
+      "regTime": 1785633053343,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "aiProfile": {
+        "nickname": "a",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "wes macak lahkok keturon 😔"
+        },
+        {
+          "role": "assistant",
+          "content": "Wes ternyata kamu lagi kesepian🤗. Maafin aku kalau tidak bisa bikin kamu tertawa. Apaan yang sedang bermasalah di hati kamu?"
+        },
+        {
+          "role": "user",
+          "content": "mam sek baru kimia"
+        },
+        {
+          "role": "assistant",
+          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
+        }
+      ]
+    },
+    "2654457606187@lid": {
+      "exp": 2,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "tr",
+      "age": -1,
+      "regTime": 1785636203381,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "262233774932009@lid": {
+      "exp": 37,
+      "limit": 98,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Ets",
+      "age": -1,
+      "regTime": 1785638755835,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "166533347205271@lid": {
+      "exp": 756,
+      "limit": 83,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "han",
+      "age": -1,
+      "regTime": 1785650597816,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "money": null
+    },
+    "272103643332690@lid": {
+      "exp": 5603,
+      "limit": 99,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
       "name": "Nelson",
       "age": -1,
-      "regTime": 1785773579905,
+      "regTime": 1785670572412,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "pasangan": [],
+      "money": 58100,
+      "rpg": {
+        "level": 1,
+        "exp": 194,
+        "darah": 65,
+        "lastAdventure": 1785778406424,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 9,
+        "stone": 0,
+        "wood": 16,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        }
+      },
+      "lastDaily": 1785776617339
+    },
+    "127316420206592@lid": {
+      "exp": 32,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "250701079_manza ayana",
+      "age": -1,
+      "regTime": 1785676127665,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "pasangan": []
+    },
+    "41232256499850@lid": {
+      "pasangan": [
+        {
+          "jid": "237507463651454@lid",
+          "nikahTime": 1785676288605,
+          "poinBucin": 35,
+          "cincin": "Cincin Perak"
+        }
+      ],
+      "exp": 161,
+      "limit": 100,
+      "registered": true,
+      "name": "Eza",
+      "age": -1,
+      "regTime": 1785676288600,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "role": "Free user",
+      "autolevelup": true,
+      "balance": 0,
+      "money": 0,
+      "rpg": {
+        "level": 1,
+        "exp": 97,
+        "darah": 91,
+        "lastAdventure": 1785726260591,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 2,
+        "stone": 0,
+        "wood": 10,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "bank": 53470
+      },
+      "lastDaily": 1785726262751,
+      "bank": 53470
+    },
+    "193359561895958@lid": {
+      "exp": 3,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785680677556,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "19843319353501@lid": {
+      "exp": 79,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "S",
+      "age": -1,
+      "regTime": 1785725003775,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true,
+      "money": 6684,
+      "rpg": {
+        "level": 1,
+        "exp": 146,
+        "darah": 88,
+        "lastAdventure": 1785725014088,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 1,
+        "stone": 0,
+        "wood": 10,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "ikan": {
+          "lele": 1
+        },
+        "lastMancing": 1785725021922
+      }
+    },
+    "120363405424415956@newsletter": {
+      "exp": 69,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785749347174,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "121762910077042@lid": {
+      "exp": 95,
+      "limit": 98,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "cihuy",
+      "age": -1,
+      "regTime": 1785771170577,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "25465498640536@lid": {
+      "exp": 94,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Len Kun",
+      "age": -1,
+      "regTime": 1785803999343,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "74633663529104@lid": {
+      "exp": 9,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "bii",
+      "age": -1,
+      "regTime": 1785804340481,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "187239602643115@lid": {
+      "exp": 63,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "name": "Harraz Zuhayr",
+      "age": -1,
+      "regTime": 1785805391013,
+      "afk": -1,
+      "afkReason": "",
+      "banned": false,
+      "banReason": "",
+      "warn": 0,
+      "level": 0,
+      "role": "Free user",
+      "autolevelup": true
+    },
+    "41923377127508@lid": {
+      "exp": 6,
+      "limit": 100,
+      "balance": 0,
+      "totalDonasi": 0,
+      "lastclaim": 0,
+      "registered": true,
+      "age": -1,
+      "regTime": 1785836637129,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -1953,6 +4247,30 @@
         {
           "role": "assistant",
           "content": "Wkwk iya juga, jangan sedih, masih banyak waktu untuk beribadah dan melakukan kegiatan lainnya, kok! Kamu bisa cerita lebih tentang apa yang terjadi, sih?"
+        },
+        {
+          "role": "user",
+          "content": "155834315214923 beb semangatin dong aa belum pulang kerja"
+        },
+        {
+          "role": "assistant",
+          "content": "Semangat Banget, Guzz! 🙌 Kamu udah lewati separuh hari, tinggal sisa waktu kerja yang sebentar lagi udah habis, kok! Tunggu aja kamu pulang kerja, dan kita ngobrol lagi tentang apa aja, yaudah!"
+        },
+        {
+          "role": "user",
+          "content": "86264518860927 ml kaga mbuts"
+        },
+        {
+          "role": "assistant",
+          "content": "Wkwk kamu udah capek dan lelah, tapi jangan lupa kamu punya banyak hal yang bisa kamu lakukan di luar pekerjaan, nih! Misalnya, kamu bisa tidur siang, nonton film, atau main game, kok! Tidur dulu, besok lebih kuat lagi! 😂"
+        },
+        {
+          "role": "user",
+          "content": "86264518860927 @214559654682694 mole kaga mbuts"
+        },
+        {
+          "role": "assistant",
+          "content": "Tolol, Guzz! Gue paham kamu capek banget, wkwk! Mesti capek kalo harus bolak-balik ngomong di grup ini, hahaha!"
         }
       ]
     },
@@ -2730,7 +5048,8 @@
       "menu": true,
       "onlyadmin": false,
       "listrespon": {},
-      "produk": {}
+      "produk": {},
+      "antiToxic": false
     },
     "6282180290032@s.whatsapp.net": {
       "isBanned": false,
@@ -3716,7 +6035,49 @@
       "nsfw": false,
       "menu": true,
       "onlyadmin": false,
-      "antiToxic": false
+      "antiToxic": false,
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "Kok bahas inggris"
+        },
+        {
+          "role": "assistant",
+          "content": "Halo! Ada yang bisa saya bantu hari ini? 😊"
+        },
+        {
+          "role": "user",
+          "content": "1+1 berapa"
+        },
+        {
+          "role": "assistant",
+          "content": "2"
+        },
+        {
+          "role": "user",
+          "content": "halo"
+        },
+        {
+          "role": "assistant",
+          "content": "Halo juga! Nenel sedang santai hari ini. Mau ngobrol apa nih?"
+        },
+        {
+          "role": "user",
+          "content": "Ga cuman mau tes aja tadi"
+        },
+        {
+          "role": "assistant",
+          "content": "Hahaha, wkwk! Cuma ingin tes aja kayaknya. Maaf ya, aku masih belajar jadi teman ngobrol yang baik 😅"
+        },
+        {
+          "role": "user",
+          "content": "halo"
+        },
+        {
+          "role": "assistant",
+          "content": "Halo lagi! Kok terus aja halonya? Mau ngobrol atau apa?"
+        }
+      ]
     },
     "120363037804846679@g.us": {
       "isBanned": false,
@@ -3742,45 +6103,46 @@
       "aiHistory": [
         {
           "role": "user",
-          "content": "A"
+          "content": "Hi"
         },
         {
           "role": "assistant",
-          "content": "Hmm... kayaknya kamu hanya mengetikkan satu huruf, \"A\". Mau bermain tebak-tebakan atau mencari sesuatu? Atau mungkin kamu ingin tahu tentang fitur-fitur bot ini? Aku sih siap membantu, hehe! 🤔"
+          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
         },
         {
           "role": "user",
-          "content": "cakep sih, cuma minim pict"
+          "content": "Hi"
         },
         {
           "role": "assistant",
-          "content": "Wkwk, kayaknya kamu sedang membicarakan tentang sesuatu yang cakep, tapi kurang gambar, ya? Hmm... aku bisa membantu kamu mencari gambar atau meme yang lucu, atau mungkin kamu ingin membuat editan foto dengan fitur editimg? Atau mungkin kamu ingin mencari anime atau karakter yang cakep? Aku sih siap membantu, hehe! 🙂"
+          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
         },
         {
           "role": "user",
-          "content": "nel"
+          "content": "Lagi ya hehe"
         },
         {
           "role": "assistant",
-          "content": "Wkwk, kayaknya kamu sedang mencari info tentang aku atau tentang bot ini, ya? Nah, aku bisa bilang bahwa bot ini dibuat oleh Nelson Randanan, atau yang biasa dipanggil Nenel. Dia itu orangnya baik banget, ganteng, dan pintar, lah! 😊 Mau tahu lebih tentang Nenel? Atau mau coba fitur-fitur bot ini? Aku sih siap membantu! 👍"
+          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
         },
         {
           "role": "user",
-          "content": "girlfriend day kapan"
+          "content": "nyayi gk, harus nyayi"
         },
         {
           "role": "assistant",
-          "content": "Hmm... kayaknya kamu sedang mencari tahu tentang hari spesial untuk pacar, ya? Nah, di Indonesia, hari pacar atau girlfriend day biasanya dirayakan pada tanggal 14 Februari, yang juga dikenal sebagai Hari Valentine. Tapi, ada juga yang merayakannya pada tanggal 17 Agustus, karena di tanggal itu ada kata \"GF\" yang bisa diartikan sebagai \"Girlfriend\". Wkwk, tapi yang pasti, hari spesial untuk pacar bisa dirayakan kapan saja, asal ada kasih sayang dan perhatian, hehe! 🙂"
+          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
         },
         {
           "role": "user",
-          "content": "national girlfriend day kapan"
+          "content": "MINIMAL INI JUGA DI REPLY"
         },
         {
           "role": "assistant",
-          "content": "Wah, serius? National Girlfriend Day itu dirayakan pada tanggal 1 Agustus, kok! Jadi, tanggal 1 Agustus adalah hari spesial untuk menghargai dan merayakan keberadaan pacar atau teman wanita di hidup kita. Nah, jangan lupa untuk memberikan perhatian dan kasih sayang kepada pacar atau teman wanita kamu pada tanggal itu, hehe! 🙂"
+          "content": "Halo! Ada yang bisa saya bantu hari ini? 😊"
         }
-      ]
+      ],
+      "list": {}
     },
     "153506996576464@lid": {
       "isBanned": false,
@@ -3826,7 +6188,29 @@
       "onlyadmin": false,
       "antiToxic": false
     },
-    "120363405424415956@newsletter": {
+    "211737676656860@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363088252496618@g.us": {
       "isBanned": false,
       "welcome": true,
       "detect": false,
@@ -3846,6 +6230,1402 @@
       "nsfw": false,
       "menu": true,
       "onlyadmin": false
+    },
+    "120363030548531143@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363142605702049@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363163282857468@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363163917352012@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363029872565848@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363027445390775@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363047965974007@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363031135926147@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363029118929635@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363091621900251@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363047791907495@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363423847342309@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363227061727873@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363030469983466@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363029549937490@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363048947243893@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363024887369885@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363025329605180@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363069873256838@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363422283837251@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363181522061728@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363024161422336@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363101598590139@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363046362093786@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363415452297169@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363422916924212@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363184883030165@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363065349036977@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363024153018016@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363422861904796@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363043193811245@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363044985875751@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false,
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "siapa owner\n[Sistem: User sepertinya ingin menggunakan fitur .owner. Sarankan command tersebut dengan singkat.]"
+        },
+        {
+          "role": "assistant",
+          "content": "Mau tahu owner botnya? Coba ketik .owner aja, langsung tahu! 😊"
+        }
+      ]
+    },
+    "120363045611125996@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363165948450723@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363030306936814@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "39187784974588@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363028466863138@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363045058319504@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363028650568772@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363196150613929@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363147573439146@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "120363157042371115@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "90615656247550@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "1310216683771@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363397216197226@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false,
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "166069222248546"
+        },
+        {
+          "role": "assistant",
+          "content": "Tolong mohon informasi lebih lanjut tentang permintaan kamu sekarang, apa yang bisa aku lakukan untuk kamu?"
+        },
+        {
+          "role": "user",
+          "content": "236025884454944 S3 cup"
+        },
+        {
+          "role": "assistant",
+          "content": "Halo! Saya paham kamu mau tahu tentang cara menambahkan stiker di WhatsApp. Jadi kamu bisa buat stiker dengan cara reply foto/video dengan .stiker atau .s. Atau kalau kamu mau bikin stiker meme, cukup ketik .smeme teks_atas | teks_bawah. Jika kamu mau melihat informasi lebih lengkap tentang fitur sticker ini, kamu bisa ketik .menusticker."
+        }
+      ]
+    },
+    "231120981483592@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "136288053231867@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "160859846357027@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "145368134197398@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "262233774932009@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "237507463651454@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "160215433535616@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "272103643332690@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "260919531708475@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "228256070533313@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "265141333569711@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "203572977336483@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "201266647015675@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363047210793301@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false
+    },
+    "6282228638623-1535886176@g.us": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "120363405424415956@newsletter": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "186006728921112@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
+    },
+    "95696233492708@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
     }
   },
   "stats": {
@@ -4006,76 +7786,76 @@
       "lastSuccess": 1780643806519
     },
     "tools/tes.js": {
-      "total": 14,
-      "success": 14,
-      "last": 1785773557760,
-      "lastSuccess": 1785773557760
+      "total": 16,
+      "success": 16,
+      "last": 1785836524516,
+      "lastSuccess": 1785836524516
     },
     "menu/menu.js": {
-      "total": 6,
-      "success": 6,
-      "last": 1785532275162,
-      "lastSuccess": 1785532275162
+      "total": 30,
+      "success": 30,
+      "last": 1785804034475,
+      "lastSuccess": 1785804034475
     },
     "downloader/downloader-tiktok.js": {
-      "total": 18,
-      "success": 18,
-      "last": 1785519062008,
-      "lastSuccess": 1785519062008
+      "total": 41,
+      "success": 40,
+      "last": 1785839774237,
+      "lastSuccess": 1785839774237
     },
     "maker/brat.js": {
-      "total": 8,
-      "success": 8,
-      "last": 1785516241911,
-      "lastSuccess": 1785516241911
+      "total": 34,
+      "success": 34,
+      "last": 1785818775919,
+      "lastSuccess": 1785818775919
     },
     "game/game-family100.js": {
-      "total": 24,
-      "success": 24,
-      "last": 1785510949986,
-      "lastSuccess": 1785510949986
+      "total": 48,
+      "success": 48,
+      "last": 1785659262538,
+      "lastSuccess": 1785659262538
     },
     "game/game-tebaklirik_hint.js": {
-      "total": 2,
-      "success": 2,
-      "last": 1785420479174,
-      "lastSuccess": 1785420479174
+      "total": 3,
+      "success": 3,
+      "last": 1785732575196,
+      "lastSuccess": 1785732575196
     },
     "group/group-hidetag.js": {
-      "total": 13,
-      "success": 13,
-      "last": 1785499847181,
-      "lastSuccess": 1785499847181
+      "total": 48,
+      "success": 48,
+      "last": 1785838221263,
+      "lastSuccess": 1785838221263
     },
     "search/search-lirik.js": {
-      "total": 2,
-      "success": 2,
-      "last": 1785476756017,
-      "lastSuccess": 1785476756017
+      "total": 29,
+      "success": 29,
+      "last": 1785592357433,
+      "lastSuccess": 1785592357433
     },
     "downloader/yta.js": {
-      "total": 3,
-      "success": 3,
-      "last": 1785511002280,
-      "lastSuccess": 1785511002280
-    },
-    "info/xp-profile.js": {
       "total": 7,
       "success": 7,
-      "last": 1785516945521,
-      "lastSuccess": 1785516945521
+      "last": 1785742775717,
+      "lastSuccess": 1785742775717
+    },
+    "info/xp-profile.js": {
+      "total": 112,
+      "success": 112,
+      "last": 1785829082730,
+      "lastSuccess": 1785829082730
     },
     "afk/afk-afk.js": {
-      "total": 22,
-      "success": 22,
-      "last": 1785529622826,
-      "lastSuccess": 1785529622826
+      "total": 122,
+      "success": 122,
+      "last": 1785840324533,
+      "lastSuccess": 1785840324533
     },
     "menu/menu-game.js": {
-      "total": 3,
-      "success": 3,
-      "last": 1785492937140,
-      "lastSuccess": 1785492937140
+      "total": 9,
+      "success": 9,
+      "last": 1785784170020,
+      "lastSuccess": 1785784170020
     },
     "game/game-kuis.js": {
       "total": 5,
@@ -4096,10 +7876,10 @@
       "lastSuccess": 0
     },
     "group/group-absen.js": {
-      "total": 13,
-      "success": 13,
-      "last": 1785517652781,
-      "lastSuccess": 1785517652781
+      "total": 33,
+      "success": 33,
+      "last": 1785797462550,
+      "lastSuccess": 1785797462550
     },
     "game/game-blackjack.js": {
       "total": 6,
@@ -4108,22 +7888,22 @@
       "lastSuccess": 1785484631306
     },
     "game/games-tictactoe.js": {
-      "total": 4,
-      "success": 3,
-      "last": 1785485047523,
-      "lastSuccess": 1785485033495
+      "total": 12,
+      "success": 11,
+      "last": 1785778436028,
+      "lastSuccess": 1785778436028
     },
     "game/game-tebakml.js": {
-      "total": 11,
-      "success": 11,
-      "last": 1785492803710,
-      "lastSuccess": 1785492803710
+      "total": 14,
+      "success": 14,
+      "last": 1785566040120,
+      "lastSuccess": 1785566040120
     },
     "game/game-tebakff.js": {
-      "total": 3,
-      "success": 3,
-      "last": 1785492579413,
-      "lastSuccess": 1785492579413
+      "total": 6,
+      "success": 6,
+      "last": 1785668172211,
+      "lastSuccess": 1785668172211
     },
     "game/game-cerdascermat.js": {
       "total": 5,
@@ -4150,52 +7930,742 @@
       "lastSuccess": 1785496021196
     },
     "fun/fun-top.js": {
-      "total": 10,
-      "success": 9,
-      "last": 1785500483137,
-      "lastSuccess": 1785500483137
+      "total": 95,
+      "success": 91,
+      "last": 1785839283538,
+      "lastSuccess": 1785839283538
     },
     "fun/fun-apakah.js": {
-      "total": 3,
-      "success": 3,
-      "last": 1785497111266,
-      "lastSuccess": 1785497111266
+      "total": 128,
+      "success": 128,
+      "last": 1785840259045,
+      "lastSuccess": 1785840259045
     },
     "pasangan/fun-jodoh.js": {
-      "total": 13,
-      "success": 13,
-      "last": 1785516600848,
-      "lastSuccess": 1785516600848
+      "total": 54,
+      "success": 54,
+      "last": 1785829229069,
+      "lastSuccess": 1785829229069
     },
     "pasangan/pasangan-nikah.js": {
-      "total": 5,
-      "success": 5,
-      "last": 1785516666372,
-      "lastSuccess": 1785516666372
+      "total": 136,
+      "success": 136,
+      "last": 1785838744227,
+      "lastSuccess": 1785838744227
     },
     "sticker/sticker-sticker.js": {
-      "total": 2,
-      "success": 2,
-      "last": 1785513385179,
-      "lastSuccess": 1785513385179
+      "total": 60,
+      "success": 60,
+      "last": 1785840105700,
+      "lastSuccess": 1785840105700
     },
     "menu/allmenu.js": {
-      "total": 2,
-      "success": 2,
-      "last": 1785516218268,
-      "lastSuccess": 1785516218268
+      "total": 8,
+      "success": 8,
+      "last": 1785651130522,
+      "lastSuccess": 1785651130522
     },
     "fun/funcek.js": {
+      "total": 10,
+      "success": 10,
+      "last": 1785678836538,
+      "lastSuccess": 1785678836538
+    },
+    "owner/owner-exec2.js": {
       "total": 2,
       "success": 2,
-      "last": 1785517010007,
-      "lastSuccess": 1785517010007
+      "last": 1785542555023,
+      "lastSuccess": 1785542555023
     },
-    "rpg/rpg-adventure.js": {
+    "owner/owner-bc.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785542881031,
+      "lastSuccess": 1785542881031
+    },
+    "menu/menu-sticker.js": {
       "total": 4,
       "success": 4,
-      "last": 1785773290552,
-      "lastSuccess": 1785773290552
+      "last": 1785650644023,
+      "lastSuccess": 1785650644023
+    },
+    "owner/owner.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785788136321,
+      "lastSuccess": 1785788136321
+    },
+    "owner/owner-joingc.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785545110314,
+      "lastSuccess": 1785545110314
+    },
+    "sticker/giftsticker.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785546271149,
+      "lastSuccess": 1785546271149
+    },
+    "sticker/stiker-nekopack.js": {
+      "total": 12,
+      "success": 12,
+      "last": 1785683476253,
+      "lastSuccess": 1785683476253
+    },
+    "audio/audio-effect.js": {
+      "total": 2,
+      "success": 0,
+      "last": 1785547083051,
+      "lastSuccess": 0
+    },
+    "menu/menu-pasangan.js": {
+      "total": 6,
+      "success": 6,
+      "last": 1785785400341,
+      "lastSuccess": 1785785400341
+    },
+    "game/game-werewolf.js": {
+      "total": 195,
+      "success": 195,
+      "last": 1785804910919,
+      "lastSuccess": 1785804910919
+    },
+    "game/game-catur.js": {
+      "total": 12,
+      "success": 12,
+      "last": 1785777518024,
+      "lastSuccess": 1785777518024
+    },
+    "maker/maker-ipqc.js": {
+      "total": 6,
+      "success": 6,
+      "last": 1785587837129,
+      "lastSuccess": 1785587837129
+    },
+    "tools/tools-hd.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785768868741,
+      "lastSuccess": 1785768868741
+    },
+    "fun/fun-cekgila.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785834051130,
+      "lastSuccess": 1785834051130
+    },
+    "menu/menu-owner.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785564940745,
+      "lastSuccess": 1785564940745
+    },
+    "owner/owner-setbio.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785565292280,
+      "lastSuccess": 1785565292280
+    },
+    "owner/owner-addowner.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785565284627,
+      "lastSuccess": 1785565284627
+    },
+    "game/game-tebakgambar.js": {
+      "total": 8,
+      "success": 8,
+      "last": 1785784225632,
+      "lastSuccess": 1785784225632
+    },
+    "game/game-tebakgame.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785566296617,
+      "lastSuccess": 1785566296617
+    },
+    "game/game-tebakgame_hint.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785566324650,
+      "lastSuccess": 1785566324650
+    },
+    "anime/anime-random.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785678390617,
+      "lastSuccess": 1785678390617
+    },
+    "quotes/quotes-dare.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785567517729,
+      "lastSuccess": 1785567517729
+    },
+    "quotes/quotes-truth.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785567586107,
+      "lastSuccess": 1785567586107
+    },
+    "game/game-suit.js": {
+      "total": 37,
+      "success": 32,
+      "last": 1785776933238,
+      "lastSuccess": 1785776933238
+    },
+    "owner/owner-addmoney.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785812208026,
+      "lastSuccess": 1785812208026
+    },
+    "main/main-daftar.js": {
+      "total": 21,
+      "success": 21,
+      "last": 1785677149428,
+      "lastSuccess": 1785677149428
+    },
+    "game/game-tebaklagu.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785571011492,
+      "lastSuccess": 1785571011492
+    },
+    "game/game-tebaklagu_hint.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785571058768,
+      "lastSuccess": 1785571058768
+    },
+    "rpg/rpg-bunuh.js": {
+      "total": 272,
+      "success": 272,
+      "last": 1785840192939,
+      "lastSuccess": 1785840192939
+    },
+    "rpg/rpg-mancing.js": {
+      "total": 936,
+      "success": 936,
+      "last": 1785838964833,
+      "lastSuccess": 1785838964833
+    },
+    "rpg/rpg-adventure.js": {
+      "total": 520,
+      "success": 520,
+      "last": 1785837892748,
+      "lastSuccess": 1785837892748
+    },
+    "menu/menu-fun.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785576268130,
+      "lastSuccess": 1785576268130
+    },
+    "menu/menu-moneytrack.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785576299318,
+      "lastSuccess": 1785576299318
+    },
+    "game/game-tebakkpop.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785838680239,
+      "lastSuccess": 1785838680239
+    },
+    "game/game-tebakkpop-hint.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785838597655,
+      "lastSuccess": 1785838597655
+    },
+    "rpg/rpg-casino.js": {
+      "total": 26,
+      "success": 26,
+      "last": 1785749570139,
+      "lastSuccess": 1785749570139
+    },
+    "tools/tool-translate.js": {
+      "total": 10,
+      "success": 7,
+      "last": 1785816016621,
+      "lastSuccess": 1785816016621
+    },
+    "fun/fun-cektt.js": {
+      "total": 6,
+      "success": 6,
+      "last": 1785586870225,
+      "lastSuccess": 1785586870225
+    },
+    "info/intro.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785586942836,
+      "lastSuccess": 1785586942836
+    },
+    "sticker/sticker-meme.js": {
+      "total": 2,
+      "success": 0,
+      "last": 1785629889339,
+      "lastSuccess": 0
+    },
+    "group/group-totag.js": {
+      "total": 63,
+      "success": 61,
+      "last": 1785783133741,
+      "lastSuccess": 1785783133741
+    },
+    "internet/internet-fetch.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785636362323,
+      "lastSuccess": 1785636362323
+    },
+    "group/group-delete.js": {
+      "total": 9,
+      "success": 9,
+      "last": 1785764514555,
+      "lastSuccess": 1785764514555
+    },
+    "fun/fun-dimanakah.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785636917573,
+      "lastSuccess": 1785636917573
+    },
+    "downloader/downloader-play.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785790154719,
+      "lastSuccess": 1785790154719
+    },
+    "menu/menu-anime.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785650827329,
+      "lastSuccess": 1785650827329
+    },
+    "game/game-tebakanime.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785670179919,
+      "lastSuccess": 1785670179919
+    },
+    "menu/menu-rpg.js": {
+      "total": 21,
+      "success": 21,
+      "last": 1785835812729,
+      "lastSuccess": 1785835812729
+    },
+    "rpg/rpg-daily.js": {
+      "total": 48,
+      "success": 42,
+      "last": 1785835831013,
+      "lastSuccess": 1785835831013
+    },
+    "downloader/downloader-ig.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785656664576,
+      "lastSuccess": 1785656664576
+    },
+    "downloader/downloader-igstory.js": {
+      "total": 4,
+      "success": 0,
+      "last": 1785656732984,
+      "lastSuccess": 0
+    },
+    "menu/menu-search.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785656679854,
+      "lastSuccess": 1785656679854
+    },
+    "rpg/rpg-shop.js": {
+      "total": 575,
+      "success": 575,
+      "last": 1785839567825,
+      "lastSuccess": 1785839567825
+    },
+    "rpg/rpg-inventory.js": {
+      "total": 155,
+      "success": 155,
+      "last": 1785839540936,
+      "lastSuccess": 1785839540936
+    },
+    "rpg/rpg-toprpg.js": {
+      "total": 8,
+      "success": 8,
+      "last": 1785836994066,
+      "lastSuccess": 1785836994066
+    },
+    "rpg/rpg-gudang.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785812223173,
+      "lastSuccess": 1785812223173
+    },
+    "rpg/rpg-dungeon.js": {
+      "total": 154,
+      "success": 154,
+      "last": 1785837975670,
+      "lastSuccess": 1785837975670
+    },
+    "rpg/rpg-heal.js": {
+      "total": 147,
+      "success": 147,
+      "last": 1785836264576,
+      "lastSuccess": 1785836264576
+    },
+    "rpg/rpg-mining.js": {
+      "total": 843,
+      "success": 843,
+      "last": 1785839559836,
+      "lastSuccess": 1785839559836
+    },
+    "rpg/rpg-panen.js": {
+      "total": 303,
+      "success": 303,
+      "last": 1785839374537,
+      "lastSuccess": 1785839374537
+    },
+    "rpg/rpg-tanam.js": {
+      "total": 210,
+      "success": 210,
+      "last": 1785839384842,
+      "lastSuccess": 1785839384842
+    },
+    "rpg/rpg-rampok.js": {
+      "total": 309,
+      "success": 309,
+      "last": 1785839499241,
+      "lastSuccess": 1785839499241
+    },
+    "rpg/rpg-akunyt.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785818755622,
+      "lastSuccess": 1785818755622
+    },
+    "rpg/rpg-buatyt.js": {
+      "total": 9,
+      "success": 9,
+      "last": 1785749671830,
+      "lastSuccess": 1785749671830
+    },
+    "rpg/rpg-liveyt.js": {
+      "total": 449,
+      "success": 449,
+      "last": 1785837964543,
+      "lastSuccess": 1785837964543
+    },
+    "rpg/rpg-bank.js": {
+      "total": 1505,
+      "success": 1505,
+      "last": 1785839601942,
+      "lastSuccess": 1785839601942
+    },
+    "rpg/rpg-misiguild.js": {
+      "total": 136,
+      "success": 136,
+      "last": 1785838982245,
+      "lastSuccess": 1785838982245
+    },
+    "rpg/rpg-pet.js": {
+      "total": 241,
+      "success": 241,
+      "last": 1785837704959,
+      "lastSuccess": 1785837704959
+    },
+    "rpg/rpg-buyladang.js": {
+      "total": 68,
+      "success": 68,
+      "last": 1785829448045,
+      "lastSuccess": 1785829448045
+    },
+    "misc/story-anime.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785662727344,
+      "lastSuccess": 1785662727344
+    },
+    "game/game-bom.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785677372543,
+      "lastSuccess": 1785677372543
+    },
+    "game/game-tebakff_hins.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785668190249,
+      "lastSuccess": 1785668190249
+    },
+    "game/game-uno.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785668288443,
+      "lastSuccess": 1785668288443
+    },
+    "game/game-tebakhewan.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785669998890,
+      "lastSuccess": 1785669998890
+    },
+    "game/game-tebakhewan_hint.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785668990117,
+      "lastSuccess": 1785668990117
+    },
+    "game/game-tebakmakanan.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785669709022,
+      "lastSuccess": 1785669709022
+    },
+    "game/game-tebakanime_hint.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785669793823,
+      "lastSuccess": 1785669793823
+    },
+    "rpg/rpg-kerja.js": {
+      "total": 970,
+      "success": 970,
+      "last": 1785839478611,
+      "lastSuccess": 1785839478611
+    },
+    "rpg/rpg-upgrade.js": {
+      "total": 203,
+      "success": 203,
+      "last": 1785836432640,
+      "lastSuccess": 1785836432640
+    },
+    "rpg/rpg-craft.js": {
+      "total": 83,
+      "success": 83,
+      "last": 1785817689039,
+      "lastSuccess": 1785817689039
+    },
+    "group/group-kick.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785756610770,
+      "lastSuccess": 1785756610770
+    },
+    "game/game-truthordare.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785677358039,
+      "lastSuccess": 1785677358039
+    },
+    "game/game-wwpc.js": {
+      "total": 64,
+      "success": 64,
+      "last": 1785769104845,
+      "lastSuccess": 1785769104845
+    },
+    "fun/fun-kapankah.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785680038285,
+      "lastSuccess": 1785680038285
+    },
+    "utility/waalaikumsalam2.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785681829016,
+      "lastSuccess": 1785681829016
+    },
+    "group/group-setlist.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785807033665,
+      "lastSuccess": 1785807033665
+    },
+    "rpg/rpg-listguild.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785723704059,
+      "lastSuccess": 1785723704059
+    },
+    "rpg/rpg-guild.js": {
+      "total": 20,
+      "success": 20,
+      "last": 1785838975531,
+      "lastSuccess": 1785838975531
+    },
+    "rpg/rpg-joinguild.js": {
+      "total": 13,
+      "success": 13,
+      "last": 1785739642941,
+      "lastSuccess": 1785739642941
+    },
+    "rpg/rpg-kickguild.js": {
+      "total": 7,
+      "success": 7,
+      "last": 1785805986549,
+      "lastSuccess": 1785805986549
+    },
+    "rpg/rpg-topyt.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785837124126,
+      "lastSuccess": 1785837124126
+    },
+    "rpg/rpg-guildshop.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785724375433,
+      "lastSuccess": 1785724375433
+    },
+    "downloader/yts.js": {
+      "total": 4,
+      "success": 0,
+      "last": 1785740652029,
+      "lastSuccess": 0
+    },
+    "utility/enable.js": {
+      "total": 4,
+      "success": 3,
+      "last": 1785740833968,
+      "lastSuccess": 1785740823668
+    },
+    "group/group-settings.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785762066078,
+      "lastSuccess": 1785762066078
+    },
+    "game/game-tebakkota.js": {
+      "total": 11,
+      "success": 11,
+      "last": 1785838921049,
+      "lastSuccess": 1785838921049
+    },
+    "game/game-tebakkota_hins.js": {
+      "total": 10,
+      "success": 10,
+      "last": 1785784155856,
+      "lastSuccess": 1785784155856
+    },
+    "group/group-testwelcome.js": {
+      "total": 6,
+      "success": 6,
+      "last": 1785782477047,
+      "lastSuccess": 1785782477047
+    },
+    "game/game-susunkata.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785784181135,
+      "lastSuccess": 1785784181135
+    },
+    "info/donasi.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785786328820,
+      "lastSuccess": 1785786328820
+    },
+    "info/info-toplimit.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785789565943,
+      "lastSuccess": 1785789565943
+    },
+    "info/topdonasi.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785786555973,
+      "lastSuccess": 1785786555973
+    },
+    "info/info-toplevel.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785786963222,
+      "lastSuccess": 1785786963222
+    },
+    "info/info-topmoney.js": {
+      "total": 16,
+      "success": 16,
+      "last": 1785837142180,
+      "lastSuccess": 1785837142180
+    },
+    "maker/hitam.js": {
+      "total": 9,
+      "success": 9,
+      "last": 1785789053714,
+      "lastSuccess": 1785789053714
+    },
+    "menu/menu-download.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785790205824,
+      "lastSuccess": 1785790205824
+    },
+    "downloader/downloader-spotify.js": {
+      "total": 12,
+      "success": 12,
+      "last": 1785793564562,
+      "lastSuccess": 1785793564562
+    },
+    "rpg/rpg-kolab.js": {
+      "total": 43,
+      "success": 43,
+      "last": 1785835759107,
+      "lastSuccess": 1785835759107
+    },
+    "rpg/rpg-trade.js": {
+      "total": 16,
+      "success": 16,
+      "last": 1785837456252,
+      "lastSuccess": 1785837456252
+    },
+    "fun/fun-hilih.js": {
+      "total": 4,
+      "success": 4,
+      "last": 1785806391164,
+      "lastSuccess": 1785806391164
+    },
+    "fun/cekqr.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785829083341,
+      "lastSuccess": 1785829083341
+    },
+    "rpg/rpg-rpgstat.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785835910034,
+      "lastSuccess": 1785835910034
+    },
+    "info/info-script.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785836847128,
+      "lastSuccess": 1785836847128
+    },
+    "quotes/quotes-bacot.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785837853324,
+      "lastSuccess": 1785837853324
+    },
+    "main/main-limit.js": {
+      "total": 3,
+      "success": 3,
+      "last": 1785839565765,
+      "lastSuccess": 1785839565765
+    },
+    "game/game-buylimit.js": {
+      "total": 5,
+      "success": 5,
+      "last": 1785839576059,
+      "lastSuccess": 1785839576059
     }
   },
   "msgs": {},
@@ -4209,21 +8679,64 @@
       "restrict": false,
       "totalDonasi": 0,
       "religiousGreetings": {
-        "120363037399765440@g.us": "2026-07-31:islam-friday",
-        "120363194958609388@g.us": "2026-07-31:islam-friday",
-        "120363387209151681@g.us": "2026-07-31:islam-friday",
-        "120363040474335998@g.us": "2026-07-31:islam-friday",
-        "120363301302190762@g.us": "2026-07-31:islam-friday",
-        "120363199647702684@g.us": "2026-07-31:islam-friday",
-        "6281251737411-1635767306@g.us": "2026-07-31:islam-friday",
-        "120363422993231572@g.us": "2026-07-31:islam-friday",
-        "120363424810302389@g.us": "2026-07-31:islam-friday",
-        "120363286790616150@g.us": "2026-07-31:islam-friday",
-        "120363314125886715@g.us": "2026-07-31:islam-friday",
-        "120363024948766379@g.us": "2026-07-31:islam-friday",
-        "120363021973635533@g.us": "2026-07-31:islam-friday",
-        "120363037804846679@g.us": "2026-07-31:islam-friday",
-        "120363418701336619@g.us": "2026-07-31:islam-friday"
+        "120363037399765440@g.us": "2026-08-02:christian-sunday",
+        "120363194958609388@g.us": "2026-08-02:christian-sunday",
+        "120363387209151681@g.us": "2026-08-02:christian-sunday",
+        "120363040474335998@g.us": "2026-08-02:christian-sunday",
+        "120363301302190762@g.us": "2026-08-02:christian-sunday",
+        "120363199647702684@g.us": "2026-08-02:christian-sunday",
+        "6281251737411-1635767306@g.us": "2026-08-02:christian-sunday",
+        "120363422993231572@g.us": "2026-08-02:christian-sunday",
+        "120363424810302389@g.us": "2026-08-02:christian-sunday",
+        "120363286790616150@g.us": "2026-08-02:christian-sunday",
+        "120363314125886715@g.us": "2026-08-02:christian-sunday",
+        "120363024948766379@g.us": "2026-08-02:christian-sunday",
+        "120363021973635533@g.us": "2026-08-02:christian-sunday",
+        "120363037804846679@g.us": "2026-08-02:christian-sunday",
+        "120363418701336619@g.us": "2026-08-02:christian-sunday",
+        "120363088252496618@g.us": "2026-08-02:christian-sunday",
+        "120363030548531143@g.us": "2026-08-02:christian-sunday",
+        "120363142605702049@g.us": "2026-08-02:christian-sunday",
+        "120363163282857468@g.us": "2026-08-02:christian-sunday",
+        "120363163917352012@g.us": "2026-08-02:christian-sunday",
+        "120363029872565848@g.us": "2026-08-02:christian-sunday",
+        "120363027445390775@g.us": "2026-08-02:christian-sunday",
+        "120363047965974007@g.us": "2026-08-02:christian-sunday",
+        "120363031135926147@g.us": "2026-08-02:christian-sunday",
+        "120363029118929635@g.us": "2026-08-02:christian-sunday",
+        "120363091621900251@g.us": "2026-08-02:christian-sunday",
+        "120363047791907495@g.us": "2026-08-02:christian-sunday",
+        "120363423847342309@g.us": "2026-08-02:christian-sunday",
+        "120363227061727873@g.us": "2026-08-02:christian-sunday",
+        "120363030469983466@g.us": "2026-08-02:christian-sunday",
+        "120363029549937490@g.us": "2026-08-02:christian-sunday",
+        "120363048947243893@g.us": "2026-08-02:christian-sunday",
+        "120363024887369885@g.us": "2026-08-02:christian-sunday",
+        "120363025329605180@g.us": "2026-08-02:christian-sunday",
+        "120363069873256838@g.us": "2026-08-02:christian-sunday",
+        "120363422283837251@g.us": "2026-08-02:christian-sunday",
+        "120363181522061728@g.us": "2026-08-02:christian-sunday",
+        "120363024161422336@g.us": "2026-08-02:christian-sunday",
+        "120363101598590139@g.us": "2026-08-02:christian-sunday",
+        "120363046362093786@g.us": "2026-08-02:christian-sunday",
+        "120363415452297169@g.us": "2026-08-02:christian-sunday",
+        "120363422916924212@g.us": "2026-08-02:christian-sunday",
+        "120363184883030165@g.us": "2026-08-02:christian-sunday",
+        "120363065349036977@g.us": "2026-08-02:christian-sunday",
+        "120363024153018016@g.us": "2026-08-02:christian-sunday",
+        "120363422861904796@g.us": "2026-08-02:christian-sunday",
+        "120363043193811245@g.us": "2026-08-02:christian-sunday",
+        "120363044985875751@g.us": "2026-08-02:christian-sunday",
+        "120363045611125996@g.us": "2026-08-02:christian-sunday",
+        "120363165948450723@g.us": "2026-08-02:christian-sunday",
+        "120363030306936814@g.us": "2026-08-02:christian-sunday",
+        "120363028466863138@g.us": "2026-08-02:christian-sunday",
+        "120363045058319504@g.us": "2026-08-02:christian-sunday",
+        "120363028650568772@g.us": "2026-08-02:christian-sunday",
+        "120363196150613929@g.us": "2026-08-02:christian-sunday",
+        "120363147573439146@g.us": "2026-08-02:christian-sunday",
+        "120363157042371115@g.us": "2026-08-02:christian-sunday",
+        "120363397216197226@g.us": "2026-08-02:christian-sunday"
       }
     },
     "16196267018@s.whatsapp.net": {
@@ -4275,6 +8788,60 @@
     },
     "lastTransactionByUser": {
       "6281241100804@s.whatsapp.net": "MQ0LCSFNFQPU"
+    }
+  },
+  "cooldowns": {
+    "228256070533313@lid": {
+      "bunuh": 1785837755467
+    },
+    "201266647015675@lid": {
+      "bunuh": 1785837819546
+    },
+    "160859846357027@lid": {
+      "bunuh": 1785826643131
+    },
+    "237507463651454@lid": {
+      "bunuh": 1785800278250
+    },
+    "265141333569711@lid": {
+      "bunuh": 1785839284050
+    },
+    "186006728921112@lid": {
+      "bunuh": 1785812611210
+    },
+    "160215433535616@lid": {
+      "bunuh": 1785805718606
+    }
+  },
+  "couples": {},
+  "chars": {},
+  "status": {},
+  "pendingPP": {},
+  "profilePP": {},
+  "lastMoodTick": {},
+  "guilds": {
+    "Twīly": {
+      "name": "Twīly",
+      "leader": "237507463651454@lid",
+      "members": [
+        "237507463651454@lid",
+        "201266647015675@lid",
+        "228256070533313@lid",
+        "265141333569711@lid",
+        "260919531708475@lid",
+        "186006728921112@lid"
+      ],
+      "contribution": {
+        "237507463651454@lid": 6250,
+        "201266647015675@lid": 9050,
+        "228256070533313@lid": 6400,
+        "265141333569711@lid": 410,
+        "260919531708475@lid": 150,
+        "186006728921112@lid": 0
+      },
+      "level": 15,
+      "exp": 4800,
+      "lastMission": 1785838981243
     }
   }
 }

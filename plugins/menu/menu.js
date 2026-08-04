@@ -25,7 +25,8 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   let hari = d.toLocaleDateString(locale, { weekday: 'long' })
   let jam = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })
 
-  let user = global.db.data.users[m.sender] || {}
+  let users = global.db.data.users || {}
+  let user = users[m.sender] || {}
   const wdb = loadDB()
   const uang = wdb.money?.[m.sender] || 0
   let { limit = 0, role = 'User', premiumTime = 0, pasangan = [] } = user
@@ -38,6 +39,24 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
           let dur = formatDuration(Date.now() - p.nikahTime)
           return `@${p.jid.split('@')[0]} (${dur})`
       }).join(', ')
+  }
+
+  // Ambil Top 3 Donatur secara dinamis
+  let topDonors = Object.entries(users)
+      .filter(([_, data]) => data.totalDonasi > 0)
+      .sort((a, b) => b[1].totalDonasi - a[1].totalDonasi)
+      .slice(0, 3)
+
+  let donorText = ''
+  let donorMentions = []
+  if (topDonors.length > 0) {
+      donorText = topDonors.map(([jid, data], i) => {
+          let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
+          donorMentions.push(jid)
+          return `${i === 0 ? '╭' : i === topDonors.length - 1 ? '╰' : '│'} ${medal} @${jid.split('@')[0]} : Rp ${data.totalDonasi.toLocaleString('id-ID')}`
+      }).join('\n')
+  } else {
+      donorText = `╰ 💎 *Ketik ${_p}donasi untuk mendukung bot!*`
   }
 
   let videoMenu = 'https://api.deline.web.id/tMbmgonUvF.mp4'
@@ -80,6 +99,7 @@ ${greeting}, *${name}*! Aku *${global.namebot}*, bot WhatsApp yang siap membantu
 │ 𖥔  ʟɪᴍɪᴛ : ${limit}
 │ 𖥔  ᴍᴏɴᴇʏ : Rp ${uang.toLocaleString('id-ID')}
 ╰ 𖥔  ᴘᴀsᴀɴɢᴀɴ : ${partnerDisplay}
+
 [ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
 ╭ 𖥔  ɴᴀᴍᴀ ʙᴏᴛ : ${global.namebot}
 │ 𖥔  ᴠᴇʀsɪ : ${global.versi}
@@ -87,6 +107,10 @@ ${greeting}, *${name}*! Aku *${global.namebot}*, bot WhatsApp yang siap membantu
 │ 𖥔  ᴍᴏᴅᴇ : Public
 │ 𖥔  ʟɪᴍɪᴛ ꜰᴇᴀᴛᴜʀᴇ : Ⓛ
 ╰ 𖥔  ᴘʀᴇᴍɪᴜᴍ ꜰᴇᴀᴛᴜʀᴇ : Ⓟ
+
+[ 🏆 ]───[ *_ᴛᴏᴘ • ᴅᴏɴᴀᴛᴜʀ_* ]───✦
+${donorText}
+
 ╭──「 *ᴀʙᴏᴜᴛ* 」✦
 │ 𖥔  ᴛᴀɴɢɢᴀʟ : ${tanggal}
 │ 𖥔  ʜᴀʀɪ : ${hari}
@@ -115,7 +139,7 @@ ${greeting}, *${name}*! Aku *${global.namebot}*, bot WhatsApp yang siap membantu
 ╰──
 `.trim()
 
-  let mentions = [m.sender]
+  let mentions = [m.sender, ...donorMentions]
   if (pasangan && pasangan.length > 0) {
       pasangan.forEach(p => mentions.push(p.jid))
   }
@@ -155,5 +179,6 @@ ${greeting}, *${name}*! Aku *${global.namebot}*, bot WhatsApp yang siap membantu
 handler.help = ['menu']
 handler.tags = ['main']
 handler.command = /^(menu|help|\?)$/i
+handler.limit = false
 
 export default handler

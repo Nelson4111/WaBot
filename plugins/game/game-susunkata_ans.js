@@ -1,30 +1,32 @@
 import similarity from 'similarity'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 
-const THRESHOLD = 0.72
+const threshold = 0.72
 
 function cleanText(str = '') {
   return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
 }
 
 export async function before(m) {
-  if (!m.text) return true
-  if (/^[./#!]\w+/.test(m.text.trim())) return true
+  if (!m.text) return false
+  if (/^[./#!]\w+/.test(m.text.trim())) return false
 
   this.game = this.game || {}
   const id = 'susunkata-' + m.chat
-  if (!(id in this.game)) return true
+  if (!(id in this.game)) return false
 
   const session = this.game[id]
-  if (!session || !session[1]) return true
+  if (!session || !session[1]) return false
 
   const [msg, data, timeout] = session
   const jawab = (data.jawaban || '').trim()
-  if (!jawab) return true
+  if (!jawab) return false
 
-  const isQuotedFromBot = m.quoted && m.quoted.fromMe
+  const msgId = session[0]?.key?.id || session[0]?.id
+  const isQuotedFromBot = m.quoted && m.quoted.fromMe && (m.quoted.id === msgId || !msgId)
+
   const isCorrect = cleanText(m.text) === cleanText(jawab)
-  const isSimilar = similarity(cleanText(m.text), cleanText(jawab)) >= THRESHOLD
+  const isSimilar = similarity(cleanText(m.text), cleanText(jawab)) >= threshold
   const isSurrender = /^((me)?nyerah|surr?ender)$/i.test(m.text.trim())
 
   if (isSurrender) {
@@ -54,19 +56,15 @@ export async function before(m) {
       `Limit: ${global.db.data.users[m.sender].limit}`
     )
     return true
-  }
-
-  if (isSimilar) {
+  } else if (isSimilar) {
     await m.reply('🔍 *Dikit Lagi!*')
     return true
-  }
-
-  if (isQuotedFromBot) {
-    await m.reply('❌ *Jawaban Salah!*')
+  } else if (isQuotedFromBot) {
+    await m.reply('❌ *Salah!*')
     return true
   }
 
-  return true
+  return false
 }
 
 export const exp = 0

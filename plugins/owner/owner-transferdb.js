@@ -1,5 +1,3 @@
-import fs from 'fs'
-
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     conn.transferdb = conn.transferdb ? conn.transferdb : {}
 
@@ -14,13 +12,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let users = global.db.data.users
     if (!users[oldJid]) return m.reply(`❌ Data nomor *${oldJid.split('@')[0]}* tidak ditemukan.`)
 
-    let waifuPath = './waifu_db.json'
-    let waifuDb = { money: {} }
-    if (fs.existsSync(waifuPath)) {
-        waifuDb = JSON.parse(fs.readFileSync(waifuPath))
-    }
-
-    let oldWaifuMoney = waifuDb.money[oldJid] || 0
     let d = users[oldJid]
     
     let detail = `
@@ -28,8 +19,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 📝 *Detail User Lama:*
 • Nama: ${d.name || 'User'}
-• Balance: ${d.balance || 0}
-• Money: ${oldWaifuMoney}
+• Cash: ${d.money || 0}
+• Bank: ${d.bank || 0}
 • Limit: ${d.limit || 0}
 • Level: ${d.level || 0}
 • Premium: ${d.premium ? '✅' : '❌'}
@@ -37,14 +28,13 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 🔄 *Transfer Dari:* @${oldJid.split('@')[0]}
 ➡️ *Transfer Ke:* @${newJid.split('@')[0]}
 
-Ketik *Y* untuk konfirmasi. Data lama di waifu_db dan database utama akan dipindahkan.
+Ketik *Y* untuk konfirmasi. Seluruh data user di database utama akan dipindahkan.
 `.trim()
 
     conn.transferdb[m.sender] = {
         oldJid,
         newJid,
         data: { ...users[oldJid] },
-        waifuMoney: oldWaifuMoney,
         timeout: setTimeout(() => {
             if (conn.transferdb[m.sender]) {
                 delete conn.transferdb[m.sender]
@@ -61,21 +51,17 @@ handler.before = async (m, { conn }) => {
     if (!conn.transferdb[m.sender] || !m.text) return
     if (!/^(y|ya|yes)$/i.test(m.text)) return
 
-    let { oldJid, newJid, data, waifuMoney, timeout } = conn.transferdb[m.sender]
+    let { oldJid, newJid, data, timeout } = conn.transferdb[m.sender]
     
     global.db.data.users[newJid] = data
     delete global.db.data.users[oldJid]
     
-    let waifuPath = './waifu_db.json'
-    if (fs.existsSync(waifuPath)) {
-        let waifuDb = JSON.parse(fs.readFileSync(waifuPath))
-        waifuDb.money[newJid] = waifuMoney
-        delete waifuDb.money[oldJid]
-        fs.writeFileSync(waifuPath, JSON.stringify(waifuDb, null, 2))
-    }
-    
     clearTimeout(timeout)
     delete conn.transferdb[m.sender]
+
+    if (global.db && typeof global.db.write === 'function') {
+        global.db.write().catch(() => {})
+    }
 
     await m.reply("✅ *Berhasil!* Seluruh database telah dipindahkan.")
 

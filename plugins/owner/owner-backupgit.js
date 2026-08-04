@@ -30,7 +30,7 @@ export async function runGitBackup() {
       }
     }
 
-    // 3. Git push ke origin main secara non-interaktif (remote URL sudah terkonfigurasi dengan token di .git/config)
+    // 3. Git push ke origin main secara 100% non-interaktif
     const { stdout, stderr } = await execPromise('git push origin main')
     console.log('[GitHub Backup] Backup berhasil dipush ke GitHub!')
     return { success: true, message: `Backup berhasil dipush ke GitHub (${timestamp})`, stdout, stderr }
