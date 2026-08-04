@@ -1,7 +1,7 @@
 {
   "users": {
     "6281242432747@s.whatsapp.net": {
-      "exp": 7426,
+      "exp": 8060,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -19,7 +19,7 @@
       "role": "Free user",
       "autolevelup": true,
       "pasangan": [],
-      "money": 4849,
+      "money": 9698,
       "rpg": {
         "level": 1,
         "exp": 86,
@@ -87,7 +87,6 @@
       "exp": 737,
       "limit": 100,
       "balance": 0,
-      "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
       "name": "nenel",
@@ -163,7 +162,6 @@
       "exp": 10,
       "limit": 100,
       "balance": 0,
-      "totalDonasi": 0,
       "lastclaim": 0,
       "registered": false,
       "name": "nenel",
@@ -179,10 +177,9 @@
       "autolevelup": true
     },
     "226804522590211@lid": {
-      "exp": 23847,
+      "exp": 24350,
       "limit": 101,
       "balance": 0,
-      "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
       "age": -1,
@@ -197,14 +194,6 @@
       "autolevelup": true,
       "name": "nenel",
       "aiHistory": [
-        {
-          "role": "user",
-          "content": "Itu kah khusus owner kalo untuk user?"
-        },
-        {
-          "role": "assistant",
-          "content": "Nenel! Untuk user seperti kamu, caranya adalah mengetik .addgrup atau .joingrup di grup yang kamu ingin masukin aku. Nanti aku akan bergabung!"
-        },
         {
           "role": "user",
           "content": "Hai"
@@ -236,6 +225,14 @@
         {
           "role": "assistant",
           "content": "Tesnya sukses, nenel! Kita bisa lanjut ke ngobrol yang lebih serius atau santai aja, kaya dulu? 😊"
+        },
+        {
+          "role": "user",
+          "content": "Menunggu pesan ini. Ini mungkin membutuhkan waktu beberapa saat. Pelajari selengkapnya"
+        },
+        {
+          "role": "assistant",
+          "content": "Nenel, pesan ini mungkin membutuhkan waktu beberapa saat. Aku akan menunggu. Btw, kamu sedang sibuk atau ada tugas yang harus diselesaikan?"
         }
       ],
       "aiProfile": {
@@ -244,7 +241,7 @@
         "language": "Indonesia"
       },
       "pasangan": [],
-      "money": 50000,
+      "money": 100000,
       "rpg": {
         "level": 2,
         "exp": 270,
@@ -271,7 +268,7 @@
         "bank": 43968
       },
       "lastDaily": 1785789374449,
-      "bank": 43968
+      "bank": 87936
     },
     "628989139222@s.whatsapp.net": {
       "exp": 393,
@@ -834,7 +831,7 @@
       }
     },
     "58643517051067@lid": {
-      "exp": 88,
+      "exp": 167,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1345,7 +1342,7 @@
       "autolevelup": true
     },
     "260919531708475@lid": {
-      "exp": 437651,
+      "exp": 437720,
       "limit": 86,
       "balance": 0,
       "totalDonasi": 0,
@@ -1376,7 +1373,7 @@
         "preferences": [],
         "language": "Indonesia"
       },
-      "money": 14302205,
+      "money": 23610506,
       "youtube": {
         "name": "buttercat",
         "subs": 8658,
@@ -1429,13 +1426,13 @@
         "pickaxe": 2
       },
       "lastDaily": 1785676690036,
-      "bank": 1105464
+      "bank": 2210928
     },
     "237507463651454@lid": {
-      "exp": 1019142,
+      "exp": 1028652,
       "limit": 158,
       "balance": 0,
-      "totalDonasi": 0,
+      "totalDonasi": 5000,
       "lastclaim": 0,
       "registered": true,
       "name": "Eza",
@@ -1487,7 +1484,7 @@
         "language": "Indonesia"
       },
       "lastKencan": 1785801178574,
-      "money": 2000,
+      "money": 0,
       "aiHistory": [
         {
           "role": "user",
@@ -1600,13 +1597,13 @@
         "lastLive": 1785831139750,
         "lastKolab": 1785831139750
       },
-      "bank": 88650554
+      "bank": 177301108
     },
     "228256070533313@lid": {
-      "exp": 1039936,
+      "exp": 1052241,
       "limit": 96,
       "balance": 0,
-      "totalDonasi": 0,
+      "totalDonasi": 2423,
       "lastclaim": 0,
       "registered": true,
       "name": "sasha",
@@ -1703,11 +1700,11 @@
         "lastLive": 1785837687536,
         "lastKolab": 1785835759105
       },
-      "bank": 119699612
+      "bank": 239399224
     },
     "231120981483592@lid": {
-      "exp": 86,
-      "limit": 99,
+      "exp": 109,
+      "limit": 98,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -1764,7 +1761,7 @@
       ]
     },
     "160859846357027@lid": {
-      "exp": 366455,
+      "exp": 366982,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1878,13 +1875,13 @@
         "lastLive": 1785801154410,
         "lastKolab": 1785801154410
       },
-      "bank": 27462622
+      "bank": 54925244
     },
     "265141333569711@lid": {
-      "exp": 481597,
+      "exp": 493478,
       "limit": 80,
       "balance": 0,
-      "totalDonasi": 0,
+      "totalDonasi": 9000,
       "lastclaim": 0,
       "registered": true,
       "name": "jara",
@@ -2027,7 +2024,7 @@
         "lastLive": 1785835759105,
         "lastKolab": 1785835759105
       },
-      "bank": 110614644
+      "bank": 221229288
     },
     "95696233492708@lid": {
       "exp": 532,
@@ -2185,7 +2182,7 @@
       "role": "Free user",
       "autolevelup": true,
       "pasangan": [],
-      "money": 19478,
+      "money": 38956,
       "rpg": {
         "level": 1,
         "exp": 77,
@@ -2244,7 +2241,7 @@
         "language": "Indonesia"
       },
       "lastKencan": 1785659018021,
-      "money": 9258,
+      "money": 18516,
       "rpg": {
         "level": 1,
         "exp": 140,
@@ -2273,10 +2270,10 @@
       }
     },
     "160215433535616@lid": {
-      "exp": 20118,
+      "exp": 20436,
       "limit": 99,
       "balance": 0,
-      "totalDonasi": 0,
+      "totalDonasi": 7000,
       "lastclaim": 0,
       "registered": true,
       "name": "jijieww",
@@ -2326,7 +2323,7 @@
         "lastrob": 1785805793820
       },
       "lastDaily": 1785826229936,
-      "bank": 145795
+      "bank": 291590
     },
     "92376542494740@lid": {
       "exp": 14,
@@ -2388,7 +2385,7 @@
           "content": "wkwk, apa kabar Sosiologi B? Tertawa sendirian lagi nggak? 😅"
         }
       ],
-      "money": 15918,
+      "money": 31836,
       "rpg": {
         "level": 2,
         "exp": 284,
@@ -2434,16 +2431,16 @@
       "autolevelup": true
     },
     "201266647015675@lid": {
-      "exp": 993068,
+      "exp": 993798,
       "limit": 100,
       "balance": 0,
-      "totalDonasi": 0,
+      "totalDonasi": 10000,
       "lastclaim": 0,
       "registered": true,
       "name": ".",
       "age": -1,
       "regTime": 1785478808180,
-      "afk": 1785840324249,
+      "afk": 1785845316511,
       "afkReason": "Tanpa Alasan",
       "banned": false,
       "banReason": "",
@@ -2548,10 +2545,10 @@
         "lastLive": 1785837908939,
         "lastKolab": 1785831139750
       },
-      "bank": 122502731
+      "bank": 245005462
     },
     "26599437115392@lid": {
-      "exp": 102,
+      "exp": 105,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -2600,6 +2597,14 @@
         {
           "role": "assistant",
           "content": "Eh, capek banget gitu? Udah mau tidur, tapi masih lama lagi sih. Bantal tebal aja sih, atau mungkin kuping aku siap jadi penghiburnya wkwk 😂"
+        },
+        {
+          "role": "user",
+          "content": "19.40 bersama adek aqila cantik dan lucu😘🫶🏻"
+        },
+        {
+          "role": "assistant",
+          "content": "Mantap! Seneng banget kamu punya adek yang cantik dan lucu! Aku yakin Aqila suka banget sama kamu juga, adek-adek mania! Btw, apa kalian nonton film atau main game sama-sama? 🎥👀"
         }
       ],
       "aiProfile": {
@@ -2709,7 +2714,7 @@
       }
     },
     "215586000867401@lid": {
-      "exp": 412,
+      "exp": 525,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -2762,7 +2767,7 @@
       ]
     },
     "202044002570318@lid": {
-      "exp": 255,
+      "exp": 395,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -2839,7 +2844,7 @@
       "autolevelup": true
     },
     "86041851642054@lid": {
-      "exp": 212,
+      "exp": 405,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -2882,7 +2887,7 @@
       "autolevelup": true
     },
     "86264518860927@lid": {
-      "exp": 100,
+      "exp": 266,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -3147,7 +3152,7 @@
       }
     },
     "39187784974588@lid": {
-      "exp": 454,
+      "exp": 473,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -3270,8 +3275,8 @@
       "autolevelup": true
     },
     "1310216683771@lid": {
-      "exp": 617,
-      "limit": 93,
+      "exp": 763,
+      "limit": 91,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -3545,7 +3550,7 @@
       "autolevelup": true
     },
     "221461683937305@lid": {
-      "exp": 847,
+      "exp": 1024,
       "limit": 97,
       "balance": 0,
       "totalDonasi": 0,
@@ -3639,10 +3644,10 @@
       "pasangan": []
     },
     "186006728921112@lid": {
-      "exp": 262844,
+      "exp": 263202,
       "limit": 99,
       "balance": 0,
-      "totalDonasi": 0,
+      "totalDonasi": 2000,
       "lastclaim": 0,
       "registered": true,
       "name": "salsabila",
@@ -3712,7 +3717,7 @@
         "lastLive": 1785837962630,
         "lastKolab": 1785828596759
       },
-      "bank": 44705602
+      "bank": 89411204
     },
     "216977721282669@lid": {
       "exp": 163,
@@ -3926,7 +3931,7 @@
       "role": "Free user",
       "autolevelup": true,
       "pasangan": [],
-      "money": 58100,
+      "money": 116200,
       "rpg": {
         "level": 1,
         "exp": 194,
@@ -3978,7 +3983,7 @@
           "cincin": "Cincin Perak"
         }
       ],
-      "exp": 161,
+      "exp": 226,
       "limit": 100,
       "registered": true,
       "name": "Eza",
@@ -4014,7 +4019,7 @@
         "bank": 53470
       },
       "lastDaily": 1785726262751,
-      "bank": 53470
+      "bank": 106940
     },
     "193359561895958@lid": {
       "exp": 3,
@@ -4052,7 +4057,7 @@
       "level": 0,
       "role": "Free user",
       "autolevelup": true,
-      "money": 6684,
+      "money": 13368,
       "rpg": {
         "level": 1,
         "exp": 146,
@@ -4097,8 +4102,8 @@
       "autolevelup": true
     },
     "121762910077042@lid": {
-      "exp": 95,
-      "limit": 98,
+      "exp": 142,
+      "limit": 97,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -6103,43 +6108,43 @@
       "aiHistory": [
         {
           "role": "user",
-          "content": "Hi"
+          "content": "buat beli cilok nel"
         },
         {
           "role": "assistant",
-          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
+          "content": "Haha, kamu punya niat belanja nih? Cilok Nel siap di pesan! Aku bisa kasih rekomendasi tempat paling enak cilok di dekat kamu. Apa kamu mau pesan cilok di tempat mana?"
         },
         {
           "role": "user",
-          "content": "Hi"
+          "content": "makasi udah mengusahakan biar aku bisa lihat bot 🥹🥹"
         },
         {
           "role": "assistant",
-          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
+          "content": "Haha, kamu udah berhasil buat aku merasa bangga! Cilok Nel udah siap di pesan, tapi aku gak bisa pesan untuk kamu. Kamu bisa coba cari tempat paling enak cilok di dekatmu sendiri!"
         },
         {
           "role": "user",
-          "content": "Lagi ya hehe"
+          "content": "buat nenel bukan buat aku"
         },
         {
           "role": "assistant",
-          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
+          "content": "Haha, kamu udah terbongkar! Cilok Nel siap di pesan, aku akan pesan untuk Nenel. Tapi, jangan bilang dia aku pesan karena aku nggak mau dia tahu aku udah dimanfaatkan! 😂"
         },
         {
           "role": "user",
-          "content": "nyayi gk, harus nyayi"
+          "content": "MAKASIII UDAH MENGUSAHAKAN"
         },
         {
           "role": "assistant",
-          "content": "Aduh maaf Kak, otakku lagi ngeblank dikit nih. Coba tanya lagi ya hehe 🙏"
+          "content": "Haha, kamu udah terlalu semangat! Makasi, aku udah \"mengusahakan\" untuk Nenel. Sekarang, silakan tunggu pesanan cilok Nel!"
         },
         {
           "role": "user",
-          "content": "MINIMAL INI JUGA DI REPLY"
+          "content": "Aku tambah maaf sedikit Terimakasih banyak  🥺🥺🥹"
         },
         {
           "role": "assistant",
-          "content": "Halo! Ada yang bisa saya bantu hari ini? 😊"
+          "content": "Haha, kamu udah terlalu lembut! Tidak perlu maaf, aku gak ada masalah. Senang bisa \"mengusahakan\" untuk Nenel. Sekarang, silakan nikmatin cilok Nel! 🍜👍"
         }
       ],
       "list": {}
@@ -7792,22 +7797,22 @@
       "lastSuccess": 1785836524516
     },
     "menu/menu.js": {
-      "total": 30,
-      "success": 30,
-      "last": 1785804034475,
-      "lastSuccess": 1785804034475
+      "total": 35,
+      "success": 35,
+      "last": 1785844986037,
+      "lastSuccess": 1785844986037
     },
     "downloader/downloader-tiktok.js": {
-      "total": 41,
-      "success": 40,
-      "last": 1785839774237,
-      "lastSuccess": 1785839774237
+      "total": 42,
+      "success": 41,
+      "last": 1785843335020,
+      "lastSuccess": 1785843335020
     },
     "maker/brat.js": {
-      "total": 34,
-      "success": 34,
-      "last": 1785818775919,
-      "lastSuccess": 1785818775919
+      "total": 37,
+      "success": 37,
+      "last": 1785843893083,
+      "lastSuccess": 1785843893083
     },
     "game/game-family100.js": {
       "total": 48,
@@ -7822,10 +7827,10 @@
       "lastSuccess": 1785732575196
     },
     "group/group-hidetag.js": {
-      "total": 48,
-      "success": 48,
-      "last": 1785838221263,
-      "lastSuccess": 1785838221263
+      "total": 50,
+      "success": 50,
+      "last": 1785844263853,
+      "lastSuccess": 1785844263853
     },
     "search/search-lirik.js": {
       "total": 29,
@@ -7846,10 +7851,10 @@
       "lastSuccess": 1785829082730
     },
     "afk/afk-afk.js": {
-      "total": 122,
-      "success": 122,
-      "last": 1785840324533,
-      "lastSuccess": 1785840324533
+      "total": 128,
+      "success": 128,
+      "last": 1785845316763,
+      "lastSuccess": 1785845316763
     },
     "menu/menu-game.js": {
       "total": 9,
@@ -7930,9 +7935,9 @@
       "lastSuccess": 1785496021196
     },
     "fun/fun-top.js": {
-      "total": 95,
+      "total": 96,
       "success": 91,
-      "last": 1785839283538,
+      "last": 1785841731329,
       "lastSuccess": 1785839283538
     },
     "fun/fun-apakah.js": {
@@ -7954,10 +7959,10 @@
       "lastSuccess": 1785838744227
     },
     "sticker/sticker-sticker.js": {
-      "total": 60,
-      "success": 60,
-      "last": 1785840105700,
-      "lastSuccess": 1785840105700
+      "total": 70,
+      "success": 70,
+      "last": 1785843834963,
+      "lastSuccess": 1785843834963
     },
     "menu/allmenu.js": {
       "total": 8,
@@ -7990,10 +7995,10 @@
       "lastSuccess": 1785650644023
     },
     "owner/owner.js": {
-      "total": 5,
-      "success": 5,
-      "last": 1785788136321,
-      "lastSuccess": 1785788136321
+      "total": 6,
+      "success": 6,
+      "last": 1785843500864,
+      "lastSuccess": 1785843500864
     },
     "owner/owner-joingc.js": {
       "total": 2,
@@ -8026,10 +8031,10 @@
       "lastSuccess": 1785785400341
     },
     "game/game-werewolf.js": {
-      "total": 195,
-      "success": 195,
-      "last": 1785804910919,
-      "lastSuccess": 1785804910919
+      "total": 201,
+      "success": 201,
+      "last": 1785844294645,
+      "lastSuccess": 1785844294645
     },
     "game/game-catur.js": {
       "total": 12,
@@ -8056,10 +8061,10 @@
       "lastSuccess": 1785834051130
     },
     "menu/menu-owner.js": {
-      "total": 2,
-      "success": 2,
-      "last": 1785564940745,
-      "lastSuccess": 1785564940745
+      "total": 3,
+      "success": 3,
+      "last": 1785841579756,
+      "lastSuccess": 1785841579756
     },
     "owner/owner-setbio.js": {
       "total": 3,
@@ -8140,22 +8145,22 @@
       "lastSuccess": 1785571058768
     },
     "rpg/rpg-bunuh.js": {
-      "total": 272,
-      "success": 272,
-      "last": 1785840192939,
-      "lastSuccess": 1785840192939
+      "total": 280,
+      "success": 280,
+      "last": 1785845137968,
+      "lastSuccess": 1785845137968
     },
     "rpg/rpg-mancing.js": {
-      "total": 936,
-      "success": 936,
-      "last": 1785838964833,
-      "lastSuccess": 1785838964833
+      "total": 943,
+      "success": 943,
+      "last": 1785844585254,
+      "lastSuccess": 1785844585254
     },
     "rpg/rpg-adventure.js": {
-      "total": 520,
-      "success": 520,
-      "last": 1785837892748,
-      "lastSuccess": 1785837892748
+      "total": 522,
+      "success": 522,
+      "last": 1785844205135,
+      "lastSuccess": 1785844205135
     },
     "menu/menu-fun.js": {
       "total": 2,
@@ -8284,16 +8289,16 @@
       "lastSuccess": 1785656679854
     },
     "rpg/rpg-shop.js": {
-      "total": 575,
-      "success": 575,
-      "last": 1785839567825,
-      "lastSuccess": 1785839567825
+      "total": 580,
+      "success": 580,
+      "last": 1785844155362,
+      "lastSuccess": 1785844155362
     },
     "rpg/rpg-inventory.js": {
-      "total": 155,
-      "success": 155,
-      "last": 1785839540936,
-      "lastSuccess": 1785839540936
+      "total": 159,
+      "success": 159,
+      "last": 1785844179949,
+      "lastSuccess": 1785844179949
     },
     "rpg/rpg-toprpg.js": {
       "total": 8,
@@ -8308,40 +8313,40 @@
       "lastSuccess": 1785812223173
     },
     "rpg/rpg-dungeon.js": {
-      "total": 154,
-      "success": 154,
-      "last": 1785837975670,
-      "lastSuccess": 1785837975670
+      "total": 155,
+      "success": 155,
+      "last": 1785844170750,
+      "lastSuccess": 1785844170750
     },
     "rpg/rpg-heal.js": {
-      "total": 147,
-      "success": 147,
-      "last": 1785836264576,
-      "lastSuccess": 1785836264576
+      "total": 148,
+      "success": 148,
+      "last": 1785842745338,
+      "lastSuccess": 1785842745338
     },
     "rpg/rpg-mining.js": {
-      "total": 843,
-      "success": 843,
-      "last": 1785839559836,
-      "lastSuccess": 1785839559836
+      "total": 848,
+      "success": 848,
+      "last": 1785844115232,
+      "lastSuccess": 1785844115232
     },
     "rpg/rpg-panen.js": {
-      "total": 303,
-      "success": 303,
-      "last": 1785839374537,
-      "lastSuccess": 1785839374537
+      "total": 312,
+      "success": 312,
+      "last": 1785844127157,
+      "lastSuccess": 1785844127157
     },
     "rpg/rpg-tanam.js": {
-      "total": 210,
-      "success": 210,
-      "last": 1785839384842,
-      "lastSuccess": 1785839384842
+      "total": 219,
+      "success": 219,
+      "last": 1785844137825,
+      "lastSuccess": 1785844137825
     },
     "rpg/rpg-rampok.js": {
-      "total": 309,
-      "success": 309,
-      "last": 1785839499241,
-      "lastSuccess": 1785839499241
+      "total": 318,
+      "success": 318,
+      "last": 1785844296941,
+      "lastSuccess": 1785844296941
     },
     "rpg/rpg-akunyt.js": {
       "total": 5,
@@ -8356,28 +8361,28 @@
       "lastSuccess": 1785749671830
     },
     "rpg/rpg-liveyt.js": {
-      "total": 449,
-      "success": 449,
-      "last": 1785837964543,
-      "lastSuccess": 1785837964543
+      "total": 450,
+      "success": 450,
+      "last": 1785844147136,
+      "lastSuccess": 1785844147136
     },
     "rpg/rpg-bank.js": {
-      "total": 1505,
-      "success": 1505,
-      "last": 1785839601942,
-      "lastSuccess": 1785839601942
+      "total": 1534,
+      "success": 1534,
+      "last": 1785844309153,
+      "lastSuccess": 1785844309153
     },
     "rpg/rpg-misiguild.js": {
-      "total": 136,
-      "success": 136,
-      "last": 1785838982245,
-      "lastSuccess": 1785838982245
+      "total": 137,
+      "success": 137,
+      "last": 1785842721519,
+      "lastSuccess": 1785842721519
     },
     "rpg/rpg-pet.js": {
-      "total": 241,
-      "success": 241,
-      "last": 1785837704959,
-      "lastSuccess": 1785837704959
+      "total": 242,
+      "success": 242,
+      "last": 1785842746989,
+      "lastSuccess": 1785842746989
     },
     "rpg/rpg-buyladang.js": {
       "total": 68,
@@ -8434,10 +8439,10 @@
       "lastSuccess": 1785669793823
     },
     "rpg/rpg-kerja.js": {
-      "total": 970,
-      "success": 970,
-      "last": 1785839478611,
-      "lastSuccess": 1785839478611
+      "total": 978,
+      "success": 978,
+      "last": 1785844208932,
+      "lastSuccess": 1785844208932
     },
     "rpg/rpg-upgrade.js": {
       "total": 203,
@@ -8494,10 +8499,10 @@
       "lastSuccess": 1785723704059
     },
     "rpg/rpg-guild.js": {
-      "total": 20,
-      "success": 20,
-      "last": 1785838975531,
-      "lastSuccess": 1785838975531
+      "total": 25,
+      "success": 25,
+      "last": 1785845773832,
+      "lastSuccess": 1785845773832
     },
     "rpg/rpg-joinguild.js": {
       "total": 13,
@@ -8566,10 +8571,10 @@
       "lastSuccess": 1785784181135
     },
     "info/donasi.js": {
-      "total": 4,
-      "success": 4,
-      "last": 1785786328820,
-      "lastSuccess": 1785786328820
+      "total": 10,
+      "success": 8,
+      "last": 1785845582848,
+      "lastSuccess": 1785845582848
     },
     "info/info-toplimit.js": {
       "total": 3,
@@ -8578,10 +8583,10 @@
       "lastSuccess": 1785789565943
     },
     "info/topdonasi.js": {
-      "total": 2,
-      "success": 2,
-      "last": 1785786555973,
-      "lastSuccess": 1785786555973
+      "total": 12,
+      "success": 12,
+      "last": 1785844096345,
+      "lastSuccess": 1785844096345
     },
     "info/info-toplevel.js": {
       "total": 3,
@@ -8590,10 +8595,10 @@
       "lastSuccess": 1785786963222
     },
     "info/info-topmoney.js": {
-      "total": 16,
-      "success": 16,
-      "last": 1785837142180,
-      "lastSuccess": 1785837142180
+      "total": 17,
+      "success": 17,
+      "last": 1785841302422,
+      "lastSuccess": 1785841302422
     },
     "maker/hitam.js": {
       "total": 9,
@@ -8614,10 +8619,10 @@
       "lastSuccess": 1785793564562
     },
     "rpg/rpg-kolab.js": {
-      "total": 43,
-      "success": 43,
-      "last": 1785835759107,
-      "lastSuccess": 1785835759107
+      "total": 44,
+      "success": 44,
+      "last": 1785842715829,
+      "lastSuccess": 1785842715829
     },
     "rpg/rpg-trade.js": {
       "total": 16,
@@ -8626,10 +8631,10 @@
       "lastSuccess": 1785837456252
     },
     "fun/fun-hilih.js": {
-      "total": 4,
-      "success": 4,
-      "last": 1785806391164,
-      "lastSuccess": 1785806391164
+      "total": 5,
+      "success": 5,
+      "last": 1785841775531,
+      "lastSuccess": 1785841775531
     },
     "fun/cekqr.js": {
       "total": 2,
@@ -8656,16 +8661,34 @@
       "lastSuccess": 1785837853324
     },
     "main/main-limit.js": {
-      "total": 3,
-      "success": 3,
-      "last": 1785839565765,
-      "lastSuccess": 1785839565765
+      "total": 4,
+      "success": 4,
+      "last": 1785841470333,
+      "lastSuccess": 1785841470333
     },
     "game/game-buylimit.js": {
       "total": 5,
       "success": 5,
       "last": 1785839576059,
       "lastSuccess": 1785839576059
+    },
+    "owner/owner-addprem.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785841606965,
+      "lastSuccess": 1785841606965
+    },
+    "owner/owner-adddonasi.js": {
+      "total": 22,
+      "success": 22,
+      "last": 1785845145813,
+      "lastSuccess": 1785845145813
+    },
+    "info/ping.js": {
+      "total": 2,
+      "success": 2,
+      "last": 1785844976027,
+      "lastSuccess": 1785844976027
     }
   },
   "msgs": {},
@@ -8677,7 +8700,7 @@
       "anticall": true,
       "restartDB": 0,
       "restrict": false,
-      "totalDonasi": 0,
+      "totalDonasi": 35423,
       "religiousGreetings": {
         "120363037399765440@g.us": "2026-08-02:christian-sunday",
         "120363194958609388@g.us": "2026-08-02:christian-sunday",
@@ -8792,13 +8815,13 @@
   },
   "cooldowns": {
     "228256070533313@lid": {
-      "bunuh": 1785837755467
+      "bunuh": 1785844025016
     },
     "201266647015675@lid": {
       "bunuh": 1785837819546
     },
     "160859846357027@lid": {
-      "bunuh": 1785826643131
+      "bunuh": 1785844210848
     },
     "237507463651454@lid": {
       "bunuh": 1785800278250
