@@ -53,29 +53,65 @@ async function getMp3Url(videoUrl) {
   throw new Error('Gagal mengambil file audio MP3.')
 }
 
+async function getSpotifyMeta(input) {
+  // 1. Ekstrak ID Track jika input berupa Link Spotify
+  let trackMatch = input.match(/track\/([a-zA-Z0-9]+)/i)
+  if (trackMatch) {
+    const trackId = trackMatch[1]
+    const directTrackUrl = `https://open.spotify.com/track/${trackId}`
+    try {
+      const oe = await axios.get(`https://open.spotify.com/oembed?url=${encodeURIComponent(directTrackUrl)}`, { timeout: 8000 })
+      if (oe.data?.title) {
+        return {
+          title: oe.data.title,
+          cover: oe.data.thumbnail_url || '',
+          url: directTrackUrl,
+          isDirectTrack: true
+        }
+      }
+    } catch (e) {}
+    return {
+      title: input,
+      cover: '',
+      url: directTrackUrl,
+      isDirectTrack: true
+    }
+  } else {
+    // 2. Jika input berupa Teks Judul Lagu, cari metadata & cover album musik HD
+    try {
+      const dz = await axios.get(`https://api.deezer.com/search?q=${encodeURIComponent(input)}`, { timeout: 8000 })
+      const t = dz.data?.data?.[0]
+      if (t) {
+        return {
+          title: `${t.artist.name} - ${t.title}`,
+          artist: t.artist.name,
+          cover: t.album?.cover_xl || t.album?.cover_big || t.album?.cover_medium || '',
+          url: '',
+          isDirectTrack: false
+        }
+      }
+    } catch (e) {}
+    return {
+      title: input,
+      artist: 'Spotify Artist',
+      cover: '',
+      url: '',
+      isDirectTrack: false
+    }
+  }
+}
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text) return m.reply(`🎧 *Contoh Penggunaan:*\n• ${usedPrefix + command} https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT\n• ${usedPrefix + command} Alan Walker Faded`)
 
   await m.react('🎧')
 
   try {
-    let isSpotifyUrl = /spotify\.com\/track\/|spotify\.link\//i.test(text)
-    let title = ''
-    let thumbnail = ''
-    let spotifyUrl = isSpotifyUrl ? text : ''
-
-    if (isSpotifyUrl) {
-      try {
-        const oe = await axios.get(`https://open.spotify.com/oembed?url=${encodeURIComponent(text)}`, { timeout: 8000 })
-        if (oe.data?.title) {
-          title = oe.data.title
-          thumbnail = oe.data.thumbnail_url || ''
-        }
-      } catch (e) {}
-    }
-
-    let searchQuery = title || text
-    let search = await yts(searchQuery)
+    // 1. Ambil Metadata & Sampul Album Asli dari Spotify / Music Metadata API
+    let meta = await getSpotifyMeta(text)
+    
+    // 2. Pencarian Audio Stream
+    let search = await yts(meta.title)
     let videos = search.videos
 
     if (!Array.isArray(videos) || videos.length === 0) {
@@ -83,30 +119,35 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     let video = videos[0]
-    let trackTitle = title || video.title
-    let coverArt = thumbnail || video.thumbnail
+    let trackTitle = meta.title || video.title
+    let coverArt = meta.cover || video.thumbnail
+    let artist = meta.artist || video.author?.name || 'Spotify Music'
     let duration = video.timestamp || '-'
-    let channel = video.author?.name || '-'
+
+    // Format info link: Jika pengguna kirim link Spotify, tampilkan Direct Track Link. Jika teks pencarian, tampilkan info pencarian tanpa URL /search/
+    let linkInfoLine = meta.isDirectTrack
+      ? `🔗 *Link Spotify:* ${meta.url}`
+      : `🔎 *Pencarian:* ${text}`
 
     let caption = `
-🎧 *SPOTIFY PLAY / DOWNLOADER*
+🎧 *SPOTIFY DOWNLOADER*
 
 📌 *Judul:* ${trackTitle}
-👤 *Artis / Channel:* ${channel}
+👤 *Artis:* ${artist}
 🍜 *Durasi:* ${duration}
-🔗 *Link:* ${spotifyUrl || video.url}
+${linkInfoLine}
 
 ─────────────────
 🎵 *Sedang mengunduh audio (320kbps MP3)...*
 `.trim()
 
-    // 1. Kirim kartu informasi Spotify
+    // 3. Kirim Kartu Gambar Album Asli Spotify / Musik HD
     await conn.sendMessage(m.chat, {
       image: { url: coverArt },
       caption: caption
     }, { quoted: m })
 
-    // 2. Unduh dan kirim file audio MP3
+    // 4. Unduh & kirimkan file audio MP3 berkualitas tinggi di background
     let mp3Data = await getMp3Url(video.url)
 
     await conn.sendMessage(m.chat, {
