@@ -40,7 +40,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply(`⏳ Guild sedang cooldown. Sisa: ${sisa} detik lagi.`)
   }
 
-  let user = wdb.users[m.sender].rpg
+  let user = wdb.users[m.sender]?.rpg || (getUserRPG(wdb, m.sender).rpg)
   if (user.level < msn.minLevel) return m.reply(`❌ Butuh Player Lv.${msn.minLevel} untuk misi ini.`)
 
   // Inisialisasi jika data korup/null
@@ -50,7 +50,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // UPDATE DATA INTI
   myGuild.contribution[m.sender] = (myGuild.contribution[m.sender] || 0) + msn.contrib
-  myGuild.exp += msn.reward.exp // Mengambil nilai exp dari reward misi
+  myGuild.exp += msn.reward.exp
   myGuild.lastMission = Date.now()
 
   // Distribusi Hadiah
@@ -78,13 +78,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   wdb.guilds[guildName] = myGuild
   saveDB(wdb)
 
+  let executorName = m.pushName || global.db.data.users[m.sender]?.name || conn.getName(m.sender) || 'Player'
+
   let cap = `*───「 GUILD MISSION CLEAR 」───*\n\n`
   cap += `📜 *Misi:* ${msn.name}\n`
-  cap += `👤 *Eksekutor:* @${m.sender.split('@')[0]}\n`
+  cap += `👤 *Eksekutor:* ${executorName} (@${m.sender.split('@')[0]})\n`
   cap += `✨ *Guild Exp:* +${msn.reward.exp}\n`
   cap += `🏆 *Kontribusi:* +${msn.contrib} Pts\n\n`
   cap += `🎁 *HADIAH SEMUA MEMBER:* \n`
-  cap += `• 💰 Money: +Rp ${msn.reward.money.toLocaleString()}\n`
+  cap += `• 💰 Money: +Rp ${msn.reward.money.toLocaleString('id-ID')}\n`
   if (msn.reward.diamond) cap += `• 💎 Diamond: +${msn.reward.diamond}`
 
   return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [m.sender] } })

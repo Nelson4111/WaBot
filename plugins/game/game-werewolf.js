@@ -39,12 +39,6 @@ import {
     run_pagi
 } from '../../lib/werewolf.js'
 
-const resize = async (image, width, height) => {
-    const read = await jimp.read(image);
-    const data = await read.resize(width, height).getBufferAsync(jimp.MIME_JPEG);
-    return data;
-};
-
 let thumb = "https://user-images.githubusercontent.com/72728486/235316834-f9f84ba0-8df3-4444-81d8-db5270995e6d.jpg";
 
 let handler = async (m, { conn, command, usedPrefix, args }) => {
@@ -100,19 +94,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         });
         text += "\nJumlah player minimal adalah 5 dan maximal 15";
         
-        conn.sendMessage(m.chat, {
-            text: text.trim(),
-            contextInfo: {
-                mentionedJid: jids,
-                externalAdReply: {
-                    title: "W E R E W O L F",
-                    mediaType: 1,
-                    renderLargerThumbnail: true,
-                    thumbnail: await resize(thumb, 300, 175),
-                    sourceUrl: "",
-                    mediaUrl: thumb,
-                }
-            }
+        await conn.sendMessage(m.chat, {
+            image: { url: thumb },
+            caption: text.trim(),
+            mentions: jids
         }, { quoted: m });
 
     } else if (value === "start") {
@@ -189,7 +174,11 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         ww[chat].player.forEach(p => {
             text += `(${p.number}) @${p.id.split('@')[0]} ${p.isdead ? `☠️ [${p.role}]` : ""}\n`;
         });
-        conn.sendMessage(m.chat, { text: text, contextInfo: { mentionedJid: jids } }, { quoted: m });
+        await conn.sendMessage(m.chat, {
+            image: { url: thumb },
+            caption: text.trim(),
+            mentions: jids
+        }, { quoted: m });
 
     } else {
         let text = `*⌂ W E R E W O L F - G A M E*\n\n• ww create\n• ww join\n• ww start\n• ww exit\n• ww delete\n• ww player`;
