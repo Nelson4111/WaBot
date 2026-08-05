@@ -186,7 +186,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         if (pList.length === 0) return m.reply('💔 Kamu tidak memiliki pasangan untuk diajak kencan. Lamar seseorang dulu dengan *.lamar @user*!')
 
         let lastKencan = users[sender].lastKencan || 0
-        let cooldown = 86400000 // 24 jam
+        let cooldown = 3600000 // 1 jam
         if (Date.now() - lastKencan < cooldown) {
             let remaining = formatDuration(cooldown - (Date.now() - lastKencan))
             return m.reply(`⏳ Kamu dan pasanganmu baru saja kencan! Tunggu *${remaining}* lagi untuk kencan berikutnya.`)
