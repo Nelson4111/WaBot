@@ -156,12 +156,17 @@ const connectionOptions = {
   },
   auth: {
     creds: state.creds,
-    keys: state.keys,
+    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
   },
   getMessage: async key => {
-    let jid = jidNormalizedUser(key.remoteJid)
-    let msg = await store.loadMessage(jid, key.id)
-    return msg?.message || undefined
+    // Ambil pesan dari database lokal jika tersedia
+    try {
+      const msgs = global.db?.data?.msgs
+      if (msgs && msgs[key.id]) {
+        return msgs[key.id].message
+      }
+    } catch {}
+    return undefined
   },
   generateHighQualityLinkPreview: true,
   patchMessageBeforeSending: (message) => {
