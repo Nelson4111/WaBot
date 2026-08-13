@@ -44,7 +44,7 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@adiwajshing/baileys": "npm:@whiskeysockets/baileys@^6.7.24",
+    "@adiwajshing/baileys": "npm:baileys@^7.0.0-rc14",
     "@bochilteam/scraper": "^5.0.1",
     "@ibaraki-douji/pixivts": "^2.4.1",
     "@vitalets/google-translate-api": "^9.2.0",
