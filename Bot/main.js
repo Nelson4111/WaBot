@@ -159,14 +159,9 @@ const connectionOptions = {
     keys: state.keys,
   },
   getMessage: async key => {
-    // Coba ambil dari database pesan yang tersimpan
-    try {
-      const msgs = global.db?.data?.msgs
-      if (msgs && msgs[key.id]) {
-        return msgs[key.id].message
-      }
-    } catch {}
-    return undefined
+    let jid = jidNormalizedUser(key.remoteJid)
+    let msg = await store.loadMessage(jid, key.id)
+    return msg?.message || undefined
   },
   generateHighQualityLinkPreview: true,
   patchMessageBeforeSending: (message) => {
