@@ -539,7 +539,9 @@ export async function handler(chatUpdate) {
         }
 
         try {
-            if (!opts['noprint']) (await import('./lib/print.js')).default(m, this)
+            if (!opts['noprint'] && m.mtype !== 'protocolMessage' && m.mtype !== 'senderKeyDistributionMessage') {
+                (await import('./lib/print.js')).default(m, this)
+            }
         } catch (e) {
             console.log(m, m.quoted, e)
         }

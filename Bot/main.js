@@ -156,10 +156,7 @@ const connectionOptions = {
   },
   auth: {
     creds: state.creds,
-    keys: makeCacheableSignalKeyStore(state.keys, pino().child({
-      level: 'silent',
-      stream: 'store'
-    })),
+    keys: state.keys,
   },
   getMessage: async key => {
     // Coba ambil dari database pesan yang tersimpan
