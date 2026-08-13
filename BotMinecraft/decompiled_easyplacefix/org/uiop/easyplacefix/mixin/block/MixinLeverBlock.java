@@ -1,0 +1,127 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  net.minecraft.client.Minecraft
+ *  net.minecraft.core.BlockPos
+ *  net.minecraft.core.Direction
+ *  net.minecraft.world.level.LevelReader
+ *  net.minecraft.world.level.block.LeverBlock
+ *  net.minecraft.world.level.block.state.BlockState
+ *  net.minecraft.world.level.block.state.properties.AttachFace
+ *  net.minecraft.world.level.block.state.properties.BlockStateProperties
+ *  net.minecraft.world.level.block.state.properties.BooleanProperty
+ *  net.minecraft.world.level.block.state.properties.Property
+ *  net.minecraft.world.phys.BlockHitResult
+ *  net.minecraft.world.phys.Vec3
+ *  org.spongepowered.asm.mixin.Final
+ *  org.spongepowered.asm.mixin.Mixin
+ *  org.spongepowered.asm.mixin.Shadow
+ */
+package org.uiop.easyplacefix.mixin.block;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.uiop.easyplacefix.IBlock;
+import org.uiop.easyplacefix.ICanUse;
+import org.uiop.easyplacefix.data.RelativeBlockHitResult;
+import org.uiop.easyplacefix.mixin.block.MixinWallMountedBlock;
+import org.uiop.easyplacefix.util.PlayerInputAction;
+
+@Mixin(value={LeverBlock.class})
+public abstract class MixinLeverBlock
+extends MixinWallMountedBlock
+implements IBlock {
+    @Shadow
+    @Final
+    public static BooleanProperty POWERED;
+
+    @Override
+    public Tuple<RelativeBlockHitResult, Integer> getHitResult(BlockState blockState, BlockPos blockPos, BlockState worldBlockState) {
+        Tuple<RelativeBlockHitResult, Integer> tuple;
+        AttachFace blockFace = (AttachFace)blockState.getValue((Property)BlockStateProperties.ATTACH_FACE);
+        Direction direction = (Direction)blockState.getValue((Property)BlockStateProperties.HORIZONTAL_FACING);
+        if (blockState.canSurvive((LevelReader)Minecraft.getInstance().level, blockPos)) {
+            switch (blockFace) {
+                default: {
+                    throw new MatchException(null, null);
+                }
+                case FLOOR: {
+                    tuple = new Tuple<RelativeBlockHitResult, Integer>(new RelativeBlockHitResult(new Vec3(0.5, 1.0, 0.5), Direction.UP, blockPos.below(), false), (Boolean)blockState.getValue((Property)BlockStateProperties.POWERED) != false ? 2 : 1);
+                    break;
+                }
+                case CEILING: {
+                    tuple = new Tuple<RelativeBlockHitResult, Integer>(new RelativeBlockHitResult(new Vec3(0.5, 0.0, 0.5), Direction.DOWN, blockPos.above(), false), (Boolean)blockState.getValue((Property)BlockStateProperties.POWERED) != false ? 2 : 1);
+                    break;
+                }
+                case WALL: {
+                    tuple = new Tuple<RelativeBlockHitResult, Integer>(new RelativeBlockHitResult(switch (direction) {
+                        case Direction.EAST -> new Vec3(1.0, 0.5, 0.5);
+                        case Direction.SOUTH -> new Vec3(0.5, 0.5, 1.0);
+                        case Direction.WEST -> new Vec3(0.0, 0.5, 0.5);
+                        default -> new Vec3(0.5, 0.5, 0.0);
+                    }, direction, blockPos.relative(direction.getOpposite()), false), (Boolean)blockState.getValue((Property)BlockStateProperties.POWERED) != false ? 2 : 1);
+                    break;
+                }
+            }
+        } else {
+            tuple = null;
+        }
+        return tuple;
+    }
+
+    @Override
+    public void afterAction(BlockState stateSchematic, BlockHitResult blockHitResult) {
+        if (stateSchematic.getValue((Property)BlockStateProperties.ATTACH_FACE) == AttachFace.CEILING) {
+            BlockState blockState = Minecraft.getInstance().level.getBlockState(blockHitResult.getBlockPos().above());
+            if (blockState.getBlock() instanceof ICanUse) {
+                PlayerInputAction.SetShift(false);
+            }
+        } else if (stateSchematic.getValue((Property)BlockStateProperties.ATTACH_FACE) == AttachFace.FLOOR) {
+            BlockState blockState = Minecraft.getInstance().level.getBlockState(blockHitResult.getBlockPos().below());
+            if (blockState.getBlock() instanceof ICanUse) {
+                PlayerInputAction.SetShift(false);
+            }
+        } else {
+            BlockState blockState = Minecraft.getInstance().level.getBlockState(blockHitResult.getBlockPos().relative(((Direction)stateSchematic.getValue((Property)BlockStateProperties.HORIZONTAL_FACING)).getOpposite()));
+            if (blockState.getBlock() instanceof ICanUse) {
+                PlayerInputAction.SetShift(false);
+            }
+        }
+    }
+
+    @Override
+    public void firstAction(BlockState stateSchematic, BlockHitResult blockHitResult) {
+        if (stateSchematic.getValue((Property)BlockStateProperties.ATTACH_FACE) == AttachFace.CEILING) {
+            BlockState blockState = Minecraft.getInstance().level.getBlockState(blockHitResult.getBlockPos().above());
+            if (blockState.getBlock() instanceof ICanUse) {
+                PlayerInputAction.SetShift(true);
+            }
+        } else if (stateSchematic.getValue((Property)BlockStateProperties.ATTACH_FACE) == AttachFace.FLOOR) {
+            BlockState blockState = Minecraft.getInstance().level.getBlockState(blockHitResult.getBlockPos().below());
+            if (blockState.getBlock() instanceof ICanUse) {
+                PlayerInputAction.SetShift(true);
+            }
+        } else {
+            BlockState blockState = Minecraft.getInstance().level.getBlockState(blockHitResult.getBlockPos().relative(((Direction)stateSchematic.getValue((Property)BlockStateProperties.HORIZONTAL_FACING)).getOpposite()));
+            if (blockState.getBlock() instanceof ICanUse) {
+                PlayerInputAction.SetShift(true);
+            }
+        }
+    }
+}
+

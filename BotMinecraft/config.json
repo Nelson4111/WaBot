@@ -1,0 +1,112 @@
+{
+  "bot": {
+    "version": false,
+    "viewDistance": "tiny",
+    "chatLengthLimit": 256,
+    "physicsEnabled": true
+  },
+  "reconnect": {
+    "enabled": true,
+    "initialDelayMs": 15000,
+    "maxDelayMs": 300000,
+    "multiplier": 2
+  },
+  "auth": {
+    "enabled": true,
+    "loginTriggerWords": [
+      "please log in",
+      "please login",
+      "register or login",
+      "you need to log in",
+      "authentication required",
+      "/login",
+      "login to play"
+    ],
+    "loginDelayMs": 1500,
+    "loginTimeoutMs": 30000
+  },
+  "antiAfk": {
+    "enabled": true,
+    "intervalSeconds": 30,
+    "actions": ["look", "sneak", "walk"]
+  },
+  "guard": {
+    "enabled": false,
+    "radius": 16,
+    "attackInterval": 1200,
+    "hostileMobs": [
+      "zombie",
+      "skeleton",
+      "creeper",
+      "spider",
+      "cave_spider",
+      "enderman",
+      "witch",
+      "pillager",
+      "vindicator",
+      "phantom",
+      "drowned",
+      "husk",
+      "stray",
+      "blaze",
+      "ghast",
+      "slime",
+      "magma_cube"
+    ]
+  },
+  "farm": {
+    "enabled": true,
+    "waypointName": "farm",
+    "lootRadius": 5,
+    "lootIntervalMs": 3000,
+    "stuckTimeoutMs": 60000,
+    "autoSell": {
+      "enabled": true,
+      "command": "/sellall ENDER_PEARL",
+      "triggerAtStacks": 16,
+      "triggerOnFullInventory": true
+    }
+  },
+  "chat": {
+    "ownerUsername": "Nelson41111",
+    "usePrivateMessage": false,
+    "privateMessageCommand": "/msg",
+    "delayMinMs": 1800,
+    "delayMaxMs": 3500,
+    "maxMessagesPerInterval": 1
+  },
+  "commands": {
+    "prefix": "!"
+  },
+  "autoEat": {
+    "priority": "foodPoints",
+    "startAt": 14,
+    "bannedFood": [],
+    "checkOnItemPickup": true
+  },
+  "health": {
+    "checkIntervalMinutes": 1,
+    "lowHealthThreshold": 5
+  },
+  "stats": {
+    "saveIntervalMinutes": 5
+  },
+  "web": {
+    "enabled": false,
+    "logBufferSize": 500
+  },
+  "inventory": {
+    "trashItems": ["rotten_flesh", "dirt", "cobblestone", "string", "bone", "spider_eye", "arrow"],
+    "protectedItems": ["sword", "armor", "food", "totem", "ender_pearl", "diamond", "netherite"],
+    "swordPriority": ["netherite_sword", "diamond_sword", "iron_sword", "stone_sword", "wooden_sword"],
+    "foodPriority": ["golden_carrot", "cooked_beef", "cooked_porkchop", "cooked_chicken", "bread"],
+    "autoDropIntervalMs": 120000
+  },
+  "storage": {
+    "enabled": false,
+    "chestWaypoint": "storage"
+  },
+  "movement": {
+    "followDistance": 3
+  }
+}

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minecraft Bot Dashboard</title>
+  <meta name="description" content="Real-time dashboard untuk monitoring dan kontrol Minecraft AFK Bot" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">⛏</span>
+        <span class="logo-text">MC Bot</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-tab="dashboard" id="nav-dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-tab="inventory" id="nav-inventory">
+        <span class="nav-icon">🎒</span>
+        <span>Inventory</span>
+      </button>
+      <button class="nav-item" data-tab="waypoints" id="nav-waypoints">
+        <span class="nav-icon">📍</span>
+        <span>Waypoints</span>
+      </button>
+      <button class="nav-item" data-tab="logs" id="nav-logs">
+        <span class="nav-icon">📜</span>
+        <span>Live Logs</span>
+      </button>
+      <button class="nav-item" data-tab="commands" id="nav-commands">
+        <span class="nav-icon">⌨</span>
+        <span>Commands</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="connection-status" id="connectionStatus">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Connecting...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="topbar">
+      <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      <div class="topbar-right">
+        <div class="last-update">Update: <span id="lastUpdate">—</span></div>
+        <button class="btn btn-primary" id="refreshBtn" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+    </header>
+
+    <!-- ─── TAB: Dashboard ─────────────────────────────────────── -->
+    <section class="tab-content active" id="tab-dashboard">
+      <!-- Squad Overview & Bot Roles -->
+      <div class="section" style="margin-bottom: 20px;">
+        <h2 class="section-title">🤖 Multi-Bot Squad Overview</h2>
+        <div class="stats-grid" id="squadGrid">
+          <div class="empty-state">Loading squad status...</div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card" id="card-health">
+          <div class="stat-icon">❤️</div>
+          <div class="stat-body">
+            <div class="stat-label">Health</div>
+            <div class="stat-value" id="statHealth">—</div>
+            <div class="progress-bar"><div class="progress-fill health-fill" id="healthBar"></div></div>
+          </div>
+        </div>
+        <div class="stat-card" id="card-food">
+          <div class="stat-icon">🍖</div>
+          <div class="stat-body">
+            <div class="stat-label">Food</div>
+            <div class="stat-value" id="statFood">—</div>
+            <div class="progress-bar"><div class="progress-fill food-fill" id="foodBar"></div></div>
+          </div>
+        </div>
+        <div class="stat-card" id="card-position">
+          <div class="stat-icon">📍</div>
+          <div class="stat-body">
+            <div class="stat-label">Position</div>
+            <div class="stat-value mono" id="statPosition">—</div>
+          </div>
+        </div>
+        <div class="stat-card" id="card-uptime">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-body">
+            <div class="stat-label">Uptime</div>
+            <div class="stat-value" id="statUptime">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Badges -->
+      <div class="section">
+        <h2 class="section-title">Active Modes</h2>
+        <div class="mode-badges" id="modeBadges">
+          <span class="badge badge-idle">idle</span>
+        </div>
+      </div>
+
+
+
+      <!-- Stats Summary -->
+      <div class="section">
+        <h2 class="section-title">Statistics</h2>
+        <div class="stats-table-grid" id="statsTable">
+          <div class="stats-row"><span>Total Deaths</span><span id="statDeaths">—</span></div>
+          <div class="stats-row"><span>Total Logins</span><span id="statLogins">—</span></div>
+          <div class="stats-row"><span>Total Reconnects</span><span id="statReconnects">—</span></div>
+          <div class="stats-row"><span>Items Looted</span><span id="statItems">—</span></div>
+          <div class="stats-row"><span>Farm Cycles</span><span id="statFarmCycles">—</span></div>
+          <div class="stats-row"><span>Last Seen</span><span id="statLastSeen">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── TAB: Inventory ─────────────────────────────────────── -->
+    <section class="tab-content" id="tab-inventory">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Inventory</h2>
+          <button class="btn btn-sm" onclick="loadInventory()">↻ Refresh</button>
+        </div>
+        <div class="inventory-grid" id="inventoryGrid">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── TAB: Waypoints ─────────────────────────────────────── -->
+    <section class="tab-content" id="tab-waypoints">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Waypoints</h2>
+          <button class="btn btn-sm" onclick="loadWaypoints()">↻ Refresh</button>
+        </div>
+        <div class="waypoints-list" id="waypointsList">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── TAB: Live Logs ─────────────────────────────────────── -->
+    <section class="tab-content" id="tab-logs">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Live Logs <span style="background: #27272a; color: #a1a1aa; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 500;">🧹 Auto-Clean: 200 Logs Max</span></h2>
+          <div class="log-controls">
+            <label class="checkbox-label">
+              <input type="checkbox" id="autoScrollLogs" checked /> Auto-scroll
+            </label>
+            <select id="logLevelFilter" onchange="filterLogs()">
+              <option value="all">All Levels</option>
+              <option value="error">Error</option>
+              <option value="warn">Warn</option>
+              <option value="info">Info</option>
+              <option value="success">Success</option>
+              <option value="debug">Debug</option>
+            </select>
+            <button class="btn btn-sm btn-danger" onclick="clearLogs()">🗑 Clear</button>
+          </div>
+        </div>
+        <div class="log-container" id="logContainer"></div>
+      </div>
+    </section>
+
+    <!-- ─── TAB: Commands ─────────────────────────────────────── -->
+    <section class="tab-content" id="tab-commands">
+      <div class="section">
+        <h2 class="section-title">Send Command</h2>
+        <div class="command-input-group">
+          <input type="text" id="commandInput" class="command-input" placeholder="!status, !farm, !goto 100 -200..." />
+          <button class="btn btn-primary" id="sendCommandBtn" onclick="sendCommand()">Send ↵</button>
+        </div>
+        <div class="command-response" id="commandResponse"></div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Quick Commands (Otomatis Ter-update)</h2>
+        <div class="quick-commands" id="dynamicQuickCommands">
+          <button class="quick-cmd" onclick="quickCmd('!status')">📊 Status</button>
+          <button class="quick-cmd" onclick="quickCmd('!inventory')">🎒 Inventory</button>
+          <button class="quick-cmd" onclick="quickCmd('!farm')">🌾 Toggle Farm</button>
+          <button class="quick-cmd" onclick="quickCmd('!farm')">🌾 Start Farm Auto</button>
+          <button class="quick-cmd" onclick="quickCmd('!job farm1')">🌾 Job: Farm1 (Crop)</button>
+          <button class="quick-cmd" onclick="quickCmd('!job farm2')">⚔️ Job: Farm2 (Mob)</button>
+          <button class="quick-cmd" onclick="quickCmd('!job farm3')">⛏️ Job: Farm3 (Stone)</button>
+          <button class="quick-cmd" onclick="quickCmd('!stop')">⏹ Stop All</button>
+          <button class="quick-cmd" onclick="quickCmd('!eat')">🍖 Force Eat</button>
+          <button class="quick-cmd" onclick="quickCmd('!afk')">💤 Toggle AFK</button>
+          <button class="quick-cmd" onclick="quickCmd('!waypoint list')">📍 List Waypoints</button>
+          <button class="quick-cmd" onclick="quickCmd('!whitelist list')">📋 Whitelist</button>
+          <button class="quick-cmd" onclick="quickCmd('!help')">❓ Help</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Command Reference</h2>
+        <div class="cmd-reference">
+          <div class="cmd-ref-item"><code>!status</code><span>Tampilkan status bot</span></div>
+          <div class="cmd-ref-item"><code>!goto &lt;x&gt; &lt;z&gt; [y]</code><span>Navigasi ke koordinat</span></div>
+          <div class="cmd-ref-item"><code>!stop</code><span>Hentikan semua aktivitas</span></div>
+          <div class="cmd-ref-item"><code>!farm</code><span>Toggle farming mode</span></div>
+          <div class="cmd-ref-item"><code>!guard</code><span>Toggle guard mode</span></div>
+          <div class="cmd-ref-item"><code>!eat</code><span>Paksa makan sekarang</span></div>
+          <div class="cmd-ref-item"><code>!inventory</code><span>Tampilkan inventory</span></div>
+          <div class="cmd-ref-item"><code>!waypoint add/go/list/delete &lt;nama&gt;</code><span>Kelola waypoint</span></div>
+          <div class="cmd-ref-item"><code>!whitelist add/remove/list &lt;player&gt;</code><span>Kelola whitelist</span></div>
+          <div class="cmd-ref-item"><code>!say &lt;pesan&gt;</code><span>Bot kirim chat</span></div>
+          <div class="cmd-ref-item"><code>!afk</code><span>Toggle AFK mode</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal Dialog: Target Bot Selection for Commands -->
+  <div id="commandTargetModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 9999;">
+    <div class="modal-content" style="background: #18181b; border: 1px solid #3f3f46; border-radius: 12px; padding: 20px; width: 380px; max-width: 90vw; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #f4f4f5; margin: 0;">⚡ Pilih Target Bot</h3>
+        <button onclick="closeCommandModal()" style="background: #27272a; border: 1px solid #3f3f46; color: #f4f4f5; border-radius: 6px; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+      </div>
+      <p style="font-size: 13px; color: #a1a1aa; margin-bottom: 16px;">Command: <strong id="modalCommandText" style="color: #60a5fa; font-family: monospace;">!status</strong></p>
+      <div id="modalTargetButtons" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Dynamic Target Buttons -->
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

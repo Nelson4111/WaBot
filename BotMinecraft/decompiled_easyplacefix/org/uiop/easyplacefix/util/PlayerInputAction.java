@@ -1,0 +1,23 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  net.minecraft.client.Minecraft
+ *  net.minecraft.network.protocol.Packet
+ *  net.minecraft.network.protocol.game.ServerboundPlayerInputPacket
+ *  net.minecraft.world.entity.player.Input
+ */
+package org.uiop.easyplacefix.util;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
+import net.minecraft.world.entity.player.Input;
+
+public class PlayerInputAction {
+    public static void SetShift(boolean isPressed) {
+        Input playerInput = Minecraft.getInstance().player.getLastSentInput();
+        Minecraft.getInstance().getConnection().send((Packet)new ServerboundPlayerInputPacket(new Input(playerInput.forward(), playerInput.backward(), playerInput.left(), playerInput.right(), playerInput.jump(), isPressed, playerInput.sprint())));
+    }
+}
+

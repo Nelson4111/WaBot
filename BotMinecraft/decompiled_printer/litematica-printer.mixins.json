@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "me.aleksilassila.litematica.printer.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AxeItemAccessor",
+    "ConfigsMixin",
+    "GuiConfigsMixin",
+    "InputHandlerMixin",
+    "MixinMinecraftClient",
+    "PlayerMoveC2SPacketMixin",
+    "MixinBlock"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,381 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   DESIGN TOKENS — MoneyTracking Neo-Brutalism
+   ============================================ */
+:root {
+  /* Colors */
+  --color-bg: #F5F5E8;
+  --color-surface: #FFFFFF;
+  --color-primary: #AADD00;
+  --color-primary-dark: #88BB00;
+  --color-secondary: #FF4D8D;
+  --color-secondary-dark: #E0005A;
+  --color-black: #111111;
+  --color-border: #111111;
+  --color-text: #111111;
+  --color-muted: #666666;
+  --color-income: #16a34a;
+  --color-expense: #dc2626;
+  --color-transfer: #2563eb;
+  --color-warning: #f59e0b;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+
+  /* Shadows */
+  --shadow-sm: 2px 2px 0px #111111;
+  --shadow-md: 4px 4px 0px #111111;
+  --shadow-lg: 6px 6px 0px #111111;
+  --shadow-xl: 8px 8px 0px #111111;
+
+  /* Borders */
+  --border: 2px solid #111111;
+  --border-thick: 3px solid #111111;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+
+  /* Spacing */
+  --nav-height: 72px;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer base {
+  /* Hapus outline default browser yang merusak estetika Neo-Brutalism */
+  *:focus {
+    outline: none !important;
+  }
+  *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  
+  /* Hierarchy Tipografi (Sesuai panduan UI_DESIGN_SYSTEM) */
+  h1 {
+    font-size: 1.5rem; /* text-2xl */
+    line-height: 2rem;
+    font-weight: 800; /* font-extrabold */
+  }
+  h2 {
+    font-size: 1.25rem; /* text-xl */
+    line-height: 1.75rem;
+    font-weight: 800;
+  }
+  h3 {
+    font-size: 1.125rem; /* text-lg */
+    line-height: 1.75rem;
+    font-weight: 700; /* font-bold */
+  }
+  h4 {
+    font-size: 1rem; /* text-base */
+    line-height: 1.5rem;
+    font-weight: 700;
+  }
+  p {
+    font-size: 0.875rem; /* text-sm */
+    line-height: 1.25rem;
+    font-weight: 500; /* font-medium */
+  }
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* Subtle grid background */
+  background-image: 
+    linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Brutal Cards */
+.brutal-card {
+  background: var(--color-surface);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.brutal-card-sm {
+  background: var(--color-surface);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.brutal-card-lg {
+  background: var(--color-surface);
+  border: var(--border-thick);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Brutal Buttons */
+.brutal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  border: var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  padding: 10px 20px;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.brutal-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.brutal-btn-primary {
+  background: var(--color-primary);
+  color: var(--color-black);
+}
+
+.brutal-btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.brutal-btn-secondary {
+  background: var(--color-secondary);
+  color: #FFFFFF;
+}
+
+.brutal-btn-secondary:hover {
+  background: var(--color-secondary-dark);
+}
+
+.brutal-btn-outline {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.brutal-btn-outline:hover {
+  background: var(--color-bg);
+}
+
+.brutal-btn-black {
+  background: var(--color-black);
+  color: #FFFFFF;
+}
+
+.brutal-btn-danger {
+  background: #ef4444;
+  color: #FFFFFF;
+}
+
+.brutal-btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.brutal-btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.brutal-btn-lg:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+/* Brutal Inputs */
+.brutal-input {
+  width: 100%;
+  background: var(--color-surface);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--color-text);
+  outline: none;
+  transition: box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.brutal-input:focus {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.brutal-input::placeholder {
+  color: var(--color-muted);
+}
+
+/* Brutal Badge */
+.brutal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+/* Income / Expense */
+.text-income { color: var(--color-income); }
+.text-expense { color: var(--color-expense); }
+.text-transfer { color: var(--color-transfer); }
+
+.bg-income { background: #dcfce7; }
+.bg-expense { background: #fee2e2; }
+.bg-transfer { background: #dbeafe; }
+.bg-primary { background: var(--color-primary); }
+.bg-secondary { background: var(--color-secondary); }
+
+/* Brutal Shadow Sizes */
+.shadow-brutal-sm { box-shadow: var(--shadow-sm); }
+.shadow-brutal-md { box-shadow: var(--shadow-md); }
+.shadow-brutal-lg { box-shadow: var(--shadow-lg); }
+.shadow-brutal-xl { box-shadow: var(--shadow-xl); }
+
+/* Progress Bar */
+.brutal-progress {
+  width: 100%;
+  height: 12px;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.brutal-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.brutal-progress-fill.warning { background: var(--color-warning); }
+.brutal-progress-fill.danger { background: var(--color-expense); }
+
+/* Tabs */
+.brutal-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-muted);
+  transition: all 0.1s;
+}
+
+.brutal-tab.active {
+  background: var(--color-primary);
+  color: var(--color-black);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   SCROLLBAR (custom minimal)
+   ============================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #999; }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.animate-slide-up { animation: slideUp 0.3s ease forwards; }
+.animate-fade-in  { animation: fadeIn 0.2s ease forwards; }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #e8e8d8 25%, #f0f0e0 50%, #e8e8d8 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ============================================
+   MOBILE-FIRST UTILITIES
+   ============================================ */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+.mobile-content { padding-bottom: calc(var(--nav-height) + 16px); }
+
+.page-container {
+  padding-left: 16px;
+  padding-right: 16px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    padding-left: 32px;
+    padding-right: 32px;
+    max-width: 1200px;
+  }
+}
+
+/* Touch targets — minimum 44px */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
