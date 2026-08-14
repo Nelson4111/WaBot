@@ -1,4 +1,4 @@
-import { areJidsSameUser } from '@adiwajshing/baileys'
+import { areJidsSameUser } from '@whiskeysockets/baileys'
 
 let handler = async (m, { conn, participants, isAdmin, isBotAdmin }) => {
   if (!m.isGroup) throw '❌ Perintah ini hanya untuk grup!'

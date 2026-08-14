@@ -2,7 +2,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
-import { generateWAMessageFromContent, proto } from '@adiwajshing/baileys'
+import { generateWAMessageFromContent, proto } from '@whiskeysockets/baileys'
 
 const formatDuration = (ms) => {
     let seconds = Math.floor(ms / 1000)

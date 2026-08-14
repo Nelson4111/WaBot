@@ -1,4 +1,4 @@
-import { areJidsSameUser } from '@adiwajshing/baileys'
+import { areJidsSameUser } from '@whiskeysockets/baileys'
 import fetch from 'node-fetch'
 import { Sticker } from 'wa-sticker-formatter'
 

@@ -39,7 +39,7 @@ const {
   makeInMemoryStore,
   makeCacheableSignalKeyStore,
   Browsers
-} = await import('@adiwajshing/baileys')
+} = await import('@whiskeysockets/baileys')
 import { Low, JSONFile } from 'lowdb'
 import { makeWASocket, protoType, serialize } from './lib/simple.js'
 import cloudDBAdapter from './lib/cloudDBAdapter.js'

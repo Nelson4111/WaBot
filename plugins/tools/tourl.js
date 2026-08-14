@@ -3,7 +3,7 @@ import FormData from "form-data"
 import { fileTypeFromBuffer } from "file-type"
 import axios from "axios"
 
-import { proto, generateWAMessageFromContent } from "@adiwajshing/baileys"
+import { proto, generateWAMessageFromContent } from "@whiskeysockets/baileys"
 
 const API_KEY = "AIzaBj7z2z3xBjsk"
 

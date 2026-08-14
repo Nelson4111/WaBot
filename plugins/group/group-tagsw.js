@@ -1,4 +1,4 @@
-import * as baileys from "@adiwajshing/baileys";
+import * as baileys from "@whiskeysockets/baileys";
 import crypto from "node:crypto";
 import { Readable, PassThrough } from 'stream';
 import ffmpeg from 'fluent-ffmpeg';
@@ -94,9 +94,9 @@ let Izumi = async (m, { conn, text }) => {
 
 /**
  * Send WhatsApp status on group.
- * @param {import("@adiwajshing/baileys").WASocket} conn
+ * @param {import("@whiskeysockets/baileys").WASocket} conn
  * @param {string} jid
- * @param {import("@adiwajshing/baileys").AnyMessageContent} content
+ * @param {import("@whiskeysockets/baileys").AnyMessageContent} content
  */
 async function groupStatus(conn, jid, content) {
   const { backgroundColor } = content;

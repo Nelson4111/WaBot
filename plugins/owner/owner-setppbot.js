@@ -1,5 +1,5 @@
 import { createRequire } from 'module';
-const { S_WHATSAPP_NET } =  (await import('@adiwajshing/baileys')).default
+const { S_WHATSAPP_NET } =  (await import('@whiskeysockets/baileys')).default
 const require = createRequire(import.meta.url);
 
 const jimp_1 = require('jimp')

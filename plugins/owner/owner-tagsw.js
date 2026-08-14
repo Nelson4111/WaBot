@@ -18,7 +18,7 @@ https://whatsapp.com/channel/0029VaoJb11LikgEpNpBty0e/2181
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import { fileTypeFromBuffer } from 'file-type';
-const baileys = (await import("@adiwajshing/baileys")).default;
+const baileys = (await import("@whiskeysockets/baileys")).default;
 
 // **FIXED Function uploadImage**
 /**

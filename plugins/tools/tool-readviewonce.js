@@ -1,4 +1,4 @@
-import { downloadContentFromMessage } from '@adiwajshing/baileys'
+import { downloadContentFromMessage } from '@whiskeysockets/baileys'
 
 let handler = async (m, { conn }) => {
   if (!m.quoted) throw 'Send/Reply Images with the caption *.readviewonve*'

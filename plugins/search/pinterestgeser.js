@@ -9,7 +9,7 @@ const {
   proto,
   generateWAMessageFromContent,
   generateWAMessageContent
-} = (await import('@adiwajshing/baileys')).default
+} = (await import('@whiskeysockets/baileys')).default
 
 async function pinterestApi(query) {
   const { data } = await axios.get(

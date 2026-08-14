@@ -3,7 +3,7 @@ import {
   generateWAMessage,
   generateWAMessageFromContent,
   jidNormalizedUser
-} from "@adiwajshing/baileys"
+} from "@whiskeysockets/baileys"
 import { randomBytes } from "crypto"
 
 function shuffle(array) {

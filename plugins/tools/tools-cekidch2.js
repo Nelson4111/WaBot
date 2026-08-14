@@ -5,7 +5,7 @@
 ✍️ Convert By ZenzXD
 */
 
-const { proto } = (await import('@adiwajshing/baileys')).default;
+const { proto } = (await import('@whiskeysockets/baileys')).default;
 
 const handler = async (m, { text, command }) => {
   if (!text) return m.reply('Masukkan link channel-nya.');
