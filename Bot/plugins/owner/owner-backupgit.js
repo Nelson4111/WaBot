@@ -16,8 +16,8 @@ export async function runGitBackup() {
   console.log(`[GitHub Backup] Memulai auto backup (${timestamp})...`)
 
   try {
-    // 1. Git add seluruh perubahan file/database
-    await execPromise('git add -A')
+    // 1. Git add khusus database saja
+    await execPromise('git add database.json')
     
     // 2. Git commit (abaikan jika tidak ada perubahan baru)
     try {
