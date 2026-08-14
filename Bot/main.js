@@ -357,10 +357,22 @@ if (!opts['test']) {
   (await import('./server.js')).default(PORT)
   setInterval(async () => {
     if (global.db.data) await global.db.write().catch(console.error)
-    // if (opts['autocleartmp']) try {
     clearTmp()
-    //  } catch (e) { console.error(e) }
   }, 60 * 1000)
+
+  // Auto Bio Feature
+  setInterval(async () => {
+    if (global.opts['autobio']) {
+      try {
+        let uptime = process.uptime() * 1000
+        let d = Math.floor(uptime / 86400000)
+        let h = Math.floor(uptime / 3600000) % 24
+        let m = Math.floor(uptime / 60000) % 60
+        let status = `🤖 Bot aktif selama: ${d > 0 ? d + 'h ' : ''}${h}j ${m}m | Mode: ${global.opts['self'] ? 'Private' : 'Public'} | DB: ${Object.keys(global.db.data?.users || {}).length} Users`
+        await global.conn.updateProfileStatus(status)
+      } catch (e) {}
+    }
+  }, 60000) // Update every 1 minute
 }
 
 function clearTmp() {

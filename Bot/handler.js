@@ -600,7 +600,7 @@ export async function participantsUpdate({ id, participants, action }) {
     }  
     break
     case 'remove':
-    if (chat.welcome) {
+    if (chat.leave) {
         let groupMetadata = await this.groupMetadata(id).catch(_ => ({})) || (conn.chats[id] || {}).metadata
         for (let user of participants) {
             let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
