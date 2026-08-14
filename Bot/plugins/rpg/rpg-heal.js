@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { BANK_TIERS } from './rpg-bank.js'
+import { BANK_TIERS } from './bank.js'
 
 let handler = async (m, { conn, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -7,9 +7,11 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
 
   if(!user.maxDarahBonus) user.maxDarahBonus = 0
+  if(!user.darah) user.darah = 100
+  if(!user.riwayat) user.riwayat = []
 
   let armorLvl = user.armor || 0
-  let maxHP = 100 + (armorLvl * 20) + user.maxDarahBonus
+  let maxHP = 100 + (armorLvl * 20) + user.maxDarahBonus // SAMA KAYA GYM & DUNGEON
 
   if (user.darah >= maxHP) {
     return m.reply(`❤️ Darahmu sudah penuh! (*${user.darah}/${maxHP} HP*)`)
@@ -18,7 +20,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   let butuhHP = maxHP - user.darah
   let biaya = butuhHP * 1000
   let tier = BANK_TIERS[user.bankTier || 0]
-  let asuransi = tier.asuransi
+  let asuransi = tier.asuransi || 0
   let biayaBayar = Math.floor(biaya * (1 - asuransi))
 
   // Prioritas: uang saku dulu, baru bank
@@ -50,5 +52,4 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 handler.help = ['heal']
 handler.tags = ['rpg']
 handler.command = ['heal']
-
 export default handler

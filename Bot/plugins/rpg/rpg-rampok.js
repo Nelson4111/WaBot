@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { BANK_TIERS } from './rpg-bank.js'
+import { BANK_TIERS } from './bank.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     const wdb = loadDB()
@@ -7,10 +7,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     if (!userRPG) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
 
-    let cooldown = 600000
+    let cooldown = 86400000 // 1 hari
     if (userRPG.lastrob === undefined) userRPG.lastrob = 0
     let timers = (cooldown - (new Date() - userRPG.lastrob))
-    if (new Date() - userRPG.lastrob < cooldown) return m.reply(`🕵️ Tunggu selama *${Math.ceil(timers / 60000)} menit* lagi.`)
+    if (new Date() - userRPG.lastrob < cooldown) {
+        let jam = Math.floor(timers / 3600000)
+        let menit = Math.floor((timers % 3600000) / 60000)
+        return m.reply(`🕵️ Tunggu selama *${jam} jam ${menit} menit* lagi untuk merampok.`)
+    }
 
     let who = m.quoted? m.quoted.sender : false
     if (!who) return m.reply(`Balas (reply) pesan orang yang ingin dirampok!`)
@@ -29,7 +33,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if(target.kartuBeku) return m.reply('❌ Target kartunya sedang beku.')
 
     let targetBank = target.bank || 0
-    let userMoney = wdb.money[m.sender] || 0
+    let userBank = userRPG.bank || 0 // AMBIL DARI BANK BUKAN UANG SAKU
     if (targetBank < 50000) return m.reply('Bank target terlalu sedikit. Minimal Rp 50.000')
 
     try {
@@ -45,7 +49,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             let robAmount = Math.floor(targetBank * persenAmbil * (1 - tierTarget.asuransi))
 
             target.bank -= robAmount
-            userRPG.bank += robAmount
+            userRPG.bank += robAmount // LANGSUNG MASUK BANK
 
             // TRACKING CRIME
             if(!wdb.crime) wdb.crime = {}
@@ -56,12 +60,20 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             target.riwayat.unshift(`-Rp ${robAmount.toLocaleString()} Dirampok @${m.sender.split('@')[0]}`)
             userRPG.riwayat.unshift(`+Rp ${robAmount.toLocaleString()} Rampok @${who.split('@')[0]}`)
 
-            m.reply(`*BERHASIL!* 🕵️\nKamu merampok *@${who.split('@')[0]}* sebesar *Rp ${robAmount.toLocaleString()}* dari bank!\nKeamanan: ${tierTarget.fasilitas.find(f=>f.includes('Penjaga'))}`, null, { mentions: [who] })
+            m.reply(`*BERHASIL!* 🕵️💰\nKamu merampok *@${who.split('@')[0]}* sebesar *Rp ${robAmount.toLocaleString()}*\n\n💳 *Uang langsung masuk ke Saldo Bank kamu*\n🔒 Keamanan Target: ${tierTarget.fasilitas.find(f=>f.includes('Penjaga'))}`, null, { mentions: [who] })
         } else {
-            // GAGAL - DENDA 20% dari uang saku
-            let denda = Math.floor(userMoney * 0.2)
-            wdb.money[m.sender] -= denda
-            m.reply(`🚓 *TERTANGKAP!* 👮\nKamu gagal merampok dan didenda sebesar *Rp ${denda.toLocaleString()}*.`)
+            // GAGAL - DENDA 50% DARI SALDO BANK SENDIRI MASUK KE BANK TARGET
+            let denda = Math.floor(userBank * 0.5)
+            if(denda < 10000) denda = 10000 // minimal denda 10k
+            if(userBank < denda) return m.reply(`❌ Saldo bank kamu tidak cukup untuk denda. Butuh Rp ${denda.toLocaleString()}`)
+
+            userRPG.bank -= denda // POTONG DARI BANK KAMU
+            target.bank += denda // MASUK KE BANK TARGET
+
+            target.riwayat.unshift(`+Rp ${denda.toLocaleString()} Denda Rampok dari @${m.sender.split('@')[0]}`)
+            userRPG.riwayat.unshift(`-Rp ${denda.toLocaleString()} Denda Gagal Rampok @${who.split('@')[0]}`)
+
+            m.reply(`🚓 *TERTANGKAP!* 👮\nKamu gagal merampok dan didenda *50% dari saldo bank = Rp ${denda.toLocaleString()}*\n\n💳 *Denda langsung masuk ke Saldo Bank @${who.split('@')[0]}*\n🕵️ Cooldown reset 1 hari.`, null, { mentions: [who] })
         }
 
         saveDB(wdb)

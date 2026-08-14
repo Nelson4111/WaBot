@@ -83,7 +83,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   let args = text.toLowerCase().split(' ')
   let jenis = args[0]
-  if(bibit[args[0] + ' ' + args[1]]) jenis = args[0] + ' ' + args[1]
+  if(bibit[args[0] + ' ' + args[1]]) jenis = args[0] + ' + args[1]
   let slotTarget = args[args.length - 1]
   let isAll = slotTarget === 'all'
 

@@ -1,21 +1,21 @@
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 
 export const BANK_TIERS = {
-  0: { name: 'Basic Card', limit: 10000000, bunga: 0.002, price: 0, biayaBulanan: 0, color: '⬜', keamanan: 1, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa'] },
-  1: { name: 'Bronze Card', limit: 25000000, bunga: 0.003, price: 5000000, biayaBulanan: 2500000, color: '🟫', keamanan: 2, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS'] },
-  2: { name: 'Red Card', limit: 50000000, bunga: 0.004, price: 12500000, biayaBulanan: 6250000, color: '🟥', keamanan: 3, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS', 'Riwayat Transaksi'] },
-  3: { name: 'Orange Card', limit: 100000000, bunga: 0.005, price: 25000000, biayaBulanan: 12500000, color: '🟧', keamanan: 4, asuransi: 0.1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Riwayat Transaksi', 'Asuransi 10%'] },
-  4: { name: 'Yellow Card', limit: 250000000, bunga: 0.006, price: 50000000, biayaBulanan: 25000000, color: '🟨', keamanan: 5, asuransi: 0.2, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 20%'] },
-  5: { name: 'Green Card', limit: 500000000, bunga: 0.007, price: 125000000, biayaBulanan: 62500000, color: '🟩', keamanan: 6, asuransi: 0.3, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 30%', 'Transfer Bank', 'Fast Track', 'Digital Access'] },
-  6: { name: 'Blue Card', limit: 1000000000, bunga: 0.008, price: 250000000, biayaBulanan: 125000000, color: '🟦', keamanan: 7, asuransi: 0.4, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv1', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 40%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access'] },
-  7: { name: 'Purple Card', limit: 5000000000, bunga: 0.009, price: 500000000, biayaBulanan: 250000000, color: '🟪', keamanan: 8, asuransi: 0.5, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv2', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 50%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP'] },
-  8: { name: 'Black Card', limit: 10000000000, bunga: 0.01, price: 2500000000, biayaBulanan: 1250000000, color: '⬛', keamanan: 9, asuransi: 0.6, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv3', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 60%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi'] },
-  9: { name: 'Platinum Card', limit: 25000000000, bunga: 0.012, price: 5000000000, biayaBulanan: 2500000000, color: '🔲', keamanan: 12, asuransi: 0.9, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv4', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 90%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi'] },
-  10: { name: 'Premium Card', limit: 50000000000, bunga: 0.014, price: 12500000000, biayaBulanan: 6250000000, color: '🔳', keamanan: 11, asuransi: 0.8, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv5', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 80%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif'] },
-  11: { name: 'Royal Card', limit: 100000000000, bunga: 0.016, price: 25000000000, biayaBulanan: 12500000000, color: '👑', keamanan: 10, asuransi: 0.7, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Polisi', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 70%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan'] },
-  12: { name: 'Spiral Card', limit: 250000000000, bunga: 0.018, price: 50000000000, biayaBulanan: 25000000000, color: '🌀', keamanan: 13, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Tentara', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank'] },
-  13: { name: 'Crystal Card', limit: 500000000000, bunga: 0.02, price: 125000000000, biayaBulanan: 62500000000, color: '💠', keamanan: 14, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Pasukan Khusus', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal'] },
-  14: { name: 'Cosmic Card', limit: 1000000000000, bunga: 0.02, price: 250000000000, biayaBulanan: 125000000000, color: '🌐', keamanan: 15, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] }
+ 0: { name: 'Basic Card', limit: 10_000_000, bunga: 0.002, price: 0, biayaBulanan: 0, color: '⬜', keamanan: 1, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa'] },
+ 1: { name: 'Bronze Card', limit: 25_000_000, bunga: 0.003, price: 5_000_000, biayaBulanan: 250_000, color: '🟫', keamanan: 2, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS'] },
+ 2: { name: 'Red Card', limit: 50_000_000, bunga: 0.004, price: 12_500_000, biayaBulanan: 625_000, color: '🟥', keamanan: 3, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS', 'Riwayat Transaksi'] },
+ 3: { name: 'Orange Card', limit: 100_000_000, bunga: 0.005, price: 25_000_000, biayaBulanan: 1_250_000, color: '🟧', keamanan: 4, asuransi: 0.1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Riwayat Transaksi', 'Asuransi 10%'] },
+ 4: { name: 'Yellow Card', limit: 250_000_000, bunga: 0.006, price: 50_000_000, biayaBulanan: 2_500_000, color: '🟨', keamanan: 5, asuransi: 0.2, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 20%'] },
+ 5: { name: 'Green Card', limit: 500_000_000, bunga: 0.007, price: 125_000_000, biayaBulanan: 6_250_000, color: '🟩', keamanan: 6, asuransi: 0.3, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 30%', 'Transfer Bank', 'Fast Track', 'Digital Access'] },
+ 6: { name: 'Blue Card', limit: 1_000_000_000, bunga: 0.008, price: 250_000_000, biayaBulanan: 12_500_000, color: '🟦', keamanan: 7, asuransi: 0.4, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv1', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 40%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access'] },
+ 7: { name: 'Purple Card', limit: 5_000_000_000, bunga: 0.009, price: 500_000_000, biayaBulanan: 25_000_000, color: '🟪', keamanan: 8, asuransi: 0.5, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv2', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 50%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP'] },
+ 8: { name: 'Black Card', limit: 10_000_000_000, bunga: 0.01, price: 2_500_000_000, biayaBulanan: 125_000_000, color: '⬛', keamanan: 9, asuransi: 0.6, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv3', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 60%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi'] },
+ 9: { name: 'Platinum Card', limit: 25_000_000_000, bunga: 0.012, price: 5_000_000_000, biayaBulanan: 250_000_000, color: '🔲', keamanan: 12, asuransi: 0.9, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv4', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 90%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi'] },
+ 10: { name: 'Premium Card', limit: 50_000_000_000, bunga: 0.014, price: 12_500_000_000, biayaBulanan: 625_000_000, color: '🔳', keamanan: 11, asuransi: 0.8, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv5', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 80%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif'] },
+ 11: { name: 'Royal Card', limit: 100_000_000_000, bunga: 0.016, price: 25_000_000_000, biayaBulanan: 1_250_000_000, color: '👑', keamanan: 10, asuransi: 0.7, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Polisi', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 70%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan'] },
+ 12: { name: 'Spiral Card', limit: 250_000_000_000, bunga: 0.018, price: 50_000_000_000, biayaBulanan: 2_500_000_000, color: '🌀', keamanan: 13, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Tentara', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank'] },
+ 13: { name: 'Crystal Card', limit: 500_000_000_000, bunga: 0.02, price: 125_000_000_000, biayaBulanan: 6_250_000_000, color: '💠', keamanan: 14, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Pasukan Khusus', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal'] },
+ 14: { name: 'Cosmic Card', limit: 1_000_000_000_000, bunga: 0.02, price: 250_000_000_000, biayaBulanan: 12_500_000_000, color: '🌐', keamanan: 15, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] }
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -82,7 +82,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let sisaMembership = Math.max(0, Math.ceil((2592000000 - (now - userRPG.lastMembership)) / satuHari))
 
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
-    if(tier.fasilitas.includes('Lounge VIP')) cap += `✧ Selamat Datang di Lounge VIP ✧\n Nikmati kenyamanan eksklusif anda\n\n`
+    if(tier.fasilitas.includes('Lounge VIP')) cap += `✧ Selamat Datang di Lounge VIP ✧\n Nikmati kenyamanan eksklusif anda\n`
     cap += `◈ ${tier.color} ${tier.name.toUpperCase()} ${userRPG.kartuBeku? '❌ BEKU':''} ◈\n`
     cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
     cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
@@ -97,20 +97,44 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       cap += `◈ FASILITAS EKSKLUSIF ◈\n`
       if(tier.fasilitas.includes('Digital Access')) cap += ` ✦ Digital Access\n`
       if(tier.fasilitas.includes('Lounge VIP')) cap += ` ✦ Lounge VIP\n`
-      if(tier.fasilitas.includes('Mahkota Nasabah')) cap += ` ✦ Mahkota Nasabah\n`
+      if(tier.fasilitas.includes('Mahkota Kehormatan')) cap += ` ✦ Mahkota Kehormatan\n`
       if(tier.fasilitas.includes('Gratis Makanan & Minuman')) cap += ` ✦ Gratis Makanan & Minuman\n`
       cap += `\n`
     }
     cap += `◈ Total Bunga : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n\n`
     if(userRPG.kartuBeku) cap += `🚨 AKSI DIBUTUHKAN\n Isi saldo Rp ${tier.biayaBulanan.toLocaleString()} untuk \n mengaktifkan kartu otomatis\n\n❌ FITUR NONAKTIF\n Bunga • Transfer • Pinjaman • Heal Bank\n`
     if(userRPG.pinjaman.jumlah > 0) cap += `📌 Pinjaman Aktif : Rp ${userRPG.pinjaman.jumlah.toLocaleString()}\n\n`
-    cap += `─━━━━━━━━━─\n📌.bank simpan | tarik | tf | pinjam | bayar | riwayat`
+    cap += `─━━━━━━━━━─\n📌.bank simpan | tarik | tf | pinjam | bayar | riwayat | card | kartu`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
   }
 
-  if(userRPG.kartuBeku && action!== 'tarik') return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Kartu kamu sedang BEKU\nIsi saldo untuk aktif otomatis\n\n─━━━━━━━━━─`)
+  if(userRPG.kartuBeku && action!== 'tarik') return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Kartu kamu sedang BEKU\nIsi saldo untuk aktif otomatis\n─━━━━━━━━━─`)
 
   let userMoney = wdb.money[m.sender] || 0
+
+  // LIST KARTU - FASILITAS KE BAWAH
+  if (action === 'card' || action === 'kartu') {
+    let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n◈ DAFTAR KARTU BANK ◈\n`
+    for(let i in BANK_TIERS){
+      let t = BANK_TIERS[i]
+      let punya = userRPG.bankTier == i? '✅ KAMU' : ''
+
+      cap += `${t.color} *Lv.${i} ${t.name}* ${punya}\n`
+      cap += `◆ Limit : Rp ${t.limit.toLocaleString()}\n`
+      cap += `◆ Bunga : ${(t.bunga*100).toFixed(2)}%/minggu\n`
+      cap += `◆ Harga Upgrade : Rp ${t.price.toLocaleString()}\n`
+      cap += `◆ Biaya Bulanan : Rp ${t.biayaBulanan.toLocaleString()}\n`
+      cap += `◆ Asuransi : ${(t.asuransi*100).toFixed(0)}%\n`
+      cap += `◆ Fasilitas:\n`
+      t.fasilitas.forEach(f => {
+        cap += ` • ${f}\n`
+      })
+      cap += `\n`
+    }
+    cap += `Cara upgrade : *.upgradebank beli* / *.upgradebank 5*\n`
+    cap += `─━━━━━━━━━─`
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
+  }
 
   // SIMPAN
   if (action === 'simpan') {
@@ -132,7 +156,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
     userRPG.bank -= amount; wdb.money[m.sender] += amount
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n`
     if(tier.fasilitas.includes('Kendaraan Pribadi')) msg += `◆ Kurir : Kendaraan Pribadi\n`
     msg += `\n─━━━━━━━━━─`
     saveDB(wdb); return m.reply(msg)
@@ -142,6 +166,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (action === 'tf') {
     if (!tier.fasilitas.includes('Transfer Bank')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa transfer\n─━━━━━━━━━─`)
     let who = m.mentionedJid[0]; if (!who) return m.reply('❌ Tag target')
+    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
     let targetRPG = getUserRPG(wdb, who).rpg; if (!targetRPG) return m.reply('❌ Target belum punya data RPG')
     userRPG.bank -= amount; targetRPG.bank += amount
@@ -154,13 +179,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // PINJAM
   if (action === 'pinjam') {
-    if (!tier.fasilitas.includes('Pinjaman Bank')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa pinjam\n\n─━━━━━━━━━─`)
+    if (!tier.fasilitas.includes('Pinjaman Bank')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa pinjam\n─━━━━━━━━━─`)
     if (userRPG.pinjaman.jumlah > 0) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Masih punya pinjaman aktif\nLunasi dulu\n─━━━━━━━━━─`)
+    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (amount > tier.limit * 0.5) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Maksimal pinjam 50% limit\nMaks: Rp ${(tier.limit * 0.5).toLocaleString()}\n\n─━━━━━━━━━─`)
     userRPG.pinjaman = { jumlah: amount, waktu: now }; userRPG.bank += amount
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Pinjaman`)
     saveDB(wdb);
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PINJAMAN CAIR\n\n◈ PENGAJUAN PINJAMAN ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Bunga : 10%\n◆ Total Bayar : Rp ${Math.floor(amount * 1.1).toLocaleString()}\n◆ Jangka Waktu : 7 Hari\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PINJAMAN CAIR\n◈ PENGAJUAN PINJAMAN ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Bunga : 10%\n◆ Total Bayar : Rp ${Math.floor(amount * 1.1).toLocaleString()}\n◆ Jangka Waktu : 7 Hari\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
 
@@ -186,4 +212,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   saveDB(wdb)
 }
-handler.command = ['bank', 'tabung']; export default handler
+handler.command = ['bank', 'tabung'];
+handler.tags = ['rpg']
+handler.help = ['bank', 'bank simpan', 'bank tarik', 'bank tf', 'bank pinjam', 'bank bayar', 'bank riwayat', 'bank card', 'bank kartu']
+handler.group = false
+export default handler

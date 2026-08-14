@@ -5,9 +5,9 @@ let handler = async (m, { conn }) => {
     if(!wdb.crime) return m.reply('📋 Belum ada data kriminal di kota ini')
 
     let crimeList = Object.entries(wdb.crime)
-       .filter(([jid, data]) => data.total > 0)
-       .sort((a, b) => b[1].total - a[1].total)
-       .slice(0, 10)
+      .filter(([jid, data]) => data.total > 0)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10)
 
     if(crimeList.length === 0) return m.reply('📋 Belum ada kriminal di kota ini')
 
@@ -35,8 +35,8 @@ let handler = async (m, { conn }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { contextInfo: { mentionedJid: mentioned } })
 }
 
-handler.help = ['wanted']
+handler.help = ['buronan']
 handler.tags = ['rpg']
-handler.command = ['wanted', 'mostwanted', 'buronan']
+handler.command = ['buronan', 'mostwanted', 'topkriminal', 'dpo'] // ganti dari 'wanted'
 handler.group = true
 export default handler

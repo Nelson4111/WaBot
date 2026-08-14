@@ -45,7 +45,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   function punyaBahan(bahan) {
     for(let item in bahan) {
-      let punya = user.inventory[item] || user.ikan[item] || 0 // FIX
+      let punya = user.inventory[item] || user.ikan[item] || 0
       if(punya < bahan[item]) return false
     }
     return true
@@ -53,7 +53,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   function ambilBahan(bahan) {
     for(let item in bahan) {
       if(user.ikan[item]!== undefined) user.ikan[item] -= bahan[item]
-      else user.inventory[item] -= bahan[item] // FIX
+      else user.inventory[item] -= bahan[item]
     }
   }
   function formatWaktu(ms) {
@@ -65,28 +65,77 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return `${detik}d`
   }
 
-  let masakan = text? text.toLowerCase() : ''
-  if (!masakan || command === 'dapur') {
-    let cap = `┌───❏「 ZETA KITCHEN 」❏\n`
-    cap += `│ 👨‍🍳 Slot Dapur : ${user.dapur.antrian.length}/${user.dapur.slot}\n`
-    cap += `│ ⚠️ Aturan : Ambil dalam 5 jam setelah matang\n`
-    cap += `│ atau akan gosong!\n`
-    cap += `└───────────────\n\n`
-    if(user.dapur.antrian.length === 0) cap += `✨ Dapur masih kosong\nMasak sesuatu yuk!`
+  let args = text? text.split(' ') : []
+  let action = args[0]?.toLowerCase()
+  let masakan = args.slice(1).join(' ').toLowerCase()
+
+  // MENU UTAMA DAPUR
+  if (!text || command === 'dapur') {
+    let cap = `╭──「 👨‍🍳 ZETA KITCHEN 」──╮\n\n`
+    cap += `⏰ Slot : ${user.dapur.antrian.length}/${user.dapur.slot}\n`
+    cap += `⚠️ Ambil dalam 5 jam setelah matang\n\n`
+    if(user.dapur.antrian.length === 0) cap += `_✨ Dapur masih kosong_\n_Masak sesuatu yuk!_`
     else {
+      cap += `🍳 *ANTRIAN MASAKAN*\n`
       user.dapur.antrian.forEach((item, i) => {
         let sisa = item.selesai - Date.now()
         let status = sisa > 0? `⏳ ${formatWaktu(sisa)} lagi` : sisa > -18000000? `✅ Siap diambil!` : `🔥 Gosong ${formatWaktu(Math.abs(sisa))} lalu`
-        cap += `${i+1}. ${item.emoji} *${item.nama}*\n ${status}\n\n`
+        cap += `${i+1}. ${item.emoji} *${item.nama}*\n └ ${status}\n`
       })
-      cap += `📦 Ambil hasil : *${usedPrefix}ambilmasak*`
+      cap += `\n📦 Ambil hasil : *${usedPrefix}ambilmasak*`
     }
+    cap += `\n\n━━━━━━━━━━━\n📌.masak resep - Lihat semua resep\n📌.masak resep <nama> - Detail resep\n📌.masak <nama> - Masak`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
-  if(!resep[masakan]) return m.reply(`❌ Masakan ${masakan} tidak ada`)
+  // LIAT SEMUA RESEP
+  if(action === 'resep' &&!masakan){
+    let cap = `╭──「 📖 ZETA RECIPE BOOK 」──╮\n\n`
+    cap += `📌 Lihat detail : *.masak resep <nama>*\n`
+    cap += `📌 Masak : *.masak <nama>*\n\n`
+
+    cap += `🟢 *MAKANAN MURAH* < 100RB\n`
+    Object.entries(resep).filter(([k,v]) => v.jual < 100000).forEach(([k,v]) => {
+      cap += `${v.emoji} ${k}\n └ Rp ${v.jual.toLocaleString()} | ${formatWaktu(v.waktu)} | +${v.exp} exp\n`
+    })
+
+    cap += `\n🔵 *MAKANAN MAHAL* 100RB - 1JT\n`
+    Object.entries(resep).filter(([k,v]) => v.jual >= 100000 && v.jual < 1000000).forEach(([k,v]) => {
+      cap += `${v.emoji} ${k}\n └ Rp ${v.jual.toLocaleString()} | ${formatWaktu(v.waktu)} | +${v.exp} exp\n`
+    })
+
+    cap += `\n🔴 *MAKANAN LEGEND* > 1JT\n`
+    Object.entries(resep).filter(([k,v]) => v.jual >= 1000000).forEach(([k,v]) => {
+      cap += `${v.emoji} ${k}\n └ Rp ${v.jual.toLocaleString()} | ${formatWaktu(v.waktu)} | +${v.exp} exp\n`
+    })
+    cap += `━━━━━━━━━━━━━━━━━━━`
+    return m.reply(cap)
+  }
+
+  // LIAT DETAIL 1 RESEP
+  if(action === 'resep' && masakan){
+    if(!resep[masakan]) return m.reply(`❌ Resep ${masakan} tidak ada\nLihat daftar: *${usedPrefix}masak resep*`)
+    let r = resep[masakan]
+    let cap = `╭──「 📖 DETAIL RESEP 」──╮\n\n`
+    cap += `${r.emoji} *${masakan.toUpperCase()}*\n\n`
+    cap += `💰 Harga Jual : Rp ${r.jual.toLocaleString()}\n`
+    cap += `💸 Biaya Masak : Rp ${r.biaya.toLocaleString()}\n`
+    cap += `⏰ Waktu Masak : ${formatWaktu(r.waktu)}\n`
+    cap += `📈 Exp : +${r.exp}\n\n`
+    cap += `📦 *BAHAN-BAHAN:*\n`
+    Object.entries(r.bahan).forEach(([b,j]) => {
+      let punya = user.inventory[b] || user.ikan[b] || 0
+      let status = punya >= j? '✅' : '❌'
+      cap += `${status} ${j}x ${b} [Punya: ${punya}]\n`
+    })
+    cap += `\n━━━━━━━━━━━`
+    return m.reply(cap)
+  }
+
+  // PROSES MASAK
+  if(!resep[action]) return m.reply(`❌ Masakan ${action} tidak ada\nLihat daftar resep: *${usedPrefix}masak resep*`)
+  let r = resep[action]
   if(user.dapur.antrian.length >= user.dapur.slot) return m.reply(`❌ Dapur penuh! Slot: ${user.dapur.antrian.length}/${user.dapur.slot}\nUpgrade dapur dulu dengan *${usedPrefix}upgradedapur*`)
-  let r = resep[masakan]
   if(!punyaBahan(r.bahan)) {
     let kurang = []
     for(let item in r.bahan) {
@@ -100,11 +149,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   ambilBahan(r.bahan)
   wdb.money[m.sender] -= r.biaya
-  user.dapur.antrian.push({ nama: masakan, emoji: r.emoji, selesai: Date.now() + r.waktu, exp: r.exp, harga: r.jual })
+  user.dapur.antrian.push({ nama: action, emoji: r.emoji, selesai: Date.now() + r.waktu, exp: r.exp, harga: r.jual })
   saveDB(wdb)
-  return m.reply(`✅ *MASUK ANTRIAN!*\n${r.emoji} ${masakan.toUpperCase()}\n⏰ Selesai: ${formatWaktu(r.waktu)}\nSlot: ${user.dapur.antrian.length}/${user.dapur.slot}\n\n⚠️ Ingat ambil dalam 5 jam ya!`)
+  return m.reply(`╭──「 👨‍🍳 ZETA KITCHEN 」──╮\n\n✅ *MASUK ANTRIAN!*\n${r.emoji} *${action.toUpperCase()}*\n⏰ Selesai : ${formatWaktu(r.waktu)}\n📦 Slot : ${user.dapur.antrian.length}/${user.dapur.slot}\n\n⚠️ Ingat ambil dalam 5 jam ya!\n━━━━━━━━━━━━━━━━━━━`)
 }
-handler.help = ['masak <nama>', 'dapur']
+
+handler.help = ['dapur', 'masak <nama>', 'masak resep']
 handler.tags = ['rpg']
 handler.command = /^(masak|dapur)$/i
 handler.group = true

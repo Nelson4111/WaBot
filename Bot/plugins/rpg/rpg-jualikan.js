@@ -1,5 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
+function formatNama(nama) { return nama.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }
+
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
@@ -75,25 +77,45 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   if (!text) {
-    let cap = `*╭───「 🎣 JUAL IKAN 」───╮*\n`
-    cap += `│ ${isPrem? '👑 Bonus +10%' : '👤 User'}\n`
-    cap += `*╰─────────────────╯*\n\n`
-    cap += `*💰 CARA:* ${usedPrefix}jualikan [nama] [jumlah/all]\n\n`
-    cap += `*🎣 DAFTAR HARGA*\n`
-    Object.entries(harga).slice(0, 50).forEach(([k,v]) => {
-      let h = Math.floor(v.harga * sellBonus)
-      cap += `├ ${v.emoji} ${k.toUpperCase()} : Rp ${h.toLocaleString()}\n`
-    })
-    cap += `└...dan ${Object.keys(harga).length - 50} item lainnya`
+    let cap = `╭───「 🎣 ZETA FISH MARKET 」───╮\n`
+    cap += `│ ${isPrem? '👑 Premium Bonus +10%' : '👤 User Biasa'}\n`
+    cap += `╰─────────────────╯\n\n`
+    cap += `📌 Cara jual: *${usedPrefix}jualikan <nama> <jumlah/all>*\n`
+    cap += `💡 Bisa pake spasi atau _\n\n`
+
+    const printTier = (title, items) => {
+      cap += `${title}\n`
+      items.forEach(k => {
+        let h = Math.floor(harga[k].harga * sellBonus)
+        cap += `├ ${harga[k].emoji} ${formatNama(k).padEnd(20)} Rp ${h.toLocaleString()}\n`
+      })
+      cap += `\n`
+    }
+
+    printTier('🗑️ *SAMPAH*', Object.keys(harga).filter(k => harga[k].harga === 5000))
+    printTier('🐟 *IKAN MURAH*', Object.keys(harga).filter(k => harga[k].harga === 8000))
+    printTier('🐠 *IKAN MENENGAH*', Object.keys(harga).filter(k => harga[k].harga === 25000))
+    printTier('🦀 *IKAN MAHAL*', Object.keys(harga).filter(k => harga[k].harga === 60000))
+    printTier('⭐ *IKAN LEGEND*', Object.keys(harga).filter(k => harga[k].harga === 125000))
+    printTier('💎 *IKAN MYTHIC*', Object.keys(harga).filter(k => harga[k].harga === 250000))
+    printTier('👑 *IKAN BOS*', Object.keys(harga).filter(k => harga[k].harga === 500000))
+    printTier('🔱 *IKAN GOD*', Object.keys(harga).filter(k => harga[k].harga === 2500000))
+
+    cap += `━━━━━━━━━━━`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
   let args = text.toLowerCase().split(' ')
-  let item = args[0]
+  let itemInput = args[0]
   let amount = args[1] === 'all'? 'all' : (parseInt(args[1]) || 1)
-  if (!harga[item]) return m.reply('❌ Ikan tidak ada.')
+
+  // KUNCI: ubah _ jadi spasi biar support 2 versi
+  let item = itemInput.replace(/_/g, ' ')
+
+  if (!harga[item]) return m.reply(`❌ Ikan "${itemInput}" tidak ada.\nLihat list: *${usedPrefix}jualikan*`)
+
   let stok = user.ikan[item] || 0
-  if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${item}`)
+  if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(item)}`)
   let jual = amount === 'all'? stok : amount
   if (jual > stok) return m.reply(`❌ Stok tidak cukup! Kamu punya ${stok}`)
 
@@ -102,7 +124,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if(user.ikan[item] <= 0) delete user.ikan[item]
   wdb.money[m.sender] += hasil
   saveDB(wdb)
-  return m.reply(`✅ *BERHASIL JUAL!*\n\n${harga[item].emoji} ${item} x${jual}\n💰 +Rp ${hasil.toLocaleString()}`)
+  return m.reply(`╭──「 🎣 ZETA FISH MARKET 」──╮\n\n✅ *BERHASIL JUAL!*\n${harga[item].emoji} *${formatNama(item)}* x${jual}\n💰 +Rp ${hasil.toLocaleString()}\n\n━━━━━━━━━━━`)
 }
 
 handler.help = ['jualikan <nama> <jumlah/all>']

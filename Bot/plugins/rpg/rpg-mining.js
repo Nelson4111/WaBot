@@ -24,9 +24,8 @@ let rare = ['platinum', 'cobalt', 'titanium', 'obsidian', 'rivalite', 'bananite'
 let uncommon = ['iron', 'silver', 'gold', 'mushroomite', 'cardboardite', 'poopite', 'cuprite'];
 let common = ['stone', 'sand_stone', 'grass', 'graphite', 'pumice', 'sulfur', 'copper', 'tin'];
 
-function rollOre(hance, bonus, pickLvl, pity){
-  if(pity >= 10) hance += 20
-
+function rollOre(hance, bonus, pickLvl){
+  // RNG MURNI. Ga ada pity
   let bisaSecret = pickLvl >= 25
   let bisaMythic = pickLvl >= 20
   let bisaLegend = pickLvl >= 15
@@ -47,7 +46,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
   if (!user.ores) user.ores = {}
-  if (user.pity_mining === undefined) user.pity_mining = 0
+  // hapus pity
+  if (user.pity_mining!== undefined) delete user.pity_mining
 
   let args = text.split(' ')[0]?.toLowerCase()
 
@@ -72,14 +72,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   // MINING
-  let cooldown = 120000
+  let cooldown = 120000 // 2 menit
   if (Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
     return m.reply(`─━━ ⛏️ MINING ━━─\n\n⏰ LELAH\nTunggu ${sisa} detik lagi agar energimu pulih.\n─━━━━━━━━━─`)
   }
 
   let pickLvl = user.pickaxe || 0
-  let bonus = Math.min(pickLvl * 1.5, 30)
+  let bonus = Math.min(pickLvl * 1.5, 30) // Max 30% bonus
   let jumlahJenisDrop = Math.min(Math.floor(pickLvl / 10) + 1, 5) // brp jenis ore
 
   let hasilTambang = {}
@@ -89,7 +89,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   for(let i = 0; i < jumlahJenisDrop; i++){
     let hance = Math.random() * 100
-    let {ore, tier, exp} = rollOre(hance, bonus, pickLvl, user.pity_mining)
+    let {ore, tier, exp} = rollOre(hance, bonus, pickLvl)
 
     // Jumlah per ore: 1 - 5. Makin tinggi pickaxe makin banyak
     let maxJumlah = Math.min(Math.floor(pickLvl / 15) + 2, 5)
@@ -103,10 +103,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if(urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
   }
 
-  // Reset pity kalau dapet rare+
-  if(['RARE','EPIC','LEGENDARY','MYTHIC','SECRET'].includes(tierTertinggi)) user.pity_mining = 0
-  else user.pity_mining += 1
-
+  // Simpan hasil
   for(let ore in hasilTambang){
     user.ores[ore] = (user.ores[ore] || 0) + hasilTambang[ore]
   }
@@ -121,18 +118,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let pp = 'https://c.termai.cc/i140/srjE7x6'
   let tierData = {
-    SECRET: {stars: '★★★', emoji: '🔮'},
-    MYTHIC: {stars: '★★☆', emoji: '🌌'},
+    SECRET: {stars: '★★★★★★★', emoji: '🔮'},
+    MYTHIC: {stars: '★★★★★★☆', emoji: '🌌'},
     LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑'},
-    EPIC: {stars: '★★☆', emoji: '💎'},
+    EPIC: {stars: '★★★★☆☆☆', emoji: '💎'},
     RARE: {stars: '★★★☆☆☆☆', emoji: '✨'},
-    UNCOMMON: {stars: '★★☆', emoji: '💙'},
-    COMMON: {stars: '★☆', emoji: '🤍'}
+    UNCOMMON: {stars: '★★☆☆☆☆☆', emoji: '💙'},
+    COMMON: {stars: '★☆☆☆☆☆☆', emoji: '🤍'}
   }
 
   let caption = `─━━ ⛏️ MINING RESULT ━━─\n`
   caption += `◈ Tier Tertinggi : ${tierData[tierTertinggi].stars} ${tierTertinggi} ${tierData[tierTertinggi].emoji}\n`
-  caption += `◈ Pity : ${user.pity_mining}/10\n`
   caption += `🏆 Hasil Tambang : ${jumlahJenisDrop} jenis | Total x${totalOreDidapat} ore\n\n`
 
   for(let ore in hasilTambang){

@@ -1,5 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
+function formatNama(nama) { return nama.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') }
+
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
@@ -26,26 +28,32 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   if (!text) {
-    let cap = `*╭───「 🌾 JUAL HASIL PANEN 」───╮*\n`
-    cap += `│ ${isPrem? '👑 Bonus +10%' : '👤 User'}\n`
-    cap += `*╰─────────────────╯*\n\n`
-    cap += `*💰 CARA:* ${usedPrefix}jualpanen [nama] [jumlah/all]\n\n`
+    let cap = `╭───「 🌾 ZETA PANEN MARKET 」───╮\n`
+    cap += `│ ${isPrem? '👑 Premium Bonus +10%' : '👤 User Biasa'}\n`
+    cap += `╰─────────────────╯\n\n`
+    cap += `📌 Cara jual: *${usedPrefix}jualpanen <nama> <jumlah/all>*\n`
+    cap += `💡 Bisa pake spasi atau _\n\n`
     cap += `*🌾 DAFTAR HARGA*\n`
+    
     Object.entries(harga).forEach(([k,v]) => {
       let h = Math.floor(v.harga * sellBonus)
-      cap += `├ ${v.emoji} ${k.toUpperCase()} : Rp ${h.toLocaleString()}\n`
+      cap += `├ ${v.emoji} ${formatNama(k).padEnd(15)} Rp ${h.toLocaleString()}\n`
     })
+    cap += `━━━━━━━━━━━━━━━━━━━`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
   let args = text.toLowerCase().split(' ')
-  let item = args.slice(0, -1).join(' ')
-  if(!harga[item]) item = args[0]
   let amount = args[args.length-1] === 'all'? 'all' : (parseInt(args[args.length-1]) || 1)
+  let itemInput = amount === 'all'? args.slice(0, -1).join(' ') : args.join(' ')
 
-  if (!harga[item]) return m.reply('❌ Hasil panen tidak ada.')
+  // KUNCI: ubah _ jadi spasi biar support 2 versi
+  let item = itemInput.replace(/_/g, ')
+
+  if (!harga[item]) return m.reply(`❌ Hasil panen "${itemInput}" tidak ada.\nLihat list: *${usedPrefix}jualpanen*`)
+  
   let stok = user.inventory[item] || 0
-  if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${item}`)
+  if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(item)}`)
   let jual = amount === 'all'? stok : amount
   if (jual > stok) return m.reply(`❌ Stok tidak cukup! Kamu punya ${stok}`)
 
@@ -54,7 +62,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if(user.inventory[item] <= 0) delete user.inventory[item]
   wdb.money[m.sender] += hasil
   saveDB(wdb)
-  return m.reply(`✅ *BERHASIL JUAL!*\n\n${harga[item].emoji} ${item} x${jual}\n💰 +Rp ${hasil.toLocaleString()}`)
+  return m.reply(`╭──「 🌾 ZETA PANEN MARKET 」──╮\n\n✅ *BERHASIL JUAL!*\n${harga[item].emoji} *${formatNama(item)}* x${jual}\n💰 +Rp ${hasil.toLocaleString()}\n\n━━━━━━━━━━━━━━━━━━━`)
 }
 
 handler.help = ['jualpanen <nama> <jumlah/all>']

@@ -5,19 +5,25 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
 
+  // INIT
   let armorLvl = user.armor || 0
   let swordLvl = user.sword || 0
   let pet = user.pet || { tipe: 'none', level: 0 }
   if(!user.maxDarahBonus) user.maxDarahBonus = 0
+  if(!user.gold) user.gold = 0
+  if(!user.diamond) user.diamond = 0
+  if(!user.limit) user.limit = 0
+  if(!user.darah) user.darah = 100
 
+  // HITUNG MAX HP - SAMA KAYA GYM & HEAL
   let maxHP = 100 + (armorLvl * 20) + user.maxDarahBonus
   user.maxDarah = maxHP
   if (user.darah > maxHP) user.darah = maxHP
 
+  // GUILD BUFF
   let bonusDmgGuild = 0
   let bonusDefGuild = 0
-  let myGuild = Object.values(wdb.guilds || {}).find(g => g.members.includes(m.sender))
-
+  let myGuild = Object.values(wdb.guilds || {}).find(g => g.members?.includes(m.sender))
   if (myGuild) {
     if (myGuild.buffAttack && Date.now() < myGuild.buffAttack) bonusDmgGuild = 200
     if (myGuild.buffDefense && Date.now() < myGuild.buffDefense) bonusDefGuild = 200
@@ -51,14 +57,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     'final': { name: 'Genesis Realm', enemy: 'The Creator', minLevel: 2500, minSword: 200, hpEnemy: 7000000, dmgEnemy: 75000, reward: { exp: 6000000, money: 120000000, gold: 25000, limit: 2500 }, cooldown: 120000 }
   }
 
-  let type = text? text.toLowerCase() : ''
+  let type = text?.toLowerCase() || ''
   if (!type ||!dungeons[type]) {
     let list = `*───「 RPG DUNGEON 」───*\n\n`
     for (let i in dungeons) {
       let d = dungeons[i]
+      let reward = d.reward.diamond? `💎 ${d.reward.diamond}` : d.reward.limit? `🎫 ${d.reward.limit} Limit` : `🪙 ${d.reward.gold}`
       list += `💀 *${i.toUpperCase()}* (${d.enemy})\n`
       list += ` - 📊 Syarat: Player Lvl ${d.minLevel} & Sword Lv.${d.minSword}\n`
-      list += ` - 🎁 Reward: ${d.reward.diamond? '💎' : '🪙'} ${d.reward.diamond || d.reward.gold}\n\n`
+      list += ` - 🎁 Reward: ${reward}\n\n`
     }
     return m.reply(list + `*Cara Main:* ${usedPrefix}${command} easy`)
   }
@@ -74,28 +81,33 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
   }
 
+  // DMG USER
   let userDmg = (user.level * 10) + (swordLvl * 100) + bonusDmgGuild
+  if (pet.tipe === 'naga') userDmg += Math.floor(userDmg * (pet.level * 0.05))
 
-  if (pet.tipe === 'naga') {
-    let bonusPet = Math.floor(userDmg * (pet.level * 0.05))
-    userDmg += bonusPet
-  }
-
+  // DMG ENEMY
   let rounds = Math.ceil(selected.hpEnemy / userDmg)
   let totalEnemyDmg = rounds * selected.dmgEnemy
 
+  // DEF USER
   let userDef = (armorLvl * 100) + bonusDefGuild
+  if (pet.tipe === 'rubah') userDef += Math.floor(userDef * (pet.level * 0.03))
   let finalDamage = Math.max(10, totalEnemyDmg - userDef)
 
+  // KALO MATI
   if (user.darah <= finalDamage) {
     user.darah = 0
     user.lastDungeon = Date.now()
     saveDB(wdb)
-    return m.reply(`💀 *KAMU TEWAS!* \nBoss ${selected.enemy} menghancurkan pertahananmu.`)
+    return m.reply(`💀 *KAMU TEWAS!*\nBoss ${selected.enemy} menghancurkan pertahananmu.\nGunakan *.heal* untuk bangkit.`)
   }
 
+  // REWARD
   let earnedExp = selected.reward.exp
   let earnedMoney = selected.reward.money
+  let earnedGold = selected.reward.gold || 0
+  let earnedDiamond = selected.reward.diamond || 0
+  let earnedLimit = selected.reward.limit || 0
 
   if (pet.tipe === 'kucing') earnedExp += Math.floor(earnedExp * (pet.level * 0.10))
   if (pet.tipe === 'anjing') earnedMoney += Math.floor(earnedMoney * (pet.level * 0.10))
@@ -103,8 +115,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   user.darah -= Math.floor(finalDamage)
   user.exp += earnedExp
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
-  if (selected.reward.gold) user.gold = (user.gold || 0) + selected.reward.gold
-  if (selected.reward.diamond) user.diamond = (user.diamond || 0) + selected.reward.diamond
+  user.gold += earnedGold
+  user.diamond += earnedDiamond
+  user.limit += earnedLimit
   user.lastDungeon = Date.now()
 
   saveDB(wdb)
@@ -113,12 +126,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   winMsg += `✅ Berhasil menaklukkan *${selected.name}*!\n`
   winMsg += `⚔️ *Total Damage:* ${userDmg.toLocaleString()} ${bonusDmgGuild > 0? '(🛡️ Guild Boost)' : ''}\n`
   winMsg += `🛡️ *Total Defense:* ${userDef.toLocaleString()} ${bonusDefGuild > 0? '(🛡️ Guild Boost)' : ''}\n`
-  winMsg += `🩸 *HP Terkuras:* -${finalDamage.toFixed(0)}\n`
+  winMsg += `🩸 *HP Terkuras:* -${finalDamage.toLocaleString()}\n`
   winMsg += `❤️ *Sisa HP:* ${user.darah}/${maxHP}\n\n`
   winMsg += `🎁 *HADIAH:* \n`
   winMsg += `• 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
   winMsg += `• 🌟 XP: +${earnedExp.toLocaleString()}\n`
-  if (selected.reward.diamond) winMsg += `• 💎 Diamond: +${selected.reward.diamond}\n`
+  if (earnedGold > 0) winMsg += `• 🪙 Gold: +${earnedGold}\n`
+  if (earnedDiamond > 0) winMsg += `• 💎 Diamond: +${earnedDiamond}\n`
+  if (earnedLimit > 0) winMsg += `• 🎫 Limit: +${earnedLimit}\n`
 
   return sendRpgMsg(conn, m, winMsg, 'https://c.termai.cc/i187/iFxwQG')
 }
@@ -126,5 +141,4 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 handler.help = ['dungeon']
 handler.tags = ['rpg']
 handler.command = ['dungeon']
-
 export default handler
