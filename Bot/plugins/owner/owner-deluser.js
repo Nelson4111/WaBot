@@ -22,7 +22,7 @@ let handler = async (m, { conn, text }) => {
         let user = number + '@s.whatsapp.net';
         let groupMetadata = m.isGroup ? await conn.groupMetadata(m.chat) : {};
         let participants = m.isGroup ? groupMetadata.participants : [];
-        let users = m.isGroup ? participants.find(u => u.jid == user) : {};
+        let users = m.isGroup ? participants.find(u => (u.phoneNumber || u.jid || u.id) == user) : {};
 
         if (users) {
             delete global.db.data.users[user];

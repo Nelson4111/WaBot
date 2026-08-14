@@ -4,7 +4,7 @@ const handler = async (m, { conn, text, groupMetadata }) => {
       timeZone: "Asia/Jakarta",
     }),
     milliseconds = new Date(now).getTime();
-  let member = groupMetadata.participants.map((v) => v.id);
+  let member = groupMetadata.participants.map((v) => v.phoneNumber || v.jid || v.id);
   if (text) pesan = text;
   else
     var pesan =
@@ -15,7 +15,7 @@ const handler = async (m, { conn, text, groupMetadata }) => {
     sider = [];
   for (let i = 0; i < sum; i++) {
     let users = m.isGroup
-      ? groupMetadata.participants.find((u) => u.id === member[i])
+      ? groupMetadata.participants.find((u) => (u.phoneNumber || u.jid || u.id) === member[i])
       : {};
     !(
       void 0 === db.data.users[member[i]] ||
@@ -23,6 +23,8 @@ const handler = async (m, { conn, text, groupMetadata }) => {
     ) ||
       users.isAdmin ||
       users.isSuperAdmin ||
+      users.admin === 'admin' ||
+      users.admin === 'superadmin' ||
       (void 0 !== db.data.users[member[i]]
         ? !0 === db.data.users[member[i]].banned &&
           (total++, sider.push(member[i]))

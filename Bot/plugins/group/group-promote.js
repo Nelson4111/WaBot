@@ -23,11 +23,13 @@ let handler = async (m, { conn, participants, isAdmin, isBotAdmin }) => {
     let jid = conn.decodeJid(user)
 
     let member = participants.find(p =>
-      areJidsSameUser(conn.decodeJid(p.id), jid)
+      areJidsSameUser(conn.decodeJid(p.id || ''), jid) || 
+      areJidsSameUser(conn.decodeJid(p.phoneNumber || ''), jid) ||
+      areJidsSameUser(conn.decodeJid(p.jid || ''), jid)
     )
 
     if (!member) continue
-    if (member.admin) continue
+    if (member.admin === 'admin' || member.admin === 'superadmin' || member.isAdmin || member.isSuperAdmin) continue
 
     await conn.groupParticipantsUpdate(m.chat, [jid], 'promote')
     await delay(1000)

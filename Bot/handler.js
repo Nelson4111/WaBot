@@ -328,12 +328,12 @@ export async function handler(chatUpdate) {
             const senderJid = conn.decodeJid(m.sender)
             const botJid = conn.decodeJid(conn.user.id)
             user = participants.find(u => {
-                const uJid = conn.decodeJid(u.id || u.jid)
-                return uJid === senderJid || u.lid === senderJid || u.id === senderJid || u.jid === senderJid
+                const check = [u.id, u.jid, u.phoneNumber, u.lid].map(v => v ? conn.decodeJid(v) : '')
+                return check.includes(senderJid) || [u.id, u.jid, u.phoneNumber, u.lid].includes(senderJid)
             }) || {}
             bot = participants.find(u => {
-                const uJid = conn.decodeJid(u.id || u.jid)
-                return uJid === botJid || u.lid === botJid || u.id === botJid || u.jid === botJid
+                const check = [u.id, u.jid, u.phoneNumber, u.lid].map(v => v ? conn.decodeJid(v) : '')
+                return check.includes(botJid) || [u.id, u.jid, u.phoneNumber, u.lid].includes(botJid)
             }) || {}
         }
 
