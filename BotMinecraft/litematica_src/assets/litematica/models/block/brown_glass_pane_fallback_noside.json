@@ -1,9 +1,0 @@
-{
-  "parent": "litematica:block/template_glass_pane_fallback_noside",
-  "textures": {
-    "pane": {
-      "force_translucent": true,
-      "sprite": "litematica:block/brown_glass_fallback"
-    }
-  }
-}
