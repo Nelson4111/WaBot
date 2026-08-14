@@ -11,20 +11,17 @@ function getTitlePanco(menang) {
 let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
-  let arena = wdb.temp[`arena_${m.chat}`] // KUNCI GLOBAL SAMA DENGAN JAMBAK
+  wdb.temp.panco = wdb.temp.panco || {} // SIMPAN JADI OBJECT
 
-  // AUTO HAPUS KALAU EXPIRED
-  if(arena && Date.now() - arena.waktu > 30000){
-    delete wdb.temp[`arena_${m.chat}`]
-    saveDB(wdb)
-    if(command === 'panco') return m.reply('❌ Arena sudah kosong. Bisa buat tantangan baru.')
-    arena = null
+  // AUTO HAPUS KALAU EXPIRED - 2 MENIT
+  for(let id in wdb.temp.panco){
+    if(Date.now() - wdb.temp.panco[id].waktu > 120000){
+      delete wdb.temp.panco[id]
+    }
   }
 
   // COMMAND 1: PANCO - BUAT NANTANG
   if (command === 'panco') {
-    if(arena) return m.reply(`❌ Masih ada *${arena.tipe}* aktif di grup ini.\nSelesaikan dulu dengan *.${arena.tipe}terima* / *.${arena.tipe}tolak*`)
-
     let data = getUserRPG(wdb, m.sender)
     let user = data.rpg
     if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
@@ -64,16 +61,19 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let titleP = getTitlePanco(user.stats.pancoMenang)
     let titleT = getTitlePanco(userTarget.stats.pancoMenang)
 
-    let cap = `┌───❏「 💪 ARENA PANCO 」❏\n│\n`
+    let arenaId = Date.now().toString() // ID UNIK
+
+    let cap = `┌───❏「 💪 ARENA PANCO #${arenaId.slice(-4)} 」❏\n│\n`
     cap += `│ 👤 *PENANTANG*\n│ @${m.sender.split('@')[0]}\n│ ${titleP}\n│ Lv.${user.level} | ❤️ ${user.darah}/${maxHP} | ✨ ${user.exp}\n│ W-L : ${user.stats.pancoMenang}W - ${user.stats.pancoKalah}L\n`
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${titleT}\n│ Lv.${userTarget.level} | ❤️ ${userTarget.darah}/${maxHPTarget} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ *.pancoterima* → Terima\n│ *.pancotolak* → Tolak\n│ ⏰ 30 detik\n`
+    cap += `│\n│ *.pancoterima @${m.sender.split('@')[0]}* → Terima\n│ *.pancotolak @${m.sender.split('@')[0]}* → Tolak\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
-    wdb.temp[`arena_${m.chat}`] = {
-      tipe: 'panco',
+    wdb.temp.panco[arenaId] = {
+      id: arenaId,
+      chat: m.chat,
       penantang: m.sender,
       target: target,
       taruhan: taruhan,
@@ -83,10 +83,13 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
   }
 
-  // COMMAND 2: PANCO TERIMA
+  // COMMAND 2: PANCO TERIMA - PAKE @TAG
   if (command === 'pancoterima') {
-    if(!arena || arena.tipe!== 'panco') return m.reply('❌ Tidak ada tantangan panco aktif')
-    if(m.sender!== arena.target) return m.reply('❌ Kamu bukan target dari tantangan ini')
+    let penantangTag = m.mentionedJid[0]
+    if(!penantangTag) return m.reply(`❌ Format: *.pancoterima @penantang*`)
+
+    let arena = Object.values(wdb.temp.panco).find(a => a.chat === m.chat && a.penantang === penantangTag && a.target === m.sender)
+    if(!arena) return m.reply('❌ Tidak ada tantangan panco dari orang itu ke kamu')
 
     let dataP = getUserRPG(wdb, arena.penantang)
     let dataT = getUserRPG(wdb, arena.target)
@@ -96,7 +99,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
     let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
 
-    let cap = `┌───❏「 ⚔️ PERTARUNGAN 」❏\n│\n`
+    let cap = `┌───❏「 ⚔️ PERTARUNGAN PANCO 」❏\n│\n`
     cap += `│ @${arena.penantang.split('@')[0]} ⚡ ${powerP}\n│ VS\n│ @${arena.target.split('@')[0]} ⚡ ${powerT}\n│\n`
 
     if(powerP > powerT){
@@ -118,34 +121,40 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     }
     cap += `\n└───────────────────`
 
-    delete wdb.temp[`arena_${m.chat}`]
+    delete wdb.temp.panco[arena.id]
     saveDB(wdb)
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [arena.penantang, arena.target])
   }
 
-  // COMMAND 3: PANCO TOLAK
+  // COMMAND 3: PANCO TOLAK - PAKE @TAG
   if (command === 'pancotolak') {
-    if(!arena || arena.tipe!== 'panco') return m.reply('❌ Tidak ada tantangan panco aktif')
-    if(m.sender!== arena.target) return m.reply('❌ Kamu bukan target dari tantangan ini')
+    let penantangTag = m.mentionedJid[0]
+    if(!penantangTag) return m.reply(`❌ Format: *.pancotolak @penantang*`)
 
-    delete wdb.temp[`arena_${m.chat}`]
+    let arena = Object.values(wdb.temp.panco).find(a => a.chat === m.chat && a.penantang === penantangTag && a.target === m.sender)
+    if(!arena) return m.reply('❌ Tidak ada tantangan panco dari orang itu ke kamu')
+
+    delete wdb.temp.panco[arena.id]
     saveDB(wdb)
-    return m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan panco`, null, { mentions: [m.sender] })
+    return m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan panco dari @${penantangTag.split('@')[0]}`, null, { mentions: [m.sender, penantangTag] })
   }
 }
 
 handler.all = async function(m) {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
-  let arena = wdb.temp[`arena_${m.chat}`]
-  if(arena && Date.now() - arena.waktu > 30000){
-    delete wdb.temp[`arena_${m.chat}`]
-    saveDB(wdb)
-    await this.sendMessage(m.chat, { text: `⏰ Tantangan ${arena.tipe} dari @${arena.penantang.split('@')[0]} ke @${arena.target.split('@')[0]} telah kadaluarsa`, mentions: [arena.penantang, arena.target] })
+  wdb.temp.panco = wdb.temp.panco || {}
+  for(let id in wdb.temp.panco){
+    let arena = wdb.temp.panco[id]
+    if(Date.now() - arena.waktu > 120000){ // 2 MENIT
+      delete wdb.temp.panco[id]
+      saveDB(wdb)
+      await this.sendMessage(arena.chat, { text: `⏰ Tantangan panco dari @${arena.penantang.split('@')[0]} ke @${arena.target.split('@')[0]} telah kadaluarsa`, mentions: [arena.penantang, arena.target] })
+    }
   }
 }
 
-handler.help = ['panco @tag [taruhan]', 'pancoterima', 'pancotolak']
+handler.help = ['panco @tag [taruhan]', 'pancoterima @tag', 'pancotolak @tag']
 handler.tags = ['rpg']
 handler.command = /^(panco|pancoterima|pancotolak)$/i
 handler.group = true

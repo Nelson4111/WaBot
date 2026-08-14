@@ -337,10 +337,10 @@ export async function handler(chatUpdate) {
             }) || {}
         }
 
-        const isRAdmin = user?.admin === 'superadmin'
-        const isAdmin = isOwner || isRAdmin || user?.admin === 'admin'
-        const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin'
-
+        const isRAdmin = user?.admin === 'superadmin' || user?.isSuperAdmin || false
+        const isAdmin = isOwner || isRAdmin || user?.admin === 'admin' || user?.isAdmin || false
+        const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin' || bot?.isAdmin || bot?.isSuperAdmin || false
+        
         // ONLY ADMIN LOGIC
         if (m.isGroup && global.db.data.chats[m.chat]?.onlyadmin && !isAdmin && !isOwner) {
         return false

@@ -11,20 +11,17 @@ function getTitleJambak(menang) {
 let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
-  let arena = wdb.temp[`arena_${m.chat}`] // KUNCI GLOBAL
+  wdb.temp.jambak = wdb.temp.jambak || {} // SIMPAN JADI OBJECT
 
-  // AUTO HAPUS KALAU EXPIRED
-  if(arena && Date.now() - arena.waktu > 30000){
-    delete wdb.temp[`arena_${m.chat}`]
-    saveDB(wdb)
-    if(command === 'jambak') return m.reply('❌ Arena sudah kosong. Bisa buat tantangan baru.')
-    arena = null
+  // AUTO HAPUS KALAU EXPIRED - 2 MENIT
+  for(let id in wdb.temp.jambak){
+    if(Date.now() - wdb.temp.jambak[id].waktu > 120000){
+      delete wdb.temp.jambak[id]
+    }
   }
 
   // COMMAND 1: JAMBAK - BUAT NANTANG
   if (command === 'jambak') {
-    if(arena) return m.reply(`❌ Masih ada *${arena.tipe}* aktif di grup ini.\nSelesaikan dulu dengan *.${arena.tipe}terima* / *.${arena.tipe}tolak*`)
-
     let data = getUserRPG(wdb, m.sender)
     let user = data.rpg
     if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
@@ -64,16 +61,19 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let titleP = getTitleJambak(user.stats.jambakMenang)
     let titleT = getTitleJambak(userTarget.stats.jambakMenang)
 
+    let arenaId = Date.now().toString() // ID UNIK
+
     let cap = `┌───❏「 💇 ARENA JAMBAK 」❏\n│\n`
     cap += `│ 👤 *PENANTANG*\n│ @${m.sender.split('@')[0]}\n│ ${titleP}\n│ Lv.${user.level} | ❤️ ${user.darah}/${maxHP}\n│ W-L : ${user.stats.jambakMenang}W - ${user.stats.jambakKalah}L\n`
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${titleT}\n│ Lv.${userTarget.level} | ❤️ ${userTarget.darah}/${maxHPTarget}\n│ W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ *.jambakterima* → Terima\n│ *.jambaktolak* → Tolak\n│ ⏰ 30 detik\n`
+    cap += `│\n│ *.jambakterima @${m.sender.split('@')[0]}* → Terima\n│ *.jambaktolak @${m.sender.split('@')[0]}* → Tolak\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
-    wdb.temp[`arena_${m.chat}`] = {
-      tipe: 'jambak',
+    wdb.temp.jambak[arenaId] = {
+      id: arenaId,
+      chat: m.chat,
       penantang: m.sender,
       target: target,
       taruhan: taruhan,
@@ -83,10 +83,13 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
   }
 
-  // COMMAND 2: JAMBAKTERIMA
+  // COMMAND 2: JAMBAKTERIMA - PAKE @TAG
   if (command === 'jambakterima') {
-    if(!arena || arena.tipe!== 'jambak') return m.reply('❌ Tidak ada tantangan jambak aktif')
-    if(m.sender!== arena.target) return m.reply('❌ Kamu bukan target dari tantangan ini')
+    let penantangTag = m.mentionedJid[0]
+    if(!penantangTag) return m.reply(`❌ Format: *.jambakterima @penantang*`)
+
+    let arena = Object.values(wdb.temp.jambak).find(a => a.chat === m.chat && a.penantang === penantangTag && a.target === m.sender)
+    if(!arena) return m.reply('❌ Tidak ada tantangan jambak dari orang itu ke kamu')
 
     let dataP = getUserRPG(wdb, arena.penantang)
     let dataT = getUserRPG(wdb, arena.target)
@@ -96,7 +99,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
     let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
 
-    let cap = `┌───❏「 ⚔️ PERTARUNGAN 」❏\n│\n`
+    let cap = `┌───❏「 ⚔️ PERTARUNGAN JAMBAK 」❏\n│\n`
     cap += `│ @${arena.penantang.split('@')[0]} ⚡ ${powerP}\n│ VS\n│ @${arena.target.split('@')[0]} ⚡ ${powerT}\n│\n`
 
     if(powerP > powerT){
@@ -118,34 +121,40 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     }
     cap += `\n└───────────────────`
 
-    delete wdb.temp[`arena_${m.chat}`]
+    delete wdb.temp.jambak[arena.id]
     saveDB(wdb)
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [arena.penantang, arena.target])
   }
 
-  // COMMAND 3: JAMBAKTOLAK
+  // COMMAND 3: JAMBAKTOLAK - PAKE @TAG
   if (command === 'jambaktolak') {
-    if(!arena || arena.tipe!== 'jambak') return m.reply('❌ Tidak ada tantangan jambak aktif')
-    if(m.sender!== arena.target) return m.reply('❌ Kamu bukan target dari tantangan ini')
+    let penantangTag = m.mentionedJid[0]
+    if(!penantangTag) return m.reply(`❌ Format: *.jambaktolak @penantang*`)
 
-    delete wdb.temp[`arena_${m.chat}`]
+    let arena = Object.values(wdb.temp.jambak).find(a => a.chat === m.chat && a.penantang === penantangTag && a.target === m.sender)
+    if(!arena) return m.reply('❌ Tidak ada tantangan jambak dari orang itu ke kamu')
+
+    delete wdb.temp.jambak[arena.id]
     saveDB(wdb)
-    return m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan jambak`, null, { mentions: [m.sender] })
+    return m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan jambak dari @${penantangTag.split('@')[0]}`, null, { mentions: [m.sender, penantangTag] })
   }
 }
 
 handler.all = async function(m) {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
-  let arena = wdb.temp[`arena_${m.chat}`]
-  if(arena && Date.now() - arena.waktu > 30000){
-    delete wdb.temp[`arena_${m.chat}`]
-    saveDB(wdb)
-    await this.sendMessage(m.chat, { text: `⏰ Tantangan ${arena.tipe} dari @${arena.penantang.split('@')[0]} ke @${arena.target.split('@')[0]} telah kadaluarsa`, mentions: [arena.penantang, arena.target] })
+  wdb.temp.jambak = wdb.temp.jambak || {}
+  for(let id in wdb.temp.jambak){
+    let arena = wdb.temp.jambak[id]
+    if(Date.now() - arena.waktu > 120000){ // 2 MENIT
+      delete wdb.temp.jambak[id]
+      saveDB(wdb)
+      await this.sendMessage(arena.chat, { text: `⏰ Tantangan jambak dari @${arena.penantang.split('@')[0]} ke @${arena.target.split('@')[0]} telah kadaluarsa`, mentions: [arena.penantang, arena.target] })
+    }
   }
 }
 
-handler.help = ['jambak @tag [taruhan]', 'jambakterima', 'jambaktolak']
+handler.help = ['jambak @tag [taruhan]', 'jambakterima @tag', 'jambaktolak @tag']
 handler.tags = ['rpg']
 handler.command = /^(jambak|jambakterima|jambaktolak)$/i
 handler.group = true

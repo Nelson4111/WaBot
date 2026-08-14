@@ -1,22 +1,47 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { prosesKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan } from '../../lib/rpg-libternakData.js' // FIX
+import { prosesKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan } from '../../lib/rpg-libternakData.js'
 
 global.icuTernak = global.icuTernak || {}
 
 let handler = async (m, { conn, args }) => {
   const wdb = loadDB()
+  wdb.temp = wdb.temp || {}
+  wdb.temp.kawin = wdb.temp.kawin || {} // TEMP BUAT KONFIRMASI
   let user = getUserRPG(wdb, m.sender).rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}
   if(!user.cooldown) user.cooldown = {}
 
-  let [h1, h2, asuransi] = args
+  let [sub, h1, h2, asuransi] = args
   h1 = h1?.toLowerCase(); h2 = h2?.toLowerCase()
   asuransi = asuransi === 'asuransi'
-  if(!h1 ||!h2) return m.reply('Contoh:\n.kawin ayam\n.kawin ayam naga asuransi')
 
-  let d1 = getHewan(h1) // FIX: pake getHewan
+  // COMMAND 1: KAWIN PROSES
+  if(sub === 'proses'){
+    let data = wdb.temp.kawin[m.sender]
+    if(!data) return m.reply('❌ Tidak ada kawin yg menunggu konfirmasi')
+    if(Date.now() - data.waktu > 60000) { // 1 menit expired
+      delete wdb.temp.kawin[m.sender]
+      saveDB(wdb)
+      return m.reply('❌ Konfirmasi kadaluarsa. Ketik ulang.kawin')
+    }
+    h1 = data.h1; h2 = data.h2; asuransi = data.asuransi
+  }
+
+  // COMMAND 2: KAWIN BATAL
+  if(sub === 'batal'){
+    if(wdb.temp.kawin[m.sender]){
+      delete wdb.temp.kawin[m.sender]
+      saveDB(wdb)
+      return m.reply('❌ Kawin dibatalkan')
+    } else return m.reply('❌ Tidak ada kawin yg menunggu konfirmasi')
+  }
+
+  // DARI SINI PROSES AWAL KAWIN
+  if(!h1 ||!h2) return m.reply('Contoh:\n.kawin ayam sapi\n.kawin ayam naga asuransi')
+
+  let d1 = getHewan(h1)
   let d2 = getHewan(h2)
   if(!d1 ||!d2) return m.reply('❌ Hewan tidak ditemukan')
   if(!user.ternak[h1] ||!user.ternak[h2]) return m.reply('❌ Kamu tidak punya 1 dari hewan tersebut')
@@ -40,17 +65,23 @@ let handler = async (m, { conn, args }) => {
   let eTertinggi = Math.max(d1.evolusi, d2.evolusi)
   let exp = (d1.exp + d2.exp) * (eTertinggi + 1) * 5 * (h1!==h2?2:1) * (eTertinggi >=7?3:1)
 
-  if(h1!== h2) {
+  // KALAU KAWIN SILANG MINTA KONFIRMASI DULU
+  if(h1!== h2 && sub!== 'proses') {
+    wdb.temp.kawin[m.sender] = {h1, h2, asuransi, waktu: Date.now()}
+    saveDB(wdb)
+
     let ket = `┌───❏「 ⚠️ PERINGATAN EVOLUSI 」❏\n│\n│ ${d1.emoji} ${d1.nama} [E${d1.evolusi}] × ${d2.emoji} ${d2.nama} [E${d2.evolusi}]\n│\n│ 📊 Resiko Gagal : ${peluangGagal(d1,d2)*100}%\n│ 🎯 Hasil : E${Math.min(eTertinggi+1,7)}\n│ ✨ Exp : ${Math.floor(exp)} / ${Math.floor(exp/2)}\n│\n│ 💰 Biaya Kawin : Rp ${biaya.toLocaleString()}`
     ket += asuransi? `\n│ 🛡️ Biaya Asuransi: Rp ${biayaAs.toLocaleString()}\n│ 🏥 Biaya ICU : Rp ${biayaObat.toLocaleString()}` : `\n│ ⚠️ Tanpa Asuransi: Tidak bisa ICU`
     ket += `\n│\n│ ℹ️ ICU = Ruang penyelamatan. Jika gagal dan punya asuransi,\n│ hewan masuk ICU 30 menit. Ketik.icu untuk menyelamatkan`
-    return m.reply(ket + `\n│\n│ Ketik lagi untuk melanjutkan\n└───────────────────`)
+    return m.reply(ket + `\n│\n│ Ketik *.kawin proses* untuk lanjut\n│ Ketik *.kawin batal* untuk batal\n│ ⏰ 1 menit\n└───────────────────`)
   }
 
+  // PROSES KAWIN BENERAN
   wdb.money[m.sender] -= bayar
   user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
   user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
   user.cooldown.kawin = sekarang
+  delete wdb.temp.kawin[m.sender] // hapus konfirmasi
 
   let gagal = Math.random() < peluangGagal(d1,d2)
   if(gagal) {
@@ -83,7 +114,7 @@ let handler = async (m, { conn, args }) => {
     return m.reply(`┌───❏「 🎉 EVOLUSI BERHASIL 」❏\n│\n│ ${d1.emoji} ${d1.nama} × ${d2.emoji} ${d2.nama}\n│\n│ 🎁 Lahir: ${hasil.data.emoji} ${hasil.data.nama} [E${hasil.data.evolusi}] x1${notif}${mentok}\n│ ✨ +${Math.floor(exp)} Exp\n│ 💰 -Rp ${bayar.toLocaleString()}\n│ ⏰ Cooldown: ${jenis === 'biasa'? '2 jam' : '7 jam'}\n└───────────────────`)
   }
 }
-handler.help = ['kawin <h1> <h2> [asuransi]']
+handler.help = ['kawin <h1> <h2> [asuransi]', 'kawin proses', 'kawin batal']
 handler.tags = ['rpg']
 handler.command = /^(kawin)$/i
 handler.group = true
