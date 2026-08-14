@@ -49,18 +49,20 @@ let handler = async function (m, { text, usedPrefix, command, conn }) {
   user.regTime = +new Date()
   user.registered = true
 
+  let lidWarning = m.sender.endsWith('@lid') ? `\n\n⚠️ *Catatan:* Kamu mendaftar menggunakan WhatsApp Web (LID). Jika nanti di HP disuruh daftar lagi, tenang saja, sistem sedang mensinkronkan datamu secara otomatis.` : ''
+
   let caption = `
 「 *PENDAFTARAN BERHASIL* 」
 │ ✅ *Status:* Aktif
 │ ✨ *Nama:* ${name}
 │ 🎂 *Umur:* ${age} Tahun
-│ 📱 *Nomor:* +${m.sender.split('@')[0]}
+│ 📱 *ID:* ${m.sender.split('@')[0]}
 │ 🔐 *SN Key:* ${sn}
 │
 │ 📅 *Tanggal:* ${week}, ${date}
 │ ⏰ *Waktu:* ${wktuwib}
 
-Data profil kamu sudah tersimpan di database.
+Data profil kamu sudah tersimpan di database.${lidWarning}
 `.trim()
 
   try {
