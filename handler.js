@@ -373,11 +373,6 @@ export async function handler(chatUpdate) {
         }
 
         // PLUGIN LOADER
-        if (m.text && m.text.toLowerCase().trim() === 'terima') {
-            let debugQuotedText = m.quoted ? (m.quoted.text || 'NO_TEXT') : 'NO_QUOTED'
-            this.reply(m.chat, `[DEBUG-GLOBAL] Pesan 'terima' terdeteksi oleh handler inti!\nQuoted: ${!!m.quoted}\nQuoted text: ${debugQuotedText}`, m)
-        }
-        
         const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
             let plugin = global.plugins[name]

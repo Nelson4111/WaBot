@@ -67,7 +67,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitleJambak(userTarget.stats.jambakMenang)}\n│ Lv.${userTarget.level} | W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ Balas pesan ini degan tulisan *terima* atau *tolak*\n│ ⏰ 2 menit\n`
+    cap += `│\n│ Balas pesan ini dengan perintah:\n│ *.jambakterima* atau *.jambaktolak*\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -104,7 +104,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitlePanco(userTarget.stats.pancoMenang)}\n│ Lv.${userTarget.level} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ Balas pesan ini degan tulisan *terima* atau *tolak*\n│ ⏰ 2 menit\n`
+    cap += `│\n│ Balas pesan ini dengan perintah:\n│ *.pancoterima* atau *.pancotolak*\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -189,96 +189,5 @@ handler.help = ['jambak @tag [taruhan]', 'panco @tag [taruhan]']
 handler.tags = ['rpg']
 handler.command = /^(jambak|jambakterima|jambaktolak|panco|pancoterima|pancotolak)$/i
 handler.group = true
-
-handler.before = async function (m, { conn }) {
-    if (!m.text) return
-    let txt = m.text.toLowerCase().trim()
-    if (txt !== 'terima' && txt !== 'tolak') return
-    
-    // TRACE START
-    m.reply(`[DEBUG-ARENA] Handler rpg-arena dieksekusi!\nSender: ${m.sender}\nTxt: ${txt}`)
-    
-    if (!m.quoted) {
-        return m.reply('[DEBUG] Kamu mengetik "terima" tapi tidak mereply/membalas pesan apapun. Harus reply pesan arenanya!')
-    }
-
-    let cap = m.quoted.text || m.quoted.caption || ''
-    let isJambak = cap.includes('JAMBAK')
-    let isPanco = cap.includes('PANCO')
-    
-    // DEBUG:
-    if (!isJambak && !isPanco) {
-       return m.reply(`[DEBUG] No Jambak/Panco found in cap.\n\nCap content:\n${cap}`)
-    }
-
-    let type = isJambak ? 'jambak' : 'panco'
-    let wdb = loadDB()
-    wdb.temp = wdb.temp || {}
-    wdb.temp.arena = wdb.temp.arena || {}
-
-    let senderJid = m.sender.split(':')[0] + '@s.whatsapp.net'
-
-    let arenaKey = Object.keys(wdb.temp.arena).find(k => {
-      return wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === senderJid;
-    })
-
-    if (!arenaKey) {
-        let debugKeys = Object.keys(wdb.temp.arena).map(k => `Key: ${k}, Target: ${wdb.temp.arena[k].target}`).join('\n')
-        m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.\n\n[DEBUG Info]\nYour senderJid: ${senderJid}\nPending arenas:\n${debugKeys || 'None'}`)
-        return true
-    }
-
-    let arena = wdb.temp.arena[arenaKey]
-
-    if (txt === 'tolak') {
-        let penantangAsli = arena.penantang
-        delete wdb.temp.arena[arenaKey]
-        saveDB(wdb)
-        m.reply(`❌ @${senderJid.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [senderJid, penantangAsli] })
-        return true
-    }
-
-    // Jika Terima
-    let dataP = getUserRPG(wdb, arena.penantang)
-    let dataT = getUserRPG(wdb, arena.target)
-    let userP = dataP.rpg
-    let userT = dataT.rpg
-    initStats(userP)
-    initStats(userT)
-
-    let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
-    let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
-
-    let resCap = `┌───❏「 ⚔️ PERTARUNGAN ${type.toUpperCase()} 」❏\n│\n`
-    resCap += `│ @${arena.penantang.split('@')[0]} ⚡ ${powerP}\n│ VS\n│ @${arena.target.split('@')[0]} ⚡ ${powerT}\n│\n`
-
-    if (powerP > powerT) {
-      wdb.money[arena.penantang] += arena.taruhan
-      wdb.money[arena.target] -= arena.taruhan
-      userP.exp += 50
-      if(type === 'jambak'){ userP.stats.jambakMenang++; userT.stats.jambakKalah++ }
-      else { userP.stats.pancoMenang++; userT.stats.pancoKalah++ }
-      resCap += `│ 🏆 *PEMENANG*\n│ @${arena.penantang.split('@')[0]}\n│\n│ 💰 +Rp ${arena.taruhan.toLocaleString()}\n│ ✨ +50 Exp`
-    } else if (powerT > powerP) {
-      wdb.money[arena.target] += arena.taruhan
-      wdb.money[arena.penantang] -= arena.taruhan
-      userT.exp += 50
-      if(type === 'jambak'){ userT.stats.jambakMenang++; userP.stats.jambakKalah++ }
-      else { userT.stats.pancoMenang++; userP.stats.pancoKalah++ }
-      resCap += `│ 🏆 *PEMENANG*\n│ @${arena.target.split('@')[0]}\n│\n│ 💰 +Rp ${arena.taruhan.toLocaleString()}\n│ ✨ +50 Exp`
-    } else {
-      resCap += `│ 🤝 *HASIL: SERI*\n│ Taruhan dikembalikan`
-    }
-    resCap += `\n└───────────────────`
-
-    delete wdb.temp.arena[arenaKey]
-    saveDB(wdb)
-    
-    // TRACE SUCCESS
-    m.reply(`[DEBUG-ARENA] Mengirim hasil pertarungan... (Jika pesan setelah ini tidak muncul, berarti conn.sendMessage bermasalah!)`)
-    
-    conn.sendMessage(m.chat, { text: resCap, mentions: [arena.penantang, arena.target] }, { quoted: m })
-    return true
-}
 
 export default handler
