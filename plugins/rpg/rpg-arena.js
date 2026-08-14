@@ -42,7 +42,8 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   // 1. JAMBAK - BUAT NANTANG
   if (command === 'jambak') {
     let targetRaw = m.mentionedJid[0] || m.quoted?.sender
-    if(!targetRaw) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
+    if(!targetRaw) return m.reply(`❌ Tag orang yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
+    if(targetRaw.includes('@lid')) return m.reply(`❌ Sistem mendeteksi JID anonim (@lid) dari reply kamu.\nTolong gunakan TAG langsung (@nama) ya, jangan reply pesannya!\nContoh: *${usedPrefix}jambak @tag 50000*`)
     let target = targetRaw.split('@')[0].split(':')[0] + '@s.whatsapp.net'
     if(target === senderJid) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
 
@@ -59,16 +60,6 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let taruhan = taruhanInput? taruhanInput : taruhanDefault
 
     if(taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1000')
-
-    // DEBUG START
-    if (uangUser === 0 || uangTarget === 0) {
-      let debugText = `[DEBUG JAMBAK]\nsenderJid: ${senderJid}\ntarget: ${target}\nuangUser: ${uangUser}\nuangTarget: ${uangTarget}\n`
-      debugText += `db.users[senderJid]?.money = ${global.db.data.users[senderJid]?.money}\n`
-      debugText += `db.users[target]?.money = ${global.db.data.users[target]?.money}`
-      return m.reply(debugText)
-    }
-    // DEBUG END
-
     if(uangUser < taruhan) return m.reply(`❌ Uang kamu kurang! Punya Rp ${uangUser.toLocaleString()}`)
     if(uangTarget < taruhan) return m.reply(`❌ Uang target kurang! Punya Rp ${uangTarget.toLocaleString()}`)
 
@@ -91,6 +82,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (command === 'panco') {
     let targetRaw = m.mentionedJid[0] || m.quoted?.sender
     if(!targetRaw) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
+    if(targetRaw.includes('@lid')) return m.reply(`❌ Sistem mendeteksi JID anonim (@lid) dari reply kamu.\nTolong gunakan TAG langsung (@nama) ya, jangan reply pesannya!\nContoh: *${usedPrefix}panco @tag 50000*`)
     let target = targetRaw.split('@')[0].split(':')[0] + '@s.whatsapp.net'
     if(target === senderJid) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
 
