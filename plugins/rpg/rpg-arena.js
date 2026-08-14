@@ -33,7 +33,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   wdb.temp = wdb.temp || {}
   wdb.temp.arena = wdb.temp.arena || {}
 
-  let senderJid = m.sender.split(':')[0] + '@s.whatsapp.net'
+  let senderJid = m.sender.split('@')[0].split(':')[0] + '@s.whatsapp.net'
   let data = getUserRPG(wdb, senderJid)
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
@@ -43,7 +43,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (command === 'jambak') {
     let targetRaw = m.mentionedJid[0] || m.quoted?.sender
     if(!targetRaw) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
-    let target = targetRaw.split(':')[0] + '@s.whatsapp.net'
+    let target = targetRaw.split('@')[0].split(':')[0] + '@s.whatsapp.net'
     if(target === senderJid) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
@@ -81,7 +81,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (command === 'panco') {
     let targetRaw = m.mentionedJid[0] || m.quoted?.sender
     if(!targetRaw) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
-    let target = targetRaw.split(':')[0] + '@s.whatsapp.net'
+    let target = targetRaw.split('@')[0].split(':')[0] + '@s.whatsapp.net'
     if(target === senderJid) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
