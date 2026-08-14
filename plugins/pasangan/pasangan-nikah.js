@@ -28,19 +28,19 @@ const CINCIN_SHOP = {
 let proposals = {}
 
 let handler = async (m, { conn, usedPrefix, command, text, args }) => {
-    let inputCmd = command.toLowerCase()
+    let inputCmd = command || m.text.toLowerCase().trim()
     let users = global.db.data.users
     let sender = m.sender
 
     if (!users[sender]) users[sender] = {}
     if (!users[sender].pasangan) users[sender].pasangan = []
 
-    // 1. LAMAR / NIKAH / TEMBAK
+    // 1. LAMAR / NIKAH
     if (['lamar', 'nikah', 'tembak'].includes(inputCmd)) {
         let target = m.mentionedJid?.[0]
-        if (!target) return m.reply(` Tag orang yang ingin kamu lamar!\n*Contoh:* ${usedPrefix}${command} @tag`)
-        if (target === sender) return m.reply('❌ Kamu tidak bisa melamar diri sendiri!')
-        if (target === conn.user.jid) return m.reply('🤖 Aduh, bot cuma program komputer, cari pasangan manusia ya!')
+        if (!target) return m.reply(` Tag orang yang mau kamu lamar!\nContoh: *${usedPrefix}lamar @tag*`)
+        if (target === sender) return m.reply('❌ Kamu mau nikah sama diri sendiri? 😭')
+        if (target === conn.user.jid) return m.reply('❌ Aku ini bot, masa kamu mau nikah sama bot... 🤖💔')
 
         if (!users[target]) users[target] = {}
         if (!users[target].pasangan) users[target].pasangan = []
@@ -56,9 +56,6 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
             time: Date.now()
         }
 
-        let senderName = conn.getName(sender)
-        let targetName = conn.getName(target)
-
         let msg = `💍 *LAMARAN PERNIKAHAN* 💍\n\n`
         msg += `Hai @${target.split('@')[0]},\n`
         msg += `@${sender.split('@')[0]} ingin melamarmu menjadi pasangannya! 💕\n\n`
@@ -69,56 +66,6 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         return conn.sendMessage(m.chat, {
             text: msg,
             mentions: [sender, target]
-        }, { quoted: m })
-    }
-
-    // 2. TERIMA LAMARAN
-    if (inputCmd === 'terima') {
-        if (!m.quoted || !m.quoted.fromMe || !m.quoted.text?.includes('MELAMAR')) return // Abaikan jika bukan reply pesan lamaran
-
-        let prop = proposals[sender]
-        if (!prop || (Date.now() - prop.time > 60000)) {
-            delete proposals[sender]
-            return m.reply('❌ Tidak ada lamaran yang ditujukan padamu atau lamaran sudah kedaluwarsa.')
-        }
-
-        let fromJid = prop.from
-        delete proposals[sender]
-
-        if (!users[fromJid]) users[fromJid] = {}
-        if (!users[fromJid].pasangan) users[fromJid].pasangan = []
-
-        let now = Date.now()
-        let newRecordFrom = { jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' }
-        let newRecordTarget = { jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' }
-
-        users[fromJid].pasangan.push(newRecordFrom)
-        users[sender].pasangan.push(newRecordTarget)
-
-        let ann = `🎉 *SELAMAT! PERNIKAHAN SAH!* 🎉\n\n`
-        ann += `@${fromJid.split('@')[0]} 💞 @${sender.split('@')[0]}\n`
-        ann += `Telah resmi menjadi pasangan suami & istri! 💍✨\n\n`
-        ann += `Ketik *${usedPrefix}pasangan* untuk melihat info status pernikahan kalian!\n`
-        ann += `Ketik *${usedPrefix}kartunikah* untuk melihat Kartu Nikah Digital!`
-
-        return conn.sendMessage(m.chat, {
-            text: ann,
-            mentions: [fromJid, sender]
-        }, { quoted: m })
-    }
-
-    // 3. TOLAK LAMARAN
-    if (inputCmd === 'tolak') {
-        if (!m.quoted || !m.quoted.fromMe || !m.quoted.text?.includes('MELAMAR')) return // Abaikan jika bukan reply pesan lamaran
-        
-        let prop = proposals[sender]
-        if (!prop) return m.reply('❌ Tidak ada lamaran yang ditujukan padamu.')
-        let fromJid = prop.from
-        delete proposals[sender]
-
-        return conn.sendMessage(m.chat, {
-            text: `💔 @${sender.split('@')[0]} menolak lamaran dari @${fromJid.split('@')[0]}. Sabar ya, mungkin belum jodoh... 🥺`,
-            mentions: [sender, fromJid]
         }, { quoted: m })
     }
 
@@ -417,7 +364,67 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
 handler.help = ['lamar @user', 'terima', 'tolak', 'cerai @user', 'pasangan', 'kencan', 'belicincin', 'hadiah @user <jumlah>', 'kartunikah']
 handler.tags = ['pasangan']
-handler.customPrefix = /^(terima|tolak)$/i
 handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|istri|suami|kencan|belicincin|cincin|hadiah|kartunikah|bukunikah)$/i
+
+handler.before = async function (m, { conn }) {
+    if (!m.text) return
+    let txt = m.text.toLowerCase().trim()
+    if (txt !== 'terima' && txt !== 'tolak') return
+    if (!m.quoted || !m.quoted.fromMe || !m.quoted.text?.includes('MELAMAR')) return
+
+    let sender = m.sender
+    let proposals = global.db.data.proposals = global.db.data.proposals || {}
+    let users = global.db.data.users
+
+    if (txt === 'terima') {
+        let prop = proposals[sender]
+        if (!prop || (Date.now() - prop.time > 60000)) {
+            delete proposals[sender]
+            m.reply('❌ Tidak ada lamaran yang ditujukan padamu atau lamaran sudah kedaluwarsa.')
+            return true
+        }
+
+        let fromJid = prop.from
+        delete proposals[sender]
+
+        if (!users[fromJid]) users[fromJid] = {}
+        if (!users[fromJid].pasangan) users[fromJid].pasangan = []
+
+        let now = Date.now()
+        let newRecordFrom = { jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' }
+        let newRecordTarget = { jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' }
+
+        users[fromJid].pasangan.push(newRecordFrom)
+        users[sender].pasangan.push(newRecordTarget)
+
+        let ann = `🎉 *SELAMAT! PERNIKAHAN SAH!* 🎉\n\n`
+        ann += `@${fromJid.split('@')[0]} 💞 @${sender.split('@')[0]}\n`
+        ann += `Telah resmi menjadi pasangan suami & istri! 💍✨\n\n`
+        ann += `Ketik *.pasangan* untuk melihat info status pernikahan kalian!\n`
+        ann += `Ketik *.kartunikah* untuk melihat Kartu Nikah Digital!`
+
+        conn.sendMessage(m.chat, {
+            text: ann,
+            mentions: [fromJid, sender]
+        }, { quoted: m })
+        return true
+    }
+
+    if (txt === 'tolak') {
+        let prop = proposals[sender]
+        if (!prop) {
+            m.reply('❌ Tidak ada lamaran yang ditujukan padamu.')
+            return true
+        }
+        let fromJid = prop.from
+        delete proposals[sender]
+
+        conn.sendMessage(m.chat, {
+            text: `💔 @${sender.split('@')[0]} menolak lamaran dari @${fromJid.split('@')[0]}. Sabar ya, mungkin belum jodoh... 🥺`,
+            mentions: [sender, fromJid]
+        }, { quoted: m })
+        return true
+    }
+}
 
 export default handler

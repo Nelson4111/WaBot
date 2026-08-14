@@ -38,18 +38,8 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   initStats(user) // auto fix
 
-  let inputCmd = command || m.text.toLowerCase().trim()
-  
-  if (inputCmd === 'terima' || inputCmd === 'tolak') {
-      if (!m.quoted || !m.quoted.fromMe) return // Abaikan jika bukan reply
-      let cap = m.quoted.text || m.quoted.caption || ''
-      if (cap.includes('JAMBAK')) inputCmd = 'jambak' + inputCmd
-      else if (cap.includes('PANCO')) inputCmd = 'panco' + inputCmd
-      else return // Bukan reply dari game arena, biarkan plugin lain yang handle
-  }
-
   // 1. JAMBAK - BUAT NANTANG
-  if (inputCmd === 'jambak') {
+  if (command === 'jambak') {
     let target = m.mentionedJid[0] || m.quoted?.sender
     if(!target) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
@@ -86,7 +76,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   }
 
   // 2. PANCO - BUAT NANTANG
-  if (inputCmd === 'panco') {
+  if (command === 'panco') {
     let target = m.mentionedJid[0] || m.quoted?.sender
     if(!target) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
@@ -122,16 +112,15 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
   }
 
-  // 3. TERIMA - BISA AUTO-DETECT ATAU REPLY
-  if (inputCmd === 'jambakterima' || inputCmd === 'pancoterima') {
-    let type = inputCmd.includes('jambak')? 'jambak' : 'panco'
+  // 3. TERIMA - LEWAT COMMAND
+  if (command === 'jambakterima' || command === 'pancoterima') {
+    let type = command.includes('jambak')? 'jambak' : 'panco'
     let penantangTag = getPenantang(m, args)
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
     
     let arenaKey = Object.keys(wdb.temp.arena).find(k => {
       let match = wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === m.sender;
-      // Jika ada tag spesifik dan itu bukan bot, pastikan cocok dengan penantang
       if (penantangTag && !isBot) match = match && wdb.temp.arena[k].penantang === penantangTag;
       return match;
     })
@@ -175,9 +164,9 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
   }
 
-  // 4. TOLAK - BISA AUTO-DETECT ATAU REPLY
-  if (inputCmd === 'jambaktolak' || inputCmd === 'pancotolak') {
-    let type = inputCmd.includes('jambak')? 'jambak' : 'panco'
+  // 4. TOLAK - LEWAT COMMAND
+  if (command === 'jambaktolak' || command === 'pancotolak') {
+    let type = command.includes('jambak')? 'jambak' : 'panco'
     let penantangTag = getPenantang(m, args)
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
@@ -198,7 +187,81 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
 handler.help = ['jambak @tag [taruhan]', 'panco @tag [taruhan]']
 handler.tags = ['rpg']
-handler.customPrefix = /^(terima|tolak)$/i
 handler.command = /^(jambak|jambakterima|jambaktolak|panco|pancoterima|pancotolak)$/i
 handler.group = true
+
+handler.before = async function (m, { conn }) {
+    if (!m.text) return
+    let txt = m.text.toLowerCase().trim()
+    if (txt !== 'terima' && txt !== 'tolak') return
+    if (!m.quoted || !m.quoted.fromMe) return
+
+    let cap = m.quoted.text || m.quoted.caption || ''
+    let isJambak = cap.includes('JAMBAK')
+    let isPanco = cap.includes('PANCO')
+    if (!isJambak && !isPanco) return
+
+    let type = isJambak ? 'jambak' : 'panco'
+    let wdb = loadDB()
+    wdb.temp = wdb.temp || {}
+    wdb.temp.arena = wdb.temp.arena || {}
+
+    let arenaKey = Object.keys(wdb.temp.arena).find(k => {
+      return wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === m.sender;
+    })
+
+    if (!arenaKey) {
+        m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
+        return true
+    }
+
+    let arena = wdb.temp.arena[arenaKey]
+
+    if (txt === 'tolak') {
+        let penantangAsli = arena.penantang
+        delete wdb.temp.arena[arenaKey]
+        saveDB(wdb)
+        m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [m.sender, penantangAsli] })
+        return true
+    }
+
+    // Jika Terima
+    let dataP = getUserRPG(wdb, arena.penantang)
+    let dataT = getUserRPG(wdb, arena.target)
+    let userP = dataP.rpg
+    let userT = dataT.rpg
+    initStats(userP)
+    initStats(userT)
+
+    let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
+    let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
+
+    let resCap = `┌───❏「 ⚔️ PERTARUNGAN ${type.toUpperCase()} 」❏\n│\n`
+    resCap += `│ @${arena.penantang.split('@')[0]} ⚡ ${powerP}\n│ VS\n│ @${arena.target.split('@')[0]} ⚡ ${powerT}\n│\n`
+
+    if (powerP > powerT) {
+      wdb.money[arena.penantang] += arena.taruhan
+      wdb.money[arena.target] -= arena.taruhan
+      userP.exp += 50
+      if(type === 'jambak'){ userP.stats.jambakMenang++; userT.stats.jambakKalah++ }
+      else { userP.stats.pancoMenang++; userT.stats.pancoKalah++ }
+      resCap += `│ 🏆 *PEMENANG*\n│ @${arena.penantang.split('@')[0]}\n│\n│ 💰 +Rp ${arena.taruhan.toLocaleString()}\n│ ✨ +50 Exp`
+    } else if (powerT > powerP) {
+      wdb.money[arena.target] += arena.taruhan
+      wdb.money[arena.penantang] -= arena.taruhan
+      userT.exp += 50
+      if(type === 'jambak'){ userT.stats.jambakMenang++; userP.stats.jambakKalah++ }
+      else { userT.stats.pancoMenang++; userP.stats.pancoKalah++ }
+      resCap += `│ 🏆 *PEMENANG*\n│ @${arena.target.split('@')[0]}\n│\n│ 💰 +Rp ${arena.taruhan.toLocaleString()}\n│ ✨ +50 Exp`
+    } else {
+      resCap += `│ 🤝 *HASIL: SERI*\n│ Taruhan dikembalikan`
+    }
+    resCap += `\n└───────────────────`
+
+    delete wdb.temp.arena[arenaKey]
+    saveDB(wdb)
+    sendRpgMsg(conn, m, resCap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
+    return true
+}
+
 export default handler
