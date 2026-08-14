@@ -372,7 +372,7 @@ handler.before = async function (m, { conn }) {
     if (txt !== 'terima' && txt !== 'tolak') return
     if (!m.quoted || !m.quoted.fromMe || !m.quoted.text?.includes('MELAMAR')) return
 
-    let sender = m.sender
+    let sender = m.sender.split(':')[0] + '@s.whatsapp.net'
     let proposals = global.db.data.proposals = global.db.data.proposals || {}
     let users = global.db.data.users
 

@@ -206,8 +206,10 @@ handler.before = async function (m, { conn }) {
     wdb.temp = wdb.temp || {}
     wdb.temp.arena = wdb.temp.arena || {}
 
+    let senderJid = m.sender.split(':')[0] + '@s.whatsapp.net'
+
     let arenaKey = Object.keys(wdb.temp.arena).find(k => {
-      return wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === m.sender;
+      return wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === senderJid;
     })
 
     if (!arenaKey) {
@@ -221,7 +223,7 @@ handler.before = async function (m, { conn }) {
         let penantangAsli = arena.penantang
         delete wdb.temp.arena[arenaKey]
         saveDB(wdb)
-        m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [m.sender, penantangAsli] })
+        m.reply(`❌ @${senderJid.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [senderJid, penantangAsli] })
         return true
     }
 
