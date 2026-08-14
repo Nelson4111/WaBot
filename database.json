@@ -1,8 +1,8 @@
 {
   "users": {
     "6281242432747@s.whatsapp.net": {
-      "exp": null,
-      "limit": null,
+      "exp": 1,
+      "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -90,7 +90,7 @@
       "autolevelup": true
     },
     "6281241100804@s.whatsapp.net": {
-      "exp": 717,
+      "exp": 1995,
       "limit": 100,
       "balance": 0,
       "lastclaim": 0,
@@ -154,7 +154,7 @@
         "language": "Indonesia"
       },
       "pasangan": [],
-      "money": 100000,
+      "money": 1100000,
       "rpg": {
         "level": 2,
         "exp": 270,
@@ -280,7 +280,7 @@
       "autolevelup": true
     },
     "60165346338@s.whatsapp.net": {
-      "exp": 15,
+      "exp": 10,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -305,22 +305,6 @@
       "aiHistory": [
         {
           "role": "user",
-          "content": "kerja dia jaga makanan, refill angkat piring susun piring atur meja, dan lain” apa” info shaja"
-        },
-        {
-          "role": "assistant",
-          "content": "Tugasnya tidak terlalu sulit, ya? Jaga makanan, refill angkat piring, susun piring, atur meja... kayaknya sudah cukup! Tapi, perlu diingat, harus rajin dan teliti dalam melakukannya, karena harus membuat tamu merasa nyaman dan puas. Apa kabar, kamu sudah menemukan orang yang mau bekerja part-time nih?"
-        },
-        {
-          "role": "user",
-          "content": "meng solo"
-        },
-        {
-          "role": "assistant",
-          "content": "Meng solo, ya? Makanya kamu butuh bantuan orang lain untuk bekerja part-time di esk! Mungkin kamu bisa berbohong pada teman-temanmu bahwa kamu sudah menemukan orang lain yang bisa bekerja nih wkwk"
-        },
-        {
-          "role": "user",
           "content": "info dkt simpang kg bawan ad jpj sblm simpang kmpg ya… dkt” petron yg di rubuhkan"
         },
         {
@@ -342,6 +326,22 @@
         {
           "role": "assistant",
           "content": "Sopan banget, kamu! Baju asli yang sopan, ya? Gak perlu khawatir, aku yakin kamu akan terlihat cantik dan percaya diri dengan baju yang kamu pilih!"
+        },
+        {
+          "role": "user",
+          "content": "gais repost dlu psl pramusaji tu, kurg org ni msi"
+        },
+        {
+          "role": "assistant",
+          "content": "Kamu ingin merepost informasi tentang pramusaji tu, ya? Gais, kamu bisa ngasih link repostnya nih, aku bisa bantu kamu share di grup-grup yang terkait!"
+        },
+        {
+          "role": "user",
+          "content": "esok di perlukan, hnya sehari sahaja yg ptg rajin"
+        },
+        {
+          "role": "assistant",
+          "content": "Wah, kamu butuh bantuan sementara untuk pekerjaan itu, ya? Sehari saja kamu perlukan, tapi malam ini kamu belum siap, mungkin kamu bisa cari teman yang mau bantuin kamu nih!"
         }
       ]
     },
@@ -383,7 +383,7 @@
       "autolevelup": true
     },
     "120363405553948470@newsletter": {
-      "exp": 8,
+      "exp": 10,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -412,6 +412,14 @@
         {
           "role": "assistant",
           "content": "Nggak sabar nih, teman! Apa yang bisa aku lakukan untuk kamu? Mau ngobrol tentang apa aja?"
+        },
+        {
+          "role": "user",
+          "content": "Done panel 5gb"
+        },
+        {
+          "role": "assistant",
+          "content": "Wah, panel 5GB udah berhasil! Sekarang kamu bisa main game atau nonton video tanpa hambatan lagi! Apa kamu ingin main game online atau nonton film favorit?"
         }
       ]
     },
@@ -1394,8 +1402,8 @@
       "autolevelup": true
     },
     "16196267018@s.whatsapp.net": {
-      "exp": null,
-      "limit": null,
+      "exp": 336,
+      "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -1412,7 +1420,7 @@
       "role": "Free user",
       "autolevelup": true,
       "pasangan": [],
-      "money": 116200,
+      "money": 1116200,
       "rpg": {
         "level": 1,
         "exp": 194,
@@ -1431,6 +1439,12 @@
           "level": 1,
           "exp": 0,
           "lastFeed": 0
+        },
+        "stats": {
+          "jambakMenang": 0,
+          "jambakKalah": 0,
+          "pancoMenang": 0,
+          "pancoKalah": 0
         }
       },
       "lastDaily": 1785776617339
@@ -2030,15 +2044,15 @@
       }
     },
     "215586000867401@lid": {
-      "exp": 1580,
+      "exp": 1652,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
       "registered": true,
-      "name": "...",
-      "age": -1,
-      "regTime": 1785494644677,
+      "name": ": vira",
+      "age": 17,
+      "regTime": 1786715029432,
       "afk": -1,
       "afkReason": "",
       "banned": false,
@@ -2070,7 +2084,30 @@
         "lastrob": 0,
         "bank": 949
       },
-      "money": 0
+      "money": 0,
+      "aiProfile": {
+        "nickname": "...",
+        "preferences": [],
+        "language": "Indonesia"
+      },
+      "aiHistory": [
+        {
+          "role": "user",
+          "content": "Ketik dengan format:\n\n.daftar nama : vira, 17\n\nContoh:\n.daftar nenel,16"
+        },
+        {
+          "role": "assistant",
+          "content": ".daftar owner : nenel, 28"
+        },
+        {
+          "role": "user",
+          "content": "Ketik dengan format:\n\n.daftar nama : vira, 17"
+        },
+        {
+          "role": "assistant",
+          "content": ".daftar kamu : aku, 20"
+        }
+      ]
     },
     "7035240333502@lid": {
       "exp": 1524,
@@ -2694,7 +2731,7 @@
       "autolevelup": true
     },
     "1310216683771@lid": {
-      "exp": 2020,
+      "exp": 2053,
       "limit": 90,
       "balance": 0,
       "totalDonasi": 0,
@@ -2931,8 +2968,8 @@
       "autolevelup": true
     },
     "166069222248546@lid": {
-      "exp": null,
-      "limit": null,
+      "exp": 52,
+      "limit": 99,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -4950,7 +4987,7 @@
         "preferences": [],
         "language": "Indonesia"
       },
-      "money": 77715774,
+      "money": 81315774,
       "lastKencan": 1786440755846,
       "aiHistory": [
         {
@@ -5001,8 +5038,8 @@
         "lastAdventure": 1786680835502,
         "lastMining": 1786677122869,
         "lastDungeon": 1786619376442,
-        "diamond": 4478,
-        "gold": 11485,
+        "diamond": 4520,
+        "gold": 11590,
         "iron": 1287,
         "stone": 16754,
         "wood": 358,
@@ -5163,7 +5200,7 @@
             "revive": true
           }
         ],
-        "emerald": 183
+        "emerald": 191
       },
       "lastDaily": 1786152996391,
       "youtube": {
@@ -5339,7 +5376,7 @@
       "lastDaily": 1786681591317
     },
     "6287716300353@s.whatsapp.net": {
-      "exp": 45767,
+      "exp": 45835,
       "limit": 97,
       "balance": 0,
       "totalDonasi": 8997,
@@ -5395,7 +5432,7 @@
         }
       ],
       "lastKencan": 1786367592154,
-      "money": 145666,
+      "money": 155345,
       "aiProfile": {
         "nickname": "Mina",
         "preferences": [],
@@ -5403,16 +5440,16 @@
       },
       "rpg": {
         "level": 79,
-        "exp": 20507,
-        "darah": 226,
-        "lastAdventure": 1786712324578,
-        "lastMining": 1786712344641,
+        "exp": 28988,
+        "darah": 207,
+        "lastAdventure": 1786715724409,
+        "lastMining": 1786715713546,
         "lastDungeon": 1786432532135,
-        "diamond": 2135,
+        "diamond": 2136,
         "gold": 7583,
-        "iron": 803,
+        "iron": 807,
         "stone": 10703,
-        "wood": 837,
+        "wood": 845,
         "inventory": {
           "emas": 90,
           "padi": 10,
@@ -5473,9 +5510,10 @@
           "koin_emas_kuno": 1,
           "peti_karat": 2,
           "cerberus_laut": 1,
-          "tongkol": 1
+          "tongkol": 1,
+          "siput": 1
         },
-        "lastMancing": 1786712375459,
+        "lastMancing": 1786715717506,
         "bank": 438056953,
         "maxLadang": 10,
         "ladang": {
@@ -5594,7 +5632,7 @@
           "gold": 5,
           "fillium": 1,
           "tin": 4,
-          "copper": 7,
+          "copper": 9,
           "titanium": 1,
           "cuprite": 3,
           "iron": 3
@@ -5606,15 +5644,15 @@
         },
         "items": {
           "wood": 6,
-          "belati_karat": 15,
+          "belati_karat": 16,
           "ramuan_kecil": 5,
           "jamur": 1,
           "ramuan_sedang": 17,
           "tali": 6,
-          "iron": 15,
+          "iron": 17,
           "koin_tembaga": 7,
           "pedang_baja": 12,
-          "diamond": 7,
+          "diamond": 8,
           "koin_emas": 6,
           "koin_perak": 25,
           "peta_harta": 7,
@@ -5627,11 +5665,11 @@
           "pedang_legendaris": 1,
           "air_mata_dewi": 10,
           "pecahan_bintang": 10,
-          "jiwa_abadi": 64,
-          "segel_dewa": 71,
+          "jiwa_abadi": 65,
+          "segel_dewa": 72,
           "permata_biru": 1
         },
-        "adventureLevel": 49,
+        "adventureLevel": 50,
         "dapur": {
           "slot": 2,
           "antrian": []
@@ -6007,7 +6045,7 @@
       "lastKencan": 1786495732609
     },
     "628385848829@s.whatsapp.net": {
-      "exp": 21314,
+      "exp": 24006,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 2423,
@@ -6050,19 +6088,19 @@
         "language": "Indonesia"
       },
       "lastKencan": 1786710955522,
-      "money": 8678846,
+      "money": 0,
       "rpg": {
         "level": 99,
-        "exp": 8030,
-        "darah": 235,
-        "lastAdventure": 1786704473905,
-        "lastMining": 1786710835260,
-        "lastDungeon": 1786710831682,
-        "diamond": 4331,
-        "gold": 8250,
-        "iron": 211,
+        "exp": 21359,
+        "darah": 216,
+        "lastAdventure": 1786716406064,
+        "lastMining": 1786716402148,
+        "lastDungeon": 1786716414749,
+        "diamond": 4379,
+        "gold": 8390,
+        "iron": 216,
         "stone": 3845,
-        "wood": 1374,
+        "wood": 1385,
         "inventory": {
           "emas": 40
         },
@@ -6100,7 +6138,7 @@
           "ikan_selar": 14,
           "kaos_kaki": 1,
           "ikan_layang": 10,
-          "ikan_tembang": 10,
+          "ikan_tembang": 11,
           "flying_dutchman": 1,
           "ikan_gurame": 4,
           "ikan_wader": 5,
@@ -6127,9 +6165,9 @@
           "karang_keras": 1,
           "phoenix_laut": 1
         },
-        "lastMancing": 1786710838671,
-        "bank": 537417048,
-        "lastkerja": 1786710827864,
+        "lastMancing": 1786716403580,
+        "bank": 554602381,
+        "lastkerja": 1786716420293,
         "maxDarah": 300,
         "sword": 12,
         "armor": 10,
@@ -6140,6 +6178,7 @@
         "lastBunga": 1786612632321,
         "totalBunga": 2494069,
         "riwayat": [
+          "-Rp 17,185,333 Simpan",
           "-Rp 8,475,000 Simpan",
           "-Rp 23,472,283 Simpan",
           "-Rp 14,965,002 Simpan",
@@ -6200,30 +6239,30 @@
           "pumice": 2,
           "obsidian": 4,
           "rivalite": 1,
-          "tin": 2,
+          "tin": 4,
           "graphite": 2
         },
         "items": {
           "tali": 3,
           "koin_perak": 9,
           "batu": 2,
-          "iron": 4,
+          "iron": 5,
           "koin_tembaga": 5,
-          "wood": 7,
+          "wood": 8,
           "ramuan_sedang": 6,
           "pedang_baja": 2,
-          "ramuan_kecil": 4,
+          "ramuan_kecil": 5,
           "diamond": 4,
           "ramuan_besar": 2,
           "koin_emas": 3,
-          "belati_karat": 4,
+          "belati_karat": 5,
           "permata_hijau": 4,
-          "peta_harta": 6,
+          "peta_harta": 7,
           "permata_biru": 8,
           "permata_merah": 1
         },
-        "adventureLevel": 14,
-        "emerald": 183,
+        "adventureLevel": 15,
+        "emerald": 191,
         "limit": 0,
         "dapur": {
           "slot": 1,
@@ -6233,11 +6272,11 @@
       "lastDaily": 1786681601430,
       "youtube": {
         "name": "sasha",
-        "subs": 271829,
-        "views": 2391101,
-        "likes": 729835,
+        "subs": 272850,
+        "views": 2401319,
+        "likes": 733463,
         "level": 28,
-        "lastLive": 1786710856631,
+        "lastLive": 1786716409671,
         "lastKolab": 1786710856631
       },
       "bank": 239399224
@@ -6399,7 +6438,7 @@
       "totalDonasi": 10000
     },
     "6282228638623@s.whatsapp.net": {
-      "exp": 19,
+      "exp": 52,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 29000,
@@ -6408,8 +6447,8 @@
       "name": "Eza",
       "age": 17,
       "regTime": 1785568676426,
-      "afk": -1,
-      "afkReason": "",
+      "afk": 1786715517122,
+      "afkReason": "lanjut coding",
       "banned": false,
       "banReason": "",
       "warn": 0,
@@ -7303,11 +7342,46 @@
           "level": 1,
           "exp": 0,
           "lastFeed": 0
+        },
+        "stats": {
+          "jambakMenang": 0,
+          "jambakKalah": 0,
+          "pancoMenang": 0,
+          "pancoKalah": 0
         }
       },
       "money": 0,
       "afk": -1,
       "afkReason": ""
+    },
+    "226804522590211@lid": {
+      "rpg": {
+        "level": 1,
+        "exp": 0,
+        "darah": 100,
+        "lastAdventure": 0,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 0,
+        "stone": 0,
+        "wood": 0,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "stats": {
+          "jambakMenang": 0,
+          "jambakKalah": 0,
+          "pancoMenang": 0,
+          "pancoKalah": 0
+        }
+      },
+      "money": 0
     }
   },
   "chats": {
@@ -11138,6 +11212,28 @@
       "menu": true,
       "onlyadmin": false,
       "antiToxic": false
+    },
+    "215586000867401@lid": {
+      "isBanned": false,
+      "welcome": true,
+      "detect": false,
+      "sWelcome": "",
+      "sBye": "",
+      "sPromote": "",
+      "sDemote": "",
+      "antiLink": false,
+      "antispam": false,
+      "viewonce": false,
+      "simi": false,
+      "autogpt": false,
+      "expired": 0,
+      "autoSticker": false,
+      "premium": false,
+      "premiumTime": false,
+      "nsfw": false,
+      "menu": true,
+      "onlyadmin": false,
+      "antiToxic": false
     }
   },
   "stats": {
@@ -11304,16 +11400,16 @@
       "lastSuccess": 1786684385485
     },
     "menu/menu.js": {
-      "total": 112,
-      "success": 112,
-      "last": 1786700383249,
-      "lastSuccess": 1786700383249
+      "total": 115,
+      "success": 115,
+      "last": 1786717193352,
+      "lastSuccess": 1786717193352
     },
     "downloader/downloader-tiktok.js": {
-      "total": 94,
-      "success": 86,
-      "last": 1786692454719,
-      "lastSuccess": 1786692454719
+      "total": 95,
+      "success": 87,
+      "last": 1786717224026,
+      "lastSuccess": 1786717224026
     },
     "maker/brat.js": {
       "total": 43,
@@ -11352,16 +11448,16 @@
       "lastSuccess": 1786607751686
     },
     "info/xp-profile.js": {
-      "total": 191,
-      "success": 191,
-      "last": 1786678149520,
-      "lastSuccess": 1786678149520
+      "total": 199,
+      "success": 199,
+      "last": 1786718229369,
+      "lastSuccess": 1786718229369
     },
     "afk/afk-afk.js": {
-      "total": 605,
-      "success": 605,
-      "last": 1786709050440,
-      "lastSuccess": 1786709050440
+      "total": 608,
+      "success": 608,
+      "last": 1786715518632,
+      "lastSuccess": 1786715518632
     },
     "menu/menu-game.js": {
       "total": 14,
@@ -11460,16 +11556,16 @@
       "lastSuccess": 1786532917541
     },
     "pasangan/pasangan-nikah.js": {
-      "total": 489,
-      "success": 489,
-      "last": 1786710957643,
-      "lastSuccess": 1786710957643
+      "total": 493,
+      "success": 493,
+      "last": 1786718577099,
+      "lastSuccess": 1786718577099
     },
     "sticker/sticker-sticker.js": {
-      "total": 154,
-      "success": 154,
-      "last": 1786709786071,
-      "lastSuccess": 1786709786071
+      "total": 155,
+      "success": 155,
+      "last": 1786717167127,
+      "lastSuccess": 1786717167127
     },
     "menu/allmenu.js": {
       "total": 19,
@@ -11628,16 +11724,16 @@
       "lastSuccess": 1785776933238
     },
     "owner/owner-addmoney.js": {
-      "total": 17,
-      "success": 17,
-      "last": 1786678919018,
-      "lastSuccess": 1786678919018
+      "total": 19,
+      "success": 19,
+      "last": 1786714325248,
+      "lastSuccess": 1786714325248
     },
     "main/main-daftar.js": {
-      "total": 91,
-      "success": 91,
-      "last": 1786709755909,
-      "lastSuccess": 1786709755909
+      "total": 93,
+      "success": 93,
+      "last": 1786715030242,
+      "lastSuccess": 1786715030242
     },
     "game/game-tebaklagu.js": {
       "total": 6,
@@ -11658,16 +11754,16 @@
       "lastSuccess": 1786709817434
     },
     "rpg/rpg-mancing.js": {
-      "total": 2162,
-      "success": 2162,
-      "last": 1786712989133,
-      "lastSuccess": 1786712989133
+      "total": 2164,
+      "success": 2164,
+      "last": 1786716405833,
+      "lastSuccess": 1786716405833
     },
     "rpg/rpg-adventure.js": {
-      "total": 1230,
-      "success": 1230,
-      "last": 1786712995639,
-      "lastSuccess": 1786712995639
+      "total": 1232,
+      "success": 1232,
+      "last": 1786716407443,
+      "lastSuccess": 1786716407443
     },
     "menu/menu-fun.js": {
       "total": 6,
@@ -11820,10 +11916,10 @@
       "lastSuccess": 1786702369526
     },
     "rpg/rpg-dungeon.js": {
-      "total": 591,
-      "success": 589,
-      "last": 1786712355729,
-      "lastSuccess": 1786712355729
+      "total": 592,
+      "success": 590,
+      "last": 1786716415833,
+      "lastSuccess": 1786716415833
     },
     "rpg/rpg-heal.js": {
       "total": 304,
@@ -11832,16 +11928,16 @@
       "lastSuccess": 1786712352184
     },
     "rpg/rpg-mining.js": {
-      "total": 1666,
-      "success": 1666,
-      "last": 1786712990168,
-      "lastSuccess": 1786712990168
+      "total": 1668,
+      "success": 1668,
+      "last": 1786716404466,
+      "lastSuccess": 1786716404466
     },
     "rpg/rpg-panen.js": {
-      "total": 800,
-      "success": 800,
-      "last": 1786712397053,
-      "lastSuccess": 1786712397053
+      "total": 801,
+      "success": 801,
+      "last": 1786716423184,
+      "lastSuccess": 1786716423184
     },
     "rpg/rpg-tanam.js": {
       "total": 628,
@@ -11868,28 +11964,28 @@
       "lastSuccess": 1786110289530
     },
     "rpg/rpg-liveyt.js": {
-      "total": 810,
-      "success": 810,
-      "last": 1786710849155,
-      "lastSuccess": 1786710849155
+      "total": 811,
+      "success": 811,
+      "last": 1786716411236,
+      "lastSuccess": 1786716411236
     },
     "rpg/rpg-bank.js": {
-      "total": 3872,
-      "success": 3868,
-      "last": 1786712502239,
-      "lastSuccess": 1786712502239
+      "total": 3873,
+      "success": 3869,
+      "last": 1786716431702,
+      "lastSuccess": 1786716431702
     },
     "rpg/rpg-misiguild.js": {
-      "total": 732,
-      "success": 732,
-      "last": 1786712388836,
-      "lastSuccess": 1786712388836
+      "total": 733,
+      "success": 733,
+      "last": 1786716419098,
+      "lastSuccess": 1786716419098
     },
     "rpg/rpg-pet.js": {
-      "total": 722,
-      "success": 722,
-      "last": 1786710845814,
-      "lastSuccess": 1786710845814
+      "total": 723,
+      "success": 723,
+      "last": 1786716412132,
+      "lastSuccess": 1786716412132
     },
     "rpg/rpg-buyladang.js": {
       "total": 146,
@@ -11946,10 +12042,10 @@
       "lastSuccess": 1785669793823
     },
     "rpg/rpg-kerja.js": {
-      "total": 2101,
-      "success": 2101,
-      "last": 1786712991155,
-      "lastSuccess": 1786712991155
+      "total": 2102,
+      "success": 2102,
+      "last": 1786716420302,
+      "lastSuccess": 1786716420302
     },
     "rpg/rpg-upgrade.js": {
       "total": 529,
@@ -12666,16 +12762,16 @@
       "lastSuccess": 1786674005764
     },
     "rpg/rpg-arena.js": {
-      "total": 63,
-      "success": 62,
-      "last": 1786709820836,
-      "lastSuccess": 1786709820836
+      "total": 83,
+      "success": 82,
+      "last": 1786718591226,
+      "lastSuccess": 1786718591226
     },
     "owner/owner-exec.js": {
-      "total": 25,
-      "success": 25,
-      "last": 1786712972033,
-      "lastSuccess": 1786712972033
+      "total": 37,
+      "success": 37,
+      "last": 1786718549116,
+      "lastSuccess": 1786718549116
     },
     "owner/owner-backupgit.js": {
       "total": 8,
@@ -12702,10 +12798,10 @@
       "lastSuccess": 1786679425126
     },
     "owner/owner-update.js": {
-      "total": 28,
-      "success": 28,
-      "last": 1786712976424,
-      "lastSuccess": 1786712976424
+      "total": 47,
+      "success": 47,
+      "last": 1786718552295,
+      "lastSuccess": 1786718552295
     },
     "rpg/rpg-jualikan.js": {
       "total": 14,
@@ -12739,2098 +12835,27 @@
     }
   },
   "msgs": {
-    "3EB0A27413C7C4C65BC32F": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* Mina\n🆙 *Level:* 79 (0/39500 XP)\n❤️ *Darah:* 241/240\n💰 *Saldo:* Rp 7,061,167\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.8\n🛡️ Armor: Lv.7\n⛏️ Pickaxe: Lv.6\n🎣 Fishingrod: Lv.6\n🐾 Pet: NAGA (Lv.12)\n\n*───「 STORAGE 」───*\n💎 Diamond: 2135\n⛓️ Iron: 800\n✨ Gold: 7583\n🪵 Wood: 822\n🪨 Stone: 10703\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 18\n🐠 Nila: 10\n🦈 Hiu: 20\n🐡 Bawal: 8\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
-          "contextInfo": {
-            "stanzaId": "AC5CD3F75958A3D21C5214740DF94920",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".inv"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "CecQ/9PstOcWmEwIKEVyV3ovC+GXfJ1ir0lgvo1MAGM="
-        }
-      },
-      "time": 1786709402429
-    },
-    "3EB02EB2539A6C5C9842E1": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "✨ *WELCOME BACK!*\n\nUser @6282228638623 telah kembali dari AFK!\n⏱️ *Lama AFK:* 33 Menit 29 Detik\n📝 *Alasan Sebelumnya:* _makan nasi trs lanjut ngoding_",
-          "contextInfo": {
-            "stanzaId": "AC096F6A98F3CB0791683F795DB89796",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": "apaan",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "6282228638623@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "OVTbbmAWHvZhsdPAzBjm6mLROKg9DulgNMJwDTai9Ec="
-        }
-      },
-      "time": 1786709575643
-    },
-    "3EB0ED63EA046FA4127D88": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "┌───❏「 🎟️ GYM MEMBERSHIP 」❏\n│\n│ Status: *Tidak Aktif* ❌\n│\n│ Membership Harian\n│ 💰 Rp 75,000\n│ Akses semua gym 1 hari\n\n│ Membership Mingguan\n│ 💰 Rp 400,000\n│ Akses semua gym 7 hari\n\n│ Membership Bulanan\n│ 💰 Rp 1,200,000\n│ Akses semua gym 30 hari + Bonus 10% Exp\n\n│ Cara beli: *.gym membership harian*\n└───────────────────",
-          "contextInfo": {
-            "stanzaId": "AC5F553D45D84FBB72A80D79ED0C0C65",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".gym membership"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "fymbCA9pMguCWN6jdW+kUPzpCdlWLc4KkCV8hUZ55l4="
-        }
-      },
-      "time": 1786709625134
-    },
-    "3EB02FB42337DBA9753673": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Masalahnya gimana? Tidak bisa download atau ada error gitu?",
-          "contextInfo": {
-            "stanzaId": "A5146F40190C78D69A94AFDFAE997C45",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": "bisa ga..."
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "Z1qtTUOdRKawXWEO96lrdf5LXXAJ/uwGNOMNM/MI3So="
-        }
-      },
-      "time": 1786709637051
-    },
-    "3EB01B860A1C45421AD968": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Tapi ya, mungkin aku ngomong kecewa dulu. Coba lagi, aku akan membantu kamu download videonya dengan baik! Serius? 😅",
-          "contextInfo": {
-            "stanzaId": "A58A0E1CC626CCACB84A66550CDCA912",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ":))"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "/DjVW43i5elIUe4tiy/YWyFMS5z3HVXd64eReSQXKuY="
-        }
-      },
-      "time": 1786709638523
-    },
-    "3EB004CDA07388D83E3DE1": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/6281242432747?text=.daftar%20%E3%85%A4%2C-1",
-          "contextInfo": {
-            "stanzaId": "A5D5708C0DD1E97F344925D235438D58",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".brat helo"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "1UX9C6jFNUQgh5PtP5bTOxl3x6pQ06EcbGU2107VTOk="
-        }
-      },
-      "time": 1786709655357
-    },
-    "3EB0325109446246CD5FFB": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Uang kurang!\nButuh: Rp 1,200,000",
-          "contextInfo": {
-            "stanzaId": "ACE431C29F0F32FD82A1BCD847E09520",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".gym membership bulanan"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "sPm4bGkDU2cTjihJQ3H69C3CWi3+g+xAC2aocvwozyE="
-        }
-      },
-      "time": 1786709657643
-    },
-    "3EB0A0E97DB65C61E92D86": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Ketik dengan format:\n\n.daftar namamu,umurmu\n\nContoh:\n.daftar nenel,16",
-          "contextInfo": {
-            "stanzaId": "A547EF7E35D9D5DFCC16C56475441D12",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".daftar ㅤ,-1",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "iMN98GA7HX0qrKMeVZlA3IVKfHxc6MsGLUWYtBtTU0E="
-        }
-      },
-      "time": 1786709671011
-    },
-    "3EB02325A99CA8C559C034": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp 1,200,000\n◆ Saldo Tersisa : Rp 250,270,087,682\n◆ Kurir : Kendaraan Pribadi\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "AC84BDF36ADD485D485249CDC6D98B84",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".bank tarik 1200000"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "NHDT3NzAKe63KgSj2sAxkXy+L7d1lKyTH3ulHMeUKno="
-        }
-      },
-      "time": 1786709673370
-    },
-    "3EB0E55DF15851C77769FD": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🎉 *MEMBERSHIP AKTIF!*\nMembership Bulanan\nBerlaku: 30 hari\nSekarang semua gym GRATIS!",
-          "contextInfo": {
-            "stanzaId": "ACA342C8880016F77B9F95D1E6A3F47B",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".gym membership bulanan"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "uo2DRGUCPnXyEON/alBFRGSPc6WofS/Zu5cwIhR+01c="
-        }
-      },
-      "time": 1786709695125
-    },
-    "3EB0D8D31A9D807FC910BF": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m232/AQN5XBZFjS3nA3DK7i3MHC56QGWMk9lbMF-anfp5iX9t1DuwlKl-5P0DyAmB0wIKO89_hEZLLmTgXwc0_Lr_BR5h8iifvjBP16_yz7PLAg?ccb=9-4&oh=01_Q5Aa5QHpSIV6wa7HipcORJp0eCWu3n-ZYezYxnGx4THcS64Igw&oe=6AA68760&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "「 *PENDAFTARAN BERHASIL* 」\n│ ✅ *Status:* Aktif\n│ ✨ *Nama:* zely\n│ 🎂 *Umur:* 13 Tahun\n│ 📱 *Nomor:* +145368134197398\n│ 🔐 *SN Key:* 4cfddd95b6f2b00ff0f6fd47286f02c1\n│\n│ 📅 *Tanggal:* Jumat, 14 Agustus 2026\n│ ⏰ *Waktu:* 19 H 14 M 54 S\n\nData profil kamu sudah tersimpan di database.",
-          "fileSha256": "Zx2AQ9LSRqfFHMjlpRQUTBhMBTcucjivzHnL/x5EIz4=",
-          "fileLength": "110531",
-          "height": 400,
-          "width": 800,
-          "mediaKey": "oiFSm315glDcARvja6T1xocBw5/1oNuH6e/Othqm3Uc=",
-          "fileEncSha256": "6lnLfSQtVoL46mLX6MUgzVLHS8bwzv9gE4S9C5Txd0U=",
-          "directPath": "/o1/v/t24/f2/m232/AQN5XBZFjS3nA3DK7i3MHC56QGWMk9lbMF-anfp5iX9t1DuwlKl-5P0DyAmB0wIKO89_hEZLLmTgXwc0_Lr_BR5h8iifvjBP16_yz7PLAg?ccb=9-4&oh=01_Q5Aa5QHpSIV6wa7HipcORJp0eCWu3n-ZYezYxnGx4THcS64Igw&oe=6AA68760&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709695",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQACADASIAAhEBAxEB/8QAGAAAAgMAAAAAAAAAAAAAAAAAAAMBAgX/xAAkEAACAgEDAwUBAAAAAAAAAAABAgMRABITIQQx4SIjUXFzwf/EABUBAQEAAAAAAAAAAAAAAAAAAAIB/8QAGBEBAQADAAAAAAAAAAAAAAAAAAEREiH/2gAMAwEAAhEDEQA/AMyTcjVHMMjRt3daoc1/Mb0rQyR62QurC1IbTWEMixMXWNNw9nZbK4RgKKB4wzbPRhr7CjmBue1SeMpr6ez7L1+njJL+miQR8G8UzAggIv2LxK//2Q==",
-          "contextInfo": {
-            "stanzaId": "A50128209DFFD5875C61213E0AB230C7",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".daftar zely,13"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "uA2wRYnYCY+JxDUIZA0nZ8AAyV2N578Zrrgo6sl9GY8="
-        }
-      },
-      "time": 1786709695961
-    },
-    "3EB0EDAEC41842CD46D8DE": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "┌───❏「 🏋️ PILIH GYM 」❏\n│\n│ Cara: *.gym premium*\n│ Cara Member: *.gym membership*\n│\n│ Gym Basic\n💰 GRATIS\n✨ Exp: 30-60 | ❤️ HP: +5-10\nPeralatan seadanya. Gratis\n\nGym Premium\n💰 GRATIS\n✨ Exp: 60-120 | ❤️ HP: +10-20\nAlat lengkap + AC + Sauna\n\nGym Legend\n💰 GRATIS\n✨ Exp: 120-200 | ❤️ HP: +15-30\nTrainer pribadi + Kolam renang\n│\n│ ⏰ Cooldown: 5 jam\n└───────────────────",
-          "contextInfo": {
-            "stanzaId": "ACFAED01BE45BF68607E064959405471",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".gym"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "GI1tgZnbW/u5Cpmrxm0fBRj/FWX/6dOO+QeTc39mXTo="
-        }
-      },
-      "time": 1786709706041
-    },
-    "3EB033F59C3815009819C3": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/6281242432747?text=.daftar%20zely%2C13",
-          "contextInfo": {
-            "stanzaId": "A5D943639C181FBABDC20EB8C7BB2543",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "imageMessage": {
-                "url": "https://mmg.whatsapp.net/v/t62.7118-24/542738242_28116853427945966_3687694933178125278_n.enc?ccb=11-4&oh=01_Q5Aa5QHN-pAqL65AvYB24_QtzQAS6zb7X1ELfY-kyNAYaQ6F_A&oe=6AA68831&_nc_sid=5e03e0&mms3=true",
-                "mimetype": "image/jpeg",
-                "caption": ".s",
-                "fileSha256": "MbtXgJft25ns0Za5Ef6NQvnHJjm9mqzmAjYf6AOUR64=",
-                "fileLength": "24458",
-                "height": 432,
-                "width": 367,
-                "mediaKey": "wSNwon1QnHu6lBySMUAAvEbjdm+be8fckamxlmRDxeo=",
-                "fileEncSha256": "SD2w6lgSrP1eysLwYy+v1KWzG1WHI6h7RudvmRQNMT0=",
-                "directPath": "/v/t62.7118-24/542738242_28116853427945966_3687694933178125278_n.enc?ccb=11-4&oh=01_Q5Aa5QHN-pAqL65AvYB24_QtzQAS6zb7X1ELfY-kyNAYaQ6F_A&oe=6AA68831&_nc_sid=5e03e0&_nc_hot=1786709709",
-                "mediaKeyTimestamp": "1786709619",
-                "jpegThumbnail": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z//////////////8BGxsbGxwbHiEhHiotKC0qPTgzMzg9XUJHQkdCXY1YZ1hYZ1iNfZd7c3uXfeCwnJyw4P/Zztn////////////////CABEIAEgAPQMBIgACEQEDEQH/xAAwAAADAQEBAQAAAAAAAAAAAAACAwQAAQUGAQADAQEAAAAAAAAAAAAAAAAAAQIDBP/aAAwDAQACEAMQAAAAjJBLnflGBYuM67GtJJKYaPTdPQ0hfXY6+kuhiPniSeszVTnceznojSfTCRG3rDRDwdWdpRMI71xzuk9pcs+wC3apsZsq/8QAJhAAAgIBAwMEAwEAAAAAAAAAAQIAAxIEESETMVEiMkFSBSMzQv/aAAgBAQABPwAU1nxOgngToL4E6C/UToJ9BBSo/wAwVj6xKd99klZDOIzrmw3gbw0UsT3jsyt3gsbzEFhIy4E691ZKrsBNPQObGPpEsKZtuJTRn7e4ESh1DM0sCnvKqi9oAgqsYnP2qOIdMbfV7Yt29WIjIcuZprFXgnaahyPklYHOQPxNNv1iRLi7qiqefmABVALcxLlQghJY6uuWMY4niJcXASJpwoEsAqXKDWmv1AbmN+R3PNcXmduI+IiOlTKSIrBlBHYzV/ygXIIPkmXJ+1h4lbMO8zJhG5XeGtLGA4Jg3qUAtwJYOpXsDERhapI4AirlY5YTARE8iXFTiJVghJMLgKdz3ldnEWwTIeJXpUYcuA01C+1NhwImjSwtz8Q6Z+xeFsFwJEqBYcRKpiRP/8QAHREAAgICAwEAAAAAAAAAAAAAAAECERAhAxIxUf/aAAgBAgEBPwDGjRVko9URuzk0xOmN2L0lCLe8RlVEvpYvC2Xj/8QAHxEBAAIBBAMBAAAAAAAAAAAAAQACERASISIDMkFR/9oACAEDAQE/AMWncha/7KPkXmCjy/IX3CQ60WVRMy9BM4gc4lvVlHrpamd2F3fJ41ztfpCppgm0HT//2Q==",
-                "scansSidecar": "UIojXdFgAeQGmQFGmyBd5JeRUjUUKZH4MmzYLWlSqkwepWCOhrhmNQ==",
-                "scanLengths": [
-                  2468,
-                  9467,
-                  5006,
-                  7517
-                ],
-                "midQualityFileSha256": "JGuJ0b++6h0F4iZAA/vVVNhZG6fTEMQuA7ejJaPB8F8="
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "U22x9z8tgH61JnkDSTYTbpmp+C13qcDLjptYlB4fFpo="
-        }
-      },
-      "time": 1786709710076
-    },
-    "3EB0C42AB15DA7F1FBCC8A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "┌───❏「 🏋️ PILIH GYM 」❏\n│\n│ Cara: *.gym premium*\n│ Cara Member: *.gym membership*\n│\n│ Gym Basic\n💰 Rp 0\n✨ Exp: 30-60 | ❤️ HP: +5-10\nPeralatan seadanya. Gratis\n\nGym Premium\n💰 Rp 50,000\n✨ Exp: 60-120 | ❤️ HP: +10-20\nAlat lengkap + AC + Sauna\n\nGym Legend\n💰 Rp 200,000\n✨ Exp: 120-200 | ❤️ HP: +15-30\nTrainer pribadi + Kolam renang\n│\n│ ⏰ Cooldown: 5 jam\n└───────────────────",
-          "contextInfo": {
-            "stanzaId": "AC16EF366D855B1D5DA84460D3BB83CE",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".gym"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "9KQvM5uYiQV+B+RhqrdG/pHOYmXy0qhAozKTQECERKg="
-        }
-      },
-      "time": 1786709715123
-    },
-    "3EB002C75BDAEE673C21CA": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Teman, kamu sudah menemukan web untuk search sound effect, ya? 🎵\n\nMyinstants.com memang memiliki koleksi sound effect yang luas dan menarik. Dan kamu juga sudah menemukan kode yang rumit di baliknya, hehe! 🤔\n\nJika kamu ingin mencoba membuat search sound effect sendiri, kamu bisa mengikuti kode yang kamu temukan di pastebin. Tapi jangan lupa untuk menambahkan catatan di setiap fungsi seperti yang kamu lakukan sebelumnya, supaya lebih mudah dipahami. Yaudah, deh! Semoga kamu bisa membuat search sound effect yang keren! 🎉"
-        },
-        "messageContextInfo": {
-          "messageSecret": "hRp1+8Z5nyXs63VixLaMYDbPE54unMrtMxzLG34iyg4="
-        }
-      },
-      "time": 1786709718445
-    },
-    "3EB0129218CE65C40AE456": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/6281242432747?text=.daftar%20zely%2C13",
-          "contextInfo": {
-            "stanzaId": "A5C35BC12989775691B573A4065BE09F",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".brat"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "rhNQ4Vt63oD5grXkmKln3sC6Zon1PQ+JAYoMwzpsQc8="
-        }
-      },
-      "time": 1786709719774
-    },
-    "3EB0ACEA4D7543F665F2AF": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m234/AQP61Z2k_UYs41pGHV1jWDQDYxru6tsOsSpfevlxELkbcovjptqd4svblL_9ebvv3VC3SGN4_IoOcq8OxI5ixbu1TMLlm-P4b8OaQ07o-A?ccb=9-4&oh=01_Q5Aa5QGzPIApe-DfUe_loU5ajyM5Wfjo5KL3YCAxHo_AlPCDIA&oe=6AA67962&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "┌───❏「 Gym Legend 」❏\n│\n│ 🔥 Latihan selesai!\n│ 💸 Biaya: GRATIS (Member)\n│ 🎟️ Member: Membership Bulanan\n│\n│ ✨ +152 Exp (+10% Bonus)\n│ ❤️ +27 HP\n│ 🏋️ +1 Max HP Permanen\n│\n│ Level: 2 ⬆️ LEVEL UP!\n│ HP: 198/202\n│ Total Gym: 1x\n│ Sisa Uang: Rp 464,675\n│\n│ ⏰ Cooldown: 5 jam\n└───────────────────",
-          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
-          "fileLength": "58809",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "AzYT3MEHLH7rOUo2bplahDBe89Yxyy0aZBlkLoVEXm4=",
-          "fileEncSha256": "SL8i+u4XpS+n+NK8TL4AvX9QQiLpcjqfpCqNbXOJgHM=",
-          "directPath": "/o1/v/t24/f2/m234/AQP61Z2k_UYs41pGHV1jWDQDYxru6tsOsSpfevlxELkbcovjptqd4svblL_9ebvv3VC3SGN4_IoOcq8OxI5ixbu1TMLlm-P4b8OaQ07o-A?ccb=9-4&oh=01_Q5Aa5QGzPIApe-DfUe_loU5ajyM5Wfjo5KL3YCAxHo_AlPCDIA&oe=6AA67962&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709725",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
-          "contextInfo": {
-            "stanzaId": "ACD81FF2EA64AE916246F18A81297E83",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".gym legend"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "Ya0onXZq009y354uTuW5nw+mvNHfKevLdoOkp3P/Iys="
-        }
-      },
-      "time": 1786709726620
-    },
-    "3EB0785008F705B9942125": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "┌───❏「 🎟️ GYM MEMBERSHIP 」❏\n│\n│ Status: *Tidak Aktif* ❌\n│\n│ Membership Harian\n│ 💰 Rp 75,000\n│ Akses semua gym 1 hari\n\n│ Membership Mingguan\n│ 💰 Rp 400,000\n│ Akses semua gym 7 hari\n\n│ Membership Bulanan\n│ 💰 Rp 1,200,000\n│ Akses semua gym 30 hari + Bonus 10% Exp\n\n│ Cara beli: *.gym membership harian*\n└───────────────────",
-          "contextInfo": {
-            "stanzaId": "AC3634762EB402F8A7A59423956D5AB4",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".gym membership"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "8fmWGNgGIDg3BAcdbHJjkuUaZIefqhzWmFIWuIH+0ck="
-        }
-      },
-      "time": 1786709731060
-    },
-    "3EB00C6B1B257A24B71D50": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m235/AQPsqnKgm-RTThUAQvu1Ud_e9YGIAix1p0SEDmGtJE29xonhGxbCb7leBluv70sUJr7kOKDZmWY60tTFEe8H4VHWmW1nCqCrA0WvRoYVDg?ccb=9-4&oh=01_Q5Aa5QGriP0EzM2i8VJ0aRABI1v-p1mz9dZFT8dr8dIFxpEDyw&oe=6AA660CF&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "「 *PENDAFTARAN BERHASIL* 」\n│ ✅ *Status:* Aktif\n│ ✨ *Nama:* zely\n│ 🎂 *Umur:* 13 Tahun\n│ 📱 *Nomor:* +145368134197398\n│ 🔐 *SN Key:* 4cfddd95b6f2b00ff0f6fd47286f02c1\n│\n│ 📅 *Tanggal:* Jumat, 14 Agustus 2026\n│ ⏰ *Waktu:* 19 H 15 M 34 S\n\nData profil kamu sudah tersimpan di database.",
-          "fileSha256": "Zx2AQ9LSRqfFHMjlpRQUTBhMBTcucjivzHnL/x5EIz4=",
-          "fileLength": "110531",
-          "height": 400,
-          "width": 800,
-          "mediaKey": "3A3bDWywe20B9PzbfAUspBUuaTZc//sXtqaKID0w9OU=",
-          "fileEncSha256": "Fi0iyr3hx+Bg7fnQ5g6M9yNFdlG3OCnSv5yTgIXFxc8=",
-          "directPath": "/o1/v/t24/f2/m235/AQPsqnKgm-RTThUAQvu1Ud_e9YGIAix1p0SEDmGtJE29xonhGxbCb7leBluv70sUJr7kOKDZmWY60tTFEe8H4VHWmW1nCqCrA0WvRoYVDg?ccb=9-4&oh=01_Q5Aa5QGriP0EzM2i8VJ0aRABI1v-p1mz9dZFT8dr8dIFxpEDyw&oe=6AA660CF&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709735",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQACADASIAAhEBAxEB/8QAGAAAAgMAAAAAAAAAAAAAAAAAAAMBAgX/xAAkEAACAgEDAwUBAAAAAAAAAAABAgMRABITIQQx4SIjUXFzwf/EABUBAQEAAAAAAAAAAAAAAAAAAAIB/8QAGBEBAQADAAAAAAAAAAAAAAAAAAEREiH/2gAMAwEAAhEDEQA/AMyTcjVHMMjRt3daoc1/Mb0rQyR62QurC1IbTWEMixMXWNNw9nZbK4RgKKB4wzbPRhr7CjmBue1SeMpr6ez7L1+njJL+miQR8G8UzAggIv2LxK//2Q==",
-          "contextInfo": {
-            "stanzaId": "A526BE73F8B24097905641E986483C8D",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".daftar zely,13"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "W0aFEx+3IFsY/0PKJcQhNykEM1KaH+ihNKPBeUenUYw="
-        }
-      },
-      "time": 1786709735039
-    },
-    "3EB03AE946DE62ED0C845A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🎉 *MEMBERSHIP AKTIF!*\nMembership Bulanan\nBerlaku: 30 hari\nSekarang semua gym GRATIS!",
-          "contextInfo": {
-            "stanzaId": "AC06028EA0E22300C973B8CCB9AC8163",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".gym membership bulanan"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "H9PCxX9D1sbfjd+LrOmbgS09wJ/yrFVCOxJbB+/pRT4="
-        }
-      },
-      "time": 1786709744721
-    },
-    "3EB0FD51BE476D265DC50E": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/6281242432747?text=.daftar%20zely%2C13",
-          "contextInfo": {
-            "stanzaId": "A59381B6FA7C2533AADE895174473C2A",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".brat hei"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "hY4IOTLVzKQ/ScNGXdyNH7eFCSvd1fV96SIZXftgs5A="
-        }
-      },
-      "time": 1786709746494
-    },
-    "3EB07F33031EC4D049125D": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQNRSl_11cgxZEry5sxmE7RXsTmdM0AfUYxVdjJ39y-zW-xaLk17_ebLA4aUNjkvT0cu9UR9tv4NbH_Zl_-bokmD_9RKNI-IzZLxvpTguQ?ccb=9-4&oh=01_Q5Aa5QHYjV4Z9MNutkPASkLyKyYL9jWVCXjThTilHoUnQF5PyA&oe=6AA6679A&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "「 *PENDAFTARAN BERHASIL* 」\n│ ✅ *Status:* Aktif\n│ ✨ *Nama:* zely\n│ 🎂 *Umur:* 13 Tahun\n│ 📱 *Nomor:* +145368134197398\n│ 🔐 *SN Key:* 4cfddd95b6f2b00ff0f6fd47286f02c1\n│\n│ 📅 *Tanggal:* Jumat, 14 Agustus 2026\n│ ⏰ *Waktu:* 19 H 15 M 54 S\n\nData profil kamu sudah tersimpan di database.",
-          "fileSha256": "Zx2AQ9LSRqfFHMjlpRQUTBhMBTcucjivzHnL/x5EIz4=",
-          "fileLength": "110531",
-          "height": 400,
-          "width": 800,
-          "mediaKey": "YKDBJtTlyCx68BJx5WBdu9aWCMH1KUUpOKG3JfYceOo=",
-          "fileEncSha256": "ipC8WEJjvqWL9BAqYshDuNX7BRlwrikldMCaoJixUI8=",
-          "directPath": "/o1/v/t24/f2/m238/AQNRSl_11cgxZEry5sxmE7RXsTmdM0AfUYxVdjJ39y-zW-xaLk17_ebLA4aUNjkvT0cu9UR9tv4NbH_Zl_-bokmD_9RKNI-IzZLxvpTguQ?ccb=9-4&oh=01_Q5Aa5QHYjV4Z9MNutkPASkLyKyYL9jWVCXjThTilHoUnQF5PyA&oe=6AA6679A&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709755",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQACADASIAAhEBAxEB/8QAGAAAAgMAAAAAAAAAAAAAAAAAAAMBAgX/xAAkEAACAgEDAwUBAAAAAAAAAAABAgMRABITIQQx4SIjUXFzwf/EABUBAQEAAAAAAAAAAAAAAAAAAAIB/8QAGBEBAQADAAAAAAAAAAAAAAAAAAEREiH/2gAMAwEAAhEDEQA/AMyTcjVHMMjRt3daoc1/Mb0rQyR62QurC1IbTWEMixMXWNNw9nZbK4RgKKB4wzbPRhr7CjmBue1SeMpr6ez7L1+njJL+miQR8G8UzAggIv2LxK//2Q==",
-          "contextInfo": {
-            "stanzaId": "A5F8EE688908A2401FB65FD9D02ADB65",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".daftar zely,13"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "p3Ri+1d1rBUVOo+lXZKdmK6JyOoQyWsg3V/Y6JriPH8="
-        }
-      },
-      "time": 1786709755909
-    },
-    "3EB06F867D42F5E1C5392F": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQNagID2a8w9MmOv2rqSWkgWNzzBxAfn77nb-3g2j5-CkJEeOvvyLiq0LtlAOzBkbuY_LSOgVH2W9YcTk2pR0pz-EnNoUbw_kV0MjnNuYA?ccb=9-4&oh=01_Q5Aa5QFIpWXF0o346dwYocs8PWfPLF46LzDdEatbxZxSwGb0GA&oe=6AA6930D&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "┌───❏「 Gym Legend 」❏\n│\n│ 🏋️ Latihan selesai!\n│ 💸 Biaya: GRATIS (Member)\n│ 🎟️ Member: Membership Bulanan\n│\n│ ✨ +158 Exp (+10% Bonus)\n│ ❤️ +25 HP\n│ 🏋️ +1 Max HP Permanen\n│\n│ Level: 79 \n│ HP: 242/242\n│ Total Gym: 1x\n│ Sisa Uang: Rp 5,861,167\n│\n│ ⏰ Cooldown: 5 jam\n└───────────────────",
-          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
-          "fileLength": "58809",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "j5KoFjqZOHYokDUKOkQdMAdVm3PUvuWAWm1lKzVlGX4=",
-          "fileEncSha256": "lPQRKsgwO0FuhBj1Ye1S/L65CrpOa/vmRBbwwpY5QrY=",
-          "directPath": "/o1/v/t24/f2/m238/AQNagID2a8w9MmOv2rqSWkgWNzzBxAfn77nb-3g2j5-CkJEeOvvyLiq0LtlAOzBkbuY_LSOgVH2W9YcTk2pR0pz-EnNoUbw_kV0MjnNuYA?ccb=9-4&oh=01_Q5Aa5QFIpWXF0o346dwYocs8PWfPLF46LzDdEatbxZxSwGb0GA&oe=6AA6930D&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709763",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
-          "contextInfo": {
-            "stanzaId": "AC3645C6FACB31F1DB2D495E872D2A27",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".gym legend"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "c+Bvj2VnLuCBJMkdjVNnL77nCWijKCYlk17VL5SswQc="
-        }
-      },
-      "time": 1786709764557
-    },
-    "3EB0395BAD7BB184CAB449": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Wah, sudah pendaftaran! Sekarang kamu sudah memiliki akun di sini, zely! Selamat ya! 🎉",
-          "contextInfo": {
-            "stanzaId": "A5E8A8C973E1E451BC885E7DC1A11476",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "imageMessage": {
-                "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQNRSl_11cgxZEry5sxmE7RXsTmdM0AfUYxVdjJ39y-zW-xaLk17_ebLA4aUNjkvT0cu9UR9tv4NbH_Zl_-bokmD_9RKNI-IzZLxvpTguQ?ccb=9-4&oh=01_Q5Aa5QHYjV4Z9MNutkPASkLyKyYL9jWVCXjThTilHoUnQF5PyA&oe=6AA6679A&_nc_sid=e6ed6c&mms3=true",
-                "mimetype": "image/jpeg",
-                "caption": "「 *PENDAFTARAN BERHASIL* 」\n│ ✅ *Status:* Aktif\n│ ✨ *Nama:* zely\n│ 🎂 *Umur:* 13 Tahun\n│ 📱 *Nomor:* +145368134197398\n│ 🔐 *SN Key:* 4cfddd95b6f2b00ff0f6fd47286f02c1\n│\n│ 📅 *Tanggal:* Jumat, 14 Agustus 2026\n│ ⏰ *Waktu:* 19 H 15 M 54 S\n\nData profil kamu sudah tersimpan di database.",
-                "fileSha256": "Zx2AQ9LSRqfFHMjlpRQUTBhMBTcucjivzHnL/x5EIz4=",
-                "fileLength": "110531",
-                "height": 400,
-                "width": 800,
-                "mediaKey": "YKDBJtTlyCx68BJx5WBdu9aWCMH1KUUpOKG3JfYceOo=",
-                "fileEncSha256": "ipC8WEJjvqWL9BAqYshDuNX7BRlwrikldMCaoJixUI8=",
-                "directPath": "/o1/v/t24/f2/m238/AQNRSl_11cgxZEry5sxmE7RXsTmdM0AfUYxVdjJ39y-zW-xaLk17_ebLA4aUNjkvT0cu9UR9tv4NbH_Zl_-bokmD_9RKNI-IzZLxvpTguQ?ccb=9-4&oh=01_Q5Aa5QHYjV4Z9MNutkPASkLyKyYL9jWVCXjThTilHoUnQF5PyA&oe=6AA6679A&_nc_sid=e6ed6c&_nc_hot=1786709773",
-                "mediaKeyTimestamp": "1786709755",
-                "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQACADASIAAhEBAxEB/8QAGAAAAgMAAAAAAAAAAAAAAAAAAAMBAgX/xAAkEAACAgEDAwUBAAAAAAAAAAABAgMRABITIQQx4SIjUXFzwf/EABUBAQEAAAAAAAAAAAAAAAAAAAIB/8QAGBEBAQADAAAAAAAAAAAAAAAAAAEREiH/2gAMAwEAAhEDEQA/AMyTcjVHMMjRt3daoc1/Mb0rQyR62QurC1IbTWEMixMXWNNw9nZbK4RgKKB4wzbPRhr7CjmBue1SeMpr6ez7L1+njJL+miQR8G8UzAggIv2LxK//2Q=="
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "UwyzXP1wR9fe6Tkq27hhZL8p4W2hLnzKumD6w2kSN6M="
-        }
-      },
-      "time": 1786709774192
-    },
-    "3EB06BD53D1431F06BD986": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQOKqAMWN784CSiozrwqXFfR54Dnfj_oJKf2G05Z-DCj6WU4MYjj7_qsPiXs9GZjnp6ZTItIYtbFdnyrwdZG37Avq_txPH79PHYd2K9NtA?ccb=9-4&oh=01_Q5Aa5QH_kMVOtWxz_mJVJnq8J5MGJ6cQMfPpg2PctOqJNB2OVw&oe=6AA6611E&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "┌───❏「 💇 ARENA JAMBAK 」❏\n│\n│ 👤 *PENANTANG*\n│ @6287716300353\n│ 🌸 Pemula\n│ Lv.79 | W-L : 0W - 0L\n│\n│ ⚔️ *VS*\n│\n│ 👤 *LAWAN*\n│ @6282228638623\n│ 🌸 Pemula\n│ Lv.2 | W-L : 0W - 0L\n│\n│ 💰 Taruhan : Rp 46,467\n│\n│ *.jambakterima* → Terima\n│ *.jambaktolak* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n└───────────────────",
-          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
-          "fileLength": "58809",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "7azUBDoe/qIdQH6zLLGfgvZFF6Ec4dL6JfKbOVd/Ntk=",
-          "fileEncSha256": "+mugPInzQJN2+b7jCgrFpuwt55lEgZxR/116UjoGqQQ=",
-          "directPath": "/o1/v/t24/f2/m238/AQOKqAMWN784CSiozrwqXFfR54Dnfj_oJKf2G05Z-DCj6WU4MYjj7_qsPiXs9GZjnp6ZTItIYtbFdnyrwdZG37Avq_txPH79PHYd2K9NtA?ccb=9-4&oh=01_Q5Aa5QH_kMVOtWxz_mJVJnq8J5MGJ6cQMfPpg2PctOqJNB2OVw&oe=6AA6611E&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709778",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
-          "contextInfo": {
-            "stanzaId": "AC13F67097FB5803905AD2725338BA5D",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".jambak",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "6287716300353@s.whatsapp.net",
-              "6282228638623@s.whatsapp.net"
-            ]
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "3RMxI8d7IhSc1yxN4vz/6UVLrQct81f5y8eg8jw9o0o="
-        }
-      },
-      "time": 1786709778880
-    },
-    "3EB0A97BEFB40651775C67": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🕵️ Tunggu selama *15 jam 35 menit* lagi untuk merampok.",
-          "contextInfo": {
-            "stanzaId": "AC91F634005AFCE23819A5CE7239A63B",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".rampok",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "X61HsWeskdbpNw0RWlstPZUgFqQRNPcCQTv7r2nq8+0="
-        }
-      },
-      "time": 1786709784845
-    },
-    "3EB06697D9F236A96151BB": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/6281242432747?text=.daftar%20zely%2C13",
-          "contextInfo": {
-            "stanzaId": "A508943ECB871050C1B56649A0DFF126",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "imageMessage": {
-                "url": "https://mmg.whatsapp.net/v/t62.7118-24/542738242_28116853427945966_3687694933178125278_n.enc?ccb=11-4&oh=01_Q5Aa5QHN-pAqL65AvYB24_QtzQAS6zb7X1ELfY-kyNAYaQ6F_A&oe=6AA68831&_nc_sid=5e03e0&mms3=true",
-                "mimetype": "image/jpeg",
-                "caption": ".s",
-                "fileSha256": "MbtXgJft25ns0Za5Ef6NQvnHJjm9mqzmAjYf6AOUR64=",
-                "fileLength": "24458",
-                "height": 432,
-                "width": 367,
-                "mediaKey": "wSNwon1QnHu6lBySMUAAvEbjdm+be8fckamxlmRDxeo=",
-                "fileEncSha256": "SD2w6lgSrP1eysLwYy+v1KWzG1WHI6h7RudvmRQNMT0=",
-                "directPath": "/v/t62.7118-24/542738242_28116853427945966_3687694933178125278_n.enc?ccb=11-4&oh=01_Q5Aa5QHN-pAqL65AvYB24_QtzQAS6zb7X1ELfY-kyNAYaQ6F_A&oe=6AA68831&_nc_sid=5e03e0&_nc_hot=1786709785",
-                "mediaKeyTimestamp": "1786709619",
-                "jpegThumbnail": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z//////////////8BGxsbGxwbHiEhHiotKC0qPTgzMzg9XUJHQkdCXY1YZ1hYZ1iNfZd7c3uXfeCwnJyw4P/Zztn////////////////CABEIAEgAPQMBIgACEQEDEQH/xAAwAAADAQEBAQAAAAAAAAAAAAACAwQAAQUGAQADAQEAAAAAAAAAAAAAAAAAAQIDBP/aAAwDAQACEAMQAAAAjJBLnflGBYuM67GtJJKYaPTdPQ0hfXY6+kuhiPniSeszVTnceznojSfTCRG3rDRDwdWdpRMI71xzuk9pcs+wC3apsZsq/8QAJhAAAgIBAwMEAwEAAAAAAAAAAQIAAxIEESETMVEiMkFSBSMzQv/aAAgBAQABPwAU1nxOgngToL4E6C/UToJ9BBSo/wAwVj6xKd99klZDOIzrmw3gbw0UsT3jsyt3gsbzEFhIy4E691ZKrsBNPQObGPpEsKZtuJTRn7e4ESh1DM0sCnvKqi9oAgqsYnP2qOIdMbfV7Yt29WIjIcuZprFXgnaahyPklYHOQPxNNv1iRLi7qiqefmABVALcxLlQghJY6uuWMY4niJcXASJpwoEsAqXKDWmv1AbmN+R3PNcXmduI+IiOlTKSIrBlBHYzV/ygXIIPkmXJ+1h4lbMO8zJhG5XeGtLGA4Jg3qUAtwJYOpXsDERhapI4AirlY5YTARE8iXFTiJVghJMLgKdz3ldnEWwTIeJXpUYcuA01C+1NhwImjSwtz8Q6Z+xeFsFwJEqBYcRKpiRP/8QAHREAAgICAwEAAAAAAAAAAAAAAAECERAhAxIxUf/aAAgBAgEBPwDGjRVko9URuzk0xOmN2L0lCLe8RlVEvpYvC2Xj/8QAHxEBAAIBBAMBAAAAAAAAAAAAAQACERASISIDMkFR/9oACAEDAQE/AMWncha/7KPkXmCjy/IX3CQ60WVRMy9BM4gc4lvVlHrpamd2F3fJ41ztfpCppgm0HT//2Q==",
-                "scansSidecar": "UIojXdFgAeQGmQFGmyBd5JeRUjUUKZH4MmzYLWlSqkwepWCOhrhmNQ==",
-                "scanLengths": [
-                  2468,
-                  9467,
-                  5006,
-                  7517
-                ],
-                "midQualityFileSha256": "JGuJ0b++6h0F4iZAA/vVVNhZG6fTEMQuA7ejJaPB8F8="
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "rxJreI4iMVpOM4wZjsFiSBQwQ7luyTLWoYUDfymEVrY="
-        }
-      },
-      "time": 1786709786088
-    },
-    "3EB07A39E7BE70447889BE": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "✅ *BEGAL BERHASIL*\n\n🏴‍☠️ *Begal:* @6282228638623\n🎯 *Korban:* @6287716300353\n\n💰 Korban kehilangan *12%* uangnya.\n💵 Kamu mendapatkan: *Rp 703,340*\n\n🩸 *Target kehilangan 9 HP*\n❤️ *Sisa HP Target:* 233/242",
-          "contextInfo": {
-            "stanzaId": "AC80D61098086BFAAB654DFA948132D7",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".begal",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "6282228638623@s.whatsapp.net",
-              "6287716300353@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "i5OMcUkriASs9p9xAKjfljmyFO0T00Y6H6oy8u9v67k="
-        }
-      },
-      "time": 1786709795854
-    },
-    "3EB03B4EB46A985A8A1C2C": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🕵️ Tunggu selama *15 jam 34 menit* lagi untuk merampok.",
-          "contextInfo": {
-            "stanzaId": "AC2998E28EEF4B7E32E5B37815A65AFE",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".rampok",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "lA4+56BuKskJOzecZrZqqyLzSjbEPNi4lbAlu+/4UVU="
-        }
-      },
-      "time": 1786709811646
-    },
-    "3EB03FA8F51333D7EB8B4E": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Senang bisa membantu kamu, zely! Sekarang kamu bisa ngobrol santai dengan aku, atau ada yang ingin dibicarakan?",
-          "contextInfo": {
-            "stanzaId": "A515AAED14C503C599D887ABAD9CB542",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": "gj"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "tboWfcbStGfM8TTLJ3ZMujnKJ2atvsjiiZQ7nbiYdaY="
-        }
-      },
-      "time": 1786709813999
-    },
-    "3EB089E250DC5EEBE49C15": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "💀 *PEMBUNUHAN BERHASIL*\n\n🔪 *Pembunuh:* @6282228638623\n🎯 *Korban:* @6287716300353\n\n💰 Korban kehilangan *9%* uangnya.\n💸 Kamu mendapatkan: *Rp 464,204*\n\n❤️ *Target HP: 0/242*\n⚰️ *TARGET MATI!* Harus.heal dulu baru bisa beraktivitas",
-          "contextInfo": {
-            "stanzaId": "AC7E67887EDE6417A7097DBA76F978C1",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".bunuh",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "6282228638623@s.whatsapp.net",
-              "6287716300353@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "LI+6y7VssZ5jgCEAcz09yEujGueGgqoL/ztjXGJDihQ="
-        }
-      },
-      "time": 1786709818632
-    },
-    "3EB0F00040A909EF013139": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m231/AQPH6ASUOrHEudkb22p2V_Lgint1RF7MWvuZiP8Q4QonQQ2Y-LvsbgTbeB6ZClluFR72IGF9_esK5VI2JDOvcMuaP0cfVf1QAWxHAxGA7Q?ccb=9-4&oh=01_Q5Aa5QGDFaTDjsDw46OJNhcCOiYuw55VJo4wTe7QjRa2hoKH5Q&oe=6AA6775C&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "┌───❏「 💇 ARENA JAMBAK 」❏\n│\n│ 👤 *PENANTANG*\n│ @6287716300353\n│ 🌸 Pemula\n│ Lv.79 | W-L : 0W - 0L\n│\n│ ⚔️ *VS*\n│\n│ 👤 *LAWAN*\n│ @6282228638623\n│ 🌸 Pemula\n│ Lv.2 | W-L : 0W - 0L\n│\n│ 💰 Taruhan : Rp 163,221\n│\n│ *.jambakterima* → Terima\n│ *.jambaktolak* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n└───────────────────",
-          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
-          "fileLength": "58809",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "HHxikU3plQVSvXM0iPzGLnQrEfce/XwodjNZPJ2SNMQ=",
-          "fileEncSha256": "dGVct5P0gR75505pWGrZrg9tSMtGip/tpIIPQbk/UD4=",
-          "directPath": "/o1/v/t24/f2/m231/AQPH6ASUOrHEudkb22p2V_Lgint1RF7MWvuZiP8Q4QonQQ2Y-LvsbgTbeB6ZClluFR72IGF9_esK5VI2JDOvcMuaP0cfVf1QAWxHAxGA7Q?ccb=9-4&oh=01_Q5Aa5QGDFaTDjsDw46OJNhcCOiYuw55VJo4wTe7QjRa2hoKH5Q&oe=6AA6775C&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786709820",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
-          "contextInfo": {
-            "stanzaId": "ACA4DEC21BDCC03CA30A320B1AC056C0",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".jambak",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "6287716300353@s.whatsapp.net",
-              "6282228638623@s.whatsapp.net"
-            ]
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "Y35lKwovh8nN9DUSrewAU8ntZxWV7DUKGnuHZz4eUzc="
-        }
-      },
-      "time": 1786709820836
-    },
-    "3EB0DEB56A1B57D2C10825": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 HEAL SUCCESS 」───*\n\n🏥 *Status Kesehatan:* Pulih Total!\n❤️ *HP Sekarang:* 242 / 242\n💰 *Biaya Awal:* Rp 142,000\n🛡️ *Asuransi:* 30%\n💸 *Yang Dibayar:* Rp 99,400\n\n_Sekarang kamu siap untuk masuk ke Dungeon lagi!_",
-          "contextInfo": {
-            "stanzaId": "AC6BBC0AA64A87551E42488C470CBFD2",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".heal"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "556gZxQXPcsY5hahMqFNRQRoi3aPV4L32Pt5VQR/UUo="
-        }
-      },
-      "time": 1786709825446
-    },
-    "3EB0CF96E30A6EDE4948F0": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* Mina\n🆙 *Level:* 79 (158/39500 XP)\n❤️ *Darah:* 242/240\n💰 *Saldo:* Rp 4,594,223\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.8\n🛡️ Armor: Lv.7\n⛏️ Pickaxe: Lv.6\n🎣 Fishingrod: Lv.6\n🐾 Pet: NAGA (Lv.12)\n\n*───「 STORAGE 」───*\n💎 Diamond: 2135\n⛓️ Iron: 800\n✨ Gold: 7583\n🪵 Wood: 822\n🪨 Stone: 10703\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 18\n🐠 Nila: 10\n🦈 Hiu: 20\n🐡 Bawal: 8\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
-          "contextInfo": {
-            "stanzaId": "AC7B8594B88E61C4B294ED0899ACC41D",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".inv"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "wn8NcG49jX5jxY9lLDlxXeqk1VAKaq2WK1ZEzd2V1K4="
-        }
-      },
-      "time": 1786709840032
-    },
-    "3EB0A4AD9428596762B7D7": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/6281242432747?text=.daftar%20zely%2C13",
-          "contextInfo": {
-            "stanzaId": "A5221E217D07F3526A9F594AD89EB066",
-            "participant": "145368134197398@lid",
-            "quotedMessage": {
-              "conversation": ".brat helo"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "WN1ZF0Ve3ZXEMP91B0nzf4eHynr+qAedR7DeZuk2Fh8="
-        }
-      },
-      "time": 1786709853577
-    },
-    "3EB0AB57659717D4AD7EB6": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n◈ RIWAYAT TRANSAKSI ◈\n\n 1. +Rp 1,200,000 Tarik\n 2. +Rp 5,000,000 Tarik\n 3. +Rp 22,500,000 Tarik\n 4. +Rp 10,000,000 Tarik\n 5. -Rp 210,000,000 TF ke @160859846357027\n 6. +Rp 208,813,804 Denda Rampok dari @6287716300353\n 7. -Rp 250,309,973,878 Simpan\n 8. +Rp 250,298,040,904 Tarik\n 9. +Rp 15,000,000 Tarik\n 10. +Rp 18,000,000 Tarik\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "ACFC4B3E27175B1FECDDA044607ADBA5",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".bank riwayat"
-            },
-            "mentionedJid": [
-              "160859846357027@s.whatsapp.net",
-              "6287716300353@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "EHlVi0XRrLCMYMYRwCeOYGgLaj5c34bl4YCizKJLX6o="
-        }
-      },
-      "time": 1786709886738
-    },
-    "3EB015D90D1C50A8C24BFF": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp 210,000,000\n◆ Saldo Tersisa : Rp 250,060,087,682\n◆ Kurir : Kendaraan Pribadi\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "AC4FCCDCB748713D9566AB6ABA5F4BF4",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".bank tarik 210000000"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "XL3h1gRcBh/lLu8jQm8M8D5RsOYnRr5u58DRhgiAH+E="
-        }
-      },
-      "time": 1786709929046
-    },
-    "3EB07BBB4D145B29EB625A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 GIFT SYSTEM 」───*\n\nKirim item langsung tanpa persetujuan.\n\n*Cara:*\n*Tag:* .gift @tag diamond 5\n*Reply:* .gift diamond 5\n*Nomor:* .gift 628xxx gold 10\n\n*Item:* money, diamond, gold, iron, stone, wood",
-          "contextInfo": {
-            "stanzaId": "AC96522DA6BF90DA66AF91C3E11EC698",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".gift money all",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "UqMeO1rRxfXv638QSSDHr8Cuk2k+ESmcE+XfimzqQLY="
-        }
-      },
-      "time": 1786709938024
-    },
-    "3EB0E2D2C8AC33586A9000": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 GIFT SENT 」───*\n\n🎁 Berhasil mengirim hadiah!\n\n┌ *Dari*: @6282228638623\n├ *Ke*: @6287716300353\n├ *Item*: MONEY\n└ *Jumlah*: 210,000,001\n\n💡 *Mau tukar barang? Pakai:* *.trade @tag*",
-          "contextInfo": {
-            "stanzaId": "ACDC635E047A19C1A05C7BE9E6841B12",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".gift money 210000001",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "6282228638623@s.whatsapp.net",
-              "6287716300353@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "AVEDtYLW2hAvPuz+LGzk/afeTj4L/3DsKEAKgSmGuSA="
-        }
-      },
-      "time": 1786709956331
-    },
-    "3EB0695970E133C8C40F94": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp 1,632,218\n◆ Saldo Baru : Rp 250,061,719,900\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "ACA83D90B274B88EB16E502D2F2FBA76",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "conversation": ".bank simpan all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "0I+TfcwOI988BIM7gv6y2loPmR3sgqs29z9n0o79Bu8="
-        }
-      },
-      "time": 1786709974143
-    },
-    "3EB0086D7B5ADD6AAA3D96": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp 214,594,224\n◆ Saldo Baru : Rp 438,056,953\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "AC05D025B61AE19BF33CC3F386D7A083",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".bank simpan all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "24uqSbtdYd+gwcElIO7P6AyAE36/GJkq3RFXS7rxDG8="
-        }
-      },
-      "time": 1786710016039
-    },
-    "3EB0DE31161D8E80DA7A36": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "✨ *WELCOME BACK!*\n\nUser @628993226000 telah kembali dari AFK!\n⏱️ *Lama AFK:* 29 Menit 9 Detik\n📝 *Alasan Sebelumnya:* _sibuk mlm ini_",
-          "contextInfo": {
-            "stanzaId": "AC06F1357E7BB3421203FE42E7DE054F",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".mancing"
-            },
-            "mentionedJid": [
-              "628993226000@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "MBL+wwK7xoVciIapy49emzAB0qCNfCAQLuyYuNuNG0E="
-        }
-      },
-      "time": 1786710800228
-    },
-    "3EB0F138F6B109C5F53268": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQOJpVvKhB-rPG-3SGw2JfVaZ_fl2meoJkdmB303PCVA2iHDjgOcAOqxHTiosoqeWyisIr3v2EWzP1YHIDrz0c2j5_dmXVNyOIWcgWQqOg?ccb=9-4&oh=01_Q5Aa5QFtS_MeIiB40Yn_o1c_YWvFz_3umq1qlOt1myrj9O9xBw&oe=6AA68AC3&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🎣 FISHING RESULT 」───*\n\n*Tier* : ★☆ COMMON 🤍\n\n🏆 *Hasil Tangkapan*\n🪝 🐟👀 Ikan Pepetek\n\n✨ *XP Didapat* : +15\n🎣 *Level Pancingan* : 11\n🍀 *Bonus Rod* : +16.5%\n\n────────────────",
-          "fileSha256": "3F6iBLCCLxC9g6FrMHEbbkiaoOpjGW3niAOUFlCM3CM=",
-          "fileLength": "67769",
-          "height": 424,
-          "width": 734,
-          "mediaKey": "6xE/C8lH7ywSJceirgxyP8t5SJ/K4l2SWB5izaQuwUo=",
-          "fileEncSha256": "CWhjFITesfEw6U4Xo7lRMHvt/trGwRq7Vmc5keiIaJk=",
-          "directPath": "/o1/v/t24/f2/m238/AQOJpVvKhB-rPG-3SGw2JfVaZ_fl2meoJkdmB303PCVA2iHDjgOcAOqxHTiosoqeWyisIr3v2EWzP1YHIDrz0c2j5_dmXVNyOIWcgWQqOg?ccb=9-4&oh=01_Q5Aa5QFtS_MeIiB40Yn_o1c_YWvFz_3umq1qlOt1myrj9O9xBw&oe=6AA68AC3&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710801",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGAABAQEBAQAAAAAAAAAAAAAAAAUEBgH/xAAoEAABAwEGBQUAAAAAAAAAAAABAAIDEQQFISJRYQYSEzGBMkFDkbH/xAAXAQADAQAAAAAAAAAAAAAAAAAAAQID/8QAGREBAAMBAQAAAAAAAAAAAAAAAAECEQNR/9oADAMBAAIRAxEAPwCZYLRLACxjSHOI+l0EUlXZhhquXs149OgMUZA0OI2VCLiN9kZRkTaV7VIH6rxNbYvmSFnqFfKn268BFkiYOf32WJ3FczvgjHkrFNf8ri49CHNtiPKcUg56eIQcdSnMT3JRFoxe1OqVOqIgP//Z",
-          "contextInfo": {
-            "stanzaId": "AC06F1357E7BB3421203FE42E7DE054F",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".mancing"
-            },
-            "mentionedJid": [
-              "628993226000@s.whatsapp.net"
-            ]
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "vF+tH9SVXbE6KYdhwbgf7SvWqj/m2ivcuRlkwo0SeD4="
-        }
-      },
-      "time": 1786710801763
-    },
-    "3EB006473D431DB708E716": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQNytuw5PmF-s5qpNs-GzDqALneSPnCATL6K1x2OKZr1X92o1FHcOhWodTjoDxXARhjJ2fNFICYCjJpAqGYLJvKmunSyREIvWsZ8SdpZpg?ccb=9-4&oh=01_Q5Aa5QELjg9igwvMR-rN91ZunkKlsYZq_jqAlVe545Q_P436sw&oe=6AA6752F&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "─━━ ⛏️ MINING RESULT ━━─\n◈ Tier Tertinggi : ★☆☆☆☆☆☆ COMMON 🤍\n🏆 Hasil Tambang : 2 jenis | Total x3 ore\n\n│ 🏜️ Sand Stone x1\n│ 🫧 Pumice x2\n└ ✨ Total XP : +45 | 💰 +Rp 24\n\n◆ Level Pickaxe : 11\n◆ Bonus Pick : +16.5%\n◆ Secret : Buka di Pick Lvl 25\n\n─━━━━━━━━━─",
-          "fileSha256": "DoYS2+WRfY90R3iQHOToeeQvUzItrTPB4eNCrJtcT+w=",
-          "fileLength": "43370",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "CZbKPmxBk+d7TYBW0pSAvqZNqwbN7Oshuv27FzyV2j8=",
-          "fileEncSha256": "DNb1qmH4/joR4RCdLhef2kdrS9wo58CYUnh5yPByklM=",
-          "directPath": "/o1/v/t24/f2/m237/AQNytuw5PmF-s5qpNs-GzDqALneSPnCATL6K1x2OKZr1X92o1FHcOhWodTjoDxXARhjJ2fNFICYCjJpAqGYLJvKmunSyREIvWsZ8SdpZpg?ccb=9-4&oh=01_Q5Aa5QELjg9igwvMR-rN91ZunkKlsYZq_jqAlVe545Q_P436sw&oe=6AA6752F&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710803",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAIhAAAgICAQQDAQAAAAAAAAAAAQIDEQASIQQFE1ExMkFh/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAIDAf/EABsRAAMAAgMAAAAAAAAAAAAAAAABAgMxESFB/9oADAMBAAIRAxEAPwBJD22XqFUxr8reoNkjF0yeNyPWdFIkkYBVdHWhWwHH8xH1kTLKxaxZvnJY6bfZW540Rh18ZJQsfX4M2zQBOnWXxxspHA+DXvMMS7cWB+2eAc10QjbzR66EABrzaCS8yyR9okaOR0NgWprjFsRJskkknm8MMWPQZKX7ZS2GGUQj2f/Z",
-          "contextInfo": {
-            "stanzaId": "ACDC20E8AA0E125F963C3AD16F5AEFDE",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ". Mining"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "8D62PyMfBihiiKcEJd1WJu/5Z3elZQ02PUyDvlYZ+cg="
-        }
-      },
-      "time": 1786710804056
-    },
-    "3EB09BF448F39C23346D50": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m235/AQMnkcc56Fh-qqe716uoT60KuK0pqDAnOC4wNP_T6kPKtWcgom74TV0k-U_HRw6eaAcXHNNvYQlckMVnrecSIsRX3HDTd19WSA8JAJ4Ynw?ccb=9-4&oh=01_Q5Aa5QHhdjylzbAgGo8t2SelO1Zg4OAOyrT1E4oqEfWllY1iHQ&oe=6AA691D3&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 DUNGEON CLEAR 」───*\n\n✅ Berhasil menaklukkan *Wolf Territory*!\n⚔️ *Total Damage:* 1,450 \n🛡️ *Total Defense:* 1,000 \n🩸 *HP Terkuras:* -10\n❤️ *Sisa HP:* 67/300\n\n🎁 *HADIAH:* \n• 💰 Money: +Rp 30,000\n• 🌟 XP: +3,000\n• 🪙 Gold: +10\n",
-          "fileSha256": "13qF9HS9c0OxUPmuFGUmGR6ijylzbfJjDHV3SVEqSPA=",
-          "fileLength": "52175",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "6+YxWcEzBFzkrMm6ECuSjAal8VQcJyjtYCBYTojvvy8=",
-          "fileEncSha256": "NBQQB18I3KLaQCPNgST3qjsOzZFWiY+ngfoP0mPuhXc=",
-          "directPath": "/o1/v/t24/f2/m235/AQMnkcc56Fh-qqe716uoT60KuK0pqDAnOC4wNP_T6kPKtWcgom74TV0k-U_HRw6eaAcXHNNvYQlckMVnrecSIsRX3HDTd19WSA8JAJ4Ynw?ccb=9-4&oh=01_Q5Aa5QHhdjylzbAgGo8t2SelO1Zg4OAOyrT1E4oqEfWllY1iHQ&oe=6AA691D3&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710810",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAwEBAQAAAAAAAAAAAAAAAAQFBgID/8QAJBAAAgEDBAICAwAAAAAAAAAAAQIDAAQRBRIhQSIxEzJRYXH/xAAXAQEBAQEAAAAAAAAAAAAAAAABAgMF/8QAGhEAAwADAQAAAAAAAAAAAAAAAAECESExA//aAAwDAQACEQMRAD8AzttKFjjyDudsn99CnFl+QKked4Y5x1ikLZWZImZh4nunNNkFpqUUj8qG8sjPHddWaeApMrW12zWkkFxF8q59EVG1KCIJlUVWDeSqPQNP3ThbiVoXDRsxbK9g1EurhtskS4KluWNFYWylTc7OLX7j+Cr1iqtICVBP5IooojhrB7a6qpanYoXkehislITg890UVNk+nT//2Q==",
-          "contextInfo": {
-            "stanzaId": "ACE60A8733E7269C1A157F9E154781A7",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".dungeon normal"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "5o8lOI4j+ecmr0OeQgkUpNqCGibPqiscW5Q1n6a+uHI="
-        }
-      },
-      "time": 1786710810533
-    },
-    "3EB053092ED427E22E2FF3": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 ✅ MISSION CLEAR 」──╮\n\n│ 📜 *Misi:* Ekspedisi Tambang Tua\n│ 👤 *Eksekutor:* zz\n│ ✨ *Guild Exp:* +200\n│ 🏆 *Kontribusi:* +50 Pts\n\n│ 🎁 *HADIAH SEMUA MEMBER:* \n│ • 💰 Rp 80.000\n╰───────────────────╯",
-          "contextInfo": {
-            "stanzaId": "ACEA08A83EC30882D45A628A24FAAD2B",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".misiguild 3"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "7/Uo0Ag0MvfgNII3llDBPK2vUoNs+09kHIcEI4wE3UA="
-        }
-      },
-      "time": 1786710817444
-    },
-    "3EB00699866E514CB3AB70": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQPq6DprBareDYbT1F8z_yHsMj7KLMsBaNJia2xCeL6kNApApuD5QUN8JDWbksGqIHJzzQGvIh4T2-Ra6v_pYyAEjSLGxq9xWACplnsFQw?ccb=9-4&oh=01_Q5Aa5QFzoiZos62bDJ88ch3nFTAL3X250akH0t7dV7aOgJ56Wg&oe=6AA66CE3&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🗺️ ADVENTURE 」───*\n\n*Tier Tertinggi* : ★★★★★☆☆ LEGENDARY 👑\n\n🎒 *Hasil Penjelajahan x6* :\n\n👑 *LEGENDARY*\n│ 👑 Mahkota Raja x1\n│ 📚 Buku Sihir Kuno x1\n\n💙 *UNCOMMON*\n│ 🔪 Belati Karat x1\n\n🤍 *COMMON*\n│ 🪵 Wood x1\n│ 🧪 Ramuan Kecil x1\n│ 🪙 Koin Tembaga x1\n\n│ 💰 Money : +Rp 7,819\n└ 🌟 XP : +1212\n\n❤️ *Sisa Darah* : 52\n🗺️ *Lvl* : 15 | ⚔️ *Sword* : 11 | ⛏️ *Pick* : 11\n🍀 *Bonus* : +46.0%",
-          "fileSha256": "WFpdTw8l43dtR4gC4Pm95JVQc7AVpxfTyfqd2y4lV2o=",
-          "fileLength": "42017",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "52Rgh2P2imVs4dMIBZ1+duW8ia6YMEQJvONDRG0bqWM=",
-          "fileEncSha256": "NT3+6Lb/YIzAeCfRmd219Ot0tQ4IEnwz2TyxA3aQ+bU=",
-          "directPath": "/o1/v/t24/f2/m237/AQPq6DprBareDYbT1F8z_yHsMj7KLMsBaNJia2xCeL6kNApApuD5QUN8JDWbksGqIHJzzQGvIh4T2-Ra6v_pYyAEjSLGxq9xWACplnsFQw?ccb=9-4&oh=01_Q5Aa5QFzoiZos62bDJ88ch3nFTAL3X250akH0t7dV7aOgJ56Wg&oe=6AA66CE3&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710824",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAMCBAUG/8QAJRAAAgICAQMDBQAAAAAAAAAAAQIAAwQREgUxQSFRcRMiMmGx/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxEhQf/aAAwDAQACEQMRAD8A0rnodVdCFP6B/sopXjXFyb9kH10pOjMW3q9TY7kUFLeO1IPpv4lTpl5+s75GQ1QbuV8n4mYyaRZVJs6eqnDrsDOzOo8cYuwYVt5YEqm/xVZSOTQ541ZQYgaBfsYi06YFbUA39x5bhW6+h04jEbssU5OoQmyhWT7ybE+/mEI9B//Z",
-          "contextInfo": {
-            "stanzaId": "AC76EE11C2BA289570A6A7459D412449",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".adventure"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "ZGyWcNoFyjUXQAMgaQ+Rm4DPH5/veFnK/abc9tEuQZM="
-        }
-      },
-      "time": 1786710825025
-    },
-    "3EB07CBC7400A44D991D2E": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "💼 *KERJA BERHASIL*\n\nPekerjaan: *Petugas Pemadam Kebakaran*\nPendapatan: *+Rp 1,687,000*\nXP: *+1,687*\nLevel: *Lv.36* (1687/18000)",
-          "contextInfo": {
-            "stanzaId": "AC701944CFE915B439BB22455B6005ED",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".work"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "GxNKVzPILzlIs02yt9Cm4OXIYdkkpiDhQRv7y6waGGs="
-        }
-      },
-      "time": 1786710826027
-    },
-    "3EB08A2974420ACA01CC6C": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 ✅ MISSION CLEAR 」──╮\n\n│ 📜 *Misi:* Invasi Kerajaan Mayat Hidup\n│ 👤 *Eksekutor:* Saa\n│ ✨ *Guild Exp:* +11500\n│ 🏆 *Kontribusi:* +1900 Pts\n\n│ 🎁 *HADIAH SEMUA MEMBER:* \n│ • 💰 Rp 3.600.000\n│ • 💎 42\n│ • 🟢 8\n╰───────────────────╯",
-          "contextInfo": {
-            "stanzaId": "AC80DB03365144842EAD60A4AC7CEAB0",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ". misiguild 10"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "uoMYuyf5/psz256vw3LV1acFS2JDgLfaRv/hBk8mhzs="
-        }
-      },
-      "time": 1786710826721
-    },
-    "3EB0B946DF71E2F0F11002": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "💼 *KERJA BERHASIL*\n\nPekerjaan: *Digital Marketing*\nPendapatan: *+Rp 4,785,000*\nXP: *+4,785*\nLevel: *Lv.99* (0/49500)\n\n🎉 *LEVEL UP!*",
-          "contextInfo": {
-            "stanzaId": "AC7033314956A038A1BCD45A01288C46",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ".kerja"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "9n92Sx+xV/023riR7oNXHsGk1Oj4v17UcjsioPR00Tg="
-        }
-      },
-      "time": 1786710828471
-    },
-    "3EB05EAB66A3BF3661DBFD": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m231/AQPn_ZX-_c4UAA17YNO0c0u4M41K7g3AFwJbct5oWOWcDh07UcNHiDuG7ICXZas7gveT7GIsqqyOcGelXPe8zZZykCnJTzxr81yj1GZX5w?ccb=9-4&oh=01_Q5Aa5QFB7yxcnfHi34qb_Bvxg2QCO8jLIh0VchKOcDjwGhANaA&oe=6AA67CCF&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 DUNGEON CLEAR 」───*\n\n✅ Berhasil menaklukkan *Labyrinth of Minos*!\n⚔️ *Total Damage:* 2,190 \n🛡️ *Total Defense:* 1,000 \n🩸 *HP Terkuras:* -10\n❤️ *Sisa HP:* 235/300\n\n🎁 *HADIAH:* \n• 💰 Money: +Rp 90,000\n• 🌟 XP: +8,000\n• 🪙 Gold: +35\n• 💎 Diamond: +6\n",
-          "fileSha256": "13qF9HS9c0OxUPmuFGUmGR6ijylzbfJjDHV3SVEqSPA=",
-          "fileLength": "52175",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "+CP3UaVVbKLFfH+pJS2aTxP9vs55fhqgvw04LMuni5g=",
-          "fileEncSha256": "oLS92Em8rGfqzKdZXY4BYMEqolvyICW65GCBdTkzM0U=",
-          "directPath": "/o1/v/t24/f2/m231/AQPn_ZX-_c4UAA17YNO0c0u4M41K7g3AFwJbct5oWOWcDh07UcNHiDuG7ICXZas7gveT7GIsqqyOcGelXPe8zZZykCnJTzxr81yj1GZX5w?ccb=9-4&oh=01_Q5Aa5QFB7yxcnfHi34qb_Bvxg2QCO8jLIh0VchKOcDjwGhANaA&oe=6AA67CCF&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710832",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAwEBAQAAAAAAAAAAAAAAAAQFBgID/8QAJBAAAgEDBAICAwAAAAAAAAAAAQIDAAQRBRIhQSIxEzJRYXH/xAAXAQEBAQEAAAAAAAAAAAAAAAABAgMF/8QAGhEAAwADAQAAAAAAAAAAAAAAAAECESExA//aAAwDAQACEQMRAD8AzttKFjjyDudsn99CnFl+QKked4Y5x1ikLZWZImZh4nunNNkFpqUUj8qG8sjPHddWaeApMrW12zWkkFxF8q59EVG1KCIJlUVWDeSqPQNP3ThbiVoXDRsxbK9g1EurhtskS4KluWNFYWylTc7OLX7j+Cr1iqtICVBP5IooojhrB7a6qpanYoXkehislITg890UVNk+nT//2Q==",
-          "contextInfo": {
-            "stanzaId": "AC48053F97E7CD87C73F1CE68A6D25F0",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ".dungeon elite"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "QwaiosUn9t8+IMXZKwgkh7ivRf5J4z+25+doQafQmJM="
-        }
-      },
-      "time": 1786710832644
-    },
-    "3EB01C73DF5D94270AD5AD": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m234/AQM37AC6UcZ2Qrm3m4HF3Y4ryz8hUnHyofU_NV5RT_lA0c7kaHhwny-jOvmn3OoUfPElYi-U9g1Fl_N7btkyOY3ooX21Lqr58poGicJF0Q?ccb=9-4&oh=01_Q5Aa5QFt_jc1ZP1YKX9cHzbcj7yV-EvQzbIQLv0jDBopFQc-KQ&oe=6AA67CE8&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "─━━ ⛏️ MINING RESULT ━━─\n◈ Tier Tertinggi : ★☆☆☆☆☆☆ COMMON 🤍\n🏆 Hasil Tambang : 1 jenis | Total x1 ore\n\n│ 🪨 Stone x1\n└ ✨ Total XP : +15 | 💰 +Rp 4\n\n◆ Level Pickaxe : 5\n◆ Bonus Pick : +7.5%\n◆ Secret : Buka di Pick Lvl 25\n\n─━━━━━━━━━─",
-          "fileSha256": "DoYS2+WRfY90R3iQHOToeeQvUzItrTPB4eNCrJtcT+w=",
-          "fileLength": "43370",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "QXxKCivN/N1q2UKu7YbfIWDlWxyYL6APn7HAKiON710=",
-          "fileEncSha256": "IMyKXz/rv4Y2sRJphOTnIClIsKkW0DaKFUd1cZeQqfU=",
-          "directPath": "/o1/v/t24/f2/m234/AQM37AC6UcZ2Qrm3m4HF3Y4ryz8hUnHyofU_NV5RT_lA0c7kaHhwny-jOvmn3OoUfPElYi-U9g1Fl_N7btkyOY3ooX21Lqr58poGicJF0Q?ccb=9-4&oh=01_Q5Aa5QFt_jc1ZP1YKX9cHzbcj7yV-EvQzbIQLv0jDBopFQc-KQ&oe=6AA67CE8&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710835",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAIhAAAgICAQQDAQAAAAAAAAAAAQIDEQASIQQFE1ExMkFh/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAIDAf/EABsRAAMAAgMAAAAAAAAAAAAAAAABAgMxESFB/9oADAMBAAIRAxEAPwBJD22XqFUxr8reoNkjF0yeNyPWdFIkkYBVdHWhWwHH8xH1kTLKxaxZvnJY6bfZW540Rh18ZJQsfX4M2zQBOnWXxxspHA+DXvMMS7cWB+2eAc10QjbzR66EABrzaCS8yyR9okaOR0NgWprjFsRJskkknm8MMWPQZKX7ZS2GGUQj2f/Z",
-          "contextInfo": {
-            "stanzaId": "AC4098DED88C318844DB58F881CBDD75",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ".mining"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "44762+Vxpm8KXrz6vokTyzYuVO2olwxdE5jPy0yKwf0="
-        }
-      },
-      "time": 1786710836223
-    },
-    "3EB016B03A0E185C7D1D19": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m235/AQPzJpPE5ISe6nHiGp6-kfndqpyFb1PcLOJZgIvYJb4gs1ZPlOKqSHobrwVZVHyegXs-skDH5NphOiukeezEStDJFt9qYyFOKzyCX-bDUw?ccb=9-4&oh=01_Q5Aa5QFHeFJjw7UmxhF9N9FhF8y-JaSXIfmZyETgShOuN7tnog&oe=6AA68EC1&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🎣 FISHING RESULT 」───*\n\n*Tier* : ★☆ COMMON 🤍\n\n🏆 *Hasil Tangkapan*\n🪝 🐟🪡 Ikan Julung\n\n✨ *XP Didapat* : +15\n🎣 *Level Pancingan* : 6\n🍀 *Bonus Rod* : +9.0%\n\n────────────────",
-          "fileSha256": "0rv3cv71t3BFKKDpujvHn7T9aWp9FLIjBVz9csAjM1o=",
-          "fileLength": "66853",
-          "height": 424,
-          "width": 734,
-          "mediaKey": "E9ry3tcne99Wy0UzkvGQtdJHSvbctiegunJWXAEpv0c=",
-          "fileEncSha256": "TNq9rcUXMDSr35toUxM1Sm1CwLTpv0zf/FxqLvHQa90=",
-          "directPath": "/o1/v/t24/f2/m235/AQPzJpPE5ISe6nHiGp6-kfndqpyFb1PcLOJZgIvYJb4gs1ZPlOKqSHobrwVZVHyegXs-skDH5NphOiukeezEStDJFt9qYyFOKzyCX-bDUw?ccb=9-4&oh=01_Q5Aa5QFHeFJjw7UmxhF9N9FhF8y-JaSXIfmZyETgShOuN7tnog&oe=6AA68EC1&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710839",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGAAAAwEBAAAAAAAAAAAAAAAAAAQFAQb/xAAoEAABAwIDBwUAAAAAAAAAAAABAAIDBBESIjEFBhMhUWGBMkFDkbH/xAAWAQEBAQAAAAAAAAAAAAAAAAAAAwL/xAAZEQACAwEAAAAAAAAAAAAAAAAAAQIRUQP/2gAMAwEAAhEDEQA/AJlBUSwAsY0hziPpdBFJd2Ycuq5qKrkp2Rukp2YXi7TdOxbxvpGWZE219LkD9VGndGIyWl8yQs9Qv5U+u2gIskTBj9+ySdvXM74Ix5KSm2/K4uPAhzduY8ooI0+mEPiPIAL3ENFgCdFmInUoQqETbnqi56oQgP/Z",
-          "contextInfo": {
-            "stanzaId": "AC9E5E49A340BB53DFC77BB25EEB867F",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ".mancing"
-            },
-            "mentionedJid": [
-              "628385848829@s.whatsapp.net"
-            ]
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "VXDkfy6DQq+tcJd1tvkxUEgjRgSkdAGqEpLia0apToQ="
-        }
-      },
-      "time": 1786710840308
-    },
-    "3EB06B5A3EFD7647FAD5C5": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m234/AQNEkVh9SBNEOa_50BTuAzlF5YD3-bcWSKlU-kC_XWpVJuVQQvyZMqPnApIBHSufPytxx8jeaaBxORkgyKRG6r3zOdVFx6FCL_P3x959fQ?ccb=9-4&oh=01_Q5Aa5QGimuyLx3WX0umKEqRiyPkdwRG8e8QVZWpaXgaXOCcxqg&oe=6AA66DC2&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 LIVE STREAMING 」───*\n\nJudul: \"gatau\"\nChannel: sasha\n\nStatistik Live:\n┌ *Viewers*: 2,524\n│ *Likes*: +996\n│ *Subs* Baru: +252\n│ *Gaji*: Rp 59,264\n└ *Exp*: +5,926\n\nLive selesai pada 14/8/2026, 19.34.08 WIB",
-          "fileSha256": "fHfT8CHq/cIlxuMuvciq+VxVAH7fccYPSpBvFafwR9M=",
-          "fileLength": "16467",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "1QaFe6hjrwy6mPyqvCD60NigSK1lzy7U8pm5o7WETEs=",
-          "fileEncSha256": "1s1hcoINczVoR5jTodQfN34SnGdKL5wmLHiuzYXBN24=",
-          "directPath": "/o1/v/t24/f2/m234/AQNEkVh9SBNEOa_50BTuAzlF5YD3-bcWSKlU-kC_XWpVJuVQQvyZMqPnApIBHSufPytxx8jeaaBxORkgyKRG6r3zOdVFx6FCL_P3x959fQ?ccb=9-4&oh=01_Q5Aa5QGimuyLx3WX0umKEqRiyPkdwRG8e8QVZWpaXgaXOCcxqg&oe=6AA66DC2&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786710848",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgICAQMCBwAAAAAAAAAAAQIAAwQRBRIhYQZBEyMxUXGR0f/EABYBAQEBAAAAAAAAAAAAAAAAAAACA//EAB0RAAICAQUAAAAAAAAAAAAAAAABAhEDEhMiQVH/2gAMAwEAAhEDEQA/AOwd6MWr4uRYtab11MdDclj5+DcPlZVTdwvZvc+0V5XCHJYIpDFWVw4PkROn091Y94yLC9l1gckaGiA3jzIuWqujdQxbTk3y8Nuy/HR2R7UVlXrYE9wv3/EjbUJiN6ZQro3W68sD2/U0OOw047FelWZgzltsdn6D+SzAtqjaQhAB4pbCEA//2Q==",
-          "contextInfo": {
-            "stanzaId": "ACE3C1F6445871E45089CAB4399F0C15",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ".liveyt gatau"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "Q/Ekbf5IHW7c7hMWXV4RAsgdwjQXyjk56PlAbsdp92A="
-        }
-      },
-      "time": 1786710849155
-    },
-    "3EB0CF8A8B21550FB534C3": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*🌾 PANEN MASSAL BERHASIL!*\n\n*Total:* 10 Slot\n• 10x 🧅 BAWANG MERAH\n\n*Bonus:* +1300 XP\n*Level:* 36",
-          "contextInfo": {
-            "stanzaId": "ACCD8B88B015CE4AF0E4F94A11A04660",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".panen all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "bdP0TrzNsoHqfAAKAOqMZfMnSXL31JbH+Z1DpqvSbDI="
-        }
-      },
-      "time": 1786710851086
-    },
-    "3EB0A4450FB577ED7F1920": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*「 COLLABORATION 」*\n\nPartner: buttercat x sasha\n\nHasil Kolaborasi:\n┌ *Viewers*: 5,632\n│ *Likes*: +1,940\n│ *Subs* Baru: +704\n│ *Gaji*: Rp 144,578\n└ *Exp*: +14,457\n\nStatus: Kolaborasi Berhasil",
-          "contextInfo": {
-            "stanzaId": "AC84B29E8114D936EFA2E6749C2FF8B9",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".collab",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "628993226000@s.whatsapp.net",
-              "628385848829@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "DPHAs7MsgukIK3MW0igE3CGVRg9fSOvPS118w8U6kos="
-        }
-      },
-      "time": 1786710856966
-    },
-    "3EB0A8E7D57267368216A4": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "👩‍❤️‍👨 *KENCAN ROMANTIS BERHASIL!* 👩‍❤️‍👨\n\nKamu baru saja mengajak pasanganmu kencan di *Pantai Sunset 🌅*!\n\n🎁 *Bonus Pasangan:*\n• +302 EXP\n• +12 Poin Kemesraan Bucin 💕",
-          "contextInfo": {
-            "stanzaId": "AC180865E22C1E472C69E7C0FD60A8F4",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".kencan"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "PA62qmh/orHBdX83wLTEKr5+1oil6XwBj9sqXFeuWNk="
-        }
-      },
-      "time": 1786710858966
-    },
-    "3EB0E5D5FE5EE82C0B3039": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🌱 *DAFTAR BIBIT ZETA*\nStatus: 👤 User Normal\n\n*─── TERMURAH ───*\n🥜 kacang - Rp 4,500\n🧄 bawang putih - Rp 5,000\n🌾 padi - Rp 5,000\n🧅 bawang merah - Rp 5,500\n🥕 wortel - Rp 6,000\n🥒 timun - Rp 7,000\n🥬 selada - Rp 8,000\n🥔 kentang - Rp 8,500\n🍅 tomat - Rp 9,000\n🍠 ubi - Rp 9,000\n\n*─── MENENGAH ───*\n🌽 jagung - Rp 10,000\n🥦 brokoli - Rp 10,000\n🍆 terong - Rp 11,000\n🍉 semangka - Rp 12,000\n🍋 lemon - Rp 12,000\n🌶 cabai - Rp 13,000\n🫑 paprika - Rp 12,500\n🍓 stroberi - Rp 14,000\n🍊 jeruk - Rp 15,000\n🫐 bluberi - Rp 15,000\n🍒 ceri - Rp 16,000\n🌰 kastanye - Rp 16,500\n🫒 zaitun - Rp 17,000\n🍌 pisang - Rp 18,000\n🍍 nanas - Rp 19,000\n\n*─── TERMAHAL ───*\n🥝 kiwi - Rp 19,000\n🍐 pir - Rp 20,000\n🍑 persik - Rp 20,000\n🍈 melon - Rp 21,000\n🍇 anggur - Rp 22,000\n🥭 mangga - Rp 23,000\n🍏 apel hijau - Rp 24,000\n🥑 alpukat - Rp 24,000\n🍎 apel merah - Rp 25,000\n🥥 kelapa - Rp 25,000\n✨ exp - Rp 40,000\n🌳 durian - Rp 50,000\n💵 uang - Rp 50,000\n🪙 koin - Rp 60,000\n⚜️ emas - Rp 200,000\n💎 diamond - Rp 250,000\n\n*CARA TANAM:* \n• Per slot: *.tanam wortel*\n• Slot tertentu: *.tanam diamond 1*\n• Semua slot: *.tanam koin all*",
-          "contextInfo": {
-            "stanzaId": "AC2DEB0DA1EED7DBBE08F9A27F6025E1",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".tanam"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "F0yJfliQjQLV8lI63Tfewvo7I7sX1PfftIWfmUiWNWs="
-        }
-      },
-      "time": 1786710870100
-    },
-    "3EB0E9437F0FB2643845C2": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🌱 *TANAM MASSAL BERHASIL!*\n\n🥕 WORTEL x10\n💸 Biaya: Rp 60,000\n💰 Sisa: Rp 6,670,342",
-          "contextInfo": {
-            "stanzaId": "AC5FB562D59878116F4C8C84A39C7353",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".tanam wortel all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "c/8aQtiPS0i5Ntz7fMWBxy87KYa/DscqKVDQsnv2Lbc="
-        }
-      },
-      "time": 1786710881575
-    },
-    "3EB01EE9DF0230E5BFBD3E": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "👩‍❤️‍👨 *KENCAN ROMANTIS BERHASIL!* 👩‍❤️‍👨\n\nKamu baru saja mengajak pasanganmu kencan di *Pantai Sunset 🌅*!\n\n🎁 *Bonus Pasangan:*\n• +375 EXP\n• +6 Poin Kemesraan Bucin 💕",
-          "contextInfo": {
-            "stanzaId": "ACD11DD2501E9366BE32C92E2F76D71C",
-            "participant": "228256070533313@lid",
-            "quotedMessage": {
-              "conversation": ".kencan"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "dVnpK6PXCs+WFTaTSyQnmrn+fn7ZJL64EOLE6JKFZuI="
-        }
-      },
-      "time": 1786710957643
-    },
-    "3EB00B4B462D3DBC47AFA1": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQOO5iTK0EjqiwaZOEuBPsd5ZVAPyhnRGMsfbsNCdXh7ZQ2h1gPmG7gmUFFT_D7of4kHQjLgazXNsgTl1KnMYAH2OKd0LDL5fgCnut022Q?ccb=9-4&oh=01_Q5Aa5QFjJnNGyiYjvQSMkYXjWXTvdUdHg-WrTWczEtsiCmy3TQ&oe=6AA68C7B&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🎣 FISHING RESULT 」───*\n\n*Tier* : ★★☆ UNCOMMON 💙\n\n🏆 *Hasil Tangkapan*\n🪝 🐟💙 Ikan Nila\n\n✨ *XP Didapat* : +50\n🎣 *Level Pancingan* : 11\n🍀 *Bonus Rod* : +16.5%\n\n────────────────",
-          "fileSha256": "GCWkND8nGX/Y+GJyM/6aWEmpcphbHGfJBmEMmDmsZYw=",
-          "fileLength": "67789",
-          "height": 424,
-          "width": 734,
-          "mediaKey": "FzTo1604fEJCsgAhkRp3RmpbOLaOsmlc5IMR8jv6vmg=",
-          "fileEncSha256": "x7mZBJDdhSnIjsozc95tWOBQ3UvQnRnrKIp8YkZZp2Y=",
-          "directPath": "/o1/v/t24/f2/m233/AQOO5iTK0EjqiwaZOEuBPsd5ZVAPyhnRGMsfbsNCdXh7ZQ2h1gPmG7gmUFFT_D7of4kHQjLgazXNsgTl1KnMYAH2OKd0LDL5fgCnut022Q?ccb=9-4&oh=01_Q5Aa5QFjJnNGyiYjvQSMkYXjWXTvdUdHg-WrTWczEtsiCmy3TQ&oe=6AA68C7B&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712307",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGAABAQEBAQAAAAAAAAAAAAAAAAUEBgH/xAAoEAABAwEGBQUAAAAAAAAAAAABAAIDEQQFISJRYQYSEzGBMkFDkbH/xAAXAQADAQAAAAAAAAAAAAAAAAAAAQID/8QAGREBAAMBAQAAAAAAAAAAAAAAAAECEQNR/9oADAMBAAIRAxEAPwCZYLRLACxjSHOI+l0EUlXZhhquXs149OgMUZA0OI2VCLiN9kZRkTaV7VIH6rxNbYvmSFnqFfKn268BFkiYOf32WJ3FczvgjHkrFNf8ri49CHNtiPKcUg56eIQcdSnMT3JRFoxe1OqVOqIgP//Z",
-          "contextInfo": {
-            "stanzaId": "AC4321904C2CED7D489A42707DFC7176",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ". Mancing"
-            },
-            "mentionedJid": [
-              "628993226000@s.whatsapp.net"
-            ]
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "gwpP85PsQrz4FSDDjgEsp1UNG1XTmR6tcLWxUap66Lw="
-        }
-      },
-      "time": 1786712309336
-    },
-    "3EB0B26BB8CEEAEE881238": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQM6JdRcd8yl61zd2t64g1HcQ6Lx4x5VyRdXjCfhNo8TSVFDbex5So9A7FhLdlnpPEjF7DHJjnpjdbkyCbVvccyiGdfTMs7BMYVwUP92AQ?ccb=9-4&oh=01_Q5Aa5QGmY37OAZbhJ05MW4fZukZ15su91s6jJR9kMKBWgvdrhQ&oe=6AA67A2B&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "─━━ ⛏️ MINING RESULT ━━─\n◈ Tier Tertinggi : ★★☆☆☆☆☆ UNCOMMON 💙\n🏆 Hasil Tambang : 2 jenis | Total x3 ore\n\n│ ✨ Gold x2\n│ 🟠 Copper x1\n└ ✨ Total XP : +115 | 💰 +Rp 18\n\n◆ Level Pickaxe : 11\n◆ Bonus Pick : +16.5%\n◆ Secret : Buka di Pick Lvl 25\n\n─━━━━━━━━━─",
-          "fileSha256": "DoYS2+WRfY90R3iQHOToeeQvUzItrTPB4eNCrJtcT+w=",
-          "fileLength": "43370",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "VU1KY47xTT/yqSsJv9DRTocwCmnICLisAJOwFP77T8c=",
-          "fileEncSha256": "PY4E2RinSFmTC+IxJ5nv/TbD6WUv/LED9p4K7ZNAlSU=",
-          "directPath": "/o1/v/t24/f2/m233/AQM6JdRcd8yl61zd2t64g1HcQ6Lx4x5VyRdXjCfhNo8TSVFDbex5So9A7FhLdlnpPEjF7DHJjnpjdbkyCbVvccyiGdfTMs7BMYVwUP92AQ?ccb=9-4&oh=01_Q5Aa5QGmY37OAZbhJ05MW4fZukZ15su91s6jJR9kMKBWgvdrhQ&oe=6AA67A2B&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712309",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAIhAAAgICAQQDAQAAAAAAAAAAAQIDEQASIQQFE1ExMkFh/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAIDAf/EABsRAAMAAgMAAAAAAAAAAAAAAAABAgMxESFB/9oADAMBAAIRAxEAPwBJD22XqFUxr8reoNkjF0yeNyPWdFIkkYBVdHWhWwHH8xH1kTLKxaxZvnJY6bfZW540Rh18ZJQsfX4M2zQBOnWXxxspHA+DXvMMS7cWB+2eAc10QjbzR66EABrzaCS8yyR9okaOR0NgWprjFsRJskkknm8MMWPQZKX7ZS2GGUQj2f/Z",
-          "contextInfo": {
-            "stanzaId": "ACEDC11F0400677EC0F2B4A6B0A318AC",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ". Mining"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "d4fviKRccH+YpCefz2vzRiQDh/eYYW7tpXP3+SpB/YM="
-        }
-      },
-      "time": 1786712310439
-    },
-    "3EB015EE84EA48EBA3DF43": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m269/AQO8CGrITduxLbkMXTH7p5a3uheQsh7mrJGXIACeqr90h5P9u1N8fc9rUCl8Cfdrw0WHmB6YDMediJ-2mw-u-lOxE8QF-J6oRYeYkJ_Mmg?ccb=9-4&oh=01_Q5Aa5QHQHGcCwHRFuczIuv-9PM3zyHKkKeHx-3VJg3oElqF6Gg&oe=6AA66B04&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🗺️ ADVENTURE 」───*\n\n*Tier Tertinggi* : ★★★★★☆☆ LEGENDARY 👑\n\n🎒 *Hasil Penjelajahan x6* :\n\n👑 *LEGENDARY*\n│ 👑 Mahkota Raja x1\n│ 📚 Buku Sihir Kuno x1\n\n💙 *UNCOMMON*\n│ 🔪 Belati Karat x2\n│ 🧪 Ramuan Sedang x1\n\n🤍 *COMMON*\n│ 🪵 Wood x1\n\n│ 💰 Money : +Rp 6,766\n└ 🌟 XP : +1326\n\n❤️ *Sisa Darah* : 43\n🗺️ *Lvl* : 15 | ⚔️ *Sword* : 11 | ⛏️ *Pick* : 11\n🍀 *Bonus* : +46.0%",
-          "fileSha256": "WFpdTw8l43dtR4gC4Pm95JVQc7AVpxfTyfqd2y4lV2o=",
-          "fileLength": "42017",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "DH0STrhhU+f/2Li3Jp5Ev8oroIOJmJELLMQctszUkvM=",
-          "fileEncSha256": "lkW5QenYMdn8Qz3rGqVHIjT5ZfNNzDpc9RCecxqEPYk=",
-          "directPath": "/o1/v/t24/f2/m269/AQO8CGrITduxLbkMXTH7p5a3uheQsh7mrJGXIACeqr90h5P9u1N8fc9rUCl8Cfdrw0WHmB6YDMediJ-2mw-u-lOxE8QF-J6oRYeYkJ_Mmg?ccb=9-4&oh=01_Q5Aa5QHQHGcCwHRFuczIuv-9PM3zyHKkKeHx-3VJg3oElqF6Gg&oe=6AA66B04&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712315",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAMCBAUG/8QAJRAAAgICAQMDBQAAAAAAAAAAAQIAAwQREgUxQSFRcRMiMmGx/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxEhQf/aAAwDAQACEQMRAD8A0rnodVdCFP6B/sopXjXFyb9kH10pOjMW3q9TY7kUFLeO1IPpv4lTpl5+s75GQ1QbuV8n4mYyaRZVJs6eqnDrsDOzOo8cYuwYVt5YEqm/xVZSOTQ541ZQYgaBfsYi06YFbUA39x5bhW6+h04jEbssU5OoQmyhWT7ybE+/mEI9B//Z",
-          "contextInfo": {
-            "stanzaId": "ACD657E456E4550D162D2A4114780E51",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".adventure"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "WDBIXNbwszxxvbBrpkh2dABsp0GE6znp+vtYHHEn8rY="
-        }
-      },
-      "time": 1786712316353
-    },
-    "3EB0CE3B3C9B37D6C6330A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "💼 *KERJA BERHASIL*\n\nPekerjaan: *Petugas Pemadam Kebakaran*\nPendapatan: *+Rp 1,687,000*\nXP: *+1,687*\nLevel: *Lv.36* (6165/18000)",
-          "contextInfo": {
-            "stanzaId": "AC98744016A15409748E0FDD081A53C4",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".work"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "SAp9bhZ6PkNqTrvnYoWWwJNznav1qANtVM4PatVVJXI="
-        }
-      },
-      "time": 1786712317620
-    },
-    "3EB061B9AD412C0DA28AF2": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m235/AQPtZdrkBCmq7TjMWRlWph8wh-3Jxo6uk93o6jwgf6xqW2YcM6BDeTMmToJ3EpnwOhZiVRMbrvT7-Jno53MH_X3cc93Pohc4mMnvZIKkwg?ccb=9-4&oh=01_Q5Aa5QEzs-V_F0xJr3Uh4Qycpi8fc2IbHcTB01thxTgmQqZUJQ&oe=6AA68011&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🗺️ ADVENTURE 」───*\n\n*Tier Tertinggi* : ★★★★★★★ SECRET 🔮\n\n🎒 *Hasil Penjelajahan x6* :\n\n🔮 *SECRET*\n│ 📜 Segel Dewa x5\n\n✨ *RARE*\n│ 🧪 Ramuan Besar x1\n\n│ 💰 Money : +Rp 6,604\n└ 🌟 XP : +20319\n\n❤️ *Sisa Darah* : 226\n🗺️ *Lvl* : 48 | ⚔️ *Sword* : 8 | ⛏️ *Pick* : 6\n🍀 *Bonus* : +60.0%",
-          "fileSha256": "WFpdTw8l43dtR4gC4Pm95JVQc7AVpxfTyfqd2y4lV2o=",
-          "fileLength": "42017",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "aeSzWaIsm3bhdqhrLP9yBjVCNJLMRlxg3M3VswAhqY8=",
-          "fileEncSha256": "mZvCEinjstLPg1AC1fjWUX7P8OHZGLH0FvSTJPQznpU=",
-          "directPath": "/o1/v/t24/f2/m235/AQPtZdrkBCmq7TjMWRlWph8wh-3Jxo6uk93o6jwgf6xqW2YcM6BDeTMmToJ3EpnwOhZiVRMbrvT7-Jno53MH_X3cc93Pohc4mMnvZIKkwg?ccb=9-4&oh=01_Q5Aa5QEzs-V_F0xJr3Uh4Qycpi8fc2IbHcTB01thxTgmQqZUJQ&oe=6AA68011&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712325",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAMCBAUG/8QAJRAAAgICAQMDBQAAAAAAAAAAAQIAAwQREgUxQSFRcRMiMmGx/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxEhQf/aAAwDAQACEQMRAD8A0rnodVdCFP6B/sopXjXFyb9kH10pOjMW3q9TY7kUFLeO1IPpv4lTpl5+s75GQ1QbuV8n4mYyaRZVJs6eqnDrsDOzOo8cYuwYVt5YEqm/xVZSOTQ541ZQYgaBfsYi06YFbUA39x5bhW6+h04jEbssU5OoQmyhWT7ybE+/mEI9B//Z",
-          "contextInfo": {
-            "stanzaId": "ACCA22A93DBF431AD191DAB2F1FB9269",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ". adventure"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "ub0yj0LoMzASPr5m3Q4PQU0mcOD5mxPBAdy58JmxpT8="
-        }
-      },
-      "time": 1786712325698
-    },
-    "3EB06F2F5AB3958E6AC6C8": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 RPG DUNGEON 」───*\n\n💀 *EASY* (Goblin Scout)\n - 📊 Syarat: Player Lvl 1 & Sword Lv.0\n - 🎁 Reward: 🪙 1\n\n💀 *NOVICE* (Goblin Chief)\n - 📊 Syarat: Player Lvl 3 & Sword Lv.1\n - 🎁 Reward: 🪙 3\n\n💀 *BEGINNER* (Orc Warrior)\n - 📊 Syarat: Player Lvl 5 & Sword Lv.2\n - 🎁 Reward: 🪙 5\n\n💀 *NORMAL* (Alpha Wolf)\n - 📊 Syarat: Player Lvl 8 & Sword Lv.3\n - 🎁 Reward: 🪙 10\n\n💀 *ADVANCED* (Ogre Brute)\n - 📊 Syarat: Player Lvl 12 & Sword Lv.5\n - 🎁 Reward: 💎 3\n\n💀 *ELITE* (Minotaur)\n - 📊 Syarat: Player Lvl 16 & Sword Lv.7\n - 🎁 Reward: 💎 6\n\n💀 *HARD* (Wyvern King)\n - 📊 Syarat: Player Lvl 20 & Sword Lv.10\n - 🎁 Reward: 💎 10\n\n💀 *MASTER* (Ancient Golem)\n - 📊 Syarat: Player Lvl 25 & Sword Lv.13\n - 🎁 Reward: 💎 15\n\n💀 *VETERAN* (Sea Leviathan)\n - 📊 Syarat: Player Lvl 30 & Sword Lv.16\n - 🎁 Reward: 💎 22\n\n💀 *EXPERT* (Ancient Dragon)\n - 📊 Syarat: Player Lvl 40 & Sword Lv.20\n - 🎁 Reward: 💎 30\n\n💀 *NIGHTMARE* (Lich King)\n - 📊 Syarat: Player Lvl 55 & Sword Lv.25\n - 🎁 Reward: 💎 45\n\n💀 *HELL* (Demon General)\n - 📊 Syarat: Player Lvl 70 & Sword Lv.30\n - 🎁 Reward: 💎 60\n\n💀 *ABYSS* (Phoenix of Ruin)\n - 📊 Syarat: Player Lvl 90 & Sword Lv.35\n - 🎁 Reward: 💎 80\n\n💀 *CHAOS* (Hydra)\n - 📊 Syarat: Player Lvl 110 & Sword Lv.40\n - 🎁 Reward: 💎 110\n\n💀 *INFERNO* (Titan Colossus)\n - 📊 Syarat: Player Lvl 140 & Sword Lv.45\n - 🎁 Reward: 💎 150\n\n💀 *CATACLYSM* (Behemoth)\n - 📊 Syarat: Player Lvl 180 & Sword Lv.50\n - 🎁 Reward: 💎 200\n\n💀 *MYTHIC* (Void Reaper)\n - 📊 Syarat: Player Lvl 230 & Sword Lv.60\n - 🎁 Reward: 💎 300\n\n💀 *LEGENDARY* (Celestial Dragon)\n - 📊 Syarat: Player Lvl 300 & Sword Lv.70\n - 🎁 Reward: 💎 500\n\n💀 *GODLIKE* (Chronos)\n - 📊 Syarat: Player Lvl 400 & Sword Lv.80\n - 🎁 Reward: 💎 800\n\n💀 *DIVINE* (World Eater)\n - 📊 Syarat: Player Lvl 550 & Sword Lv.90\n - 🎁 Reward: 💎 1200\n\n💀 *TRANSCENDENT* (Astral Leviathan)\n - 📊 Syarat: Player Lvl 750 & Sword Lv.100\n - 🎁 Reward: 🎫 100 Limit\n\n💀 *ETERNITY* (The Fallen Seraph)\n - 📊 Syarat: Player Lvl 1000 & Sword Lv.120\n - 🎁 Reward: 🎫 250 Limit\n\n💀 *COSMIC* (Emperor of Hell)\n - 📊 Syarat: Player Lvl 1400 & Sword Lv.140\n - 🎁 Reward: 🎫 500 Limit\n\n💀 *APOCALYPSE* (Void Emperor)\n - 📊 Syarat: Player Lvl 1900 & Sword Lv.170\n - 🎁 Reward: 🎫 1000 Limit\n\n💀 *FINAL* (The Creator)\n - 📊 Syarat: Player Lvl 2500 & Sword Lv.200\n - 🎁 Reward: 🎫 2500 Limit\n\n*Cara Main:* .dungeon easy",
-          "contextInfo": {
-            "stanzaId": "AC37A740FAA52B2437D34B69079A61F7",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ". Dungeon"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "/eQyT03IHan9q7qwboxm/IwJrQUM69PzGPccVeIQBN4="
-        }
-      },
-      "time": 1786712326242
-    },
-    "3EB0CB71E9F8265C2E828D": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m235/AQMZA7ybzLIRR5kETOe6iTojsofIzpuwA0Ka_eERLaPJlIm35tha8MEWW-Pu0zNs3J5nzeN6Jze2IjWtL5v2Tucb1r_bI-Ucf3Djqbu5WA?ccb=9-4&oh=01_Q5Aa5QE_e9xGlmyvjjOtqOJwCxNcPIQiMqdGX0BFr99Eu-xA7w&oe=6AA6933F&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "─━━ ⛏️ MINING RESULT ━━─\n◈ Tier Tertinggi : ★☆☆☆☆☆☆ COMMON 🤍\n🏆 Hasil Tambang : 1 jenis | Total x1 ore\n\n│ 🟠 Copper x1\n└ ✨ Total XP : +15 | 💰 +Rp 6\n\n◆ Level Pickaxe : 6\n◆ Bonus Pick : +9.0%\n◆ Secret : Buka di Pick Lvl 25\n\n─━━━━━━━━━─",
-          "fileSha256": "DoYS2+WRfY90R3iQHOToeeQvUzItrTPB4eNCrJtcT+w=",
-          "fileLength": "43370",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "B3XHcI5qCzpSDFqxl3EsqhE9uS2qVs4xt/fYKJnpyls=",
-          "fileEncSha256": "bZf8IyQd6eDYoxWO0OGoAM3jYP7+24xygqMg7bHGqp4=",
-          "directPath": "/o1/v/t24/f2/m235/AQMZA7ybzLIRR5kETOe6iTojsofIzpuwA0Ka_eERLaPJlIm35tha8MEWW-Pu0zNs3J5nzeN6Jze2IjWtL5v2Tucb1r_bI-Ucf3Djqbu5WA?ccb=9-4&oh=01_Q5Aa5QE_e9xGlmyvjjOtqOJwCxNcPIQiMqdGX0BFr99Eu-xA7w&oe=6AA6933F&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712345",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAIhAAAgICAQQDAQAAAAAAAAAAAQIDEQASIQQFE1ExMkFh/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAIDAf/EABsRAAMAAgMAAAAAAAAAAAAAAAABAgMxESFB/9oADAMBAAIRAxEAPwBJD22XqFUxr8reoNkjF0yeNyPWdFIkkYBVdHWhWwHH8xH1kTLKxaxZvnJY6bfZW540Rh18ZJQsfX4M2zQBOnWXxxspHA+DXvMMS7cWB+2eAc10QjbzR66EABrzaCS8yyR9okaOR0NgWprjFsRJskkknm8MMWPQZKX7ZS2GGUQj2f/Z",
-          "contextInfo": {
-            "stanzaId": "AC38BC1A0585A3D3789E9E44B6AACBE3",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ". mining"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "HkAv62PcraG3vfw5tufZHpsD+YnczJ5B63XQS6dr17w="
-        }
-      },
-      "time": 1786712346228
-    },
-    "3EB00125CA5C4C11C41F8D": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Darah kritis (43/300). Gunakan.heal dulu!",
-          "contextInfo": {
-            "stanzaId": "AC37B7A546B83FED035E44942F23A75E",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".dungeon elite",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "eV8Ua/ZjDI2VSAoOer9OKNvTj64xMU+pAtHTQzYvCKw="
-        }
-      },
-      "time": 1786712347067
-    },
-    "3EB0877361C093139FD6A9": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQPWR8NtPobxJa5rN9cDkyVRY5AOcOYAVSgAOfZMGeufzGzyWUm3kVD86hlchvb1TPExcDisZgEe1q3qKsJVX_gcBOL9wkQlw4KmmGfRZA?ccb=9-4&oh=01_Q5Aa5QGEUuaxKmFo9RqYpJg9s-r4cUNCbKKYi6iYF3H1ICuP9w&oe=6AA698D0&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 HEAL SUCCESS 」───*\n\n🏥 *Status Kesehatan:* Pulih Total!\n❤️ *HP Sekarang:* 300 / 300\n💰 *Biaya Awal:* Rp 257,000\n🛡️ *Asuransi:* 20%\n💸 *Yang Dibayar:* Rp 205,600\n\n_Sekarang kamu siap untuk masuk ke Dungeon lagi!_",
-          "fileSha256": "inArVnD8JUGCQ4rhtf1MBBIyZr1aju/Aw6w5Hrts7Lw=",
-          "fileLength": "10861",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "rdmyCF8g8j47xAlL0Hnn/ATvtOMgc2XiO1Gxy3Vkyr8=",
-          "fileEncSha256": "LcjEo8skSmmME84U3WibewvoTNQrnuG2NH0cLN6NZIw=",
-          "directPath": "/o1/v/t24/f2/m237/AQPWR8NtPobxJa5rN9cDkyVRY5AOcOYAVSgAOfZMGeufzGzyWUm3kVD86hlchvb1TPExcDisZgEe1q3qKsJVX_gcBOL9wkQlw4KmmGfRZA?ccb=9-4&oh=01_Q5Aa5QGEUuaxKmFo9RqYpJg9s-r4cUNCbKKYi6iYF3H1ICuP9w&oe=6AA698D0&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712351",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAwADAAAAAAAAAAAAAAAAAAQFAQID/8QAIxAAAQQCAQMFAAAAAAAAAAAAAQACAxEEEiETMWEFQUNxkf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFREBAQAAAAAAAAAAAAAAAAAAAAH/2gAMAwEAAhEDEQA/AILpRRJPAUzMymyubqCNTYK6ZReYSGn7HhTqN0FbRSb6nLkTjrBp24sCqTBfz4UeOxKwe9hP7pBk90nCB1ZOOwNfqEJSNfnamUIRX//Z",
-          "contextInfo": {
-            "stanzaId": "ACB4C5F95E5BB15A3F210B4DB72EA499",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".heal"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "u/BSty41BPK9FvRaM0N8lmZnzL18vbS+ZrNJBQQ2nuk="
-        }
-      },
-      "time": 1786712352184
-    },
-    "3EB0588172CC7A5BD5AA2A": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQP6GtC8thD0pKuqpQ_ou7T61v0NzC5FeHmI1qn2drOAlX4yFTdbGgiJENXqnZBthz6x4V4m-nJx-Ba1vMT89h8lRdPSZPAXGqd7uT0aZg?ccb=9-4&oh=01_Q5Aa5QF8xSlvzvHwH6BZeBfanXGy1Io79nxCnB5G2oUF57AB5w&oe=6AA6782B&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 DUNGEON CLEAR 」───*\n\n✅ Berhasil menaklukkan *Labyrinth of Minos*!\n⚔️ *Total Damage:* 1,460 \n🛡️ *Total Defense:* 1,000 \n🩸 *HP Terkuras:* -10\n❤️ *Sisa HP:* 290/300\n\n🎁 *HADIAH:* \n• 💰 Money: +Rp 90,000\n• 🌟 XP: +8,000\n• 🪙 Gold: +35\n• 💎 Diamond: +6\n",
-          "fileSha256": "13qF9HS9c0OxUPmuFGUmGR6ijylzbfJjDHV3SVEqSPA=",
-          "fileLength": "52175",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "ODpU4r9PJPdvIy5L9/UpnSvXE12/9CtugYMuaU8ZgRI=",
-          "fileEncSha256": "4Gyub1hgPZhuMurTVj4Y8SXWbni9VJrdS+rFlbk9pkU=",
-          "directPath": "/o1/v/t24/f2/m237/AQP6GtC8thD0pKuqpQ_ou7T61v0NzC5FeHmI1qn2drOAlX4yFTdbGgiJENXqnZBthz6x4V4m-nJx-Ba1vMT89h8lRdPSZPAXGqd7uT0aZg?ccb=9-4&oh=01_Q5Aa5QF8xSlvzvHwH6BZeBfanXGy1Io79nxCnB5G2oUF57AB5w&oe=6AA6782B&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712355",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAwEBAQAAAAAAAAAAAAAAAAQFBgID/8QAJBAAAgEDBAICAwAAAAAAAAAAAQIDAAQRBRIhQSIxEzJRYXH/xAAXAQEBAQEAAAAAAAAAAAAAAAABAgMF/8QAGhEAAwADAQAAAAAAAAAAAAAAAAECESExA//aAAwDAQACEQMRAD8AzttKFjjyDudsn99CnFl+QKked4Y5x1ikLZWZImZh4nunNNkFpqUUj8qG8sjPHddWaeApMrW12zWkkFxF8q59EVG1KCIJlUVWDeSqPQNP3ThbiVoXDRsxbK9g1EurhtskS4KluWNFYWylTc7OLX7j+Cr1iqtICVBP5IooojhrB7a6qpanYoXkehislITg890UVNk+nT//2Q==",
-          "contextInfo": {
-            "stanzaId": "ACA8C87473CBA36A4FEDFC77C8389DCD",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ". Dungeon elite"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "Px1VEA/5IbDDQqMSrTMM9CMsjSkyrlokcs4IzQKBVoo="
-        }
-      },
-      "time": 1786712355729
-    },
-    "3EB0CC8EA85F23950FFBCF": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 📜 GUILD EXPEDITION 」──╮\n\n│ 1. *Pembersihan Selokan Kota*\n│ └ 📊 Syarat: Lv.1\n│ └ 🏆 +10 Pts | ✨ +50 Exp\n│ 2. *Patroli Perbatasan*\n│ └ 📊 Syarat: Lv.10\n│ └ 🏆 +25 Pts | ✨ +120 Exp\n│ 3. *Ekspedisi Tambang Tua*\n│ └ 📊 Syarat: Lv.20\n│ └ 🏆 +50 Pts | ✨ +200 Exp\n│ 4. *Perburuan Orc Liar*\n│ └ 📊 Syarat: Lv.30\n│ └ 🏆 +100 Pts | ✨ +450 Exp\n│ 5. *Penjajahan Benteng Goblin*\n│ └ 📊 Syarat: Lv.40\n│ └ 🏆 +200 Pts | ✨ +1000 Exp\n│ 6. *Slayer Sang Naga Purba*\n│ └ 📊 Syarat: Lv.50\n│ └ 🏆 +500 Pts | ✨ +2500 Exp\n│ 7. *Pemusnahan Kamp Ogre*\n│ └ 📊 Syarat: Lv.60\n│ └ 🏆 +750 Pts | ✨ +4000 Exp\n│ 8. *Perburuan Kalajengking Raksasa*\n│ └ 📊 Syarat: Lv.70\n│ └ 🏆 +1000 Pts | ✨ +6000 Exp\n│ 9. *Penaklukan Raja Lich*\n│ └ 📊 Syarat: Lv.80\n│ └ 🏆 +1400 Pts | ✨ +8500 Exp\n│ 10. *Invasi Kerajaan Mayat Hidup*\n│ └ 📊 Syarat: Lv.90\n│ └ 🏆 +1900 Pts | ✨ +11500 Exp\n│ 11. *Eksekusi Phoenix Kegelapan*\n│ └ 📊 Syarat: Lv.100\n│ └ 🏆 +2500 Pts | ✨ +15000 Exp\n│ 12. *Penjelajahan Gunung Neraka*\n│ └ 📊 Syarat: Lv.120\n│ └ 🏆 +3200 Pts | ✨ +19000 Exp\n│ 13. *Pembantaian Iblis*\n│ └ 📊 Syarat: Lv.140\n│ └ 🏆 +4000 Pts | ✨ +23500 Exp\n│ 14. *Perburuan Hydra Berkepala Sembilan*\n│ └ 📊 Syarat: Lv.160\n│ └ 🏆 +4900 Pts | ✨ +28500 Exp\n│ 15. *Ekspedisi Abyss Tanpa Dasar*\n│ └ 📊 Syarat: Lv.180\n│ └ 🏆 +6000 Pts | ✨ +34000 Exp\n│ 16. *Penaklukan Titan Petir*\n│ └ 📊 Syarat: Lv.200\n│ └ 🏆 +7300 Pts | ✨ +40000 Exp\n│ 17. *Pemburuan Leviathan Astral*\n│ └ 📊 Syarat: Lv.230\n│ └ 🏆 +8800 Pts | ✨ +46500 Exp\n│ 18. *Eksekusi Raja Iblis Azrael*\n│ └ 📊 Syarat: Lv.260\n│ └ 🏆 +10500 Pts | ✨ +53500 Exp\n│ 19. *Penumpasan Dewa Kekacauan*\n│ └ 📊 Syarat: Lv.300\n│ └ 🏆 +12500 Pts | ✨ +61000 Exp\n│ 20. *Serangan ke Istana Dewa Matahari*\n│ └ 📊 Syarat: Lv.350\n│ └ 🏆 +14800 Pts | ✨ +69000 Exp\n│ 21. *Perburuan Naga Astral Abadi*\n│ └ 📊 Syarat: Lv.400\n│ └ 🏆 +18000 Pts | ✨ +85000 Exp\n│ 22. *Penaklukan Penguasa Dimensi Void*\n│ └ 📊 Syarat: Lv.450\n│ └ 🏆 +23000 Pts | ✨ +105000 Exp\n│ 23. *Eksekusi Sang Pengamat Semesta*\n│ └ 📊 Syarat: Lv.500\n│ └ 🏆 +30000 Pts | ✨ +130000 Exp\n│ 24. *Raid Istana Para Dewa*\n│ └ 📊 Syarat: Lv.550\n│ └ 🏆 +39000 Pts | ✨ +160000 Exp\n│ 25. *Invasi Langit Ketujuh*\n│ └ 📊 Syarat: Lv.600\n│ └ 🏆 +50000 Pts | ✨ +200000 Exp\n│ 26. *Perburuan Dewa Petir*\n│ └ 📊 Syarat: Lv.650\n│ └ 🏆 +65000 Pts | ✨ +250000 Exp\n│ 27. *Penaklukan Kastil Waktu*\n│ └ 📊 Syarat: Lv.700\n│ └ 🏆 +85000 Pts | ✨ +310000 Exp\n│ 28. *Eksekusi Kaisar Void*\n│ └ 📊 Syarat: Lv.800\n│ └ 🏆 +110000 Pts | ✨ +380000 Exp\n│ 29. *Pembantaian 9 Raja Iblis*\n│ └ 📊 Syarat: Lv.900\n│ └ 🏆 +145000 Pts | ✨ +470000 Exp\n│ 30. *Runtuhkan Menara Keabadian*\n│ └ 📊 Syarat: Lv.1000\n│ └ 🏆 +190000 Pts | ✨ +580000 Exp\n│ 31. *Perburuan Naga Kosmik*\n│ └ 📊 Syarat: Lv.1100\n│ └ 🏆 +250000 Pts | ✨ +710000 Exp\n│ 32. *Penaklukan Armada Galaksi*\n│ └ 📊 Syarat: Lv.1200\n│ └ 🏆 +330000 Pts | ✨ +870000 Exp\n│ 33. *Eksekusi Penguasa Galaksi*\n│ └ 📊 Syarat: Lv.1300\n│ └ 🏆 +430000 Pts | ✨ +1060000 Exp\n│ 34. *Raid Dimensi Paralel*\n│ └ 📊 Syarat: Lv.1400\n│ └ 🏆 +560000 Pts | ✨ +1290000 Exp\n│ 35. *Pembantaian Dewa Primordial*\n│ └ 📊 Syarat: Lv.1500\n│ └ 🏆 +730000 Pts | ✨ +1570000 Exp\n│ 36. *Penaklukan Alam Semesta*\n│ └ 📊 Syarat: Lv.1600\n│ └ 🏆 +950000 Pts | ✨ +1900000 Exp\n│ 37. *Eksekusi Sang Pencipta*\n│ └ 📊 Syarat: Lv.1700\n│ └ 🏆 +1250000 Pts | ✨ +2300000 Exp\n│ 38. *Runtuhkan Tahta Semesta*\n│ └ 📊 Syarat: Lv.1800\n│ └ 🏆 +1650000 Pts | ✨ +2800000 Exp\n│ 39. *Perang Melawan Kehampaan*\n│ └ 📊 Syarat: Lv.1900\n│ └ 🏆 +2200000 Pts | ✨ +3400000 Exp\n│ 40. *Ascensi Menjadi Dewa Tertinggi*\n│ └ 📊 Syarat: Lv.2000\n│ └ 🏆 +3000000 Pts | ✨ +4200000 Exp\n╰───────────────────╯\n*Cara Pilih:* .misiguild [nomor]",
-          "contextInfo": {
-            "stanzaId": "ACD3978A61D2002655F181F41AFC8C52",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".misiguild"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "dH/ES6y52l1GSx4WF+EtpXcWdui5koV0SrpLJqkLDXU="
-        }
-      },
-      "time": 1786712364363
-    },
-    "3EB04EAF980637237598D4": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m239/AQOV5swmBBPDm1PZCY-gQ7b4if5FhQyO_vb5wC3vDTPcex43gdPGEYO11dKaqU9Da9ZZCDgDxWZy_B6sy2F8Aa-sB-S0xJniId5R_447KA?ccb=9-4&oh=01_Q5Aa5QEdKDAXQ0XeibSmSvZlSfrRdrQvHMumTVqEa9gHzbws2Q&oe=6AA672AC&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 🎣 FISHING RESULT 」───*\n\n*Tier* : ★☆ COMMON 🤍\n\n🏆 *Hasil Tangkapan*\n🪝 🐟🥫 Ikan Kembung Kecil\n\n✨ *XP Didapat* : +15\n🎣 *Level Pancingan* : 6\n🍀 *Bonus Rod* : +9.0%\n\n────────────────",
-          "fileSha256": "FTX16aiW0/dBTnHp8WjFqA4VEkdh8BxeOu8/mWiDUa8=",
-          "fileLength": "67019",
-          "height": 424,
-          "width": 734,
-          "mediaKey": "un97EspOnA33YDm5eF+sCsOhtvNg6a4rPPo+SrEmdyI=",
-          "fileEncSha256": "A6uUFQrhrd9qwxmgxWMb5X3j5CuEiP8uVvFKdGUx0sg=",
-          "directPath": "/o1/v/t24/f2/m239/AQOV5swmBBPDm1PZCY-gQ7b4if5FhQyO_vb5wC3vDTPcex43gdPGEYO11dKaqU9Da9ZZCDgDxWZy_B6sy2F8Aa-sB-S0xJniId5R_447KA?ccb=9-4&oh=01_Q5Aa5QEdKDAXQ0XeibSmSvZlSfrRdrQvHMumTVqEa9gHzbws2Q&oe=6AA672AC&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712376",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGAAAAwEBAAAAAAAAAAAAAAAAAAQFAQb/xAAoEAABAwIDBwUAAAAAAAAAAAABAAIDBBESIjEFBhMhUWGBMkFDkbH/xAAWAQEBAQAAAAAAAAAAAAAAAAAAAwL/xAAZEQACAwEAAAAAAAAAAAAAAAAAAQIRUQP/2gAMAwEAAhEDEQA/AJlBUSwAsY0hziPpdBFJd2Ycuq5qKrkp2Rukp2YXi7TdOxbxvpGWZE219LkD9VGndGIyWl8yQs9Qv5U+u2gIskTBj9+ySdvXM74Ix5KSm2/K4uPAhzduY8ooI0+mEPiPIAL3ENFgCdFmInUoQqETbnqi56oQgP/Z",
-          "contextInfo": {
-            "stanzaId": "AC0DDE5E62958931209DDE1039D72D6E",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ". mancing"
-            },
-            "mentionedJid": [
-              "6287716300353@s.whatsapp.net"
-            ]
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "OrTk3R9aiS7JUcQNmZDe+AN2snMGeweLFnp754zxx7w="
-        }
-      },
-      "time": 1786712376789
-    },
-    "3EB052561738BA8423E3F1": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 ✅ MISSION CLEAR 」──╮\n\n│ 📜 *Misi:* Perburuan Orc Liar\n│ 👤 *Eksekutor:* zz\n│ ✨ *Guild Exp:* +450\n│ 🏆 *Kontribusi:* +100 Pts\n\n│ 🎁 *HADIAH SEMUA MEMBER:* \n│ • 💰 Rp 150.000\n╰───────────────────╯",
-          "contextInfo": {
-            "stanzaId": "AC16E43AEB0B67550BDF38C5927CC711",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".misiguild 4"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "VgXdWMzyFyhZLc0HVohYoqtCyXbW5Ie+ygbAQvj4Mcc="
-        }
-      },
-      "time": 1786712388836
-    },
-    "3EB05DD70AE429D69675F6": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*🌾 PANEN MASSAL BERHASIL!*\n\n*Total:* 10 Slot\n• 10x 🥕 WORTEL\n\n*Bonus:* +1400 XP\n*Level:* 36",
-          "contextInfo": {
-            "stanzaId": "AC547AF3D29AA7F3AEED6440F42630CA",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".panen all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "rk4KRFQuYAcgLC+1UpnhQBk3oyEH5drmdTn81bFcLv4="
-        }
-      },
-      "time": 1786712397053
-    },
-    "3EB032481D34F37F7F4255": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🌱 *DAFTAR BIBIT ZETA*\nStatus: 👤 User Normal\n\n*─── TERMURAH ───*\n🥜 kacang - Rp 4,500\n🧄 bawang putih - Rp 5,000\n🌾 padi - Rp 5,000\n🧅 bawang merah - Rp 5,500\n🥕 wortel - Rp 6,000\n🥒 timun - Rp 7,000\n🥬 selada - Rp 8,000\n🥔 kentang - Rp 8,500\n🍅 tomat - Rp 9,000\n🍠 ubi - Rp 9,000\n\n*─── MENENGAH ───*\n🌽 jagung - Rp 10,000\n🥦 brokoli - Rp 10,000\n🍆 terong - Rp 11,000\n🍉 semangka - Rp 12,000\n🍋 lemon - Rp 12,000\n🌶 cabai - Rp 13,000\n🫑 paprika - Rp 12,500\n🍓 stroberi - Rp 14,000\n🍊 jeruk - Rp 15,000\n🫐 bluberi - Rp 15,000\n🍒 ceri - Rp 16,000\n🌰 kastanye - Rp 16,500\n🫒 zaitun - Rp 17,000\n🍌 pisang - Rp 18,000\n🍍 nanas - Rp 19,000\n\n*─── TERMAHAL ───*\n🥝 kiwi - Rp 19,000\n🍐 pir - Rp 20,000\n🍑 persik - Rp 20,000\n🍈 melon - Rp 21,000\n🍇 anggur - Rp 22,000\n🥭 mangga - Rp 23,000\n🍏 apel hijau - Rp 24,000\n🥑 alpukat - Rp 24,000\n🍎 apel merah - Rp 25,000\n🥥 kelapa - Rp 25,000\n✨ exp - Rp 40,000\n🌳 durian - Rp 50,000\n💵 uang - Rp 50,000\n🪙 koin - Rp 60,000\n⚜️ emas - Rp 200,000\n💎 diamond - Rp 250,000\n\n*CARA TANAM:* \n• Per slot: *.tanam wortel*\n• Slot tertentu: *.tanam diamond 1*\n• Semua slot: *.tanam koin all*",
-          "contextInfo": {
-            "stanzaId": "AC96353E07AE6E8772AF3759D10A80F4",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".tanam"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "BA6NSJnMLUX1RKkmDShZ2agekWJd6JExYR2nj88V+eU="
-        }
-      },
-      "time": 1786712399741
-    },
-    "3EB049B83E2A1CD7923CB0": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🌱 *TANAM MASSAL BERHASIL!*\n\n🥒 TIMUN x10\n💸 Biaya: Rp 70,000\n💰 Sisa: Rp 8,328,526",
-          "contextInfo": {
-            "stanzaId": "ACCE3AABA65408B84301A74DF0F1F97A",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".tanam timun all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "Twvw63X0hfhWKj11sXYtwemLMSwA2XUc/aWKwYHdlxs="
-        }
-      },
-      "time": 1786712406123
-    },
-    "3EB02F9FBEB9AB41D6CA5A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Uang kurang! Butuh Rp 20,480,000",
-          "contextInfo": {
-            "stanzaId": "AC33E040B0D0714770DC675DBEE38A29",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".upgrade armor"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "iIDmeDYc+3IGh0LC49xE12DbrKIR2foqPa/vszqRNWY="
-        }
-      },
-      "time": 1786712439621
-    },
-    "3EB08A03A2C1A89A01E232": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp 20,000,000\n◆ Saldo Tersisa : Rp 82,246,202\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "AC1C458351C2ED4EFE68CF070F925565",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".bank tarik 20000000"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "sllTGXR/ZkiTLi2WbDC8GBqO6GTcdIf1y0BR735CC6A="
-        }
-      },
-      "time": 1786712458841
-    },
-    "3EB04FE741CCFBEF6FF701": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Iron kurang! Butuh 7680",
-          "contextInfo": {
-            "stanzaId": "AC198E3B8EBBCE0656F5F60562601107",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".upgrade armor"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "ZeTEX9u7oVAisLHO1SDWqM80VMKxDlE9AFCOCRYF3OE="
-        }
-      },
-      "time": 1786712467223
-    },
-    "3EB09E5098E36A8A9879B4": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp 28,328,526\n◆ Saldo Baru : Rp 110,574,728\n\n─━━━━━━━━━─",
-          "contextInfo": {
-            "stanzaId": "AC9CFB6AA2C9D9C6FEBB4947B272689F",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".bank simpan all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "FsqzH5BYvQEsB6aqCYu4Vw0wBPY83V4WvbahGCNYCuw="
-        }
-      },
-      "time": 1786712502239
-    },
-    "3EB04408818F5EF292E71A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*「 COLLABORATION 」*\n\nPartner: buttercat x Mina\n\nHasil Kolaborasi:\n┌ *Viewers*: 18,302\n│ *Likes*: +4,667\n│ *Subs* Baru: +2,287\n│ *Gaji*: Rp 139,056\n└ *Exp*: +13,905\n\nStatus: Kolaborasi Berhasil",
-          "contextInfo": {
-            "stanzaId": "ACA5A201A3ACCB4070E00669E283493E",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".collab",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "628993226000@s.whatsapp.net",
-              "6287716300353@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "CYV/YD8UW2NgDd4BwzTwKii0tiOTa45+aT6OTuDlAWU="
-        }
-      },
-      "time": 1786712520282
-    },
-    "3EB0042CFB953CFA85B1E3": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQMfNIwHlU70ideLxImv9_cDeAVgwxqPEazPv_xryEMoclmeVRKsaYMJOiEq_z7aI6pYdk2lZt1MXO2TlyhDpST0E3n7Hfpr6ILKeaCBpg?ccb=9-4&oh=01_Q5Aa5QHz_9a1-S-OBr49FMSf1qtrNZ0b0fKlnJkd6lyKNRNHFA&oe=6AA66976&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* zz\n🆙 *Level:* 36 (15565/18000 XP)\n❤️ *Darah:* 290/300\n💰 *Saldo:* Rp 139,056\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.11\n🛡️ Armor: Lv.10\n⛏️ Pickaxe: Lv.11\n🎣 Fishingrod: Lv.11\n🐾 Pet: NAGA (Lv.8)\n\n*───「 STORAGE 」───*\n💎 Diamond: 389\n⛓️ Iron: 7289\n✨ Gold: 4257\n🪵 Wood: 258\n🪨 Stone: 11923\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 17\n🐠 Nila: 6\n🦈 Hiu: 19\n🐡 Bawal: 3\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
-          "fileSha256": "inArVnD8JUGCQ4rhtf1MBBIyZr1aju/Aw6w5Hrts7Lw=",
-          "fileLength": "10861",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "n9SRfk71A6NC6Ugo2n95/gCaS4ikzSNNBM3hJxkjfNc=",
-          "fileEncSha256": "CXB3hmfc/YCrGuTGtlHnciK+oAyjLMBoFrbxd/3r6Q0=",
-          "directPath": "/o1/v/t24/f2/m233/AQMfNIwHlU70ideLxImv9_cDeAVgwxqPEazPv_xryEMoclmeVRKsaYMJOiEq_z7aI6pYdk2lZt1MXO2TlyhDpST0E3n7Hfpr6ILKeaCBpg?ccb=9-4&oh=01_Q5Aa5QHz_9a1-S-OBr49FMSf1qtrNZ0b0fKlnJkd6lyKNRNHFA&oe=6AA66976&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712674",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAwADAAAAAAAAAAAAAAAAAAQFAQID/8QAIxAAAQQCAQMFAAAAAAAAAAAAAQACAxEEEiETMWEFQUNxkf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFREBAQAAAAAAAAAAAAAAAAAAAAH/2gAMAwEAAhEDEQA/AILpRRJPAUzMymyubqCNTYK6ZReYSGn7HhTqN0FbRSb6nLkTjrBp24sCqTBfz4UeOxKwe9hP7pBk90nCB1ZOOwNfqEJSNfnamUIRX//Z",
-          "contextInfo": {
-            "stanzaId": "AC5C19F92598B89F2173AFB4B9335B7C",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".inv"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "GnzglC4HuC9XtNt+M/6wmfiznokCY8RHe8vHbyfl0KM="
-        }
-      },
-      "time": 1786712676138
-    },
-    "3EB0823F21320B05D1181E": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "┌───❏「 🐠 AQUARIUM 」❏\n│ 👤 Owner : zz\n│ 📦 Total : 71 Ikan\n│ 🧬 Jenis : 18\n└───────────────────\n\n┌───❏「 🔮 SECRET 」❏\n│ 🏴‍☠️🦑 Davy Jones x1\n└───────────────────\n\n┌───❏「 🌌 MYTHIC 」❏\n│ 🐲🌊 Sea Dragon x1\n└───────────────────\n\n┌───❏「 ✨ RARE 」❏\n│ 🪙 Koin Tembaga x1\n│ 🌸🌊 Anemon x1\n│ 🦐🍤 Udang x1\n└───────────────────\n\n┌───❏「 💙 UNCOMMON 」❏\n│ 🐟💙 Ikan Nila x2\n│ 🐟⚡ Ikan Seluang x2\n│ 🐟🔫 Ikan Gabus x2\n│ 🐟🐷 Ikan Patin x3\n└───────────────────\n\n┌───❏「 🤍 COMMON 」❏\n│ 🐟🪁 Ikan Layang x4\n│ 🐟👀 Ikan Pepetek x3\n│ 🐟🪡 Ikan Julung x3\n│ 🐟🥫 Ikan Kembung Kecil x1\n│ 🐟📏 Ikan Teri x1\n└───────────────────\n\n┌───❏「 🗑️ TRASH 」❏\n│ 🐟 Lele x17\n│ 🐟 Bawal x3\n│ 🐟 Nila x6\n│ 🐟 Hiu x19\n└───────────────────\n\n💡 Ketik #shop > #jual [ikan] [jml] untuk menjual",
-          "contextInfo": {
-            "stanzaId": "ACF03CCADE7208372F962CE3249D9B8D",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".aquarium"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "s8zk6MY7t1964w2GCmmIU6JmH4lQOTnM7Pl9H/aA4RI="
-        }
-      },
-      "time": 1786712694624
-    },
-    "3EB0AE3BAC7EC0EA41A076": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQOwvUO01-mIIiIhNpKp3XdFH8yaT2jS6n2aRrXyoimUZsW6MAlebM3zEcbZTlHnJV23mICrjEiLmcFtCSQuKS33eqTnOh8iSUS7OOQ0AA?ccb=9-4&oh=01_Q5Aa5QGDSvXD2AkM04U5OqnyKTYmzbx0bXHfSBwj0fhdQKN1fQ&oe=6AA671FA&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "╭──「 👨‍🍳 ZETA KITCHEN 」──╮\n\n⏰ Slot : 0/1\n⚠️ Ambil dalam 5 jam setelah matang\n\n_✨ Dapur masih kosong_\n_Masak sesuatu yuk!_\n\n━━━━━━━━━━━\n📌.masak resep - Lihat semua resep\n📌.masak resep <nama> - Detail resep\n📌.masak <nama> - Masak",
-          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
-          "fileLength": "58809",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "qm2qIA5TgICUmabS9fYR452vMBfzLYBvI+nn0dBI5xM=",
-          "fileEncSha256": "99FuE/o/wCMDxH+yOdreIRAuFKiFf5xMtL/ccWFsPhk=",
-          "directPath": "/o1/v/t24/f2/m233/AQOwvUO01-mIIiIhNpKp3XdFH8yaT2jS6n2aRrXyoimUZsW6MAlebM3zEcbZTlHnJV23mICrjEiLmcFtCSQuKS33eqTnOh8iSUS7OOQ0AA?ccb=9-4&oh=01_Q5Aa5QGDSvXD2AkM04U5OqnyKTYmzbx0bXHfSBwj0fhdQKN1fQ&oe=6AA671FA&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712712",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
-          "contextInfo": {
-            "stanzaId": "AC4C723ED2EEC5EFBA09B85DA90A37FD",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "2oqLBXs7E7+rSM779IesPGq7A9MdPsn2DhDMu6F090w="
-        }
-      },
-      "time": 1786712713353
-    },
-    "3EB078046A3E74590273AD": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 📖 ZETA RECIPE BOOK 」──╮\n\n📌 Lihat detail : *.masak resep <nama>*\n📌 Masak : *.masak <nama>*\n\n🟢 *MAKANAN MURAH* < 100RB\n🍞 roti tawar\n └ Rp 8,000 | 1m 0d | +20 exp\n🍜 mie goreng\n └ Rp 18,000 | 2m 0d | +40 exp\n🍢 sate ikan\n └ Rp 35,000 | 3m 0d | +60 exp\n🥗 salad buah\n └ Rp 40,000 | 3m 0d | +80 exp\n🍲 sup ikan\n └ Rp 40,000 | 4m 0d | +70 exp\n🌮 taco ikan\n └ Rp 45,000 | 5m 0d | +65 exp\n🍤 udang goreng\n └ Rp 90,000 | 6m 0d | +90 exp\n\n🔵 *MAKANAN MAHAL* 100RB - 1JT\n🦑 cumi goreng\n └ Rp 110,000 | 6m 0d | +100 exp\n🦀 kepiting rebus\n └ Rp 120,000 | 7m 0d | +110 exp\n🥛 jus durian\n └ Rp 100,000 | 10m 0d | +200 exp\n🍷 wine\n └ Rp 120,000 | 15m 0d | +150 exp\n🍣 sushi\n └ Rp 400,000 | 10m 0d | +130 exp\n🍣 sashimi\n └ Rp 500,000 | 10m 0d | +140 exp\n🦞 lobster bakar\n └ Rp 600,000 | 15m 0d | +150 exp\n🐟 tuna panggang\n └ Rp 600,000 | 15m 0d | +180 exp\n🐟 salmon asap\n └ Rp 600,000 | 20m 0d | +185 exp\n🦈 steak hiu\n └ Rp 900,000 | 20m 0d | +200 exp\n\n🔴 *MAKANAN LEGEND* > 1JT\n🛸 pari bakar\n └ Rp 1,000,000 | 25m 0d | +210 exp\n🐢 penyu panggang\n └ Rp 1,200,000 | 30m 0d | +230 exp\n🥩 steak emas\n └ Rp 1,500,000 | 30m 0d | +500 exp\n🎂 diamond cake\n └ Rp 3,000,000 | 1j 0m | +1000 exp\n🦑 sop kraken\n └ Rp 2,000,000 | 1j 0m | +800 exp\n🦈 sate megalodon\n └ Rp 2,500,000 | 1j 15m | +900 exp\n🐉 sup leviathan\n └ Rp 3,000,000 | 1j 30m | +1000 exp\n🐲 sea dragon grill\n └ Rp 3,500,000 | 1j 30m | +1100 exp\n🐍 hydra stew\n └ Rp 4,500,000 | 2j 0m | +1300 exp\n🐢 kura titan soup\n └ Rp 5,000,000 | 2j 0m | +1500 exp\n🐋 paus putih steak\n └ Rp 6,000,000 | 2j 30m | +1600 exp\n🐉 naga laut bakar\n └ Rp 8,000,000 | 2j 30m | +1800 exp\n🦑 raja ubur jelly\n └ Rp 9,000,000 | 3j 0m | +1900 exp\n🦖 steak godzilla\n └ Rp 15,000,000 | 4j 0m | +15000 exp\n━━━━━━━━━━━━━━━━━━━",
-          "contextInfo": {
-            "stanzaId": "AC8B65ECF7C60B30082268F180C61985",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak resep"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "jF1p4YauC/NrFbF55FEBWuS8GPxhMboUiNOmrdO5ta8="
-        }
-      },
-      "time": 1786712720971
-    },
-    "3EB0C856246728DA061F6D": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Masakan steak tidak ada\nLihat daftar resep: *.masak resep*",
-          "contextInfo": {
-            "stanzaId": "ACDF9F9E35BA4519EAABF4BF6414A085",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak steak hiu masak"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "goSablkVkc+gYHZIm25evoIjHx1sPAwGKO50P8Dnmqg="
-        }
-      },
-      "time": 1786712784948
-    },
-    "3EB07A68770164E68D244A": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Masakan steakhiu tidak ada\nLihat daftar resep: *.masak resep*",
-          "contextInfo": {
-            "stanzaId": "AC34ED62BDC928CD404FEC7433EDE865",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak steakhiu"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "xXFqiy3Vf0rMaG8TzM1e8A1o3+NoziFq5K+XLO+xY1M="
-        }
-      },
-      "time": 1786712800451
-    },
-    "3EB035F093F33757D2FBB4": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 📖 DETAIL RESEP 」──╮\n\n🦈 *STEAK HIU*\n\n💰 Harga Jual : Rp 900,000\n💸 Biaya Masak : Rp 20,000\n⏰ Waktu Masak : 20m 0d\n📈 Exp : +200\n\n📦 *BAHAN-BAHAN:*\n❌ 1x hiu hitam [Punya: 0]\n❌ 1x hiu biru [Punya: 0]\n\n━━━━━━━━━━━",
-          "contextInfo": {
-            "stanzaId": "ACC831D372FACE92C87CACE73ADB3CC5",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak resep steak hiu"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "KHwUC4tOxSycHfPu1qofe+NkS9xITNap8Un8pkI4aUI="
-        }
-      },
-      "time": 1786712820532
-    },
-    "3EB033BD171C273EA4B3E9": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 📖 DETAIL RESEP 」──╮\n\n🍲 *SUP IKAN*\n\n💰 Harga Jual : Rp 40,000\n💸 Biaya Masak : Rp 0\n⏰ Waktu Masak : 4m 0d\n📈 Exp : +70\n\n📦 *BAHAN-BAHAN:*\n❌ 1x ikan nila [Punya: 0]\n✅ 1x wortel [Punya: 10]\n❌ 1x kentang [Punya: 0]\n\n━━━━━━━━━━━",
-          "contextInfo": {
-            "stanzaId": "AC25B0D97A00EEE08CB1D0389838A7FD",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak resep sup ikan"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "KxQ3eUzJoI932Of8lJT3NUUnzyNpS0SHHvBRvj5xQPo="
-        }
-      },
-      "time": 1786712853143
-    },
-    "3EB023F168B0D0243A8A1E": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "╭──「 📖 DETAIL RESEP 」──╮\n\n🍞 *ROTI TAWAR*\n\n💰 Harga Jual : Rp 8,000\n💸 Biaya Masak : Rp 0\n⏰ Waktu Masak : 1m 0d\n📈 Exp : +20\n\n📦 *BAHAN-BAHAN:*\n✅ 3x padi [Punya: 10]\n\n━━━━━━━━━━━",
-          "contextInfo": {
-            "stanzaId": "AC4CF0F28EEBFE7E37846ABE0E8BDC78",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak resep roti tawar"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "WTSe850MZRxaqw+XMhIZm//ijZg0TokwJ3ErwNSdm7U="
-        }
-      },
-      "time": 1786712905046
-    },
-    "3EB0E77E285A255D105EA7": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Masakan roti tidak ada\nLihat daftar resep: *.masak resep*",
-          "contextInfo": {
-            "stanzaId": "ACCA6403D0C636E6FBFC28B5081D02EF",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "conversation": ".masak roti tawar"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "kTvyeeKiuNCbv7tp/lFs0ptSLZ9JYtutD++B/AOPycU="
-        }
-      },
-      "time": 1786712920434
-    },
-    "3EB080E013CDC9197BB3E8": {
+    "3EB04884CE25E55C89332E": {
       "message": {
         "reactionMessage": {
           "key": {
             "remoteJid": "226804522590211@lid",
             "fromMe": false,
-            "id": "A5F1B3381CB991A4A2CF34DAFDD9E5A3",
+            "id": "A5DE72D19B86CD288DECAFF4A73EB749",
             "participant": ""
           },
           "text": "⏳",
-          "senderTimestampMs": "1786712933844"
+          "senderTimestampMs": "1786718136433"
         }
       },
-      "time": 1786712934750
+      "time": 1786718137419
     },
-    "3EB061ED207A14A7B669F4": {
+    "3EB091CA330F8A4778C1FC": {
       "message": {
         "extendedTextMessage": {
           "text": "🔄 *Menarik update terbaru dari GitHub...*",
           "contextInfo": {
-            "stanzaId": "A5F1B3381CB991A4A2CF34DAFDD9E5A3",
+            "stanzaId": "A5DE72D19B86CD288DECAFF4A73EB749",
             "participant": "226804522590211@lid",
             "quotedMessage": {
               "extendedTextMessage": {
@@ -14843,32 +12868,32 @@
           }
         },
         "messageContextInfo": {
-          "messageSecret": "Aa6PmkNYyT7o35zbNcbIOBCXenhhpadC1lKWWRE1JKs="
+          "messageSecret": "i20dagMSIv9hYPvYJVHCwwJ2kYO5es8TaFmXdPiVRAU="
         }
       },
-      "time": 1786712934770
+      "time": 1786718137638
     },
-    "3EB0B7948B891794923496": {
+    "3EB0188B901F3CFD724C22": {
       "message": {
         "reactionMessage": {
           "key": {
             "remoteJid": "226804522590211@lid",
             "fromMe": false,
-            "id": "A5F1B3381CB991A4A2CF34DAFDD9E5A3",
+            "id": "A5DE72D19B86CD288DECAFF4A73EB749",
             "participant": ""
           },
           "text": "❌",
-          "senderTimestampMs": "1786712934861"
+          "senderTimestampMs": "1786718137835"
         }
       },
-      "time": 1786712934924
+      "time": 1786718138020
     },
-    "3EB0267E1A3F69675DB034": {
+    "3EB05EF92C2D4F2BCFA346": {
       "message": {
         "extendedTextMessage": {
           "text": "❌ *Gagal Update!*\n\n⚠️ *Error:*\nCommand failed: git pull --rebase origin main\nerror: cannot pull with rebase: You have unstaged changes.\nerror: please commit or stash them.\n\n\nCoba ketik `$ git fetch origin && git reset --hard origin/main && git clean -fd` jika terjadi konflik.",
           "contextInfo": {
-            "stanzaId": "A5F1B3381CB991A4A2CF34DAFDD9E5A3",
+            "stanzaId": "A5DE72D19B86CD288DECAFF4A73EB749",
             "participant": "226804522590211@lid",
             "quotedMessage": {
               "extendedTextMessage": {
@@ -14881,73 +12906,17 @@
           }
         },
         "messageContextInfo": {
-          "messageSecret": "k093cUfofEd5TuH9Ff79Hzs57Nw6n80kn9kCUnb8oaA="
+          "messageSecret": "GJ5C+lFXDYGk7fvP2k2Ql8P1VKmCnTXrLNQIoIxE2Gc="
         }
       },
-      "time": 1786712934960
+      "time": 1786718138540
     },
-    "3EB03C1D4F28E1CEE675E5": {
-      "message": {
-        "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m269/AQOU_pH9-s2JyWwc4f9RO-uZONMSiUzk9WC3LnBceFh61avUlQUn8mpXKpLtvU11vgGASwbxnyC6WPRatxmE3e4g5dbjM5NpSFgdZli3eQ?ccb=9-4&oh=01_Q5Aa5QHiEI0UpIWAb-tFI2SA9bFreH1-Vyvec1cHk9GSpsI92g&oe=6AA67597&_nc_sid=e6ed6c&mms3=true",
-          "mimetype": "image/jpeg",
-          "caption": "╭──「 👨‍🍳 ZETA KITCHEN 」──╮\n\n⏰ Slot : 0/1\n⚠️ Ambil dalam 5 jam setelah matang\n\n_✨ Dapur masih kosong_\n_Masak sesuatu yuk!_\n\n━━━━━━━━━━━\n📌.masak resep - Lihat semua resep\n📌.masak resep <nama> - Detail resep\n📌.masak <nama> - Masak",
-          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
-          "fileLength": "58809",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "OqpBWtbXmZ+coCAxVnydV9q6aW/Fx0nQWi6ESuY+DNE=",
-          "fileEncSha256": "9MFxcQS38U7vxeqr5k5GKo/CAAQFCvPe4A0Nx8wUQKA=",
-          "directPath": "/o1/v/t24/f2/m269/AQOU_pH9-s2JyWwc4f9RO-uZONMSiUzk9WC3LnBceFh61avUlQUn8mpXKpLtvU11vgGASwbxnyC6WPRatxmE3e4g5dbjM5NpSFgdZli3eQ?ccb=9-4&oh=01_Q5Aa5QHiEI0UpIWAb-tFI2SA9bFreH1-Vyvec1cHk9GSpsI92g&oe=6AA67597&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712955",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
-          "contextInfo": {
-            "stanzaId": "ACBCCC8EFC51F08FE41B50A871D05961",
-            "participant": "260919531708475@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".masak",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "1yqJ/Sq1vsWjRHp4rPqDePy3DDXvAxTtqw9H6MCryzE="
-        }
-      },
-      "time": 1786712956326
-    },
-    "3EB04FFE4A15D5A5804A6C": {
+    "3EB00746371FD60CC2C693": {
       "message": {
         "extendedTextMessage": {
-          "text": "/bin/sh: 1: Syntax error: EOF in backquote substitution\n",
+          "text": "HEAD is now at 2b8482b Fix RPG Arena: Switch to explicit commands for accepting/rejecting challenges\n",
           "contextInfo": {
-            "stanzaId": "A54E137824CBBA5B2077F276E98E951C",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": "$ git fetch origin && git reset --hard origin/main && git clean -fd`",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "remoteJid": "226804522590211@lid"
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "6mv2vBzzV/I0NWfFW8HhaUu2gCExFZ8RzPNy9Re13oI="
-        }
-      },
-      "time": 1786712961957
-    },
-    "3EB0B1CB1F43332362720D": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "HEAD is now at a714de4 Optimize msgs garbage collection and add LID warning on registration\n",
-          "contextInfo": {
-            "stanzaId": "A5B54D2A563FD539B8DC4E386AF7C279",
+            "stanzaId": "A50F678058C25FBCA0F1AC282FD14DDF",
             "participant": "226804522590211@lid",
             "quotedMessage": {
               "extendedTextMessage": {
@@ -14960,17 +12929,17 @@
           }
         },
         "messageContextInfo": {
-          "messageSecret": "lUzDFvgJi0sfPWEgbWyfBQssMHk/bDw5xkSYQLP+PwE="
+          "messageSecret": "eYLZLNva+Z8CgQp9e1CjKD4ygheOXagIY2LhmXijIUw="
         }
       },
-      "time": 1786712972166
+      "time": 1786718141629
     },
-    "3EB0E19C05F96A5389AE9B": {
+    "3EB0F81E9A7C61E620A539": {
       "message": {
         "extendedTextMessage": {
-          "text": "From https://github.com/Nelson4111/WaBot\n   f99cbb5..a714de4  main       -> origin/main\nAuto packing the repository in background for optimum performance.\nSee \"git help gc\" for manual housekeeping.\nwarning: The last gc run reported the following. Please correct the root cause\nand remove .git/gc.log\nAutomatic cleanup will not be performed until the file is removed.\n\nwarning: There are too many unreachable loose objects; run 'git prune' to remove them.\n\n",
+          "text": "From https://github.com/Nelson4111/WaBot\n   4eb0f94..2b8482b  main       -> origin/main\nAuto packing the repository in background for optimum performance.\nSee \"git help gc\" for manual housekeeping.\nwarning: The last gc run reported the following. Please correct the root cause\nand remove .git/gc.log\nAutomatic cleanup will not be performed until the file is removed.\n\nwarning: There are too many unreachable loose objects; run 'git prune' to remove them.\n\n",
           "contextInfo": {
-            "stanzaId": "A5B54D2A563FD539B8DC4E386AF7C279",
+            "stanzaId": "A50F678058C25FBCA0F1AC282FD14DDF",
             "participant": "226804522590211@lid",
             "quotedMessage": {
               "extendedTextMessage": {
@@ -14983,32 +12952,32 @@
           }
         },
         "messageContextInfo": {
-          "messageSecret": "8qUcOH2f5RVs0EDFbZsqzz3tlKMqt6Ss+etuy2y1wy4="
+          "messageSecret": "dcFTtap5702GqLTXg8IObw5GAwy6e+Z4A+tpGLvSC5I="
         }
       },
-      "time": 1786712972246
+      "time": 1786718141731
     },
-    "3EB0B1233D3BEEBE3E7ABA": {
+    "3EB023ABF6518ED745C24E": {
       "message": {
         "reactionMessage": {
           "key": {
             "remoteJid": "226804522590211@lid",
             "fromMe": false,
-            "id": "A58D68F75A0423BFF34231441AE08B82",
+            "id": "A54444CF871FB3F18DA9D293DE6EA11F",
             "participant": ""
           },
           "text": "⏳",
-          "senderTimestampMs": "1786712975775"
+          "senderTimestampMs": "1786718145043"
         }
       },
-      "time": 1786712975794
+      "time": 1786718145132
     },
-    "3EB0234D484E3BE1207E77": {
+    "3EB060517BE5B3DEE1C5D3": {
       "message": {
         "extendedTextMessage": {
           "text": "🔄 *Menarik update terbaru dari GitHub...*",
           "contextInfo": {
-            "stanzaId": "A58D68F75A0423BFF34231441AE08B82",
+            "stanzaId": "A54444CF871FB3F18DA9D293DE6EA11F",
             "participant": "226804522590211@lid",
             "quotedMessage": {
               "extendedTextMessage": {
@@ -15021,32 +12990,32 @@
           }
         },
         "messageContextInfo": {
-          "messageSecret": "ZaUfgs96iaunHGc4t99i5Ed7XlyvQ4e6usZEoXyMYJk="
+          "messageSecret": "yEK1ZDU0su7C9fi5MNRp1p+PWVeK5PnUIyFvXTbgjxk="
         }
       },
-      "time": 1786712975819
+      "time": 1786718145154
     },
-    "3EB0FC67B231C947B87DDF": {
+    "3EB0EE5C47B2A360B611D5": {
       "message": {
         "reactionMessage": {
           "key": {
             "remoteJid": "226804522590211@lid",
             "fromMe": false,
-            "id": "A58D68F75A0423BFF34231441AE08B82",
+            "id": "A54444CF871FB3F18DA9D293DE6EA11F",
             "participant": ""
           },
           "text": "✅",
-          "senderTimestampMs": "1786712976392"
+          "senderTimestampMs": "1786718146246"
         }
       },
-      "time": 1786712976422
+      "time": 1786718146324
     },
-    "3EB01BE3CA88810D2CE8F2": {
+    "3EB051E2B7B35FE417894D": {
       "message": {
         "extendedTextMessage": {
           "text": "✅ *Bot sudah berada di versi terbaru!*",
           "contextInfo": {
-            "stanzaId": "A58D68F75A0423BFF34231441AE08B82",
+            "stanzaId": "A54444CF871FB3F18DA9D293DE6EA11F",
             "participant": "226804522590211@lid",
             "quotedMessage": {
               "extendedTextMessage": {
@@ -15059,118 +13028,455 @@
           }
         },
         "messageContextInfo": {
-          "messageSecret": "GGRuTSDIkvb7SBwsahbjsqiph6FiUVXEdDdhcPpkMoQ="
+          "messageSecret": "bOCiagm6bgjCCuaLV+7sdp8gD24JTOop19e+ZBmbsv0="
         }
       },
-      "time": 1786712976443
+      "time": 1786718146353
     },
-    "3EB0237055D9EC4A8F9993": {
+    "3EB0F6D8C22E266C930D6A": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "❌ Uang target kurang! Punya Rp 0",
+          "contextInfo": {
+            "stanzaId": "A5653E8DC2E340DC91E2703F05F9D932",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".Jambak @272103643332690",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "aLnEuX73p/cx0aWmIZ9Njnl+JnXges7/lXbGXvPFtDw="
+        }
+      },
+      "time": 1786718161228
+    },
+    "3EB0DFD13D2F85E3795A13": {
       "message": {
         "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m269/AQMYA1KFdsN4MQhLlOHDWT2ofj7xnSIHQ-C149Zy7aCGnp7stB3MTffNiqNVwMM5_hJNtB8EmQnYveplDiwShVwDQdcZOuL3l7j-nv-yYQ?ccb=9-4&oh=01_Q5Aa5QGD-IrRJh1skQpOknKBvxJpaOlvpBRc3bJT6dpnE39M6A&oe=6AA67232&_nc_sid=e6ed6c&mms3=true",
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQN0jnQPSijdx8HV-jW6g2c3BquSDDz4xylvC8-T8vMeK4eK6Qvubvzyt_CzowE0CJWFz-Dfx0ge6pvGq4cJ8H70Ybi4IWchTfg3U4fR-Q?ccb=9-4&oh=01_Q5Aa5QFXrTpjTXA-0zy07j19ufRPqB5r70pD_oEeeHa3ILNg_w&oe=6AA68C7F&_nc_sid=e6ed6c&mms3=true",
           "mimetype": "image/jpeg",
-          "caption": "*───「 🎣 FISHING RESULT 」───*\n\n*Tier* : ★☆ COMMON 🤍\n\n🏆 *Hasil Tangkapan*\n🪝 🐟🎵 Ikan Tembang\n\n✨ *XP Didapat* : +15\n🎣 *Level Pancingan* : 11\n🍀 *Bonus Rod* : +16.5%\n\n────────────────",
-          "fileSha256": "TN9gzsdlnkBhk1t1ZGi/yiAtzmM5rWPb/V9gc4ZLKY0=",
-          "fileLength": "67818",
+          "caption": "乂 *U S E R - P R O F I L E* 乂\n\n◈ *Nama* : Nelson\n◈ *Umur* : 20 Tahun\n◈ *Uang Cash* : Rp 1.116.200\n◈ *Uang Bank* : Rp 0\n◈ *Pasangan* : 💔 Jomblo\n◈ *Number* : @16196267018\n◈ *SN Key* : 8823c03245689de8b8cabc1a4a46b146\n\n『 REGISTERED : ✅ 』",
+          "fileSha256": "GjMrDad4ZyfR1zi2EMYo1XrDIPBqVCdPku3WcA1rjNE=",
+          "fileLength": "52426",
           "height": 424,
           "width": 734,
-          "mediaKey": "4Ya8bF5/PZDLktQIjeNjfOBSn4Gpbh0GEz2glIyDMwI=",
-          "fileEncSha256": "BbYOdaxjNSsUy7nipksU+hC4LuUO7FX1gHIbm0vJPSw=",
-          "directPath": "/o1/v/t24/f2/m269/AQMYA1KFdsN4MQhLlOHDWT2ofj7xnSIHQ-C149Zy7aCGnp7stB3MTffNiqNVwMM5_hJNtB8EmQnYveplDiwShVwDQdcZOuL3l7j-nv-yYQ?ccb=9-4&oh=01_Q5Aa5QGD-IrRJh1skQpOknKBvxJpaOlvpBRc3bJT6dpnE39M6A&oe=6AA67232&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712987",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGAABAQEBAQAAAAAAAAAAAAAAAAUEBgH/xAAoEAABAwEGBQUAAAAAAAAAAAABAAIDEQQFISJRYQYSEzGBMkFDkbH/xAAXAQADAQAAAAAAAAAAAAAAAAAAAQID/8QAGREBAAMBAQAAAAAAAAAAAAAAAAECEQNR/9oADAMBAAIRAxEAPwCZYLRLACxjSHOI+l0EUlXZhhquXs149OgMUZA0OI2VCLiN9lZRkTaV7VIH6rxNbYvmSFnqFfKn268BFkiYOf32WJ3FczvgjHkrFNf8ri49CHNtiPKcUg56eIQcdSnMT3JRFoxe1OqVOqIgP//Z",
+          "mediaKey": "GsYRdwH0xdYvFU6lgOSdlFAQuohskwNY3NARGbwGLuk=",
+          "fileEncSha256": "HHVe8GaRzmB+ERDQUbxzvIfuDXBWWRkf5yDJIGnE+kg=",
+          "directPath": "/o1/v/t24/f2/m237/AQN0jnQPSijdx8HV-jW6g2c3BquSDDz4xylvC8-T8vMeK4eK6Qvubvzyt_CzowE0CJWFz-Dfx0ge6pvGq4cJ8H70Ybi4IWchTfg3U4fR-Q?ccb=9-4&oh=01_Q5Aa5QFXrTpjTXA-0zy07j19ufRPqB5r70pD_oEeeHa3ILNg_w&oe=6AA68C7F&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786718171",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGQAAAwADAAAAAAAAAAAAAAAAAAMEAgUG/8QAIxAAAQUAAQIHAAAAAAAAAAAAAQACAxEhEkHwExQxUXGRkv/EABYBAQEBAAAAAAAAAAAAAAAAAAIBA//EABgRAAIDAAAAAAAAAAAAAAAAAAABERJR/9oADAMBAAIRAxEAPwDkvHlIsEflPikneW24aaxoUjXmt77tMjncwtIF0bVhYOz02Ub5RYJDh78QkSvkbej6SfNOqhh66lPmeRpRqi2ek49eqbHI5oABxCE2FFMc8gAbyz4Cwke7RaELOByz/9k=",
           "contextInfo": {
-            "stanzaId": "AC8E9E8E8844853AC1C37FD06123E894",
-            "participant": "260919531708475@lid",
+            "stanzaId": "ACECEF0053E0D5CAD1613B524FEAB213",
+            "participant": "272103643332690@lid",
             "quotedMessage": {
-              "conversation": ".mancing"
+              "conversation": ".me"
             },
             "mentionedJid": [
-              "628993226000@s.whatsapp.net"
+              "16196267018@s.whatsapp.net"
             ]
           }
         },
         "messageContextInfo": {
-          "messageSecret": "vz4zGcW1BdzjCnJTavmejNrj7M0UqltxRCdG1I01kac="
+          "messageSecret": "+NlwRzh7IyORD2Jm+uhRcVm/tCo5fmBAWAdbOUPzc0Y="
         }
       },
-      "time": 1786712989133
+      "time": 1786718171733
     },
-    "3EB0E2BFDB6C3931598A81": {
+    "3EB0A0288B1B9FBF8F1E82": {
       "message": {
         "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m231/AQME3Dtdj2KUiV28hAS45QthHEB2Op5-_iUoblDhIUR713mITLpEMphv36rCEbS1euop9oM-fxVpigksgeOae5erdO3s3AqZpd0iYW9wHQ?ccb=9-4&oh=01_Q5Aa5QFycxVrwa-O541aQCrpkvxidDZN9U65_gGPkmrF8QlXIQ&oe=6AA699BB&_nc_sid=e6ed6c&mms3=true",
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQMhSWqLAJIdNFD0Yk7IxSSRroCtCsheAFJo4Dzq7IwXEc4D9HoirCWS0M097hqVCCTUS7pvABhc08mWms5yMBZdmkJGSLXPUIZ0PzK9pw?ccb=9-4&oh=01_Q5Aa5QHIm6UjYffjXKvJvFomsyJ0gP46BNdf_mrl1uSVoit8lQ&oe=6AA68A77&_nc_sid=e6ed6c&mms3=true",
           "mimetype": "image/jpeg",
-          "caption": "─━━ ⛏️ MINING RESULT ━━─\n◈ Tier Tertinggi : ★★★☆☆☆☆ RARE ✨\n🏆 Hasil Tambang : 2 jenis | Total x3 ore\n\n│ 🌱 Grass x1\n│ ⚙️ Titanium x2\n└ ✨ Total XP : +255 | 💰 +Rp 21\n\n◆ Level Pickaxe : 11\n◆ Bonus Pick : +16.5%\n◆ Secret : Buka di Pick Lvl 25\n\n─━━━━━━━━━─",
-          "fileSha256": "DoYS2+WRfY90R3iQHOToeeQvUzItrTPB4eNCrJtcT+w=",
-          "fileLength": "43370",
-          "height": 405,
-          "width": 720,
-          "mediaKey": "qFrWHxkVIEpABcv5KhbYJziB/1a3XONaJEZt+ahwXNQ=",
-          "fileEncSha256": "pmdxJNdTlN0K6k2pgjiN/09tAWf9T6YUCjbIegcWkck=",
-          "directPath": "/o1/v/t24/f2/m231/AQME3Dtdj2KUiV28hAS45QthHEB2Op5-_iUoblDhIUR713mITLpEMphv36rCEbS1euop9oM-fxVpigksgeOae5erdO3s3AqZpd0iYW9wHQ?ccb=9-4&oh=01_Q5Aa5QFycxVrwa-O541aQCrpkvxidDZN9U65_gGPkmrF8QlXIQ&oe=6AA699BB&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712989",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAIhAAAgICAQQDAQAAAAAAAAAAAQIDEQASIQQFE1ExMkFh/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAIDAf/EABsRAAMAAgMAAAAAAAAAAAAAAAABAgMxESFB/9oADAMBAAIRAxEAPwBJD22XqFUxr8reoNkjF0yeNyPWdFIkkYBVdHWhWwHH8xH1kTLKxaxZvnJY6bfZW540Rh18ZJQsfX4M2zQBOnWXxxspHA+DXvMMS7cWB+2eAc10QjbzR66EABrzaCS8yyR9okaOR0NgWprjFsRJskkknm8MMWPQZKX7ZS2GGUQj2f/Z",
+          "caption": "乂 *U S E R - P R O F I L E* 乂\n\n◈ *Nama* : Nenel\n◈ *Umur* : 19 Tahun\n◈ *Uang Cash* : Rp 1.100.000\n◈ *Uang Bank* : Rp 87.936\n◈ *Pasangan* : 💔 Jomblo\n◈ *Number* : @6281241100804\n◈ *SN Key* : 6b883a403cc761319e462ec825e17506\n\n『 REGISTERED : ✅ 』",
+          "fileSha256": "0SBDtlpC6y8mF2GKhSrN3vppdKxLghvIkU7RZz4bNuI=",
+          "fileLength": "52342",
+          "height": 424,
+          "width": 734,
+          "mediaKey": "bLM77BhhE+GOsCqdIBUJPGpa89efjlmNH/HJSVtBZyU=",
+          "fileEncSha256": "aDrnxSK2krTJCB8PTQBr1NLnIlF30LbHVmYc5v0S8Wo=",
+          "directPath": "/o1/v/t24/f2/m237/AQMhSWqLAJIdNFD0Yk7IxSSRroCtCsheAFJo4Dzq7IwXEc4D9HoirCWS0M097hqVCCTUS7pvABhc08mWms5yMBZdmkJGSLXPUIZ0PzK9pw?ccb=9-4&oh=01_Q5Aa5QHIm6UjYffjXKvJvFomsyJ0gP46BNdf_mrl1uSVoit8lQ&oe=6AA68A77&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786718229",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAMCBAUG/8QAJRAAAgICAAQHAQAAAAAAAAAAAQIAAxEhBAUSQRMUMTJRcYGR/8QAFgEBAQEAAAAAAAAAAAAAAAAAAgED/8QAGREAAgMBAAAAAAAAAAAAAAAAAAERElEC/9oADAMBAAIRAxEAPwDkxbcVLD2g4J6dR1Vl7lcsNnGlEt8LzzwOSXcv8sGaxWQP1awTnJHzM2u9kKnGcHMsLB2emlW9wyrYP4Ii17FzsfyJPFNjA0e+4p7nI2YarC260rj17xtdjKAAdQhGwos132ABerX0JCx22MwhM4HLP//Z",
           "contextInfo": {
-            "stanzaId": "AC5266BFDA1E0D9F337850AEC0745CE0",
-            "participant": "260919531708475@lid",
+            "stanzaId": "A504C3C87AE23D23C933F3D9255727B0",
+            "participant": "226804522590211@lid",
             "quotedMessage": {
-              "conversation": ". Mining"
-            }
+              "conversation": ".me"
+            },
+            "mentionedJid": [
+              "6281241100804@s.whatsapp.net"
+            ]
           }
         },
         "messageContextInfo": {
-          "messageSecret": "g3WYXYyBFJjWMU2lGkCrbo8Tfbj0UlCrr1L7PtRmNHE="
+          "messageSecret": "V/MUwwAkDGz8ff5PBfOyRYrzsT4Hpq7zImeJBhamYBo="
         }
       },
-      "time": 1786712990168
+      "time": 1786718229369
     },
-    "3EB0EFE61F341176FCB13E": {
+    "3EB009CEC56C037BB75B60": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQM_lrdyzK2FhaYugCHEjQ08G_GL0Z6laIyCpajxCHQQT6xhL4lX_ZRh1AIPBpCvMP2pXTODuymUOZgS9jNF3096GW980DH9r7h5DPZp4w?ccb=9-4&oh=01_Q5Aa5QFNdNxD_fbPBTj1CHY3KP3i0qMQqWa936V4mT788Hy1BA&oe=6AA68479&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "┌───❏「 💇 ARENA JAMBAK 」❏\n│\n│ 👤 *PENANTANG*\n│ @6281241100804\n│ 🌸 Pemula\n│ Lv.2 | W-L : 0W - 0L\n│\n│ ⚔️ *VS*\n│\n│ 👤 *LAWAN*\n│ @16196267018\n│ 🌸 Pemula\n│ Lv.1 | W-L : 0W - 0L\n│\n│ 💰 Taruhan : Rp 110,000\n│\n│ Balas pesan ini degan tulisan *terima* atau *tolak*\n│ ⏰ 2 menit\n└───────────────────",
+          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
+          "fileLength": "58809",
+          "height": 405,
+          "width": 720,
+          "mediaKey": "T3m54bn6ma/V9V+E022XYnUURlDBz1P7lVLwrsxF8iM=",
+          "fileEncSha256": "4ZNx7s3nOzYM1RoANAx7kH7L4oATdvr9UltaD0NuJlw=",
+          "directPath": "/o1/v/t24/f2/m238/AQM_lrdyzK2FhaYugCHEjQ08G_GL0Z6laIyCpajxCHQQT6xhL4lX_ZRh1AIPBpCvMP2pXTODuymUOZgS9jNF3096GW980DH9r7h5DPZp4w?ccb=9-4&oh=01_Q5Aa5QFNdNxD_fbPBTj1CHY3KP3i0qMQqWa936V4mT788Hy1BA&oe=6AA68479&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786718244",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
+          "contextInfo": {
+            "stanzaId": "A5FAD074D79D581F58F94A835379EC06",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".Jambak",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "mentionedJid": [
+              "6281241100804@s.whatsapp.net",
+              "16196267018@s.whatsapp.net"
+            ]
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "m91knuqbd0YQc2tp6SFwVtdyDJGxrG1M5aL/cxd3u8w="
+        }
+      },
+      "time": 1786718245280
+    },
+    "3EB064F831C8D0D6AE2D25": {
       "message": {
         "extendedTextMessage": {
-          "text": "💼 *KERJA BERHASIL*\n\nPekerjaan: *Petugas Pemadam Kebakaran*\nPendapatan: *+Rp 1,687,000*\nXP: *+1,687*\nLevel: *Lv.36* (17522/18000)",
+          "text": "❌ Tidak ada tantangan jambak yang sedang menunggumu saat ini.",
           "contextInfo": {
-            "stanzaId": "AC514912CE879BA957A1EF850B2CE8AA",
-            "participant": "260919531708475@lid",
+            "stanzaId": "AC6E639D7FBB479A86267172EE4E05BB",
+            "participant": "272103643332690@lid",
             "quotedMessage": {
-              "conversation": ". Work"
+              "conversation": ".jambakterima"
             }
           }
         },
         "messageContextInfo": {
-          "messageSecret": "KJ/pmli3E919yytTj8dEFyuaSTd+eM1UdrfkV2mbf/o="
+          "messageSecret": "FoB0AnPyGDRLqJbEuAEZlinmWmiWaCtu3KalIQFFk7E="
         }
       },
-      "time": 1786712991629
+      "time": 1786718281567
     },
-    "3EB0A82452FC8F5D80A17B": {
+    "3EB056BB05EA203BED3ED6": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "❌ Tidak ada tantangan jambak yang sedang menunggumu saat ini.",
+          "contextInfo": {
+            "stanzaId": "AC74739A1A427CA065052A54CCDEB8B7",
+            "participant": "272103643332690@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".jambakterima",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "s/HztqBWYnVJPHvbJzufMk2w9Q9/Co8d/6Vcef96JUg="
+        }
+      },
+      "time": 1786718292148
+    },
+    "3EB06C5CD4885C88E8DF0A": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "Wah, panel 5GB udah berhasil! Sekarang kamu bisa main game atau nonton video tanpa hambatan lagi! Apa kamu ingin main game online atau nonton film favorit?"
+        },
+        "messageContextInfo": {
+          "messageSecret": "Zx7C2Qp0DuQuCdu9jKBgpb05ZPnf88NmzviCnGBKJkk="
+        }
+      },
+      "time": 1786718494330
+    },
+    "3EB0CD276FF31C867EA282": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A5BFA5C3CC0B8059EB7C7FC930B60253",
+            "participant": ""
+          },
+          "text": "⏳",
+          "senderTimestampMs": "1786718545021"
+        }
+      },
+      "time": 1786718545842
+    },
+    "3EB0D6AC501CA5791E148B": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "🔄 *Menarik update terbaru dari GitHub...*",
+          "contextInfo": {
+            "stanzaId": "A5BFA5C3CC0B8059EB7C7FC930B60253",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "heMdzWwXoREu8tamOd+Jh6nfnDA5Ya3+RSXhUKsXupU="
+        }
+      },
+      "time": 1786718545860
+    },
+    "3EB0E63D6E24649D72BAA4": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A5BFA5C3CC0B8059EB7C7FC930B60253",
+            "participant": ""
+          },
+          "text": "❌",
+          "senderTimestampMs": "1786718545919"
+        }
+      },
+      "time": 1786718545946
+    },
+    "3EB017B9C4B05FC0594E16": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "❌ *Gagal Update!*\n\n⚠️ *Error:*\nCommand failed: git pull --rebase origin main\nerror: cannot pull with rebase: You have unstaged changes.\nerror: please commit or stash them.\n\n\nCoba ketik `$ git fetch origin && git reset --hard origin/main && git clean -fd` jika terjadi konflik.",
+          "contextInfo": {
+            "stanzaId": "A5BFA5C3CC0B8059EB7C7FC930B60253",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "8b7Q1NMOpZYtv/Gf4U/1TPXCUf2YZly9rRaSq9T00QU="
+        }
+      },
+      "time": 1786718546122
+    },
+    "3EB0024BB54F1E71236E5E": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "HEAD is now at d14cb20 Fix JID comparison and device ID issues in RPG arena\n",
+          "contextInfo": {
+            "stanzaId": "A5D1F8EDB1408F6FEA45957A21165A45",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": "$ git fetch origin && git reset --hard origin/main && git clean -fd",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "tsAvauq0hoOWAtV7u95/UoKc5em1ODmeUdqiy8KBrwI="
+        }
+      },
+      "time": 1786718549136
+    },
+    "3EB06B82D88711360A1A0D": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "From https://github.com/Nelson4111/WaBot\n   2b8482b..d14cb20  main       -> origin/main\nAuto packing the repository in background for optimum performance.\nSee \"git help gc\" for manual housekeeping.\nwarning: The last gc run reported the following. Please correct the root cause\nand remove .git/gc.log\nAutomatic cleanup will not be performed until the file is removed.\n\nwarning: There are too many unreachable loose objects; run 'git prune' to remove them.\n\n",
+          "contextInfo": {
+            "stanzaId": "A5D1F8EDB1408F6FEA45957A21165A45",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": "$ git fetch origin && git reset --hard origin/main && git clean -fd",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "O2kTvaJD8pfbwyQwIgxRkVEx1o7cA918szMqGFuEns4="
+        }
+      },
+      "time": 1786718549149
+    },
+    "3EB04ACAEF2EAB40188534": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A53EF12E9123F9558F9D9F2F7955D541",
+            "participant": ""
+          },
+          "text": "⏳",
+          "senderTimestampMs": "1786718551665"
+        }
+      },
+      "time": 1786718551695
+    },
+    "3EB05687496FB12BC1AD75": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "🔄 *Menarik update terbaru dari GitHub...*",
+          "contextInfo": {
+            "stanzaId": "A53EF12E9123F9558F9D9F2F7955D541",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ". update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "0OH1eeISUosmispRKWP4WILD3+Kdr/JtFbEC2huJQec="
+        }
+      },
+      "time": 1786718551719
+    },
+    "3EB0D04A4011079182C11C": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A53EF12E9123F9558F9D9F2F7955D541",
+            "participant": ""
+          },
+          "text": "✅",
+          "senderTimestampMs": "1786718552263"
+        }
+      },
+      "time": 1786718552294
+    },
+    "3EB0F0951416D1CE9A7BE4": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "✅ *Bot sudah berada di versi terbaru!*",
+          "contextInfo": {
+            "stanzaId": "A53EF12E9123F9558F9D9F2F7955D541",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ". update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "ULQZhJXPtKptJE6U6n6FuLsGQ8RKvhcbx9umzULRdAA="
+        }
+      },
+      "time": 1786718552328
+    },
+    "3EB0070A756DA58EDB12A8": {
       "message": {
         "imageMessage": {
-          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m234/AQPSNujjLM39uU5oVpOgKeTGwQphL5gY9MwpbXYBj8Gz9hDdK_tnQF-Qe8AJrtY3xV9iQ_l918vISdc9LYwO6km62_FBJ1Q9vHGNMLsofw?ccb=9-4&oh=01_Q5Aa5QHg0rZ2YqKgr-g2PNoNTXaa-zb8niHxgKYD6o68jY1Qrw&oe=6AA695ED&_nc_sid=e6ed6c&mms3=true",
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m269/AQNQWdVcNfUB6LYPElKzWHTH1fdtGefspjtKHw_GGqFnQrPflXJjh4xf7KahrCUpJaIm8owpG9X1r6kF1p9oxKQU_5F7R494TwL2A5D8Fg?ccb=9-4&oh=01_Q5Aa5QG_wHKMOc5A4170YjkEL-hBgc1G1awV7jWRk54I2iY76A&oe=6AA6A432&_nc_sid=e6ed6c&mms3=true",
           "mimetype": "image/jpeg",
-          "caption": "*───「 🗺️ ADVENTURE 」───*\n\n*Tier Tertinggi* : ★★★★★☆☆ LEGENDARY 👑\n\n🎒 *Hasil Penjelajahan x6* :\n\n👑 *LEGENDARY*\n│ 👑 Mahkota Raja x2\n\n✨ *RARE*\n│ ⚔️ Pedang Baja x1\n\n💙 *UNCOMMON*\n│ 🔪 Belati Karat x2\n│ 🧪 Ramuan Sedang x1\n\n│ 💰 Money : +Rp 7,806\n└ 🌟 XP : +1461\n\n❤️ *Sisa Darah* : 282\n🗺️ *Lvl* : 15 | ⚔️ *Sword* : 11 | ⛏️ *Pick* : 11\n🍀 *Bonus* : +46.0%",
-          "fileSha256": "WFpdTw8l43dtR4gC4Pm95JVQc7AVpxfTyfqd2y4lV2o=",
-          "fileLength": "42017",
+          "caption": "┌───❏「 💇 ARENA JAMBAK 」❏\n│\n│ 👤 *PENANTANG*\n│ @6281241100804\n│ 🌸 Pemula\n│ Lv.2 | W-L : 0W - 0L\n│\n│ ⚔️ *VS*\n│\n│ 👤 *LAWAN*\n│ @16196267018\n│ 🌸 Pemula\n│ Lv.1 | W-L : 0W - 0L\n│\n│ 💰 Taruhan : Rp 110,000\n│\n│ Balas pesan ini degan tulisan *terima* atau *tolak*\n│ ⏰ 2 menit\n└───────────────────",
+          "fileSha256": "BBbs1sV0GtrSdlspfbwucMjxvXFNh8VmuvKGLUmpZRA=",
+          "fileLength": "58809",
           "height": 405,
           "width": 720,
-          "mediaKey": "rtmV2hpRSd1rTWRc1x+KzaKY1VFo6CNBaPkrm51JSUE=",
-          "fileEncSha256": "QL9FdXM5CXp8OQx4fzvgiOkvKAbKJofHx7Nh7rKmP4w=",
-          "directPath": "/o1/v/t24/f2/m234/AQPSNujjLM39uU5oVpOgKeTGwQphL5gY9MwpbXYBj8Gz9hDdK_tnQF-Qe8AJrtY3xV9iQ_l918vISdc9LYwO6km62_FBJ1Q9vHGNMLsofw?ccb=9-4&oh=01_Q5Aa5QHg0rZ2YqKgr-g2PNoNTXaa-zb8niHxgKYD6o68jY1Qrw&oe=6AA695ED&_nc_sid=e6ed6c",
-          "mediaKeyTimestamp": "1786712995",
-          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAMCBAUG/8QAJRAAAgICAQMDBQAAAAAAAAAAAQIAAwQREgUxQSFRcRMiMmGx/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxEhQf/aAAwDAQACEQMRAD8A0rnodVdCFP6B/sopXjXFyb9kH10pOjMW3q9TY7kUFLeO1IPpv4lTpl5+s75GQ1QbuV8n4mYyaRZVJs6eqnDrsDOzOo8cYuwYVt5YEqm/xVZSOTQ541ZQYgaBfsYi06YFbUA39x5bhW6+h04jEbssU5OoQmyhWT7ybE+/mEI9B//Z",
+          "mediaKey": "F7ZBEc3d/0JwVwS3XkIENjOcLB4Af/ZNSTzLXlVvNgk=",
+          "fileEncSha256": "wie6QxbB0uj8Q4Nw5QYGYifu/GGRyebH1AFLCg99aII=",
+          "directPath": "/o1/v/t24/f2/m269/AQNQWdVcNfUB6LYPElKzWHTH1fdtGefspjtKHw_GGqFnQrPflXJjh4xf7KahrCUpJaIm8owpG9X1r6kF1p9oxKQU_5F7R494TwL2A5D8Fg?ccb=9-4&oh=01_Q5Aa5QG_wHKMOc5A4170YjkEL-hBgc1G1awV7jWRk54I2iY76A&oe=6AA6A432&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786718568",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUG/8QAJhAAAgEDAwMEAwAAAAAAAAAAAQIAAxEhBAUxEjJBEyIjUUJh0f/EABcBAAMBAAAAAAAAAAAAAAAAAAECAwD/xAAZEQADAQEBAAAAAAAAAAAAAAAAAQJBETH/2gAMAwEAAhEDEQA/AOLpnqsCLzc023UayKz6dRfOGtcYJ/kyUoBO5/vEYobjWp01VGYWFiABiTruFZ5potodt0vyOrOfCEmx/cW1m5J2UaQVRwCcDnwLDyebxDU7jVrVGZukX/G3EV9YsuQLk8zKX6wulhJT7pYuQbwhCxUUVQPoSswhGQjP/9k=",
           "contextInfo": {
-            "stanzaId": "ACAB186D22615235BA11A81013E66F20",
-            "participant": "260919531708475@lid",
+            "stanzaId": "A5F4A1B80EDEE42A2F0084298C693028",
+            "participant": "226804522590211@lid",
             "quotedMessage": {
-              "conversation": ". Adventure"
+              "extendedTextMessage": {
+                "text": ".jambak",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "mentionedJid": [
+              "6281241100804@s.whatsapp.net",
+              "16196267018@s.whatsapp.net"
+            ]
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "FLvcVeLk9FcE78iUqBt08Yo17shsOBmoE8g0VOlCzh0="
+        }
+      },
+      "time": 1786718569531
+    },
+    "3EB057D86CDBC8615E1895": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "Command *.jambakterim* tidak ditemukan.\n\nMungkin command ini yang kamu maksud:\n- .jambakterima\n- .jambaktolak",
+          "contextInfo": {
+            "stanzaId": "ACEAF20EDBE5F65304C256F6352E605D",
+            "participant": "272103643332690@lid",
+            "quotedMessage": {
+              "conversation": ".jambakterim"
             }
           }
         },
         "messageContextInfo": {
-          "messageSecret": "GZ92z6VJCGpcl16x1S0bNV48ooHuzwVHxrZzZXCSpgs="
+          "messageSecret": "ZQKLItJMZgXYYa5jbJbD0rMu9bNPGVpQdlRcHmh/Wa8="
         }
       },
-      "time": 1786712995639
+      "time": 1786718584669
+    },
+    "3EB000C26C5996D5F5E83D": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "❌ Tidak ada tantangan jambak yang sedang menunggumu saat ini.",
+          "contextInfo": {
+            "stanzaId": "ACEBCD375407750AC567F4DE8EE4B4C3",
+            "participant": "272103643332690@lid",
+            "quotedMessage": {
+              "conversation": ".jambakterima"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "xqjpqp7JkEqn33Uu56YRWz6Qb6GiNsjwL/hc8YlANZY="
+        }
+      },
+      "time": 1786718591226
     }
   },
   "sticker": {},
@@ -15394,12 +13700,12 @@
       ],
       "contribution": {
         "228256070533313@lid": 46600,
-        "628385848829@s.whatsapp.net": 46900,
+        "628385848829@s.whatsapp.net": 48800,
         "6281370424543@s.whatsapp.net": 1500
       },
       "level": 34,
-      "exp": 12400,
-      "lastMission": 1786710826274,
+      "exp": 23900,
+      "lastMission": 1786716418602,
       "lastParty": 1786618626757,
       "lastTrain": 0,
       "buffSpeed": 0,
