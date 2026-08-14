@@ -1,8 +1,8 @@
 {
   "users": {
     "6281242432747@s.whatsapp.net": {
-      "exp": null,
-      "limit": null,
+      "exp": 2,
+      "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
       "lastclaim": 0,
@@ -90,7 +90,7 @@
       "autolevelup": true
     },
     "6281241100804@s.whatsapp.net": {
-      "exp": 2400,
+      "exp": 2423,
       "limit": 100,
       "balance": 0,
       "lastclaim": 0,
@@ -361,7 +361,34 @@
       "warn": 0,
       "level": 0,
       "role": "Free user",
-      "autolevelup": true
+      "autolevelup": true,
+      "rpg": {
+        "level": 1,
+        "exp": 10,
+        "darah": 100,
+        "lastAdventure": 0,
+        "lastMining": 0,
+        "lastDungeon": 0,
+        "diamond": 0,
+        "gold": 0,
+        "iron": 0,
+        "stone": 0,
+        "wood": 0,
+        "inventory": {},
+        "pet": {
+          "tipe": "none",
+          "level": 1,
+          "exp": 0,
+          "lastFeed": 0
+        },
+        "stats": {
+          "jambakMenang": 0,
+          "jambakKalah": 0,
+          "pancoMenang": 0,
+          "pancoKalah": 0
+        }
+      },
+      "money": 0
     },
     "628989139222@s.whatsapp.net": {
       "exp": null,
@@ -1402,7 +1429,7 @@
       "autolevelup": true
     },
     "16196267018@s.whatsapp.net": {
-      "exp": 428,
+      "exp": 500,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 0,
@@ -1445,7 +1472,10 @@
           "jambakKalah": 0,
           "pancoMenang": 0,
           "pancoKalah": 0
-        }
+        },
+        "maxLadang": 1,
+        "ladang": {},
+        "hasilKebun": {}
       },
       "lastDaily": 1785776617339
     },
@@ -5215,7 +5245,7 @@
       "bank": 221229288
     },
     "6281335750641@s.whatsapp.net": {
-      "exp": 19614,
+      "exp": 19769,
       "limit": 99,
       "balance": 0,
       "totalDonasi": 0,
@@ -5377,7 +5407,7 @@
       "lastDaily": 1786681591317
     },
     "6287716300353@s.whatsapp.net": {
-      "exp": 46073,
+      "exp": 46114,
       "limit": 97,
       "balance": 0,
       "totalDonasi": 8997,
@@ -6046,7 +6076,7 @@
       "lastKencan": 1786495732609
     },
     "628385848829@s.whatsapp.net": {
-      "exp": 24006,
+      "exp": 24008,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 2423,
@@ -6439,7 +6469,7 @@
       "totalDonasi": 10000
     },
     "6282228638623@s.whatsapp.net": {
-      "exp": 80,
+      "exp": 125,
       "limit": 100,
       "balance": 0,
       "totalDonasi": 29000,
@@ -11712,10 +11742,10 @@
       "lastSuccess": 1786607751686
     },
     "info/xp-profile.js": {
-      "total": 204,
-      "success": 204,
-      "last": 1786719169835,
-      "lastSuccess": 1786719169835
+      "total": 205,
+      "success": 205,
+      "last": 1786719933067,
+      "lastSuccess": 1786719933067
     },
     "afk/afk-afk.js": {
       "total": 609,
@@ -12162,10 +12192,10 @@
       "lastSuccess": 1786719363953
     },
     "rpg/rpg-inventory.js": {
-      "total": 442,
-      "success": 442,
-      "last": 1786719809791,
-      "lastSuccess": 1786719809791
+      "total": 447,
+      "success": 447,
+      "last": 1786720010724,
+      "lastSuccess": 1786720010724
     },
     "rpg/rpg-toprpg.js": {
       "total": 16,
@@ -12246,10 +12276,10 @@
       "lastSuccess": 1786716419098
     },
     "rpg/rpg-pet.js": {
-      "total": 723,
-      "success": 723,
-      "last": 1786716412132,
-      "lastSuccess": 1786716412132
+      "total": 727,
+      "success": 727,
+      "last": 1786719966844,
+      "lastSuccess": 1786719966844
     },
     "rpg/rpg-buyladang.js": {
       "total": 146,
@@ -13026,10 +13056,10 @@
       "lastSuccess": 1786674005764
     },
     "rpg/rpg-arena.js": {
-      "total": 90,
-      "success": 89,
-      "last": 1786719161765,
-      "lastSuccess": 1786719161765
+      "total": 91,
+      "success": 90,
+      "last": 1786719925440,
+      "lastSuccess": 1786719925440
     },
     "owner/owner-exec.js": {
       "total": 39,
@@ -13099,272 +13129,6 @@
     }
   },
   "msgs": {
-    "3EB0C1B7707E127D2341B6": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Belum ada yang siap dipanen.",
-          "contextInfo": {
-            "stanzaId": "AC7E190CE29A254661712443846A10D8",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".panen all"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "3QZx+pi3Ii3BBnn+aYgiVyE6+Fd+Tczrit17ehhTQwA="
-        }
-      },
-      "time": 1786719018230
-    },
-    "3EB0B3A6D4FE28F041E0E2": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*🏡 AREA PERKEBUNAN 🏡*\n*──「 STATUS LADANG 」──*\n\n╭───〔 *LADANG 1* 〕\n┊ 🪾 Status: Kosong\n╰──────────────\n\n*CARA PANEN:* \n- *.panen all* → Panen semua yang siap\n- *.panen [nomor]* → Panen 1 slot\n*TIP:* Tanam bibit dulu pake *.tanam*",
-          "contextInfo": {
-            "stanzaId": "ACD07CE755EF81AAF3800D07A61FF4D9",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".panen"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "5ToU0gjrgPtC4Q2zCWb04TVKqk4tUg1Xi4NbNG3GF1c="
-        }
-      },
-      "time": 1786719029650
-    },
-    "3EB0D235770F54FB39E482": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* Mina\n🆙 *Level:* 1 (0/500 XP)\n❤️ *Darah:* 100/100\n💰 *Saldo:* Rp 0\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.0\n🛡️ Armor: Lv.0\n⛏️ Pickaxe: Lv.0\n🎣 Fishingrod: Lv.0\n🐾 Pet: Tidak ada\n\n*───「 STORAGE 」───*\n💎 Diamond: 0\n⛓️ Iron: 0\n✨ Gold: 0\n🪵 Wood: 0\n🪨 Stone: 0\n_Lihat lengkap: *.tas*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
-          "contextInfo": {
-            "stanzaId": "AC966B5BBF973338887743BF9708FD87",
-            "participant": "160859846357027@lid",
-            "quotedMessage": {
-              "conversation": ".inv"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "wsidO7l/2mjALbvyETLHERrDYKftIPsYvr07QPcBmIA="
-        }
-      },
-      "time": 1786719042938
-    },
-    "3EB01155C033C17C61F102": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🏖️ *AFK MODE ACTIVATED* 🏖️\n\n👤 *User:* @6281335750641\n📝 *Alasan:* _Tanpa Alasan_\n🕒 *Waktu:* 21:50:45 33IB\n\n_Bot akan memberi tahu siapa saja yang men-tag kamu bahwa kamu sedang AFK._",
-          "contextInfo": {
-            "stanzaId": "AC2CC949653956EC1DE6EC41CD28047C",
-            "participant": "203572977336483@lid",
-            "quotedMessage": {
-              "conversation": ".afk"
-            },
-            "mentionedJid": [
-              "6281335750641@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "RXiOBX8YTtC6wkm360ZsdPoVlr2RPn63lTaAVV5b2ZE="
-        }
-      },
-      "time": 1786719046537
-    },
-    "3EB0EFC9F4CF9A715E4851": {
-      "message": {
-        "reactionMessage": {
-          "key": {
-            "remoteJid": "120363021973635533@g.us",
-            "fromMe": false,
-            "id": "A53A72EF0BD8C887816C61C389BD2FB6",
-            "participant": "226804522590211@lid"
-          },
-          "text": "⏳",
-          "senderTimestampMs": "1786719048520"
-        }
-      },
-      "time": 1786719049119
-    },
-    "3EB034247969ED8110E927": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🔄 *Menarik update terbaru dari GitHub...*",
-          "contextInfo": {
-            "stanzaId": "A53A72EF0BD8C887816C61C389BD2FB6",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "conversation": ".update"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "QN7jN4oIBYSBaHRuNKk5ZQonMqtiQQsdcRkXZQxguyk="
-        }
-      },
-      "time": 1786719049336
-    },
-    "3EB071B6E2ADB4FA7FC17A": {
-      "message": {
-        "reactionMessage": {
-          "key": {
-            "remoteJid": "120363021973635533@g.us",
-            "fromMe": false,
-            "id": "A53A72EF0BD8C887816C61C389BD2FB6",
-            "participant": "226804522590211@lid"
-          },
-          "text": "❌",
-          "senderTimestampMs": "1786719049442"
-        }
-      },
-      "time": 1786719049732
-    },
-    "3EB0FF5B6E3075302C7E89": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ *Gagal Update!*\n\n⚠️ *Error:*\nCommand failed: git pull --rebase origin main\nerror: cannot pull with rebase: You have unstaged changes.\nerror: please commit or stash them.\n\n\nCoba ketik `$ git fetch origin && git reset --hard origin/main && git clean -fd` jika terjadi konflik.",
-          "contextInfo": {
-            "stanzaId": "A53A72EF0BD8C887816C61C389BD2FB6",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "conversation": ".update"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "nFAVsWnwSmeoCAzahrPxt8GGiJZA82TwVuSsQ4LHDvY="
-        }
-      },
-      "time": 1786719049945
-    },
-    "3EB001CB63E83FE95BEAFD": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "✨ *WELCOME BACK!*\n\nUser @6281335750641 telah kembali dari AFK!\n⏱️ *Lama AFK:* 16 Detik\n📝 *Alasan Sebelumnya:* _Tanpa Alasan_",
-          "contextInfo": {
-            "stanzaId": "AC7C78F2B366E2B879D0014BA8D4E8DA",
-            "participant": "203572977336483@lid",
-            "quotedMessage": {
-              "conversation": "nahh hlo guys"
-            },
-            "mentionedJid": [
-              "6281335750641@s.whatsapp.net"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "lDOySOdvfqTkyilBJ7rxyN/r5lpBwl74/vP5F66lOq8="
-        }
-      },
-      "time": 1786719063231
-    },
-    "3EB0F90B03A46896D9EC11": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "HEAD is now at 9de0b8b Fix JID parsing logic appending @s.whatsapp.net twice\n",
-          "contextInfo": {
-            "stanzaId": "A582C1A159151450FA6766E3108EB76C",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "conversation": "$ git fetch origin && git reset --hard origin/main && git clean -fd"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "DNV6J8LLrVlpopqpbqRg5Zw3qGA/68tKbK4j9x1E+ZE="
-        }
-      },
-      "time": 1786719068742
-    },
-    "3EB0F87820F00D0D75ED50": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "From https://github.com/Nelson4111/WaBot\n   0797751..9de0b8b  main       -> origin/main\nAuto packing the repository in background for optimum performance.\nSee \"git help gc\" for manual housekeeping.\nwarning: The last gc run reported the following. Please correct the root cause\nand remove .git/gc.log\nAutomatic cleanup will not be performed until the file is removed.\n\nwarning: There are too many unreachable loose objects; run 'git prune' to remove them.\n\n",
-          "contextInfo": {
-            "stanzaId": "A582C1A159151450FA6766E3108EB76C",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "conversation": "$ git fetch origin && git reset --hard origin/main && git clean -fd"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "8BykLurWVWTkgD4ZdL7jU8IWj8T2pmgJbwx3MXbcgpk="
-        }
-      },
-      "time": 1786719069031
-    },
-    "3EB0DD55373F7333B5332C": {
-      "message": {
-        "reactionMessage": {
-          "key": {
-            "remoteJid": "120363021973635533@g.us",
-            "fromMe": false,
-            "id": "A5B62DB2D36A7DD0B51ACE00A588F20D",
-            "participant": "226804522590211@lid"
-          },
-          "text": "⏳",
-          "senderTimestampMs": "1786719070665"
-        }
-      },
-      "time": 1786719070921
-    },
-    "3EB0FFEE9FBE69A47790B9": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "🔄 *Menarik update terbaru dari GitHub...*",
-          "contextInfo": {
-            "stanzaId": "A5B62DB2D36A7DD0B51ACE00A588F20D",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "conversation": ". update"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "6rHv5WdwSKeUKTtVe1IU0JUHM+T8apPYlTSVWdvj3wY="
-        }
-      },
-      "time": 1786719071145
-    },
-    "3EB072C417B677BFFD7BF3": {
-      "message": {
-        "reactionMessage": {
-          "key": {
-            "remoteJid": "120363021973635533@g.us",
-            "fromMe": false,
-            "id": "A5B62DB2D36A7DD0B51ACE00A588F20D",
-            "participant": "226804522590211@lid"
-          },
-          "text": "✅",
-          "senderTimestampMs": "1786719072254"
-        }
-      },
-      "time": 1786719072539
-    },
-    "3EB00F50CE3E0C05710A1F": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "✅ *Bot sudah berada di versi terbaru!*",
-          "contextInfo": {
-            "stanzaId": "A5B62DB2D36A7DD0B51ACE00A588F20D",
-            "participant": "226804522590211@lid",
-            "quotedMessage": {
-              "conversation": ". update"
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "pHr2wXoz4Z4lvDv7E0UvtPDMnFz86MkNBRb3CdAMMXw="
-        }
-      },
-      "time": 1786719072818
-    },
     "3EB0AE52ED3EDC92ACD4F7": {
       "message": {
         "extendedTextMessage": {
@@ -14014,6 +13778,206 @@
         }
       },
       "time": 1786719841266
+    },
+    "3EB070DE7F6A8A6A54F8B7": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m239/AQMKl4Kl791YMjlznZBbeXCgDoTNJf66i_4TvSBRToVhrjPVKMQ5r-3hH1jT6ztl9S6NHz0tRFRzqSHVqcRfrI7NKtBqtpdPOQzluB8e1g?ccb=9-4&oh=01_Q5Aa5QEC5JsnigZ834H1tlsgqDY53iwlyayFkAb6En4yYofdCg&oe=6AA691D0&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* nenel\n🆙 *Level:* 2 (270/1000 XP)\n❤️ *Darah:* 49/100\n💰 *Saldo:* Rp 1,100,000\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.0\n🛡️ Armor: Lv.0\n⛏️ Pickaxe: Lv.0\n🎣 Fishingrod: Lv.0\n🐾 Pet: Tidak ada\n\n*───「 STORAGE 」───*\n💎 Diamond: 0\n⛓️ Iron: 16\n✨ Gold: 3\n🪵 Wood: 40\n🪨 Stone: 8\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 2\n🐠 Nila: 0\n🦈 Hiu: 0\n🐡 Bawal: 0\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
+          "fileSha256": "PIvuI9UQf01Tu3q+ITMARyrixK9Sf2vXi2jdOHUr0as=",
+          "fileLength": "14027",
+          "height": 405,
+          "width": 720,
+          "mediaKey": "w/uf90MpE0r64yyJiLSRpyDOblhJDHl+j7PJxYJKsUg=",
+          "fileEncSha256": "U/FvVRkSO1zIZSwdwdDT23T4sO2GtzxVKi+Z5zD74GQ=",
+          "directPath": "/o1/v/t24/f2/m239/AQMKl4Kl791YMjlznZBbeXCgDoTNJf66i_4TvSBRToVhrjPVKMQ5r-3hH1jT6ztl9S6NHz0tRFRzqSHVqcRfrI7NKtBqtpdPOQzluB8e1g?ccb=9-4&oh=01_Q5Aa5QEC5JsnigZ834H1tlsgqDY53iwlyayFkAb6En4yYofdCg&oe=6AA691D0&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786719884",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAJBAAAgIBAwMFAQAAAAAAAAAAAQIAAxEEEiEFEzIUIjFBYaH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8Ab1TN1u+ujTUd/Tm+p7grhc7lGCdykcgjGZqqk3XTWWU951D1WB0BbGGwQP4TAu6G9r6Be85sZWZVsPzYgPtb9yMcx1T4xT0+rTaUen09gAzuWrfnaDzwPofkbVeMDnKpcNPTY256a2Y/bKCYQgbKKKks3pUitjGQoBjGrxhCB//Z",
+          "contextInfo": {
+            "stanzaId": "A5F83D7A77C4A3404D0911067BE45B8B",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".inv",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "tBoZTK+7hjC/F92zA6PHsDHTQM0wp/PakkQ8IPf8q+g="
+        }
+      },
+      "time": 1786719885133
+    },
+    "3EB065DA26AA182468B480": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* nathan 'Sosiologi B\n🆙 *Level:* 36 (17450/18000 XP)\n❤️ *Darah:* 0/160\n💰 *Saldo:* Rp 12,967,408\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.4\n🛡️ Armor: Lv.3\n⛏️ Pickaxe: Lv.4\n🎣 Fishingrod: Lv.4\n🐾 Pet: NAGA (Lv.3)\n\n*───「 STORAGE 」───*\n💎 Diamond: 1905\n⛓️ Iron: 62\n✨ Gold: 6688\n🪵 Wood: 27\n🪨 Stone: 5801\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 9\n🐠 Nila: 12\n🦈 Hiu: 2\n🐡 Bawal: 4\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
+          "contextInfo": {
+            "stanzaId": "AC16DD6F4CADE7699E5056311162ABAF",
+            "participant": "203572977336483@lid",
+            "quotedMessage": {
+              "conversation": ".inv"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "916aOMKnAJeGRoQyChLvrxU3QqakevUN9cpBfPvJ9wM="
+        }
+      },
+      "time": 1786719898545
+    },
+    "3EB09DB441CC8ED85E984B": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "❌ Uang target kurang! Punya Rp 0",
+          "contextInfo": {
+            "stanzaId": "AC5CA5356AE59E7B7E7ED80D7A50C863",
+            "participant": "272103643332690@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".Jambak @226804522590211",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "vXZo4HZcAXqOOD/JA2eC5Hjbx/oHn6jPS/1At+oG6Fs="
+        }
+      },
+      "time": 1786719925439
+    },
+    "3EB0E17E792669AE954860": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m237/AQM-ulNoqRDaAdkv8qtWypvoCXBpJgnnlpr3OCuKUDjZRnVuZxjJd7OMTcWSv-91wfbBgKOtU0BYCKRoVochtVxFzEBNvXGVEHi5gt8Y9A?ccb=9-4&oh=01_Q5Aa5QH6MwuH6rAKM7aWEypgThY-dtBSlnJaDAUo0qZdCNU-RQ&oe=6AA683BF&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "乂 *U S E R - P R O F I L E* 乂\n\n◈ *Nama* : Nelson\n◈ *Umur* : 20 Tahun\n◈ *Uang Cash* : Rp 1.116.200\n◈ *Uang Bank* : Rp 0\n◈ *Pasangan* : 💔 Jomblo\n◈ *Number* : @16196267018\n◈ *SN Key* : 8823c03245689de8b8cabc1a4a46b146\n\n『 REGISTERED : ✅ 』",
+          "fileSha256": "hLH2lYyKdsSg8nD28oApAi3JgTKosfQSMS3E04je338=",
+          "fileLength": "52456",
+          "height": 424,
+          "width": 734,
+          "mediaKey": "LtkRY1Ay65FKM+hh7Rc+zMciLCirr2kgBqmT+PE0oJk=",
+          "fileEncSha256": "sS531XdCGyZ6dJ5KYAbtSIwXpsT+ZP1NwYuR2y6oOdk=",
+          "directPath": "/o1/v/t24/f2/m237/AQM-ulNoqRDaAdkv8qtWypvoCXBpJgnnlpr3OCuKUDjZRnVuZxjJd7OMTcWSv-91wfbBgKOtU0BYCKRoVochtVxFzEBNvXGVEHi5gt8Y9A?ccb=9-4&oh=01_Q5Aa5QH6MwuH6rAKM7aWEypgThY-dtBSlnJaDAUo0qZdCNU-RQ&oe=6AA683BF&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786719932",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGQAAAwADAAAAAAAAAAAAAAAAAAMEAgUG/8QAIxAAAgICAQIHAAAAAAAAAAAAAQIAAxEhEnHwExQxQVGRkv/EABYBAQEBAAAAAAAAAAAAAAAAAAIBA//EABgRAAIDAAAAAAAAAAAAAAAAAAABERJR/9oADAMBAAIRAxEAPwDkvHtIyCPzH1WXuVyw2caUSRXON995jK72QqQM4OZYWDs9NlW9oyCQw+eIiLXsXOx9RPmm44Gj1inucjZhqi2ek49feNrsZQADqEI2FFNd9gAXlroJhY7bGYQmcDln/9k=",
+          "contextInfo": {
+            "stanzaId": "AC8D0AB42689B3FE9F201F647D1D42FD",
+            "participant": "272103643332690@lid",
+            "quotedMessage": {
+              "conversation": ".me"
+            },
+            "mentionedJid": [
+              "16196267018@s.whatsapp.net"
+            ]
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "ntafera17NhdJe+aEPIBVATFG7xTZqd36ZtluIq6FKg="
+        }
+      },
+      "time": 1786719933067
+    },
+    "3EB0F33CF768DFE2506F02": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m239/AQMNs7-AAICVawU5Z4j7OB2ZY5dTOuhmyvx86-T-sSphga127YMLuPfNvYJ8lwjF7iGaBjmna_gGC85iIyv2rHJiQX5onPEi8m1-XP4bzQ?ccb=9-4&oh=01_Q5Aa5QGzxIczsNUlcEP9oD0Pk0OsSHp_u0t13IP3DFpIYBepew&oe=6AA698CD&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* Nelson\n🆙 *Level:* 1 (194/500 XP)\n❤️ *Darah:* 65/100\n💰 *Saldo:* Rp 1,116,200\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.0\n🛡️ Armor: Lv.0\n⛏️ Pickaxe: Lv.0\n🎣 Fishingrod: Lv.0\n🐾 Pet: Tidak ada\n\n*───「 STORAGE 」───*\n💎 Diamond: 0\n⛓️ Iron: 9\n✨ Gold: 0\n🪵 Wood: 16\n🪨 Stone: 0\n_Lihat lengkap: *.tas*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
+          "fileSha256": "UswS/yWGvwGOqbti638F/z1OtPru0sbJRPNqq0h41ew=",
+          "fileLength": "17119",
+          "height": 405,
+          "width": 720,
+          "mediaKey": "ouv8pQDqg/qMsyLujXWAOAzKOANF8SihsyqnA0O4l/8=",
+          "fileEncSha256": "pXShH/xSTtmxtsTTW1wd+fQVZddXP+O1K3icxfo5+aE=",
+          "directPath": "/o1/v/t24/f2/m239/AQMNs7-AAICVawU5Z4j7OB2ZY5dTOuhmyvx86-T-sSphga127YMLuPfNvYJ8lwjF7iGaBjmna_gGC85iIyv2rHJiQX5onPEi8m1-XP4bzQ?ccb=9-4&oh=01_Q5Aa5QGzxIczsNUlcEP9oD0Pk0OsSHp_u0t13IP3DFpIYBepew&oe=6AA698CD&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786719948",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUBAwQG/8QAJRAAAQQCAAUFAQAAAAAAAAAAAQACAxEEIQUSEzGRFCIyUaHR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOPgn6jORx2P1WcLYPUuYYeoHOLRZraWscWuBC24WQWZbC11bs7rdUg2cRxRPHHJFiCCRxrlvv5Sl2tfSbcQz5HvDo/bQIvv4/qUEoKwpb8ghCDTkk1Hs9lQUIQf/9k=",
+          "contextInfo": {
+            "stanzaId": "AC53E664BF000CC77FCF72EBF6CE5BC9",
+            "participant": "272103643332690@lid",
+            "quotedMessage": {
+              "conversation": ".inv"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "oxsC/iI2rGj51xM0BV42jLU2nmfygKdcEftHlODtCSA="
+        }
+      },
+      "time": 1786719948331
+    },
+    "3EB0945120CF0F32BE7A65": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "╭──「 🐾 ZETA PET CENTER 」──╮\n\n⏰ ☀️ Siang | 17:05 WIB\n💰 Saldo : Rp 12,967,408\n📦 Total Pet : 1\n\n🐾 SEMUA PELIHARAAN KAMU 🐾\n🐉 *NAGA*\n 📈 Level : 3\n 📊 Exp : 0/100\n 🔋 Energy : `██████████` 100%\n 😊 Happy : `███████░░░` 75%\n 🧼 Kebersihan : `██████████` 100%\n └ Status : ✅ Bersih\n\n━━━━━━━━━━━\n📌.pet shop | adopt | release\n📌.pet feed | walk | play | train | rest | clean | battle",
+          "contextInfo": {
+            "stanzaId": "ACFBC24C84FFDCC1F0B97132852AC2FA",
+            "participant": "203572977336483@lid",
+            "quotedMessage": {
+              "conversation": ".pet"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "P7KYyL0zMzcW2jq5LBXep42e1z+wGOyyEQfDrU0I6kk="
+        }
+      },
+      "time": 1786719952163
+    },
+    "3EB07A9C723F95AF8F56E8": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* Mina\n🆙 *Level:* 79 (37325/39500 XP)\n❤️ *Darah:* 190/240\n💰 *Saldo:* Rp 155,345\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.8\n🛡️ Armor: Lv.7\n⛏️ Pickaxe: Lv.6\n🎣 Fishingrod: Lv.6\n🐾 Pet: NAGA (Lv.12)\n\n*───「 STORAGE 」───*\n💎 Diamond: 2136\n⛓️ Iron: 812\n✨ Gold: 7583\n🪵 Wood: 860\n🪨 Stone: 10703\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 18\n🐠 Nila: 10\n🦈 Hiu: 20\n🐡 Bawal: 8\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
+          "contextInfo": {
+            "stanzaId": "AC79F4A517C8CBE05EC263A66CA071ED",
+            "participant": "160859846357027@lid",
+            "quotedMessage": {
+              "conversation": ".inv"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "TjvrVV1w/PvcZYyJp5yA7YyADWe7nX7DPwJErL+nlfo="
+        }
+      },
+      "time": 1786719974932
+    },
+    "3EB0CC2994D3D546016DF6": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQMaX9ijw4bhCeyFsP-gWstFMAQtad_Gb3LVwkw6EB3PJVwzoBbEYXylPELjE4fKCWAsK3RP4tLbOEuQp-PWAQhHF5CqVPriGyysq3-Sdw?ccb=9-4&oh=01_Q5Aa5QHUthS7OJZqoy2fT7u9w94G4HTsADDD2fs8mjhStIZ0pQ&oe=6AA6848D&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "*───「 RPG INVENTORY 」───*\n\n👤 *Pemain:* Eza\n🆙 *Level:* 2 (58/1000 XP)\n❤️ *Darah:* 198/200\n💰 *Saldo:* Rp 230,000\n\n*───「 EQUIPMENT 」───*\n🗡️ Sword: Lv.7\n🛡️ Armor: Lv.5\n⛏️ Pickaxe: Lv.4\n🎣 Fishingrod: Lv.5\n🐾 Pet: NAGA (Lv.9)\n\n*───「 STORAGE 」───*\n💎 Diamond: 1769\n⛓️ Iron: 510\n✨ Gold: 5701\n🪵 Wood: 271\n🪨 Stone: 11096\n_Lihat lengkap: *.tas*_\n\n*───「 FISH TANK 」───*\n🐟 Lele: 11\n🐠 Nila: 8\n🦈 Hiu: 3\n🐡 Bawal: 6\n_Lihat lengkap: *.aquarium*_\n\n*───「 GARDEN HARVEST 」───*\n🌾 Padi: 0\n🌽 Jagung: 0\n🍉 Semangka: 0\n🍊 Jeruk: 0\n🥭 Mangga: 0\n🍎 Apel: 0\n🌳 Durian: 0\n⚜️ Emas: 0\n_Lihat lengkap: *.kebun*_\n\n*───「 INVENTORY LAINNYA 」───*\n📦 Cek Semua: *.gudang*\n⛏️ Cek Ore: *.tas*\n🍖 Cek Makanan: *.makan*\n🐾 Cek Pet: *.pet*\n🐠 Cek Aquarium: *.aquarium*\n🌾 Cek Kebun: *.kebun*",
+          "fileSha256": "fdgUcomYEbZ3mkOPQb8LQF/hMqm/VhaSDwbcTMzF28w=",
+          "fileLength": "23761",
+          "height": 405,
+          "width": 720,
+          "mediaKey": "zQDvkKnX5roSiEXqRudSJtEzA5o9yEhPmU48mWfcrwM=",
+          "fileEncSha256": "EiaWDCL75+nmwgYuOGApfCxvU0XdvQA20Pq52a9oVew=",
+          "directPath": "/o1/v/t24/f2/m233/AQMaX9ijw4bhCeyFsP-gWstFMAQtad_Gb3LVwkw6EB3PJVwzoBbEYXylPELjE4fKCWAsK3RP4tLbOEuQp-PWAQhHF5CqVPriGyysq3-Sdw?ccb=9-4&oh=01_Q5Aa5QHUthS7OJZqoy2fT7u9w94G4HTsADDD2fs8mjhStIZ0pQ&oe=6AA6848D&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786720009",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAUGAv/EACcQAAIBAwQABQUAAAAAAAAAAAECAwAEEQUSITEGE0FRYRQyQmKh/8QAFwEBAAMAAAAAAAAAAAAAAAAAAwABAv/EABoRAAMAAwEAAAAAAAAAAAAAAAABAhEhMjH/2gAMAwEAAhEDEQA/AJ63jjkljjkmREdgGbPQ96u7lNP0TRltbRl3zgHf2zD1Y0ki8D3iHM9zEqYOdnJ/tatbO3Zw13cvIYCoUsduVHQ+BUplysseyNCzx2TMjuIiz/GcYqT1rTW0m8int2Ko53KR+LCmdzZyw3jaiLoLE2WKA8n9c08sNPjv7K1N+nmtEQ4B6Jx6+9GtPRqlolfEt1cfUKvny4Jbjeax4aJk1CfeS2Yuc855oopHyHPaHDjdfKjcoF+09diqixAECADAooo59Fs//9k=",
+          "contextInfo": {
+            "stanzaId": "AC803345FFC605A4AD47F5E920875BB4",
+            "participant": "237507463651454@lid",
+            "quotedMessage": {
+              "conversation": ".inv"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "6lvVhN0oqxfM6hshGrRkTrcSknP5AY/qeWQChcPXzys="
+        }
+      },
+      "time": 1786720010724
     }
   },
   "sticker": {},
