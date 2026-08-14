@@ -194,7 +194,13 @@ handler.before = async function (m, { conn }) {
     if (!m.text) return
     let txt = m.text.toLowerCase().trim()
     if (txt !== 'terima' && txt !== 'tolak') return
-    if (!m.quoted) return
+    
+    // TRACE START
+    m.reply(`[DEBUG-ARENA] Handler rpg-arena dieksekusi!\nSender: ${m.sender}\nTxt: ${txt}`)
+    
+    if (!m.quoted) {
+        return m.reply('[DEBUG] Kamu mengetik "terima" tapi tidak mereply/membalas pesan apapun. Harus reply pesan arenanya!')
+    }
 
     let cap = m.quoted.text || m.quoted.caption || ''
     let isJambak = cap.includes('JAMBAK')
@@ -202,7 +208,6 @@ handler.before = async function (m, { conn }) {
     
     // DEBUG:
     if (!isJambak && !isPanco) {
-       // Only reply debug if they explicitly replied to something with terima/tolak
        return m.reply(`[DEBUG] No Jambak/Panco found in cap.\n\nCap content:\n${cap}`)
     }
 
@@ -268,6 +273,10 @@ handler.before = async function (m, { conn }) {
 
     delete wdb.temp.arena[arenaKey]
     saveDB(wdb)
+    
+    // TRACE SUCCESS
+    m.reply(`[DEBUG-ARENA] Mengirim hasil pertarungan... (Jika pesan setelah ini tidak muncul, berarti conn.sendMessage bermasalah!)`)
+    
     conn.sendMessage(m.chat, { text: resCap, mentions: [arena.penantang, arena.target] }, { quoted: m })
     return true
 }
