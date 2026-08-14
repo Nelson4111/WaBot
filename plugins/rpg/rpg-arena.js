@@ -16,12 +16,14 @@ function getTitlePanco(menang) {
   return '🥊 Pemula'
 }
 
-// fungsi buat cari penantang dari tag atau reply
-function getPenantang(m, args) {
-  let penantang = m.mentionedJid[0] || m.quoted?.sender
-  // kalau ga tag dan ga reply, coba cari dari args[1]
-  if(!penantang && args[1]) penantang = args[1].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
-  return penantang
+// fungsi buat cari pengguna (bisa tag, reply, atau ketik nomor)
+function getTarget(m, args, argIndex = 0) {
+  let target = m.mentionedJid[0] || m.quoted?.sender
+  if (!target && args[argIndex]) {
+      let num = args[argIndex].replace(/[^0-9]/g, '')
+      if (num.length > 5) target = num + '@s.whatsapp.net'
+  }
+  return target
 }
 
 let handler = async (m, { conn, text, usedPrefix, command, args }) => {
@@ -36,8 +38,8 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
   // 1. JAMBAK - BUAT NANTANG
   if (command === 'jambak') {
-    let target = m.mentionedJid[0] || m.quoted?.sender
-    if(!target) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
+    let target = getTarget(m, args, 0)
+    if(!target) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000* atau *${usedPrefix}jambak 628xxx 50000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
@@ -67,13 +69,13 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
   }
 
   // 2. PANCO - BUAT NANTANG
   if (command === 'panco') {
-    let target = m.mentionedJid[0] || m.quoted?.sender
-    if(!target) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
+    let target = getTarget(m, args, 0)
+    if(!target) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000* atau *${usedPrefix}panco 628xxx 100000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
@@ -103,14 +105,14 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
   }
 
   // 3. TERIMA - BISA TAG ATAU REPLY
   if (command === 'jambakterima' || command === 'pancoterima') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getPenantang(m, args)
-    if(!penantangTag) return m.reply(`❌ Tag atau reply pesan ajakan nya!\nContoh: *.${command} @penantang*`)
+    let penantangTag = getTarget(m, args, 0)
+    if(!penantangTag) return m.reply(`❌ Tag, ketik nomor, atau reply pesan ajakan nya!\nContoh: *.${command} @penantang*`)
 
     let arenaKey = Object.keys(wdb.temp.arena).find(k =>
       wdb.temp.arena[k].type === type &&
@@ -153,14 +155,14 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     delete wdb.temp.arena[arenaKey]
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [arena.penantang, arena.target])
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
   }
 
   // 4. TOLAK - BISA TAG ATAU REPLY
   if (command === 'jambaktolak' || command === 'pancotolak') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getPenantang(m, args)
-    if(!penantangTag) return m.reply(`❌ Tag atau reply pesan ajakan nya!\nContoh: *.${command} @penantang*`)
+    let penantangTag = getTarget(m, args, 0)
+    if(!penantangTag) return m.reply(`❌ Tag, ketik nomor, atau reply pesan ajakan nya!\nContoh: *.${command} @penantang*`)
 
     let arenaKey = Object.keys(wdb.temp.arena).find(k =>
       wdb.temp.arena[k].type === type &&
