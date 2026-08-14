@@ -13,7 +13,7 @@ function isNonAIMessage(m) {
         'tebak', 'fishing', 'mancing', 'asah otak', 'profile', 'user · profile',
         'welcome', 'goodbye', 'cak lontong', 'family 100', 'susun kata',
         'timeout', 'bonus:', 'hadiah:', 'ketik #', 'ketik .', 'waktu habis',
-        'level pancingan', 'hasil cerdas cermat', 'registered :'
+        'level pancingan', 'hasil cerdas cermat', 'registered :', 'menfess'
     ];
 
     if (nonAiKeywords.some(k => text.includes(k))) return true;
@@ -62,6 +62,12 @@ handler.all = async function (m) {
         // Di Private Chat: Abaikan jika pesan diawali simbol command resmi (seperti . / ! # $)
         let isSymbolCommand = /^[\.\/!#\$%=>\+\-_~&\*]/.test(text);
         if (isSymbolCommand) return;
+        
+        // Di PC: Jangan respon AI jika user sedang dalam sesi Menfess
+        if (this.menfess) {
+            let mf = Object.values(this.menfess).find(v => v.status === false && v.penerima == m.sender);
+            if (mf) return;
+        }
         
         // Di PC: Jika pesan adalah reply, HANYA respon jika yang di-reply adalah pesan AI (bukan game/soal)
         if (m.quoted) {
