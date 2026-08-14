@@ -39,7 +39,7 @@ handler.before = async function (m, { conn }) {
         if (jid.startsWith(botNumber)) continue;
 
         const taggedUser = DB[jid];
-        if (!taggedUser || taggedUser.afk < 0) continue;
+        if (!taggedUser || !(taggedUser.afk > -1)) continue;
 
         const duration = formatDuration(Date.now() - taggedUser.afk);
         const reason = taggedUser.afkReason || 'Tanpa Alasan';
