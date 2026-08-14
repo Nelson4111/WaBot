@@ -16,24 +16,31 @@ export async function runGitBackup() {
   console.log(`[GitHub Backup] Memulai auto backup (${timestamp})...`)
 
   try {
+    // 0. Set Git Identity (Sangat penting untuk server panel)
+    await execPromise('git config user.email "bot@nelbotz.com"').catch(() => {})
+    await execPromise('git config user.name "NelBotz AutoBackup"').catch(() => {})
+
     // 1. Git add khusus database saja
     await execPromise('git add database.json')
     
-    // 2. Git commit (abaikan jika tidak ada perubahan baru)
-    try {
-      await execPromise(`git commit -m "${commitMsg}"`)
-    } catch (e) {
-      const out = (e.stdout || '') + (e.stderr || '')
-      if (out.includes('nothing to commit') || out.includes('clean')) {
-        console.log('[GitHub Backup] Tidak ada perubahan data untuk di-commit.')
-        return { success: true, message: 'Tidak ada perubahan database baru.' }
-      }
+    // Cek file apa saja yang akan di-commit
+    const { stdout: diffOutput } = await execPromise('git diff --name-only --cached')
+    const filesToPush = diffOutput.trim().split('\n').filter(f => f).join(', ')
+
+    if (!filesToPush) {
+        console.log('[GitHub Backup] Tidak ada perubahan data untuk di-commit (clean).')
+        return { success: true, message: 'Tidak ada perubahan file baru untuk dipush.' }
     }
+
+    console.log(`[GitHub Backup] File yang akan di-push: ${filesToPush}`)
+
+    // 2. Git commit
+    await execPromise(`git commit -m "${commitMsg}"`)
 
     // 3. Git push ke origin main secara 100% non-interaktif
     const { stdout, stderr } = await execPromise('git push origin main')
-    console.log('[GitHub Backup] Backup berhasil dipush ke GitHub!')
-    return { success: true, message: `Backup berhasil dipush ke GitHub (${timestamp})`, stdout, stderr }
+    console.log(`[GitHub Backup] Backup berhasil dipush ke GitHub! (File: ${filesToPush})`)
+    return { success: true, message: `Backup berhasil dipush ke GitHub (${timestamp})\n📝 File yang di-push: ${filesToPush}`, stdout, stderr }
   } catch (error) {
     console.error('[GitHub Backup] Gagal:', error.message)
     return { success: false, message: error.message }
