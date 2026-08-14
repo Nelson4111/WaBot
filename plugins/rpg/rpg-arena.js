@@ -67,12 +67,12 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitleJambak(userTarget.stats.jambakMenang)}\n│ Lv.${userTarget.level} | W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ *.jambakterima @${m.sender.split('@')[0]}* → Terima\n│ *.jambaktolak @${m.sender.split('@')[0]}* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n`
+    cap += `│\n│ *.jambakterima* → Terima\n│ *.jambaktolak* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
   }
 
   // 2. PANCO - BUAT NANTANG
@@ -109,7 +109,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
   }
 
   // 3. TERIMA - BISA AUTO-DETECT ATAU REPLY
@@ -162,7 +162,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     delete wdb.temp.arena[arenaKey]
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [arena.penantang, arena.target])
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
   }
 
   // 4. TOLAK - BISA AUTO-DETECT ATAU REPLY
