@@ -62,8 +62,8 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         let msg = `💍 *LAMARAN PERNIKAHAN* 💍\n\n`
         msg += `Hai @${target.split('@')[0]},\n`
         msg += `@${sender.split('@')[0]} ingin melamarmu menjadi pasangannya! 💕\n\n`
-        msg += `Ketik *${usedPrefix}terima* untuk menerima lamaran.\n`
-        msg += `Ketik *${usedPrefix}tolak* untuk menolak lamaran.\n\n`
+        msg += `Balas (reply) pesan ini dengan tulisan *terima* untuk menerima lamaran.\n`
+        msg += `Atau balas *tolak* untuk menolak lamaran.\n\n`
         msg += `⏱️ _Lamaran ini berlaku selama 60 detik._`
 
         return conn.sendMessage(m.chat, {
@@ -74,6 +74,8 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
     // 2. TERIMA LAMARAN
     if (inputCmd === 'terima') {
+        if (!m.quoted || !m.quoted.fromMe || !m.quoted.text?.includes('MELAMAR')) return // Abaikan jika bukan reply pesan lamaran
+
         let prop = proposals[sender]
         if (!prop || (Date.now() - prop.time > 60000)) {
             delete proposals[sender]
@@ -107,6 +109,8 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
     // 3. TOLAK LAMARAN
     if (inputCmd === 'tolak') {
+        if (!m.quoted || !m.quoted.fromMe || !m.quoted.text?.includes('MELAMAR')) return // Abaikan jika bukan reply pesan lamaran
+        
         let prop = proposals[sender]
         if (!prop) return m.reply('❌ Tidak ada lamaran yang ditujukan padamu.')
         let fromJid = prop.from
@@ -413,6 +417,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
 handler.help = ['lamar @user', 'terima', 'tolak', 'cerai @user', 'pasangan', 'kencan', 'belicincin', 'hadiah @user <jumlah>', 'kartunikah']
 handler.tags = ['pasangan']
+handler.customPrefix = /^(terima|tolak)$/i
 handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|istri|suami|kencan|belicincin|cincin|hadiah|kartunikah|bukunikah)$/i
 
 export default handler

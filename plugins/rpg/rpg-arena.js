@@ -38,8 +38,18 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   initStats(user) // auto fix
 
+  let inputCmd = command || m.text.toLowerCase().trim()
+  
+  if (inputCmd === 'terima' || inputCmd === 'tolak') {
+      if (!m.quoted || !m.quoted.fromMe) return // Abaikan jika bukan reply
+      let cap = m.quoted.text || m.quoted.caption || ''
+      if (cap.includes('JAMBAK')) inputCmd = 'jambak' + inputCmd
+      else if (cap.includes('PANCO')) inputCmd = 'panco' + inputCmd
+      else return // Bukan reply dari game arena, biarkan plugin lain yang handle
+  }
+
   // 1. JAMBAK - BUAT NANTANG
-  if (command === 'jambak') {
+  if (inputCmd === 'jambak') {
     let target = m.mentionedJid[0] || m.quoted?.sender
     if(!target) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
@@ -67,7 +77,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitleJambak(userTarget.stats.jambakMenang)}\n│ Lv.${userTarget.level} | W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ *.jambakterima* → Terima\n│ *.jambaktolak* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n`
+    cap += `│\n│ Balas pesan ini degan tulisan *terima* atau *tolak*\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -76,7 +86,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   }
 
   // 2. PANCO - BUAT NANTANG
-  if (command === 'panco') {
+  if (inputCmd === 'panco') {
     let target = m.mentionedJid[0] || m.quoted?.sender
     if(!target) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
@@ -104,7 +114,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitlePanco(userTarget.stats.pancoMenang)}\n│ Lv.${userTarget.level} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ *.pancoterima* → Terima\n│ *.pancotolak* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n`
+    cap += `│\n│ Balas pesan ini degan tulisan *terima* atau *tolak*\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -113,8 +123,8 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   }
 
   // 3. TERIMA - BISA AUTO-DETECT ATAU REPLY
-  if (command === 'jambakterima' || command === 'pancoterima') {
-    let type = command.includes('jambak')? 'jambak' : 'panco'
+  if (inputCmd === 'jambakterima' || inputCmd === 'pancoterima') {
+    let type = inputCmd.includes('jambak')? 'jambak' : 'panco'
     let penantangTag = getPenantang(m, args)
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
@@ -166,8 +176,8 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   }
 
   // 4. TOLAK - BISA AUTO-DETECT ATAU REPLY
-  if (command === 'jambaktolak' || command === 'pancotolak') {
-    let type = command.includes('jambak')? 'jambak' : 'panco'
+  if (inputCmd === 'jambaktolak' || inputCmd === 'pancotolak') {
+    let type = inputCmd.includes('jambak')? 'jambak' : 'panco'
     let penantangTag = getPenantang(m, args)
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
@@ -186,8 +196,9 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   }
 }
 
-handler.help = ['jambak @tag [taruhan]', 'jambakterima @tag/reply', 'jambaktolak @tag/reply', 'panco @tag [taruhan]', 'pancoterima @tag/reply', 'pancotolak @tag/reply']
+handler.help = ['jambak @tag [taruhan]', 'panco @tag [taruhan]']
 handler.tags = ['rpg']
+handler.customPrefix = /^(terima|tolak)$/i
 handler.command = /^(jambak|jambakterima|jambaktolak|panco|pancoterima|pancotolak)$/i
 handler.group = true
 export default handler
