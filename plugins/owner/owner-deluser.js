@@ -1,44 +1,66 @@
 let handler = async (m, { conn, text }) => {
-    function no(number) {
-        return number.replace(/\s/g, '').replace(/([@+-])/g, '');
+    let usersToDelete = []
+
+    // 1. Ambil dari tag (mention)
+    if (m.mentionedJid && m.mentionedJid.length > 0) {
+        usersToDelete.push(...m.mentionedJid)
     }
 
-    let numbers = text.split(/\s+/).map(no);
-
-    if (!numbers.length && !m.quoted) {
-        return conn.reply(m.chat, `*❏ DELETE USER*\n\nTag user, tulis nomor, atau balas member yang ingin di RESET`, m);
+    // 2. Ambil dari pesan yang di-reply (quoted)
+    if (m.quoted) {
+        usersToDelete.push(m.quoted.sender)
     }
 
-    let deletedUsers = [];
-
-    for (let i = 0; i < numbers.length; i++) {
-        let number = numbers[i];
-
-        if (isNaN(number) || number.length > 15) {
-            conn.reply(m.chat, `*❏ DELETE USER*\n\nNomor '${number}' tidak valid!`, m);
-            continue;
+    // 3. Ambil dari nomor yang diketik manual
+    if (text) {
+        let numbers = text.replace(/[^0-9]/g, ' ').split(/\s+/).filter(v => v.length > 5)
+        for (let num of numbers) {
+            usersToDelete.push(num + '@s.whatsapp.net')
         }
+    }
 
-        let user = number + '@s.whatsapp.net';
-        let groupMetadata = m.isGroup ? await conn.groupMetadata(m.chat) : {};
-        let participants = m.isGroup ? groupMetadata.participants : [];
-        let users = m.isGroup ? participants.find(u => (u.phoneNumber || u.jid || u.id) == user) : {};
+    // Bersihkan duplikat
+    usersToDelete = [...new Set(usersToDelete)]
 
-        if (users) {
-            delete global.db.data.users[user];
-            deletedUsers.push(`@${number}`);
+    if (usersToDelete.length === 0) {
+        return conn.reply(m.chat, `*❏ DELETE USER*\n\nTag user, tulis nomor, atau balas chat member yang ingin dihapus datanya dari database.`, m)
+    }
+
+    let deletedList = []
+    let notFoundList = []
+
+    for (let user of usersToDelete) {
+        let userData = global.db.data.users[user]
+        
+        if (userData) {
+            // Cek ringkasan data yang dihapus
+            let info = []
+            if (userData.level !== undefined) info.push(`Lvl: ${userData.level}`)
+            if (userData.money !== undefined) info.push(`Uang: ${userData.money}`)
+            if (userData.limit !== undefined) info.push(`Limit: ${userData.limit}`)
+            
+            let dataSummary = info.length > 0 ? `(${info.join(', ')})` : `(Menghapus ${Object.keys(userData).length} record data)`
+            
+            delete global.db.data.users[user]
+            deletedList.push(`- @${user.split('@')[0]} ${dataSummary}`)
         } else {
-            conn.reply(m.chat, `*❏ DELETE USER*\n\nUser dengan nomor @${number} tidak ditemukan di grup ini!`, m);
+            notFoundList.push(`- @${user.split('@')[0]} (Tidak ada di database)`)
         }
     }
 
-    if (deletedUsers.length > 0) {
-        conn.reply(m.chat, `*❏ DELETE USER*\n\nBerhasil menghapus ${deletedUsers.join(', ')} dari *DATABASE*`, null, {
-            contextInfo: {
-                mentionedJid: deletedUsers.map(u => u + '@s.whatsapp.net')
-            }
-        });
+    let replyMsg = `*❏ HASIL DELETE USER*\n\n`
+    if (deletedList.length > 0) {
+        replyMsg += `✅ *Berhasil dihapus:*\n${deletedList.join('\n')}\n\n`
     }
+    if (notFoundList.length > 0) {
+        replyMsg += `❌ *Gagal (Data Kosong):*\n${notFoundList.join('\n')}`
+    }
+
+    conn.reply(m.chat, replyMsg.trim(), m, { 
+        contextInfo: { 
+            mentionedJid: usersToDelete 
+        } 
+    })
 }
 
 handler.help = ['deleteuser']
