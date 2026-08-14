@@ -66,6 +66,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
         let optKey = type.replace('only', 'only').replace('private', 'pc').replace('group', 'gc').replace('status', 'sw')
         global.opts[optKey] = isEnable
       }
+      
+      if (!global.db.data.settings['bot']) global.db.data.settings['bot'] = {}
+      global.db.data.settings['bot'][type === 'public' || type === 'self' ? 'self' : type.replace('only', 'only').replace('private', 'pc').replace('group', 'gc').replace('status', 'sw')] = global.opts.self ?? isEnable
       break
 
     default:

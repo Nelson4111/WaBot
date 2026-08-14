@@ -370,7 +370,9 @@ if (!opts['test']) {
         let s = Math.floor((uptime % 60000) / 1000).toString().padStart(2, '0')
         let status = `I am NelBotz | Aktif Selama ${h}:${m}:${s} ⏳`
         await global.conn.updateProfileStatus(status)
-      } catch (e) {}
+      } catch (e) {
+        console.error('[AUTOBIO ERROR]', e)
+      }
     }
   }, 60000) // Update every 1 minute
 }
@@ -554,6 +556,10 @@ async function connectionUpdate(_0x7a1f) {
   if (global.db.data == null) {
     await global.loadDatabase()
   }
+  
+  // Persist global options from DB
+  if (!global.db.data.settings['bot']) global.db.data.settings['bot'] = {}
+  Object.assign(global.opts, global.db.data.settings['bot'])
 process.on('uncaughtException', console.error)
 // let strQuot = /(["'])(?:(?=(\\?))\2.)*?\1/
 
