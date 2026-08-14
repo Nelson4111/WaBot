@@ -367,14 +367,13 @@ if (!opts['test']) {
         let uptime = process.uptime() * 1000
         let h = Math.floor(uptime / 3600000).toString().padStart(2, '0')
         let m = Math.floor((uptime % 3600000) / 60000).toString().padStart(2, '0')
-        let s = Math.floor((uptime % 60000) / 1000).toString().padStart(2, '0')
-        let status = `I am NelBotz | Aktif Selama ${h}:${m}:${s} ⏳`
+        let status = `I am NelBotz | Aktif Selama ${h} Jam ${m} Menit ⏳`
         await global.conn.updateProfileStatus(status)
       } catch (e) {
         console.error('[AUTOBIO ERROR]', e)
       }
     }
-  }, 60000) // Update every 1 minute
+  }, 300000) // Update every 5 minutes to prevent rate limit
 }
 
 let isExiting = false;

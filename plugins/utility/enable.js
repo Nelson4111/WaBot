@@ -68,7 +68,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       }
       
       if (!global.db.data.settings['bot']) global.db.data.settings['bot'] = {}
-      global.db.data.settings['bot'][type === 'public' || type === 'self' ? 'self' : type.replace('only', 'only').replace('private', 'pc').replace('group', 'gc').replace('status', 'sw')] = global.opts.self ?? isEnable
+      let finalOptKey = type === 'public' || type === 'self' ? 'self' : type.replace('only', 'only').replace('private', 'pc').replace('group', 'gc').replace('status', 'sw')
+      global.db.data.settings['bot'][finalOptKey] = (type === 'public' || type === 'self') ? global.opts.self : isEnable
       break
 
     default:
