@@ -16,14 +16,16 @@ function getTitlePanco(menang) {
   return '🥊 Pemula'
 }
 
-// fungsi buat cari pengguna (bisa tag, reply, atau ketik nomor)
-function getTarget(m, args, argIndex = 0) {
-  let target = m.mentionedJid[0] || m.quoted?.sender
-  if (!target && args[argIndex]) {
-      let num = args[argIndex].replace(/[^0-9]/g, '')
-      if (num.length > 5) target = num + '@s.whatsapp.net'
-  }
-  return target
+// fungsi buat cari penantang dari tag atau reply
+function getPenantang(m, args) {
+  let penantang = m.mentionedJid[0] || m.quoted?.sender
+  if(!penantang && args[1]) penantang = args[1].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+  return penantang
+}
+
+// fungsi auto fix stats biar ga undefined
+function initStats(user) {
+  user.stats = user.stats || { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
 }
 
 let handler = async (m, { conn, text, usedPrefix, command, args }) => {
@@ -34,19 +36,18 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
-  if(!user.stats) user.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
+  initStats(user) // auto fix
 
   // 1. JAMBAK - BUAT NANTANG
   if (command === 'jambak') {
-    let target = getTarget(m, args, 0)
-    if(!target) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000* atau *${usedPrefix}jambak 628xxx 50000*`)
+    let target = m.mentionedJid[0] || m.quoted?.sender
+    if(!target) return m.reply(`❌ Tag cewe yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
     let userTarget = dataTarget.rpg
     if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
-    if(!userTarget.stats) userTarget.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
-
+    initStats(userTarget) // auto fix target
 
     let uangUser = wdb.money[m.sender] || 0
     let uangTarget = wdb.money[target] || 0
@@ -71,19 +72,19 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
   }
 
   // 2. PANCO - BUAT NANTANG
   if (command === 'panco') {
-    let target = getTarget(m, args, 0)
-    if(!target) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000* atau *${usedPrefix}panco 628xxx 100000*`)
+    let target = m.mentionedJid[0] || m.quoted?.sender
+    if(!target) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
     if(target === m.sender) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
     let userTarget = dataTarget.rpg
     if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
-    if(!userTarget.stats) userTarget.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
+    initStats(userTarget) // auto fix target
 
     let uangUser = wdb.money[m.sender] || 0
     let uangTarget = wdb.money[target] || 0
@@ -103,38 +104,36 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitlePanco(userTarget.stats.pancoMenang)}\n│ Lv.${userTarget.level} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ *.pancoterima @${m.sender.split('@')[0]}* → Terima\n│ *.pancotolak @${m.sender.split('@')[0]}* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n`
+    cap += `│\n│ *.pancoterima* → Terima\n│ *.pancotolak* → Tolak\n│ Bisa juga: Reply pesan ajakan\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target])
   }
 
-  // 3. TERIMA - WAJIB REPLY PESAN
+  // 3. TERIMA - BISA AUTO-DETECT ATAU REPLY
   if (command === 'jambakterima' || command === 'pancoterima') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    if(!m.quoted) return m.reply(`❌ Wajib reply pesan ajakan dari penantang!\nBalas pesannya lalu ketik *.${command}*`)
+    let penantangTag = getPenantang(m, args)
+    let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
+    let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
     
-    let penantangTag = m.quoted.sender
-
-    let arenaKey = Object.keys(wdb.temp.arena).find(k =>
-      wdb.temp.arena[k].type === type &&
-      wdb.temp.arena[k].chat === m.chat &&
-      wdb.temp.arena[k].penantang === penantangTag &&
-      wdb.temp.arena[k].target === m.sender
-    )
-    if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} dari orang itu ke kamu`)
+    let arenaKey = Object.keys(wdb.temp.arena).find(k => {
+      let match = wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === m.sender;
+      // Jika ada tag spesifik dan itu bukan bot, pastikan cocok dengan penantang
+      if (penantangTag && !isBot) match = match && wdb.temp.arena[k].penantang === penantangTag;
+      return match;
+    })
+    if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
     let arena = wdb.temp.arena[arenaKey]
     let dataP = getUserRPG(wdb, arena.penantang)
     let dataT = getUserRPG(wdb, arena.target)
     let userP = dataP.rpg
     let userT = dataT.rpg
-    
-    if(!userP.stats) userP.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
-    if(!userT.stats) userT.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
-
+    initStats(userP) // auto fix
+    initStats(userT) // auto fix
 
     let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
     let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
@@ -163,27 +162,27 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     delete wdb.temp.arena[arenaKey]
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [arena.penantang, arena.target])
   }
 
-  // 4. TOLAK - WAJIB REPLY PESAN
+  // 4. TOLAK - BISA AUTO-DETECT ATAU REPLY
   if (command === 'jambaktolak' || command === 'pancotolak') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    if(!m.quoted) return m.reply(`❌ Wajib reply pesan ajakan dari penantang!\nBalas pesannya lalu ketik *.${command}*`)
-    
-    let penantangTag = m.quoted.sender
+    let penantangTag = getPenantang(m, args)
+    let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
+    let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
 
-    let arenaKey = Object.keys(wdb.temp.arena).find(k =>
-      wdb.temp.arena[k].type === type &&
-      wdb.temp.arena[k].chat === m.chat &&
-      wdb.temp.arena[k].penantang === penantangTag &&
-      wdb.temp.arena[k].target === m.sender
-    )
-    if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} dari orang itu ke kamu`)
+    let arenaKey = Object.keys(wdb.temp.arena).find(k => {
+      let match = wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === m.sender;
+      if (penantangTag && !isBot) match = match && wdb.temp.arena[k].penantang === penantangTag;
+      return match;
+    })
+    if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
+    let penantangAsli = wdb.temp.arena[arenaKey].penantang
     delete wdb.temp.arena[arenaKey]
     saveDB(wdb)
-    return m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan ${type} dari @${penantangTag.split('@')[0]}`, null, { mentions: [m.sender, penantangTag] })
+    return m.reply(`❌ @${m.sender.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [m.sender, penantangAsli] })
   }
 }
 
