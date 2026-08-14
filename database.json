@@ -90,7 +90,7 @@
       "autolevelup": true
     },
     "6281241100804@s.whatsapp.net": {
-      "exp": 359,
+      "exp": 458,
       "limit": 100,
       "balance": 0,
       "lastclaim": 0,
@@ -5270,8 +5270,8 @@
       "lastDaily": 1786681591317
     },
     "6287716300353@s.whatsapp.net": {
-      "exp": 17757,
-      "limit": 97,
+      "exp": null,
+      "limit": null,
       "balance": 0,
       "totalDonasi": 8997,
       "lastclaim": 0,
@@ -5326,7 +5326,7 @@
         }
       ],
       "lastKencan": 1786367592154,
-      "money": 1335563,
+      "money": 1341556,
       "aiProfile": {
         "nickname": "Mina",
         "preferences": [],
@@ -5334,16 +5334,16 @@
       },
       "rpg": {
         "level": 68,
-        "exp": 0,
-        "darah": 138,
-        "lastAdventure": 1786683078724,
-        "lastMining": 1786683052245,
+        "exp": 16504,
+        "darah": 125,
+        "lastAdventure": 1786683450531,
+        "lastMining": 1786683434284,
         "lastDungeon": 1786432532135,
         "diamond": 2119,
         "gold": 7536,
-        "iron": 712,
+        "iron": 715,
         "stone": 10623,
-        "wood": 627,
+        "wood": 639,
         "inventory": {
           "emas": 60,
           "padi": 10,
@@ -5391,7 +5391,7 @@
           "ikan_pari_manta": 1,
           "mutiara_biasa": 1,
           "karang_antik": 1,
-          "ikan_gurame": 4,
+          "ikan_gurame": 5,
           "leviathan_primordial": 1,
           "ikan_patin": 3,
           "davy_jones": 1,
@@ -5405,7 +5405,7 @@
           "peti_karat": 1,
           "cerberus_laut": 1
         },
-        "lastMancing": 1786683048258,
+        "lastMancing": 1786683428695,
         "bank": 408927458,
         "maxLadang": 10,
         "ladang": {
@@ -5516,7 +5516,7 @@
           "sand_stone": 6,
           "bananite": 5,
           "cardboardite": 2,
-          "platinum": 1,
+          "platinum": 3,
           "gold": 5,
           "fillium": 1,
           "tin": 4,
@@ -5534,12 +5534,12 @@
           "jamur": 1,
           "ramuan_sedang": 13,
           "tali": 5,
-          "iron": 12,
+          "iron": 13,
           "koin_tembaga": 5,
           "pedang_baja": 9,
           "diamond": 6,
           "koin_emas": 5,
-          "koin_perak": 18,
+          "koin_perak": 19,
           "peta_harta": 7,
           "ramuan_besar": 4,
           "permata_hijau": 2,
@@ -5550,11 +5550,11 @@
           "pedang_legendaris": 1,
           "air_mata_dewi": 10,
           "pecahan_bintang": 10,
-          "jiwa_abadi": 25,
-          "segel_dewa": 27,
+          "jiwa_abadi": 28,
+          "segel_dewa": 28,
           "permata_biru": 1
         },
-        "adventureLevel": 36,
+        "adventureLevel": 37,
         "dapur": {
           "slot": 1,
           "antrian": []
@@ -11476,16 +11476,16 @@
       "lastSuccess": 1786680777097
     },
     "rpg/rpg-mancing.js": {
-      "total": 2111,
-      "success": 2111,
-      "last": 1786683049418,
-      "lastSuccess": 1786683049418
+      "total": 2112,
+      "success": 2112,
+      "last": 1786683430355,
+      "lastSuccess": 1786683430355
     },
     "rpg/rpg-adventure.js": {
-      "total": 1179,
-      "success": 1179,
-      "last": 1786683079841,
-      "lastSuccess": 1786683079841
+      "total": 1181,
+      "success": 1181,
+      "last": 1786683463104,
+      "lastSuccess": 1786683463104
     },
     "menu/menu-fun.js": {
       "total": 6,
@@ -11650,10 +11650,10 @@
       "lastSuccess": 1786681498126
     },
     "rpg/rpg-mining.js": {
-      "total": 1620,
-      "success": 1620,
-      "last": 1786683053164,
-      "lastSuccess": 1786683053164
+      "total": 1621,
+      "success": 1621,
+      "last": 1786683435048,
+      "lastSuccess": 1786683435048
     },
     "rpg/rpg-panen.js": {
       "total": 776,
@@ -12490,16 +12490,16 @@
       "lastSuccess": 1786682270726
     },
     "owner/owner-exec.js": {
-      "total": 20,
-      "success": 20,
-      "last": 1786683119233,
-      "lastSuccess": 1786683119233
+      "total": 21,
+      "success": 21,
+      "last": 1786683461825,
+      "lastSuccess": 1786683461825
     },
     "owner/owner-backupgit.js": {
-      "total": 7,
-      "success": 7,
-      "last": 1786679284535,
-      "lastSuccess": 1786679284535
+      "total": 8,
+      "success": 8,
+      "last": 1786683319368,
+      "lastSuccess": 1786683319368
     },
     "rpg/rpg-panelB.js": {
       "total": 2,
@@ -12520,10 +12520,10 @@
       "lastSuccess": 1786679425126
     },
     "owner/owner-update.js": {
-      "total": 20,
-      "success": 20,
-      "last": 1786683122428,
-      "lastSuccess": 1786683122428
+      "total": 22,
+      "success": 22,
+      "last": 1786683465878,
+      "lastSuccess": 1786683465878
     },
     "rpg/rpg-jualikan.js": {
       "total": 13,
@@ -12539,76 +12539,6 @@
     }
   },
   "msgs": {
-    "3EB07CC41B01ADA02A6115": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "⚠️ *SSTT... JANGAN TAG DIA!* ⚠️\n\nDia sedang *AFK*!\n📝 *Alasan:* _Tanpa Alasan_\n⏱️ *Sejak:* beberapa detik yang lalu.\n\n_Harap tidak mengganggu sampai dia kembali online._",
-          "contextInfo": {
-            "stanzaId": "AC7FFAE79106EA73D826DB9EDC53A81D",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".bank tf @265141333569711",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            },
-            "mentionedJid": [
-              "265141333569711@lid"
-            ],
-            "nonJidMentions": 0
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "vm3RenmQCOGH+V7muzhacjBmHxzAxmwY4Z3jwQfpHAM="
-        }
-      },
-      "time": 1786679754535
-    },
-    "3EB03D6B0122B3B88ED394": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "❌ Tag target",
-          "contextInfo": {
-            "stanzaId": "AC7FFAE79106EA73D826DB9EDC53A81D",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".bank tf @265141333569711",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "vE0RRR2yvQyv53TFZycsEZob7AQ/QOcQ9CMrU1pK4Xg="
-        }
-      },
-      "time": 1786679754970
-    },
-    "3EB01FB6AB2B974C762747": {
-      "message": {
-        "extendedTextMessage": {
-          "text": "Uangmu tidak cukup!",
-          "contextInfo": {
-            "stanzaId": "AC8B926A4944AD6636474E832C23819F",
-            "participant": "237507463651454@lid",
-            "quotedMessage": {
-              "extendedTextMessage": {
-                "text": ".gift money 68671835\n\ndah kubalikin",
-                "previewType": "NONE",
-                "inviteLinkGroupTypeV2": "DEFAULT"
-              }
-            }
-          }
-        },
-        "messageContextInfo": {
-          "messageSecret": "uXKWETtIv+PGG0eFIHBdaIGH9uxywmzSUBG0tCUT3b8="
-        }
-      },
-      "time": 1786679832047
-    },
     "3EB0BB3644CF971306C64B": {
       "message": {
         "extendedTextMessage": {
@@ -24708,6 +24638,414 @@
         }
       },
       "time": 1786683205332
+    },
+    "3EB09297420F81DA0E4CD4": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A531B34B02DAEE1F23EF2B5D68BBCFF9",
+            "participant": ""
+          },
+          "text": "⏳",
+          "senderTimestampMs": "1786683317418"
+        }
+      },
+      "time": 1786683317432
+    },
+    "3EB08D3BD9907942A89324": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "📦 *Memulai backup database & project ke GitHub...*",
+          "contextInfo": {
+            "stanzaId": "A531B34B02DAEE1F23EF2B5D68BBCFF9",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".gitbackup",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "3oTgbNeyTjCVpSY1orJ2F+h/7Omjle+QMk8v9e105Rk="
+        }
+      },
+      "time": 1786683317448
+    },
+    "3EB054ED318F8C34095461": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A531B34B02DAEE1F23EF2B5D68BBCFF9",
+            "participant": ""
+          },
+          "text": "✅",
+          "senderTimestampMs": "1786683319350"
+        }
+      },
+      "time": 1786683319367
+    },
+    "3EB0AD7DFCAB3331447824": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "✅ *GitHub Backup Selesai!*\n\n📝 *Status:* Backup berhasil dipush ke GitHub (14-08-2026 11.55.17 WIB)\n📝 File yang di-push: database.json",
+          "contextInfo": {
+            "stanzaId": "A531B34B02DAEE1F23EF2B5D68BBCFF9",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".gitbackup",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "VZCRWnYUhdju6q/0jMDzO/nEckA3MU3YFPsPsqodEI0="
+        }
+      },
+      "time": 1786683319427
+    },
+    "3EB0F60799190888E52C0B": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "⚠️ *SSTT... JANGAN TAG DIA!* ⚠️\n\nDia sedang *AFK*!\n📝 *Alasan:* _sakit perut gara2 mina_\n⏱️ *Sejak:* 3 Menit 37 Detik yang lalu.\n\n_Harap tidak mengganggu sampai dia kembali online._",
+          "contextInfo": {
+            "stanzaId": "AC315F399F686BFEED3BF48219D3EEDE",
+            "participant": "160859846357027@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": "aku pula yang kena",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "mentionedJid": [
+              "6282228638623@s.whatsapp.net"
+            ],
+            "nonJidMentions": 0
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "uusm4QuVNnHbkSUUgYPfGc7MLP583LlNTgKK2ZkD+3g="
+        }
+      },
+      "time": 1786683406150
+    },
+    "3EB0FE2270B7DBB0622F79": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQOQoH0RdD9kx6uTvIjeuKhYW4NCNrnQGnkfhGOcOqzkuekQYRc9HPtqSI3W1D2axO-HTyLhgygslapPONU8pjefhE_9qMzcZFvV3BGfTA?ccb=9-4&oh=01_Q5Aa5QFkGKYCFy3iYcnUccdWeA512xM41PHpVVChnwdydDEyzg&oe=6AA62CD5&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "*───「 🎣 FISHING RESULT 」───*\n\n*Tier* : ★★☆ UNCOMMON 💙\n\n🏆 *Hasil Tangkapan*\n🪝 🐟🍽️ Ikan Gurame\n\n✨ *XP Didapat* : +50\n🎣 *Level Pancingan* : 6\n🍀 *Bonus Rod* : +9.0%\n\n────────────────",
+          "fileSha256": "vXl14azcJ0F0yxPGWyULqX8cwJlS2FAGfX6sp8O54Cc=",
+          "fileLength": "66854",
+          "height": 424,
+          "width": 734,
+          "mediaKey": "c/teCpQAUWJ0LjXLnv8dzdWqxMR6pSaA1lOMoF0Q9cg=",
+          "fileEncSha256": "9RJFA3AJS+b1A8C/sAONwrG64OoydyAV9uvy3234xJw=",
+          "directPath": "/o1/v/t24/f2/m238/AQOQoH0RdD9kx6uTvIjeuKhYW4NCNrnQGnkfhGOcOqzkuekQYRc9HPtqSI3W1D2axO-HTyLhgygslapPONU8pjefhE_9qMzcZFvV3BGfTA?ccb=9-4&oh=01_Q5Aa5QFkGKYCFy3iYcnUccdWeA512xM41PHpVVChnwdydDEyzg&oe=6AA62CD5&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786683429",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAATACADASIAAhEBAxEB/8QAGAAAAwEBAAAAAAAAAAAAAAAAAAQFAQb/xAAoEAABAwIDBwUAAAAAAAAAAAABAAIDBBESISIFBhMxUWGBMkFDkbH/xAAWAQEBAQAAAAAAAAAAAAAAAAAAAwL/xAAZEQACAwEAAAAAAAAAAAAAAAAAAQIRUQP/2gAMAwEAAhEDEQA/AJlBUSwAsY0hziPpdBFJd2oZdVzUVXJTsjdJTswvF2m6di3jfSMwsiba/K5A/VRp3RiMlpfMkLPUL+VPrtoCLREwY/fsknb1zO+CMeSkptvyuLjwIdXbMeUUEafTCHxHkAF7iG5AE8lmInmShCoRNueqLnqhCA//2Q==",
+          "contextInfo": {
+            "stanzaId": "ACC4A0AC5294ABC03D872D08E8D37A60",
+            "participant": "160859846357027@lid",
+            "quotedMessage": {
+              "conversation": ".mancing"
+            },
+            "mentionedJid": [
+              "6287716300353@s.whatsapp.net"
+            ]
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "BSiOFSgXjRy9b4YhZ0LRQwvCGzjOBPpd+LdU7QyiTpY="
+        }
+      },
+      "time": 1786683430355
+    },
+    "3EB0FD02BB968F57F96A0B": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQOvVCooRNggQq02yYfgL4WjXypGZTBVrN3c7dhyFmkUHIDXguySV6wlRpdrFgL8HZcXmxSrff7L7QZuA-KxAs-P1TcVB7eUhDVB0qFMXw?ccb=9-4&oh=01_Q5Aa5QF54DOnmUFD6dFTxX1pcFcUPMRgSFq72tDMS7gOh5u30A&oe=6AA6030B&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "─━━ ⛏️ MINING RESULT ━━─\n◈ Tier Tertinggi : ★★★☆☆☆☆ RARE ✨\n🏆 Hasil Tambang : 1 jenis | Total x2 ore\n\n│ 💿 Platinum x2\n└ ✨ Total XP : +240 | 💰 +Rp 8\n\n◆ Level Pickaxe : 6\n◆ Bonus Pick : +9.0%\n◆ Secret : Buka di Pick Lvl 25\n\n─━━━━━━━━━─",
+          "fileSha256": "DoYS2+WRfY90R3iQHOToeeQvUzItrTPB4eNCrJtcT+w=",
+          "fileLength": "43370",
+          "height": 405,
+          "width": 720,
+          "mediaKey": "SOBMh4w77LPnWVb3QN23B2STAx7kl2VSajtFOXoDPm8=",
+          "fileEncSha256": "CNTMSdBsTEgGFzo9cuWM5vL/cdylQArNu3tXQQ7IGoI=",
+          "directPath": "/o1/v/t24/f2/m233/AQOvVCooRNggQq02yYfgL4WjXypGZTBVrN3c7dhyFmkUHIDXguySV6wlRpdrFgL8HZcXmxSrff7L7QZuA-KxAs-P1TcVB7eUhDVB0qFMXw?ccb=9-4&oh=01_Q5Aa5QF54DOnmUFD6dFTxX1pcFcUPMRgSFq72tDMS7gOh5u30A&oe=6AA6030B&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786683434",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAUCAwQG/8QAIhAAAgICAQQDAQAAAAAAAAAAAQIDEQASIQQFE1ExMkFh/8QAFwEAAwEAAAAAAAAAAAAAAAAAAAIDAf/EABsRAAMAAgMAAAAAAAAAAAAAAAABAgMxESFB/9oADAMBAAIRAxEAPwBJD22XqFUxr8reoNkjF0yeNyPWdFIkkYBVdHWhWwHH8xH1kTLKxaxZvnJY6bfZW540Rh18ZJQsfX4M2zQBOnWXxxspHA+DXvMMS7cWB+2eAc10QjbzR66EABrzaCS8yyR9okaOR0NgWprjFsRJskkknm8MMWPQZKX7ZS2GGUQj2f/Z",
+          "contextInfo": {
+            "stanzaId": "AC6F0E04261839155CACCC3047AD1273",
+            "participant": "160859846357027@lid",
+            "quotedMessage": {
+              "conversation": ".mining"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "KrnklGpN3k4AlzOrObcXpjIzU57lnKxD47X1X4fhg68="
+        }
+      },
+      "time": 1786683435047
+    },
+    "3EB01994390C9635B238E0": {
+      "message": {
+        "imageMessage": {
+          "url": "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQMm6iKz4PQGF306JqRo9FsBvkMvOBvVQKr9_aVmuSJA0mf885S73F_Q8m404selXUOu0FcFzp4QD28r2udLjsQCZKjnKJqPWIAB0yKFQQ?ccb=9-4&oh=01_Q5Aa5QG-IdESi6XFV5rs1qJKdNtx0mUBJPZUq4Z6TEea1wshmQ&oe=6AA61431&_nc_sid=e6ed6c&mms3=true",
+          "mimetype": "image/jpeg",
+          "caption": "*───「 🗺️ ADVENTURE 」───*\n\n*Tier Tertinggi* : ★★★★★★★ SECRET 🔮\n\n🎒 *Hasil Penjelajahan x6* :\n\n🔮 *SECRET*\n│ 📜 Segel Dewa x1\n│ 👻 Jiwa Abadi x3\n\n💙 *UNCOMMON*\n│ 🪙 Koin Perak x1\n│ ⛓️ Iron x1\n\n│ 💰 Money : +Rp 5,985\n└ 🌟 XP : +16214\n\n❤️ *Sisa Darah* : 125\n🗺️ *Lvl* : 36 | ⚔️ *Sword* : 8 | ⛏️ *Pick* : 6\n🍀 *Bonus* : +60.0%",
+          "fileSha256": "WFpdTw8l43dtR4gC4Pm95JVQc7AVpxfTyfqd2y4lV2o=",
+          "fileLength": "42017",
+          "height": 405,
+          "width": 720,
+          "mediaKey": "/h6T2cy3ANSky2v5cWUEwUnNYIb08zB4EH60KYEZFgM=",
+          "fileEncSha256": "UtBHgIjgW07OHl82jE8PdXiq6Y30Y7Yc/ok1CI6Bht4=",
+          "directPath": "/o1/v/t24/f2/m233/AQMm6iKz4PQGF306JqRo9FsBvkMvOBvVQKr9_aVmuSJA0mf885S73F_Q8m404selXUOu0FcFzp4QD28r2udLjsQCZKjnKJqPWIAB0yKFQQ?ccb=9-4&oh=01_Q5Aa5QG-IdESi6XFV5rs1qJKdNtx0mUBJPZUq4Z6TEea1wshmQ&oe=6AA61431&_nc_sid=e6ed6c",
+          "mediaKeyTimestamp": "1786683451",
+          "jpegThumbnail": "/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAASACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAMCBAUG/8QAJRAAAgICAQMDBQAAAAAAAAAAAQIAAwQREgUxQSFRcRMiMmGx/8QAFgEBAQEAAAAAAAAAAAAAAAAAAAEC/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxEhQf/aAAwDAQACEQMRAD8A0rnodVdCFP6B/sopXjXFyb9kH10pOjMW3q9TY7kUFLeO1IPpv4lTpl5+s75GQ1QbuV8n4mYyaRZVJs6eqnDrsDOzOo8cYuwYVt5YEqm/xVZSOTQ541ZQYgaBfsYi06YFbUA39x5bhW6+h04jEbssU5OoQmyhWT7ybE+/mEI9B//Z",
+          "contextInfo": {
+            "stanzaId": "ACC9E2D5DE18AC04013B7F2F9EB53605",
+            "participant": "160859846357027@lid",
+            "quotedMessage": {
+              "conversation": ".adventure"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "gt17Zy1UFOn6EKHoc0iyvHDjQomRr8gMZRzrzECIbUs="
+        }
+      },
+      "time": 1786683452165
+    },
+    "3EB0492269CF500CF53F31": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A510BF412EABC864CD55DBA1A07410AA",
+            "participant": ""
+          },
+          "text": "⏳",
+          "senderTimestampMs": "1786683457198"
+        }
+      },
+      "time": 1786683457711
+    },
+    "3EB08AABCE8865CAA1F239": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "🔄 *Menarik update terbaru dari GitHub...*",
+          "contextInfo": {
+            "stanzaId": "A510BF412EABC864CD55DBA1A07410AA",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "7rpSKJqPYhdLSzLl2pJYsGnFpf7uAKYPGz8QHO7UMvA="
+        }
+      },
+      "time": 1786683457723
+    },
+    "3EB043323CFD999247ACF8": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A510BF412EABC864CD55DBA1A07410AA",
+            "participant": ""
+          },
+          "text": "❌",
+          "senderTimestampMs": "1786683457765"
+        }
+      },
+      "time": 1786683457777
+    },
+    "3EB0C4DB8A64B7FB72431C": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "❌ *Gagal Update!*\n\n⚠️ *Error:*\nCommand failed: git pull --rebase origin main\nerror: cannot pull with rebase: You have unstaged changes.\nerror: please commit or stash them.\n\n\nCoba ketik `$ git fetch origin && git reset --hard origin/main && git clean -fd` jika terjadi konflik.",
+          "contextInfo": {
+            "stanzaId": "A510BF412EABC864CD55DBA1A07410AA",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "GWVgNGPsmNQa+Q0yc0uk2+CyRderNmtT2AqEzh3exf4="
+        }
+      },
+      "time": 1786683457831
+    },
+    "3EB092EB13F38A8046D8E3": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "HEAD is now at 8c48944 Fix AI intercepting Menfess replies in private chat\n",
+          "contextInfo": {
+            "stanzaId": "A5365A221A0A7E47EA2D1462F412B22B",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": "$ git fetch origin && git reset --hard origin/main && git clean - fd",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "fEobw/ZZFwfYBZf/U5zzDJgLCsjfQ2YknHRy0OhNRRc="
+        }
+      },
+      "time": 1786683461951
+    },
+    "3EB0642265857385E3C9DC": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "From https://github.com/Nelson4111/WaBot\n   ea3342f..8c48944  main       -> origin/main\nAuto packing the repository in background for optimum performance.\nSee \"git help gc\" for manual housekeeping.\nwarning: The last gc run reported the following. Please correct the root cause\nand remove .git/gc.log\nAutomatic cleanup will not be performed until the file is removed.\n\nwarning: There are too many unreachable loose objects; run 'git prune' to remove them.\n\nfatal: clean.requireForce defaults to true and neither -i, -n, nor -f given; refusing to clean\n",
+          "contextInfo": {
+            "stanzaId": "A5365A221A0A7E47EA2D1462F412B22B",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": "$ git fetch origin && git reset --hard origin/main && git clean - fd",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "yZsJ9R9sfl5Gpke3ciVpf22h8CxIwxEyg0xB5cEEtG4="
+        }
+      },
+      "time": 1786683462034
+    },
+    "3EB0F78FAA2CD6A57B9205": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "*───「 🎒 TAS ADVENTURE 」───*\nTotal Item: 204 unit\n\n🔮 *SECRET*\n👻 Jiwa Abadi           x28\n📜 Segel Dewa           x28\n\n🌌 *MYTHIC*\n💧 Air Mata Dewi        x10\n🌠 Pecahan Bintang      x10\n\n👑 *LEGENDARY*\n👑 Mahkota Raja         x5\n🐉🛡️ Armor Naga           x4\n📚 Buku Sihir Kuno      x2\n⚔️👑 Pedang Legendaris    x1\n\n💎 *EPIC*\n🗺️ Peta Harta           x7\n💚 Permata Hijau        x2\n❤️ Permata Merah        x3\n💎 Permata Biru         x1\n\n✨ *RARE*\n⚔️ Pedang Baja          x9\n💎 Diamond              x6\n🪙 Koin Emas            x5\n🧪 Ramuan Besar         x4\n\n💙 *UNCOMMON*\n🔪 Belati Karat         x12\n🧪 Ramuan Sedang        x13\n⛓️ Iron                 x13\n🪙 Koin Perak           x19\n\n🤍 *COMMON*\n🪵 Wood                 x6\n🧪 Ramuan Kecil         x5\n🪢 Tali                 x5\n🪙 Koin Tembaga         x5\n\n🗑️ *TRASH*\n🍄 Jamur                x1\n",
+          "contextInfo": {
+            "stanzaId": "AC3C6562FB9E2E2EC7268E7CF224FEB8",
+            "participant": "160859846357027@lid",
+            "quotedMessage": {
+              "conversation": ".tasadv"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "bsaSFG9PDCl3XsZHkhzZPhHBkmK915m/Xj4th+a2n2k="
+        }
+      },
+      "time": 1786683463104
+    },
+    "3EB0EAD4319965234EF2CD": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A5CE294F0B7D11E09680AC8E612CF5FA",
+            "participant": ""
+          },
+          "text": "⏳",
+          "senderTimestampMs": "1786683465299"
+        }
+      },
+      "time": 1786683465309
+    },
+    "3EB0C71F111765D97E57FD": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "🔄 *Menarik update terbaru dari GitHub...*",
+          "contextInfo": {
+            "stanzaId": "A5CE294F0B7D11E09680AC8E612CF5FA",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "r0VywWr2yrLjlN9kC07NdsZO81RxoU6iyOK78yf4Hhg="
+        }
+      },
+      "time": 1786683465321
+    },
+    "3EB03C9B81A1966DC933C0": {
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "226804522590211@lid",
+            "fromMe": false,
+            "id": "A5CE294F0B7D11E09680AC8E612CF5FA",
+            "participant": ""
+          },
+          "text": "✅",
+          "senderTimestampMs": "1786683465863"
+        }
+      },
+      "time": 1786683465876
+    },
+    "3EB0720B8756CA2D85C9B2": {
+      "message": {
+        "extendedTextMessage": {
+          "text": "✅ *Bot sudah berada di versi terbaru!*",
+          "contextInfo": {
+            "stanzaId": "A5CE294F0B7D11E09680AC8E612CF5FA",
+            "participant": "226804522590211@lid",
+            "quotedMessage": {
+              "extendedTextMessage": {
+                "text": ".update",
+                "previewType": "NONE",
+                "inviteLinkGroupTypeV2": "DEFAULT"
+              }
+            },
+            "remoteJid": "226804522590211@lid"
+          }
+        },
+        "messageContextInfo": {
+          "messageSecret": "mmP/N2Vz0IDMPdO8Jk9ySUBw+al/VEJ5AOha97UgkLU="
+        }
+      },
+      "time": 1786683465894
     }
   },
   "sticker": {},
