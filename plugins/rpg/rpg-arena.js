@@ -59,6 +59,16 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let taruhan = taruhanInput? taruhanInput : taruhanDefault
 
     if(taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1000')
+
+    // DEBUG START
+    if (uangUser === 0 || uangTarget === 0) {
+      let debugText = `[DEBUG JAMBAK]\nsenderJid: ${senderJid}\ntarget: ${target}\nuangUser: ${uangUser}\nuangTarget: ${uangTarget}\n`
+      debugText += `db.users[senderJid]?.money = ${global.db.data.users[senderJid]?.money}\n`
+      debugText += `db.users[target]?.money = ${global.db.data.users[target]?.money}`
+      return m.reply(debugText)
+    }
+    // DEBUG END
+
     if(uangUser < taruhan) return m.reply(`❌ Uang kamu kurang! Punya Rp ${uangUser.toLocaleString()}`)
     if(uangTarget < taruhan) return m.reply(`❌ Uang target kurang! Punya Rp ${uangTarget.toLocaleString()}`)
 
