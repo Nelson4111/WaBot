@@ -13,6 +13,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
   switch (type) {
     case 'welcome':
+    case 'leave':
     case 'detect':
     case 'antispam':
     case 'antidelete':
@@ -36,6 +37,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     case 'document':
+      checkAdmin()
       chat.useDocument = isEnable
       break
 
@@ -44,6 +46,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'restrict':
     case 'nyimak':
     case 'autoread':
+    case 'autobio':
     case 'pconly':
     case 'privateonly':
     case 'pconlyprem':
@@ -68,32 +71,38 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     default:
       if (!/[01]/.test(command)) {
         return m.reply(`
-List option:
-| antispam
-| antilink
-| antitoxic
-| antisticker
-| antiimage
-| antidelete
-| onlyadmin
-| welcome
-| detect
-| document
-| gconly
-| menu
-| nsfw
-| nyimak
-| owneronly
-| pconly
-| pconlyprem
-| public
-| self
-| simi
-| swonly
-| viewonce
-| autogpt
+*≡ SETTINGS ADMIN (GRUP)*
+○ welcome
+○ leave
+○ antispam
+○ antilink
+○ antitoxic
+○ antisticker
+○ antiimage
+○ antidelete
+○ onlyadmin
+○ detect
+○ document
+○ viewonce
+○ nsfw
+○ menu
+○ simi
+○ autogpt
 
-Contoh:
+*≡ SETTINGS OWNER (GLOBAL)*
+○ public
+○ self
+○ restrict
+○ nyimak
+○ autoread
+○ autobio
+○ gconly
+○ pconly
+○ pconlyprem
+○ owneronly
+○ swonly
+
+*Contoh:*
 ${usedPrefix}enable welcome 
 ${usedPrefix}disable welcome 
 `.trim())
