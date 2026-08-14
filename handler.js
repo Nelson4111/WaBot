@@ -456,14 +456,6 @@ export async function handler(chatUpdate) {
                     continue
                 }
 
-                // LID / UID BLOCKER (Memaksa user UID lama untuk nge-PC bot)
-                if (m.sender.endsWith('@lid') && !allowUnreg.includes(command)) {
-                    let regText = encodeURIComponent(`.daftar ${_user.name || 'namamu'},${_user.age || 18}`);
-                    let textMsg = `*Peringatan Keamanan Akun*\n\nKarena pembaruan WhatsApp, bot tidak bisa membaca nomor aslimu di dalam grup (kamu terbaca sebagai UID).\n\nSilakan klik link di bawah ini dan kirim pesannya ke bot agar akunmu bisa dipulihkan ke Nomor Asli:\n\nwa.me/${global.nomorbot}?text=${regText}`;
-                    this.reply(m.chat, textMsg, m);
-                    continue;
-                }
-
                 m.isCommand = true
                 let xp = 'exp' in plugin ? parseInt(plugin.exp) : 17
                 if (xp > 200) console.log("ngecit -_-");
