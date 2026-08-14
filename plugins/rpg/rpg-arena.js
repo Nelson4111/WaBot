@@ -45,6 +45,8 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let dataTarget = getUserRPG(wdb, target)
     let userTarget = dataTarget.rpg
     if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
+    if(!userTarget.stats) userTarget.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
+
 
     let uangUser = wdb.money[m.sender] || 0
     let uangTarget = wdb.money[target] || 0
@@ -81,6 +83,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let dataTarget = getUserRPG(wdb, target)
     let userTarget = dataTarget.rpg
     if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
+    if(!userTarget.stats) userTarget.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
 
     let uangUser = wdb.money[m.sender] || 0
     let uangTarget = wdb.money[target] || 0
@@ -108,11 +111,12 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
   }
 
-  // 3. TERIMA - BISA TAG ATAU REPLY
+  // 3. TERIMA - WAJIB REPLY PESAN
   if (command === 'jambakterima' || command === 'pancoterima') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getTarget(m, args, 0)
-    if(!penantangTag) return m.reply(`❌ Tag, ketik nomor, atau reply pesan ajakan nya!\nContoh: *.${command} @penantang*`)
+    if(!m.quoted) return m.reply(`❌ Wajib reply pesan ajakan dari penantang!\nBalas pesannya lalu ketik *.${command}*`)
+    
+    let penantangTag = m.quoted.sender
 
     let arenaKey = Object.keys(wdb.temp.arena).find(k =>
       wdb.temp.arena[k].type === type &&
@@ -127,6 +131,10 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let dataT = getUserRPG(wdb, arena.target)
     let userP = dataP.rpg
     let userT = dataT.rpg
+    
+    if(!userP.stats) userP.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
+    if(!userT.stats) userT.stats = { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
+
 
     let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
     let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
@@ -158,11 +166,12 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
   }
 
-  // 4. TOLAK - BISA TAG ATAU REPLY
+  // 4. TOLAK - WAJIB REPLY PESAN
   if (command === 'jambaktolak' || command === 'pancotolak') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getTarget(m, args, 0)
-    if(!penantangTag) return m.reply(`❌ Tag, ketik nomor, atau reply pesan ajakan nya!\nContoh: *.${command} @penantang*`)
+    if(!m.quoted) return m.reply(`❌ Wajib reply pesan ajakan dari penantang!\nBalas pesannya lalu ketik *.${command}*`)
+    
+    let penantangTag = m.quoted.sender
 
     let arenaKey = Object.keys(wdb.temp.arena).find(k =>
       wdb.temp.arena[k].type === type &&

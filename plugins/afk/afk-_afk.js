@@ -22,23 +22,8 @@ handler.before = async function (m, { conn }) {
     const DB = global.db?.data?.users || {};
     const user = DB[m.sender];
 
-    // Restorasi / Berhenti AFK (boleh pakai @tag)
-    if (user && user.afk > -1) {
-        const duration = formatDuration(Date.now() - user.afk);
-        const reason = user.afkReason || 'Tanpa Alasan';
-        
-        let caption = `
-✨ *WELCOME BACK!* ✨
-
-User @${m.sender.split('@')[0]} telah kembali dari AFK!
-⏱️ *Lama AFK:* ${duration}
-📝 *Alasan Sebelumnya:* _${reason}_
-`.trim();
-        await conn.sendMessage(m.chat, { text: caption, mentions: [m.sender] }, { quoted: m });
-
-        user.afk = -1;
-        user.afkReason = '';
-    }
+    // Restorasi / Berhenti AFK sekarang ditangani langsung di handler.js 
+    // agar tidak terblokir oleh isBaileys / Anti-Spam
 
     // Peringatan saat member lain men-tag user AFK
     const jids = [...new Set([

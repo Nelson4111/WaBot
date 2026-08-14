@@ -298,6 +298,22 @@ export async function handler(chatUpdate) {
             }, time)
         }
 
+        // -- AFK CLEAR (Dipindah ke sini agar tidak terblokir oleh isBaileys / WA Mods) --
+        let userAFK = global.db.data.users[m.sender]
+        if (userAFK && userAFK.afk > -1 && !m.fromMe) {
+            let duration = Date.now() - userAFK.afk;
+            let seconds = Math.floor(duration / 1000);
+            let d = Math.floor(seconds / 86400); seconds %= 86400;
+            let h = Math.floor(seconds / 3600); seconds %= 3600;
+            let min = Math.floor(seconds / 60); seconds %= 60;
+            let timeStr = [d ? `${d} Hari` : '', h ? `${h} Jam` : '', min ? `${min} Menit` : '', seconds ? `${seconds} Detik` : ''].filter(Boolean).join(' ') || 'beberapa detik';
+            
+            let caption = `✨ *WELCOME BACK!*\n\nUser @${m.sender.split('@')[0]} telah kembali dari AFK!\n⏱️ *Lama AFK:* ${timeStr}\n📝 *Alasan Sebelumnya:* _${userAFK.afkReason || 'Tanpa Alasan'}_`.trim()
+            userAFK.afk = -1
+            userAFK.afkReason = ''
+            conn.sendMessage(m.chat, { text: caption, mentions: [m.sender] }, { quoted: m }).catch(() => {})
+        }
+
         if (m.isBaileys && !commandCandidate) return
 
         m.exp += Math.ceil(Math.random() * 10)
