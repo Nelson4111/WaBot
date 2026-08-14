@@ -72,7 +72,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
+    return conn.sendMessage(m.chat, { text: cap, mentions: [m.sender, target] }, { quoted: m })
   }
 
   // 2. PANCO - BUAT NANTANG
@@ -109,7 +109,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: m.sender, target: target, taruhan: taruhan, waktu: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [m.sender, target] })
+    return conn.sendMessage(m.chat, { text: cap, mentions: [m.sender, target] }, { quoted: m })
   }
 
   // 3. TERIMA - LEWAT COMMAND
@@ -262,7 +262,7 @@ handler.before = async function (m, { conn }) {
 
     delete wdb.temp.arena[arenaKey]
     saveDB(wdb)
-    sendRpgMsg(conn, m, resCap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
+    conn.sendMessage(m.chat, { text: resCap, mentions: [arena.penantang, arena.target] }, { quoted: m })
     return true
 }
 
