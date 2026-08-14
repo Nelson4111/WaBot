@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { BANK_TIERS } from './bank.js'
+import { BANK_TIERS } from './rpg-bank.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()

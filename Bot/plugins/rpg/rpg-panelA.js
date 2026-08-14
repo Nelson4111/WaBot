@@ -1,6 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { hewanList, getHewan } from '../../lib/rpg-libternakData.js'
-import { BANK_TIERS } from './bank.js'
+import { BANK_TIERS } from './rpg-bank.js'
 import fs from 'fs'
 
 function formatNama(nama) {

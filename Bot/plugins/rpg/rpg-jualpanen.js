@@ -48,7 +48,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let itemInput = amount === 'all'? args.slice(0, -1).join(' ') : args.join(' ')
 
   // KUNCI: ubah _ jadi spasi biar support 2 versi
-  let item = itemInput.replace(/_/g, ')
+  let item = itemInput.replace(/_/g, ' ')
 
   if (!harga[item]) return m.reply(`❌ Hasil panen "${itemInput}" tidak ada.\nLihat list: *${usedPrefix}jualpanen*`)
   
