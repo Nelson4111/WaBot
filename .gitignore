@@ -7,3 +7,6 @@ tmp/
 sessions/
 jadibts/
 store.json
+database.json
+.database.json.tmp
+*_database.json
