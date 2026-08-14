@@ -199,7 +199,12 @@ handler.before = async function (m, { conn }) {
     let cap = m.quoted.text || m.quoted.caption || ''
     let isJambak = cap.includes('JAMBAK')
     let isPanco = cap.includes('PANCO')
-    if (!isJambak && !isPanco) return
+    
+    // DEBUG:
+    if (!isJambak && !isPanco) {
+       // Only reply debug if they explicitly replied to something with terima/tolak
+       return m.reply(`[DEBUG] No Jambak/Panco found in cap.\n\nCap content:\n${cap}`)
+    }
 
     let type = isJambak ? 'jambak' : 'panco'
     let wdb = loadDB()
@@ -213,7 +218,8 @@ handler.before = async function (m, { conn }) {
     })
 
     if (!arenaKey) {
-        m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
+        let debugKeys = Object.keys(wdb.temp.arena).map(k => `Key: ${k}, Target: ${wdb.temp.arena[k].target}`).join('\n')
+        m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.\n\n[DEBUG Info]\nYour senderJid: ${senderJid}\nPending arenas:\n${debugKeys || 'None'}`)
         return true
     }
 
