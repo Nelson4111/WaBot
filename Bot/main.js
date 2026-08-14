@@ -365,15 +365,29 @@ if (!opts['test']) {
     if (global.opts['autobio']) {
       try {
         let uptime = process.uptime() * 1000
-        let d = Math.floor(uptime / 86400000)
-        let h = Math.floor(uptime / 3600000) % 24
-        let m = Math.floor(uptime / 60000) % 60
-        let status = `🤖 Bot aktif selama: ${d > 0 ? d + 'h ' : ''}${h}j ${m}m | Mode: ${global.opts['self'] ? 'Private' : 'Public'} | DB: ${Object.keys(global.db.data?.users || {}).length} Users`
+        let h = Math.floor(uptime / 3600000).toString().padStart(2, '0')
+        let m = Math.floor((uptime % 3600000) / 60000).toString().padStart(2, '0')
+        let s = Math.floor((uptime % 60000) / 1000).toString().padStart(2, '0')
+        let status = `I am NelBotz | Aktif Selama ${h}:${m}:${s} ⏳`
         await global.conn.updateProfileStatus(status)
       } catch (e) {}
     }
   }, 60000) // Update every 1 minute
 }
+
+let isExiting = false;
+async function gracefulExit() {
+  if (isExiting) return;
+  isExiting = true;
+  try {
+    if (global.opts['autobio'] && global.conn) {
+      await global.conn.updateProfileStatus('Bot sedang offline ❌. Akan aktif kembali nanti.')
+    }
+  } catch (e) {}
+  process.exit(0);
+}
+process.on('SIGINT', gracefulExit)
+process.on('SIGTERM', gracefulExit)
 
 function clearTmp() {
   const tmp = [tmpdir(), join(__dirname, './tmp')]
