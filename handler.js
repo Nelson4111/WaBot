@@ -113,7 +113,7 @@ async function replyCommandSuggestion(conn, m, candidate) {
     await conn.reply(m.chat, `Command *${candidate.usedPrefix}${candidate.command}* tidak ditemukan.\n\nMungkin command ini yang kamu maksud:\n${list}`, m)
 }
 
-const processedMessages = new Set()
+
 const lastPresenceSentAt = new Map()
 
 const processedMessageIds = new Map()
@@ -151,10 +151,6 @@ export async function handler(chatUpdate) {
     for (const message of chatUpdate.messages) {
         const msgId = message.key?.id
         const jid = message.key?.remoteJid
-        if (msgId && isDuplicateMessage(msgId)) {
-            console.log('[SKIP DUPLIKAT]', msgId)
-            continue
-        }
         
         const prevQueue = chatQueues.get(jid) || Promise.resolve()
         const nextQueue = prevQueue.then(async () => {
@@ -181,8 +177,7 @@ async function processMessage(m, chatUpdate) {
 
     if (!m) return  
     
-    // Mencegah double response dengan mengecek ID pesan yang sudah diproses
-    if (processedMessages.has(m.key.id)) return
+    // Deduplikasi dipindah ke bawah setelah validasi m.mtype selesai
 
     if (global.db.data == null) await global.loadDatabase()
     try {
@@ -195,8 +190,10 @@ async function processMessage(m, chatUpdate) {
         
         // JANGAN cache pesan yang belum terdekripsi (m.mtype kosong)
         // Cache hanya jika pesan valid, agar mekanisme retry dari Baileys tetap berjalan
-        processedMessages.add(m.key.id)
-        setTimeout(() => processedMessages.delete(m.key.id), 5 * 60 * 1000) // Hapus cache setelah 5 menit
+        if (isDuplicateMessage(m.key.id)) {
+            console.log('[SKIP DUPLIKAT]', m.key.id)
+            return
+        }
         
         m.exp = 0
         m.limit = false
