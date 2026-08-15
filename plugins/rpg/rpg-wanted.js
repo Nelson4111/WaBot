@@ -2,12 +2,12 @@ import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
     const wdb = loadDB()
-    if(!wdb.crime) return m.reply('📋 Belum ada data kriminal di kota ini')
+    if(!wdb.crime || Object.keys(wdb.crime).length === 0) return m.reply('📋 Belum ada data kriminal di kota ini')
 
     let crimeList = Object.entries(wdb.crime)
-      .filter(([jid, data]) => data.total > 0)
-      .sort((a, b) => b[1].total - a[1].total)
-      .slice(0, 10)
+     .filter(([jid, data]) => data && Number(data.total) > 0) // <- cek data ada
+     .sort((a, b) => Number(b[1].total) - Number(a[1].total)) // <- paksa number
+     .slice(0, 10)
 
     if(crimeList.length === 0) return m.reply('📋 Belum ada kriminal di kota ini')
 
@@ -25,7 +25,7 @@ let handler = async (m, { conn }) => {
 
         cap += `${medal} @${jid.split('@')[0]}\n`
         cap += `│ 💀 Total : *${data.total}x Kejahatan*\n`
-        cap += `│ 🕵️${data.rampok} 🏴‍☠️${data.begal} 🔪${data.bunuh}\n`
+        cap += `│ 🕵️${data.rampok || 0} 🏴‍☠️${data.begal || 0} 🔪${data.bunuh || 0}\n` // <- kasih || 0 biar ga NaN
         if(rank < crimeList.length) cap += `├─────────────────────\n`
     }
 
@@ -37,6 +37,6 @@ let handler = async (m, { conn }) => {
 
 handler.help = ['buronan']
 handler.tags = ['rpg']
-handler.command = ['buronan', 'mostwanted', 'topkriminal', 'dpo'] // ganti dari 'wanted'
+handler.command = ['buronan', 'mostwanted', 'topkriminal', 'dpo']
 handler.group = true
 export default handler

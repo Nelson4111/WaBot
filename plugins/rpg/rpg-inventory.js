@@ -64,9 +64,9 @@ let handler = async (m, { conn }) => {
 
   cap += `*───「 INVENTORY LAINNYA 」───*\n`
   cap += `📦 Cek Semua: *.gudang*\n`
-  cap += `⛏️ Cek Ore: *.tas*\n`
+  cap += `⛏️ Cek Material: *.tas*\n`
   cap += `🍖 Cek Makanan: *.makan*\n`
-  cap += `🐾 Cek Pet: *.pet*\n`
+  cap += `🐾 Cek Peliharaan: *.pet*\n`
   cap += `🐠 Cek Aquarium: *.aquarium*\n`
   cap += `🌾 Cek Kebun: *.kebun*`
 

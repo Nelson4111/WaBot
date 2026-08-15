@@ -12,7 +12,7 @@ export const BANK_TIERS = {
  8: { name: 'Black Card', limit: 10_000_000_000, bunga: 0.01, price: 2_500_000_000, biayaBulanan: 125_000_000, color: '⬛', keamanan: 9, asuransi: 0.6, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv3', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 60%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi'] },
  9: { name: 'Platinum Card', limit: 25_000_000_000, bunga: 0.012, price: 5_000_000_000, biayaBulanan: 250_000_000, color: '🔲', keamanan: 12, asuransi: 0.9, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv4', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 90%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi'] },
  10: { name: 'Premium Card', limit: 50_000_000_000, bunga: 0.014, price: 12_500_000_000, biayaBulanan: 625_000_000, color: '🔳', keamanan: 11, asuransi: 0.8, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv5', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 80%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif'] },
- 11: { name: 'Royal Card', limit: 100_000_000_000, bunga: 0.016, price: 25_000_000_000, biayaBulanan: 1_250_000_000, color: '👑', keamanan: 10, asuransi: 0.7, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Polisi', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 70%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan'] },
+ 11: { name: 'Royal Card', limit: 100_000_000_000, bunga: 0.016, price: 25_000_000_000, biayaBulanan: 1_250_000_000, color: '👑', keamanan: 16, asuransi: 0.7, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Polisi', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 70%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan'] },
  12: { name: 'Spiral Card', limit: 250_000_000_000, bunga: 0.018, price: 50_000_000_000, biayaBulanan: 2_500_000_000, color: '🌀', keamanan: 13, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Tentara', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank'] },
  13: { name: 'Crystal Card', limit: 500_000_000_000, bunga: 0.02, price: 125_000_000_000, biayaBulanan: 6_250_000_000, color: '💠', keamanan: 14, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Pasukan Khusus', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal'] },
  14: { name: 'Cosmic Card', limit: 1_000_000_000_000, bunga: 0.02, price: 250_000_000_000, biayaBulanan: 12_500_000_000, color: '🌐', keamanan: 15, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] }
@@ -55,6 +55,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         userRPG.kartuBeku = true
       }
       userRPG.lastDendaHarian = now
+      saveDB(wdb)
+    }
+  }
+
+  // DENDA PINJAMAN TELAT 7 HARI
+  if(userRPG.pinjaman.jumlah > 0 && now - userRPG.pinjaman.waktu > 604800000){
+    let denda = Math.floor(userRPG.pinjaman.jumlah * 0.05)
+    if(userRPG.bank >= denda){
+      userRPG.bank -= denda
+      userRPG.riwayat.unshift(`-Rp ${denda.toLocaleString()} Denda Pinjaman`)
+      saveDB(wdb)
     }
   }
 
@@ -64,6 +75,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     userRPG.lastMembership = now
     userRPG.kartuBeku = false
     userRPG.riwayat.unshift(`-Rp ${tier.biayaBulanan.toLocaleString()} Biaya Membership`)
+    saveDB(wdb)
   }
 
   // BUNGA MINGGUAN
@@ -73,10 +85,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     userRPG.bank += bunga; userRPG.totalBunga += bunga; userRPG.lastBunga = now
     userRPG.riwayat.unshift(`+Rp ${bunga.toLocaleString()} Bunga Mingguan`)
     if(userRPG.riwayat.length > 20) userRPG.riwayat.pop()
+    saveDB(wdb)
     conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
   }
 
-  // MENU UTAMA
+  // === MENU MONEY / UANG ===
+  if(command === 'money' || command === 'uang'){
+    let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
+    cap += `◈ INFORMASI SALDO ◈\n`
+    cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+    cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
+    cap += `◆ Total Aset : Rp ${((wdb.money[m.sender] || 0) + userRPG.bank).toLocaleString()}\n\n`
+    cap += `◈ KARTU BANK ◈\n`
+    cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
+    cap += `─━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  // MENU UTAMA BANK
   if (!action) {
     let sisaHari = Math.max(0, Math.ceil((cdBunga - (now - userRPG.lastBunga)) / satuHari))
     let sisaMembership = Math.max(0, Math.ceil((2592000000 - (now - userRPG.lastMembership)) / satuHari))
@@ -112,13 +138,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let userMoney = wdb.money[m.sender] || 0
 
-  // LIST KARTU - FASILITAS KE BAWAH
+  // LIST KARTU
   if (action === 'card' || action === 'kartu') {
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n◈ DAFTAR KARTU BANK ◈\n`
     for(let i in BANK_TIERS){
       let t = BANK_TIERS[i]
       let punya = userRPG.bankTier == i? '✅ KAMU' : ''
-
       cap += `${t.color} *Lv.${i} ${t.name}* ${punya}\n`
       cap += `◆ Limit : Rp ${t.limit.toLocaleString()}\n`
       cap += `◆ Bunga : ${(t.bunga*100).toFixed(2)}%/minggu\n`
@@ -126,9 +151,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       cap += `◆ Biaya Bulanan : Rp ${t.biayaBulanan.toLocaleString()}\n`
       cap += `◆ Asuransi : ${(t.asuransi*100).toFixed(0)}%\n`
       cap += `◆ Fasilitas:\n`
-      t.fasilitas.forEach(f => {
-        cap += ` • ${f}\n`
-      })
+      t.fasilitas.forEach(f => { cap += ` • ${f}\n` })
       cap += `\n`
     }
     cap += `Cara upgrade : *.upgradebank beli* / *.upgradebank 5*\n`
@@ -136,9 +159,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
   }
 
-  // SIMPAN
-  if (action === 'simpan') {
-    if (args[1] === 'all') amount = userMoney
+  // SIMPAN + ALIAS "all"
+  if (action === 'simpan' || action === 'all') {
+    if (args[1] === 'all' || action === 'all') amount = userMoney
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (userMoney < amount) return m.reply('❌ Uang saku tidak cukup')
     if (userRPG.bank + amount > tier.limit) return m.reply(`❌ Melebihi limit. Sisa: Rp ${(tier.limit - userRPG.bank).toLocaleString()}`)
@@ -149,33 +172,48 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply(msg)
   }
 
-  // TARIK
+  // TARIK + ALIAS "all"
   if (action === 'tarik') {
     if (args[1] === 'all') amount = userRPG.bank
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
     userRPG.bank -= amount; wdb.money[m.sender] += amount
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
+    saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n`
     if(tier.fasilitas.includes('Kendaraan Pribadi')) msg += `◆ Kurir : Kendaraan Pribadi\n`
     msg += `\n─━━━━━━━━━─`
-    saveDB(wdb); return m.reply(msg)
+    return m.reply(msg)
   }
 
-  // TF
+  // TF + BIAYA ADMIN 0.5% + SUPPORT REPLY + ALL
   if (action === 'tf') {
     if (!tier.fasilitas.includes('Transfer Bank')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa transfer\n─━━━━━━━━━─`)
-    let who = m.mentionedJid[0]; if (!who) return m.reply('❌ Tag target')
+    let who = m.mentionedJid[0] || m.quoted?.sender
+    if (!who) return m.reply('❌ Tag target atau reply pesan target')
+    if (who === m.sender) return m.reply('❌ Gak bisa tf ke diri sendiri')
+
+    if (args[1] === 'all') {
+      let biayaAdmin = Math.max(1000, Math.min(500000, Math.floor(userRPG.bank * 0.005)))
+      amount = userRPG.bank - biayaAdmin
+      if(amount <= 0) return m.reply('❌ Saldo tidak cukup untuk biaya admin')
+    }
+
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
-    if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
-    let dataTarget = getUserRPG(wdb, who)
-    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa transfer!')
-    let targetRPG = dataTarget.rpg; if (!targetRPG) return m.reply('❌ Target belum punya data RPG')
-    userRPG.bank -= amount; targetRPG.bank += amount
-    userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} TF ke @${who.split('@')[0]}`)
+
+    let biayaAdmin = Math.max(1000, Math.min(500000, Math.floor(amount * 0.005)))
+    let totalPotong = amount + biayaAdmin
+
+    if (userRPG.bank < totalPotong) return m.reply(`❌ Saldo bank tidak cukup\nButuh: Rp ${totalPotong.toLocaleString()} = Transfer + Admin Rp ${biayaAdmin.toLocaleString()}`)
+
+    let targetRPG = getUserRPG(wdb, who).rpg; if (!targetRPG) return m.reply('❌ Target belum punya data RPG')
+
+    userRPG.bank -= totalPotong; targetRPG.bank += amount
+    userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} TF ke @${who.split('@')[0]} + Admin Rp ${biayaAdmin.toLocaleString()}`)
     targetRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} TF dari @${m.sender.split('@')[0]}`)
     saveDB(wdb);
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSFER BERHASIL\n\n◈ TRANSFER BANK ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Ke : @${who.split('@')[0]}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
+
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSFER BERHASIL\n◈ TRANSFER BANK ◈\n◆ Jumlah TF : Rp ${amount.toLocaleString()}\n◆ Biaya Admin : Rp ${biayaAdmin.toLocaleString()}\n◆ Total Potong : Rp ${totalPotong.toLocaleString()}\n◆ Ke : @${who.split('@')[0]}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
     return m.reply(msg, null, { mentions: [who] })
   }
 
@@ -214,8 +252,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   saveDB(wdb)
 }
-handler.command = ['bank', 'tabung'];
+handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank simpan', 'bank tarik', 'bank tf', 'bank pinjam', 'bank bayar', 'bank riwayat', 'bank card', 'bank kartu']
+handler.help = ['bank', 'bank all', 'bank simpan', 'bank tarik', 'bank tf', 'bank pinjam', 'bank bayar', 'bank riwayat', 'bank card', 'money', 'uang']
 handler.group = false
 export default handler

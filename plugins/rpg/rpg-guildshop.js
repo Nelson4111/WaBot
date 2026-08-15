@@ -2,14 +2,22 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let myGuild = Object.values(wdb.guilds || {}).find(g => g.leader === m.sender)
-  if (!myGuild) return m.reply('❌ Hanya Leader Guild yang bisa akses.')
+  if (!wdb.guilds) wdb.guilds = {}
 
-  let totalPoints = Object.values(myGuild.contribution || {}).reduce((a, b) => a + b, 0)
+  // Biar semua member bisa buka shop, bukan cuma leader
+  let myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+  if (!myGuild) return m.reply('❌ Kamu belum punya Guild.')
+
+  // Init biar aman
+  if (!myGuild.contribution) myGuild.contribution = {}
+  if (!myGuild.contribution[m.sender]) myGuild.contribution[m.sender] = 0
+
+  let userContrib = myGuild.contribution[m.sender] || 0
+  let durasi = 2 * 60 * 60 * 1000 // 2 jam
 
   if (!text) {
     let cap = `╭──「 🛍️ GUILD SHOP 」──╮\n`
-    cap += `│ 📊 *Poin Pribadi:* ${totalPoints} Pts\n╰───────────────────╯\n\n`
+    cap += `│ 📊 *Poin Pribadi:* ${userContrib.toLocaleString()} Pts\n╰───────────────────╯\n\n`
     cap += `╭──「 ITEM BUFF 2 JAM 」──╮\n`
     cap += `│ 1. ⚔️ *Attack* - 500 Pts\n`
     cap += `│ 2. 🛡️ *Defense* - 500 Pts\n`
@@ -24,23 +32,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
   }
 
-  let userContrib = myGuild.contribution?.[m.sender] || 0
-  let durasi = 7200000
-
   const buy = (cost, buff, msg) => {
-    if (userContrib < cost) return m.reply(`❌ Poin tidak cukup (${cost} Pts)`)
+    if (userContrib < cost) return m.reply(`❌ Poin tidak cukup. Butuh ${cost} Pts, kamu punya ${userContrib} Pts`)
+
     myGuild.contribution[m.sender] -= cost
     myGuild[buff] = Date.now() + durasi
     saveDB(wdb)
-    m.reply(msg)
+    return m.reply(msg)
   }
 
-  if (text === '1') buy(500, 'buffAttack', '✅ ⚔️ Buff Attack Aktif (2 Jam)!')
-  else if (text === '2') buy(500, 'buffDefense', '✅ 🛡️ Buff Defense Aktif (2 Jam)!')
-  else if (text === '3') buy(500, 'buffMagic', '✅ 🔮 Buff Magic Aktif (2 Jam)!')
-  else if (text === '4') {
-    if (userContrib < 700) return m.reply('❌ Poin tidak cukup (700 Pts)')
+  if (text === '1') return buy(500, 'buffAttack', '✅ ⚔️ Buff Attack Aktif (2 Jam)!')
+  if (text === '2') return buy(500, 'buffDefense', '✅ 🛡️ Buff Defense Aktif (2 Jam)!')
+  if (text === '3') return buy(500, 'buffMagic', '✅ 🔮 Buff Magic Aktif (2 Jam)!')
+
+  if (text === '4') {
+    if (userContrib < 700) return m.reply('❌ Poin tidak cukup. Butuh 700 Pts')
     myGuild.contribution[m.sender] -= 700
+
+    // Heal semua member
     myGuild.buffHeal = Date.now() + durasi
     myGuild.members.forEach(jid => {
       let u = wdb.users[jid]?.rpg
@@ -52,12 +61,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       }
     })
     saveDB(wdb)
-    m.reply('✅ 💊 Buff Heal Aktif!\nSemua anggota +30% HP')
+    return m.reply('✅ 💊 Buff Heal Aktif!\nSemua anggota +30% HP')
   }
-  else if (text === '5') buy(800, 'buffMulti', '✅ 📈 Buff Multiplier Aktif (2 Jam)!')
-  else if (text === '6') buy(900, 'buffLuck', '✅ 🍀 Buff Luck Aktif (2 Jam)!')
-  else if (text === '7') buy(900, 'buffSpeed', '✅ ⚡ Buff Speed Aktif (2 Jam)!')
-  else m.reply('❌ Pilihan tidak valid.')
+
+  if (text === '5') return buy(800, 'buffMulti', '✅ 📈 Buff Multiplier Aktif (2 Jam)!')
+  if (text === '6') return buy(900, 'buffLuck', '✅ 🍀 Buff Luck Aktif (2 Jam)!')
+  if (text === '7') return buy(900, 'buffSpeed', '✅ ⚡ Buff Speed Aktif (2 Jam)!')
+
+  return m.reply('❌ Pilihan tidak valid.')
 }
 
 handler.help = ['guildshop']

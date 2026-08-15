@@ -6,22 +6,33 @@ global.icuTernak = global.icuTernak || {}
 let handler = async (m, { conn, args }) => {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
-  wdb.temp.kawin = wdb.temp.kawin || {} // TEMP BUAT KONFIRMASI
+  wdb.temp.kawin = wdb.temp.kawin || {}
   let user = getUserRPG(wdb, m.sender).rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}
   if(!user.cooldown) user.cooldown = {}
 
+  // AUTO MIGRASI KEY LOWERCASE BUAT DATA LAMA
+  let needSave = false
+  for(let key in user.ternak){
+    let keyLower = key.toLowerCase()
+    if(key!== keyLower){
+      user.ternak[keyLower] = (user.ternak[keyLower] || 0) + user.ternak[key]
+      delete user.ternak[key]
+      needSave = true
+    }
+  }
+  if(needSave) saveDB(wdb) // save 1x pas migrasi
+
   let [sub, h1, h2, asuransi] = args
   h1 = h1?.toLowerCase(); h2 = h2?.toLowerCase()
   asuransi = asuransi === 'asuransi'
 
-  // COMMAND 1: KAWIN PROSES
   if(sub === 'proses'){
     let data = wdb.temp.kawin[m.sender]
     if(!data) return m.reply('❌ Tidak ada kawin yg menunggu konfirmasi')
-    if(Date.now() - data.waktu > 60000) { // 1 menit expired
+    if(Date.now() - data.waktu > 60000) {
       delete wdb.temp.kawin[m.sender]
       saveDB(wdb)
       return m.reply('❌ Konfirmasi kadaluarsa. Ketik ulang.kawin')
@@ -29,7 +40,6 @@ let handler = async (m, { conn, args }) => {
     h1 = data.h1; h2 = data.h2; asuransi = data.asuransi
   }
 
-  // COMMAND 2: KAWIN BATAL
   if(sub === 'batal'){
     if(wdb.temp.kawin[m.sender]){
       delete wdb.temp.kawin[m.sender]
@@ -38,7 +48,6 @@ let handler = async (m, { conn, args }) => {
     } else return m.reply('❌ Tidak ada kawin yg menunggu konfirmasi')
   }
 
-  // DARI SINI PROSES AWAL KAWIN
   if(!h1 ||!h2) return m.reply('Contoh:\n.kawin ayam sapi\n.kawin ayam naga asuransi')
 
   let d1 = getHewan(h1)
@@ -65,23 +74,20 @@ let handler = async (m, { conn, args }) => {
   let eTertinggi = Math.max(d1.evolusi, d2.evolusi)
   let exp = (d1.exp + d2.exp) * (eTertinggi + 1) * 5 * (h1!==h2?2:1) * (eTertinggi >=7?3:1)
 
-  // KALAU KAWIN SILANG MINTA KONFIRMASI DULU
   if(h1!== h2 && sub!== 'proses') {
     wdb.temp.kawin[m.sender] = {h1, h2, asuransi, waktu: Date.now()}
     saveDB(wdb)
-
     let ket = `┌───❏「 ⚠️ PERINGATAN EVOLUSI 」❏\n│\n│ ${d1.emoji} ${d1.nama} [E${d1.evolusi}] × ${d2.emoji} ${d2.nama} [E${d2.evolusi}]\n│\n│ 📊 Resiko Gagal : ${peluangGagal(d1,d2)*100}%\n│ 🎯 Hasil : E${Math.min(eTertinggi+1,7)}\n│ ✨ Exp : ${Math.floor(exp)} / ${Math.floor(exp/2)}\n│\n│ 💰 Biaya Kawin : Rp ${biaya.toLocaleString()}`
     ket += asuransi? `\n│ 🛡️ Biaya Asuransi: Rp ${biayaAs.toLocaleString()}\n│ 🏥 Biaya ICU : Rp ${biayaObat.toLocaleString()}` : `\n│ ⚠️ Tanpa Asuransi: Tidak bisa ICU`
     ket += `\n│\n│ ℹ️ ICU = Ruang penyelamatan. Jika gagal dan punya asuransi,\n│ hewan masuk ICU 30 menit. Ketik.icu untuk menyelamatkan`
     return m.reply(ket + `\n│\n│ Ketik *.kawin proses* untuk lanjut\n│ Ketik *.kawin batal* untuk batal\n│ ⏰ 1 menit\n└───────────────────`)
   }
 
-  // PROSES KAWIN BENERAN
   wdb.money[m.sender] -= bayar
   user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
   user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
   user.cooldown.kawin = sekarang
-  delete wdb.temp.kawin[m.sender] // hapus konfirmasi
+  delete wdb.temp.kawin[m.sender]
 
   let gagal = Math.random() < peluangGagal(d1,d2)
   if(gagal) {
@@ -90,11 +96,13 @@ let handler = async (m, { conn, args }) => {
       global.icuTernak[m.sender] = {h1, h2, d1, d2, biayaObat}
       setTimeout(() => {
         if(global.icuTernak[m.sender]) {
+          const wdb2 = loadDB()
+          let user2 = getUserRPG(wdb2, m.sender).rpg
           let data = global.icuTernak[m.sender]
-          user.inventory[dapatkanHasil(data.d1).sembelih] = (user.inventory[dapatkanHasil(data.d1).sembelih] || 0) + 1
-          user.inventory[dapatkanHasil(data.d2).sembelih] = (user.inventory[dapatkanHasil(data.d2).sembelih] || 0) + 1
+          user2.inventory[dapatkanHasil(data.d1).sembelih] = (user2.inventory[dapatkanHasil(data.d1).sembelih] || 0) + 1
+          user2.inventory[dapatkanHasil(data.d2).sembelih] = (user2.inventory[dapatkanHasil(data.d2).sembelih] || 0) + 1
           delete global.icuTernak[m.sender]
-          saveDB(wdb)
+          saveDB(wdb2)
           conn.sendMessage(m.chat, {text: `┌───❏「 💀 WAKTU HABIS 」❏\n│\n│ ${data.d1.emoji} ${data.d1.nama} × ${data.d2.emoji} ${data.d2.nama}\n│ Status: MATI\n│\n│ 🍖 ${dapatkanHasil(data.d1).sembelih} x1\n│ 🍖 ${dapatkanHasil(data.d2).sembelih} x1\n└───────────────────`}, {quoted: m})
         }
       }, 30 * 60 * 1000)
@@ -106,7 +114,8 @@ let handler = async (m, { conn, args }) => {
     }
   } else {
     let hasil = prosesKawin(h1,h2)
-    user.ternak[hasil.hasil] = (user.ternak[hasil.hasil] || 0) + 1
+    let keyHasil = hasil.data.nama.toLowerCase()
+    user.ternak[keyHasil] = (user.ternak[keyHasil] || 0) + 1
     user.exp += Math.floor(exp)
     saveDB(wdb)
     let notif = hasil.baru? `\n│ ✨ HEWAN BARU TERDAFTAR!` : ''

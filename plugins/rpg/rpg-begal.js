@@ -2,122 +2,95 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
+  let userRPG = wdb.users[m.sender]?.rpg
+  if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
+  if(!userRPG.riwayat) userRPG.riwayat = []
 
-  // INIT COOLDOWN
-  if (!wdb.cooldowns) wdb.cooldowns = {}
-  if (!wdb.cooldowns[m.sender]) wdb.cooldowns[m.sender] = { begal: 0, gagalBegal: 0, penjara: 0 }
-  let cdData = wdb.cooldowns[m.sender]
-
-  // CEK PENJARA
-  if (Date.now() - cdData.penjara < 60000) {
-    let sisa = 60000 - (Date.now() - cdData.penjara)
-    let detik = Math.floor(sisa / 1000)
-    return m.reply(`🚔 *DI PENJARA*\nKamu masih di penjara karena gagal begal 2x.\nTunggu *${detik} detik* lagi.`)
+  // CEK PENJARA GLOBAL
+  if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
+    let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
+    let jam = Math.floor(sisa / 3600000)
+    let menit = Math.floor((sisa % 3600000) / 60000)
+    let tebusan = userRPG.tebusan || 2000000
+    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.tebus*`)
   }
 
-  // CEK COOLDOWN BEGAL
-  let lastBegal = cdData.begal || 0
-  let cd = 120000 // 2 menit
-  if (Date.now() - lastBegal < cd) {
-    let sisa = cd - (Date.now() - lastBegal)
-    let menit = Math.floor(sisa / 60000)
-    let detik = Math.floor((sisa % 60000) / 1000)
-    return m.reply(`⏳ Tunggu *${menit} menit ${detik} detik* lagi untuk begal kembali.`)
+  // COOLDOWN 2 JAM
+  let cd = 7200000
+  if (!userRPG.lastbegal) userRPG.lastbegal = 0
+  let sisa = cd - (Date.now() - userRPG.lastbegal)
+  if (sisa > 0) {
+    let jam = Math.floor(sisa / 3600000)
+    let menit = Math.floor((sisa % 3600000) / 60000)
+    return m.reply(`⏳ *COOLDOWN*\nTunggu *${jam}j ${menit}m* lagi untuk begal`)
   }
 
-  let who = m.quoted ? m.quoted.sender : null
-  if (!who) return m.reply(`❌ Silakan reply pesan orang yang ingin kamu begal!`)
-  if (who === m.sender) return m.reply('❌ Tidak bisa begal diri sendiri.')
+  let who = m.quoted?.sender
+  if (!who) return m.reply(`❌ Reply pesan target yg mau dibegal`)
+  if (who === m.sender) return m.reply('❌ Ga bisa begal diri sendiri')
 
-  // CEK GUILD
-  let myGuild = Object.values(wdb.guilds || {}).find(g => g.members?.includes(m.sender))
-  let targetGuild = Object.values(wdb.guilds || {}).find(g => g.members?.includes(who))
-  if(myGuild && targetGuild && myGuild.name === targetGuild.name){
-    return m.reply('❌ Sesama anggota guild tidak bisa saling begal!')
-  }
+  let target = getUserRPG(wdb, who).rpg
+  if(!target) return m.reply('❌ Target belum punya data RPG')
+  if(!target.riwayat) target.riwayat = []
 
-  let dataTarget = getUserRPG(wdb, who)
-  let target = dataTarget.rpg
-  if(!target) return m.reply('❌ Target belum punya data RPG.')
+  let uangTarget = wdb.money[who] || 0
+  if (uangTarget < 500) return m.reply('❌ Target terlalu miskin. Minimal Rp 500')
 
-  // HITUNG HP TARGET
-  if(!target.maxDarahBonus) target.maxDarahBonus = 0
-  let armorTarget = target.armor || 0
-  let maxHPTarget = 100 + (armorTarget * 20) + target.maxDarahBonus
-  target.maxDarah = maxHPTarget
-  if(!target.darah || target.darah > maxHPTarget) target.darah = maxHPTarget
+  userRPG.lastbegal = Date.now()
+  let gagal = Math.random() < 0.3 // 30% gagal
 
-  if (target.darah <= 0) return m.reply('❌ Target sudah sekarat! Dia tidak bisa dibegal. Suruh heal dulu')
+  wdb.crime = wdb.crime || {}
+  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
 
-  let targetMoney = wdb.money[who] || 0
-  if (targetMoney < 500) return m.reply('❌ Target terlalu miskin untuk dibegal. Minimal Rp 500')
+  if (gagal) {
+    // GAGAL = KAMU MATI + PENJARA 2 JAM
+    userRPG.darah = 0
+    wdb.penjara = wdb.penjara || []
+    let sel = wdb.penjara.length + 1
+    userRPG.penjara = Date.now()
+    userRPG.lamaPenjara = 7200000 // 2 jam
+    userRPG.tebusan = 2000000 // 2jt
+    userRPG.sel = sel
+    wdb.penjara.push(m.sender)
 
-  cdData.begal = Date.now()
-
-  let peluangGagal = Math.random() < 0.3 // 30% gagal
-
-  if (peluangGagal) {
-    cdData.gagalBegal += 1
-
-    let denda = Math.floor((wdb.money[m.sender] || 0) * 0.15)
-    if(denda > 0) {
-      wdb.money[m.sender] -= denda
-      wdb.money[who] += denda
-    }
-
-    if (cdData.gagalBegal >= 2) {
-      cdData.penjara = Date.now()
-      cdData.gagalBegal = 0
-      saveDB(wdb)
-      return m.reply(`🚔 *DITANGKEP POLISI!*\nKamu gagal begal 2x berturut-turut.\nMasuk penjara *1 menit*.`)
-    }
+    wdb.crime[m.sender].begal += 1
+    wdb.crime[m.sender].total += 1
+    userRPG.riwayat.unshift(`💀 Mati saat begal @${who.split('@')[0]}`)
 
     saveDB(wdb)
-
-    let teksGagal = `❌ *BEGAL GAGAL!*\n\n`
-    teksGagal += `🏴‍☠️ *Begal:* @${m.sender.split('@')[0]}\n`
-    teksGagal += `🎯 *Target:* @${who.split('@')[0]}\n\n`
-    teksGagal += `👮 Kamu ketahuan warga!\n`
-    teksGagal += `💸 Bayar ganti rugi *Rp ${denda.toLocaleString()}*\n`
-    teksGagal += `⚠️ Gagal ${cdData.gagalBegal}/2. Gagal 1x lagi = Penjara!`
-    return conn.reply(m.chat, teksGagal, m, { mentions: [m.sender, who] })
+    let txt = `┌───❏「 💀 BEGAL GAGAL 」❏\n`
+    txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
+    txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
+    txt += `│ ⚰️ Kamu tertembak dan mati\n`
+    txt += `│ 🚔 Masuk *PENJARA SEL ${sel}* selama *2 jam*\n`
+    txt += `│ 💰 Tebusan: *Rp 2.000.000*\n`
+    txt += `└───────────────────`
+    return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
-  cdData.gagalBegal = 0
+  // SUKSES
+  let hasil = Math.max(500, Math.floor(uangTarget * 0.1))
+  wdb.money[who] -= hasil
+  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
 
-  let persen = Math.floor(Math.random() * 11) + 5 // 5-15%
-  let hasilCuri = Math.floor(targetMoney * (persen / 100))
-
-  let damage = Math.floor(Math.random() * 15) + 5 // 5-19
-  target.darah -= damage
-  if(target.darah < 0) target.darah = 0
-
-  wdb.money[who] -= hasilCuri
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasilCuri
-
-  // TRACKING CRIME
-  if(!wdb.crime) wdb.crime = {}
-  if(!wdb.crime[m.sender]) wdb.crime[m.sender] = { rampok: 0, begal: 0, bunuh: 0, total: 0 }
   wdb.crime[m.sender].begal += 1
   wdb.crime[m.sender].total += 1
 
+  target.riwayat.unshift(`-Rp ${hasil.toLocaleString()} Dibegal @${m.sender.split('@')[0]}`)
+  userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Begal @${who.split('@')[0]}`)
   saveDB(wdb)
 
-  let teks = `✅ *BEGAL BERHASIL*\n\n`
-  teks += `🏴‍☠️ *Begal:* @${m.sender.split('@')[0]}\n`
-  teks += `🎯 *Korban:* @${who.split('@')[0]}\n\n`
-  teks += `💰 Korban kehilangan *${persen}%* uangnya.\n`
-  teks += `💵 Kamu mendapatkan: *Rp ${hasilCuri.toLocaleString()}*\n\n`
-  teks += `🩸 *Target kehilangan ${damage} HP*\n`
-  teks += `❤️ *Sisa HP Target:* ${target.darah}/${maxHPTarget}`
-  if(target.darah <= 0) teks += `\n\n💀 *TARGET SEKARAT!* Gabisa dibegal lagi sampai heal`
+  let txt = `┌───❏「 ✅ BEGAL BERHASIL 」❏\n`
+  txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
+  txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
+  txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
+  txt += `└───────────────────\n`
+  txt += `\n💡 Cek *.buronan* untuk lihat riwayat kriminalmu`
 
-  conn.reply(m.chat, teks, m, { mentions: [m.sender, who] })
+  conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
-
 handler.help = ['begal (reply)']
 handler.tags = ['rpg']
 handler.command = /^(begal)$/i
 handler.group = true
-
 export default handler

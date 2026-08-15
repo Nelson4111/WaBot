@@ -3,8 +3,6 @@ import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 let secret = ['poseidon', 'flying dutchman', 'aquaman', 'godzilla', 'zeus laut', 'atlas laut', 'kitsune laut', 'leviathan primordial', 'davy jones', 'caylpso', 'ariel little mermaid', 'treasure chest', 'ancient relic', 'pirate gold', 'mermaid tear']; // PAKE SPASI
 
 let handler = async (m, { conn }) => {
-  if(!global.owner.includes(m.sender)) return m.reply('❌ Khusus owner')
-
   const wdb = loadDB()
   let totalUser = 0
   let totalIkan = 0
@@ -32,10 +30,17 @@ let handler = async (m, { conn }) => {
   }
 
   saveDB(wdb)
-  m.reply(`✅ BERES\n🧹 ${totalUser} user dibersihkan\n🐟 ${totalIkan} ikan SECRET dihapus permanen\n\n_Versi spasi & underscore sudah dihapus semua_`)
+
+  let cap = `*──「 BERSIH SECRET 」──*\n\n`
+  cap += `🧹 User dibersihkan: ${totalUser}\n`
+  cap += `🐟 Ikan secret dihapus: ${totalIkan.toLocaleString()}\n`
+  cap += `✅ Versi spasi & underscore sudah dihapus`
+
+  return m.reply(cap)
 }
 handler.help = ['bersihsecret']
 handler.tags = ['owner']
 handler.command = /^(bersihsecret)$/i
-handler.owner = true
+handler.owner = true 
+
 export default handler
