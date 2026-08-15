@@ -538,7 +538,10 @@ async function processMessage(m, chatUpdate) {
                 else m.exp += xp
 
                 if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
-                    this.reply(m.chat, `[❗] Limit kamu telah habis *.buylimit* untuk membeli limit`, m)
+                    console.log('[LIMIT HABIS]', new Date().toISOString(), 
+                        'jid:', m.chat, 
+                        'limit saat ini:', global.db.data.users[m.sender].limit)
+                    this.reply(m.chat, `[❗] Limit harian kamu sudah habis. Silakan tunggu reset limit besok, atau ketik *.buylimit* untuk membeli limit.`, m).catch((err) => console.error('[GAGAL KIRIM PESAN LIMIT HABIS]', err.message))
                     continue
                 }
 
