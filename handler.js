@@ -118,8 +118,15 @@ const processedMessages = new Set()
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
     if (!chatUpdate || chatUpdate.type !== 'notify') return
-      this.pushMessage(chatUpdate.messages).catch(console.error)
-    let m = chatUpdate.messages[chatUpdate.messages.length - 1]
+    this.pushMessage(chatUpdate.messages).catch(console.error)
+    
+    // Proses semua pesan secara sekuensial atau paralel
+    for (const message of chatUpdate.messages) {
+        processMessage.call(this, message).catch(console.error)
+    }
+}
+
+async function processMessage(m) {
     if (!m) return  
     
     // Mencegah double response dengan menyimpan ID pesan yang sudah diproses
