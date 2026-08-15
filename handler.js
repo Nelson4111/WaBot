@@ -138,10 +138,8 @@ export async function handler(chatUpdate) {
 async function processMessage(m, chatUpdate) {
     if (!m) return  
     
-    // Mencegah double response dengan menyimpan ID pesan yang sudah diproses
+    // Mencegah double response dengan mengecek ID pesan yang sudah diproses
     if (processedMessages.has(m.key.id)) return
-    processedMessages.add(m.key.id)
-    setTimeout(() => processedMessages.delete(m.key.id), 5 * 60 * 1000) // Hapus cache setelah 5 menit
 
     if (global.db.data == null) await global.loadDatabase()
     try {
@@ -151,6 +149,11 @@ async function processMessage(m, chatUpdate) {
         // Cek langsung ke raw message object untuk menghindari bug getter mtype
         if (m.message && (m.message.protocolMessage || m.message.senderKeyDistributionMessage)) return
         if (m.mtype === 'protocolMessage' || m.mtype === 'senderKeyDistributionMessage' || !m.mtype) return
+        
+        // JANGAN cache pesan yang belum terdekripsi (m.mtype kosong)
+        // Cache hanya jika pesan valid, agar mekanisme retry dari Baileys tetap berjalan
+        processedMessages.add(m.key.id)
+        setTimeout(() => processedMessages.delete(m.key.id), 5 * 60 * 1000) // Hapus cache setelah 5 menit
         
         m.exp = 0
         m.limit = false
