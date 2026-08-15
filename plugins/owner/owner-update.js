@@ -19,7 +19,12 @@ let handler = async (m, { conn }) => {
     }
   } catch (e) {
     await m.react('❌')
-    m.reply(`❌ *Gagal Update!*\n\n⚠️ *Error:*\n${e.message}\n\nCoba ketik \`$ git fetch origin && git reset --hard origin/main && git clean -fd\` jika terjadi konflik.`)
+    let errText = `❌ *Gagal Update!*\n\n⚠️ *Error:*\n${e.message}\n\nKlik tombol di bawah untuk memaksa update (Force Pull) jika terjadi konflik.`
+    let buttons = [
+        ["Force Update 🚀", "$ git fetch origin && git reset --hard origin/main && git clean -fd"],
+        ["Update 🚀", ".update"]
+    ]
+    await conn.sendButton(m.chat, errText, "Gunakan dengan hati-hati!", buttons, m)
   }
 }
 

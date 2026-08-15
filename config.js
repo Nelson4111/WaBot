@@ -48,7 +48,7 @@ global.namebot = 'NelBot-MD'
 global.ch = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.saluran = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.useAdReply = false // Setel ke false jika ingin mematikan allfake/adReply agar chat 100% masuk di semua WA
-global.useButton = false // Setel ke false jika ingin menggunakan mode fallback text biasa (tanpa tombol)
+global.useButton = true // Mengaktifkan tombol interaktif di seluruh script
 global.wm = 'Nenel'
 global.watermark = wm
 global.versi = '4.0.0'

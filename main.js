@@ -158,11 +158,18 @@ const connectionOptions = {
   browser: ['Alya Bot', 'Safari', '1.0.0'],
   msgRetryCounterCache,
   cachedGroupMetadata: async (jid) => {
+    // 1. Utamakan ambil dari cache memoryStore Baileys yang terisi otomatis
+    if (memoryStore && memoryStore.groupMetadata && memoryStore.groupMetadata[jid]) {
+      return memoryStore.groupMetadata[jid];
+    }
+    
+    // 2. Fallback ke cache manual (jika ada yang set manual)
     if (global.groupMetadataCache.has(jid)) {
       const cached = global.groupMetadataCache.get(jid);
       if (Date.now() - cached.time < 5 * 60 * 1000) return cached.data;
     }
-    return null;
+    
+    return undefined;
   },
   auth: {
     creds: state.creds,
