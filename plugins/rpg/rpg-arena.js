@@ -17,8 +17,11 @@ function getTitlePanco(menang) {
 }
 
 function getPenantang(m, args, conn) {
+  let tagDariArgs = args.find(v => v.includes('@'))
+  if (tagDariArgs) {
+    return conn.decodeJid(tagDariArgs.replace(/[^0-9]/g, '') + '@s.whatsapp.net')
+  }
   let penantang = m.mentionedJid[0] || m.quoted?.sender
-  if(!penantang && args[1]) penantang = args[1].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
   if (penantang) return conn.decodeJid(penantang)
   return penantang
 }
@@ -147,11 +150,27 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
     
-    let arenaKey = Object.keys(global.arena).find(k => {
-      let match = global.arena[k].type === type && global.arena[k].chat === m.chat && global.arena[k].target === senderJid;
-      if (penantangTag && !isBot) match = match && global.arena[k].penantang === penantangTag;
-      return match;
-    })
+    let meta = await conn.groupMetadata(m.chat).catch(() => null)
+    let arenaKey = null
+    for (let k in global.arena) {
+      let a = global.arena[k]
+      if (a.type !== type || a.chat !== m.chat) continue
+      
+      let isTarget = (a.target === senderJid)
+      if (!isTarget && meta && meta.participants) {
+         let pTarget = meta.participants.find(p => p.id === a.target || p.lid === a.target)
+         let pSender = meta.participants.find(p => p.id === senderJid || p.lid === senderJid)
+         if (pTarget && pSender && pTarget.id === pSender.id) isTarget = true
+      }
+      
+      let match = isTarget
+      if (penantangTag && !isBot) match = match && a.penantang === penantangTag
+      
+      if (match) {
+         arenaKey = k
+         break
+      }
+    }
     if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
     let arena = global.arena[arenaKey]
@@ -211,11 +230,27 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
 
-    let arenaKey = Object.keys(global.arena).find(k => {
-      let match = global.arena[k].type === type && global.arena[k].chat === m.chat && global.arena[k].target === senderJid;
-      if (penantangTag && !isBot) match = match && global.arena[k].penantang === penantangTag;
-      return match;
-    })
+    let meta = await conn.groupMetadata(m.chat).catch(() => null)
+    let arenaKey = null
+    for (let k in global.arena) {
+      let a = global.arena[k]
+      if (a.type !== type || a.chat !== m.chat) continue
+      
+      let isTarget = (a.target === senderJid)
+      if (!isTarget && meta && meta.participants) {
+         let pTarget = meta.participants.find(p => p.id === a.target || p.lid === a.target)
+         let pSender = meta.participants.find(p => p.id === senderJid || p.lid === senderJid)
+         if (pTarget && pSender && pTarget.id === pSender.id) isTarget = true
+      }
+      
+      let match = isTarget
+      if (penantangTag && !isBot) match = match && a.penantang === penantangTag
+      
+      if (match) {
+         arenaKey = k
+         break
+      }
+    }
     if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
     let penantangAsli = global.arena[arenaKey].penantang
