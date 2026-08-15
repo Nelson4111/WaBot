@@ -116,6 +116,19 @@ async function replyCommandSuggestion(conn, m, candidate) {
 const processedMessages = new Set()
 const lastPresenceSentAt = new Map()
 
+const processedMessageIds = new Map()
+const DEDUP_TTL_MS = 5 * 60 * 1000
+
+function isDuplicateMessage(id) {
+    const now = Date.now()
+    for (const [key, ts] of processedMessageIds) {
+        if (now - ts > DEDUP_TTL_MS) processedMessageIds.delete(key)
+    }
+    if (processedMessageIds.has(id)) return true
+    processedMessageIds.set(id, now)
+    return false
+}
+
 function withTimeout(promise, ms, label) {
     return Promise.race([
         promise,
@@ -125,7 +138,7 @@ function withTimeout(promise, ms, label) {
     ])
 }
 
-let messageQueue = Promise.resolve()
+const chatQueues = new Map()
 
 export async function handler(chatUpdate) {
     console.log('[EVENT MASUK]', new Date().toISOString(), 
@@ -135,23 +148,37 @@ export async function handler(chatUpdate) {
     if (!chatUpdate || chatUpdate.type !== 'notify') return
     this.pushMessage(chatUpdate.messages).catch(console.error)
     
-    // Antrean global untuk memastikan pemrosesan pesan tetap sekuensial
-    // meskipun event upsert datang bertubi-tubi (spam di PC/Group)
-    messageQueue = messageQueue.then(async () => {
-        for (const message of chatUpdate.messages) {
+    for (const message of chatUpdate.messages) {
+        const msgId = message.key?.id
+        const jid = message.key?.remoteJid
+        if (msgId && isDuplicateMessage(msgId)) {
+            console.log('[SKIP DUPLIKAT]', msgId)
+            continue
+        }
+        
+        const prevQueue = chatQueues.get(jid) || Promise.resolve()
+        const nextQueue = prevQueue.then(async () => {
             await withTimeout(
                 processMessage.call(this, message, chatUpdate),
                 15000,
-                `processMessage untuk pesan id=${message.key?.id} dari=${message.key?.remoteJid}`
+                `processMessage untuk pesan id=${msgId} dari=${jid}`
             ).catch((err) => {
                 console.error('[PROCESS MESSAGE GAGAL/TIMEOUT]', err.message)
             })
-        }
-    }).catch(console.error)
+        }).catch(console.error)
+        chatQueues.set(jid, nextQueue)
+    }
 }
 
 async function processMessage(m, chatUpdate) {
     console.log('[PM START]', new Date().toISOString(), m?.key?.id)
+    
+    try {
+        if (opts['autoread']) await this.readMessages([m.key])
+    } catch (err) {
+        console.error('[AUTOREAD GAGAL]', err?.message)
+    }
+
     if (!m) return  
     
     // Mencegah double response dengan mengecek ID pesan yang sudah diproses
@@ -603,8 +630,6 @@ async function processMessage(m, chatUpdate) {
         } catch (e) {
             console.log(m, m.quoted, e)
         }
-        console.log('[PM BEFORE AUTOREAD]', new Date().toISOString(), m.key?.id)
-        if (opts['autoread']) await this.readMessages([m.key])
         console.log('[PM END]', new Date().toISOString(), m.key?.id)
     }
 }
