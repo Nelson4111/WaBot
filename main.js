@@ -1,5 +1,11 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1';
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[UNHANDLED REJECTION]', reason)
+})
+process.on('uncaughtException', (err) => {
+    console.error('[UNCAUGHT EXCEPTION]', err)
+})
 import store from './lib/store.js'
 
 import './config.js'
@@ -464,6 +470,13 @@ async function connectionUpdate(_0x7a1f) {
     isNewLogin: _0x2c11,
     qr
   } = _0x7a1f
+
+  if (_0x18c9 === 'close') {
+      console.log('[CONNECTION CLOSED]', 
+          'statusCode:', _0x6aa1?.error?.output?.statusCode,
+          'message:', _0x6aa1?.error?.message
+      )
+  }
 
   if (qr && !usePairingCode) {
     try {

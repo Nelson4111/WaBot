@@ -114,10 +114,14 @@ async function replyCommandSuggestion(conn, m, candidate) {
 }
 
 const processedMessages = new Set()
+const lastPresenceSentAt = new Map()
 
 let messageQueue = Promise.resolve()
 
 export async function handler(chatUpdate) {
+    console.log('[EVENT MASUK]', new Date().toISOString(), 
+        'jumlah pesan:', chatUpdate?.messages?.length, 
+        'type:', chatUpdate?.type)
     this.msgqueque = this.msgqueque || []
     if (!chatUpdate || chatUpdate.type !== 'notify') return
     this.pushMessage(chatUpdate.messages).catch(console.error)
@@ -151,11 +155,23 @@ async function processMessage(m, chatUpdate) {
         m.exp = 0
         m.limit = false
         // auto typing & recording
-        if (global.autotyping && typeof this.sendPresenceUpdate === 'function') {
-            this.sendPresenceUpdate('composing', m.chat).catch(console.error)
-        }
-        if (global.autorecording && typeof this.sendPresenceUpdate === 'function') {
-            this.sendPresenceUpdate('recording', m.chat).catch(console.error)
+        if (typeof this.sendPresenceUpdate === 'function') {
+            const jid = m.chat
+            const now = Date.now()
+            const lastSent = lastPresenceSentAt.get(jid) || 0
+            if (now - lastSent > 4000) { // throttle: maksimal sekali tiap 4 detik per chat
+                lastPresenceSentAt.set(jid, now)
+                
+                if (global.autotyping) {
+                    this.sendPresenceUpdate('composing', jid).catch((err) => {
+                        console.error('[PRESENCE UPDATE FAILED]', jid, err?.message)
+                    })
+                } else if (global.autorecording) {
+                    this.sendPresenceUpdate('recording', jid).catch((err) => {
+                        console.error('[PRESENCE UPDATE FAILED]', jid, err?.message)
+                    })
+                }
+            }
         }
         try {
             // DATABASE USER
