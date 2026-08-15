@@ -115,15 +115,20 @@ async function replyCommandSuggestion(conn, m, candidate) {
 
 const processedMessages = new Set()
 
+let messageQueue = Promise.resolve()
+
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || []
     if (!chatUpdate || chatUpdate.type !== 'notify') return
     this.pushMessage(chatUpdate.messages).catch(console.error)
     
-    // Proses semua pesan secara sekuensial
-    for (const message of chatUpdate.messages) {
-        await processMessage.call(this, message, chatUpdate).catch(console.error)
-    }
+    // Antrean global untuk memastikan pemrosesan pesan tetap sekuensial
+    // meskipun event upsert datang bertubi-tubi (spam di PC/Group)
+    messageQueue = messageQueue.then(async () => {
+        for (const message of chatUpdate.messages) {
+            await processMessage.call(this, message, chatUpdate).catch(console.error)
+        }
+    }).catch(console.error)
 }
 
 async function processMessage(m, chatUpdate) {
