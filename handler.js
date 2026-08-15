@@ -116,6 +116,15 @@ async function replyCommandSuggestion(conn, m, candidate) {
 const processedMessages = new Set()
 const lastPresenceSentAt = new Map()
 
+function withTimeout(promise, ms, label) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`TIMEOUT setelah ${ms}ms: ${label}`)), ms)
+        )
+    ])
+}
+
 let messageQueue = Promise.resolve()
 
 export async function handler(chatUpdate) {
@@ -130,12 +139,19 @@ export async function handler(chatUpdate) {
     // meskipun event upsert datang bertubi-tubi (spam di PC/Group)
     messageQueue = messageQueue.then(async () => {
         for (const message of chatUpdate.messages) {
-            await processMessage.call(this, message, chatUpdate).catch(console.error)
+            await withTimeout(
+                processMessage.call(this, message, chatUpdate),
+                15000,
+                `processMessage untuk pesan id=${message.key?.id} dari=${message.key?.remoteJid}`
+            ).catch((err) => {
+                console.error('[PROCESS MESSAGE GAGAL/TIMEOUT]', err.message)
+            })
         }
     }).catch(console.error)
 }
 
 async function processMessage(m, chatUpdate) {
+    console.log('[PM START]', new Date().toISOString(), m?.key?.id)
     if (!m) return  
     
     // Mencegah double response dengan mengecek ID pesan yang sudah diproses
@@ -405,6 +421,7 @@ async function processMessage(m, chatUpdate) {
         }
 
         // PLUGIN LOADER
+        console.log('[PM BEFORE SEND]', new Date().toISOString(), m.key?.id)
         const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
@@ -537,6 +554,7 @@ async function processMessage(m, chatUpdate) {
             }
         }
         if (commandCandidate && !m.plugin) await replyCommandSuggestion(this, m, commandCandidate)
+        console.log('[PM AFTER SEND]', new Date().toISOString(), m.key?.id)
     } catch (e) {
         console.error(e)
     } finally {
@@ -585,7 +603,9 @@ async function processMessage(m, chatUpdate) {
         } catch (e) {
             console.log(m, m.quoted, e)
         }
+        console.log('[PM BEFORE AUTOREAD]', new Date().toISOString(), m.key?.id)
         if (opts['autoread']) await this.readMessages([m.key])
+        console.log('[PM END]', new Date().toISOString(), m.key?.id)
     }
 }
 /**
