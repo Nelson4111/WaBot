@@ -2,24 +2,7 @@ import { AIService } from '../../lib/ai/core/AIService.js';
 
 const aiService = new AIService();
 
-// Helper untuk mengecek apakah pesan yang di-reply berasal dari Game / Fitur Non-AI
-function isNonAIMessage(m) {
-    if (!m.quoted) return false;
-    
-    let text = (m.quoted.text || '').toLowerCase();
-    
-    // Kata kunci unik fitur bot non-AI (Game, RPG, Profile, Welcome, dll)
-    let nonAiKeywords = [
-        'tebak', 'fishing', 'mancing', 'asah otak', 'profile', 'user · profile',
-        'welcome', 'goodbye', 'cak lontong', 'family 100', 'susun kata',
-        'timeout', 'bonus:', 'hadiah:', 'ketik #', 'ketik .', 'waktu habis',
-        'level pancingan', 'hasil cerdas cermat', 'registered :', 'menfess'
-    ];
 
-    if (nonAiKeywords.some(k => text.includes(k))) return true;
-
-    return false;
-}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     let qText = text || m.text;
@@ -35,8 +18,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 handler.all = async function (m) {
     if (!m.text || m.isBaileys || m.fromMe) return;
 
-    // Jika pesan ini membalas game / non-AI bot message, JANGAN respon
-    if (isNonAIMessage(m)) return;
+
 
     let text = m.text.trim();
 
@@ -51,7 +33,7 @@ handler.all = async function (m) {
         );
 
         // Periksa apakah pesan yang di-reply adalah pesan respon AI sebelumnya
-        let isReplyAI = m.quoted && (global.aiMessages?.has(m.quoted.id) || (m.quoted.fromMe && !isNonAIMessage(m)));
+        let isReplyAI = m.quoted && global.aiMessages?.has(m.quoted.id);
 
         // Di Grup: Hanya respon bila men-tag BOT secara eksplisit ATAU me-reply pesan AI!
         if (!isMentionBot && !isReplyAI) return;
@@ -71,7 +53,7 @@ handler.all = async function (m) {
         
         // Di PC: Jika pesan adalah reply, HANYA respon jika yang di-reply adalah pesan AI (bukan game/soal)
         if (m.quoted) {
-            let isReplyAI = global.aiMessages?.has(m.quoted.id) || (m.quoted.fromMe && !isNonAIMessage(m));
+            let isReplyAI = global.aiMessages?.has(m.quoted.id);
             if (!isReplyAI) return;
         }
     }

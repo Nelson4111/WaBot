@@ -1,4 +1,5 @@
-import { areJidsSameUser } from '@whiskeysockets/baileys'
+import pkg from '@whiskeysockets/baileys'
+const {  areJidsSameUser  } = pkg
 import fetch from 'node-fetch'
 import { Sticker } from 'wa-sticker-formatter'
 

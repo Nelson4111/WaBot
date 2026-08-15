@@ -1,4 +1,5 @@
-import { downloadContentFromMessage } from '@whiskeysockets/baileys'
+import pkg from '@whiskeysockets/baileys'
+const {  downloadContentFromMessage  } = pkg
 
 let handler = async (m, { conn }) => {
   if (!m.quoted) throw 'Send/Reply Images with the caption *.readviewonve*'
@@ -24,3 +25,4 @@ handler.command = /^read/i
 handler.register = true
 
 export default handler
+

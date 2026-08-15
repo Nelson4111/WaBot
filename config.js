@@ -39,6 +39,7 @@ global.nomorbot = '6281242432747' // ubah pake no kalian
 global.nomorown = '6281241100804' // ubah pake no kalian
 global.autotyping = false // default mati
 global.autorecording = false // default mati
+global.usePairingCode = false // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
 
 /*============= WATERMARK =============*/
 global.readMore = readMore
@@ -47,6 +48,7 @@ global.namebot = 'NelBot-MD'
 global.ch = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.saluran = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.useAdReply = false // Setel ke false jika ingin mematikan allfake/adReply agar chat 100% masuk di semua WA
+global.useButton = false // Setel ke false jika ingin menggunakan mode fallback text biasa (tanpa tombol)
 global.wm = 'Nenel'
 global.watermark = wm
 global.versi = '4.0.0'

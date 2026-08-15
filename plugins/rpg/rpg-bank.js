@@ -168,7 +168,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let who = m.mentionedJid[0]; if (!who) return m.reply('❌ Tag target')
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
-    let targetRPG = getUserRPG(wdb, who).rpg; if (!targetRPG) return m.reply('❌ Target belum punya data RPG')
+    let dataTarget = getUserRPG(wdb, who)
+    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa transfer!')
+    let targetRPG = dataTarget.rpg; if (!targetRPG) return m.reply('❌ Target belum punya data RPG')
     userRPG.bank -= amount; targetRPG.bank += amount
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} TF ke @${who.split('@')[0]}`)
     targetRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} TF dari @${m.sender.split('@')[0]}`)

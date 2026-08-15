@@ -1,5 +1,7 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1';
 
+import store from './lib/store.js'
+
 import './config.js'
 
 import path, { join } from 'path'
@@ -97,7 +99,7 @@ global.loadDatabase = async function loadDatabase() {
   global.db.chain = chain(db.data)
 }
 loadDatabase()
-const usePairingCode = !process.argv.includes('--use-pairing-code')
+const usePairingCode = global.usePairingCode !== undefined ? global.usePairingCode : !process.argv.includes('--use-pairing-code')
 const useMobile = process.argv.includes('--mobile')
 
 var question = function (text) {
@@ -111,8 +113,10 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 const { version, isLatest } = await fetchLatestBaileysVersion()
 const { state, saveCreds } = await useMultiFileAuthState('./sessions')
 
-if (!state.creds.registered) {
-  delete state.creds.me
+// Buat memory store asli dari Baileys untuk menyimpan pesan masuk sementara (penting untuk getMessage)
+const memoryStore = makeInMemoryStore({ logger: pino().child({ level: 'silent', stream: 'store' }) })
+
+if (!state.creds.me) {
   delete state.creds.pairingCode
   await saveCreds()
 }
@@ -145,7 +149,7 @@ const connectionOptions = {
   version,
   logger: pino({ level: 'silent' }),
   printQRInTerminal: !usePairingCode,
-  browser: Browsers.ubuntu('Chrome'),
+  browser: ['Alya Bot', 'Safari', '1.0.0'],
   msgRetryCounterCache,
   cachedGroupMetadata: async (jid) => {
     if (global.groupMetadataCache.has(jid)) {
@@ -159,13 +163,22 @@ const connectionOptions = {
     keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
   },
   getMessage: async key => {
-    // Ambil pesan dari database lokal jika tersedia
+    // 1. Coba ambil dari Baileys store (cache memori)
+    try {
+      if (memoryStore) {
+        const msg = await memoryStore.loadMessage(key.remoteJid, key.id)
+        if (msg) return msg.message || undefined
+      }
+    } catch {}
+    
+    // 2. Coba ambil dari global.db (fallback)
     try {
       const msgs = global.db?.data?.msgs
       if (msgs && msgs[key.id]) {
         return msgs[key.id].message
       }
     } catch {}
+
     return undefined
   },
   generateHighQualityLinkPreview: true,
@@ -200,6 +213,8 @@ const connectionOptions = {
 }
 
 global.conn = makeWASocket(connectionOptions)
+store.bind(conn)
+memoryStore.bind(conn.ev)
 conn.isInit = false
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -295,7 +310,7 @@ function scheduleReconnect() {
   }, delay)
 }
 
-if (usePairingCode && !conn.authState.creds.registered) {
+if (usePairingCode && !conn.authState.creds.me) {
   if (useMobile) throw new Error('Cannot use pairing code with mobile api')
 
   let phoneNumber = String(argv._[0] || '').trim().replace(/[^0-9]/g, '')

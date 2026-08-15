@@ -21,7 +21,7 @@ export async function runGitBackup() {
     await execPromise('git config user.name "NelBotz AutoBackup"').catch(() => {})
 
     // 1. Git add khusus database saja
-    await execPromise('git add database.json')
+    await execPromise('git add --sparse database.json').catch(() => {})
     
     // Cek file apa saja yang akan di-commit
     const { stdout: diffOutput } = await execPromise('git diff --name-only --cached')

@@ -28,6 +28,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     let dataTarget = getUserRPG(wdb, who)
+    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa dirampok!')
     let target = dataTarget.rpg
     if(!target) return m.reply('❌ Target belum punya data RPG.')
     if(target.kartuBeku) return m.reply('❌ Target kartunya sedang beku.')

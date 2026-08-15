@@ -16,10 +16,10 @@ function getTitlePanco(menang) {
   return '🥊 Pemula'
 }
 
-// fungsi buat cari penantang dari tag atau reply
-function getPenantang(m, args) {
+function getPenantang(m, args, conn) {
   let penantang = m.mentionedJid[0] || m.quoted?.sender
   if(!penantang && args[1]) penantang = args[1].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+  if (penantang) return conn.decodeJid(penantang)
   return penantang
 }
 
@@ -30,10 +30,9 @@ function initStats(user) {
 
 let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   const wdb = loadDB()
-  wdb.temp = wdb.temp || {}
-  wdb.temp.arena = wdb.temp.arena || {}
+  global.arena = global.arena || {}
 
-  let senderJid = m.sender.split('@')[0].split(':')[0] + '@s.whatsapp.net'
+  let senderJid = conn.decodeJid(m.sender)
   let data = getUserRPG(wdb, senderJid)
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
@@ -43,11 +42,11 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (command === 'jambak') {
     let targetRaw = m.mentionedJid[0] || m.quoted?.sender
     if(!targetRaw) return m.reply(`❌ Tag orang yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
-    if(targetRaw.includes('@lid')) return m.reply(`❌ Sistem mendeteksi JID anonim (@lid) dari reply kamu.\nTolong gunakan TAG langsung (@nama) ya, jangan reply pesannya!\nContoh: *${usedPrefix}jambak @tag 50000*`)
-    let target = targetRaw.split('@')[0].split(':')[0] + '@s.whatsapp.net'
+    let target = conn.decodeJid(targetRaw)
     if(target === senderJid) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
+    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa ditantang!')
     let userTarget = dataTarget.rpg
     if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
     initStats(userTarget) // auto fix target
@@ -73,20 +72,28 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ Balas pesan ini dengan perintah:\n│ *.jambakterima* atau *.jambaktolak*\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
-    wdb.temp.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
-    saveDB(wdb)
+    global.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
+    
+    // Auto hapus setelah 2 menit
+    setTimeout(() => {
+        if (global.arena[arenaId]) {
+            delete global.arena[arenaId]
+            conn.sendMessage(m.chat, { text: `❌ Tantangan Jambak dari @${senderJid.split('@')[0]} kepada @${target.split('@')[0]} telah kedaluwarsa.`, mentions: [senderJid, target] }).catch(() => {})
+        }
+    }, 120000)
+
     return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
   }
 
   // 2. PANCO - BUAT NANTANG
   if (command === 'panco') {
     let targetRaw = m.mentionedJid[0] || m.quoted?.sender
-    if(!targetRaw) return m.reply(`❌ Tag cowo yang mau kamu panco!\nContoh: *${usedPrefix}panco @tag 100000*`)
-    if(targetRaw.includes('@lid')) return m.reply(`❌ Sistem mendeteksi JID anonim (@lid) dari reply kamu.\nTolong gunakan TAG langsung (@nama) ya, jangan reply pesannya!\nContoh: *${usedPrefix}panco @tag 50000*`)
-    let target = targetRaw.split('@')[0].split(':')[0] + '@s.whatsapp.net'
+    if(!targetRaw) return m.reply(`❌ Tag orang yang mau diajak panco!\nContoh: *${usedPrefix}panco @tag 50000*`)
+    let target = conn.decodeJid(targetRaw)
     if(target === senderJid) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
 
     let dataTarget = getUserRPG(wdb, target)
+    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa ditantang!')
     let userTarget = dataTarget.rpg
     if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
     initStats(userTarget) // auto fix target
@@ -112,26 +119,46 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ Balas pesan ini dengan perintah:\n│ *.pancoterima* atau *.pancotolak*\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
-    wdb.temp.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
-    saveDB(wdb)
+    global.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
+    
+    // Auto hapus setelah 2 menit
+    setTimeout(() => {
+        if (global.arena[arenaId]) {
+            delete global.arena[arenaId]
+            conn.sendMessage(m.chat, { text: `❌ Tantangan Panco dari @${senderJid.split('@')[0]} kepada @${target.split('@')[0]} telah kedaluwarsa.`, mentions: [senderJid, target] }).catch(() => {})
+        }
+    }, 120000)
+
     return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
   }
 
   // 3. TERIMA - LEWAT COMMAND
   if (command === 'jambakterima' || command === 'pancoterima') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getPenantang(m, args)
+    let penantangTag = getPenantang(m, args, conn)
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
     
-    let arenaKey = Object.keys(wdb.temp.arena).find(k => {
-      let match = wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === senderJid;
-      if (penantangTag && !isBot) match = match && wdb.temp.arena[k].penantang === penantangTag;
+    let arenaKey = Object.keys(global.arena).find(k => {
+      let match = global.arena[k].type === type && global.arena[k].chat === m.chat && global.arena[k].target === senderJid;
+      if (penantangTag && !isBot) match = match && global.arena[k].penantang === penantangTag;
       return match;
     })
     if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
-    let arena = wdb.temp.arena[arenaKey]
+    let arena = global.arena[arenaKey]
+    
+    // VALIDASI ULANG UANG SEBELUM MAIN (Mencegah uang minus)
+    let uangP = wdb.money[arena.penantang] || 0
+    let uangT = wdb.money[arena.target] || 0
+    if (uangP < arena.taruhan) {
+        delete global.arena[arenaKey]
+        return m.reply(`❌ Pertarungan dibatalkan! Penantang (@${arena.penantang.split('@')[0]}) tidak memiliki cukup uang lagi.`, null, { mentions: [arena.penantang] })
+    }
+    if (uangT < arena.taruhan) {
+        delete global.arena[arenaKey]
+        return m.reply(`❌ Pertarungan dibatalkan! Kamu tidak memiliki cukup uang untuk membayar taruhan Rp ${arena.taruhan.toLocaleString()}.`)
+    }
     let dataP = getUserRPG(wdb, arena.penantang)
     let dataT = getUserRPG(wdb, arena.target)
     let userP = dataP.rpg
@@ -164,7 +191,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     }
     cap += `\n└───────────────────`
 
-    delete wdb.temp.arena[arenaKey]
+    delete global.arena[arenaKey]
     saveDB(wdb)
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
   }
@@ -172,20 +199,19 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   // 4. TOLAK - LEWAT COMMAND
   if (command === 'jambaktolak' || command === 'pancotolak') {
     let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getPenantang(m, args)
+    let penantangTag = getPenantang(m, args, conn)
     let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
     let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
 
-    let arenaKey = Object.keys(wdb.temp.arena).find(k => {
-      let match = wdb.temp.arena[k].type === type && wdb.temp.arena[k].chat === m.chat && wdb.temp.arena[k].target === senderJid;
-      if (penantangTag && !isBot) match = match && wdb.temp.arena[k].penantang === penantangTag;
+    let arenaKey = Object.keys(global.arena).find(k => {
+      let match = global.arena[k].type === type && global.arena[k].chat === m.chat && global.arena[k].target === senderJid;
+      if (penantangTag && !isBot) match = match && global.arena[k].penantang === penantangTag;
       return match;
     })
     if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
-    let penantangAsli = wdb.temp.arena[arenaKey].penantang
-    delete wdb.temp.arena[arenaKey]
-    saveDB(wdb)
+    let penantangAsli = global.arena[arenaKey].penantang
+    delete global.arena[arenaKey]
     return m.reply(`❌ @${senderJid.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [senderJid, penantangAsli] })
   }
 }

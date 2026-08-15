@@ -287,7 +287,8 @@ export async function handler(chatUpdate) {
 
         if (!isOwner && !m.fromMe && opts['self']) return
 
-        // Message Queue
+        // Message Queue (Dihapus agar bot langsung membalas tanpa delay)
+        /*
         if (m.text && !(isMods || isPrems)) {
             let queque = this.msgqueque, time = 1000 * 5
             const previousID = queque[queque.length - 1]
@@ -297,6 +298,7 @@ export async function handler(chatUpdate) {
                 await delay(time)
             }, time)
         }
+        */
 
         // -- AFK CLEAR (Dipindah ke sini agar tidak terblokir oleh isBaileys / WA Mods) --
         let userAFK = global.db.data.users[m.sender]

@@ -30,6 +30,7 @@ let handler = async (m, { conn }) => {
 
     const wdb = loadDB()
     const uang = wdb.money?.[who] || 0
+    const bank = user.rpg?.bank || 0
 
     let partnerText = '💔 Jomblo'
     if (pasangan && pasangan.length > 0) {
@@ -52,8 +53,10 @@ let handler = async (m, { conn }) => {
     let caption = `乂 *U S E R - P R O F I L E* 乂\n
 ◈ *Nama* : ${name || username}
 ◈ *Umur* : ${age} Tahun
-◈ *Uang Cash* : Rp ${uang.toLocaleString('id-ID')}
-◈ *Uang Bank* : Rp ${(user.bank || 0).toLocaleString('id-ID')}
+『 🔖 STATUS : ${status} 』
+『 💸 CASH   : Rp ${uang.toLocaleString()} 』
+『 🏦 BANK   : Rp ${bank.toLocaleString()} 』
+『 ✨ EXP    : ${exp} 』
 ◈ *Pasangan* : ${partnerText}
 ◈ *Number* : @${who.split('@')[0]}
 ◈ *SN Key* : ${sn}\n

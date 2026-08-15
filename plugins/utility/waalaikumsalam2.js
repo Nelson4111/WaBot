@@ -1,4 +1,5 @@
-import { generateWAMessageFromContent } from "@whiskeysockets/baileys"
+import pkg from '@whiskeysockets/baileys'
+const {  generateWAMessageFromContent  } = pkg
 var handler = async (m, { conn, usedPrefix: _p }) => {
     let info = `*ᴏʀᴀɴɢ ʏᴀɴɢ ᴍᴇɴɢᴜᴄᴀᴘᴋᴀɴ ꜱᴀʟᴀᴍ ꜱᴇᴘᴇʀᴛɪ ɪɴɪ ᴍᴀᴋᴀ ɪɑ ᴍᴇɴᴅᴀᴘᴛᴋᴀɴ 30 ᴘᴀʜᴀʟᴀ, ᴋᴇᴍᴜᴅɪᴀɴ, ᴏʀᴀɴɢ ʏᴀɴɢ ᴅɪʜᴀᴅᴀᴘᴀɴ ᴀᴛᴀᴜ ᴍᴇɴᴅᴇɴɢᴀʀɴʏᴀ ᴍᴇᴍʙᴀʟᴀꜱ ᴅᴇɴɢᴀɴ ᴋᴀʟɪᴍᴀᴛ ʏᴀɴɢ ꜱᴀᴍᴀ ʏᴀɪᴛᴜ ᴡᴀᴀʟᴀɪᴋᴜᴍᴜsꜱᴀʟᴀᴍ ᴡᴀʀᴀʜᴍᴀᴛᴜʟʟᴀʜɪ ᴡᴀʙᴀʀᴀᴋᴀᴛᴜʜ” ᴀᴛᴀᴜ ᴅɪᴛᴀᴍʙᴀʜ ᴅᴇɴɢᴀɴ ʏᴀɴɢ ʟᴀɪɴ (ᴡᴀʀɪᴅʜᴡᴀᴀɴᴀ). ᴀʀᴛɪɴʏᴀ ꜱᴇʟᴀɪɴ ᴅᴀʀɪᴘᴀᴅᴀ ᴅᴏ'ᴀ ꜱᴇʟᴀᴍᴀᴛ ᴊᴜɢᴀ ᴍᴇᴍɪɴᴛᴀ ᴘᴀᴅᴀ ᴀʟʟᴀʜ ꜱᴡᴛ*\nSumber: https://rumaysho.com/2677-lebih-sempurna-dalam-salam-lebih-baik.html#:~:text=Disebutkan%20dalam%20sunan%20An%20Nasai,%20ada%20seseorang%20mendatangi%20beliau%20lantas%20mengucapkan%20salam`
 
@@ -34,3 +35,4 @@ handler.customPrefix = /^(assalamualaikum|assalam|salam|asalamualaikum|assalamua
 handler.command = new RegExp;
 
 export default handler;
+

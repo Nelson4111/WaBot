@@ -6,7 +6,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let args = text.trim().split(' ')
   let action = args[0]?.toLowerCase()
-  let sender = m.sender
+  let sender = conn.decodeJid(m.sender)
   const items = ['money', 'diamond', 'gold', 'iron', 'stone', 'wood', 'diamond', 'koin_tembaga', 'koin_perak', 'koin_emas']
   const getTradeId = (a, b) => [a,b].sort().join('_')
 
@@ -17,7 +17,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // 1. MULAI VIA REPLY - harus paling atas
   if (m.quoted &&!trade) {
-    let partner = m.quoted.sender
+    let partner = conn.decodeJid(m.quoted.sender)
     if (partner === sender) return m.reply('❌ Tidak bisa trade dengan diri sendiri!')
     if (!wdb.users[partner]?.rpg) return m.reply('❌ Target belum punya data RPG.')
     let tid = getTradeId(sender, partner)
@@ -28,7 +28,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // 2. MULAI VIA TAG
   if (m.mentionedJid[0] &&!trade) {
-    let partner = m.mentionedJid[0]
+    let partner = conn.decodeJid(m.mentionedJid[0])
     if (partner === sender) return m.reply('❌ Tidak bisa trade dengan diri sendiri!')
     if (!wdb.users[partner]?.rpg) return m.reply('❌ Target belum punya data RPG.')
     let tid = getTradeId(sender, partner)

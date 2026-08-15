@@ -1,4 +1,5 @@
-import { areJidsSameUser } from '@whiskeysockets/baileys'
+import pkg from '@whiskeysockets/baileys'
+const {  areJidsSameUser  } = pkg
 
 let handler = async (m, { conn, participants, isAdmin, isBotAdmin }) => {
   if (!m.isGroup) throw '❌ Perintah ini hanya untuk grup!'

@@ -1,4 +1,5 @@
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, command }) => {
+  if (command === 'debugduit') return debugduit(m, { conn })
   let userMap = {}
 
   function getCanonicalId(jid = '') {
@@ -19,8 +20,10 @@ let handler = async (m, { conn }) => {
   // Ambil dari global.db.data.users (Database Utama Tunggal)
   if (global.db && global.db.data && global.db.data.users) {
     for (let [jid, u] of Object.entries(global.db.data.users)) {
+      if (jid.endsWith('@lid')) continue // Abaikan akun LID (akun bayangan/hantu)
+      
       const cashMoney = (u.money || 0) + (u.balance || 0)
-      const bankMoney = (u.bank || 0) + (u.rpg?.bank || 0)
+      const bankMoney = u.rpg?.bank || 0
       if (cashMoney > 0 || bankMoney > 0) {
         addMoney(jid, u.name, cashMoney, bankMoney)
       }
@@ -51,9 +54,35 @@ let handler = async (m, { conn }) => {
   conn.sendMessage(m.chat, { text: teks.trim(), mentions }, { quoted: m })
 }
 
+let debugduit = async (m, { conn }) => {
+  let target = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.sender;
+  let clean = target.split('@')[0].split(':')[0];
+  
+  let result = `*DEBUG DUIT: ${clean}*\n\n`;
+  let matches = [];
+  
+  if (global.db && global.db.data && global.db.data.users) {
+    for (let [jid, u] of Object.entries(global.db.data.users)) {
+      if (jid.includes(clean)) {
+        matches.push({
+          jid: jid,
+          name: u.name,
+          money: u.money,
+          bank: u.bank,
+          balance: u.balance,
+          rpg_bank: u.rpg?.bank
+        });
+      }
+    }
+  }
+  
+  result += JSON.stringify(matches, null, 2);
+  conn.sendMessage(m.chat, { text: result }, { quoted: m });
+}
+
 handler.help = ['topmoney', 'topuang']
 handler.tags = ['info', 'rpg']
-handler.command = /^(topmoney|topuang)$/i
+handler.command = /^(topmoney|topuang|debugduit)$/i
 handler.limit = false
 
 export default handler
