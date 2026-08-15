@@ -69,7 +69,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitleJambak(userTarget.stats.jambakMenang)}\n│ Lv.${userTarget.level} | W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ Balas pesan ini dengan perintah:\n│ *.jambakterima* atau *.jambaktolak*\n│ ⏰ 2 menit\n`
+    cap += `│\n│ Silakan klik tombol di bawah untuk\n│ menerima atau menolak tantangan!\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     global.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -82,7 +82,11 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
         }
     }, 120000)
 
-    return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
+    let buttons = [
+        ["Terima ⚔️", `.jambakterima @${senderJid.split('@')[0]}`],
+        ["Tolak 🏃", `.jambaktolak @${senderJid.split('@')[0]}`]
+    ]
+    return conn.sendButton(m.chat, cap, "Pilih Aksi", buttons, m, { mentions: [senderJid, target] })
   }
 
   // 2. PANCO - BUAT NANTANG
@@ -116,7 +120,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitlePanco(userTarget.stats.pancoMenang)}\n│ Lv.${userTarget.level} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ Balas pesan ini dengan perintah:\n│ *.pancoterima* atau *.pancotolak*\n│ ⏰ 2 menit\n`
+    cap += `│\n│ Silakan klik tombol di bawah untuk\n│ menerima atau menolak tantangan!\n│ ⏰ 2 menit\n`
     cap += `└───────────────────`
 
     global.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -129,7 +133,11 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
         }
     }, 120000)
 
-    return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
+    let buttons = [
+        ["Terima 💪", `.pancoterima @${senderJid.split('@')[0]}`],
+        ["Tolak 🏃", `.pancotolak @${senderJid.split('@')[0]}`]
+    ]
+    return conn.sendButton(m.chat, cap, "Pilih Aksi", buttons, m, { mentions: [senderJid, target] })
   }
 
   // 3. TERIMA - LEWAT COMMAND
