@@ -47,7 +47,7 @@
     "@bochilteam/scraper": "^5.0.1",
     "@ibaraki-douji/pixivts": "^2.4.1",
     "@vitalets/google-translate-api": "^9.2.0",
-    "@whiskeysockets/baileys": "github:yuusuke1101/ryuuxalya",
+    "@whiskeysockets/baileys": "https://codeload.github.com/yuusuke1101/ryuuxalya/tar.gz/main",
     "archiver": "^7.0.1",
     "awesome-phonenumber": "^5.10.0",
     "axios": "^1.4.0",
