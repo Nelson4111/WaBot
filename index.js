@@ -5,33 +5,7 @@ import { join, dirname } from 'path';
 import { createRequire } from 'module';
 import { createInterface } from 'readline';
 import { setupMaster, fork } from 'cluster';
-import { watchFile, unwatchFile, existsSync, rmSync } from 'fs';
-import { execSync } from 'child_process';
-
-// ── AUTO-PATCH: Ganti Baileys resmi dengan fork yuusuke1101/ryuuxalya ──
-const __dirname_root = dirname(fileURLToPath(import.meta.url));
-const baileysPath = join(__dirname_root, 'node_modules/@whiskeysockets/baileys');
-const forkUrl = 'https://github.com/yuusuke1101/ryuuxalya.git';
-const pkgCheck = join(baileysPath, 'package.json');
-
-try {
-  const createRequireCheck = (await import('module')).createRequire(import.meta.url);
-  const pkgData = existsSync(pkgCheck) ? createRequireCheck(pkgCheck) : {};
-  // Cek apakah yang terinstall bukan fork (fork namanya AlyaxRyuu)
-  if (pkgData?.name !== 'AlyaxRyuu') {
-    console.log('[🔄 PATCH] Baileys bukan fork, mengganti dengan fork yuusuke1101/ryuuxalya...');
-    if (existsSync(baileysPath)) rmSync(baileysPath, { recursive: true, force: true });
-    execSync(`git clone --depth 1 ${forkUrl} "${baileysPath}"`, { stdio: 'inherit' });
-    // Install dependencies fork
-    execSync(`npm install --prefix "${baileysPath}"`, { stdio: 'inherit' });
-    console.log('[✅ PATCH] Fork Baileys berhasil dipasang!');
-  } else {
-    console.log('[✅ PATCH] Fork Baileys (AlyaxRyuu) sudah terpasang, skip.');
-  }
-} catch (e) {
-  console.warn('[⚠️ PATCH] Gagal ganti Baileys fork, melanjutkan dengan versi terinstall:', e.message);
-}
-// ── END AUTO-PATCH ──
+import { watchFile, unwatchFile } from 'fs';
 
 // Setup console output
 const { say } = cfonts;
