@@ -425,6 +425,8 @@ handler.before = async function (m, { conn }) {
         }, { quoted: m })
         return true
     }
+}
+
 handler.help = ['lamar @user', 'terima', 'tolak', 'cerai @user', 'pasangan', 'kencan', 'belicincin', 'hadiah <tipe> <jumlah>', 'kartunikah']
 handler.tags = ['romansa', 'pasangan']
 handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|istri|suami|kencan|belicincin|cincin|hadiah|kartunikah|bukunikah)$/i
