@@ -1,5 +1,5 @@
-let handler = async (m, { conn, args, usedPrefix, command }) => {
-    let type = (args[0] || '').toLowerCase()
+let handler = async (m, { conn, args, text, usedPrefix, command }) => {
+    let type = (text || '').toLowerCase()
 
     if (!type) {
         // Tampilkan Menu List jika dipanggil tanpa argumen
@@ -7,10 +7,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             {
                 title: "Silakan pilih tipe interaktif yang ingin diuji:",
                 rows: [
-                    { title: "Tes Regular Button", rowId: `${usedPrefix + command} button`, description: "Mengirim tombol standar (max 3)" },
-                    { title: "Tes List Menu", rowId: `${usedPrefix + command} list`, description: "Mengirim menu dropdown bergaya List" },
-                    { title: "Tes Polling", rowId: `${usedPrefix + command} poll`, description: "Mengirim pesan polling / pemungutan suara" },
-                    { title: "Tes Template / Hydrated", rowId: `${usedPrefix + command} hydrated`, description: "Mengirim pesan dengan tombol URL, Call, dan Quick Reply" },
+                    { title: "Tes Regular Button", id: "button", rowId: `${usedPrefix + command} button`, description: "Mengirim tombol standar (max 3)" },
+                    { title: "Tes List Menu", id: "list", rowId: `${usedPrefix + command} list`, description: "Mengirim menu dropdown bergaya List" },
+                    { title: "Tes Polling", id: "poll", rowId: `${usedPrefix + command} poll`, description: "Mengirim pesan polling / pemungutan suara" },
+                    { title: "Tes Template / Hydrated", id: "hydrated", rowId: `${usedPrefix + command} hydrated`, description: "Mengirim pesan dengan tombol URL, Call, dan Quick Reply" },
                 ]
             }
         ]
@@ -25,7 +25,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         )
     }
 
-    if (type === 'button') {
+    if (type.includes('button')) {
         let buttons = [
             ["Button 1", "id_btn_1"],
             ["Button 2", "id_btn_2"],
@@ -34,13 +34,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         return conn.sendButton(m.chat, "Ini adalah tes Regular Button", "Powered by Baileys", null, buttons, m)
     }
 
-    if (type === 'list') {
+    if (type.includes('list')) {
         let sections = [
             {
                 title: "Bagian Pertama",
                 rows: [
-                    { title: "Opsi 1", rowId: "id_opsi_1", description: "Deskripsi Opsi 1" },
-                    { title: "Opsi 2", rowId: "id_opsi_2", description: "Deskripsi Opsi 2" }
+                    { title: "Opsi 1", id: "opsi_1", rowId: "id_opsi_1", description: "Deskripsi Opsi 1" },
+                    { title: "Opsi 2", id: "opsi_2", rowId: "id_opsi_2", description: "Deskripsi Opsi 2" }
                 ]
             }
         ]
@@ -55,12 +55,12 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         )
     }
 
-    if (type === 'poll') {
+    if (type.includes('poll')) {
         let options = ["Pilihan A", "Pilihan B", "Pilihan C"]
         return conn.sendPoll(m.chat, "Ini adalah tes Polling. Pilih salah satu!", options)
     }
 
-    if (type === 'hydrated') {
+    if (type.includes('hydrated') || type.includes('template')) {
         return conn.sendHydrated2(
             m.chat,
             "Ini adalah tes Hydrated/Template Buttons",
