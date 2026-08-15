@@ -30,7 +30,7 @@ let proposals = {}
 let handler = async (m, { conn, usedPrefix, command, text, args }) => {
     let inputCmd = command || m.text.toLowerCase().trim()
     let users = global.db.data.users
-    let sender = m.sender
+    let sender = conn.decodeJid(m.sender)
 
     if (!users[sender]) users[sender] = {}
     if (!users[sender].pasangan) users[sender].pasangan = []
@@ -372,7 +372,7 @@ handler.before = async function (m, { conn }) {
     if (txt !== 'terima' && txt !== 'tolak') return
     if (!m.quoted || !m.quoted.text?.includes('MELAMAR')) return
 
-    let sender = m.sender.split(':')[0] + '@s.whatsapp.net'
+    let sender = conn.decodeJid(m.sender)
     let proposals = global.db.data.proposals = global.db.data.proposals || {}
     let users = global.db.data.users
 
@@ -425,6 +425,8 @@ handler.before = async function (m, { conn }) {
         }, { quoted: m })
         return true
     }
-}
+handler.help = ['lamar @user', 'terima', 'tolak', 'cerai @user', 'pasangan', 'kencan', 'belicincin', 'hadiah <tipe> <jumlah>', 'kartunikah']
+handler.tags = ['romansa', 'pasangan']
+handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|istri|suami|kencan|belicincin|cincin|hadiah|kartunikah|bukunikah)$/i
 
 export default handler

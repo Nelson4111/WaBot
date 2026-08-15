@@ -28,6 +28,7 @@ let kataBucin = [
 
 let handler = async (m, { conn, usedPrefix, command, text, participants }) => {
     let inputCmd = command.toLowerCase()
+    let senderJid = conn.decodeJid(m.sender)
 
     // 1. CEK ISI HATI
     if (inputCmd === 'cekisihati') {
@@ -46,7 +47,7 @@ let handler = async (m, { conn, usedPrefix, command, text, participants }) => {
     if (['jodoh', 'jodohku'].includes(inputCmd)) {
         if (!m.isGroup) return m.reply('❌ Fitur ini hanya bisa digunakan di dalam grup!')
 
-        let members = participants.map(u => conn.decodeJid(u.id || u.jid)).filter(v => v !== m.sender && v !== conn.user.jid)
+        let members = participants.map(u => conn.decodeJid(u.id || u.jid)).filter(v => v !== senderJid && v !== conn.user.jid)
         if (members.length === 0) return m.reply('❌ Anggota grup terlalu sedikit!')
 
         let randomJodoh = members[Math.floor(Math.random() * members.length)]
@@ -54,13 +55,13 @@ let handler = async (m, { conn, usedPrefix, command, text, participants }) => {
         let ramalan = getRamalanByScore(score)
 
         let txt = `💘 *RAMALAN JODOH RAHASIA HARI INI* 💘\n\n`
-        txt += `✨ @${m.sender.split('@')[0]} Jodoh takdirmu di grup ini adalah...\n`
+        txt += `✨ @${senderJid.split('@')[0]} Jodoh takdirmu di grup ini adalah...\n`
         txt += `👉 @${randomJodoh.split('@')[0]} 👩‍❤️‍👨\n\n`
         txt += `📊 *Tingkat Kecocokan:* *${score}%*\n`
         txt += `📜 *Ramalan:* ${ramalan}\n\n`
         txt += `_Cobalah sapa jodohmu dengan *.lamar @tag*! 😉_`
 
-        return conn.sendMessage(m.chat, { text: txt, mentions: [m.sender, randomJodoh] }, { quoted: m })
+        return conn.sendMessage(m.chat, { text: txt, mentions: [senderJid, randomJodoh] }, { quoted: m })
     }
 
     // 3. JODOHIN / CEKJODOH (2 ORANG)
@@ -95,10 +96,10 @@ let handler = async (m, { conn, usedPrefix, command, text, participants }) => {
         let status = statusList[Math.floor(Math.random() * statusList.length)]
 
         let txt = `🤫 *DRAMA SELINGKUH RAHASIA* 🤫\n\n`
-        txt += `@${m.sender.split('@')[0]} mencoba selingkuh dengan @${target.split('@')[0]}...\n\n`
+        txt += `@${senderJid.split('@')[0]} mencoba selingkuh dengan @${target.split('@')[0]}...\n\n`
         txt += `📌 *Hasil:* ${status}`
 
-        return conn.sendMessage(m.chat, { text: txt, mentions: [m.sender, target] }, { quoted: m })
+        return conn.sendMessage(m.chat, { text: txt, mentions: [senderJid, target] }, { quoted: m })
     }
 
     // 5. PELET
@@ -128,7 +129,7 @@ let handler = async (m, { conn, usedPrefix, command, text, participants }) => {
 }
 
 handler.help = ['cekisihati @user', 'jodoh', 'jodohku', 'jodohin @u1 @u2', 'selingkuh @user', 'pelet @user', 'bucin']
-handler.tags = ['pasangan', 'fun']
+handler.tags = ['romansa', 'fun']
 handler.command = /^(cekisihati|jodoh|jodohku|jodohin|cekjodoh|selingkuh|pelet|bucin)$/i
 
 export default handler
