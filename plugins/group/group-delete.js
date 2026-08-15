@@ -11,7 +11,7 @@ let handler = async (m, { conn, isAdmin, isOwner }) => {
 
     if (m.isGroup) {
         if (!(isAdmin || isOwner)) {
-            return m.reply('*Hanya Admin menggunakan perintah ini!*')
+            if (!fromMe) return m.reply('*Fitur hapus pesan member lain hanya untuk Admin!\nKamu hanya bisa menghapus pesan dari bot.*')
         }
     }
 
