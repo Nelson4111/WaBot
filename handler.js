@@ -592,6 +592,9 @@ async function processMessage(m, chatUpdate) {
         }
         let user, stats = global.db.data.stats
         if (m) {
+            if (m.mtype === 'templateButtonReplyMessage') {
+                console.log('[DEBUG BUTTON REPLY RAW]', JSON.stringify(m.message, null, 2))
+            }
             if (m.sender && (user = global.db.data.users[m.sender])) {
                 user.exp += m.exp
                 user.limit -= m.limit * 1
