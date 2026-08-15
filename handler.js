@@ -120,9 +120,9 @@ export async function handler(chatUpdate) {
     if (!chatUpdate || chatUpdate.type !== 'notify') return
     this.pushMessage(chatUpdate.messages).catch(console.error)
     
-    // Proses semua pesan secara sekuensial atau paralel
+    // Proses semua pesan secara sekuensial
     for (const message of chatUpdate.messages) {
-        processMessage.call(this, message, chatUpdate).catch(console.error)
+        await processMessage.call(this, message, chatUpdate).catch(console.error)
     }
 }
 
