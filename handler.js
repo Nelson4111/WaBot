@@ -565,7 +565,12 @@ async function processMessage(m, chatUpdate) {
                                 if (data.exists)
                                     m.reply(`*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim(), data.jid)
                             }
-                        m.reply(text)
+                        
+                        if (String(e).includes('rate-overlimit') || String(e).includes('Rate Overlimit')) {
+                            m.reply('⚠️ Sistem sedang sibuk (Rate Limit Server WhatsApp). Silakan ulangi perintahmu dalam beberapa detik. 🙏')
+                        } else {
+                            m.reply('❌ Terjadi kesalahan pada fitur ini, silakan coba lagi nanti atau laporkan ke owner.')
+                        }
                     }
                 } finally {
                     // m.reply(util.format(_user))
