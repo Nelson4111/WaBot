@@ -122,11 +122,11 @@ export async function handler(chatUpdate) {
     
     // Proses semua pesan secara sekuensial atau paralel
     for (const message of chatUpdate.messages) {
-        processMessage.call(this, message).catch(console.error)
+        processMessage.call(this, message, chatUpdate).catch(console.error)
     }
 }
 
-async function processMessage(m) {
+async function processMessage(m, chatUpdate) {
     if (!m) return  
     
     // Mencegah double response dengan menyimpan ID pesan yang sudah diproses
