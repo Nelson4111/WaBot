@@ -36,7 +36,7 @@ let handler = async (m, { conn, args, text, usedPrefix, command }) => {
                 ["Button 2", "id_btn_2"],
                 ["Button 3", "id_btn_3"]
             ]
-            return await conn.sendButton(m.chat, "Ini adalah tes Regular Button", "Powered by Baileys", buttons, m)
+            return await conn.sendButton(m.chat, "Ini adalah tes Regular Button", "Powered by Baileys", buttons, null)
         }
 
         if (type.includes('list')) {
@@ -56,7 +56,7 @@ let handler = async (m, { conn, args, text, usedPrefix, command }) => {
                 "Footer list", 
                 "Klik Untuk Buka List", 
                 sections, 
-                m
+                null
             )
         }
 
@@ -80,7 +80,7 @@ let handler = async (m, { conn, args, text, usedPrefix, command }) => {
                     ["Quick Reply 1", "id_quick_1"],
                     ["Quick Reply 2", "id_quick_2"]
                 ], // buttons
-                m
+                null
             )
         }
 
