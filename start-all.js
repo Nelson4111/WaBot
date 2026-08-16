@@ -12,11 +12,32 @@
  */
 
 import { spawn } from 'child_process';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// ─────────────────────────────────────────────
+// Auto-install bot-discord/node_modules jika belum ada
+// (Pterodactyl hanya auto-install root package.json)
+// ─────────────────────────────────────────────
+const dcNodeModules = join(__dirname, 'bot-discord', 'node_modules')
+const dcPackageJson = join(__dirname, 'bot-discord', 'package.json')
+
+if (existsSync(dcPackageJson) && !existsSync(dcNodeModules)) {
+    console.log(`${'\x1b[34m'}[BOT-DC]${'\x1b[0m'} 📦 node_modules tidak ditemukan, auto-install...`)
+    try {
+        execSync('npm install', {
+            cwd: join(__dirname, 'bot-discord'),
+            stdio: 'inherit',
+        })
+        console.log(`${'\x1b[34m'}[BOT-DC]${'\x1b[0m'} ✅ Install selesai.`)
+    } catch (e) {
+        console.error(`${'\x1b[31m'}[BOT-DC][ERR]${'\x1b[0m'} Gagal install dependencies: ${e.message}`)
+    }
+}
 
 // ─────────────────────────────────────────────
 // Konfigurasi Bot
