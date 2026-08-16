@@ -6,8 +6,6 @@
 import 'dotenv/config'
 import { Client, GatewayIntentBits, Collection } from 'discord.js'
 import { Player } from 'discord-player'
-import extractorPkg from '@discord-player/extractor'
-const { DefaultExtractors } = extractorPkg
 import { readdirSync } from 'fs'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { dirname, join } from 'path'
@@ -56,7 +54,7 @@ const player = new Player(client, {
 })
 
 // Load semua extractor (YouTube, Spotify, SoundCloud, dll)
-await player.extractors.loadMulti(DefaultExtractors)
+await player.extractors.loadDefault()
 console.log('[BOT-DC] ✅ Audio extractors dimuat.')
 
 // ─────────────────────────────────────────────
