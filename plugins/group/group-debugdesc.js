@@ -4,15 +4,12 @@ let handler = async (m, { conn }) => {
     try {
         await m.react('⏳')
         let metadata = await conn.groupMetadata(m.chat, true)
-        let descId = metadata.descId || 'Tidak ada (Atau belum diset)'
-        let desc = metadata.desc?.toString() || 'Tidak ada deskripsi'
         
-        let report = `*DEBUG GROUP METADATA*\n\n`
-        report += `*Subject:* ${metadata.subject}\n`
-        report += `*DescId:* ${descId}\n`
-        report += `*Desc Tipe:* ${typeof metadata.desc}\n`
-        report += `*Desc (Teks Asli):*\n${desc}\n\n`
-        report += `_Pesan ini untuk mengecek apakah server WhatsApp benar-benar mengembalikan deskripsi grup atau tidak._`
+        let rawJson = JSON.stringify(metadata, null, 2)
+        
+        let report = `*RAW GROUP METADATA (DEBUG)*\n\n`
+        report += `\`\`\`json\n${rawJson}\n\`\`\`\n\n`
+        report += `_Pesan ini berisi data mentah dari WhatsApp Server. Silakan cek apakah teks deskripsi ada di dalam properti lain._`
         
         await m.reply(report)
         await m.react('✅')
