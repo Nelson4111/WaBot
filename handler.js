@@ -183,6 +183,8 @@ async function processMessage(m, chatUpdate) {
     try {
         m = smsg(this, m) || m
         if (!m) return
+        if (m.chat) m.chat = this.decodeJid(m.chat)
+        if (m.sender) m.sender = this.decodeJid(m.sender)
         
         // Cek langsung ke raw message object untuk menghindari bug getter mtype
         if (m.message && (m.message.protocolMessage || m.message.senderKeyDistributionMessage)) return
@@ -392,7 +394,7 @@ async function processMessage(m, chatUpdate) {
 
         m.exp += Math.ceil(Math.random() * 10)
         let usedPrefix
-        let _user = global.db.data?.users?.[m.sender]
+        let _user = global.db.data?.users?.[m.sender] || {}
         let groupMetadata = {}
         if (m.isGroup) {
             this.chats = this.chats || {}
@@ -542,7 +544,7 @@ async function processMessage(m, chatUpdate) {
                 if (plugin.private && m.isGroup) { fail('private', m, this); continue }
                 // Game & RPG sekarang bisa dimainkan di private chat maupun grup
                 // GLOBAL REGISTRATION CHECK
-                let isUnreg = !(_user?.registered)
+                let isUnreg = _user?.registered === false
                 let allowUnreg = ['daftar', 'unreg', 'verify']
                 
                 // Jika command membutuhkan unreg (seperti .daftar), atau nama command ada di whitelist
