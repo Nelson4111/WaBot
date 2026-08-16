@@ -3,7 +3,7 @@ import { format } from 'util'
 let handler = async (m, { conn }) => {
     try {
         await m.react('⏳')
-        let metadata = await conn.groupMetadata(m.chat)
+        let metadata = await conn.groupMetadata(m.chat, true)
         let descId = metadata.descId || 'Tidak ada (Atau belum diset)'
         let desc = metadata.desc?.toString() || 'Tidak ada deskripsi'
         
