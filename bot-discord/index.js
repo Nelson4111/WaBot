@@ -3,14 +3,17 @@
  * Entry point bot musik Discord NelMusic
  */
 
-import 'dotenv/config'
+import { fileURLToPath, pathToFileURL } from 'url'
+import path, { join } from 'path'
+import dotenv from 'dotenv'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+dotenv.config({ path: path.join(__dirname, '.env') })
+
 import { Client, GatewayIntentBits, Collection } from 'discord.js'
 import { Player } from 'discord-player'
 import { readdirSync } from 'fs'
-import { fileURLToPath, pathToFileURL } from 'url'
-import { dirname, join } from 'path'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // ─────────────────────────────────────────────
 // Inisialisasi Discord Client
