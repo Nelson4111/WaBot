@@ -106,7 +106,13 @@ let handler = async (m, { conn, text, participants, isAdmin, isOwner, usedPrefix
   } catch (e) {
     console.error('Group Add Error:', e)
     await m.react('❌')
-    m.reply(`❌ *Gagal menambahkan anggota:* ${e.message || e}`)
+    
+    let errStr = String(e.message || e)
+    if (errStr.includes('account_reachout_restricted') || errStr.includes('463')) {
+      return m.reply('❌ *Gagal menambahkan anggota!*\n\nAkun bot sedang dibatasi (Shadowban) oleh WhatsApp sehingga tidak bisa menambahkan orang ke grup secara langsung. Harap bagikan link grup kepada target.')
+    }
+    
+    m.reply(`❌ *Gagal menambahkan anggota:* ${errStr}`)
   }
 }
 
