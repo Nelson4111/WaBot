@@ -9,7 +9,9 @@ import dotenv from 'dotenv'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-dotenv.config({ path: path.join(__dirname, '.env') })
+// Muat .env dari root folder dan subfolder bot-discord
+dotenv.config({ path: path.join(__dirname, '..', '.env') })
+dotenv.config({ path: path.join(__dirname, '.env'), override: true })
 
 import { Client, GatewayIntentBits, Collection } from 'discord.js'
 import { Player } from 'discord-player'
@@ -82,9 +84,12 @@ function parseYoutubeCookie(rawCookie) {
     return rawCookie; // Jika sudah format string biasa
 }
 
+const ytCookie = parseYoutubeCookie(process.env.YOUTUBE_COOKIE)
+console.log(`[BOT-DC] 🍪 Status YouTube Cookie: ${ytCookie ? `Terdeteksi (${ytCookie.length} karakter) ✅` : 'TIDAK TERDETEKSI / KOSONG ⚠️'}`)
+
 // Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama dengan engine YTMUSIC & Cookie
 await player.extractors.register(YoutubeiExtractor, {
-    cookie: parseYoutubeCookie(process.env.YOUTUBE_COOKIE),
+    cookie: ytCookie,
     streamOptions: {
         useClient: 'YTMUSIC'
     }
