@@ -20,6 +20,7 @@
     "ffmpeg-static": "^5.2.0",
     "genius-lyrics": "^4.4.5",
     "sodium-native": "^4.1.1",
+    "youtube-dl-exec": "^3.1.12",
     "youtube-ext": "^1.1.2",
     "youtubei.js": "^18.0.0"
   }
