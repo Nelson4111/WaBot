@@ -62,10 +62,10 @@ await player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor')
 
 // Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama
 await player.extractors.register(YoutubeiExtractor, {
+    generateWithPoToken: true,
     streamOptions: {
-        useClient: 'ANDROID'
-    },
-    disablePlayer: true
+        useClient: 'WEB'
+    }
 })
 
 console.log('[BOT-DC] ✅ Audio extractors dimuat (via YoutubeiExtractor).')
