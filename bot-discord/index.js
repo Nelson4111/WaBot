@@ -6,7 +6,8 @@
 import 'dotenv/config'
 import { Client, GatewayIntentBits, Collection } from 'discord.js'
 import { Player } from 'discord-player'
-import { DefaultExtractors } from '@discord-player/extractor'
+import extractorPkg from '@discord-player/extractor'
+const { DefaultExtractors } = extractorPkg
 import { readdirSync } from 'fs'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { dirname, join } from 'path'
