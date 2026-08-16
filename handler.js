@@ -263,7 +263,8 @@ async function processMessage(m, chatUpdate) {
                 global.db.data.chats[m.chat] = {}
             if (chat) {
                 if (!('isBanned' in chat)) chat.isBanned = false
-                if (!('welcome' in chat)) chat.welcome = false
+                if (!('welcome' in chat)) chat.welcome = true
+                if (!('leave' in chat)) chat.leave = true
                 if (!('detect' in chat)) chat.detect = false
                 if (!('sWelcome' in chat)) chat.sWelcome = ''
                 if (!('sBye' in chat)) chat.sBye = ''
@@ -286,6 +287,7 @@ async function processMessage(m, chatUpdate) {
                 global.db.data.chats[m.chat] = {
                     isBanned: false,
                     welcome: true,
+                    leave: true,
                     detect: false,
                     sWelcome: '',
                     sBye: '',
@@ -693,7 +695,7 @@ export async function participantsUpdate({ id, participants, action }) {
                 let username = dbName || waName || user.split('@')[0]
                 let gcname = await this.getName(id)
                 let memberCount = groupMetadata.participants ? groupMetadata.participants.length : '0'
-                let text = (chat.sWelcome || this.welcome || conn.welcome || 'Welcome, @user!').replace('@subject', gcname).replace('@desc', groupMetadata.desc?.toString() || 'no description').replace('@user', '@' + user.split('@')[0])               
+                let text = (chat.sWelcome || this.welcome || conn.welcome || 'Welcome, @user!').replace('@subject', gcname).replace('@desc', groupMetadata.desc?.toString() || 'Belum ada deskripsi').replace('@user', '@' + user.split('@')[0])               
                 let cardBuf
                 try {
                     cardBuf = await generateWelcomeCard({ avatarUrl: pp, username, groupName: gcname, memberCount })
