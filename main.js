@@ -205,9 +205,33 @@ const connectionOptions = {
       return meta;
     }
     
+    // 4. CACHE MISS — fetch sendiri dengan single-flight agar Baileys tidak juga
+    //    memanggil groupMetadata(jid) secara paralel (yang menyebabkan rate-overlimit).
+    //    cachedGroupMetadata TIDAK BOLEH return undefined untuk group JID.
     global.groupMetadataQueryHourly = (global.groupMetadataQueryHourly || 0) + 1;
-    console.log(chalk.yellow(`⚠️ [GROUP METADATA SERVER QUERY #${global.groupMetadataQueryHourly}] Cache miss for ${jid}. Querying server...`))
-    return undefined;
+    console.log(chalk.yellow(`⚠️ [METADATA QUERY #${global.groupMetadataQueryHourly}] Cache miss ${jid}, fetching inline...`))
+    
+    if (!global._cachedMetaInFlight) global._cachedMetaInFlight = new Map()
+    if (global._cachedMetaInFlight.has(jid)) {
+      // Reuse promise yang sedang in-flight untuk JID yang sama
+      return global._cachedMetaInFlight.get(jid)
+    }
+
+    const promise = (global.conn ? global.conn.groupMetadata(jid) : Promise.reject(new Error('no conn')))
+      .then(meta => {
+        if (meta && global.updateGroupMetadataCache) global.updateGroupMetadataCache(jid, meta)
+        return meta
+      })
+      .catch(e => {
+        console.error(chalk.red(`❌ [cachedGroupMetadata FETCH FAIL] ${jid}: ${e?.message}`));
+        // Kembalikan object minimal agar Baileys tidak crash dan tidak ikut fetch lagi.
+        // Baileys hanya butuh { id, participants } untuk key distribution.
+        return global.conn?.chats?.[jid]?.metadata || { id: jid, participants: [], subject: '' }
+      })
+      .finally(() => { global._cachedMetaInFlight?.delete(jid) })
+    
+    global._cachedMetaInFlight.set(jid, promise)
+    return promise
   },
   auth: {
     creds: state.creds,
@@ -560,6 +584,24 @@ async function connectionUpdate(_0x7a1f) {
       )
     )
     global.timestamp.connect = new Date()
+
+    // Pre-fetch semua metadata grup sekaligus (1 IQ query total, bukan 1 per grup).
+    // Ini mengisi cache SEBELUM pesan pertama datang, mencegah Baileys memanggil
+    // groupMetadata(jid) dari dalam sendMessage saat cache masih kosong.
+    setTimeout(async () => {
+      try {
+        if (!conn.ws?.isOpen) return
+        const groups = await conn.groupFetchAllParticipating().catch(_ => null)
+        if (groups && Object.keys(groups).length > 0) {
+          for (const [id, meta] of Object.entries(groups)) {
+            if (global.updateGroupMetadataCache) global.updateGroupMetadataCache(id, meta)
+          }
+          console.log(chalk.green(`✅ [GROUP PRE-FETCH] Cache pre-populated untuk ${Object.keys(groups).length} grup via groupFetchAllParticipating.`))
+        }
+      } catch (e) {
+        console.error(chalk.red('[GROUP PRE-FETCH ERROR]'), e?.message)
+      }
+    }, 5000) // tunggu 5 detik agar koneksi stabil dulu
 
     // E2EE Pre-Key Warmup Ping (Sinkronisasi Kunci E2EE Otomatis Pasca Connection)
     try {
