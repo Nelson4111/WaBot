@@ -648,20 +648,21 @@ process.on('uncaughtException', console.error)
 // let strQuot = /(["'])(?:(?=(\\?))\2.)*?\1/
 
 let isInit = true
+let isReloadingHandler = false
 let handler = await import('./handler.js')
 global.reloadHandler = async function (restatConn) {
-  /*try {
-      const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error)*/
-  try {
-    // Jika anda menggunakan replit, gunakan yang sevenHoursLater dan tambahkan // pada const Handler.
-    // Default runtime bot biasa; replit + 7 jam buat jam Indonesia.
-    // const sevenHoursLater = Dateindonesia 7 * 60 * 60 * 1000;
-    const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error)
-    // const Handler = await import(`./handler.js?update=${sevenHoursLater}`).catch(console.error)
-    if (Object.keys(Handler || {}).length) handler = Handler
-  } catch (e) {
-    console.error(e)
+  if (isReloadingHandler) {
+    console.log(chalk.yellow('[RELOAD] reloadHandler already in progress, ignoring overlapping invocation.'))
+    return false
   }
+  isReloadingHandler = true
+  try {
+    try {
+      const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error)
+      if (Object.keys(Handler || {}).length) handler = Handler
+    } catch (e) {
+      console.error(e)
+    }
   if (restatConn) {
     const oldChats = global.conn.chats
     try { global.conn.ws.close() } catch { }
@@ -727,7 +728,9 @@ global.reloadHandler = async function (restatConn) {
   conn.ev.on('creds.update', conn.credsUpdate)
   isInit = false
   return true
-
+  } finally {
+    isReloadingHandler = false
+  }
 }
 
 const pluginFolder = join(__dirname, './plugins')
