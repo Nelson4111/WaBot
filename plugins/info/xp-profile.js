@@ -12,8 +12,18 @@ const formatDuration = (ms) => {
     return `${minutes} Menit`
 }
 
-let handler = async (m, { conn }) => {
-    let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : m.sender
+let handler = async (m, { conn, text }) => {
+    let rawNumber = text ? text.replace(/[^0-9]/g, '') : ''
+    let who
+    if (m.mentionedJid && m.mentionedJid[0]) {
+        who = m.mentionedJid[0]
+    } else if (m.quoted && m.quoted.sender) {
+        who = m.quoted.sender
+    } else if (rawNumber && rawNumber.length >= 10) {
+        who = rawNumber + '@s.whatsapp.net'
+    } else {
+        who = m.sender
+    }
     who = conn.decodeJid(who)
 
     let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'

@@ -142,6 +142,26 @@ global.updateGroupMetadataCache = function (jid, metadata) {
     global.conn.chats[jid].metadata = metadata;
     if (metadata.subject) global.conn.chats[jid].subject = metadata.subject;
   }
+
+  // Auto-index all participant LIDs to JIDs
+  if (Array.isArray(metadata.participants)) {
+    if (!global.lids) global.lids = {};
+    if (global.db && global.db.data && !global.db.data.lids) global.db.data.lids = {};
+    for (const p of metadata.participants) {
+      const lid = p.lid || (p.id?.endsWith('@lid') ? p.id : null);
+      const phoneJid = p.jid || p.phoneNumber || (p.id?.endsWith('@s.whatsapp.net') ? p.id : null);
+      if (lid && lid.endsWith('@lid') && phoneJid && phoneJid.endsWith('@s.whatsapp.net')) {
+        const cleanLid = lid.split(':')[0].replace(/@.+/, '') + '@lid';
+        const cleanJid = phoneJid.split(':')[0].replace(/@.+/, '') + '@s.whatsapp.net';
+        global.lids[cleanLid] = cleanJid;
+        global.lids[lid] = cleanJid;
+        if (global.db && global.db.data && global.db.data.lids) {
+          global.db.data.lids[cleanLid] = cleanJid;
+          global.db.data.lids[lid] = cleanJid;
+        }
+      }
+    }
+  }
 };
 
 // Message retry counter cache (pengganti NodeCache tanpa dependency tambahan)

@@ -1,7 +1,16 @@
-let handler = async (m, { conn }) => {
-  let hasMention = /(@\d{5,})/.test(m.text || '')
-  let rawWho = (hasMention && m.mentionedJid?.[0]) || (m.fromMe ? conn.user.jid : m.sender)
-  let who = conn.decodeJid(rawWho)
+let handler = async (m, { conn, text }) => {
+  let rawNumber = text ? text.replace(/[^0-9]/g, '') : ''
+  let who
+  if (m.mentionedJid && m.mentionedJid[0]) {
+    who = m.mentionedJid[0]
+  } else if (m.quoted && m.quoted.sender) {
+    who = m.quoted.sender
+  } else if (rawNumber && rawNumber.length >= 10) {
+    who = rawNumber + '@s.whatsapp.net'
+  } else {
+    who = m.fromMe ? conn.user.jid : m.sender
+  }
+  who = conn.decodeJid(who)
 
   let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
   try { pp = await conn.profilePictureUrl(who, 'image') } catch {}

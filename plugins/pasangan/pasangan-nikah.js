@@ -104,7 +104,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
     // 5. PASANGAN / CEKNIKAH
     if (['pasangan', 'ceknikah', 'istri', 'suami'].includes(inputCmd)) {
-        let who = m.mentionedJid?.[0] || sender
+        let who = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || sender)
         let pList = users[who]?.pasangan || []
 
         if (pList.length === 0) {
@@ -238,7 +238,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
     // 9. KARTU NIKAH DIGITAL (CANVAS ELEGANT ROYAL BLUE)
     if (['kartunikah', 'bukunikah'].includes(inputCmd)) {
-        let who = m.mentionedJid?.[0] || sender
+        let who = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || sender)
         let pList = users[who]?.pasangan || []
 
         if (pList.length === 0) {

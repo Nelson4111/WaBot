@@ -189,8 +189,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   // TF + BIAYA ADMIN 0.5% + SUPPORT REPLY + ALL
   if (action === 'tf') {
     if (!tier.fasilitas.includes('Transfer Bank')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa transfer\n─━━━━━━━━━─`)
-    let who = m.mentionedJid[0] || m.quoted?.sender
+    let who = m.mentionedJid?.[0] || m.quoted?.sender
     if (!who) return m.reply('❌ Tag target atau reply pesan target')
+    who = conn.decodeJid(who)
     if (who === m.sender) return m.reply('❌ Gak bisa tf ke diri sendiri')
 
     if (args[1] === 'all') {
