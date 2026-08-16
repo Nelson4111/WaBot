@@ -4,7 +4,7 @@
  */
 
 import { SlashCommandBuilder } from 'discord.js'
-import { useMainPlayer } from 'discord-player'
+import { useMainPlayer, QueryType } from 'discord-player'
 import { errorEmbed, successEmbed } from '../utils/embed.js'
 
 export default {
@@ -35,6 +35,7 @@ export default {
 
         try {
             const { track } = await player.play(channel, query, {
+                searchEngine: QueryType.YOUTUBE_SEARCH,
                 nodeOptions: {
                     metadata: {
                         channel: interaction.channel,
