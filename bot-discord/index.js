@@ -14,7 +14,15 @@ dotenv.config({ path: path.join(__dirname, '.env') })
 import { Client, GatewayIntentBits, Collection } from 'discord.js'
 import { Player } from 'discord-player'
 import { YoutubeiExtractor } from 'discord-player-youtubei'
+import { Platform } from 'youtubei.js'
 import { readdirSync } from 'fs'
+
+// Konfigurasi JavaScript evaluator untuk decipher signature YouTube secara native
+Platform.shim.eval = (data, env = {}) => {
+    const code = typeof data === 'string' ? data : data.output
+    const fn = new Function(...Object.keys(env), code)
+    return fn(...Object.values(env))
+}
 
 // ─────────────────────────────────────────────
 // Inisialisasi Discord Client
@@ -74,10 +82,12 @@ function parseYoutubeCookie(rawCookie) {
     return rawCookie; // Jika sudah format string biasa
 }
 
-// Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama dengan engine yt-dlp & Cookie
+// Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama dengan engine YTMUSIC & Cookie
 await player.extractors.register(YoutubeiExtractor, {
     cookie: parseYoutubeCookie(process.env.YOUTUBE_COOKIE),
-    useYoutubeDL: true,
+    streamOptions: {
+        useClient: 'YTMUSIC'
+    }
 })
 
 console.log('[BOT-DC] ✅ Audio extractors dimuat (via YoutubeiExtractor).')
