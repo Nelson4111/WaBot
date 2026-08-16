@@ -166,6 +166,15 @@ const msgRetryCounterCache = {
   }
 }
 
+global.groupMetadataQueryHourly = 0;
+global.groupMetadataCacheHits = 0;
+
+setInterval(() => {
+  console.log(chalk.cyan(`📊 [METADATA STATS 1-JAM] Query Server WA: ${global.groupMetadataQueryHourly || 0} | Cache Hits: ${global.groupMetadataCacheHits || 0}`));
+  global.groupMetadataQueryHourly = 0;
+  global.groupMetadataCacheHits = 0;
+}, 60 * 60 * 1000);
+
 const connectionOptions = {
   version,
   logger: pino({ level: 'silent' }),
@@ -175,23 +184,29 @@ const connectionOptions = {
   cachedGroupMetadata: async (jid) => {
     // 1. Tier 1: Ambil dari memoryStore Baileys
     if (memoryStore && memoryStore.groupMetadata && memoryStore.groupMetadata[jid]) {
+      global.groupMetadataCacheHits = (global.groupMetadataCacheHits || 0) + 1;
       return memoryStore.groupMetadata[jid];
     }
     
     // 2. Tier 2: Fallback ke global.groupMetadataCache Map (TTL 15 menit)
     if (global.groupMetadataCache && global.groupMetadataCache.has(jid)) {
       const cached = global.groupMetadataCache.get(jid);
-      if (Date.now() - cached.time < 15 * 60 * 1000) return cached.data;
+      if (Date.now() - cached.time < 15 * 60 * 1000) {
+        global.groupMetadataCacheHits = (global.groupMetadataCacheHits || 0) + 1;
+        return cached.data;
+      }
     }
 
     // 3. Tier 3: Fallback ke conn.chats[jid].metadata
     if (global.conn && global.conn.chats && global.conn.chats[jid] && global.conn.chats[jid].metadata) {
       const meta = global.conn.chats[jid].metadata;
       global.updateGroupMetadataCache(jid, meta);
+      global.groupMetadataCacheHits = (global.groupMetadataCacheHits || 0) + 1;
       return meta;
     }
     
-    console.log(chalk.yellow(`⚠️ [GROUP METADATA FALLBACK QUERY] Cache miss for ${jid}. Querying server...`))
+    global.groupMetadataQueryHourly = (global.groupMetadataQueryHourly || 0) + 1;
+    console.log(chalk.yellow(`⚠️ [GROUP METADATA SERVER QUERY #${global.groupMetadataQueryHourly}] Cache miss for ${jid}. Querying server...`))
     return undefined;
   },
   auth: {
@@ -656,6 +671,7 @@ global.reloadHandler = async function (restatConn) {
     isInit = true
   }
   if (!isInit) {
+    if (conn.callHandler) conn.ev.off('call', conn.callHandler)
     conn.ev.off('messages.upsert', conn.handler)
     conn.ev.off('group-participants.update', conn.participantsUpdate)
     conn.ev.off('groups.update', conn.groupsUpdate)
@@ -695,14 +711,15 @@ global.reloadHandler = async function (restatConn) {
   conn.groupsUpdate = handler.groupsUpdate.bind(global.conn)
   conn.connectionUpdate = connectionUpdate.bind(global.conn)
   conn.credsUpdate = saveCreds.bind(global.conn)
-
-  conn.ev.on('call', async (call) => {
+  conn.callHandler = async (call) => {
     console.log('Panggilan diterima:', call);
     if (call.status === 'ringing') {
       await conn.rejectCall(call.id);
       console.log('Panggilan ditolak');
     }
-  })
+  };
+
+  conn.ev.on('call', conn.callHandler)
   conn.ev.on('messages.upsert', conn.handler)
   conn.ev.on('group-participants.update', conn.participantsUpdate)
   conn.ev.on('groups.update', conn.groupsUpdate)
