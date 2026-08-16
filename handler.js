@@ -333,13 +333,8 @@ async function processMessage(m, chatUpdate) {
         if (m.isGroup && !m.isBaileys) {
             addChat(m.chat, m.sender)
         }
-        // Options Check
-        if (opts['nyimak']) return
-        if (opts['pconly'] && m.chat.endsWith('g.us')) return
-        if (opts['gconly'] && !m.chat.endsWith('g.us')) return
-        if (opts['swonly'] && m.chat !== 'status@broadcast') return
         if (typeof m.text !== 'string') m.text = ''
-        const commandCandidate = getCommandCandidate(m.text, conn.prefix ? conn.prefix : global.prefix)
+        m.text = m.text.trim()
 
         const senderClean = conn.decodeJid(m.sender || '')
         const ownerRawNumbers = (global.owner || []).map(([num]) => String(num).replace(/[^0-9]/g, '')).filter(Boolean)
@@ -355,7 +350,14 @@ async function processMessage(m, chatUpdate) {
         const isMods = isOwner || global.mods.map(v => String(v).replace(/[^0-9]/g, '')).some(num => num && (senderDigits === num || rawSenderDigits === num))
         const isPrems = isROwner || (global.db.data.users[senderClean] && global.db.data.users[senderClean].premiumTime > 0) || (global.db.data.users[m.sender] && global.db.data.users[m.sender].premiumTime > 0)
 
+        // Options Check
+        if (opts['nyimak']) return
+        if (opts['pconly'] && m.chat.endsWith('g.us') && !isOwner) return
+        if (opts['gconly'] && !m.chat.endsWith('g.us') && !isOwner) return
+        if (opts['swonly'] && m.chat !== 'status@broadcast') return
         if (!isOwner && !m.fromMe && opts['self']) return
+
+        const commandCandidate = getCommandCandidate(m.text, conn.prefix ? conn.prefix : global.prefix)
 
         // Message Queue (Dihapus agar bot langsung membalas tanpa delay)
         /*
