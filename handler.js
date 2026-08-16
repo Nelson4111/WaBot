@@ -395,10 +395,23 @@ async function processMessage(m, chatUpdate) {
         if (m.isGroup) {
             this.chats = this.chats || {}
             let chat = this.chats[m.chat] || (this.chats[m.chat] = {})
+            
+            // Cek cache lokal terlebih dahulu sebelum fetch jaringan
+            if (!chat.metadata && global.groupMetadataCache?.has(m.chat)) {
+                chat.metadata = global.groupMetadataCache.get(m.chat).data
+                chat.metadataTime = global.groupMetadataCache.get(m.chat).time
+            } else if (!chat.metadata && global.memoryStore?.groupMetadata?.[m.chat]) {
+                chat.metadata = global.memoryStore.groupMetadata[m.chat]
+                chat.metadataTime = Date.now()
+            }
+
             if (!chat.metadata || Date.now() - (chat.metadataTime || 0) > 900000) {
                 try {
                     chat.metadata = await conn.groupMetadata(m.chat)
                     chat.metadataTime = Date.now()
+                    if (global.updateGroupMetadataCache) {
+                        global.updateGroupMetadataCache(m.chat, chat.metadata)
+                    }
                 } catch (e) {
                     chat.metadataTime = Date.now() + 120000
                     console.error('GroupMetadata Fetch Error (backed off 2 min):', e?.message || e)

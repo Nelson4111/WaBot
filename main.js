@@ -128,6 +128,21 @@ if (!state.creds.me) {
 }
 
 global.groupMetadataCache = global.groupMetadataCache || new Map();
+global.memoryStore = memoryStore;
+
+global.updateGroupMetadataCache = function (jid, metadata) {
+  if (!jid || !metadata) return;
+  if (!global.groupMetadataCache) global.groupMetadataCache = new Map();
+  global.groupMetadataCache.set(jid, { data: metadata, time: Date.now() });
+  if (memoryStore && memoryStore.groupMetadata) {
+    memoryStore.groupMetadata[jid] = metadata;
+  }
+  if (global.conn && global.conn.chats) {
+    if (!global.conn.chats[jid]) global.conn.chats[jid] = { id: jid };
+    global.conn.chats[jid].metadata = metadata;
+    if (metadata.subject) global.conn.chats[jid].subject = metadata.subject;
+  }
+};
 
 // Message retry counter cache (pengganti NodeCache tanpa dependency tambahan)
 // Ini krusial agar Baileys bisa retry dekripsi pesan yang gagal di grup
@@ -158,17 +173,25 @@ const connectionOptions = {
   browser: ['Alya Bot', 'Safari', '1.0.0'],
   msgRetryCounterCache,
   cachedGroupMetadata: async (jid) => {
-    // 1. Utamakan ambil dari cache memoryStore Baileys yang terisi otomatis
+    // 1. Tier 1: Ambil dari memoryStore Baileys
     if (memoryStore && memoryStore.groupMetadata && memoryStore.groupMetadata[jid]) {
       return memoryStore.groupMetadata[jid];
     }
     
-    // 2. Fallback ke cache manual (jika ada yang set manual)
-    if (global.groupMetadataCache.has(jid)) {
+    // 2. Tier 2: Fallback ke global.groupMetadataCache Map (TTL 15 menit)
+    if (global.groupMetadataCache && global.groupMetadataCache.has(jid)) {
       const cached = global.groupMetadataCache.get(jid);
-      if (Date.now() - cached.time < 5 * 60 * 1000) return cached.data;
+      if (Date.now() - cached.time < 15 * 60 * 1000) return cached.data;
+    }
+
+    // 3. Tier 3: Fallback ke conn.chats[jid].metadata
+    if (global.conn && global.conn.chats && global.conn.chats[jid] && global.conn.chats[jid].metadata) {
+      const meta = global.conn.chats[jid].metadata;
+      global.updateGroupMetadataCache(jid, meta);
+      return meta;
     }
     
+    console.log(chalk.yellow(`⚠️ [GROUP METADATA FALLBACK QUERY] Cache miss for ${jid}. Querying server...`))
     return undefined;
   },
   auth: {
@@ -225,9 +248,21 @@ const connectionOptions = {
   markOnlineOnConnect: false
 }
 
+function bindSocketStores(sock) {
+  if (!sock) return
+  try {
+    store.bind(sock)
+    if (memoryStore && sock.ev) {
+      memoryStore.bind(sock.ev)
+    }
+    console.log(chalk.green('📦 [STORE] Successfully bound memoryStore & store to socket instance.'))
+  } catch (e) {
+    console.error('❌ [STORE BIND ERROR]', e)
+  }
+}
+
 global.conn = makeWASocket(connectionOptions)
-store.bind(conn)
-memoryStore.bind(conn.ev)
+bindSocketStores(global.conn)
 conn.isInit = false
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -617,6 +652,7 @@ global.reloadHandler = async function (restatConn) {
     try { global.conn.ws.close() } catch { }
     conn.ev.removeAllListeners()
     global.conn = makeWASocket(connectionOptions, { chats: oldChats })
+    bindSocketStores(global.conn)
     isInit = true
   }
   if (!isInit) {
