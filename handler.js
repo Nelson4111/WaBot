@@ -183,8 +183,6 @@ async function processMessage(m, chatUpdate) {
     try {
         m = smsg(this, m) || m
         if (!m) return
-        if (m.chat) m.chat = this.decodeJid(m.chat)
-        if (m.sender) m.sender = this.decodeJid(m.sender)
         
         // Cek langsung ke raw message object untuk menghindari bug getter mtype
         if (m.message && (m.message.protocolMessage || m.message.senderKeyDistributionMessage)) return
@@ -260,9 +258,10 @@ async function processMessage(m, chatUpdate) {
             }
 
             // DATABASE CHAT
-            let chat = global.db.data.chats[m.chat]
+            let chatJid = this.decodeJid ? this.decodeJid(m.chat) : m.chat
+            let chat = global.db.data.chats[chatJid]
             if (typeof chat !== 'object')
-                global.db.data.chats[m.chat] = {}
+                global.db.data.chats[chatJid] = {}
             if (chat) {
                 if (!('isBanned' in chat)) chat.isBanned = false
                 if (!('welcome' in chat)) chat.welcome = false
@@ -285,7 +284,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('onlyadmin' in chat)) chat.onlyadmin = false
                 if (!isNumber(chat.expired)) chat.expired = 0
             } else {
-                global.db.data.chats[m.chat] = {
+                global.db.data.chats[chatJid] = {
                     isBanned: false,
                     welcome: true,
                     detect: false,
@@ -335,8 +334,13 @@ async function processMessage(m, chatUpdate) {
         if (m.isGroup && !m.isBaileys) {
             addChat(m.chat, m.sender)
         }
+        // Options Check
+        if (opts['nyimak']) return
+        if (opts['pconly'] && m.chat.endsWith('g.us')) return
+        if (opts['gconly'] && !m.chat.endsWith('g.us')) return
+        if (opts['swonly'] && m.chat !== 'status@broadcast') return
         if (typeof m.text !== 'string') m.text = ''
-        m.text = m.text.trim()
+        const commandCandidate = getCommandCandidate(m.text, conn.prefix ? conn.prefix : global.prefix)
 
         const senderClean = conn.decodeJid(m.sender || '')
         const ownerRawNumbers = (global.owner || []).map(([num]) => String(num).replace(/[^0-9]/g, '')).filter(Boolean)
@@ -352,14 +356,7 @@ async function processMessage(m, chatUpdate) {
         const isMods = isOwner || global.mods.map(v => String(v).replace(/[^0-9]/g, '')).some(num => num && (senderDigits === num || rawSenderDigits === num))
         const isPrems = isROwner || (global.db.data.users[senderClean] && global.db.data.users[senderClean].premiumTime > 0) || (global.db.data.users[m.sender] && global.db.data.users[m.sender].premiumTime > 0)
 
-        // Options Check
-        if (opts['nyimak']) return
-        if (opts['pconly'] && m.chat.endsWith('g.us') && !isOwner) return
-        if (opts['gconly'] && !m.chat.endsWith('g.us') && !isOwner) return
-        if (opts['swonly'] && m.chat !== 'status@broadcast') return
         if (!isOwner && !m.fromMe && opts['self']) return
-
-        const commandCandidate = getCommandCandidate(m.text, conn.prefix ? conn.prefix : global.prefix)
 
         // Message Queue (Dihapus agar bot langsung membalas tanpa delay)
         /*
@@ -394,7 +391,7 @@ async function processMessage(m, chatUpdate) {
 
         m.exp += Math.ceil(Math.random() * 10)
         let usedPrefix
-        let _user = global.db.data?.users?.[m.sender] || {}
+        let _user = global.db.data?.users?.[m.sender]
         let groupMetadata = {}
         if (m.isGroup) {
             this.chats = this.chats || {}
@@ -454,11 +451,12 @@ async function processMessage(m, chatUpdate) {
         const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin' || bot?.isAdmin || bot?.isSuperAdmin || false
         
         // ONLY ADMIN LOGIC
-        if (m.isGroup && global.db.data.chats[m.chat]?.onlyadmin && !isAdmin && !isOwner) {
+        let chatJid = this.decodeJid ? this.decodeJid(m.chat) : m.chat
+        if (m.isGroup && global.db.data.chats[chatJid]?.onlyadmin && !isAdmin && !isOwner) {
         return false
         }
         // ANTI SPAM LOGIC
-        let chat = global.db.data.chats[m.chat]
+        let chat = global.db.data.chats[chatJid]
         if (chat && chat.antispam && !isOwner && !m.fromMe) {
             this.spam = this.spam ? this.spam : {}
             let userSpam = m.sender
@@ -525,8 +523,9 @@ async function processMessage(m, chatUpdate) {
                 if (!isAccept) continue
 
                 m.plugin = name
-                if (m.chat in global.db.data.chats || m.sender in global.db.data.users) {
-                    let chat = global.db.data.chats[m.chat]
+                let chatJid = this.decodeJid ? this.decodeJid(m.chat) : m.chat
+                if (chatJid in global.db.data.chats || m.sender in global.db.data.users) {
+                    let chat = global.db.data.chats[chatJid]
                     let user = global.db.data.users[m.sender]
                     const pluginFile = path.basename(name)
                     if (!['owner-unbanchat.js', 'owner-exec.js', 'owner-exec2.js'].includes(pluginFile) && chat?.isBanned) return
@@ -544,7 +543,7 @@ async function processMessage(m, chatUpdate) {
                 if (plugin.private && m.isGroup) { fail('private', m, this); continue }
                 // Game & RPG sekarang bisa dimainkan di private chat maupun grup
                 // GLOBAL REGISTRATION CHECK
-                let isUnreg = _user?.registered === false
+                let isUnreg = !(_user?.registered)
                 let allowUnreg = ['daftar', 'unreg', 'verify']
                 
                 // Jika command membutuhkan unreg (seperti .daftar), atau nama command ada di whitelist
