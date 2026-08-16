@@ -103,6 +103,31 @@ global.loadDatabase = async function loadDatabase() {
     ...(db.data || {})
   }
   global.db.chain = chain(db.data)
+
+  // Auto-clean & merge any remaining @lid ghost accounts into canonical @s.whatsapp.net accounts
+  try {
+    if (global.db.data?.lids && global.db.data?.users) {
+      for (const [lid, phoneJid] of Object.entries(global.db.data.lids)) {
+        if (global.db.data.users[lid] && phoneJid && phoneJid.endsWith('@s.whatsapp.net')) {
+          if (!global.db.data.users[phoneJid]) {
+            global.db.data.users[phoneJid] = global.db.data.users[lid]
+          } else {
+            for (const [k, v] of Object.entries(global.db.data.users[lid])) {
+              if (typeof v === 'number' && typeof global.db.data.users[phoneJid][k] === 'number') {
+                global.db.data.users[phoneJid][k] = Math.max(global.db.data.users[phoneJid][k], v)
+              } else if (global.db.data.users[phoneJid][k] === undefined) {
+                global.db.data.users[phoneJid][k] = v
+              }
+            }
+          }
+          delete global.db.data.users[lid]
+          console.log(chalk.green(`🧹 [LID CLEANUP] Merged ghost user ${lid} -> ${phoneJid}`))
+        }
+      }
+    }
+  } catch (e) {
+    console.error('LID DB Cleanup Error:', e)
+  }
 }
 loadDatabase()
 const usePairingCode = global.usePairingCode !== undefined ? global.usePairingCode : !process.argv.includes('--use-pairing-code')
