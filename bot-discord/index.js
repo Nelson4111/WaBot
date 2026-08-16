@@ -62,6 +62,7 @@ await player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor')
 
 // Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama
 await player.extractors.register(YoutubeiExtractor, {
+    authentication: process.env.YOUTUBE_COOKIE,
     generateWithPoToken: true,
     streamOptions: {
         useClient: 'WEB'
