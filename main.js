@@ -649,86 +649,108 @@ process.on('uncaughtException', console.error)
 
 let isInit = true
 let isReloadingHandler = false
+const RELOAD_TIMEOUT_MS = 45000 // 45 detik batas timeout reload
 let handler = await import('./handler.js')
+
 global.reloadHandler = async function (restatConn) {
   if (isReloadingHandler) {
     console.log(chalk.yellow('[RELOAD] reloadHandler already in progress, ignoring overlapping invocation.'))
     return false
   }
   isReloadingHandler = true
-  try {
+
+  let reloadTimer
+  const timeoutPromise = new Promise((_, reject) => {
+    reloadTimer = setTimeout(() => {
+      reject(new Error(`Reload operation timed out after ${RELOAD_TIMEOUT_MS / 1000}s`))
+    }, RELOAD_TIMEOUT_MS)
+  })
+
+  const executeReload = async () => {
     try {
       const Handler = await import(`./handler.js?update=${Date.now()}`).catch(console.error)
       if (Object.keys(Handler || {}).length) handler = Handler
     } catch (e) {
       console.error(e)
     }
-  if (restatConn) {
-    const oldChats = global.conn.chats
-    try { global.conn.ws.close() } catch { }
-    conn.ev.removeAllListeners()
-    global.conn = makeWASocket(connectionOptions, { chats: oldChats })
-    bindSocketStores(global.conn)
-    isInit = true
-  }
-  if (!isInit) {
-    if (conn.callHandler) conn.ev.off('call', conn.callHandler)
-    conn.ev.off('messages.upsert', conn.handler)
-    conn.ev.off('group-participants.update', conn.participantsUpdate)
-    conn.ev.off('groups.update', conn.groupsUpdate)
-    conn.ev.off('connection.update', conn.connectionUpdate)
-    conn.ev.off('creds.update', conn.credsUpdate)
-  }
-
- conn.welcome = '❖━━━〔 ようこそ 〕━━━❖\n\n' +
-'┏━━━━━━━━━━━━━━━\n' +
-'┃ 🌸 @subject\n' +
-'┣━━━━━━━━━━━━━━━\n' +
-'┃ (≧◡≦) ♡ Hai @user\n' +
-'┃ Selamat datang\n' +
-'┣━━━〔 自己紹介 〕━━━\n' +
-'┃ • Nama   : \n' +
-'┃ • Usia   : \n' +
-'┃ • Gender : \n' +
-'┗━━━━━━━━━━━━━━━\n\n' +
-'━━━〔 グループ情報 〕━━━\n' +
-'@desc'
-  conn.bye = '❖━━━〔 さようなら 〕━━━❖\n\n' +
-'(｡•́︿•̀｡) @user telah pergi\n' +
-'Semoga kita bertemu lagi 🌙'
-  conn.spromote = '@user Sekarang jadi admin!'
-  conn.sdemote = '@user Sekarang bukan lagi admin!'
-  conn.sDesc = 'Deskripsi telah diubah menjadi \n@desc'
-  conn.sSubject = 'Judul grup telah diubah menjadi \n@subject'
-  conn.sIcon = 'Icon grup telah diubah!'
-  conn.sRevoke = 'Link group telah diubah ke \n@revoke'
-  conn.sAnnounceOn = 'Group telah di tutup!\nsekarang hanya admin yang dapat mengirim pesan.'
-  conn.sAnnounceOff = 'Group telah di buka!\nsekarang semua peserta dapat mengirim pesan.'
-  conn.sRestrictOn = 'Edit Info Grup di ubah ke hanya admin!'
-  conn.sRestrictOff = 'Edit Info Grup di ubah ke semua peserta!'
-
-  conn.handler = handler.handler.bind(global.conn)
-  conn.participantsUpdate = handler.participantsUpdate.bind(global.conn)
-  conn.groupsUpdate = handler.groupsUpdate.bind(global.conn)
-  conn.connectionUpdate = connectionUpdate.bind(global.conn)
-  conn.credsUpdate = saveCreds.bind(global.conn)
-  conn.callHandler = async (call) => {
-    console.log('Panggilan diterima:', call);
-    if (call.status === 'ringing') {
-      await conn.rejectCall(call.id);
-      console.log('Panggilan ditolak');
+    if (restatConn) {
+      const oldChats = global.conn.chats
+      try { global.conn.ws.close() } catch { }
+      conn.ev.removeAllListeners()
+      global.conn = makeWASocket(connectionOptions, { chats: oldChats })
+      bindSocketStores(global.conn)
+      isInit = true
     }
-  };
+    if (!isInit) {
+      if (conn.callHandler) conn.ev.off('call', conn.callHandler)
+      conn.ev.off('messages.upsert', conn.handler)
+      conn.ev.off('group-participants.update', conn.participantsUpdate)
+      conn.ev.off('groups.update', conn.groupsUpdate)
+      conn.ev.off('connection.update', conn.connectionUpdate)
+      conn.ev.off('creds.update', conn.credsUpdate)
+    }
 
-  conn.ev.on('call', conn.callHandler)
-  conn.ev.on('messages.upsert', conn.handler)
-  conn.ev.on('group-participants.update', conn.participantsUpdate)
-  conn.ev.on('groups.update', conn.groupsUpdate)
-  conn.ev.on('connection.update', conn.connectionUpdate)
-  conn.ev.on('creds.update', conn.credsUpdate)
-  isInit = false
-  return true
+    conn.welcome = '❖━━━〔 ようこそ 〕━━━❖\n\n' +
+      '┏━━━━━━━━━━━━━━━\n' +
+      '┃ 🌸 @subject\n' +
+      '┣━━━━━━━━━━━━━━━\n' +
+      '┃ (≧◡≦) ♡ Hai @user\n' +
+      '┃ Selamat datang\n' +
+      '┣━━━〔 自己紹介 〕━━━\n' +
+      '┃ • Nama   : \n' +
+      '┃ • Usia   : \n' +
+      '┃ • Gender : \n' +
+      '┗━━━━━━━━━━━━━━━\n\n' +
+      '━━━〔 グループ情報 〕━━━\n' +
+      '@desc'
+    conn.bye = '❖━━━〔 さようなら 〕━━━❖\n\n' +
+      '(｡•́︿•̀｡) @user telah pergi\n' +
+      'Semoga kita bertemu lagi 🌙'
+    conn.spromote = '@user Sekarang jadi admin!'
+    conn.sdemote = '@user Sekarang bukan lagi admin!'
+    conn.sDesc = 'Deskripsi telah diubah menjadi \n@desc'
+    conn.sSubject = 'Judul grup telah diubah menjadi \n@subject'
+    conn.sIcon = 'Icon grup telah diubah!'
+    conn.sRevoke = 'Link group telah diubah ke \n@revoke'
+    conn.sAnnounceOn = 'Group telah di tutup!\nsekarang hanya admin yang dapat mengirim pesan.'
+    conn.sAnnounceOff = 'Group telah di buka!\nsekarang semua peserta dapat mengirim pesan.'
+    conn.sRestrictOn = 'Edit Info Grup di ubah ke hanya admin!'
+    conn.sRestrictOff = 'Edit Info Grup di ubah ke semua peserta!'
+
+    conn.handler = handler.handler.bind(global.conn)
+    conn.participantsUpdate = handler.participantsUpdate.bind(global.conn)
+    conn.groupsUpdate = handler.groupsUpdate.bind(global.conn)
+    conn.connectionUpdate = connectionUpdate.bind(global.conn)
+    conn.credsUpdate = saveCreds.bind(global.conn)
+    conn.callHandler = async (call) => {
+      console.log('Panggilan diterima:', call);
+      if (call.status === 'ringing') {
+        await conn.rejectCall(call.id);
+        console.log('Panggilan ditolak');
+      }
+    };
+
+    conn.ev.on('call', conn.callHandler)
+    conn.ev.on('messages.upsert', conn.handler)
+    conn.ev.on('group-participants.update', conn.participantsUpdate)
+    conn.ev.on('groups.update', conn.groupsUpdate)
+    conn.ev.on('connection.update', conn.connectionUpdate)
+    conn.ev.on('creds.update', conn.credsUpdate)
+    isInit = false
+    return true
+  }
+
+  try {
+    return await Promise.race([executeReload(), timeoutPromise])
+  } catch (err) {
+    console.error(chalk.red(`❌ [RELOAD TIMEOUT/ERROR] ${err?.message || err}. Force-unlocking mutex...`))
+    if (restatConn) {
+      console.log(chalk.yellow('🔄 [RELOAD AUTO-RECOVER] Triggering scheduleReconnect to recover socket state...'))
+      scheduleReconnect()
+    }
+    return false
   } finally {
+    clearTimeout(reloadTimer)
     isReloadingHandler = false
   }
 }
