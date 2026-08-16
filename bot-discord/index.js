@@ -74,13 +74,10 @@ function parseYoutubeCookie(rawCookie) {
     return rawCookie; // Jika sudah format string biasa
 }
 
-// Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama
+// Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama dengan engine yt-dlp & Cookie
 await player.extractors.register(YoutubeiExtractor, {
     cookie: parseYoutubeCookie(process.env.YOUTUBE_COOKIE),
-    streamOptions: {
-        useClient: 'ANDROID'
-    },
-    disablePlayer: true
+    useYoutubeDL: true,
 })
 
 console.log('[BOT-DC] ✅ Audio extractors dimuat (via YoutubeiExtractor).')
