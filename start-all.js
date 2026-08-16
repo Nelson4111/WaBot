@@ -20,20 +20,18 @@ import { existsSync } from 'fs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ─────────────────────────────────────────────
-// Auto-install bot-discord/node_modules jika belum ada
-// (Pterodactyl hanya auto-install root package.json)
+// Auto-install dependencies bot-discord (Selalu cek setiap start)
 // ─────────────────────────────────────────────
-const dcNodeModules = join(__dirname, 'bot-discord', 'node_modules')
 const dcPackageJson = join(__dirname, 'bot-discord', 'package.json')
 
-if (existsSync(dcPackageJson) && !existsSync(dcNodeModules)) {
-    console.log(`${'\x1b[34m'}[BOT-DC]${'\x1b[0m'} 📦 node_modules tidak ditemukan, auto-install...`)
+if (existsSync(dcPackageJson)) {
+    console.log(`${'\x1b[34m'}[BOT-DC]${'\x1b[0m'} 📦 Menginstall dependencies bot-discord...`)
     try {
         execSync('npm install', {
             cwd: join(__dirname, 'bot-discord'),
             stdio: 'inherit',
         })
-        console.log(`${'\x1b[34m'}[BOT-DC]${'\x1b[0m'} ✅ Install selesai.`)
+        console.log(`${'\x1b[34m'}[BOT-DC]${'\x1b[0m'} ✅ Dependencies siap.`)
     } catch (e) {
         console.error(`${'\x1b[31m'}[BOT-DC][ERR]${'\x1b[0m'} Gagal install dependencies: ${e.message}`)
     }
