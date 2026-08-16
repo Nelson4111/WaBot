@@ -38,9 +38,9 @@ export async function before(m) {
 
     let answersList = room.jawaban.map((j, i) => {
         if (isWin || isSurrender || room.terjawab[i]) {
-            let userJid = room.terjawab[i]
-            let userName = userJid ? (this.getName ? this.getName(userJid) : userJid.split('@')[0]) : ''
-            return `(${i + 1}) ${j} ${userJid ? '👤 _' + userName + '_' : ''}`
+            let userJid = room.terjawab[i] ? (this.decodeJid ? this.decodeJid(room.terjawab[i]) : room.terjawab[i]) : null
+            let userTag = userJid ? `@${userJid.split('@')[0]}` : ''
+            return `(${i + 1}) ${j} ${userJid ? '👤 ' + userTag : ''}`
         }
         return null
     }).filter(Boolean).join('\n')
@@ -55,7 +55,7 @@ ${answersList}
 ${isWin || isSurrender ? '' : `+${room.winScore} XP tiap jawaban benar`}
 `.trim()
 
-    let mentions = room.terjawab.filter(Boolean)
+    let mentions = room.terjawab.filter(Boolean).map(v => this.decodeJid ? this.decodeJid(v) : v)
 
     let q = global.forder || global.ftoko || m
     let msg = await this.sendMessage(m.chat, {
