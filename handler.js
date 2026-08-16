@@ -407,11 +407,18 @@ async function processMessage(m, chatUpdate) {
 
             if (!chat.metadata || Date.now() - (chat.metadataTime || 0) > 900000) {
                 try {
-                    chat.metadata = await conn.groupMetadata(m.chat)
-                    chat.metadataTime = Date.now()
-                    if (global.updateGroupMetadataCache) {
-                        global.updateGroupMetadataCache(m.chat, chat.metadata)
+                    // Single-flight dedup: reuse in-flight promise jika ada
+                    const jid = m.chat
+                    const inFlight = conn._groupMetaInFlight
+                    if (inFlight && inFlight.has(jid)) {
+                        chat.metadata = await inFlight.get(jid)
+                    } else {
+                        chat.metadata = await conn.groupMetadata(jid)
+                        if (global.updateGroupMetadataCache) {
+                            global.updateGroupMetadataCache(jid, chat.metadata)
+                        }
                     }
+                    chat.metadataTime = Date.now()
                 } catch (e) {
                     chat.metadataTime = Date.now() + 120000
                     console.error('GroupMetadata Fetch Error (backed off 2 min):', e?.message || e)

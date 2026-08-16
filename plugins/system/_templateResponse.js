@@ -44,19 +44,23 @@ export async function all(m, chatUpdate) {
             isIdMessage = true
         }
     }
-    let messages = await generateWAMessage(m.chat, { text: isIdMessage ? id : text, mentions: m.mentionedJid }, {
-        userJid: this.user.id,
-        quoted: m.quoted && m.quoted.fakeObj
-    })
-    messages.key.fromMe = areJidsSameUser(m.sender, this.user.id)
-    messages.key.id = m.key.id
-    messages.pushName = m.name
-    if (m.isGroup)
-        messages.key.participant = messages.participant = m.sender
-    let msg = {
-        ...chatUpdate,
-        messages: [proto.WebMessageInfo.fromObject(messages)].map(v => (v.conn = this, v)),
-        type: 'append'
+    try {
+        let messages = await generateWAMessage(m.chat, { text: isIdMessage ? id : text, mentions: m.mentionedJid }, {
+            userJid: this.user.id,
+            quoted: m.quoted && m.quoted.fakeObj
+        })
+        messages.key.fromMe = areJidsSameUser(m.sender, this.user.id)
+        messages.key.id = m.key.id
+        messages.pushName = m.name
+        if (m.isGroup)
+            messages.key.participant = messages.participant = m.sender
+        let msg = {
+            ...chatUpdate,
+            messages: [proto.WebMessageInfo.fromObject(messages)].map(v => (v.conn = this, v)),
+            type: 'append'
+        }
+        this.ev.emit('messages.upsert', msg)
+    } catch (e) {
+        console.error('[_templateResponse] Error converting button reply:', e?.message || e)
     }
-    this.ev.emit('messages.upsert', msg)
 }
