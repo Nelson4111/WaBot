@@ -9,11 +9,12 @@
     "deploy": "node deploy-commands.js"
   },
   "dependencies": {
+    "@discord-player/extractor": "^4.5.0",
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
-    "@discord-player/extractor": "^4.5.0",
-    "discord.js": "^14.18.0",
+    "@distube/ytdl-core": "^4.16.12",
     "discord-player": "^6.7.1",
+    "discord.js": "^14.18.0",
     "dotenv": "^16.4.5",
     "ffmpeg-static": "^5.2.0",
     "genius-lyrics": "^4.4.5",
