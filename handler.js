@@ -683,7 +683,7 @@ export async function participantsUpdate({ id, participants, action }) {
     switch (action) {
     case 'add':
     if (chat.welcome) {
-        let groupMetadata = await this.groupMetadata(id).catch(_ => ({})) || (conn.chats[id] || {}).metadata
+        let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
         for (let user of participants) {
             let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
             let ppgc = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
@@ -718,8 +718,8 @@ export async function participantsUpdate({ id, participants, action }) {
     }  
     break
     case 'remove':
-    if (chat.leave) {
-        let groupMetadata = await this.groupMetadata(id).catch(_ => ({})) || (conn.chats[id] || {}).metadata
+    if (chat.welcome || chat.leave) {
+        let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
         for (let user of participants) {
             let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
             let gcIcon = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'          
