@@ -1,0 +1,22 @@
+{
+  "name": "nelmusic-discord",
+  "version": "1.0.0",
+  "description": "Bot Musik Discord - NelMusic (All Premium Unlocked)",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.18.0",
+    "@discord-player/extractor": "^4.5.0",
+    "discord.js": "^14.18.0",
+    "discord-player": "^6.8.0",
+    "dotenv": "^16.4.5",
+    "ffmpeg-static": "^5.2.0",
+    "genius-lyrics": "^4.4.5",
+    "sodium-native": "^4.1.1"
+  }
+}
