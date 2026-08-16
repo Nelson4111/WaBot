@@ -13,6 +13,7 @@ dotenv.config({ path: path.join(__dirname, '.env') })
 
 import { Client, GatewayIntentBits, Collection } from 'discord.js'
 import { Player } from 'discord-player'
+import { YoutubeiExtractor } from 'discord-player-youtubei'
 import { readdirSync } from 'fs'
 
 // ─────────────────────────────────────────────
@@ -56,9 +57,30 @@ const player = new Player(client, {
     useLegacyFFmpeg: false,
 })
 
-// Load semua extractor (YouTube, Spotify, SoundCloud, dll)
-await player.extractors.loadDefault()
-console.log('[BOT-DC] ✅ Audio extractors dimuat.')
+// Load semua extractor default KECUALI YoutubeExtractor bawaan yang bermasalah
+await player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor')
+
+// Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama
+await player.extractors.register(YoutubeiExtractor, {})
+
+console.log('[BOT-DC] ✅ Audio extractors dimuat (via YoutubeiExtractor).')
+
+// ─────────────────────────────────────────────
+// Player Error Handling
+// ─────────────────────────────────────────────
+player.events.on('error', (queue, error) => {
+    console.error(`[BOT-DC][Player Error] (Connection) di guild ${queue.guild.name}:`, error.message)
+    if (queue.metadata?.channel) {
+        queue.metadata.channel.send(`⚠️ Terjadi masalah koneksi audio: \`${error.message}\``).catch(() => {})
+    }
+})
+
+player.events.on('playerError', (queue, error) => {
+    console.error(`[BOT-DC][Player Error] (Streaming) di guild ${queue.guild.name}:`, error.message)
+    if (queue.metadata?.channel) {
+        queue.metadata.channel.send(`⚠️ Gagal memutar lagu, coba lagu lain ya. (\`${error.message}\`)`).catch(() => {})
+    }
+})
 
 // ─────────────────────────────────────────────
 // Load Event Handlers (Discord Events)
