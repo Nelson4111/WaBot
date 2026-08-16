@@ -88,9 +88,6 @@ setupPlayerEvents(player)
 // ─────────────────────────────────────────────
 // Login ke Discord
 // ─────────────────────────────────────────────
-console.log('[DEBUG] cwd:', process.cwd());
-console.log('[DEBUG] token exists:', !!process.env.DISCORD_TOKEN);
-console.log('[DEBUG] token length:', process.env.DISCORD_TOKEN?.length || 0);
-
 await client.login(process.env.DISCORD_TOKEN)
+
 
