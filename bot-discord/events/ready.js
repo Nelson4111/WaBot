@@ -3,8 +3,10 @@
  * Fired saat bot berhasil login dan siap
  */
 
+import { Events } from 'discord.js'
+
 export default {
-    name: 'ready',
+    name: Events.ClientReady || 'ready',
     once: true,
     execute(client) {
         console.log(`[BOT-DC] ✅ ${client.user.tag} Online! Siap melayani musik 🎵`)
