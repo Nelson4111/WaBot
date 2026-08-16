@@ -258,10 +258,9 @@ async function processMessage(m, chatUpdate) {
             }
 
             // DATABASE CHAT
-            let chatJid = this.decodeJid ? this.decodeJid(m.chat) : m.chat
-            let chat = global.db.data.chats[chatJid]
+            let chat = global.db.data.chats[m.chat]
             if (typeof chat !== 'object')
-                global.db.data.chats[chatJid] = {}
+                global.db.data.chats[m.chat] = {}
             if (chat) {
                 if (!('isBanned' in chat)) chat.isBanned = false
                 if (!('welcome' in chat)) chat.welcome = false
@@ -284,7 +283,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('onlyadmin' in chat)) chat.onlyadmin = false
                 if (!isNumber(chat.expired)) chat.expired = 0
             } else {
-                global.db.data.chats[chatJid] = {
+                global.db.data.chats[m.chat] = {
                     isBanned: false,
                     welcome: true,
                     detect: false,
@@ -334,11 +333,6 @@ async function processMessage(m, chatUpdate) {
         if (m.isGroup && !m.isBaileys) {
             addChat(m.chat, m.sender)
         }
-        // Options Check
-        if (opts['nyimak']) return
-        if (opts['pconly'] && m.chat.endsWith('g.us')) return
-        if (opts['gconly'] && !m.chat.endsWith('g.us')) return
-        if (opts['swonly'] && m.chat !== 'status@broadcast') return
         if (typeof m.text !== 'string') m.text = ''
         const commandCandidate = getCommandCandidate(m.text, conn.prefix ? conn.prefix : global.prefix)
 
@@ -355,6 +349,14 @@ async function processMessage(m, chatUpdate) {
         const isOwner = isROwner || m.fromMe || isCoOwner
         const isMods = isOwner || global.mods.map(v => String(v).replace(/[^0-9]/g, '')).some(num => num && (senderDigits === num || rawSenderDigits === num))
         const isPrems = isROwner || (global.db.data.users[senderClean] && global.db.data.users[senderClean].premiumTime > 0) || (global.db.data.users[m.sender] && global.db.data.users[m.sender].premiumTime > 0)
+
+        // Options Check (Owner exempt)
+        if (!isOwner) {
+            if (opts['nyimak']) return
+            if (opts['pconly'] && m.chat.endsWith('g.us')) return
+            if (opts['gconly'] && !m.chat.endsWith('g.us')) return
+            if (opts['swonly'] && m.chat !== 'status@broadcast') return
+        }
 
         if (!isOwner && !m.fromMe && opts['self']) return
 
@@ -451,12 +453,11 @@ async function processMessage(m, chatUpdate) {
         const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin' || bot?.isAdmin || bot?.isSuperAdmin || false
         
         // ONLY ADMIN LOGIC
-        let chatJid = this.decodeJid ? this.decodeJid(m.chat) : m.chat
-        if (m.isGroup && global.db.data.chats[chatJid]?.onlyadmin && !isAdmin && !isOwner) {
+        if (m.isGroup && global.db.data.chats[m.chat]?.onlyadmin && !isAdmin && !isOwner) {
         return false
         }
         // ANTI SPAM LOGIC
-        let chat = global.db.data.chats[chatJid]
+        let chat = global.db.data.chats[m.chat]
         if (chat && chat.antispam && !isOwner && !m.fromMe) {
             this.spam = this.spam ? this.spam : {}
             let userSpam = m.sender
@@ -523,9 +524,8 @@ async function processMessage(m, chatUpdate) {
                 if (!isAccept) continue
 
                 m.plugin = name
-                let chatJid = this.decodeJid ? this.decodeJid(m.chat) : m.chat
-                if (chatJid in global.db.data.chats || m.sender in global.db.data.users) {
-                    let chat = global.db.data.chats[chatJid]
+                if (m.chat in global.db.data.chats || m.sender in global.db.data.users) {
+                    let chat = global.db.data.chats[m.chat]
                     let user = global.db.data.users[m.sender]
                     const pluginFile = path.basename(name)
                     if (!['owner-unbanchat.js', 'owner-exec.js', 'owner-exec2.js'].includes(pluginFile) && chat?.isBanned) return
