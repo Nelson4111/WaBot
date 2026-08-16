@@ -60,13 +60,27 @@ const player = new Player(client, {
 // Load semua extractor default KECUALI YoutubeExtractor bawaan yang bermasalah
 await player.extractors.loadDefault((ext) => ext !== 'YouTubeExtractor')
 
+// Fungsi pintar untuk mendeteksi dan mengubah Netscape Cookie (dari file/extension) menjadi HTTP Cookie String (key=value)
+function parseYoutubeCookie(rawCookie) {
+    if (!rawCookie) return '';
+    if (rawCookie.includes('Netscape HTTP Cookie File') || rawCookie.includes('\t')) {
+        return rawCookie.split('\n')
+            .filter(line => line && !line.startsWith('#'))
+            .map(line => line.split('\t'))
+            .filter(parts => parts.length >= 7)
+            .map(parts => `${parts[5]}=${parts[6]}`)
+            .join('; ');
+    }
+    return rawCookie; // Jika sudah format string biasa
+}
+
 // Daftarkan YoutubeiExtractor sebagai mesin pencari YouTube utama
 await player.extractors.register(YoutubeiExtractor, {
-    cookie: process.env.YOUTUBE_COOKIE,
-    generateWithPoToken: true,
+    cookie: parseYoutubeCookie(process.env.YOUTUBE_COOKIE),
     streamOptions: {
-        useClient: 'WEB'
-    }
+        useClient: 'ANDROID'
+    },
+    disablePlayer: true
 })
 
 console.log('[BOT-DC] ✅ Audio extractors dimuat (via YoutubeiExtractor).')
