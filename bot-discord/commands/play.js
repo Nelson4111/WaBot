@@ -33,9 +33,12 @@ export default {
             return interaction.editReply({ embeds: [errorEmbed(`Bot sedang di VC lain: **${botVc.name}**. Masuk ke sana dulu!`)] })
         }
 
+        const isUrl = /^https?:\/\//i.test(query.trim())
+        const searchEngine = isUrl ? QueryType.AUTO : QueryType.SOUNDCLOUD_SEARCH
+
         try {
             const { track } = await player.play(channel, query, {
-                searchEngine: QueryType.YOUTUBE_SEARCH,
+                searchEngine,
                 nodeOptions: {
                     metadata: {
                         channel: interaction.channel,
