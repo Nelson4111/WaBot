@@ -1,7 +1,8 @@
 {
-  "name": "nao-esm",
+  "name": "NelBot-MD",
   "version": "10.0.0",
-  "description": "BOT Whatsapp",
+  "description": "NelBot Multi-Device WhatsApp Bot",
+  "author": "Nenel",
   "main": "index.js",
   "type": "module",
   "directories": {

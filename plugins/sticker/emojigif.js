@@ -11,8 +11,8 @@ let handler = async (m, { conn, args }) => {
 
     const stickerBuffer = await createSticker(buffer, {
       type: StickerTypes.FULL,
-      pack: 'Vestia Zeta - MD',
-      author: 'By Nenel',
+      pack: global.namebot || 'NelBot-MD',
+      author: global.author || 'Nenel',
       categories: ['✨'],
       id: '.',
       quality: 70,

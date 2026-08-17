@@ -26,8 +26,8 @@ let handler = async (m, { conn, args, isOwner }) => {
     forwardingScore: 999,
     isForwarded: true,
     forwardedNewsletterMessageInfo: {
-      newsletterName: '「 VESTIA ZETA - MD 」',
-      newsletterJid: '120363405424415956@newsletter'
+      newsletterName: `「 ${global.namebot || 'NelBot-MD'} 」`,
+      newsletterJid: global.ch || ''
     },
     externalAdReply: {
       title: senderName, 

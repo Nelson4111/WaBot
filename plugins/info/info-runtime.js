@@ -32,16 +32,16 @@ ${muptime}
 💬 *Anime Quote:*
 _${quote}_
 
-🍭 Powered by *Vestia Zeta Multi Device*`,
+🍭 Powered by *${global.namebot || 'NelBot-MD'}*`,
 
     contextInfo: {
       externalAdReply: {
-        title: 'Vestia Zeta MD — Runtime Status',
+        title: `${global.namebot || 'NelBot-MD'} — Runtime Status`,
         body: 'Bot is running smoothly!',
         mediaType: 1,
         thumbnail: fs.readFileSync('./media/thumbnail.jpg'),
         renderLargerThumbnail: true,
-        sourceUrl: 'https://youtube.com/'
+        sourceUrl: global.ch || ''
       }
     }
   }, { quoted: m })

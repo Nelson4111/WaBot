@@ -67,7 +67,7 @@ handler.all = async function (m) {
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
                 newsletterName: `${global.namebot || 'NelBot-MD'} Official ✓`,
-                newsletterJid: global.ch || "120363405424415956@newsletter"
+                newsletterJid: global.ch || ""
             },
             externalAdReply: {
                 title: `${global.namebot || 'NelBot-MD'} Official ✓`,

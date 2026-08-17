@@ -1,16 +1,14 @@
 let handler = async (m) => {
-  let ryo = `
-*「 🍬 Vestia zeta」*
+  let text = `
+*「 🤖 ${global.namebot || 'NelBot-MD'} 」*
 
-Hmph... apa sih, manggil-manggil Zeta segala...  
-Yasudah, kalau kamu *beneran* butuh, ketik aja *.menu* ✨  
-
-(Tapi jangan ganggu aku lagi ya...) 
-`
-  await m.reply(ryo)
+Halo! Aku *${global.namebot || 'NelBot-MD'}*, bot asisten aktif milik *${global.author || 'Nenel'}*.  
+Ketik *.menu* untuk melihat semua daftar fitur yang tersedia ✨
+`.trim()
+  await m.reply(text)
 }
 
-handler.customPrefix = /^(tes|zetabot|test)$/i
+handler.customPrefix = /^(tes|nelbot|test|bot)$/i
 handler.command = new RegExp
 
 export default handler

@@ -1,6 +1,6 @@
 /*
-Base : Elaina-MultiDevice
-Release : 22 Nov 2022
+Base : NelBot-MD
+Owner: Nenel
 */
 
 import { watchFile, unwatchFile } from 'fs'

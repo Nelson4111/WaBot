@@ -17,8 +17,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   await m.reply(`📦 *${res.title}*\nMengirim 10 stiker...`)
 
-  let packname = 'Elaina - MD'
-  let author = 'By Hilman'
+  let packname = global.namebot || 'NelBot-MD'
+  let author = global.author || 'Nenel'
 
   for (let url of res.sticker.slice(0, 10)) {
     try {

@@ -39,12 +39,12 @@ let handler = async (m, { conn }) => {
     text: caption,
     contextInfo: {
       externalAdReply: {
-        title: "Vestia Zeta MD",
-        body: "Bot Status",
+        title: `${global.namebot || 'NelBot-MD'} Status`,
+        body: `Created by ${global.author || 'Nenel'}`,
         thumbnail: thumb,
         mediaType: 1,
         renderLargerThumbnail: true,
-        sourceUrl: "https://whatsapp.com/channel/0029VaS7A00G02PT4BqD3G13"
+        sourceUrl: global.ch || ""
       }
     }
   }, { quoted: m })

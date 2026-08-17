@@ -65,8 +65,8 @@ export default handler
 async function createSticker(img, url, packName, authorName, quality) {
   let stickerMetadata = {
     type: "full",
-    pack: "Vestia Zeta - MD",
-    author: "by nenel",
+    pack: global.namebot || "NelBot-MD",
+    author: global.author || "Nenel",
     quality: quality || 100
   }
   return (new Sticker(img ? img : url, stickerMetadata)).toBuffer()

@@ -1,11 +1,15 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1';
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('[UNHANDLED REJECTION]', reason)
-})
+    if (reason && (reason.code === 'ERR_NON_2XX_3XX_RESPONSE' || (reason.message && reason.message.includes('429')))) {
+        console.warn('⚠️ [HTTP Rate Limit 429] API eksternal sedang sibuk (akan otomatis coba lagi nanti).');
+        return;
+    }
+    console.error('[UNHANDLED REJECTION]', reason);
+});
 process.on('uncaughtException', (err) => {
-    console.error('[UNCAUGHT EXCEPTION]', err)
-})
+    console.error('[UNCAUGHT EXCEPTION]', err);
+});
 import store from './lib/store.js'
 
 import './config.js'
@@ -556,32 +560,20 @@ async function clearSessions(folder = './sessions') {
   return [];
 }
 
-async function connectionUpdate(_0x7a1f) {
-  const _0x3c9b = [
-    'b3Blbg==', // open
-    'Y29ubmVjdGluZw==', 
-    'MTIwMzYzNDA1NDI0NDE1OTU2QG5ld3NsZXR0ZXI=',
-    'MTIwMzYzNDI1NzIyODY1NDU2QG5ld3NsZXR0ZXI=',
-    'MTIwMzYzNDA1NTUzOTQ4NDcwQG5ld3NsZXR0ZXI=',
-    'MTIwMzYzNDI0MTQzOTE0MDU2QG5ld3NsZXR0ZXI=',
-    'MTIwMzYzMzk1MTE0MTY4NzQ2QG5ld3NsZXR0ZXI=' 
-  ]
-
-  const _0xdec = i => Buffer.from(_0x3c9b[i], 'base64').toString()
-
+async function connectionUpdate(update) {
   const {
-    receivedPendingNotifications: _0x51d3,
-    connection: _0x18c9,
-    lastDisconnect: _0x6aa1,
-    isOnline: _0x1bde,
-    isNewLogin: _0x2c11,
+    receivedPendingNotifications,
+    connection,
+    lastDisconnect,
+    isOnline,
+    isNewLogin,
     qr
-  } = _0x7a1f
+  } = update
 
-  if (_0x18c9 === 'close') {
+  if (connection === 'close') {
       console.log('[CONNECTION CLOSED]', 
-          'statusCode:', _0x6aa1?.error?.output?.statusCode,
-          'message:', _0x6aa1?.error?.message
+          'statusCode:', lastDisconnect?.error?.output?.statusCode,
+          'message:', lastDisconnect?.error?.message
       )
   }
 
@@ -599,9 +591,9 @@ async function connectionUpdate(_0x7a1f) {
     }
   }
 
-  if (_0x2c11) conn.isInit = true
+  if (isNewLogin) conn.isInit = true
 
-  if (_0x18c9 === _0xdec(0)) {
+  if (connection === 'open') {
     reconnectAttempts = 0
     pairingCodeRequested = false
     console.log(
@@ -612,8 +604,6 @@ async function connectionUpdate(_0x7a1f) {
     global.timestamp.connect = new Date()
 
     // Pre-fetch semua metadata grup sekaligus (1 IQ query total, bukan 1 per grup).
-    // Ini mengisi cache SEBELUM pesan pertama datang, mencegah Baileys memanggil
-    // groupMetadata(jid) dari dalam sendMessage saat cache masih kosong.
     setTimeout(async () => {
       try {
         if (!conn.ws?.isOpen) return
@@ -627,7 +617,7 @@ async function connectionUpdate(_0x7a1f) {
       } catch (e) {
         console.error(chalk.red('[GROUP PRE-FETCH ERROR]'), e?.message)
       }
-    }, 5000) // tunggu 5 detik agar koneksi stabil dulu
+    }, 5000)
 
     // E2EE Pre-Key Warmup Ping (Sinkronisasi Kunci E2EE Otomatis Pasca Connection)
     try {
@@ -639,55 +629,32 @@ async function connectionUpdate(_0x7a1f) {
     } catch (e) {
       /* E2EE Warmup skipped */
     }
-  if (!conn.sewaInit) {
-       initSewaCheck(conn)
-       conn.sewaInit = true
-    }
-    if (typeof conn.newsletterFollow === 'function') {
-      const _0xchannels = [
-        _0xdec(2),
-        _0xdec(3),
-        _0xdec(4),
-        _0xdec(5),
-        _0xdec(6) 
-      ]
 
-      await new Promise(r => setTimeout(r, 7000))
-
-      for (const _0xjid of _0xchannels) {
-        try {
-          await conn.newsletterFollow(_0xjid)
-          // console.log(chalk.green.bold('✅ Successfully follow Channel')) 
-          await new Promise(r => setTimeout(r, 6000))
-        } catch (e) {
-          /* console.log(
-            chalk.redBright('❌ Failed to follow Channel'),
-            e?.message || e
-          ) */
-        }
-      }
+    if (!conn.sewaInit) {
+      initSewaCheck(conn)
+      conn.sewaInit = true
     }
-  } else if (_0x18c9 === _0xdec(1)) {
+  } else if (connection === 'connecting') {
     console.log(chalk.green('⏱️ Koneksi connecting'))
   }
 
-  if (_0x1bde === true) {
+  if (isOnline === true) {
     console.log(chalk.green('⚡ Status Aktif'))
-  } else if (_0x1bde === false) {
+  } else if (isOnline === false) {
     console.log(chalk.redBright('Status Mati'))
   }
 
-  if (_0x51d3) {
+  if (receivedPendingNotifications) {
     console.log(chalk.yellow('Menunggu Pesan Baru'))
   }
 
   if (
-    _0x18c9 === 'close' &&
+    connection === 'close' &&
     conn.ws.readyState !== CONNECTING
   ) {
-    const statusCode = _0x6aa1?.error?.output?.statusCode
+    const statusCode = lastDisconnect?.error?.output?.statusCode
     const reason = disconnectReasonName(statusCode)
-    const message = _0x6aa1?.error?.message || _0x6aa1?.error?.output?.payload?.message || 'Unknown reason'
+    const message = lastDisconnect?.error?.message || lastDisconnect?.error?.output?.payload?.message || 'Unknown reason'
 
     console.log(chalk.redBright(`❌ Koneksi close: ${reason} (${statusCode || 'no-code'}) - ${message}`))
 
