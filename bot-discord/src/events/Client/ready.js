@@ -89,13 +89,23 @@ module.exports = {
           return commandData;
         });
 
-        client.logger.log(`Deploying ${commands.length} slash commands...`, "cmd");
+        client.logger.log(`Deploying ${commands.length} slash commands (Global & Guilds)...`, "cmd");
 
+        // 1. Deploy Global commands
         await rest.put(Routes.applicationCommands(client.user.id), {
           body: commands,
         });
 
-        client.logger.log(`Successfully deployed ${commands.length} slash commands.`, "cmd");
+        // 2. Deploy Instant Guild commands ke semua server yang dimasuki bot
+        for (const guild of client.guilds.cache.values()) {
+          try {
+            await rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), {
+              body: commands,
+            });
+          } catch (_) {}
+        }
+
+        client.logger.log(`Successfully deployed ${commands.length} slash commands instantly.`, "cmd");
       } catch (error) {
         console.error("Error deploying slash commands:", error);
       }
