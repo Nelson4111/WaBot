@@ -3,11 +3,16 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   if (!wdb.guilds) wdb.guilds = {}
+  if (!wdb.money) wdb.money = {}
 
-  let user = getUserRPG(m.sender)
+  let user = getUserRPG(wdb, m.sender)
   if (!user) return m.reply('📖 Untuk bermain rpg ketik *.adventure*')
 
-  let args = text.split(' ')
+  if (wdb.money[m.sender] === undefined && user.money !== undefined) {
+    wdb.money[m.sender] = user.money || 0
+  }
+
+  let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
 
   if (!action) {
