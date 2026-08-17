@@ -16,8 +16,6 @@ module.exports = {
       if (!guild) return;
 
       const name = guild.name;
-      const web1 = new WebhookClient({ url: player_delete });
-
       if (player.voiceId) {
         try {
           await client.rest.put(`/channels/${player.voiceId}/voice-status`, { body: { status: `` } });
@@ -25,15 +23,20 @@ module.exports = {
         }
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(client.color)
-        .setAuthor({
-          name: `Player Destroyed`,
-          iconURL: client.user.displayAvatarURL(),
-        })
-        .setDescription(`**Id:** \`${guild.id}\`\n**Name:** \`${name ? name : 'Unknown'}\``);
-
-      await web1.send({ embeds: [embed] }).catch(() => null);
+      if (player_delete && typeof player_delete === 'string' && player_delete.startsWith('http')) {
+        try {
+          const web1 = new WebhookClient({ url: player_delete });
+          const embed = new EmbedBuilder()
+            .setColor(client.color)
+            .setAuthor({
+              name: `Player Destroyed`,
+              iconURL: client.user.displayAvatarURL(),
+            })
+            .setDescription(`**Id:** \`${guild.id}\`\n**Name:** \`${name ? name : 'Unknown'}\``);
+          await web1.send({ embeds: [embed] }).catch(() => null);
+          if (typeof web1.destroy === 'function') web1.destroy();
+        } catch (_) {}
+      }
 
       client.logger.log(`Player Destroy in ${name ? name : 'Unknown'} [ ${player.guildId} ]`, "log");
 
@@ -50,13 +53,6 @@ module.exports = {
       }
 
       player.data.clear();
-
-      if (web1 && typeof web1.destroy === 'function') {
-        try {
-          web1.destroy();
-        } catch (err) {
-        }
-      }
     } catch (err) {
       client.logger.log(`Error in player destroy: ${err.message}`, "error");
     }

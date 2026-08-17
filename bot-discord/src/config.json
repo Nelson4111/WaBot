@@ -35,8 +35,8 @@
     },
     {
       "name": "NelBot-Backup",
-      "url": "lavalink.jirayu.net:443",
-      "auth": "youshallnotpass",
+      "url": "lavalink.serenetia.com:443",
+      "auth": "https://seretia.link/discord",
       "secure": true
     }
   ],

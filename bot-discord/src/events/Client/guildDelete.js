@@ -21,28 +21,32 @@ const moment = require("moment");
 module.exports = {
   name: "guildDelete",
   run: async (client, guild) => {
-    const web = new WebhookClient({ url: guild_leave });
     const own = await guild.fetchOwner().catch(() => null);
 
-    const embed = new EmbedBuilder()
-      .setColor("#ff0000")
-      .setThumbnail(guild.iconURL({ size: 1024 }))
-      .setDescription(
-        `**${client.emoji.cross} Left a Guild**\n\n` +
-        `**${client.emoji.dot} Server Name:** \`${guild.name}\` \n` +
-        `**${client.emoji.dot} Server ID:** \`${guild.id}\` \n` +
-        `**${client.emoji.dot} Server Owner:** \`${own?.user?.username || "Unknown"}\` (${own?.id || "N/A"}) \n` +
-        `**${client.emoji.dot} Member Count:** \`${guild.memberCount}\` Members \n` +
-        `**${client.emoji.dot} Creation Date:** \`${moment.utc(guild.createdAt).format("DD/MMM/YYYY")}\` \n` +
-        `**${client.emoji.dot} Total Servers:** \`${client.guilds.cache.size}\``
-      )
-      .setFooter({
-        text: `Total Server Count [ ${client.guilds.cache.size} ]`,
-        iconURL: client.user.displayAvatarURL(),
-      })
-      .setTimestamp();
+    if (guild_leave && typeof guild_leave === 'string' && guild_leave.startsWith('http')) {
+      try {
+        const web = new WebhookClient({ url: guild_leave });
+        const embed = new EmbedBuilder()
+          .setColor("#ff0000")
+          .setThumbnail(guild.iconURL({ size: 1024 }))
+          .setDescription(
+            `**${client.emoji.cross} Left a Guild**\n\n` +
+            `**${client.emoji.dot} Server Name:** \`${guild.name}\` \n` +
+            `**${client.emoji.dot} Server ID:** \`${guild.id}\` \n` +
+            `**${client.emoji.dot} Server Owner:** \`${own?.user?.username || "Unknown"}\` (${own?.id || "N/A"}) \n` +
+            `**${client.emoji.dot} Member Count:** \`${guild.memberCount}\` Members \n` +
+            `**${client.emoji.dot} Creation Date:** \`${moment.utc(guild.createdAt).format("DD/MMM/YYYY")}\` \n` +
+            `**${client.emoji.dot} Total Servers:** \`${client.guilds.cache.size}\``
+          )
+          .setFooter({
+            text: `Total Server Count [ ${client.guilds.cache.size} ]`,
+            iconURL: client.user.displayAvatarURL(),
+          })
+          .setTimestamp();
 
-    web.send({ embeds: [embed] }).catch(() => { });
+        web.send({ embeds: [embed] }).catch(() => { });
+      } catch (_) {}
+    }
 
     try {
       client.db.prefixes.delete(guild.id);

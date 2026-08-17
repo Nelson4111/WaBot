@@ -1,4 +1,4 @@
-﻿const {
+const {
   WebhookClient,
   ComponentType,
   ActionRowBuilder,
@@ -408,18 +408,20 @@ module.exports = {
       if (!player.data?.get("playerStarted")) {
         player.data?.set("playerStarted", true);
 
-        if (player_create) {
-          const webhook = new WebhookClient({ url: player_create });
+        if (player_create && typeof player_create === 'string' && player_create.startsWith('http')) {
+          try {
+            const webhook = new WebhookClient({ url: player_create });
 
-          const embed = new EmbedBuilder()
-            .setColor(client.color)
-            .setAuthor({
-              name: `Player Started`,
-              iconURL: client.user.displayAvatarURL()
-            })
-            .setDescription(`**Server:** \`${guild.name}\`\n**ID:** \`${player.guildId}\``);
+            const embed = new EmbedBuilder()
+              .setColor(client.color)
+              .setAuthor({
+                name: `Player Started`,
+                iconURL: client.user.displayAvatarURL()
+              })
+              .setDescription(`**Server:** \`${guild.name}\`\n**ID:** \`${player.guildId}\``);
 
-          webhook.send({ embeds: [embed] }).catch(() => { });
+            webhook.send({ embeds: [embed] }).catch(() => { });
+          } catch (_) {}
         }
       }
 

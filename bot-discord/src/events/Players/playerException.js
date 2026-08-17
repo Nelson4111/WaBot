@@ -18,32 +18,57 @@ module.exports = {
       const channel = client.channels.cache.get(player.textId);
       const currentTrack = player.queue.current;
 
-      if (reason.exception?.cause?.includes("ScriptExtractionException")) {
+      const cause = (reason.exception?.cause || "").toLowerCase();
+      const msg = (reason.exception?.message || "").toLowerCase();
+      const isRestricted =
+        cause.includes("scriptextractionexception") ||
+        cause.includes("allclientsfailedexception") ||
+        msg.includes("requires login") ||
+        msg.includes("all clients failed") ||
+        msg.includes("sign in to confirm") ||
+        msg.includes("age-restricted") ||
+        msg.includes("unavailable") ||
+        msg.includes("something went wrong");
+
+      if (isRestricted || currentTrack) {
         if (currentTrack) {
-          const searchQuery = `${currentTrack.title} ${currentTrack.author}`;
+          // Bersihkan judul lagu dari noise YouTube agar pencarian alternatif akurat
+          let cleanTitle = currentTrack.title
+            .replace(/[\(\[\{].*?(official|video|audio|lirik|lyrics|remix|clip|mv|hd|4k|music|feat|ft).*?[\)\]\}]/gi, '')
+            .replace(/\|\s*.*$/gi, '')
+            .replace(/-\s*topic$/gi, '')
+            .trim();
+
+          let cleanAuthor = (currentTrack.author || '')
+            .replace(/-\s*topic$/gi, '')
+            .replace(/vevo$/gi, '')
+            .trim();
+
+          const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
+
           let searchResult = await client.manager.search(searchQuery, {
             engine: "ytmsearch",
             requester: currentTrack.requester,
           });
 
-          if (!searchResult.tracks.length) {
+          if (!searchResult?.tracks?.length) {
             searchResult = await client.manager.search(searchQuery, {
               engine: "spsearch",
               requester: currentTrack.requester,
             });
           }
 
-          if (!searchResult.tracks.length) {
+          if (!searchResult?.tracks?.length) {
             searchResult = await client.manager.search(searchQuery, {
               engine: "scsearch",
               requester: currentTrack.requester,
             });
           }
 
-          if (searchResult.tracks.length > 0) {
+          if (searchResult?.tracks?.length > 0) {
             if (channel) {
               const fallbackDisplay = new TextDisplayBuilder()
-                .setContent(`**${client.emoji.warn} YouTube restricted → using alternative source!**`);
+                .setContent(`**${client.emoji.warn || "⚠️"} YouTube restricted → dialihkan ke sumber alternatif (Audio Jernih)!**`);
 
               const container = new ContainerBuilder()
                 .addTextDisplayComponents(fallbackDisplay);
@@ -65,8 +90,8 @@ module.exports = {
         if (channel) {
           const blockedDisplay = new TextDisplayBuilder()
             .setContent(
-              `**${client.emoji.error} Couldn't play this track [YouTube blocked].**\n` +
-              `**${client.emoji.info} Skipping...**`
+              `**${client.emoji.error || "❌"} Tidak dapat memutar lagu ini [Restriksi YouTube Login].**\n` +
+              `**${client.emoji.info || "ℹ️"} Melewati ke lagu berikutnya...**`
             );
 
           const container = new ContainerBuilder()
