@@ -80,6 +80,7 @@ function startBot(bot, retries = 0) {
     console.log(`${prefix} 🚀 Menyalakan...`);
 
     const child = spawn(process.execPath, [bot.script], {
+        cwd: bot.name === 'BOT-DC' ? join(__dirname, 'bot-discord') : __dirname,
         stdio: ['inherit', 'pipe', 'pipe'],
         env: { ...process.env },
     });
