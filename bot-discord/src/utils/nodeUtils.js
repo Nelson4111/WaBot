@@ -34,8 +34,27 @@ function getAvailableNode(manager) {
     return nodes.length > 0 ? nodes[0] : null;
 }
 
+function getBestNode(manager) {
+    if (!manager?.shoukaku) return null;
+    const connectedNodes = [...manager.shoukaku.nodes.values()].filter(
+        node => node.state === 1
+    );
+
+    if (connectedNodes.length === 0) {
+        return getAvailableNode(manager);
+    }
+
+    // Sort berdasarkan jumlah player terkecil dan penalti paling rendah
+    return connectedNodes.sort((a, b) => {
+        const loadA = (a.stats?.players || 0) + (a.penalties || 0);
+        const loadB = (b.stats?.players || 0) + (b.penalties || 0);
+        return loadA - loadB;
+    })[0];
+}
+
 module.exports = {
     waitForNodeConnection,
     hasAvailableNodes,
-    getAvailableNode
+    getAvailableNode,
+    getBestNode
 };

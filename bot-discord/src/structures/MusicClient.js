@@ -55,6 +55,8 @@ class MusicBot extends Client {
     this.manager = null;
     this.spamMap = new Map();
     this.cooldowns = new Collection();
+    const YoutubeAccountManager = require("../utils/youtubeAccountManager");
+    this.youtubeAccounts = new YoutubeAccountManager(this.config);
     this.db = require("./Database");
     this.logger.log("[DB] Local SQLite Database Initialized", "ready");
 

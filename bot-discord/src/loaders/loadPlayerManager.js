@@ -44,10 +44,10 @@ module.exports = function loadPlayerManager(client) {
 
   manager.searchEngines = searchEngines;
 
-  const originalSearch = manager.search.bind(manager);
+  const { getBestNode } = require("../utils/nodeUtils");
 
   manager.search = async function (query, options = {}) {
-    const node = [...this.shoukaku.nodes.values()].find(n => n.state === 1) || [...this.shoukaku.nodes.values()][0];
+    const node = getBestNode(this) || [...this.shoukaku.nodes.values()][0];
     if (!node) return { type: "SEARCH", tracks: [] };
 
     let cleanQuery = query.trim().replace(/[<>]/g, '');

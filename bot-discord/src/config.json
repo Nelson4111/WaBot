@@ -50,5 +50,6 @@
     "restTimeout": 60000,
     "voiceConnectionTimeout": 30000,
     "userAgent": "NelBot"
-  }
+  },
+  "youtube_account_pool": []
 }
