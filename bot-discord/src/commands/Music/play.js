@@ -33,13 +33,13 @@ module.exports = {
   ],
 
   autocomplete: async (interaction, client) => {
-    const focusedValue = interaction.options.getFocused();
+    const focusedValue = interaction.options.getFocused()?.trim();
 
     if (!focusedValue || focusedValue.length < 2) {
-      return interaction.respond([]);
+      return interaction.respond([]).catch(() => {});
     }
 
-    const isUrl = /^https?:\/\//.test(focusedValue) ||
+    const isUrl = /^https?:\/\//i.test(focusedValue) ||
       focusedValue.includes('youtube.com') ||
       focusedValue.includes('youtu.be') ||
       focusedValue.includes('music.youtube.com') ||
@@ -51,35 +51,49 @@ module.exports = {
       focusedValue.includes('soundcloud.com');
 
     if (isUrl) {
-      return interaction.respond([]);
+      return interaction.respond([]).catch(() => {});
     }
 
     try {
+      // 1. Instant Google Search Suggestions (<30ms, anti-rate limit Lavalink)
+      const suggestUrl = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(focusedValue)}`;
+      const suggestRes = await fetch(suggestUrl, { signal: AbortSignal.timeout(1200) }).catch(() => null);
+      
+      if (suggestRes && suggestRes.ok) {
+        const data = await suggestRes.json().catch(() => null);
+        const suggestions = Array.isArray(data?.[1]) ? data[1] : [];
+        if (suggestions.length > 0) {
+          const choices = suggestions.slice(0, 25).map(s => {
+            const str = String(s).trim();
+            return {
+              name: str.length > 95 ? str.substring(0, 92) + '...' : str,
+              value: str.length > 100 ? str.substring(0, 100) : str
+            };
+          });
+          return interaction.respond(choices).catch(() => {});
+        }
+      }
+
+      // 2. Fallback pencarian langsung jika suggestion tidak tersedia
       let searchEngine = 'ytmsearch';
       try {
         const userPref = client.db.userpreferences.get(interaction.user.id);
         if (userPref?.musicSource) {
           searchEngine = userPref.musicSource;
         }
-      } catch (error) {
-        console.error("Error fetching user preference:", error);
-      }
+      } catch (_) {}
 
       const searchPromise = client.manager.search(focusedValue, {
         engine: searchEngine,
         requester: interaction.user
       });
 
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => resolve({ tracks: [] }), 2500);
-      });
-
-      const searchResult = await Promise.race([searchPromise, timeoutPromise]);
-
-      const tracks = searchResult.tracks || [];
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ tracks: [] }), 1500));
+      const searchResult = await Promise.race([searchPromise, timeoutPromise]).catch(() => ({ tracks: [] }));
+      const tracks = searchResult?.tracks || [];
 
       if (tracks.length === 0) {
-        return interaction.respond([]).catch(() => { });
+        return interaction.respond([]).catch(() => {});
       }
 
       const choices = tracks.slice(0, 25).map(track => {
@@ -93,12 +107,11 @@ module.exports = {
         };
       });
 
-      await interaction.respond(choices).catch(() => { });
-    } catch (error) {
-      console.error("Autocomplete error:", error);
+      await interaction.respond(choices).catch(() => {});
+    } catch (_) {
       try {
-        await interaction.respond([]).catch(() => { });
-      } catch (e) { }
+        await interaction.respond([]).catch(() => {});
+      } catch (_) {}
     }
   },
 
