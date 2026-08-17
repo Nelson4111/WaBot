@@ -29,8 +29,8 @@
   "nodes": [
     {
       "name": "NelBot-Main",
-      "url": "lavalinkv4.serenetia.com:443",
-      "auth": "https://seretia.link/discord",
+      "url": "lava-v4.ajieblogs.eu.org:443",
+      "auth": "https://dsc.gg/ajiedev",
       "secure": true
     }
   ],
@@ -39,8 +39,8 @@
     "resume": true,
     "resumeTimeout": 60,
     "resumeByLibrary": true,
-    "reconnectTries": 15,
-    "reconnectInterval": 10,
+    "reconnectTries": 10,
+    "reconnectInterval": 15,
     "restTimeout": 60000,
     "voiceConnectionTimeout": 30000,
     "userAgent": "NelBot"
