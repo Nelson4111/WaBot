@@ -83,7 +83,12 @@ module.exports = {
 
       const { waitForNodeConnection, hasAvailableNodes } = require("../../utils/nodeUtils");
 
-      if (!hasAvailableNodes(client.manager)) {
+      let hasNodes = hasAvailableNodes(client.manager);
+      if (!hasNodes) {
+        hasNodes = await waitForNodeConnection(client.manager, 4000);
+      }
+
+      if (!hasNodes) {
         const errorDisplay = new TextDisplayBuilder()
           .setContent(`**${client.emoji.cross} The music server is currently unavailable. Please try again later.**`);
 
