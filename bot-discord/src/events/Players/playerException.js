@@ -21,6 +21,8 @@ module.exports = {
       const cause = (reason.exception?.cause || "").toLowerCase();
       const msg = (reason.exception?.message || "").toLowerCase();
       const isRestricted =
+        cause.includes("403") ||
+        cause.includes("not success status code") ||
         cause.includes("scriptextractionexception") ||
         cause.includes("allclientsfailedexception") ||
         msg.includes("requires login") ||
@@ -28,7 +30,16 @@ module.exports = {
         msg.includes("sign in to confirm") ||
         msg.includes("age-restricted") ||
         msg.includes("unavailable") ||
-        msg.includes("something went wrong");
+        msg.includes("something went wrong") ||
+        msg.includes("something broke");
+
+      const trackPosition = reason.track?.info?.position || currentTrack?.position || 0;
+
+      // Jika lagu sudah berjalan lebih dari 1 menit saat terputus di tengah jalan, langsung lanjutkan antrean
+      if (trackPosition > 60000) {
+        player.skip();
+        return;
+      }
 
       if (isRestricted || currentTrack) {
         if (currentTrack) {
@@ -47,16 +58,9 @@ module.exports = {
           const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
 
           let searchResult = await client.manager.search(searchQuery, {
-            engine: "spsearch",
+            engine: "scsearch",
             requester: currentTrack.requester,
           });
-
-          if (!searchResult?.tracks?.length) {
-            searchResult = await client.manager.search(searchQuery, {
-              engine: "scsearch",
-              requester: currentTrack.requester,
-            });
-          }
 
           if (!searchResult?.tracks?.length) {
             searchResult = await client.manager.search(searchQuery, {
