@@ -32,6 +32,12 @@
       "url": "lava-v4.ajieblogs.eu.org:443",
       "auth": "https://dsc.gg/ajiedev",
       "secure": true
+    },
+    {
+      "name": "NelBot-Backup",
+      "url": "lavalink.jirayu.net:443",
+      "auth": "youshallnotpass",
+      "secure": true
     }
   ],
   "node_options": {
