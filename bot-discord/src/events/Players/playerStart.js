@@ -609,6 +609,18 @@ async function handleTrackStart(client, player, track) {
 
     player.data?.set("message", message);
 
+    const resumePos = player.data?.get("resumePosition");
+    if (resumePos && resumePos > 3000) {
+      player.data?.delete("resumePosition");
+      setTimeout(async () => {
+        try {
+          if (player && !player.destroyed && player.seek) {
+            await player.seek(resumePos);
+          }
+        } catch (_) {}
+      }, 1000);
+    }
+
     setupMessageCollector(client, player, message);
 
   } catch (error) {

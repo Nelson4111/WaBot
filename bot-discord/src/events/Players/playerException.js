@@ -3,6 +3,7 @@ const {
   TextDisplayBuilder,
   MessageFlags
 } = require("discord.js");
+const { convertTime } = require("../../utils/convert.js");
 
 module.exports = {
   name: "playerException",
@@ -35,12 +36,6 @@ module.exports = {
 
       const trackPosition = reason.track?.info?.position || currentTrack?.position || 0;
 
-      // Jika lagu sudah berjalan lebih dari 1 menit saat terputus di tengah jalan, langsung lanjutkan antrean
-      if (trackPosition > 60000) {
-        player.skip();
-        return;
-      }
-
       if (isRestricted || currentTrack) {
         if (currentTrack) {
           // Bersihkan judul lagu dari noise YouTube agar pencarian alternatif akurat
@@ -70,9 +65,14 @@ module.exports = {
           }
 
           if (searchResult?.tracks?.length > 0) {
+            if (trackPosition > 3000) {
+              player.data?.set("resumePosition", trackPosition);
+            }
+
             if (channel) {
+              const posText = trackPosition > 3000 ? ` dan melanjutkan dari menit **${convertTime(trackPosition)}**` : '';
               const fallbackDisplay = new TextDisplayBuilder()
-                .setContent(`**${client.emoji.warn || "⚠️"} YouTube restricted → dialihkan ke sumber alternatif (Audio Jernih)!**`);
+                .setContent(`**${client.emoji.warn || "⚠️"} Stream terputus → dialihkan ke sumber alternatif${posText}!**`);
 
               const container = new ContainerBuilder()
                 .addTextDisplayComponents(fallbackDisplay);
