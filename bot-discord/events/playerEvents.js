@@ -40,14 +40,33 @@ export default function setupPlayerEvents(player) {
         }).catch(console.error)
     })
 
-    // Error saat memutar lagu
+    // Error pada level Voice Connection
     player.events.on('error', (queue, err) => {
-        console.error(`[BOT-DC] ❌ Player Error: ${err.message}`)
+        console.error(`[BOT-DC][Voice Error] di guild ${queue.guild?.name || 'Unknown'}:`, err.message)
+        
+        // Bersihkan queue jika koneksi voice dibatalkan atau terputus
+        if (err.message?.includes('aborted') || err.message?.includes('destroyed')) {
+            try {
+                if (queue && !queue.deleted) queue.delete()
+            } catch (_) {}
+        }
+
         const channel = queue.metadata?.channel
         if (channel) {
             channel.send({
-                embeds: [{ color: 0xED4245, description: `❌ Terjadi error: \`${err.message}\`` }]
-            }).catch(console.error)
+                embeds: [{ color: 0xED4245, description: `⚠️ Masalah koneksi audio: \`${err.message}\`` }]
+            }).catch(() => {})
+        }
+    })
+
+    // Error pada level Streaming / Audio Decoder
+    player.events.on('playerError', (queue, err) => {
+        console.error(`[BOT-DC][Stream Error] di guild ${queue.guild?.name || 'Unknown'}:`, err.message)
+        const channel = queue.metadata?.channel
+        if (channel) {
+            channel.send({
+                embeds: [{ color: 0xED4245, description: `⚠️ Gagal memutar track: \`${err.message}\`. Melewati ke lagu berikutnya...` }]
+            }).catch(() => {})
         }
     })
 

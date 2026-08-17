@@ -97,22 +97,6 @@ await player.extractors.register(YoutubeiExtractor, {
 
 console.log('[BOT-DC] ✅ Audio extractors dimuat (via YoutubeiExtractor).')
 
-// ─────────────────────────────────────────────
-// Player Error Handling
-// ─────────────────────────────────────────────
-player.events.on('error', (queue, error) => {
-    console.error(`[BOT-DC][Player Error] (Connection) di guild ${queue.guild.name}:`, error.message)
-    if (queue.metadata?.channel) {
-        queue.metadata.channel.send(`⚠️ Terjadi masalah koneksi audio: \`${error.message}\``).catch(() => {})
-    }
-})
-
-player.events.on('playerError', (queue, error) => {
-    console.error(`[BOT-DC][Player Error] (Streaming) di guild ${queue.guild.name}:`, error.message)
-    if (queue.metadata?.channel) {
-        queue.metadata.channel.send(`⚠️ Gagal memutar lagu, coba lagu lain ya. (\`${error.message}\`)`).catch(() => {})
-    }
-})
 
 // ─────────────────────────────────────────────
 // Load Event Handlers (Discord Events)

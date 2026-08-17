@@ -36,6 +36,12 @@ export default {
         const isUrl = /^https?:\/\//i.test(query.trim())
         const searchEngine = isUrl ? QueryType.AUTO : QueryType.SOUNDCLOUD_SEARCH
 
+        // Bersihkan queue lama jika koneksi voice sebelumnya mati/terputus
+        const existingQueue = player.nodes.get(interaction.guildId)
+        if (existingQueue && !existingQueue.connection) {
+            existingQueue.delete()
+        }
+
         try {
             const { track } = await player.play(channel, query, {
                 searchEngine,
@@ -50,6 +56,8 @@ export default {
                     leaveOnEmptyCooldown: 60_000,
                     leaveOnEnd: true,
                     leaveOnEndCooldown: 60_000,
+                    connectionTimeout: 60_000,
+                    bufferingTimeout: 10_000,
                 },
                 requestedBy: interaction.user,
             })
