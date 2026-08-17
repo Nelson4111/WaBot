@@ -45,6 +45,7 @@ module.exports = function loadPlayerManager(client) {
   manager.searchEngines = searchEngines;
 
   const { getBestNode } = require("../utils/nodeUtils");
+  const originalSearch = manager.search.bind(manager);
 
   manager.search = async function (query, options = {}) {
     const node = getBestNode(this) || [...this.shoukaku.nodes.values()][0];
