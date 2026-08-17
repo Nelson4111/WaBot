@@ -17,27 +17,51 @@ module.exports = {
     sameVoiceChannel: true,
     botPerms: ["EmbedLinks", "Connect", "Speak"],
 
+    slashOptions: [],
+
+    async slashExecute(interaction, client) {
+        const interactionWrapper = {
+            guild: interaction.guild,
+            channel: interaction.channel,
+            author: interaction.user,
+            member: interaction.member,
+            createdTimestamp: interaction.createdTimestamp,
+            reply: async (options) => {
+                if (interaction.deferred) {
+                    return await interaction.editReply(options);
+                } else if (interaction.replied) {
+                    return await interaction.followUp(options);
+                } else {
+                    return await interaction.reply(options);
+                }
+            },
+        };
+        return this.execute(interactionWrapper, [], client, '/');
+    },
+
     async execute(message, args, client, prefix) {
         const regions = [
-            { label: "Global", value: "global", description: "International chart-toppers" },
-            { label: "English", value: "english", description: "Popular English vibes" },
-            { label: "Hindi", value: "hindi", description: "Pure Hindi music" },
-            { label: "Bollywood", value: "bollywood", description: "Iconic Indian cinema tracks" },
-            { label: "Punjabi", value: "punjabi", description: "Bhangra and Punjabi beats" },
-            { label: "Haryanvi", value: "haryanvi", description: "Top Haryanvi music" },
-            { label: "K-Pop", value: "k-pop", description: "Best of Korean pop" },
-            { label: "Spanish", value: "spanish", description: "Top Spanish language hits" },
-            { label: "Latin", value: "latin", description: "Rhythms from Latin America" }
+            { label: "🇮🇩 Indonesia", value: "indonesia", description: "Lagu Pop & Hits Indonesia" },
+            { label: "💃 Dangdut Koplo", value: "dangdut", description: "Dangdut, Koplo & Campursari" },
+            { label: "🌐 Global", value: "global", description: "International chart-toppers" },
+            { label: "🇺🇸 English", value: "english", description: "Popular English vibes" },
+            { label: "🌸 J-Pop / Anime", value: "j-pop", description: "Japanese Pop & Anime hits" },
+            { label: "🇰🇷 K-Pop", value: "k-pop", description: "Best of Korean pop" },
+            { label: "🇮🇳 Bollywood", value: "bollywood", description: "Iconic Indian cinema tracks" },
+            { label: "🇮🇳 Hindi", value: "hindi", description: "Pure Hindi music" },
+            { label: "🇮🇳 Punjabi", value: "punjabi", description: "Bhangra and Punjabi beats" },
+            { label: "🇪🇸 Spanish", value: "spanish", description: "Top Spanish language hits" },
+            { label: "🌴 Latin", value: "latin", description: "Rhythms from Latin America" }
         ];
 
         const regionMenu = new StringSelectMenuBuilder()
             .setCustomId("region_select")
-            .setPlaceholder("First, select your specific region/language...")
+            .setPlaceholder("Pilih kategori bahasa / wilayah musik...")
             .addOptions(regions);
 
         const row = new ActionRowBuilder().addComponents(regionMenu);
         const display = new TextDisplayBuilder()
-            .setContent(`### ${client.emoji.dance} **Music for Everyone**\nSelect a region to get started with custom vibe stations!`);
+            .setContent(`### ${client.emoji.dance || "🎶"} **Music Mood & Vibe Station**\nPilih wilayah / bahasa untuk mulai mendengarkan playlist suasana hati:`);
 
         const container = new ContainerBuilder().addTextDisplayComponents(display);
 
@@ -47,7 +71,7 @@ module.exports = {
         });
 
         const collector = msg.createMessageComponentCollector({
-            filter: (i) => i.user.id === message.author.id,
+            filter: (i) => i.user.id === (message.author?.id || message.user?.id),
             time: 60000
         });
 
@@ -59,20 +83,20 @@ module.exports = {
                 await interaction.deferUpdate();
 
                 const moodOptions = [
-                    { label: "Chill / Lofi", value: "chill", description: "Relaxing vibes" },
-                    { label: "Party / Dance", value: "party", description: "Energy boost" },
-                    { label: "Sad / Emotional", value: "sad", description: "Deep feels" },
-                    { label: "Romance", value: "romance", description: "Love songs" }
+                    { label: "☕ Chill / Santai", value: "chill", description: "Lofi & musik santai rileks" },
+                    { label: "🎉 Party / Semangat", value: "party", description: "Energi booster & upbeat" },
+                    { label: "💔 Sad / Galau", value: "sad", description: "Lagu galau & emosional" },
+                    { label: "💖 Romantis / Cinta", value: "romance", description: "Lagu cinta & manis" }
                 ];
 
                 const moodMenu = new StringSelectMenuBuilder()
                     .setCustomId("mood_select")
-                    .setPlaceholder(`Now, choose a ${selectedRegion.label} mood...`)
+                    .setPlaceholder(`Pilih suasana hati untuk ${selectedRegion.label}...`)
                     .addOptions(moodOptions);
 
                 const moodRow = new ActionRowBuilder().addComponents(moodMenu);
                 const moodDisplay = new TextDisplayBuilder()
-                    .setContent(`**${selectedRegion.label} Center**\nWhat's your vibe today?`);
+                    .setContent(`**${selectedRegion.label} Music Station**\nBagaimana suasana hati kamu sekarang?`);
 
                 const moodContainer = new ContainerBuilder().addTextDisplayComponents(moodDisplay);
                 await msg.edit({ components: [moodContainer, moodRow] });
@@ -82,6 +106,9 @@ module.exports = {
                 await interaction.deferUpdate();
 
                 const tagMap = {
+                    indonesia: { chill: "indonesian indie", party: "indonesia pop", sad: "galau", romance: "indonesian pop", keyword: "Indonesia" },
+                    dangdut: { chill: "dangdut akustik", party: "koplo", sad: "dangdut", romance: "dangdut", keyword: "Dangdut" },
+                    "j-pop": { chill: "japanese lofi", party: "j-pop", sad: "j-pop sad", romance: "j-pop", keyword: "Japanese" },
                     global: { chill: "lofi", party: "party", sad: "sad", romance: "romance", keyword: "" },
                     english: { chill: "chill house", party: "pop", sad: "sad pop", romance: "lovesong", keyword: "English" },
                     hindi: { chill: "hindi", party: "hindi", sad: "hindi sad", romance: "hindi", keyword: "Hindi" },
