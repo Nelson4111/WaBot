@@ -42,13 +42,17 @@ async function processRadio(message, artistName, client) {
     try {
         let player = client.manager.players.get(message.guild.id);
         if (!player) {
-            player = await client.manager.createPlayer({
-                guildId: message.guild.id,
-                voiceId: channel.id,
-                textId: message.channel.id,
-                volume: 80,
-                deaf: true,
-            });
+            try {
+                player = await client.manager.createPlayer({
+                    guildId: message.guild.id,
+                    voiceId: channel.id,
+                    textId: message.channel.id,
+                    volume: 80,
+                    deaf: true,
+                });
+            } catch (createErr) {
+                return await reply(`Server audio sedang menghubungkan ulang, silakan coba 3 detik lagi.`, true);
+            }
         }
 
         let searchEngine = client.config.node_source || 'scsearch';
