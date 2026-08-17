@@ -29,7 +29,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   wdb.users = wdb.users || {}
   wdb.money = wdb.money || {}
 
-  let [aksi, target,...args] = text.split(' ')
+  let rawArgs = (text || '').trim().split(/\s+/).filter(Boolean)
+  let aksi = rawArgs[0]?.toLowerCase()
+  let remaining = rawArgs.slice(1)
 
   if (!aksi) return m.reply(`*╭───「 👑 RPG PANEL OWNER 」───╮*
 │ *Fitur Admin RPG ZETA*
@@ -106,54 +108,6 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 ├ ${usedPrefix}rpgpanel resetlevel @tag
 ├ ${usedPrefix}rpgpanel resetmoney @tag
 └ ${usedPrefix}rpgpanel resetdiamond @tag`)
-  
-  // VALIDASI TARGET
-  let who = m.mentionedJid[0]
-  if(!who && target) who = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
-
-  // INISIALISASI WAJIB BIAR GA RESET
-  if(who){
-    if(!wdb.users[who]) wdb.users[who] = {}
-    if(!wdb.users[who].rpg) wdb.users[who].rpg = {}
-    if(!wdb.money[who]) wdb.money[who] = 0
-  }
-
-  let user = who? wdb.users[who].rpg : null
-  if(user){
-    user.inventory = user.inventory || {}
-    user.ikan = user.ikan || {}
-    user.ores = user.ores || {}
-    user.items = user.items || {}
-    user.masakan = user.masakan || {}
-    user.pets = user.pets || []
-    user.ternak = user.ternak || {}
-    user.dapur = user.dapur || {slot:1, antrian:[]}
-    user.bank = user.bank || 0
-    user.bankTier = user.bankTier || 0
-    user.riwayat = user.riwayat || []
-    user.pinjaman = user.pinjaman || {jumlah:0,waktu:0}
-    user.kartuBeku = user.kartuBeku || false
-    user.lastkerja = user.lastkerja || 0
-    user.maxDarahBonus = user.maxDarahBonus || 0
-    user.darah = user.darah || 100
-    user.level = user.level || 1
-    user.exp = user.exp || 0
-    user.gold = user.gold || 0
-    user.diamond = user.diamond || 0
-    user.iron = user.iron || 0
-    user.stone = user.stone || 0
-    user.wood = user.wood || 0
-    user.limit = user.limit || 0
-    user.armor = user.armor || 0
-    user.sword = user.sword || 0
-    user.pickaxe = user.pickaxe || 0
-    user.fishingrod = user.fishingrod || 0
-    user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
-  }
-
-  let jumlah = parseInt(args[0]) || 0
-  let itemInput = args[1]
-  let item = itemInput?.toLowerCase().replace(/ /g, '_')
 
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
@@ -176,9 +130,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     text += `\n💎 *TOP 10 COLLECTOR*\n`
     topDiamond.forEach((id, i) => { text += `${i + 1}. ${formatUser(id)}\n └─ *${wdb.users[id].rpg.diamond || 0} Diamond*\n` })
     return conn.sendMessage(m.chat, { 
-  image: { url: 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg' }, 
-  caption: text 
-}, { quoted: m })
+      image: { url: 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg' }, 
+      caption: text 
+    }, { quoted: m })
   }
 
   if(aksi === 'rpgstat'){
@@ -199,9 +153,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     let avgLevel = totalUsers > 0? (totalLevel / totalUsers).toFixed(1) : 0
     let cap = `*───「 RPG GLOBAL STATS 」───*\n\n📊 *Populasi:* ${totalUsers} User\n💰 *Total Uang:* Rp ${totalMoney.toLocaleString()}\n⛓️ *Total Iron:* ${totalIron.toLocaleString()}\n✨ *Total Gold:* ${totalGold.toLocaleString()}\n🏆 *Lv Tertinggi:* ${topPlayer} Lv.${highestLevel}\n📚 *Rata2:* Lv.${avgLevel}`
     return conn.sendMessage(m.chat, { 
-  image: { url: 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg' }, 
-  caption: cap 
-}, { quoted: m })
+      image: { url: 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg' }, 
+      caption: cap 
+    }, { quoted: m })
   } 
   
   if(aksi === 'topyt'){
@@ -210,13 +164,148 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     let caption = `*───「 TOP YOUTUBER 」───*\n\n`
     topYoutuber.slice(0, 10).forEach((u, i) => { caption += `${i + 1}. ${u.name}\n *Subs*: ${u.subs.toLocaleString()}\n\n` })
     return conn.sendMessage(m.chat, { 
-  image: { url: 'https://c.termai.cc/i174/Uwc' }, 
-  caption: caption.trim() 
-}, { quoted: m })
-  } // <-- TAMBAH INI
+      image: { url: 'https://c.termai.cc/i174/Uwc' }, 
+      caption: caption.trim() 
+    }, { quoted: m })
+  }
+
+  // 2. Normalisasi 2-kata aksi (misal: "set money", "add diamond", "del wood")
+  const statAliases = [
+    'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood',
+    'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
+    'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item'
+  ];
+
+  if (['set', 'add', 'del', 'tambah', 'kurang', 'reset'].includes(aksi) && remaining.length > 0) {
+    let nextWord = remaining[0].toLowerCase();
+    if (statAliases.includes(nextWord)) {
+      let prefixAksi = aksi === 'tambah' ? 'add' : (aksi === 'kurang' ? 'del' : aksi);
+      aksi = prefixAksi + nextWord;
+      remaining = remaining.slice(1);
+    }
+  }
+
+  // 3. Resolusi Target User (Mendukung: Tag / Mention, Reply / Quoted, Nomor HP, JID, LID)
+  let who = null;
+  let targetArgIndex = -1;
+
+  // A. Cek dari Mention / Tag (@user)
+  if (m.mentionedJid && m.mentionedJid.length > 0) {
+    who = m.mentionedJid[0];
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i].startsWith('@') || remaining[i].includes('@s.whatsapp.net') || remaining[i].includes('@lid')) {
+        targetArgIndex = i;
+        break;
+      }
+    }
+  }
+  // B. Cek dari Quoted / Reply pesan user
+  else if (m.quoted && m.quoted.sender) {
+    who = m.quoted.sender;
+  }
+  // C. Cek dari argumen teks (nomor HP / string JID / LID)
+  else {
+    for (let i = 0; i < remaining.length; i++) {
+      let arg = remaining[i].trim();
+      let clean = arg.replace(/^@/, '');
+      if (clean.includes('@s.whatsapp.net') || clean.includes('@lid')) {
+        who = clean;
+        targetArgIndex = i;
+        break;
+      }
+      let digits = clean.replace(/[^0-9]/g, '');
+      if (digits.length >= 8 && digits.length <= 16) {
+        if (digits.startsWith('08')) digits = '628' + digits.slice(2);
+        who = digits + '@s.whatsapp.net';
+        targetArgIndex = i;
+        break;
+      }
+    }
+  }
+
+  if (targetArgIndex !== -1) {
+    remaining.splice(targetArgIndex, 1);
+  }
+
+  // 4. Konversi dan Standarisasi format JID / LID ke Database User Key
+  if (who) {
+    try {
+      if (conn && typeof conn.decodeJid === 'function') {
+        who = conn.decodeJid(who);
+      }
+    } catch (_) {}
+
+    // Konversi LID (@lid) ke nomor HP (@s.whatsapp.net) asli jika tersedia
+    if (who.endsWith('@lid')) {
+      const resolvedLid = global.lids?.[who] || 
+                          global.db?.data?.lids?.[who] || 
+                          (wdb?.lids && wdb.lids[who]);
+      if (resolvedLid) {
+        who = resolvedLid;
+      } else if (global.db?.data?.users) {
+        for (const [realJid, uData] of Object.entries(global.db.data.users)) {
+          if (uData.lid === who || realJid.split('@')[0] === who.split('@')[0]) {
+            who = realJid;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!who.includes('@')) {
+      who = who + '@s.whatsapp.net';
+    } else if (!who.endsWith('@s.whatsapp.net') && !who.endsWith('@lid')) {
+      who = who.split('@')[0] + '@s.whatsapp.net';
+    }
+
+    if (who === '@s.whatsapp.net' || who.startsWith('NaN') || who === 'undefined@s.whatsapp.net') {
+      who = null;
+    }
+  }
 
   // ========== EDIT USER HARUS ADA TARGET ==========
-  if(!who) return m.reply('❌ Tag target dulu untuk edit user')
+  if (!who) return m.reply('❌ Tag / reply / masukkan nomor target dulu untuk edit user!')
+
+  // INISIALISASI WAJIB BIAR GA RESET
+  if (!wdb.users[who]) wdb.users[who] = {}
+  if (!wdb.users[who].rpg) wdb.users[who].rpg = {}
+  if (wdb.money[who] === undefined) wdb.money[who] = 0
+
+  let user = wdb.users[who].rpg
+  user.inventory = user.inventory || {}
+  user.ikan = user.ikan || {}
+  user.ores = user.ores || {}
+  user.items = user.items || {}
+  user.masakan = user.masakan || {}
+  user.pets = user.pets || []
+  user.ternak = user.ternak || {}
+  user.dapur = user.dapur || {slot:1, antrian:[]}
+  user.bank = user.bank || 0
+  user.bankTier = user.bankTier || 0
+  user.riwayat = user.riwayat || []
+  user.pinjaman = user.pinjaman || {jumlah:0,waktu:0}
+  user.kartuBeku = user.kartuBeku || false
+  user.lastkerja = user.lastkerja || 0
+  user.maxDarahBonus = user.maxDarahBonus || 0
+  user.darah = user.darah || 100
+  user.level = user.level || 1
+  user.exp = user.exp || 0
+  user.gold = user.gold || 0
+  user.diamond = user.diamond || 0
+  user.iron = user.iron || 0
+  user.stone = user.stone || 0
+  user.wood = user.wood || 0
+  user.limit = user.limit || 0
+  user.armor = user.armor || 0
+  user.sword = user.sword || 0
+  user.pickaxe = user.pickaxe || 0
+  user.fishingrod = user.fishingrod || 0
+  user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
+
+  let args = remaining
+  let jumlah = parseInt(remaining.find(a => !isNaN(parseInt(a)))) || 0
+  let itemInput = remaining.find(a => isNaN(parseInt(a)))
+  let item = itemInput?.toLowerCase().replace(/ /g, '_')
 
   // 1. SET STAT
   if(['setmoney','setlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod'].includes(aksi)){
