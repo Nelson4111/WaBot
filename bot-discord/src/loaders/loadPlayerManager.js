@@ -13,24 +13,27 @@ const searchEngines = {
   SOUNDCLOUD: "scsearch"
 };
 
-const fallbackEngines = ["ytmsearch", "amsearch", "spsearch", "ytsearch"];
+const fallbackEngines = ["scsearch", "ytmsearch", "ytsearch"];
 
 module.exports = function loadPlayerManager(client) {
+  const spotifyId = client.config.SpotifyID || client.config.spotifyId;
+  const spotifySecret = client.config.SpotifySecret || client.config.spotifySecret;
+
   const manager = new Kazagumo(
     {
-      defaultSearchEngine: client.config.node_source || "ytmsearch",
+      defaultSearchEngine: client.config.node_source || "scsearch",
       send: (guildId, payload) => {
         const guild = client.guilds.cache.get(guildId);
         if (guild) guild.shard.send(payload);
       },
-      plugins: client.config.spotifyId ? [
+      plugins: spotifyId ? [
         new Spotify({
-          clientId: client.config.spotifyId,
-          clientSecret: client.config.spotifySecret,
+          clientId: spotifyId,
+          clientSecret: spotifySecret,
           playlistPageLimit: 1,
           albumPageLimit: 1,
           searchLimit: 10,
-          searchMarket: 'IN',
+          searchMarket: 'ID',
         }),
       ] : [],
     },
@@ -82,6 +85,9 @@ module.exports = function loadPlayerManager(client) {
 
       for (const engine of searchEngineList) {
         if (!engine) continue;
+        if (engine === 'spsearch' || engine.startsWith('spsearch:')) {
+          continue;
+        }
         const searchQuery = engine.includes(':') ? cleanQuery : `${engine}:${cleanQuery}`;
         const searchRes = await node.rest.resolve(searchQuery).catch(() => null);
         if (searchRes && searchRes.loadType !== 'EMPTY' && searchRes.loadType !== 'ERROR' && searchRes.loadType !== 'NO_MATCHES') {

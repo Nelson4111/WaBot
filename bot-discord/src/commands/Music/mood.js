@@ -70,10 +70,10 @@ async function startMoodRadio(message, tag, label, client, statusMsg, searchKeyw
                 const query = `${t.author} ${t.title}`.trim();
                 let result = await client.manager.search(query, { requester: author, engine: searchEngine });
                 if (!result || !result.tracks || !result.tracks.length) {
-                    result = await client.manager.search(query, { requester: author, engine: 'spsearch' });
+                    result = await client.manager.search(query, { requester: author, engine: 'scsearch' });
                 }
                 if (!result || !result.tracks || !result.tracks.length) {
-                    result = await client.manager.search(query, { requester: author, engine: 'scsearch' });
+                    result = await client.manager.search(query, { requester: author, engine: 'ytmsearch' });
                 }
 
                 if (result && result.tracks && result.tracks.length > 0) {
@@ -113,7 +113,9 @@ async function startMoodRadio(message, tag, label, client, statusMsg, searchKeyw
         player.data?.set("autoplay", true);
 
         if (!player.playing && !player.paused) {
-            await player.play();
+            await player.play().catch((err) => {
+                console.error("[Mood] player.play error:", err.message);
+            });
         }
 
         const successDisplay = new TextDisplayBuilder()
