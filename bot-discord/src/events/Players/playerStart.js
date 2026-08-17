@@ -99,7 +99,7 @@ function getCleanThumbnail(thumbnailUrl) {
   if (thumbnailUrl.includes('i.ytimg.com') || thumbnailUrl.includes('img.youtube.com')) {
     const videoIdMatch = thumbnailUrl.match(/vi\/([^\/]+)\//);
     if (videoIdMatch && videoIdMatch[1]) {
-      return `https://i.ytimg.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
+      return `https://i.ytimg.com/vi/${videoIdMatch[1]}/hqdefault.jpg`;
     }
   }
 
@@ -327,26 +327,14 @@ async function handleButtonInteraction(interaction, player, client) {
         const newVolDown = Math.max(10, curVolDown - 10);
         player.setVolume(newVolDown);
         await updateNowPlayingButtons(client, player, player.paused || false);
-        const displayVolDown = new TextDisplayBuilder()
-          .setContent(`🔉 Volume diturunkan ke \`${newVolDown}%\``);
-        const containerVolDown = new ContainerBuilder().addTextDisplayComponents(displayVolDown);
-        return interaction.reply({
-          components: [containerVolDown],
-          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
-        });
+        return interaction.deferUpdate().catch(() => { });
 
       case "volup":
         const curVolUp = player.volume || 100;
         const newVolUp = Math.min(150, curVolUp + 10);
         player.setVolume(newVolUp);
         await updateNowPlayingButtons(client, player, player.paused || false);
-        const displayVolUp = new TextDisplayBuilder()
-          .setContent(`🔊 Volume dinaikkan ke \`${newVolUp}%\``);
-        const containerVolUp = new ContainerBuilder().addTextDisplayComponents(displayVolUp);
-        return interaction.reply({
-          components: [containerVolUp],
-          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
-        });
+        return interaction.deferUpdate().catch(() => { });
 
       case "loop":
         const currentLoop = player.loop || 'none';
@@ -397,7 +385,7 @@ async function handleButtonInteraction(interaction, player, client) {
             flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
           });
         }
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
+        await interaction.deferReply({ flags: MessageFlags.IsComponentsV2 });
         try {
           const lyricsCommand = require("../../commands/Music/lyrics");
           let lyricsResult = null;
@@ -413,21 +401,45 @@ async function handleButtonInteraction(interaction, player, client) {
               flags: MessageFlags.IsComponentsV2
             });
           }
-          let lirikText = lyricsResult.lyrics;
-          if (lirikText.length > 3800) {
-            lirikText = lirikText.substring(0, 3800) + '\n\n_(Lirik terlalu panjang untuk ditampilkan semua)_';
+
+          const hasSynced = lyricsResult.synced && lyricsResult.synced.length > 0;
+          const syncedLines = hasSynced && lyricsCommand.parseSyncedLyrics ? lyricsCommand.parseSyncedLyrics(lyricsResult.synced) : null;
+
+          if (syncedLines && syncedLines.length > 0 && lyricsCommand.showLiveSyncLyrics) {
+            const loadingDisplay = new TextDisplayBuilder()
+              .setContent(`**${client.emoji.check || "✅"} Memuat Live Sync Lyrics...**`);
+            const loadingContainer = new ContainerBuilder().addTextDisplayComponents(loadingDisplay);
+            const sentMsg = await interaction.editReply({
+              components: [loadingContainer],
+              flags: MessageFlags.IsComponentsV2
+            });
+            return await lyricsCommand.showLiveSyncLyrics(client, sentMsg, currentTrack, syncedLines, player, lyricsResult.source, interaction.user.id, interaction.guild.id);
+          } else if (lyricsCommand.showStaticLyrics) {
+            const loadingDisplay = new TextDisplayBuilder()
+              .setContent(`**${client.emoji.check || "✅"} Memuat Lirik...**`);
+            const loadingContainer = new ContainerBuilder().addTextDisplayComponents(loadingDisplay);
+            const sentMsg = await interaction.editReply({
+              components: [loadingContainer],
+              flags: MessageFlags.IsComponentsV2
+            });
+            return await lyricsCommand.showStaticLyrics(client, sentMsg, currentTrack, lyricsResult.lyrics, lyricsResult.source, interaction.user.id);
+          } else {
+            let lirikText = lyricsResult.lyrics;
+            if (lirikText.length > 3800) {
+              lirikText = lirikText.substring(0, 3800) + '\n\n_(Lirik terlalu panjang untuk ditampilkan semua)_';
+            }
+            const header = new TextDisplayBuilder()
+              .setContent(`### 🎤 Lirik Lagu: [${truncateTitle(currentTrack.title, 40)}](${currentTrack.uri || currentTrack.url})\n> **Artis:** ${cleanAuthorName(currentTrack.author)} • **Sumber:** ${lyricsResult.source || "Lyrics"}`);
+            const body = new TextDisplayBuilder().setContent(lirikText);
+            const container = new ContainerBuilder()
+              .addTextDisplayComponents(header)
+              .addSeparatorComponents(new SeparatorBuilder())
+              .addTextDisplayComponents(body);
+            return interaction.editReply({
+              components: [container],
+              flags: MessageFlags.IsComponentsV2
+            });
           }
-          const header = new TextDisplayBuilder()
-            .setContent(`### 🎤 Lirik Lagu: [${truncateTitle(currentTrack.title, 40)}](${currentTrack.uri || currentTrack.url})\n> **Artis:** ${cleanAuthorName(currentTrack.author)} • **Sumber:** ${lyricsResult.source || "Lyrics"}`);
-          const body = new TextDisplayBuilder().setContent(lirikText);
-          const container = new ContainerBuilder()
-            .addTextDisplayComponents(header)
-            .addSeparatorComponents(new SeparatorBuilder())
-            .addTextDisplayComponents(body);
-          return interaction.editReply({
-            components: [container],
-            flags: MessageFlags.IsComponentsV2
-          });
         } catch (err) {
           const display = new TextDisplayBuilder()
             .setContent(`**${client.emoji.cross || "❌"} Gagal mencari lirik: ${err.message}**`);

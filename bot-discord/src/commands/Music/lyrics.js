@@ -706,4 +706,7 @@ async function fetchSongLyrics(rawTitle, rawArtist) {
 
 module.exports.fetchSongLyrics = fetchSongLyrics;
 module.exports.LyricsManager = LyricsManager;
+module.exports.parseSyncedLyrics = parseSyncedLyrics;
+module.exports.showLiveSyncLyrics = showLiveSyncLyrics;
+module.exports.showStaticLyrics = showStaticLyrics;
 
