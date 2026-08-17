@@ -12,76 +12,151 @@ const { convertTime } = require("../../utils/convert.js");
 const lyricsFinder = require("@flytri/lyrics-finder");
 const axios = require("axios");
 
+function cleanTrackInfo(rawTitle, rawArtist) {
+    if (!rawTitle) return { title: '', artist: '' };
+    let title = rawTitle;
+    let artist = rawArtist || '';
+
+    // 1. Bersihkan noise YouTube umum: (Official ...), [Official ...], | ..., dll.
+    title = title
+        .replace(/\|.*$/g, '')
+        .replace(/\[.*?\]/g, '')
+        .replace(/\(.*?(?:official|audio|video|lyrics?|lirik|visualizer|remastered|hd|4k|clip).*?\)/gi, '')
+        .replace(/official\s+(?:music\s+)?(?:video|audio|lyrics?|lirik)/gi, '')
+        .replace(/lyrics?\s+video/gi, '')
+        .replace(/lirik\s+lagu/gi, '')
+        .trim();
+
+    // 2. Jika judul mengandung format "Artist - Title" atau "Title - Artist"
+    let extractedArtist = null;
+    let extractedTitle = null;
+    if (title.includes(' - ')) {
+        const parts = title.split(' - ');
+        if (parts.length >= 2) {
+            extractedArtist = parts[0].trim();
+            extractedTitle = parts.slice(1).join(' - ').trim();
+        }
+    }
+
+    const cleanFeaturing = (str) => str ? str.replace(/(?:ft\.?|feat\.?|featuring)\s+[^,\(\)\[\]]+/gi, '').trim() : '';
+
+    return {
+        originalTitle: rawTitle,
+        originalArtist: rawArtist,
+        cleanTitle: cleanFeaturing(title),
+        extractedArtist: extractedArtist ? cleanFeaturing(extractedArtist) : null,
+        extractedTitle: extractedTitle ? cleanFeaturing(extractedTitle) : null,
+        cleanArtist: cleanFeaturing(artist)
+    };
+}
+
 class LyricsManager {
     constructor() {
         this.sources = [
-            this.fetchFromLyricsFinder.bind(this),
             this.fetchFromLRCLib.bind(this),
+            this.fetchFromLyricsFinder.bind(this),
             this.fetchFromGenius.bind(this),
         ];
     }
 
-    async fetchFromLyricsFinder(title, artist) {
-        try {
-            const lyrics = await lyricsFinder(artist, title);
-            if (lyrics && lyrics.length > 0) {
-                return { lyrics: lyrics, source: "Lyrics Finder", synced: null };
-            }
-        } catch (error) {
-            return null;
+    async fetchFromLRCLib(queryTitle, queryArtist) {
+        // 1. Coba pencarian spesifik track_name & artist_name
+        if (queryTitle && queryArtist) {
+            try {
+                const response = await axios.get(
+                    `https://lrclib.net/api/search?track_name=${encodeURIComponent(queryTitle)}&artist_name=${encodeURIComponent(queryArtist)}`,
+                    { timeout: 4000 }
+                );
+                if (response.data && response.data.length > 0) {
+                    const result = response.data[0];
+                    if (result.plainLyrics || result.syncedLyrics) {
+                        return {
+                            lyrics: result.plainLyrics || result.syncedLyrics,
+                            source: "LRClib",
+                            synced: result.syncedLyrics || null,
+                        };
+                    }
+                }
+            } catch (_) {}
         }
+
+        // 2. Coba pencarian query gabungan (q=...)
+        try {
+            const q = `${queryTitle} ${queryArtist || ''}`.trim();
+            const response = await axios.get(
+                `https://lrclib.net/api/search?q=${encodeURIComponent(q)}`,
+                { timeout: 4000 }
+            );
+            if (response.data && response.data.length > 0) {
+                const result = response.data[0];
+                if (result.plainLyrics || result.syncedLyrics) {
+                    return {
+                        lyrics: result.plainLyrics || result.syncedLyrics,
+                        source: "LRClib",
+                        synced: result.syncedLyrics || null,
+                    };
+                }
+            }
+        } catch (_) {}
+
         return null;
     }
 
-    async fetchFromLRCLib(title, artist) {
+    async fetchFromLyricsFinder(title, artist) {
         try {
-            const response = await axios.get(
-                `https://lrclib.net/api/search?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}`,
-                { timeout: 5000 }
-            );
-
-            if (response.data && response.data.length > 0) {
-                const result = response.data[0];
-                return {
-                    lyrics: result.plainLyrics || result.syncedLyrics,
-                    source: "LRClib",
-                    synced: result.syncedLyrics || null,
-                };
+            const lyrics = await lyricsFinder(artist || '', title);
+            if (lyrics && lyrics.length > 0) {
+                return { lyrics: lyrics, source: "Lyrics Finder", synced: null };
             }
-        } catch (error) {
-            return null;
-        }
+        } catch (_) {}
         return null;
     }
 
     async fetchFromGenius(title, artist) {
         try {
-            const query = `${artist} ${title}`.trim();
+            const query = `${artist || ''} ${title}`.trim();
             const response = await axios.get(
                 `https://some-random-api.com/lyrics?title=${encodeURIComponent(query)}`,
-                { timeout: 5000 }
+                { timeout: 4000 }
             );
-
             if (response.data && response.data.lyrics) {
-                return { lyrics: response.data.lyrics, source: "Some Random API", synced: null };
+                return { lyrics: response.data.lyrics, source: "Genius", synced: null };
             }
-        } catch (error) {
-            return null;
-        }
+        } catch (_) {}
         return null;
     }
 
-    async fetchLyrics(title, artist) {
-        for (const source of this.sources) {
-            try {
-                const result = await source(title, artist);
-                if (result && result.lyrics) {
-                    return result;
-                }
-            } catch (error) {
-                continue;
+    async fetchLyrics(rawTitle, rawArtist) {
+        const info = cleanTrackInfo(rawTitle, rawArtist);
+        const candidates = [];
+
+        // 1. Jika ada extractedTitle dan extractedArtist dari pemisahan "Artist - Title" atau "Title - Artist"
+        if (info.extractedArtist && info.extractedTitle) {
+            candidates.push({ title: info.extractedTitle, artist: info.extractedArtist });
+            candidates.push({ title: info.extractedArtist, artist: info.extractedTitle });
+            candidates.push({ title: `${info.extractedArtist} ${info.extractedTitle}`, artist: '' });
+        }
+
+        // 2. Gunakan cleanTitle dengan cleanArtist
+        if (info.cleanTitle) {
+            candidates.push({ title: info.cleanTitle, artist: info.cleanArtist || '' });
+            candidates.push({ title: info.cleanTitle, artist: '' });
+        }
+
+        // 3. Fallback ke judul & artis asli
+        candidates.push({ title: rawTitle, artist: rawArtist || '' });
+
+        for (const cand of candidates) {
+            for (const source of this.sources) {
+                try {
+                    const result = await source(cand.title, cand.artist);
+                    if (result && result.lyrics) {
+                        return result;
+                    }
+                } catch (_) {}
             }
         }
+
         return null;
     }
 }

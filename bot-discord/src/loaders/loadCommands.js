@@ -19,24 +19,27 @@ module.exports = (client) => {
         client.aliases.set(command.aliases, command.name);
       }
 
-      const slashData = {
-        name: command.name,
-        description: command.description || `${command.name} command`,
-        options: command.slashOptions || [],
-        category: command.category,
-        execute: command.execute,
-        slashExecute: command.slashExecute,
-        autocomplete: command.autocomplete,
-        run: command.run,
-        player: command.player,
-        inVoiceChannel: command.inVoiceChannel,
-        sameVoiceChannel: command.sameVoiceChannel,
-        botPerms: command.botPerms,
-        userPerms: command.userPerms,
-        owner: command.owner || false,
-      };
+      // Daftarkan sebagai Slash Command untuk command umum/musik/fitur (maks 100 sesuai limit Discord)
+      if (!command.owner && command.category !== "Owner" && client.slashCommands.size < 100) {
+        const slashData = {
+          name: command.name,
+          description: command.description || `${command.name} command`,
+          options: command.slashOptions || [],
+          category: command.category,
+          execute: command.execute,
+          slashExecute: command.slashExecute,
+          autocomplete: command.autocomplete,
+          run: command.run,
+          player: command.player,
+          inVoiceChannel: command.inVoiceChannel,
+          sameVoiceChannel: command.sameVoiceChannel,
+          botPerms: command.botPerms,
+          userPerms: command.userPerms,
+          owner: false,
+        };
 
-      client.slashCommands.set(command.name, slashData);
+        client.slashCommands.set(command.name, slashData);
+      }
 
       totalCommands++;
     }
