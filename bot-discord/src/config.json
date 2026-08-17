@@ -32,12 +32,6 @@
       "url": "lavalinkv4.serenetia.com:443",
       "auth": "https://seretia.link/discord",
       "secure": true
-    },
-    {
-      "name": "NelBot-Backup",
-      "url": "lavalink.serenetia.com:443",
-      "auth": "https://seretia.link/discord",
-      "secure": true
     }
   ],
   "node_options": {
