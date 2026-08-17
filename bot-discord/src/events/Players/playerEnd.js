@@ -84,7 +84,7 @@ module.exports = {
 
         const searchQueries = recommendations.map(r => `${r.author} ${r.title}`);
 
-        let engines = ["ytmsearch", "ytsearch", "spsearch", "amsearch", "dzsearch", "jssearch", "gnsearch", "scsearch"];
+        let engines = ["spsearch", "scsearch", "ytmsearch", "amsearch", "dzsearch", "ytsearch"];
         try {
           const userId = track.requester?.id || track.requester;
           const userPref = client.db.userpreferences.get(userId);

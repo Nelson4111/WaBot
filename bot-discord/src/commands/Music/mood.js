@@ -46,7 +46,7 @@ async function startMoodRadio(message, tag, label, client, statusMsg, searchKeyw
             });
         }
 
-        let searchEngine = 'ytmsearch';
+        let searchEngine = client.config.node_source || 'spsearch';
         try {
             const userPref = client.db.userpreferences.get(author.id);
             if (userPref?.musicSource) {
@@ -67,8 +67,14 @@ async function startMoodRadio(message, tag, label, client, statusMsg, searchKeyw
             await updateStatus(`Memuat lagu untuk **${label}** radio...`);
 
             for (const t of tracks.slice(0, 6)) {
-                const query = `${t.author} ${t.title} ${searchKeyword}`.trim();
-                const result = await client.manager.search(query, { requester: author, engine: searchEngine });
+                const query = `${t.author} ${t.title}`.trim();
+                let result = await client.manager.search(query, { requester: author, engine: searchEngine });
+                if (!result || !result.tracks || !result.tracks.length) {
+                    result = await client.manager.search(query, { requester: author, engine: 'spsearch' });
+                }
+                if (!result || !result.tracks || !result.tracks.length) {
+                    result = await client.manager.search(query, { requester: author, engine: 'scsearch' });
+                }
 
                 if (result && result.tracks && result.tracks.length > 0) {
                     player.queue.add(result.tracks[0]);

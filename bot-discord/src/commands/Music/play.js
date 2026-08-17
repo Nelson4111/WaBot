@@ -75,7 +75,7 @@ module.exports = {
       }
 
       // 2. Fallback pencarian langsung jika suggestion tidak tersedia
-      let searchEngine = 'ytmsearch';
+      let searchEngine = client.config.node_source || 'spsearch';
       try {
         const userPref = client.db.userpreferences.get(interaction.user.id);
         if (userPref?.musicSource) {
@@ -229,7 +229,7 @@ module.exports = {
       if (markdownMatch) query = markdownMatch[1];
 
       const isUrl = /^https?:\/\//.test(query);
-      let searchEngine = 'ytmsearch';
+      let searchEngine = client.config.node_source || 'spsearch';
 
       if (!isUrl) {
         try {
@@ -244,6 +244,18 @@ module.exports = {
           requester: interaction.user,
           engine: isUrl ? undefined : searchEngine
         });
+        if ((!searchResult || !searchResult.tracks || !searchResult.tracks.length) && !isUrl) {
+          searchResult = await player.search(query, {
+            requester: interaction.user,
+            engine: 'spsearch'
+          });
+        }
+        if ((!searchResult || !searchResult.tracks || !searchResult.tracks.length) && !isUrl) {
+          searchResult = await player.search(query, {
+            requester: interaction.user,
+            engine: 'scsearch'
+          });
+        }
       } catch (err) {
         console.error(`Search error:`, err);
         searchResult = { tracks: [] };
@@ -823,7 +835,7 @@ module.exports = {
 
       if (query) {
         const isUrl = /^https?:\/\//.test(query);
-        let searchEngine = 'ytmsearch';
+        let searchEngine = client.config.node_source || 'spsearch';
 
         try {
           const userPref = client.db.userpreferences.get(message.author.id);
@@ -835,6 +847,18 @@ module.exports = {
             requester: message.author,
             engine: isUrl ? undefined : searchEngine
           });
+          if ((!searchResult || !searchResult.tracks || !searchResult.tracks.length) && !isUrl) {
+            searchResult = await player.search(query, {
+              requester: message.author,
+              engine: 'spsearch'
+            });
+          }
+          if ((!searchResult || !searchResult.tracks || !searchResult.tracks.length) && !isUrl) {
+            searchResult = await player.search(query, {
+              requester: message.author,
+              engine: 'scsearch'
+            });
+          }
         } catch (err) {
           console.error(`Search error:`, err);
         }
