@@ -8,12 +8,24 @@ module.exports = {
     const now = Date.now();
     const lastTime = lastErrorTime.get(errorKey) || 0;
 
-    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED') || error.message?.includes('ETIMEDOUT') || error.message?.includes('Websocket closed before a connection was established')) {
+    const isTransientError =
+      error.code === 'ETIMEDOUT' ||
+      error.code === 'ECONNREFUSED' ||
+      error.message?.includes('524') ||
+      error.message?.includes('502') ||
+      error.message?.includes('503') ||
+      error.message?.includes('522') ||
+      error.message?.includes('ECONNREFUSED') ||
+      error.message?.includes('ETIMEDOUT') ||
+      error.message?.includes('Unexpected server response') ||
+      error.message?.includes('Websocket closed before a connection was established');
+
+    if (isTransientError) {
       if (now - lastTime < ERROR_THROTTLE_MS) {
         return;
       }
       lastErrorTime.set(errorKey, now);
-      client.logger.log(`Lavalink "${name}" standby / reconnecting (${error.code || 'connecting'})`, "warn");
+      client.logger.log(`Lavalink "${name}" standby / reconnecting (${error.message || error.code || 'connecting'})`, "warn");
       return;
     }
 
