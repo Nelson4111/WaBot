@@ -62,6 +62,40 @@ const categoryInfo = {
 
 const categoryOrder = ['Information', 'Music', 'Favourite', 'Config', 'Moderation', 'Automod', 'Voice', 'Utility', 'Giveaway', 'Filters', 'Tracker'];
 
+function formatCategoryContent(selectedCategory, commandsList, serverPrefix) {
+    if (selectedCategory === 'Music') {
+        return (
+            `▶️ **PEMUTARAN DASAR**\n` +
+            `• \`${serverPrefix}play <lagu>\` — Putar lagu dari YouTube / Spotify\n` +
+            `• \`${serverPrefix}pause\` & \`${serverPrefix}resume\` — Jeda atau lanjutkan musik\n` +
+            `• \`${serverPrefix}stop\` — Matikan musik & bersihkan antrean\n` +
+            `• \`${serverPrefix}nowplaying\` — Info lagu yang sedang berputar\n` +
+            `• \`${serverPrefix}replay\` & \`${serverPrefix}previous\` — Putar ulang / lagu sebelumnya\n\n` +
+            `📋 **PENGATURAN ANTREAN**\n` +
+            `• \`${serverPrefix}queue\` — Lihat daftar antrean lagu\n` +
+            `• \`${serverPrefix}skip\` & \`${serverPrefix}forceskip\` — Lewati lagu (biasa / paksa)\n` +
+            `• \`${serverPrefix}skipto <no>\` & \`${serverPrefix}remove <no>\` — Lompat / hapus antrean\n` +
+            `• \`${serverPrefix}shuffle\` & \`${serverPrefix}loop\` — Acak atau ulang antrean\n` +
+            `• \`${serverPrefix}clearqueue\` & \`${serverPrefix}move\` — Kosongkan atau pindah urutan\n\n` +
+            `🤖 **FITUR CERDAS & RADIO**\n` +
+            `• \`${serverPrefix}autoplay\` — Putar rekomendasi nonstop otomatis\n` +
+            `• \`${serverPrefix}artistradio <artis>\` — Radio nonstop lagu artis favorit\n` +
+            `• \`${serverPrefix}mood <vibes>\` — Putar musik sesuai suasana hati\n` +
+            `• \`${serverPrefix}similar\` — Cari lagu yang mirip lagu saat ini\n\n` +
+            `⏩ **DURASI, EFEK & SUARA**\n` +
+            `• \`${serverPrefix}volume <1-150>\` — Atur kekerasan suara bot\n` +
+            `• \`${serverPrefix}lyrics\` — Tampilkan lirik lagu di chat\n` +
+            `• \`${serverPrefix}seek\`, \`${serverPrefix}forward\`, \`${serverPrefix}rewind\` — Lompat & majukan durasi\n` +
+            `• \`${serverPrefix}speed <0.5-2x>\` — Atur kecepatan pemutaran musik\n` +
+            `• \`${serverPrefix}search\` & \`${serverPrefix}grab\` — Cari manual & simpan lagu ke DM\n` +
+            `• \`${serverPrefix}join\`, \`${serverPrefix}leave\` & \`${serverPrefix}forcefix\` — Kelola koneksi Voice`
+        );
+    }
+
+    if (!commandsList || commandsList.length === 0) return 'No commands found';
+    return commandsList.map(cmd => `\`${cmd.name}\``).join(' • ');
+}
+
 module.exports = {
     name: 'help',
     category: 'Information',
@@ -378,15 +412,6 @@ module.exports = {
 
             const catSeparator = new SeparatorBuilder();
 
-            const commandsText = commandsList.length > 0
-                ? commandsList.map(cmd => `\`${cmd.name}\``).join(' , ')
-                : 'No commands found';
-
-            const commandsDisplay = new TextDisplayBuilder()
-                .setContent(commandsText);
-
-            const catSeparator2 = new SeparatorBuilder();
-
             let serverPrefix = config.prefix || '.';
             try {
                 const prefixData = client.db.prefixes.get(interaction.guild.id);
@@ -395,6 +420,11 @@ module.exports = {
                 }
             } catch (err) {
             }
+
+            const commandsText = formatCategoryContent(selectedCategory, commandsList, serverPrefix);
+
+            const commandsDisplay = new TextDisplayBuilder()
+                .setContent(commandsText);
 
             const tipText = `-# use \`${serverPrefix}help <cmd name>\` to get more details`;
             const tipDisplay = new TextDisplayBuilder()
@@ -690,15 +720,6 @@ module.exports = {
 
             const catSeparator = new SeparatorBuilder();
 
-            const commandsText = commandsList.length > 0
-                ? commandsList.map(cmd => `\`${cmd.name}\``).join(' , ')
-                : 'No commands found';
-
-            const commandsDisplay = new TextDisplayBuilder()
-                .setContent(commandsText);
-
-            const catSeparator2 = new SeparatorBuilder();
-
             let serverPrefix = config.prefix || '.';
             try {
                 const prefixData = client.db.prefixes.get(message.guild.id);
@@ -707,6 +728,11 @@ module.exports = {
                 }
             } catch (err) {
             }
+
+            const commandsText = formatCategoryContent(selectedCategory, commandsList, serverPrefix);
+
+            const commandsDisplay = new TextDisplayBuilder()
+                .setContent(commandsText);
             const tipText = `-# use \`${serverPrefix}help <cmd name>\` to get more details`;
             const tipDisplay = new TextDisplayBuilder()
                 .setContent(tipText);

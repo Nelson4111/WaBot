@@ -14,29 +14,58 @@ const {
 } = require("discord.js");
 const { player_create } = require("../../config").Webhooks;
 
-const createButtonRow = (client, paused) => {
-  return new ActionRowBuilder().addComponents(
+const createButtonRows = (client, paused, player) => {
+  const currentLoop = player?.loop || 'none';
+  const isLoopActive = currentLoop && currentLoop !== 'none';
+  const isAutoplayActive = player?.data?.get("autoplay") || false;
+
+  const row1 = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("previous")
-      .setEmoji(client.emoji.previous)
+      .setEmoji(client.emoji.previous || "⏮️")
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(paused ? "resume" : "pause")
-      .setEmoji(paused ? client.emoji.play : client.emoji.pause)
-      .setStyle(ButtonStyle.Secondary),
+      .setEmoji(paused ? (client.emoji.play || "▶️") : (client.emoji.pause || "⏸️"))
+      .setStyle(paused ? ButtonStyle.Success : ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId("skip")
-      .setEmoji(client.emoji.skip)
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId("like")
-      .setEmoji(client.emoji.like)
+      .setEmoji(client.emoji.skip || "⏭️")
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId("stop")
-      .setEmoji(client.emoji.stop)
+      .setEmoji(client.emoji.stop || "⏹️")
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId("loop")
+      .setEmoji("🔁")
+      .setStyle(isLoopActive ? ButtonStyle.Primary : ButtonStyle.Secondary)
+  );
+
+  const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("voldown")
+      .setEmoji("🔉")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("volup")
+      .setEmoji("🔊")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("lyrics")
+      .setEmoji("🎤")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("autoplay")
+      .setEmoji("♾️")
+      .setStyle(isAutoplayActive ? ButtonStyle.Primary : ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("like")
+      .setEmoji(client.emoji.like || "❤️")
       .setStyle(ButtonStyle.Secondary)
   );
+
+  return [row1, row2];
 };
 
 function formatDuration(ms) {
@@ -77,14 +106,16 @@ function getCleanThumbnail(thumbnailUrl) {
   return thumbnailUrl;
 }
 
-function buildNowPlayingContainer(client, track, paused) {
+function buildNowPlayingContainer(client, track, paused, player) {
   const titleDisplay = new TextDisplayBuilder()
     .setContent(`### [${truncateTitle(track.title)}](${track.uri || track.url})`);
 
+  const currentVol = player?.volume ?? 100;
   const infoDisplay = new TextDisplayBuilder()
     .setContent(
       `> - **Author:** [${cleanAuthorName(track.author)}](${track.uri || track.url})\n` +
       `> - **Duration:** \`${formatDuration(track.length || track.duration || 0)}\`\n` +
+      `> - **Volume:** \`🔊 ${currentVol}%\`\n` +
       `> - **Requester:** [${track.requester?.username}](https://discord.com/users/${track.requester?.id})`
     );
 
@@ -103,8 +134,8 @@ function buildNowPlayingContainer(client, track, paused) {
   const container = new ContainerBuilder()
     .addSectionComponents(section);
 
-  const buttonRow = createButtonRow(client, paused);
-  container.addActionRowComponents(buttonRow);
+  const buttonRows = createButtonRows(client, paused, player);
+  buttonRows.forEach(row => container.addActionRowComponents(row));
 
   return container;
 }
@@ -116,7 +147,7 @@ async function sendNowPlaying(client, player, track) {
       return null;
     }
 
-    const container = buildNowPlayingContainer(client, track, player.paused || false);
+    const container = buildNowPlayingContainer(client, track, player.paused || false, player);
 
     try {
       const message = await channel.send({
@@ -146,7 +177,7 @@ async function updateNowPlayingButtons(client, player, paused) {
       return;
     }
 
-    const container = buildNowPlayingContainer(client, track, paused);
+    const container = buildNowPlayingContainer(client, track, paused, player);
 
     await nowPlayingMsg.edit({
       components: [container],
@@ -289,8 +320,125 @@ async function handleButtonInteraction(interaction, player, client) {
             flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
           }).catch(() => { });
         }
-
         break;
+
+      case "voldown":
+        const curVolDown = player.volume || 100;
+        const newVolDown = Math.max(10, curVolDown - 10);
+        player.setVolume(newVolDown);
+        await updateNowPlayingButtons(client, player, player.paused || false);
+        const displayVolDown = new TextDisplayBuilder()
+          .setContent(`🔉 Volume diturunkan ke \`${newVolDown}%\``);
+        const containerVolDown = new ContainerBuilder().addTextDisplayComponents(displayVolDown);
+        return interaction.reply({
+          components: [containerVolDown],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+        });
+
+      case "volup":
+        const curVolUp = player.volume || 100;
+        const newVolUp = Math.min(150, curVolUp + 10);
+        player.setVolume(newVolUp);
+        await updateNowPlayingButtons(client, player, player.paused || false);
+        const displayVolUp = new TextDisplayBuilder()
+          .setContent(`🔊 Volume dinaikkan ke \`${newVolUp}%\``);
+        const containerVolUp = new ContainerBuilder().addTextDisplayComponents(displayVolUp);
+        return interaction.reply({
+          components: [containerVolUp],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+        });
+
+      case "loop":
+        const currentLoop = player.loop || 'none';
+        let nextLoop = 'none';
+        let loopLabel = 'Mati (Off)';
+        if (currentLoop === 'none') {
+          nextLoop = 'track';
+          loopLabel = 'Ulang 1 Lagu (Track)';
+        } else if (currentLoop === 'track') {
+          nextLoop = 'queue';
+          loopLabel = 'Ulang Seluruh Antrean (Queue)';
+        } else {
+          nextLoop = 'none';
+          loopLabel = 'Mati (Off)';
+        }
+        if (player.setLoop) player.setLoop(nextLoop);
+        else player.loop = nextLoop;
+        await updateNowPlayingButtons(client, player, player.paused || false);
+        const displayLoop = new TextDisplayBuilder()
+          .setContent(`🔁 Mode Loop: \`${loopLabel}\``);
+        const containerLoop = new ContainerBuilder().addTextDisplayComponents(displayLoop);
+        return interaction.reply({
+          components: [containerLoop],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+        });
+
+      case "autoplay":
+        const currentAutoplay = player.data?.get("autoplay") || false;
+        const newAutoplay = !currentAutoplay;
+        player.data?.set("autoplay", newAutoplay);
+        await updateNowPlayingButtons(client, player, player.paused || false);
+        const displayAutoplay = new TextDisplayBuilder()
+          .setContent(`♾️ Mode Autoplay: \`${newAutoplay ? "Aktif (Musik Nonstop)" : "Nonaktif"}\``);
+        const containerAutoplay = new ContainerBuilder().addTextDisplayComponents(displayAutoplay);
+        return interaction.reply({
+          components: [containerAutoplay],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+        });
+
+      case "lyrics":
+        const currentTrack = player.queue?.current || player.data?.get("currentTrack");
+        if (!currentTrack) {
+          const display = new TextDisplayBuilder()
+            .setContent(`**${client.emoji.cross || "❌"} Tidak ada lagu yang sedang diputar.**`);
+          const container = new ContainerBuilder().addTextDisplayComponents(display);
+          return interaction.reply({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+          });
+        }
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
+        try {
+          const lyricsFinder = require("@flytri/lyrics-finder");
+          const rawTitle = currentTrack.title.replace(/\(.*?\)|\[.*?\]/g, '').replace(/\|.*$/g, '').trim();
+          const rawArtist = (currentTrack.author || '').replace(/\s*-\s*Topic\s*$/i, '').trim();
+          let lyricsResult = await lyricsFinder(rawTitle, rawArtist).catch(() => null);
+          if (!lyricsResult || !lyricsResult.lyrics) {
+            lyricsResult = await lyricsFinder(rawTitle).catch(() => null);
+          }
+          if (!lyricsResult || !lyricsResult.lyrics) {
+            const display = new TextDisplayBuilder()
+              .setContent(`**${client.emoji.info || "ℹ️"} Lirik tidak ditemukan untuk \`${currentTrack.title}\`.**`);
+            const container = new ContainerBuilder().addTextDisplayComponents(display);
+            return interaction.editReply({
+              components: [container],
+              flags: MessageFlags.IsComponentsV2
+            });
+          }
+          let lirikText = lyricsResult.lyrics;
+          if (lirikText.length > 3800) {
+            lirikText = lirikText.substring(0, 3800) + '\n\n_(Lirik terlalu panjang untuk ditampilkan semua)_';
+          }
+          const header = new TextDisplayBuilder()
+            .setContent(`### 🎤 Lirik Lagu: [${truncateTitle(currentTrack.title, 40)}](${currentTrack.uri || currentTrack.url})\n> **Artis:** ${cleanAuthorName(currentTrack.author)}`);
+          const body = new TextDisplayBuilder().setContent(lirikText);
+          const container = new ContainerBuilder()
+            .addTextDisplayComponents(header)
+            .addSeparatorComponents(new SeparatorBuilder())
+            .addTextDisplayComponents(body);
+          return interaction.editReply({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+          });
+        } catch (err) {
+          const display = new TextDisplayBuilder()
+            .setContent(`**${client.emoji.cross || "❌"} Gagal mencari lirik: ${err.message}**`);
+          const container = new ContainerBuilder().addTextDisplayComponents(display);
+          return interaction.editReply({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+          });
+        }
 
       default:
         const unknownDisplay = new TextDisplayBuilder()
