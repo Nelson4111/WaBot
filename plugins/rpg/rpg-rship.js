@@ -1,9 +1,14 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let user = wdb.users[m.sender]?.rpg
-  if (!user) return m.reply(`╭──「 ❌ ERROR 」──╮\n\nKetik.adventure dulu buat daftar RPG.\n━━━━━━━━━━━`)
+  if (!wdb.users) wdb.users = {}
+  if (!wdb.money) wdb.money = {}
+  let uData = getUserRPG(wdb, m.sender)
+  let user = wdb.users[m.sender]?.rpg || uData?.rpg || uData
+  if (!user) return m.reply(`╭──「 ❌ ERROR 」──╮\n\nKetik .adventure dulu buat daftar RPG.\n━━━━━━━━━━━`)
+  if (!wdb.users[m.sender]) wdb.users[m.sender] = { rpg: user }
+  if (!wdb.users[m.sender].rpg) wdb.users[m.sender].rpg = user
 
   if (!user.harem) user.harem = []
   if (!user.ex) user.ex = []
@@ -11,7 +16,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!user.cooldown) user.cooldown = {}
   if (!user.dateStats) user.dateStats = { totalDate: 0, totalNikah: 0, selingkuh: 0, kill: 0, duelWin: 0, urusAnak: 0, wohoo: 0 }
 
-  let args = text.split(' ')
+  let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
   let jam = new Date().getHours()
   let waktu = jam >= 18 || jam < 6? '🌙 Malam' : '☀️ Siang'
@@ -240,9 +245,57 @@ if (!action) {
     }
   }
 
+  // === FITUR LIST ===
+  if (action === 'fitur') {
+    let cap = `╭──「 📋 FITUR RELATIONSHIP 」──╮\n\n`
+    cap += `🔓 Lv.1  : date, talk, makan, marah, maaf, usil, kill, duel, putus\n`
+    cap += `🔓 Lv.10 : peluk, belanja\n`
+    cap += `🔓 Lv.20 : nonton, swim\n`
+    cap += `🔓 Lv.27 : kiss ${'['}Harus Nikah${']'}\n`
+    cap += `🔓 Lv.40 : mandi, tidur, nikah, wohoo, kerja ${'['}Harus Nikah${']'}\n`
+    cap += `🔓 Lv.50 : anak ${'['}Harus Nikah + Love 70%${']'}\n\n`
+    cap += `━━━━━━━━━━━\n`
+    cap += `📌 INFO PENTING\n`
+    cap += `• Slot Harem +1 tiap pasangan Lv.20, max 10\n`
+    cap += `• nikah = Butuh Lv.40 + Cincin + Love 90%\n`
+    cap += `• anak  = Butuh Lv.50 + Status Nikah + Love 70%\n`
+    cap += `• kiss, kerja, anak, wohoo = Harus status Nikah\n`
+    cap += `• maaf = Cooldown 30m | talk = Cooldown 15m\n`
+    cap += `• gift = pake Bank, bukan Uang Saku\n`
+    cap += `━━━━━━━━━━━`
+    return m.reply(cap)
+  }
+
+  // === GIFT LIST ===
+  if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
+    let cap = `╭──「 🎁 DAFTAR 50 HADIAH 」──╮\n\n`
+    GIFT_LIST.forEach((g, i) => {
+      cap += `${g.emoji} ${i+1}. ${g.desc}\n`
+      cap += ` Harga: Rp ${g.harga.toLocaleString()} | EXP: ${g.exp.toLocaleString()}\n\n`
+    })
+    cap += `📌 Cara Pakai:\n`
+    cap += `Item: ${usedPrefix}rship gift item 5 2\n`
+    cap += `Nama: ${usedPrefix}rship gift item baju 1\n`
+    cap += `Uang: ${usedPrefix}rship gift money 50000000 1\n`
+    cap += `━━━━━━━━━━━`
+    return m.reply(cap)
+  }
+
+  // === ANAK LIST ===
+  if (action === 'anaklist') {
+    if(user.kids.length === 0) return m.reply(`╭──「 💔 KOSONG 」──╮\n\nBelum punya anak\n━━━━━━━━━━━`)
+    let cap = `╭──「 👶 DAFTAR ANAK 」──╮\n\n`
+    user.kids.forEach((k,i) => {
+      cap += `${i+1}. ${getGenderEmoji(k.jenis === 'Laki-laki'? 'cowok' : 'cewek')} *${k.nama}*\n`
+      cap += ` Umur: ${k.umur.toFixed(1)} tahun ${getUmurAnak(k.umur)}\n`
+      cap += ` Ortu: ${k.ortu}\n\n`
+    })
+    return m.reply(cap + `📌 urusanak <no>\n━━━━━━━━━━━`)
+  }
+
   if (user.harem.length === 0) return m.reply(`╭──「 ❌ JOMBLO 」──╮\n━━━━━━━━━━━`)
   let no = parseInt(args[1]) - 1
-  if(isNaN(no) ||!user.harem[no]) return m.reply(`╭──「 ❌ SALAH 」──╮\n\nPilih nomor dari.rship harem\n━━━━━━━━━━━`)
+  if(isNaN(no) ||!user.harem[no]) return m.reply(`╭──「 ❌ SALAH 」──╮\n\nPilih nomor dari .rship harem\n━━━━━━━━━━━`)
   let p = user.harem[no]
 
 // === DATE LV1 ===
@@ -883,18 +936,6 @@ if (action === 'talk') {
     return m.reply(`╭──「 👶 URUS ANAK 」──╮\n\nMengurus *${anak.nama}*\nUmur: ${anak.umur.toFixed(1)} tahun ${getUmurAnak(anak.umur)}\n${getGenderEmoji(anak.jenis === 'Laki-laki'? 'cowok' : 'cewek')} ${anak.jenis}\n📈 EXP Ortu +${expOrtu}\n━━━━━━━━━━━`)
   }
 
-  // === ANAK LIST ===
-  if (action === 'anaklist') {
-    if(user.kids.length === 0) return m.reply(`╭──「 💔 KOSONG 」──╮\n\nBelum punya anak\n━━━━━━━━━━━`)
-    let cap = `╭──「 👶 DAFTAR ANAK 」──╮\n\n`
-    user.kids.forEach((k,i) => {
-      cap += `${i+1}. ${getGenderEmoji(k.jenis === 'Laki-laki'? 'cowok' : 'cewek')} *${k.nama}*\n`
-      cap += ` Umur: ${k.umur.toFixed(1)} tahun ${getUmurAnak(k.umur)}\n`
-      cap += ` Ortu: ${k.ortu}\n\n`
-    })
-    return m.reply(cap + `📌 urusanak <no>\n━━━━━━━━━━━`)
-  }
-
   // === DUEL LV80 ===
   if (action === 'duel') {
     let err = cekLevel(p, 1, 'Duel')
@@ -977,27 +1018,6 @@ if (action === 'putus') {
     const ceritaRand = cerita[Math.floor(Math.random() * cerita.length)]
 
     return m.reply(`*╭─「 ${judulRand} 」─╮*\n│\n│ ${ceritaRand}\n*╰───────────────────────╯*`)
-}
-
-// === FITUR LIST ===
-if (action === 'fitur') {
-    let cap = `╭──「 📋 FITUR RELATIONSHIP 」──╮\n\n`
-    cap += `🔓 Lv.1  : date, talk, makan, marah, maaf, usil, kill, duel, putus\n`
-    cap += `🔓 Lv.10 : peluk, belanja\n`
-    cap += `🔓 Lv.20 : nonton, swim\n`
-    cap += `🔓 Lv.27 : kiss ${'['}Harus Nikah${']'}\n`
-    cap += `🔓 Lv.40 : mandi, tidur, nikah, wohoo, kerja ${'['}Harus Nikah${']'}\n`
-    cap += `🔓 Lv.50 : anak ${'['}Harus Nikah + Love 70%${']'}\n\n`
-    cap += `━━━━━━━━━━━\n`
-    cap += `📌 INFO PENTING\n`
-    cap += `• Slot Harem +1 tiap pasangan Lv.20, max 10\n`
-    cap += `• nikah = Butuh Lv.40 + Cincin + Love 90%\n`
-    cap += `• anak  = Butuh Lv.50 + Status Nikah + Love 70%\n`
-    cap += `• kiss, kerja, anak, wohoo = Harus status Nikah\n`
-    cap += `• maaf = Cooldown 30m | talk = Cooldown 15m\n`
-    cap += `• gift = pake Bank, bukan Uang Saku\n`
-    cap += `━━━━━━━━━━━`
-    return m.reply(cap)
 }
 }
 

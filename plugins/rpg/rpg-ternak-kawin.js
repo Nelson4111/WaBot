@@ -7,7 +7,8 @@ let handler = async (m, { conn, args }) => {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
   wdb.temp.kawin = wdb.temp.kawin || {}
-  let user = getUserRPG(wdb, m.sender).rpg
+  let userRPG = getUserRPG(wdb, m.sender)
+  let user = userRPG?.rpg || userRPG
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}

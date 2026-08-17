@@ -1,16 +1,18 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
-let handler = async (m, { conn, args }) => {
+let handler = async (m, { conn, args, isOwner }) => {
     const wdb = loadDB()
+    if (!wdb.crime) wdb.crime = {}
 
-    // RESET COMMAND BUAT ADMIN
-    if(args[0] === 'reset' && m.isGroup && m.sender === conn.user.jid){
+    // RESET COMMAND BUAT OWNER
+    if(args[0] === 'reset'){
+        if (!isOwner) return m.reply('❌ Khusus Owner')
         wdb.crime = {}
         saveDB(wdb)
-        return m.reply('✅ Data buronan di reset')
+        return m.reply('✅ Data buronan berhasil di-reset')
     }
 
-    if(!wdb.crime || Object.keys(wdb.crime).length === 0)
+    if(Object.keys(wdb.crime).length === 0)
         return m.reply('📋 Belum ada data kriminal di kota ini')
 
     let crimeList = Object.entries(wdb.crime)
@@ -47,6 +49,6 @@ let handler = async (m, { conn, args }) => {
 
 handler.help = ['buronan']
 handler.tags = ['rpg']
-handler.command = ['buronan', 'mostwanted', 'topkriminal', 'dpo']
+handler.command = /^(buronan|mostwanted|topkriminal|dpo)$/i
 handler.group = true
 export default handler
