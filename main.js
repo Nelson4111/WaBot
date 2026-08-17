@@ -247,7 +247,6 @@ setInterval(() => {
 const connectionOptions = {
   version,
   logger: pino({ level: 'silent' }),
-  printQRInTerminal: !usePairingCode,
   browser: ['Alya Bot', 'Safari', '1.0.0'],
   msgRetryCounterCache,
   cachedGroupMetadata: async (jid) => {
