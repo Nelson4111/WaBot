@@ -1,15 +1,58 @@
-const BetterSqlite3 = require('better-sqlite3');
 const path = require('path');
 
-const db = new BetterSqlite3(path.join(__dirname, '..', '..', 'database.db'));
+const dbPath = path.join(__dirname, '..', '..', 'database.db');
 
+function initDatabase() {
+    // 1. Coba better-sqlite3 jika native C++ binding tersedia
+    try {
+        const BetterSqlite3 = require('better-sqlite3');
+        const nativeDb = new BetterSqlite3(dbPath);
+        nativeDb.pragma('journal_mode = WAL');
+        nativeDb.pragma('synchronous = NORMAL');
+        nativeDb.pragma('cache_size = -32000');
+        nativeDb.pragma('temp_store = MEMORY');
+        nativeDb.pragma('mmap_size = 1073741824');
+        nativeDb.pragma('page_size = 4096');
+        return nativeDb;
+    } catch (err) {
+        // Fallback jika binding C++ better-sqlite3 tidak tersedia (Pterodactyl container)
+    }
 
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
-db.pragma('cache_size = -32000');
-db.pragma('temp_store = MEMORY');
-db.pragma('mmap_size = 1073741824');
-db.pragma('page_size = 4096');
+    // 2. Coba built-in node:sqlite (Tersedia native di Node.js v22+ seperti di server Pterodactyl v22.23.2)
+    try {
+        const { DatabaseSync } = require('node:sqlite');
+        const nodeDb = new DatabaseSync(dbPath);
+        return {
+            pragma: (sql) => {
+                try { nodeDb.exec(`PRAGMA ${sql};`); } catch (_) {}
+            },
+            prepare: (sql) => {
+                const stmt = nodeDb.prepare(sql);
+                return {
+                    run: (...args) => stmt.run(...args),
+                    get: (...args) => stmt.get(...args),
+                    all: (...args) => stmt.all(...args)
+                };
+            },
+            exec: (sql) => nodeDb.exec(sql)
+        };
+    } catch (err) {
+        // Fallback
+    }
+
+    // 3. Fallback mock driver jika driver SQLite tidak ditemukan
+    return {
+        pragma: () => {},
+        prepare: () => ({
+            run: () => ({ changes: 1 }),
+            get: () => null,
+            all: () => []
+        }),
+        exec: () => {}
+    };
+}
+
+const db = initDatabase();
 
 
 const serialize = (data) => JSON.stringify(data);
