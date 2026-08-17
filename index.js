@@ -1,5 +1,6 @@
 import yargs from 'yargs';
 import cfonts from 'cfonts';
+import chalk from 'chalk';
 import { fileURLToPath } from 'url';
 import { join, dirname } from 'path';
 import { createRequire } from 'module';
@@ -14,10 +15,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(__dirname);
 const { name, author } = require(join(__dirname, './package.json'));
 
-say('Lightweight\nWhatsApp Bot', { font: 'chrome', align: 'center', gradient: ['red', 'magenta'] });
-say(`'${name}' By @${author.name || author}`, { font: 'console', align: 'center', gradient: ['red', 'magenta'] });
+say('NelBot-MD', { font: 'block', align: 'center', gradient: ['cyan', 'blue'] });
+say(`By ${author?.name || author || 'Nenel'}`, { font: 'console', align: 'center', gradient: ['magenta', 'red'] });
 
-console.log('🐾 Starting...'); 
+console.log(chalk.cyan('┌────────────────────────────────────────────────────────┐'));
+console.log(chalk.cyan('│') + chalk.black.bgCyan('             NELBOT-MD SYSTEM INITIALIZED               ') + chalk.cyan('│'));
+console.log(chalk.cyan('├────────────────────────────────────────────────────────┤'));
+console.log(chalk.cyan('│') + ` [+] TIME   : ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`.padEnd(56) + chalk.cyan('│'));
+console.log(chalk.cyan('│') + ` [+] OWNER  : ${author?.name || author || 'Nenel'}`.padEnd(56) + chalk.cyan('│'));
+console.log(chalk.cyan('│') + ` [+] SYSTEM : ${name || 'NelBot-MD'}`.padEnd(56) + chalk.cyan('│'));
+console.log(chalk.cyan('│') + ` [+] ENGINE : Baileys Multi-Device Official`.padEnd(56) + chalk.cyan('│'));
+console.log(chalk.cyan('└────────────────────────────────────────────────────────┘'));
+
+console.log(chalk.green('🐾 Starting engine...')); 
 
 var isRunning = false;
 
