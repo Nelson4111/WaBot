@@ -19,26 +19,24 @@ module.exports = (client) => {
         client.aliases.set(command.aliases, command.name);
       }
 
-      if (command.slashExecute || command.slashOptions) {
-        const slashData = {
-          name: command.name,
-          description: command.description || "No description provided",
-          options: command.slashOptions || [],
-          category: command.category,
-          execute: command.execute,
-          slashExecute: command.slashExecute,
-          autocomplete: command.autocomplete,
-          run: command.run,
-          player: command.player,
-          inVoiceChannel: command.inVoiceChannel,
-          sameVoiceChannel: command.sameVoiceChannel,
-          botPerms: command.botPerms,
-          userPerms: command.userPerms,
-          owner: command.owner || false,
-        };
+      const slashData = {
+        name: command.name,
+        description: command.description || `${command.name} command`,
+        options: command.slashOptions || [],
+        category: command.category,
+        execute: command.execute,
+        slashExecute: command.slashExecute,
+        autocomplete: command.autocomplete,
+        run: command.run,
+        player: command.player,
+        inVoiceChannel: command.inVoiceChannel,
+        sameVoiceChannel: command.sameVoiceChannel,
+        botPerms: command.botPerms,
+        userPerms: command.userPerms,
+        owner: command.owner || false,
+      };
 
-        client.slashCommands.set(command.name, slashData);
-      }
+      client.slashCommands.set(command.name, slashData);
 
       totalCommands++;
     }

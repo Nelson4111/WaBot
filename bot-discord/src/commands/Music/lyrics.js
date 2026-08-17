@@ -159,7 +159,8 @@ module.exports = {
                 } else if (interaction.replied) {
                     return await interaction.followUp(options);
                 } else {
-                    return await interaction.reply(options);
+                    await interaction.reply(options);
+                    return await interaction.fetchReply();
                 }
             },
         };
