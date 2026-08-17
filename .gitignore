@@ -12,3 +12,9 @@ database.json
 *_database.json
 waifu_db.json
 bot-discord/cache/
+database.db
+*.db
+*.db-*
+*.db-journal
+*.db-wal
+*.db-shm
