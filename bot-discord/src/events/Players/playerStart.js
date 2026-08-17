@@ -399,12 +399,10 @@ async function handleButtonInteraction(interaction, player, client) {
         }
         await interaction.deferReply({ flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
         try {
-          const lyricsFinder = require("@flytri/lyrics-finder");
-          const rawTitle = currentTrack.title.replace(/\(.*?\)|\[.*?\]/g, '').replace(/\|.*$/g, '').trim();
-          const rawArtist = (currentTrack.author || '').replace(/\s*-\s*Topic\s*$/i, '').trim();
-          let lyricsResult = await lyricsFinder(rawTitle, rawArtist).catch(() => null);
-          if (!lyricsResult || !lyricsResult.lyrics) {
-            lyricsResult = await lyricsFinder(rawTitle).catch(() => null);
+          const lyricsCommand = require("../../commands/Music/lyrics");
+          let lyricsResult = null;
+          if (lyricsCommand.fetchSongLyrics) {
+            lyricsResult = await lyricsCommand.fetchSongLyrics(currentTrack.title, currentTrack.author);
           }
           if (!lyricsResult || !lyricsResult.lyrics) {
             const display = new TextDisplayBuilder()
@@ -420,7 +418,7 @@ async function handleButtonInteraction(interaction, player, client) {
             lirikText = lirikText.substring(0, 3800) + '\n\n_(Lirik terlalu panjang untuk ditampilkan semua)_';
           }
           const header = new TextDisplayBuilder()
-            .setContent(`### 🎤 Lirik Lagu: [${truncateTitle(currentTrack.title, 40)}](${currentTrack.uri || currentTrack.url})\n> **Artis:** ${cleanAuthorName(currentTrack.author)}`);
+            .setContent(`### 🎤 Lirik Lagu: [${truncateTitle(currentTrack.title, 40)}](${currentTrack.uri || currentTrack.url})\n> **Artis:** ${cleanAuthorName(currentTrack.author)} • **Sumber:** ${lyricsResult.source || "Lyrics"}`);
           const body = new TextDisplayBuilder().setContent(lirikText);
           const container = new ContainerBuilder()
             .addTextDisplayComponents(header)

@@ -683,3 +683,11 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
     });
 }
 
+const defaultLyricsManager = new LyricsManager();
+async function fetchSongLyrics(rawTitle, rawArtist) {
+    return await defaultLyricsManager.fetchLyrics(rawTitle, rawArtist);
+}
+
+module.exports.fetchSongLyrics = fetchSongLyrics;
+module.exports.LyricsManager = LyricsManager;
+
