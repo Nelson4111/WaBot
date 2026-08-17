@@ -144,33 +144,53 @@ class LyricsManager {
 
     async fetchLyrics(rawTitle, rawArtist) {
         const info = cleanTrackInfo(rawTitle, rawArtist);
-        const candidates = [];
 
-        // 1. Jika ada extractedTitle dan extractedArtist dari pemisahan "Artist - Title" atau "Title - Artist"
+        const queries = [];
+        const clean = info.cleanTitle;
+        const withoutFeat = clean ? clean.replace(/\b(?:ft\.?|feat\.?|featuring)\b.*$/gi, '').trim() : '';
+
+        if (clean) queries.push(clean);
+        if (withoutFeat && withoutFeat !== clean) queries.push(withoutFeat);
+
         if (info.extractedArtist && info.extractedTitle) {
-            candidates.push({ title: info.extractedTitle, artist: info.extractedArtist });
-            candidates.push({ title: info.extractedArtist, artist: info.extractedTitle });
-            candidates.push({ title: `${info.extractedArtist} ${info.extractedTitle}`, artist: '' });
+            const cleanExtTitle = info.extractedTitle.replace(/\b(?:ft\.?|feat\.?|featuring)\b.*$/gi, '').trim();
+            const cleanExtArtist = info.extractedArtist.replace(/\b(?:ft\.?|feat\.?|featuring)\b.*$/gi, '').trim();
+            queries.push(`${cleanExtTitle} ${cleanExtArtist}`);
+            queries.push(`${cleanExtArtist} ${cleanExtTitle}`);
+            queries.push(cleanExtTitle);
+            queries.push(cleanExtArtist);
         }
 
-        // 2. Gunakan cleanTitle dengan cleanArtist
-        if (info.cleanTitle) {
-            candidates.push({ title: info.cleanTitle, artist: info.cleanArtist || '' });
-            candidates.push({ title: info.cleanTitle, artist: '' });
+        if (info.cleanArtist && clean && !clean.toLowerCase().includes(info.cleanArtist.toLowerCase())) {
+            queries.push(`${clean} ${info.cleanArtist}`);
         }
 
-        // 3. Fallback ke judul & artis asli
-        candidates.push({ title: rawTitle, artist: rawArtist || '' });
+        queries.push(rawTitle);
 
-        for (const cand of candidates) {
-            for (const source of this.sources) {
-                try {
-                    const result = await source(cand.title, cand.artist);
-                    if (result && result.lyrics) {
-                        return result;
-                    }
-                } catch (_) {}
-            }
+        const uniqueQueries = [...new Set(queries.map(q => q.trim()).filter(Boolean))];
+
+        // 1. Prioritaskan LRCLib untuk SEMUA query (cepat & ada Live Sync)
+        for (const q of uniqueQueries) {
+            try {
+                const res = await this.fetchFromLRCLib(q, '');
+                if (res && res.lyrics) return res;
+            } catch (_) {}
+        }
+
+        // 2. Jika belum ditemukan di LRCLib, coba Genius
+        for (const q of uniqueQueries) {
+            try {
+                const res = await this.fetchFromGenius(q, '');
+                if (res && res.lyrics) return res;
+            } catch (_) {}
+        }
+
+        // 3. Fallback terakhir ke LyricsFinder
+        for (const q of uniqueQueries.slice(0, 3)) {
+            try {
+                const res = await this.fetchFromLyricsFinder(q, '');
+                if (res && res.lyrics) return res;
+            } catch (_) {}
         }
 
         return null;
