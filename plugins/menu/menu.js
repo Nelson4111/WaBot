@@ -2,8 +2,6 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
-import pkg from '@whiskeysockets/baileys'
-const { generateWAMessageFromContent, proto } = pkg
 
 const formatDuration = (ms) => {
     let seconds = Math.floor(ms / 1000)
@@ -121,116 +119,46 @@ ${donorText}
 │ 𖥔  ʜᴀʀɪ : ${hari}
 │ 𖥔  ᴊᴀᴍ : ${jam} WIB
 ╰──
-`.trim()
 
-  /* Backup List Menu Text:
-  ╭──「 *ʟɪsᴛ ᴍᴇɴᴜ* 」─✦
-  │ ⟡ .allmenu
-  │ ⟡ .menuai
-  │ ⟡ .menuanime
-  │ ⟡ .menuaudio
-  │ ⟡ .menudownload
-  │ ⟡ .menufun
-  │ ⟡ .menugame
-  │ ⟡ .menugroup
-  │ ⟡ .menuinfo
-  │ ⟡ .menuinternet
-  │ ⟡ .menumaker
-  │ ⟡ .menumoneytrack
-  │ ⟡ .menuowner
-  │ ⟡ .menupasangan
-  │ ⟡ .menurpg
-  │ ⟡ .menusearch
-  │ ⟡ .menustalker
-  │ ⟡ .menusticker
-  │ ⟡ .menutools
-  ╰──
-  */
+╭──「 *ʟɪsᴛ ᴍᴇɴᴜ* 」─✦
+│ ⟡ ${_p}allmenu
+│ ⟡ ${_p}menuai
+│ ⟡ ${_p}menuanime
+│ ⟡ ${_p}menuaudio
+│ ⟡ ${_p}menudownload
+│ ⟡ ${_p}menufun
+│ ⟡ ${_p}menugame
+│ ⟡ ${_p}menugroup
+│ ⟡ ${_p}menuinfo
+│ ⟡ ${_p}menuinternet
+│ ⟡ ${_p}menumaker
+│ ⟡ ${_p}menumoneytrack
+│ ⟡ ${_p}menuowner
+│ ⟡ ${_p}menupasangan
+│ ⟡ ${_p}menurpg
+│ ⟡ ${_p}menusearch
+│ ⟡ ${_p}menustalker
+│ ⟡ ${_p}menusticker
+│ ⟡ ${_p}menutools
+╰──
+`.trim()
 
   let mentions = [m.sender, ...donorMentions]
   if (pasangan && pasangan.length > 0) {
       pasangan.forEach(p => mentions.push(p.jid))
   }
 
-  let menuRows = [
-    { title: "All Menu", id: ".allmenu", description: "Tampilkan semua daftar perintah" },
-    { title: "AI Menu", id: ".menuai", description: "Fitur kecerdasan buatan" },
-    { title: "Anime Menu", id: ".menuanime", description: "Fitur pencarian anime" },
-    { title: "Audio Menu", id: ".menuaudio", description: "Manipulasi file audio" },
-    { title: "Download Menu", id: ".menudownload", description: "Unduh media dari sosmed" },
-    { title: "Fun Menu", id: ".menufun", description: "Fitur hiburan" },
-    { title: "Game Menu", id: ".menugame", description: "Daftar mini games" },
-    { title: "Group Menu", id: ".menugroup", description: "Manajemen grup" },
-    { title: "Info Menu", id: ".menuinfo", description: "Informasi bot" },
-    { title: "Internet Menu", id: ".menuinternet", description: "Browsing internet" },
-    { title: "Maker Menu", id: ".menumaker", description: "Buat logo & gambar" },
-    { title: "Money Track", id: ".menumoneytrack", description: "Pencatatan keuangan" },
-    { title: "Owner Menu", id: ".menuowner", description: "Khusus owner bot" },
-    { title: "Pasangan Menu", id: ".menupasangan", description: "Fitur relationship" },
-    { title: "RPG Menu", id: ".menurpg", description: "Roleplay game features" },
-    { title: "Search Menu", id: ".menusearch", description: "Pencarian data" },
-    { title: "Stalker Menu", id: ".menustalker", description: "Mata-mata sosmed" },
-    { title: "Sticker Menu", id: ".menusticker", description: "Pembuatan stiker" },
-    { title: "Tools Menu", id: ".menutools", description: "Alat bantu multifungsi" }
-  ]
-
   try {
-    const { prepareWAMessageMedia } = pkg
-    const media = await prepareWAMessageMedia({ video: { url: videoMenu }, gifPlayback: true }, { upload: conn.waUploadToServer })
-
-    const interactiveMessage = {
-        body: { text: caption },
-        footer: { text: global.footer },
-        header: {
-            title: "",
-            hasMediaAttachment: true,
-            videoMessage: media.videoMessage
-        },
-        contextInfo: {
-            mentionedJid: mentions,
-            isForwarded: true,
-            forwardingScore: 1
-        },
-        nativeFlowMessage: {
-            buttons: [
-                {
-                    name: "single_select",
-                    buttonParamsJson: JSON.stringify({
-                        title: "Pilih Menu Di Sini ⎙",
-                        sections: [{ title: "Daftar Menu", rows: menuRows }]
-                    })
-                },
-                {
-                    name: "quick_reply",
-                    buttonParamsJson: JSON.stringify({
-                        display_text: "All Menu 🗂️",
-                        id: ".allmenu"
-                    })
-                },
-                {
-                    name: "quick_reply",
-                    buttonParamsJson: JSON.stringify({
-                        display_text: "Owner 👑",
-                        id: ".owner"
-                    })
-                }
-            ]
-        }
-    }
-
-    const msg = await generateWAMessageFromContent(m.chat, {
-        viewOnceMessage: {
-            message: {
-                messageContextInfo: {
-                    deviceListMetadata: {},
-                    deviceListMetadataVersion: 2
-                },
-                interactiveMessage
-            }
-        }
-    }, { quoted: null }) // Dibuat null agar tidak terkena heuristic anti-spam WA
-
-    await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
+    // Kirim Video Menu GIF dengan Caption & Mentions
+    await conn.sendFile(m.chat, videoMenu, 'menu.mp4', caption, m, false, {
+      mentions,
+      gifPlayback: true,
+      contextInfo: {
+        mentionedJid: mentions,
+        isForwarded: true,
+        forwardingScore: 1
+      }
+    })
 
     // Send Background Voice Note
     if (audioMenu) {
