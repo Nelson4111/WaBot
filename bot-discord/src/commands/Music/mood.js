@@ -8,15 +8,128 @@ const {
 } = require("discord.js");
 const LastFM = require("../../utils/lastfm");
 
+async function startMoodRadio(message, tag, label, client, statusMsg, searchKeyword = "", regionValue = "indonesia") {
+    const author = message.author || message.user;
+    const member = message.member;
+    const channel = member?.voice?.channel;
+
+    const updateStatus = async (content, isError = false) => {
+        const display = new TextDisplayBuilder()
+            .setContent(isError ? `**${client.emoji.cross || "❌"} ${content}**` : `**${client.emoji.info || "ℹ️"} ${content}**`);
+        const container = new ContainerBuilder().addTextDisplayComponents(display);
+        await statusMsg.edit({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => {});
+    };
+
+    if (!channel) {
+        return await updateStatus("Kamu harus berada di Voice Channel terlebih dahulu!", true);
+    }
+
+    try {
+        await updateStatus(`Mencari lagu untuk playlist **${label}**...`);
+
+        let tracks = [];
+        try {
+            const lastfm = new LastFM(client);
+            tracks = await lastfm.getTopTracksByTag(tag, 20);
+        } catch (err) {
+            console.error("[Mood] LastFM fetch error:", err.message);
+        }
+
+        let player = client.manager.players.get(message.guild.id);
+        if (!player) {
+            player = await client.manager.createPlayer({
+                guildId: message.guild.id,
+                voiceId: channel.id,
+                textId: message.channel.id,
+                volume: 80,
+                deaf: true,
+            });
+        }
+
+        let searchEngine = 'ytmsearch';
+        try {
+            const userPref = client.db.userpreferences.get(author.id);
+            if (userPref?.musicSource) {
+                searchEngine = userPref.musicSource;
+            }
+        } catch (error) {
+            console.error("Error fetching user preference:", error);
+        }
+
+        let originalQueued = 0;
+
+        if (tracks && tracks.length > 0) {
+            for (let i = tracks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+            }
+
+            await updateStatus(`Memuat lagu untuk **${label}** radio...`);
+
+            for (const t of tracks.slice(0, 6)) {
+                const query = `${t.author} ${t.title} ${searchKeyword}`.trim();
+                const result = await client.manager.search(query, { requester: author, engine: searchEngine });
+
+                if (result && result.tracks && result.tracks.length > 0) {
+                    player.queue.add(result.tracks[0]);
+                    originalQueued++;
+                }
+            }
+        }
+
+        // Fallback jika LastFM kosong atau tidak menemukan lagu
+        if (originalQueued === 0) {
+            await updateStatus(`Mencari rekomendasi kurasi playlist **${label}**...`);
+            const fallbackMap = {
+                indonesia: ["lagu pop indonesia hits", "lagu galau indonesia", "indie pop indonesia", "lagu santai indonesia"],
+                dangdut: ["dangdut koplo terbaru", "lagu ambyar koplo", "dangdut akustik", "campursari koplo hits"],
+                "j-pop": ["top anime songs", "j-pop hits", "japanese lofi chill", "j-pop popular"],
+                global: ["today's top hits", "viral pop hits", "chill lofi beats", "party dance hits"],
+                english: ["english pop hits", "chill acoustic pop", "sad pop songs", "love songs english"]
+            };
+
+            const queries = fallbackMap[regionValue] || [`${label} playlist songs`];
+            const chosenQuery = queries[Math.floor(Math.random() * queries.length)];
+            const searchRes = await client.manager.search(chosenQuery, { requester: author, engine: searchEngine });
+
+            if (searchRes && searchRes.tracks && searchRes.tracks.length > 0) {
+                for (const tr of searchRes.tracks.slice(0, 8)) {
+                    player.queue.add(tr);
+                    originalQueued++;
+                }
+            }
+        }
+
+        if (originalQueued === 0) {
+            return await updateStatus(`Tidak dapat menemukan lagu yang cocok untuk: **${label}**.`, true);
+        }
+
+        player.data?.set("autoplay", true);
+
+        if (!player.playing && !player.paused) {
+            await player.play();
+        }
+
+        const successDisplay = new TextDisplayBuilder()
+            .setContent(`### ${client.emoji.check || "✅"} **${label} Radio** Berhasil Dimulai!\n> Menambahkan **${originalQueued}** lagu ke antrean. Mode Autoplay aktif!`);
+
+        const container = new ContainerBuilder().addTextDisplayComponents(successDisplay);
+        await statusMsg.edit({ components: [container], flags: MessageFlags.IsComponentsV2 });
+
+    } catch (err) {
+        console.error(err);
+        await updateStatus(`Terjadi kesalahan: ${err.message}`, true);
+    }
+}
+
 module.exports = {
     name: "mood",
     category: "Music",
     aliases: ["genre", "vibe"],
-    description: "Play music based on your mood or genre",
+    description: "Putar playlist musik berdasarkan suasana hati dan negara",
     inVoiceChannel: true,
     sameVoiceChannel: true,
     botPerms: ["EmbedLinks", "Connect", "Speak"],
-
     slashOptions: [],
 
     async slashExecute(interaction, client) {
@@ -120,94 +233,17 @@ module.exports = {
                     latin: { chill: "latin chill", party: "reggaeton", sad: "latin ballad", romance: "latin romance", keyword: "Latin" }
                 };
 
-                const regionData = tagMap[selectedRegion.value];
+                const regionData = tagMap[selectedRegion?.value || "indonesia"];
                 const finalTag = regionData[moodValue];
                 const searchKeyword = regionData.keyword;
-                const moodLabel = interaction.component.options.find(o => o.value === moodValue).label;
+                const moodOption = interaction.component?.options?.find(o => o.value === moodValue);
+                const moodLabel = moodOption ? moodOption.label : moodValue;
 
-                await this.startMoodRadio(message, finalTag, `${selectedRegion.label} ${moodLabel}`, client, msg, searchKeyword);
+                await startMoodRadio(message, finalTag, `${selectedRegion.label} ${moodLabel}`, client, msg, searchKeyword, selectedRegion.value);
                 collector.stop();
             }
         });
     },
 
-    async startMoodRadio(message, tag, label, client, statusMsg, searchKeyword = "") {
-        const author = message.author || message.user;
-        const channel = message.member.voice.channel;
-
-        const updateStatus = async (content, isError = false) => {
-            const display = new TextDisplayBuilder()
-                .setContent(isError ? `**${client.emoji.cross} ${content}**` : `**${client.emoji.info} ${content}**`);
-            const container = new ContainerBuilder().addTextDisplayComponents(display);
-            await statusMsg.edit({ components: [container], flags: MessageFlags.IsComponentsV2 });
-        };
-
-        try {
-            await updateStatus(`Fetching **${label}** tracks...`);
-
-            const lastfm = new LastFM(client);
-            const tracks = await lastfm.getTopTracksByTag(tag, 20);
-
-            if (tracks.length === 0) {
-                return await updateStatus(`Could not find any tracks for: **${label}**.`, true);
-            }
-
-            for (let i = tracks.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
-            }
-
-            let player = client.manager.players.get(message.guild.id);
-            if (!player) {
-                player = await client.manager.createPlayer({
-                    guildId: message.guild.id,
-                    voiceId: channel.id,
-                    textId: message.channel.id,
-                    volume: 80,
-                    deaf: true,
-                });
-            }
-
-            let searchEngine = 'ytmsearch';
-            try {
-                const userPref = client.db.userpreferences.get(author.id);
-                if (userPref?.musicSource) {
-                    searchEngine = userPref.musicSource;
-                }
-            } catch (error) {
-                console.error("Error fetching user preference:", error);
-            }
-
-            let originalQueued = 0;
-            await updateStatus(`Resolving tracks for **${label}** radio...`);
-
-            for (const t of tracks.slice(0, 5)) {
-                const query = `${t.author} ${t.title} ${searchKeyword}`.trim();
-                const result = await client.manager.search(query, { requester: author, engine: searchEngine });
-
-                if (result && result.tracks.length > 0) {
-                    player.queue.add(result.tracks[0]);
-                    originalQueued++;
-                }
-            }
-
-            player.data?.set("autoplay", true);
-
-            if (originalQueued === 0) {
-                return await updateStatus(`Found mood tracks but could not resolve them to playable versions.`, true);
-            }
-
-            if (!player.playing && !player.paused) await player.play();
-
-            const successDisplay = new TextDisplayBuilder()
-                .setContent(`### ${client.emoji.check} **${label} Radio** Started!\n> Queued **${originalQueued}** tracks matching your vibe.`);
-
-            const container = new ContainerBuilder().addTextDisplayComponents(successDisplay);
-            await statusMsg.edit({ components: [container], flags: MessageFlags.IsComponentsV2 });
-
-        } catch (err) {
-            console.error(err);
-            await updateStatus(`An error occurred: ${err.message}`, true);
-        }
-    }
+    startMoodRadio
 };
