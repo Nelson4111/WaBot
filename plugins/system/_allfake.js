@@ -22,42 +22,15 @@ handler.all = async function (m) {
         thumbUrl = listThumb[Math.floor(Math.random() * listThumb.length)]
     } catch {}
 
-    // === Interactive Multi-Product / Catalog Message (WhatsApp Business API) ===
+    // === Fake Verified Text Message ===
     global.finteractive = {
         key: {
             fromMe: false,
             participant: `0@s.whatsapp.net`
         },
         message: {
-            interactiveMessage: {
-                header: {
-                    title: `${global.namebot || 'NelBot-MD'} Official ✓`,
-                    hasMediaAttachment: false
-                },
-                body: {
-                    text: `${global.namebot || 'NelBot-MD'} Business Store`
-                },
-                footer: {
-                    text: `${momentGreeting()}`
-                },
-                nativeFlowMessage: {
-                    buttons: [
-                        {
-                            name: "single_select",
-                            buttonParamsJson: JSON.stringify({
-                                title: "NelBot Catalog",
-                                sections: [
-                                    {
-                                        title: "Official Bot Service",
-                                        rows: [
-                                            { title: "Menu Bot", description: "Tampilkan seluruh menu", id: ".menu" }
-                                        ]
-                                    }
-                                ]
-                            })
-                        }
-                    ]
-                }
+            extendedTextMessage: {
+                text: `${global.namebot || 'NelBot-MD'} Official ✓`
             }
         }
     }

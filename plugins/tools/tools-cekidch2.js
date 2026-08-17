@@ -5,8 +5,6 @@
 ✍️ Convert By ZenzXD
 */
 
-const { proto } = (await import('@whiskeysockets/baileys')).default;
-
 const handler = async (m, { text, command }) => {
   if (!text) return m.reply('Masukkan link channel-nya.');
   if (!text.includes('https://whatsapp.com/channel/')) return m.reply('Link tautan tidak valid.');
@@ -16,37 +14,17 @@ const handler = async (m, { text, command }) => {
     const res = await m.conn.newsletterMetadata("invite", id);
 
     const infoText = `
-*ID:* ${res.id}
-*Nama:* ${res.name}
-*Total Pengikut:* ${res.subscribers}
-*Status:* ${res.state}
-*Verified:* ${res.verification === "VERIFIED" ? "Terverifikasi" : "Tidak"}
+[ 📢 ]───[ *_INFO • CHANNEL_* ]───✦
+╭ 𖥔  *ID:* \`${res.id}\`
+│ 𖥔  *Nama:* ${res.name}
+│ 𖥔  *Total Pengikut:* ${res.subscribers}
+│ 𖥔  *Status:* ${res.state}
+╰ 𖥔  *Verified:* ${res.verification === "VERIFIED" ? "Terverifikasi ✓" : "Tidak"}
+
+💡 _Salin ID dengan menekan teks kode di atas._
     `.trim();
 
-    const msg = {
-      interactiveMessage: proto.Message.InteractiveMessage.create({
-        body: proto.Message.InteractiveMessage.Body.create({
-          text: infoText
-        }),
-        footer: proto.Message.InteractiveMessage.Footer.create({
-          text: "Tekan tombol untuk menyalin ID Channel."
-        }),
-        nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-          buttons: [
-            {
-              name: "cta_copy",
-              buttonParamsJson: JSON.stringify({
-                display_text: "Salin ID Channel",
-                copy_code: res.id
-              })
-            }
-          ]
-        })
-      })
-    };
-
-    await m.conn.relayMessage(m.chat, msg, { messageId: m.key.id });
-
+    await m.reply(infoText);
   } catch (e) {
     console.error(e);
     m.reply("Gagal mengambil data channel. Pastikan link benar.");

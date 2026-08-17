@@ -119,46 +119,62 @@ ${donorText}
 │ 𖥔  ʜᴀʀɪ : ${hari}
 │ 𖥔  ᴊᴀᴍ : ${jam} WIB
 ╰──
-
-╭──「 *ʟɪsᴛ ᴍᴇɴᴜ* 」─✦
-│ ⟡ ${_p}allmenu
-│ ⟡ ${_p}menuai
-│ ⟡ ${_p}menuanime
-│ ⟡ ${_p}menuaudio
-│ ⟡ ${_p}menudownload
-│ ⟡ ${_p}menufun
-│ ⟡ ${_p}menugame
-│ ⟡ ${_p}menugroup
-│ ⟡ ${_p}menuinfo
-│ ⟡ ${_p}menuinternet
-│ ⟡ ${_p}menumaker
-│ ⟡ ${_p}menumoneytrack
-│ ⟡ ${_p}menuowner
-│ ⟡ ${_p}menupasangan
-│ ⟡ ${_p}menurpg
-│ ⟡ ${_p}menusearch
-│ ⟡ ${_p}menustalker
-│ ⟡ ${_p}menusticker
-│ ⟡ ${_p}menutools
-╰──
 `.trim()
+
+  let listMenuText = `
+[ 📑 ]───[ *_ᴅᴀғᴛᴀʀ • ᴍᴇɴᴜ_* ]───✦
+╭ 𖥔  ${_p}allmenu ➔ Semua Perintah
+│ 𖥔  ${_p}menuai ➔ Fitur AI & ChatBot
+│ 𖥔  ${_p}menuanime ➔ Fitur Anime
+│ 𖥔  ${_p}menuaudio ➔ Manipulasi Audio
+│ 𖥔  ${_p}menudownload ➔ Pengunduh Media
+│ 𖥔  ${_p}menufun ➔ Fitur Hiburan
+│ 𖥔  ${_p}menugame ➔ Mini Games
+│ 𖥔  ${_p}menugroup ➔ Manajemen Grup
+│ 𖥔  ${_p}menuinfo ➔ Informasi Bot
+│ 𖥔  ${_p}menuinternet ➔ Pencarian Web
+│ 𖥔  ${_p}menumaker ➔ Pembuat Gambar & Logo
+│ 𖥔  ${_p}menumoneytrack ➔ Pencatatan Keuangan
+│ 𖥔  ${_p}menuowner ➔ Khusus Owner
+│ 𖥔  ${_p}menupasangan ➔ Fitur Hubungan
+│ 𖥔  ${_p}menurpg ➔ Roleplay Game (RPG)
+│ 𖥔  ${_p}menusearch ➔ Pencarian Data
+│ 𖥔  ${_p}menustalker ➔ Stalker Sosmed
+│ 𖥔  ${_p}menusticker ➔ Pembuat Stiker
+╰ 𖥔  ${_p}menutools ➔ Alat Bantu & Utilitas
+`.trim()
+
+  caption += '\n\n' + listMenuText
 
   let mentions = [m.sender, ...donorMentions]
   if (pasangan && pasangan.length > 0) {
       pasangan.forEach(p => mentions.push(p.jid))
   }
 
+  let contextInfo = {
+    mentionedJid: mentions,
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterName: `「 ${global.namebot} 」`,
+      newsletterJid: global.ch
+    }
+  }
+
   try {
-    // Kirim Video Menu GIF dengan Caption & Mentions
-    await conn.sendFile(m.chat, videoMenu, 'menu.mp4', caption, m, false, {
-      mentions,
-      gifPlayback: true,
-      contextInfo: {
-        mentionedJid: mentions,
-        isForwarded: true,
-        forwardingScore: 1
-      }
-    })
+    if (videoMenu) {
+      await conn.sendMessage(m.chat, {
+        video: { url: videoMenu },
+        gifPlayback: true,
+        caption,
+        contextInfo
+      }, { quoted: m })
+    } else {
+      await conn.sendMessage(m.chat, {
+        text: caption,
+        contextInfo
+      }, { quoted: m })
+    }
 
     // Send Background Voice Note
     if (audioMenu) {
@@ -175,7 +191,6 @@ ${donorText}
         console.error('Failed to send menu VN:', errAudio?.message || errAudio)
       }
     }
-
   } catch (e) {
     conn.reply(m.chat, caption, m, { mentions })
   }

@@ -153,56 +153,30 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     let contextInfo = {
       forwardingScore: 999,
       isForwarded: true,
+      mentionedJid: [m.sender],
       forwardedNewsletterMessageInfo: {
         newsletterName: `「 ${global.namebot} 」`,
         newsletterJid: global.ch
       }
     }
 
-    const pkg = (await import('@whiskeysockets/baileys')).default
-    const { generateWAMessageFromContent, prepareWAMessageMedia } = pkg
-
-    let interactiveMessage
-    
-    if (videoMenu) {
-      const media = await prepareWAMessageMedia({ video: { url: videoMenu }, gifPlayback: true }, { upload: conn.waUploadToServer })
-      interactiveMessage = {
-          body: { text: text.trim() },
-          footer: { text: global.namebot },
-          header: { title: "", hasMediaAttachment: true, videoMessage: media.videoMessage },
-          contextInfo: { ...contextInfo, mentionedJid: [m.sender] },
-          nativeFlowMessage: {
-              buttons: [
-                  { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Menu Utama 🏠", id: ".menu" }) },
-                  { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Owner 👑", id: ".owner" }) }
-              ]
-          }
+    try {
+      if (videoMenu) {
+        await conn.sendMessage(m.chat, {
+          video: { url: videoMenu },
+          gifPlayback: true,
+          caption: text.trim(),
+          contextInfo
+        }, { quoted: m })
+      } else {
+        await conn.sendMessage(m.chat, {
+          text: text.trim(),
+          contextInfo
+        }, { quoted: m })
       }
-    } else {
-      interactiveMessage = {
-          body: { text: text.trim() },
-          footer: { text: global.namebot },
-          header: { title: "", hasMediaAttachment: false },
-          contextInfo: { ...contextInfo, mentionedJid: [m.sender] },
-          nativeFlowMessage: {
-              buttons: [
-                  { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Menu Utama 🏠", id: ".menu" }) },
-                  { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Owner 👑", id: ".owner" }) }
-              ]
-          }
-      }
+    } catch (e) {
+      await conn.sendMessage(m.chat, { text: text.trim(), contextInfo }, { quoted: m })
     }
-
-    const msg = await generateWAMessageFromContent(m.chat, {
-        viewOnceMessage: {
-            message: {
-                messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
-                interactiveMessage
-            }
-        }
-    }, { quoted: null })
-
-    await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 
 
     if (audioMenu) {

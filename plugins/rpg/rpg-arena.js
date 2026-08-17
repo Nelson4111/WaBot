@@ -43,7 +43,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
   // 1. JAMBAK - BUAT NANTANG
   if (command === 'jambak') {
-    let targetRaw = m.mentionedJid[0] || m.quoted?.sender
+    let targetRaw = m.mentionedJid?.[0] || m.quoted?.sender
     if(!targetRaw) return m.reply(`❌ Tag orang yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
     let target = conn.decodeJid(targetRaw)
     if(target === senderJid) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
@@ -72,7 +72,10 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitleJambak(userTarget.stats.jambakMenang)}\n│ Lv.${userTarget.level} | W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ Silakan klik tombol di bawah untuk\n│ menerima atau menolak tantangan!\n│ ⏰ 2 menit\n`
+    cap += `│\n│ 📌 *Ketik Perintah untuk Merespons:*\n`
+    cap += `│ • Terima: *${usedPrefix}jambakterima @${senderJid.split('@')[0]}*\n`
+    cap += `│ • Tolak: *${usedPrefix}jambaktolak @${senderJid.split('@')[0]}*\n`
+    cap += `│ ⏰ Batas waktu: 2 menit\n`
     cap += `└───────────────────`
 
     global.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -85,16 +88,12 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
         }
     }, 120000)
 
-    let buttons = [
-        ["Terima ⚔️", `.jambakterima @${senderJid.split('@')[0]}`],
-        ["Tolak 🏃", `.jambaktolak @${senderJid.split('@')[0]}`]
-    ]
-    return conn.sendButton(m.chat, cap, "Pilih Aksi", buttons, m, { mentions: [senderJid, target] })
+    return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
   }
 
   // 2. PANCO - BUAT NANTANG
   if (command === 'panco') {
-    let targetRaw = m.mentionedJid[0] || m.quoted?.sender
+    let targetRaw = m.mentionedJid?.[0] || m.quoted?.sender
     if(!targetRaw) return m.reply(`❌ Tag orang yang mau diajak panco!\nContoh: *${usedPrefix}panco @tag 50000*`)
     let target = conn.decodeJid(targetRaw)
     if(target === senderJid) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
@@ -123,7 +122,10 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     cap += `│\n│ ⚔️ *VS*\n│\n`
     cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitlePanco(userTarget.stats.pancoMenang)}\n│ Lv.${userTarget.level} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
     cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ Silakan klik tombol di bawah untuk\n│ menerima atau menolak tantangan!\n│ ⏰ 2 menit\n`
+    cap += `│\n│ 📌 *Ketik Perintah untuk Merespons:*\n`
+    cap += `│ • Terima: *${usedPrefix}pancoterima @${senderJid.split('@')[0]}*\n`
+    cap += `│ • Tolak: *${usedPrefix}pancotolak @${senderJid.split('@')[0]}*\n`
+    cap += `│ ⏰ Batas waktu: 2 menit\n`
     cap += `└───────────────────`
 
     global.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
@@ -136,11 +138,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
         }
     }, 120000)
 
-    let buttons = [
-        ["Terima 💪", `.pancoterima @${senderJid.split('@')[0]}`],
-        ["Tolak 🏃", `.pancotolak @${senderJid.split('@')[0]}`]
-    ]
-    return conn.sendButton(m.chat, cap, "Pilih Aksi", buttons, m, { mentions: [senderJid, target] })
+    return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
   }
 
   // 3. TERIMA - LEWAT COMMAND
