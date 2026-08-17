@@ -430,6 +430,8 @@ module.exports = {
             const tipDisplay = new TextDisplayBuilder()
                 .setContent(tipText);
 
+            const catSeparator2 = new SeparatorBuilder();
+
             const categoryContainer = new ContainerBuilder()
                 .addTextDisplayComponents(categoryHeader)
                 .addSeparatorComponents(catSeparator)
@@ -736,6 +738,8 @@ module.exports = {
             const tipText = `-# use \`${serverPrefix}help <cmd name>\` to get more details`;
             const tipDisplay = new TextDisplayBuilder()
                 .setContent(tipText);
+
+            const catSeparator2 = new SeparatorBuilder();
 
             const categoryContainer = new ContainerBuilder()
                 .addTextDisplayComponents(categoryHeader)
