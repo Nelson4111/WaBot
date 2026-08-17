@@ -198,8 +198,11 @@ function paginateLyrics(lyrics, linesPerPage = 15) {
 }
 
 function getCurrentLineIndex(syncedLines, position) {
+    if (!syncedLines || syncedLines.length === 0) return 0;
+    // Kompensasi offset +400ms agar kursor berpindah tepat pada ketukan vokal lirik
+    const targetPosition = position + 400;
     for (let i = syncedLines.length - 1; i >= 0; i--) {
-        if (position >= syncedLines[i].time) {
+        if (targetPosition >= syncedLines[i].time) {
             return i;
         }
     }
@@ -507,12 +510,16 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
     let updateInterval;
     let isActive = true;
     let lastIndex = -1;
+    let isUpdating = false;
 
     const updateLyrics = async () => {
         if (!isActive) {
             if (updateInterval) clearInterval(updateInterval);
             return;
         }
+
+        if (isUpdating) return;
+        isUpdating = true;
 
         try {
             const currentPlayer = client.manager.players.get(guildId);
@@ -544,10 +551,10 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
                     }
                 }
 
-                const progress = Math.floor((position / duration) * 100);
+                const progress = duration > 0 ? Math.floor((position / duration) * 100) : 0;
                 const progressBarLength = 30;
                 const progressPos = Math.floor(progressBarLength * (progress / 100));
-                const progressBar = "─".repeat(progressPos) + "○" + "─".repeat(progressBarLength - progressPos);
+                const progressBar = "─".repeat(progressPos) + "○" + "─".repeat(Math.max(0, progressBarLength - progressPos));
 
                 const headerDisplay = new TextDisplayBuilder()
                     .setContent(`**${client.emoji.check} ${track.title}**`);
@@ -597,11 +604,13 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
             console.error("Update lyrics error:", error);
             if (updateInterval) clearInterval(updateInterval);
             isActive = false;
+        } finally {
+            isUpdating = false;
         }
     };
 
     await updateLyrics();
-    updateInterval = setInterval(updateLyrics, 5);
+    updateInterval = setInterval(updateLyrics, 1000);
 
     const collector = message.createMessageComponentCollector({
         componentType: ComponentType.Button,
