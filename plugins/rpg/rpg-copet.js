@@ -6,13 +6,13 @@ let handler = async (m, { conn }) => {
   if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
   if(!userRPG.riwayat) userRPG.riwayat = []
 
-  // CEK PENJARA GLOBAL - HANYA UNTUK COMMAND KRIMINAL
+  // CEK PENJARA
   if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
     let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
     let jam = Math.floor(sisa / 3600000)
     let menit = Math.floor((sisa % 3600000) / 60000)
     let tebusan = userRPG.tebusan || 1000000
-    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.tebus* atau *.tebus sel ${userRPG.sel}*`)
+    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.tebus*`)
   }
 
   // COOLDOWN 10 MENIT
@@ -22,7 +22,7 @@ let handler = async (m, { conn }) => {
   if (sisa > 0) {
     let menit = Math.floor(sisa / 60000)
     let detik = Math.floor((sisa % 60000) / 1000)
-    return m.reply(`⏳ *COOLDOWN*\nTunggu *${menit}m ${detik}d* lagi untuk copet`)
+    return m.reply(`⏳ *COOLDOWN COPET*\nTunggu *${menit}m ${detik}d* lagi`)
   }
 
   let who = m.quoted?.sender
@@ -60,15 +60,17 @@ let handler = async (m, { conn }) => {
     // GAGAL 2X = PENJARA 1 JAM
     if (userRPG.gagalCopet >= 2) {
       wdb.penjara = wdb.penjara || []
-      let sel = wdb.penjara.length + 1
-      userRPG.penjara = Date.now()
-      userRPG.lamaPenjara = 3600000 // 1 jam
-      userRPG.tebusan = 1000000 // 1jt
-      userRPG.sel = sel
-      userRPG.gagalCopet = 0
-      wdb.penjara.push(m.sender)
+      if(!wdb.penjara.includes(m.sender)){
+        let sel = wdb.penjara.length + 1
+        userRPG.penjara = Date.now()
+        userRPG.lamaPenjara = 3600000 // 1 jam
+        userRPG.tebusan = 1000000 // 1jt
+        userRPG.sel = sel
+        userRPG.gagalCopet = 0
+        wdb.penjara.push(m.sender)
+      }
       saveDB(wdb)
-      return m.reply(`🚔 *KETANGKEP POLISI!*\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus* atau minta teman *.tebus @kamu*`)
+      return m.reply(`🚔 *KETANGKEP POLISI!*\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus*`)
     }
     saveDB(wdb)
 
@@ -77,11 +79,11 @@ let handler = async (m, { conn }) => {
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += `│ 💸 Denda: Rp ${denda.toLocaleString()}\n`
     txt += `│ ⚠️ Strike: ${userRPG.gagalCopet}/2\n`
-    txt += `└───────────────────\n`
-    txt += `\n💡 Cek *.buronan* untuk lihat riwayat kriminalmu`
+    txt += `└───────────────────`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
+  // SUKSES
   userRPG.gagalCopet = 0
   let hasil = Math.floor(Math.random() * 5000) + 1000 // 1k - 6k
 
@@ -99,8 +101,7 @@ let handler = async (m, { conn }) => {
   txt += `│ 🤏 Copet: @${m.sender.split('@')[0]}\n`
   txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
   txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
-  txt += `└───────────────────\n`
-  txt += `\n💡 Cek *.buronan* untuk lihat riwayat kriminalmu`
+  txt += `└───────────────────`
 
   conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }

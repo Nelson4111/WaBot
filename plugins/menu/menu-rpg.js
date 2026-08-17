@@ -14,7 +14,23 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     let { limit = 0, role = 'User', name = m.pushName, premiumTime = 0 } = user
     let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ' : 'ғʀᴇᴇ'
 
-    let rpgFeatures = Object.values(global.plugins)
+    // CEK APA DI PENJARA
+    let userRPG = wdb.users[m.sender]?.rpg
+    let diPenjara = false
+    let infoPenjara = ''
+    if(userRPG?.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara){
+        diPenjara = true
+        let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
+        let jamSisa = Math.floor(sisa / 3600000)
+        let menitSisa = Math.floor((sisa % 3600000) / 60000)
+        infoPenjara = `╭──「 *⚠️ KAMU DI PENJARA* 」─✦\n│ 🚔 SEL : ${userRPG.sel}\n│ ⏰ SISA : ${jamSisa}j ${menitSisa}m\n│ 💰 TEBUSAN : Rp ${userRPG.tebusan.toLocaleString('id-ID')}\n│\n│ ❌ Semua command RPG diblokir\n│ 💡 Minta teman *.tebus @kamu* atau tunggu bebas\n╰──\n\n`
+    }
+
+    let rpgFeatures = ''
+    if(diPenjara){
+        rpgFeatures = `│ 🔒 Semua command RPG dikunci\n│    Sampai kamu bebas dari penjara`
+    } else {
+        rpgFeatures = Object.values(global.plugins)
         .filter(p => !p.disabled && p.tags && p.tags.includes('rpg'))
         .flatMap(p => (Array.isArray(p.help) ? p.help : [p.help]).map(cmd => ({
             cmd: p.prefix ? cmd : _p + cmd,
@@ -24,6 +40,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
         .sort((a, b) => a.cmd.localeCompare(b.cmd))
         .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
         .join('\n')
+    }
 
     let videoMenu = null
     try {
@@ -39,7 +56,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 │ 𖥔  ʟɪᴍɪᴛ : ${limit}
 ╰ 𖥔  ᴍᴏɴᴇʏ : ${uang.toLocaleString('id-ID')}
 
-[ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
+${infoPenjara}[ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
 ╭ 𖥔  ɴᴀᴍᴀ ʙᴏᴛ : ${global.namebot}
 │ 𖥔  ᴠᴇʀsɪ : ${global.versi}
 │ 𖥔  ᴄʀᴇᴀᴛᴏʀ : ${global.author}

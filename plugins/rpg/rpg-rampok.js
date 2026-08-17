@@ -7,7 +7,7 @@ let handler = async (m, { conn }) => {
     if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
     if(!userRPG.riwayat) userRPG.riwayat = []
 
-    // CEK PENJARA GLOBAL
+    // CEK PENJARA
     if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
         let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
         let jam = Math.floor(sisa / 3600000)
@@ -23,7 +23,7 @@ let handler = async (m, { conn }) => {
     if (sisa > 0) {
         let jam = Math.floor(sisa / 3600000)
         let menit = Math.floor((sisa % 3600000) / 60000)
-        return m.reply(`⏳ *COOLDOWN*\nTunggu *${jam}j ${menit}m* lagi untuk merampok`)
+        return m.reply(`⏳ *COOLDOWN RAMPOK*\nTunggu *${jam}j ${menit}m* lagi`)
     }
 
     let who = m.quoted?.sender
@@ -33,28 +33,31 @@ let handler = async (m, { conn }) => {
     let target = getUserRPG(wdb, who).rpg
     if(!target) return m.reply('❌ Target belum punya data RPG')
     if(!target.riwayat) target.riwayat = []
-    if(target.kartuBeku) return m.reply('❌ Target kartunya sedang beku')
+    if(target.kartuBeku) return m.reply('❌ Kartu bank target sedang beku')
 
     let bankTarget = target.bank || 0
     if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
 
     userRPG.lastrob = Date.now()
     let tier = BANK_TIERS[target.bankTier || 0]
-    let peluang = Math.max(0.15, 0.8 - (tier.keamanan * 0.04))
+    let peluang = Math.max(0.15, 0.8 - (tier.keamanan * 0.04)) // makin tinggi tier makin susah
     let roll = Math.random()
 
+    // INIT CRIME
     wdb.crime = wdb.crime || {}
     wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
 
     if (roll >= peluang) {
         // GAGAL = LANGSUNG PENJARA 4 JAM
         wdb.penjara = wdb.penjara || []
-        let sel = wdb.penjara.length + 1
-        userRPG.penjara = Date.now()
-        userRPG.lamaPenjara = 14400000 // 4 jam
-        userRPG.tebusan = 4000000 // 4jt
-        userRPG.sel = sel
-        wdb.penjara.push(m.sender)
+        if(!wdb.penjara.includes(m.sender)){
+          let sel = wdb.penjara.length + 1
+          userRPG.penjara = Date.now()
+          userRPG.lamaPenjara = 14400000 // 4 jam
+          userRPG.tebusan = 4000000 // 4jt
+          userRPG.sel = sel
+          wdb.penjara.push(m.sender)
+        }
 
         wdb.crime[m.sender].rampok += 1
         wdb.crime[m.sender].total += 1
@@ -65,18 +68,18 @@ let handler = async (m, { conn }) => {
         txt += `│ 👤 Perampok: @${m.sender.split('@')[0]}\n`
         txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
         txt += `│ ⚰️ Ketahuan polisi\n`
-        txt += `│ 🚔 Masuk *PENJARA SEL ${sel}* selama *4 jam*\n`
+        txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *4 jam*\n`
         txt += `│ 💰 Tebusan: *Rp 4.000.000*\n`
         txt += `└───────────────────`
-        return conn.reply(m.chat, txt, m, { mentions: [who] })
+        return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
     }
 
     // SUKSES
-    let persen = 0.05 + (Math.random() * 0.25)
+    let persen = 0.05 + (Math.random() * 0.25) // 5% - 30%
     let hasil = Math.max(10000, Math.floor(bankTarget * persen * (1 - tier.asuransi)))
 
     target.bank -= hasil
-    userRPG.bank += hasil
+    userRPG.bank = (userRPG.bank || 0) + hasil
 
     wdb.crime[m.sender].rampok += 1
     wdb.crime[m.sender].total += 1
@@ -88,11 +91,11 @@ let handler = async (m, { conn }) => {
     let txt = `┌───❏「 🕵️ RAMPOK BERHASIL 」❏\n`
     txt += `│ 👤 Perampok: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-    txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
-    txt += `└───────────────────\n`
-    txt += `\n💡 Cek *.buronan* untuk lihat riwayat kriminalmu`
+    txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} *${(persen*100).toFixed(1)}%*\n`
+    txt += `│ 🛡️ Asuransi Target: ${(tier.asuransi*100).toFixed(0)}%\n`
+    txt += `└───────────────────`
 
-    conn.reply(m.chat, txt, m, { mentions: [who] })
+    conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
 handler.help = ['rampok (reply)']
 handler.tags = ['rpg']

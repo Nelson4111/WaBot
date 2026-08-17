@@ -242,6 +242,7 @@ user.pets = user.pets.filter(p => {
     'gundam': { emoji: '🤖', harga: 24000000, rarity: 'SECRET', skill: 'beam: ignore 100 defense' },
     'king_kong': { emoji: '🦍', harga: 25000000, rarity: 'SECRET', skill: 'pukul: power battle +50' },
     'godzilla': { emoji: '🦖', harga: 25000000, rarity: 'SECRET', skill: 'atomic breath: damage x3' },
+    'pochita': { emoji: '⛓️', harga: 25000000, rarity: 'SECRET', skill: 'chainsaw: damage x3 saat HP < 30%' },
     'juubi': { emoji: '👁️', harga: 25000000, rarity: 'SECRET', skill: 'mugen tsukuyomi: menang otomatis vs SECRET' }
 }
 
@@ -427,6 +428,7 @@ user.pets = user.pets.filter(p => {
     'gundam': ['gundam'],
     'king_kong': ['king kong', 'kong'],
     'godzilla': ['godzilla'],
+    'pochita': ['pochita', 'pochi', 'chainsaw dog', 'woof'],
     'juubi': ['juubi', 'ekor 10', '10ekor', 'jubi', 'shinju']
 }
 
@@ -618,14 +620,37 @@ for(let key in aliases){
     return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n✅ *ADOPSI BERHASIL*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n🌟 ${rarities[pets[petName].rarity].emoji} ${pets[petName].rarity}\n✨ Skill : ${pets[petName].skill || 'Tidak ada'}\n💰 Harga : -Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
   }
 
-  // === GACHA ===
+// === GACHA ===
   if (action === 'gacha') {
     if(user.pets.length >= 10) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET PENUH*\nMax 10 pet. Release/Sell/Kill/Transfer dulu\n━━━━━━━━━━━`)
-    let biaya = 1000000
+    let biaya = 10000000 // 10jt
     if ((wdb.money[m.sender] || 0) < biaya) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
 
     user.pity++
-    let rarity = user.pity >= 90? 'LEGENDARY' : getRarityPet()
+    // [NERF SADIS] RATE DIJATUHIN LAGI
+    const raritiesNerf = {
+      COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍', rate: 95},
+      UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙', rate: 52},
+      RARE:      {stars: '★★★☆☆☆☆', emoji: '✨', rate: 2.4},
+      EPIC:      {stars: '★★★★☆☆☆', emoji: '💎', rate: 0.49},
+      LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑', rate: 0.01},
+      MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌', rate: 0.01},
+      SECRET: {stars: '★★★★★★★', emoji: '🔮', rate: 0.01} // 1/10.000
+    }
+
+    let roll = Math.random() * 100
+    let cum = 0
+    let rarity = 'COMMON'
+    for(let r of Object.keys(raritiesNerf)){
+      cum += raritiesNerf[r].rate
+      if(roll <= cum){ rarity = r; break }
+    }
+    
+    // [NERF PITY] 90 -> 500
+    if(user.pity >= 500){ 
+      rarity = 'LEGENDARY' // mentok cuma LEGEND, ga bisa MYTH/SECRET
+      user.pity = 0 
+    }
     if(rarity === 'LEGENDARY' || rarity === 'MYTHIC' || rarity === 'SECRET') user.pity = 0
 
     let pool = Object.entries(pets).filter(([k,v]) => v.rarity === rarity)
@@ -635,7 +660,8 @@ for(let key in aliases){
     user.pets.push({ tipe: randomPet, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
     saveDB(wdb)
 
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎰 PET GACHA\n${rarities[rarity].emoji} *${rarity}*\n${rarities[rarity].stars}\n\n${pets[randomPet].emoji} *${formatNamaAsli(randomPet).toUpperCase()}*\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
+    let pitySisa = 500 - user.pity
+    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎰 PET GACHA - 10JT/ROLL\n${raritiesNerf[rarity].emoji} *${rarity}*\n${raritiesNerf[rarity].stars}\n\n${pets[randomPet].emoji} *${formatNamaAsli(randomPet).toUpperCase()}*\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n📊 Pity: ${pitySisa} lagi ke LEGEND\n━━━━━━━━━━━`)
   }
   
     // === CEK VAMPIR ===
@@ -652,30 +678,69 @@ for(let key in aliases){
     return sisa > 0? Math.ceil(sisa / 1000) : 0
   }
 
-  // === FEED ===
+// === FEED ===
   if (action === 'feed') {
     if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
     let cd = getCooldown(120000, user)
     if(cekBuzz()) cd = 0 
     if (user.pets.some(p => Date.now() - (p.lastFeed || 0) < cd)) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 *MASIH KENYANG*\nPerut pet buncit. Nanti muntah\n⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi\n━━━━━━━━━━━`)
-    let biayaMakan = 5000 * user.pets.filter(p => p.tipe!== 'robot').length
-    if ((wdb.money[m.sender] || 0) < biayaMakan) return m.reply(`❌ Uang tidak cukup! Butuh Rp ${biayaMakan.toLocaleString()}.`)
+
+    // HARGA FEED BERDASAR RARITY
+    const feedCost = {
+      COMMON: 5000,
+      UNCOMMON: 15000,
+      RARE: 50000,
+      EPIC: 150000,
+      LEGENDARY: 500000,
+      MYTHIC: 1000000,
+      SECRET: 2000000
+    }
+    const feedExp = {
+      COMMON: 20,
+      UNCOMMON: 25,
+      RARE: 35,
+      EPIC: 50,
+      LEGENDARY: 70,
+      MYTHIC: 90,
+      SECRET: 120
+    }
+
+    let biayaMakan = 0
+    let detailBiaya = []
+    user.pets.filter(p => p.tipe !== 'robot').forEach(p => {
+      let rarity = pets[p.tipe]?.rarity || 'COMMON'
+      let cost = feedCost[rarity]
+      biayaMakan += cost
+      detailBiaya.push(`${pets[p.tipe].emoji} ${formatNama(p)}: Rp ${cost.toLocaleString()}`)
+    })
+
+    if ((wdb.money[m.sender] || 0) < biayaMakan) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biayaMakan.toLocaleString()}.\n━━━━━━━━━━━`)
+    
     wdb.money[m.sender] -= biayaMakan
     let naik = []
     user.pets.forEach(p => {
-      let energyGain = 20 + (p.tipe === 'mermaid'? 10 : 0)
-      if(p.tipe!== 'robot'){
-        p.exp += 25;
-        p.energy = Math.min(100, (p.energy || 100) + energyGain);
-        p.happy = Math.min(100, (p.happy || 50) + 5)
-      }
+      if(p.tipe === 'robot') return
+      let rarity = pets[p.tipe]?.rarity || 'COMMON'
+      let expGain = feedExp[rarity] + (p.tipe === 'anjing_alpha' ? 10 : 0)
+      let energyGain = 20 + (p.tipe === 'mermaid' ? 10 : 0)
+      
+      p.exp += expGain
+      p.energy = Math.min(100, (p.energy || 100) + energyGain)
+      p.happy = Math.min(100, (p.happy || 50) + 5)
+      
       if(p.tipe === 'alien') wdb.money[m.sender] += 1000 * p.level
       if(p.tipe === 'poop') wdb.money[m.sender] += 2000
+      if(p.tipe === 'remy_ratatouille') wdb.money[m.sender] += Math.floor(biayaMakan * 0.5 / user.pets.filter(x => x.tipe !== 'robot').length) // refund 50%
+      
       p.lastFeed = Date.now()
       if (p.exp >= 100) { p.level += 1; p.exp = 0; naik.push(p) }
     })
     saveDB(wdb)
-    let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 WAKTU MAKAN TIBA\n🍽️ MEMBERI MAKAN 🍽️\n💰 Biaya : -Rp ${biayaMakan.toLocaleString()}\n📊 Status : +25 Exp | +20 Energy | +5 Happy`
+    
+    let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 WAKTU MAKAN TIBA\n🍽️ MEMBERI MAKAN 🍽️\n`
+    teks += `💰 Biaya Total : -Rp ${biayaMakan.toLocaleString()}\n`
+    teks += `📊 Detail:\n${detailBiaya.map(x => `├ ${x}`).join('\n')}\n`
+    teks += `│\n├ Status : Exp beda2 | +20 Energy | +5 Happy`
     if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')}`
     teks += `\n━━━━━━━━━━━`
     return m.reply(teks)
@@ -1117,17 +1182,25 @@ if (action === 'revive'){
 // === LEADERBOARD ===
 if (action === 'lb'){
   let all = Object.entries(wdb.users).filter(([_,u]) => u.rpg?.pets?.length)
-all.sort((a,b) => {
-  let pa = a[1].rpg.pets.reduce((x,y) => x + y.level, 0)
-  let pb = b[1].rpg.pets.reduce((x,y) => x + y.level, 0)
-  return pb - pa
-})
-let cap = '╭──「 🏆 TOP 10 PET TRAINER 」──╮\n\n'
-all.slice(0,10).forEach(([jid,u],i) => {
-  let totalLv = u.rpg.pets.reduce((x,y) => x + y.level, 0)
-  cap += `${i+1}. @${jid.split('@')[0]} - ${totalLv} Lv Total\n`
-})
-return sendRpgMsg(conn, m, cap, null, all.slice(0,10).map(u => u[0]))
+  if(all.length === 0) return m.reply('╭──「 🏆 TOP 10 PET TRAINER 」──╮\n\n📝 Belum ada yg punya pet\n━━━━━━━━━━━')
+
+  all.sort((a,b) => {
+    let pa = a[1].rpg.pets.reduce((x,y) => x + y.level, 0)
+    let pb = b[1].rpg.pets.reduce((x,y) => x + y.level, 0)
+    return pb - pa
+  })
+
+  let cap = '╭──「 🏆 TOP 10 PET TRAINER 」──╮\n\n'
+  let mention = []
+  all.slice(0,10).forEach(([jid,u],i) => {
+    let totalLv = u.rpg.pets.reduce((x,y) => x + y.level, 0)
+    let totalPet = u.rpg.pets.length
+    cap += `│ ${i+1}. @${jid.split('@')[0]}\n│ 𖥔 Lv Total : ${totalLv}\n│ 𖥔 Total Pet : ${totalPet}\n`
+    if(i < 9) cap += `│\n`
+    mention.push(jid)
+  })
+  cap += `╰───────────────────\n━━━━━━━━━━━`
+  return conn.reply(m.chat, cap, m, { mentions: mention })
 }
 
 // === CLAIM PASIF HARIAN ===

@@ -64,7 +64,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       donorText = `╰ 💎 *Ketik ${_p}donasi untuk mendukung bot!*`
   }
 
-  let videoMenu = 'https://c.termai.cc/v174/zFX'
+  let videoMenu = 'https://api.deline.web.id/tMbmgonUvF.mp4'
   try {
     if (fs.existsSync('./media/menu.json')) {
       const listMenu = JSON.parse(fs.readFileSync('./media/menu.json'))
@@ -73,7 +73,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       }
     }
   } catch (e) {
-    videoMenu = 'https://c.termai.cc/v174/zFX'
+    videoMenu = 'https://api.deline.web.id/tMbmgonUvF.mp4'
   }
 
   let audioMenu = 'https://c.termai.cc/a100/hMW4'

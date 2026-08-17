@@ -80,7 +80,6 @@ let handler = async (m, { conn }) => {
   if (!user) return m.reply('Ketik #adventure dulu.')
   if(!user.ikan) user.ikan = {}
 
-  // MIGRASI DATA LAMA spasi -> _
   let adaMigrasi = false
   for(let ikanLama in user.ikan){
     if(ikanLama.includes(' ')){
@@ -90,7 +89,7 @@ let handler = async (m, { conn }) => {
       adaMigrasi = true
     }
   }
-  if(adaMigrasi) saveDB(wdb) // penting biar ke save
+  if(adaMigrasi) saveDB(wdb)
 
   if(Object.keys(user.ikan).length === 0)
     return m.reply('┌───❏「 🐠 AQUARIUM KOSONG 」❏\n│\n│ Kamu belum punya koleksi ikan.\n│ Ketik #mancing untuk mulai\n└───────────────────')
@@ -103,21 +102,28 @@ let handler = async (m, { conn }) => {
     let tier = getTier(nama)
     if(!grouped[tier.name]) grouped[tier.name] = {icon: tier.icon, list: []}
     let emoji = ikanEmoji[nama] || '🐟'
-    grouped[tier.name].list.push(`│ ${emoji} ${formatNama(nama)} x${inventory[nama]}`)
+    grouped[tier.name].list.push({nama, emoji, jml: inventory[nama]})
     totalIkan += inventory[nama]
+  }
+
+  for(let t in grouped){
+    grouped[t].list.sort((a,b) => b.jml - a.jml)
   }
 
   let urutan = ['SECRET','MYTHIC','LEGENDARY','EPIC','RARE','UNCOMMON','COMMON','TRASH']
   let cap = `┌───❏「 🐠 AQUARIUM 」❏\n`
   cap += `│ 👤 Owner : ${conn.getName(m.sender)}\n`
-  cap += `│ 📦 Total : ${totalIkan} Ikan\n`
+  cap += `│ 📦 Total : ${totalIkan.toLocaleString()} Ikan\n`
   cap += `│ 🧬 Jenis : ${Object.keys(inventory).length}\n`
   cap += `└───────────────────\n\n`
 
+  let nomor = 1 // <-- NOMOR NYAMBUNG
   for(let t of urutan){
     if(grouped[t]){
       cap += `┌───❏「 ${grouped[t].icon} ${t} 」❏\n`
-      cap += grouped[t].list.join('\n') + '\n'
+      grouped[t].list.forEach((v) => {
+        cap += `│ ${nomor++}. ${v.emoji} ${formatNama(v.nama)} x${v.jml.toLocaleString()}\n`
+      })
       cap += `└───────────────────\n\n`
     }
   }

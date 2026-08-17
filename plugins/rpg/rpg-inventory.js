@@ -1,10 +1,34 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 
+function formatNama(nama) {
+  return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
   initLadang(user)
+  if(!user.inventory) user.inventory = {}
+
+  let isChanged = false
+
+  // MIGRASI DATA LAMA: hasilKebun -> inventory biar sinkron sama kebun.js
+  const itemKebun = ['padi','jagung','semangka','jeruk','mangga','apel_merah','apel_hijau','apel','durian','emas']
+  if(user.hasilKebun){
+    for(let item in user.hasilKebun){
+      if(user.hasilKebun[item] > 0){
+        let key = item.replace(/ /g, '_')
+        if(key === 'apel') key = 'apel_merah' // apel lama = apel_merah
+        if(itemKebun.includes(key)){
+          user.inventory[key] = (user.inventory[key] || 0) + user.hasilKebun[item]
+          isChanged = true
+        }
+      }
+    }
+    delete user.hasilKebun // hapus biar gak dobel
+  }
+  if(isChanged) saveDB(wdb)
 
   let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
   let threshold = user.level * 500
@@ -49,23 +73,37 @@ let handler = async (m, { conn }) => {
     cap += `_Lihat lengkap: *.aquarium*_\n\n`
   }
 
-  if (user.hasilKebun) {
+  // GARDEN HARVEST: AMBIL DARI INVENTORY KHUS 8 ITEM, PENATAAN SAMA KAYA PUNYAMU
+  let totalKebun = 0
+  const cek = {
+    padi: user.inventory.padi || 0,
+    jagung: user.inventory.jagung || 0,
+    semangka: user.inventory.semangka || 0,
+    jeruk: user.inventory.jeruk || 0,
+    mangga: user.inventory.mangga || 0,
+    apel: (user.inventory.apel_merah || 0) + (user.inventory.apel_hijau || 0), // apel digabung
+    durian: user.inventory.durian || 0,
+    emas: user.inventory.emas || 0
+  }
+  for(let i in cek) totalKebun += cek[i]
+
+  if (totalKebun > 0) {
     cap += `*───「 GARDEN HARVEST 」───*\n`
-    cap += `🌾 Padi: ${user.hasilKebun.padi || 0}\n`
-    cap += `🌽 Jagung: ${user.hasilKebun.jagung || 0}\n`
-    cap += `🍉 Semangka: ${user.hasilKebun.semangka || 0}\n`
-    cap += `🍊 Jeruk: ${user.hasilKebun.jeruk || 0}\n`
-    cap += `🥭 Mangga: ${user.hasilKebun.mangga || 0}\n`
-    cap += `🍎 Apel: ${user.hasilKebun.apel || 0}\n`
-    cap += `🌳 Durian: ${user.hasilKebun.durian || 0}\n`
-    cap += `⚜️ Emas: ${user.hasilKebun.emas || 0}\n`
+    cap += `🌾 Padi: ${cek.padi.toLocaleString()}\n`
+    cap += `🌽 Jagung: ${cek.jagung.toLocaleString()}\n`
+    cap += `🍉 Semangka: ${cek.semangka.toLocaleString()}\n`
+    cap += `🍊 Jeruk: ${cek.jeruk.toLocaleString()}\n`
+    cap += `🥭 Mangga: ${cek.mangga.toLocaleString()}\n`
+    cap += `🍎 Apel: ${cek.apel.toLocaleString()}\n`
+    cap += `🌳 Durian: ${cek.durian.toLocaleString()}\n`
+    cap += `⚜️ Emas: ${cek.emas.toLocaleString()}\n`
     cap += `_Lihat lengkap: *.kebun*_\n\n`
   }
 
   cap += `*───「 INVENTORY LAINNYA 」───*\n`
   cap += `📦 Cek Semua: *.gudang*\n`
   cap += `⛏️ Cek Material: *.tas*\n`
-  cap += `🍖 Cek Makanan: *.makan*\n`
+  cap += `🍖 Cek Makanan: *.kulkas*\n`
   cap += `🐾 Cek Peliharaan: *.pet*\n`
   cap += `🐠 Cek Aquarium: *.aquarium*\n`
   cap += `🌾 Cek Kebun: *.kebun*`

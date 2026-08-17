@@ -6,7 +6,7 @@ let handler = async (m, { conn }) => {
   if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
   if(!userRPG.riwayat) userRPG.riwayat = []
 
-  // CEK PENJARA GLOBAL
+  // CEK PENJARA
   if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
     let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
     let jam = Math.floor(sisa / 3600000)
@@ -22,7 +22,7 @@ let handler = async (m, { conn }) => {
   if (sisa > 0) {
     let jam = Math.floor(sisa / 3600000)
     let menit = Math.floor((sisa % 3600000) / 60000)
-    return m.reply(`⏳ *COOLDOWN*\nTunggu *${jam}j ${menit}m* lagi untuk membunuh`)
+    return m.reply(`⏳ *COOLDOWN BUNUH*\nTunggu *${jam}j ${menit}m* lagi`)
   }
 
   let who = m.quoted?.sender
@@ -39,19 +39,22 @@ let handler = async (m, { conn }) => {
   userRPG.lastbunuh = Date.now()
   let gagal = Math.random() < 0.2 // 20% gagal
 
+  // INIT CRIME
   wdb.crime = wdb.crime || {}
   wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
 
   if (gagal) {
     // GAGAL = KAMU MATI + PENJARA 2 JAM
-    userRPG.darah = 0
+    if(userRPG.darah!== undefined) userRPG.darah = 0
     wdb.penjara = wdb.penjara || []
-    let sel = wdb.penjara.length + 1
-    userRPG.penjara = Date.now()
-    userRPG.lamaPenjara = 7200000 // 2 jam
-    userRPG.tebusan = 2000000 // 2jt
-    userRPG.sel = sel
-    wdb.penjara.push(m.sender)
+    if(!wdb.penjara.includes(m.sender)){
+      let sel = wdb.penjara.length + 1
+      userRPG.penjara = Date.now()
+      userRPG.lamaPenjara = 7200000 // 2 jam
+      userRPG.tebusan = 2000000 // 2jt
+      userRPG.sel = sel
+      wdb.penjara.push(m.sender)
+    }
 
     wdb.crime[m.sender].bunuh += 1
     wdb.crime[m.sender].total += 1
@@ -62,17 +65,17 @@ let handler = async (m, { conn }) => {
     txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += `│ ⚰️ Kamu dibunuh duluan\n`
-    txt += `│ 🚔 Masuk *PENJARA SEL ${sel}* selama *2 jam*\n`
+    txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n`
     txt += `│ 💰 Tebusan: *Rp 2.000.000*\n`
     txt += `└───────────────────`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
   // SUKSES
-  let persen = Math.floor(Math.random() * 16) + 5
+  let persen = Math.floor(Math.random() * 16) + 5 // 5% - 20%
   let hasil = Math.max(1000, Math.floor(uangTarget * (persen / 100)))
 
-  target.darah = 0
+  if(target.darah!== undefined) target.darah = 0 // matiin target
   wdb.money[who] -= hasil
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
 
@@ -88,8 +91,7 @@ let handler = async (m, { conn }) => {
   txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
   txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} *${persen}%*\n`
   txt += `└───────────────────\n`
-  txt += `⚰️ *TARGET MATI!* Harus.heal dulu\n`
-  txt += `\n💡 Cek *.buronan* untuk lihat riwayat kriminalmu`
+  txt += `⚰️ *TARGET MATI!* Harus.heal dulu`
 
   conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }

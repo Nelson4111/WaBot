@@ -14,12 +14,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const isPrem = global.db.data.users[m.sender]?.premium
   const sellBonus = isPrem? 1.1 : 1
 
-  // HARGA SAMA PERSIS DENGAN DI TANAM.JS
+  // HARGA SAMA PERSIS DENGAN DI TANAM.JS + TAMBAH BERLIAN
   const harga = {
     'kacang': { emoji: '🥜', harga: 4500 },
-    'bawang putih': { emoji: '🧄', harga: 5000 },
+    'bawang_putih': { emoji: '🧄', harga: 5000 },
     'padi': { emoji: '🌾', harga: 5000 },
-    'bawang merah': { emoji: '🧅', harga: 5500 },
+    'bawang_merah': { emoji: '🧅', harga: 5500 },
     'wortel': { emoji: '🥕', harga: 6000 },
     'timun': { emoji: '🥒', harga: 7000 },
     'selada': { emoji: '🥬', harga: 8000 },
@@ -47,16 +47,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     'melon': { emoji: '🍈', harga: 21000 },
     'anggur': { emoji: '🍇', harga: 22000 },
     'mangga': { emoji: '🥭', harga: 23000 },
-    'apel hijau': { emoji: '🍏', harga: 24000 },
+    'apel_hijau': { emoji: '🍏', harga: 24000 },
     'alpukat': { emoji: '🥑', harga: 24000 },
-    'apel merah': { emoji: '🍎', harga: 25000 },
+    'apel_merah': { emoji: '🍎', harga: 25000 },
     'kelapa': { emoji: '🥥', harga: 25000 },
     'exp': { emoji: '✨', harga: 40000 },
     'durian': { emoji: '🌳', harga: 50000 },
     'uang': { emoji: '💵', harga: 50000 },
     'koin': { emoji: '🪙', harga: 60000 },
     'emas': { emoji: '⚜️', harga: 200000 },
-    'diamond': { emoji: '💎', harga: 250000 }
+    'berlian': { emoji: '💠', harga: 250000 } // DARI PERKEBUNAN
   }
 
   const keys = Object.keys(harga).sort((a,b) => harga[a].harga - harga[b].harga)
@@ -65,7 +65,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   function getItemByInput(input) {
     if(!isNaN(input)) return nomorKeItem[parseInt(input)]
-    return input.replace(/_/g, ' ')
+    return input.replace(/ /g, '_') // spasi -> _
   }
 
   // MENU
@@ -126,7 +126,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   else if(args[args.length-1] === 'all'){ amount = 'all'; itemInput = getItemByInput(args.slice(0, -1).join(' ')) }
   else { itemInput = getItemByInput(args.join(' ')) }
 
-  if (!harga[itemInput]) return m.reply(`❌ Item "${itemInput}" tidak bisa dijual.\nLihat list: *${usedPrefix}tokopanen*`)
+  if (!harga[itemInput]) return m.reply(`❌ Item "${formatNama(itemInput)}" tidak bisa dijual.\nLihat list: *${usedPrefix}tokopanen*`)
 
   let stok = user.inventory[itemInput] || 0
   if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(itemInput)}\n\nMau nanem dulu? ketik *${usedPrefix}tanam*`)

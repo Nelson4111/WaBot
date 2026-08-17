@@ -23,10 +23,10 @@ let handler = async (m, { conn, args }) => {
       needSave = true
     }
   }
-  if(needSave) saveDB(wdb) // save 1x pas migrasi
+  if(needSave) saveDB(wdb)
 
   let [sub, h1, h2, asuransi] = args
-  h1 = h1?.toLowerCase(); h2 = h2?.toLowerCase()
+  h1 = h1?.toLowerCase(); h2 = h2?.toLowerCase() // PENTING: lowercase dulu
   asuransi = asuransi === 'asuransi'
 
   if(sub === 'proses'){
@@ -50,10 +50,12 @@ let handler = async (m, { conn, args }) => {
 
   if(!h1 ||!h2) return m.reply('Contoh:\n.kawin ayam sapi\n.kawin ayam naga asuransi')
 
+  // CEK STOK DULU PAKE KEY LOWERCASE
+  if(!user.ternak[h1] ||!user.ternak[h2]) return m.reply(`❌ Kamu tidak punya 1 dari hewan tersebut\nPunya: ${Object.keys(user.ternak).join(', ')}`)
+
   let d1 = getHewan(h1)
   let d2 = getHewan(h2)
-  if(!d1 ||!d2) return m.reply('❌ Hewan tidak ditemukan')
-  if(!user.ternak[h1] ||!user.ternak[h2]) return m.reply('❌ Kamu tidak punya 1 dari hewan tersebut')
+  if(!d1 ||!d2) return m.reply('❌ Hewan tidak ditemukan di database')
 
   let sekarang = Date.now()
   let jenis = h1 === h2? 'biasa' : 'silang'

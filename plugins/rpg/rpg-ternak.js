@@ -18,10 +18,10 @@ let handler = async (m, { args }) => {
       needSave = true
     }
   }
-  if(needSave) saveDB(wdb) // save 1x pas migrasi
+  if(needSave) saveDB(wdb)
 
   let [sub, hewan1, jml] = args
-  hewan1 = hewan1?.toLowerCase()
+  hewan1 = hewan1?.toLowerCase() // PENTING: lowercase dulu
   jml = parseInt(jml) || 1
 
   if(!sub || sub === 'kandang') {
@@ -35,7 +35,6 @@ let handler = async (m, { args }) => {
     return m.reply(txt)
   }
 
-  //... sisanya sama kayak file yg tadi aku kirim
   if(sub === 'list') {
     let txt = '┌───❏「 🛒 PASAR TERNAK 」❏\n│\n'
     for(let k in hewanList) {
@@ -46,6 +45,7 @@ let handler = async (m, { args }) => {
     return m.reply(txt + '│.kawin [hewan1] [hewan2]\n└───────────────────')
   }
   if(sub === 'hybrid') return m.reply(listHybrid())
+
   if(sub === 'beli') {
     let h = getHewan(hewan1)
     if(!h) return m.reply('❌ Hewan tidak ada')
@@ -53,14 +53,16 @@ let handler = async (m, { args }) => {
     let total = h.hargaBibit * jml
     if((wdb.money[m.sender] || 0) < total) return m.reply(`❌ Uang kurang: Rp ${total.toLocaleString()}`)
     wdb.money[m.sender] -= total
-    let key = h.nama.toLowerCase()
+    let key = h.nama.toLowerCase() // simpan pake nama asli lowercase
     user.ternak[key] = (user.ternak[key] || 0) + jml
     saveDB(wdb)
     return m.reply(`┌───❏「 🛒 PEMBELIAN BERHASIL 」❏\n│\n│ ${h.emoji} ${h.nama} x${jml}\n│ 💰 Harga: Rp ${total.toLocaleString()}\n│\n│ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n└───────────────────`)
   }
+
   if(sub === 'ambil') {
+    if(!user.ternak[hewan1]) return m.reply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
-    if(!h ||!user.ternak[hewan1]) return m.reply('❌ Kamu tidak punya hewan itu')
+    if(!h) return m.reply('❌ Data hewan tidak ditemukan')
     let hasil = dapatkanHasil(h).ambil
     user.inventory[hasil] = (user.inventory[hasil] || 0) + user.ternak[hewan1]
     let exp = h.exp * user.ternak[hewan1]
@@ -68,9 +70,11 @@ let handler = async (m, { args }) => {
     saveDB(wdb)
     return m.reply(`┌───❏「 🌾 HASIL PANEN 」❏\n│\n│ ${h.emoji} ${h.nama} x${user.ternak[hewan1]}\n│ 🎁 ${hasil} x${user.ternak[hewan1]}\n│ ✨ +${exp} Exp\n│ 💚 Hewan tetap hidup\n└───────────────────`)
   }
+
   if(sub === 'sembelih') {
+    if(!user.ternak[hewan1]) return m.reply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
-    if(!h ||!user.ternak[hewan1]) return m.reply('❌ Kamu tidak punya hewan itu')
+    if(!h) return m.reply('❌ Data hewan tidak ditemukan')
     let punya = user.ternak[hewan1]
     let sembelih = Math.min(jml, punya)
     let hasil = dapatkanHasil(h).sembelih
@@ -80,6 +84,7 @@ let handler = async (m, { args }) => {
     saveDB(wdb)
     return m.reply(`┌───❏「 🔪 PENYEMBELIHAN 」❏\n│\n│ ${h.emoji} ${h.nama} x${sembelih}\n│ 🍖 ${hasil} x${sembelih}\n└───────────────────`)
   }
+
   if(sub === 'jual') {
     let item = hewan1
     if(!user.inventory[item]) return m.reply('❌ Item tidak ada di inventory')

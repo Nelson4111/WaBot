@@ -8,6 +8,8 @@ let handler = async (m) => {
   const wdb = loadDB()
   let user = getUserRPG(wdb, m.sender).rpg
 
+  if(!user.ternak) user.ternak = {} // init jaga2
+
   if((wdb.money[m.sender] || 0) < data.biayaObat)
     return m.reply(`❌ Uang kurang: Rp ${data.biayaObat.toLocaleString()}`)
 
@@ -17,7 +19,7 @@ let handler = async (m) => {
   delete global.icuTernak[m.sender]
   saveDB(wdb)
 
-  return m.reply(`┌───❏「 🏥 PENYELAMATAN 」❏\n│\n│ ${data.d1.emoji} ${data.d1.nama} + ${data.d2.emoji} ${data.d2.nama}\n│ Status: SEHAT KEMBALI\n│\n│ 💰 -Rp ${data.biayaObat.toLocaleString()}\n└───────────────────`)
+  return m.reply(`┌───❏「 🏥 PENYELAMATAN BERHASIL 」❏\n│\n│ ${data.d1.emoji} ${data.d1.nama} + ${data.d2.emoji} ${data.d2.nama}\n│ Status: SEHAT KEMBALI\n│\n│ 💰 -Rp ${data.biayaObat.toLocaleString()}\n│\n│ Hewan sudah kembali ke kandang\n└───────────────────`)
 }
 handler.help = ['icu']
 handler.tags = ['rpg']
