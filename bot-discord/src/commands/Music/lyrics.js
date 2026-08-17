@@ -235,8 +235,8 @@ function paginateLyrics(lyrics, linesPerPage = 15) {
 
 function getCurrentLineIndex(syncedLines, position) {
     if (!syncedLines || syncedLines.length === 0) return 0;
-    // Kompensasi antisipasi maju (+1200ms) agar latensi HTTP Discord dan mata pembaca sinkron tepat saat vokal berbunyi
-    const targetPosition = position + 1200;
+    // Kompensasi antisipasi maju (+2200ms) agar lirik tampil lebih awal dan pas dengan tempo vokal
+    const targetPosition = position + 2200;
     for (let i = syncedLines.length - 1; i >= 0; i--) {
         if (targetPosition >= syncedLines[i].time) {
             return i;
