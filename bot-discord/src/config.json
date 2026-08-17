@@ -29,14 +29,14 @@
   "nodes": [
     {
       "name": "NelBot-Main",
-      "url": "lavalink.jirayu.net:443",
-      "auth": "youshallnotpass",
+      "url": "lavalinkv4.serenetia.com:443",
+      "auth": "https://seretia.link/discord",
       "secure": true
     },
     {
       "name": "NelBot-Backup",
-      "url": "lava-v4.ajieblogs.eu.org:443",
-      "auth": "https://dsc.gg/ajiedev",
+      "url": "lava-v4.millohost.my.id:443",
+      "auth": "https://discord.gg/mjS5J2K3ep",
       "secure": true
     }
   ],
