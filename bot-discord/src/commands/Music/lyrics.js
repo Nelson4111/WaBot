@@ -548,6 +548,9 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
     let lastIndex = -1;
     let isUpdating = false;
 
+    let lastKnownPosition = (player?.position || 0);
+    let lastPositionTime = Date.now();
+
     const updateLyrics = async () => {
         if (!isActive) {
             if (updateInterval) clearInterval(updateInterval);
@@ -566,14 +569,22 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
                 return;
             }
 
-            const position = currentPlayer.position || 0;
+            // Hitung posisi audio real-time terinterpolasi (0ms delay)
+            const rawPos = currentPlayer.position || 0;
+            if (rawPos !== lastKnownPosition) {
+                lastKnownPosition = rawPos;
+                lastPositionTime = Date.now();
+            }
+
+            const elapsed = currentPlayer.paused ? 0 : (Date.now() - lastPositionTime);
+            const position = Math.min(track.length || track.duration || 0, lastKnownPosition + elapsed);
             const duration = track.length || track.duration || 0;
             const currentIndex = getCurrentLineIndex(syncedLines, position);
 
             if (currentIndex !== lastIndex) {
                 lastIndex = currentIndex;
 
-                const contextLines = 5;
+                const contextLines = 4;
                 const start = Math.max(0, currentIndex - contextLines);
                 const end = Math.min(syncedLines.length, currentIndex + contextLines + 1);
 
@@ -588,12 +599,12 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
                 }
 
                 const progress = duration > 0 ? Math.floor((position / duration) * 100) : 0;
-                const progressBarLength = 30;
+                const progressBarLength = 26;
                 const progressPos = Math.floor(progressBarLength * (progress / 100));
                 const progressBar = "─".repeat(progressPos) + "○" + "─".repeat(Math.max(0, progressBarLength - progressPos));
 
                 const headerDisplay = new TextDisplayBuilder()
-                    .setContent(`**${client.emoji.check} ${track.title}**`);
+                    .setContent(`**${client.emoji.check || "✅"} ${track.title}**`);
 
                 const separator1 = new SeparatorBuilder();
 
@@ -606,7 +617,7 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
                 const separator2 = new SeparatorBuilder();
 
                 const lyricsDisplay = new TextDisplayBuilder()
-                    .setContent(lyricsText);
+                    .setContent(lyricsText || "_Instrumental / Music Playing_");
 
                 const buttons = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
@@ -631,15 +642,14 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
                     .addActionRowComponents(buttons);
 
                 await message.edit({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch((err) => {
-                    console.error("Failed to update lyrics:", err);
-                    if (updateInterval) clearInterval(updateInterval);
-                    isActive = false;
+                    if (err.status === 404 || err.code === 10008) {
+                        if (updateInterval) clearInterval(updateInterval);
+                        isActive = false;
+                    }
                 });
             }
         } catch (error) {
-            console.error("Update lyrics error:", error);
-            if (updateInterval) clearInterval(updateInterval);
-            isActive = false;
+            console.error("Update lyrics error:", error.message);
         } finally {
             isUpdating = false;
         }

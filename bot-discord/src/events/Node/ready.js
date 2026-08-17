@@ -4,14 +4,14 @@ module.exports = {
   name: "ready",
   run: async (client, name) => {
     client.logger.log(`Lavalink "${name}" connected.`, "ready");
-    client.logger.log("Auto Reconnect Collecting player 24/7 data", "log");
 
     const maindata = client.db.twofourseven.getAll();
+    if (!maindata || maindata.length === 0) {
+      return;
+    }
+
     client.logger.log(
-      `Auto Reconnect found ${maindata.length
-        ? `${maindata.length} queue${maindata.length > 1 ? "s" : ""}. Resuming all auto reconnect queue`
-        : "0 queue"
-      }`,
+      `Auto Reconnect found ${maindata.length} queue${maindata.length > 1 ? "s" : ""}. Resuming 24/7 queue...`,
       "ready",
     );
 
