@@ -13,6 +13,7 @@
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
     "@distube/ytdl-core": "^4.16.12",
+    "axios": "^1.7.9",
     "discord-player": "^6.7.1",
     "discord-player-youtubei": "^2.0.0",
     "discord.js": "^14.18.0",
@@ -25,7 +26,8 @@
     "sodium-native": "^4.1.1",
     "youtube-dl-exec": "^3.1.12",
     "youtube-ext": "^1.1.2",
-    "youtubei.js": "^18.0.0"
+    "youtubei.js": "^18.0.0",
+    "yt-search": "^2.12.1"
   },
   "overrides": {
     "discord-player-youtubei": {

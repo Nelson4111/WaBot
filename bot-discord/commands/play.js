@@ -6,6 +6,7 @@
 import { SlashCommandBuilder } from 'discord.js'
 import { useMainPlayer, QueryType } from 'discord-player'
 import { errorEmbed, successEmbed } from '../utils/embed.js'
+import { resolveAndDownloadAudio } from '../utils/musicDownloader.js'
 
 export default {
     data: new SlashCommandBuilder()
@@ -33,9 +34,6 @@ export default {
             return interaction.editReply({ embeds: [errorEmbed(`Bot sedang di VC lain: **${botVc.name}**. Masuk ke sana dulu!`)] })
         }
 
-        const isUrl = /^https?:\/\//i.test(query.trim())
-        const searchEngine = isUrl ? QueryType.AUTO : QueryType.SOUNDCLOUD_SEARCH
-
         // Bersihkan queue lama jika koneksi voice sebelumnya mati/terputus
         const existingQueue = player.nodes.get(interaction.guildId)
         if (existingQueue && !existingQueue.connection) {
@@ -43,8 +41,12 @@ export default {
         }
 
         try {
-            const { track } = await player.play(channel, query, {
-                searchEngine,
+            // 1. Download atau ambil audio dari cache lokal via API tunnel
+            const audioData = await resolveAndDownloadAudio(query)
+
+            // 2. Putar file lokal di Voice Channel via discord-player
+            const { track } = await player.play(channel, audioData.filePath, {
+                searchEngine: QueryType.FILE,
                 nodeOptions: {
                     metadata: {
                         channel: interaction.channel,
@@ -62,6 +64,13 @@ export default {
                 requestedBy: interaction.user,
             })
 
+            // 3. Pasang metadata lengkap lagu asli ke track object
+            track.title = audioData.title
+            track.author = audioData.artist
+            track.duration = audioData.duration
+            track.thumbnail = audioData.thumbnail
+            track.url = audioData.url
+
             return interaction.editReply({
                 embeds: [{
                     color: 0x5865F2,
@@ -70,6 +79,7 @@ export default {
                     fields: [
                         { name: '👤 Artis', value: track.author || 'Unknown', inline: true },
                         { name: '⏱️ Durasi', value: track.duration || 'Live', inline: true },
+                        { name: '⚡ Mode', value: audioData.fromCache ? '💾 Instant (Cache)' : '📥 Pre-Downloaded (HD)', inline: true },
                     ]
                 }]
             })
