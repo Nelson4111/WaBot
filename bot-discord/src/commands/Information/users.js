@@ -17,7 +17,7 @@ module.exports = {
 
         const display = new TextDisplayBuilder()
             .setContent(
-                `**Groove's Users !**\n` +
+                `**NelBot's Users !**\n` +
                 `${emoji.blank}${emoji.wickarrow} Total of **__${totalUsers}__** users in **__${totalServers}__** servers`
             );
 

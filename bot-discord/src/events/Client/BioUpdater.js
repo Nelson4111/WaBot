@@ -13,7 +13,7 @@ module.exports = {
                     return n.toString();
                 };
 
-                const bio = `**@ groove • ${formatK(totalUsers)}** __users__ **• ${totalCommands}+** __commands__\n\n` +
+                const bio = `**@ NelBot • ${formatK(totalUsers)}** __users__ **• ${totalCommands}+** __commands__\n\n` +
                     `**•** __High-Quality__ & __Lag-Free__ Music\n` +
                     `**•** Supports __Spotify__, __Apple Music__ & more\n` +
                     `**•** __Moderation__, __Utility__ & much more!`;

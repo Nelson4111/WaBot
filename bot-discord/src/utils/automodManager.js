@@ -68,7 +68,7 @@ class AutomodManager {
             if (!me || !me.permissions.has(PermissionFlagsBits.ManageGuild)) return;
             const rules = await guild.autoModerationRules.fetch().catch(() => null);
             if (!rules) return;
-            const nsfwRuleName = "Groove Safety: NSFW Filter";
+            const nsfwRuleName = "NelBot Safety: NSFW Filter";
             const existingNsfw = rules.find(r => r.name === nsfwRuleName);
             if (settings.antiNsfw && !existingNsfw) {
                 await guild.autoModerationRules.create({
@@ -80,7 +80,7 @@ class AutomodManager {
                     },
                     actions: [{
                         type: 1,
-                        metadata: { customMessage: "This message was blocked by Groove's NSFW Filter." }
+                        metadata: { customMessage: "This message was blocked by NelBot's NSFW Filter." }
                     }],
                     enabled: true,
                     reason: "Enabled Anti-NSFW"

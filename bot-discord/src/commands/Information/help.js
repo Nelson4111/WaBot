@@ -15,47 +15,47 @@ const { parseEmoji } = require('../../utils/emojiParser.js');
 
 const categoryInfo = {
     'Information': {
-        emoji: '<:icon_2:1490275264263880734>',
+        emoji: 'ℹ️',
         description: 'Shows information commands'
     },
     'Music': {
-        emoji: '<:muscik:1490275609975328779>',
+        emoji: '🎵',
         description: 'Shows music commands'
     },
     'Favourite': {
-        emoji: '<:icon_11:1490275358443044924>',
+        emoji: '❤️',
         description: 'Shows favourite commands'
     },
     'Config': {
-        emoji: '<:geea:1490275618406006866>',
+        emoji: '⚙️',
         description: 'Shows configuration commands'
     },
     'Utility': {
-        emoji: '<:bosz:1490275627406725252>',
+        emoji: '🛠️',
         description: 'Shows utility commands'
     },
     'Giveaway': {
-        emoji: '<:icon_17:1490275459831697419>',
+        emoji: '🎉',
         description: 'Shows giveaway commands'
     },
     'Filters': {
-        emoji: '<:floil:1490275636823195718>',
+        emoji: '🎛️',
         description: 'Shows filter commands'
     },
     'Tracker': {
-        emoji: '<:tradu:1490275644960018435>',
+        emoji: '📈',
         description: 'Shows invite tracking commands'
     },
     'Moderation': {
-        emoji: '<:icon_20:1490275548990279790>',
+        emoji: '🛡️',
         description: 'Shows moderation commands'
     },
     'Automod': {
-        emoji: '<:autoss:1490299455293882454>',
+        emoji: '🤖',
         description: 'Shows automod commands'
     },
     'Voice': {
-        emoji: `${emoji.volup}`,
+        emoji: '🔊',
         description: 'Shows voice commands'
     }
 };

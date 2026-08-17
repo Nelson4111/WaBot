@@ -1,5 +1,7 @@
 {
   "token": "YOUR_BOT_TOKEN",
+  "botName": "NelBot",
+  "ownerName": "Nenel",
   "prefix": ".",
   "ownerID": [
     "791148901729435669"
@@ -12,9 +14,9 @@
   "logs": "",
   "node_source": "spsearch",
   "links": {
-    "support": "https://discord.gg/aerox",
-    "invite": "https://discord.gg/aerox",
-    "guild": "https://discord.gg/aerox"
+    "support": "https://discord.gg/NgGU8f5KVV",
+    "invite": "https://discord.gg/NgGU8f5KVV",
+    "guild": "https://discord.gg/NgGU8f5KVV"
   },
   "Webhooks": {
     "black": "",
@@ -26,13 +28,13 @@
   },
   "nodes": [
     {
-      "name": "Serenetia-Main",
+      "name": "NelBot-Main",
       "url": "lavalinkv4.serenetia.com:443",
       "auth": "https://seretia.link/discord",
       "secure": true
     },
     {
-      "name": "Jirayu-Backup",
+      "name": "NelBot-Backup",
       "url": "lavalink.jirayu.net:443",
       "auth": "youshallnotpass",
       "secure": true
@@ -47,6 +49,6 @@
     "reconnectInterval": 10,
     "restTimeout": 60000,
     "voiceConnectionTimeout": 30000,
-    "userAgent": "Groove"
+    "userAgent": "NelBot"
   }
 }
