@@ -3,7 +3,7 @@
  * Memutar lagu dari YouTube, Spotify, atau SoundCloud
  */
 
-import { SlashCommandBuilder } from 'discord.js'
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js'
 import { useMainPlayer, QueryType } from 'discord-player'
 import { errorEmbed, successEmbed } from '../utils/embed.js'
 import { resolveAndDownloadAudio } from '../utils/musicDownloader.js'
@@ -29,7 +29,19 @@ export default {
             return interaction.editReply({ embeds: [errorEmbed('Kamu harus masuk **Voice Channel** dulu!')] })
         }
 
-        const botVc = interaction.guild.members.me?.voice?.channel
+        const botMember = interaction.guild.members.me
+        const permissions = channel.permissionsFor(botMember)
+        if (permissions && !permissions.has(PermissionFlagsBits.ViewChannel)) {
+            return interaction.editReply({ embeds: [errorEmbed('Bot tidak memiliki izin untuk **Melihat (View Channel)** Voice Channel ini!')] })
+        }
+        if (permissions && !permissions.has(PermissionFlagsBits.Connect)) {
+            return interaction.editReply({ embeds: [errorEmbed('Bot tidak memiliki izin untuk **Masuk (Connect)** ke Voice Channel ini!')] })
+        }
+        if (permissions && !permissions.has(PermissionFlagsBits.Speak)) {
+            return interaction.editReply({ embeds: [errorEmbed('Bot tidak memiliki izin untuk **Bicara (Speak)** di Voice Channel ini!')] })
+        }
+
+        const botVc = botMember?.voice?.channel
         if (botVc && botVc.id !== channel.id) {
             return interaction.editReply({ embeds: [errorEmbed(`Bot sedang di VC lain: **${botVc.name}**. Masuk ke sana dulu!`)] })
         }
@@ -44,25 +56,46 @@ export default {
             // 1. Download atau ambil audio dari cache lokal via API tunnel
             const audioData = await resolveAndDownloadAudio(query)
 
-            // 2. Putar file lokal di Voice Channel via discord-player
-            const { track } = await player.play(channel, audioData.filePath, {
-                searchEngine: QueryType.FILE,
-                nodeOptions: {
-                    metadata: {
-                        channel: interaction.channel,
-                        stayIn247: false,
-                    },
-                    selfDeaf: true,
-                    volume: 80,
-                    leaveOnEmpty: true,
-                    leaveOnEmptyCooldown: 60_000,
-                    leaveOnEnd: true,
-                    leaveOnEndCooldown: 60_000,
-                    connectionTimeout: 60_000,
-                    bufferingTimeout: 10_000,
+            const nodeOptions = {
+                metadata: {
+                    channel: interaction.channel,
+                    stayIn247: false,
                 },
-                requestedBy: interaction.user,
-            })
+                selfDeaf: true,
+                volume: 80,
+                leaveOnEmpty: true,
+                leaveOnEmptyCooldown: 60_000,
+                leaveOnEnd: true,
+                leaveOnEndCooldown: 60_000,
+                connectionTimeout: 60_000,
+                bufferingTimeout: 10_000,
+            }
+
+            // 2. Putar file lokal di Voice Channel via discord-player (dengan retry otomatis jika handshake abort)
+            let playResult
+            try {
+                playResult = await player.play(channel, audioData.filePath, {
+                    searchEngine: QueryType.FILE,
+                    nodeOptions,
+                    requestedBy: interaction.user,
+                })
+            } catch (playErr) {
+                if (playErr.message?.includes('aborted') || playErr.message?.includes('destroyed')) {
+                    console.warn(`[BOT-DC] Voice handshake retry in guild ${interaction.guild.name}...`)
+                    const staleQ = player.nodes.get(interaction.guildId)
+                    if (staleQ) staleQ.delete()
+                    await new Promise(r => setTimeout(r, 1500))
+                    playResult = await player.play(channel, audioData.filePath, {
+                        searchEngine: QueryType.FILE,
+                        nodeOptions,
+                        requestedBy: interaction.user,
+                    })
+                } else {
+                    throw playErr
+                }
+            }
+
+            const { track } = playResult
 
             // 3. Pasang metadata lengkap lagu asli ke track object
             track.title = audioData.title

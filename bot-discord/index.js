@@ -65,6 +65,7 @@ for (const file of commandFiles) {
 const player = new Player(client, {
     skipFFmpeg: false,
     useLegacyFFmpeg: false,
+    connectionTimeout: 60_000,
 })
 
 // Load semua extractor default KECUALI YoutubeExtractor bawaan yang bermasalah
