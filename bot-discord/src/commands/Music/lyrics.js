@@ -13,40 +13,56 @@ const lyricsFinder = require("@flytri/lyrics-finder");
 const axios = require("axios");
 
 function cleanTrackInfo(rawTitle, rawArtist) {
-    if (!rawTitle) return { title: '', artist: '' };
+    if (!rawTitle) return { originalTitle: '', originalArtist: '', cleanTitle: '', cleanArtist: '' };
     let title = rawTitle;
     let artist = rawArtist || '';
 
-    // 1. Bersihkan noise YouTube umum: (Official ...), [Official ...], | ..., dll.
-    title = title
-        .replace(/\|.*$/g, '')
-        .replace(/\[.*?\]/g, '')
-        .replace(/\(.*?(?:official|audio|video|lyrics?|lirik|visualizer|remastered|hd|4k|clip).*?\)/gi, '')
-        .replace(/official\s+(?:music\s+)?(?:video|audio|lyrics?|lirik)/gi, '')
-        .replace(/lyrics?\s+video/gi, '')
-        .replace(/lirik\s+lagu/gi, '')
-        .trim();
-
-    // 2. Jika judul mengandung format "Artist - Title" atau "Title - Artist"
+    // 1. Ekstraksi awal jika ada format "Artist - Title" atau "Title - Artist"
     let extractedArtist = null;
     let extractedTitle = null;
-    if (title.includes(' - ')) {
-        const parts = title.split(' - ');
+    if (rawTitle.includes(' - ')) {
+        const parts = rawTitle.split(' - ');
         if (parts.length >= 2) {
-            extractedArtist = parts[0].trim();
-            extractedTitle = parts.slice(1).join(' - ').trim();
+            const cleanPart = (str) => str
+                .replace(/#\S+/g, '')
+                .replace(/\/\/.*$/g, '')
+                .replace(/\|.*$/g, '')
+                .replace(/\[.*?\]/g, '')
+                .replace(/\(.*?\)/g, '')
+                .replace(/\b(?:cover(?:\s*by\s*.*)?|by\s+[a-zA-Z0-9_\s]+|official(?:\s*(?:video|audio|mv))?|lyrics?|lirik)\b/gi, '')
+                .trim();
+
+            extractedArtist = cleanPart(parts[0]);
+            extractedTitle = cleanPart(parts.slice(1).join(' '));
         }
     }
 
-    const cleanFeaturing = (str) => str ? str.replace(/(?:ft\.?|feat\.?|featuring)\s+[^,\(\)\[\]]+/gi, '').trim() : '';
+    // 2. Bersihkan judul umum dari noise YouTube: #hashtag, // Cover, [Official], | ..., dll.
+    title = title
+        .replace(/#\S+/g, ' ')
+        .replace(/\/\/.*$/g, ' ')
+        .replace(/\|.*$/g, ' ')
+        .replace(/\[.*?\]/g, ' ')
+        .replace(/\(.*?\)/g, ' ')
+        .replace(/\b(?:official\s*(?:video|audio|music\s*video|lyric\s*video|mv)?|lyrics?|lirik\s*(?:lagu)?|audio|video|clip|mv|hd|4k|remastered|cover(?:\s*by\s*.*)?|by\s+[a-zA-Z0-9_\s]+)\b/gi, ' ')
+        .replace(/[-_~]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    artist = artist
+        .replace(/\s*-\s*topic$/i, '')
+        .replace(/vevo$/i, '')
+        .replace(/official$/i, '')
+        .replace(/#\S+/g, '')
+        .trim();
 
     return {
         originalTitle: rawTitle,
         originalArtist: rawArtist,
-        cleanTitle: cleanFeaturing(title),
-        extractedArtist: extractedArtist ? cleanFeaturing(extractedArtist) : null,
-        extractedTitle: extractedTitle ? cleanFeaturing(extractedTitle) : null,
-        cleanArtist: cleanFeaturing(artist)
+        cleanTitle: title,
+        cleanArtist: artist,
+        extractedArtist: extractedArtist || null,
+        extractedTitle: extractedTitle || null
     };
 }
 
