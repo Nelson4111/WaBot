@@ -8,12 +8,12 @@ module.exports = {
     const now = Date.now();
     const lastTime = lastErrorTime.get(errorKey) || 0;
 
-    if (error.code === 'ETIMEDOUT' || error.message?.includes('ETIMEDOUT') || error.message?.includes('Websocket closed before a connection was established')) {
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED') || error.message?.includes('ETIMEDOUT') || error.message?.includes('Websocket closed before a connection was established')) {
       if (now - lastTime < ERROR_THROTTLE_MS) {
         return;
       }
       lastErrorTime.set(errorKey, now);
-      client.logger.log(`Lavalink "${name}" reconnecting (handshake in progress)`, "warn");
+      client.logger.log(`Lavalink "${name}" standby / reconnecting (${error.code || 'connecting'})`, "warn");
       return;
     }
 

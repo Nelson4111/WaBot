@@ -44,14 +44,34 @@ import pino from 'pino'
 import ws from 'ws'
 import { initSewaCheck } from './lib/sewaCheck.js';
 
+const Baileys = await import('@whiskeysockets/baileys')
 const {
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeInMemoryStore,
   makeCacheableSignalKeyStore,
   Browsers
-} = await import('@whiskeysockets/baileys')
+} = Baileys
+
+let makeInMemoryStore = Baileys.makeInMemoryStore || Baileys.default?.makeInMemoryStore
+if (typeof makeInMemoryStore !== 'function') {
+  try {
+    const storeModule = await import('@whiskeysockets/baileys/lib/Store/index.js')
+    makeInMemoryStore = storeModule.makeInMemoryStore || storeModule.default?.makeInMemoryStore
+  } catch {}
+}
+if (typeof makeInMemoryStore !== 'function') {
+  makeInMemoryStore = () => ({
+    bind: () => {},
+    loadMessages: async () => [],
+    writeToFile: () => {},
+    readFromFile: () => {},
+    chats: new Map(),
+    messages: new Map(),
+    contacts: {},
+    groupMetadata: {}
+  })
+}
 import { Low, JSONFile } from 'lowdb'
 import { makeWASocket, protoType, serialize } from './lib/simple.js'
 import cloudDBAdapter from './lib/cloudDBAdapter.js'
