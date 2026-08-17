@@ -28,19 +28,13 @@
   },
   "nodes": [
     {
-      "name": "NelBot-Local",
-      "url": "127.0.0.1:5006",
-      "auth": "youshallnotpass",
-      "secure": false
-    },
-    {
-      "name": "NelBot-Backup",
+      "name": "NelBot-Main",
       "url": "lavalink.jirayu.net:443",
       "auth": "youshallnotpass",
       "secure": true
     },
     {
-      "name": "NelBot-Ajie",
+      "name": "NelBot-Backup",
       "url": "lava-v4.ajieblogs.eu.org:443",
       "auth": "https://dsc.gg/ajiedev",
       "secure": true
