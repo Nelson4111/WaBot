@@ -85,17 +85,21 @@ module.exports = {
           // 1. Coba pulihkan instan via Downloader Engine lokal (Anti-Blokir 100%)
           try {
             const { getDownloadedAudioTrack } = require('../../utils/youtubeDownloader.js');
-            const targetInput = (currentTrack.uri && /youtu\.?be/i.test(currentTrack.uri)) ? currentTrack.uri : searchQuery;
+            // Teruskan URL asli untuk Spotify, SoundCloud, dan YouTube; fallback ke judul lagu
+            const uri = currentTrack.uri || '';
+            const isDirectUrl = /youtu\.?be/i.test(uri) || uri.includes('spotify.com/track/') || uri.includes('soundcloud.com/');
+            const targetInput = isDirectUrl ? uri : searchQuery;
             const dl = await getDownloadedAudioTrack(targetInput).catch(() => null);
             if (dl?.streamUrl) {
               const res = await client.manager.search(dl.streamUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
               const dlTrack = res?.tracks?.[0];
               if (dlTrack) {
-                dlTrack.title = currentTrack.title || dl.title;
-                dlTrack.author = currentTrack.author || 'YouTube';
+                dlTrack.title = dl.title || currentTrack.title;
+                dlTrack.author = currentTrack.author || 'Unknown';
                 if (channel) {
+                  const sourceEmoji = uri.includes('spotify') ? '🟢' : uri.includes('soundcloud') ? '🔶' : '🎬';
                   const dlDisplay = new TextDisplayBuilder()
-                    .setContent(`**${client.emoji.warn || "⚠️"} Stream stream error/diblokir → dialihkan otomatis via Downloader Engine!**`);
+                    .setContent(`**${client.emoji.warn || "⚠️"} ${sourceEmoji} Stream error/diblokir → dialihkan otomatis via Downloader Engine!**`);
                   const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
                   channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
                 }

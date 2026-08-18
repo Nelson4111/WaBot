@@ -173,6 +173,27 @@ module.exports = function loadPlayerManager(client) {
       } catch (_) {}
     }
 
+    // Handler khusus untuk URL Spotify dan SoundCloud — bypass LavaSrc langsung ke Downloader Engine
+    const isSpotify = cleanQuery.includes('spotify.com/track/');
+    const isSoundCloud = cleanQuery.includes('soundcloud.com/');
+    if (isUrl && (isSpotify || isSoundCloud)) {
+      try {
+        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
+        const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
+        if (dlTrack?.streamUrl) {
+          const res = await node.rest.resolve(dlTrack.streamUrl).catch(() => null);
+          if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
+            const result = processSearchResult(res, options.requester);
+            if (result.tracks.length > 0) {
+              result.tracks[0].title = dlTrack.title || result.tracks[0].title;
+              result.tracks[0].author = result.tracks[0].author || (isSpotify ? 'Spotify' : 'SoundCloud');
+              return result;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
     if (!isUrl) {
       let preferredEngine = options.engine || this.defaultSearchEngine || 'spsearch';
       if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
