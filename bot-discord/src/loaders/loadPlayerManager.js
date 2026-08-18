@@ -50,8 +50,12 @@ module.exports = function loadPlayerManager(client) {
   const { getBestNode } = require("../utils/nodeUtils");
   const { resolveWithFallback, validateTrack } = require("../utils/resolveTrack");
   const originalSearch = manager.search.bind(manager);
+  manager.originalSearch = originalSearch;
 
   manager.search = async function (query, options = {}) {
+    if (options.skipChain) {
+      return originalSearch(query, options);
+    }
     const node = getBestNode(this) || [...this.shoukaku.nodes.values()][0];
     if (!node) return { type: "SEARCH", tracks: [] };
 

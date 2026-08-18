@@ -54,8 +54,10 @@ async function resolveWithFallback(manager, query, requester, preferredEngine = 
 
   // 1. Jika query adalah URL langsung, biarkan manager menyelesaikan URL tersebut
   const isUrl = /^https?:\/\//i.test(cleanQuery);
+  const searchFn = (manager.originalSearch || manager.search).bind(manager);
+
   if (isUrl) {
-    const directResult = await manager.search(cleanQuery, { requester }).catch(() => null);
+    const directResult = await searchFn(cleanQuery, { requester, skipChain: true }).catch(() => null);
     if (directResult?.tracks?.length > 0) {
       const validatedFirst = validateTrack(directResult.tracks[0], '');
       if (validatedFirst) return directResult;
@@ -77,7 +79,11 @@ async function resolveWithFallback(manager, query, requester, preferredEngine = 
   for (const { prefix, label } of chain) {
     try {
       const searchQuery = cleanQuery.startsWith(prefix) ? cleanQuery : `${prefix}${cleanQuery}`;
-      const result = await manager.search(searchQuery, { requester, engine: prefix.replace(':', '') }).catch(() => null);
+      const result = await searchFn(searchQuery, {
+        requester,
+        engine: prefix.replace(':', ''),
+        skipChain: true
+      }).catch(() => null);
 
       if (result?.tracks?.length > 0) {
         // Cari track pertama yang lolos validasi
