@@ -52,20 +52,24 @@ module.exports = {
 
           const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
 
-          // Prioritaskan sumber alternatif yang tahan blokir (SoundCloud & YouTube Music)
+          // Deteksi sumber yang sedang bermasalah agar fallback mencari ke platform yang berbeda
+          const isSoundCloudError = currentTrack.uri?.includes('soundcloud') || cause.includes('soundcloud') || msg.includes('soundcloud');
+          const primaryEngine = isSoundCloudError ? "ytmsearch" : "scsearch";
+          const secondaryEngine = isSoundCloudError ? "scsearch" : "ytmsearch";
+
           let searchResult = await client.manager.search(searchQuery, {
-            engine: "scsearch",
+            engine: primaryEngine,
             requester: currentTrack.requester,
           });
 
-          if (!searchResult?.tracks?.length) {
+          if (!searchResult?.tracks?.length || searchResult.tracks[0]?.identifier === currentTrack.identifier) {
             searchResult = await client.manager.search(searchQuery, {
-              engine: "ytmsearch",
+              engine: secondaryEngine,
               requester: currentTrack.requester,
             });
           }
 
-          if (!searchResult?.tracks?.length && !isRestricted) {
+          if (!searchResult?.tracks?.length && !isRestricted && !isSoundCloudError) {
             searchResult = await client.manager.search(searchQuery, {
               engine: "ytsearch",
               requester: currentTrack.requester,
