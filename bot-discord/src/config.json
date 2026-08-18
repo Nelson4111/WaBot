@@ -40,7 +40,7 @@
     "resumeTimeout": 60,
     "resumeByLibrary": true,
     "reconnectTries": 10,
-    "reconnectInterval": 15,
+    "reconnectInterval": 5000,
     "restTimeout": 60000,
     "voiceConnectionTimeout": 30000,
     "userAgent": "NelBot"
