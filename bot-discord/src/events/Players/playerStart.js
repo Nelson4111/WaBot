@@ -119,20 +119,19 @@ function buildNowPlayingContainer(client, track, paused, player) {
       `> - **Requester:** [${track.requester?.username}](https://discord.com/users/${track.requester?.id})`
     );
 
-  const section = new SectionBuilder()
-    .addTextDisplayComponents(titleDisplay, infoDisplay);
+  const container = new ContainerBuilder();
+  const cleanThumbnail = getCleanThumbnail(track.thumbnail || track.artworkUrl || track.image);
 
-  if (track.thumbnail || track.artworkUrl || track.image) {
-    const cleanThumbnail = getCleanThumbnail(track.thumbnail || track.artworkUrl || track.image);
-    if (cleanThumbnail) {
-      section.setThumbnailAccessory((thumbnail) =>
+  if (cleanThumbnail) {
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(titleDisplay, infoDisplay)
+      .setThumbnailAccessory((thumbnail) =>
         thumbnail.setURL(cleanThumbnail)
       );
-    }
+    container.addSectionComponents(section);
+  } else {
+    container.addTextDisplayComponents(titleDisplay, infoDisplay);
   }
-
-  const container = new ContainerBuilder()
-    .addSectionComponents(section);
 
   const buttonRows = createButtonRows(client, paused, player);
   buttonRows.forEach(row => container.addActionRowComponents(row));

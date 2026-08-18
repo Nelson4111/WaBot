@@ -100,24 +100,27 @@ module.exports = {
 
     const separator = new SeparatorBuilder();
 
-    const songInfoSection = new SectionBuilder()
-      .addTextDisplayComponents(
+    const cleanThumbnail = song.thumbnail ? song.thumbnail : null;
+    const dmContainer = new ContainerBuilder()
+      .addTextDisplayComponents(songHeader)
+      .addSeparatorComponents(separator);
+
+    if (cleanThumbnail) {
+      const songInfoSection = new SectionBuilder()
+        .addTextDisplayComponents(
+          (textDisplay) => textDisplay.setContent(`**${client.emoji.info} Duration:** \`${convertTime(total)}\``),
+          (textDisplay) => textDisplay.setContent(`**${client.emoji.info} Author:** \`${cleanAuthorName(song.author)}\``)
+        )
+        .setThumbnailAccessory((thumbnail) => thumbnail.setURL(cleanThumbnail));
+      dmContainer.addSectionComponents(songInfoSection);
+    } else {
+      dmContainer.addTextDisplayComponents(
         (textDisplay) => textDisplay.setContent(`**${client.emoji.info} Duration:** \`${convertTime(total)}\``),
         (textDisplay) => textDisplay.setContent(`**${client.emoji.info} Author:** \`${cleanAuthorName(song.author)}\``)
       );
-
-    if (song.thumbnail) {
-      songInfoSection.setThumbnailAccessory(
-        (thumbnail) => thumbnail.setURL(song.thumbnail)
-      );
     }
 
-    const separator2 = new SeparatorBuilder();
-
-    const dmContainer = new ContainerBuilder()
-      .addTextDisplayComponents(songHeader)
-      .addSeparatorComponents(separator)
-      .addSectionComponents(songInfoSection)
+    dmContainer
       .addSeparatorComponents(separator2)
       .addActionRowComponents(row2);
 

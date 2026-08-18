@@ -390,20 +390,19 @@ module.exports = {
           `-# Position \` #${position} \` • Duration \` ${convertTime(track.length)} \` • By \` ${interaction.user.username} \``
         );
 
-      const section = new SectionBuilder()
-        .addTextDisplayComponents(titleDisplay, infoDisplay);
+      const container = new ContainerBuilder();
+      const cleanThumbnail = getCleanThumbnail(track.thumbnail || track.artworkUrl);
 
-      if (track.thumbnail || track.artworkUrl) {
-        const cleanThumbnail = getCleanThumbnail(track.thumbnail || track.artworkUrl);
-        if (cleanThumbnail) {
-          section.setThumbnailAccessory((thumbnail) =>
+      if (cleanThumbnail) {
+        const section = new SectionBuilder()
+          .addTextDisplayComponents(titleDisplay, infoDisplay)
+          .setThumbnailAccessory((thumbnail) =>
             thumbnail.setURL(cleanThumbnail)
           );
-        }
+        container.addSectionComponents(section);
+      } else {
+        container.addTextDisplayComponents(titleDisplay, infoDisplay);
       }
-
-      const container = new ContainerBuilder()
-        .addSectionComponents(section);
 
       if (position > 0) {
         const removeButton = new ButtonBuilder()
