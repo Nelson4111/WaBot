@@ -73,9 +73,35 @@ module.exports = function loadPlayerManager(client) {
     const isYouTube = cleanQuery.includes('youtube.com') || cleanQuery.includes('youtu.be') || cleanQuery.includes('music.youtube.com');
 
     if (isYouTube) {
+      let youtubeSearchTitle = null;
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(cleanQuery)}&format=json`;
+        const oembedRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(2500) })
+          .then(r => (r.ok ? r.json() : null))
+          .catch(() => null);
+        if (oembedRes?.title) {
+          youtubeSearchTitle = `${oembedRes.title} ${oembedRes.author_name || ''}`.trim();
+        }
+      } catch (_) {}
+
+      // Jika judul berhasil diekstrak via oEmbed, cari audio stream via Spotify / SoundCloud
+      if (youtubeSearchTitle) {
+        const smartResult = await resolveWithFallback(
+          this,
+          youtubeSearchTitle,
+          options.requester,
+          'spsearch'
+        ).catch(() => null);
+
+        if (smartResult && smartResult.tracks && smartResult.tracks.length > 0) {
+          return smartResult;
+        }
+      }
+
+      // Fallback manual jika oEmbed tidak merespon
       const strategies = videoId
-        ? [`ytmsearch:${videoId}`, cleanQuery, `ytsearch:${videoId}`]
-        : [`ytmsearch:${cleanQuery}`, cleanQuery, `ytsearch:${cleanQuery}`];
+        ? [`ytmsearch:${videoId}`, `scsearch:${videoId}`, cleanQuery]
+        : [`ytmsearch:${cleanQuery}`, `scsearch:${cleanQuery}`, cleanQuery];
 
       for (const q of strategies) {
         const res = await node.rest.resolve(q).catch(() => null);
