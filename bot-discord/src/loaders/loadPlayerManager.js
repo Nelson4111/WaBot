@@ -5,7 +5,7 @@ const Spotify = require("kazagumo-spotify");
 const searchEngines = {
   DEEZER: "dzsearch",
   SPOTIFY: "spsearch",
-  YOUTUBE: "ytsearch",
+  YOUTUBE: "ytmsearch",
   JIO_SAAVAN: "jssearch",
   APPLE_MUSIC: "amsearch",
   YOUTUBE_MUSIC: "ytmsearch",
@@ -13,7 +13,7 @@ const searchEngines = {
   SOUNDCLOUD: "scsearch"
 };
 
-const fallbackEngines = ["scsearch", "ytmsearch", "ytsearch"];
+const fallbackEngines = ["ytmsearch", "spsearch", "scsearch"];
 
 module.exports = function loadPlayerManager(client) {
   const spotifyId = client.config.SpotifyID || client.config.spotifyId;

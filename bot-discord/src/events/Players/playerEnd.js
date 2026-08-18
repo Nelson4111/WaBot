@@ -84,11 +84,11 @@ module.exports = {
 
         const searchQueries = recommendations.map(r => `${r.author} ${r.title}`);
 
-        let engines = ["spsearch", "scsearch", "ytmsearch", "amsearch", "dzsearch", "ytsearch"];
+        let engines = ["ytmsearch", "spsearch", "scsearch", "dzsearch"];
         try {
           const userId = track.requester?.id || track.requester;
           const userPref = client.db.userpreferences.get(userId);
-          if (userPref && userPref.musicSource) {
+          if (userPref && userPref.musicSource && userPref.musicSource !== 'ytsearch') {
             engines = [userPref.musicSource, ...engines.filter(e => e !== userPref.musicSource)];
           }
         } catch (err) { }

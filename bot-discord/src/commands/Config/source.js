@@ -20,7 +20,6 @@ module.exports = {
       required: true,
       choices: [
         { name: "YouTube Music", value: "ytmsearch" },
-        { name: "YouTube", value: "ytsearch" },
         { name: "Spotify", value: "spsearch" },
         { name: "Apple Music", value: "amsearch" },
         { name: "Deezer", value: "dzsearch" },
@@ -33,11 +32,12 @@ module.exports = {
 
   async slashExecute(interaction, client) {
     try {
-      const selectedSource = interaction.options.getString("source");
+      let selectedSource = interaction.options.getString("source");
+      if (selectedSource === 'ytsearch') selectedSource = 'ytmsearch';
 
       const sourceNames = {
         'ytmsearch': 'YouTube Music',
-        'ytsearch': 'YouTube',
+        'ytsearch': 'YouTube Music',
         'spsearch': 'Spotify',
         'amsearch': 'Apple Music',
         'dzsearch': 'Deezer',
@@ -46,7 +46,7 @@ module.exports = {
         'scsearch': 'SoundCloud'
       };
 
-      const selectedSourceName = sourceNames[selectedSource];
+      const selectedSourceName = sourceNames[selectedSource] || 'YouTube Music';
 
       client.db.userpreferences.set(interaction.user.id, {
         musicSource: selectedSource
@@ -83,7 +83,6 @@ module.exports = {
     try {
       const sourceOptions = [
         { label: 'YouTube Music', value: 'ytmsearch', emoji: client.emoji.ytmusic },
-        { label: 'YouTube', value: 'ytsearch', emoji: client.emoji.youtube },
         { label: 'Spotify', value: 'spsearch', emoji: client.emoji.spotify },
         { label: 'Apple Music', value: 'amsearch', emoji: client.emoji.applemusic },
         { label: 'Deezer', value: 'dzsearch', emoji: client.emoji.deezer },
@@ -92,9 +91,10 @@ module.exports = {
         { label: 'SoundCloud', value: 'scsearch', emoji: client.emoji.soundcloud },
       ];
 
-      const selectedSource = args[0];
-      if (selectedSource && ['ytmsearch', 'ytsearch', 'spsearch', 'amsearch', 'dzsearch', 'jssearch', 'gnsearch', 'scsearch'].includes(selectedSource)) {
-        const selectedSourceName = sourceOptions.find(opt => opt.value === selectedSource)?.label;
+      let selectedSource = args[0];
+      if (selectedSource === 'ytsearch') selectedSource = 'ytmsearch';
+      if (selectedSource && ['ytmsearch', 'spsearch', 'amsearch', 'dzsearch', 'jssearch', 'gnsearch', 'scsearch'].includes(selectedSource)) {
+        const selectedSourceName = sourceOptions.find(opt => opt.value === selectedSource)?.label || 'YouTube Music';
 
         client.db.userpreferences.set(message.author.id, {
           musicSource: selectedSource
@@ -129,8 +129,9 @@ module.exports = {
 
       collector.on('collect', async (interaction) => {
         try {
-          const selectedSource = interaction.values[0];
-          const selectedSourceName = sourceOptions.find(opt => opt.value === selectedSource)?.label;
+          let selectedSource = interaction.values[0];
+          if (selectedSource === 'ytsearch') selectedSource = 'ytmsearch';
+          const selectedSourceName = sourceOptions.find(opt => opt.value === selectedSource)?.label || 'YouTube Music';
 
           client.db.userpreferences.set(message.author.id, {
             musicSource: selectedSource

@@ -92,7 +92,7 @@ module.exports = {
                         if (node && node.state === 1) {
                             const start = Date.now();
                             try {
-                                await node.rest.resolve('ytsearch:test');
+                                await node.rest.resolve('ytmsearch:test');
                                 return `${Date.now() - start}ms`;
                             } catch {
                                 return 'Connected';

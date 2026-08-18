@@ -1223,14 +1223,13 @@ module.exports = {
 
 async function performSmartSelection(query, requester, client) {
   const allSources = [
-    { engine: 'ytsearch', name: 'YouTube', emoji: client.emoji.youtube },
     { engine: 'ytmsearch', name: 'YouTube Music', emoji: client.emoji.ytmusic },
     { engine: 'spsearch', name: 'Spotify', emoji: client.emoji.spotify },
-    { engine: 'amsearch', name: 'Apple Music', emoji: client.emoji.applemusic },
+    { engine: 'scsearch', name: 'SoundCloud', emoji: client.emoji.soundcloud },
     { engine: 'dzsearch', name: 'Deezer', emoji: client.emoji.deezer },
+    { engine: 'amsearch', name: 'Apple Music', emoji: client.emoji.applemusic },
     { engine: 'jssearch', name: 'JioSaavn', emoji: client.emoji.jiosaavn },
-    { engine: 'gnsearch', name: 'Gaana', emoji: client.emoji.gaana },
-    { engine: 'scsearch', name: 'SoundCloud', emoji: client.emoji.soundcloud }
+    { engine: 'gnsearch', name: 'Gaana', emoji: client.emoji.gaana }
   ];
 
   const shuffledSources = allSources.sort(() => Math.random() - 0.5);

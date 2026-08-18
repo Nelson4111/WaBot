@@ -8,8 +8,7 @@ const RESOLUTION_CHAIN = [
   { prefix: 'ytmsearch:', label: 'YouTube Music (Official Topic Stream, Anti Login-Wall)' },
   { prefix: 'spsearch:', label: 'Spotify (Official ISRC via LavaSrc)' },
   { prefix: 'scsearch:', label: 'SoundCloud (Indie & Cover Direct Stream)' },
-  { prefix: 'dzsearch:', label: 'Deezer (Direct playback)' },
-  { prefix: 'ytsearch:', label: 'YouTube Video (Fallback terakhir)' }
+  { prefix: 'dzsearch:', label: 'Deezer (Direct playback)' }
 ];
 
 /**
