@@ -26,7 +26,14 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   let args = text? text.toLowerCase().split(' ') : []
-  let cmd = args[0]
+  let mode = command.toLowerCase()
+  let arg0 = args[0]?.toLowerCase()
+  let arg1 = args[1]?.toLowerCase()
+
+  let isBeli = (mode === 'beli') || (arg0 === 'beli')
+  let isJualAll = (mode === 'jual' && arg0 === 'all') || (arg0 === 'jual' && arg1 === 'all')
+  let isJualYa = (mode === 'jual' && (arg0 === 'ya' || arg0 === 'yes')) || (arg0 === 'jual' && (arg1 === 'ya' || arg1 === 'yes'))
+  let isJualTidak = (mode === 'jual' && (arg0 === 'tidak' || arg0 === 'batal' || arg0 === 'no')) || (arg0 === 'jual' && (arg1 === 'tidak' || arg1 === 'batal' || arg1 === 'no'))
 
   function getAllItems() {
     let semuaItem = {}
@@ -37,10 +44,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return semuaItem
   }
 
-  // 1. COMMAND BELI -.beli iron 10
-  if(cmd === 'beli') {
-    let item = args[1]
-    let jumlah = parseInt(args[2]) || 1
+  // 1. COMMAND BELI
+  if(isBeli) {
+    let item = (mode === 'beli') ? args[0] : args[1]
+    let jumlah = (mode === 'beli') ? (parseInt(args[1]) || 1) : (parseInt(args[2]) || 1)
     if(!item) {
       let cap = `*╭───「 🛒 TOKO TERBATAS 」───╮*\n`
       cap += `│ Diskon Premium: 20%\n`
@@ -59,8 +66,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     let hargaSatuan = Math.floor(hargaBeli[item].harga * buyDiskon)
     let totalHarga = hargaSatuan * jumlah
 
-    if(wdb.money[m.sender] < totalHarga) {
-      return m.reply(`❌ Uang kamu tidak cukup!\nButuh: Rp ${totalHarga.toLocaleString()}\nPunya: Rp ${wdb.money[m.sender].toLocaleString()}`)
+    if((wdb.money[m.sender] || 0) < totalHarga) {
+      return m.reply(`❌ Uang kamu tidak cukup!\nButuh: Rp ${totalHarga.toLocaleString()}\nPunya: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}`)
     }
 
     wdb.money[m.sender] -= totalHarga
@@ -69,13 +76,23 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return m.reply(`✅ *BERHASIL BELI!*\n\n${hargaBeli[item].emoji} ${formatNama(item)} x${jumlah}\n💸 -Rp ${totalHarga.toLocaleString()}`)
   }
 
+  // BATAL JUAL ALL
+  if(isJualTidak) {
+    if(user.jualAllConfirm) {
+      delete user.jualAllConfirm
+      saveDB(wdb)
+      return m.reply('✅ Penjualan semua item dibatalkan.')
+    }
+    return m.reply('❌ Tidak ada konfirmasi jual yang aktif.')
+  }
+
   // 2. JUAL ALL
-  if(cmd === 'jual' && args[1] === 'all') {
+  if(isJualAll) {
     let semuaItem = getAllItems()
     if(Object.keys(semuaItem).length === 0) return m.reply('❌ Kamu tidak punya item yg bisa dijual.')
 
     let cap = `*───「 ⚠️ KONFIRMASI JUAL SEMUA 」───*\n\n`
-    cap += `Kamu akan menjual semua item yg ada.\n\n`
+    cap += `Kamu akan menjual semua item yg ada:\n\n`
     Object.keys(semuaItem).forEach(nama => {
       cap += `• ${formatNama(nama)} x${semuaItem[nama].toLocaleString()}\n`
     })
@@ -88,8 +105,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
-  // 3. KONFIRMASI
-  if(cmd === 'jual' && args[1] === 'ya') {
+  // 3. KONFIRMASI YA
+  if(isJualYa) {
     if(!user.jualAllConfirm || Date.now() - user.jualAllConfirm.time > 60000) {
       return m.reply('❌ Konfirmasi kadaluarsa. Ketik `.jual all` lagi')
     }

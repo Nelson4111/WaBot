@@ -1,4 +1,4 @@
-﻿const {
+const {
   PermissionsBitField,
   WebhookClient,
   EmbedBuilder,
@@ -24,6 +24,29 @@ module.exports = {
     const isIgnored = client.db.ignorechannels.get(message.guild.id, message.channel.id);
     if (isIgnored) {
       return;
+    }
+
+    // === TWO-WAY BRIDGE DISCORD -> WHATSAPP ===
+    try {
+      if (global.conn && global.db?.data?.bridges && !message.webhookId && !message.author.bot) {
+        for (const [waChatJid, bridgeData] of Object.entries(global.db.data.bridges)) {
+          if (bridgeData && bridgeData.enabled && bridgeData.webhookUrl && bridgeData.webhookUrl.includes(message.channel.id)) {
+            let sender = message.member?.displayName || message.author.username;
+            let text = `*[Discord 🎧]* *${sender}*: ${message.cleanContent || message.content || ''}`;
+            
+            let attachment = message.attachments.first();
+            if (attachment && attachment.contentType && attachment.contentType.startsWith('image/')) {
+              await global.conn.sendMessage(waChatJid, { image: { url: attachment.url }, caption: text }).catch(() => null);
+            } else if (attachment && attachment.contentType && attachment.contentType.startsWith('video/')) {
+              await global.conn.sendMessage(waChatJid, { video: { url: attachment.url }, caption: text }).catch(() => null);
+            } else if (message.content) {
+              await global.conn.sendMessage(waChatJid, { text }).catch(() => null);
+            }
+          }
+        }
+      }
+    } catch (bridgeErr) {
+      // Silent non-blocking catch for bridge relay
     }
 
 

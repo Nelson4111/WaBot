@@ -66,21 +66,20 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         let who, menit, tebusan
         if(m.quoted){
             who = resolveTarget()
-            menit = parseInt(args[0])
-            tebusan = parseInt(args[1])
+            menit = parseInt(args[0]) || 30
+            tebusan = parseInt(args[1]) || 1000000
         } else {
-            if(args.length < 3) return m.reply(`*Format:* ${usedPrefix}penjarain @tag <menit> <tebusan>\n*Contoh:* ${usedPrefix}penjarain @628xxx 60 5000000`)
             who = resolveTarget(args[0])
-            menit = parseInt(args[1])
-            tebusan = parseInt(args[2])
+            menit = parseInt(args[1]) || 30
+            tebusan = parseInt(args[2]) || 1000000
         }
-        if(!who) return m.reply('❌ Tag target')
-        if(isNaN(menit) || menit < 1) return m.reply('❌ Menit tidak valid')
-        if(isNaN(tebusan) || tebusan < 0) return m.reply('❌ Tebusan tidak valid')
+        if(!who) return m.reply(`*Format:* ${usedPrefix}penjarain @tag <menit> <tebusan>\n*Contoh:* ${usedPrefix}penjarain @628xxx 60 5000000`)
+        if(isNaN(menit) || menit < 1) menit = 30
+        if(isNaN(tebusan) || tebusan < 0) tebusan = 1000000
 
-        wdb.users[who] = wdb.users[who] || {}
-        wdb.users[who].rpg = wdb.users[who].rpg || {}
-        let userRPG = wdb.users[who].rpg
+        if(!global.db.data.users[who]) global.db.data.users[who] = {}
+        if(!global.db.data.users[who].rpg) global.db.data.users[who].rpg = {}
+        let userRPG = global.db.data.users[who].rpg
 
         if(userRPG.penjara) return m.reply('❌ Orang ini sudah di penjara')
 

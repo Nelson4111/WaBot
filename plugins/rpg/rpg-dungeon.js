@@ -97,8 +97,13 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let dmgPerRound = Math.max(Math.ceil(selected.dmgEnemy * 0.15), selected.dmgEnemy - dmgReduction)
   let rawDamage = rounds * dmgPerRound
 
-  // Batasi damage maksimal proporsional terhadap maxHP jika memenuhi level & sword syarat
-  let maxPossibleDmg = Math.floor(maxHP * 0.75)
+  // Batasi damage proporsional berdasarkan kelebihan level & equipment
+  let overLevelRatio = Math.min(1, Math.max(0, (user.level - selected.minLevel) / (selected.minLevel + 10)))
+  let overSwordRatio = Math.min(1, Math.max(0, (swordLvl - selected.minSword) / (selected.minSword + 5)))
+  let statAdvantage = (overLevelRatio * 0.25) + (overSwordRatio * 0.25)
+
+  let dmgCapPercentage = Math.max(0.15, 0.45 - statAdvantage)
+  let maxPossibleDmg = Math.floor(maxHP * dmgCapPercentage)
   let finalDamage = Math.max(10, Math.min(rawDamage, maxPossibleDmg))
 
   // KALO MATI

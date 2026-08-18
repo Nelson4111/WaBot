@@ -441,6 +441,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     if(!csm.relations[char.nama]) csm.relations[char.nama] = 0
     csm.relations[char.nama] += Math.floor(Math.random()*8) + 5
+    csm.encounter = null // Reset encounter agar bisa pindah lokasi dan encounter baru
 
     saveDB(wdb)
 

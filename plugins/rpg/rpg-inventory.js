@@ -42,7 +42,8 @@ let handler = async (m, { conn }) => {
   let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
   let threshold = user.level * 500
   let armorLvl = user.armor || 0
-  let maxHP = 100 + (armorLvl * 20)
+  let maxHP = 100 + (armorLvl * 20) + (user.maxDarahBonus || 0)
+  if (typeof user.darah === 'undefined') user.darah = maxHP
 
   // cari pet level tertinggi
   let petTertinggi = null
@@ -52,25 +53,32 @@ let handler = async (m, { conn }) => {
     petTertinggi = user.pet
   }
 
+  // Hitung total material gabungan dari berbagai key
+  let totalDiamond = (user.diamond || 0) + (user.inventory?.diamond || 0) + (user.ores?.diamond || 0)
+  let totalIron = (user.iron || 0) + (user.inventory?.iron || 0) + (user.ores?.iron || 0)
+  let totalGold = (user.gold || 0) + (user.inventory?.gold || 0) + (user.ores?.gold || 0)
+  let totalWood = (user.wood || 0) + (user.inventory?.wood || 0) + (user.ores?.wood || 0)
+  let totalStone = (user.stone || 0) + (user.inventory?.stone || 0) + (user.ores?.stone || 0)
+
   let cap = `*───「 RPG INVENTORY 」───*\n\n`
-  cap += `👤 *Pemain:* ${m.pushName}\n`
+  cap += `👤 *Pemain:* ${m.pushName || 'Player'}\n`
   cap += `🆙 *Level:* ${user.level} (${user.exp}/${threshold} XP)\n`
   cap += `❤️ *Darah:* ${user.darah}/${maxHP}\n`
   cap += `💰 *Saldo:* Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n`
 
   cap += `*───「 EQUIPMENT 」───*\n`
-  cap += `🗡️ *Weapon:* ${user.sword ? getEquipmentName('sword', user.sword) : 'Tidak Ada'}\n`
-  cap += `🛡️ *Armor:* ${user.armor ? getEquipmentName('armor', user.armor) : 'Tidak Ada'}\n`
-  cap += `⛏️ *Pickaxe:* ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'Tidak Ada'}\n`
-  cap += `🎣 *Rod:* ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'Tidak Ada'}\n`
+  cap += `🗡️ *Weapon:* ${user.sword ? getEquipmentName('sword', user.sword) : 'None'}\n`
+  cap += `🛡️ *Armor:* ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n`
+  cap += `⛏️ *Pickaxe:* ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n`
+  cap += `🎣 *Fishing Rod:* ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n`
   cap += `🐾 *Pet:* ${petTertinggi ? `${petTertinggi.tipe.toUpperCase()} (Lv.${petTertinggi.level})` : 'Tidak Ada'}\n\n`
 
   cap += `*───「 STORAGE 」───*\n`
-  cap += `💎 Diamond: ${user.diamond || 0}\n`
-  cap += `⛓️ Iron: ${user.iron || 0}\n`
-  cap += `✨ Gold: ${user.gold || 0}\n`
-  cap += `🪵 Wood: ${user.wood || 0}\n`
-  cap += `🪨 Stone: ${user.stone || 0}\n`
+  cap += `💎 Diamond: ${totalDiamond.toLocaleString()}\n`
+  cap += `⛓️ Iron: ${totalIron.toLocaleString()}\n`
+  cap += `✨ Gold: ${totalGold.toLocaleString()}\n`
+  cap += `🪵 Wood: ${totalWood.toLocaleString()}\n`
+  cap += `🪨 Stone: ${totalStone.toLocaleString()}\n`
   cap += `_Lihat lengkap: *.tas*_\n\n`
 
   if (user.ikan) {

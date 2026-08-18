@@ -704,43 +704,50 @@ for(let key in aliases){
       SECRET: 120
     }
 
+    let isMesin = (tipe) => ['robot', 'drone', 'cyborg', 'mecha'].includes(tipe)
     let biayaMakan = 0
     let detailBiaya = []
-    user.pets.filter(p => p.tipe !== 'robot').forEach(p => {
+    let hasRemy = user.pets.some(p => p.tipe === 'remy_ratatouille')
+
+    user.pets.filter(p => !isMesin(p.tipe)).forEach(p => {
       let rarity = pets[p.tipe]?.rarity || 'COMMON'
-      let cost = feedCost[rarity]
+      let cost = feedCost[rarity] || 2000
+      if (hasRemy) cost = Math.floor(cost * 0.5)
       biayaMakan += cost
-      detailBiaya.push(`${pets[p.tipe].emoji} ${formatNama(p)}: Rp ${cost.toLocaleString()}`)
+      detailBiaya.push(`${pets[p.tipe]?.emoji || '🐾'} ${formatNama(p)}: Rp ${cost.toLocaleString()}${hasRemy ? ' (Remy -50%)' : ''}`)
     })
+
+    if (user.pets.every(p => isMesin(p.tipe))) {
+      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n⚙️ *PET MESIN*\nPet bertipe mesin/robot tidak membutuhkan makanan organik.\n━━━━━━━━━━━`)
+    }
 
     if ((wdb.money[m.sender] || 0) < biayaMakan) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biayaMakan.toLocaleString()}.\n━━━━━━━━━━━`)
     
     wdb.money[m.sender] -= biayaMakan
     let naik = []
     user.pets.forEach(p => {
-      if(p.tipe === 'robot') return
+      if(isMesin(p.tipe)) return
       let rarity = pets[p.tipe]?.rarity || 'COMMON'
       let expGain = feedExp[rarity] + (p.tipe === 'anjing_alpha' ? 10 : 0)
       let energyGain = 20 + (p.tipe === 'mermaid' ? 10 : 0)
       
-      p.exp += expGain
+      p.exp = (p.exp || 0) + expGain
       p.energy = Math.min(100, (p.energy || 100) + energyGain)
       p.happy = Math.min(100, (p.happy || 50) + 5)
       
       if(p.tipe === 'alien') wdb.money[m.sender] += 1000 * p.level
       if(p.tipe === 'poop') wdb.money[m.sender] += 2000
-      if(p.tipe === 'remy_ratatouille') wdb.money[m.sender] += Math.floor(biayaMakan * 0.5 / user.pets.filter(x => x.tipe !== 'robot').length) // refund 50%
       
       p.lastFeed = Date.now()
-      if (p.exp >= 100) { p.level += 1; p.exp = 0; naik.push(p) }
+      if (p.exp >= 100) { p.level = (p.level || 1) + 1; p.exp = 0; naik.push(p) }
     })
     saveDB(wdb)
     
     let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 WAKTU MAKAN TIBA\n🍽️ MEMBERI MAKAN 🍽️\n`
-    teks += `💰 Biaya Total : -Rp ${biayaMakan.toLocaleString()}\n`
+    teks += `💰 Biaya Total : -Rp ${biayaMakan.toLocaleString()}${hasRemy ? ' ✨ (Remy Passif -50%)' : ''}\n`
     teks += `📊 Detail:\n${detailBiaya.map(x => `├ ${x}`).join('\n')}\n`
-    teks += `│\n├ Status : Exp beda2 | +20 Energy | +5 Happy`
-    if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')}`
+    teks += `│\n├ Status : Exp bertambah | +20 Energy | +5 Happy`
+    if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe]?.emoji || '🐾'} ${formatNama(n)} (Lv.${n.level})`).join('\n')}`
     teks += `\n━━━━━━━━━━━`
     return m.reply(teks)
   }

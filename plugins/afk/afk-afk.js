@@ -3,6 +3,13 @@ import moment from 'moment-timezone';
 let handler = async (m, { conn, text }) => {
     let user = global.db.data.users[m.sender] || {};
     
+    // Cooldown setelah selesai AFK (60 detik)
+    const cooldown = 60000;
+    if (user.lastAfk && (Date.now() - user.lastAfk < cooldown)) {
+        let sisa = Math.ceil((cooldown - (Date.now() - user.lastAfk)) / 1000);
+        return m.reply(`⏳ Kamu baru saja selesai AFK. Tunggu *${sisa} detik* lagi sebelum bisa mengaktifkan AFK kembali.`);
+    }
+
     user.afk = +new Date();
     user.afkReason = text || 'Tanpa Alasan';
     global.db.data.users[m.sender] = user;

@@ -57,10 +57,14 @@ const categoryInfo = {
     'Voice': {
         emoji: '🔊',
         description: 'Shows voice commands'
+    },
+    'RPG': {
+        emoji: '⚔️',
+        description: 'Shows RPG & Game commands'
     }
 };
 
-const categoryOrder = ['Information', 'Music', 'Favourite', 'Config', 'Moderation', 'Automod', 'Voice', 'Utility', 'Giveaway', 'Filters', 'Tracker'];
+const categoryOrder = ['Information', 'RPG', 'Music', 'Favourite', 'Config', 'Moderation', 'Automod', 'Voice', 'Utility', 'Giveaway', 'Filters', 'Tracker'];
 
 function formatCategoryContent(selectedCategory, commandsList, serverPrefix) {
     if (selectedCategory === 'Music') {

@@ -22,8 +22,14 @@ handler.before = async function (m, { conn }) {
     const DB = global.db?.data?.users || {};
     const user = DB[m.sender];
 
-    // Restorasi / Berhenti AFK sekarang ditangani langsung di handler.js 
-    // agar tidak terblokir oleh isBaileys / Anti-Spam
+    // Otomatis selesai AFK saat user mengirim pesan
+    if (user && user.afk > -1 && !m.fromMe && m.text && !m.text.startsWith('.afk')) {
+        const duration = formatDuration(Date.now() - user.afk);
+        user.lastAfk = Date.now();
+        user.afk = -1;
+        user.afkReason = '';
+        conn.sendMessage(m.chat, { text: `👋 Selamat datang kembali @${m.sender.split('@')[0]}! Kamu berhenti AFK setelah *${duration}*.`, mentions: [m.sender] }, { quoted: m }).catch(() => {});
+    }
 
     // Peringatan saat member lain men-tag user AFK
     const jids = [...new Set([

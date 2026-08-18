@@ -547,7 +547,7 @@ async function processMessage(m, chatUpdate) {
                 // CEK STATUS PENJARA RPG
                 const isRpgPlugin = (plugin.tags && (plugin.tags.includes('rpg') || plugin.tags.includes('pasangan'))) || name.includes('/rpg/') || name.includes('\\rpg\\');
                 if (isRpgPlugin && !['penjara', 'tebus', 'bebasin', 'penjarain', 'statuspenjara'].includes(command)) {
-                    let userRPG = _user?.rpg;
+                    let userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
                     if (userRPG && userRPG.penjara) {
                         let now = Date.now();
                         if (now - userRPG.penjara < (userRPG.lamaPenjara || 0)) {

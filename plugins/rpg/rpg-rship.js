@@ -247,21 +247,31 @@ if (!action) {
 
   // === FITUR LIST ===
   if (action === 'fitur') {
+    let maxPartnerLvl = user.harem.reduce((max, cur) => Math.max(max, cur.level || 1), 0)
+    let isNikah = user.harem.some(cur => cur.menikah)
+    let getLock = (reqLvl, reqNikah = false) => {
+      if (reqNikah && !isNikah) return '🔒'
+      return maxPartnerLvl >= reqLvl ? '🔓' : '🔒'
+    }
+
     let cap = `╭──「 📋 FITUR RELATIONSHIP 」──╮\n\n`
-    cap += `🔓 Lv.1  : date, talk, makan, marah, maaf, usil, kill, duel, putus\n`
-    cap += `🔓 Lv.10 : peluk, belanja\n`
-    cap += `🔓 Lv.20 : nonton, swim\n`
-    cap += `🔓 Lv.27 : kiss ${'['}Harus Nikah${']'}\n`
-    cap += `🔓 Lv.40 : mandi, tidur, nikah, wohoo, kerja ${'['}Harus Nikah${']'}\n`
-    cap += `🔓 Lv.50 : anak ${'['}Harus Nikah + Love 70%${']'}\n\n`
+    cap += `${getLock(1)} Lv.1  : date, talk, makan, marah, maaf, usil, kill, duel, putus\n`
+    cap += `${getLock(10)} Lv.10 : peluk, belanja\n`
+    cap += `${getLock(20)} Lv.20 : nonton, swim\n`
+    cap += `${getLock(27, true)} Lv.27 : kiss ${'['}Harus Nikah${']'}\n`
+    cap += `${getLock(40, true)} Lv.40 : mandi, tidur, nikah, wohoo, kerja ${'['}Harus Nikah${']'}\n`
+    cap += `${getLock(50, true)} Lv.50 : anak ${'['}Harus Nikah + Love 70%${']'}\n\n`
     cap += `━━━━━━━━━━━\n`
+    cap += `📌 Keterangan Icon:\n`
+    cap += `• 🔓 = Fitur sudah terbuka untukmu\n`
+    cap += `• 🔒 = Fitur masih terkunci (naikkan level/status)\n\n`
     cap += `📌 INFO PENTING\n`
     cap += `• Slot Harem +1 tiap pasangan Lv.20, max 10\n`
     cap += `• nikah = Butuh Lv.40 + Cincin + Love 90%\n`
     cap += `• anak  = Butuh Lv.50 + Status Nikah + Love 70%\n`
     cap += `• kiss, kerja, anak, wohoo = Harus status Nikah\n`
     cap += `• maaf = Cooldown 30m | talk = Cooldown 15m\n`
-    cap += `• gift = pake Bank, bukan Uang Saku\n`
+    cap += `• gift = Pake Bank/Uang\n`
     cap += `━━━━━━━━━━━`
     return m.reply(cap)
   }
@@ -659,9 +669,9 @@ if (action === 'gift') {
     return m.reply(`*╭─「 ${judulRand} 」─╮*\n│\n│ ${isiRand}\n│\n│ 💌 *Love* : -2\n│ 📈 *EXP* : +10\n${up? `│ 🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}*╰───────────────────────╯*`)
 }
 
-  // === MARAH LV30 ===
+  // === MARAH LV1 ===
   if (action === 'marah') {
-    let err = cekLevel(p, 10, 'Marah')
+    let err = cekLevel(p, 1, 'Marah')
     if(err) return m.reply(err)
     if(cekCD('marah'+no, 3600000) > 0) return m.reply(`╭──「 ⏰ COOLDOWN 」──╮\n\nTunggu 1 jam\n━━━━━━━━━━━`)
     p.love = Math.max(0, p.love - 8)
@@ -941,22 +951,23 @@ if (action === 'talk') {
     let err = cekLevel(p, 1, 'Duel')
     if(err) return m.reply(err)
     if(cekCD('duel'+no, 21600000) > 0) return m.reply(`╭──「 ⏰ COOLDOWN 」──╮\n\nTunggu 6 jam\n━━━━━━━━━━━`)
-    let win = Math.random() < 0.6
+    let win = Math.random() < 0.5
     user.cooldown['duel'+no] = Date.now()
     if(win){
-      let hadiah = Math.floor(Math.random() * 100000) + 50000
-      wdb.money[m.sender] += hadiah
-      addExp(p, 80)
+      let up = addExp(p, 40)
+      p.love = Math.max(0, p.love - 5)
       user.dateStats.duelWin++
       saveDB(wdb)
-      return m.reply(`╭──「 ⚔️ DUEL 」──╮\n\nMENANG!\nKamu dan ${p.name} menang duel\n🏆 +Rp ${hadiah.toLocaleString()}\n📈 +80 EXP\n━━━━━━━━━━━`)
-} else {
-      p.love = Math.max(0, p.love - 10)
-      addExp(p, 20)
+      return m.reply(`╭──「 ⚔️ DUEL RELATIONSHIP 」──╮\n\n🏆 *KAMU MENANG!*\nKamu berhasil mengalahkan *${p.name}* dalam duel.\n🥺 *${p.name}* : "Ih kamu tega banget ngalahin aku!"\n\n💔 *Love* : -5\n📈 *EXP*  : +40\n${up? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}━━━━━━━━━━━`)
+    } else {
+      let hadiah = Math.floor(Math.random() * 50000) + 25000
+      wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hadiah
+      p.love = Math.min(100, p.love + 15)
+      let up = addExp(p, 60)
       saveDB(wdb)
-      return m.reply(`╭──「 ⚔️ DUEL 」──╮\n\nKALAH\n${p.name} kecewa\n💌 -10\n📈 +20 EXP\n━━━━━━━━━━━`)
+      return m.reply(`╭──「 ⚔️ DUEL RELATIONSHIP 」──╮\n\n🎉 *${p.name.toUpperCase()} MENANG!*\n*${p.name}* berhasil mengalahkanmu dalam duel.\n😆 *${p.name}* : "Horeee! Aku lebih kuat dari kamu!" (Bangga & Senang)\n\n💖 *Love* : +15\n📈 *EXP*  : +60\n💰 *Hadiah* : +Rp ${hadiah.toLocaleString()}\n${up? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}━━━━━━━━━━━`)
     }
-  } // <-- TAMBAHIN INI
+  }
   
     // === DETAIL PASANGAN ===
   if (action === 'detail') {

@@ -26,30 +26,31 @@ let handler = async (m, { conn, args }) => {
   }
   if(needSave) saveDB(wdb)
 
-  let [sub, h1, h2, asuransi] = args
-  h1 = h1?.toLowerCase(); h2 = h2?.toLowerCase() // PENTING: lowercase dulu
-  asuransi = asuransi === 'asuransi'
+  let sub = args[0]?.toLowerCase()
+  let h1 = null, h2 = null, asuransi = false
 
-  if(sub === 'proses'){
+  if (sub === 'proses') {
     let data = wdb.temp.kawin[m.sender]
     if(!data) return m.reply('❌ Tidak ada kawin yg menunggu konfirmasi')
     if(Date.now() - data.waktu > 60000) {
       delete wdb.temp.kawin[m.sender]
       saveDB(wdb)
-      return m.reply('❌ Konfirmasi kadaluarsa. Ketik ulang.kawin')
+      return m.reply('❌ Konfirmasi kadaluarsa. Ketik ulang .kawin')
     }
     h1 = data.h1; h2 = data.h2; asuransi = data.asuransi
-  }
-
-  if(sub === 'batal'){
+  } else if (sub === 'batal') {
     if(wdb.temp.kawin[m.sender]){
       delete wdb.temp.kawin[m.sender]
       saveDB(wdb)
       return m.reply('❌ Kawin dibatalkan')
     } else return m.reply('❌ Tidak ada kawin yg menunggu konfirmasi')
+  } else {
+    h1 = args[0]?.toLowerCase()
+    h2 = args[1]?.toLowerCase()
+    asuransi = (args[2]?.toLowerCase() === 'asuransi') || (args[3]?.toLowerCase() === 'asuransi')
   }
 
-  if(!h1 ||!h2) return m.reply('Contoh:\n.kawin ayam sapi\n.kawin ayam naga asuransi')
+  if(!h1 || !h2) return m.reply('📌 *Contoh Penggunaan:*\n• .kawin ayam sapi\n• .kawin ayam naga asuransi')
 
   // CEK STOK DULU PAKE KEY LOWERCASE
   if (h1 === h2) {

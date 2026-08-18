@@ -41,6 +41,13 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   initStats(user) // auto fix
 
+  // Dukungan sub-command: .jambak terima / .jambak tolak / .panco terima / .panco tolak
+  let sub = args[0]?.toLowerCase()
+  if (command === 'jambak' && sub === 'terima') command = 'jambakterima'
+  if (command === 'jambak' && (sub === 'tolak' || sub === 'batal')) command = 'jambaktolak'
+  if (command === 'panco' && sub === 'terima') command = 'pancoterima'
+  if (command === 'panco' && (sub === 'tolak' || sub === 'batal')) command = 'pancotolak'
+
   // 1. JAMBAK - BUAT NANTANG
   if (command === 'jambak') {
     let targetRaw = m.mentionedJid?.[0] || m.quoted?.sender
