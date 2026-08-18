@@ -229,14 +229,14 @@ module.exports = {
       if (markdownMatch) query = markdownMatch[1];
 
       const isUrl = /^https?:\/\//.test(query);
-      let searchEngine = client.config.node_source || 'spsearch';
+      let searchEngine = client.config.node_source || 'ytmsearch';
 
       if (!isUrl) {
         try {
           const userPref = client.db.userpreferences.get(interaction.user.id);
           if (userPref?.musicSource) searchEngine = userPref.musicSource;
         } catch (error) { }
-        if (searchEngine === 'ytsearch') searchEngine = 'scsearch';
+        if (searchEngine === 'ytsearch') searchEngine = 'ytmsearch';
       }
 
       let searchResult;
@@ -836,13 +836,13 @@ module.exports = {
 
       if (query) {
         const isUrl = /^https?:\/\//.test(query);
-        let searchEngine = client.config.node_source || 'spsearch';
+        let searchEngine = client.config.node_source || 'ytmsearch';
 
         try {
           const userPref = client.db.userpreferences.get(message.author.id);
           if (userPref && userPref.musicSource) searchEngine = userPref.musicSource;
         } catch (error) { }
-        if (searchEngine === 'ytsearch') searchEngine = 'scsearch';
+        if (searchEngine === 'ytsearch') searchEngine = 'ytmsearch';
 
         try {
           searchResult = await player.search(query, {
