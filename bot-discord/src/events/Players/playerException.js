@@ -90,22 +90,27 @@ module.exports = {
             const isDirectUrl = /youtu\.?be/i.test(uri) || uri.includes('spotify.com/track/') || uri.includes('soundcloud.com/');
             const targetInput = isDirectUrl ? uri : searchQuery;
             const dl = await getDownloadedAudioTrack(targetInput).catch(() => null);
-            if (dl?.streamUrl) {
-              const res = await client.manager.search(dl.streamUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
-              const dlTrack = res?.tracks?.[0];
-              if (dlTrack) {
-                dlTrack.title = dl.title || currentTrack.title;
-                dlTrack.author = currentTrack.author || 'Unknown';
-                if (channel) {
-                  const sourceEmoji = uri.includes('spotify') ? '🟢' : uri.includes('soundcloud') ? '🔶' : '🎬';
-                  const dlDisplay = new TextDisplayBuilder()
-                    .setContent(`**${client.emoji.warn || "⚠️"} ${sourceEmoji} Stream error/diblokir → dialihkan otomatis via Downloader Engine!**`);
-                  const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
-                  channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
+            if (dl?.cdnUrl || dl?.streamUrl) {
+              // Prioritaskan CDN URL (bisa diakses Lavalink di container terpisah)
+              // Fallback ke streamUrl (localhost) jika CDN tidak tersedia
+              const urlsToTry = [dl.cdnUrl, dl.streamUrl].filter(Boolean);
+              for (const tryUrl of urlsToTry) {
+                const res = await client.manager.search(tryUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
+                const dlTrack = res?.tracks?.[0];
+                if (dlTrack) {
+                  dlTrack.title = dl.title || currentTrack.title;
+                  dlTrack.author = currentTrack.author || 'Unknown';
+                  if (channel) {
+                    const sourceEmoji = uri.includes('spotify') ? '🟢' : uri.includes('soundcloud') ? '🔶' : '🎬';
+                    const dlDisplay = new TextDisplayBuilder()
+                      .setContent(`**${client.emoji.warn || "⚠️"} ${sourceEmoji} Stream error/diblokir → dialihkan otomatis via Downloader Engine!**`);
+                    const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
+                    channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
+                  }
+                  player.queue.unshift(dlTrack);
+                  player.skip();
+                  return;
                 }
-                player.queue.unshift(dlTrack);
-                player.skip();
-                return;
               }
             }
           } catch (_) {}

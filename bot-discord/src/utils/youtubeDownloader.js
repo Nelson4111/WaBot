@@ -249,6 +249,7 @@ async function getDownloadedAudioTrack(videoUrl) {
 
   return {
     streamUrl: `http://127.0.0.1:${port}/audio/${mp3Info.videoId}`,
+    cdnUrl: mp3Info.url,  // URL CDN publik yang bisa diakses Lavalink di container lain
     title: mp3Info.title || 'YouTube Track',
     videoId: mp3Info.videoId
   };

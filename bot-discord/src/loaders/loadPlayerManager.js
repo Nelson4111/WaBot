@@ -158,15 +158,19 @@ module.exports = function loadPlayerManager(client) {
       try {
         const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
         const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
-        if (dlTrack?.streamUrl) {
-          const res = await node.rest.resolve(dlTrack.streamUrl).catch(() => null);
-          if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
-            const result = processSearchResult(res, options.requester);
-            if (result.tracks.length > 0) {
-              if (result.tracks[0].title === 'Unknown' || !result.tracks[0].title) {
-                result.tracks[0].title = dlTrack.title;
+        if (dlTrack?.cdnUrl || dlTrack?.streamUrl) {
+          // Prioritaskan CDN URL (bisa diakses Lavalink di container terpisah)
+          const urlsToTry = [dlTrack.cdnUrl, dlTrack.streamUrl].filter(Boolean);
+          for (const tryUrl of urlsToTry) {
+            const res = await node.rest.resolve(tryUrl).catch(() => null);
+            if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
+              const result = processSearchResult(res, options.requester);
+              if (result.tracks.length > 0) {
+                if (result.tracks[0].title === 'Unknown' || !result.tracks[0].title) {
+                  result.tracks[0].title = dlTrack.title;
+                }
+                return result;
               }
-              return result;
             }
           }
         }
@@ -180,14 +184,17 @@ module.exports = function loadPlayerManager(client) {
       try {
         const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
         const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
-        if (dlTrack?.streamUrl) {
-          const res = await node.rest.resolve(dlTrack.streamUrl).catch(() => null);
-          if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
-            const result = processSearchResult(res, options.requester);
-            if (result.tracks.length > 0) {
-              result.tracks[0].title = dlTrack.title || result.tracks[0].title;
-              result.tracks[0].author = result.tracks[0].author || (isSpotify ? 'Spotify' : 'SoundCloud');
-              return result;
+        if (dlTrack?.cdnUrl || dlTrack?.streamUrl) {
+          const urlsToTry = [dlTrack.cdnUrl, dlTrack.streamUrl].filter(Boolean);
+          for (const tryUrl of urlsToTry) {
+            const res = await node.rest.resolve(tryUrl).catch(() => null);
+            if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
+              const result = processSearchResult(res, options.requester);
+              if (result.tracks.length > 0) {
+                result.tracks[0].title = dlTrack.title || result.tracks[0].title;
+                result.tracks[0].author = result.tracks[0].author || (isSpotify ? 'Spotify' : 'SoundCloud');
+                return result;
+              }
             }
           }
         }
