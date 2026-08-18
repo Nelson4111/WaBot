@@ -86,14 +86,29 @@ async function extractMp3Url(videoInput) {
   if (idMatch) {
     id = idMatch[1];
   } else {
+    // 1. Coba Ryzumi Search API
     try {
-      const yts = require('yt-search');
-      const searchRes = await yts(videoInput);
-      if (searchRes?.videos?.length > 0) {
-        id = searchRes.videos[0].videoId;
-        queryTitle = searchRes.videos[0].title;
+      const ryz = await axios.get(`https://api.ryzumi.net/api/search/yt?query=${encodeURIComponent(videoInput)}`, {
+        headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        timeout: 5000
+      });
+      if (ryz.data?.videos?.length > 0) {
+        id = ryz.data.videos[0].id;
+        queryTitle = ryz.data.videos[0].title;
       }
     } catch (_) {}
+
+    // 2. Fallback ke yt-search lokal
+    if (!id) {
+      try {
+        const yts = require('yt-search');
+        const searchRes = await yts(videoInput);
+        if (searchRes?.videos?.length > 0) {
+          id = searchRes.videos[0].videoId;
+          queryTitle = searchRes.videos[0].title;
+        }
+      } catch (_) {}
+    }
   }
 
   if (!id) throw new Error('Invalid YouTube video ID or search query');
