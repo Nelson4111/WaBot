@@ -96,24 +96,33 @@ module.exports = {
 
         const searchSongs = async (q) => {
             let res = await player.search(q, { requester: author, engine: searchEngine });
-            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'ytsearch') {
-                res = await player.search(q, { requester: author, engine: 'ytsearch' });
+            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'scsearch') {
+                res = await player.search(q, { requester: author, engine: 'scsearch' });
+            }
+            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'ytmsearch') {
+                res = await player.search(q, { requester: author, engine: 'ytmsearch' });
             }
             return res?.tracks || [];
         };
 
         const searchArtists = async (q) => {
             let res = await player.search(q, { requester: author, engine: searchEngine });
-            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'ytsearch') {
-                res = await player.search(q, { requester: author, engine: 'ytsearch' });
+            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'scsearch') {
+                res = await player.search(q, { requester: author, engine: 'scsearch' });
+            }
+            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'ytmsearch') {
+                res = await player.search(q, { requester: author, engine: 'ytmsearch' });
             }
             return res?.tracks || [];
         };
 
         const loadArtistTracks = async (artistQuery) => {
             let res = await player.search(artistQuery, { requester: author, engine: searchEngine });
-            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'ytsearch') {
-                res = await player.search(artistQuery, { requester: author, engine: 'ytsearch' });
+            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'scsearch') {
+                res = await player.search(artistQuery, { requester: author, engine: 'scsearch' });
+            }
+            if ((!res || !res.tracks || res.tracks.length === 0) && searchEngine !== 'ytmsearch') {
+                res = await player.search(artistQuery, { requester: author, engine: 'ytmsearch' });
             }
             return res?.tracks || [];
         };

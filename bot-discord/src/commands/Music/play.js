@@ -236,6 +236,7 @@ module.exports = {
           const userPref = client.db.userpreferences.get(interaction.user.id);
           if (userPref?.musicSource) searchEngine = userPref.musicSource;
         } catch (error) { }
+        if (searchEngine === 'ytsearch') searchEngine = 'scsearch';
       }
 
       let searchResult;
@@ -841,6 +842,7 @@ module.exports = {
           const userPref = client.db.userpreferences.get(message.author.id);
           if (userPref && userPref.musicSource) searchEngine = userPref.musicSource;
         } catch (error) { }
+        if (searchEngine === 'ytsearch') searchEngine = 'scsearch';
 
         try {
           searchResult = await player.search(query, {
