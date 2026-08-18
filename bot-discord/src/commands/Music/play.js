@@ -182,12 +182,15 @@ module.exports = {
 
       if (!player) {
         try {
+          const { getBestNode } = require("../../utils/nodeUtils");
+          const bestNode = getBestNode(client.manager);
           player = await client.manager.createPlayer({
             guildId: interaction.guild.id,
             voiceId: channel.id,
             textId: interaction.channel.id,
             volume: 80,
             deaf: true,
+            node: bestNode?.name
           });
 
         } catch (createError) {

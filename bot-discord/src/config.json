@@ -32,12 +32,6 @@
       "url": "nelbo-lava.nelsonrandanan.workers.dev:443",
       "auth": "nelbotpassword123",
       "secure": true
-    },
-    {
-      "name": "NelBot-Backup",
-      "url": "lavalink.serenetia.com:443",
-      "auth": "youshallnotpass",
-      "secure": true
     }
   ],
   "node_options": {
