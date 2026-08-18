@@ -35,12 +35,12 @@ lavalink:
       lowPass: true
     bufferDurationMs: 400
     frameBufferDurationMs: 5000
-    opusEncodingQuality: 10
+    opusEncodingQuality: 8
     resamplingQuality: HIGH
     trackStuckThresholdMs: 10000
     useSeekGhosting: true
-    youtubePlaylistLoadLimit: 100
-    playerUpdateInterval: 3
+    youtubePlaylistLoadLimit: 6
+    playerUpdateInterval: 5
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
@@ -52,19 +52,26 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - TV
       - MUSIC
+      - TV
+      - WEB
       - ANDROID_VR
       - WEBEMBEDDED
       - MWEB
-      - WEB
+      - TVHTML5_SIMPLY
+      - ANDROID
     clientOptions:
+      MUSIC:
+        playback: false
+        videoLoading: false
+        searching: true
+        playlistLoading: true
       TV:
         playback: true
         videoLoading: true
         searching: false
         playlistLoading: false
-      MUSIC:
+      WEB:
         playback: true
         videoLoading: true
         searching: true
@@ -84,26 +91,34 @@ plugins:
         videoLoading: true
         searching: true
         playlistLoading: true
-      WEB:
+      TVHTML5_SIMPLY:
         playback: true
         videoLoading: true
-        searching: true
-        playlistLoading: true
+        searching: false
+        playlistLoading: false
+      ANDROID:
+        playback: true
+        videoLoading: true
+        searching: false
+        playlistLoading: false
     oauth:
       enabled: true
       refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
       skipInitialization: true
+    pot:
+      token: "${YOUTUBE_POT_TOKEN:}"
+      visitorData: "${YOUTUBE_VISITOR_DATA:}"
   lavasrc:
     providers:
+      - "dzisrc:%ISRC%"
       - "ytsearch:\"%ISRC%\""
       - "ytsearch:%QUERY%"
+      - "ymsearch:%QUERY%"
       - "scsearch:%QUERY%"
     sources:
       spotify: true
-      applemusic: false
-      deezer: false
-      yandexmusic: false
-      flowerytts: false
+      applemusic: true
+      deezer: true
       youtube: true
     spotify:
       clientId: "85aab1d51a174aad9eed6d7989f530e6"

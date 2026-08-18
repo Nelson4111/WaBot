@@ -4,6 +4,28 @@ const {
   MessageFlags
 } = require("discord.js");
 const { convertTime } = require("../../utils/convert.js");
+const { resolveWithFallback } = require("../../utils/resolveTrack.js");
+
+// Circuit Breaker: Jika suatu sumber gagal >= 5 kali dalam 10 menit, deprioritaskan / cooldown selama 30 menit
+const sourceFailures = new Map();
+
+function shouldSkipSource(source) {
+  const entry = sourceFailures.get(source);
+  if (!entry) return false;
+  const cooldownActive = Date.now() - entry.windowStart < 30 * 60 * 1000;
+  return entry.count >= 5 && cooldownActive;
+}
+
+function recordFailure(source) {
+  const now = Date.now();
+  const entry = sourceFailures.get(source);
+  if (!entry || (now - entry.windowStart > 10 * 60 * 1000)) {
+    sourceFailures.set(source, { count: 1, windowStart: now });
+  } else {
+    entry.count += 1;
+    sourceFailures.set(source, entry);
+  }
+}
 
 module.exports = {
   name: "playerException",
@@ -23,6 +45,7 @@ module.exports = {
       const msg = (reason.exception?.message || "").toLowerCase();
       const isRestricted =
         cause.includes("403") ||
+        cause.includes("404") ||
         cause.includes("not success status code") ||
         cause.includes("scriptextractionexception") ||
         cause.includes("allclientsfailedexception") ||
@@ -34,11 +57,18 @@ module.exports = {
         msg.includes("something went wrong") ||
         msg.includes("something broke");
 
+      // Catat kegagalan ke Circuit Breaker
+      if (currentTrack?.uri?.includes("soundcloud") || cause.includes("soundcloud")) {
+        recordFailure("soundcloud");
+      } else if (currentTrack?.uri?.includes("youtube") || cause.includes("youtube") || isRestricted) {
+        recordFailure("youtube");
+      }
+
       const trackPosition = reason.track?.info?.position || currentTrack?.position || 0;
 
       if (isRestricted || currentTrack) {
         if (currentTrack) {
-          // Bersihkan judul lagu dari noise YouTube agar pencarian alternatif akurat
+          // Bersihkan judul lagu dari noise agar pencarian alternatif akurat
           let cleanTitle = currentTrack.title
             .replace(/[\(\[\{].*?(official|video|audio|lirik|lyrics|remix|clip|mv|hd|4k|music|feat|ft).*?[\)\]\}]/gi, '')
             .replace(/\|\s*.*$/gi, '')
@@ -52,29 +82,19 @@ module.exports = {
 
           const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
 
-          // Deteksi sumber yang sedang bermasalah agar fallback mencari ke platform yang berbeda
+          // Gunakan smart multi-tier fallback resolver
           const isSoundCloudError = currentTrack.uri?.includes('soundcloud') || cause.includes('soundcloud') || msg.includes('soundcloud');
-          const primaryEngine = isSoundCloudError ? "ytmsearch" : "scsearch";
-          const secondaryEngine = isSoundCloudError ? "scsearch" : "ytmsearch";
-
-          let searchResult = await client.manager.search(searchQuery, {
-            engine: primaryEngine,
-            requester: currentTrack.requester,
-          });
-
-          if (!searchResult?.tracks?.length || searchResult.tracks[0]?.identifier === currentTrack.identifier) {
-            searchResult = await client.manager.search(searchQuery, {
-              engine: secondaryEngine,
-              requester: currentTrack.requester,
-            });
+          let preferredEngine = isSoundCloudError ? 'ytmsearch' : 'scsearch';
+          if (shouldSkipSource('soundcloud') && preferredEngine === 'scsearch') {
+            preferredEngine = 'ytmsearch';
           }
 
-          if (!searchResult?.tracks?.length && !isRestricted && !isSoundCloudError) {
-            searchResult = await client.manager.search(searchQuery, {
-              engine: "ytsearch",
-              requester: currentTrack.requester,
-            });
-          }
+          const searchResult = await resolveWithFallback(
+            client.manager,
+            searchQuery,
+            currentTrack.requester,
+            preferredEngine
+          );
 
           // Filter agar tidak memilih kembali track yang baru saja gagal/error
           const validTrack = searchResult?.tracks?.find(
@@ -87,10 +107,14 @@ module.exports = {
             }
 
             if (channel) {
-              const sourceLabel = validTrack.uri?.includes('soundcloud') ? 'SoundCloud' : 'Sumber Alternatif';
+              const sourceLabel = validTrack.uri?.includes('soundcloud')
+                ? 'SoundCloud'
+                : validTrack.uri?.includes('spotify')
+                ? 'Spotify'
+                : 'YouTube Music';
               const posText = trackPosition > 3000 ? ` dan melanjutkan dari menit **${convertTime(trackPosition)}**` : '';
               const fallbackDisplay = new TextDisplayBuilder()
-                .setContent(`**${client.emoji.warn || "⚠️"} Stream dibatasi → dialihkan otomatis ke ${sourceLabel}${posText}!**`);
+                .setContent(`**${client.emoji.warn || "⚠️"} Stream gagal/dibatasi → dialihkan otomatis ke ${sourceLabel}${posText}!**`);
 
               const container = new ContainerBuilder()
                 .addTextDisplayComponents(fallbackDisplay);

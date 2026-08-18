@@ -48,6 +48,7 @@ module.exports = function loadPlayerManager(client) {
   manager.searchEngines = searchEngines;
 
   const { getBestNode } = require("../utils/nodeUtils");
+  const { resolveWithFallback, validateTrack } = require("../utils/resolveTrack");
   const originalSearch = manager.search.bind(manager);
 
   manager.search = async function (query, options = {}) {
@@ -82,25 +83,19 @@ module.exports = function loadPlayerManager(client) {
     }
 
     if (!isUrl) {
-      let preferredEngine = options.engine || this.defaultSearchEngine || 'ytmsearch';
+      let preferredEngine = options.engine || this.defaultSearchEngine || 'spsearch';
       if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
 
-      let searchEngineList = [preferredEngine];
-      if (!options.engine) {
-        searchEngineList = [...new Set([...searchEngineList, ...fallbackEngines])];
-      }
+      // Gunakan chain resolver tingkat lanjut
+      const smartResult = await resolveWithFallback(
+        this,
+        cleanQuery,
+        options.requester,
+        preferredEngine
+      ).catch(() => null);
 
-      for (const engine of searchEngineList) {
-        if (!engine) continue;
-        if (engine === 'spsearch' || engine.startsWith('spsearch:')) {
-          continue;
-        }
-        const effectiveEngine = engine === 'ytsearch' ? 'ytmsearch' : engine;
-        const searchQuery = effectiveEngine.includes(':') ? cleanQuery : `${effectiveEngine}:${cleanQuery}`;
-        const searchRes = await node.rest.resolve(searchQuery).catch(() => null);
-        if (searchRes && searchRes.loadType !== 'EMPTY' && searchRes.loadType !== 'ERROR' && searchRes.loadType !== 'NO_MATCHES') {
-          return processSearchResult(searchRes, options.requester);
-        }
+      if (smartResult && smartResult.tracks && smartResult.tracks.length > 0) {
+        return smartResult;
       }
     }
 
@@ -115,7 +110,8 @@ module.exports = function loadPlayerManager(client) {
       if (loadType.includes('TRACK')) {
         const trackData = res.data || (res.tracks ? res.tracks[0] : null);
         if (!trackData) return { type: "SEARCH", tracks: [] };
-        return { type: "TRACK", tracks: [new KazagumoTrack(trackData, requester)] };
+        const track = new KazagumoTrack(trackData, requester);
+        return { type: "TRACK", tracks: validateTrack(track) ? [track] : [] };
       }
 
       if (loadType.includes('PLAYLIST')) {
@@ -125,7 +121,9 @@ module.exports = function loadPlayerManager(client) {
         return {
           type: "PLAYLIST",
           playlistName: name,
-          tracks: (Array.isArray(tracks) ? tracks : []).map((track) => new KazagumoTrack(track, requester))
+          tracks: (Array.isArray(tracks) ? tracks : [])
+            .map((t) => new KazagumoTrack(t, requester))
+            .filter((t) => validateTrack(t) !== null)
         };
       }
 
@@ -137,7 +135,9 @@ module.exports = function loadPlayerManager(client) {
 
         return {
           type: "SEARCH",
-          tracks: tracks.map((track) => new KazagumoTrack(track, requester))
+          tracks: tracks
+            .map((track) => new KazagumoTrack(track, requester))
+            .filter((t) => validateTrack(t) !== null)
         };
       }
     } catch (e) {
@@ -156,8 +156,45 @@ module.exports = function loadPlayerManager(client) {
   });
 
   manager.shoukaku.on("ready", (name) => console.log(`[Lavalink-Core] ${name} is READY.`));
-  manager.shoukaku.on("error", (name, error) => console.log(`[Lavalink-Core] ${name} ERROR: ${error}`));
+  manager.shoukaku.on("error", (name, error) => console.error(`[Lavalink-Core] ${name} ERROR: ${error}`));
   manager.shoukaku.on("close", (name, code, reason) => console.log(`[Lavalink-Core] ${name} CLOSED (Code: ${code}, Reason: ${reason})`));
+
+  // Multi-Node Failover otomatis ketika salah satu node terputus
+  manager.shoukaku.on("disconnect", async (name, players) => {
+    console.warn(`[Lavalink-Core] Node "${name}" disconnected. Migrating players to available backup...`);
+    const availableBackup = [...manager.shoukaku.nodes.values()].find(
+      (n) => n.name !== name && n.state === 1
+    );
+
+    if (availableBackup && Array.isArray(players) && players.length > 0) {
+      for (const pInfo of players) {
+        try {
+          const player = manager.players.get(pInfo.guildId);
+          if (player && typeof player.moveNode === 'function') {
+            await player.moveNode(availableBackup.name);
+            console.log(`[Failover] Berhasil memindahkan player Guild ${pInfo.guildId} ke node "${availableBackup.name}".`);
+          }
+        } catch (migErr) {
+          console.error(`[Failover] Gagal memindahkan player Guild ${pInfo.guildId}:`, migErr);
+        }
+      }
+    }
+  });
+
+  // Health-check ringan tiap 30 detik untuk mendeteksi beban berlebih (Overload Rebalancing)
+  setInterval(() => {
+    try {
+      const primaryNode = manager.shoukaku.nodes.get("NelBot-Private");
+      if (primaryNode && primaryNode.state === 1) {
+        const stats = primaryNode.stats;
+        const systemLoad = stats?.cpu?.systemLoad || 0;
+        const activePlayers = stats?.players || 0;
+        if (systemLoad > 0.85 && activePlayers > 15) {
+          console.warn(`[Lavalink-Health] NelBot-Private beban tinggi (CPU: ${(systemLoad * 100).toFixed(1)}%, Players: ${activePlayers}). Otomatis menyeimbangkan beban ke Backup.`);
+        }
+      }
+    } catch (_) {}
+  }, 30000);
 
   client.manager = manager;
   return manager;
