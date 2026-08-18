@@ -26,24 +26,24 @@ module.exports = function loadPlayerManager(client) {
     const node = (player && player.node) || (await this.kazagumo.getLeastUsedNode());
     if (!node) throw new Error('No nodes available');
 
-    // 1. Prioritaskan SoundCloud (100% bebas dari YouTube cipher block)
-    let res = await node.rest.resolve(`scsearch:${query}`).catch(() => null);
+    // 1. YouTube Music (Official Topic Audio - bebas 404 & bebas cipher block)
+    let res = await node.rest.resolve(`ytmsearch:${query}`).catch(() => null);
     if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
       const tracks = res.data?.tracks || res.data || [];
       if (Array.isArray(tracks) && tracks.length > 0) return tracks[0];
       if (res.data && !Array.isArray(res.data)) return res.data;
     }
 
-    // 2. Coba YouTube Music (Client MUSIC)
-    res = await node.rest.resolve(`ytmsearch:${query}`).catch(() => null);
-    if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
-      const tracks = res.data?.tracks || res.data || [];
-      if (Array.isArray(tracks) && tracks.length > 0) return tracks[0];
-      if (res.data && !Array.isArray(res.data)) return res.data;
-    }
-
-    // 3. Fallback Spotify search via LavaSrc
+    // 2. Spotify via LavaSrc
     res = await node.rest.resolve(`spsearch:${query}`).catch(() => null);
+    if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
+      const tracks = res.data?.tracks || res.data || [];
+      if (Array.isArray(tracks) && tracks.length > 0) return tracks[0];
+      if (res.data && !Array.isArray(res.data)) return res.data;
+    }
+
+    // 3. SoundCloud (Indie/Cover fallback)
+    res = await node.rest.resolve(`scsearch:${query}`).catch(() => null);
     if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
       const tracks = res.data?.tracks || res.data || [];
       if (Array.isArray(tracks) && tracks.length > 0) return tracks[0];
