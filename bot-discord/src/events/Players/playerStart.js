@@ -390,7 +390,7 @@ async function handleButtonInteraction(interaction, player, client) {
           const lyricsCommand = require("../../commands/Music/lyrics");
           let lyricsResult = null;
           if (lyricsCommand.fetchSongLyrics) {
-            lyricsResult = await lyricsCommand.fetchSongLyrics(currentTrack.title, currentTrack.author);
+            lyricsResult = await lyricsCommand.fetchSongLyrics(currentTrack.title, currentTrack.author, currentTrack.length || currentTrack.duration);
           }
           if (!lyricsResult || !lyricsResult.lyrics) {
             const display = new TextDisplayBuilder()

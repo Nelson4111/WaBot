@@ -75,7 +75,24 @@ class LyricsManager {
         ];
     }
 
-    async fetchFromLRCLib(queryTitle, queryArtist) {
+    async fetchFromLRCLib(queryTitle, queryArtist, durationSeconds = null) {
+        // 0. Coba direct get jika durationSeconds ada
+        if (queryTitle && queryArtist && durationSeconds) {
+            try {
+                const response = await axios.get(
+                    `https://lrclib.net/api/get?track_name=${encodeURIComponent(queryTitle)}&artist_name=${encodeURIComponent(queryArtist)}&duration=${Math.round(durationSeconds)}`,
+                    { timeout: 3500 }
+                );
+                if (response.data && (response.data.syncedLyrics || response.data.plainLyrics)) {
+                    return {
+                        lyrics: response.data.plainLyrics || response.data.syncedLyrics,
+                        source: "LRClib",
+                        synced: response.data.syncedLyrics || null,
+                    };
+                }
+            } catch (_) {}
+        }
+
         // 1. Coba pencarian spesifik track_name & artist_name
         if (queryTitle && queryArtist) {
             try {
@@ -84,8 +101,12 @@ class LyricsManager {
                     { timeout: 4000 }
                 );
                 if (response.data && response.data.length > 0) {
-                    const result = response.data[0];
-                    if (result.plainLyrics || result.syncedLyrics) {
+                    let candidates = response.data.filter(r => r.syncedLyrics || r.plainLyrics);
+                    if (durationSeconds && candidates.length > 1) {
+                        candidates.sort((a, b) => Math.abs((a.duration || 0) - durationSeconds) - Math.abs((b.duration || 0) - durationSeconds));
+                    }
+                    const result = candidates[0];
+                    if (result) {
                         return {
                             lyrics: result.plainLyrics || result.syncedLyrics,
                             source: "LRClib",
@@ -104,8 +125,12 @@ class LyricsManager {
                 { timeout: 4000 }
             );
             if (response.data && response.data.length > 0) {
-                const result = response.data[0];
-                if (result.plainLyrics || result.syncedLyrics) {
+                let candidates = response.data.filter(r => r.syncedLyrics || r.plainLyrics);
+                if (durationSeconds && candidates.length > 1) {
+                    candidates.sort((a, b) => Math.abs((a.duration || 0) - durationSeconds) - Math.abs((b.duration || 0) - durationSeconds));
+                }
+                const result = candidates[0];
+                if (result) {
                     return {
                         lyrics: result.plainLyrics || result.syncedLyrics,
                         source: "LRClib",
@@ -142,8 +167,9 @@ class LyricsManager {
         return null;
     }
 
-    async fetchLyrics(rawTitle, rawArtist) {
+    async fetchLyrics(rawTitle, rawArtist, duration = null) {
         const info = cleanTrackInfo(rawTitle, rawArtist);
+        const durationSeconds = duration ? (duration > 1000 ? Math.round(duration / 1000) : Math.round(duration)) : null;
 
         const queries = [];
         const clean = info.cleanTitle;
@@ -169,10 +195,10 @@ class LyricsManager {
 
         const uniqueQueries = [...new Set(queries.map(q => q.trim()).filter(Boolean))];
 
-        // 1. Prioritaskan LRCLib untuk SEMUA query (cepat & ada Live Sync)
+        // 1. Prioritaskan LRCLib untuk SEMUA query (cepat, tepat durasi, & ada Live Sync)
         for (const q of uniqueQueries) {
             try {
-                const res = await this.fetchFromLRCLib(q, '');
+                const res = await this.fetchFromLRCLib(q, '', durationSeconds);
                 if (res && res.lyrics) return res;
             } catch (_) {}
         }
@@ -235,8 +261,8 @@ function paginateLyrics(lyrics, linesPerPage = 15) {
 
 function getCurrentLineIndex(syncedLines, position) {
     if (!syncedLines || syncedLines.length === 0) return 0;
-    // Kompensasi antisipasi maju (+2200ms) agar lirik tampil lebih awal dan pas dengan tempo vokal
-    const targetPosition = position + 2200;
+    // Kompensasi delay alami Discord/WebSocket (~400ms) agar pas dengan saat vokal bernyanyi
+    const targetPosition = position + 400;
     for (let i = syncedLines.length - 1; i >= 0; i--) {
         if (targetPosition >= syncedLines[i].time) {
             return i;
@@ -323,7 +349,7 @@ module.exports = {
         });
 
         const lyricsManager = new LyricsManager();
-        const result = await lyricsManager.fetchLyrics(track.title, track.author);
+        const result = await lyricsManager.fetchLyrics(track.title, track.author, track.length || track.duration);
 
         if (!result || !result.lyrics) {
             const notFoundDisplay = new TextDisplayBuilder()
@@ -730,8 +756,8 @@ async function showLiveSyncLyrics(client, message, track, syncedLines, player, s
 }
 
 const defaultLyricsManager = new LyricsManager();
-async function fetchSongLyrics(rawTitle, rawArtist) {
-    return await defaultLyricsManager.fetchLyrics(rawTitle, rawArtist);
+async function fetchSongLyrics(rawTitle, rawArtist, duration = null) {
+    return await defaultLyricsManager.fetchLyrics(rawTitle, rawArtist, duration);
 }
 
 module.exports.fetchSongLyrics = fetchSongLyrics;
