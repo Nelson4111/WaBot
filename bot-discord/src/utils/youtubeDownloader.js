@@ -138,6 +138,8 @@ async function getDownloadedAudioTrack(videoUrl) {
       responseType: 'stream',
       headers: {
         'User-Agent': headers['User-Agent'],
+        'Origin': headers['Origin'],
+        'Referer': headers['Referer'],
         'Accept': '*/*'
       },
       timeout: 20000
