@@ -89,6 +89,14 @@ module.exports = function loadPlayerManager(client) {
 
   manager.search = async function (query, options = {}) {
     if (options.skipChain) {
+      const prefixRegex = /^(?:(ytmsearch|spsearch|scsearch|dzsearch|ytsearch|amsearch|jssearch|gnsearch):)+/i;
+      if (prefixRegex.test(query)) {
+        const matches = query.match(/([a-zA-Z_]+):/g);
+        const lastPrefix = matches ? matches[matches.length - 1] : '';
+        const cleanBody = query.replace(prefixRegex, '');
+        query = `${lastPrefix}${cleanBody}`;
+        options.source = "";
+      }
       return originalSearch(query, options);
     }
     const node = getBestNode(this) || [...this.shoukaku.nodes.values()][0];

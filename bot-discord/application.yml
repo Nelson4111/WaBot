@@ -58,7 +58,6 @@ plugins:
       - WEBEMBEDDED
       - MWEB
       - TVHTML5_SIMPLY
-      - ANDROID
     clientOptions:
       MUSIC:
         playback: true
@@ -91,11 +90,6 @@ plugins:
         searching: true
         playlistLoading: true
       TVHTML5_SIMPLY:
-        playback: true
-        videoLoading: true
-        searching: false
-        playlistLoading: false
-      ANDROID:
         playback: true
         videoLoading: true
         searching: false

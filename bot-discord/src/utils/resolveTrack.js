@@ -77,10 +77,11 @@ async function resolveWithFallback(manager, query, requester, preferredEngine = 
   // 3. Iterasi resolver chain dengan validasi pre-emptive
   for (const { prefix, label } of chain) {
     try {
-      const searchQuery = cleanQuery.startsWith(prefix) ? cleanQuery : `${prefix}${cleanQuery}`;
+      const strippedQuery = cleanQuery.replace(/^(?:ytmsearch|spsearch|scsearch|dzsearch|ytsearch|amsearch|jssearch|gnsearch):/i, '').trim();
+      const searchQuery = `${prefix}${strippedQuery}`;
       const result = await searchFn(searchQuery, {
         requester,
-        engine: prefix.replace(':', ''),
+        source: "",
         skipChain: true
       }).catch(() => null);
 
