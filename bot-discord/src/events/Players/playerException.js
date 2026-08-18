@@ -53,13 +53,20 @@ module.exports = {
           const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
 
           let searchResult = await client.manager.search(searchQuery, {
-            engine: "scsearch",
+            engine: "ytsearch",
             requester: currentTrack.requester,
           });
 
           if (!searchResult?.tracks?.length) {
             searchResult = await client.manager.search(searchQuery, {
               engine: "ytmsearch",
+              requester: currentTrack.requester,
+            });
+          }
+
+          if (!searchResult?.tracks?.length) {
+            searchResult = await client.manager.search(searchQuery, {
+              engine: "scsearch",
               requester: currentTrack.requester,
             });
           }
