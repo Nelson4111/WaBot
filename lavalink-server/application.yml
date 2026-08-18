@@ -51,12 +51,15 @@ plugins:
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
+    oauth:
+      enabled: true
     clients:
       - TVHTML5EMBEDDED
       - ANDROID_MUSIC
       - MUSIC
       - ANDROID
       - IOS
+      - WEB
   lavasrc:
     providers:
       - "ytsearch:\"%ISRC%\""
