@@ -135,8 +135,8 @@ module.exports = function loadPlayerManager(client) {
     const isSpotify = cleanQuery.includes('spotify.com/track/');
     const isSoundCloud = cleanQuery.includes('soundcloud.com/');
 
-    // 1. URL Spotify & SoundCloud -> Direct Downloader Engine (HQ MP3 CDN, Kebal Blokir 100%)
-    if (isUrl && (isSpotify || isSoundCloud)) {
+    // 1. URL YouTube, Spotify & SoundCloud -> Direct Downloader Engine (HQ MP3 CDN, Kebal Blokir 100%)
+    if (isUrl && (isYouTube || isSpotify || isSoundCloud)) {
       try {
         const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
         const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
@@ -146,15 +146,16 @@ module.exports = function loadPlayerManager(client) {
           if (trackData && (res?.loadType?.toUpperCase()?.includes('TRACK') || trackData.encoded)) {
             trackData.info = trackData.info || {};
             trackData.info.title = dlTrack.title || trackData.info.title;
-            trackData.info.author = isSpotify ? 'Spotify' : 'SoundCloud';
             const track = new KazagumoTrack(trackData, options.requester);
+            track.title = dlTrack.title || track.title;
+            track.author = isSpotify ? 'Spotify' : (isSoundCloud ? 'SoundCloud' : 'YouTube');
             return { type: 'TRACK', tracks: [track] };
           }
         }
       } catch (_) {}
     }
 
-    // 2. URL YouTube -> Ekstrak Judul via oEmbed/Search lalu putar via YouTube Music (Topic)
+    // 2. URL YouTube Fallback jika downloader gagal -> Ekstrak Judul via oEmbed
     if (isUrl && isYouTube) {
       let youtubeSearchTitle = null;
       try {
@@ -176,18 +177,6 @@ module.exports = function loadPlayerManager(client) {
         ).catch(() => null);
         if (smartResult && smartResult.tracks && smartResult.tracks.length > 0) {
           return smartResult;
-        }
-      }
-
-      const strategies = videoId
-        ? [`ytmsearch:${videoId}`, `scsearch:${videoId}`]
-        : [`ytmsearch:${cleanQuery}`, `scsearch:${cleanQuery}`];
-
-      for (const q of strategies) {
-        const res = await node.rest.resolve(q).catch(() => null);
-        if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
-          const result = processSearchResult(res, options.requester);
-          if (result.tracks.length > 0) return result;
         }
       }
     }

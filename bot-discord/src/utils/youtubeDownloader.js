@@ -127,6 +127,16 @@ async function extractMp3Url(videoInput) {
   const idMatch = videoInput.match(/(?:youtu\.be\/|v=|\/v\/|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
   if (idMatch) {
     id = idMatch[1];
+    // Ekstrak judul video YouTube via oEmbed agar bisa dicari di SoundCloud
+    try {
+      const oembedRes = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`, { timeout: 3000 });
+      if (oembedRes.data?.title) {
+        queryTitle = `${oembedRes.data.title} ${oembedRes.data.author_name || ''}`
+          .replace(/[\(\[\{].*?(official|video|audio|mv|hd|4k|music|lirik|lyrics).*?[\)\]\}]/gi, '')
+          .replace(/-\s*topic$/gi, '')
+          .trim();
+      }
+    } catch (_) {}
   } else {
     // 1. Coba Ryzumi Search API
     try {
@@ -153,64 +163,105 @@ async function extractMp3Url(videoInput) {
     }
   }
 
-  if (!id) throw new Error('Invalid YouTube video ID or search query');
-  const videoUrl = `https://www.youtube.com/watch?v=${id}`;
+  if (!id && !queryTitle) throw new Error('Invalid YouTube video ID or search query');
+  const videoUrl = id ? `https://www.youtube.com/watch?v=${id}` : '';
+  const searchTitle = (queryTitle || videoInput).trim();
 
-  // 1. Coba Ryzumi ytmp3 Downloader API (v1 & v2)
+  // 1. Prioritas Utama: Cari di SoundCloud & Download via Ryzumi SoundCloud (HQ MP3 CDN, Bebas Blokir Lavalink 100%)
   try {
-    const ryzRes = await axios.get(`https://api.ryzumi.net/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`, {
-      headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-      timeout: 8000
+    const cheerio = require('cheerio');
+    const scSearchRes = await axios.get(`https://m.soundcloud.com/search?q=${encodeURIComponent(searchTitle)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' },
+      timeout: 6000
     });
-    if (ryzRes.data?.url) {
-      return {
-        url: ryzRes.data.url,
-        title: ryzRes.data.title || queryTitle || 'YouTube Audio',
-        videoId: id
-      };
-    }
-  } catch (_) {}
+    const $ = cheerio.load(scSearchRes.data);
+    let trackPath = null;
+    $('a').each((_, elem) => {
+      const href = $(elem).attr('href');
+      if (href && href.startsWith('/') && href.split('/').length === 3 &&
+          !href.includes('/terms') && !href.includes('/mobile') && !href.includes('/search') &&
+          !href.includes('/pages') && !href.includes('/creators') && !trackPath) {
+        trackPath = href;
+      }
+    });
 
-  // 2. Coba cnv.cx API dengan arsitektur ytv.js
-  try {
-    const cnvHeaders = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
-      'Origin': 'https://frame.y2meta-uk.com',
-      'Accept': '*/*'
-    };
-    const keyRes = await axios.get(`https://cnv.cx/v2/sanity/key?id=${id}`, { headers: cnvHeaders, timeout: 8000 });
-    const key = keyRes.data?.key;
-    if (key) {
-      const convRes = await axios.post('https://cnv.cx/v2/converter',
-        new URLSearchParams({
-          link: `https://www.youtube.com/watch?v=${id}`,
-          format: 'mp3',
-          audioBitrate: '128',
-          videoQuality: '720',
-          filenameStyle: 'pretty',
-          vCodec: 'h264'
-        }),
-        { headers: { ...cnvHeaders, key }, timeout: 10000 }
-      );
-
-      const job = convRes.data;
-      if (job?.status === 'tunnel' && job.url) {
-        return { url: job.url, title: job.filename || queryTitle, videoId: id };
+    if (trackPath) {
+      const fullScUrl = `https://soundcloud.com${trackPath}`;
+      const scDlRes = await axios.get(`https://api.ryzumi.net/api/downloader/soundcloud?url=${encodeURIComponent(fullScUrl)}`, {
+        headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        timeout: 8000
+      });
+      if (scDlRes.data?.download_url) {
+        return {
+          url: scDlRes.data.download_url,
+          title: scDlRes.data.title || searchTitle,
+          videoId: id || 'sc_' + Buffer.from(searchTitle).toString('hex').slice(0, 10)
+        };
       }
     }
   } catch (_) {}
 
-  // 2. Coba Deline API
-  try {
-    const fallbackRes = await axios.get(`https://api.deline.web.id/downloader/ytplay?q=${encodeURIComponent(videoUrl)}`, { timeout: 8000 });
-    if (fallbackRes.data?.status && fallbackRes.data?.result?.dlink) {
-      return {
-        url: fallbackRes.data.result.dlink,
-        title: fallbackRes.data.result.title || queryTitle || 'YouTube Audio',
-        videoId: id
+  // 2. Coba Ryzumi ytmp3 Downloader API (v1 & v2)
+  if (videoUrl) {
+    try {
+      const ryzRes = await axios.get(`https://api.ryzumi.net/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`, {
+        headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        timeout: 8000
+      });
+      if (ryzRes.data?.url) {
+        return {
+          url: ryzRes.data.url,
+          title: ryzRes.data.title || searchTitle || 'YouTube Audio',
+          videoId: id
+        };
+      }
+    } catch (_) {}
+  }
+
+  // 3. Coba cnv.cx API dengan arsitektur ytv.js
+  if (id) {
+    try {
+      const cnvHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
+        'Origin': 'https://frame.y2meta-uk.com',
+        'Accept': '*/*'
       };
-    }
-  } catch (_) {}
+      const keyRes = await axios.get(`https://cnv.cx/v2/sanity/key?id=${id}`, { headers: cnvHeaders, timeout: 8000 });
+      const key = keyRes.data?.key;
+      if (key) {
+        const convRes = await axios.post('https://cnv.cx/v2/converter',
+          new URLSearchParams({
+            link: `https://www.youtube.com/watch?v=${id}`,
+            format: 'mp3',
+            audioBitrate: '128',
+            videoQuality: '720',
+            filenameStyle: 'pretty',
+            vCodec: 'h264'
+          }),
+          { headers: { ...cnvHeaders, key }, timeout: 10000 }
+        );
+
+        const job = convRes.data;
+        if (job?.status === 'tunnel' && job.url) {
+          return { url: job.url, title: job.filename || searchTitle, videoId: id };
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 4. Coba Deline API
+  if (videoUrl) {
+    try {
+      const fallbackRes = await axios.get(`https://api.deline.web.id/downloader/ytplay?q=${encodeURIComponent(videoUrl)}`, { timeout: 8000 });
+      if (fallbackRes.data?.status && fallbackRes.data?.result?.dlink) {
+        return {
+          url: fallbackRes.data.result.dlink,
+          title: fallbackRes.data.result.title || searchTitle || 'YouTube Audio',
+          videoId: id
+        };
+      }
+    } catch (_) {}
+  }
 
   throw new Error('All MP3 extraction converters failed');
 }
