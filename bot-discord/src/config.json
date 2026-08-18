@@ -28,22 +28,10 @@
   },
   "nodes": [
     {
-      "name": "NelBot-Private-Internal",
-      "url": "172.18.0.1:5004",
+      "name": "NelBot-Private",
+      "url": "nelbo-lava.nelsonrandanan.workers.dev:443",
       "auth": "nelbotpassword123",
-      "secure": false
-    },
-    {
-      "name": "NelBot-Private-Bridge",
-      "url": "172.17.0.1:5004",
-      "auth": "nelbotpassword123",
-      "secure": false
-    },
-    {
-      "name": "NelBot-Private-Public",
-      "url": "n.allen-panel.pterokudesu.web.id:5004",
-      "auth": "nelbotpassword123",
-      "secure": false
+      "secure": true
     },
     {
       "name": "NelBot-Backup",
