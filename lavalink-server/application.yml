@@ -62,8 +62,8 @@ plugins:
       - ANDROID
     clientOptions:
       MUSIC:
-        playback: false
-        videoLoading: false
+        playback: true
+        videoLoading: true
         searching: true
         playlistLoading: true
       TV:
@@ -102,7 +102,7 @@ plugins:
         searching: false
         playlistLoading: false
     oauth:
-      enabled: true
+      enabled: false
       refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
       skipInitialization: true
     pot:
