@@ -100,13 +100,6 @@ module.exports = {
                 if (dlTrack) {
                   dlTrack.title = dl.title || currentTrack.title;
                   dlTrack.author = currentTrack.author || 'Unknown';
-                  if (channel) {
-                    const sourceEmoji = uri.includes('spotify') ? '🟢' : uri.includes('soundcloud') ? '🔶' : '🎬';
-                    const dlDisplay = new TextDisplayBuilder()
-                      .setContent(`**${client.emoji.warn || "⚠️"} ${sourceEmoji} Stream error/diblokir → dialihkan otomatis via Downloader Engine!**`);
-                    const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
-                    channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
-                  }
                   player.queue.unshift(dlTrack);
                   player.skip();
                   return;

@@ -135,25 +135,24 @@ module.exports = function loadPlayerManager(client) {
     const isSpotify = cleanQuery.includes('spotify.com/track/');
     const isSoundCloud = cleanQuery.includes('soundcloud.com/');
 
-    // 1. URL YouTube, Spotify & SoundCloud -> Direct Downloader Engine (HQ MP3 CDN, Kebal Blokir 100%)
-    if (isUrl && (isYouTube || isSpotify || isSoundCloud)) {
-      try {
-        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
-        const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
-        if (dlTrack?.cdnUrl) {
-          const res = await node.rest.resolve(dlTrack.cdnUrl).catch(() => null);
-          const trackData = res?.data || (res?.tracks ? res.tracks[0] : null);
-          if (trackData && (res?.loadType?.toUpperCase()?.includes('TRACK') || trackData.encoded)) {
-            trackData.info = trackData.info || {};
-            trackData.info.title = dlTrack.title || trackData.info.title;
-            const track = new KazagumoTrack(trackData, options.requester);
-            track.title = dlTrack.title || track.title;
-            track.author = isSpotify ? 'Spotify' : (isSoundCloud ? 'SoundCloud' : 'YouTube');
-            return { type: 'TRACK', tracks: [track] };
-          }
+    // 1. Prioritas Utama untuk SEMUA query (URL YouTube/Spotify/SoundCloud maupun teks lagu):
+    // Langsung ambil direct HQ MP3 CDN stream via Downloader Engine agar 100% bebas dari blokir IP YouTube/Lavalink
+    try {
+      const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
+      const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
+      if (dlTrack?.cdnUrl) {
+        const res = await node.rest.resolve(dlTrack.cdnUrl).catch(() => null);
+        const trackData = res?.data || (res?.tracks ? res.tracks[0] : null);
+        if (trackData && (res?.loadType?.toUpperCase()?.includes('TRACK') || trackData.encoded)) {
+          trackData.info = trackData.info || {};
+          trackData.info.title = dlTrack.title || trackData.info.title;
+          const track = new KazagumoTrack(trackData, options.requester);
+          track.title = dlTrack.title || track.title;
+          track.author = isSpotify ? 'Spotify' : (isSoundCloud ? 'SoundCloud' : 'Audio Stream');
+          return { type: 'TRACK', tracks: [track] };
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
 
     // 2. URL YouTube Fallback jika downloader gagal -> Ekstrak Judul via oEmbed
     if (isUrl && isYouTube) {
@@ -181,7 +180,7 @@ module.exports = function loadPlayerManager(client) {
       }
     }
 
-    // 3. Search query teks biasa -> Gunakan smart resolver dengan ytmsearch sebagai engine utama
+    // 3. Search query teks biasa fallback
     if (!isUrl) {
       let preferredEngine = options.engine || this.defaultSearchEngine || 'ytmsearch';
       if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
