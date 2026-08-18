@@ -52,7 +52,11 @@ let handler = async (m, { conn, args }) => {
   if(!h1 ||!h2) return m.reply('Contoh:\n.kawin ayam sapi\n.kawin ayam naga asuransi')
 
   // CEK STOK DULU PAKE KEY LOWERCASE
-  if(!user.ternak[h1] ||!user.ternak[h2]) return m.reply(`❌ Kamu tidak punya 1 dari hewan tersebut\nPunya: ${Object.keys(user.ternak).join(', ')}`)
+  if (h1 === h2) {
+    if ((user.ternak[h1] || 0) < 2) return m.reply(`❌ Kamu butuh minimal 2 ekor ${h1} untuk dikawinkan!\nStok kamu: ${user.ternak[h1] || 0}`)
+  } else {
+    if (!user.ternak[h1] || !user.ternak[h2]) return m.reply(`❌ Kamu tidak punya salah satu dari hewan tersebut\nPunya: ${Object.keys(user.ternak).join(', ')}`)
+  }
 
   let d1 = getHewan(h1)
   let d2 = getHewan(h2)

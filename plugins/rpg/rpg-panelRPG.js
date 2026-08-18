@@ -567,16 +567,9 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   if(aksi === 'heal'){
     let butuhHP = user.maxDarah - user.darah
     if(butuhHP <= 0) return m.reply(`❤️ Darah sudah penuh!`, null, {mentions: [who]})
-    let biaya = butuhHP * 1000
-    let tier = BANK_TIERS[user.bankTier || 0]
-    let asuransi = tier.asuransi || 0
-    let biayaBayar = Math.floor(biaya * (1 - asuransi))
-    if (wdb.money[who] >= biayaBayar) { wdb.money[who] -= biayaBayar }
-    else if (user.bank >= biayaBayar &&!user.kartuBeku) { user.bank -= biayaBayar }
-    else { return m.reply(`❌ Uang tidak cukup! Butuh Rp ${biayaBayar.toLocaleString()}`, null, {mentions: [who]}) }
     user.darah = user.maxDarah
     saveDB(wdb)
-    return m.reply(`*───「 HEAL SUCCESS 」───*\n\n@${who.split('@')[0]}\n🏥 HP: ${user.darah}/${user.maxDarah}\n💸 Bayar: Rp ${biayaBayar.toLocaleString()}`, null, {mentions: [who]})
+    return m.reply(`*───「 HEAL SUCCESS 」───*\n\n@${who.split('@')[0]}\n🏥 HP: ${user.darah}/${user.maxDarah}`, null, {mentions: [who]})
   }
 
   // 7. RESET
@@ -591,7 +584,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     user.kartuBeku = user.kartuBeku || false
 
     if(aksi === 'setbank'){
-      let val = parseInt(args[1])
+      let val = parseInt(args[0])
       if(isNaN(val)) return m.reply(`Contoh: *${usedPrefix}rpgpanel setbank @tag 100000000*`)
       user.bank = Math.max(0, val)
       saveDB(wdb)
@@ -599,7 +592,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'setbanktier'){
-      let tier = parseInt(args[1])
+      let tier = parseInt(args[0])
       if(isNaN(tier) || tier < 0 || tier > 14) return m.reply(`Contoh: *${usedPrefix}rpgpanel setbanktier @tag 14*\nList: 0-14`)
       user.bankTier = tier
       saveDB(wdb)
@@ -623,9 +616,9 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 // 9. RSHIP HAREM
   if(['addharem','delharem','setharem','editharem'].includes(aksi)){
     user.harem = user.harem || []
-    let no = parseInt(args[1]) - 1 // nomor pasangan
-    let nama = args[2]
-    let gender = args[3]?.toLowerCase()
+    let no = parseInt(args[0]) - 1 // nomor pasangan
+    let nama = args[0]
+    let gender = args[1]?.toLowerCase()
 
     if(aksi === 'addharem'){
       if(!nama ||!gender) return m.reply(`Contoh: *${usedPrefix}rpgpanel addharem @tag Rem cewek*`)
@@ -635,37 +628,45 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'delharem'){
-      if(isNaN(no) ||!user.harem[no]) return m.reply(`❌ Nomor salah. Cek pake.rship harem`)
-      let nama = user.harem[no].name
+      if(isNaN(no) ||!user.harem[no]) return m.reply(`❌ Nomor salah. Cek pake .rship harem`)
+      let namaH = user.harem[no].name
       user.harem.splice(no, 1)
       saveDB(wdb)
-      return m.reply(`✅ Hapus pasangan *${nama}* dari @${who.split('@')[0]}`, null, {mentions: [who]})
+      return m.reply(`✅ Hapus pasangan *${namaH}* dari @${who.split('@')[0]}`, null, {mentions: [who]})
     }
 
     if(aksi === 'setharem'){
-      let tipe = args[2] // level/love/exp/nikah
-      let val = args[3]
-      if(isNaN(no) ||!user.harem[no] ||!tipe || val === undefined) return m.reply(`Contoh: *${usedPrefix}rpgpanel setharem @tag 1 level 100*`)
-      if(tipe === 'level') user.harem[no].level = parseInt(val)
-      if(tipe === 'love') user.harem[no].love = parseInt(val)
-      if(tipe === 'exp') user.harem[no].exp = parseInt(val)
-      if(tipe === 'nikah') user.harem[no].menikah = val === 'true'
+      let noH = parseInt(args[0]) - 1
+      let tipe = args[1]?.toLowerCase() // level/love/exp/nikah
+      let val = args[2]
+      if(isNaN(noH) ||!user.harem[noH] ||!tipe || val === undefined) return m.reply(`Contoh: *${usedPrefix}rpgpanel setharem @tag 1 level 100*`)
+      if(tipe === 'level') user.harem[noH].level = parseInt(val)
+      if(tipe === 'love') user.harem[noH].love = parseInt(val)
+      if(tipe === 'exp') user.harem[noH].exp = parseInt(val)
+      if(tipe === 'nikah') user.harem[noH].menikah = val === 'true' || val === '1' || val === 'ya'
       saveDB(wdb)
-      return m.reply(`✅ Set ${tipe} *${user.harem[no].name}* = ${val}`, null, {mentions: [who]})
+      return m.reply(`✅ Set ${tipe} *${user.harem[noH].name}* = ${val}`, null, {mentions: [who]})
     }
   }
 
 // 5.2 RSHIP ANAK
   if(['addanak','delanak','setanak'].includes(aksi)){
     user.kids = user.kids || []
-    let no = parseInt(args[1]) - 1
+    let no = parseInt(args[0]) - 1
 
     if(aksi === 'addanak'){
-      let nama = args.slice(2).join(' ')
+      let nama = args.join(' ')
       if(!nama) return m.reply(`Contoh: *${usedPrefix}rpgpanel addanak @tag Bayi Zeta*`)
       user.kids.push({ nama, jenis: 'Laki-laki', umur: 0, ortu: 'Admin' })
       saveDB(wdb)
       return m.reply(`✅ Tambah anak *${nama}* ke @${who.split('@')[0]}`, null, {mentions: [who]})
+    }
+    if(aksi === 'delanak'){
+      if(isNaN(no) || !user.kids[no]) return m.reply(`Contoh: *${usedPrefix}rpgpanel delanak @tag 1*`)
+      let namaA = user.kids[no].nama
+      user.kids.splice(no, 1)
+      saveDB(wdb)
+      return m.reply(`✅ Hapus anak *${namaA}* dari @${who.split('@')[0]}`, null, {mentions: [who]})
     }
   }
   
@@ -682,9 +683,8 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'setcsm'){
-      //.rpgpanel setcsm @tag blood 100000
-      let stat = args[1] // blood, level, story, maxHealth, health, devilsKilled
-      let val = parseInt(args[2])
+      let stat = args[0] // blood, level, story, maxHealth, health, devilsKilled
+      let val = parseInt(args[1])
       if(!stat || isNaN(val)) return m.reply(`Contoh: *${usedPrefix}rpgpanel setcsm @tag blood 999999*`)
       if(!user.csm.hasOwnProperty(stat)) return m.reply(`❌ Stat tidak ada. List: blood, level, exp, story, health, maxHealth, devilsKilled`)
 
@@ -695,9 +695,8 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'addcsm'){
-      //.rpgpanel addcsm @tag blood 50000
-      let stat = args[1]
-      let val = parseInt(args[2])
+      let stat = args[0]
+      let val = parseInt(args[1])
       if(!stat || isNaN(val)) return m.reply(`Contoh: *${usedPrefix}rpgpanel addcsm @tag blood 50000*`)
       if(!user.csm.hasOwnProperty(stat)) return m.reply(`❌ Stat tidak ada`)
 
@@ -707,9 +706,8 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'delcsm'){
-      //.rpgpanel delcsm @tag blood 10000
-      let stat = args[1]
-      let val = parseInt(args[2])
+      let stat = args[0]
+      let val = parseInt(args[1])
       if(!stat || isNaN(val)) return m.reply(`Contoh: *${usedPrefix}rpgpanel delcsm @tag blood 10000*`)
       if(!user.csm.hasOwnProperty(stat)) return m.reply(`❌ Stat tidak ada`)
 
@@ -719,8 +717,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'setcontract'){
-      //.rpgpanel setcontract @tag Chainsaw
-      let namaKontrak = args.slice(1).join(' ')
+      let namaKontrak = args.join(' ')
       if(!namaKontrak) return m.reply(`Contoh: *${usedPrefix}rpgpanel setcontract @tag Chainsaw*`)
 
       user.csm.devilContract = namaKontrak
@@ -733,7 +730,6 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
 
     if(aksi === 'delcontract'){
-      //.rpgpanel delcontract @tag
       user.csm.devilContract = null
       user.csm.contractExpire = 0
       user.csm.contractSide = null

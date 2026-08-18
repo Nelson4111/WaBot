@@ -86,45 +86,66 @@ let handler = async (m, { conn }) => {
   }
 
   let rodLvl = user.fishingrod || 0
-  let hance = Math.random() * 100
-  let bonus = Math.min(rodLvl * 1.5, 30)
-  let bisaSecret = rodLvl >= 25
+  let bonus = Math.min(rodLvl * 2, 40)
 
+  // Probabilitas realistis terdistribusi sesuai level pancingan
+  let pSecret = rodLvl >= 15 ? Math.min(0.2 + (rodLvl - 15) * 0.15, 2.5) : 0
+  let pMythic = rodLvl >= 8 ? Math.min(0.8 + (rodLvl - 8) * 0.35, 6.0) : (rodLvl >= 3 ? 0.3 : 0)
+  let pLegend = Math.min(2.0 + (rodLvl * 0.8), 15.0)
+  let pEpic = Math.min(6.0 + (rodLvl * 1.2), 22.0)
+  let pRare = Math.min(15.0 + (rodLvl * 1.2), 30.0)
+  let pUncommon = Math.max(15.0, 30.0 - (rodLvl * 0.5))
+  let pCommon = Math.max(15.0, 30.0 - (rodLvl * 0.8))
+
+  let roll = Math.random() * 100
+  let cum = 0
   let ikan = ''
   let exp = 0
   let tier = ''
 
-  if (bisaSecret && hance > (99.99 - bonus)) {
+  cum += pSecret
+  if (roll <= cum && pSecret > 0) {
     ikan = secret[Math.floor(Math.random() * secret.length)]
     exp = 5000; tier = 'SECRET'
-  }
-  else if (hance > (99.9 - bonus)) {
-    ikan = mythic[Math.floor(Math.random() * mythic.length)]
-    exp = 1000; tier = 'MYTHIC'
-  }
-  else if (hance > (99 - bonus)) {
-    ikan = legendary[Math.floor(Math.random() * legendary.length)]
-    exp = 500; tier = 'LEGENDARY'
-  }
-  else if (hance > (96 - bonus)) {
-    ikan = epic[Math.floor(Math.random() * epic.length)]
-    exp = 250; tier = 'EPIC'
-  }
-  else if (hance > (86 - bonus)) {
-    ikan = rare[Math.floor(Math.random() * rare.length)]
-    exp = 120; tier = 'RARE'
-  }
-  else if (hance > (61 - bonus)) {
-    ikan = uncommon[Math.floor(Math.random() * uncommon.length)]
-    exp = 50; tier = 'UNCOMMON'
-  }
-  else if (hance > (11 - bonus)) {
-    ikan = common[Math.floor(Math.random() * common.length)]
-    exp = 15; tier = 'COMMON'
-  }
-  else {
-    ikan = trash[Math.floor(Math.random() * trash.length)]
-    exp = 5; tier = 'TRASH'
+  } else {
+    cum += pMythic
+    if (roll <= cum && pMythic > 0) {
+      ikan = mythic[Math.floor(Math.random() * mythic.length)]
+      exp = 1000; tier = 'MYTHIC'
+    } else {
+      cum += pLegend
+      if (roll <= cum) {
+        ikan = legendary[Math.floor(Math.random() * legendary.length)]
+        exp = 500; tier = 'LEGENDARY'
+      } else {
+        cum += pEpic
+        if (roll <= cum) {
+          ikan = epic[Math.floor(Math.random() * epic.length)]
+          exp = 250; tier = 'EPIC'
+        } else {
+          cum += pRare
+          if (roll <= cum) {
+            ikan = rare[Math.floor(Math.random() * rare.length)]
+            exp = 120; tier = 'RARE'
+          } else {
+            cum += pUncommon
+            if (roll <= cum) {
+              ikan = uncommon[Math.floor(Math.random() * uncommon.length)]
+              exp = 50; tier = 'UNCOMMON'
+            } else {
+              cum += pCommon
+              if (roll <= cum) {
+                ikan = common[Math.floor(Math.random() * common.length)]
+                exp = 15; tier = 'COMMON'
+              } else {
+                ikan = trash[Math.floor(Math.random() * trash.length)]
+                exp = 5; tier = 'TRASH'
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   user.ikan[ikan] = (user.ikan[ikan] || 0) + 1
@@ -137,14 +158,14 @@ let handler = async (m, { conn }) => {
   try { pp = await conn.profilePictureUrl(m.sender, 'image') } catch {}
 
   let tierData = {
-    SECRET: {stars: '★★★★★★★', emoji: '🔮'},
-    MYTHIC: {stars: '★★★★★★☆', emoji: '🌌'},
-    LEGENDARY: {stars: '★★★☆', emoji: '👑'},
-    EPIC: {stars: '★★☆☆☆', emoji: '💎'},
-    RARE: {stars: '★★★☆☆', emoji: '✨'},
-    UNCOMMON: {stars: '★★☆', emoji: '💙'},
-    COMMON: {stars: '★☆', emoji: '🤍'},
-    TRASH: {stars: '☆', emoji: '🗑️'}
+    SECRET:    {stars: '★★★★★★★', emoji: '🔮'},
+    MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌'},
+    LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑'},
+    EPIC:      {stars: '★★★★☆☆☆', emoji: '💎'},
+    RARE:      {stars: '★★★☆☆☆☆', emoji: '✨'},
+    UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙'},
+    COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍'},
+    TRASH:     {stars: '☆☆☆☆☆☆☆', emoji: '🗑️'}
   }
 
   let caption = `*───「 🎣 FISHING RESULT 」───*\n\n`

@@ -51,6 +51,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
             return m.reply(`❤️ Kamu sudah sah menjadi pasangan dari @${target.split('@')[0]}!`, null, { mentions: [target] })
         }
 
+        let proposals = global.db.data.proposals = global.db.data.proposals || {}
         proposals[target] = {
             from: sender,
             time: Date.now()
@@ -59,13 +60,65 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         let msg = `💍 *LAMARAN PERNIKAHAN* 💍\n\n`
         msg += `Hai @${target.split('@')[0]},\n`
         msg += `@${sender.split('@')[0]} ingin melamarmu menjadi pasangannya! 💕\n\n`
-        msg += `Balas (reply) pesan ini dengan tulisan *terima* untuk menerima lamaran.\n`
-        msg += `Atau balas *tolak* untuk menolak lamaran.\n\n`
+        msg += `Ketik *.terima* atau balas pesan ini dengan tulisan *terima* untuk menerima lamaran.\n`
+        msg += `Atau ketik *.tolak* untuk menolak lamaran.\n\n`
         msg += `⏱️ _Lamaran ini berlaku selama 60 detik._`
 
         return conn.sendMessage(m.chat, {
             text: msg,
             mentions: [sender, target]
+        }, { quoted: m })
+    }
+
+    // 2. TERIMA LAMARAN SEBAGAI COMMAND
+    if (['terima', 'accept'].includes(inputCmd)) {
+        let proposals = global.db.data.proposals = global.db.data.proposals || {}
+        let prop = proposals[sender]
+        if (!prop || (Date.now() - prop.time > 60000)) {
+            delete proposals[sender]
+            return m.reply('❌ Tidak ada lamaran yang ditujukan padamu atau lamaran sudah kedaluwarsa.')
+        }
+
+        let fromJid = prop.from
+        delete proposals[sender]
+
+        if (!users[fromJid]) users[fromJid] = {}
+        if (!users[fromJid].pasangan) users[fromJid].pasangan = []
+        if (!users[sender]) users[sender] = {}
+        if (!users[sender].pasangan) users[sender].pasangan = []
+
+        let now = Date.now()
+        let newRecordFrom = { jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' }
+        let newRecordTarget = { jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' }
+
+        users[fromJid].pasangan.push(newRecordFrom)
+        users[sender].pasangan.push(newRecordTarget)
+
+        let ann = `🎉 *SELAMAT! PERNIKAHAN SAH!* 🎉\n\n`
+        ann += `@${fromJid.split('@')[0]} 💞 @${sender.split('@')[0]}\n`
+        ann += `Telah resmi menjadi pasangan suami & istri! 💍✨\n\n`
+        ann += `Ketik *.pasangan* untuk melihat info status pernikahan kalian!\n`
+        ann += `Ketik *.kartunikah* untuk melihat Kartu Nikah Digital!`
+
+        return conn.sendMessage(m.chat, {
+            text: ann,
+            mentions: [fromJid, sender]
+        }, { quoted: m })
+    }
+
+    // 3. TOLAK LAMARAN SEBAGAI COMMAND
+    if (['tolak', 'reject'].includes(inputCmd)) {
+        let proposals = global.db.data.proposals = global.db.data.proposals || {}
+        let prop = proposals[sender]
+        if (!prop) {
+            return m.reply('❌ Tidak ada lamaran yang ditujukan padamu.')
+        }
+        let fromJid = prop.from
+        delete proposals[sender]
+
+        return conn.sendMessage(m.chat, {
+            text: `💔 @${sender.split('@')[0]} menolak lamaran dari @${fromJid.split('@')[0]}. Sabar ya, mungkin belum jodoh... 🥺`,
+            mentions: [sender, fromJid]
         }, { quoted: m })
     }
 
@@ -102,6 +155,14 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         }, { quoted: m })
     }
 
+    function getIntimacyRank(bucin = 0) {
+        if (bucin >= 1000) return { title: '✨ Soulmate Abadi', buff: '+15% EXP & Dungeon Loot' }
+        if (bucin >= 500) return { title: '👑 Pengantin Bahagia', buff: '+10% EXP Kencan' }
+        if (bucin >= 200) return { title: '💍 Tunangan Romantis', buff: '+5% EXP Kencan' }
+        if (bucin >= 50) return { title: '💖 Pacaran Mesra', buff: 'Harmonis' }
+        return { title: '🌸 Pasangan Baru (PDKT)', buff: 'Awal Perjalanan' }
+    }
+
     // 5. PASANGAN / CEKNIKAH
     if (['pasangan', 'ceknikah', 'istri', 'suami'].includes(inputCmd)) {
         let who = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || sender)
@@ -112,18 +173,20 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
             return m.reply(isSelf ? '💔 Kamu saat ini masih *Jomblo*.\nGunakan *.lamar @user* untuk mencari pasangan!' : `💔 @${who.split('@')[0]} saat ini statusnya *Jomblo*.`, null, { mentions: [who] })
         }
 
-        let nameWho = conn.getName(who)
         let txt = `💍 *STATUS PERNIKAHAN @${who.split('@')[0]}*\n\n`
         pList.forEach((p, i) => {
             let dur = formatDuration(Date.now() - p.nikahTime)
             let dateStr = new Date(p.nikahTime).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+            let rank = getIntimacyRank(p.poinBucin || 0)
             txt += `*${i + 1}. Pasangan:* @${p.jid.split('@')[0]}\n`
             txt += `   📅 *Tanggal Nikah:* ${dateStr}\n`
             txt += `   ⏳ *Lama Menikah:* ${dur}\n`
             txt += `   💖 *Poin Bucin:* ${p.poinBucin || 0} Poin\n`
+            txt += `   🏆 *Tingkat Hubungan:* ${rank.title}\n`
+            txt += `   ✨ *Buff Spesial:* ${rank.buff}\n`
             txt += `   💍 *Cincin:* ${p.cincin || 'Cincin Perak'}\n\n`
         })
-        txt += `_Ketik *.kencan* untuk menambah Poin Kemesraan bersama pasangan!_`
+        txt += `_Ketik *.kencan* atau *.loveclaim* untuk mempererat hubunganmu!_`
 
         return conn.sendMessage(m.chat, {
             text: txt,
@@ -140,7 +203,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         let cooldown = 3600000 // 1 jam
         if (Date.now() - lastKencan < cooldown) {
             let remaining = formatDuration(cooldown - (Date.now() - lastKencan))
-            return m.reply(`⏳ Kamu dan pasanganmu baru saja kencan! Tunggu *${remaining}* lagi untuk kencan berikutnya.`)
+            return m.reply(`⏳ Kamu dan pasanganmu masih lelah setelah kencan sebelumnya.\nTunggu *${remaining}* lagi untuk kencan berikutnya! 💕`)
         }
 
         users[sender].lastKencan = Date.now()
@@ -159,7 +222,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
 
         users[sender].exp = (users[sender].exp || 0) + expBonus
 
-        let places = ['Restoran Mewah 🍷', 'Bioskop XXI 🍿', 'Taman Bunga 🌸', 'Pantai Sunset 🌅', 'Kafe Kopi Romantis ☕']
+        let places = ['Restoran Mewah 🍷', 'Bioskop XXI 🍿', 'Taman Bunga 🌸', 'Pantai Sunset 🌅', 'Kafe Kopi Romantis ☕', 'Piknik Bukit Bintang ✨', 'Kapal Pesiar Sunset 🚢']
         let place = places[Math.floor(Math.random() * places.length)]
 
         let resText = `👩‍❤️‍👨 *KENCAN ROMANTIS BERHASIL!* 👩‍❤️‍👨\n\n`
@@ -169,6 +232,50 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         resText += `• +${bucinBonus} Poin Kemesraan Bucin 💕`
 
         return m.reply(resText)
+    }
+
+    // 6B. DAILY LOVE CLAIM (BERKAH NIKAH)
+    if (['loveclaim', 'berkahnikah', 'hadiahpasangan'].includes(inputCmd)) {
+        let pList = users[sender]?.pasangan || []
+        if (pList.length === 0) return m.reply('💔 Kamu belum memiliki pasangan untuk mengklaim Berkah Nikah!')
+
+        let lastClaim = users[sender].lastLoveClaim || 0
+        let cooldown = 86400000 // 24 jam
+        if (Date.now() - lastClaim < cooldown) {
+            let remaining = formatDuration(cooldown - (Date.now() - lastClaim))
+            return m.reply(`⏳ Kamu sudah mengklaim Berkah Nikah hari ini.\nTunggu *${remaining}* lagi untuk klaim harian berikutnya! ✨`)
+        }
+
+        users[sender].lastLoveClaim = Date.now()
+        let moneyBonus = 50000
+        let bucinBonus = 10
+        let expBonus = 200
+
+        users[sender].exp = (users[sender].exp || 0) + expBonus
+        if (global.db?.data?.money) {
+            global.db.data.money[sender] = (global.db.data.money[sender] || 0) + moneyBonus
+        }
+
+        pList.forEach(p => {
+            p.poinBucin = (p.poinBucin || 0) + bucinBonus
+            if (users[p.jid] && users[p.jid].pasangan) {
+                let rec = users[p.jid].pasangan.find(x => x.jid === sender)
+                if (rec) rec.poinBucin = (rec.poinBucin || 0) + bucinBonus
+                if (global.db?.data?.money) {
+                    global.db.data.money[p.jid] = (global.db.data.money[p.jid] || 0) + moneyBonus
+                }
+            }
+        })
+
+        let capClaim = `*╭───「 🎁 BERKAH NIKAH HARIAN 」───╮*\n`
+        capClaim += `│ Selamat! Kamu dan pasanganmu mendapatkan\n`
+        capClaim += `│ tunjangan kebahagiaan harian:\n`
+        capClaim += `*╰─────────────────────────────────╯*\n\n`
+        capClaim += `💰 *Bonus Uang:* +Rp ${moneyBonus.toLocaleString()} (Masing-masing)\n`
+        capClaim += `💖 *Poin Bucin:* +${bucinBonus} Poin\n`
+        capClaim += `✨ *Bonus EXP:* +${expBonus} EXP`
+
+        return m.reply(capClaim)
     }
 
     // 7. BELI CINCIN
@@ -205,7 +312,7 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
         return m.reply(`🎉 *BERHASIL MEMBELI ${item.name.toUpperCase()}!*\n\nCincin pernikahanmu dan pasanganmu kini telah diperbarui menjadi *${item.name}*! 💍✨`)
     }
 
-    // 8. HADIAH PASANGAN (TRANSFER LIMIT/EXP)
+    // 8. HADIAH PASANGAN (TRANSFER LIMIT/EXP/MONEY/ATM/BERLIAN)
     if (inputCmd === 'hadiah') {
         let pList = users[sender]?.pasangan || []
         if (pList.length === 0) return m.reply('💔 Kamu tidak memiliki pasangan untuk diberi hadiah!')
@@ -219,19 +326,38 @@ let handler = async (m, { conn, usedPrefix, command, text, args }) => {
             count = parseInt(args[2])
         }
 
-        if (!['limit', 'exp'].includes(type) || isNaN(count) || count <= 0) {
-            return m.reply(`🎁 *FORMAT HADIAH PASANGAN:*\n*${usedPrefix}hadiah limit <jumlah>*\n*${usedPrefix}hadiah exp <jumlah>*\n\n_Bisa hadiahkan ke pasangan tanpa biaya potongan!_`)
+        const validTypes = ['limit', 'exp', 'money', 'atm', 'berlian']
+        if (!validTypes.includes(type) || isNaN(count) || count <= 0) {
+            return m.reply(`🎁 *FORMAT HADIAH PASANGAN:*\n*${usedPrefix}hadiah limit <jumlah>*\n*${usedPrefix}hadiah exp <jumlah>*\n*${usedPrefix}hadiah money <jumlah>*\n*${usedPrefix}hadiah atm <jumlah>*\n*${usedPrefix}hadiah berlian <jumlah>*\n\n_Bisa hadiahkan ke pasangan tanpa biaya potongan!_`)
         }
 
-        let userVal = users[sender][type] || 0
-        if (userVal < count) return m.reply(`❌ ${type.toUpperCase()} kamu tidak cukup! Kamu hanya punya ${userVal} ${type}.`)
-
-        users[sender][type] -= count
-        if (!users[target]) users[target] = {}
-        users[target][type] = (users[target][type] || 0) + count
+        if (type === 'money') {
+            let moneySrc = global.db?.data?.money?.[sender] || 0
+            if (moneySrc < count) return m.reply(`❌ Uang kamu tidak cukup! Kamu hanya punya Rp ${moneySrc.toLocaleString()}.`)
+            global.db.data.money[sender] -= count
+            global.db.data.money[target] = (global.db.data.money[target] || 0) + count
+        } else if (type === 'atm') {
+            let bankSrc = global.db?.data?.bank?.[sender] || 0
+            if (bankSrc < count) return m.reply(`❌ Saldo Bank kamu tidak cukup! Kamu hanya punya Rp ${bankSrc.toLocaleString()}.`)
+            global.db.data.bank[sender] -= count
+            global.db.data.bank[target] = (global.db.data.bank[target] || 0) + count
+        } else if (type === 'berlian') {
+            if (!users[sender].inventory) users[sender].inventory = {}
+            let berSrc = users[sender].inventory.berlian || 0
+            if (berSrc < count) return m.reply(`❌ Berlian kebun kamu tidak cukup! Kamu punya ${berSrc} Berlian.`)
+            users[sender].inventory.berlian -= count
+            if (!users[target].inventory) users[target].inventory = {}
+            users[target].inventory.berlian = (users[target].inventory.berlian || 0) + count
+        } else {
+            let userVal = users[sender][type] || 0
+            if (userVal < count) return m.reply(`❌ ${type.toUpperCase()} kamu tidak cukup! Kamu hanya punya ${userVal} ${type}.`)
+            users[sender][type] -= count
+            if (!users[target]) users[target] = {}
+            users[target][type] = (users[target][type] || 0) + count
+        }
 
         return conn.sendMessage(m.chat, {
-            text: `🎁 *HADIAH UNTUK PASANGAN*\n\n@${sender.split('@')[0]} memberikan hadiah *${count} ${type.toUpperCase()}* kepada pasangannya @${target.split('@')[0]}! 💕`,
+            text: `🎁 *HADIAH UNTUK PASANGAN*\n\n@${sender.split('@')[0]} memberikan hadiah *${count.toLocaleString()} ${type.toUpperCase()}* kepada pasangannya @${target.split('@')[0]}! 💕`,
             mentions: [sender, target]
         }, { quoted: m })
     }
@@ -369,8 +495,12 @@ handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|ist
 handler.before = async function (m, { conn }) {
     if (!m.text) return
     let txt = m.text.toLowerCase().trim()
-    if (txt !== 'terima' && txt !== 'tolak') return
-    if (!m.quoted || !m.quoted.text?.includes('MELAMAR')) return
+    let isLamaranReply = m.quoted && (
+        m.quoted.text?.toLowerCase().includes('lamaran') || 
+        m.quoted.text?.toLowerCase().includes('melamar') ||
+        m.quoted.text?.toLowerCase().includes('pasangannya')
+    )
+    if (!isLamaranReply && !global.db.data.proposals?.[conn.decodeJid(m.sender)]) return
 
     let sender = conn.decodeJid(m.sender)
     let proposals = global.db.data.proposals = global.db.data.proposals || {}
@@ -427,8 +557,9 @@ handler.before = async function (m, { conn }) {
     }
 }
 
-handler.help = ['lamar @user', 'terima', 'tolak', 'cerai @user', 'pasangan', 'kencan', 'belicincin', 'hadiah <tipe> <jumlah>', 'kartunikah']
+handler.help = ['lamar @user', 'terima', 'tolak', 'cerai @user', 'pasangan', 'kencan', 'loveclaim', 'belicincin', 'hadiah <tipe> <jumlah>', 'kartunikah']
 handler.tags = ['romansa', 'pasangan']
-handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|istri|suami|kencan|belicincin|cincin|hadiah|kartunikah|bukunikah)$/i
+handler.command = /^(lamar|nikah|tembak|terima|tolak|cerai|pasangan|ceknikah|istri|suami|kencan|loveclaim|berkahnikah|hadiahpasangan|belicincin|cincin|hadiah|kartunikah|bukunikah)$/i
 
 export default handler
+

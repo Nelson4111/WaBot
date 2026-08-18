@@ -129,8 +129,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
     cap += `◈ Total Bunga : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n\n`
     if(userRPG.kartuBeku) cap += `🚨 AKSI DIBUTUHKAN\n Isi saldo Rp ${tier.biayaBulanan.toLocaleString()} untuk \n mengaktifkan kartu otomatis\n\n❌ FITUR NONAKTIF\n Bunga • Transfer • Pinjaman • Heal Bank\n`
-    if(userRPG.pinjaman.jumlah > 0) cap += `📌 Pinjaman Aktif : Rp ${userRPG.pinjaman.jumlah.toLocaleString()}\n\n`
-    cap += `─━━━━━━━━━─\n📌.bank simpan | tarik | tf | pinjam | bayar | riwayat | card | kartu`
+    cap += `─━━━━━━━━━─\n📌 .bank simpan | tarik | tf | pinjam | bayar | riwayat | kartu`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
   }
 

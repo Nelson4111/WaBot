@@ -4,15 +4,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   if (!wdb.guilds) wdb.guilds = {}
 
+  const sender = conn.decodeJid(m.sender)
   // Biar semua member bisa buka shop, bukan cuma leader
-  let myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+  let myGuild = Object.values(wdb.guilds).find(g => g.members && (
+    g.members.includes(m.sender) || 
+    g.members.includes(sender) || 
+    g.leader === m.sender || 
+    g.leader === sender
+  ))
   if (!myGuild) return m.reply('❌ Kamu belum punya Guild.')
 
   // Init biar aman
   if (!myGuild.contribution) myGuild.contribution = {}
-  if (!myGuild.contribution[m.sender]) myGuild.contribution[m.sender] = 0
+  if (!myGuild.contribution[sender] && myGuild.contribution[m.sender]) {
+    myGuild.contribution[sender] = myGuild.contribution[m.sender]
+  }
+  if (!myGuild.contribution[sender]) myGuild.contribution[sender] = 0
 
-  let userContrib = myGuild.contribution[m.sender] || 0
+  let userContrib = myGuild.contribution[sender] || 0
   let durasi = 2 * 60 * 60 * 1000 // 2 jam
 
   if (!text) {
@@ -35,7 +44,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const buy = (cost, buff, msg) => {
     if (userContrib < cost) return m.reply(`❌ Poin tidak cukup. Butuh ${cost} Pts, kamu punya ${userContrib} Pts`)
 
-    myGuild.contribution[m.sender] -= cost
+    myGuild.contribution[sender] -= cost
     myGuild[buff] = Date.now() + durasi
     saveDB(wdb)
     return m.reply(msg)

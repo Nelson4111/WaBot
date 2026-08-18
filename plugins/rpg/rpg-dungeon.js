@@ -84,15 +84,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   // DMG USER
   let userDmg = (user.level * 10) + (swordLvl * 100) + bonusDmgGuild
   if (pet.tipe === 'naga') userDmg += Math.floor(userDmg * (pet.level * 0.05))
+  userDmg = Math.max(10, userDmg)
 
   // DMG ENEMY
   let rounds = Math.ceil(selected.hpEnemy / userDmg)
-  let totalEnemyDmg = rounds * selected.dmgEnemy
 
-  // DEF USER
+  // DEF USER & MITIGASI DAMAGE
   let userDef = (armorLvl * 100) + bonusDefGuild
   if (pet.tipe === 'rubah') userDef += Math.floor(userDef * (pet.level * 0.03))
-  let finalDamage = Math.max(10, totalEnemyDmg - userDef)
+
+  let dmgReduction = (armorLvl * 15) + Math.floor(bonusDefGuild * 0.1)
+  let dmgPerRound = Math.max(Math.ceil(selected.dmgEnemy * 0.15), selected.dmgEnemy - dmgReduction)
+  let rawDamage = rounds * dmgPerRound
+
+  // Batasi damage maksimal proporsional terhadap maxHP jika memenuhi level & sword syarat
+  let maxPossibleDmg = Math.floor(maxHP * 0.75)
+  let finalDamage = Math.max(10, Math.min(rawDamage, maxPossibleDmg))
 
   // KALO MATI
   if (user.darah <= finalDamage) {

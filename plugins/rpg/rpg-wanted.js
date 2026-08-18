@@ -44,7 +44,7 @@ let handler = async (m, { conn, args, isOwner }) => {
     cap += `\n⚠️ *WASPADA! JANGAN DEKATI MEREKA*`
     cap += `\n\n💡 *.buronan reset* - Reset data buronan`
 
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { contextInfo: { mentionedJid: mentioned } })
+    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg', { mentions: mentioned })
 }
 
 handler.help = ['buronan']

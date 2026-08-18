@@ -1,13 +1,12 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
+  if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan .adventure')
 
   const upgradeable = ['sword', 'armor', 'pickaxe', 'fishingrod']
-  let item = text? text.toLowerCase() : ''
-  let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
+  let item = text ? text.toLowerCase() : ''
 
   const basePrice = {
     sword: { money: 50000, iron: 10, stone: 5, wood: 0, gold: 5 },
@@ -16,15 +15,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     fishingrod: { money: 35000, iron: 5, stone: 0, wood: 20, gold: 4 }
   }
 
-  if (!item ||!upgradeable.includes(item)) {
-    let listUpgrade = `*───「 ZETA UPGRADE CENTER 」───*\n\n`
-    listUpgrade += `💎 *Lv.7+ membutuhkan Diamond.*\n\n`
+  if (!item || !upgradeable.includes(item)) {
+    let listUpgrade = `*───「 ZETA UPGRADE & FORGE CENTER 」───*\n\n`
+    listUpgrade += `💎 *Lv.7+ membutuhkan Diamond untuk evolusi.*\n\n`
 
     for (let i of upgradeable) {
       let lvl = user[i] || 0
-      let mul = Math.pow(2, lvl - 1)
-      let name = i.toUpperCase()
-      let icon = i === 'sword'? '⚔️' : i === 'armor'? '🛡️' : i === 'pickaxe'? '⛏️' : '🎣'
+      let mul = Math.pow(2, Math.max(0, lvl - 1))
+      let icon = i === 'sword' ? '⚔️' : i === 'armor' ? '🛡️' : i === 'pickaxe' ? '⛏️' : '🎣'
+      let currentName = lvl > 0 ? getEquipmentName(i, lvl) : 'Belum Dimiliki'
+      let nextName = getEquipmentName(i, lvl + 1)
 
       let detailBonus = ""
       if (i === 'sword') detailBonus = `Dmg: +${(lvl * 100)} ➔ +${((lvl + 1) * 100)}`
@@ -32,10 +32,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       if (i === 'pickaxe') detailBonus = `Gold: +${lvl * 10}% ➔ +${(lvl + 1) * 10}%`
       if (i === 'fishingrod') detailBonus = `Rarity: +${lvl * 5}% ➔ +${(lvl + 1) * 5}%`
 
-      listUpgrade += `${icon} *${name}* (Lv.${lvl})\n`
+      listUpgrade += `${icon} *${currentName}*\n`
       if (lvl === 0) {
         listUpgrade += ` - _Status: Belum dimiliki (.craft ${i})_\n\n`
       } else {
+        listUpgrade += ` - 🔮 *Evolusi ke:* ${nextName}\n`
         listUpgrade += ` - ✨ *Efek:* ${detailBonus}\n`
         listUpgrade += ` - 💰 Biaya: Rp ${(basePrice[i].money * mul).toLocaleString()}\n`
         listUpgrade += ` - ⛓️ Bahan: ${basePrice[i].iron * mul} Iron, ${basePrice[i].gold * mul} Gold`
@@ -47,16 +48,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return sendRpgMsg(conn, m, listUpgrade + `*Contoh:* Ketik ${usedPrefix}${command} sword`, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
   }
 
-  if (!user[item] || user[item] < 1) return m.reply(`❌ Kamu belum memiliki ${item.toUpperCase()}! Ketik.craft ${item} dulu.`)
+  if (!user[item] || user[item] < 1) return m.reply(`❌ Kamu belum memiliki ${item.toUpperCase()}! Ketik .craft ${item} dulu.`)
 
   let lvl = user[item]
+  let oldName = getEquipmentName(item, lvl)
   let multiplier = Math.pow(2, lvl - 1)
   let totalMoney = basePrice[item].money * multiplier
   let totalIron = basePrice[item].iron * multiplier
   let totalStone = basePrice[item].stone * multiplier
   let totalWood = basePrice[item].wood * multiplier
   let totalGold = (basePrice[item].gold || 0) * multiplier
-  let totalDiamond = lvl >= 7? (lvl - 5) : 0
+  let totalDiamond = lvl >= 7 ? (lvl - 5) : 0
 
   if ((wdb.money[m.sender] || 0) < totalMoney) return m.reply(`❌ Uang kurang! Butuh Rp ${totalMoney.toLocaleString()}`)
   if ((user.iron || 0) < totalIron) return m.reply(`❌ Iron kurang! Butuh ${totalIron}`)
@@ -73,9 +75,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   user.diamond = Math.max(0, (user.diamond || 0) - totalDiamond)
 
   user[item] += 1
+  let newName = getEquipmentName(item, user[item])
 
   if (item === 'armor') {
-    if(!user.maxDarahBonus) user.maxDarahBonus = 0
+    if (!user.maxDarahBonus) user.maxDarahBonus = 0
     user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
     user.darah = user.maxDarah
   }
@@ -88,12 +91,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (item === 'pickaxe') bonusMsg = `Hasil mining Gold akan lebih banyak!`
   if (item === 'fishingrod') bonusMsg = `Peluang dapat Ikan Langka meningkat!`
 
-  let capSuccess = `✅ *UPGRADE SUCCESS!*\n\n`
-  capSuccess += `🔥 *${item.toUpperCase()}* naik ke *Lv.${user[item]}*\n`
-  capSuccess += `📝 *Bonus:* ${bonusMsg}\n\n`
+  let capSuccess = `*╭───「 ✨ UPGRADE & EVOLUTION SUCCESS 」───╮*\n`
+  capSuccess += `│ Peralatanmu berhasil dievolusi!\n`
+  capSuccess += `*╰────────────────────────────────────────╯*\n\n`
+  capSuccess += `🔥 *Transformasi:* \n`
+  capSuccess += `  • Semula: *${oldName}*\n`
+  capSuccess += `  • Menjadi: *${newName}* 🌟\n\n`
+  capSuccess += `📝 *Bonus Efek:* ${bonusMsg}\n\n`
   capSuccess += `*Rincian Biaya Terpakai:*\n`
   capSuccess += `• 💰 Money: Rp ${totalMoney.toLocaleString()}\n`
   capSuccess += `• ⛓️ Iron: ${totalIron}\n`
+  capSuccess += `• ✨ Gold: ${totalGold}\n`
   if (totalDiamond > 0) capSuccess += `• 💎 Diamond: ${totalDiamond}\n`
 
   return sendRpgMsg(conn, m, capSuccess, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
@@ -104,3 +112,4 @@ handler.tags = ['rpg']
 handler.command = ['upgrade']
 
 export default handler
+

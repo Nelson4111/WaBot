@@ -332,7 +332,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   // === MENU UTAMA ===
   if(!action){
     let cap = header('MENU UTAMA')
-    cap += `👤 ${user.name} | ${csm.title}\n`
+    cap += `👤 ${user.name} | ${csm.title} (${csm.gender || 'Laki-Laki ♂️'})\n`
     cap += `📍 ${csm.location} | 📖 Story ${csm.story}/14\n`
     cap += `📊 Lv.${csm.level} | 🩸 ${csm.blood.toLocaleString()} Darah\n`
     cap += `❤️ ${'█'.repeat(Math.floor(csm.health/csm.maxHealth*10))}${'░'.repeat(10-Math.floor(csm.health/csm.maxHealth*10))} ${csm.health}/${csm.maxHealth}\n`
@@ -341,7 +341,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `👥 PARTNER: ${csm.partners.length}/5\n`
     cap += `⛓️ KONTRAK: ${csm.devilContract || 'Tidak Ada'}\n`
     cap += `💼 PEKERJAAN: ${csm.job || 'Belum Kerja'}\n\n`
-    cap += `📋 BANTUAN: .csm tutorial\n━━━━━━━━━━━`
+    cap += `📋 BANTUAN: .csm tutorial | .csm gender\n━━━━━━━━━━━`
     return m.reply(cap)
   }
 
@@ -1625,7 +1625,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         )
       }
 
-      const harga = csm.pendingBlood * 100
+      const harga = csm.pendingBlood * 1500
 
       if (bloodUser.bank < harga) {
         return m.reply(
@@ -1665,16 +1665,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     const money = parseInt(args[1], 10)
 
-    if (!money || money < 100) {
+    if (!money || money < 1500) {
       return m.reply(
         header('JUMLAH SALAH') +
-        `Contoh: .csm blood 1000\n` +
-        `Rate: Rp 100 = 1 Darah\n` +
+        `Contoh: .csm blood 15000\n` +
+        `Rate: Rp 1.500 = 1 Darah\n` +
         `━━━━━━━━━━━`
       )
     }
 
-    const dapat = Math.floor(money / 100)
+    const dapat = Math.floor(money / 1500)
 
     csm.pendingBlood = dapat
 
@@ -1683,9 +1683,34 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply(
       header('KONFIRMASI SACRIFICE') +
       `Tukar Rp ${money.toLocaleString()} Bank → ${dapat} Darah\n` +
-      `Rate: Rp 100 = 1 Darah\n\n` +
+      `Rate: Rp 1.500 = 1 Darah\n\n` +
       `Ketik .csm blood deal untuk konfirmasi.\n` +
       `Ketik .csm blood cancel untuk batal.\n` +
+      `━━━━━━━━━━━`
+    )
+  }
+
+  // === GENDER HUNTER ==========================================
+  if (action === 'gender' || action === 'kelamin') {
+    let genderInput = (args[1] || '').toLowerCase()
+    if (!['pria', 'wanita', 'cowok', 'cewek', 'laki-laki', 'perempuan', 'male', 'female'].includes(genderInput)) {
+      return m.reply(
+        header('PILIH GENDER HUNTER') +
+        `Pilih gender karakter Chainsaw Man kamu:\n` +
+        `• *.csm gender pria* / *.csm gender cowok*\n` +
+        `• *.csm gender wanita* / *.csm gender cewek*\n\n` +
+        `Gender saat ini: *${csm.gender || 'Laki-Laki ♂️'}*\n` +
+        `━━━━━━━━━━━`
+      )
+    }
+
+    let g = ['pria', 'cowok', 'laki-laki', 'male'].includes(genderInput) ? 'Laki-Laki ♂️' : 'Perempuan ♀️'
+    csm.gender = g
+    saveDB(wdb)
+
+    return m.reply(
+      header('GENDER DIUBAH') +
+      `Identitas Hunter kamu kini terdaftar sebagai *${g}*!\n` +
       `━━━━━━━━━━━`
     )
   }

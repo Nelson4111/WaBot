@@ -544,6 +544,29 @@ async function processMessage(m, chatUpdate) {
                 if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
                 if (plugin.private && m.isGroup) { fail('private', m, this); continue }
                 // Game & RPG sekarang bisa dimainkan di private chat maupun grup
+                // CEK STATUS PENJARA RPG
+                const isRpgPlugin = (plugin.tags && (plugin.tags.includes('rpg') || plugin.tags.includes('pasangan'))) || name.includes('/rpg/') || name.includes('\\rpg\\');
+                if (isRpgPlugin && !['penjara', 'tebus', 'bebasin', 'penjarain', 'statuspenjara'].includes(command)) {
+                    let userRPG = _user?.rpg;
+                    if (userRPG && userRPG.penjara) {
+                        let now = Date.now();
+                        if (now - userRPG.penjara < (userRPG.lamaPenjara || 0)) {
+                            let sisa = userRPG.lamaPenjara - (now - userRPG.penjara);
+                            let jam = Math.floor(sisa / 3600000);
+                            let menit = Math.floor((sisa % 3600000) / 60000);
+                            this.reply(m.chat, `[ 🚔 ]───[ *_AKSES DITOLAK_* ]───✦\n╭ 𖥔 SEL : ${userRPG.sel || 1}\n│ 𖥔 SISA : ${jam}j ${menit}m\n│ 𖥔 TEBUS : Rp ${(userRPG.tebusan || 1000000).toLocaleString('id-ID')}\n│\n│ 𖥔 ❌ Semua akses RPG diblokir selama di penjara!\n╰ 𖥔 Minta orang lain ketik *.tebus @kamu* atau tunggu bebas otomatis.`, m);
+                            continue;
+                        } else {
+                            // Masa tahanan habis, auto-bebas
+                            userRPG.penjara = null;
+                            userRPG.lamaPenjara = 0;
+                            userRPG.tebusan = 0;
+                            userRPG.sel = 0;
+                            userRPG.gagalCopet = 0;
+                        }
+                    }
+                }
+
                 // GLOBAL REGISTRATION CHECK
                 let isUnreg = !(_user?.registered)
                 let allowUnreg = ['daftar', 'unreg', 'verify']

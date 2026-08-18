@@ -623,19 +623,18 @@ for(let key in aliases){
 // === GACHA ===
   if (action === 'gacha') {
     if(user.pets.length >= 10) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET PENUH*\nMax 10 pet. Release/Sell/Kill/Transfer dulu\n━━━━━━━━━━━`)
-    let biaya = 10000000 // 10jt
+    let biaya = 2500000 // 2.5jt
     if ((wdb.money[m.sender] || 0) < biaya) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
 
     user.pity++
-    // [NERF SADIS] RATE DIJATUHIN LAGI
     const raritiesNerf = {
-      COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍', rate: 95},
-      UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙', rate: 52},
-      RARE:      {stars: '★★★☆☆☆☆', emoji: '✨', rate: 2.4},
-      EPIC:      {stars: '★★★★☆☆☆', emoji: '💎', rate: 0.49},
-      LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑', rate: 0.01},
-      MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌', rate: 0.01},
-      SECRET: {stars: '★★★★★★★', emoji: '🔮', rate: 0.01} // 1/10.000
+      COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍', rate: 60},
+      UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙', rate: 25},
+      RARE:      {stars: '★★★☆☆☆☆', emoji: '✨', rate: 10},
+      EPIC:      {stars: '★★★★☆☆☆', emoji: '💎', rate: 3.5},
+      LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑', rate: 1.0},
+      MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌', rate: 0.4},
+      SECRET:    {stars: '★★★★★★★', emoji: '🔮', rate: 0.1}
     }
 
     let roll = Math.random() * 100
@@ -646,9 +645,9 @@ for(let key in aliases){
       if(roll <= cum){ rarity = r; break }
     }
     
-    // [NERF PITY] 90 -> 500
-    if(user.pity >= 500){ 
-      rarity = 'LEGENDARY' // mentok cuma LEGEND, ga bisa MYTH/SECRET
+    // Pity 100 roll ke LEGENDARY
+    if(user.pity >= 100){ 
+      rarity = 'LEGENDARY'
       user.pity = 0 
     }
     if(rarity === 'LEGENDARY' || rarity === 'MYTHIC' || rarity === 'SECRET') user.pity = 0
@@ -660,8 +659,8 @@ for(let key in aliases){
     user.pets.push({ tipe: randomPet, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
     saveDB(wdb)
 
-    let pitySisa = 500 - user.pity
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎰 PET GACHA - 10JT/ROLL\n${raritiesNerf[rarity].emoji} *${rarity}*\n${raritiesNerf[rarity].stars}\n\n${pets[randomPet].emoji} *${formatNamaAsli(randomPet).toUpperCase()}*\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n📊 Pity: ${pitySisa} lagi ke LEGEND\n━━━━━━━━━━━`)
+    let pitySisa = Math.max(0, 100 - user.pity)
+    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎰 PET GACHA - 2.5JT/ROLL\n${raritiesNerf[rarity].emoji} *${rarity}*\n${raritiesNerf[rarity].stars}\n\n${pets[randomPet].emoji} *${formatNamaAsli(randomPet).toUpperCase()}*\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n📊 Pity: ${pitySisa} lagi ke LEGEND\n━━━━━━━━━━━`)
   }
   
     // === CEK VAMPIR ===
@@ -1205,23 +1204,39 @@ if (action === 'lb'){
 
 // === CLAIM PASIF HARIAN ===
   if (action === 'claim') {
-    if (user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💸 *DOMPET KOSONG*\nKamu belum punya pet yg bisa hasilin uang\nBeli dulu di.pet shop\n━━━━━━━━━━━`)
+    if (user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💸 *DOMPET KOSONG*\nKamu belum punya pet yg bisa hasilin uang\nBeli dulu di .pet shop\n━━━━━━━━━━━`)
     
     let uang = 0
     let daftar = []
     user.pets.forEach(p => {
-      if(p.tipe === 'kucing_dewa'){ uang += 1000; daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)}`) }
-      if(p.tipe === 'trotter_numby'){ uang += 2000; daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)}`) }
-      if(p.tipe === 'alien'){ uang += 1000 * p.level; daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)}`) }
-      if(p.tipe === 'poop'){ uang += 2000; daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)}`) }
+      if(p.tipe === 'kucing_dewa'){ 
+        let get = 100000 + (p.level * 25000)
+        uang += get
+        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+      }
+      if(p.tipe === 'trotter_numby'){ 
+        let get = 150000 + (p.level * 30000)
+        uang += get
+        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+      }
+      if(p.tipe === 'alien'){ 
+        let get = 75000 + (p.level * 50000)
+        uang += get
+        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+      }
+      if(p.tipe === 'poop'){ 
+        let get = 50000 + (p.level * 20000)
+        uang += get
+        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+      }
     })
     
     if(uang === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TIDAK ADA PASSIVE*\nPet kamu tidak ada yg punya skill menghasilkan uang\n━━━━━━━━━━━`)
     
-    wdb.money[m.sender] += uang
+    wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uang
     saveDB(wdb)
     
-    let cap = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n💰 KLAIM PASSIVE\n📦 PET YANG MENGHASILKAN\n`
+    let cap = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n💰 KLAIM PASSIVE HARIAN\n📦 PET YANG MENGHASILKAN\n`
     cap += daftar.map(x => `├ ${x}`).join('\n')
     cap += `\n│\n├ 💵 Total : +Rp ${uang.toLocaleString()}\n`
     cap += `└───────────────────\n━━━━━━━━━━━`
