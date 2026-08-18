@@ -80,6 +80,48 @@ function initServer() {
  * Ekstraksi link download MP3 dari converter multi-tier
  */
 async function extractMp3Url(videoInput) {
+  // 1. Handler khusus URL Spotify
+  if (videoInput.includes('spotify.com/track/')) {
+    try {
+      const spRes = await axios.get(`https://api.ryzumi.net/api/downloader/spotify?url=${encodeURIComponent(videoInput)}`, {
+        headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        timeout: 12000
+      });
+      if (spRes.data?.success && spRes.data?.link) {
+        const id = spRes.data.metadata?.id || 'sp_' + Date.now();
+        const title = `${spRes.data.metadata?.title || 'Spotify Track'} - ${spRes.data.metadata?.artists || ''}`.trim();
+        return {
+          url: spRes.data.link,
+          title,
+          videoId: id,
+          downloadHeaders: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://spotidown.app/',
+            'Origin': 'https://spotidown.app'
+          }
+        };
+      }
+    } catch (_) {}
+  }
+
+  // 2. Handler khusus URL SoundCloud
+  if (videoInput.includes('soundcloud.com/')) {
+    try {
+      const scRes = await axios.get(`https://api.ryzumi.net/api/downloader/soundcloud?url=${encodeURIComponent(videoInput)}`, {
+        headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        timeout: 10000
+      });
+      if (scRes.data?.download_url) {
+        const id = 'sc_' + Buffer.from(videoInput).toString('hex').slice(0, 12);
+        return {
+          url: scRes.data.download_url,
+          title: scRes.data.title || 'SoundCloud Track',
+          videoId: id
+        };
+      }
+    } catch (_) {}
+  }
+
   let id = '';
   let queryTitle = '';
   const idMatch = videoInput.match(/(?:youtu\.be\/|v=|\/v\/|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
@@ -186,7 +228,7 @@ async function getDownloadedAudioTrack(videoUrl) {
     const writer = fs.createWriteStream(filePath);
     const downloadRes = await axios.get(mp3Info.url, {
       responseType: 'stream',
-      headers: {
+      headers: mp3Info.downloadHeaders || {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
         'Referer': 'https://v6.www-y2mate.com/',
         'Range': 'bytes=0-',
