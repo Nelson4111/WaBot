@@ -1,5 +1,5 @@
 server:
-  port: 2333
+  port: 5004
   address: 0.0.0.0
   http2:
     enabled: true
