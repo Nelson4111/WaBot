@@ -84,7 +84,19 @@ async function extractMp3Url(videoUrl) {
   const id = idMatch ? idMatch[1] : '';
   if (!id) throw new Error('Invalid YouTube video ID');
 
-  // 1. Coba converter cnv.cx
+  // 1. Coba Progmore AIO API (sangat cepat & direct video/audio)
+  try {
+    const progRes = await axios.get(`https://main.api.progmore.com/?url=${encodeURIComponent(videoUrl)}`, { timeout: 8000 });
+    if (progRes.data?.success && progRes.data?.download_links?.[0]) {
+      return {
+        url: progRes.data.download_links[0],
+        title: 'YouTube Audio',
+        videoId: id
+      };
+    }
+  } catch (_) {}
+
+  // 2. Coba cnv.cx API (MP3 Converter)
   try {
     const keyRes = await axios.get(`https://cnv.cx/v2/sanity/key?id=${id}`, { headers, timeout: 8000 });
     const key = keyRes.data?.key;
@@ -108,7 +120,7 @@ async function extractMp3Url(videoUrl) {
     }
   } catch (_) {}
 
-  // 2. Fallback converter API
+  // 3. Fallback converter API
   try {
     const fallbackRes = await axios.get(`https://api.deline.web.id/downloader/ytplay?q=${encodeURIComponent(videoUrl)}`, { timeout: 8000 });
     if (fallbackRes.data?.status && fallbackRes.data?.result?.dlink) {
