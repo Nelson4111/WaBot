@@ -26,7 +26,25 @@ module.exports = function loadPlayerManager(client) {
     const node = (player && player.node) || (await this.kazagumo.getLeastUsedNode());
     if (!node) throw new Error('No nodes available');
 
-    // 1. YouTube Music (Official Topic Audio - bebas 404 & bebas cipher block)
+    // 1. Coba Downloader API langsung jika ada URL Spotify / SoundCloud
+    if (this.uri && (this.uri.includes('spotify.com/track/') || this.uri.includes('soundcloud.com/'))) {
+      try {
+        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
+        const dl = await getDownloadedAudioTrack(this.uri).catch(() => null);
+        if (dl?.cdnUrl) {
+          const res = await node.rest.resolve(dl.cdnUrl).catch(() => null);
+          const trackData = res?.data || (res?.tracks ? res.tracks[0] : null);
+          if (trackData && (res?.loadType?.toUpperCase()?.includes('TRACK') || trackData.encoded)) {
+            trackData.info = trackData.info || {};
+            trackData.info.title = dl.title || this.title;
+            trackData.info.author = this.author || 'Audio Stream';
+            return trackData;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. YouTube Music (Official Topic Audio - bebas 404 & bebas cipher block)
     let res = await node.rest.resolve(`ytmsearch:${query}`).catch(() => null);
     if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
       const tracks = res.data?.tracks || res.data || [];
@@ -34,7 +52,7 @@ module.exports = function loadPlayerManager(client) {
       if (res.data && !Array.isArray(res.data)) return res.data;
     }
 
-    // 2. Spotify via LavaSrc
+    // 3. Spotify via LavaSrc
     res = await node.rest.resolve(`spsearch:${query}`).catch(() => null);
     if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
       const tracks = res.data?.tracks || res.data || [];
@@ -42,7 +60,7 @@ module.exports = function loadPlayerManager(client) {
       if (res.data && !Array.isArray(res.data)) return res.data;
     }
 
-    // 3. SoundCloud (Indie/Cover fallback)
+    // 4. SoundCloud fallback
     res = await node.rest.resolve(`scsearch:${query}`).catch(() => null);
     if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
       const tracks = res.data?.tracks || res.data || [];
@@ -55,8 +73,8 @@ module.exports = function loadPlayerManager(client) {
 
   const manager = new Kazagumo(
     {
-      defaultSearchEngine: "soundcloud",
-      defaultSource: "scsearch:",
+      defaultSearchEngine: "youtube_music",
+      defaultSource: "ytmsearch:",
       send: (guildId, payload) => {
         const guild = client.guilds.cache.get(guildId);
         if (guild) guild.shard.send(payload);
@@ -114,8 +132,30 @@ module.exports = function loadPlayerManager(client) {
 
     const isUrl = /^https?:\/\//.test(cleanQuery);
     const isYouTube = cleanQuery.includes('youtube.com') || cleanQuery.includes('youtu.be') || cleanQuery.includes('music.youtube.com');
+    const isSpotify = cleanQuery.includes('spotify.com/track/');
+    const isSoundCloud = cleanQuery.includes('soundcloud.com/');
 
-    if (isYouTube) {
+    // 1. URL Spotify & SoundCloud -> Direct Downloader Engine (HQ MP3 CDN, Kebal Blokir 100%)
+    if (isUrl && (isSpotify || isSoundCloud)) {
+      try {
+        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
+        const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
+        if (dlTrack?.cdnUrl) {
+          const res = await node.rest.resolve(dlTrack.cdnUrl).catch(() => null);
+          const trackData = res?.data || (res?.tracks ? res.tracks[0] : null);
+          if (trackData && (res?.loadType?.toUpperCase()?.includes('TRACK') || trackData.encoded)) {
+            trackData.info = trackData.info || {};
+            trackData.info.title = dlTrack.title || trackData.info.title;
+            trackData.info.author = isSpotify ? 'Spotify' : 'SoundCloud';
+            const track = new KazagumoTrack(trackData, options.requester);
+            return { type: 'TRACK', tracks: [track] };
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. URL YouTube -> Ekstrak Judul via oEmbed/Search lalu putar via YouTube Music (Topic)
+    if (isUrl && isYouTube) {
       let youtubeSearchTitle = null;
       try {
         const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(cleanQuery)}&format=json`;
@@ -127,24 +167,21 @@ module.exports = function loadPlayerManager(client) {
         }
       } catch (_) {}
 
-      // Jika judul berhasil diekstrak via oEmbed, cari audio stream via SoundCloud / Spotify
       if (youtubeSearchTitle) {
         const smartResult = await resolveWithFallback(
           this,
           youtubeSearchTitle,
           options.requester,
-          'scsearch'
+          'ytmsearch'
         ).catch(() => null);
-
         if (smartResult && smartResult.tracks && smartResult.tracks.length > 0) {
           return smartResult;
         }
       }
 
-      // Fallback manual jika oEmbed tidak merespon
       const strategies = videoId
-        ? [`scsearch:${videoId}`, `ytmsearch:${videoId}`]
-        : [`scsearch:${cleanQuery}`, `ytmsearch:${cleanQuery}`];
+        ? [`ytmsearch:${videoId}`, `scsearch:${videoId}`]
+        : [`ytmsearch:${cleanQuery}`, `scsearch:${cleanQuery}`];
 
       for (const q of strategies) {
         const res = await node.rest.resolve(q).catch(() => null);
@@ -153,59 +190,13 @@ module.exports = function loadPlayerManager(client) {
           if (result.tracks.length > 0) return result;
         }
       }
-
-      // 3. Ultimate Fallback: Download Audio ke local buffer stream via youtubeDownloader
-      try {
-        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
-        const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
-        if (dlTrack?.cdnUrl || dlTrack?.streamUrl) {
-          // Prioritaskan CDN URL (bisa diakses Lavalink di container terpisah)
-          const urlsToTry = [dlTrack.cdnUrl, dlTrack.streamUrl].filter(Boolean);
-          for (const tryUrl of urlsToTry) {
-            const res = await node.rest.resolve(tryUrl).catch(() => null);
-            if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
-              const result = processSearchResult(res, options.requester);
-              if (result.tracks.length > 0) {
-                if (result.tracks[0].title === 'Unknown' || !result.tracks[0].title) {
-                  result.tracks[0].title = dlTrack.title;
-                }
-                return result;
-              }
-            }
-          }
-        }
-      } catch (_) {}
     }
 
-    // Handler khusus untuk URL Spotify dan SoundCloud — bypass LavaSrc langsung ke Downloader Engine
-    const isSpotify = cleanQuery.includes('spotify.com/track/');
-    const isSoundCloud = cleanQuery.includes('soundcloud.com/');
-    if (isUrl && (isSpotify || isSoundCloud)) {
-      try {
-        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
-        const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
-        if (dlTrack?.cdnUrl || dlTrack?.streamUrl) {
-          const urlsToTry = [dlTrack.cdnUrl, dlTrack.streamUrl].filter(Boolean);
-          for (const tryUrl of urlsToTry) {
-            const res = await node.rest.resolve(tryUrl).catch(() => null);
-            if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
-              const result = processSearchResult(res, options.requester);
-              if (result.tracks.length > 0) {
-                result.tracks[0].title = dlTrack.title || result.tracks[0].title;
-                result.tracks[0].author = result.tracks[0].author || (isSpotify ? 'Spotify' : 'SoundCloud');
-                return result;
-              }
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
+    // 3. Search query teks biasa -> Gunakan smart resolver dengan ytmsearch sebagai engine utama
     if (!isUrl) {
-      let preferredEngine = options.engine || this.defaultSearchEngine || 'spsearch';
+      let preferredEngine = options.engine || this.defaultSearchEngine || 'ytmsearch';
       if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
 
-      // Gunakan chain resolver tingkat lanjut
       const smartResult = await resolveWithFallback(
         this,
         cleanQuery,
