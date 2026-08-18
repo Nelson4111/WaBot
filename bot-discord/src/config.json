@@ -32,12 +32,6 @@
       "url": "lavalinkv4.serenetia.com:443",
       "auth": "https://seretia.link/discord",
       "secure": true
-    },
-    {
-      "name": "Serenetia-Port80",
-      "url": "lavalinkv4.serenetia.com:80",
-      "auth": "https://seretia.link/discord",
-      "secure": false
     }
   ],
   "node_options": {
