@@ -106,9 +106,8 @@ plugins:
       url: "https://cipher.kikkia.dev"
   lavasrc:
     providers:
-      - "ymsearch:%QUERY%"
-      - "dzisrc:%ISRC%"
       - "scsearch:%QUERY%"
+      - "ytmsearch:%QUERY%"
     sources:
       spotify: true
       applemusic: false

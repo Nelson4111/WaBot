@@ -5,9 +5,9 @@
  */
 
 const RESOLUTION_CHAIN = [
-  { prefix: 'ytmsearch:', label: 'YouTube Music (Official Topic Stream, Anti Login-Wall)' },
-  { prefix: 'spsearch:', label: 'Spotify (Official ISRC via LavaSrc)' },
-  { prefix: 'scsearch:', label: 'SoundCloud (Indie & Cover Direct Stream)' },
+  { prefix: 'scsearch:', label: 'SoundCloud (Direct HQ Stream, Kebal Blokir IP Datacenter)' },
+  { prefix: 'spsearch:', label: 'Spotify (Official LavaSrc Stream)' },
+  { prefix: 'ytmsearch:', label: 'YouTube Music (Topic Stream)' },
   { prefix: 'dzsearch:', label: 'Deezer (Direct playback)' }
 ];
 

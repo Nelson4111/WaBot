@@ -55,8 +55,8 @@ module.exports = function loadPlayerManager(client) {
 
   const manager = new Kazagumo(
     {
-      defaultSearchEngine: "youtube_music",
-      defaultSource: "ytmsearch:",
+      defaultSearchEngine: "soundcloud",
+      defaultSource: "scsearch:",
       send: (guildId, payload) => {
         const guild = client.guilds.cache.get(guildId);
         if (guild) guild.shard.send(payload);
