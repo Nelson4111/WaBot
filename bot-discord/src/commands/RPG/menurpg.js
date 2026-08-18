@@ -239,4 +239,3 @@ async function sendRpgMenu(context, user, client, isSlash) {
             await msg.edit({ components: [disabledRow, disabledBtnRow] }).catch(() => null);
         });
     }
-};

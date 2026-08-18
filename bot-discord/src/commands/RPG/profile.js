@@ -147,15 +147,14 @@ async function sendProfile(context, user, client, isSlash) {
                 }
                 if (i.customId === 'rpg_refresh_profile') {
                     await i.deferUpdate();
-                    return this.sendProfile(context, user, client, isSlash);
+                    return sendProfile(context, user, client, isSlash);
                 } else if (i.customId === 'rpg_goto_menu') {
                     const menuCmd = client.commands.get('menurpg');
                     if (menuCmd) {
                         await i.deferReply({ ephemeral: true });
-                        return menuCmd.sendRpgMenu(i, user, client, true);
+                        return menuCmd.slashExecute(i, client);
                     }
                 }
             });
         }
     }
-};
