@@ -79,26 +79,34 @@ function initServer() {
 /**
  * Ekstraksi link download MP3 dari converter multi-tier
  */
-async function extractMp3Url(videoUrl) {
-  const idMatch = videoUrl.match(/(?:youtu\.be\/|v=|\/v\/|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
-  const id = idMatch ? idMatch[1] : '';
-  if (!id) throw new Error('Invalid YouTube video ID');
+async function extractMp3Url(videoInput) {
+  let id = '';
+  let queryTitle = '';
+  const idMatch = videoInput.match(/(?:youtu\.be\/|v=|\/v\/|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  if (idMatch) {
+    id = idMatch[1];
+  } else {
+    try {
+      const yts = require('yt-search');
+      const searchRes = await yts(videoInput);
+      if (searchRes?.videos?.length > 0) {
+        id = searchRes.videos[0].videoId;
+        queryTitle = searchRes.videos[0].title;
+      }
+    } catch (_) {}
+  }
 
-  // 1. Coba Progmore AIO API (sangat cepat & direct video/audio)
-  try {
-    const progRes = await axios.get(`https://main.api.progmore.com/?url=${encodeURIComponent(videoUrl)}`, { timeout: 8000 });
-    if (progRes.data?.success && progRes.data?.download_links?.[0]) {
-      return {
-        url: progRes.data.download_links[0],
-        title: 'YouTube Audio',
-        videoId: id
-      };
-    }
-  } catch (_) {}
+  if (!id) throw new Error('Invalid YouTube video ID or search query');
+  const videoUrl = `https://www.youtube.com/watch?v=${id}`;
 
-  // 2. Coba cnv.cx API (MP3 Converter)
+  // 1. Coba cnv.cx API dengan arsitektur ytv.js
   try {
-    const keyRes = await axios.get(`https://cnv.cx/v2/sanity/key?id=${id}`, { headers, timeout: 8000 });
+    const cnvHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
+      'Origin': 'https://frame.y2meta-uk.com',
+      'Accept': '*/*'
+    };
+    const keyRes = await axios.get(`https://cnv.cx/v2/sanity/key?id=${id}`, { headers: cnvHeaders, timeout: 8000 });
     const key = keyRes.data?.key;
     if (key) {
       const convRes = await axios.post('https://cnv.cx/v2/converter',
@@ -110,23 +118,23 @@ async function extractMp3Url(videoUrl) {
           filenameStyle: 'pretty',
           vCodec: 'h264'
         }),
-        { headers: { ...headers, key }, timeout: 10000 }
+        { headers: { ...cnvHeaders, key }, timeout: 10000 }
       );
 
       const job = convRes.data;
       if (job?.status === 'tunnel' && job.url) {
-        return { url: job.url, title: job.filename, videoId: id };
+        return { url: job.url, title: job.filename || queryTitle, videoId: id };
       }
     }
   } catch (_) {}
 
-  // 3. Fallback converter API
+  // 2. Coba Deline API
   try {
     const fallbackRes = await axios.get(`https://api.deline.web.id/downloader/ytplay?q=${encodeURIComponent(videoUrl)}`, { timeout: 8000 });
     if (fallbackRes.data?.status && fallbackRes.data?.result?.dlink) {
       return {
         url: fallbackRes.data.result.dlink,
-        title: fallbackRes.data.result.title || 'YouTube Audio',
+        title: fallbackRes.data.result.title || queryTitle || 'YouTube Audio',
         videoId: id
       };
     }
@@ -149,9 +157,9 @@ async function getDownloadedAudioTrack(videoUrl) {
     const downloadRes = await axios.get(mp3Info.url, {
       responseType: 'stream',
       headers: {
-        'User-Agent': headers['User-Agent'],
-        'Origin': headers['Origin'],
-        'Referer': headers['Referer'],
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
+        'Referer': 'https://v6.www-y2mate.com/',
+        'Range': 'bytes=0-',
         'Accept': '*/*'
       },
       timeout: 20000

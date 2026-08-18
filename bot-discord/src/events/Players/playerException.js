@@ -68,7 +68,7 @@ module.exports = {
 
       if (isRestricted || currentTrack) {
         if (currentTrack) {
-          // Bersihkan judul lagu dari noise agar pencarian alternatif akurat
+          // Bersihkan judul lagu dari noise
           let cleanTitle = currentTrack.title
             .replace(/[\(\[\{].*?(official|video|audio|lirik|lyrics|remix|clip|mv|hd|4k|music|feat|ft).*?[\)\]\}]/gi, '')
             .replace(/\|\s*.*$/gi, '')
@@ -80,9 +80,33 @@ module.exports = {
             .replace(/vevo$/gi, '')
             .trim();
 
-          const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
+          const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim() || currentTrack.title;
 
-          // Gunakan smart multi-tier fallback resolver
+          // 1. Coba pulihkan instan via Downloader Engine lokal (Anti-Blokir 100%)
+          try {
+            const { getDownloadedAudioTrack } = require('../../utils/youtubeDownloader.js');
+            const targetInput = (currentTrack.uri && /youtu\.?be/i.test(currentTrack.uri)) ? currentTrack.uri : searchQuery;
+            const dl = await getDownloadedAudioTrack(targetInput).catch(() => null);
+            if (dl?.streamUrl) {
+              const res = await client.manager.search(dl.streamUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
+              const dlTrack = res?.tracks?.[0];
+              if (dlTrack) {
+                dlTrack.title = currentTrack.title || dl.title;
+                dlTrack.author = currentTrack.author || 'YouTube';
+                if (channel) {
+                  const dlDisplay = new TextDisplayBuilder()
+                    .setContent(`**${client.emoji.warn || "⚠️"} Stream stream error/diblokir → dialihkan otomatis via Downloader Engine!**`);
+                  const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
+                  channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
+                }
+                player.queue.unshift(dlTrack);
+                player.skip();
+                return;
+              }
+            }
+          } catch (_) {}
+
+          // 2. Fallback sekunder via resolveWithFallback
           const isSoundCloudError = currentTrack.uri?.includes('soundcloud') || cause.includes('soundcloud') || msg.includes('soundcloud');
           let preferredEngine = isSoundCloudError ? 'ytmsearch' : 'scsearch';
           if (shouldSkipSource('soundcloud') && preferredEngine === 'scsearch') {
@@ -131,31 +155,6 @@ module.exports = {
             player.skip();
             return;
           }
-        }
-
-        // Coba jalur Downloader Engine jika direct stream YouTube gagal
-        if (currentTrack?.uri && (currentTrack.uri.includes('youtube.com') || currentTrack.uri.includes('youtu.be'))) {
-          try {
-            const { getDownloadedAudioTrack } = require('../../utils/youtubeDownloader.js');
-            const dl = await getDownloadedAudioTrack(currentTrack.uri).catch(() => null);
-            if (dl?.streamUrl) {
-              const res = await client.manager.search(dl.streamUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
-              const dlTrack = res?.tracks?.[0];
-              if (dlTrack) {
-                dlTrack.title = currentTrack.title || dl.title;
-                dlTrack.author = currentTrack.author || 'YouTube';
-                if (channel) {
-                  const dlDisplay = new TextDisplayBuilder()
-                    .setContent(`**${client.emoji.warn || "⚠️"} Stream langsung YouTube diblokir → dialihkan otomatis via Downloader Engine!**`);
-                  const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
-                  channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
-                }
-                player.queue.unshift(dlTrack);
-                player.skip();
-                return;
-              }
-            }
-          } catch (_) {}
         }
 
         if (channel) {
