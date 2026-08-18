@@ -133,6 +133,31 @@ module.exports = {
           }
         }
 
+        // Coba jalur Downloader Engine jika direct stream YouTube gagal
+        if (currentTrack?.uri && (currentTrack.uri.includes('youtube.com') || currentTrack.uri.includes('youtu.be'))) {
+          try {
+            const { getDownloadedAudioTrack } = require('../../utils/youtubeDownloader.js');
+            const dl = await getDownloadedAudioTrack(currentTrack.uri).catch(() => null);
+            if (dl?.streamUrl) {
+              const res = await client.manager.search(dl.streamUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
+              const dlTrack = res?.tracks?.[0];
+              if (dlTrack) {
+                dlTrack.title = currentTrack.title || dl.title;
+                dlTrack.author = currentTrack.author || 'YouTube';
+                if (channel) {
+                  const dlDisplay = new TextDisplayBuilder()
+                    .setContent(`**${client.emoji.warn || "⚠️"} Stream langsung YouTube diblokir → dialihkan otomatis via Downloader Engine!**`);
+                  const container = new ContainerBuilder().addTextDisplayComponents(dlDisplay);
+                  channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => null);
+                }
+                player.queue.unshift(dlTrack);
+                player.skip();
+                return;
+              }
+            }
+          } catch (_) {}
+        }
+
         if (channel) {
           const blockedDisplay = new TextDisplayBuilder()
             .setContent(

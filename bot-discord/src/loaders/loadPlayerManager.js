@@ -145,6 +145,24 @@ module.exports = function loadPlayerManager(client) {
           if (result.tracks.length > 0) return result;
         }
       }
+
+      // 3. Ultimate Fallback: Download Audio ke local buffer stream via youtubeDownloader
+      try {
+        const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
+        const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
+        if (dlTrack?.streamUrl) {
+          const res = await node.rest.resolve(dlTrack.streamUrl).catch(() => null);
+          if (res && res.loadType !== 'EMPTY' && res.loadType !== 'ERROR' && res.loadType !== 'NO_MATCHES') {
+            const result = processSearchResult(res, options.requester);
+            if (result.tracks.length > 0) {
+              if (result.tracks[0].title === 'Unknown' || !result.tracks[0].title) {
+                result.tracks[0].title = dlTrack.title;
+              }
+              return result;
+            }
+          }
+        }
+      } catch (_) {}
     }
 
     if (!isUrl) {
