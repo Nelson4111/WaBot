@@ -130,6 +130,8 @@ module.exports = function loadPlayerManager(client) {
       cleanQuery = `https://www.youtube.com/watch?v=${videoId}`;
     }
 
+    const isUrl = /^https?:\/\//i.test(cleanQuery);
+
     if (!isUrl) {
       let preferredEngine = options.engine || this.defaultSearchEngine || 'ytmsearch';
       if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
