@@ -70,8 +70,8 @@ plugins:
         searching: false
         playlistLoading: false
       WEB:
-        playback: true
-        videoLoading: true
+        playback: false
+        videoLoading: false
         searching: true
         playlistLoading: true
       ANDROID_VR:
