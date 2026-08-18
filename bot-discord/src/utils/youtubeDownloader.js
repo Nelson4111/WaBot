@@ -114,7 +114,22 @@ async function extractMp3Url(videoInput) {
   if (!id) throw new Error('Invalid YouTube video ID or search query');
   const videoUrl = `https://www.youtube.com/watch?v=${id}`;
 
-  // 1. Coba cnv.cx API dengan arsitektur ytv.js
+  // 1. Coba Ryzumi ytmp3 Downloader API (v1 & v2)
+  try {
+    const ryzRes = await axios.get(`https://api.ryzumi.net/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`, {
+      headers: { 'accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+      timeout: 8000
+    });
+    if (ryzRes.data?.url) {
+      return {
+        url: ryzRes.data.url,
+        title: ryzRes.data.title || queryTitle || 'YouTube Audio',
+        videoId: id
+      };
+    }
+  } catch (_) {}
+
+  // 2. Coba cnv.cx API dengan arsitektur ytv.js
   try {
     const cnvHeaders = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
