@@ -84,13 +84,13 @@ module.exports = function loadPlayerManager(client) {
         }
       } catch (_) {}
 
-      // Jika judul berhasil diekstrak via oEmbed, cari audio stream via Spotify / SoundCloud
+      // Jika judul berhasil diekstrak via oEmbed, cari audio stream via SoundCloud / Spotify
       if (youtubeSearchTitle) {
         const smartResult = await resolveWithFallback(
           this,
           youtubeSearchTitle,
           options.requester,
-          'spsearch'
+          'scsearch'
         ).catch(() => null);
 
         if (smartResult && smartResult.tracks && smartResult.tracks.length > 0) {
@@ -100,8 +100,8 @@ module.exports = function loadPlayerManager(client) {
 
       // Fallback manual jika oEmbed tidak merespon
       const strategies = videoId
-        ? [`ytmsearch:${videoId}`, `scsearch:${videoId}`, cleanQuery]
-        : [`ytmsearch:${cleanQuery}`, `scsearch:${cleanQuery}`, cleanQuery];
+        ? [`scsearch:${videoId}`, `ytmsearch:${videoId}`]
+        : [`scsearch:${cleanQuery}`, `ytmsearch:${cleanQuery}`];
 
       for (const q of strategies) {
         const res = await node.rest.resolve(q).catch(() => null);

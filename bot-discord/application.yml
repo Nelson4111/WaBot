@@ -109,11 +109,11 @@ plugins:
       visitorData: "${YOUTUBE_VISITOR_DATA:}"
   lavasrc:
     providers:
+      - "scsearch:%QUERY%"
       - "dzisrc:%ISRC%"
+      - "ymsearch:%QUERY%"
       - "ytsearch:\"%ISRC%\""
       - "ytsearch:%QUERY%"
-      - "ymsearch:%QUERY%"
-      - "scsearch:%QUERY%"
     sources:
       spotify: true
       applemusic: false

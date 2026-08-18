@@ -5,10 +5,10 @@
  */
 
 const RESOLUTION_CHAIN = [
+  { prefix: 'scsearch:', label: 'SoundCloud (Direct HQ Stream, Bebas Blokir)' },
   { prefix: 'spsearch:', label: 'Spotify (ISRC-aware via LavaSrc)' },
-  { prefix: 'dzsearch:', label: 'Deezer (Direct playback, tidak lewat YouTube)' },
-  { prefix: 'ytmsearch:', label: 'YouTube Music (Client MUSIC, anti login-wall)' },
-  { prefix: 'scsearch:', label: 'SoundCloud (dengan validasi stream)' },
+  { prefix: 'dzsearch:', label: 'Deezer (Direct playback)' },
+  { prefix: 'ytmsearch:', label: 'YouTube Music (Client MUSIC)' },
   { prefix: 'ytsearch:', label: 'YouTube Video (Fallback terakhir)' }
 ];
 
