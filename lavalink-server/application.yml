@@ -117,8 +117,10 @@ plugins:
       - "scsearch:%QUERY%"
     sources:
       spotify: true
-      applemusic: true
-      deezer: true
+      applemusic: false
+      deezer: false
+      yandexmusic: false
+      flowerytts: false
       youtube: true
     spotify:
       clientId: "85aab1d51a174aad9eed6d7989f530e6"
