@@ -28,7 +28,19 @@
   },
   "nodes": [
     {
-      "name": "NelBot-Private",
+      "name": "NelBot-Private-Internal",
+      "url": "172.18.0.1:5004",
+      "auth": "nelbotpassword123",
+      "secure": false
+    },
+    {
+      "name": "NelBot-Private-Bridge",
+      "url": "172.17.0.1:5004",
+      "auth": "nelbotpassword123",
+      "secure": false
+    },
+    {
+      "name": "NelBot-Private-Public",
       "url": "n.allen-panel.pterokudesu.web.id:5004",
       "auth": "nelbotpassword123",
       "secure": false
