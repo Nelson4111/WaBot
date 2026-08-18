@@ -82,33 +82,7 @@ module.exports = {
 
           const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim() || currentTrack.title;
 
-          // 1. Coba pulihkan instan via Downloader Engine lokal (Anti-Blokir 100%)
-          try {
-            const { getDownloadedAudioTrack } = require('../../utils/youtubeDownloader.js');
-            // Teruskan URL asli untuk Spotify, SoundCloud, dan YouTube; fallback ke judul lagu
-            const uri = currentTrack.uri || '';
-            const isDirectUrl = /youtu\.?be/i.test(uri) || uri.includes('spotify.com/track/') || uri.includes('soundcloud.com/');
-            const targetInput = isDirectUrl ? uri : searchQuery;
-            const dl = await getDownloadedAudioTrack(targetInput).catch(() => null);
-            if (dl?.cdnUrl || dl?.streamUrl) {
-              // Prioritaskan CDN URL (bisa diakses Lavalink di container terpisah)
-              // Fallback ke streamUrl (localhost) jika CDN tidak tersedia
-              const urlsToTry = [dl.cdnUrl, dl.streamUrl].filter(Boolean);
-              for (const tryUrl of urlsToTry) {
-                const res = await client.manager.search(tryUrl, { requester: currentTrack.requester, skipChain: true }).catch(() => null);
-                const dlTrack = res?.tracks?.[0];
-                if (dlTrack) {
-                  dlTrack.title = dl.title || currentTrack.title;
-                  dlTrack.author = currentTrack.author || 'Unknown';
-                  player.queue.unshift(dlTrack);
-                  player.skip();
-                  return;
-                }
-              }
-            }
-          } catch (_) {}
-
-          // 2. Fallback sekunder via resolveWithFallback
+          // Fallback via resolveWithFallback
           const isSoundCloudError = currentTrack.uri?.includes('soundcloud') || cause.includes('soundcloud') || msg.includes('soundcloud');
           let preferredEngine = isSoundCloudError ? 'ytmsearch' : 'scsearch';
           if (shouldSkipSource('soundcloud') && preferredEngine === 'scsearch') {

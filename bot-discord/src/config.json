@@ -28,9 +28,9 @@
   },
   "nodes": [
     {
-      "name": "NelBot-Private",
-      "url": "nelbo-lava.nelsonrandanan.workers.dev:443",
-      "auth": "nelbotpassword123",
+      "name": "Serenetia-v4",
+      "url": "lavalinkv4.serenetia.com:443",
+      "auth": "https://seretia.link/discord",
       "secure": true
     }
   ],

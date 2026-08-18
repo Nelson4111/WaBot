@@ -130,57 +130,6 @@ module.exports = function loadPlayerManager(client) {
       cleanQuery = `https://www.youtube.com/watch?v=${videoId}`;
     }
 
-    const isUrl = /^https?:\/\//.test(cleanQuery);
-    const isYouTube = cleanQuery.includes('youtube.com') || cleanQuery.includes('youtu.be') || cleanQuery.includes('music.youtube.com');
-    const isSpotify = cleanQuery.includes('spotify.com/track/');
-    const isSoundCloud = cleanQuery.includes('soundcloud.com/');
-
-    // 1. Prioritas Utama untuk SEMUA query (URL YouTube/Spotify/SoundCloud maupun teks lagu):
-    // Langsung ambil direct HQ MP3 CDN stream via Downloader Engine agar 100% bebas dari blokir IP YouTube/Lavalink
-    try {
-      const { getDownloadedAudioTrack } = require('../utils/youtubeDownloader.js');
-      const dlTrack = await getDownloadedAudioTrack(cleanQuery).catch(() => null);
-      if (dlTrack?.cdnUrl) {
-        const res = await node.rest.resolve(dlTrack.cdnUrl).catch(() => null);
-        const trackData = res?.data || (res?.tracks ? res.tracks[0] : null);
-        if (trackData && (res?.loadType?.toUpperCase()?.includes('TRACK') || trackData.encoded)) {
-          trackData.info = trackData.info || {};
-          trackData.info.title = dlTrack.title || trackData.info.title;
-          const track = new KazagumoTrack(trackData, options.requester);
-          track.title = dlTrack.title || track.title;
-          track.author = isSpotify ? 'Spotify' : (isSoundCloud ? 'SoundCloud' : 'Audio Stream');
-          return { type: 'TRACK', tracks: [track] };
-        }
-      }
-    } catch (_) {}
-
-    // 2. URL YouTube Fallback jika downloader gagal -> Ekstrak Judul via oEmbed
-    if (isUrl && isYouTube) {
-      let youtubeSearchTitle = null;
-      try {
-        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(cleanQuery)}&format=json`;
-        const oembedRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(2500) })
-          .then(r => (r.ok ? r.json() : null))
-          .catch(() => null);
-        if (oembedRes?.title) {
-          youtubeSearchTitle = `${oembedRes.title} ${oembedRes.author_name || ''}`.trim();
-        }
-      } catch (_) {}
-
-      if (youtubeSearchTitle) {
-        const smartResult = await resolveWithFallback(
-          this,
-          youtubeSearchTitle,
-          options.requester,
-          'ytmsearch'
-        ).catch(() => null);
-        if (smartResult && smartResult.tracks && smartResult.tracks.length > 0) {
-          return smartResult;
-        }
-      }
-    }
-
-    // 3. Search query teks biasa fallback
     if (!isUrl) {
       let preferredEngine = options.engine || this.defaultSearchEngine || 'ytmsearch';
       if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
