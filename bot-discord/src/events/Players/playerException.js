@@ -52,8 +52,9 @@ module.exports = {
 
           const searchQuery = `${cleanTitle} ${cleanAuthor}`.trim();
 
+          // Prioritaskan sumber alternatif yang tahan blokir (SoundCloud & YouTube Music)
           let searchResult = await client.manager.search(searchQuery, {
-            engine: "ytsearch",
+            engine: "scsearch",
             requester: currentTrack.requester,
           });
 
@@ -64,22 +65,28 @@ module.exports = {
             });
           }
 
-          if (!searchResult?.tracks?.length) {
+          if (!searchResult?.tracks?.length && !isRestricted) {
             searchResult = await client.manager.search(searchQuery, {
-              engine: "scsearch",
+              engine: "ytsearch",
               requester: currentTrack.requester,
             });
           }
 
-          if (searchResult?.tracks?.length > 0) {
+          // Filter agar tidak memilih kembali track yang baru saja gagal/error
+          const validTrack = searchResult?.tracks?.find(
+            t => t.identifier !== currentTrack.identifier && t.uri !== currentTrack.uri
+          ) || (searchResult?.tracks?.[0]?.identifier !== currentTrack.identifier ? searchResult?.tracks?.[0] : null);
+
+          if (validTrack) {
             if (trackPosition > 3000) {
               player.data?.set("resumePosition", trackPosition);
             }
 
             if (channel) {
+              const sourceLabel = validTrack.uri?.includes('soundcloud') ? 'SoundCloud' : 'Sumber Alternatif';
               const posText = trackPosition > 3000 ? ` dan melanjutkan dari menit **${convertTime(trackPosition)}**` : '';
               const fallbackDisplay = new TextDisplayBuilder()
-                .setContent(`**${client.emoji.warn || "⚠️"} Stream terputus → dialihkan ke sumber alternatif${posText}!**`);
+                .setContent(`**${client.emoji.warn || "⚠️"} Stream dibatasi → dialihkan otomatis ke ${sourceLabel}${posText}!**`);
 
               const container = new ContainerBuilder()
                 .addTextDisplayComponents(fallbackDisplay);
@@ -92,7 +99,7 @@ module.exports = {
                 .catch(() => null);
             }
 
-            player.queue.unshift(searchResult.tracks[0]);
+            player.queue.unshift(validTrack);
             player.skip();
             return;
           }

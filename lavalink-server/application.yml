@@ -51,15 +51,48 @@ plugins:
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
+    clients:
+      - TV
+      - MUSIC
+      - ANDROID_VR
+      - WEBEMBEDDED
+      - MWEB
+      - WEB
+    clientOptions:
+      TV:
+        playback: true
+        videoLoading: true
+        searching: false
+        playlistLoading: false
+      MUSIC:
+        playback: true
+        videoLoading: true
+        searching: true
+        playlistLoading: true
+      ANDROID_VR:
+        playback: true
+        videoLoading: true
+        searching: true
+        playlistLoading: true
+      WEBEMBEDDED:
+        playback: true
+        videoLoading: true
+        searching: false
+        playlistLoading: false
+      MWEB:
+        playback: true
+        videoLoading: true
+        searching: true
+        playlistLoading: true
+      WEB:
+        playback: true
+        videoLoading: true
+        searching: true
+        playlistLoading: true
     oauth:
       enabled: true
-    clients:
-      - TVHTML5EMBEDDED
-      - ANDROID_MUSIC
-      - MUSIC
-      - ANDROID
-      - IOS
-      - WEB
+      refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
+      skipInitialization: true
   lavasrc:
     providers:
       - "ytsearch:\"%ISRC%\""
@@ -94,6 +127,7 @@ logging:
   level:
     root: INFO
     lavalink: INFO
+    dev.lavalink.youtube.http.YoutubeOauth2Handler: INFO
   request:
     enabled: true
     includeClientInfo: true

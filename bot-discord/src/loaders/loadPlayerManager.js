@@ -69,8 +69,8 @@ module.exports = function loadPlayerManager(client) {
 
     if (isYouTube) {
       const strategies = videoId
-        ? [cleanQuery, `ytsearch:${videoId}`, `ytmsearch:${videoId}`]
-        : [cleanQuery, `ytsearch:${cleanQuery}`, `ytmsearch:${cleanQuery}`];
+        ? [`ytmsearch:${videoId}`, cleanQuery, `ytsearch:${videoId}`]
+        : [`ytmsearch:${cleanQuery}`, cleanQuery, `ytsearch:${cleanQuery}`];
 
       for (const q of strategies) {
         const res = await node.rest.resolve(q).catch(() => null);
@@ -82,7 +82,10 @@ module.exports = function loadPlayerManager(client) {
     }
 
     if (!isUrl) {
-      let searchEngineList = [options.engine || this.defaultSearchEngine];
+      let preferredEngine = options.engine || this.defaultSearchEngine || 'ytmsearch';
+      if (preferredEngine === 'ytsearch') preferredEngine = 'ytmsearch';
+
+      let searchEngineList = [preferredEngine];
       if (!options.engine) {
         searchEngineList = [...new Set([...searchEngineList, ...fallbackEngines])];
       }
@@ -92,7 +95,8 @@ module.exports = function loadPlayerManager(client) {
         if (engine === 'spsearch' || engine.startsWith('spsearch:')) {
           continue;
         }
-        const searchQuery = engine.includes(':') ? cleanQuery : `${engine}:${cleanQuery}`;
+        const effectiveEngine = engine === 'ytsearch' ? 'ytmsearch' : engine;
+        const searchQuery = effectiveEngine.includes(':') ? cleanQuery : `${effectiveEngine}:${cleanQuery}`;
         const searchRes = await node.rest.resolve(searchQuery).catch(() => null);
         if (searchRes && searchRes.loadType !== 'EMPTY' && searchRes.loadType !== 'ERROR' && searchRes.loadType !== 'NO_MATCHES') {
           return processSearchResult(searchRes, options.requester);
