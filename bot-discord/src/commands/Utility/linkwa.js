@@ -49,7 +49,7 @@ module.exports = {
 
     async slashExecute(interaction, client) {
         const kode = interaction.options.getString('kode')?.trim();
-        return this.handleLink(interaction, interaction.user, kode, true);
+        return handleLink(interaction, interaction.user, kode, true);
     },
 
     async execute(message, args, client) {
@@ -57,16 +57,16 @@ module.exports = {
         if (!kode) {
             return message.reply('❌ Masukkan kode OTP!\nContoh: `!linkwa 123456`\n_Dapatkan kode dengan mengetik `.linkdc` di WhatsApp._');
         }
-        return this.handleLink(message, message.author, kode, false);
+        return handleLink(message, message.author, kode, false);
     },
 
-    async handleLink(context, user, kode, isSlash) {
-        const db = getDB();
-        db.linkCodes = db.linkCodes || {};
-        db.users = db.users || {};
-        db.linkedUsers = db.linkedUsers || {};
+async function handleLink(context, user, kode, isSlash) {
+    const db = getDB();
+    db.linkCodes = db.linkCodes || {};
+    db.users = db.users || {};
+    db.linkedUsers = db.linkedUsers || {};
 
-        const record = db.linkCodes[kode];
+    const record = db.linkCodes[kode];
 
         if (!record) {
             const errEmbed = new EmbedBuilder()

@@ -51,16 +51,17 @@ module.exports = {
 
     async slashExecute(interaction, client) {
         const targetUser = interaction.options.getUser('user') || interaction.user;
-        return this.sendProfile(interaction, targetUser, client, true);
+        return sendProfile(interaction, targetUser, client, true);
     },
 
     async execute(message, args, client) {
         const targetUser = message.mentions.users.first() || message.author;
-        return this.sendProfile(message, targetUser, client, false);
-    },
+        return sendProfile(message, targetUser, client, false);
+    }
+};
 
-    async sendProfile(context, user, client, isSlash) {
-        const db = getDB();
+async function sendProfile(context, user, client, isSlash) {
+    const db = getDB();
         const linkInfo = db.linkedUsers ? db.linkedUsers[user.id] : null;
 
         let waJid = linkInfo ? linkInfo.waJid : null;

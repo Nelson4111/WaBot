@@ -22,6 +22,7 @@ module.exports = (client) => {
       // Daftarkan sebagai Slash Command untuk command umum/musik/fitur (maks 100 sesuai limit Discord)
       if (!command.owner && command.category !== "Owner" && client.slashCommands.size < 100) {
         const slashData = {
+          ...command,
           name: command.name,
           description: command.description || `${command.name} command`,
           options: command.slashOptions || [],

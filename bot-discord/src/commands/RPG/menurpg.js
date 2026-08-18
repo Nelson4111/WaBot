@@ -32,15 +32,16 @@ module.exports = {
     owner: false,
 
     async slashExecute(interaction, client) {
-        return this.sendRpgMenu(interaction, interaction.user, client, true);
+        return sendRpgMenu(interaction, interaction.user, client, true);
     },
 
     async execute(message, args, client) {
-        return this.sendRpgMenu(message, message.author, client, false);
-    },
+        return sendRpgMenu(message, message.author, client, false);
+    }
+};
 
-    async sendRpgMenu(context, user, client, isSlash) {
-        const db = getDB();
+async function sendRpgMenu(context, user, client, isSlash) {
+    const db = getDB();
         const linkInfo = db.linkedUsers ? db.linkedUsers[user.id] : null;
         const isLinked = !!linkInfo;
 

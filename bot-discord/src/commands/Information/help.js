@@ -60,11 +60,23 @@ const categoryInfo = {
     },
     'RPG': {
         emoji: '⚔️',
-        description: 'Shows RPG & Game commands'
+        description: 'Shows RPG & Dungeon commands'
+    },
+    'Downloader': {
+        emoji: '📥',
+        description: 'Shows media download commands'
+    },
+    'Game': {
+        emoji: '🎮',
+        description: 'Shows mini-game commands'
+    },
+    'Pasangan': {
+        emoji: '💖',
+        description: 'Shows relationship & matchmaker commands'
     }
 };
 
-const categoryOrder = ['Information', 'RPG', 'Music', 'Favourite', 'Config', 'Moderation', 'Automod', 'Voice', 'Utility', 'Giveaway', 'Filters', 'Tracker'];
+const categoryOrder = ['Information', 'RPG', 'Game', 'Pasangan', 'Downloader', 'Music', 'Favourite', 'Config', 'Moderation', 'Automod', 'Voice', 'Utility', 'Giveaway', 'Filters', 'Tracker'];
 
 function formatCategoryContent(selectedCategory, commandsList, serverPrefix) {
     if (selectedCategory === 'Music') {
