@@ -327,6 +327,11 @@ module.exports = {
 
       try {
         if (!player.playing && !player.paused) {
+          let waitAttempts = 0;
+          while (player.state !== 'CONNECTED' && waitAttempts < 10) {
+            await new Promise(r => setTimeout(r, 200));
+            waitAttempts++;
+          }
           await player.play();
         }
       } catch (playError) {
