@@ -42,6 +42,9 @@ module.exports = function loadPlayerManager(client) {
     client.config.node_options
   );
 
+  const nodeNames = (client.config.nodes || []).map(n => `${n.name} [${n.url}]`).join(", ");
+  client.logger.log(`Configured Lavalink Nodes (${(client.config.nodes || []).length}): ${nodeNames}`, "ready");
+
   manager.searchEngines = searchEngines;
 
   const { getBestNode } = require("../utils/nodeUtils");
