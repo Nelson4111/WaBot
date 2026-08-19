@@ -37,56 +37,19 @@ module.exports = {
       player.queue.previous = [];
     }
 
-    const TwoFourSeven = client.db.twofourseven.get(player.guildId);
-    const is247Enabled = !!TwoFourSeven;
+    // Informasikan bahwa antrean telah selesai dan bot tetap standby di voice channel
+    const textChannel = client.channels.cache.get(player.textId);
+    if (textChannel) {
+      const headerDisplay = new TextDisplayBuilder()
+        .setContent(`**${client.emoji.info || "ℹ️"} Queue Ended**\n${client.emoji.blank || ""} ${client.emoji.wickarrow || "➜"} Gunakan \`${prefix}play\` untuk memutar lagu berikutnya.`);
 
-    if (is247Enabled) {
-      return;
-    }
-    const vchannel = guild.channels.cache.get(player.voiceId);
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents(headerDisplay);
 
-    if (vchannel) {
-      const existingTimeout = player.data.get("disconnectTimeout");
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-      }
-
-      const disconnectTimeout = setTimeout(async () => {
-        const currentTwoFourSeven = client.db.twofourseven.get(player.guildId);
-        if (currentTwoFourSeven) {
-          return;
-        }
-
-        if ((!player.queue || player.queue.size === 0) && !player.playing && !player.paused) {
-          const headerDisplay = new TextDisplayBuilder()
-            .setContent(`**${client.emoji.info} Queue Ended**`);
-
-          const separator = new SeparatorBuilder();
-
-          const infoDisplay = new TextDisplayBuilder()
-            .setContent(`Disconnecting due to inactivity.`);
-
-          const container = new ContainerBuilder()
-            .addTextDisplayComponents(headerDisplay)
-            .addSeparatorComponents(separator)
-            .addTextDisplayComponents(infoDisplay);
-
-          client.channels.cache.get(player.textId)?.send({
-            components: [container],
-            flags: MessageFlags.IsComponentsV2
-          }).catch(() => null);
-
-
-          const currentPlayer = client.manager.players.get(player.guildId);
-          if (currentPlayer && currentPlayer.state !== "DESTROYED") {
-            player.destroy().catch(() => null);
-          }
-        }
-
-        player.data.delete("disconnectTimeout");
-      }, 60000);
-
-      player.data.set("disconnectTimeout", disconnectTimeout);
+      textChannel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      }).then((msg) => setTimeout(() => msg.delete().catch(() => null), 10000)).catch(() => null);
     }
   },
 };

@@ -189,50 +189,58 @@ module.exports = {
     ) {
       const humanCount = currentChannel.members.filter((m) => !m.user.bot).size;
 
-      if (humanCount === 0 && player.playing) {
-        player.pause(true);
-        player.data.set('pausedByAlone', true);
-        player.data.set('aloneStartTime', Date.now());
+      if (humanCount === 0) {
+        // Jika sedang memutar lagu, jeda lagunya
+        if (player.playing) {
+          player.pause(true);
+          player.data.set('pausedByAlone', true);
+          player.data.set('aloneStartTime', Date.now());
 
-        await client.rest
-          .put(`/channels/${player.voiceId}/voice-status`, {
-            body: { status: `${client.emoji.pause} Song Paused` },
-          })
-          .catch(() => null);
-
-        const textChannel = client.channels.cache.get(player.textId);
-        if (textChannel) {
-          const display = new TextDisplayBuilder()
-            .setContent(`**NelBot !**\n${client.emoji.blank}${client.emoji.wickarrow} **P__aused__** Waiting for listeners`);
-
-          const container = new ContainerBuilder()
-            .addTextDisplayComponents(display);
-
-          textChannel
-            .send({
-              components: [container],
-              flags: MessageFlags.IsComponentsV2
+          await client.rest
+            .put(`/channels/${player.voiceId}/voice-status`, {
+              body: { status: `${client.emoji.pause || "⏸️"} Song Paused (Waiting for listeners)` },
             })
-            .then((msg) =>
-              setTimeout(() => msg.delete().catch(() => null), 5000)
-            )
             .catch(() => null);
+
+          const textChannel = client.channels.cache.get(player.textId);
+          if (textChannel) {
+            const display = new TextDisplayBuilder()
+              .setContent(`**NelBot !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **P__aused__** Waiting for listeners`);
+
+            const container = new ContainerBuilder()
+              .addTextDisplayComponents(display);
+
+            textChannel
+              .send({
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+              })
+              .then((msg) =>
+                setTimeout(() => msg.delete().catch(() => null), 5000)
+              )
+              .catch(() => null);
+          }
         }
 
-        const destroyTimeout = setTimeout(async () => {
-          const activePlayer = client.manager.players.get(guildId);
-          const stillInVC = currentChannel.members.has(botId);
-          const stillAlone =
-            currentChannel.members.filter((m) => !m.user.bot).size === 0;
+        // Mulai timeout keluar jika belum ada timer aktif
+        if (!player.data.get('aloneTimeout')) {
+          const destroyTimeout = setTimeout(async () => {
+            const activePlayer = client.manager.players.get(guildId);
+            const stillInVC = currentChannel.members.has(botId);
+            const stillAlone =
+              currentChannel.members.filter((m) => !m.user.bot).size === 0;
 
-          if (activePlayer && stillInVC && stillAlone) {
-            const twoFourSeven = client.db.twofourseven.get(guildId);
+            if (activePlayer && stillInVC && stillAlone) {
+              const twoFourSeven = client.db.twofourseven.get(guildId);
 
-            if (twoFourSeven) {
+              if (twoFourSeven) {
+                return;
+              }
+
               const textChannel = client.channels.cache.get(activePlayer.textId);
               if (textChannel) {
                 const display = new TextDisplayBuilder()
-                  .setContent(`**NelBot !**\n${client.emoji.blank}${client.emoji.wickarrow} **P__aused__**`);
+                  .setContent(`**NelBot !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **Left voice channel** due to empty room.`);
                 const container = new ContainerBuilder()
                   .addTextDisplayComponents(display);
 
@@ -242,70 +250,67 @@ module.exports = {
                     flags: MessageFlags.IsComponentsV2
                   })
                   .then((msg) =>
-                    setTimeout(() => msg.delete().catch(() => null), 5000)
+                    setTimeout(() => msg.delete().catch(() => null), 6000)
                   )
                   .catch(() => null);
               }
-              return;
-            }
 
-            try {
-              await activePlayer.destroy();
-            } catch (destroyError) {
-              if (client.manager.players.has(guildId)) {
-                client.manager.players.delete(guildId);
+              try {
+                await activePlayer.destroy();
+              } catch (destroyError) {
+                if (client.manager.players.has(guildId)) {
+                  client.manager.players.delete(guildId);
+                }
+                if (client.manager.shoukaku) {
+                  await client.manager.shoukaku.leaveVoiceChannel(guildId).catch(() => null);
+                }
               }
-              if (client.manager.shoukaku) {
-                await client.manager.shoukaku.leaveVoiceChannel(guildId).catch(() => null);
-              }
             }
+          }, 1000 * 60);
 
-
-          }
-        }, 1000 * 60);
-
-        player.data.set('aloneTimeout', destroyTimeout);
+          player.data.set('aloneTimeout', destroyTimeout);
+        }
       }
-      else if (humanCount > 0 && player.paused && player.data.get('pausedByAlone')) {
+      else if (humanCount > 0) {
+        // Ada member di dalam channel, batalkan timer keluar
         const aloneTimeout = player.data.get('aloneTimeout');
         if (aloneTimeout) {
           clearTimeout(aloneTimeout);
           player.data.delete('aloneTimeout');
         }
 
-        const aloneStartTime = player.data.get('aloneStartTime');
-        const aloneTime = aloneStartTime ? Math.floor((Date.now() - aloneStartTime) / 1000) : 0;
+        if (player.paused && player.data.get('pausedByAlone')) {
+          player.pause(false);
+          player.data.delete('pausedByAlone');
+          player.data.delete('aloneStartTime');
 
-        player.pause(false);
-        player.data.delete('pausedByAlone');
-        player.data.delete('aloneStartTime');
+          const currentTrack = player.queue?.current;
+          if (currentTrack) {
+            await client.rest
+              .put(`/channels/${player.voiceId}/voice-status`, {
+                body: { status: `${client.emoji.dance || "🎵"} Playing **${currentTrack.title}**` },
+              })
+              .catch(() => null);
+          }
 
-        const currentTrack = player.queue?.current;
-        if (currentTrack) {
-          await client.rest
-            .put(`/channels/${player.voiceId}/voice-status`, {
-              body: { status: `${client.emoji.dance} Playing **${currentTrack.title}**` },
-            })
-            .catch(() => null);
-        }
+          const textChannel = client.channels.cache.get(player.textId);
+          if (textChannel) {
+            const display = new TextDisplayBuilder()
+              .setContent(`**NelBot !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **R__esumed__** Welcome back`);
 
-        const textChannel = client.channels.cache.get(player.textId);
-        if (textChannel) {
-          const display = new TextDisplayBuilder()
-            .setContent(`**NelBot !**\n${client.emoji.blank}${client.emoji.wickarrow} **R__esumed__** Welcome back`);
+            const container = new ContainerBuilder()
+              .addTextDisplayComponents(display);
 
-          const container = new ContainerBuilder()
-            .addTextDisplayComponents(display);
-
-          textChannel
-            .send({
-              components: [container],
-              flags: MessageFlags.IsComponentsV2
-            })
-            .then((msg) =>
-              setTimeout(() => msg.delete().catch(() => null), 5000)
-            )
-            .catch(() => null);
+            textChannel
+              .send({
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+              })
+              .then((msg) =>
+                setTimeout(() => msg.delete().catch(() => null), 5000)
+              )
+              .catch(() => null);
+          }
         }
       }
     }
