@@ -53,57 +53,19 @@ plugins:
     allowDirectPlaylistIds: true
     clients:
       - MUSIC
-      - TV
-      - WEB
       - ANDROID_VR
+      - WEB
       - WEBEMBEDDED
-      - MWEB
-      - TVHTML5_SIMPLY
-    clientOptions:
-      MUSIC:
-        playback: true
-        videoLoading: true
-        searching: true
-        playlistLoading: true
-      TV:
-        playback: true
-        videoLoading: true
-        searching: false
-        playlistLoading: false
-      WEB:
-        playback: false
-        videoLoading: false
-        searching: true
-        playlistLoading: true
-      ANDROID_VR:
-        playback: true
-        videoLoading: true
-        searching: true
-        playlistLoading: true
-      WEBEMBEDDED:
-        playback: true
-        videoLoading: true
-        searching: false
-        playlistLoading: false
-      MWEB:
-        playback: true
-        videoLoading: true
-        searching: true
-        playlistLoading: true
-      TVHTML5_SIMPLY:
-        playback: true
-        videoLoading: true
-        searching: false
-        playlistLoading: false
     oauth:
       enabled: true
       refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
       skipInitialization: false
-    pot:
-      token: "${YOUTUBE_POT_TOKEN:}"
-      visitorData: "${YOUTUBE_VISITOR_DATA:}"
-    remoteCipher:
-      url: "https://cipher.kikkia.dev"
+    # PoToken & RemoteCipher dinonaktifkan sementara untuk pengujian baseline murni
+    # pot:
+    #   token: "${YOUTUBE_POT_TOKEN:}"
+    #   visitorData: "${YOUTUBE_VISITOR_DATA:}"
+    # remoteCipher:
+    #   url: "https://cipher.kikkia.dev"
   lavasrc:
     providers:
       - "scsearch:%QUERY%"
