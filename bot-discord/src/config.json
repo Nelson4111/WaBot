@@ -29,7 +29,7 @@
   "nodes": [
     {
       "name": "Private-Lavalink",
-      "url": "127.0.0.1:5004",
+      "url": "n.allen-panel.pterokudesu.web.id:5004",
       "auth": "nelbotpassword123",
       "secure": false
     }
