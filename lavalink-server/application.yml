@@ -98,7 +98,7 @@ plugins:
     oauth:
       enabled: true
       refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
-      skipInitialization: true
+      skipInitialization: false
     pot:
       token: "${YOUTUBE_POT_TOKEN:}"
       visitorData: "${YOUTUBE_VISITOR_DATA:}"
