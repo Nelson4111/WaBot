@@ -29,9 +29,9 @@
   "nodes": [
     {
       "name": "Private-Lavalink",
-      "url": "172.18.0.1:5004",
+      "url": "nelbo-lava.nelsonrandanan.workers.dev:443",
       "auth": "nelbotpassword123",
-      "secure": false
+      "secure": true
     }
   ],
   "node_options": {
