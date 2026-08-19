@@ -182,7 +182,8 @@ module.exports = {
 
       if (!player) {
         try {
-          const { getBestNode } = require("../../utils/nodeUtils");
+          const { getBestNode, waitForNodeConnection } = require("../../utils/nodeUtils");
+          await waitForNodeConnection(client.manager, 5000);
           const bestNode = getBestNode(client.manager);
           player = await client.manager.createPlayer({
             guildId: interaction.guild.id,

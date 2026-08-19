@@ -62,12 +62,17 @@ async function recreatePlayer(client, guildId, voiceId, textId) {
 
         await new Promise(resolve => setTimeout(resolve, 1500));
 
+        const { waitForNodeConnection, getBestNode } = require("./nodeUtils");
+        await waitForNodeConnection(client.manager, 5000);
+        const bestNode = getBestNode(client.manager);
+
         const newPlayer = await client.manager.createPlayer({
             guildId: guildId,
             voiceId: voiceId,
             textId: textId,
             volume: 80,
             deaf: true,
+            node: bestNode?.name
         });
 
         if (!newPlayer) {
