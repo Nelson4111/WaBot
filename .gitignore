@@ -18,3 +18,4 @@ database.db
 *.db-journal
 *.db-wal
 *.db-shm
+local-lavalink-test/

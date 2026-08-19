@@ -52,20 +52,17 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - MUSIC
-      - ANDROID_VR
+      - TV
       - WEB
-      - WEBEMBEDDED
     oauth:
       enabled: true
       refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
       skipInitialization: false
-    # PoToken & RemoteCipher dinonaktifkan sementara untuk pengujian baseline murni
-    # pot:
-    #   token: "${YOUTUBE_POT_TOKEN:}"
-    #   visitorData: "${YOUTUBE_VISITOR_DATA:}"
-    # remoteCipher:
-    #   url: "https://cipher.kikkia.dev"
+    pot:
+      token: "${YOUTUBE_POT_TOKEN:}"
+      visitorData: "${YOUTUBE_VISITOR_DATA:}"
+    remoteCipher:
+      url: "https://cipher.kikkia.dev"
   lavasrc:
     providers:
       - "scsearch:%QUERY%"

@@ -191,7 +191,8 @@ module.exports = {
             textId: interaction.channel.id,
             volume: 80,
             deaf: true,
-            node: bestNode?.name
+            nodeName: bestNode?.name,
+            loadBalancer: true
           });
 
         } catch (createError) {
@@ -751,12 +752,17 @@ module.exports = {
 
       if (!player) {
         try {
+          const { getBestNode, waitForNodeConnection } = require("../../utils/nodeUtils");
+          await waitForNodeConnection(client.manager, 5000);
+          const bestNode = getBestNode(client.manager);
           player = await client.manager.createPlayer({
             guildId: message.guild.id,
             voiceId: channel.id,
             textId: message.channel.id,
             volume: 80,
             deaf: true,
+            nodeName: bestNode?.name,
+            loadBalancer: true
           });
 
         } catch (createError) {

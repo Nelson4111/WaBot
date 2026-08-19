@@ -12,7 +12,7 @@
   "LastFmSecret": "ac670032b9e8f4f96734e8f413b9488c",
   "color": "#00D4FF",
   "logs": "",
-  "node_source": "scsearch",
+  "node_source": "ytsearch",
   "links": {
     "support": "https://discord.gg/NgGU8f5KVV",
     "invite": "https://discord.gg/NgGU8f5KVV",
@@ -28,10 +28,22 @@
   },
   "nodes": [
     {
-      "name": "Private-Lavalink",
-      "url": "nelbo-lava.nelsonrandanan.workers.dev:443",
-      "auth": "nelbotpassword123",
+      "name": "Serenetia-SSL",
+      "url": "lavalinkv4.serenetia.com:443",
+      "auth": "https://seretia.link/discord",
       "secure": true
+    },
+    {
+      "name": "Millohost-SSL",
+      "url": "lava-v4.millohost.my.id:443",
+      "auth": "https://discord.gg/mjS5J2K3ep",
+      "secure": true
+    },
+    {
+      "name": "Local-Lavalink",
+      "url": "127.0.0.1:5004",
+      "auth": "nelbotpassword123",
+      "secure": false
     }
   ],
   "node_options": {

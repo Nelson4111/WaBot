@@ -72,7 +72,8 @@ async function recreatePlayer(client, guildId, voiceId, textId) {
             textId: textId,
             volume: 80,
             deaf: true,
-            node: bestNode?.name
+            nodeName: bestNode?.name,
+            loadBalancer: true
         });
 
         if (!newPlayer) {
