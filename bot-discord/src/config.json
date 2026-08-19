@@ -32,12 +32,6 @@
       "url": "127.0.0.1:5004",
       "auth": "nelbotpassword123",
       "secure": false
-    },
-    {
-      "name": "Serenetia-SSL",
-      "url": "lavalinkv4.serenetia.com:443",
-      "auth": "https://seretia.link/discord",
-      "secure": true
     }
   ],
   "node_options": {
