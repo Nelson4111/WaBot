@@ -3,40 +3,96 @@ import {
   DEVIL_LIST, CHARACTER_LIST, WEAPON_LIST, ITEM_LIST, STORY_LIST,
   MAIN_LOCATION_LIST, SIDE_LOCATION_LIST, MAIN_JOB_LIST, SIDE_JOB_LIST,
   BOSS_LIST, ACHIEVEMENT_LIST, calcBonus, getTitle, bar,
-  calcSetBonus, checkAchievements
+  calcSetBonus, checkAchievements, CONTRACT_PRICE, getContractMeta
 } from '../../lib/rpg-libmyCSM.js'
+
+const JOB_LIST = [...MAIN_JOB_LIST, ...SIDE_JOB_LIST].map(job => job.job)
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
+  const resolveJid = (jid) => {
+    if (!jid) return jid
+    if (jid.endsWith('@lid')) {
+      return global.lids?.[jid] || global.db?.data?.lids?.[jid] || (wdb?.lids && wdb.lids[jid]) || jid
+    }
+    return jid
+  }
+
+  const senderJid = resolveJid(m.sender)
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply(`╭──「 ❌ ERROR 」──╮\n│ Ketik *.adventure* dulu buat daftar RPG.\n━━━━━━━━━━━`)
 
   let userRPG = getUserRPG(wdb, m.sender).rpg
   if (!userRPG) return m.reply(`╭──「 ❌ ERROR 」──╮\n│ Data RPG bank tidak ditemukan.\n━━━━━━━━━━━`)
 
-if (!user.csm) user.csm = {
+  if (!user.csm) user.csm = {
+    started: false,
     nickname: '', health: 100, maxHealth: 100, level: 1, exp: 0, title: 'Applicant',
-    devilContract: null, contractHistory: [], isTransform: false,
-    devilsKilled: 0, blood: 0, partners: [], story: 1, location: 'Markas Public Safety', gender: 'Laki-Laki ♂️',
+    devilContract: null, contractType: null, contractHistory: [], isTransform: false,
+    erasureProtection: null, erasurePending: null, dollContract: false,
+    lastTerror: 0, terrorStory: [], lastStory: 0,
+    devilsKilled: 0, blood: 0, partners: [], story: 1, location: 'Markas Public Safety', gender: 'None',
     weapon: {nama: 'Fist', dur: 999},
     inventory: [{nama: 'Fist', dur: 999}], 
-    lastRest: 0, lastGacha: 0, lastVisit: 0, lastExplore: 0, lastMission: 0, // TAMBAH 2 INI
-    encounter: null, tempMission: null, // TAMBAH tempMission
+    lastRest: 0, lastGacha: 0, lastVisit: 0, lastExplore: 0, lastMission: 0,
+    encounter: null, tempMission: null,
     relations: {}, pendingBlood: 0,
     lastWork: 0, pendingDuel: null,
     contractExpire: 0, contractSide: null, ending: null,
     hospital: [], job: null, lastJob: 0, lastRaid: '', endings: [],
     achievements: [], lastSeenChars: {},
-    storyCooldown: {}, // TAMBAH INI BUAT REPLAY
-    contractPending: null // TAMBAH INI BUAT KONTRAK
+    storyCooldown: {},
+    contractPending: null
   }
 
   let csm = user.csm
+  if (csm.contractType === undefined) csm.contractType = csm.devilContract ? 'devil' : null
+  if (csm.erasureProtection === undefined) csm.erasureProtection = null
+  if (csm.erasurePending === undefined) csm.erasurePending = null
+  if (csm.dollContract === undefined) csm.dollContract = false
+  if (csm.lastTerror === undefined) csm.lastTerror = 0
+  if (!Array.isArray(csm.terrorStory)) csm.terrorStory = []
+  if (csm.lastStory === undefined) csm.lastStory = 0
+  if (!csm.title) csm.title = getTitle(csm.level || 1) || 'Applicant'
+  if (typeof csm.started !== 'boolean') {
+    if ((csm.level && csm.level > 1) || (csm.exp && csm.exp > 0) || (csm.story && csm.story > 1) || (csm.blood && csm.blood > 0) || csm.devilContract || (csm.nickname && csm.nickname.trim())) {
+      csm.started = true
+    } else {
+      csm.started = false
+    }
+    if (!csm.gender) csm.gender = 'None'
+  }
+  if (!Array.isArray(csm.inventory) || csm.inventory.length === 0) csm.inventory = [{ nama: 'Fist', dur: 999 }]
+  if (!csm.weapon || !csm.weapon.nama) csm.weapon = { nama: 'Fist', dur: 999 }
+  if (!Array.isArray(csm.partners)) csm.partners = []
+  if (!csm.relations || typeof csm.relations !== 'object') csm.relations = {}
+  if (!csm.lastSeenChars || typeof csm.lastSeenChars !== 'object') csm.lastSeenChars = {}
+  if (!Array.isArray(csm.contractHistory)) csm.contractHistory = []
+  if (!Array.isArray(csm.hospital)) csm.hospital = []
+  if (!Array.isArray(csm.endings)) csm.endings = []
+  if (!Array.isArray(csm.achievements)) csm.achievements = []
+  if (!csm.storyCooldown || typeof csm.storyCooldown !== 'object') csm.storyCooldown = {}
   let today = new Date().toISOString().split('T')[0]
   let args = text.split(' ')
   let action = args[0]?.toLowerCase()
 
-    const ALL_LOCATION_LIST = [...MAIN_LOCATION_LIST, ...SIDE_LOCATION_LIST]
-  const ALL_JOB_LIST = [...MAIN_JOB_LIST, ...SIDE_JOB_LIST]
+  const ALL_LOCATION_LIST = [...MAIN_LOCATION_LIST,...SIDE_LOCATION_LIST]
+  const SAFE_BLOOD_LOCATIONS = new Set([
+    'Kafe Crossroads (Trois Bagues Vertes)',
+    'Markas Public Safety',
+    'Apartemen Himeno',
+    'Apartemen Hayakawa',
+    'Rumah Sakit Tokyo (Hospital)',
+    'Toko Roti Murah Tokyo',
+    'Kedai Ramen Pinggir Jalan',
+    'Supermarket Tokyo',
+    'Kamar Hotel Kyoto',
+    'Kafe Retro Tokyo',
+    'Rumah Perlindungan Public Safety (Safehouse)',
+    'Pusat Penyelamatan Publik',
+    'Kedai Es Krim Tokyo',
+    'Kedai Teh Tradisional (Tea House)'
+  ])
 
   const cekCD = (key, durasi) => {
     let last = csm[key] || 0
@@ -44,7 +100,7 @@ if (!user.csm) user.csm = {
     return sisa > 0? Math.ceil(sisa / 1000) : 0
   }
 
-  // INIT RAID
+  // === INIT RAID 👹
   global.raid_csm = global.raid_csm || {}
   let raid = global.raid_csm[m.chat]
   if (!raid || raid.date!== today) {
@@ -58,9 +114,152 @@ if (!user.csm) user.csm = {
 
   const header = (title) => `╭──「 ⛓️ DEVIL HUNTER RPG 」──╮\n│ ${title}\n━━━━━━━━━━━\n\n`
 
-  // CEK KONTRAK HABIS
+  const setupActions = ['start', 'gender', 'kelamin', 'nickname']
+  if (!csm.started && action !== 'start') {
+    return m.reply(header('BELUM START') + `Gunakan ${usedPrefix}csm start terlebih dahulu.\n━━━━━━━━━━━`)
+  }
+  if (csm.started && (!csm.nickname || !csm.nickname.trim()) && !setupActions.includes(action)) {
+    return m.reply(header('SET NICKNAME') + `Atur nickname terlebih dahulu.\n${usedPrefix}csm nickname <nama>\n━━━━━━━━━━━`)
+  }
+
+  if (csm.erasurePending && action !== 'erasure') {
+    return m.reply(header('KONFIRMASI TERTUNDA') + `Selesaikan konfirmasi Erasure Effect terlebih dahulu dengan ${usedPrefix}csm erasure yes/no atau confirm/cancel.\n━━━━━━━━━━━`)
+  }
+
+  const dollBlockedActions = ['rest', 'partner', 'explore', 'mission', 'misi', 'story', 'storylist', 'visit', 'location', 'shop', 'store', 'toko', 'raid']
+  if (csm.dollContract && dollBlockedActions.includes(action) && action !== 'contract') {
+    return m.reply(header('DOLL CONTRACT') + `Kamu sudah menjadi boneka kontrak.\nGunakan ${usedPrefix}csm terror untuk berburu manusia.\nGunakan ${usedPrefix}csm contract untuk mencari jalan keluar.\n━━━━━━━━━━━`)
+  }
+
+  if (!csm.devilContract && !csm.dollContract && !csm.erasureProtection && !setupActions.includes(action) && !['contract', 'erasure'].includes(action) && Math.random() < 0.4) {
+    csm.dollContract = true
+    csm.contractType = 'doll'
+    csm.devilContract = 'Doll Devil'
+    csm.isTransform = false
+    saveDB(wdb)
+    return m.reply(header('DOLL CONTRACT') + `Benang asing menembus tubuhmu. Kamu dipaksa menjadi boneka Doll Devil.\nKamu masih sadar, tetapi kehendakmu bukan lagi milikmu.\nGunakan ${usedPrefix}csm terror untuk bertahan.\n━━━━━━━━━━━`)
+  }
+
+  if (csm.contractType === 'host' && !['start', 'gender', 'kelamin', 'nickname', 'contract'].includes(action) && Math.random() < 0.01) {
+    csm.devilContract = null
+    csm.contractType = null
+    csm.health = 1
+    saveDB(wdb)
+    return m.reply(header('HOST DIPANGGIL') + `Devil yang meminjamkan kekuatannya menagih tubuhmu. Kontrak host terputus dan kamu nyaris mati.\n━━━━━━━━━━━`)
+  }
+
+  if (!csm.erasureProtection && !csm.erasurePending && !['start', 'gender', 'kelamin', 'nickname', 'erasure'].includes(action)) {
+    const inHell = csm.location?.includes('Neraka')
+    const makimaEncounter = csm.encounter?.type === 'makima_neraka'
+    const erasureChance = makimaEncounter ? 0.1 : inHell ? 0.02 : 0.0001
+    if (Math.random() < erasureChance) {
+      csm.erasurePending = { time: Date.now(), location: csm.location }
+      saveDB(wdb)
+      return m.reply(header('ERASURE EFFECT') + `Pochita memakan bagian dirinya sendiri. Konsep dan ingatan mulai terhapus dari dunia.\n\nKamu terkena Erasure Effect. Jika diterima, Story, kontrak, darah, dan inventory akan hilang. Level, EXP, partner, dan ending history tetap ada.\n\nKetik ${usedPrefix}csm erasure yes untuk menerima.\nKetik ${usedPrefix}csm erasure no untuk membatalkan dan memilih perlindungan.\n━━━━━━━━━━━`)
+    }
+  }
+
+  // === ERASURE EFFECT 🕳️
+  if (action === 'erasure') {
+    const sub = args[1]?.toLowerCase()
+    if (sub === 'no') {
+      csm.erasurePending = null
+      return m.reply(header('PILIH PERLINDUNGAN') + `Pilih salah satu cara menghindari Erasure Effect:\n${usedPrefix}csm erasure horsemen makima\n${usedPrefix}csm erasure horsemen yoru\n${usedPrefix}csm erasure horsemen fami\n${usedPrefix}csm erasure horsemen nayuta\n${usedPrefix}csm erasure fiend\n${usedPrefix}csm erasure hybrid\n━━━━━━━━━━━`)
+    }
+    if (sub === 'yes') {
+      if (!csm.erasurePending) return m.reply(header('TIDAK ADA ERASURE') + `Tidak ada Erasure Effect yang sedang menunggu.\n━━━━━━━━━━━`)
+      csm.erasurePending = null
+      csm.story = 1
+      csm.devilContract = null
+      csm.contractType = null
+      csm.contractExpire = 0
+      csm.isTransform = false
+      csm.dollContract = false
+      csm.lastStory = 0
+      csm.blood = 0
+      csm.inventory = [{ nama: 'Fist', dur: 999 }]
+      csm.weapon = { nama: 'Fist', dur: 999 }
+      saveDB(wdb)
+      return m.reply(header('ERASURE EFFECT') + `Pochita selesai memakan bagian dirinya sendiri. Story, kontrak, darah, dan inventory kamu terhapus.\nLevel, EXP, partner, dan riwayat ending tetap tersimpan.\n━━━━━━━━━━━`)
+    }
+    if (sub === 'horsemen' || sub === 'fiend' || sub === 'hybrid') {
+      const choice = ['fiend', 'hybrid'].includes(sub) ? sub : args[2]?.toLowerCase()
+      const horsemen = ['makima', 'yoru', 'fami', 'nayuta']
+      if (sub === 'horsemen' && !horsemen.includes(choice)) return m.reply(header('PILIH HORSEMEN') + `Pilih Makima, Yoru, Fami, atau Nayuta.\n━━━━━━━━━━━`)
+      csm.erasurePending = { type: 'protection', protection: sub, choice, time: Date.now() }
+      return m.reply(header('KONFIRMASI PERLINDUNGAN') + `Pilihan ini membebaskanmu dari Erasure Effect, tetapi tidak bisa dilepas kecuali dengan ${usedPrefix}csm reset.\n\nKetik ${usedPrefix}csm erasure confirm untuk mengunci pilihan.\nKetik ${usedPrefix}csm erasure cancel untuk memilih ulang.\n━━━━━━━━━━━`)
+    }
+    if (sub === 'confirm') {
+      const pending = csm.erasurePending
+      if (!pending || pending.type !== 'protection') return m.reply(header('TIDAK ADA PILIHAN') + `Pilih perlindungan dulu.\n━━━━━━━━━━━`)
+      csm.erasureProtection = ['fiend', 'hybrid'].includes(pending.protection) ? pending.protection : `horsemen:${pending.choice}`
+      csm.erasurePending = null
+      const horsemenTitle = { makima: 'Makima\'s Pawns', yoru: 'Property of Yoru', fami: 'Fami\'s Puppets', nayuta: 'Playmates of Nayuta' }
+      if (['fiend', 'hybrid'].includes(csm.erasureProtection)) {
+        const pool = DEVIL_LIST.filter(entity => getContractMeta(entity).types.includes(csm.erasureProtection))
+        const replacement = pool[Math.floor(Math.random() * pool.length)]
+        csm.devilContract = replacement?.nama || null
+        csm.contractType = csm.erasureProtection
+      } else {
+        csm.devilContract = horsemenTitle[pending.choice]
+        csm.contractType = 'horsemen'
+      }
+      csm.dollContract = false
+      saveDB(wdb)
+      return m.reply(header('PERLINDUNGAN TERKUNCI') + `Kamu sekarang terlindungi dari Erasure Effect.\nGunakan ${usedPrefix}csm contract untuk kontrak yang sesuai dengan pilihanmu.\n━━━━━━━━━━━`)
+    }
+    if (sub === 'cancel') {
+      csm.erasurePending = null
+      return m.reply(header('PILIH ULANG') + `Gunakan ${usedPrefix}csm erasure horsemen <makima/yoru/fami/nayuta>, ${usedPrefix}csm erasure fiend, atau ${usedPrefix}csm erasure hybrid.\n━━━━━━━━━━━`)
+    }
+    return m.reply(header('ERASURE EFFECT') + `Gunakan ${usedPrefix}csm erasure yes/no atau pilih perlindungan.\n━━━━━━━━━━━`)
+  }
+
+  // === TERROR 😈
+  if (action === 'terror') {
+    if (!csm.contractType && !csm.dollContract) return m.reply(header('TIDAK ADA KONTRAK') + `Terror membutuhkan kontrak aktif.\n${usedPrefix}csm contract\n━━━━━━━━━━━`)
+    const terrorCooldown = 3600000
+    const terrorLeft = terrorCooldown - (Date.now() - (csm.lastTerror || 0))
+    if (terrorLeft > 0) return m.reply(header('COOLDOWN TERROR') + `Tunggu ${Math.ceil(terrorLeft / 60000)} menit lagi.\n━━━━━━━━━━━`)
+
+    const terrorSuccess = [
+      'Kota menutup tirai. Kontrakmu menelan ketakutan manusia dan meninggalkan darah di jalan.',
+      'Tidak ada yang berani menyebut namamu. Kamu pulang membawa darah sebelum fajar.',
+      'Kontrakmu mengambil alih tubuh untuk sesaat. Saat sadar, hanya jejak kaki yang tersisa.',
+      'Kamu memburu kerumunan dari bayangan. Ketakutan mereka berubah menjadi kekuatan.',
+      'Satu distrik menjadi sunyi. Kontrakmu tertawa, dan darah mengalir ke tanganmu.'
+    ]
+    const terrorDeath = [
+      'Seorang Devil Hunter mengenal kontrakmu. Pertarungan singkat berakhir dengan tubuhmu roboh.',
+      'Kishibe mengirim pemburu lain. Kamu kalah sebelum sempat memanggil kekuatan penuh.',
+      'Karakter dari Public Safety menemukan jejakmu dan memutus seranganmu.',
+      'Hunter yang kamu temui lebih siap. Kontrakmu dipaksa mundur dan tubuhmu hancur.',
+      'Sirene memenuhi kota. Para pemburu mengepungmu sampai kesadaranmu padam.'
+    ]
+    const metHunter = Math.random() < 0.25
+    const story = metHunter ? terrorDeath[Math.floor(Math.random() * terrorDeath.length)] : terrorSuccess[Math.floor(Math.random() * terrorSuccess.length)]
+    csm.lastTerror = Date.now()
+    if (!Array.isArray(csm.terrorStory)) csm.terrorStory = []
+    csm.terrorStory.push({ date: Date.now(), result: metHunter ? 'death' : 'success', story })
+    if (csm.terrorStory.length > 10) csm.terrorStory.shift()
+
+    if (metHunter) {
+      csm.blood = 0
+      csm.health = csm.dollContract ? 1 : Math.max(1, Math.floor(csm.maxHealth * 0.1))
+      saveDB(wdb)
+      return m.reply(header('TERROR GAGAL') + `${story}\n\n🩸 Darah tersisa: 0\n${csm.dollContract ? '🪆 Boneka tidak benar-benar mati. Kamu masih bisa terror lagi setelah cooldown.' : '❤️ Kamu nyaris mati.'}\n━━━━━━━━━━━`)
+    }
+
+    const reward = Math.floor(Math.random() * 40000) + 5000
+    csm.blood += reward
+    saveDB(wdb)
+    return m.reply(header('TERROR BERHASIL') + `${story}\n\n🩸 +${reward.toLocaleString()} Darah\n📖 Catatan terror tersimpan: ${csm.terrorStory.length}/10\n━━━━━━━━━━━`)
+  }
+
+  // === CONTRACT EXPIRED ⏳
   if (csm.contractExpire > 0 && csm.contractExpire < Date.now()) {
     csm.devilContract = null
+    csm.contractType = null
     csm.contractExpire = 0
     m.reply(header('KONTRAK HABIS') + `Kontrak trial mu sudah selesai\n━━━━━━━━━━━`)
   }
@@ -96,26 +295,14 @@ if (!user.csm) user.csm = {
     return null
   }
 
-// ============================================================
-// === START ================================================
-// ============================================================
+// === START 🏠
 if (action === 'start') {
-  if (!user.csm) user.csm = {
-    nickname: '', health: 100, maxHealth: 100, level: 1, exp: 0, title: 'Applicant',
-    devilContract: null, contractHistory: [], isTransform: false,
-    devilsKilled: 0, blood: 0, partners: [], story: 1, location: 'Markas Public Safety', gender: 'Laki-Laki ♂️',
-    weapon: {nama: 'Fist', dur: 999},
-    inventory: [{nama: 'Fist', dur: 999}], lastRest: 0, lastGacha: 0, lastVisit: 0, encounter: null,
-    relations: {}, pendingBlood: 0,
-    lastWork: 0, pendingDuel: null,
-    contractExpire: 0, contractSide: null, ending: null,
-    hospital: [], job: null, lastJob: 0, lastRaid: '', endings: [],
-    achievements: [], lastSeenChars: {}
-  }
-  csm = user.csm
+  csm.started = true
+  if (!csm.gender) csm.gender = 'None'
+  saveDB(wdb)
 
   let cap = header('SELAMAT DATANG DEVIL HUNTER')
-  cap += `👤 ${user.name}\n`
+  cap += `👤 @${senderJid.split('@')[0]}\n`
   cap += `🏷️ ${csm.title}\n`
   cap += `📛 ${csm.nickname || 'Belum Ada Nickname'} | ${csm.gender}\n`
   cap += `📍 ${csm.location}\n`
@@ -129,12 +316,10 @@ if (action === 'start') {
   cap += `*.csm blood*\n\n`
   cap += `📋 Ketik *.csm* untuk buka Menu Utama\n`
   cap += `📖 Ketik *.csm tutorial* untuk panduan\n━━━━━━━━━━━`
-  return m.reply(cap)
+  return conn.reply(m.chat, cap, m, { mentions: [senderJid, m.sender] })
 }
 
-// ============================================================
-// === NICKNAME =============================================
-// ============================================================
+// === NICKNAME 🏷️
 if (action === 'nickname') {
   csm = user.csm
   if (!csm) return m.reply(header('ERROR') + `Data tidak ditemukan\n━━━━━━━━━━━`)
@@ -154,32 +339,30 @@ if (action === 'nickname') {
   return m.reply(header('NICKNAME DISET') + `Nama Hunter : *${nama}*\nNickname : *${nama.split(' ')[0]}*\n\n${msg}\n━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === GENDER HUNTER ========================================
-// ============================================================
+// === GENDER ⚧️
 if (action === 'gender' || action === 'kelamin') {
   csm = user.csm
   if (!csm) return m.reply(header('ERROR') + `Data tidak ditemukan\n━━━━━━━━━━━`)
   let genderInput = (args[1] || '').toLowerCase()
-  if (!['pria', 'wanita', 'cowok', 'cewek', 'laki-laki', 'perempuan', 'male', 'female'].includes(genderInput)) {
+  if (!['pria', 'wanita', 'cowok', 'cewek', 'laki-laki', 'perempuan', 'male', 'female', 'none'].includes(genderInput)) {
     return m.reply(
       header('PILIH GENDER HUNTER') +
       `Pilih gender karakter Chainsaw Man kamu:\n` +
       `• *.csm gender pria* / *.csm gender cowok* / *.csm gender male*\n` +
       `• *.csm gender wanita* / *.csm gender cewek* / *.csm gender female*\n\n` +
+      `• *.csm gender none* - Tidak ingin menyebutkan\n\n` +
       `Gender saat ini: *${csm.gender}*\n` +
       `━━━━━━━━━━━`
     )
   }
   if (['pria', 'cowok', 'laki-laki', 'male'].includes(genderInput)) csm.gender = 'Laki-Laki ♂️'
-  else csm.gender = 'Perempuan ♀️'
+  else if (['wanita', 'cewek', 'perempuan', 'female'].includes(genderInput)) csm.gender = 'Perempuan ♀️'
+  else csm.gender = 'None'
   saveDB(wdb)
   return m.reply(header('GENDER DISET') + `Gender kamu sekarang: *${csm.gender}*\n\nLanjut set nickname dengan:\n.csm nickname <nama>\n━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === VIEW =================================================
-// ============================================================
+// === VIEW 👤
 if (action === 'view') {
   csm = user.csm
   if (!csm) return m.reply(header('ERROR') + `Data tidak ditemukan\n━━━━━━━━━━━`)
@@ -187,6 +370,10 @@ if (action === 'view') {
 
   if (sub === 'backstory' || sub === 'story') {
     if (!csm.nickname) return m.reply(header('WAJIB SET NICKNAME') + `Kamu belum punya nama Hunter.\nGunakan:.csm nickname <nama>\n━━━━━━━━━━━`)
+
+    if (csm.erasureProtection?.startsWith('horsemen:')) {
+      return m.reply(header('BACKSTORY TERKENDALI') + `Nama: ${csm.nickname}\nKontrak: ${csm.devilContract}\n\nIngatanmu tersusun seperti potongan mimpi. Kamu ingat perintah, wajah yang tidak lengkap, dan suara yang memanggilmu pulang.\n\nStory: ???/14\n━━━━━━━━━━━`)
+    }
 
     let cap = header('BACKSTORY KAMU')
     cap += `🏷️ ${csm.title}\n`
@@ -200,15 +387,42 @@ if (action === 'view') {
     return m.reply(cap)
   }
 
+  if (sub === 'character' || sub === 'characters' || sub === 'char') {
+    let cap = header('DATABASE CHARACTER')
+    CHARACTER_LIST.forEach((character, index) => {
+      cap += `*${index + 1}.* ${character.emoji} *${character.nama}*\n${character.role} | ${character.status}\n📍 ${character.lokasi.join(', ')}\n\n`
+    })
+    return m.reply(cap + `━━━━━━━━━━━`)
+  }
+
+  if (sub === 'database' || sub === 'devil') {
+    let cap = header('DATABASE DEVIL')
+    DEVIL_LIST.forEach((devil, index) => {
+      const meta = getContractMeta(devil)
+      cap += `*${index + 1}.* ${devil.emoji} *${devil.nama}* [${devil.rank}]\nTipe: ${devil.tipe} | Kontrak: ${meta.types.join('/')}\nHost: ${meta.canHost ? 'Bisa' : 'Tidak'} | Doll: ${meta.canDoll ? 'Bisa' : 'Tidak'}\n\n`
+    })
+    return m.reply(cap + `━━━━━━━━━━━`)
+  }
+
+  if (sub === 'terror') {
+    let cap = header('TERROR STORY')
+    if (!csm.terrorStory.length) return m.reply(cap + `Belum ada catatan terror.\n━━━━━━━━━━━`)
+    csm.terrorStory.forEach((entry, index) => {
+      cap += `*${index + 1}.* ${entry.result === 'success' ? '✅' : '💀'} ${entry.story}\n`
+    })
+    return m.reply(cap + `━━━━━━━━━━━`)
+  }
+
   let cap = header('MENU VIEW')
   cap += `📖.csm view backstory - Lihat backstory kamu\n`
+  cap += `👥.csm view character - Lihat database karakter\n`
+  cap += `👹.csm view database - Lihat database devil\n`
+  cap += `😈.csm view terror - Lihat catatan terror\n`
   cap += `*Fitur lain coming soon*\n━━━━━━━━━━━`
   return m.reply(cap)
 }
 
-// ============================================================
-// === 2. TUTORIAL ==========================================
-// ============================================================
+// === TUTORIAL 📚
 if (action === 'tutorial'){
   let cap = header('PANDUAN PEMULA')
   cap += `*1. 🏠 DASAR*\n`
@@ -216,6 +430,7 @@ if (action === 'tutorial'){
   cap += `.csm mission |.csm rest\n`
   cap += `.csm fight |.csm run\n`
   cap += `.csm blood |.csm explore\n`
+  cap += `.csm terror |.csm erasure\n`
   cap += `.csm profile |.csm stats\n`
   cap += `.csm nickname |.csm gender\n`
   cap += `.csm view\n━━━━━━━━━━━\n\n`
@@ -229,10 +444,13 @@ if (action === 'tutorial'){
   cap += `.csm revive\n━━━━━━━━━━━\n\n`
   cap += `*3. ⛓️ KONTRAK*\n`
   cap += `.csm contract\n`
-  cap += `.csm contract fiend\n`
-  cap += `.csm contract devil\n`
+  cap += `.csm contract host |.csm contract fiend\n`
+  cap += `.csm contract hybrid |.csm contract devil\n`
   cap += `.csm contract trial <angka>\n`
   cap += `.csm contract deal <angka>\n`
+  cap += `.csm erasure horsemen <makima/yoru/fami/nayuta>\n`
+  cap += `.csm erasure fiend\n`
+  cap += `.csm erasure hybrid\n`
   cap += `*⚠️ Wajib.csm contract yes/no*\n━━━━━━━━━━━\n\n`
   cap += `*4. 🛒 TOKO & WEAPON*\n`
   cap += `.csm shop |.csm store |.csm toko\n`
@@ -265,16 +483,14 @@ if (action === 'tutorial'){
   return m.reply(cap)
 }
 
-// ============================================================
-// === MENU UTAMA ===========================================
-// ============================================================
+// === MENU UTAMA 📋
 if(!action){
   csm = user.csm
-  if (!csm) return m.reply(header('BELUM START') + `Gunakan.csm start untuk memulai\n━━━━━━━━━━━`)
+  if (!csm) return m.reply(header('BELUM START') + `Gunakan ${usedPrefix}csm start untuk memulai\n━━━━━━━━━━━`)
   let bonus = calcBonus(csm)
   let cap = header('MENU UTAMA')
   cap += `🏷️ ${csm.title}\n`
-  cap += `👤 ${user.name} | ${csm.gender}\n`
+  cap += `👤 @${senderJid.split('@')[0]} | ${csm.nickname || 'Tanpa Nick'} (${csm.gender})\n`
   cap += `📍 Location : ${csm.location}\n`
   cap += `📊 Lv.${csm.level} | 🩸 ${csm.blood.toLocaleString()} Darah\n`
   cap += `❤️ ${bar(Math.floor(csm.health/csm.maxHealth*100))} ${csm.health}/${csm.maxHealth}\n`
@@ -286,41 +502,34 @@ if(!action){
   cap += `💼 PEKERJAAN: ${csm.job || 'Belum Kerja'}\n\n`
   cap += `📋 BANTUAN: ${usedPrefix}csm tutorial \n━━━━━━━━━━━`
   saveDB(wdb)
-  return m.reply(cap)
+  return conn.reply(m.chat, cap, m, { mentions: [senderJid, m.sender] })
 }
 
-  // === LOCATION ===
-  if (action === 'location') {
-    let cap = header('LOKASI UTAMA')
-    MAIN_LOCATION_LIST.forEach((l, i) => {
-      let rateColor = l.rateDevil >= 0.7 ? '🔴' : l.rateDevil >= 0.4 ? '🟡' : '🟢'
-      cap += `*${i + 1}.* *${l.nama}*\n`
-      cap += ` ${l.desc}\n`
-      cap += ` Devil Rate: ${rateColor} ${(l.rateDevil * 100).toFixed(0)}%\n\n`
+  // === LOCATION 🗺️
+  if(action === 'location'){
+    let cap = header('DAFTAR LOKASI')
+    cap += `*MAIN LOCATIONS*\n`
+    MAIN_LOCATION_LIST.forEach((l,i) => {
+      cap += `${i+1}. ${l.emoji} ${l.nama}\n`
     })
-
-    cap += `━━━━━━━━━━━\n`
-    cap += header('LOKASI LAINNYA')
-    SIDE_LOCATION_LIST.forEach((l, i) => {
-      let rateColor = l.rateDevil >= 0.7 ? '🔴' : l.rateDevil >= 0.4 ? '🟡' : '🟢'
-      cap += `*${i + MAIN_LOCATION_LIST.length + 1}.* *${l.nama}*\n`
-      cap += ` ${l.desc}\n`
-      cap += ` Devil Rate: ${rateColor} ${(l.rateDevil * 100).toFixed(0)}%\n\n`
+    cap += `\n*SIDE LOCATIONS*\n`
+    SIDE_LOCATION_LIST.forEach((l,i) => {
+      cap += `${i+1+MAIN_LOCATION_LIST.length}. ${l.emoji} ${l.nama}\n`
     })
-
-    cap += `📌 ${usedPrefix}csm visit <nama/nomor> [Cooldown 1 Jam]\n━━━━━━━━━━━`
+    cap += `\nGunakan: ${usedPrefix}csm visit <nomor/nama>\n━━━━━━━━━━━`
+    saveDB(wdb)
     return m.reply(cap)
   }
 
-  // === VISIT CD 1 JAM ===
+  // === VISIT 🚶
   if (action === 'visit') {
-    if (csm.encounter) return m.reply(header('BELUM SELESAI') + `Selesaikan encounter dulu\n━━━━━━━━━━━`)
-    if (cekCD('lastVisit', 3600000) > 0) return m.reply(header('COOLDOWN') + `Tunggu ${Math.ceil(cekCD('lastVisit', 3600000) / 60)} menit\n━━━━━━━━━━━`)
+    if(csm.encounter) return m.reply(header('BELUM SELESAI') + `Selesaikan encounter dulu\n━━━━━━━━━━━`)
+    if(cekCD('lastVisit', 3600000) > 0) return m.reply(header('COOLDOWN') + `Tunggu ${Math.ceil(cekCD('lastVisit', 3600000)/60)} menit\n━━━━━━━━━━━`)
 
     let input = args.slice(1).join(' ')
-    let locIndex = isNaN(input) ? -1 : parseInt(input) - 1
+    let locIndex = isNaN(input)? -1 : parseInt(input) - 1
     let loc = isNaN(input)
-      ? ALL_LOCATION_LIST.find(l => l.nama.toLowerCase() === input.toLowerCase())
+  ? ALL_LOCATION_LIST.find(l => l.nama.toLowerCase() === input.toLowerCase())
       : ALL_LOCATION_LIST[locIndex]
 
     if (!loc) return m.reply(header('LOKASI SALAH') + `Lihat: ${usedPrefix}csm location\n━━━━━━━━━━━`)
@@ -331,148 +540,141 @@ if(!action){
     let msg = header(`PERGI KE: ${loc.nama}`) + `${loc.desc}\n\n`
     let expGain = Math.floor(Math.random() * 20) + 10
     let levelUp = addExp(expGain)
-    if (levelUp) msg += `🎉 LEVEL UP! Sekarang Lv.${csm.level}\n\n`
+    if(levelUp) msg += `🎉 LEVEL UP! Sekarang Lv.${csm.level}\n\n`
 
     let rand = Math.random()
     let isSide = SIDE_LOCATION_LIST.some(s => s.nama === loc.nama)
 
-    if (rand < 0.15) {
-      let weap = WEAPON_LIST[Math.floor(Math.random() * WEAPON_LIST.length)]
-      csm.inventory.push({ nama: weap.nama, dur: weap.dur })
+    if(rand < 0.15){
+      let weap = WEAPON_LIST[Math.floor(Math.random()*WEAPON_LIST.length)]
+      csm.inventory.push({nama: weap.nama, dur: weap.dur})
       msg += `📦 Kamu nemu *${weap.emoji} ${weap.nama}* di tanah!\n`
-    } else if (rand < 0.35) {
+    } else if(rand < 0.35 && !SAFE_BLOOD_LOCATIONS.has(loc.nama)){
       let darah, extraMsg = ''
-      if (isSide) {
+      if(isSide){
         let tier = Math.random()
-        if (tier < 0.2) darah = (Math.floor(Math.random() * 20) + 5) * 100
-        else if (tier < 0.8) darah = (Math.floor(Math.random() * 150) + 50) * 100
-        else darah = (Math.floor(Math.random() * 800) + 200) * 100
-        if (darah >= 20000) {
+        if(tier < 0.2) darah = (Math.floor(Math.random()*20) + 5) * 100
+        else if(tier < 0.8) darah = (Math.floor(Math.random()*150) + 50) * 100
+        else darah = (Math.floor(Math.random()*800) + 200) * 100
+        if(darah >= 20000){
           let pembantaian = ['...Bau darah masih menyengat.', 'Noda darah dimana-mana.', 'Lantai lengket.', 'Tercerai berai.', 'Aura kematian masih terasa.']
-          extraMsg = `\n${pembantaian[Math.floor(Math.random() * pembantaian.length)]}`
+          extraMsg = `\n${pembantaian[Math.floor(Math.random()*pembantaian.length)]}`
         }
       } else {
-        darah = (Math.floor(Math.random() * 150) + 50) * 100
+        darah = (Math.floor(Math.random()*150) + 50) * 100
       }
       csm.blood += darah
       msg += `🩸 Kamu nemu ${darah.toLocaleString()} Darah tercecer!${extraMsg}\n`
-    } else if (rand < 0.75) {
-      let devilSpawn = Math.random() < loc.rateDevil
+    } else if(rand < 0.75){
+      const horsemenDanger = csm.erasureProtection?.startsWith('horsemen:') ? 0.25 : 0
+      let devilSpawn = Math.random() < Math.min(0.98, loc.rateDevil + horsemenDanger)
       let lastSeen = csm.lastSeenChars || {}
       let charList = CHARACTER_LIST.filter(c => c.lokasi?.includes(loc.nama))
-      const CORE_CHARS = ['Denji', 'Aki Hayakawa', 'Power', 'Asa Mitaka', 'Nayuta', 'Fami', 'Makima', 'Yoru', 'Kishibe', 'Himeno', 'Kobeni Higashiyama', 'Hirofumi Yoshida', 'Beam', 'Galgali', 'Reze', 'Quanxi', 'Angel Devil', 'Pochita', 'Meowy']
+      const CORE_CHARS = ['Denji','Aki Hayakawa','Power','Asa Mitaka','Nayuta','Fami','Makima','Yoru','Kishibe','Himeno','Kobeni Higashiyama','Hirofumi Yoshida','Beam','Galgali','Reze','Quanxi','Angel Devil','Pochita','Meowy']
 
       charList = charList.map(c => {
         let weight = 1
-        if (CORE_CHARS.includes(c.nama)) {
-          if (loc.nama.includes('Markas') && ['Makima', 'Himeno', 'Kishibe', 'Aki Hayakawa', 'Galgali', 'Kobeni Higashiyama', 'Beam'].includes(c.nama)) weight = 5
-          if (loc.nama.includes('Kafe') && c.nama === 'Reze') weight = 6
-          if (loc.nama.includes('Kafe') && c.nama === 'Denji') weight = 4
-          if (loc.nama.includes('Apartemen Hayakawa') && ['Aki Hayakawa', 'Power', 'Denji', 'Meowy'].includes(c.nama)) weight = 6
-          if (loc.nama.includes('SMA') && ['Asa Mitaka', 'Yoshida', 'Denji', 'Yoru'].includes(c.nama)) weight = 5
-          if (loc.nama.includes('Gudang') && c.nama === 'Reze') weight = 5
-          if ((loc.nama.includes('Neraka') || loc.nama.includes('Mindscape')) && c.nama === 'Pochita') weight = 10
-          if ((loc.nama.includes('Neraka') || loc.nama.includes('Mindscape')) && c.nama === 'Makima') weight = 7
-          if (loc.nama.includes('Kamar Kos Baru Denji') && ['Denji', 'Nayuta'].includes(c.nama)) weight = 7
-          if (loc.nama.includes('Gereja Chainsaw Man') && c.nama === 'Fami') weight = 6
-          if ((loc.nama.includes('Hotel Quanxi') || loc.nama.includes('Park')) && c.nama === 'Quanxi') weight = 5
-          if (loc.nama.includes('Park') && c.nama === 'Angel Devil') weight = 4
-          if (loc.nama.includes('Apartemen') && c.nama === 'Meowy') weight = 5
+        if(CORE_CHARS.includes(c.nama)){
+          if(loc.nama.includes('Markas') && ['Makima','Himeno','Kishibe','Aki Hayakawa','Galgali','Kobeni Higashiyama','Beam'].includes(c.nama)) weight = 5
+          if(loc.nama.includes('Kafe') && c.nama === 'Reze') weight = 6
+          if(loc.nama.includes('Kafe') && c.nama === 'Denji') weight = 4
+          if(loc.nama.includes('Apartemen Hayakawa') && ['Aki Hayakawa','Power','Denji','Meowy'].includes(c.nama)) weight = 6
+          if(loc.nama.includes('SMA') && ['Asa Mitaka','Yoshida','Denji','Yoru'].includes(c.nama)) weight = 5
+          if(loc.nama.includes('Gudang') && c.nama === 'Reze') weight = 5
+          if((loc.nama.includes('Neraka') || loc.nama.includes('Mindscape')) && c.nama === 'Pochita') weight = 10
+          if((loc.nama.includes('Neraka') || loc.nama.includes('Mindscape')) && c.nama === 'Makima') weight = 7
+          if(loc.nama.includes('Kamar Kos Baru Denji') && ['Denji','Nayuta'].includes(c.nama)) weight = 7
+          if(loc.nama.includes('Gereja Chainsaw Man') && c.nama === 'Fami') weight = 6
+          if((loc.nama.includes('Hotel Quanxi') || loc.nama.includes('Park')) && c.nama === 'Quanxi') weight = 5
+          if(loc.nama.includes('Park') && c.nama === 'Angel Devil') weight = 4
+          if(loc.nama.includes('Apartemen') && c.nama === 'Meowy') weight = 5
         }
-        if (lastSeen[c.nama] && Date.now() - lastSeen[c.nama] < 3600000) weight = 0.1
-        return { ...c, weight }
+        if(lastSeen[c.nama] && Date.now() - lastSeen[c.nama] < 3600000) weight = 0.1
+        return {...c, weight}
       }).filter(c => c.weight > 0)
 
       let spawned = []
-      if (charList.length > 0) {
-        let spawnCount = devilSpawn ? Math.min(Math.floor(Math.random() * 5) + 1, 5) : Math.min(Math.floor(Math.random() * 10) + 1, 10)
-        for (let i = 0; i < spawnCount; i++) {
-          let totalWeight = charList.reduce((a, b) => a + b.weight, 0)
-          if (totalWeight <= 0) break
+      if(charList.length > 0){
+        let spawnCount = devilSpawn? Math.min(Math.floor(Math.random()*5)+1, 5) : Math.min(Math.floor(Math.random()*10)+1, 10)
+        for(let i=0; i<spawnCount; i++){
+          let totalWeight = charList.reduce((a,b)=>a+b.weight,0)
+          if(totalWeight <= 0) break
           let r = Math.random() * totalWeight
           let pick = charList.find(c => (r -= c.weight) <= 0)
-          if (pick) {
+          if(pick){
             spawned.push(pick)
-            charList = charList.filter(c => c.nama !== pick.nama)
+            charList = charList.filter(c => c.nama!== pick.nama)
           }
         }
         spawned.forEach(c => csm.lastSeenChars[c.nama] = Date.now())
       }
 
-      let makimaEvent = loc.nama.includes('Neraka') && spawned.some(c => c.nama === 'Makima')
-
-      if (makimaEvent) {
-        let dialogMakima = [
-          'Kau seharusnya tidak disini, anjingku.',
-          'Tempat ini bukan untukmu.',
-          'Beraninya kau menginjak Neraka tanpa seizinku?',
-          'Hmph. Lagi-lagi kau.',
-          'Sudah kubilang jangan ikut campur.'
-        ]
-        csm.encounter = { type: 'makima_neraka' }
-        msg += `⛓️ *Makima* muncul di hadapanmu...\n\n`
-        msg += `⛓️ *Makima*: "${dialogMakima[Math.floor(Math.random() * dialogMakima.length)]}"\n\n`
-        msg += `.csm fight - Lawan\n`
-      } else if (devilSpawn) {
-        let devil = DEVIL_LIST[Math.floor(Math.random() * DEVIL_LIST.length)]
-        csm.encounter = { type: 'devil', data: devil, helpers: spawned }
-        msg += `👹 *${devil.emoji} ${devil.nama}* [${devil.rank}] muncul!\n\n`
-
-        if (spawned.length > 0) {
-          let dialogBantu = ['Aku bantu!', 'Jangan mati disini!', 'Sini aku backup!', 'Keroyok bareng!']
-          msg += `${spawned[Math.floor(Math.random() * spawned.length)].emoji} *${spawned[0].nama}*: "${dialogBantu[Math.floor(Math.random() * dialogBantu.length)]}"\n\n`
-          spawned.forEach((c, i) => {
-            msg += `*${i + 1}.* ${c.emoji} *${c.nama}*\n`
-          })
-          msg += `\n`
+      if(spawned.length > 0){
+        msg += `⚠️ ${devilSpawn? 'Iblis' : 'Karakter'} muncul:\n`
+        spawned.forEach(s => msg += `- ${s.nama}\n`)
+        const makimaEvent = (loc.nama.includes('Neraka') || loc.nama.includes('Mindscape')) && spawned.some(c => c.nama === 'Makima')
+        if (makimaEvent) {
+          const dialogMakima = [
+            'Kau seharusnya tidak disini, anjingku.',
+            'Tempat ini bukan untukmu.',
+            'Beraninya kau menginjak Neraka tanpa seizinku?',
+            'Hmph. Lagi-lagi kau.',
+            'Sudah kubilang jangan ikut campur.'
+          ]
+          csm.encounter = { type: 'makima_neraka' }
+          msg += `\n⛓️ *Makima* muncul di hadapanmu...\n`
+          msg += `⛓️ *Makima*: "${dialogMakima[Math.floor(Math.random() * dialogMakima.length)]}"\n`
+          msg += `\n.csm fight - Lawan\n`
+          saveDB(wdb)
+          return m.reply(msg + `━━━━━━━━━━━`)
         }
-        msg += `.csm fight - Lawan\n.csm run - Kabur`
-      } else {
-        if (spawned.length > 0) {
-          csm.encounter = { type: 'chars', data: spawned }
-          msg += `👥 Ada ${spawned.length} orang di sini:\n`
-          spawned.forEach((c, i) => {
-            let love = csm.relations[c.nama] || 0
-            msg += `*${i + 1}.* ${c.emoji} *${c.nama}* - ${c.role}\n`
-            msg += ` "${c.dialog[Math.floor(Math.random() * c.dialog.length)]}"\n`
-            msg += ` 💌 ${love}/${c.needLove}\n\n`
-          })
-          msg += `.csm interact <nomor/nama> - Ngobrol\n.csm run - Pergi`
+        if (devilSpawn) {
+          const devil = DEVIL_LIST[Math.floor(Math.random() * DEVIL_LIST.length)]
+          csm.encounter = { type: 'devil', data: devil, helpers: spawned }
+          msg += `\n👹 *${devil.emoji} ${devil.nama}* [${devil.rank}] muncul!\n`
+          if (spawned.length > 0) {
+            const dialogBantu = ['Aku bantu!', 'Jangan mati disini!', 'Sini aku backup!', 'Keroyok bareng!']
+            const helper = spawned[Math.floor(Math.random() * spawned.length)]
+            msg += `\n${helper.emoji} *${helper.nama}*: "${dialogBantu[Math.floor(Math.random() * dialogBantu.length)]}"\n`
+            msg += `👥 ${spawned.length} karakter ikut membantu:\n`
+            spawned.forEach((character, index) => {
+              msg += `*${index + 1}.* ${character.emoji} *${character.nama}*\n`
+            })
+          }
+          msg += `\n.csm fight - Lawan\n.csm run - Kabur\n`
         } else {
-          msg += `Sepertinya tidak ada apa-apa disini...\n`
+          csm.encounter = { type: 'char', data: spawned[0] }
+          msg += `\n👥 Ada ${spawned.length} orang di sini:\n`
+          spawned.forEach((character, index) => {
+            const love = csm.relations[character.nama] || 0
+            msg += `*${index + 1}.* ${character.emoji} *${character.nama}* - ${character.role}\n`
+            msg += ` "${character.dialog[Math.floor(Math.random() * character.dialog.length)]}"\n`
+            msg += ` 💌 ${love}/${character.needLove}\n\n`
+          })
+          msg += `.csm interact <nama> - Ngobrol\n.csm run - Pergi\n`
         }
+      } else {
+        msg += `Sepertinya tidak ada apa-apa disini...\n`
       }
     } else {
       msg += `Tempat ini tenang. Tidak ada yg terjadi.\n`
     }
 
-    msg += `\n📈 +${expGain} EXP`
+    msg += `\n📈 +${expGain} EXP\n`
     saveDB(wdb)
-    return m.reply(msg + `\n━━━━━━━━━━━`)
+    return m.reply(msg + `━━━━━━━━━━━`)
   }
 
-  // === INTERACT ===
-  if (action === 'interact') {
-  if (!csm.encounter || (csm.encounter.type !== 'char' && csm.encounter.type !== 'chars')) {
+// === INTERACT 💬
+if (action === 'interact') {
+  if(!csm.encounter || csm.encounter.type!== 'char') {
     return m.reply(header('TIDAK ADA') + `Tidak ada karakter di sini\n━━━━━━━━━━━`)
   }
 
-  let charList = csm.encounter.type === 'char' ? [csm.encounter.data] : (Array.isArray(csm.encounter.data) ? csm.encounter.data : (Array.isArray(csm.encounter.list) ? csm.encounter.list : []))
-  let char = null
-  const input = args.slice(1).join(' ').trim()
-  if (!isNaN(input) && parseInt(input) > 0) {
-    char = charList[parseInt(input) - 1]
-  } else if (input) {
-    char = charList.find(c => c.nama.toLowerCase() === input.toLowerCase())
-  } else {
-    char = charList[0]
-  }
+  let char = csm.encounter.data
 
-  if (!char) char = charList[0]
-  if (!char) return m.reply(header('TIDAK ADA') + `Karakter tidak ditemukan\n━━━━━━━━━━━`)
-
-  if (!csm.relations[char.nama]) csm.relations[char.nama] = 0
-  csm.relations[char.nama] += Math.floor(Math.random() * 8) + 5
+  if(!csm.relations[char.nama]) csm.relations[char.nama] = 0
+  csm.relations[char.nama] += Math.floor(Math.random()*8) + 5
 
   csm.encounter = null
 
@@ -480,12 +682,13 @@ if(!action){
 
   return m.reply(
     header(`INTERAKSI DENGAN ${char.nama}`) +
-    `${char.emoji} "${char.dialog[Math.floor(Math.random() * char.dialog.length)]}"\n\n` +
+    `${char.emoji} "${char.dialog[Math.floor(Math.random()*char.dialog.length)]}"\n\n` +
     `💌 Hubungan: ${csm.relations[char.nama]}/${char.needLove}\n` +
     `━━━━━━━━━━━`
   )
 }
 
+// === FIGHT ⚔️
 if (action === 'fight') {
   if(csm.encounter?.type === 'makima_neraka'){
     csm.encounter = null
@@ -589,7 +792,7 @@ if (action === 'fight') {
   csm.health = Math.max(1, csm.health - dmgTaken)
 
   if(b.regen > 0 || b.heal > 0){
-    csm.health = Math.min(100, csm.health + b.regen + b.heal)
+    csm.health = Math.min(csm.maxHealth, csm.health + b.regen + b.heal)
   }
 
   if(devil.hp <= dmg){
@@ -639,6 +842,7 @@ if (action === 'fight') {
   return m.reply(header('KEKALAHAN') + `Kamu kalah...\n❤️ -${dmgTaken} HP\n━━━━━━━━━━━`)
 }
 
+// === RUN 🏃
 if (action === 'run') {
   if(!csm.encounter) return m.reply(header('TIDAK ADA') + `Tidak ada yg dikejar\n━━━━━━━━━━━`)
   let b = calcBonus(csm)
@@ -659,6 +863,7 @@ if (action === 'run') {
   return m.reply(msg + `━━━━━━━━━━━`)
 }
 
+// === SHOP 🛒
 if (action === 'shop' || action === 'store' || action === 'toko') {
   const sub = args[1]?.toLowerCase()
 
@@ -666,7 +871,6 @@ if (action === 'shop' || action === 'store' || action === 'toko') {
   if (sub === 'weapon') {
     const act = args[2]?.toLowerCase()
 
-    // BELI / BUY / BELI
     if (act === 'beli' || act === 'buy') {
       const input = args.slice(3).join(' ').trim()
       if (!input) return m.reply(header('PENGGUNAAN') + `.csm shop weapon buy <nomor/nama>\n━━━━━━━━━━━`)
@@ -681,7 +885,6 @@ if (action === 'shop' || action === 'store' || action === 'toko') {
       return m.reply(header('PEMBELIAN BERHASIL') + `${item.emoji} *${item.nama}* [T${item.tier}]\nDMG: +${item.dmg}\nDUR: ${item.dur}\n-Rp ${item.harga.toLocaleString()}\n━━━━━━━━━━━`)
     }
 
-    // INFO
     if (act === 'info') {
       const input = args.slice(3).join(' ').trim()
       if (!input) return m.reply(header('PENGGUNAAN') + `.csm shop weapon info <nomor/nama>\n━━━━━━━━━━━`)
@@ -690,7 +893,6 @@ if (action === 'shop' || action === 'store' || action === 'toko') {
       return m.reply(header(item.nama) + `${item.emoji} [TIER ${item.tier}]\nJenis: ${item.jenis}\nDMG: +${item.dmg}\nDUR: ${item.dur}\nHarga: Rp ${item.harga.toLocaleString()}\nUser: ${item.user}\nMaterial: ${item.material}\n\n${item.desc}\n━━━━━━━━━━━`)
     }
 
-    // LIST WEAPON FULL
     let cap = header('TOKO WEAPON')
     cap += `💰 Bank: Rp ${userRPG.bank.toLocaleString()}\n🩸 Darah: ${csm.blood.toLocaleString()}\n`
     cap += `📌.csm shop weapon buy <nomor/nama>\n📌.csm shop weapon info <nomor/nama>\n━━━━━━━━━━━\n\n`
@@ -711,19 +913,18 @@ if (action === 'shop' || action === 'store' || action === 'toko') {
     return m.reply(header('TOKO ITEM') + `Fitur beli item belum tersedia.\nNanti akan ada consumable, material, dll.\n━━━━━━━━━━━`)
   }
 
-  // === DEFAULT MENU ===
   let cap = header('TOKO')
   cap += `💰 Bank: Rp ${userRPG.bank.toLocaleString()}\n🩸 Darah: ${csm.blood.toLocaleString()}\n\n`
   cap += `📌.csm shop weapon - Beli senjata\n📌.csm shop item - Lihat item\n📌.csm jual/sell <nomor> - Jual dari inventory\n━━━━━━━━━━━`
   return m.reply(cap)
 }
 
-// === CEK STATUS DARAH (Jika tanpa argumen) ===
-if ((action === 'blood' || action === 'darah') && !args[1]) {
-  return m.reply(header('STATUS DARAH') + `🩸 Darah Kamu: ${csm.blood.toLocaleString()}\n💰 Bank: Rp ${userRPG.bank.toLocaleString()}\n\n💡 Ketik *.csm blood <jumlah>* untuk beli Darah.\n━━━━━━━━━━━`)
+// === BLOOD 🩸
+if (action === 'blood' || action === 'darah') {
+  return m.reply(header('STATUS DARAH') + `🩸 Darah Kamu: ${csm.blood.toLocaleString()}\n💰 Bank: Rp ${userRPG.bank.toLocaleString()}\n━━━━━━━━━━━`)
 }
 
-// === JUAL / SELL / JUAL ===
+// === SELL 💰
 if (action === 'jual' || action === 'sell') {
   if (!Array.isArray(csm.inventory)) csm.inventory = [{nama: 'Fist', dur: 999}]
   const input = args[1]
@@ -739,11 +940,11 @@ if (action === 'jual' || action === 'sell') {
   const hargaJual = dataItem.harga? Math.floor(dataItem.harga / 2) : Math.floor(dataItem.jual / 2)
   csm.inventory.splice(index, 1)
   csm.blood += hargaJual
-  saveDB(wdb) // <-- save setelah ubah darah + inventory
+  saveDB(wdb)
   return m.reply(header('PENJUALAN BERHASIL') + `${dataItem.emoji} *${dataItem.nama}* [T${dataItem.tier}]\nDapat: +${hargaJual.toLocaleString()} Darah [50%]\n━━━━━━━━━━━`)
 }
 
-// === EQUIP ===
+// === EQUIP ⚔️
 if (action === 'equip') {
   if (!Array.isArray(csm.inventory)) csm.inventory = [{nama: 'Fist', dur: 999}]
   const input = args.slice(1).join(' ').trim()
@@ -765,11 +966,11 @@ if (action === 'equip') {
   if (typeof item.dur!== 'number' || item.dur < 0) item.dur = dataItem.dur
   csm.inventory.unshift(item)
   csm.weapon = { nama: item.nama, dur: item.dur }
-  saveDB(wdb) // <-- save setelah ubah equip
+  saveDB(wdb)
   return m.reply(header('SENJATA DIPASANG') + `${dataItem.emoji} *${dataItem.nama}* [T${dataItem.tier}]\nDMG: ${dataItem.dmg}\nDUR: ${item.dur}/${dataItem.dur}\n━━━━━━━━━━━`)
 }
 
-// === INVENTORY ===
+// === INVENTORY 🎒
 if (action === 'inv' || action === 'inventory') {
   if (!Array.isArray(csm.inventory)) csm.inventory = [{nama: 'Fist', dur: 999}]
   let cap = header('INVENTORY KAMU')
@@ -785,7 +986,7 @@ if (action === 'inv' || action === 'inventory') {
   return m.reply(cap)
 }
 
-// === REPAIR ===
+// === REPAIR 🔧
 if (action === 'repair') {
   if (!Array.isArray(csm.inventory)) csm.inventory = [{nama: 'Fist', dur: 999}]
   if (!csm.weapon ||!csm.weapon.nama) csm.weapon = { nama: 'Fist', dur: 999 }
@@ -823,18 +1024,15 @@ if (action === 'repair') {
   userRPG.bank -= biaya
   itemInv.dur = dataItem.dur
   if (csm.weapon.nama === dataItem.nama) csm.weapon.dur = dataItem.dur
-  saveDB(wdb) // <-- save setelah repair
+  saveDB(wdb)
   return m.reply(header('BERHASIL DI-REPAIR') + `${dataItem.emoji} *${dataItem.nama}* [T${dataItem.tier}]\nDurability: FULL\nBiaya: ${persen*100}% = Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === CSM CONTRACT SYSTEM  =========================
-// ============================================================
+// === CONTRACT ⛓️
 if (action === 'contract') {
   if (!Array.isArray(csm.contractHistory)) csm.contractHistory = [];
   if (!csm.contractPending) csm.contractPending = null;
 
-  // 1. CEK KONTRAK HABIS SECARA OTOMATIS
   if (csm.contractExpire > 0 && Date.now() > csm.contractExpire) {
     csm.devilContract = null; csm.isTransform = false; csm.contractExpire = 0;
     saveDB(wdb);
@@ -843,7 +1041,10 @@ if (action === 'contract') {
 
   const sub = args[1]?.toLowerCase();
 
-  // 2. PANEL INFORMASI UTAMA (.csm contract)
+  if (csm.erasureProtection?.startsWith('horsemen:') && ['trial', 'deal'].includes(sub)) {
+    return m.reply(header('KONTRAK TERKUNCI') + `Kamu adalah bagian dari Four Horsemen dan tidak bisa membuat kontrak lain.\n━━━━━━━━━━━`)
+  }
+
   if (!sub) {
     let cap = header('INFORMASI KONTRAK');
     cap += `🩸 Darah: ${csm.blood.toLocaleString()}\n━━━━━━━━━━━\n`;
@@ -851,6 +1052,7 @@ if (action === 'contract') {
       cap += `Mode: 🧑 Manusia\nStatus: Belum Berkontrak\n`;
     } else {
       const dv = DEVIL_LIST.find(d => d.nama === csm.devilContract);
+      cap += `Tipe Kontrak: ${csm.contractType || 'devil'}\n`;
       cap += `Mode: ${csm.isTransform ? '🧬 Transform Aktif' : '🧑 Tidak Transform'}\n`;
       cap += `Status: ⛓️ ${dv?.emoji || '👹'} ${csm.devilContract} [${dv?.rank || '?'}]\n`;
       if (csm.contractExpire > 0) {
@@ -860,13 +1062,12 @@ if (action === 'contract') {
       } else { cap += `⏰ Sisa: Permanen\n`; }
     }
     cap += `━━━━━━━━━━━\n*DAFTAR COMMAND*\n`;
-    cap += `1..csm contract fiend - 10.000 Darah\n2..csm contract devil - 50.000 Darah\n`;
-    cap += `3..csm contract trial <angka> - Sewa 2 Hari\n4..csm contract deal <angka> - Beli Permanen\n`;
+    cap += `1..csm contract host - 5.000 Darah\n2..csm contract fiend - 10.000 Darah\n3..csm contract hybrid - 50.000 Darah\n4..csm contract devil - 100.000 Darah\n`;
+    cap += `5..csm contract trial <angka> - Sewa Devil\n6..csm contract deal <angka> - Beli Devil Permanen\n`;
     cap += `5..csm contract list [info <angka/nama>]\n6..csm contract database / history\n━━━━━━━━━━━`;
     return m.reply(cap);
   }
 
-  // 3. RIWAYAT KONTRAK (.csm contract history)
   if (sub === 'history') {
     let cap = header('RIWAYAT KONTRAK');
     if (csm.contractHistory.length === 0) cap += `Belum ada riwayat kontrak.\n`;
@@ -874,7 +1075,6 @@ if (action === 'contract') {
     return m.reply(cap + `━━━━━━━━━━━`);
   }
 
-  // 4. DATABASE UTAMA GROUP BY RANK (.csm contract database)
   if (sub === 'database') {
     let cap = header('DATABASE GLOBAL MONSTER');
     let ranks = ['E','D','C','B','A','S','SS','SSS'];
@@ -882,18 +1082,19 @@ if (action === 'contract') {
       let list = DEVIL_LIST.filter(d => d.rank === rank);
       if (list.length) {
         cap += `\n*${rank} RANK*\n`;
-        list.forEach((d, i) => { cap += `${i + 1}. ${d.emoji} ${d.nama} (${d.tipe})\n`; });
+        list.forEach((d, i) => {
+          const meta = getContractMeta(d)
+          cap += `${i + 1}. ${d.emoji} ${d.nama} (${d.tipe}) | ${meta.types.join('/')} | Host:${meta.canHost ? 'Yes' : 'No'} Doll:${meta.canDoll ? 'Yes' : 'No'}\n`;
+        });
       }
     });
     cap += `\n.csm contract trial <angka> - 2 Hari\n.csm contract deal <angka> - Permanen\n━━━━━━━━━━━`;
     return m.reply(cap);
   }
 
-  // 5. LIST SIMPLE SEMUA MONSTER BERURUTAN (.csm contract list)
   if (sub === 'list') {
     const nextArg = args[2]?.toLowerCase();
     
-    // LOGIKA SUB-SUB COMMAND: .csm contract list info <angka/nama>
     if (nextArg === 'info') {
       const searchParam = args.slice(3).join(' ');
       if (!searchParam) return m.reply(header('ARGUMEN KURANG') + `Gunakan: .csm contract list info <angka/nama>\n━━━━━━━━━━━`);
@@ -901,7 +1102,6 @@ if (action === 'contract') {
       let targetMonster;
       const idx = parseInt(searchParam);
       
-      // Urutan sorting internal agar penomoran list info sama persis dengan menu list biasa
       const sortedDb = [...DEVIL_LIST].sort((a, b) => {
         const ranks = ['E','D','C','B','A','S','SS','SSS'];
         return ranks.indexOf(a.rank) - ranks.indexOf(b.rank);
@@ -915,23 +1115,21 @@ if (action === 'contract') {
 
       if (!targetMonster) return m.reply(header('TIDAK DITEMUKAN') + `Monster atau nomor tidak terdaftar dalam database.\n━━━━━━━━━━━`);
 
-      // Kalkulasi estimasi harga berdasarkan rank untuk panel deskripsi info
-      let tPrice = 70000, dPrice = 150000;
-      if (targetMonster.rank === 'S') { tPrice = 120000; dPrice = 200000; }
-      else if (targetMonster.rank === 'SS') { tPrice = 200000; dPrice = 400000; }
-      else if (targetMonster.rank === 'SSS') { tPrice = 500000; dPrice = 700000; }
+      const meta = getContractMeta(targetMonster)
+      const dPrice = { E: 200000, D: 225000, C: 300000, B: 450000, A: 700000, S: 1000000, SS: 1500000, SSS: 2500000 }[targetMonster.rank] || 200000
+      const tPrice = Math.floor(dPrice * 0.5)
 
       let cap = header(`DETAIL: ${targetMonster.nama.toUpperCase()}`);
       cap += `Tipe: ${targetMonster.tipe} (${targetMonster.emoji})\n`;
       cap += `Rank: [${targetMonster.rank}] | HP: ${targetMonster.hp} | DMG: ${targetMonster.dmg}\n`;
       cap += `Loot: +${targetMonster.exp} EXP | +${targetMonster.blood} Blood\n`;
+      cap += `Kontrak: ${meta.types.join('/')} | Host: ${meta.canHost ? 'Bisa' : 'Tidak'} | Doll: ${meta.canDoll ? 'Bisa' : 'Tidak'}\n`;
       cap += `💰 Biaya Sewa (Trial 2 Hari): ${tPrice.toLocaleString()} Darah\n`;
       cap += `💳 Biaya Beli (Deal Permanen): ${dPrice.toLocaleString()} Darah\n`;
       cap += `━━━━━━━━━━━\n*DESKRIPSI:*\n${targetMonster.desc || '-'}\n━━━━━━━━━━━`;
       return m.reply(cap);
     }
 
-    // TAMPILAN STANDAR: .csm contract list
     let cap = header('DAFTAR ALL MONSTER');
     let ranks = ['E','D','C','B','A','S','SS','SSS'];
     let counter = 1;
@@ -946,8 +1144,10 @@ if (action === 'contract') {
     return m.reply(cap);
   }
 
-  // 6. LOGIKA BELI LANGSUNG (.csm contract trial / .csm contract deal)
   if (sub === 'trial' || sub === 'deal') {
+    if (['fiend', 'hybrid'].includes(csm.erasureProtection)) {
+      return m.reply(header('KONTRAK TERBATAS') + `Perlindunganmu hanya mengizinkan kontrak ${csm.erasureProtection}. Trial/deal Devil tidak tersedia.\n━━━━━━━━━━━`)
+    }
     const sortedDb = [...DEVIL_LIST].sort((a, b) => {
       const ranks = ['E','D','C','B','A','S','SS','SSS'];
       return ranks.indexOf(a.rank) - ranks.indexOf(b.rank);
@@ -961,19 +1161,9 @@ if (action === 'contract') {
     const devil = sortedDb[num - 1];
     let price = 0;
 
-    if (sub === 'trial') {
-      if (devil.rank === 'S') price = 120000;
-      else if (devil.rank === 'SS') price = 200000;
-      else if (devil.rank === 'SSS') price = 500000;
-      else price = 70000;
-    }
-
-    if (sub === 'deal') {
-      if (devil.rank === 'S') price = 200000;
-      else if (devil.rank === 'SS') price = 400000;
-      else if (devil.rank === 'SSS') price = 700000;
-      else price = 150000;
-    }
+    const rankPrice = { E: 200000, D: 225000, C: 300000, B: 450000, A: 700000, S: 1000000, SS: 1500000, SSS: 2500000 }
+    price = rankPrice[devil.rank] || 200000
+    if (sub === 'trial') price = Math.floor(price * 0.5)
 
     if (csm.blood < price) return m.reply(header('DARAH KURANG') + `Butuh ${price.toLocaleString()} Darah\nKamu punya: ${csm.blood.toLocaleString()}\n━━━━━━━━━━━`);
 
@@ -990,7 +1180,6 @@ if (action === 'contract') {
   }
 
 
-  // 7. SISTEM KONFIRMASI SETUJU (.csm contract yes)
   if (sub === 'yes') {
     if (!csm.contractPending) return m.reply(header('TIDAK ADA KONTRAK') + `Tidak ada kontrak yang menunggu konfirmasi.\n━━━━━━━━━━━`);
     if (Date.now() - csm.contractPending.time > 60000) {
@@ -1002,28 +1191,15 @@ if (action === 'contract') {
     if (csm.blood < data.price) return m.reply(header('DARAH KURANG') + `Darahmu habis saat menunggu proses konfirmasi.\n━━━━━━━━━━━`);
 
     let devil;
-    // JIKA TRANSAKSI ADALAH GACHA ACAK
     if (data.type === 'gacha') {
-      if (data.rank === 'fiend') {
-        // Hanya mengambil monster tipe Fiend ber-rank E atau D
-        let pool = DEVIL_LIST.filter(d => d.tipe === 'Fiend' && ['E', 'D'].includes(d.rank));
-        devil = pool[Math.floor(Math.random() * pool.length)];
-      } else {
-        // Gacha Devil murni dengan rate tier sesuai lore
-        const rate = Math.random();
-        let pool;
-        if (rate < 0.50) pool = DEVIL_LIST.filter(d => d.tipe === 'Devil' && ['E', 'D'].includes(d.rank));
-        else if (rate < 0.80) pool = DEVIL_LIST.filter(d => d.tipe === 'Devil' && ['C', 'B'].includes(d.rank));
-        else if (rate < 0.95) pool = DEVIL_LIST.filter(d => d.tipe === 'Devil' && ['A', 'S'].includes(d.rank));
-        else pool = DEVIL_LIST.filter(d => d.tipe === 'Devil' && ['SS', 'SSS'].includes(d.rank));
-        
-        if (!pool.length) pool = DEVIL_LIST.filter(d => d.tipe === 'Devil');
-        devil = pool[Math.floor(Math.random() * pool.length)];
-      }
+      const contractType = data.contractType || data.rank || 'devil';
+      let pool = DEVIL_LIST.filter(entity => getContractMeta(entity).types.includes(contractType));
+      if (contractType === 'host') pool = pool.filter(entity => getContractMeta(entity).canHost);
+      if (!pool.length) pool = DEVIL_LIST.filter(entity => entity.tipe === 'Fiend');
+      devil = pool[Math.floor(Math.random() * pool.length)];
       csm.lastGacha = Date.now();
       csm.contractExpire = 0; // Gacha selalu permanen
     } else {
-      // JIKA TRANSAKSI ADALAH BELI LANGSUNG (TRIAL / DEAL)
       devil = DEVIL_LIST.find(d => d.nama === data.devil);
       if (data.type === 'trial') {
         csm.contractExpire = Date.now() + 172800000; // Aktif 2 hari
@@ -1037,6 +1213,8 @@ if (action === 'contract') {
     if (csm.contractHistory.length > 10) csm.contractHistory.shift();
     
     csm.devilContract = devil.nama;
+    csm.contractType = data.type === 'gacha' ? (data.contractType || data.rank) : 'devil';
+    csm.dollContract = false;
     csm.isTransform = true; // Auto Transform setelah berhasil kontrak
     csm.contractPending = null;
     saveDB(wdb);
@@ -1047,23 +1225,27 @@ if (action === 'contract') {
     return m.reply(header(titleMsg) + `${devil.emoji} *${devil.nama}* [${devil.rank}]\n-${data.price.toLocaleString()} Darah\n${sisa}✅ Auto Transform Aktif\nKalian kini resmi terikat perjanjian darah.\n━━━━━━━━━━━`);
   }
 
-  // 8. SISTEM KONFIRMASI BATAL (.csm contract no)
   if (sub === 'no') {
     if (!csm.contractPending) return m.reply(header('TIDAK ADA KONTRAK') + `Tidak ada kontrak yang perlu dibatalkan.\n━━━━━━━━━━━`);
     csm.contractPending = null;
     return m.reply(header('KONTRAK DIBATALKAN') + `Kamu mundur dari perjanjian darah.\n━━━━━━━━━━━`);
   }
 
-  // 9. LOGIKA INISIASI GACHA ACAK (.csm contract fiend / .csm contract devil)
   const type = sub;
-  if (!type || !['fiend', 'devil'].includes(type)) {
-    return m.reply(header('PENGGUNAAN') + `.csm contract fiend - 10.000 Darah\n.csm contract devil - 50.000 Darah\n.csm contract trial <angka> - Sewa 2 Hari\n.csm contract deal <angka> - Permanen\n.csm contract list [info <angka/nama>]\n.csm contract database / history\n━━━━━━━━━━━`);
+  if (!type || !['host', 'fiend', 'hybrid', 'devil'].includes(type)) {
+    return m.reply(header('PENGGUNAAN') + `.csm contract host - 5.000 Darah\n.csm contract fiend - 10.000 Darah\n.csm contract hybrid - 50.000 Darah\n.csm contract devil - 100.000 Darah\n.csm contract trial <angka> - Sewa Devil\n.csm contract deal <angka> - Beli Devil Permanen\n.csm contract database / history\n━━━━━━━━━━━`);
   }
 
-  const cost = type === 'devil' ? 50000 : 10000;
+  if (csm.erasureProtection?.startsWith('horsemen:')) {
+    return m.reply(header('KONTRAK TERKUNCI') + `Kamu adalah bagian dari Four Horsemen dan tidak bisa membuat kontrak lain.\n━━━━━━━━━━━`)
+  }
+  if (['fiend', 'hybrid'].includes(csm.erasureProtection) && type !== csm.erasureProtection) {
+    return m.reply(header('KONTRAK TERBATAS') + `Perlindunganmu hanya mengizinkan kontrak ${csm.erasureProtection}.\n━━━━━━━━━━━`)
+  }
+
+  const cost = CONTRACT_PRICE[type];
   if (csm.blood < cost) return m.reply(header('DARAH KURANG') + `Butuh ${cost.toLocaleString()} Darah untuk gacha ${type}.\nKamu punya: ${csm.blood.toLocaleString()}\n━━━━━━━━━━━`);
   
-  // VALIDASI COOLDOWN GACHA 5 MENIT (300.000 ms)
   const lastGachaTime = csm.lastGacha || 0;
   const cdLeft = 300000 - (Date.now() - lastGachaTime);
   if (cdLeft > 0) {
@@ -1072,27 +1254,34 @@ if (action === 'contract') {
   }
 
   let cap = header(`KONFIRMASI KONTRAK ${type.toUpperCase()}`);
-  cap += `Kamu akan membuat kontrak acak dengan faksi ${type === 'devil' ? 'Devil Murni' : 'Fiend/Hybrid'}.\n`;
+  const contractLabel = { host: 'Host Devil', fiend: 'Fiend', hybrid: 'Hybrid', devil: 'Devil Murni' };
+  cap += `Kamu akan membuat kontrak acak tipe ${contractLabel[type]}.\n`;
   cap += `Biaya Gacha: ${cost.toLocaleString()} Darah\n`;
   cap += `Durasi: Permanen\n\n`;
   cap += `Apakah kamu yakin ingin melanjutkan gacha acak ini?\n`;
   cap += `Ketik: *.csm contract yes* untuk lanjut\n`;
   cap += `Ketik: *.csm contract no* untuk batal\n━━━━━━━━━━━`;
   
-  csm.contractPending = { type: 'gacha', rank: type, price: cost, time: Date.now() };
+  csm.contractPending = { type: 'gacha', contractType: type, rank: type, price: cost, time: Date.now() };
   return m.reply(cap);
 }
 
 
 
 
-  // ============================================================
-  // === RESET ==================================================
-  // ============================================================
-  // RESET DIPISAH DARI ENDING.
-  // SOURCE LAMA SALAH NESTING DI SINI.
+  // === RESET 🔄
 
   if (action === 'reset') {
+    if (!csm.ending) {
+      return m.reply(
+        header('RESET BELUM TERSEDIA') +
+        `Kamu baru bisa reset setelah memilih ending.\n` +
+        `Selesaikan story sampai Arc 14, lalu gunakan:\n` +
+        `.csm ending <1-7>\n` +
+        `━━━━━━━━━━━`
+      )
+    }
+
     const sub = args[1]?.toLowerCase()
 
     if (!sub) {
@@ -1155,6 +1344,10 @@ if (action === 'contract') {
     ]
 
     csm.devilContract = null
+    csm.contractType = null
+    csm.erasureProtection = null
+    csm.erasurePending = null
+    csm.dollContract = false
     csm.isTransform = false
     csm.blood = 0
     csm.partners = []
@@ -1164,6 +1357,9 @@ if (action === 'contract') {
     csm.encounter = null
     csm.pendingDuel = null
     csm.pendingBlood = 0
+    csm.lastTerror = 0
+    csm.terrorStory = []
+    csm.lastStory = 0
     csm.job = null
     csm.location = 'Markas Public Safety'
 
@@ -1178,9 +1374,7 @@ if (action === 'contract') {
     )
   }
 
-  // ============================================================
-  // === ENDING =================================================
-  // ============================================================
+  // === ENDING 🏁
 
   if (action === 'ending') {
     if (csm.story < 14) {
@@ -1409,11 +1603,19 @@ if (action === 'contract') {
     return m.reply(cap + `\n━━━━━━━━━━━`)
   }
 
-  // ============================================================
-  // === CONVERT DARAH ==========================================
-  // ============================================================
+  // === CONVERT BLOOD 💱
 
   if (action === 'blood') {
+    const bloodUser = global.db.data.users[m.sender]
+
+    if (!bloodUser?.rpg) {
+      return m.reply(
+        header('DATA RPG ERROR') +
+        `Data RPG tidak ditemukan.\n` +
+        `━━━━━━━━━━━`
+      )
+    }
+
     if (args[1]?.toLowerCase() === 'deal') {
       if (!csm.pendingBlood || csm.pendingBlood <= 0) {
         return m.reply(
@@ -1425,16 +1627,16 @@ if (action === 'contract') {
 
       const harga = csm.pendingBlood * 1500
 
-      if (userRPG.bank < harga) {
+      if (bloodUser.bank < harga) {
         return m.reply(
           header('SALDO KURANG') +
           `Butuh Rp ${harga.toLocaleString()}\n` +
-          `Saldo: Rp ${userRPG.bank.toLocaleString()}\n` +
+          `Saldo: Rp ${bloodUser.bank.toLocaleString()}\n` +
           `━━━━━━━━━━━`
         )
       }
 
-      userRPG.bank -= harga
+      bloodUser.bank -= harga
       const dapat = csm.pendingBlood
       csm.blood += dapat
       csm.pendingBlood = 0
@@ -1478,23 +1680,21 @@ if (action === 'contract') {
     )
   }
   
-  // ============================================================
-// === STORY ==================================================
-// ============================================================
+  // === STORY 📖
 
 if (action === 'story') {
   if (!csm.storyCooldown) csm.storyCooldown = {}
   const now = Date.now()
+  const storyCooldown = 60 * 60 * 1000
 
-  // === MODE REPLAY:.csm story replay 3 ===
-  if (args[1]?.toLowerCase() === 'replay' || args[2]?.toLowerCase() === 'replay') {
-    const targetNo = parseInt(args[1]?.toLowerCase() === 'replay' ? args[2] : args[3])
-    // targetNo already parsed
+  // Story replay
+  if (args[2] === 'replay') {
+    const targetNo = parseInt(args[3])
     if (!targetNo || isNaN(targetNo)) return m.reply(header('FORMAT SALAH') + `Contoh: *${usedPrefix}csm story replay 3*\n━━━━━━━━━━━`)
     if (targetNo < 1 || targetNo >= csm.story) return m.reply(header('GAGAL') + `Arc ${targetNo} belum terbuka.\nArc terjauh kamu: Arc ${csm.story}\n━━━━━━━━━━━`)
 
     const lastUsed = csm.storyCooldown[targetNo] || 0
-    const cd = 60 * 1000
+    const cd = storyCooldown
     if (now - lastUsed < cd) {
       const sisa = Math.ceil((cd - (now - lastUsed)) / 1000)
       return m.reply(header('COOLDOWN') + `Arc ${targetNo} masih cooldown.\nTunggu *${sisa} detik* lagi.\n━━━━━━━━━━━`)
@@ -1548,7 +1748,7 @@ if (action === 'story') {
 
       let msg = header(`📖 ${story.nama}`) +
         `✅ KEMENANGAN\n` +
-        `🔁 MODE REPLAY | CD: 60s\n` +
+        `🔁 MODE REPLAY | CD: 1 jam\n` +
         `${efek}` +
         `${story.desc}\n\n` +
         `${devilEmoji} *${devilName}*: "${devilQuote}"\n\n` +
@@ -1566,7 +1766,11 @@ if (action === 'story') {
     return m.reply(header('GAGAL') + `${efek}Kamu kalah melawan ${devilName}.\n${devilEmoji} *${devilName}*: "${devilQuote}"\n\n❤️ -50 HP total\n━━━━━━━━━━━`)
   }
 
-  // === MODE STORY BARU:.csm story ===
+  // New story
+  if (now - csm.lastStory < storyCooldown) {
+    const sisa = Math.ceil((storyCooldown - (now - csm.lastStory)) / 60000)
+    return m.reply(header('COOLDOWN STORY') + `Tunggu ${sisa} menit lagi sebelum menjalankan story berikutnya.\n━━━━━━━━━━━`)
+  }
   const story = STORY_LIST.find(s => s.no === csm.story)
   if (!story) return m.reply(header('TAMAT') + `Selamat! Kamu sudah menyelesaikan semua Arc Chainsaw Man.\n━━━━━━━━━━━`)
 
@@ -1574,6 +1778,7 @@ if (action === 'story') {
   if (csm.level < reqLevel) return m.reply(header('LEVEL KURANG') + `Arc ini butuh minimal *Lv.${reqLevel}*\nLevel kamu: *Lv.${csm.level}*\n━━━━━━━━━━━`)
   if (csm.health < 50) return m.reply(header('HP KURANG') + `Butuh minimal *50 HP*\nHP kamu: *${csm.health}*\n━━━━━━━━━━━`)
 
+  csm.lastStory = now
   csm.health -= 20
   const winRate = Math.min(0.95, 0.2 + csm.level * 0.015 + csm.partners.filter(p=>p.status==='active').length * 0.08)
   const win = Math.random() < winRate
@@ -1610,7 +1815,7 @@ if (action === 'story') {
 
   if (win) {
     csm.story++
-    const bloodReward = story.reward * 5
+    const bloodReward = Math.min(500000, Math.floor(story.reward * (8 + story.no * 0.15)))
     csm.blood += bloodReward
     const expReward = 500 + (story.no * 100)
     const leveled = addExp(expReward)
@@ -1642,7 +1847,8 @@ if (action === 'story') {
   )
 }
 
-if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() === 'list' || args[2]?.toLowerCase() === 'list'))) {
+// === STORY LIST 📚
+if (action === 'storylist' || action === 'story' && args[2] === 'list') {
   const now = Date.now()
   let list = `╭──「 📖 DAFTAR ARC 」──╮\nArc kamu: *Arc ${csm.story}*\nReplay: *.csm story replay [angka]*\n━━━━━━━━━━━\n\n`
   STORY_LIST.forEach(s => {
@@ -1655,10 +1861,10 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
     const cdText = (s.no < csm.story && cdSisa > 0)? ` | ⏳${cdSisa}d` : ''
     list += `${status} *${s.no}. ${s.nama}*${cdText}\n ${s.devil} | Lv.${reqLevel}\n Replay: 📈${expReplay} EXP | 🩸0\n`
   })
-  return m.reply(list + `━━━━━━━━━━━\n*Note: Replay = 1/4 EXP, CD 60s*`)
+  return m.reply(list + `━━━━━━━━━━━\n*Note: Replay = 1/4 EXP, CD 1 jam*`)
 }
 
-// === EXPLORE 1 JAM ===
+// === EXPLORE 🔍
   if (action === 'explore') {
     if(csm.encounter) return m.reply(header('BELUM SELESAI') + `Selesaikan encounter dulu\n━━━━━━━━━━━`)
     if(cekCD('lastExplore', 3600000) > 0) return m.reply(header('COOLDOWN') + `Tunggu ${Math.ceil(cekCD('lastExplore', 3600000)/60)} menit\n━━━━━━━━━━━`)
@@ -1668,7 +1874,6 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
     let msg = header(`EXPLORE`)
     let itemDropped = false
 
-    // 20 CERITA EXPLORE RANDOM
     const explore_story = [
       `Jalanan sepi. Hanya ada poster "Orang Hilang" yang ketiup angin.`,
       `Lembur lagi. Pas keluar kantor, lampu jalan setengahnya mati.`,
@@ -1703,7 +1908,6 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
       `Lumayan buat tambah-tambah.`
     ]
 
-    // 1. DROP ITEM 25% + FindItem + Luck. LOW TIER DIBANYAKIN
     let itemRate = 0.25 + bonus.findItem + bonus.luck
     if(rand < itemRate &&!itemDropped){
       itemDropped = true
@@ -1727,7 +1931,6 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
       msg += `📦 ${rarity} Kamu nemu *${item.emoji} ${item.nama}* [TIER ${item.tier}]!\n`
       msg += `💬 ${itemComments[Math.floor(Math.random()*itemComments.length)]}\n`
     }
-    // 2. DROP DARAH 8% SAJA
     else if(rand < 0.33 &&!itemDropped){
       itemDropped = true
       let darah = (Math.floor(Math.random()*80) + 20) * 100
@@ -1735,9 +1938,8 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
       csm.blood += darah
       msg += `🩸 Kamu nemu ${darah.toLocaleString()} Darah tercecer!\n`
     }
-    // 3. ENCOUNTER 30%
     else if(rand < 0.63){
-      let devilChance = 0.25
+      let devilChance = 0.25 + (csm.erasureProtection?.startsWith('horsemen:') ? 0.25 : 0)
       let devilSpawn = Math.random() < devilChance - bonus.info/100
       let lastSeen = csm.lastSeenChars || {}
       let charList = [...CHARACTER_LIST]
@@ -1789,7 +1991,7 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
         msg += `.csm fight - Lawan\n.csm run - Kabur`
       } else {
         if(spawned.length > 0){
-          csm.encounter = {type: 'chars', data: spawned}
+          csm.encounter = {type: 'char', data: spawned[0]}
           msg += `👥 Ada ${spawned.length} orang di sini:\n`
           spawned.forEach((c,i) => {
             let love = csm.relations[c.nama] || 0
@@ -1810,16 +2012,12 @@ if (action === 'storylist' || (action === 'story' && (args[1]?.toLowerCase() ===
     return m.reply(msg + `\n━━━━━━━━━━━`)
   }
   
-  // ============================================================
-// === MISSION FARM ===========================================
-// ============================================================
+// === MISSION 🎯
 
-if (action === 'mission' || action === 'misi') { // bisa.csm misi
-  let b = calcBonus(csm) // AMBIL BONUS DULU
-
-  // STAMINA: bonus misi lebih banyak. Default 1 menit, -3 detik per 10 stamina
+if (action === 'mission' || action === 'misi') {
+  let b = calcBonus(csm)
   let cooldown = 60000 - (b.stamina * 300)
-  if(cooldown < 10000) cooldown = 10000 // minimal 10 detik
+  if(cooldown < 10000) cooldown = 10000
 
   if (csm.lastMission && Date.now() - csm.lastMission < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - csm.lastMission)) / 1000)
@@ -1887,7 +2085,6 @@ if (action === 'mission' || action === 'misi') { // bisa.csm misi
   const weaponData = WEAPON_LIST.find(w => w.nama === weapon.nama) || WEAPON_LIST[0]
   const activePartners = csm.partners.filter(p => p.status === 'active')
 
-  // DMG + BUFF
   let dmg = Math.floor(Math.random() * 50) + csm.level * 10 + weaponData.dmg + b.dmg
   if (csm.devilContract === 'Chainsaw Devil' || b.autoTransform) dmg *= 2.5
   dmg += activePartners.length * 25
@@ -1904,7 +2101,6 @@ if (action === 'mission' || action === 'misi') { // bisa.csm misi
 
   const devilHp = Math.floor(devil.hp * 0.7)
 
-  // PILIHAN
   let partnerHelp = ''
   if(activePartners.length > 0){
     let p = activePartners[Math.floor(Math.random() * activePartners.length)]
@@ -1926,31 +2122,27 @@ if (action === 'mission' || action === 'misi') { // bisa.csm misi
     `.csm fight - Lawan langsung\n` +
     `.csm run - Kabur dan curi darah`
 
-  // SIMPAN DATA MISI SEMENTARA + SET COOLDOWN
   csm.tempMission = { devil, devilHp, dmg }
   csm.lastMission = Date.now()
-  saveDB(wdb) // WAJIB: ada perubahan tempMission & lastMission
+  saveDB(wdb)
   return m.reply(msg)
 }
 
-// === MISSION FIGHT ===
+// === MISSION FIGHT ⚔️
 if (action === 'fight' && csm.tempMission){
   let b = calcBonus(csm)
   let { devil, devilHp, dmg } = csm.tempMission
   csm.health = Math.max(1, csm.health - 10)
 
-  // REGEN & HEAL PASIF SETELAH FIGHT
   if(b.regen > 0 || b.heal > 0){
-    csm.health = Math.min(100, csm.health + b.regen + b.heal)
+    csm.health = Math.min(csm.maxHealth, csm.health + b.regen + b.heal)
   }
 
   if (devilHp <= dmg) {
     const rusak = damageWeapon()
-    // WEAPON DUR BONUS
     if(b.weaponDur > 0) csm.inventory[0].dur += b.weaponDur
 
     csm.devilsKilled++
-    // REWARD 2X LIPAT + BUFF
     let bloodGain = Math.floor(((devil.blood * 2) + 400) * b.bloodMult) + b.stealBlood
     let expGain = Math.floor(((devil.exp * 2) + 100) * b.expMult)
     let moneyGain = b.money
@@ -1959,9 +2151,8 @@ if (action === 'fight' && csm.tempMission){
     csm.money = (csm.money || 0) + moneyGain
     const leveled = addExp(expGain)
     delete csm.tempMission
-    saveDB(wdb) // WAJIB: ada perubahan health, blood, money, inventory, devilsKilled, tempMission
+    saveDB(wdb)
 
-    // 5 VARIASI MENANG - BRUTAL CSM
     const WIN_TEXT = [
       `DENTUMAN. DARAH. DAGING.\n\n${devil.emoji} *${devil.nama}* MELEDAK JADI KABUT MERAH.\nGue bahkan gak liat apa yg terjadi. Cuma bau besi.`,
       `SUARA GERGAJI. JERITAN. HENING.\n\n${devil.emoji} *${devil.nama}* JADI IRISAN-IRISAN DI LANTAI.\nEnak. Rasanya kayak ngunyah kaca sambil ketawa.`,
@@ -1984,7 +2175,6 @@ if (action === 'fight' && csm.tempMission){
     return m.reply(msg + `\n━━━━━━━━━━━`)
   }
 
-  // 5 VARIASI KALAH - HAMPIR MATI
   const LOSE_TEXT = [
     `SALAH GERAK. SATU DETIK.\n\n${devil.emoji} *${devil.nama}* NABRAK GUE KE TEMBOK.\nTulang rusuk patah 3. Kabur sekarang atau mati di sini.`,
     `GUE KELEMAHAN.\n\n${devil.emoji} *${devil.nama}* KETAWA SAMBIL NGINJEK TANGAN GUE.\n*KRETEK*. Sakit. Lari, Denji. Lari sebelum dimakan.`,
@@ -1995,29 +2185,26 @@ if (action === 'fight' && csm.tempMission){
   let loseMsg = LOSE_TEXT[Math.floor(Math.random() * LOSE_TEXT.length)]
 
   delete csm.tempMission
-  saveDB(wdb) // WAJIB: ada perubahan health, tempMission
+  saveDB(wdb)
   return m.reply(header('HAMPIR MATI') + loseMsg + `\n━━━━━━━━━━━\n❤️ -10 HP\n━━━━━━━━━━━`)
 }
 
-// === MISSION RUN ===
+// === MISSION RUN 🏃
 if (action === 'run' && csm.tempMission){
   let b = calcBonus(csm)
   let { devil } = csm.tempMission
   csm.health = Math.max(1, csm.health - 10)
-  // REWARD RUN 2X + BUFF
   let stolen = Math.floor(devil.blood * 0.6 * b.bloodMult) + b.stealBlood
   let moneyGain = b.money
   csm.blood += stolen
   csm.money = (csm.money || 0) + moneyGain
 
-  // FIND ITEM PAS KABUR
   let findItemMsg = ''
   if(b.findItem > 0 && Math.random() < b.findItem) findItemMsg = `\n🎁 Kamu nemu item pas kabur!`
 
   delete csm.tempMission
-  saveDB(wdb) // WAJIB: ada perubahan health, blood, money, tempMission
+  saveDB(wdb)
 
-  // 5 VARIASI KABUR - MALING DARAH
   const RUN_TEXT = [
     `TAKUT ITU WAJAR.\n\nGue nyolong ${stolen.toLocaleString()} Darah dari ${devil.nama} sambil merangkak di got.\nMalu? Iya. Hidup? Iya. Itu yg penting.`,
     `STRATEGI RETREAT.\n\nSabet, tusuk, lari.\nBerhasil nyuri ${stolen.toLocaleString()} Darah dari ${devil.nama}.\nBesok gue balik. Bawa teman.`,
@@ -2034,27 +2221,23 @@ if (action === 'run' && csm.tempMission){
   return m.reply(msg + `\n━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === JOB LIST =================================================
-// ============================================================
+// === JOB LIST 💼
 
 if (action === 'job' && args[1]?.toLowerCase() === 'list') {
   let cap = header('PILIH PEKERJAAN')
 
-  ALL_JOB_LIST.forEach((j, i) => {
-    cap += `*${i + 1}.* *${j.job}*\n  _${j.desc}_\n\n`
+  JOB_LIST.forEach((job, i) => {
+    cap += `*${i + 1}.* ${job}\n`
   })
 
   cap += `\n📌.csm job join <nomor/nama>\n` +
     `📌.csm job leave\n` +
     `━━━━━━━━━━━`
 
-  return m.reply(cap) // GA USAH SAVE
+  return m.reply(cap)
 }
 
-// ============================================================
-// === JOB JOIN ================================================
-// ============================================================
+// === JOB JOIN 📝
 
 if (action === 'job' && args[1]?.toLowerCase() === 'join') {
   if (csm.job) {
@@ -2068,8 +2251,8 @@ if (action === 'job' && args[1]?.toLowerCase() === 'join') {
   const cd = cekCD('lastJob', 5 * 60 * 60 * 1000)
 
   if (cd > 0) {
-    const jam = Math.floor(cd / 3600000) // FIX: /3600000 bukan /3600
-    const menit = Math.floor((cd % 3600000) / 60000) // FIX
+    const jam = Math.floor(cd / 3600000)
+    const menit = Math.floor((cd % 3600000) / 60000)
 
     return m.reply(header('COOLDOWN') +
       `Tunggu ${jam}j ${menit}m lagi.\n` +
@@ -2090,9 +2273,9 @@ if (action === 'job' && args[1]?.toLowerCase() === 'join') {
 
   if (/^\d+$/.test(input)) {
     const index = parseInt(input, 10) - 1
-    job = ALL_JOB_LIST[index]?.job
+    job = JOB_LIST[index]
   } else {
-    job = ALL_JOB_LIST.find(j => j.job.toLowerCase() === input.toLowerCase())?.job
+    job = JOB_LIST.find(j => j.toLowerCase() === input.toLowerCase())
   }
 
   if (!job) {
@@ -2104,7 +2287,7 @@ if (action === 'job' && args[1]?.toLowerCase() === 'join') {
   csm.job = job
   csm.lastJob = Date.now()
 
-  saveDB(wdb) // WAJIB: ada perubahan job & lastJob
+  saveDB(wdb)
 
   return m.reply(header('KERJA DIMULAI') +
     `💼 Kamu sekarang: *${job}*\n\n` +
@@ -2113,9 +2296,7 @@ if (action === 'job' && args[1]?.toLowerCase() === 'join') {
     `━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === JOB LEAVE ===============================================
-// ============================================================
+// === JOB LEAVE 🚪
 
 if (action === 'job' && args[1]?.toLowerCase() === 'leave') {
   if (!csm.job) {
@@ -2129,7 +2310,7 @@ if (action === 'job' && args[1]?.toLowerCase() === 'leave') {
   csm.job = null
   csm.lastJob = Date.now()
 
-  saveDB(wdb) // WAJIB: ada perubahan job & lastJob
+  saveDB(wdb)
 
   return m.reply(header('BERHENTI KERJA') +
     `Kamu resign dari:\n` +
@@ -2137,9 +2318,7 @@ if (action === 'job' && args[1]?.toLowerCase() === 'leave') {
     `━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === WORK ====================================================
-// ============================================================
+// === WORK 💼
 
 if (action === 'work') {
   if (!csm.job) {
@@ -2148,37 +2327,35 @@ if (action === 'work') {
       `━━━━━━━━━━━`)
   }
 
-  let b = calcBonus(csm) // AMBIL BONUS
+  let b = calcBonus(csm)
 
-  // 2 jam cooldown. -5 menit per 10 stamina
   let cooldown = (2 * 60 * 60 * 1000) - (b.stamina * 5 * 60 * 1000)
-  if(cooldown < 30 * 60 * 1000) cooldown = 30 * 60 * 1000 // minimal 30 menit
+  if(cooldown < 30 * 60 * 1000) cooldown = 30 * 60 * 1000
 
   const cd = cekCD('lastWork', cooldown)
 
   if (cd > 0) {
-    const jam = Math.floor(cd / 3600000) // FIX
-    const menit = Math.floor((cd % 3600000) / 60000) // FIX
+    const jam = Math.floor(cd / 3600000)
+    const menit = Math.floor((cd % 3600000) / 60000)
 
     return m.reply(header('COOLDOWN') +
       `Tunggu ${jam}j ${menit}m lagi.\n` +
       `━━━━━━━━━━━`)
   }
 
-  // GAJI DASAR + BONUS MONEY DARI BUFF
   const gajiDasar = Math.floor(Math.random() * 10000) + 5000 + csm.level * 2000
-  const gaji = Math.floor((gajiDasar + b.money) * b.bloodMult) // bloodMult + money Tadashi
-  const exp = Math.floor((50 + csm.level * 5) * b.expMult) // expMult
+  const gaji = Math.floor((gajiDasar + b.money) * b.bloodMult)
+  const exp = Math.floor((50 + csm.level * 5) * b.expMult)
 
   csm.blood += gaji
   const leveled = addExp(exp)
   csm.lastWork = Date.now()
 
-  if(b.heal > 0) { // HEAL DULU SEBELUM SAVE
-    csm.health = Math.min(100, csm.health + b.heal)
+  if(b.heal > 0) {
+    csm.health = Math.min(csm.maxHealth, csm.health + b.heal)
   }
 
-  saveDB(wdb) // WAJIB: ada perubahan blood, exp, lastWork, health
+  saveDB(wdb)
 
   let msg = header(`KERJA: ${csm.job}`) +
     `Kamu bekerja hari ini.\n\n` +
@@ -2199,9 +2376,7 @@ if (action === 'work') {
   return m.reply(msg)
 }
 
-// ============================================================
-// === MAKIMA CALL EVENT =======================================
-// ============================================================
+// === MAKIMA CALL ⛓️
 
 if (action === 'makimacall') {
   if (Math.random() > 0.15) {
@@ -2222,24 +2397,22 @@ if (action === 'makimacall') {
   const target = targets[Math.floor(Math.random() * targets.length)]
   csm.pendingDuel = target
 
-  saveDB(wdb) // WAJIB: ada perubahan pendingDuel
+  saveDB(wdb)
 
-  return m.reply(header('PANGGILAN DARI MAKIMA') +
+  return conn.reply(m.chat, header('PANGGILAN DARI MAKIMA') +
     `⛓️ "Anjing yang baik itu nurut."\n\n` +
-    `Bunuh *${conn.getName(target)}* dalam 1 jam.\n\n` +
+    `Bunuh *@${resolveJid(target).split('@')[0]}* dalam 1 jam.\n\n` +
     `🎁 Hadiah:\n` +
     `💰 Rp 500.000\n` +
     `🩸 +5.000 Darah\n` +
     `❌ Gagal:\n` +
     `🩸 -10.000 Darah\n\n` +
-    `.csm duel @${target.split('@')[0]} - Terima\n` +
+    `.csm duel @${resolveJid(target).split('@')[0]} - Terima\n` +
     `.csm refuse - Tolak\n` +
-    `━━━━━━━━━━━`)
+    `━━━━━━━━━━━`, m, { mentions: [resolveJid(target), target] })
 }
 
-// ============================================================
-// === REFUSE MAKIMA ==========================================
-// ============================================================
+// === REFUSE MAKIMA 🙅
 
 if (action === 'refuse') {
   if (!csm.pendingDuel) {
@@ -2257,7 +2430,7 @@ if (action === 'refuse') {
   csm.blood -= 10000
   csm.pendingDuel = null
 
-  saveDB(wdb) // WAJIB: ada perubahan blood & pendingDuel
+  saveDB(wdb)
 
   return m.reply(header('PENOLAKAN') +
     `⛓️ "Kecewa aku..."\n\n` +
@@ -2265,9 +2438,7 @@ if (action === 'refuse') {
     `━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === DUEL PVP ================================================
-// ============================================================
+// === DUEL ⚔️
 
 if (action === 'duel') {
   const target = m.mentionedJid?.[0]
@@ -2281,7 +2452,7 @@ if (action === 'duel') {
   if (!Array.isArray(tUser.inventory) ||!tUser.inventory.length) tUser.inventory = [{ nama: 'Fist', dur: 999 }]
   if (!tUser.weapon ||!tUser.weapon.nama) tUser.weapon = { nama: 'Fist', dur: 999 }
 
-  // MAKIMA DUEL
+  // Makima duel
   if (csm.pendingDuel === target) {
     const chance = csm.level >= tUser.level? 0.7 : 0.3
     const win = Math.random() < chance
@@ -2290,17 +2461,16 @@ if (action === 'duel') {
       userRPG.bank += 500000
       csm.blood += 5000
       csm.pendingDuel = null
-      saveDB(wdb) // WAJIB
+      saveDB(wdb)
       return m.reply(header('DUEL MENANG') + `Kamu berhasil menyelesaikan perintah Makima.\n\n💰 +Rp 500.000\n🩸 +5.000 Darah\n━━━━━━━━━━━`)
     }
 
     csm.blood = Math.max(0, csm.blood - 10000)
     csm.pendingDuel = null
-    saveDB(wdb) // WAJIB
+    saveDB(wdb)
     return m.reply(header('DUEL KALAH') + `Kamu gagal menjalankan perintah Makima.\n\n🩸 -10.000 Darah\n━━━━━━━━━━━`)
   }
 
-  // DUEL BIASA
   const taruhan = Math.max(0, parseInt(args[2], 10) || 0)
   if (taruhan > 0) {
     if (userRPG.bank < taruhan || targetRPG.bank < taruhan) {
@@ -2325,7 +2495,7 @@ if (action === 'duel') {
     }
   }
 
-  saveDB(wdb) // WAJIB: ada perubahan bank
+  saveDB(wdb)
 
   return m.reply(header('HASIL DUEL') +
     `${win? '🏆 KAMU MENANG' : '💀 KAMU KALAH'}\n\n` +
@@ -2335,9 +2505,7 @@ if (action === 'duel') {
     `━━━━━━━━━━━`)
 }
 
-// ============================================================
-// === GIFT ====================================================
-// ============================================================
+// === GIFT 🎁
 
 if (action === 'gift') {
   const type = args[1]?.toLowerCase()
@@ -2356,7 +2524,6 @@ if (action === 'gift') {
   const targetRPG = wdb.users[target]?.rpg
   if (!targetRPG) return m.reply(header('TARGET BELUM MAIN') + `━━━━━━━━━━━`)
 
-  // INIT DATA TARGET KALO BELUM ADA
   if (!targetRPG.csm) {
     targetRPG.csm = { nickname: '', health: 100, maxHealth: 100, level: 1, exp: 0, title: 'Applicant', devilContract: null, contractHistory: [], isTransform: false, devilsKilled: 0, blood: 0, partners: [], story: 1, location: 'Markas Public Safety', weapon: { nama: 'Fist', dur: 999 }, inventory: [{ nama: 'Fist', dur: 999 }], lastRest: 0, lastGacha: 0, lastVisit: 0, encounter: null, relations: {}, pendingBlood: 0, lastWork: 0, pendingDuel: null, contractExpire: 0, contractSide: null, ending: null, hospital: [], job: null, lastJob: 0, endings: [] }
   }
@@ -2371,16 +2538,14 @@ if (action === 'gift') {
     targetRPG.csm.blood += jumlah
   }
 
-  saveDB(wdb) // WAJIB: ada perubahan bank/blood
+  saveDB(wdb)
 
-  return m.reply(header('GIFT TERKIRIM') +
-    `Kamu mengirim ${jumlah.toLocaleString()} ${type} ke ${conn.getName(target)}\n` +
-    `━━━━━━━━━━━`)
+  return conn.reply(m.chat, header('GIFT TERKIRIM') +
+    `Kamu mengirim ${jumlah.toLocaleString()} ${type} ke @${resolveJid(target).split('@')[0]}\n` +
+    `━━━━━━━━━━━`, m, { mentions: [resolveJid(target), target] })
 }
 
-// ============================================================
-// === CHARACTER DETAIL =======================================
-// ============================================================
+// === CHARACTER DETAIL 👥
 
 if (action === 'char') {
   if (!csm.relations || typeof csm.relations!== 'object') csm.relations = {}
@@ -2403,14 +2568,12 @@ if (action === 'char') {
     `━━━━━━━━━━━`) // GA USAH SAVE
 }
 
-// ============================================================
-// === REST ====================================================
-// ============================================================
+// === REST 🛌
 
 if (action === 'rest') {
   const cd = cekCD('lastRest', 60 * 60 * 1000)
   if (cd > 0) {
-    const menit = Math.ceil(cd / 60000) // FIX
+    const menit = Math.ceil(cd / 60000)
     return m.reply(header('COOLDOWN') + `Tunggu ${menit} menit lagi.\n━━━━━━━━━━━`)
   }
 
@@ -2420,7 +2583,7 @@ if (action === 'rest') {
   const actualHeal = csm.health - hpSebelum
   csm.lastRest = Date.now()
 
-  saveDB(wdb) // WAJIB: ada perubahan health & lastRest
+  saveDB(wdb)
 
   return m.reply(header('ISTIRAHAT') +
     `Kamu beristirahat sejenak.\n` +
@@ -2429,24 +2592,25 @@ if (action === 'rest') {
     `━━━━━━━━━━━`)
 }
 
-  // ============================================================
-// === PARTNER SYSTEM ========================================
-// ============================================================
-if (action === 'partner') {
-  let sub = (args[1] || '').toLowerCase()
-  if (sub === 'database') {
+  // === PARTNER DATABASE 👥
+  const partnerSub = (args[1] || '').toLowerCase()
+
+  if (action === 'partner' && csm.erasureProtection?.startsWith('horsemen:') && ['recruit', 'team'].includes(partnerSub)) {
+    return m.reply(header('PARTNER TERKUNCI') + `Kamu tidak bisa memiliki partner saat menjadi bagian dari Four Horsemen. Kamu masih bisa memakai ${usedPrefix}csm char <nama> untuk berinteraksi.\n━━━━━━━━━━━`)
+  }
+
+  if (action === 'partner' && partnerSub === 'database'){
     let cap = header('DATABASE KARAKTER')
     CHARACTER_LIST.forEach((c,i) => {
       let owned = csm.partners.find(p => p.name === c.nama)? '✅' : '❌'
       cap += `*${i+1}.* ${c.emoji} *${c.nama}* ${owned}\n Faksi: ${c.faction} | 💌 ${c.needLove}\n`
     })
     cap += `\n📌.csm partner recruit <nomor/nama>\n📌.csm partner achievement\n━━━━━━━━━━━`
-    // saveDB(wdb) <-- HAPUS, CUMA VIEW
     return m.reply(cap)
   }
 
-  // === PARTNER RECRUIT ===
-  if (sub === 'recruit') {
+  // === PARTNER RECRUIT 🤝
+  if (action === 'partner' && partnerSub === 'recruit'){
     let input = args.slice(2).join(' ')
     let char = isNaN(input)? CHARACTER_LIST.find(c => c.nama.toLowerCase() === input.toLowerCase()) : CHARACTER_LIST[parseInt(input) - 1]
     if (!char) return m.reply(header('KARAKTER TIDAK ADA') + `━━━━━━━━━━━`)
@@ -2462,7 +2626,7 @@ if (action === 'partner') {
         addExp(a.reward.exp || 0)
       })
     }
-    saveDB(wdb) // WAJIB: ada perubahan partners + reward
+    saveDB(wdb)
     let msg = header('PARTNER BARU') + `${char.emoji} *${char.nama}* bergabung!\nHP: 100/100\nStatus: CADANGAN\nBonus: ${char.bonus}`
     if(newAch.length > 0){
       msg += `\n\n━━━━━━━━━━━\n🏆 *ACHIEVEMENT UNLOCKED!*\n`
@@ -2471,8 +2635,8 @@ if (action === 'partner') {
     return m.reply(msg + `\n━━━━━━━━━━━`)
   }
 
-  // === PARTNER BY NAME ===
-  if (!['database', 'recruit', 'list', 'team', 'achievement'].includes(sub)) {
+  // === PARTNER BY NAME 👤
+  if (action === 'partner' &&!['database', 'recruit', 'list', 'team', 'achievement'].includes(partnerSub)) {
     let nama = args.slice(1).join(' ')
     let char = CHARACTER_LIST.find(c => c.nama.toLowerCase() === nama.toLowerCase())
     if (!char) return m.reply(header('NAMA SALAH') + `Contoh:.csm partner Reze\n━━━━━━━━━━━`)
@@ -2487,7 +2651,7 @@ if (action === 'partner') {
         addExp(a.reward.exp || 0)
       })
     }
-    saveDB(wdb) // WAJIB
+    saveDB(wdb)
     let msg = header('PARTNER BARU') + `${char.emoji} *${char.nama}*\n${char.role}\nBonus: ${char.bonus}\nStatus: CADANGAN`
     if(newAch.length > 0){
       msg += `\n\n━━━━━━━━━━━\n🏆 *ACHIEVEMENT UNLOCKED!*\n`
@@ -2496,8 +2660,8 @@ if (action === 'partner') {
     return m.reply(msg + `\n━━━━━━━━━━━`)
   }
 
-  // === PARTNER LIST ===
-  if (sub === 'list') {
+  // === PARTNER LIST 📋
+  if (action === 'partner' && partnerSub === 'list'){
     let cap = header('PARTNER KAMU')
     if(csm.partners.length === 0) cap += `Belum ada partner\n`
     csm.partners.forEach((p, i) => {
@@ -2506,12 +2670,11 @@ if (action === 'partner') {
       cap += `*${i+1}.* ${ch.emoji} *${p.name}* | HP: ${p.hp}/100\n Status: ${p.status === 'active'? 'IKUT WAR' : 'CADANGAN'}\n\n`
     })
     cap += `Slot Koleksi: ${csm.partners.length} Karakter\n━━━━━━━━━━━\n📌.csm partner team add <nomor>\n📌.csm partner team remove <nomor>\n━━━━━━━━━━━`
-    // saveDB(wdb) <-- HAPUS
     return m.reply(cap)
   }
 
-  // === PARTNER TEAM ===
-  if (sub === 'team') {
+  // === PARTNER TEAM 🛡️
+  if (action === 'partner' && partnerSub === 'team'){
     let sub2 = args[2]
     let nomor = parseInt(args[3]) - 1
     if(!sub2){
@@ -2526,7 +2689,6 @@ if (action === 'partner') {
       msg += `━━━━━━━━━━━\n*TOTAL BONUS AKTIF:*\n⚔️ DMG: +${b.dmg}\n🛡️ DEF: +${b.def}\n💥 Crit: ${b.critChance}% / +${(b.critDmg*100).toFixed(0)}%\n💨 Evasion: ${b.evasion}%\n🩹 Regen: +${b.regen} HP\n📈 EXP: x${b.expMult.toFixed(2)}\n🩸 Blood: x${b.bloodMult.toFixed(2)} +${b.stealBlood}\n`
       if(Object.keys(setBonus).length > 0){ msg += `\n🔥 *SET BONUS PERMANEN:*\n`; for(let key in setBonus) msg += `${key}: +${setBonus[key]}\n` }
       msg += `━━━━━━━━━━━\nGunakan:\n.csm partner team add 1\n.csm partner team remove 1`
-      // saveDB(wdb) <-- HAPUS
       return m.reply(msg)
     }
     if(!csm.partners[nomor]) return m.reply(header('NOMOR SALAH') + `Nomor ${args[3]} tidak ada di list.\n━━━━━━━━━━━`)
@@ -2547,39 +2709,35 @@ if (action === 'partner') {
         addExp(a.reward.exp || 0)
       })
     }
-    saveDB(wdb) // WAJIB: ada perubahan status + reward
+    saveDB(wdb)
     let ch = CHARACTER_LIST.find(c => c.nama === csm.partners[nomor].name)
     let msg = header('TIM DIUPDATE') + `${ch.emoji} *${csm.partners[nomor].name}*\nStatus: ${csm.partners[nomor].status === 'active'? 'IKUT WAR' : 'CADANGAN'}\nBonus: ${ch.bonus}`
     if(newAch.length > 0){ msg += `\n\n━━━━━━━━━━━\n🏆 *ACHIEVEMENT UNLOCKED!*\n`; newAch.forEach(a => { msg += `${a.emoji} *${a.nama}*\n${a.desc}\n🩸 +${a.reward.blood?.toLocaleString() || 0} | 📈 +${a.reward.exp || 0} EXP\n` }) }
     return m.reply(msg + `\n━━━━━━━━━━━`)
   }
 
-  // === PARTNER ACHIEVEMENT ===
-  if (sub === 'achievement') {
+  // === PARTNER ACHIEVEMENTS 🏆
+  if (action === 'partner' && partnerSub === 'achievement'){
     if(!csm.achievements) csm.achievements = []
     let msg = header('ACHIEVEMENT PARTNER')
     let unlocked = ACHIEVEMENT_LIST.filter(a => csm.achievements.includes(a.id))
     let locked = ACHIEVEMENT_LIST.filter(a =>!csm.achievements.includes(a.id))
     if(unlocked.length > 0){ msg += `🏆 *TERBUKA [${unlocked.length}/${ACHIEVEMENT_LIST.length}]*\n`; unlocked.forEach(a => { msg += `${a.emoji} *${a.nama}*\n ${a.desc}\n` }); msg += `\n` }
     if(locked.length > 0){ msg += `🔒 *TERKUNCI*\n`; locked.forEach(a => { msg += `❌ *${a.nama}*\n ${a.desc}\n` }) }
-    // saveDB(wdb) <-- HAPUS
     return m.reply(msg + `━━━━━━━━━━━`)
   }
 
-  }
-
-  // === HOSPITAL ===
+  // === HOSPITAL 🏥
   if (action === 'hospital'){
     let cap = header('RUMAH SAKIT')
     if(!csm.hospital) csm.hospital = [] // ANTI ERROR
     if(csm.hospital.length === 0) cap += `Tidak ada partner yg sekarat\n`
     csm.hospital.forEach((p,i) => { cap += `*${i+1}.* ${p.name} | Status: Sekarat\n` })
     cap += `\n📌.csm revive <nomor> - Bayar 5000 Darah\n━━━━━━━━━━━`
-    // saveDB(wdb) <-- HAPUS
     return m.reply(cap)
   }
 
-  // === REVIVE ===
+  // === REVIVE ❤️
   if (action === 'revive'){
     if(!csm.hospital) csm.hospital = []
     let nomor = parseInt(args[1]) - 1
@@ -2590,13 +2748,11 @@ if (action === 'partner') {
     partner.hp = 100
     partner.status = 'reserve'
     csm.partners.push(partner)
-    saveDB(wdb) // WAJIB: ada perubahan blood, hospital, partners
+    saveDB(wdb)
     return m.reply(header('REVIVE BERHASIL') + `Partner sudah pulih\n-5000 Darah\n━━━━━━━━━━━`)
   }
 
-  // ============================================================
-  // === RAID GLOBAL 1x SEHARI - SISTEM NYICIL ================
-  // ============================================================
+  // === RAID 👹
 
   if (action === 'raid') {
     const sub = (args[1] || '').toLowerCase()
@@ -2619,7 +2775,7 @@ if (action === 'partner') {
       raid.date = today
       raid.players = []
       raid.lastAttack = now
-      saveDB(wdb) // WAJIB: reset boss harian
+      saveDB(wdb)
     }
 
     const myCSM = wdb.users[m.sender]?.rpg?.csm
@@ -2637,7 +2793,7 @@ if (action === 'partner') {
       let cap = header(`RAID HARI INI: ${raid.boss.nama}`)
       cap += `${raid.boss.emoji} *${raid.boss.nama}*\nHP: ${Number(raid.currentHP).toLocaleString()}/${Number(raid.boss.hp).toLocaleString()}\n👥 ${raid.players.length}/10 Hunter bergabung\n`
       cap += `📋 *COMMAND RAID*\n.csm raid create\n.csm raid join\n.csm raid leave\n.csm raid team\n.csm raid start\n.csm raid list\n.csm raid delete\n.csm raid history\n━━━━━━━━━━━`
-      return m.reply(cap) // GA USAH SAVE
+      return conn.reply(m.chat, cap, m, { mentions: raid.players.map(p => resolveJid(p)) }) // GA USAH SAVE
     }
 
     if (sub === 'list') {
@@ -2655,7 +2811,7 @@ if (action === 'partner') {
         if (h.players && h.players.length > 0) {
           let names = h.players.map(pid => {
             let nick = wdb.users[pid]?.rpg?.csm?.nickname
-            return nick? nick.split(' ')[0] : conn.getName(pid)
+            return nick? nick.split(' ')[0] : `@${resolveJid(pid).split('@')[0]}`
           }).join(', ')
           cap += `👥 ${names}\n`
         }
@@ -2668,7 +2824,7 @@ if (action === 'partner') {
       if (raid.players.length === 0) cap += `Belum ada Hunter di lobby.\n\n`
       else raid.players.forEach((pid, i) => {
         let nick = wdb.users[pid]?.rpg?.csm?.nickname
-        cap += `*${i + 1}.* ${nick? nick.split(' ')[0] : conn.getName(pid)} ${i === 0? '[Leader]' : ''}\n`
+        cap += `*${i + 1}.* ${nick? nick.split(' ')[0] : `@${resolveJid(pid).split('@')[0]}`} ${i === 0? '[Leader]' : ''}\n`
       })
       cap += `\n👥 ${raid.players.length}/10 Hunter\n.csm raid start\n━━━━━━━━━━━`
       return m.reply(cap) // GA USAH SAVE
@@ -2677,10 +2833,10 @@ if (action === 'partner') {
     if (sub === 'create') {
       if (raid.players.length > 0 && raid.players[0]!== m.sender) {
         let nick = wdb.users[raid.players[0]]?.rpg?.csm?.nickname
-        return m.reply(header('ADA LOBBY') + `Leader saat ini:\n${nick? nick.split(' ')[0] : conn.getName(raid.players[0])}\n━━━━━━━━━━━`)
+        return m.reply(header('ADA LOBBY') + `Leader saat ini:\n${nick? nick.split(' ')[0] : `@${resolveJid(raid.players[0]).split('@')[0]}`}\n━━━━━━━━━━━`)
       }
       raid.players = [m.sender]
-      saveDB(wdb) // WAJIB
+      saveDB(wdb)
       return m.reply(header('LOBBY DIBUAT') + `${raid.boss.emoji} *${raid.boss.nama}*\nHP: ${Number(raid.currentHP).toLocaleString()}/${Number(raid.boss.hp).toLocaleString()}\n👥 1 Hunter siap\n.csm raid join\n.csm raid team\n.csm raid start\n━━━━━━━━━━━`)
     }
 
@@ -2696,7 +2852,7 @@ if (action === 'partner') {
       }
       msg += `Kamu ikut berburu ${raid.boss.nama}.\n👥 ${raid.players.length}/10 Hunter\n━━━━━━━━━━━`
       raid.players.push(m.sender)
-      saveDB(wdb) // WAJIB
+      saveDB(wdb)
       return m.reply(msg)
     }
 
@@ -2704,17 +2860,17 @@ if (action === 'partner') {
       const idx = raid.players.indexOf(m.sender)
       if (idx === -1) return m.reply(header('KAMU BELUM JOIN') + `━━━━━━━━━━━`)
       raid.players.splice(idx, 1)
-      saveDB(wdb) // WAJIB
+      saveDB(wdb)
       if (raid.players.length === 0) return m.reply(header('KELUAR') + `Kamu keluar dari raid.\nLobby sekarang kosong.\n━━━━━━━━━━━`)
       let nick = wdb.users[raid.players[0]]?.rpg?.csm?.nickname
-      return m.reply(header('KELUAR') + `Kamu mundur dari perburuan.\nLeader baru: ${nick? nick.split(' ')[0] : conn.getName(raid.players[0])}\n━━━━━━━━━━━`)
+      return m.reply(header('KELUAR') + `Kamu mundur dari perburuan.\nLeader baru: ${nick? nick.split(' ')[0] : `@${resolveJid(raid.players[0]).split('@')[0]}`}\n━━━━━━━━━━━`)
     }
 
     if (sub === 'delete') {
       if (raid.players.length === 0) return m.reply(header('LOBBY KOSONG') + `Tidak ada lobby yang perlu dihapus.\n━━━━━━━━━━━`)
       if (raid.players[0]!== m.sender) return m.reply(header('BUKAN LEADER') + `Hanya leader yang bisa membubarkan lobby.\n━━━━━━━━━━━`)
       raid.players = []
-      saveDB(wdb) // WAJIB
+      saveDB(wdb)
       return m.reply(header('LOBBY DIBUBARKAN') + `Perburuan dibatalkan.\n━━━━━━━━━━━`)
     }
 
@@ -2846,7 +3002,7 @@ if (action === 'partner') {
 
       if (raid.currentHP <= 0) raid.currentHP = boss.hp
       if (raid.history.length > 30) raid.history = raid.history.slice(-30)
-      saveDB(wdb) // WAJIB: semua perubahan raid + player
+      saveDB(wdb)
       return m.reply(msg + `\n━━━━━━━━━━━`)
     }
 
