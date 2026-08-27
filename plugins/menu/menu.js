@@ -56,12 +56,11 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   let donorMentions = []
   if (topDonors.length > 0) {
       donorText = topDonors.map(([jid, data], i) => {
-          let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
           donorMentions.push(jid)
-          return `⟡ ${medal} @${jid.split('@')[0]} : Rp ${data.totalDonasi.toLocaleString('id-ID')}`
+          return `│ ⟡ *${i + 1}.* @${jid.split('@')[0]} : Rp ${data.totalDonasi.toLocaleString('id-ID')}`
       }).join('\n')
   } else {
-      donorText = `⟡ 💎 *Ketik ${_p}donasi untuk mendukung bot!*`
+      donorText = `│ ⟡ *Ketik ${_p}donasi untuk mendukung bot!*`
   }
 
   let videoMenu = 'https://api.deline.web.id/tMbmgonUvF.mp4'
@@ -92,67 +91,72 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 
   let header = `
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
-   〔 ⛩️ *${global.namebot.toUpperCase()}* 〕
-     ${greeting}
+   〔 ✦ *${global.namebot.toUpperCase()}* 〕
+> ${greeting}
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 `.trim()
 
   let userCard = `
-〔 ✿ *PROFIL PENGGUNA* 〕
-⟡ *Nama* : ${name}
-⟡ *Role* : ${role}
-⟡ *Status* : ${prems}
-⟡ *Limit* : ${limit}
-⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
-⟡ *Pasangan* : ${partnerDisplay}
+┌──〔 ✦ *PROFIL PENGGUNA* 〕
+│ ⟡ *Nama* : ${name}
+│ ⟡ *Role* : ${role}
+│ ⟡ *Status* : ${prems}
+│ ⟡ *Limit* : ${limit}
+│ ⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+│ ⟡ *Pasangan* : ${partnerDisplay}
+└────────────────────────
 `.trim()
 
   let botCard = `
-〔 ✿ *INFO SISTEM* 〕
-⟡ *Bot* : ${global.namebot}
-⟡ *Versi* : ${global.versi}
-⟡ *Creator* : ${global.author}
-⟡ *Mode* : Public
-⟡ *Limit Fitur* : Ⓛ
-⟡ *Premium Fitur* : Ⓟ
+┌──〔 ✦ *INFO SISTEM* 〕
+│ ⟡ *Bot* : ${global.namebot}
+│ ⟡ *Versi* : ${global.versi}
+│ ⟡ *Creator* : ${global.author}
+│ ⟡ *Mode* : Public
+│ ⟡ *Limit Fitur* : Ⓛ
+│ ⟡ *Premium Fitur* : Ⓟ
+└────────────────────────
 `.trim()
 
   let topDonorsCard = `
-〔 ✿ *TOP DONATUR* 〕
+┌──〔 ✦ *TOP DONATUR* 〕
 ${donorText}
+└────────────────────────
 `.trim()
 
   let aboutCard = `
-〔 ✿ *WAKTU & TANGGAL* 〕
-⟡ *Tanggal* : ${tanggal}
-⟡ *Hari* : ${hari}
-⟡ *Jam* : ${jam} WIB
+┌──〔 ✦ *WAKTU & TANGGAL* 〕
+│ ⟡ *Tanggal* : ${tanggal}
+│ ⟡ *Hari* : ${hari}
+│ ⟡ *Jam* : ${jam} WIB
+└────────────────────────
 `.trim()
 
   let listMenuText = `
-〔 ✿ *DAFTAR MENU* 〕
-› ${_p}allmenu ── Semua Perintah
-› ${_p}menuai ── Fitur AI & ChatBot
-› ${_p}menuanime ── Fitur Anime
-› ${_p}menuaudio ── Manipulasi Audio
-› ${_p}menudownload ── Pengunduh Media
-› ${_p}menufun ── Fitur Hiburan
-› ${_p}menugame ── Mini Games
-› ${_p}menugroup ── Manajemen Grup
-› ${_p}menuinfo ── Informasi Bot
-› ${_p}menuinternet ── Pencarian Web
-› ${_p}menumaker ── Pembuat Gambar & Logo
-› ${_p}menumoneytrack ── Pencatatan Keuangan
-› ${_p}menuowner ── Khusus Owner
-› ${_p}menupasangan ── Fitur Hubungan
-› ${_p}menurpg ── Roleplay Game (RPG)
-› ${_p}menusearch ── Pencarian Data
-› ${_p}menustalker ── Stalker Sosmed
-› ${_p}menusticker ── Pembuat Stiker
-› ${_p}menutools ── Alat Bantu & Utilitas
+┌──〔 ✦ *DAFTAR MENU* 〕
+│ › ${_p}allmenu ── Semua Perintah
+│ › ${_p}menuai ── Fitur AI & ChatBot
+│ › ${_p}menuanime ── Fitur Anime
+│ › ${_p}menuaudio ── Manipulasi Audio
+│ › ${_p}menudownload ── Pengunduh Media
+│ › ${_p}menufun ── Fitur Hiburan
+│ › ${_p}menugame ── Mini Games
+│ › ${_p}menugroup ── Manajemen Grup
+│ › ${_p}menuinfo ── Informasi Bot
+│ › ${_p}menuinternet ── Pencarian Web
+│ › ${_p}menumaker ── Pembuat Gambar
+│ › ${_p}menumoneytrack ── Catatan Keuangan
+│ › ${_p}menuowner ── Khusus Owner
+│ › ${_p}menupasangan ── Fitur Hubungan
+│ › ${_p}menurpg ── Roleplay Game
+│ › ${_p}menusearch ── Pencarian Data
+│ › ${_p}menustalker ── Stalker Sosmed
+│ › ${_p}menusticker ── Pembuat Stiker
+│ › ${_p}menutools ── Alat & Utilitas
+└────────────────────────
 
-── · ── · ── · ── · ── · ──
-_Ketik ${_p}help <cmd> untuk info detail perintah._
+· · ─ ─ ✦ ─ ─ · ·
+> _Ketik ${_p}help <cmd> untuk info detail perintah._
 `.trim()
 
   let caption = [header, userCard, botCard, topDonorsCard, aboutCard, listMenuText].join('\n\n')

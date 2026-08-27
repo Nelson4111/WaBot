@@ -27,8 +27,8 @@ handler.before = async function (m, { conn }) {
         const duration = formatDuration(Date.now() - user.afk);
         user.lastAfk = Date.now();
         user.afk = -1;
-        user.afkReason = '';
-        conn.sendMessage(m.chat, { text: `👋 Selamat datang kembali @${m.sender.split('@')[0]}! Kamu berhenti AFK setelah *${duration}*.`, mentions: [m.sender] }, { quoted: m }).catch(() => {});
+        const textReturn = `┌──〔 ✦ *AFK SELESAI* 〕\n│ ⟡ *User* : @${m.sender.split('@')[0]}\n│ ⟡ *Durasi* : ${duration}\n└────────────────────────\n\n· · ─ ─ ✦ ─ ─ · ·\n> _Selamat datang kembali!_`
+        conn.sendMessage(m.chat, { text: textReturn, mentions: [m.sender] }, { quoted: m }).catch(() => {});
     }
 
     // Peringatan saat member lain men-tag user AFK
@@ -49,17 +49,8 @@ handler.before = async function (m, { conn }) {
 
         const duration = formatDuration(Date.now() - taggedUser.afk);
         const reason = taggedUser.afkReason || 'Tanpa Alasan';
-        let name = (await conn.getName(jid)) || `@${jid.split('@')[0]}`;
 
-        let warningCaption = `
-⚠️ *SSTT... JANGAN TAG DIA!* ⚠️
-
-Dia sedang *AFK*!
-📝 *Alasan:* _${reason}_
-⏱️ *Sejak:* ${duration} yang lalu.
-
-_Harap tidak mengganggu sampai dia kembali online._
-`.trim();
+        let warningCaption = `┌──〔 ✦ *USER SEDANG AFK* 〕\n│ ⟡ *User* : @${jid.split('@')[0]}\n│ ⟡ *Alasan* : ${reason}\n│ ⟡ *Durasi* : ${duration} yang lalu\n└────────────────────────\n\n· · ─ ─ ✦ ─ ─ · ·\n> _Harap tidak mengganggu sampai dia kembali online._`;
         await conn.sendMessage(m.chat, { text: warningCaption, mentions: [jid] }, { quoted: m });
     }
 

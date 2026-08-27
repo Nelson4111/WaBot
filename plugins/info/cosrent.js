@@ -64,9 +64,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       shintoHeader('DETAIL SEWA COSPLAY', getGreeting(name, hour)),
       detailCard,
       kelengkapanSection,
-      `🔗 *Link Resmi:* ${item.link}`,
+      `> 🔗 *Link Resmi:* ${item.link}`,
       shintoDivider(),
-      `💡 *Tips:* Hubungi rental melalui DM Instagram untuk booking & cek ketersediaan tanggal.`
+      `> 💡 *Tips:* Hubungi rental via DM Instagram untuk booking & cek ketersediaan.`
     ].join('\n\n')
 
     if (item.image && item.image.startsWith('http')) {
@@ -123,10 +123,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let body = [
       shintoHeader('KATALOG COSPLAY WILAYAH', `Lokasi: ${locQuery.toUpperCase()}`),
-      `Ditemukan *${filtered.length}* kostum di wilayah ini (Menampilkan ${Math.min(filtered.length, 15)} teratas):\n`,
+      `> Ditemukan *${filtered.length}* kostum di wilayah ini (Menampilkan ${Math.min(filtered.length, 15)} teratas):\n`,
       rows.join('\n\n'),
       shintoDivider(),
-      `💡 *Gunakan:* _${usedPrefix + command} detail <nomor>_ untuk melihat info lengkap & foto.`
+      `> 💡 *Gunakan:* _${usedPrefix + command} detail <nomor>_ untuk melihat info lengkap & foto.`
     ].join('\n')
 
     return m.reply(body)
@@ -167,10 +167,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let body = [
       shintoHeader('KATALOG SERIES', seriesQuery.toUpperCase()),
-      `Ditemukan *${filtered.length}* kostum dari series ini:\n`,
+      `> Ditemukan *${filtered.length}* kostum dari series ini:\n`,
       rows.join('\n\n'),
       shintoDivider(),
-      `💡 *Gunakan:* _${usedPrefix + command} detail <nomor>_ untuk melihat foto & kontak rental.`
+      `> 💡 *Gunakan:* _${usedPrefix + command} detail <nomor>_ untuk melihat foto & kontak rental.`
     ].join('\n')
 
     return m.reply(body)
@@ -213,10 +213,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let body = [
       shintoHeader('HASIL PENCARIAN COSRENT', `Keyword: "${text}"`),
-      `Ditemukan *${results.length}* kostum (Menampilkan ${Math.min(results.length, 12)} teratas):\n`,
+      `> Ditemukan *${results.length}* kostum (Menampilkan ${Math.min(results.length, 12)} teratas):\n`,
       rows.join('\n\n'),
       shintoDivider(),
-      `💡 *Gunakan:* _${usedPrefix + command} detail <nomor>_ untuk melihat info detail & foto kostum.`
+      `> 💡 *Gunakan:* _${usedPrefix + command} detail <nomor>_ untuk melihat info detail & foto kostum.`
     ].join('\n')
 
     return m.reply(body)

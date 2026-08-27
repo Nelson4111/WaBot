@@ -103,31 +103,31 @@ global.religiousGreeting = {
 }
 
 /*============= TAMPILAN =============*/
-global.dmenut = '〔 ⛩️ ' //top
-global.dmenub = '⟡ ' //body
+global.dmenut = '┌──〔 ✦ *' //top
+global.dmenub = '│ ⟡ ' //body
 global.dmenub2 = '│ ' //body for info cmd on Default menu
-global.dmenuf = '── · ── · ── · ── · ── · ──' //footer
-global.dashmenu = '⋆⁺₊⋆ ───〔 ⛩️ *DASHBOARD* 〕─── ⋆⁺₊⋆'
-global.cmenut = '〔 ✿ *' //top
+global.dmenuf = '└────────────────────────' //footer
+global.dashmenu = '⋆⁺₊⋆ ───〔 ✦ *DASHBOARD* 〕─── ⋆⁺₊⋆'
+global.cmenut = '┌──〔 ✦ *' //top
 global.cmenuh = '* 〕' //header
-global.cmenub = '⟡ ' //body
-global.cmenuf = '── · ── · ── · ── · ── · ──\n' //footer
-global.cmenua = '\n── · ── · ── · ── · ── · ──\n'
+global.cmenub = '│ ⟡ ' //body
+global.cmenuf = '└────────────────────────\n' //footer
+global.cmenua = '\n· · ─ ─ ✦ ─ ─ · ·\n'
 global.pmenus = '⟡'
-global.htki = '〔 ✿ *' // Hiasan Title (KIRI)
+global.htki = '〔 ✦ *' // Hiasan Title (KIRI)
 global.htka = '* 〕' // Hiasan Title  (KANAN)
 global.lopr = 'Ⓟ' //LOGO PREMIUM ON MENU.JS
 global.lolm = 'Ⓛ' //LOGO LIMIT/FREE ON MENU.JS
-global.htjava = '⛩️'    //hiasan Doang :v
-global.hsquere = ['⛶', '〔 ✿ 〕', '⛩️']
+global.htjava = '✦'    //hiasan Doang :v
+global.hsquere = ['⛶', '〔 ✦ 〕', '✦']
 
 /*============= PG Pakasir =============*/
 global.pakasir_project = "nenel-store"
 global.pakasir_api_key = "Sja4XrXODqaldYrmJzYQaeyL7WA05hOL"
 
 /*============= RESPON =============*/
-global.wait = '〔 ⏳ *M O H O N  T U N G G U* 〕\n⟡ Sedang memproses permintaanmu...'
-global.eror = '〔 ❌ *G A G A L* 〕\n⟡ Terjadi kesalahan pada sistem!'
+global.wait = '〔 ✦ *M O H O N  T U N G G U* 〕\n> Sedang memproses permintaanmu...'
+global.eror = '〔 ✦ *G A G A L* 〕\n> Terjadi kesalahan pada sistem!'
 
 global.APIs = {
     ryzen: 'https://api.ryzumi.net',

@@ -25,7 +25,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
             premium: p.premium
         })))
         .sort((a, b) => a.cmd.localeCompare(b.cmd))
-        .map(v => `⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
+        .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
         .join('\n')
 
     let videoMenu = null
@@ -36,27 +36,30 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 
     let menuText = `
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
-   〔 ⛩️ *INTERNET & SEARCH MENU* 〕
-     ${greeting}
+   〔 ✦ *INTERNET & SEARCH MENU* 〕
+> ${greeting}
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 
-〔 ✿ *PROFIL PENGGUNA* 〕
-⟡ *Nama* : ${name}
-⟡ *Role* : ${role}
-⟡ *Status* : ${prems}
-⟡ *Limit* : ${limit}
-⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+┌──〔 ✦ *PROFIL PENGGUNA* 〕
+│ ⟡ *Nama* : ${name}
+│ ⟡ *Role* : ${role}
+│ ⟡ *Status* : ${prems}
+│ ⟡ *Limit* : ${limit}
+│ ⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+└────────────────────────
 
-〔 ✿ *WAKTU & TANGGAL* 〕
-⟡ *Tanggal* : ${tanggal}
-⟡ *Hari* : ${hari}
-⟡ *Jam* : ${jam} WIB
+┌──〔 ✦ *WAKTU & TANGGAL* 〕
+│ ⟡ *Tanggal* : ${tanggal}
+│ ⟡ *Hari* : ${hari}
+│ ⟡ *Jam* : ${jam} WIB
+└────────────────────────
 
-〔 ✿ *DAFTAR PERINTAH* 〕
+┌──〔 ✦ *DAFTAR PERINTAH* 〕
 ${internetFeatures}
+└────────────────────────
 
-── · ── · ── · ── · ── · ──
-_Terima kasih sudah menggunakan ${global.namebot} ✨_
+· · ─ ─ ✦ ─ ─ · ·
+> _Terima kasih sudah menggunakan ${global.namebot}_
 `.trim()
 
     let contextInfo = {

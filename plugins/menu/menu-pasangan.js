@@ -25,7 +25,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
             premium: p.premium
         })))
         .sort((a, b) => a.cmd.localeCompare(b.cmd))
-        .map(v => `⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
+        .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
         .join('\n')
 
     let romansaFeatures = Object.values(global.plugins)
@@ -36,7 +36,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
             premium: p.premium
         })))
         .sort((a, b) => a.cmd.localeCompare(b.cmd))
-        .map(v => `⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
+        .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
         .join('\n')
 
     let videoMenu = null
@@ -47,21 +47,23 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 
     let menuText = `
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
-   〔 ⛩️ *PASANGAN & ROMANSA MENU* 〕
-     ${greeting}
+   〔 ✦ *PASANGAN & ROMANSA MENU* 〕
+> ${greeting}
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 
-〔 ✿ *PROFIL PENGGUNA* 〕
-⟡ *Nama* : ${name}
-⟡ *Role* : ${role}
-⟡ *Status* : ${prems}
-⟡ *Limit* : ${limit}
-⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+┌──〔 ✦ *PROFIL PENGGUNA* 〕
+│ ⟡ *Nama* : ${name}
+│ ⟡ *Role* : ${role}
+│ ⟡ *Status* : ${prems}
+│ ⟡ *Limit* : ${limit}
+│ ⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+└────────────────────────
 
-〔 ✿ *WAKTU & TANGGAL* 〕
-⟡ *Tanggal* : ${tanggal}
-⟡ *Hari* : ${hari}
-⟡ *Jam* : ${jam} WIB
+┌──〔 ✦ *WAKTU & TANGGAL* 〕
+│ ⟡ *Tanggal* : ${tanggal}
+│ ⟡ *Hari* : ${hari}
+│ ⟡ *Jam* : ${jam} WIB
+└────────────────────────
 
 〔 ✿ *FITUR PASANGAN* 〕
 ${pasanganFeatures}
@@ -69,8 +71,8 @@ ${pasanganFeatures}
 〔 ✿ *FITUR ROMANSA* 〕
 ${romansaFeatures}
 
-── · ── · ── · ── · ── · ──
-_Terima kasih sudah menggunakan ${global.namebot} ✨_
+· · ─ ─ ✦ ─ ─ · ·
+> _Terima kasih sudah menggunakan ${global.namebot}_
 `.trim()
 
     let contextInfo = {

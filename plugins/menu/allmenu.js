@@ -9,35 +9,38 @@ import { getGreeting } from '../../lib/style.js'
 const defaultMenu = {
   before: `
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
-   〔 ⛩️ *ALL COMMAND MENU* 〕
-     %greeting
+   〔 ✦ *ALL COMMAND MENU* 〕
+> %greeting
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 
-〔 ✿ *PROFIL PENGGUNA* 〕
-⟡ *Nama* : %name
-⟡ *Role* : %role
-⟡ *Status* : %prems
-⟡ *Limit* : %limit
-⟡ *Saldo* : Rp %uang
+┌──〔 ✦ *PROFIL PENGGUNA* 〕
+│ ⟡ *Nama* : %name
+│ ⟡ *Role* : %role
+│ ⟡ *Status* : %prems
+│ ⟡ *Limit* : %limit
+│ ⟡ *Saldo* : Rp %uang
+└────────────────────────
 
-〔 ✿ *INFO SISTEM* 〕
-⟡ *Bot* : ${global.namebot}
-⟡ *Versi* : ${global.versi}
-⟡ *Creator* : ${global.author}
-⟡ *Uptime* : %uptime
-⟡ *Limit Fitur* : Ⓛ
-⟡ *Premium Fitur* : Ⓟ
+┌──〔 ✦ *INFO SISTEM* 〕
+│ ⟡ *Bot* : ${global.namebot}
+│ ⟡ *Versi* : ${global.versi}
+│ ⟡ *Creator* : ${global.author}
+│ ⟡ *Uptime* : %uptime
+│ ⟡ *Limit Fitur* : Ⓛ
+│ ⟡ *Premium Fitur* : Ⓟ
+└────────────────────────
 
-〔 ✿ *WAKTU & TANGGAL* 〕
-⟡ *Tanggal* : %tanggal
-⟡ *Hari* : %hari
-⟡ *Jam* : %jam WIB
+┌──〔 ✦ *WAKTU & TANGGAL* 〕
+│ ⟡ *Tanggal* : %tanggal
+│ ⟡ *Hari* : %hari
+│ ⟡ *Jam* : %jam WIB
+└────────────────────────
 %readmore
 `.trim(),
-  header: `〔 ✿ *%category* 〕`,
-  body: `⟡ %cmd %isPremium %islimit`,
-  footer: ``,
-  after: `── · ── · ── · ── · ── · ──\n_Terima kasih sudah menggunakan ${global.namebot} ✨_`,
+  header: `┌──〔 ✦ *%category* 〕`,
+  body: `│ ⟡ %cmd %isPremium %islimit`,
+  footer: `└────────────────────────\n`,
+  after: `· · ─ ─ ✦ ─ ─ · ·\n> _Terima kasih sudah menggunakan ${global.namebot}_`,
 }
 
 let handler = async (m, { conn, usedPrefix: _p }) => {

@@ -41,7 +41,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
                 premium: p.premium
             })))
             .sort((a, b) => a.cmd.localeCompare(b.cmd))
-            .map(v => `⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
+            .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
             .join('\n')
     }
 
@@ -53,27 +53,30 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 
     let menuText = `
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
-   〔 ⛩️ *RPG ADVENTURE MENU* 〕
-     ${greeting}
+   〔 ✦ *RPG ADVENTURE MENU* 〕
+> ${greeting}
 ⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 
-${infoPenjara}〔 ✿ *PROFIL PENGGUNA* 〕
-⟡ *Nama* : ${name}
-⟡ *Role* : ${role}
-⟡ *Status* : ${prems}
-⟡ *Limit* : ${limit}
-⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+${infoPenjara}┌──〔 ✦ *PROFIL PENGGUNA* 〕
+│ ⟡ *Nama* : ${name}
+│ ⟡ *Role* : ${role}
+│ ⟡ *Status* : ${prems}
+│ ⟡ *Limit* : ${limit}
+│ ⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+└────────────────────────
 
-〔 ✿ *WAKTU & TANGGAL* 〕
-⟡ *Tanggal* : ${tanggal}
-⟡ *Hari* : ${hari}
-⟡ *Jam* : ${jam} WIB
+┌──〔 ✦ *WAKTU & TANGGAL* 〕
+│ ⟡ *Tanggal* : ${tanggal}
+│ ⟡ *Hari* : ${hari}
+│ ⟡ *Jam* : ${jam} WIB
+└────────────────────────
 
-〔 ✿ *DAFTAR PERINTAH* 〕
+┌──〔 ✦ *DAFTAR PERINTAH* 〕
 ${rpgFeatures}
+└────────────────────────
 
-── · ── · ── · ── · ── · ──
-_Terima kasih sudah menggunakan ${global.namebot} ✨_
+· · ─ ─ ✦ ─ ─ · ·
+> _Terima kasih sudah menggunakan ${global.namebot}_
 `.trim()
 
     let contextInfo = {

@@ -109,8 +109,8 @@ function findCommandSuggestions(command) {
 async function replyCommandSuggestion(conn, m, candidate) {
     const suggestions = findCommandSuggestions(candidate.command)
     if (!suggestions.length) return
-    const list = suggestions.map(alias => `› *${candidate.usedPrefix}${alias}*`).join('\n')
-    await conn.reply(m.chat, `〔 ⚠️ *COMMAND TIDAK DITEMUKAN* 〕\n⟡ Perintah *${candidate.usedPrefix}${candidate.command}* tidak ada.\n\n〔 💡 *REKOMENDASI* 〕\n${list}`, m)
+    const list = suggestions.map(alias => `│ › *${candidate.usedPrefix}${alias}*`).join('\n')
+    await conn.reply(m.chat, `〔 ✦ *COMMAND TIDAK DITEMUKAN* 〕\n> Perintah *${candidate.usedPrefix}${candidate.command}* tidak ada.\n\n┌──〔 ✦ *REKOMENDASI* 〕\n${list}\n└────────────────────────`, m)
 }
 
 
@@ -818,17 +818,17 @@ export async function groupsUpdate(groupsUpdate) {
 
 global.dfail = (type, m, conn) => {
     let msg = {
-        rowner: '〔 ⛩️ *AKSES DITOLAK* 〕\n⟡ Perintah ini khusus untuk *Developer Bot*.',
-        owner: '〔 ⛩️ *AKSES DITOLAK* 〕\n⟡ Perintah ini hanya dapat digunakan oleh *Owner Bot*.',
-        mods: '〔 🛡️ *MODERATOR ONLY* 〕\n⟡ Perintah ini hanya untuk *Moderator Bot*.',
-        premium: '〔 💎 *PREMIUM ONLY* 〕\n⟡ Fitur ini khusus untuk pengguna *Premium*.\n⟡ Ketik *.sewa* atau hubungi owner untuk upgrade.',
-        group: '〔 👥 *GROUP ONLY* 〕\n⟡ Perintah ini hanya dapat digunakan di dalam grup chat.',
-        private: '〔 👤 *PRIVATE ONLY* 〕\n⟡ Perintah ini hanya dapat digunakan di private chat (PC).',
-        admin: '〔 👑 *ADMIN ONLY* 〕\n⟡ Perintah ini hanya dapat digunakan oleh *Admin Grup*.',
-        botAdmin: '〔 🤖 *BOT HARUS ADMIN* 〕\n⟡ Jadikan bot sebagai *Admin Grup* terlebih dahulu.',
-        unreg: `〔 📝 *BELUM TERDAFTAR* 〕\n⟡ Silakan daftar terlebih dahulu untuk menggunakan fitur bot:\n\nwa.me/${global.nomorbot}?text=.daftar+namamu,umurmu\n\n_Contoh: wa.me/${global.nomorbot}?text=.daftar+nenel,18_`,
-        restrict: '〔 🔒 *RESTRICTED* 〕\n⟡ Fitur restrict belum diaktifkan di chat ini.',
-        disable: '〔 ⛔ *FITUR DINONAKTIFKAN* 〕\n⟡ Perintah ini telah dimatikan sementara oleh Owner.',
+        rowner: '〔 ✦ *AKSES DITOLAK* 〕\n> Perintah ini khusus untuk *Real Developer Bot*.',
+        owner: '〔 ✦ *AKSES DITOLAK* 〕\n> Perintah ini hanya dapat digunakan oleh *Owner Bot*.',
+        mods: '〔 ✦ *MODERATOR ONLY* 〕\n> Perintah ini hanya untuk *Moderator Bot*.',
+        premium: '〔 ✦ *FITUR PREMIUM* 〕\n> Fitur ini khusus untuk pengguna *Premium*.\n> Ketik *.sewa* atau hubungi owner untuk upgrade.',
+        group: '〔 ✦ *GRUP SAJA* 〕\n> Perintah ini hanya dapat digunakan di dalam grup chat.',
+        private: '〔 ✦ *CHAT PRIBADI* 〕\n> Perintah ini hanya dapat digunakan di private chat (PC).',
+        admin: '〔 ✦ *ADMIN SAJA* 〕\n> Perintah ini hanya dapat digunakan oleh *Admin Grup*.',
+        botAdmin: '〔 ✦ *BOT HARUS ADMIN* 〕\n> Jadikan bot sebagai *Admin Grup* terlebih dahulu.',
+        unreg: `〔 ✦ *BELUM TERDAFTAR* 〕\n> Silakan daftar terlebih dahulu untuk menggunakan fitur bot:\n> wa.me/${global.nomorbot}?text=.daftar+namamu,umurmu\n\n> _Contoh: wa.me/${global.nomorbot}?text=.daftar+nenel,18_`,
+        restrict: '〔 ✦ *RESTRICTED* 〕\n> Fitur restrict belum diaktifkan di chat ini.',
+        disable: '〔 ✦ *FITUR DINONAKTIFKAN* 〕\n> Perintah ini telah dimatikan sementara oleh Owner.',
     }[type]
     if (msg) return conn.reply(m.chat, msg, m)
 }
