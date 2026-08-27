@@ -2187,6 +2187,7 @@ return m.reply(msg + `|━━━━━━━━━━━`)
 
   let rand = Math.random()
   let isSide = SIDE_LOCATION_LIST.some(s => s.nama === loc.nama)
+  let spawned = []
 
   if(rand < 0.10 && loc.drop?.length){
     const dropName = loc.drop[Math.floor(Math.random() * loc.drop.length)]
@@ -2250,7 +2251,7 @@ return m.reply(msg + `|━━━━━━━━━━━`)
       if(charList.length === 0) charList = [CHARACTER_LIST[Math.floor(Math.random()*CHARACTER_LIST.length)]]
     }
 
-    let spawned = []
+    spawned = []
     if(charList.length > 0){
       let spawnCount = devilSpawn? Math.min(Math.floor(Math.random()*5)+1, 5) : Math.min(Math.floor(Math.random()*10)+1, 10)
       if(hasWeight && spawnCount < 1) spawnCount = 1
