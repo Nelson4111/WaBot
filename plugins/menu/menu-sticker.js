@@ -1,18 +1,21 @@
 import fs from 'fs'
 import { loadDB } from '../../lib/waifuHelper.js'
+import { getGreeting } from '../../lib/style.js'
 
 let handler = async (m, { conn, usedPrefix: _p }) => {
-    let d = new Date(new Date + 3600000)
+    let wib = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })
+    let d = new Date(wib)
     let locale = 'id-ID'
     let tanggal = d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
     let hari = d.toLocaleDateString(locale, { weekday: 'long' })
-    let jam = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    let jam = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })
 
     let user = global.db.data.users[m.sender] || {}
     const wdb = loadDB()
     const uang = wdb.money?.[m.sender] || 0
     let { limit = 0, role = 'User', name = m.pushName, premiumTime = 0 } = user
-    let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ' : 'ғʀᴇᴇ'
+    let prems = premiumTime > 0 ? 'Premium Ⓟ' : 'Free Ⓛ'
+    let greeting = getGreeting(name, d.getHours())
 
     let stickerFeatures = Object.values(global.plugins)
         .filter(p => !p.disabled && p.tags && p.tags.includes('sticker'))
@@ -22,7 +25,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
             premium: p.premium
         })))
         .sort((a, b) => a.cmd.localeCompare(b.cmd))
-        .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
+        .map(v => `⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
         .join('\n')
 
     let videoMenu = null
@@ -32,30 +35,28 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     } catch { videoMenu = null }
 
     let menuText = `
-[ ⛩️ ]───[ *_ɪɴғᴏ • ᴜsᴇʀ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ : ${name}
-│ 𖥔  ʀᴏʟᴇ : ${role}
-│ 𖥔  ᴜꜱᴇʀ : ${prems}
-│ 𖥔  ʟɪᴍɪᴛ : ${limit}
-╰ 𖥔  ᴍᴏɴᴇʏ : ${uang.toLocaleString('id-ID')}
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
+   〔 ⛩️ *STICKER TOOLS MENU* 〕
+     ${greeting}
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 
-[ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ ʙᴏᴛ : ${global.namebot}
-│ 𖥔  ᴠᴇʀsɪ : ${global.versi}
-│ 𖥔  ᴄʀᴇᴀᴛᴏʀ : ${global.author}
-│ 𖥔  ᴍᴏᴅᴇ : Public
-│ 𖥔  ʟɪᴍɪᴛ ꜰᴇᴀᴛᴜʀᴇ : Ⓛ
-╰ 𖥔  ᴘʀᴇᴍɪᴜᴍ ꜰᴇᴀᴛᴜʀᴇ : Ⓟ
+〔 ✿ *PROFIL PENGGUNA* 〕
+⟡ *Nama* : ${name}
+⟡ *Role* : ${role}
+⟡ *Status* : ${prems}
+⟡ *Limit* : ${limit}
+⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
 
-╭──「 *ᴀʙᴏᴜᴛ* 」✦
-│ 𖥔  ᴛᴀɴɢɢᴀʟ : ${tanggal}
-│ 𖥔  ʜᴀʀɪ : ${hari}
-│ 𖥔  ᴊᴀᴍ : ${jam} WIB
-╰──
+〔 ✿ *WAKTU & TANGGAL* 〕
+⟡ *Tanggal* : ${tanggal}
+⟡ *Hari* : ${hari}
+⟡ *Jam* : ${jam} WIB
 
-╭──「 *sᴛɪᴄᴋᴇʀ ᴍᴇɴᴜ* 」─✦
+〔 ✿ *DAFTAR PERINTAH* 〕
 ${stickerFeatures}
-╰──
+
+── · ── · ── · ── · ── · ──
+_Terima kasih sudah menggunakan ${global.namebot} ✨_
 `.trim()
 
     let contextInfo = {
@@ -86,7 +87,7 @@ ${stickerFeatures}
     }
 }
 
-handler.command = /^menusticker$/i
+handler.command = /^(menusticker|stickermenu)$/i
 handler.help = ["menusticker"]
 handler.tags = ["main"]
 

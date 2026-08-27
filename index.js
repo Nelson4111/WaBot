@@ -15,7 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(__dirname);
 const { name, author } = require(join(__dirname, './package.json'));
 
-say('NelBot-MD', { font: 'block', align: 'center', gradient: ['cyan', 'blue'] });
+say('NelBot', { font: 'block', align: 'center', gradient: ['cyan', 'blue'] });
 say(`By ${author?.name || author || 'Nenel'}`, { font: 'console', align: 'center', gradient: ['magenta', 'red'] });
 
 console.log(chalk.cyan('┌────────────────────────────────────────────────────────┐'));

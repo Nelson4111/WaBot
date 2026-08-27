@@ -3,6 +3,8 @@ import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
 
+import { getGreeting } from '../../lib/style.js'
+
 const formatDuration = (ms) => {
     let seconds = Math.floor(ms / 1000)
     let minutes = Math.floor(seconds / 60)
@@ -29,7 +31,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   const wdb = loadDB()
   const uang = wdb.money?.[m.sender] || 0
   let { limit = 0, role = 'User', premiumTime = 0, pasangan = [] } = user
-  let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ' : 'ғʀᴇᴇ'
+  let prems = premiumTime > 0 ? 'Premium Ⓟ' : 'Free Ⓛ'
 
   let partnerDisplay = '💔 Jomblo'
   if (pasangan && pasangan.length > 0) {
@@ -56,10 +58,10 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       donorText = topDonors.map(([jid, data], i) => {
           let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
           donorMentions.push(jid)
-          return `${i === 0 ? '╭' : i === topDonors.length - 1 ? '╰' : '│'} ${medal} @${jid.split('@')[0]} : Rp ${data.totalDonasi.toLocaleString('id-ID')}`
+          return `⟡ ${medal} @${jid.split('@')[0]} : Rp ${data.totalDonasi.toLocaleString('id-ID')}`
       }).join('\n')
   } else {
-      donorText = `╰ 💎 *Ketik ${_p}donasi untuk mendukung bot!*`
+      donorText = `⟡ 💎 *Ketik ${_p}donasi untuk mendukung bot!*`
   }
 
   let videoMenu = 'https://api.deline.web.id/tMbmgonUvF.mp4'
@@ -86,65 +88,74 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     audioMenu = 'https://c.termai.cc/a100/hMW4'
   }
 
-  let hour = d.getHours()
-  let greeting = 'Selamat malam'
-  if (hour >= 4 && hour < 11) greeting = 'Selamat pagi'
-  else if (hour >= 11 && hour < 15) greeting = 'Selamat siang'
-  else if (hour >= 15 && hour < 18) greeting = 'Selamat sore'
+  let greeting = getGreeting(name, d.getHours())
 
-  let caption = `
-${greeting}, *${name}*! Aku *${global.namebot}*, bot WhatsApp yang siap membantu kamu ✨
+  let header = `
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
+   〔 ⛩️ *${global.namebot.toUpperCase()}* 〕
+     ${greeting}
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
+`.trim()
 
-[ ⛩️ ]───[ *_ɪɴғᴏ • ᴜsᴇʀ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ : ${name}
-│ 𖥔  ʀᴏʟᴇ : ${role}
-│ 𖥔  ᴜꜱᴇʀ : ${prems}
-│ 𖥔  ʟɪᴍɪᴛ : ${limit}
-│ 𖥔  ᴍᴏɴᴇʏ : Rp ${uang.toLocaleString('id-ID')}
-╰ 𖥔  ᴘᴀsᴀɴɢᴀɴ : ${partnerDisplay}
+  let userCard = `
+〔 ✿ *PROFIL PENGGUNA* 〕
+⟡ *Nama* : ${name}
+⟡ *Role* : ${role}
+⟡ *Status* : ${prems}
+⟡ *Limit* : ${limit}
+⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
+⟡ *Pasangan* : ${partnerDisplay}
+`.trim()
 
-[ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ ʙᴏᴛ : ${global.namebot}
-│ 𖥔  ᴠᴇʀsɪ : ${global.versi}
-│ 𖥔  ᴄʀᴇᴀᴛᴏʀ : ${global.author}
-│ 𖥔  ᴍᴏᴅᴇ : Public
-│ 𖥔  ʟɪᴍɪᴛ ꜰᴇᴀᴛᴜʀᴇ : Ⓛ
-╰ 𖥔  ᴘʀᴇᴍɪᴜᴍ ꜰᴇᴀᴛᴜʀᴇ : Ⓟ
+  let botCard = `
+〔 ✿ *INFO SISTEM* 〕
+⟡ *Bot* : ${global.namebot}
+⟡ *Versi* : ${global.versi}
+⟡ *Creator* : ${global.author}
+⟡ *Mode* : Public
+⟡ *Limit Fitur* : Ⓛ
+⟡ *Premium Fitur* : Ⓟ
+`.trim()
 
-[ 🏆 ]───[ *_ᴛᴏᴘ • ᴅᴏɴᴀᴛᴜʀ_* ]───✦
+  let topDonorsCard = `
+〔 ✿ *TOP DONATUR* 〕
 ${donorText}
+`.trim()
 
-╭──「 *ᴀʙᴏᴜᴛ* 」✦
-│ 𖥔  ᴛᴀɴɢɢᴀʟ : ${tanggal}
-│ 𖥔  ʜᴀʀɪ : ${hari}
-│ 𖥔  ᴊᴀᴍ : ${jam} WIB
-╰──
+  let aboutCard = `
+〔 ✿ *WAKTU & TANGGAL* 〕
+⟡ *Tanggal* : ${tanggal}
+⟡ *Hari* : ${hari}
+⟡ *Jam* : ${jam} WIB
 `.trim()
 
   let listMenuText = `
-[ 📑 ]───[ *_ᴅᴀғᴛᴀʀ • ᴍᴇɴᴜ_* ]───✦
-╭ 𖥔  ${_p}allmenu ➔ Semua Perintah
-│ 𖥔  ${_p}menuai ➔ Fitur AI & ChatBot
-│ 𖥔  ${_p}menuanime ➔ Fitur Anime
-│ 𖥔  ${_p}menuaudio ➔ Manipulasi Audio
-│ 𖥔  ${_p}menudownload ➔ Pengunduh Media
-│ 𖥔  ${_p}menufun ➔ Fitur Hiburan
-│ 𖥔  ${_p}menugame ➔ Mini Games
-│ 𖥔  ${_p}menugroup ➔ Manajemen Grup
-│ 𖥔  ${_p}menuinfo ➔ Informasi Bot
-│ 𖥔  ${_p}menuinternet ➔ Pencarian Web
-│ 𖥔  ${_p}menumaker ➔ Pembuat Gambar & Logo
-│ 𖥔  ${_p}menumoneytrack ➔ Pencatatan Keuangan
-│ 𖥔  ${_p}menuowner ➔ Khusus Owner
-│ 𖥔  ${_p}menupasangan ➔ Fitur Hubungan
-│ 𖥔  ${_p}menurpg ➔ Roleplay Game (RPG)
-│ 𖥔  ${_p}menusearch ➔ Pencarian Data
-│ 𖥔  ${_p}menustalker ➔ Stalker Sosmed
-│ 𖥔  ${_p}menusticker ➔ Pembuat Stiker
-╰ 𖥔  ${_p}menutools ➔ Alat Bantu & Utilitas
+〔 ✿ *DAFTAR MENU* 〕
+› ${_p}allmenu ── Semua Perintah
+› ${_p}menuai ── Fitur AI & ChatBot
+› ${_p}menuanime ── Fitur Anime
+› ${_p}menuaudio ── Manipulasi Audio
+› ${_p}menudownload ── Pengunduh Media
+› ${_p}menufun ── Fitur Hiburan
+› ${_p}menugame ── Mini Games
+› ${_p}menugroup ── Manajemen Grup
+› ${_p}menuinfo ── Informasi Bot
+› ${_p}menuinternet ── Pencarian Web
+› ${_p}menumaker ── Pembuat Gambar & Logo
+› ${_p}menumoneytrack ── Pencatatan Keuangan
+› ${_p}menuowner ── Khusus Owner
+› ${_p}menupasangan ── Fitur Hubungan
+› ${_p}menurpg ── Roleplay Game (RPG)
+› ${_p}menusearch ── Pencarian Data
+› ${_p}menustalker ── Stalker Sosmed
+› ${_p}menusticker ── Pembuat Stiker
+› ${_p}menutools ── Alat Bantu & Utilitas
+
+── · ── · ── · ── · ── · ──
+_Ketik ${_p}help <cmd> untuk info detail perintah._
 `.trim()
 
-  caption += '\n\n' + listMenuText
+  let caption = [header, userCard, botCard, topDonorsCard, aboutCard, listMenuText].join('\n\n')
 
   let mentions = [m.sender, ...donorMentions]
   if (pasangan && pasangan.length > 0) {

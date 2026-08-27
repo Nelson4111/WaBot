@@ -1,45 +1,48 @@
 import fs from 'fs'
 import { loadDB } from '../../lib/waifuHelper.js'
+import { getGreeting } from '../../lib/style.js'
 
 let handler = async (m, { conn, usedPrefix: _p }) => {
-    let d = new Date(new Date + 3600000)
+    let wib = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })
+    let d = new Date(wib)
     let locale = 'id-ID'
     let tanggal = d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
     let hari = d.toLocaleDateString(locale, { weekday: 'long' })
-    let jam = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    let jam = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })
 
     let user = global.db.data.users[m.sender] || {}
     const wdb = loadDB()
     const uang = wdb.money?.[m.sender] || 0
     let { limit = 0, role = 'User', name = m.pushName, premiumTime = 0 } = user
-    let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ' : 'ғʀᴇᴇ'
+    let prems = premiumTime > 0 ? 'Premium Ⓟ' : 'Free Ⓛ'
+    let greeting = getGreeting(name, d.getHours())
 
     // CEK APA DI PENJARA
-    let userRPG = wdb.users[m.sender]?.rpg
+    let userRPG = wdb.users?.[m.sender]?.rpg
     let diPenjara = false
     let infoPenjara = ''
-    if(userRPG?.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara){
+    if (userRPG?.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
         diPenjara = true
         let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
         let jamSisa = Math.floor(sisa / 3600000)
         let menitSisa = Math.floor((sisa % 3600000) / 60000)
-        infoPenjara = `╭──「 *⚠️ KAMU DI PENJARA* 」─✦\n│ 🚔 SEL : ${userRPG.sel}\n│ ⏰ SISA : ${jamSisa}j ${menitSisa}m\n│ 💰 TEBUSAN : Rp ${userRPG.tebusan.toLocaleString('id-ID')}\n│\n│ ❌ Semua command RPG diblokir\n│ 💡 Minta teman *.tebus @kamu* atau tunggu bebas\n╰──\n\n`
+        infoPenjara = `〔 ⚠️ *KAMU DI PENJARA* 〕\n⟡ *Sel* : ${userRPG.sel}\n⟡ *Sisa Waktu* : ${jamSisa}j ${menitSisa}m\n⟡ *Tebusan* : Rp ${userRPG.tebusan.toLocaleString('id-ID')}\n⟡ _Semua command RPG diblokir. Minta teman *.tebus @kamu* atau tunggu bebas._\n\n`
     }
 
     let rpgFeatures = ''
-    if(diPenjara){
-        rpgFeatures = `│ 🔒 Semua command RPG dikunci\n│    Sampai kamu bebas dari penjara`
+    if (diPenjara) {
+        rpgFeatures = `⟡ 🔒 Semua command RPG dikunci sampai kamu bebas dari penjara.`
     } else {
         rpgFeatures = Object.values(global.plugins)
-        .filter(p => !p.disabled && p.tags && p.tags.includes('rpg'))
-        .flatMap(p => (Array.isArray(p.help) ? p.help : [p.help]).map(cmd => ({
-            cmd: p.prefix ? cmd : _p + cmd,
-            limit: p.limit,
-            premium: p.premium
-        })))
-        .sort((a, b) => a.cmd.localeCompare(b.cmd))
-        .map(v => `│ ⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
-        .join('\n')
+            .filter(p => !p.disabled && p.tags && p.tags.includes('rpg'))
+            .flatMap(p => (Array.isArray(p.help) ? p.help : [p.help]).map(cmd => ({
+                cmd: p.prefix ? cmd : _p + cmd,
+                limit: p.limit,
+                premium: p.premium
+            })))
+            .sort((a, b) => a.cmd.localeCompare(b.cmd))
+            .map(v => `⟡ ${v.cmd} ${v.premium ? 'Ⓟ' : ''}${v.limit ? 'Ⓛ' : ''}`)
+            .join('\n')
     }
 
     let videoMenu = null
@@ -49,30 +52,28 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     } catch { videoMenu = null }
 
     let menuText = `
-[ ⛩️ ]───[ *_ɪɴғᴏ • ᴜsᴇʀ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ : ${name}
-│ 𖥔  ʀᴏʟᴇ : ${role}
-│ 𖥔  ᴜꜱᴇʀ : ${prems}
-│ 𖥔  ʟɪᴍɪᴛ : ${limit}
-╰ 𖥔  ᴍᴏɴᴇʏ : ${uang.toLocaleString('id-ID')}
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
+   〔 ⛩️ *RPG ADVENTURE MENU* 〕
+     ${greeting}
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
 
-${infoPenjara}[ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ ʙᴏᴛ : ${global.namebot}
-│ 𖥔  ᴠᴇʀsɪ : ${global.versi}
-│ 𖥔  ᴄʀᴇᴀᴛᴏʀ : ${global.author}
-│ 𖥔  ᴍᴏᴅᴇ : Public
-│ 𖥔  ʟɪᴍɪᴛ ꜰᴇᴀᴛᴜʀᴇ : Ⓛ
-╰ 𖥔  ᴘʀᴇᴍɪᴜᴍ ꜰᴇᴀᴛᴜʀᴇ : Ⓟ
+${infoPenjara}〔 ✿ *PROFIL PENGGUNA* 〕
+⟡ *Nama* : ${name}
+⟡ *Role* : ${role}
+⟡ *Status* : ${prems}
+⟡ *Limit* : ${limit}
+⟡ *Saldo* : Rp ${uang.toLocaleString('id-ID')}
 
-╭──「 *ᴀʙᴏᴜᴛ* 」✦
-│ 𖥔  ᴛᴀɴɢɢᴀʟ : ${tanggal}
-│ 𖥔  ʜᴀʀɪ : ${hari}
-│ 𖥔  ᴊᴀᴍ : ${jam} WIB
-╰──
+〔 ✿ *WAKTU & TANGGAL* 〕
+⟡ *Tanggal* : ${tanggal}
+⟡ *Hari* : ${hari}
+⟡ *Jam* : ${jam} WIB
 
-╭──「 *ʀᴘɢ ᴍᴇɴᴜ* 」─✦
+〔 ✿ *DAFTAR PERINTAH* 〕
 ${rpgFeatures}
-╰──
+
+── · ── · ── · ── · ── · ──
+_Terima kasih sudah menggunakan ${global.namebot} ✨_
 `.trim()
 
     let contextInfo = {

@@ -109,8 +109,8 @@ function findCommandSuggestions(command) {
 async function replyCommandSuggestion(conn, m, candidate) {
     const suggestions = findCommandSuggestions(candidate.command)
     if (!suggestions.length) return
-    const list = suggestions.map(alias => `- ${candidate.usedPrefix}${alias}`).join('\n')
-    await conn.reply(m.chat, `Command *${candidate.usedPrefix}${candidate.command}* tidak ditemukan.\n\nMungkin command ini yang kamu maksud:\n${list}`, m)
+    const list = suggestions.map(alias => `› *${candidate.usedPrefix}${alias}*`).join('\n')
+    await conn.reply(m.chat, `〔 ⚠️ *COMMAND TIDAK DITEMUKAN* 〕\n⟡ Perintah *${candidate.usedPrefix}${candidate.command}* tidak ada.\n\n〔 💡 *REKOMENDASI* 〕\n${list}`, m)
 }
 
 
@@ -385,7 +385,7 @@ async function processMessage(m, chatUpdate) {
             let min = Math.floor(seconds / 60); seconds %= 60;
             let timeStr = [d ? `${d} Hari` : '', h ? `${h} Jam` : '', min ? `${min} Menit` : '', seconds ? `${seconds} Detik` : ''].filter(Boolean).join(' ') || 'beberapa detik';
             
-            let caption = `✨ *WELCOME BACK!*\n\nUser @${m.sender.split('@')[0]} telah kembali dari AFK!\n⏱️ *Lama AFK:* ${timeStr}\n📝 *Alasan Sebelumnya:* _${userAFK.afkReason || 'Tanpa Alasan'}_`.trim()
+            let caption = `〔 ✨ *WELCOME BACK* 〕\n⟡ User @${m.sender.split('@')[0]} telah kembali dari AFK!\n⟡ *Lama AFK* : ${timeStr}\n⟡ *Alasan* : _${userAFK.afkReason || 'Tanpa Alasan'}_`.trim()
             userAFK.afk = -1
             userAFK.afkReason = ''
             conn.sendMessage(m.chat, { text: caption, mentions: [m.sender] }, { quoted: m }).catch(() => {})
@@ -818,17 +818,17 @@ export async function groupsUpdate(groupsUpdate) {
 
 global.dfail = (type, m, conn) => {
     let msg = {
-        rowner: '*ᴏɴʟʏ ᴅᴇᴠᴇʟᴏᴘᴇʀ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴅᴇᴠᴇʟᴏᴘᴇʀ ʙᴏᴛ',
-        owner: '*ᴏɴʟʏ ᴏᴡɴᴇʀ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴏᴡɴᴇʀ ʙᴏᴛ',
-        mods: '*ᴏɴʟʏ ᴍᴏᴅᴇʀᴀᴛᴏʀ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴍᴏᴅᴇʀᴀᴛᴏʀ ʙᴏᴛ',
-        premium: '*ᴏɴʟʏ ᴘʀᴇᴍɪᴜᴍ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴘʀᴇᴍɪᴜᴍ ᴜsᴇʀ',
-        group: '*ɢʀᴏᴜᴘ ᴄʜᴀᴛ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ʙɪsᴀ ᴅɪᴘᴀᴋᴀɪ ᴅɪᴅᴀʟᴀᴍ ɢʀᴏᴜᴘ',
-        private: '*ᴘʀɪᴠᴀᴇ ᴄʜᴀᴛ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ʙɪsᴀ ᴅɪᴘᴀᴋᴀɪ ᴅɪᴘʀɪᴠᴀᴛ ᴄʜᴀᴛ',
-        admin: '*ᴏɴʟʏ ᴀᴅᴍɪɴ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴀᴅᴍɪɴ ɢʀᴏᴜᴘ',
-        botAdmin: '*ᴏɴʟʏ ʙᴏᴛ ᴀᴅᴍɪɴ*\nᴄᴏᴍᴍᴀɴᴅ ɪɴɪ ʜᴀɴʏᴀ ʙɪsᴀ ᴅɪɢᴜɴᴀᴋᴀɴ ᴋᴇᴛɪᴋᴀ ʙᴏᴛ ᴍᴇɴᴊᴀᴅɪ ᴀᴅᴍɪɴ',
-        unreg: `*Kamu belum terdaftar!*\n\nSilakan daftar terlebih dahulu dengan cara klik link di bawah ini, lalu kirim pesannya ke bot:\n\nwa.me/${global.nomorbot}?text=.daftar+namamu,umurmu\n\n_Contoh: wa.me/${global.nomorbot}?text=.daftar+nenel,18_`,
-        restrict: '*ʀᴇsᴛʀɪᴄᴛ*\nʀᴇsᴛʀɪᴄᴛ ʙᴇʟᴜᴍ ᴅɪɴʏᴀʟᴀᴋᴀɴ ᴅɪᴄʜᴀᴛ ɪɴɪ',
-        disable: '*ᴅɪsᴀʙʟᴇᴅ*\nᴄᴍᴅ ɪɴɪ ᴛᴇʟᴀʜ ᴅɪᴍᴀᴛɪᴋᴀɴ ᴏʟᴇʜ ᴏᴡɴᴇʀ',
+        rowner: '〔 ⛩️ *AKSES DITOLAK* 〕\n⟡ Perintah ini khusus untuk *Developer Bot*.',
+        owner: '〔 ⛩️ *AKSES DITOLAK* 〕\n⟡ Perintah ini hanya dapat digunakan oleh *Owner Bot*.',
+        mods: '〔 🛡️ *MODERATOR ONLY* 〕\n⟡ Perintah ini hanya untuk *Moderator Bot*.',
+        premium: '〔 💎 *PREMIUM ONLY* 〕\n⟡ Fitur ini khusus untuk pengguna *Premium*.\n⟡ Ketik *.sewa* atau hubungi owner untuk upgrade.',
+        group: '〔 👥 *GROUP ONLY* 〕\n⟡ Perintah ini hanya dapat digunakan di dalam grup chat.',
+        private: '〔 👤 *PRIVATE ONLY* 〕\n⟡ Perintah ini hanya dapat digunakan di private chat (PC).',
+        admin: '〔 👑 *ADMIN ONLY* 〕\n⟡ Perintah ini hanya dapat digunakan oleh *Admin Grup*.',
+        botAdmin: '〔 🤖 *BOT HARUS ADMIN* 〕\n⟡ Jadikan bot sebagai *Admin Grup* terlebih dahulu.',
+        unreg: `〔 📝 *BELUM TERDAFTAR* 〕\n⟡ Silakan daftar terlebih dahulu untuk menggunakan fitur bot:\n\nwa.me/${global.nomorbot}?text=.daftar+namamu,umurmu\n\n_Contoh: wa.me/${global.nomorbot}?text=.daftar+nenel,18_`,
+        restrict: '〔 🔒 *RESTRICTED* 〕\n⟡ Fitur restrict belum diaktifkan di chat ini.',
+        disable: '〔 ⛔ *FITUR DINONAKTIFKAN* 〕\n⟡ Perintah ini telah dimatikan sementara oleh Owner.',
     }[type]
     if (msg) return conn.reply(m.chat, msg, m)
 }

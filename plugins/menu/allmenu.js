@@ -4,32 +4,40 @@ import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
 
+import { getGreeting } from '../../lib/style.js'
+
 const defaultMenu = {
   before: `
-[ ⛩️ ]───[ *_ɪɴғᴏ • ᴜsᴇʀ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ : %name
-│ 𖥔  ʀᴏʟᴇ : %role
-│ 𖥔  ᴜꜱᴇʀ : %prems
-│ 𖥔  ʟɪᴍɪᴛ : %limit
-╰ 𖥔  ᴍᴏɴᴇʏ : %uang
-[ ⛩️ ]───[ *_ɪɴғᴏ • ʙᴏᴛ_* ]───✦
-╭ 𖥔  ɴᴀᴍᴀ ʙᴏᴛ : ${global.namebot}
-│ 𖥔  ᴠᴇʀsɪ : 3.0.0
-│ 𖥔  ᴄʀᴇᴀᴛᴏʀ : ${global.author}
-│ 𖥔  ᴍᴏᴅᴇ : Public
-│ 𖥔  ʟɪᴍɪᴛ ꜰᴇᴀᴛᴜʀᴇ : Ⓛ
-╰ 𖥔  ᴘʀᴇᴍɪᴜᴍ ꜰᴇᴀᴛᴜʀᴇ : Ⓟ
-╭──「 *ᴀʙᴏᴜᴛ* 」✦
-│ 𖥔  ᴛᴀɴɢɢᴀʟ : %tanggal
-│ 𖥔  ʜᴀʀɪ : %hari
-│ 𖥔  ᴊᴀᴍ : %jam WIB
-╰──
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
+   〔 ⛩️ *ALL COMMAND MENU* 〕
+     %greeting
+⋆⁺₊⋆ ────────────────── ⋆⁺₊⋆
+
+〔 ✿ *PROFIL PENGGUNA* 〕
+⟡ *Nama* : %name
+⟡ *Role* : %role
+⟡ *Status* : %prems
+⟡ *Limit* : %limit
+⟡ *Saldo* : Rp %uang
+
+〔 ✿ *INFO SISTEM* 〕
+⟡ *Bot* : ${global.namebot}
+⟡ *Versi* : ${global.versi}
+⟡ *Creator* : ${global.author}
+⟡ *Uptime* : %uptime
+⟡ *Limit Fitur* : Ⓛ
+⟡ *Premium Fitur* : Ⓟ
+
+〔 ✿ *WAKTU & TANGGAL* 〕
+⟡ *Tanggal* : %tanggal
+⟡ *Hari* : %hari
+⟡ *Jam* : %jam WIB
 %readmore
 `.trim(),
-  header: `╭──「 *%category* 」─✦`,
-  body: `│ ⟡ %cmd %isPremium %islimit`,
-  footer: `╰──`,
-  after: `_Terima kasih sudah menggunakan ${global.namebot}_`,
+  header: `〔 ✿ *%category* 〕`,
+  body: `⟡ %cmd %isPremium %islimit`,
+  footer: ``,
+  after: `── · ── · ── · ── · ── · ──\n_Terima kasih sudah menggunakan ${global.namebot} ✨_`,
 }
 
 let handler = async (m, { conn, usedPrefix: _p }) => {
@@ -69,9 +77,10 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     let name = registered ? dbName || m.pushName || await conn.getName(m.sender) : m.pushName || await conn.getName(m.sender)
     user.name = name
 
-    let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ' : 'ғʀᴇᴇ'
+    let prems = premiumTime > 0 ? 'Premium Ⓟ' : 'Free Ⓛ'
     const owners = global.owner.map(v => v[0] + '@s.whatsapp.net')
     let role = owners.includes(m.sender) ? 'Owner' : dbRole
+    let greeting = getGreeting(name, d.getHours())
 
     let help = Object.values(global.plugins)
       .filter(p => !p.disabled)
@@ -84,26 +93,26 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       }))
 
     let tags = {
-      main: 'ᴍᴀɪɴ ᴍᴇɴᴜ',
-      info: 'ɪɴғᴏ ᴍᴇɴᴜ',
-      waifu: 'ᴘᴀsᴀɴɢᴀɴ',
-      rpg: 'ʀᴘɢ ᴍᴇɴᴜ',
-      moneytrack: 'ᴍᴏɴᴇʏᴛʀᴀᴄᴋ',
-      ai: 'ᴀɪ ғᴇᴀᴛᴜʀᴇ',
-      downloader: 'ᴅᴏᴡɴʟᴏᴀᴅᴇʀ',
-      internet: 'ɪɴᴛᴇʀɴᴇᴛ',
-      memfess: 'ᴍᴇɴғᴇs ᴍᴇɴᴜ',
-      maker: 'ᴍᴀᴋᴇʀ',
-      anime: 'ᴀɴɪᴍᴇ',
-      sticker: 'sᴛɪᴄᴋᴇʀ',
-      tools: 'ᴛᴏᴏʟs',
-      group: 'ɢʀᴏᴜᴘ',
-      fun: 'ғᴜɴ',
-      search: 'sᴇᴀʀᴄʜ',
-      stalk: 'sᴛᴀʟᴋᴇʀ ᴍᴇɴᴜ',
-      game: 'ɢᴀᴍᴇ',
-      owner: 'ᴏᴡɴᴇʀ',
-      audio: 'ᴀᴜᴅɪᴏ'
+      main: 'MAIN MENU',
+      info: 'INFO MENU',
+      waifu: 'PASANGAN & WAIFU',
+      rpg: 'RPG GAME',
+      moneytrack: 'MONEYTRACK',
+      ai: 'AI & CHATBOT',
+      downloader: 'DOWNLOADER',
+      internet: 'INTERNET & SEARCH',
+      memfess: 'MENFESS',
+      maker: 'IMAGE MAKER',
+      anime: 'ANIME & MANGA',
+      sticker: 'STICKER TOOLS',
+      tools: 'UTILITY TOOLS',
+      group: 'GROUP MANAGEMENT',
+      fun: 'FUN & GAMES',
+      search: 'DATABASE SEARCH',
+      stalk: 'STALKER MENU',
+      game: 'MINI GAMES',
+      owner: 'OWNER ONLY',
+      audio: 'AUDIO MANIPULATION'
     }
 
     let sortedTags = Object.keys(tags).sort((a, b) => {
@@ -134,13 +143,13 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
               .replace('%isPremium', menu.premium ? lprem : '')
           ).join('\n')
 
-        return list ? defaultMenu.header.replace('%category', tags[tag]) + '\n' + list + '\n' + defaultMenu.footer : ''
-      }),
+        return list ? defaultMenu.header.replace('%category', tags[tag]) + '\n' + list : ''
+      }).filter(Boolean),
       defaultMenu.after
-    ].join('\n')
+    ].join('\n\n')
 
     let replace = { 
-        uptime, _p, name, prems, 
+        uptime, _p, name, prems, greeting,
         uang: uang.toLocaleString('id-ID'), 
         limit, role, 
         tanggal, hari, jam,
