@@ -1,5 +1,17 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1';
 
+// Filter spam log internal libsignal (Closing/Opening session dump) agar terminal tetap bersih
+const _origConsoleLog = console.log;
+const _origConsoleInfo = console.info;
+console.log = function (...args) {
+    if (typeof args[0] === 'string' && (args[0].startsWith('Closing session:') || args[0].startsWith('Opening session:'))) return;
+    _origConsoleLog.apply(console, args);
+};
+console.info = function (...args) {
+    if (typeof args[0] === 'string' && (args[0].includes('Closing session:') || args[0].includes('Opening session:'))) return;
+    _origConsoleInfo.apply(console, args);
+};
+
 process.on('unhandledRejection', (reason, promise) => {
     if (reason && (reason.code === 'ERR_NON_2XX_3XX_RESPONSE' || (reason.message && reason.message.includes('429')))) {
         console.warn('⚠️ [HTTP Rate Limit 429] API eksternal sedang sibuk (akan otomatis coba lagi nanti).');
@@ -306,7 +318,7 @@ const connectionOptions = {
     keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
   },
   getMessage: async key => {
-    // 1. Coba ambil dari Baileys store (cache memori)
+    // 1. Coba ambil dari memoryStore Baileys
     try {
       if (memoryStore) {
         const msg = await memoryStore.loadMessage(key.remoteJid, key.id)
@@ -314,11 +326,19 @@ const connectionOptions = {
       }
     } catch {}
     
-    // 2. Coba ambil dari global.db (fallback)
+    // 2. Coba ambil dari global.db.data.msgs (outbound & recent messages)
     try {
       const msgs = global.db?.data?.msgs
       if (msgs && msgs[key.id]) {
-        return msgs[key.id].message
+        return msgs[key.id].message || undefined
+      }
+    } catch {}
+
+    // 3. Coba ambil dari store legacy jika ada
+    try {
+      if (store && typeof store.loadMessage === 'function') {
+        const msg = await store.loadMessage(key.remoteJid, key.id)
+        if (msg) return msg.message || undefined
       }
     } catch {}
 
@@ -326,6 +346,25 @@ const connectionOptions = {
   },
   generateHighQualityLinkPreview: true,
   patchMessageBeforeSending: (message) => {
+    const requiresPatch = !!(
+      message.buttonsMessage ||
+      message.templateMessage ||
+      message.listMessage ||
+      message.interactiveMessage
+    );
+    if (requiresPatch) {
+      message = {
+        viewOnceMessage: {
+          message: {
+            messageContextInfo: {
+              deviceListMetadataVersion: 2,
+              deviceListMetadata: {},
+            },
+            ...message,
+          },
+        },
+      };
+    }
     return message;
   },
   connectTimeoutMs: 60000,
@@ -333,7 +372,7 @@ const connectionOptions = {
   retryRequestDelayMs: 250,
   maxMsgRetryCount: 10,
   syncFullHistory: false,
-  markOnlineOnConnect: false
+  markOnlineOnConnect: true
 }
 
 function bindSocketStores(sock) {
