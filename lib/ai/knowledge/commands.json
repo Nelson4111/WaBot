@@ -40,8 +40,8 @@
     "commands": "Karakter: .waifu, .loli, .husbu. Pencarian: .whatanime (reply potongan gambar anime)."
   },
   "owner": {
-    "keywords": ["owner", "sewa bot", "sewa", "beli bot", "premium", "nenel", "pembuat"],
+    "keywords": ["owner", "sewa bot", "sewa", "beli bot", "premium", "nenel", "pembuat", "masukin grup", "masuk grup", "tambah grup", "tambahin ke grup", "invite bot", "masukin bot", "sewa grup", "masukin gc"],
     "menu": ".menuowner",
-    "commands": "Owner bot ini adalah {ownerName}. Untuk sewa bot atau upgrade premium, hubungi Owner via command .owner atau WA {ownerNumber}. (Admin Grup BUKAN Owner bot)."
+    "commands": "Owner bot ini adalah {ownerName}. Bot tidak bisa dimasukkan/di-invite ke grup secara bebas kecuali sudah menyewa bot. Jika ingin sewa bot atau ingin memasukkan bot ke grup kamu, silakan hubungi Owner via command .owner atau WA {ownerNumber} agar dimasukkan secara resmi oleh Owner. (Admin Grup BUKAN Owner bot)."
   }
 }
