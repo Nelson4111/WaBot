@@ -1,0 +1,136 @@
+{
+  "commands": [
+    {
+      "name": "tiktok",
+      "aliases": ["tt"],
+      "description": "Download video TikTok tanpa watermark",
+      "example": "[CMD:tiktok:https://vt.tiktok.com/xxx]"
+    },
+    {
+      "name": "play",
+      "aliases": [],
+      "description": "Cari dan putar/download lagu dari YouTube",
+      "example": "[CMD:play:Dandelions]"
+    },
+    {
+      "name": "ig",
+      "aliases": [],
+      "description": "Download postingan / reels Instagram",
+      "example": "[CMD:ig:https://instagram.com/p/xxx]"
+    },
+    {
+      "name": "ytmp3",
+      "aliases": ["yta"],
+      "description": "Download audio YouTube",
+      "example": "[CMD:ytmp3:https://youtu.be/xxx]"
+    },
+    {
+      "name": "ytmp4",
+      "aliases": ["ytv"],
+      "description": "Download video YouTube",
+      "example": "[CMD:ytmp4:https://youtu.be/xxx]"
+    },
+    {
+      "name": "spotify",
+      "aliases": [],
+      "description": "Cari dan download lagu dari Spotify",
+      "example": "[CMD:spotify:Dandelions]"
+    },
+    {
+      "name": "s",
+      "aliases": ["stiker", "sticker"],
+      "description": "Buat stiker dari foto/video (user harus reply media)",
+      "example": "[CMD:s:]"
+    },
+    {
+      "name": "smeme",
+      "aliases": [],
+      "description": "Buat stiker meme dengan teks",
+      "example": "[CMD:smeme:teks atas | teks bawah]"
+    },
+    {
+      "name": "toimg",
+      "aliases": [],
+      "description": "Konversi stiker menjadi gambar foto",
+      "example": "[CMD:toimg:]"
+    },
+    {
+      "name": "tomp3",
+      "aliases": [],
+      "description": "Konversi video/audio menjadi file MP3",
+      "example": "[CMD:tomp3:]"
+    },
+    {
+      "name": "ocr",
+      "aliases": [],
+      "description": "Membaca teks dari gambar (reply gambar)",
+      "example": "[CMD:ocr:]"
+    },
+    {
+      "name": "tr",
+      "aliases": ["translate"],
+      "description": "Menerjemahkan teks ke bahasa tertentu",
+      "example": "[CMD:tr:en Halo apa kabar]"
+    },
+    {
+      "name": "lirik",
+      "aliases": ["lyrics"],
+      "description": "Mencari lirik lagu",
+      "example": "[CMD:lirik:Dandelions]"
+    },
+    {
+      "name": "pinterest",
+      "aliases": ["pin"],
+      "description": "Mencari gambar di Pinterest",
+      "example": "[CMD:pinterest:aesthetic anime]"
+    },
+    {
+      "name": "tebakgambar",
+      "aliases": [],
+      "description": "Memulai game tebak gambar",
+      "example": "[CMD:tebakgambar:]"
+    },
+    {
+      "name": "family100",
+      "aliases": [],
+      "description": "Memulai game kuis Family 100",
+      "example": "[CMD:family100:]"
+    },
+    {
+      "name": "fbdl",
+      "aliases": [],
+      "description": "Download video Facebook",
+      "example": "[CMD:fbdl:https://fb.watch/xxx]"
+    },
+    {
+      "name": "capcut",
+      "aliases": [],
+      "description": "Download video CapCut tanpa watermark",
+      "example": "[CMD:capcut:https://capcut.com/xxx]"
+    },
+    {
+      "name": "rvo",
+      "aliases": [],
+      "description": "Membuka pesan view-once sekali lihat (reply pesan view-once)",
+      "example": "[CMD:rvo:]"
+    },
+    {
+      "name": "attp",
+      "aliases": [],
+      "description": "Membuat stiker teks animasi warna-warni",
+      "example": "[CMD:attp:Konnichiwa]"
+    },
+    {
+      "name": "emojimix",
+      "aliases": [],
+      "description": "Menggabungkan dua emoji menjadi stiker baru",
+      "example": "[CMD:emojimix:😀+😎]"
+    },
+    {
+      "name": "cosrent",
+      "aliases": ["cosplayrent", "sewacosplay"],
+      "description": "Mencari katalog rental kostum cosplay",
+      "example": "[CMD:cosrent:jingliu]"
+    }
+  ]
+}

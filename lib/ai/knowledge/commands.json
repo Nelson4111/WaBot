@@ -5,32 +5,32 @@
     "commands": "TikTok (tanpa wm): .tiktok [url], Instagram: .ig [url], YouTube Audio/Video: .ytmp3 / .ytmp4, Spotify: .spotify [judul/url], Facebook: .fbdl, CapCut/Pinterest: .capcut / .pindl."
   },
   "ai_image": {
-    "keywords": ["ai", "gemini", "claude", "gambar", "editimg", "flux", "lukis", "buat gambar"],
+    "keywords": ["gemini", "claude", "gambar", "editimg", "flux", "lukis", "buat gambar"],
     "menu": ".menuai",
     "commands": "Obrolan AI: @pertanyaan (Grup) / langsung chat (Private), Tanya AI Khusus: .ai / .gemini / .claude, Edit Foto: .editimg [prompt], Generate Gambar: .flux [deskripsi]."
   },
   "game_fun": {
-    "keywords": ["game", "tebak", "main", "family100", "caklontong", "susunkata", "tebakangka", "asahotak", "tebakkata", "blackjack", "slot", "kasino"],
+    "keywords": ["game", "tebak", "family100", "caklontong", "susunkata", "tebakangka", "asahotak", "tebakkata", "blackjack", "slot", "kasino"],
     "menu": ".menugame",
     "commands": "Tebak-tebakan: .tebakgambar, .family100, .caklontong, .susunkata, .tebakangka, .asahotak. Kasino/Kartu: .blackjack [taruhan], .slot."
   },
   "sticker_media": {
-    "keywords": ["stiker", "sticker", "s", "meme", "smeme", "toimg", "tomp3"],
+    "keywords": ["stiker", "sticker", "meme", "smeme", "toimg", "tomp3"],
     "menu": ".menusticker",
     "commands": "Buat Stiker: .stiker / .s (reply foto/video), Stiker Meme: .smeme teks_atas | teks_bawah, Konversi: .toimg, .tomp3."
   },
   "tools": {
-    "keywords": ["tools", "ocr", "teks", "translate", "tr", "terjemah", "rvo", "viewonce", "transcribe", "voice", "suara", "aivn"],
+    "keywords": ["ocr", "translate", "terjemah", "rvo", "viewonce", "transcribe", "voice", "suara", "aivn"],
     "menu": ".menutools",
     "commands": "OCR: .ocr, Translate: .tr [kode] [teks], RVO: .rvo, Transcribe Voice: .transcribe, AI Voice Note: .aivn / --vn."
   },
   "group": {
-    "keywords": ["grup", "group", "tag", "hidetag", "tagall", "kick", "add", "welcome", "absen", "admin"],
+    "keywords": ["hidetag", "tagall", "kick", "setwelcome", "absen", "cekabsen"],
     "menu": ".menugroup",
     "commands": "Tag: .hidetag / .tagall, Moderator: .kick @user, .add, .setwelcome, Presensi: .absen, .cekabsen."
   },
   "romance": {
-    "keywords": ["pasangan", "lamar", "nikah", "tembak", "cerai", "jodoh", "bucin", "pelet", "cinta"],
+    "keywords": ["pasangan", "lamar", "nikah", "tembak", "cerai", "jodoh", "bucin", "pelet"],
     "menu": ".menupasangan",
     "commands": "Hubungan: .lamar, .nikah, .tembak, .pasangan, .cerai. Hiburan: .jodoh, .cekisihati, .bucin, .pelet."
   },
@@ -40,8 +40,8 @@
     "commands": "Karakter: .waifu, .loli, .husbu. Pencarian: .whatanime (reply potongan gambar anime)."
   },
   "owner": {
-    "keywords": ["owner", "sewa", "beli", "premium", "nenel", "pembuat"],
+    "keywords": ["owner", "sewa bot", "sewa", "beli bot", "premium", "nenel", "pembuat"],
     "menu": ".menuowner",
-    "commands": "Owner bot ini adalah Nenel. Untuk sewa bot, hubungi Owner via .owner atau WA 6281241100804. (Admin Grup BUKAN Owner bot)."
+    "commands": "Owner bot ini adalah {ownerName}. Untuk sewa bot atau upgrade premium, hubungi Owner via command .owner atau WA {ownerNumber}. (Admin Grup BUKAN Owner bot)."
   }
 }

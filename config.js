@@ -29,14 +29,12 @@ const readMore = more.repeat(4001)
 
 /*============= MAIN INFO =============*/
 global.owner = [
-    ['226804522590211', 'Nenel Main ID', false],
-    ['6281242432747', 'Nenel', false],
-    ['6281241100804', 'Nenel 2', true]
+    ['6281242432747', 'Nenel', false]
 ]  // ubah pake no kalian
 global.mods = []
 global.prems = []
-global.nomorbot = '6281242432747' // ubah pake no kalian
-global.nomorown = '6281241100804' // ubah pake no kalian
+global.nomorbot = '380965329814' // ubah pake no bot kalian
+global.nomorown = '6281242432747' // ubah pake no owner kalian
 global.autotyping = false // default mati
 global.autorecording = false // default mati
 global.usePairingCode = false // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
