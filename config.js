@@ -29,7 +29,8 @@ const readMore = more.repeat(4001)
 
 /*============= MAIN INFO =============*/
 global.owner = [
-    ['6281242432747', 'Nenel', false]
+    ['6281242432747', 'owner', true],
+    ['6281241100804', 'owner2', false]
 ]  // ubah pake no kalian
 global.mods = []
 global.prems = []

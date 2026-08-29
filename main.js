@@ -1,8 +1,9 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1';
 
-// Filter spam log internal libsignal (Closing/Opening session dump) agar terminal tetap bersih
+// Filter spam log internal libsignal agar terminal tetap bersih
 const _origConsoleLog = console.log;
 const _origConsoleInfo = console.info;
+const _origConsoleError = console.error;
 console.log = function (...args) {
     if (typeof args[0] === 'string' && (args[0].startsWith('Closing session:') || args[0].startsWith('Opening session:'))) return;
     _origConsoleLog.apply(console, args);
@@ -10,6 +11,10 @@ console.log = function (...args) {
 console.info = function (...args) {
     if (typeof args[0] === 'string' && (args[0].includes('Closing session:') || args[0].includes('Opening session:'))) return;
     _origConsoleInfo.apply(console, args);
+};
+console.error = function (...args) {
+    if (typeof args[0] === 'string' && args[0].includes('Decrypted message with closed session')) return;
+    _origConsoleError.apply(console, args);
 };
 
 process.on('unhandledRejection', (reason, promise) => {
