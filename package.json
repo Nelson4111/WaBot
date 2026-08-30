@@ -12,6 +12,7 @@
   },
   "scripts": {
     "start": "node index.js",
+    "start:all": "node start-all.js",
     "test": "node test.js",
     "dev": "nodemon --experimental-specifier-resolution=node index.js"
   },

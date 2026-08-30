@@ -19,3 +19,4 @@ database.db
 *.db-wal
 *.db-shm
 local-lavalink-test/
+scratch/
