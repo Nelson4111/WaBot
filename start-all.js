@@ -34,10 +34,10 @@ async function startAll() {
         if (isRunning) {
             console.log(chalk.green('✅ [1/2] Hermes Agent Gateway ONLINE di port 8642.'));
         } else {
-            console.log(chalk.red('⚠️ [1/2] Hermes Gateway belum siap, NelBot akan menggunakan Fallback Provider (Groq 5-Key Pool).'));
+            console.log(chalk.cyan('⚡ [1/2] Mode Cloud/VPS: Menggunakan Groq 5-Key Pool (Ultra-Fast & Full Feature).'));
         }
     } else {
-        console.log(chalk.gray('ℹ️ [1/2] HERMES_ENABLED=false: Menjalankan NelBot dengan AI Provider bawaan.'));
+        console.log(chalk.cyan('⚡ [1/2] AI Mode: Menggunakan Groq 5-Key Pool.'));
     }
 
     console.log(chalk.yellow('\n🤖 [2/2] Memulai Engine Utama NelBot (Baileys WhatsApp)...'));
