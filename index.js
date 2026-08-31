@@ -42,7 +42,7 @@ function start(file) {
   let args = [join(__dirname, file), ...process.argv.slice(2)];
   say([process.argv[0], ...args].join(' '), { font: 'console', align: 'center', gradient: ['red', 'magenta'] });
   
-  setupMaster({ exec: args[0], args: args.slice(1), stdio: ['pipe', 'inherit', 'inherit', 'ipc'] });
+  setupMaster({ exec: args[0], args: args.slice(1), execArgv: ['--expose-gc'], stdio: ['pipe', 'inherit', 'inherit', 'ipc'] });
   let p = fork();
 
   p.on('message', data => {

@@ -136,7 +136,7 @@ async function startAll() {
     // --- 3. WHATSAPP BOT (BAILEYS) SPAWN ---
     console.log(chalk.yellow('\n🤖 [3/3] Memulai Engine Utama NelBot (Baileys WhatsApp)...'));
 
-    const waProcess = spawn('node', ['index.js'], {
+    const waProcess = spawn('node', ['--expose-gc', 'index.js'], {
         cwd: __dirname,
         stdio: 'inherit',
         env: { ...process.env }
