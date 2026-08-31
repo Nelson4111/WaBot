@@ -1437,7 +1437,7 @@ const findQuote = input => {
 const quoteText = quote => random(quote.quotes || [])
 
 const handler = async (m, ctx = {}) => {
-  let db = await loadDB() || {}
+  let db = global.db.data || {}
   ctx.db = db
   const user = normalizeJid(ctx.user) || normalizeJid(m.sender)
   getEpic(db)
