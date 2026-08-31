@@ -100,6 +100,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       info: 'INFO MENU',
       waifu: 'PASANGAN & WAIFU',
       rpg: 'RPG GAME',
+      csm: 'CSM RPG (CHAINSAW MAN)',
       moneytrack: 'MONEYTRACK',
       ai: 'AI & CHATBOT',
       downloader: 'DOWNLOADER',

@@ -138,6 +138,7 @@ ${donorText}
 │ › ${_p}menuai ── Fitur AI & ChatBot
 │ › ${_p}menuanime ── Fitur Anime
 │ › ${_p}menuaudio ── Manipulasi Audio
+│ › ${_p}menucsm ── Chainsaw Man RPG
 │ › ${_p}menudownload ── Pengunduh Media
 │ › ${_p}menufun ── Fitur Hiburan
 │ › ${_p}menugame ── Mini Games

@@ -272,7 +272,50 @@ let handler = async (message, { conn, text, usedPrefix, command }) => {
 }
 
 handler.command = ['csm', 'chainsaw']
-handler.help = ['csm']
+handler.help = [
+  'csm start',
+  'csm nickname <nama>',
+  'csm gender <cowok/cewek>',
+  'csm profile',
+  'csm stats',
+  'csm view <kategori>',
+  'csm hourly / daily / weekly / monthly',
+  'csm quest',
+  'csm location',
+  'csm visit <lokasi>',
+  'csm explore',
+  'csm terror',
+  'csm mission',
+  'csm rescue',
+  'csm contract',
+  'csm blood',
+  'csm story',
+  'csm storylist',
+  'csm ending',
+  'csm reset',
+  'csm shop',
+  'csm sell <nomor/all>',
+  'csm equip <nomor/nama>',
+  'csm repair <nomor/nama>',
+  'csm inv',
+  'csm use <nomor/nama>',
+  'csm job',
+  'csm work',
+  'csm partner',
+  'csm hospital',
+  'csm revive <nomor/all>',
+  'csm char <nama>',
+  'csm duel @tag',
+  'csm gift',
+  'csm rest',
+  'csm heal',
+  'csm event',
+  'csm gallery',
+  'csm raid',
+  'csm cd',
+  'csm tutorial',
+  'csm command'
+]
 handler.tags = ['csm']
 handler.limit = true
 
