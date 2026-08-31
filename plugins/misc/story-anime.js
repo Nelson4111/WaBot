@@ -1,8 +1,6 @@
 let handler = async (m, { conn, usedPrefix, command }) => {
-		
-			await conn.sendMessage(m.chat, { video: { url: dir[Math.floor(Math.random() * dir.length)] }, caption: `_Random Story Anime_` }, { quoted: m })
-	}
-
+	await conn.sendMessage(m.chat, { video: { url: dir[Math.floor(Math.random() * dir.length)] }, caption: `_Random Story Anime_` }, { quoted: m })
+}
 handler.help = ['storyanime', 'animestory']
 handler.tags = ['anime']
 handler.command = /^(stor(i|y)a?nime|a?nimestor(i|y))$/i
@@ -33,7 +31,6 @@ const dir = [
 'https://telegra.ph/file/10399f910bb90de8a6c53.mp4',
 'https://telegra.ph/file/f7b440b02e742d1d4bed6.mp4',
 'https://telegra.ph/file/3571f86c9c8843f48ce03.mp4',
-'https://telegra.ph/file/c0b4e700e2d696f6ae448.mp4',
 'https://telegra.ph/file/c0b4e700e2d696f6ae448.mp4',
 'https://telegra.ph/file/fbfa5ac6baca454de22ad.mp4',
 'https://telegra.ph/file/899cb30e29de1f0692ea1.mp4',
