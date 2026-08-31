@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
- * start-all.js — Unified Startup Orchestrator for NelBot-MD & Hermes Agent (Phase E)
+ * start-all.js — Unified Startup Orchestrator for NelBot-MD, Discord Bot & Hermes Agent
  * 
- * Menyalakan seluruh ekosistem NelBot secara terpadu:
- *  1. Memulai Hermes Agent Gateway (Python) via HermesProcessManager jika HERMES_ENABLED=true.
- *  2. Memulai engine utama NelBot (Baileys / index.js).
- *  3. Menjaga monitoring health dan graceful shutdown untuk kedua proses.
+ * Menyalakan seluruh ekosistem bot secara terpadu dalam 1 VPS:
+ *  1. Memeriksa / Menginisialisasi Hermes Agent Gateway (Remote / Local).
+ *  2. Memulai Bot Discord (bot-discord/Shard.js).
+ *  3. Memulai Engine Utama NelBot (Baileys WhatsApp / index.js).
+ *  4. Menjaga monitoring health dan graceful shutdown untuk seluruh proses.
  */
 
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import chalk from 'chalk';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -22,36 +24,78 @@ const __dirname = path.dirname(__filename);
 
 async function startAll() {
     console.log(chalk.cyan('╔═════════════════════════════════════════════════════════════════╗'));
-    console.log(chalk.cyan('║') + chalk.bold.magenta('       NELBOT-MD UNIFIED ORCHESTRATOR (HERMES + BAILEYS)        ') + chalk.cyan('║'));
+    console.log(chalk.cyan('║') + chalk.bold.magenta('       NELBOT-MD UNIFIED ORCHESTRATOR (WA + DISCORD + HERMES)     ') + chalk.cyan('║'));
     console.log(chalk.cyan('╚═════════════════════════════════════════════════════════════════╝\n'));
 
+    const runningProcesses = [];
+
+    // --- 1. HERMES AGENT CHECK ---
     const hermesEnabled = process.env.HERMES_ENABLED === 'true';
     const hermesManager = new HermesProcessManager();
 
     if (hermesEnabled) {
-        console.log(chalk.yellow('🚀 [1/2] Memeriksa status Hermes Agent Gateway...'));
-        const isRunning = await hermesManager.ensureRunning(15000);
+        console.log(chalk.yellow('🚀 [1/3] Memeriksa status Hermes Agent Gateway...'));
+        const isRunning = await hermesManager.ensureRunning(10000);
         if (isRunning) {
-            console.log(chalk.green('✅ [1/2] Hermes Agent Gateway ONLINE di port 8642.'));
+            console.log(chalk.green(`✅ [1/3] Hermes Agent Gateway ONLINE di ${hermesManager.endpoint}.`));
         } else {
-            console.log(chalk.cyan('⚡ [1/2] Mode Cloud/VPS: Menggunakan Groq 5-Key Pool (Ultra-Fast & Full Feature).'));
+            console.log(chalk.cyan(`⚡ [1/3] Hermes Agent: Menggunakan fallback AI / Remote Gateway.`));
         }
     } else {
-        console.log(chalk.cyan('⚡ [1/2] AI Mode: Menggunakan Groq 5-Key Pool.'));
+        console.log(chalk.cyan('⚡ [1/3] AI Mode: Menggunakan Groq Key Pool (HERMES_ENABLED=false).'));
     }
 
-    console.log(chalk.yellow('\n🤖 [2/2] Memulai Engine Utama NelBot (Baileys WhatsApp)...'));
+    // --- 2. DISCORD BOT SPAWN ---
+    const discordDir = path.join(__dirname, 'bot-discord');
+    const discordShardFile = path.join(discordDir, 'Shard.js');
+    const discordIndexFile = path.join(discordDir, 'index.js');
+    const discordEnabled = process.env.DISCORD_ENABLED !== 'false' && fs.existsSync(discordDir);
 
-    const botProcess = spawn('node', ['index.js'], {
+    if (discordEnabled && (fs.existsSync(discordShardFile) || fs.existsSync(discordIndexFile))) {
+        const startScript = fs.existsSync(discordShardFile) ? 'Shard.js' : 'index.js';
+        console.log(chalk.yellow(`\n🎧 [2/3] Memulai Discord Music Bot (${startScript})...`));
+
+        const discordProcess = spawn('node', ['--no-warnings', startScript], {
+            cwd: discordDir,
+            stdio: 'inherit',
+            env: { ...process.env }
+        });
+
+        runningProcesses.push({ name: 'DiscordBot', proc: discordProcess });
+
+        discordProcess.on('exit', (code, signal) => {
+            console.log(chalk.yellow(`\n[DiscordBot] Process exited (code=${code}, signal=${signal})`));
+        });
+
+        discordProcess.on('error', (err) => {
+            console.error(chalk.red(`[DiscordBot] Failed to spawn: ${err.message}`));
+        });
+    } else {
+        console.log(chalk.gray('\n⏩ [2/3] Discord Bot dilewati (folder bot-discord tidak ditemukan atau dinonaktifkan).'));
+    }
+
+    // --- 3. WHATSAPP BOT (BAILEYS) SPAWN ---
+    console.log(chalk.yellow('\n🤖 [3/3] Memulai Engine Utama NelBot (Baileys WhatsApp)...'));
+
+    const waProcess = spawn('node', ['index.js'], {
         cwd: __dirname,
-        stdio: 'inherit'
+        stdio: 'inherit',
+        env: { ...process.env }
     });
 
+    runningProcesses.push({ name: 'WhatsAppBot', proc: waProcess });
+
+    // --- GRACEFUL SHUTDOWN HANDLER ---
     const cleanupAll = () => {
-        console.log(chalk.red('\n🛑 Menghentikan seluruh proses NelBot & Hermes...'));
+        console.log(chalk.red('\n🛑 Menghentikan seluruh proses NelBot, Discord & Hermes...'));
         hermesManager.stop();
-        if (botProcess) {
-            botProcess.kill('SIGTERM');
+        for (const { name, proc } of runningProcesses) {
+            try {
+                if (proc && !proc.killed) {
+                    console.log(chalk.gray(`Stopping ${name}...`));
+                    proc.kill('SIGTERM');
+                }
+            } catch (e) {}
         }
         process.exit(0);
     };
@@ -59,10 +103,14 @@ async function startAll() {
     process.on('SIGINT', cleanupAll);
     process.on('SIGTERM', cleanupAll);
 
-    botProcess.on('exit', (code) => {
-        console.log(chalk.yellow(`\n[NelBot] Bot process exited with code ${code}`));
-        hermesManager.stop();
-        process.exit(code || 0);
+    waProcess.on('exit', (code) => {
+        console.log(chalk.yellow(`\n[NelBot WA] Bot process exited with code ${code}`));
+        cleanupAll();
+    });
+
+    waProcess.on('error', (err) => {
+        console.error(chalk.red(`[NelBot WA] Failed to spawn: ${err.message}`));
+        cleanupAll();
     });
 }
 
