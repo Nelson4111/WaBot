@@ -1,4 +1,4 @@
-﻿import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 
 const EPIC_SAGAS = [
   { id: 'troy', name: 'The Troy Saga', detail: 'Perjalanan awal Odysseus dimulai dari perang Troya, tempat strategi, keberanian, dan pengorbanan diuji. Kemenangan yang diraih membawa konsekuensi besar, membuka jalan bagi perjalanan panjang penuh luka, kehilangan, dan keputusan yang akan menentukan nasibnya.' },
@@ -1439,8 +1439,6 @@ const quoteText = quote => random(quote.quotes || [])
 const handler = async (m, ctx = {}) => {
   let db = await loadDB() || {}
   ctx.db = db
-  global.db = db
-  
   const user = normalizeJid(ctx.user) || normalizeJid(m.sender)
   getEpic(db)
   const reply = (text, options) => ctx.conn?.reply
