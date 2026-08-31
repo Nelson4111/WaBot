@@ -9,7 +9,7 @@ const EPIC_SAGAS = [
   { id: 'thunder', name: 'The Thunder Saga', detail: 'Kekuatan para dewa mulai turun tangan ketika badai besar menghadang perjalanan Odysseus. Dengan ancaman dari langit dan keputusan yang berat, ia harus membayar harga untuk tetap melanjutkan perjalanan.' },
   { id: 'wisdom', name: 'The Wisdom Saga', detail: 'Ketika kekuatan tidak lagi cukup, kecerdikan menjadi senjata utama Odysseus. Strategi, pengalaman, dan kebijaksanaan diuji dalam menghadapi musuh serta tantangan yang semakin sulit.' },
   { id: 'vengeance', name: 'The Vengeance Saga', detail: 'Rasa kehilangan dan penderitaan yang terkumpul berubah menjadi keinginan untuk membalas. Namun jalan balas dendam membawa pertanyaan besar tentang harga kemenangan dan siapa dirinya sebenarnya.' },
-  { id: 'ithaca', name: 'The Ithaca Saga', detail: 'Setelah bertahun-tahun melewati perang, monster, dan badai, Odysseus akhirnya kembali mendekati rumahnya. Namun Ithaca membawa ujian terakhir berupa masa lalu, keluarga, dan keputusan yang menentukan akhir perjalanannya.' }
+  { id: 'ithaca', name: 'The Ithaca Saga', detail: 'Setelah perjalanan panjang melewati perang, monster, dan badai, Odysseus akhirnya kembali mendekati rumahnya. Namun Ithaca membawa ujian terakhir berupa masa lalu, keluarga, dan keputusan yang menentukan akhir perjalanannya.' }
 ]
 
 const EPIC_SONGS = [
@@ -103,7 +103,7 @@ const EPIC_QUIZZES = [
   { question: 'Siapa makhluk setengah manusia setengah kuda?', options: ['Centaur', 'Satyr', 'Minotaur', 'Harpy'], answer: 1, detail: 'Centaur memiliki tubuh manusia dengan bagian bawah seperti kuda.' },
   { question: 'Siapa makhluk hutan dengan kaki kambing dalam mitologi Yunani?', options: ['Satyr', 'Nymph', 'Centaur', 'Siren'], answer: 1, detail: 'Satyr adalah makhluk alam yang sering dikaitkan dengan musik dan pesta.' },
   { question: 'Siapa dewa angin yang sering dikaitkan dengan badai?', options: ['Aeolus', 'Helios', 'Apollo', 'Hermes'], answer: 1, detail: 'Aeolus dikenal sebagai penjaga atau penguasa angin dalam kisah Odyssey.' },
-  { question: 'Siapa nimfa yang menahan Odysseus di pulaunya?', options: ['Calypso', 'Circe', 'Nausicaa', 'Penelope'], answer: 1, detail: 'Calypso menahan Odysseus selama bertahun-tahun di pulaunya.' },
+  { question: 'Siapa nimfa yang menahan Odysseus di pulaunya?', options: ['Calypso', 'Circe', 'Nausicaa', 'Penelope'], answer: 1, detail: 'Calypso menahan Odysseus dalam waktu yang sangat lama di pulaunya.' },
   { question: 'Siapa putri Raja Alcinous yang membantu Odysseus?', options: ['Nausicaa', 'Helen', 'Ariadne', 'Andromache'], answer: 1, detail: 'Nausicaa membantu Odysseus setelah ia terdampar di tanah Phaeacians.' },
   { question: 'Siapa raja Phaeacians yang membantu Odysseus?', options: ['Alcinous', 'Priam', 'Nestor', 'Laertes'], answer: 1, detail: 'Alcinous memberikan bantuan kepada Odysseus untuk kembali pulang.' },
   { question: 'Siapa ayah Odysseus?', options: ['Laertes', 'Priam', 'Zeus', 'Nestor'], answer: 1, detail: 'Laertes adalah ayah Odysseus dalam mitologi Yunani.' },
@@ -662,6 +662,7 @@ const GODS = Array.from(new Set([
   ...EPIC_CHARACTERS.filter(x => x.category === 'Gods').map(x => x.name),
   ...EXTRA_CHARACTERS.filter(x => ['Gods', 'Gods Mentioned', 'Olympian Gods', 'Twelve Olympians', 'Underworld Gods', 'Nature Gods', 'Primordial Deities', 'Titans', 'Minor Gods'].includes(x.category)).map(x => x.name)
 ]))
+const EPIC_QUOTE_COUNT = Object.values(EPIC_QUOTES).reduce((total, item) => total + (item.quotes || []).length, 0)
 
 if (!global.epicVoice) global.epicVoice = {}
 
@@ -681,6 +682,15 @@ const firstName = jid => {
   const out = String(jid).split('@')[0]
   return out || 'kamu'
 }
+const normalizeJid = value => {
+  if (!value) return null
+  if (typeof value === 'object') value = value.jid || value.id || value.user || value.sender || value.number
+  const jid = String(value)
+  if (jid.endsWith('@s.whatsapp.net') || jid.endsWith('@g.us')) return jid
+  if (jid.endsWith('@lid')) return global.lids?.[jid] || global.db?.data?.lids?.[jid] || jid
+  if (/^\d+$/.test(jid)) return `${jid}@s.whatsapp.net`
+  return jid
+}
 const listText = (title, items) => `🎭 *EPIC MUSICAL*\n\n*${title}*\n\n${items.map((x, i) => `${i + 1}. ${x}`).join('\n')}`
 
 const getEpic = db => {
@@ -696,6 +706,8 @@ const getProfile = (db, id) => {
       name: 'Belum diatur',
       saga: 'Belum dipilih',
       song: 'Belum dipilih',
+      favoriteSagas: [],
+      favoriteSongs: [],
       favoriteCharacters: [],
       favoriteGods: [],
       favoriteMonsters: [],
@@ -711,6 +723,8 @@ const getProfile = (db, id) => {
   }
   const profile = db.epic.profile[id]
   profile.favoriteCharacters = Array.isArray(profile.favoriteCharacters) ? profile.favoriteCharacters : []
+  profile.favoriteSagas = Array.isArray(profile.favoriteSagas) ? profile.favoriteSagas : (profile.saga && profile.saga !== 'Belum dipilih' ? [profile.saga] : [])
+  profile.favoriteSongs = Array.isArray(profile.favoriteSongs) ? profile.favoriteSongs : (profile.song && profile.song !== 'Belum dipilih' ? [profile.song] : [])
   profile.favoriteGods = Array.isArray(profile.favoriteGods) ? profile.favoriteGods : []
   profile.favoriteMonsters = Array.isArray(profile.favoriteMonsters) ? profile.favoriteMonsters : []
   profile.chapters = Array.isArray(profile.chapters) ? profile.chapters : []
@@ -749,22 +763,32 @@ const findCharactersByType = (value, type) => normalizeList(value).map(input => 
   return ['Humans & Ithaca', 'Trojan War', 'Underworld Souls', 'Extra Suitors', 'Suitors'].includes(character.category)
 })
 
-const sagaListText = () => listText('EPIC SAGAS', EPIC_SAGAS.map(x => x.name))
-const songListText = () => `🎭 *EPIC MUSICAL*\n\n*EPIC SONGS BY SAGA*\n\n${EPIC_SAGAS.map(saga => `${saga.name}\n${EPIC_SONGS.filter(song => song.saga === saga.name).map((song, i) => `${i + 1}. ${song.name}`).join('\n')}`).join('\n\n')}`
+const framedList = (title, rows) => `╭❖─ *${title}* ─❖╮\n\n${rows.join('\n')}\n\n╰❖─ *EPIC MUSICAL* ─❖╯`
+const framedDetail = (title, body) => `╭❖─ *${title}* ─❖╮\n\n${body}\n\n╰❖─ *EPIC MUSICAL* ─❖╯`
+const sagaListText = () => framedList('EPIC SAGAS', EPIC_SAGAS.map((saga, i) => `${i + 1}. ${saga.name}`))
+const songListText = () => framedList('EPIC SONGS', EPIC_SONGS.map((song, i) => `${i + 1}. ${song.name}`))
 const characterListText = (type = 'all') => {
   if (type === 'only') {
-    const main = EPIC_CHARACTERS.map((ch, i) => `${i + 1}. ${ch.name}`).join('\n')
-    return `🎭 *EPIC MUSICAL - MAIN CHARACTERS*\n\n${main}`
+    return framedList('EPIC MAIN CHARACTERS', [
+      '📚 Daftar utama dari EPIC: The Musical.',
+      ...EPIC_CHARACTERS.map((ch, i) => `${i + 1}. ${ch.name}`)
+    ])
   }
   if (type === 'extra') {
-    const extra = EXTRA_CHARACTERS.map((ch, i) => `${i + 1}. ${ch.name}`).join('\n')
-    return `🎭 *EPIC MUSICAL - EXTRA CHARACTERS*\n\n${extra}`
+    return framedList('EPIC EXTRA CHARACTERS', [
+      '🌌 Karakter tambahan dari mitologi Yunani dan dunia yang lebih luas.',
+      ...EXTRA_CHARACTERS.map((ch, i) => `${i + 1}. ${ch.name}`)
+    ])
   }
-  const main = EPIC_CHARACTERS.map((ch, i) => `${i + 1}. ${ch.name}`).join('\n')
-  const extra = EXTRA_CHARACTERS.map((ch, i) => `${EPIC_CHARACTERS.length + i + 1}. ${ch.name}`).join('\n')
-  return `🎭 *EPIC MUSICAL - ALL CHARACTERS*\n\n*MAIN CHARACTERS*\n\n${main}\n\n*EXTRA CHARACTERS*\n\n${extra}`
+  return framedList('EPIC ALL CHARACTERS', [
+    '🌌 EPIC diperluas dengan karakter mitologi Yunani di luar album utama.',
+    '*MAIN CHARACTERS*',
+    ...EPIC_CHARACTERS.map((ch, i) => `${i + 1}. ${ch.name}`),
+    '*EXTRA CHARACTERS*',
+    ...EXTRA_CHARACTERS.map((ch, i) => `${EPIC_CHARACTERS.length + i + 1}. ${ch.name}`)
+  ])
 }
-const charDetailText = ch => `⚔️ *${ch.name}*\n\n🧭 Kategori: ${ch.category}\n📌 Role: ${ch.role}\n${ch.isMonster ? '☠️ Status: Monster' : '✨ Status: Character'}`
+const charDetailText = ch => framedDetail('CHARACTER DETAIL', `⚔️ *${ch.name}*\n\n🧭 Kategori: ${ch.category}\n📌 Role: ${ch.role}\n${ch.isMonster ? '☠️ Status: Monster' : '✨ Status: Character'}`)
 
 const epicCreateQueue = members => {
   const songs = shuffle(EPIC_SONGS.map(x => x.name))
@@ -773,7 +797,7 @@ const epicCreateQueue = members => {
 
 const epicVoiceStatus = room => {
   const memberText = room.members.map(u => `${room.finished.includes(u) ? '✅' : room.skipped && room.skipped.includes(u) ? '⏭️' : '⏳'} @${u.split('@')[0]}`).join('\n')
-  let text = `🎤 *EPIC VOICE LOBBY*\n\n👑 Host: @${room.host.split('@')[0]}\n👥 Member: ${room.members.length}\n\n${memberText}`
+  let text = `🎤 *EPIC VOICE ROOM*\n\n👑 Host: @${room.host.split('@')[0]}\n👥 Member: ${room.members.length}\n\n${memberText}`
   if (room.started) {
     text += `\n\n🎶 Progress: ${room.finished.length}/${room.members.length}`
     if (room.current) text += `\n\n🎤 Sekarang: @${room.current.user.split('@')[0]}\n🎵 Lagu: ${room.current.song}`
@@ -783,17 +807,10 @@ const epicVoiceStatus = room => {
   return text
 }
 
-const getWhatIfTarget = (m, args = []) => {
+const getWhatIfTarget = (m, args = [], ctx = {}) => {
   const contextInfo = m.message?.extendedTextMessage?.contextInfo || m.msg?.contextInfo || m.contextInfo || {}
-  const mentioned = m.mentionedJid || m.mentionedJids || contextInfo.mentionedJid || []
-  const normalizeJid = value => {
-    if (!value) return null
-    const jid = String(value)
-    if (jid.endsWith('@lid')) return global.lids?.[jid] || global.db?.data?.lids?.[jid] || jid
-    if (jid.endsWith('@s.whatsapp.net') || jid.endsWith('@lid')) return jid
-    if (/^\d+$/.test(jid)) return `${jid}@s.whatsapp.net`
-    return jid
-  }
+  const mentionedSources = [m.mentionedJid, m.mentionedJids, ctx.mentionedJid, ctx.mentionedJids, contextInfo.mentionedJid]
+  const mentioned = mentionedSources.find(source => Array.isArray(source) && source.length) || []
   if (mentioned.length) return normalizeJid(mentioned[0])
   if (m.quoted?.sender) return normalizeJid(m.quoted.sender)
   if (contextInfo.participant) return normalizeJid(contextInfo.participant)
@@ -805,47 +822,56 @@ const getWhatIfTarget = (m, args = []) => {
   return m.sender
 }
 
+const getEpicFamily = (db, chat) => {
+  getEpic(db)
+  if (!db.epic.family) db.epic.family = {}
+  if (!db.epic.family[chat]) db.epic.family[chat] = { king: null, queen: null, kids: [] }
+  const family = db.epic.family[chat]
+  family.kids = Array.isArray(family.kids) ? family.kids : []
+  family.kids = family.kids.map(kid => typeof kid === 'string'
+    ? { jid: kid, desc: '' }
+    : { jid: kid?.jid || kid?.id, desc: String(kid?.desc || '') })
+    .filter(kid => kid.jid)
+  return family
+}
+
+const familyRoleName = role => ({ king: 'King', queen: 'Queen', kid: 'Anak', child: 'Anak', anak: 'Anak' }[role] || null)
+const familyMembers = family => [family.king, family.queen, ...family.kids.map(kid => kid.jid)].filter(Boolean)
+const familyTarget = m => getWhatIfTarget(m, [])
+const familyWordCount = text => String(text || '').trim().split(/\s+/).filter(Boolean).length
+const familyChild = (family, target) => family.kids.find(kid => kid.jid === target)
+const familyViewText = (kid, number) => framedDetail(`ANAK ${number}`, `🧒 @${firstName(kid.jid)}\n\n📝 Deskripsi: ${kid.desc || 'Kosong'}`)
+const familyText = (family, prefix) => framedDetail('EPIC FAMILY', [
+  `👑 King: ${family.king ? `@${firstName(family.king)}` : 'Kosong'}`,
+  `👸 Queen: ${family.queen ? `@${firstName(family.queen)}` : 'Kosong'}`,
+  `🧒 Anak: ${family.kids.length ? family.kids.map((kid, i) => `${i + 1}. @${firstName(kid.jid)}`).join('\n') : 'Belum ada'}`,
+  '',
+  `Gunakan ${prefix}epic family add king|queen|anak`,
+  `Hapus posisi dengan ${prefix}epic family remove`
+].join('\n'))
+
 const whatIfText = (target, ch) => {
   const person = firstName(target)
   const lines = [
   `What if ${person} became a character in *EPIC MUSICAL*?\n\nThey'd fit as *${ch.name}* because their vibe matches *${ch.category}* and their destiny is: *${ch.role}*.`,
-  
   `If ${person} entered the EPIC world, they'd be *${ch.name}* — *${ch.role.toLowerCase()}* feels like a role made specifically for them.`,
-  
   `A wild thought: ${person} in the EPIC timeline.\n\nThe perfect match is *${ch.name}* — carrying *${ch.category}* energy with a *${ch.role}* aura.`,
-  
   `If ${person} joined the story, they'd absolutely become *${ch.name}*.\n\nTheir personality fits the path of *${ch.category}* and the destiny of *${ch.role}*.`,
-  
   `What if ${person} became part of the myth?\n\nThey'd be *${ch.name}* — a perfect representation of *${ch.category}* with the fate of *${ch.role}*.`,
-  
   `${person} just entered the world of *EPIC MUSICAL*.\n\nThe gods would see them as *${ch.name}*, someone born with *${ch.category}* and destined for *${ch.role}*.`,
-  
   `Imagine ${person} sailing through the EPIC universe.\n\nTheir role? Definitely *${ch.name}* — carrying the spirit of *${ch.category}* and becoming *${ch.role}*.`,
-  
   `The prophecy has changed...\n\n${person} would take the place of *${ch.name}*, bringing *${ch.category}* energy into the story as *${ch.role}*.`,
-  
   `If the Muses wrote a new chapter about ${person}, the character would be *${ch.name}*.\n\nA perfect blend of *${ch.category}* and *${ch.role}*.`,
-  
   `A new legend appears in the EPIC universe.\n\n${person} becomes *${ch.name}* — a character defined by *${ch.category}* and the destiny of *${ch.role}*.`,
-  
   `The halls of Olympus whisper a new name: ${person}.\n\nTheir closest match is *${ch.name}*, carrying the power of *${ch.category}* and the fate of *${ch.role}*.`,
-  
   `If ${person} had a song in *EPIC MUSICAL*, it would tell the story of *${ch.name}*.\n\nA journey shaped by *${ch.category}* and the role of *${ch.role}*.`,
-  
   `Breaking news from the ancient world:\n\n${person} has been chosen as *${ch.name}* — a perfect match for *${ch.category}* with a destiny called *${ch.role}*.`,
-  
   `The oracle reveals a strange possibility...\n\n${person} was meant to become *${ch.name}*, following the path of *${ch.category}* and embracing *${ch.role}*.`,
-  
   `A forgotten tale from the EPIC universe:\n\n${person} appears as *${ch.name}*, a figure representing *${ch.category}* and carrying the role of *${ch.role}*.`,
-  
   `The story needs a new hero, and it chooses ${person}.\n\nTheir identity becomes *${ch.name}* — matching the essence of *${ch.category}* and the destiny of *${ch.role}*.`,
-  
   `From mortal to legend...\n\n${person}'s EPIC transformation would be *${ch.name}*, a character powered by *${ch.category}* and known as *${ch.role}*.`,
-  
   `The songs of the ancient world change their lyrics when ${person} arrives.\n\nThey become *${ch.name}*, representing *${ch.category}* and the fate of *${ch.role}*.`,
-  
   `What role would fate give ${person} in *EPIC MUSICAL*?\n\nThe answer is *${ch.name}* — someone who embodies *${ch.category}* and lives as *${ch.role}*.`,
-  
   `A new myth is written today.\n\n${person} takes the identity of *${ch.name}*, walking a path filled with *${ch.category}* and becoming *${ch.role}*.`
 ]
   return random(lines)
@@ -855,43 +881,24 @@ const monsterRevealText = (ch, target) => {
   const person = firstName(target)
   const lines = [
   `🩸 *WUJUD ASLI ${person.toUpperCase()}*\n\n${person} bukan sekadar manusia biasa. Mereka sebenarnya adalah *${ch.name}* — *${ch.category}* yang menyamar sempurna.\n\n✨ Sifat asli: ${ch.role}`,
-
   `🌑 *MONSTER REVEALED: ${person.toUpperCase()}*\n\nSelama ini mereka menyembunyikan identitas sebenarnya. Di balik wajah manusia, mereka adalah *${ch.name}*, sang *${ch.category}*.\n\n⚔️ Tujuan tersembunyi: *${ch.role}*`,
-
   `🕯️ *RAHASIA TERBUKA*\n\nTidak ada yang menyangka bahwa ${person} adalah bagian dari dunia monster.\n\nMereka adalah *${ch.name}* — *${ch.category}* dengan takdir: *${ch.role}*.`,
-
   `💀 *IDENTITAS SEBENARNYA*\n\nTopeng manusia akhirnya runtuh.\n\n${person} ternyata adalah *${ch.name}*, makhluk *${ch.category}* yang memiliki sifat: *${ch.role}*.`,
-
   `⚠️ *MONSTER REVEAL*\n\nJangan tertipu oleh penampilannya.\n\n${person} bukan manusia biasa, melainkan *${ch.name}* — *${ch.category}* yang bergerak dalam bayangan.`,
-
   `🩶 *FILE RAHASIA DITEMUKAN*\n\nNama: ${person}\nStatus: *${ch.name}*\nJenis: *${ch.category}*\n\nKemampuan utama: *${ch.role}*`,
-
   `🔮 *RAMALAN TERUNGKAP*\n\nPara peramal telah melihat kebenarannya.\n\n${person} akan dikenal sebagai *${ch.name}*, sosok *${ch.category}* dengan peran: *${ch.role}*.`,
-
   `🌘 *JANGAN PERCAYA WAJAHNYA*\n\n${person} terlihat seperti manusia biasa, tetapi kenyataannya mereka adalah *${ch.name}*.\n\nSebuah *${ch.category}* yang membawa sifat: *${ch.role}*.`,
-
   `🔥 *TRANSFORMASI DIMULAI*\n\nSaat wujud aslinya muncul, semua orang menyadari bahwa ${person} adalah *${ch.name}*.\n\nMakhluk *${ch.category}* dengan kekuatan: *${ch.role}*.`,
-
   `👁️ *MATA DUNIA MONSTER TERBUKA*\n\nIdentitas ${person} akhirnya diketahui.\n\nMereka adalah *${ch.name}* — *${ch.category}* yang memiliki misi besar: *${ch.role}*.`,
-
   `🩸 *SUBJEK TERIDENTIFIKASI*\n\nPenyelidikan selesai.\n\n${person} dikonfirmasi sebagai *${ch.name}*, sebuah entitas *${ch.category}* dengan karakteristik *${ch.role}*.`,
-
   `🌙 *DARI BAYANGAN MUNCUL KEBENARAN*\n\nSelama ini ${person} bersembunyi sebagai manusia.\n\nNamun wujud aslinya adalah *${ch.name}* — *${ch.category}* yang dikenal karena *${ch.role}*.`,
-
   `☠️ *ALARM MONSTER AKTIF*\n\nAda sesuatu yang berbeda dari ${person}.\n\nMereka bukan manusia biasa, tetapi *${ch.name}*, sang *${ch.category}* dengan tujuan *${ch.role}*.`,
-
   `🖤 *CATATAN TERLARANG*\n\nJangan pernah membuka rahasia ini.\n\n${person} sebenarnya adalah *${ch.name}* — makhluk *${ch.category}* yang menyimpan sifat: *${ch.role}*.`,
-
   `⚔️ *LEGEND OF ${person.toUpperCase()}*\n\nSebuah legenda baru muncul.\n\n${person} dikenal sebagai *${ch.name}*, sosok *${ch.category}* yang membawa takdir *${ch.role}*.`,
-
   `🕸️ *PERINGATAN: IDENTITAS TERUNGKAP*\n\nSistem mendeteksi bahwa ${person} memiliki wujud asli sebagai *${ch.name}*.\n\nKategori: *${ch.category}*\nSifat: *${ch.role}*`,
-
   `🌌 *DUNIA LAIN MEMANGGIL*\n\n${person} akhirnya kembali ke bentuk sebenarnya.\n\nMereka adalah *${ch.name}*, entitas *${ch.category}* dengan tujuan *${ch.role}*.`,
-
   `🩸 *THE TRUTH BEHIND ${person.toUpperCase()}*\n\nManusia hanyalah penyamaran.\n\nDi baliknya terdapat *${ch.name}*, makhluk *${ch.category}* yang ditakdirkan untuk *${ch.role}*.`,
-
   `💠 *HASIL INVESTIGASI MONSTER*\n\nNama target: ${person}\nWujud asli: *${ch.name}*\nKategori: *${ch.category}*\nKarakteristik: *${ch.role}*`,
-
   `🚨 *RAHASIA TERBESAR TERUNGKAP*\n\nSemua orang salah menilai ${person}.\n\nKarena sebenarnya mereka adalah *${ch.name}* — *${ch.category}* yang memiliki tujuan: *${ch.role}*.`
 ]
   return random(lines)
@@ -1124,23 +1131,14 @@ const diveNarration = profile => {
   const god = random(ALL_CHARACTERS.filter(character => !character.isMonster && GODS.includes(character.name)))
   return random([
   `Kamu menengadah ke langit dan memohon kepada *${god.name}*: bukakan jalan untuk perjalanan ini.`,
-
   `Doamu mencapai Olympus dan dunia bawah. *${god.name}*, berikan satu kesempatan lagi sebelum semuanya berakhir.`,
-
   `Dengan penuh harapan, kamu meminta pertolongan kepada *${god.name}*. Semoga takdir memilih jalan yang menguntungkanmu.`,
-
   `Di tengah perjalanan yang penuh bahaya, kamu menyebut nama *${god.name}* dan memohon perlindungan ilahi.`,
-
   `Kekuatan *${god.name}* menjadi harapan terakhir sebelum nasib berikutnya ditentukan.`,
-
   `Kamu mengangkat tangan ke arah langit dan meminta *${god.name}* mendengar permohonanmu.`,
-
   `Sebuah doa kecil dikirimkan kepada *${god.name}*. Mungkin kali ini para dewa akan berpihak padamu.`,
-
   `Dalam keadaan penuh ketidakpastian, kamu memanggil nama *${god.name}* dan berharap keajaiban terjadi.`,
-
   `Takdir berada di ujung keputusan. Kamu meminta *${god.name}* memberikan sedikit keberuntungan untuk langkah berikutnya.`,
-
   `Sebelum nasib menentukan hasil akhir, kamu memberikan persembahan doa kepada *${god.name}* dan menunggu jawaban dari para dewa.`
 ])
 }
@@ -1170,83 +1168,44 @@ const storyNarration = () => random([
 ])
 const HADES_REVIVAL_TEXT = [
   'Hades menatapmu dari singgasana hitam. "Satu jiwa meminta kembali hidup? Menarik... tapi belum waktunya namamu tinggal di sini."',
-
   'Kabut Styx bergerak perlahan. Hades berkata, "Kamu datang lebih cepat dari yang seharusnya. Aku memberimu satu kesempatan untuk kembali."',
-
   'Hades melihat catatan jiwa di tangannya. "Perjalananmu belum selesai. Ada sesuatu yang masih mengejarmu di dunia atas."',
-
   'Tongkat Hades menyentuh tanah. "Bangkitlah. Jangan membuat Underworld menjadi tempat akhir ceritamu."',
-
   'Para arwah terdiam ketika Hades berkata, "Kamu memiliki tekad yang berbeda dari jiwa lain yang datang ke sini."',
-
   'Hades mulai memperhatikanmu lebih lama. "Masih memaksakan diri berjalan? Bahkan kematian belum mampu menghentikanmu."',
-
   'Kabut Styx terbuka sekali lagi. Hades berkata, "Kamu kembali meminta jalan keluar... tampaknya takdirmu memang keras kepala."',
-
   'Hades menghela napas kecil. "Berapa kali lagi kamu akan berdiri setelah jatuh? Rupanya perjalanan ini lebih panjang dari perkiraanku."',
-
   'Singgasana hitam bergema. "Kamu bukan sekadar mencari kehidupan kedua. Kamu mengejar sesuatu yang belum bisa kamu lepaskan."',
-
   'Hades menatap bayangan ingatanmu. "Ada nama, janji, dan rumah yang terus menarikmu kembali."',
-
   'Hades mulai mengenali langkahmu. "Kamu datang lagi dengan luka baru, tetapi alasan yang sama: masih ada tujuan yang belum tercapai."',
-
   'Dunia bawah menjadi sunyi. Hades berkata, "Aku mulai memahami kenapa kamu terus menolak tinggal di sini."',
-
   'Hades melihat perjalananmu dari awal hingga sekarang. "Setiap kehilangan membentukmu, tetapi kamu masih memilih untuk maju."',
-
   'Para arwah memperhatikan saat Hades berkata, "Tidak banyak manusia yang membuat Underworld mengingat namanya."',
-
   'Hades berdiri dari singgasananya. "Kamu kembali lagi... bukan karena takut mati, tetapi karena masih memiliki sesuatu untuk dilindungi."',
-
   'Kabut Styx berputar mengelilingimu. Hades berkata, "Aku mulai melihat alasan para dewa masih memperhatikan perjalananmu."',
-
   'Hades memegang catatan takdirmu. "Menarik... bahkan setelah semua yang terjadi, kamu masih memilih jalan pulang."',
-
   'Hades tersenyum tipis. "Biasanya manusia memohon kehidupan karena takut kehilangan. Kamu memohon karena masih punya janji."',
-
   'Underworld terasa lebih tenang. Hades berkata, "Cerita tentangmu mulai terdengar bahkan sampai dunia orang mati."',
-
   'Hades menatapmu seperti seseorang yang sudah lama mengenalmu. "Kamu sudah melewati terlalu banyak hal untuk berhenti sekarang."',
-
   'Hades melihat kembali keputusan-keputusanmu. "Aku tahu perjalananmu tidak mudah. Laut, monster, dan para dewa telah mengujimu."',
-
   'Hades berkata pelan. "Dulu aku hanya melihatmu sebagai jiwa yang meminta kembali. Sekarang aku melihat seseorang yang menolak menyerah."',
-
   'Para arwah mundur ketika Hades berkata, "Kamu membawa terlalu banyak nama dan kenangan untuk berakhir di sini."',
-
   'Hades menyentuh sungai Styx. "Setiap kali kamu kembali, alasanmu tetap sama. Kamu masih mencari rumah."',
-
   'Hades mengingat semua permintaanmu sebelumnya. "Aku sudah memberimu banyak kesempatan. Jangan sia-siakan yang berikutnya."',
-
   'Hades menatap jauh ke dunia atas. "Bahkan aku mulai penasaran bagaimana akhir perjalananmu akan tertulis."',
-
   'Singgasana hitam berguncang. "Kamu telah kehilangan banyak hal, tetapi masih mempertahankan satu hal: harapan."',
-
   'Hades berkata, "Tidak banyak manusia yang membuatku membuka pintu Underworld berkali-kali. Kamu benar-benar berbeda."',
-
   'Dewa kematian itu terdiam sebelum berkata, "Aku tidak lagi hanya mengembalikanmu. Aku ingin melihat bagaimana kisahmu berakhir."',
-
   'Hades memberikan jalan keluar sekali lagi. "Pergilah. Masih ada seseorang yang menunggumu di dunia atas."',
-
   'Hades melihat bayangan perjalananmu. "Dari semua jiwa yang pernah datang, hanya sedikit yang membawa tekad sebesar ini."',
-
   'Kabut kematian terbuka perlahan. "Kamu sudah melewati perang, kehilangan, dan pengkhianatan. Jangan biarkan semuanya berakhir sekarang."',
-
   'Hades berkata dengan nada lebih lembut. "Aku mengingat namamu sekarang. Bukan sebagai jiwa yang datang kemari, tetapi sebagai seseorang yang terus kembali."',
-
   'Para arwah berbisik ketika Hades berkata, "Bahkan dunia bawah tahu bahwa perjalananmu belum selesai."',
-
   'Hades berdiri dan membuka gerbang terakhir. "Aku tidak memberikanmu kehidupan baru. Aku hanya mengembalikan kesempatan yang masih kamu perjuangkan."',
-
   'Hades menatapmu lama. "Kamu telah membuktikan bahwa manusia dapat melawan takdir, bahkan ketika para dewa meragukannya."',
-
   'Dunia bawah menjadi sunyi. Hades berkata, "Pergilah sekali lagi. Bawa semua luka dan pelajaranmu kembali ke dunia yang menunggumu."',
-
   'Hades tersenyum kecil. "Aku tidak pernah menyangka akan mengenali seorang manusia seperti dirimu. Jangan buat aku menyesal memberimu kesempatan ini."',
-
   'Hades membuka gerbang Styx untuk terakhir kalinya. "Setelah semua yang kamu lalui, bahkan kematian tidak mampu menghentikan langkahmu."',
-
   'Hades menatapmu sebagai seorang pengelana, bukan sekadar jiwa. "Pergilah. Akhiri perjalananmu. Dunia atas masih menunggu cerita terakhir darimu."'
 ]
 
@@ -1267,7 +1226,7 @@ menceritakan ulang kisah
 *Odyssey* karya Homer.
 
 Ikuti perjalanan *Odysseus*,  
-Raja Ithaca, selama 10 tahun.  
+Raja Ithaca dalam perjalanan panjang.  
 Melewati perang, lautan berbahaya,  
 campur tangan para dewa,  
 dan ujian untuk bisa pulang.
@@ -1276,13 +1235,15 @@ dan ujian untuk bisa pulang.
 
 ⚔️ *THE WORLD AWAITS*
 🏛️ Saga: ${EPIC_SAGAS.length}
-🎵 Songs: 40
-👥 Characters: ${ALL_CHARACTERS.length}
+🎵 Songs: ${EPIC_SONGS.length}
+👥 Total Characters: ${ALL_CHARACTERS.length}
+🧠 Total Quiz: ${EPIC_ALL_QUIZZES.length}
+💬 Total Quotes: ${EPIC_QUOTE_COUNT}
 
 ✨ *WHAT LIES WITHIN*
-📜 *The Sagas* - 9 bab perjalanan
-🎶 *The Songs* - 40 lagu legendaris
-📝 *The Lyrics* - Makna tiap bait
+📜 *The Sagas* - 9 SAGA
+🎶 *The Songs* - Gunakan .spotify
+📝 *The Lyrics* - Gunakan .lirik
 🎭 *Gods & Monsters* - Kawan & Lawan
 🎲 *Your Fate* - Pilihanmu sendiri
 
@@ -1314,14 +1275,14 @@ ${event.prompt}
 
 ─── *STATUS* ───
 🧭 Progress: ${step}/${EPIC_STORY_EVENTS.length}
-📌 ${profile.story?.dead ? '❌ Run Berakhir' : '⏳ Menunggu Pilihan'}
+📌 ${profile.story?.dead ? '❌ Run Berakhir' : '🎲 Sistem memilih otomatis'}
 
 ❝ *Set sail.* ❞
-Ketik *.epic journey 1* atau *.epic journey 2*`
+Ketik *.epic journey* untuk lanjut otomatis.`
 }
 
-const storyResultText = (event, success) => success
-  ? `╭❖─ YOU SURVIVED ─❖╮
+const storyResultText = (event, success) => {
+  if (success) return `╭❖─ YOU SURVIVED ─❖╮
 
 ⚔️ *${event.title}*
 
@@ -1339,7 +1300,7 @@ Ia hanya memberi satu halaman baru.
 
 ╰❖─ *LANJUTKAN PERJALAN* ─❖╯`
 
-  : `╭❖─ YOU DIED ─❖╮
+  return `╭❖─ YOU DIED ─❖╮
 
 ⚔️ *${event.title}*
 
@@ -1364,7 +1325,7 @@ const epicCommandText = () => `╭❖─ EPIC COMMAND GUIDE ─❖╮
 
 Concept album oleh *Jorge Rivera-Herrans*  
 yang menceritakan ulang *Odyssey*.  
-Proyek fan-made dimulai 2021.
+Proyek fan-made dari komunitas.
 
 ─── *📚 INFO* ───
 .epic saga [nomor/nama]
@@ -1385,13 +1346,17 @@ Proyek fan-made dimulai 2021.
 .epic set nama|saga|song|char|god|monster <nilai>
 .epic dive - Divine Intervention
 
+─── *👨‍👩‍👧 FAMILY* ───
+.epic family - Lihat family
+.epic family command - Daftar command family
+
 ─── *✨ FUN & VOICE* ───
 .epic random
 .epic whatif [tag/reply]
 .epic reveal [tag/reply]
 .epic voice create
 .epic voice join
-.epic voice lobby
+.epic voice room
 .epic voice start
 .epic voice next
 .epic voice skip
@@ -1412,11 +1377,18 @@ const findQuote = input => {
   return Object.values(EPIC_QUOTES).find(quote => quote.name.toLowerCase() === String(input || '').trim().toLowerCase() || quote.name.toLowerCase().replace(/\s+/g, '-') === key) || null
 }
 
+const quoteText = quote => random(quote.quotes || [])
+
 const handler = async (m, ctx = {}) => {
   const db = ctx.db || global.db || {}
-  const user = ctx.user || m.sender
+  const user = normalizeJid(ctx.user) || normalizeJid(m.sender)
+  getEpic(db)
+  const reply = (text, options) => ctx.conn?.reply
+    ? ctx.conn.reply(m.chat, text, m, options)
+    : m.reply(text, options)
   let args = Array.isArray(ctx.args) ? ctx.args.slice() : []
   let cmd = (ctx.cmd || '').toLowerCase()
+  if (cmd === 'epic') cmd = ''
 
   if (!cmd) {
     const text = (m.body || m.text || '').trim()
@@ -1427,10 +1399,119 @@ const handler = async (m, ctx = {}) => {
     }
   }
 
+  if (!cmd) cmd = (args.shift() || 'home').toLowerCase()
+
 if (!cmd) cmd = 'home'
 
 if (cmd === 'home') {
   return m.reply(epicHomeText().trim())
+}
+
+if (cmd === 'saga') {
+  if (!args.length) return m.reply(sagaListText())
+  const saga = findSaga(args.join(' '))
+  if (!saga) return m.reply(`❌ Saga tidak ditemukan. Gunakan nomor 1-${EPIC_SAGAS.length} atau nama saga.`)
+  return m.reply(framedDetail('SAGA DETAIL', `🎭 *${saga.name}*\n\n${saga.detail}`))
+}
+
+if (cmd === 'song') {
+  if (!args.length) return m.reply(songListText())
+  const song = findSong(args.join(' '))
+  if (!song) return m.reply('❌ Lagu tidak ditemukan. Gunakan nomor atau nama lagu yang sesuai.')
+  return m.reply(framedDetail('SONG DETAIL', `🎵 *${song.name}*\n\n📚 Saga: ${song.saga}\n\n${song.detail}`))
+}
+
+if (cmd === 'char' || cmd === 'character') {
+  const filter = String(args[0] || '').toLowerCase()
+  if (!args.length || ['only', 'extra'].includes(filter)) {
+    if (args[1]) {
+      const source = filter === 'only' ? EPIC_CHARACTERS : EXTRA_CHARACTERS
+      const number = Number(args[1])
+      const character = Number.isInteger(number) && number > 0
+        ? source[number - 1]
+        : source.find(item => item.name.toLowerCase() === args.slice(1).join(' ').toLowerCase() || item.id.toLowerCase() === args.slice(1).join(' ').toLowerCase())
+      if (!character) return m.reply('❌ Karakter tidak ditemukan di daftar tersebut.')
+      return m.reply(charDetailText(character))
+    }
+    return m.reply(characterListText(filter || 'all'))
+  }
+  const character = findCharacter(args.join(' '))
+  if (!character) return m.reply('❌ Karakter tidak ditemukan. Gunakan nomor atau nama karakter yang sesuai.')
+  return m.reply(charDetailText(character))
+}
+
+if (cmd === 'family') {
+  const family = getEpicFamily(db, m.chat)
+  const sub = String(args[0] || '').toLowerCase()
+  const role = familyRoleName(args[1]?.toLowerCase())
+  const mentions = familyMembers(family)
+
+  if (!sub || sub === 'list') {
+    return reply(familyText(family, ctx.usedPrefix || '.'), { mentions })
+  }
+
+  if (sub === 'command' || sub === 'commands' || sub === 'help') {
+    return m.reply(`╭❖─ *EPIC FAMILY COMMAND* ─❖╮
+
+.epic family
+.epic family add king
+.epic family add queen
+.epic family add anak
+.epic family add desc <tag/reply> <deskripsi>
+.epic family remove
+.epic family view <nomor anak>
+
+Tag atau reply target. Tanpa target berarti diri sendiri.
+
+╰❖─ *EPIC FAMILY* ─❖╯`)
+  }
+
+  if (sub === 'view') {
+    const number = Number(args[1])
+    if (!Number.isInteger(number) || number < 1 || number > family.kids.length) return m.reply(`❌ Nomor anak tidak valid. Gunakan angka 1-${family.kids.length || 1}.`)
+    const kid = family.kids[number - 1]
+    return reply(familyViewText(kid, number), { mentions: [kid.jid] })
+  }
+
+  if (sub === 'add' && String(args[1] || '').toLowerCase() === 'desc') {
+    const target = familyTarget(m)
+    const kid = familyChild(family, target)
+    if (!kid) return reply(`❌ @${firstName(target)} belum terdaftar sebagai anak.`, { mentions: [target] })
+    const hasTargetContext = Boolean(m.mentionedJid?.length || m.mentionedJids?.length || m.quoted?.sender)
+    const description = args.slice(hasTargetContext && (m.mentionedJid?.length || m.mentionedJids?.length) ? 3 : 2).join(' ').trim()
+    if (!description) return m.reply('❌ Tulis deskripsi anak setelah target.')
+    if (familyWordCount(description) > 50) return m.reply('❌ Deskripsi maksimal 50 kata.')
+    kid.desc = description
+    saveDB(db)
+    return reply(`✅ Deskripsi anak @${firstName(target)} berhasil disimpan.`, { mentions: [target] })
+  }
+
+  if (sub === 'add' || sub === 'set') {
+    if (!role) return m.reply('❌ Pilih posisi: king, queen, atau anak.')
+    if (sub === 'set' && !isEpicAdmin(ctx)) return m.reply('❌ Fitur set family hanya untuk owner.')
+    const target = familyTarget(m)
+    if (familyMembers(family).includes(target)) return reply(`❌ @${firstName(target)} sudah memiliki posisi di family. Gunakan remove dulu.`, { mentions: [target] })
+    if (role === 'King' && family.king) return reply(`❌ King sudah diisi oleh @${firstName(family.king)}.`, { mentions: [family.king] })
+    if (role === 'Queen' && family.queen) return reply(`❌ Queen sudah diisi oleh @${firstName(family.queen)}.`, { mentions: [family.queen] })
+    if (role === 'Anak') family.kids.push({ jid: target, desc: '' })
+    else family[role.toLowerCase()] = target
+    saveDB(db)
+    return reply(`✅ @${firstName(target)} sekarang menjadi *${role}* di EPIC Family.\n\n${familyText(family, ctx.usedPrefix || '.')}`, { mentions: familyMembers(family) })
+  }
+
+  if (sub === 'remove') {
+    const target = familyTarget(m, args.slice(1))
+    const child = familyChild(family, target)
+    const oldRole = family.king === target ? 'King' : family.queen === target ? 'Queen' : child ? 'Anak' : null
+    if (!oldRole) return reply(`❌ @${firstName(target)} belum terdaftar di family.`, { mentions: [target] })
+    if (oldRole === 'King') family.king = null
+    else if (oldRole === 'Queen') family.queen = null
+    else family.kids = family.kids.filter(kid => kid.jid !== target)
+    saveDB(db)
+    return reply(`✅ Posisi *${oldRole}* @${firstName(target)} sudah dihapus.`, { mentions: [target] })
+  }
+
+  return m.reply(`❌ Subcommand family tidak dikenal. Gunakan *.epic family command*.`)
 }
 
 if (cmd === 'quiz') {
@@ -1505,7 +1586,7 @@ ${Object.values(EPIC_QUOTES).map(item => `• ${item.name}`).join('\n')}
 
  👑 *${quote.name.toUpperCase()}*
 
- “${quote.quote}”
+ “${quoteText(quote)}”
 
 ╰─ *Para dewa berbicara...* ─╯`)
 }
@@ -1519,7 +1600,7 @@ if (cmd === 'help' || cmd === 'command' || cmd === 'menu') {
     delete db.epic.profile[user]
     getProfile(db, user)
     saveDB(db)
-    return m.reply(`╭❖─ *PROFILE RESET* ─❖╮
+    return reply(`╭❖─ *PROFILE RESET* ─❖╮
 
 ♻️ Profile @${firstName(user)} sudah dikembalikan ke awal.
 Semua progress dimulai lagi dari nol.
@@ -1533,9 +1614,9 @@ Semua progress dimulai lagi dari nol.
   const gods = (p.favoriteGods || []).length? p.favoriteGods.join(', ') : 'Belum dipilih'
   const monsters = (p.favoriteMonsters || []).length? p.favoriteMonsters.join(', ') : 'Belum dipilih'
   const divePoints = Number(p.divePoints || 0)
-  const profileName = p.name === 'Belum diatur'? `@${firstName(user)}` : p.name
+  const profileName = p.name === 'Belum diatur' || !p.name || p.name === '[object Object]' ? `@${firstName(user)}` : p.name
 
-  return m.reply(`╭❖─ *EPIC PROFILE* ─❖╮
+  return reply(`╭❖─ *EPIC PROFILE* ─❖╮
 
 👤 *Name*: ${profileName}
 ✨ *Dive Point*: ${divePoints}
@@ -1597,14 +1678,14 @@ Pisahkan field dengan spasi nama field
       success.push(`👤 Nama: ${value}`)
     }
     else if (field === 'saga') {
-      const saga = findSaga(value)
-      if (!saga) errors.push(`Saga: ${value}`)
-      else { p.saga = saga.name; success.push(`📚 Saga: ${saga.name}`) }
+      const sagas = normalizeList(value).map(findSaga)
+      if (sagas.some(saga => !saga)) errors.push(`Saga: ${value}`)
+      else { p.favoriteSagas = sagas.map(saga => saga.name); p.saga = sagas[0].name; success.push(`📚 Saga: ${p.favoriteSagas.join(', ')}`) }
     }
     else if (field === 'song') {
-      const song = findSong(value)
-      if (!song) errors.push(`Song: ${value}`)
-      else { p.song = song.name; success.push(`🎵 Song: ${song.name}`) }
+      const songs = normalizeList(value).map(findSong)
+      if (songs.some(song => !song)) errors.push(`Song: ${value}`)
+      else { p.favoriteSongs = songs.map(song => song.name); p.song = songs[0].name; success.push(`🎵 Song: ${p.favoriteSongs.join(', ')}`) }
     }
     else if (field === 'char' || field === 'character') {
       const list = normalizeList(value)
@@ -1633,18 +1714,31 @@ Pisahkan field dengan spasi nama field
   if (errors.length) text += `❌ *GAGAL:* \n${errors.map(e => `• ${e} tidak ditemukan`).join('\n')}\n\n`
   text += `❝ *Destiny awaits.* ❞\n╰❖─ *EPIC PROFILE* ─❖╯`
 
-  return m.reply(text, { mentions: [user] })
+  return reply(text, { mentions: [user] })
 }
 
 if (cmd === 'random') {
+  const p = getProfile(db, user)
   const saga = random(EPIC_SAGAS)
   const song = random(EPIC_SONGS)
   const god = random(GODS)
+  const character = random(EPIC_CHARACTERS.filter(item => !item.isMonster))
+  const monster = random(ALL_CHARACTERS.filter(item => item.isMonster))
+  p.saga = saga.name
+  p.song = song.name
+  p.favoriteSagas = [saga.name]
+  p.favoriteSongs = [song.name]
+  p.favoriteCharacters = [character.name]
+  p.favoriteGods = [god]
+  p.favoriteMonsters = [monster.name]
+  saveDB(db)
   return m.reply(`╭❖─ *YOUR EPIC DESTINY* ─❖╮
 
 🌊 *Saga*: ${saga.name}
 🎵 *Song*: ${song.name}
 👑 *Divine Favor*: ${god}
+👤 *Character*: ${character.name}
+👹 *Monster Form*: ${monster.name}
 
 Kamu sedang siap melangkah ke bab
 yang paling berani dalam kisah ini.
@@ -1654,9 +1748,9 @@ yang paling berani dalam kisah ini.
 }
 
 if (cmd === 'whatif') {
-  const target = getWhatIfTarget(m, args)
+  const target = getWhatIfTarget(m, args, ctx)
   const ch = random([...EPIC_CHARACTERS,...EXTRA_CHARACTERS])
-  return m.reply(`╭❖─ *WHAT IF...* ─❖╮
+  return reply(`╭❖─ *WHAT IF...* ─❖╮
 
 ${whatIfText(target, ch).replace(/^\n/, '')}
 
@@ -1665,7 +1759,7 @@ ${whatIfText(target, ch).replace(/^\n/, '')}
 }
 
 if (cmd === 'greet') {
-  const target = getWhatIfTarget(m, args)
+  const target = getWhatIfTarget(m, args, ctx)
   const name = firstName(target)
   const greeting = random([
     `🌊 Selamat datang, *${name}*. Kapal EPIC sudah menunggumu di pelabuhan Ithaca.`,
@@ -1674,7 +1768,7 @@ if (cmd === 'greet') {
     `✨ Bangkitlah, *${name}*. Bahkan ombak paling gelap tetap punya jalan pulang.`,
     `🏛️ *${name}*, Olympus dan Underworld sedang memperhatikanmu. Selamat datang di kisahmu sendiri.`
   ])
-  return m.reply(`╭❖─ *SALAM DARI OLYMPUS* ─❖╮
+  return reply(`╭❖─ *SALAM DARI OLYMPUS* ─❖╮
 
 ${greeting}
 
@@ -1684,15 +1778,22 @@ ${greeting}
 if (cmd === 'card') {
   const p = getProfile(db, user)
   const profileName = p.name === 'Belum diatur'? `@${firstName(user)}` : p.name
-  const favoriteGod = p.favoriteGods?.[0] || 'Belum dipilih'
-  const favoriteMonster = p.favoriteMonsters?.[0] || 'Belum dipilih'
-  return m.reply(`╭❖─ *EPIC FAN CARD* ─❖╮
+  const favorites = values => values?.length ? values.map((value, index) => `> ${index + 1}. ${value}`).join('\n') : '> Belum dipilih'
+  return reply(`╭❖─ *EPIC FAN-CARD* ─❖╮
 
-👤 *${profileName}*
-🌊 *Saga*: ${p.saga || 'Belum dipilih'}
-🎵 *Song*: ${p.song || 'Belum dipilih'}
-👑 *Divine Favor*: ${favoriteGod}
-👹 *Monster Form*: ${favoriteMonster}
+🎭 Perkenalkan, ini adalah identitasku untuk komunitas EPIC.
+
+NAME : ${profileName}
+
+${favorites(p.favoriteSagas).replace(/^> /, 'FAV. SAGA 🌊\n> ')}
+
+${favorites(p.favoriteSongs).replace(/^> /, 'FAV. SONG 🎵\n> ')}
+
+${favorites(p.favoriteCharacters).replace(/^> /, 'FAV. CHAR 💙\n> ')}
+
+${favorites(p.favoriteGods).replace(/^> /, 'FAV. GOD 👑\n> ')}
+
+${favorites(p.favoriteMonsters).replace(/^> /, 'FAV. MONSTER 👹\n> ')}
 
 ─── *STAT* ───
 ✨ *Dive Point*: ${Number(p.divePoints || 0)}
@@ -1704,9 +1805,9 @@ Fan-made EPIC companion card
 }
 
 if (cmd === 'reveal') {
-  const target = getWhatIfTarget(m, args)
+  const target = getWhatIfTarget(m, args, ctx)
   const monster = random(ALL_CHARACTERS.filter(x => x.isMonster))
-  return m.reply(`╭❖─ *WUJUD ASLI TERUNGKAP* ─❖╮
+  return reply(`╭❖─ *WUJUD ASLI TERUNGKAP* ─❖╮
 
 ${monsterRevealText(monster, target).replace(/^\n/, '')}
 
@@ -1720,7 +1821,7 @@ if (cmd === 'dive') {
   if (String(args[0] || '').toLowerCase() === 'set') {
     if (!isEpicAdmin(ctx)) return m.reply(`╭❖─ *AKSES DITOLAK* ─❖╮\n\n❌ Hanya owner yang bisa mengatur Dive Point.\n╰❖─ *OLYMPUS* ─❖╯`)
 
-    const target = getWhatIfTarget(m, args)
+    const target = getWhatIfTarget(m, args, ctx)
     const targetArgs = args.slice(1)
     const targetArg = targetArgs.find(value => !/^\d+$/.test(String(value)))
     const valueArg = targetArg ? targetArgs[targetArgs.indexOf(targetArg) + 1] : args[1]
@@ -1730,7 +1831,7 @@ if (cmd === 'dive') {
     const targetProfile = getProfile(db, target)
     targetProfile.divePoints = Math.floor(value)
     saveDB(db)
-    return m.reply(`╭❖─ *DIVE POINT DIATUR* ─❖╮
+    return reply(`╭❖─ *DIVE POINT DIATUR* ─❖╮
 
 👤 *Target*: @${firstName(target)}
 ✨ *Dive Point*: ${targetProfile.divePoints}
@@ -1769,11 +1870,11 @@ Ketik.epic journey next untuk mencoba keberuntunganmu.
 if (cmd === 'delete') {
   if (!isEpicAdmin(ctx)) return m.reply(`╭❖─ *AKSES DITOLAK* ─❖╮\n\n❌ Hanya owner yang bisa menghapus data Epic.\n╰❖─ *OLYMPUS* ─❖╯`)
 
-  const target = getWhatIfTarget(m, args)
+  const target = getWhatIfTarget(m, args, ctx)
   delete db.epic.profile[target]
   if (Array.isArray(db.epic.leaderboard)) db.epic.leaderboard = db.epic.leaderboard.filter(entry => entry.user!== target)
   saveDB(db)
-  return m.reply(`╭❖─ *DATA DIHAPUS* ─❖╮
+  return reply(`╭❖─ *DATA DIHAPUS* ─❖╮
 
 🗑️ Semua data Epic @${firstName(target)} telah dihapus.
 Dia bisa memulai kisah baru dari nol.
@@ -1790,7 +1891,7 @@ if (cmd === 'journey' || cmd === 'story' || cmd === 'stories') {
     p.story = createStoryState()
     const event = EPIC_STORY_EVENTS[0]
     saveDB(db)
-    return m.reply(`╭❖─ *JOURNEY RESTART* ─❖╮
+    return reply(`╭❖─ *JOURNEY RESTART* ─❖╮
 
 🔁 Kisahmu berputar kembali ke halaman pertama.
 Semua langkah sebelumnya tenggelam bersama ombak.
@@ -1824,7 +1925,7 @@ ${storyNarration()}
   if (sub === 'leaderboard' || sub === 'lb') {
     const board = (db.epic.leaderboard || []).slice(0, 5)
     if (!board.length) return m.reply(`╭❖─ *LEADERBOARD KOSONG* ─❖╮\n\n📊 Belum ada pemain yang menamatkan run.\n╰❖─ *JADI YANG PERTAMA* ─❖╯`)
-    return m.reply(`╭❖─ *EPIC LEADERBOARD* ─❖╮
+    return reply(`╭❖─ *EPIC LEADERBOARD* ─❖╮
 
 ${board.map((x, i) => `${i + 1}. @${firstName(x.user)} — Win ${x.wins} | Lose ${x.losses}`).join('\n')}
 
@@ -1832,29 +1933,22 @@ ${board.map((x, i) => `${i + 1}. @${firstName(x.user)} — Win ${x.wins} | Lose 
 ╰❖─ *TOP 5* ─❖╯`, { mentions: board.map(x => x.user) })
   }
 
-  if (!p.story ||!p.story.active) {
-    p.story = createStoryState()
-    saveDB(db)
-    const event = EPIC_STORY_EVENTS[0]
-    return m.reply(`╭❖─ *JOURNEY DIMULAI* ─❖╮
+  if (!p.story && !sub) {
+    return m.reply(`╭❖─ *EPIC JOURNEY* ─❖╮
 
-🗺️ Kapalmu menunggu di pelabuhan.
-Jalan menuju Ithaca terbuka di hadapanmu.
+Perjalanan ini berjalan otomatis. Setiap journey memiliki peluang dasar 50:50.
+Dive Point meningkatkan peluang keberhasilan hingga batas 95%.
 
-${storyStatusText(p, event)}
-
-${storyNarration()}
-
-❝ *Set sail.* ❞
+Ketik *.epic journey next* untuk memulai.
 ╰❖─ *ODYSSEY* ─❖╯`)
   }
 
-  if (p.story.dead) return m.reply(`╭❖─ *KAMU TELAH GUGUR* ─❖╮\n\n💀 Gunakan.epic journey continue atau.epic journey restart.\n╰❖─ *PILIH JALANMU* ─❖╯`)
-
-  if (sub!== 'next') {
-    const currentEvent = EPIC_STORY_EVENTS[Number(p.story.step || 0)] || EPIC_STORY_EVENTS[0]
-    return m.reply(storyStatusText(p, currentEvent))
+  if (!p.story ||!p.story.active) {
+    p.story = createStoryState()
+    saveDB(db)
   }
+
+  if (p.story.dead) return m.reply(`╭❖─ *KAMU TELAH GUGUR* ─❖╮\n\n💀 Gunakan.epic journey continue atau.epic journey restart.\n╰❖─ *PILIH JALANMU* ─❖╯`)
 
   const idx = Number(p.story.step || 0)
   const event = EPIC_STORY_EVENTS[idx]
@@ -1952,16 +2046,16 @@ Ketik.epic journey next saat siap melanjutkan.
 if (cmd === 'voice') {
   const sub = (args[0] || '').toLowerCase()
 
-  if (!sub || sub === 'lobby') {
+  if (!sub || sub === 'room' || sub === 'lobby') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Belum ada EPIC Voice Lobby di grup ini.\n\nBuat dengan:.epic voice create\n╰❖─ *BUAT SEKARANG* ─❖╯`)
-    return m.reply(`╭❖─ *EPIC VOICE LOBBY* ─❖╮\n\n${epicVoiceStatus(room)}\n\n❝ *The stage awaits.* ❞\n╰❖─ *SIAP BERAKSI* ─❖╯`, { mentions: room.members })
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Belum ada EPIC Voice Room di grup ini.\n\nBuat dengan:.epic voice create\n╰❖─ *BUAT SEKARANG* ─❖╯`)
+    return reply(`╭❖─ *EPIC VOICE ROOM* ─❖╮\n\n${epicVoiceStatus(room)}\n\n❝ *The stage awaits.* ❞\n╰❖─ *SIAP BERAKSI* ─❖╯`, { mentions: room.members })
   }
 
   if (sub === 'create') {
-    if (global.epicVoice[m.chat]) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Sudah ada EPIC Voice Lobby di grup ini.\n╰❖─ *PAKE YG ADA* ─❖╯`)
+    if (global.epicVoice[m.chat]) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Sudah ada EPIC Voice Room di grup ini.\n╰❖─ *PAKE YG ADA* ─❖╯`)
     global.epicVoice[m.chat] = { host: m.sender, members: [m.sender], started: false, finished: [], skipped: [], queue: [], current: null }
-    return m.reply(`╭❖─ *LOBBY DIBUAT* ─❖╮
+    return reply(`╭❖─ *ROOM DIBUAT* ─❖╮
 
 👑 *Host*: @${firstName(m.sender)}
 
@@ -1974,30 +2068,33 @@ Mulai:.epic voice start
 
   if (sub === 'join') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Belum ada EPIC Voice Lobby.\n╰❖─ *BUAT DULU* ─❖╯`)
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Belum ada EPIC Voice Room.\n╰❖─ *BUAT DULU* ─❖╯`)
     if (room.started) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Voice sudah dimulai.\n╰❖─ *TUNGGU ROUND BARU* ─❖╯`)
-    if (room.members.includes(m.sender)) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Kamu sudah masuk lobby.\n╰❖─ *SANTAI* ─❖╯`)
-    if (room.members.length >= EPIC_SONGS.length) return m.reply(`╭❖─ *LOBBY PENUH* ─❖╮\n\n❌ Maksimal: ${EPIC_SONGS.length} orang\nKarena setiap orang harus dapat lagu berbeda.\n╰❖─ *PENUH* ─❖╯`)
+    if (room.members.includes(m.sender)) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Kamu sudah masuk room.\n╰❖─ *SANTAI* ─❖╯`)
+    if (room.members.length >= EPIC_SONGS.length) return m.reply(`╭❖─ *ROOM PENUH* ─❖╮\n\n❌ Maksimal: ${EPIC_SONGS.length} orang\nKarena setiap orang harus dapat lagu berbeda.\n╰❖─ *PENUH* ─❖╯`)
     room.members.push(m.sender)
-    return m.reply(`╭❖─ *BERHASIL JOIN* ─❖╮\n\n✅ Kamu masuk EPIC Voice!\n\n${epicVoiceStatus(room)}\n\n╰❖─ *WELCOME* ─❖╯`, { mentions: room.members })
+    return reply(`╭❖─ *BERHASIL JOIN* ─❖╮\n\n✅ Kamu masuk EPIC Voice!\n\n${epicVoiceStatus(room)}\n\n╰❖─ *WELCOME* ─❖╯`, { mentions: room.members })
   }
 
   if (sub === 'leave') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Tidak ada lobby.\n╰❖─ *CEK LAGI* ─❖╯`)
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Tidak ada room.\n╰❖─ *CEK LAGI* ─❖╯`)
     if (room.host === m.sender) {
-      delete global.epicVoice[m.chat]
-      return m.reply(`╭❖─ *LOBBY DIBUBARKAN* ─❖╮\n\n👑 Host keluar.\nLobby EPIC Voice telah ditutup.\n╰❖─ *SELESAI* ─❖╯`)
+      if (room.members.length === 1) {
+        delete global.epicVoice[m.chat]
+        return m.reply(`╭❖─ *ROOM DITUTUP* ─❖╮\n\n👑 Host keluar dan room kosong.\n╰❖─ *SELESAI* ─❖╯`)
+      }
+      room.host = room.members.find(member => member !== m.sender)
     }
     room.members = room.members.filter(x => x!== m.sender)
     room.finished = room.finished.filter(x => x!== m.sender)
     room.skipped = (room.skipped || []).filter(x => x!== m.sender)
-    return m.reply(`╭❖─ *BERHASIL KELUAR* ─❖╮\n\n🚪 Kamu keluar dari EPIC Voice.\n\n${epicVoiceStatus(room)}\n\n╰❖─ *SEE YOU* ─❖╯`, { mentions: room.members })
+    return reply(`╭❖─ *BERHASIL KELUAR* ─❖╮\n\n🚪 Kamu keluar dari EPIC Voice.\n\n${epicVoiceStatus(room)}\n\n╰❖─ *SEE YOU* ─❖╯`, { mentions: room.members })
   }
 
   if (sub === 'start') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Belum ada lobby.\n╰❖─ *BUAT DULU* ─❖╯`)
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Belum ada room.\n╰❖─ *BUAT DULU* ─❖╯`)
     if (room.host!== m.sender) return m.reply(`╭❖─ *AKSES DITOLAK* ─❖╮\n\n❌ Hanya host yang bisa start.\n╰❖─ *OLYMPUS* ─❖╯`)
     if (room.members.length < 2) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Minimal 2 orang untuk mulai voice.\n╰❖─ *AJAK TEMAN* ─❖╯`)
     room.started = true
@@ -2018,7 +2115,7 @@ ${epicVoiceStatus(room)}
 
   if (sub === 'next' || sub === 'skip') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Tidak ada lobby.\n╰❖─ *CEK LAGI* ─❖╯`)
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Tidak ada room.\n╰❖─ *CEK LAGI* ─❖╯`)
     if (room.host!== m.sender) return m.reply(`╭❖─ *AKSES DITOLAK* ─❖╮\n\n❌ Hanya host yang bisa lanjutkan / skip.\n╰❖─ *OLYMPUS* ─❖╯`)
     if (!room.started) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Voice belum dimulai.\n╰❖─ *START DULU* ─❖╯`)
     if (!room.current) return m.reply(`╭❖─ *GAGAL* ─❖╮\n\n❌ Belum ada giliran aktif.\n╰❖─ *CEK LAGI* ─❖╯`)
@@ -2072,7 +2169,7 @@ ${epicVoiceStatus(room)}
 
   if (sub === 'repeat') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Tidak ada lobby.\n╰❖─ *CEK LAGI* ─❖╯`)
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Tidak ada room.\n╰❖─ *CEK LAGI* ─❖╯`)
     if (room.host!== m.sender) return m.reply(`╭❖─ *AKSES DITOLAK* ─❖╮\n\n❌ Hanya host.\n╰❖─ *OLYMPUS* ─❖╯`)
     room.finished = []
     room.skipped = []
@@ -2089,12 +2186,12 @@ ${epicVoiceStatus(room)}
 ╰❖─ *ENCORE* ─❖╯`, { mentions: room.members })
   }
 
-  if (sub === 'finish' || sub === 'delete') {
+  if (sub === 'delete') {
     const room = global.epicVoice[m.chat]
-    if (!room) return m.reply(`╭❖─ *TIDAK ADA LOBBY* ─❖╮\n\n❌ Tidak ada lobby.\n╰❖─ *CEK LAGI* ─❖╯`)
+    if (!room) return m.reply(`╭❖─ *TIDAK ADA ROOM* ─❖╮\n\n❌ Tidak ada room.\n╰❖─ *CEK LAGI* ─❖╯`)
     if (room.host!== m.sender) return m.reply(`╭❖─ *AKSES DITOLAK* ─❖╮\n\n❌ Hanya host.\n╰❖─ *OLYMPUS* ─❖╯`)
     delete global.epicVoice[m.chat]
-    return m.reply(`╭❖─ *VOICE SELESAI* ─❖╮
+    return m.reply(`╭❖─ *VOICE ROOM DIHAPUS* ─❖╮
 
 🗑️ EPIC VOICE telah ditutup.
 Terima kasih sudah bernyanyi bersama 🎶
@@ -2107,7 +2204,7 @@ Terima kasih sudah bernyanyi bersama 🎶
 
 .epic voice create
 .epic voice join
-.epic voice lobby
+.epic voice room
 .epic voice start
 .epic voice next
 .epic voice skip
@@ -2142,15 +2239,15 @@ Bisa multi:.set char Odys,Penelope god Zeus
 .quote [nama dewa] - Dengarkan sabda dewa
 
 ─── *🎤 VOICE* ───
-.voice create - Buat lobby
-.voice join - Join lobby
-.voice lobby - Lihat status
+.voice create - Buat room
+.voice join - Join room
+.voice room - Lihat status
 .voice start - Mulai bernyanyi
 .voice next - Lanjut giliran
 .voice skip - Skip giliran
 .voice repeat - Ulang round
 .voice leave - Keluar
-.voice finish - Tutup lobby
+.voice delete - Hapus room
 
 ─── *⚙️ CARA MAIN* ───
 1. Set profil:.epic set nama|Troy|Just A Man
@@ -2185,6 +2282,9 @@ return m.reply(`╭❖─ *EPIC MUSICAL* ─❖╮
 .epic profile - Lihat profil
 .epic set - Edit profil
 
+👨‍👩‍👧 *FAMILY*
+.epic family - Lihat family
+
 🎲 *GAMES*
 .epic story - Main story auto-gacha
 .epic dive - Divine Intervention
@@ -2193,7 +2293,7 @@ return m.reply(`╭❖─ *EPIC MUSICAL* ─❖╮
 .epic reveal - Reveal monster
 
 🎤 *VOICE*
-.epic voice - Voice lobby
+.epic voice - Voice room
 
 ❝ *Dengarkan para dewa.* ❞
 ╰❖─ *KETIK .EPIC COMMAND* ─❖╯`)
