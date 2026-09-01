@@ -112,8 +112,8 @@ async function startAll() {
 
     if (discordEnabled && (fs.existsSync(discordShardFile) || fs.existsSync(discordIndexFile))) {
         const startDiscord = () => {
-            const discordProcess = spawn('node', ['bot-discord/Shard.js'], {
-                cwd: __dirname,
+            const discordProcess = spawn('node', ['Shard.js'], {
+                cwd: discordDir,
                 stdio: 'inherit',
                 env: { ...process.env }
             });

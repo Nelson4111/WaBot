@@ -30,6 +30,7 @@ console.log(chalk.cyan('└─────────────────�
 console.log(chalk.green('🐾 Starting engine...')); 
 
 var isRunning = false;
+var p;
 
 /**
  * Start a js file
@@ -43,7 +44,7 @@ function start(file) {
   say([process.argv[0], ...args].join(' '), { font: 'console', align: 'center', gradient: ['red', 'magenta'] });
   
   setupMaster({ exec: args[0], args: args.slice(1), execArgv: ['--expose-gc'], stdio: ['pipe', 'inherit', 'inherit', 'ipc'] });
-  let p = fork();
+  p = fork();
 
   p.on('message', data => {
     console.log('[✅RECEIVED]', data);
@@ -96,3 +97,16 @@ function start(file) {
 }
 
 start('main.js');
+
+// --- GRACEFUL SHUTDOWN UNTUK MENCEGAH ORPHAN PROCESS ---
+const cleanupAndExit = () => {
+  isRunning = false;
+  console.log(chalk.red('\n🛑 [Index] Menerima sinyal berhenti, mematikan worker...'));
+  if (p && !p.killed) {
+    p.kill('SIGTERM');
+  }
+  process.exit(0);
+};
+
+process.on('SIGINT', cleanupAndExit);
+process.on('SIGTERM', cleanupAndExit);
