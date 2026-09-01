@@ -532,7 +532,21 @@ function startPairingCode(phoneNumber) {
 if (!opts['test']) {
   (await import('./server.js')).default(PORT)
   setInterval(async () => {
-    if (global.db.data) await global.db.write().catch(console.error)
+    if (global.db && global.db.data) {
+      // --- DB SANITIZER: Mencegah Circular Reference Crash ---
+      const users = global.db.data.users
+      if (users && typeof users === 'object') {
+        for (const jid in users) {
+          const user = users[jid]
+          if (user === global.db.data || user === users) {
+            console.log(`[DB SANITIZER] Terdeteksi circular reference pada user ${jid}! Mereset data user...`)
+            users[jid] = { jid } // Reset ke object aman
+          }
+        }
+      }
+      // -----------------------------------------------------
+      await global.db.write().catch(console.error)
+    }
     clearTmp()
   }, 60 * 1000)
 

@@ -111,24 +111,33 @@ async function startAll() {
     const discordEnabled = process.env.DISCORD_ENABLED !== 'false' && fs.existsSync(discordDir);
 
     if (discordEnabled && (fs.existsSync(discordShardFile) || fs.existsSync(discordIndexFile))) {
-        const startScript = fs.existsSync(discordShardFile) ? 'Shard.js' : 'index.js';
-        console.log(chalk.yellow(`\n🎧 [2/3] Memulai Discord Music Bot (${startScript})...`));
+        const startDiscord = () => {
+            const discordProcess = spawn('node', ['bot-discord/Shard.js'], {
+                cwd: __dirname,
+                stdio: 'inherit',
+                env: { ...process.env }
+            });
 
-        const discordProcess = spawn('node', ['--no-warnings', startScript], {
-            cwd: discordDir,
-            stdio: 'inherit',
-            env: { ...process.env }
-        });
+            // Store references so cleanupAll can kill them
+            const existingIdx = runningProcesses.findIndex(p => p.name === 'DiscordBot');
+            if (existingIdx !== -1) {
+                runningProcesses[existingIdx] = { name: 'DiscordBot', proc: discordProcess };
+            } else {
+                runningProcesses.push({ name: 'DiscordBot', proc: discordProcess });
+            }
 
-        runningProcesses.push({ name: 'DiscordBot', proc: discordProcess });
+            discordProcess.on('exit', (code, signal) => {
+                console.log(chalk.yellow(`\n[DiscordBot] Process exited (code=${code}, signal=${signal}). Restarting in 5s...`));
+                setTimeout(startDiscord, 5000);
+            });
 
-        discordProcess.on('exit', (code, signal) => {
-            console.log(chalk.yellow(`\n[DiscordBot] Process exited (code=${code}, signal=${signal})`));
-        });
+            discordProcess.on('error', (err) => {
+                console.error(chalk.red(`[DiscordBot] Failed to spawn: ${err.message}. Restarting in 5s...`));
+                setTimeout(startDiscord, 5000);
+            });
+        };
 
-        discordProcess.on('error', (err) => {
-            console.error(chalk.red(`[DiscordBot] Failed to spawn: ${err.message}`));
-        });
+        startDiscord();
     } else {
         console.log(chalk.gray('\n⏩ [2/3] Discord Bot dilewati (folder bot-discord tidak ditemukan atau dinonaktifkan).'));
     }
@@ -136,13 +145,32 @@ async function startAll() {
     // --- 3. WHATSAPP BOT (BAILEYS) SPAWN ---
     console.log(chalk.yellow('\n🤖 [3/3] Memulai Engine Utama NelBot (Baileys WhatsApp)...'));
 
-    const waProcess = spawn('node', ['--expose-gc', 'index.js'], {
-        cwd: __dirname,
-        stdio: 'inherit',
-        env: { ...process.env }
-    });
+    const startWA = () => {
+        const waProcess = spawn('node', ['--expose-gc', 'index.js'], {
+            cwd: __dirname,
+            stdio: 'inherit',
+            env: { ...process.env }
+        });
 
-    runningProcesses.push({ name: 'WhatsAppBot', proc: waProcess });
+        const existingIdx = runningProcesses.findIndex(p => p.name === 'WhatsAppBot');
+        if (existingIdx !== -1) {
+            runningProcesses[existingIdx] = { name: 'WhatsAppBot', proc: waProcess };
+        } else {
+            runningProcesses.push({ name: 'WhatsAppBot', proc: waProcess });
+        }
+
+        waProcess.on('exit', (code) => {
+            console.log(chalk.yellow(`\n[NelBot WA] Bot process exited with code ${code}. Restarting in 5s...`));
+            setTimeout(startWA, 5000);
+        });
+
+        waProcess.on('error', (err) => {
+            console.error(chalk.red(`[NelBot WA] Failed to spawn: ${err.message}. Restarting in 5s...`));
+            setTimeout(startWA, 5000);
+        });
+    };
+
+    startWA();
 
     // --- GRACEFUL SHUTDOWN HANDLER ---
     const cleanupAll = () => {
@@ -161,16 +189,6 @@ async function startAll() {
 
     process.on('SIGINT', cleanupAll);
     process.on('SIGTERM', cleanupAll);
-
-    waProcess.on('exit', (code) => {
-        console.log(chalk.yellow(`\n[NelBot WA] Bot process exited with code ${code}`));
-        cleanupAll();
-    });
-
-    waProcess.on('error', (err) => {
-        console.error(chalk.red(`[NelBot WA] Failed to spawn: ${err.message}`));
-        cleanupAll();
-    });
 }
 
 startAll().catch((err) => {
