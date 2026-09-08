@@ -45,7 +45,7 @@ module.exports = {
 
     const connectionDisplay = new TextDisplayBuilder()
       .setContent(
-        `**NelBot is ${status}**\n` +
+        `**Avelia is ${status}**\n` +
         `> Players \`:\` **\`${node.stats.players}\`**\n` +
         `> Playing \`:\` **\`${node.stats.playingPlayers}\`**\n` +
         `> Uptime \`:\` **\`${uptime}\`**`
@@ -113,7 +113,7 @@ module.exports = {
 
     const connectionDisplay = new TextDisplayBuilder()
       .setContent(
-        `**NelBot is ${status}**\n` +
+        `**Avelia is ${status}**\n` +
         `> Players \`:\` **\`${node.stats.players}\`**\n` +
         `> Playing \`:\` **\`${node.stats.playingPlayers}\`**\n` +
         `> Uptime \`:\` **\`${uptime}\`**`

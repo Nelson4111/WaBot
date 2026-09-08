@@ -55,7 +55,7 @@ async function handlePinterest(context, query, client, isSlash) {
             .setColor('#E60023')
             .setTitle(`📌 Pinterest: ${query.slice(0, 50)}`)
             .setImage(imageUrl)
-            .setFooter({ text: `Ditemukan ${results.length} gambar • NelBot Search Engine` })
+            .setFooter({ text: `Ditemukan ${results.length} gambar • Avelia Search Engine` })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(

@@ -188,12 +188,14 @@ function greetingText(events) {
 }
 
 function eligibleGroupIds() {
+  // Opt-in: Hanya grup yang secara eksplisit menyalakan fitur ini (chat.religiousGreeting === true)
   return Object.entries(global.db?.data?.chats || {})
-    .filter(([id, chat]) => id.endsWith('@g.us') && chat && !chat.isBanned && chat.religiousGreeting !== false)
+    .filter(([id, chat]) => id.endsWith('@g.us') && chat && !chat.isBanned && chat.religiousGreeting === true)
     .map(([id]) => id)
 }
 
 async function broadcastReligiousGreeting(conn) {
+  if (disabled) return
   const config = religiousConfig()
   if (!config.enabled) return
 
@@ -209,16 +211,23 @@ async function broadcastReligiousGreeting(conn) {
   settings.religiousGreetings = settings.religiousGreetings || {}
 
   const sentKey = `${now.format('YYYY-MM-DD')}:${events.map(event => event.id).join('+')}`
-  const text = greetingText(events)
+  const baseText = greetingText(events)
   let changed = false
 
   for (const id of eligibleGroupIds()) {
     if (settings.religiousGreetings[id] === sentKey) continue
 
+    // Berikan variasi zero-width space acak agar hash pesan tidak identik di setiap grup
+    const invisibleSalt = '\u200B'.repeat(Math.floor(Math.random() * 4) + 1)
+    const text = baseText + invisibleSalt
+
     await conn.sendMessage(id, { text }).catch(() => {})
     settings.religiousGreetings[id] = sentKey
     changed = true
-    await new Promise(resolve => setTimeout(resolve, 2500))
+
+    // Humanized randomized delay: 8 - 15 detik (bukan 2.5 detik konstan)
+    const randomDelay = Math.floor(Math.random() * 7000) + 8000
+    await new Promise(resolve => setTimeout(resolve, randomDelay))
   }
 
   if (changed && typeof global.db.write === 'function') {
@@ -227,6 +236,7 @@ async function broadcastReligiousGreeting(conn) {
 }
 
 export async function before() {
+  if (disabled) return
   if (started) return
   started = true
 
@@ -234,4 +244,4 @@ export async function before() {
   setInterval(() => broadcastReligiousGreeting(this).catch(() => {}), 30 * 60 * 1000)
 }
 
-export const disabled = false
+export const disabled = true

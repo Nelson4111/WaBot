@@ -1,0 +1,62 @@
+{
+  "inspectedAt": "2026-09-05T03:23:05.641Z",
+  "sender": "16196267018@s.whatsapp.net",
+  "chat": "120363428360459118@g.us",
+  "mtype": "interactiveMessage",
+  "extracted": {
+    "interactive": {
+      "body": {
+        "text": "⚔️ *NELBOT STAR ARENA (MULTIPLAYER)* ⚔️\n\nPanggung pertarungan bintang multiplayer real-time di WhatsApp!\n• *Room ID:* `120363428360459118`\n• *Pemain:* Nelson Randanan\n• *Relay Server:* Online (demo.piesocket.com / free.blr2.piesocket.com)\n\n_Buka kartu gelembung di atas bersama teman grupmu untuk langsung mabar bareng secara real-time!_"
+      },
+      "footer": {
+        "text": "NelBot-MD • Multiplayer Real-Time Game"
+      },
+      "nativeFlowMessage": {
+        "buttons": [
+          {
+            "name": "cta_url",
+            "buttonParamsJson": "{\"display_text\":\"🎮 Buka Arena Mabar (Layar Penuh)\",\"url\":\"https:\\/\\/favour-london-diagnostic-remainder.trycloudflare.com\\/arena\\/120363428360459118?name=Nelson%20Randanan\",\"merchant_url\":\"https:\\/\\/favour-london-diagnostic-remainder.trycloudflare.com\\/arena\\/120363428360459118?name=Nelson%20Randanan\"}"
+          }
+        ],
+        "messageParamsJson": "{}"
+      },
+      "contextInfo": {}
+    },
+    "listMsg": null,
+    "buttonsMsg": null,
+    "parsedButtons": [
+      {
+        "name": "cta_url",
+        "params": {
+          "display_text": "🎮 Buka Arena Mabar (Layar Penuh)",
+          "url": "https://favour-london-diagnostic-remainder.trycloudflare.com/arena/120363428360459118?name=Nelson%20Randanan",
+          "merchant_url": "https://favour-london-diagnostic-remainder.trycloudflare.com/arena/120363428360459118?name=Nelson%20Randanan"
+        }
+      }
+    ],
+    "parsedMessageParams": {},
+    "contextInfo": {
+      "mentionedJid": []
+    }
+  },
+  "fullRawMessage": {
+    "interactiveMessage": {
+      "body": {
+        "text": "⚔️ *NELBOT STAR ARENA (MULTIPLAYER)* ⚔️\n\nPanggung pertarungan bintang multiplayer real-time di WhatsApp!\n• *Room ID:* `120363428360459118`\n• *Pemain:* Nelson Randanan\n• *Relay Server:* Online (demo.piesocket.com / free.blr2.piesocket.com)\n\n_Buka kartu gelembung di atas bersama teman grupmu untuk langsung mabar bareng secara real-time!_"
+      },
+      "footer": {
+        "text": "NelBot-MD • Multiplayer Real-Time Game"
+      },
+      "nativeFlowMessage": {
+        "buttons": [
+          {
+            "name": "cta_url",
+            "buttonParamsJson": "{\"display_text\":\"🎮 Buka Arena Mabar (Layar Penuh)\",\"url\":\"https:\\/\\/favour-london-diagnostic-remainder.trycloudflare.com\\/arena\\/120363428360459118?name=Nelson%20Randanan\",\"merchant_url\":\"https:\\/\\/favour-london-diagnostic-remainder.trycloudflare.com\\/arena\\/120363428360459118?name=Nelson%20Randanan\"}"
+          }
+        ],
+        "messageParamsJson": "{}"
+      },
+      "contextInfo": {}
+    }
+  }
+}

@@ -30,7 +30,7 @@ module.exports = {
 
         const display = new TextDisplayBuilder()
             .setContent(
-                `**NelBot's Uptime !**\n` +
+                `**Avelia's Uptime !**\n` +
                 `${emoji.blank}${emoji.wickarrow} I have been online for **${uptimeString}**`
             );
 

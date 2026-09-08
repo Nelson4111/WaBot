@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * start-all.js — Unified Startup Orchestrator for NelBot-MD, Discord Bot & Hermes Agent
+ * start-all.js — Unified Startup Orchestrator for Avelia, Discord Bot & Hermes Agent
  * 
  * Menyalakan seluruh ekosistem bot secara terpadu dalam 1 VPS:
  *  1. Memeriksa / Menginisialisasi Hermes Agent Gateway (Remote / Local).
  *  2. Memulai Bot Discord (bot-discord/Shard.js).
- *  3. Memulai Engine Utama NelBot (Baileys WhatsApp / index.js).
+ *  3. Memulai Engine Utama Avelia (Baileys WhatsApp / index.js).
  *  4. Menjaga monitoring health dan graceful shutdown untuk seluruh proses.
  */
 
@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 
 async function startAll() {
     console.log(chalk.cyan('╔═════════════════════════════════════════════════════════════════╗'));
-    console.log(chalk.cyan('║') + chalk.bold.magenta('       NELBOT-MD UNIFIED ORCHESTRATOR (WA + DISCORD + HERMES)     ') + chalk.cyan('║'));
+    console.log(chalk.cyan('║') + chalk.bold.magenta('       AVELIA UNIFIED ORCHESTRATOR (WA + DISCORD + HERMES)     ') + chalk.cyan('║'));
     console.log(chalk.cyan('╚═════════════════════════════════════════════════════════════════╝\n'));
 
     const runningProcesses = [];
@@ -143,7 +143,7 @@ async function startAll() {
     }
 
     // --- 3. WHATSAPP BOT (BAILEYS) SPAWN ---
-    console.log(chalk.yellow('\n🤖 [3/3] Memulai Engine Utama NelBot (Baileys WhatsApp)...'));
+    console.log(chalk.yellow('\n🤖 [3/3] Memulai Engine Utama Avelia (Baileys WhatsApp)...'));
 
     const startWA = () => {
         const waProcess = spawn('node', ['--expose-gc', 'index.js'], {
@@ -160,12 +160,12 @@ async function startAll() {
         }
 
         waProcess.on('exit', (code) => {
-            console.log(chalk.yellow(`\n[NelBot WA] Bot process exited with code ${code}. Restarting in 5s...`));
+            console.log(chalk.yellow(`\n[Avelia WA] Bot process exited with code ${code}. Restarting in 5s...`));
             setTimeout(startWA, 5000);
         });
 
         waProcess.on('error', (err) => {
-            console.error(chalk.red(`[NelBot WA] Failed to spawn: ${err.message}. Restarting in 5s...`));
+            console.error(chalk.red(`[Avelia WA] Failed to spawn: ${err.message}. Restarting in 5s...`));
             setTimeout(startWA, 5000);
         });
     };
@@ -174,7 +174,7 @@ async function startAll() {
 
     // --- GRACEFUL SHUTDOWN HANDLER ---
     const cleanupAll = () => {
-        console.log(chalk.red('\n🛑 Menghentikan seluruh proses NelBot, Discord & Hermes...'));
+        console.log(chalk.red('\n🛑 Menghentikan seluruh proses Avelia, Discord & Hermes...'));
         hermesManager.stop();
         for (const { name, proc } of runningProcesses) {
             try {

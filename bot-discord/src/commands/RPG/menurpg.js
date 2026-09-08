@@ -63,7 +63,7 @@ async function sendRpgMenu(context, user, client, isSlash) {
                 { name: '🌾 Ternak & Panen', value: '`.ternak`, `.kawin`, `.kebun`', inline: true }
             )
             .setThumbnail('https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
-            .setFooter({ text: 'Zeta RPG System • NelBot Multi-Device' })
+            .setFooter({ text: 'Zeta RPG System • Avelia Multi-Device' })
             .setTimestamp();
 
         const selectMenu = new StringSelectMenuBuilder()

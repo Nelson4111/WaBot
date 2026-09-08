@@ -1,12 +1,14 @@
 import fs from 'fs'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) return m.reply(`Format: ${usedPrefix + command} <key>`)
+  if (!text) {
+    return m.reply(`*╭  〔 ◈ ꜰ ᴏ ʀ ᴍ ᴀ ᴛ 〕*\n> Contoh: *${usedPrefix + command} <kata_kunci>*\n*╰───────────────*`)
+  }
   const key = text.trim().toLowerCase()
   
   const chat = global.db.data.chats[m.chat] || {}
   if (!chat.list || !chat.list[key]) {
-    return m.reply(`❌ Tidak ada command kustom *${usedPrefix + key}* di grup ini.`)
+    return m.reply(`*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Tidak ditemukan katalog kustom dengan kata kunci *${usedPrefix + key}* di grup ini.\n*╰───────────────*`)
   }
   
   const entry = chat.list[key]
@@ -21,7 +23,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
   
   delete chat.list[key]
-  m.reply(`✅ Command kustom *${usedPrefix + key}* berhasil dihapus.`)
+  return m.reply(`*╭  〔 ❖ ʜ ᴀ ᴘ ᴜ ꜱ  ᴋ ᴀ ᴛ ᴀ ʟ ᴏ ɢ 〕*\n> Kata kunci *${usedPrefix + key}* telah berhasil dihapus dari direktori grup ✦\n*╰───────────────*`)
 }
 
 handler.help = ['dellist <key>']
@@ -30,4 +32,4 @@ handler.command = /^(dellist|delstore|delcmd)$/i
 handler.group = true
 handler.admin = true
 
-export default handler;
+export default handler

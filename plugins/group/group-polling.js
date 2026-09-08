@@ -1,37 +1,33 @@
-let handler = async (m, { conn, text }) => {
-    let args = text.split('\n').map(arg => arg.trim())
-    let name = args[0]
-    let values = args.slice(1)
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  const args = (text || '').split('\n').map(arg => arg.trim())
+  const name = args[0]
+  const values = args.slice(1).filter(Boolean)
 
-    if (!name) {
-        return m.reply(`*Contoh pemakaian:*
-.poll text
-text1
-text2
-seterusnya...
+  if (!name) {
+    return m.reply(`*╭  〔 ◈ ꜰ ᴏ ʀ ᴍ ᴀ ᴛ  ᴘ ᴏ ʟ ʟ ɪ ɴ ɢ 〕*
+> Gunakan baris baru (enter) untuk memisahkan pertanyaan dan opsi pilihan:
 
-⌕ Contoh:
-.poll best game
-free fire
-mobile legends
-call of duty mobile
-pubg mobile`.trim())
-    }
+*┆* *${usedPrefix + command} Game Favorit*
+*┆* Mobile Legends
+*┆* Free Fire
+*┆* PUBG Mobile
+*╰───────────────*`)
+  }
 
-    if (values.length < 2) {
-        return m.reply(`*Berikan minimal 2 kata yang ingin dipoll*\n\n⌕ Contoh:\n.poll mending mana\npaolo maldini\nsergio ramos`)
-    }
+  if (values.length < 2) {
+    return m.reply(`*╭  〔 ◈ ᴍ ɪ ɴ ɪ ᴍ ᴀ ʟ  ᴏ ᴘ ꜱ ɪ 〕*\n> Berikan minimal 𝟸 pilihan opsi polling!\n> Pisahkan pertanyaan dan tiap opsi dengan baris baru (enter).\n*╰───────────────*`)
+  }
 
-    let poll = {
-        name: name,
-        values: values,
-        selectableCount: true
-    }
+  const poll = {
+    name: name,
+    values: values,
+    selectableCount: true
+  }
 
-    conn.sendMessage(m.chat, { poll: poll })
-
+  await conn.sendMessage(m.chat, { poll })
 }
-handler.help = ['poll']
+
+handler.help = ['poll <pertanyaan> \\n <opsi1> \\n <opsi2>']
 handler.tags = ['group']
 handler.command = /^(poll|polling)$/i
 handler.group = true

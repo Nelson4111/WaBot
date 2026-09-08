@@ -6,47 +6,54 @@
  * Akses: Owner ATAU (Admin Grup + Premium)
  */
 
+function parseSpintax(text) {
+  if (!text) return text
+  return text.replace(/\{([^{}]+)\}/g, (_, choices) => {
+    const options = choices.split('|')
+    return options[Math.floor(Math.random() * options.length)]
+  })
+}
+
+function randomizeContent(text) {
+  if (!text) return text
+  const parsed = parseSpintax(text)
+  // Sisipkan 1-5 zero-width spaces acak di akhir agar hash pesan berbeda di tiap tujuan
+  const salt = '\u200B'.repeat(Math.floor(Math.random() * 5) + 1)
+  return parsed + salt
+}
+
 const handler = async (m, { conn, text, quoted, mime, usedPrefix, command }) => {
   const content = text?.trim() || quoted?.text?.trim() || null
 
+  if (/^(bc|bcall)$/i.test(command)) {
+    return m.reply(
+      `*╭  〔 ✕ ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴘᴄ ᴅɪɴᴏɴᴀᴋᴛɪꜰᴋᴀɴ 〕*\n` +
+      `> Broadcast ke Private Chat dimatikan demi keselamatan nomor bot dari pembatasan Reachout Timelock & Error 463 WhatsApp.\n` +
+      `> Gunakan *${usedPrefix}bcgc <teks>* untuk broadcast ke seluruh grup bot.\n` +
+      `*╰───────────────*`
+    )
+  }
+
   if (!content && !quoted) {
     return m.reply(
-      `╭──『 *📢 BROADCAST NelBot-MD* 』\n` +
+      `╭──『 *📢 BROADCAST GRUP Avelia* 』\n` +
       `│\n` +
       `│ *Cara Pakai:*\n` +
-      `│ *${usedPrefix}bc* <teks>   → BC ke semua private chat\n` +
-      `│ *${usedPrefix}bcgc* <teks> → BC ke semua grup\n` +
-      `│ *${usedPrefix}bcall* <teks> → BC ke semua (private+grup)\n` +
+      `│ *${usedPrefix}bcgc* <teks> → Broadcast ke semua grup\n` +
       `│\n` +
       `│ 💡 Bisa reply gambar/video + caption\n` +
-      `│ untuk broadcast media sekaligus.\n` +
+      `│ 💡 Dukung Spintax: {Halo|Hai|Pagi} kawan!\n` +
+      `│ 🛡️ Dilengkapi delay acak aman (8-14s)\n` +
       `╰─────────────────────`
     )
   }
 
-  const isGc = /^bcgc$/i.test(command)
-  const isAll = /^bcall$/i.test(command)
-
-  // ── Kumpulkan target ──────────────────────────────────────────────
-  let targetIds = []
-  const botJid = conn.decodeJid(conn.user?.id || conn.user?.jid || '')
-
-  if (isAll) {
-    const users = global.db.data?.users || {}
-    const pcIds = Object.keys(users).filter(j => j.endsWith('@s.whatsapp.net') && j !== botJid)
-    const groups = await conn.groupFetchAllParticipating().catch(() => ({}))
-    const gcIds = Object.keys(groups)
-    targetIds = [...new Set([...pcIds, ...gcIds])]
-  } else if (isGc) {
-    const groups = await conn.groupFetchAllParticipating().catch(() => ({}))
-    targetIds = Object.keys(groups)
-  } else {
-    const users = global.db.data?.users || {}
-    targetIds = Object.keys(users).filter(j => j.endsWith('@s.whatsapp.net') && j !== botJid)
-  }
+  // ── Kumpulkan target grup saja ──────────────────────────────────────────
+  const groups = await conn.groupFetchAllParticipating().catch(() => ({}))
+  let targetIds = Object.keys(groups)
 
   if (targetIds.length === 0) {
-    return m.reply(`❌ Tidak ada target yang ditemukan.`)
+    return m.reply(`❌ Tidak ada grup yang ditemukan.`)
   }
 
   const typeLabel = isAll
@@ -56,10 +63,11 @@ const handler = async (m, { conn, text, quoted, mime, usedPrefix, command }) => 
   const hasMedia = !!(quoted && mime && (mime.includes('image') || mime.includes('video')))
   const media = hasMedia ? await quoted.download?.().catch(() => null) : null
 
+  const estimatedMinutes = Math.ceil((targetIds.length * 11) / 60)
   m.reply(
     `🚀 *Broadcast Dimulai!*\n` +
     `📋 Target: *${targetIds.length}* ${typeLabel}\n` +
-    `⏱️ Estimasi: ~${Math.ceil(targetIds.length * 3 / 60)} menit\n` +
+    `⏱️ Estimasi: ~${estimatedMinutes} menit (Safe Humanized Delay 8-14s)\n` +
     `⏳ Harap tunggu...`
   )
 
@@ -72,20 +80,24 @@ const handler = async (m, { conn, text, quoted, mime, usedPrefix, command }) => 
       participant: '0@s.whatsapp.net',
       remoteJid: 'status@broadcast'
     },
-    message: { conversation: global.namebot || 'NelBot-MD' }
+    message: { conversation: global.namebot || 'Avelia' }
   }
 
   for (const id of targetIds) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 3000)) // delay 3 detik anti-spam
+      // Delay acak manusiawi 8-14 detik anti-spam WhatsApp
+      const randomDelay = Math.floor(Math.random() * 6000) + 8000
+      await new Promise(resolve => setTimeout(resolve, randomDelay))
+
+      const randomizedText = randomizeContent(content)
 
       if (hasMedia && media) {
         const msgContent = mime?.includes('image')
-          ? { image: media, caption: content || '' }
-          : { video: media, caption: content || '' }
+          ? { image: media, caption: randomizedText || '' }
+          : { video: media, caption: randomizedText || '' }
         await conn.sendMessage(id, msgContent, { quoted: fakeQuoted })
       } else {
-        await conn.sendMessage(id, { text: content || '(pesan)' }, { quoted: fakeQuoted })
+        await conn.sendMessage(id, { text: randomizedText || '(pesan)' }, { quoted: fakeQuoted })
       }
 
       sukses++
@@ -105,8 +117,10 @@ const handler = async (m, { conn, text, quoted, mime, usedPrefix, command }) => 
   }, { quoted: m })
 }
 
-handler.help = ['bc <pesan>', 'bcgc <pesan>', 'bcall <pesan>']
+handler.help = ['bcgc <pesan>']
 handler.tags = ['owner']
 handler.command = /^(bc|bcgc|bcall)$/i
+handler.owner = true
 
 export default handler
+

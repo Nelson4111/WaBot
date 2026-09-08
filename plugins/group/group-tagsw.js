@@ -25,38 +25,39 @@ let Izumi = async (m, { conn, text }) => {
 
   // kalau media
   if (/image/.test(mime)) {
-    const buffer = await quoted.download().catch(() => null);
-    if (!buffer) return m.reply('⚠️ Gagal ambil gambar!');
+    const buffer = await quoted.download().catch(() => null)
+    if (!buffer) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh gambar.\n*╰───────────────*')
 
     const sta = await groupStatus(conn, id, {
       image: buffer,
       caption: cap
-    });
-    return conn.reply(m.chat, '✅ Dah UpStatus Nya Tengok Di Reply', sta);
+    })
+    return conn.reply(m.chat, '*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil mengunggah status grup ✦\n*╰───────────────*', sta)
   } else if (/video/.test(mime)) {
-    const buffer = await quoted.download().catch(() => null);
-    if (!buffer) return m.reply('⚠️ Gagal ambil video!');
+    const buffer = await quoted.download().catch(() => null)
+    if (!buffer) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh video.\n*╰───────────────*')
 
     const sta = await groupStatus(conn, id, {
       video: buffer,
       caption: cap
-    });
-    return conn.reply(m.chat, '✅ Dah UpStatus Nya Tengok Di Reply', sta);
+    })
+    return conn.reply(m.chat, '*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil mengunggah status grup ✦\n*╰───────────────*', sta)
   } else if (/audio/.test(mime)) {
-    const buffer = await quoted.download().catch(() => null);
+    const buffer = await quoted.download().catch(() => null)
+    if (!buffer) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh audio.\n*╰───────────────*')
+
     const audioVn = await toVN(buffer)
     const audioWaveform = await generateWaveform(buffer)
-    if (!buffer) return m.reply('⚠️ Gagal ambil audio!');
 
     const sta = await groupStatus(conn, id, {
       audio: audioVn,
       waveform: audioWaveform,
       mimetype: "audio/ogg; codecs=opus",
       ptt: true
-    });
-    return conn.reply(m.chat, '✅ Dah UpStatus Nya Tengok Di Reply', sta);
+    })
+    return conn.reply(m.chat, '*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil mengunggah status suara grup ✦\n*╰───────────────*', sta)
   } else if (warna) {
-    if (!cap) return m.reply('⚠️ Gada Text Buat Upload Ke Status Grup!');
+    if (!cap) return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Teks status tidak boleh kosong!\n*╰───────────────*')
 
     const warnaStatusWA = new Map([
       ['biru',    '#34B7F1'],
@@ -69,28 +70,28 @@ let Izumi = async (m, { conn, text }) => {
       ['hitam',   '#000000'],
       ['putih',   '#FFFFFF'],
       ['cyan',    '#00BCD4']
-    ]);
+    ])
 
-    const textWarna = warna.toLowerCase();
-    let color = null;
+    const textWarna = warna.toLowerCase()
+    let color = null
     for (const [nama, kode] of warnaStatusWA.entries()) {
       if (textWarna.includes(nama)) {
-        color = kode;
-        break;
+        color = kode
+        break
       }
     }
 
-    if (!color) return m.reply('⚪ Tidak ada warna yang cocok ditemukan dalam teks kamu.');
+    if (!color) return m.reply('*╭  〔 ◈ ᴡ ᴀ ʀ ɴ ᴀ  ᴛ ɪ ᴅ ᴀ ᴋ  ᴠ ᴀ ʟ ɪ ᴅ 〕*\n> Pilihan warna: biru, hijau, kuning, jingga, merah, ungu, abu, hitam, putih, cyan.\n*╰───────────────*')
 
     const sta = await groupStatus(conn, id, {
       text: cap,
       backgroundColor: color
-    });
-    return conn.reply(m.chat, '✅ Dah UpStatus Nya Tengok Di Reply', sta);
+    })
+    return conn.reply(m.chat, '*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil mengunggah status teks grup ✦\n*╰───────────────*', sta)
   } else {
-    return m.reply('⚠️ Reply media (gambar/video/audio) atau kirim teks berwarna. sama bisa kirim ke link gc yang anda mau, atau up disini juga bisa');
+    return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Balas media (gambar/video/audio) atau kirim teks dengan format warna!\n*╰───────────────*')
   }
-};
+}
 
 /**
  * Send WhatsApp status on group.

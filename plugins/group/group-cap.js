@@ -1,77 +1,106 @@
-import fs from 'fs'
+import { toSmallNum } from '../../lib/style.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, isOwner, isAdmin }) => {
-    global.db.data.caps = global.db.data.caps || {}
-    let db = global.db.data.caps
+  global.db.data.caps = global.db.data.caps || {}
+  let db = global.db.data.caps
 
-    if (command === 'cap') {
-        if (!isOwner && !isAdmin) return conn.sendMessage(m.chat, { text: '❌ Hanya owner/admin yang bisa menggunakan ini!' }, { quoted: m })
-        
-        let who
-        if (m.quoted) {
-            who = m.quoted.sender
-        } else if (m.mentionedJid && m.mentionedJid[0]) {
-            who = m.mentionedJid[0]
-        } else if (text) {
-            let mnd = text.split(' ')[0].replace(/[^0-9]/g, '')
-            if (mnd.length > 5) {
-                who = mnd + '@s.whatsapp.net'
-            }
-        }
-
-        if (!who) return conn.sendMessage(m.chat, { text: `❌ Tag user, reply pesan, atau ketik nomornya!\nContoh: ${usedPrefix + command} 628xxx si beban` }, { quoted: m })
-
-        let capText
-        if (m.quoted) {
-            capText = text
-        } else {
-            capText = text.replace(/@[\d]+/g, '').replace(/[0-9]{10,15}/, '').trim()
-        }
-
-        if (!capText) return conn.sendMessage(m.chat, { text: '❌ Teks cap tidak boleh kosong!' }, { quoted: m })
-
-        db[who] = { text: capText, lastSeen: 0 }
-        
-        conn.sendMessage(m.chat, { 
-            text: `✅ Berhasil mencap @${who.split('@')[0]} sebagai:\n"${capText}"`, 
-            mentions: [who] 
-        }, { quoted: m })
+  if (command === 'cap') {
+    if (!isOwner && !isAdmin) {
+      return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Khusus untuk Administrator atau Owner.\n*╰───────────────*')
+    }
+    
+    let who
+    if (m.quoted) {
+      who = m.quoted.sender
+    } else if (m.mentionedJid && m.mentionedJid[0]) {
+      who = m.mentionedJid[0]
+    } else if (text) {
+      let mnd = text.split(' ')[0].replace(/[^0-9]/g, '')
+      if (mnd.length > 5) {
+        who = mnd + '@s.whatsapp.net'
+      }
     }
 
-    if (command === 'uncap') {
-        if (!isOwner && !isAdmin) return conn.sendMessage(m.chat, { text: '❌ Hanya owner/admin yang bisa menggunakan ini!' }, { quoted: m })
-        
-        let who
-        if (m.quoted) {
-            who = m.quoted.sender
-        } else if (m.mentionedJid && m.mentionedJid[0]) {
-            who = m.mentionedJid[0]
-        } else if (text) {
-            let mnd = text.replace(/[^0-9]/g, '')
-            who = mnd + '@s.whatsapp.net'
-        }
-
-        if (!who || !db[who]) return conn.sendMessage(m.chat, { text: '❌ User tidak ditemukan di daftar cap.' }, { quoted: m })
-        
-        delete db[who]
-        conn.sendMessage(m.chat, { text: `✅ Berhasil menghapus cap dari @${who.split('@')[0]}` }, { quoted: m })
+    if (!who) {
+      return m.reply(`*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Tandai user, balas pesan, atau ketik nomornya!\n> Contoh: *${usedPrefix + command} @user Pemalas*\n*╰───────────────*`)
     }
 
-    if (command === 'listcap') {
-        let list = Object.keys(db)
-        if (list.length === 0) return conn.sendMessage(m.chat, { text: '📂 Belum ada daftar orang yang dicap.' }, { quoted: m })
-
-        let txt = `📋 *DAFTAR ORANG DICAP*\n\n`
-        list.forEach((v, i) => {
-            txt += `${i + 1}. @${v.split('@')[0]} : _${db[v].text}_\n`
-        })
-        
-        conn.sendMessage(m.chat, { text: txt, mentions: list }, { quoted: m })
+    let capText
+    if (m.quoted) {
+      capText = text ? text.trim() : ''
+    } else {
+      capText = text.replace(/@[\d]+/g, '').replace(/[0-9]{10,15}/, '').trim()
     }
+
+    if (!capText) {
+      return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Teks julukan / cap tidak boleh kosong!\n*╰───────────────*')
+    }
+
+    who = conn.decodeJid(who)
+    db[who] = { text: capText, lastSeen: 0 }
+    const whoNum = who.split('@')[0].replace(/\D/g, '')
+
+    const txt = `*──  ୨୧ ✧ PENETAPAN STATUS JULUKAN ✧ ୨୧  ──*
+
+*╭  〔 ◈ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ᴄ ᴀ ᴘ 〕*
+*┆* ⟡ ᴛᴀʀɢᴇᴛ   : @${whoNum}
+*┆* ✧ ᴊᴜʟᴜᴋᴀɴ  : *${capText}*
+*╰───────────────*`
+
+    return conn.sendMessage(m.chat, { text: txt, mentions: [who] }, { quoted: m })
+  }
+
+  if (command === 'uncap') {
+    if (!isOwner && !isAdmin) {
+      return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Khusus untuk Administrator atau Owner.\n*╰───────────────*')
+    }
+    
+    let who
+    if (m.quoted) {
+      who = m.quoted.sender
+    } else if (m.mentionedJid && m.mentionedJid[0]) {
+      who = m.mentionedJid[0]
+    } else if (text) {
+      let mnd = text.replace(/[^0-9]/g, '')
+      who = mnd + '@s.whatsapp.net'
+    }
+
+    who = conn.decodeJid(who || '')
+    if (!who || !db[who]) {
+      return m.reply('*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Pengguna tidak ditemukan di dalam daftar julukan.\n*╰───────────────*')
+    }
+    
+    delete db[who]
+    const whoNum = who.split('@')[0].replace(/\D/g, '')
+    return conn.sendMessage(m.chat, {
+      text: `*╭  〔 ❖ ʜ ᴀ ᴘ ᴜ ꜱ  ᴄ ᴀ ᴘ 〕*\n> Berhasil menghapus julukan dari @${whoNum} ✦\n*╰───────────────*`,
+      mentions: [who]
+    }, { quoted: m })
+  }
+
+  if (command === 'listcap') {
+    let list = Object.keys(db)
+    if (list.length === 0) {
+      return m.reply('*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Belum ada daftar anggota yang diberi julukan.\n*╰───────────────*')
+    }
+
+    let lines = list.map((v, i) => {
+      const num = v.split('@')[0].replace(/\D/g, '')
+      return `*┆*   ${toSmallNum(i + 1)}. @${num} › _"${db[v].text}"_`
+    })
+
+    const txt = `*──  ୨୧ ✧ DAFTAR JULUKAN ANGGOTA ✧ ୨୧  ──*
+
+*╭  〔 ◈ ᴅ ᴀ ꜰ ᴛ ᴀ ʀ  ᴄ ᴀ ᴘ 〕*
+${lines.join('\n')}
+*╰───────────────*`
+    
+    return conn.sendMessage(m.chat, { text: txt, mentions: list }, { quoted: m })
+  }
 }
 
-handler.help = ['cap', 'uncap', 'listcap']
-handler.tags = ['owner','group']
+handler.help = ['cap @user <teks>', 'uncap @user', 'listcap']
+handler.tags = ['group']
 handler.command = /^(cap|uncap|listcap)$/i
 handler.group = true
 

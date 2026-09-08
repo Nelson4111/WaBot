@@ -2,12 +2,18 @@ import fs from 'fs'
 import path from 'path'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  // Pastikan database list ada
   global.db.data.chats[m.chat] = global.db.data.chats[m.chat] || {}
   global.db.data.chats[m.chat].list = global.db.data.chats[m.chat].list || {}
   
   if (!text) {
-    return m.reply(`Format:\n${usedPrefix + command} <key> | <message>\n\nAtau reply media (gambar/video/audio/sticker) dengan mengetik:\n${usedPrefix + command} <key> [| caption]`)
+    return m.reply(`*╭  〔 ◈ ꜰ ᴏ ʀ ᴍ ᴀ ᴛ  ᴋ ᴀ ᴛ ᴀ ʟ ᴏ ɢ 〕*
+> Simpan pesan teks:
+*┆* › *${usedPrefix + command} <kata_kunci> | <pesan>*
+
+> Atau simpan media (gambar/video/audio/stiker):
+*┆* Balas media lalu ketik:
+*┆* › *${usedPrefix + command} <kata_kunci> [| caption]*
+*╰───────────────*`)
   }
   
   let key = ''
@@ -20,7 +26,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     key = text.trim()
   }
   
-  if (!key) return m.reply('❌ Nama command (key) tidak boleh kosong!')
+  if (!key) {
+    return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Nama kata kunci (key) tidak boleh kosong!\n*╰───────────────*')
+  }
   key = key.toLowerCase()
   
   // Cek apakah key merupakan command bawaan bot
@@ -50,24 +58,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   )]
   
   if (allAliases.includes(key)) {
-    return m.reply(`⚠️ Command *${usedPrefix + key}* adalah command bawaan bot. Silakan gunakan nama command lain agar tidak bentrok.`)
+    return m.reply(`*╭  〔 ◈ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> Kata kunci *${usedPrefix + key}* merupakan perintah inti bot.\n> Harap gunakan nama kata kunci lain agar tidak bentrok.\n*╰───────────────*`)
   }
   
-  // Cek apakah user reply media
   let q = m.quoted ? m.quoted : null
   let mime = q ? (q.msg || q).mimetype || '' : ''
   
   if (q && mime) {
-    m.reply('📥 Sedang mengunduh media, mohon tunggu...')
     let media
     try {
       media = await q.download()
     } catch (e) {
       console.error(e)
-      return m.reply('❌ Gagal mengunduh media!')
+      return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh media dari pesan yang dibalas.\n*╰───────────────*')
     }
     
-    if (!media) return m.reply('❌ Gagal mengunduh media!')
+    if (!media) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal membaca berkas media.\n*╰───────────────*')
     
     const dir = './media/list'
     if (!fs.existsSync(dir)) {
@@ -75,12 +81,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
     
     let ext = mime.split('/')[1] || 'bin'
-    ext = ext.split(';')[0] // bersihkan codecs
+    ext = ext.split(';')[0]
     
     const filename = `${m.chat.split('@')[0]}_${key}.${ext}`
     const filePath = path.join(dir, filename)
     
-    // Tulis file ke storage
     fs.writeFileSync(filePath, media)
     
     let isPtt = false
@@ -97,11 +102,23 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       ptt: isPtt
     }
     
-    m.reply(`✅ Berhasil menyimpan command kustom *${usedPrefix + key}* dengan media.`)
+    const txt = `*──  ୨୧ ✧ KATALOG BERHASIL DISIMPAN ✧ ୨୧  ──*
+
+*╭  〔 ❖ ʀ ɪ ɴ ᴄ ɪ ᴀ ɴ 〕*
+*┆* ⟡ ᴋᴀᴛᴀ ᴋᴜɴᴄɪ : *${usedPrefix + key}*
+*┆* ✧ ᴛɪᴘᴇ       : *Media (${mime.split('/')[0]})*
+*┆* ✦ ꜱᴛᴀᴛᴜꜱ     : *Tersimpan di Direktori Grup*
+*╰───────────────*
+
+> _Ketik *${usedPrefix + key}* untuk menampilkan pesan ini._`.trim()
+
+    return m.reply(txt)
   } else {
-    // Text only
     if (!valText) {
-      return m.reply(`Format:\n${usedPrefix + command} <key> | <message>\n\nContoh:\n${usedPrefix + command} pay | Silakan bayar lewat DANA: 08123xxx`)
+      return m.reply(`*╭  〔 ◈ ꜰ ᴏ ʀ ᴍ ᴀ ᴛ  ᴛ ᴇ ᴋ ꜱ 〕*
+> Gunakan pemisah vertikal '|' :
+> *${usedPrefix + command} ${key} | Teks respon yang ingin disimpan*
+*╰───────────────*`)
     }
     
     global.db.data.chats[m.chat].list[key] = {
@@ -109,7 +126,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       text: valText
     }
     
-    m.reply(`✅ Berhasil menyimpan command kustom *${usedPrefix + key}*.`)
+    const txt = `*──  ୨୧ ✧ KATALOG BERHASIL DISIMPAN ✧ ୨୧  ──*
+
+*╭  〔 ❖ ʀ ɪ ɴ ᴄ ɪ ᴀ ɴ 〕*
+*┆* ⟡ ᴋᴀᴛᴀ ᴋᴜɴᴄɪ : *${usedPrefix + key}*
+*┆* ✧ ᴛɪᴘᴇ       : *Teks*
+*┆* ✦ ꜱᴛᴀᴛᴜꜱ     : *Tersimpan di Direktori Grup*
+*╰───────────────*
+
+> _Ketik *${usedPrefix + key}* untuk menampilkan pesan ini._`.trim()
+
+    return m.reply(txt)
   }
 }
 
@@ -119,4 +146,4 @@ handler.command = /^(setlist|addlist|store)$/i
 handler.group = true
 handler.admin = true
 
-export default handler;
+export default handler

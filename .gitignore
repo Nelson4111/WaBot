@@ -6,6 +6,7 @@ tmp/
 .env
 sessions/
 jadibts/
+jadibot/
 store.json
 database.json
 .database.json.tmp

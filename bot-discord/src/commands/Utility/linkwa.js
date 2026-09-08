@@ -113,7 +113,7 @@ async function handleLink(context, user, kode, isSlash) {
             { name: '🎧 Discord ID', value: `\`${user.id}\``, inline: true },
             { name: '🛡️ Status Sinkronisasi', value: '✅ Aktif & Terlindungi (Shared State)', inline: false }
         )
-        .setFooter({ text: 'NelBot Multi-Device Bridge System' })
+        .setFooter({ text: 'Avelia Multi-Device Bridge System' })
         .setTimestamp();
 
     return isSlash ? context.reply({ embeds: [successEmbed] }) : context.reply({ embeds: [successEmbed] });

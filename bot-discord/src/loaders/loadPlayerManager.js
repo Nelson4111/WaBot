@@ -233,13 +233,13 @@ module.exports = function loadPlayerManager(client) {
   // Health-check ringan tiap 30 detik untuk mendeteksi beban berlebih (Overload Rebalancing)
   setInterval(() => {
     try {
-      const primaryNode = manager.shoukaku.nodes.get("NelBot-Private");
+      const primaryNode = manager.shoukaku.nodes.get("Avelia-Private");
       if (primaryNode && primaryNode.state === 1) {
         const stats = primaryNode.stats;
         const systemLoad = stats?.cpu?.systemLoad || 0;
         const activePlayers = stats?.players || 0;
         if (systemLoad > 0.85 && activePlayers > 15) {
-          console.warn(`[Lavalink-Health] NelBot-Private beban tinggi (CPU: ${(systemLoad * 100).toFixed(1)}%, Players: ${activePlayers}). Otomatis menyeimbangkan beban ke Backup.`);
+          console.warn(`[Lavalink-Health] Avelia-Private beban tinggi (CPU: ${(systemLoad * 100).toFixed(1)}%, Players: ${activePlayers}). Otomatis menyeimbangkan beban ke Backup.`);
         }
       }
     } catch (_) {}

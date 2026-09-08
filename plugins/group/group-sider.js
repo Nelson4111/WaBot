@@ -1,63 +1,80 @@
-const handler = async (m, { conn, text, groupMetadata }) => {
-  await conn.sendPresenceUpdate("composing", m.chat);
-  const now = new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Jakarta",
-    }),
-    milliseconds = new Date(now).getTime();
-  let member = groupMetadata.participants.map((v) => v.phoneNumber || v.jid || v.id);
-  if (text) pesan = text;
-  else
-    var pesan =
-      "Harap aktif di grup karena akan ada pembersihan member setiap saat";
-  var sum;
-  sum = member.length;
-  var total = 0,
-    sider = [];
-  for (let i = 0; i < sum; i++) {
-    let users = m.isGroup
-      ? groupMetadata.participants.find((u) => (u.phoneNumber || u.jid || u.id) === member[i])
-      : {};
-    !(
-      void 0 === db.data.users[member[i]] ||
-      1 * milliseconds - db.data.users[member[i]].lastseen > 6048e5
-    ) ||
-      users.isAdmin ||
-      users.isSuperAdmin ||
-      users.admin === 'admin' ||
-      users.admin === 'superadmin' ||
-      (void 0 !== db.data.users[member[i]]
-        ? !0 === db.data.users[member[i]].banned &&
-          (total++, sider.push(member[i]))
-        : (total++, sider.push(member[i])));
-  }
-  if (0 === total)
-    return await conn.reply(m.chat, "*Digrup ini tidak terdapat sider.*", m);
-  await conn.reply(
-    m.chat,
-    `*${total}/${sum}* anggota grup *${conn.getName(m.chat)}* adalah sider dengan alasan :\n1. Tidak aktif selama lebih dari 7 hari\n2. Baru join tetapi tidak pernah nimbrung\n\n_“${pesan}”_\n\n*LIST SIDER :*\n${sider.map((v) => "  ○ @" + v.replace(/@.+/, void 0 === db.data.users[v] ? " Sider " : " Off " + msToDate(1 * milliseconds - db.data.users[v].lastseen))).join("\n")}`,
-    m,
-    {
-      contextInfo: {
-        mentionedJid: sider,
-      },
-    },
-  );
-};
-(handler.help = ["gcsider"]),
-  (handler.tags = ["group"]),
-  (handler.command = /^(gcsider|sider|getsider)$/i),
-  (handler.group = !0),
-  (handler.admin = !0);
-export default handler;
-const more = String.fromCharCode(8206),
-  readMore = more.repeat(4001);
+import { toSmallNum } from '../../lib/style.js'
 
-function msToDate(ms) {
-  let d = isNaN(ms) ? "--" : Math.floor(ms / 864e5),
-    h = isNaN(ms) ? "--" : Math.floor(ms / 36e5) % 24,
-    m = isNaN(ms) ? "--" : Math.floor(ms / 6e4) % 60;
-  isNaN(ms) || Math.floor(ms / 1e3);
-  return 0 === d && 0 === h && 0 === m
-    ? "Baru Saja"
-    : [d, "H ", h, "J "].map((v) => v.toString().padStart(2, 0)).join("");
+let handler = async (m, { conn, text, groupMetadata }) => {
+  const customNote = text ? text.trim() : 'Harap aktif di dalam grup demi menjaga kenyamanan bersama.'
+  const now = Date.now()
+  const sevenDays = 7 * 24 * 60 * 60 * 1000
+
+  const participants = groupMetadata?.participants || []
+  const totalMembers = participants.length
+  const users = global.db?.data?.users || {}
+  const botJid = conn.decodeJid(conn.user.id || conn.user.jid)
+
+  let siders = []
+
+  for (const p of participants) {
+    const rawJid = p.id || p.jid || p.phoneNumber
+    if (!rawJid) continue
+    const jid = conn.decodeJid(rawJid)
+
+    // Abaikan bot dan admin grup
+    if (jid === botJid) continue
+    if (p.admin === 'admin' || p.admin === 'superadmin' || p.isAdmin || p.isSuperAdmin) continue
+
+    const userData = users[jid]
+
+    // Jika tidak ada data aktivitas, atau banned, atau lastseen > 7 hari lalu
+    if (!userData || !userData.lastseen) {
+      siders.push({ jid, status: 'Tidak Pernah Aktif' })
+    } else if (userData.banned) {
+      siders.push({ jid, status: 'Status Banned' })
+    } else if (now - userData.lastseen > sevenDays) {
+      const offDuration = formatOffTime(now - userData.lastseen)
+      siders.push({ jid, status: `Off ${offDuration}` })
+    }
+  }
+
+  if (siders.length === 0) {
+    return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Seluruh anggota terpantau aktif dan berpartisipasi dengan baik!\n*╰───────────────*')
+  }
+
+  const siderLines = siders.slice(0, 50).map((s, idx) => {
+    const num = s.jid.split('@')[0].replace(/\D/g, '')
+    return `*┆*   ${toSmallNum(idx + 1)}. @${num} › _(${s.status})_`
+  })
+
+  const moreCount = siders.length > 50 ? `\n> _...dan ${toSmallNum(siders.length - 50)} anggota lainnya._` : ''
+
+  const txt = `*──  ୨୧ ✧ REKAP ANGGOTA TIDAK AKTIF ✧ ୨୧  ──*
+
+> *おしらせ!* (ᴘᴇᴍᴀɴᴛᴀᴜᴀɴ ꜱɪᴅᴇʀ)
+> Ditemukan *${toSmallNum(siders.length)}* dari *${toSmallNum(totalMembers)}* anggota kurang aktif.
+
+*╭  〔 ◈ ᴅ ᴀ ꜰ ᴛ ᴀ ʀ  ꜱ ɪ ᴅ ᴇ ʀ 〕*
+${siderLines.join('\n')}
+*╰───────────────*${moreCount}
+
+> _"${customNote}"_
+> ｡˚ ⊹ _Mari saling menyapa dan meramaikan grup secara harmonis_ ⊹ ˚ ｡`.trim()
+
+  return conn.sendMessage(m.chat, {
+    text: txt,
+    mentions: siders.map(s => s.jid)
+  }, { quoted: m })
+}
+
+handler.help = ['sider [pesan]']
+handler.tags = ['group']
+handler.command = /^(sider|gcsider|getsider)$/i
+handler.group = true
+handler.admin = true
+
+export default handler
+
+function formatOffTime(ms) {
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000))
+  const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+  if (days > 0) return `${days} Hari`
+  if (hours > 0) return `${hours} Jam`
+  return 'Baru Saja'
 }

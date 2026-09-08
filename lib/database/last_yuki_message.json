@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-09-04T21:50:23.698Z",
+  "sender": "6281242432747@s.whatsapp.net",
+  "pushName": null,
+  "chat": "120363428865215136@g.us",
+  "mtype": "extendedTextMessage",
+  "message": {
+    "extendedTextMessage": {
+      "text": ".tes",
+      "previewType": "NONE",
+      "contextInfo": {
+        "stanzaId": "3EB08D7137FDBCAEDBB2C1",
+        "participant": "1989207408747@lid",
+        "quotedMessage": {
+          "buttonsMessage": {
+            "locationMessage": {
+              "degreesLatitude": 0,
+              "degreesLongitude": 0,
+              "name": "ʜᴏꜱʜɪɴᴏ-ᴅᴇꜱᴜ",
+              "address": "ᴋᴀɪ ᴅᴇꜱᴜ"
+            },
+            "contentText": "*──  ୨୧ 🩶 ʜᴏꜱʜɪɴᴏ-ᴅᴇꜱᴜ 🩶 ୨୧  ──*\n\n   *こんにちわ!* (ʜᴇʟʟᴏ!)\n   ꜱᴇʟᴀᴍᴀᴛ ᴘᴀɢɪ *ɴᴇɴᴇʟ* ♡\n   ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴍʏ ᴡᴏʀʟᴅ ✨\n\n*╭  〔 👤 ᴜ ꜱ ᴇ ʀ 〕*\n*┆* ɴᴀᴍᴀ    : *ɴᴇɴᴇʟ*\n*┆* ʟᴇᴠᴇʟ   : *𝟷 (ʀᴏᴏᴋɪᴇ)*\n*┆* ʀᴏʟᴇ    : *ɴᴇᴡʙɪᴇ ㋡*\n*┆* ʟɪᴍɪᴛ   : *𝟷𝟿*\n*┆* ᴇxᴘ     : *𝟼𝟹𝟺𝟸 / 𝟷𝟾𝟾*\n*┆* xᴘ𝟺ʟᴠ   : *ꜱɪᴀᴘ ᴜɴᴛᴜᴋ .ʟᴇᴠᴇʟᴜᴘ*\n*╰───────────────*\n\n*╭  〔 ⚙️ ꜱ ʏ ꜱ ᴛ ᴇ ᴍ 〕*\n*┆* ᴜᴘᴛɪᴍᴇ      : *𝟶𝟷:𝟷𝟸:𝟻𝟽*\n*┆* ᴛᴀɴɢɢᴀʟ     : *𝟺 ꜱᴇᴘᴛᴇᴍʙᴇʀ 𝟸𝟶𝟸𝟼*\n*┆* ᴅᴀᴛᴀʙᴀꜱᴇ    : *𝟷𝟶𝟶 / 𝟷𝟷𝟼𝟼*\n*┆* ᴛᴏᴛᴀʟ ꜰɪᴛᴜʀ : *𝟽𝟻𝟷*\n*╰───────────────*\n\n*╭  〔  📌  ɴᴏᴛᴇ  〕*\n*┆* Ⓟ = ᴘʀᴇᴍɪᴜᴍ   Ⓛ = ʟɪᴍɪᴛ\n*╰───────────────*\n\n   ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ* ⊹ ˚ ｡\n✨ *ᴜɴᴛᴜᴋ ᴘɪʟɪʜ ᴋᴀᴛᴇɢᴏʀɪ ᴍᴇɴᴜ* ✨",
+            "footerText": "ʜᴏꜱʜɪɴᴏ-ᴅᴇꜱᴜ",
+            "contextInfo": {},
+            "buttons": [
+              {
+                "buttonId": "menu_select",
+                "buttonText": {
+                  "displayText": "ᴘɪʟɪʜ ᴍᴇɴᴜ"
+                },
+                "type": "RESPONSE"
+              }
+            ],
+            "headerType": "LOCATION"
+          }
+        },
+        "expiration": 86400,
+        "disappearingMode": {
+          "initiator": "CHANGED_IN_CHAT",
+          "trigger": "UNKNOWN"
+        },
+        "quotedType": "EXPLICIT"
+      },
+      "inviteLinkGroupTypeV2": "DEFAULT"
+    },
+    "messageContextInfo": {
+      "messageSecret": "xMTM8AstOGvqg00nU0zGCJQg93+TIJnF2YQ7QoTqnCg="
+    }
+  }
+}

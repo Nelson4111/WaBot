@@ -1,0 +1,480 @@
+<style>*{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}</style>
+<body style="margin:0;background:#0d0e15;font-family:'Courier New',Courier,monospace;color:#eee;touch-action:manipulation;cursor:pointer">
+<div style="width:100%;max-width:440px;margin:auto;padding:12px;box-sizing:border-box">
+<div style="background:rgba(255,255,255,.05);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:2px solid rgba(108,92,231,.4);border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.6)">
+  
+  <!-- Arcade Title Header -->
+  <div style="padding:14px 18px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:10px;letter-spacing:2px;color:#a29bfe;font-weight:bold">RETRO ARCADE CLASSIC</div>
+      <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:1px;text-shadow:0 0 12px #6c5ce7">TETRIS</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:9px;color:rgba(255,255,255,.4)">TOP SCORE</div>
+      <div id="best" style="font-size:15px;font-weight:bold;color:#feca57">000000</div>
+    </div>
+  </div>
+
+  <!-- Game Layout: Grid Canvas + Side Stats Panel -->
+  <div style="padding:14px;display:flex;gap:12px;align-items:flex-start;justify-content:center">
+    
+    <!-- Main Tetris Grid (10x20) -->
+    <div style="position:relative">
+      <canvas id="tetris" width="200" height="400" style="width:200px;height:400px;background:#000;border:2px solid rgba(255,255,255,.2);border-radius:8px;display:block;box-shadow:0 0 20px rgba(0,0,0,.8)"></canvas>
+    </div>
+
+    <!-- Side Panel: Stats & Next Piece Preview -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+      
+      <!-- Live Score Box -->
+      <div style="background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:#a1a1aa;font-weight:bold;letter-spacing:1px">SCORE</div>
+        <div id="score" style="font-size:16px;font-weight:bold;color:#54a0ff;margin-top:2px;text-shadow:0 0 8px rgba(84,160,255,.6)">000000</div>
+      </div>
+
+      <!-- Next Piece Box -->
+      <div style="background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:#a1a1aa;font-weight:bold;letter-spacing:1px">NEXT</div>
+        <canvas id="next" width="80" height="80" style="width:80px;height:80px;background:#0a0a10;border-radius:6px;display:block;margin:6px auto 0 auto;border:1px solid rgba(255,255,255,.1)"></canvas>
+      </div>
+
+      <!-- Lines Box -->
+      <div style="background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:#a1a1aa;font-weight:bold;letter-spacing:1px">LINES</div>
+        <div id="lines" style="font-size:15px;font-weight:bold;color:#1dd1a1;margin-top:2px">000</div>
+      </div>
+
+      <!-- Level Box -->
+      <div style="background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:10px;color:#a1a1aa;font-weight:bold;letter-spacing:1px">LEVEL</div>
+        <div id="level" style="font-size:15px;font-weight:bold;color:#ff9f43;margin-top:2px">01</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Audio Element media/menu.mp3 -->
+  <audio id="tetrisBgm" src="${menuSongBase64}" loop preload="auto"></audio>
+
+  <!-- Controls Panel -->
+  <div style="padding:0 14px 14px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    <button style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:11px 4px;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer;text-align:center" type="button" onclick="playerMove(-1)">⬅️ KIRI</button>
+    <button style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:11px 4px;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer;text-align:center" type="button" onclick="playerRotate()">🔄 PUTAR</button>
+    <button style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:11px 4px;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer;text-align:center" type="button" onclick="playerMove(1)">KANAN ➡️</button>
+    <button style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:11px 4px;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer;text-align:center" type="button" onclick="playerDrop()">⬇️ JATUH</button>
+
+    <button id="bgmBtn" style="grid-column:span 2;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;margin-top:2px;padding:11px;font-size:10px;font-weight:bold;border-radius:8px;cursor:pointer" type="button">🎵 MUSIK BGM: OFF</button>
+    <button style="grid-column:span 2;background:#6c5ce7;border:none;color:#fff;margin-top:2px;padding:11px;font-size:11px;font-weight:bold;border-radius:8px;cursor:pointer;box-shadow:0 4px 14px rgba(108,92,231,.4)" type="button" onclick="restartGame()">RESTART GAME 🔄</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById('tetris');
+const ctx = canvas.getContext('2d');
+
+const nextCanvas = document.getElementById('next');
+const nextCtx = nextCanvas.getContext('2d');
+
+const scoreEl = document.getElementById('score');
+const linesEl = document.getElementById('lines');
+const levelEl = document.getElementById('level');
+const bestEl = document.getElementById('best');
+const bgmBtn = document.getElementById('bgmBtn');
+const bgmAudio = document.getElementById('tetrisBgm');
+
+bgmAudio.volume = 0.55;
+
+const BLOCK_SIZE = 20;
+let best = 0;
+let gameOver = false;
+let nextPieceMatrix = null;
+
+// Web Audio API Synthesizer for SFX
+let audioCtx = null;
+function getAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioCtx.state === 'suspended'){
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playTone(freq, duration = 0.15, type = 'square', vol = 0.15){
+  try {
+    const c = getAudio();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, c.currentTime);
+    gain.gain.setValueAtTime(0.0001, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(vol, c.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(c.destination);
+
+    osc.start();
+    osc.stop(c.currentTime + duration + 0.02);
+  } catch(e) {}
+}
+
+function toggleBGM() {
+  getAudio();
+  if (bgmAudio.paused) {
+    bgmAudio.play().then(() => {
+      bgmBtn.textContent = '🎵 MUSIK BGM: ON';
+    }).catch(err => {
+      bgmAudio.load();
+      bgmAudio.play().then(() => {
+        bgmBtn.textContent = '🎵 MUSIK BGM: ON';
+      }).catch(e => {});
+    });
+  } else {
+    bgmAudio.pause();
+    bgmBtn.textContent = '🎵 MUSIK BGM: OFF';
+  }
+}
+
+if (bgmBtn) {
+  bgmBtn.onclick = function() {
+    toggleBGM();
+  };
+}
+
+try { best = parseInt(localStorage.getItem('dino_tetris_best') || '0', 10); } catch(e) {}
+bestEl.textContent = String(best).padStart(6, '0');
+
+function saveBest(v) {
+  if (v > best) {
+    best = v;
+    bestEl.textContent = String(best).padStart(6, '0');
+    try { localStorage.setItem('dino_tetris_best', String(best)); } catch(e) {}
+  }
+}
+
+function drawGridLines() {
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= 10; x++) {
+    ctx.beginPath();
+    ctx.moveTo(x * BLOCK_SIZE, 0);
+    ctx.lineTo(x * BLOCK_SIZE, 400);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= 20; y++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y * BLOCK_SIZE);
+    ctx.lineTo(200, y * BLOCK_SIZE);
+    ctx.stroke();
+  }
+}
+
+function getGhostPosition() {
+  const ghost = {
+    pos: { x: player.pos.x, y: player.pos.y },
+    matrix: player.matrix
+  };
+  while (!collide(arena, ghost)) {
+    ghost.pos.y++;
+  }
+  ghost.pos.y--;
+  return ghost;
+}
+
+function drawGhostPiece() {
+  if (!player.matrix || gameOver) return;
+  const ghost = getGhostPosition();
+  ghost.matrix.forEach((row, y) => {
+    row.forEach((val, x) => {
+      if (val !== 0) {
+        const px = (x + ghost.pos.x) * BLOCK_SIZE;
+        const py = (y + ghost.pos.y) * BLOCK_SIZE;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 2, py + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
+      }
+    });
+  });
+}
+
+function arenaSweep() {
+  let rowCount = 0;
+  outer: for (let y = arena.length - 1; y > 0; --y) {
+    for (let x = 0; x < arena[y].length; ++x) {
+      if (arena[y][x] === 0) {
+        continue outer;
+      }
+    }
+    const row = arena.splice(y, 1)[0].fill(0);
+    arena.unshift(row);
+    ++y;
+    rowCount++;
+  }
+
+  if (rowCount > 0) {
+    // Standard Arcade Tetris Scoring System
+    const lineScores = [0, 100, 300, 500, 800];
+    player.score += (lineScores[rowCount] || rowCount * 200) * player.level;
+    player.lines += rowCount;
+    player.level = Math.floor(player.lines / 10) + 1;
+    playTone(880, 0.25, 'triangle', 0.2);
+    updateStats();
+  }
+}
+
+function collide(arena, player) {
+  const [m, o] = [player.matrix, player.pos];
+  for (let y = 0; y < m.length; ++y) {
+    for (let x = 0; x < m[y].length; ++x) {
+      if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function createMatrix(w, h) {
+  const matrix = [];
+  while (h--) {
+    matrix.push(new Array(w).fill(0));
+  }
+  return matrix;
+}
+
+function createPiece(type) {
+  if (type === 'T') return [[0, 1, 0],[1, 1, 1],[0, 0, 0]];
+  if (type === 'O') return [[2, 2],[2, 2]];
+  if (type === 'L') return [[0, 0, 3],[3, 3, 3],[0, 0, 0]];
+  if (type === 'J') return [[4, 0, 0],[4, 4, 4],[0, 0, 0]];
+  if (type === 'I') return [[0, 5, 0, 0],[0, 5, 0, 0],[0, 5, 0, 0],[0, 5, 0, 0]];
+  if (type === 'S') return [[0, 6, 6],[6, 6, 0],[0, 0, 0]];
+  if (type === 'Z') return [[7, 7, 0],[0, 7, 7],[0, 0, 0]];
+}
+
+// Authentic Classic Arcade Colors
+const colors = [
+  null,
+  '#a000f0', // T - Purple
+  '#f0f000', // O - Yellow
+  '#f0a000', // L - Orange
+  '#0000f0', // J - Blue
+  '#00f0f0', // I - Cyan
+  '#00f000', // S - Green
+  '#f00000'  // Z - Red
+];
+
+function drawMatrix(matrix, offset, targetCtx = ctx, blockSize = BLOCK_SIZE) {
+  matrix.forEach((row, y) => {
+    row.forEach((val, x) => {
+      if (val !== 0) {
+        const px = (x + offset.x) * blockSize;
+        const py = (y + offset.y) * blockSize;
+
+        targetCtx.fillStyle = colors[val];
+        targetCtx.fillRect(px + 1, py + 1, blockSize - 2, blockSize - 2);
+
+        targetCtx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        targetCtx.fillRect(px + 2, py + 2, blockSize - 4, 3);
+
+        targetCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+        targetCtx.lineWidth = 1;
+        targetCtx.strokeRect(px + 1, py + 1, blockSize - 2, blockSize - 2);
+      }
+    });
+  });
+}
+
+function drawNextPiece() {
+  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  if (!nextPieceMatrix) return;
+
+  const size = 16;
+  const offsetX = Math.floor((4 - nextPieceMatrix[0].length) / 2);
+  const offsetY = Math.floor((4 - nextPieceMatrix.length) / 2);
+
+  drawMatrix(nextPieceMatrix, { x: offsetX, y: offsetY }, nextCtx, size);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGridLines();
+  drawGhostPiece();
+
+  drawMatrix(arena, {x: 0, y: 0});
+  if (player.matrix && !gameOver) {
+    drawMatrix(player.matrix, player.pos);
+  }
+
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(10, 10, 20, 0.85)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ff5252';
+    ctx.textAlign = 'center';
+    ctx.font = '900 20px "Courier New", monospace';
+    ctx.fillText('GAME OVER', canvas.width / 2, 180);
+
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = '11px Arial';
+    ctx.fillText('Klik RESTART untuk Main', canvas.width / 2, 210);
+    ctx.textAlign = 'left';
+  }
+}
+
+function merge(arena, player) {
+  player.matrix.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value !== 0) {
+        arena[y + player.pos.y][x + player.pos.x] = value;
+      }
+    });
+  });
+}
+
+function getRandomPiece() {
+  const pieces = 'ILJOTSZ';
+  return createPiece(pieces[pieces.length * Math.random() | 0]);
+}
+
+function playerDrop() {
+  if (gameOver) return;
+  player.pos.y++;
+  if (collide(arena, player)) {
+    player.pos.y--;
+    merge(arena, player);
+    player.score += 10; // Soft drop bonus points
+    playTone(160, 0.08, 'square', 0.12);
+    playerReset();
+    arenaSweep();
+    updateStats();
+  }
+  dropCounter = 0;
+}
+
+function playerMove(dir) {
+  if (gameOver) return;
+  player.pos.x += dir;
+  if (collide(arena, player)) {
+    player.pos.x -= dir;
+  } else {
+    playTone(320, 0.05, 'square', 0.1);
+  }
+}
+
+function playerReset() {
+  if (!nextPieceMatrix) {
+    nextPieceMatrix = getRandomPiece();
+  }
+
+  player.matrix = nextPieceMatrix;
+  nextPieceMatrix = getRandomPiece();
+  drawNextPiece();
+
+  player.pos.y = 0;
+  player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+  if (collide(arena, player)) {
+    gameOver = true;
+    bgmAudio.pause();
+    if (bgmBtn) bgmBtn.textContent = '🎵 MUSIK BGM: OFF';
+    playTone(120, 0.4, 'sawtooth', 0.2);
+  }
+}
+
+function playerRotate() {
+  if (gameOver) return;
+  const pos = player.pos.x;
+  let offset = 1;
+  rotate(player.matrix);
+  while (collide(arena, player)) {
+    player.pos.x += offset;
+    offset = -(offset + (offset > 0 ? 1 : -1));
+    if (offset > player.matrix[0].length) {
+      rotate(player.matrix, -1);
+      player.pos.x = pos;
+      return;
+    }
+  }
+  playTone(550, 0.06, 'square', 0.1);
+}
+
+function rotate(matrix, dir = 1) {
+  for (let y = 0; y < matrix.length; ++y) {
+    for (let x = 0; x < y; ++x) {
+      [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+    }
+  }
+  if (dir > 0) matrix.forEach(row => row.reverse());
+  else matrix.reverse();
+}
+
+let dropCounter = 0;
+let dropInterval = 800;
+let lastTime = 0;
+
+function update(time = 0) {
+  const deltaTime = time - lastTime;
+  lastTime = time;
+
+  if (!gameOver) {
+    dropCounter += deltaTime;
+    dropInterval = Math.max(80, 800 - (player.level - 1) * 75);
+
+    if (dropCounter > dropInterval) {
+      playerDrop();
+    }
+  }
+
+  draw();
+  requestAnimationFrame(update);
+}
+
+function updateStats() {
+  scoreEl.textContent = String(Math.floor(player.score)).padStart(6, '0');
+  linesEl.textContent = String(player.lines).padStart(3, '0');
+  levelEl.textContent = String(player.level).padStart(2, '0');
+  saveBest(player.score);
+}
+
+function restartGame() {
+  arena.forEach(row => row.fill(0));
+  player.score = 0;
+  player.lines = 0;
+  player.level = 1;
+  gameOver = false;
+  nextPieceMatrix = null;
+  playTone(440, 0.1, 'square');
+  playerReset();
+  updateStats();
+}
+
+const arena = createMatrix(10, 20);
+const player = {
+  pos: {x: 0, y: 0},
+  matrix: null,
+  score: 0,
+  lines: 0,
+  level: 1
+};
+
+window.addEventListener('resize', () => draw());
+
+document.addEventListener('keydown', e => {
+  if (gameOver) return;
+  if (e.code === 'ArrowLeft') playerMove(-1);
+  else if (e.code === 'ArrowRight') playerMove(1);
+  else if (e.code === 'ArrowDown') playerDrop();
+  else if (e.code === 'ArrowUp' || e.code === 'Space') playerRotate();
+});
+
+playerReset();
+updateStats();
+requestAnimationFrame(update);
+</script></body>

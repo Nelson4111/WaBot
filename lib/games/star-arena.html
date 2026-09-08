@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avelia Star Arena</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+        html, body {
+            background: #090d16;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            width: 100%;
+            height: 380px;
+            max-height: 380px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        #hud {
+            height: 32px;
+            background: rgba(15, 23, 42, 0.96);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            font-size: 11px;
+            z-index: 10;
+        }
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #eab308;
+            box-shadow: 0 0 6px #eab308;
+            transition: all 0.3s ease;
+        }
+        .dot.connected { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .dot.error { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+        .leaderboard-ticker {
+            font-weight: 600;
+            color: #38bdf8;
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
+            font-size: 10px;
+        }
+        #canvas-wrap {
+            height: 260px;
+            width: 100%;
+            position: relative;
+            background: radial-gradient(circle at center, #111827 0%, #030712 100%);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #controls-bar {
+            height: 88px;
+            background: rgba(15, 23, 42, 0.98);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 15;
+        }
+        .dpad-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .dpad-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-dir {
+            width: 44px;
+            height: 26px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 6px;
+            color: #38bdf8;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.1s ease;
+        }
+        .btn-dir:active {
+            background: #38bdf8;
+            color: #0f172a;
+            transform: scale(0.92);
+        }
+        .btn-dash {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            border: 1px solid #fbbf24;
+            color: #ffffff;
+            font-size: 12px;
+        }
+        .btn-dash:active {
+            background: #fbbf24;
+            color: #000;
+        }
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            z-index: 25;
+            padding: 16px;
+            text-align: center;
+            backdrop-filter: blur(3px);
+        }
+        #overlay.hidden { display: none; }
+        .btn-start {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .btn-start:active { transform: scale(0.95); }
+        #debug-text {
+            position: absolute;
+            bottom: 2px;
+            left: 6px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.35);
+            pointer-events: none;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <div class="status-badge">
+            <div id="status-dot" class="dot"></div>
+            <span id="status-text">Menyambungkan Mabar...</span>
+        </div>
+        <div id="lb-text" class="leaderboard-ticker">⭐ Rebut Bintang Terbanyak!</div>
+    </div>
+
+    <div id="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+        <div id="debug-text"></div>
+    </div>
+
+    <div id="controls-bar">
+        <div class="dpad-container">
+            <button class="btn-dir" id="btn-up" onclick="setDir('up')">▲</button>
+            <div class="dpad-row">
+                <button class="btn-dir" id="btn-left" onclick="setDir('left')">◀</button>
+                <button class="btn-dir btn-dash" id="btn-dash" onclick="doDash()">⚡</button>
+                <button class="btn-dir" id="btn-right" onclick="setDir('right')">▶</button>
+            </div>
+            <button class="btn-dir" id="btn-down" onclick="setDir('down')">▼</button>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <h3 style="font-size: 14px; color: #f8fafc; font-weight: 800;">⚔️ Avelia Star Arena</h3>
+        <p style="font-size: 11px; color: #cbd5e1; max-width: 260px; line-height: 1.3;">Tekan tombol panah (▲ ◀ ▶ ▼) untuk menggerakkan karakter dan rebut bintang bersama teman grup!</p>
+        <button class="btn-start" onclick="startGame()">Mulai Bermain</button>
+        <div id="overlay-status" style="font-size: 10px; color: #38bdf8; margin-top: 4px; font-weight: 600;">Menghubungkan Relay Mabar...</div>
+    </div>
+
+    <script>
+        // CONFIGURATION (Dynamically replaced by bot plugin or query parameters)
+        const URL_PARAMS = new URLSearchParams(window.location.search);
+        const WSS_URL = '{{WSS_URL}}'.startsWith('{{') ? (URL_PARAMS.get('wss') || '') : '{{WSS_URL}}';
+        const WSS_URL_FALLBACK = '{{WSS_URL_FALLBACK}}'.startsWith('{{') ? '' : '{{WSS_URL_FALLBACK}}';
+        const ROOM_ID = '{{ROOM_ID}}'.startsWith('{{') ? (URL_PARAMS.get('room') || 'arena-utama') : '{{ROOM_ID}}';
+        const PLAYER_NAME = '{{PLAYER_NAME}}'.startsWith('{{') ? (URL_PARAMS.get('name') || 'Pemain') : '{{PLAYER_NAME}}';
+
+        const COLORS = ['#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#f43f5e'];
+        const myColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const lbText = document.getElementById('lb-text');
+        const overlay = document.getElementById('overlay');
+        const debugText = document.getElementById('debug-text');
+
+        let ws = null;
+        let myPlayerId = 'p_' + Math.random().toString(36).substring(2, 7);
+        let arenaWidth = 400;
+        let arenaHeight = 260;
+
+        let stars = [];
+        let remotePlayers = new Map();
+        let isConnected = false;
+        let reconnectTimer = null;
+        let pingInterval = null;
+
+        let vx = 0;
+        let vy = 0;
+        const SPEED = 2.8;
+
+        // Karakter lokal pemain sendiri
+        let localPlayer = {
+            id: myPlayerId,
+            name: PLAYER_NAME,
+            color: myColor,
+            x: Math.floor(60 + Math.random() * (arenaWidth - 120)),
+            y: Math.floor(50 + Math.random() * (arenaHeight - 100)),
+            score: 0
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function initStars(count = 12) {
+            stars = [];
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    id: 's_' + i,
+                    x: Math.floor(25 + Math.random() * (arenaWidth - 50)),
+                    y: Math.floor(20 + Math.random() * (arenaHeight - 40))
+                });
+            }
+        }
+        initStars(12);
+
+        function broadcast(data) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                try { ws.send(JSON.stringify(data)); } catch (e) {}
+            }
+        }
+
+        function broadcastJoin() {
+            broadcast({
+                type: 'join',
+                id: myPlayerId,
+                name: PLAYER_NAME,
+                color: myColor,
+                x: Math.round(localPlayer.x),
+                y: Math.round(localPlayer.y),
+                score: localPlayer.score,
+                stars: stars
+            });
+        }
+
+        function broadcastSync() {
+            broadcast({
+                type: 'sync',
+                id: myPlayerId,
+                name: PLAYER_NAME,
+                color: myColor,
+                x: Math.round(localPlayer.x),
+                y: Math.round(localPlayer.y),
+                score: localPlayer.score
+            });
+        }
+
+        function broadcastMove() {
+            broadcast({
+                type: 'move',
+                id: myPlayerId,
+                name: PLAYER_NAME,
+                color: myColor,
+                x: Math.round(localPlayer.x),
+                y: Math.round(localPlayer.y),
+                score: localPlayer.score
+            });
+        }
+
+        function setDir(dir) {
+            if (dir === 'up') { vx = 0; vy = -SPEED; }
+            else if (dir === 'down') { vx = 0; vy = SPEED; }
+            else if (dir === 'left') { vx = -SPEED; vy = 0; }
+            else if (dir === 'right') { vx = SPEED; vy = 0; }
+            broadcastMove();
+        }
+
+        function doDash() {
+            const dirX = vx !== 0 ? Math.sign(vx) : 0;
+            const dirY = vy !== 0 ? Math.sign(vy) : (dirX === 0 ? -1 : 0);
+            localPlayer.x = Math.max(14, Math.min(arenaWidth - 14, localPlayer.x + dirX * 35));
+            localPlayer.y = Math.max(14, Math.min(arenaHeight - 14, localPlayer.y + dirY * 35));
+            broadcastMove();
+        }
+
+        const overlayStatus = document.getElementById('overlay-status');
+        const ENDPOINTS = [WSS_URL, WSS_URL_FALLBACK].filter(Boolean);
+        let endpointIdx = 0;
+        let failCount = 0;
+
+        function connectWs() {
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            if (ws) {
+                try { ws.close(); } catch (e) {}
+                ws = null;
+            }
+
+            if (ENDPOINTS.length === 0) {
+                statusDot.className = 'dot error';
+                statusText.textContent = 'URL Socket Belum Diatur';
+                if (overlayStatus) overlayStatus.textContent = '❌ URL Socket Belum Diatur';
+                return;
+            }
+
+            const wsEndpoint = ENDPOINTS[endpointIdx % ENDPOINTS.length];
+            const hostDisplay = wsEndpoint.replace(/^wss?:\/\//, '').split('/')[0];
+
+            statusDot.className = 'dot';
+            statusText.textContent = 'Menghubungkan ' + hostDisplay + '...';
+            if (debugText) debugText.textContent = 'Dial: ' + hostDisplay;
+            if (overlayStatus) overlayStatus.textContent = '🔄 Menghubungkan ke ' + hostDisplay + '...';
+
+            try {
+                ws = new WebSocket(wsEndpoint);
+
+                ws.onopen = () => {
+                    isConnected = true;
+                    failCount = 0;
+                    statusDot.className = 'dot connected';
+                    statusText.textContent = '🟢 Terhubung (' + hostDisplay + ')';
+                    if (debugText) debugText.textContent = '🟢 Mabar Room: ' + ROOM_ID + ' @ ' + hostDisplay;
+                    if (overlayStatus) overlayStatus.textContent = '🟢 Terhubung (' + hostDisplay + ') - Siap Main!';
+                    overlay.classList.add('hidden');
+
+                    broadcastJoin();
+                    updateLeaderboard();
+
+                    if (pingInterval) clearInterval(pingInterval);
+                    pingInterval = setInterval(() => {
+                        broadcast({ type: 'ping', id: myPlayerId });
+                    }, 15000);
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (!msg || msg.id === myPlayerId) return;
+
+                        if (msg.type === 'join' || msg.type === 'move' || msg.type === 'sync') {
+                            remotePlayers.set(msg.id, {
+                                id: msg.id,
+                                name: msg.name || 'Teman',
+                                color: msg.color || '#ec4899',
+                                x: Number(msg.x) || 200,
+                                y: Number(msg.y) || 130,
+                                score: Number(msg.score) || 0,
+                                lastSeen: Date.now()
+                            });
+
+                            if (msg.type === 'join') {
+                                broadcastSync();
+                                if (Array.isArray(msg.stars) && msg.stars.length > 0) {
+                                    stars = msg.stars;
+                                }
+                            }
+                            updateLeaderboard();
+                        } else if (msg.type === 'star_eat') {
+                            const idx = stars.findIndex(s => s.id === msg.starId);
+                            if (idx !== -1 && msg.newStar) {
+                                stars[idx] = msg.newStar;
+                            }
+                            if (remotePlayers.has(msg.eatenBy)) {
+                                remotePlayers.get(msg.eatenBy).score = msg.score;
+                                updateLeaderboard();
+                            }
+                        } else if (msg.type === 'ping') {
+                            if (remotePlayers.has(msg.id)) {
+                                remotePlayers.get(msg.id).lastSeen = Date.now();
+                            }
+                        }
+                    } catch (e) {}
+                };
+
+                ws.onclose = (event) => {
+                    isConnected = false;
+                    failCount++;
+                    statusDot.className = 'dot error';
+                    const code = event ? event.code : 'unknown';
+                    const reason = event && event.reason ? (' ' + event.reason) : '';
+                    statusText.textContent = 'Putus (' + code + ') - Coba ulang...';
+                    if (debugText) debugText.textContent = 'Close ' + code + reason + ' on ' + hostDisplay;
+                    if (overlayStatus) overlayStatus.textContent = '⚠️ Putus (' + code + ') dari ' + hostDisplay + ', coba cadangan...';
+
+                    // Ganti endpoint jika ada alternatif
+                    if (ENDPOINTS.length > 1) {
+                        endpointIdx = (endpointIdx + 1) % ENDPOINTS.length;
+                    }
+                    reconnectTimer = setTimeout(connectWs, 2500);
+                };
+
+                ws.onerror = (err) => {
+                    isConnected = false;
+                    statusDot.className = 'dot error';
+                    statusText.textContent = 'Gagal Konek (' + hostDisplay + ')';
+                    if (overlayStatus) overlayStatus.textContent = '❌ Gagal konek ke ' + hostDisplay;
+                };
+            } catch (err) {
+                isConnected = false;
+                failCount++;
+                statusDot.className = 'dot error';
+                const errMsg = err && err.message ? err.message : String(err);
+                statusText.textContent = 'Error: ' + errMsg.substring(0, 20);
+                if (debugText) debugText.textContent = 'Exception: ' + errMsg;
+                if (overlayStatus) overlayStatus.textContent = '❌ ' + errMsg;
+                if (ENDPOINTS.length > 1) {
+                    endpointIdx = (endpointIdx + 1) % ENDPOINTS.length;
+                }
+                reconnectTimer = setTimeout(connectWs, 3000);
+            }
+        }
+
+        // Pembersihan pemain yang tidak aktif > 25 detik
+        setInterval(() => {
+            const now = Date.now();
+            let changed = false;
+            for (const [id, p] of remotePlayers) {
+                if (now - p.lastSeen > 25000) {
+                    remotePlayers.delete(id);
+                    changed = true;
+                }
+            }
+            if (changed) updateLeaderboard();
+        }, 5000);
+
+        function updateLeaderboard() {
+            const allPlayers = [localPlayer, ...Array.from(remotePlayers.values())];
+            allPlayers.sort((a, b) => b.score - a.score);
+            const top = allPlayers[0];
+            const count = allPlayers.length;
+
+            if (isConnected) {
+                if (count > 1) {
+                    statusText.textContent = '🟢 Mabar (' + count + ' Pemain)';
+                    lbText.textContent = '🏆 1st ' + top.name + ': ' + top.score + ' ⭐';
+                } else {
+                    statusText.textContent = '🟢 Online (' + PLAYER_NAME + ')';
+                    lbText.textContent = '⭐ Menunggu kawan grup masuk...';
+                }
+            } else {
+                lbText.textContent = '⭐ Rebut Bintang Terbanyak!';
+            }
+        }
+
+        function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            const step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+            ctx.fillStyle = '#facc15';
+            ctx.shadowColor = '#eab308';
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        let moveTick = 0;
+        function updatePhysics() {
+            if (vx !== 0 || vy !== 0) {
+                localPlayer.x = Math.max(14, Math.min(arenaWidth - 14, localPlayer.x + vx));
+                localPlayer.y = Math.max(14, Math.min(arenaHeight - 14, localPlayer.y + vy));
+                moveTick++;
+                if (moveTick % 3 === 0) {
+                    broadcastMove();
+                }
+            }
+
+            // Tabrakan local player dengan bintang
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const s = stars[i];
+                if (Math.hypot(localPlayer.x - s.x, localPlayer.y - s.y) < 20) {
+                    localPlayer.score += 1;
+                    const newStar = {
+                        id: 's_' + Math.random().toString(36).substring(2, 7),
+                        x: Math.floor(25 + Math.random() * (arenaWidth - 50)),
+                        y: Math.floor(20 + Math.random() * (arenaHeight - 40))
+                    };
+                    stars[i] = newStar;
+                    updateLeaderboard();
+
+                    broadcast({
+                        type: 'star_eat',
+                        starId: s.id,
+                        eatenBy: myPlayerId,
+                        score: localPlayer.score,
+                        newStar
+                    });
+                }
+            }
+        }
+
+        function render() {
+            updatePhysics();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const scaleX = canvas.width / arenaWidth;
+            const scaleY = canvas.height / arenaHeight;
+
+            // Background Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < arenaWidth; x += 35) {
+                ctx.beginPath();
+                ctx.moveTo(x * scaleX, 0);
+                ctx.lineTo(x * scaleX, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < arenaHeight; y += 35) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * scaleY);
+                ctx.lineTo(canvas.width, y * scaleY);
+                ctx.stroke();
+            }
+
+            // Stars
+            for (const star of stars) {
+                drawStar(star.x * scaleX, star.y * scaleY, 5, 6 * scaleX, 3 * scaleX);
+            }
+
+            // Players (Karakter sendiri + Semua karakter teman yang online)
+            const allRender = [localPlayer, ...Array.from(remotePlayers.values())];
+
+            for (const p of allRender) {
+                const px = p.x * scaleX;
+                const py = p.y * scaleY;
+                const isMe = p.id === myPlayerId;
+                const radius = (isMe ? 13 : 11) * scaleX;
+
+                // Halo Glow
+                ctx.beginPath();
+                ctx.arc(px, py, radius + 4, 0, Math.PI * 2);
+                ctx.fillStyle = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(236, 72, 153, 0.2)';
+                ctx.fill();
+
+                // Player Body
+                ctx.beginPath();
+                ctx.arc(px, py, radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color || (isMe ? myColor : '#ec4899');
+                ctx.fill();
+                ctx.lineWidth = isMe ? 2 : 1.2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Player Name & Score
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold ' + Math.max(9, Math.floor(9 * scaleX)) + 'px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText((isMe ? '⭐ Kamu' : p.name) + ' (' + (p.score || 0) + ')', px, py - radius - 4);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function startGame() {
+            overlay.classList.add('hidden');
+            if (!isConnected) connectWs();
+        }
+
+        // Mulai koneksi dan loop game
+        connectWs();
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

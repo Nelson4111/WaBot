@@ -1,4 +1,4 @@
-# 🌸 NelBot-MD MD 🌸
+# 🌸 Avelia MD 🌸
 
 Bot WhatsApp Multifungsi | Base dari **Nao MD** | Full **Plugins ESM**
 
@@ -38,4 +38,4 @@ Bot WhatsApp Multifungsi | Base dari **Nao MD** | Full **Plugins ESM**
 
 ## ✍️ Credit
 
-`Script by Hilman - NelBot-MD`
+`Script by Hilman - Avelia`

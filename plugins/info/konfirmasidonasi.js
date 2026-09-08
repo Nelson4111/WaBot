@@ -17,7 +17,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     let alias = aliasArr.join('|').trim()
-    let ownNum = global.nomorown || '6281241100804'
+    let ownNum = global.nomorown || '79223679360'
     let ownerJid = ownNum + '@s.whatsapp.net'
 
     m.reply('⏳ Sedang memproses dan mengirim bukti donasimu ke Owner...')

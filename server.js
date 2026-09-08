@@ -2,10 +2,18 @@ import express from 'express';
 import fetch from 'node-fetch';
 import axios from 'axios';
 import { exec } from 'child_process';
+import initChessServer from './lib/chess/chess-server.js';
+import initMultiplayerWsServer from './lib/multiplayer/ws-server.js';
+import { startTunnel } from './lib/tunnel/tunnel-manager.js';
+import fs from 'fs';
 
 let app = global.app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+initChessServer(app);
 
 function connect(PORT) {
+    global.port = PORT;
     app.get('/', (req, res) => res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,9 +132,66 @@ function connect(PORT) {
         res.status(200).send(pingResults.join('<br /><br />'));
     });
 
-    app.listen(PORT, () => {
+    app.get('/arena/:roomId', (req, res) => {
+        const { roomId } = req.params;
+        const name = (req.query.name || 'Player').toString().replace(/[<>]/g, '');
+        const templatePath = './lib/games/star-arena.html';
+        if (fs.existsSync(templatePath)) {
+            let html = fs.readFileSync(templatePath, 'utf8');
+            const wss = global.wssUrl || `ws://${req.headers.host}/ws/arena`;
+            html = html
+                .replace(/\{\{WSS_URL\}\}/g, wss)
+                .replace(/\{\{ROOM_ID\}\}/g, roomId)
+                .replace(/\{\{PLAYER_NAME\}\}/g, name);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+        }
+        res.status(404).send('Arena template tidak ditemukan.');
+    });
+
+    app.get('/debug-ws', (req, res) => {
+        const debugPath = './lib/games/ws-debugger.html';
+        if (fs.existsSync(debugPath)) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(fs.readFileSync(debugPath, 'utf8'));
+        }
+        res.status(404).send('Debug template tidak ditemukan.');
+    });
+
+    app.get('/arena-status', async (req, res) => {
+        try {
+            const { rooms } = await import('./lib/multiplayer/ws-server.js');
+            const roomList = Array.from(rooms.entries()).map(([id, r]) => ({
+                id,
+                players: Array.from(r.players.values()).map(p => ({ id: p.id, name: p.name, score: p.score })),
+                stars: r.stars.length
+            }));
+            res.json({
+                port: global.port,
+                tunnelUrl: global.tunnelUrl,
+                wssUrl: global.wssUrl,
+                totalRooms: rooms.size,
+                rooms: roomList
+            });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    const server = app.listen(PORT, () => {
         keepAlive();
         console.log('App listened on port', PORT);
+        initMultiplayerWsServer(server);
+        startTunnel(PORT).catch(e => console.warn('Tunnel init error:', e?.message));
+    });
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            const nextPort = Number(PORT) + 1;
+            console.warn(`⚠️ [Server] Port ${PORT} sedang digunakan, mencoba port alternatif ${nextPort}...`);
+            connect(nextPort);
+        } else {
+            console.error('Server error:', err);
+        }
     });
 }
 

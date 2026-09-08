@@ -32,7 +32,7 @@ let handler = async (m, { conn, args, text, command }) => {
     let res = await fetch(api)
     let buffer = await res.buffer()
 
-    let stiker = await sticker3(buffer, false, 'NelBot-MD - MD', 'By Hilman')
+    let stiker = await sticker3(buffer, false, 'Avelia', 'By Hilman')
     await conn.sendMessage(m.chat, { sticker: stiker }, { quoted: m })
     if (conn.react) await conn.react(m.chat, '✅', m.key)
 

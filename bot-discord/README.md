@@ -1,4 +1,4 @@
-# NelBot — Discord Music & Utility Bot
+# Avelia — Discord Music & Utility Bot
 
 > **Owner & Developer:** **Nenel**  
 > **Official Support Server:** [discord.gg/NgGU8f5KVV](https://discord.gg/NgGU8f5KVV)
@@ -7,7 +7,7 @@
 
 ## Overview
 
-**NelBot** is a feature-rich Discord bot built with `discord.js v14`, centered around high-quality music playback via **Lavalink v4 (`Kazagumo`/`Shoukaku`)**. It also includes moderation, automod, invite tracking, giveaways, user profiles, and server utilities with persistent SQLite storage.
+**Avelia** is a feature-rich Discord bot built with `discord.js v14`, centered around high-quality music playback via **Lavalink v4 (`Kazagumo`/`Shoukaku`)**. It also includes moderation, automod, invite tracking, giveaways, user profiles, and server utilities with persistent SQLite storage.
 
 ---
 

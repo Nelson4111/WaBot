@@ -1,5 +1,5 @@
 /*
-Base : NelBot-MD
+Base : Avelia
 Owner: Nenel
 */
 
@@ -29,21 +29,28 @@ const readMore = more.repeat(4001)
 
 /*============= MAIN INFO =============*/
 global.owner = [
-    ['6281242432747', 'owner', true],
-    ['6281241100804', 'owner2', false]
+    ['79223679360', 'Owner', true],
+    ['6282228638623', 'Co-Owner', false]
 ]  // ubah pake no kalian
 global.mods = []
 global.prems = []
-global.nomorbot = '380965329814' // ubah pake no bot kalian
-global.nomorown = '6281242432747' // ubah pake no owner kalian
+global.nomorbot = '6281242432747' // no bot
+global.nomorown = '79223679360' // no owner
+global.nomorcoown = '6282228638623' // no co-owner (asisten)
 global.autotyping = false // default mati
 global.autorecording = false // default mati
 global.usePairingCode = false // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
 
+// Mode Hardening WhatsApp 2026: Group Only (Owner tetap bisa chat di PC)
+global.opts = global.opts || {}
+if (global.opts['gconly'] === undefined) {
+    global.opts['gconly'] = true // Lindungi bot dari Error 463 & Reachout Timelock di Private Chat
+}
+
 /*============= WATERMARK =============*/
 global.readMore = readMore
 global.author = 'Nenel'
-global.namebot = 'NelBot-MD'
+global.namebot = 'Avelia'
 global.ch = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.saluran = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.useAdReply = false // Setel ke false jika ingin mematikan allfake/adReply agar chat 100% masuk di semua WA
@@ -53,7 +60,7 @@ global.watermark = wm
 global.versi = '4.0.0'
 global.botdate = `⫹⫺ DATE: ${week} ${date}\n⫹⫺ 𝗧𝗶𝗺𝗲: ${wktuwib}`
 global.bottime = `T I M E : ${wktuwib}`
-global.stickpack = `${namebot}\n\nNelBot-MD\n+${nomorbot}`
+global.stickpack = `${namebot}\n\nAvelia\n+${nomorbot}`
 global.stickauth = `Made By Nenel`
 global.week = `${week} ${date}`
 global.wibb = `${wktuwib}`
@@ -102,19 +109,19 @@ global.religiousGreeting = {
 }
 
 /*============= TAMPILAN =============*/
-global.dmenut = '┌──〔 ✦ *' //top
-global.dmenub = '│ ⟡ ' //body
-global.dmenub2 = '│ ' //body for info cmd on Default menu
-global.dmenuf = '└────────────────────────' //footer
-global.dashmenu = '⋆⁺₊⋆ ───〔 ✦ *DASHBOARD* 〕─── ⋆⁺₊⋆'
-global.cmenut = '┌──〔 ✦ *' //top
-global.cmenuh = '* 〕' //header
-global.cmenub = '│ ⟡ ' //body
-global.cmenuf = '└────────────────────────\n' //footer
+global.dmenut = '*╭  〔 ✦ *' //top
+global.dmenub = '*┆* ⟡ ' //body
+global.dmenub2 = '*┆* ' //body for info cmd on Default menu
+global.dmenuf = '*╰───────────────*' //footer
+global.dashmenu = '*──  ୨୧ ✧ DASHBOARD ✧ ୨୧  ──*'
+global.cmenut = '*╭  〔 ✦ *' //top
+global.cmenuh = '* 〕*' //header
+global.cmenub = '*┆* ⟡ ' //body
+global.cmenuf = '*╰───────────────*\n' //footer
 global.cmenua = '\n· · ─ ─ ✦ ─ ─ · ·\n'
 global.pmenus = '⟡'
-global.htki = '〔 ✦ *' // Hiasan Title (KIRI)
-global.htka = '* 〕' // Hiasan Title  (KANAN)
+global.htki = '*╭  〔 ✦ *' // Hiasan Title (KIRI)
+global.htka = '* 〕*' // Hiasan Title  (KANAN)
 global.lopr = 'Ⓟ' //LOGO PREMIUM ON MENU.JS
 global.lolm = 'Ⓛ' //LOGO LIMIT/FREE ON MENU.JS
 global.htjava = '✦'    //hiasan Doang :v
@@ -125,8 +132,8 @@ global.pakasir_project = "nenel-store"
 global.pakasir_api_key = "Sja4XrXODqaldYrmJzYQaeyL7WA05hOL"
 
 /*============= RESPON =============*/
-global.wait = '〔 ✦ *M O H O N  T U N G G U* 〕\n> Sedang memproses permintaanmu...'
-global.eror = '〔 ✦ *G A G A L* 〕\n> Terjadi kesalahan pada sistem!'
+global.wait = '*╭  〔 ⧗ ᴍ ᴏ ʜ ᴏ ɴ  ᴛ ᴜ ɴ ɢ ɢ ᴜ 〕*\n> Sedang memproses permintaanmu...\n*╰───────────────*'
+global.eror = '*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Terjadi kesalahan pada sistem!\n*╰───────────────*'
 
 global.APIs = {
     ryzen: 'https://api.ryzumi.net',

@@ -7,6 +7,7 @@ import { createRequire } from 'module';
 import { createInterface } from 'readline';
 import { setupMaster, fork } from 'cluster';
 import { watchFile, unwatchFile } from 'fs';
+import { execSync } from 'child_process';
 
 // Setup console output
 const { say } = cfonts;
@@ -15,15 +16,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(__dirname);
 const { name, author } = require(join(__dirname, './package.json'));
 
-say('NelBot', { font: 'block', align: 'center', gradient: ['cyan', 'blue'] });
+say('Avelia', { font: 'block', align: 'center', gradient: ['cyan', 'blue'] });
 say(`By ${author?.name || author || 'Nenel'}`, { font: 'console', align: 'center', gradient: ['magenta', 'red'] });
 
 console.log(chalk.cyan('┌────────────────────────────────────────────────────────┐'));
-console.log(chalk.cyan('│') + chalk.black.bgCyan('             NELBOT-MD SYSTEM INITIALIZED               ') + chalk.cyan('│'));
+console.log(chalk.cyan('│') + chalk.black.bgCyan('             AVELIA SYSTEM INITIALIZED                       ') + chalk.cyan('│'));
 console.log(chalk.cyan('├────────────────────────────────────────────────────────┤'));
 console.log(chalk.cyan('│') + ` [+] TIME   : ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`.padEnd(56) + chalk.cyan('│'));
 console.log(chalk.cyan('│') + ` [+] OWNER  : ${author?.name || author || 'Nenel'}`.padEnd(56) + chalk.cyan('│'));
-console.log(chalk.cyan('│') + ` [+] SYSTEM : ${name || 'NelBot-MD'}`.padEnd(56) + chalk.cyan('│'));
+console.log(chalk.cyan('│') + ` [+] SYSTEM : ${name || 'Avelia'}`.padEnd(56) + chalk.cyan('│'));
 console.log(chalk.cyan('│') + ` [+] ENGINE : Baileys Multi-Device Official`.padEnd(56) + chalk.cyan('│'));
 console.log(chalk.cyan('└────────────────────────────────────────────────────────┘'));
 
@@ -103,7 +104,13 @@ const cleanupAndExit = () => {
   isRunning = false;
   console.log(chalk.red('\n🛑 [Index] Menerima sinyal berhenti, mematikan worker...'));
   if (p && !p.killed) {
-    p.kill('SIGTERM');
+    try {
+      if (process.platform === 'win32' && p.process?.pid) {
+        execSync(`taskkill /pid ${p.process.pid} /T /F`, { stdio: 'ignore' });
+      } else {
+        p.kill('SIGTERM');
+      }
+    } catch {}
   }
   process.exit(0);
 };

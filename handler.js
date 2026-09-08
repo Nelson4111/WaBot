@@ -8,6 +8,8 @@ import fetch from 'node-fetch'
 import similarity from 'similarity'
 import { addChat } from './lib/totalchat.js'
 import { generateWelcomeCard, generateGoodbyeCard } from './lib/cardGenerator.js'
+import { sendDualGroupMessage } from './lib/dual-group-message.js'
+import { toSmallNum } from './lib/style.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -167,6 +169,7 @@ export async function handler(chatUpdate) {
 }
 
 async function processMessage(m, chatUpdate) {
+    const conn = this
     console.log('[PM START]', new Date().toISOString(), m?.key?.id)
     
     try {
@@ -175,24 +178,81 @@ async function processMessage(m, chatUpdate) {
         console.error('[AUTOREAD GAGAL]', err?.message)
     }
 
-    if (!m) return  
+    if (!m) {
+        console.log('[PM DROP: !m]')
+        return  
+    }
     
     // Deduplikasi dipindah ke bawah setelah validasi m.mtype selesai
 
     if (global.db.data == null) await global.loadDatabase()
     try {
         m = smsg(this, m) || m
-        if (!m) return
+        if (!m) {
+            console.log('[PM DROP: !smsg(m)]')
+            return
+        }
         
+        console.log('[PM MSG DETAIL]', {
+            id: m.key?.id,
+            fromMe: m.fromMe,
+            sender: m.sender,
+            chat: m.chat,
+            mtype: m.mtype,
+            text: m.text,
+            isGroup: m.isGroup,
+            hasMessage: !!m.message
+        })
+
+        // ANTIDELETE: Tangkap pesan yang dihapus sebelum protocolMessage di-drop
+        if (m.mtype === 'protocolMessage' || m.message?.protocolMessage) {
+            let protocolMsg = m.message?.protocolMessage || m.msg
+            if (protocolMsg && (protocolMsg.type === 0 || protocolMsg.type === 'REVOKE') && protocolMsg.key) {
+                let targetKey = protocolMsg.key
+                let targetChat = targetKey.remoteJid || m.chat
+                let chatSettings = global.db?.data?.chats?.[targetChat]
+                if (chatSettings && chatSettings.delete && !targetKey.fromMe) {
+                    try {
+                        let chatStore = this.chats?.[targetChat] || conn.chats?.[targetChat]
+                        let cachedMsg = chatStore?.messages?.[targetKey.id]
+                        if (cachedMsg && cachedMsg.message) {
+                            const { handleAntidelete } = await import('./plugins/system/_antidelete.js').catch(() => ({}))
+                            if (typeof handleAntidelete === 'function') {
+                                await handleAntidelete(this, targetChat, cachedMsg, targetKey).catch(e => console.error('[ANTIDELETE]', e))
+                            }
+                        }
+                    } catch (errDel) {
+                        console.error('[ANTIDELETE ERROR]:', errDel?.message)
+                    }
+                }
+            }
+        }
+
         // Cek langsung ke raw message object untuk menghindari bug getter mtype
-        if (m.message && (m.message.protocolMessage || m.message.senderKeyDistributionMessage)) return
-        if (m.mtype === 'protocolMessage' || m.mtype === 'senderKeyDistributionMessage' || !m.mtype) return
+        if (m.message && (m.message.protocolMessage || m.message.senderKeyDistributionMessage)) {
+            console.log('[PM DROP: protocol/senderKey in raw message]')
+            return
+        }
+        if (m.mtype === 'protocolMessage' || m.mtype === 'senderKeyDistributionMessage' || !m.mtype) {
+            console.log('[PM DROP: mtype invalid or empty]', m.mtype)
+            return
+        }
         
         // JANGAN cache pesan yang belum terdekripsi (m.mtype kosong)
         // Cache hanya jika pesan valid, agar mekanisme retry dari Baileys tetap berjalan
         if (isDuplicateMessage(m.key.id)) {
             console.log('[SKIP DUPLIKAT]', m.key.id)
             return
+        }
+        
+        // --- TIMESTAMP FRESHNESS GUARD (Mencegah Stale Replay Burst pasca reconnect) ---
+        const rawTimestamp = m.messageTimestamp ? (typeof m.messageTimestamp === 'object' ? (m.messageTimestamp.low || m.messageTimestamp) : m.messageTimestamp) : null
+        if (rawTimestamp) {
+            const msgAgeSec = Math.floor((Date.now() - (rawTimestamp * 1000)) / 1000)
+            if (msgAgeSec > 60) {
+                console.log(chalk.yellow(`⏱️ [STALE MSG DROP] Pesan kadaluarsa (${msgAgeSec}s yang lalu), id=${m.key?.id} chat=${m.chat}`))
+                return
+            }
         }
         
         m.exp = 0
@@ -274,12 +334,13 @@ async function processMessage(m, chatUpdate) {
                 if (!('antispam' in chat)) chat.antispam = false 
                 if (!('viewonce' in chat)) chat.viewonce = false
                 if (!('antiToxic' in chat)) chat.antiToxic = false
-                if (!('simi' in chat)) chat.simi = false
-                if (!('autogpt' in chat)) chat.autogpt = false
+                if (!('antiImage' in chat)) chat.antiImage = false
+                if (!('antiSticker' in chat)) chat.antiSticker = false
+                if (!('antiTag' in chat)) chat.antiTag = false
+                if (!('delete' in chat)) chat.delete = false
                 if (!('autoSticker' in chat)) chat.autoSticker = false
                 if (!('premium' in chat)) chat.premium = false
                 if (!('premiumTime' in chat)) chat.premiumTime = false
-                if (!('nsfw' in chat)) chat.nsfw = false
                 if (!('menu' in chat)) chat.menu = false
                 if (!('onlyadmin' in chat)) chat.onlyadmin = false
                 if (!isNumber(chat.expired)) chat.expired = 0
@@ -296,13 +357,15 @@ async function processMessage(m, chatUpdate) {
                     antiLink: false,
                     antispam: false, 
                     viewonce: false,
-                    simi: false,
-                    autogpt: false,
+                    antiToxic: false,
+                    antiImage: false,
+                    antiSticker: false,
+                    antiTag: false,
+                    delete: false,
                     expired: 0,
                     autoSticker: false,
                     premium: false,
                     premiumTime: false,
-                    nsfw: false,
                     menu: true,
                     onlyadmin: false
                 }
@@ -354,13 +417,14 @@ async function processMessage(m, chatUpdate) {
 
         // Options Check (Owner exempt)
         if (!isOwner) {
-            if (opts['nyimak']) return
-            if (opts['pconly'] && m.chat.endsWith('g.us')) return
-            if (opts['gconly'] && !m.chat.endsWith('g.us')) return
-            if (opts['swonly'] && m.chat !== 'status@broadcast') return
+            if (opts['nyimak']) { console.log('[PM DROP: opts nyimak]'); return }
+            if (opts['pconly'] && m.chat.endsWith('g.us')) { console.log('[PM DROP: opts pconly]'); return }
+            if (opts['gconly'] && !m.chat.endsWith('g.us')) { console.log('[PM DROP: opts gconly]'); return }
+            if (opts['swonly'] && m.chat !== 'status@broadcast') { console.log('[PM DROP: opts swonly]'); return }
         }
 
-        if (!isOwner && !m.fromMe && opts['self']) return
+        if (!isOwner && !m.fromMe && opts['self']) { console.log('[PM DROP: opts self]'); return }
+        if (!isOwner && !m.fromMe && global.db.data.settings?.[this.user?.jid]?.self) { console.log('[PM DROP: settings self]'); return }
 
         // Message Queue (Dihapus agar bot langsung membalas tanpa delay)
         /*
@@ -458,15 +522,34 @@ async function processMessage(m, chatUpdate) {
         if (m.isGroup && global.db.data.chats[m.chat]?.onlyadmin && !isAdmin && !isOwner) {
         return false
         }
-        // ANTI SPAM LOGIC
+        // ANTI SPAM FLOOD LOGIC
         let chat = global.db.data.chats[m.chat]
-        if (chat && chat.antispam && !isOwner && !m.fromMe) {
+        if (chat && chat.antispam && !isOwner && !isAdmin && !m.fromMe) {
             this.spam = this.spam ? this.spam : {}
             let userSpam = m.sender
             let now = Date.now()
-            let cooldown = 5000 
-            if (userSpam in this.spam && now - this.spam[userSpam] < cooldown) return false
-            this.spam[userSpam] = now
+            if (!this.spam[userSpam]) this.spam[userSpam] = { times: [], warned: 0 }
+            let userTrack = this.spam[userSpam]
+            userTrack.times = userTrack.times.filter(t => now - t < 3000)
+            userTrack.times.push(now)
+            // Deteksi jika mengirim lebih dari 5 pesan dalam 3 detik
+            if (userTrack.times.length > 5) {
+                if (now - userTrack.warned > 10000) {
+                    userTrack.warned = now
+                    this.reply(m.chat, '*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ꜱ ᴘ ᴀ ᴍ 〕*\n> ⟡ Mohon jangan melakukan spam pesan di grup ini!\n> Beri jeda sejenak sebelum mengirim pesan kembali.\n*╰───────────────*', m)
+                }
+                if (isBotAdmin) {
+                    await this.sendMessage(m.chat, {
+                        delete: {
+                            remoteJid: m.chat,
+                            fromMe: false,
+                            id: m.key.id,
+                            participant: m.key.participant
+                        }
+                    }).catch(() => null)
+                }
+                return false
+            }
         }
 
         // PLUGIN LOADER
@@ -510,7 +593,7 @@ async function processMessage(m, chatUpdate) {
                 let noPrefix = m.text.replace(usedPrefix, '')
                 let [command, ...args] = noPrefix.trim().split` `.filter(v => v)
                 if (global.opts['pconlyprem'] && !m.isGroup && !isPrems && !isOwner && !m.fromMe) {
-                    this.reply(m.chat, '❌ Fitur chat pribadi bot saat ini hanya khusus user *PREMIUM*.\n\nSilakan gunakan bot di dalam grup atau hubungi owner untuk upgrade premium.', m)
+                    this.reply(m.chat, `*╭  〔 Ⓟ ᴘ ʀ ᴇ ᴍ ɪ ᴜ ᴍ  ᴏ ɴ ʟ ʏ 〕*\n> Fitur chat pribadi bot saat ini hanya khusus user *PREMIUM*.\n> Silakan gunakan bot di dalam grup atau hubungi owner untuk upgrade premium.\n*╰───────────────*`, m)
                     return false 
                 }
                 args = args || []
@@ -586,7 +669,7 @@ async function processMessage(m, chatUpdate) {
                     console.log('[LIMIT HABIS]', new Date().toISOString(), 
                         'jid:', m.chat, 
                         'limit saat ini:', global.db.data.users[m.sender].limit)
-                    this.reply(m.chat, `[❗] Limit harian kamu sudah habis. Silakan tunggu reset limit besok, atau ketik *.buylimit* untuk membeli limit.`, m).catch((err) => console.error('[GAGAL KIRIM PESAN LIMIT HABIS]', err.message))
+                    this.reply(m.chat, `*╭  〔 ⌬ ʟ ɪ ᴍ ɪ ᴛ  ʜ ᴀ ʙ ɪ ꜱ 〕*\n> Limit harian kamu sudah habis.\n> Tunggu reset limit besok atau ketik *.buylimit* untuk membeli limit.\n*╰───────────────*`, m).catch((err) => console.error('[GAGAL KIRIM PESAN LIMIT HABIS]', err.message))
                     continue
                 }
 
@@ -604,20 +687,29 @@ async function processMessage(m, chatUpdate) {
                     m.error = e
                     console.error(e)
                     if (e) {
+                        const errStr = String(e?.message || e)
+                        const isReachoutRestricted = errStr.includes('463') || errStr.includes('reachout') || errStr.includes('account_reachout_restricted')
+                        const isRateOverlimit = errStr.includes('rate-overlimit') || errStr.includes('Rate Overlimit')
+
+                        if (isReachoutRestricted) {
+                            console.error(chalk.redBright(`🚫 [REACHOUT RESTRICTED / 463] Server menolak pesan ke ${m.chat}. Menghentikan secondary reply untuk mencegah ban loop.`))
+                            return
+                        }
+
                         let text = format(e)
                         for (let key of Object.values(global.APIKeys))
                             text = text.replace(new RegExp(key, 'g'), '#HIDDEN#')
-                        if (e.name)
+                        if (e.name && !isReachoutRestricted)
                             for (let [jid] of global.owner.filter(([number, _, isDeveloper]) => isDeveloper && number)) {
                                 let data = (await conn.onWhatsApp(jid))[0] || {}
                                 if (data.exists)
-                                    m.reply(`*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim(), data.jid)
+                                    m.reply(`*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim(), data.jid).catch(() => {})
                             }
                         
-                        if (String(e).includes('rate-overlimit') || String(e).includes('Rate Overlimit')) {
-                            m.reply('⚠️ Sistem sedang sibuk (Rate Limit Server WhatsApp). Silakan ulangi perintahmu dalam beberapa detik. 🙏')
+                        if (isRateOverlimit) {
+                            m.reply('*╭  〔 ⚠ ꜱ ɪ ꜱ ᴛ ᴇ ᴍ  ꜱ ɪ ʙ ᴜ ᴋ 〕*\n> Sistem sedang sibuk (Rate Limit Server WhatsApp).\n> Silakan ulangi perintahmu dalam beberapa detik.\n*╰───────────────*').catch(() => {})
                         } else {
-                            m.reply('❌ Terjadi kesalahan pada fitur ini, silakan coba lagi nanti atau laporkan ke owner.')
+                            m.reply('*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Terjadi kesalahan pada fitur ini.\n> Silakan coba lagi nanti atau laporkan ke owner.\n*╰───────────────*').catch(() => {})
                         }
                     }
                 } finally {
@@ -694,6 +786,7 @@ async function processMessage(m, chatUpdate) {
  * @param {import('@whiskeysockets/baileys').BaileysEventMap<unknown>['group-participants.update']} groupsUpdate 
  */
 export async function participantsUpdate({ id, participants, action }) {
+    const conn = this
     if (opts['self'])
         return
     // if (id in conn.chats) return // First login will spam
@@ -707,71 +800,261 @@ export async function participantsUpdate({ id, participants, action }) {
     case 'add':
     if (chat.welcome) {
         let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
+        const defaultAvatar = 'https://i.pinimg.com/originals/ca/8c/7d/ca8c7de3ae607348b5d3f124eba8a3ee.jpg'
+        const welcomeBg = 'https://telegra.ph/file/666ccbfc3201704454ba5.jpg'
+
         for (let user of participants) {
-            let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
-            let ppgc = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
             try {
-                pp = await this.profilePictureUrl(user, 'image').catch(_ => 'https://telegra.ph/file/24fa902ead26340f3df2c.png')
-                ppgc = await this.profilePictureUrl(id, 'image').catch(_ => 'https://telegra.ph/file/24fa902ead26340f3df2c.png')          
-                let dbName = global.db.data.users[user]?.name
-                let waName = await this.getName(user)
-                let username = dbName || waName || user.split('@')[0]
-                let gcname = await this.getName(id)
-                let memberCount = groupMetadata.participants ? groupMetadata.participants.length : '0'
-                let text = (chat.sWelcome || this.welcome || conn.welcome || 'Welcome, @user!').replace('@subject', gcname).replace('@desc', groupMetadata.desc?.toString() || 'Belum ada deskripsi').replace('@user', '@' + user.split('@')[0])               
-                let cardBuf
-                try {
-                    cardBuf = await generateWelcomeCard({ avatarUrl: pp, username, groupName: gcname, memberCount })
-                } catch (e) {
-                    console.error('[WelcomeCard] Error generating card:', e.message)
+                // 1. Penerjemahan LID -> Nomor / Phone JID
+                let resolvedPhoneJid = user
+                if (resolvedPhoneJid && resolvedPhoneJid.endsWith('@lid')) {
+                    if (this.decodeJid) resolvedPhoneJid = this.decodeJid(resolvedPhoneJid)
+                    if (resolvedPhoneJid.endsWith('@lid') && global.lids?.[user]) resolvedPhoneJid = global.lids[user]
+                    if (resolvedPhoneJid.endsWith('@lid') && global.db?.data?.lids?.[user]) resolvedPhoneJid = global.db.data.lids[user]
+                    if (resolvedPhoneJid.endsWith('@lid')) {
+                        const found = (groupMetadata?.participants || []).find(p => p.lid === user || p.id === user)
+                        if (found?.jid && found.jid.endsWith('@s.whatsapp.net')) resolvedPhoneJid = found.jid
+                        else if (found?.phoneNumber || found?.phone || found?.pn) {
+                            const clean = String(found.phoneNumber || found.phone || found.pn).replace(/\D/g, '')
+                            if (clean) resolvedPhoneJid = `${clean}@s.whatsapp.net`
+                        }
+                    }
+                }
+                if (!resolvedPhoneJid || !resolvedPhoneJid.endsWith('@s.whatsapp.net')) {
+                    const cleanDigits = (resolvedPhoneJid || user || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+                    if (cleanDigits) resolvedPhoneJid = `${cleanDigits}@s.whatsapp.net`
+                }
+                const userNumber = (resolvedPhoneJid || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+
+                // 2. Avatar & Info Profil
+                let pp = await this.profilePictureUrl(user, 'image').catch(() => null)
+                if (!pp && resolvedPhoneJid !== user) {
+                    pp = await this.profilePictureUrl(resolvedPhoneJid, 'image').catch(() => null)
+                }
+                if (!pp) pp = defaultAvatar
+
+                let dbName = global.db?.data?.users?.[resolvedPhoneJid]?.name || global.db?.data?.users?.[user]?.name
+                let waName = await this.getName(resolvedPhoneJid || user)
+                let username = dbName || (waName && !waName.includes('@lid') ? waName : userNumber)
+                let gcname = (await this.getName(id)) || 'Grup'
+                let memberCount = groupMetadata?.participants ? groupMetadata.participants.length : '1'
+                let groupDesc = groupMetadata?.desc?.toString()?.trim() || ''
+
+                // 3. API URL Ryzumi Welcome
+                const welcomeUrl = `https://api.ryzumi.net/api/image/welcome?username=${encodeURIComponent(username)}&group=${encodeURIComponent(gcname)}&avatar=${encodeURIComponent(pp)}&bg=${encodeURIComponent(welcomeBg)}&member=${encodeURIComponent(memberCount)}`
+
+                // 4. Caption Zen Shinto (Member Baru)
+                const descBlock = groupDesc 
+                    ? `*╭  〔 ◈ ᴅ ᴇ ꜱ ᴋ ʀ ɪ ᴘ ꜱ ɪ 〕*\n${groupDesc.split('\n').map(l => `*┆* ${l}`).join('\n')}\n*╰───────────────*`
+                    : `*╭  〔 ◈ ᴅ ᴇ ꜱ ᴋ ʀ ɪ ᴘ ꜱ ɪ 〕*\n*┆* _Belum ada deskripsi grup._\n*╰───────────────*`
+
+                const playerCaption = `*──  ୨୧ ✧ WELCOME TO GROUP ✧ ୨୧  ──*
+
+> *ようこそ!* (ᴡᴇʟᴄᴏᴍᴇ!)
+> (≧◡≦) ♡ Hai @${userNumber}
+> Selamat datang di *${gcname}* ✧
+
+*╭  〔 ❖ ɢ ʀ ᴏ ᴜ ᴘ  ɪ ɴ ꜰ ᴏ 〕*
+*┆* ⟡ ɢʀᴜᴘ   : *${gcname}*
+*┆* ✧ ᴍᴇᴍʙᴇʀ : *${toSmallNum(memberCount)} Member*
+*╰───────────────*
+
+*╭  〔 𝜚 ᴊ ɪ ᴋ ᴏ ꜱ ʜ ᴏ ᴜ ᴋ ᴀ ɪ 〕*
+*┆* • ɴᴀᴍᴀ   : 
+*┆* • ᴜꜱɪᴀ   : 
+*┆* • ɢᴇɴᴅᴇʀ : 
+*╰───────────────*
+
+${descBlock}
+
+> ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴍᴇɴᴊᴇʟᴀᴊᴀʜɪ ꜰɪᴛᴜʀ* ⊹ ˚ ｡`.trim()
+
+                // 5. Caption Penonton (Member Grup Lainnya)
+                const spectatorCaption = `*──  ୨୧ ✧ MEMBER BARU BERGABUNG ✧ ୨୧  ──*
+
+> *おしらせ!* (ᴘᴇɴɢᴜᴍᴜᴍᴀɴ!)
+> Ada member baru @${userNumber} telah bergabung ke grup!
+> Silakan beri sambutan hangat untuknya ♡`.trim()
+
+                let dualSent = false
+                if (typeof this.Button === 'function') {
+                    try {
+                        // A. Buat Kartu Sambutan Interaktif untuk Member Baru (Pemain)
+                        const btnPlayer = new this.Button(this)
+                        btnPlayer.setBody(playerCaption)
+                        btnPlayer.setFooter(`${global.namebot || 'Avelia'} • Welcoming Service`)
+                        await btnPlayer.setImage(welcomeUrl).catch(() => null)
+                        
+                        const menuCategories = [
+                            { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: '.allmenu' },
+                            { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: '.menuai' },
+                            { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: '.menuanime' },
+                            { header: 'Audio', title: 'Manipulasi Audio', description: 'Sound effect, convert audio, TTS', id: '.menuaudio' },
+                            { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: '.menucsm' },
+                            { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: '.menudownload' },
+                            { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: '.menufun' },
+                            { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: '.menugame' },
+                            { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: '.menugroup' },
+                            { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: '.menuinfo' },
+                            { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: '.menuinternet' },
+                            { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: '.menumaker' },
+                            { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: '.menumoneytrack' },
+                            { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: '.menuowner' },
+                            { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: '.menupasangan' },
+                            { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: '.menurpg' },
+                            { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: '.menusearch' },
+                            { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: '.menustalker' },
+                            { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: '.menusticker' },
+                            { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: '.menutools' }
+                        ]
+
+                        btnPlayer.addSelection('✦ PILIH KATEGORI')
+                        btnPlayer.makeSection('✦ DAFTAR KATEGORI MENU', 'Populer')
+                        for (const cat of menuCategories) {
+                            btnPlayer.makeRow(cat.header, cat.title, cat.description, cat.id)
+                        }
+
+                        btnPlayer.addReply('❖ Info Owner', '.owner')
+                        btnPlayer.addReply('⟡ Donasi', '.donasi')
+                        btnPlayer.setContextInfo({
+                            mentionedJid: [resolvedPhoneJid]
+                        })
+
+                        const playerBuilt = await btnPlayer.build(id)
+
+                        // B. Buat Pesan Sapaan Cepat untuk Penonton
+                        const btnSpectator = new this.Button(this)
+                        btnSpectator.setBody(spectatorCaption)
+                        btnSpectator.setFooter(`${global.namebot || 'Avelia'} • Member Sapaan`)
+                        btnSpectator.addReply('✦ Sapa Member', `Halo selamat datang @${userNumber}!`)
+                        btnSpectator.addReply('❖ Info Owner', '.owner')
+                        btnSpectator.setContextInfo({
+                            mentionedJid: [resolvedPhoneJid]
+                        })
+
+                        const spectatorBuilt = await btnSpectator.build(id)
+
+                        // C. Kirim via Dual-Group-Message (Target menerima kartu sambutan, Penonton menerima tombol sapa)
+                        await sendDualGroupMessage(
+                            this,
+                            id,
+                            user,
+                            playerBuilt.message,
+                            spectatorBuilt.message,
+                            { contextInfo: { mentionedJid: [resolvedPhoneJid] } }
+                        )
+                        dualSent = true
+                    } catch (errDual) {
+                        console.warn('[WELCOME DUAL] Gagal kirim dual button:', errDual?.message)
+                        dualSent = false
+                    }
                 }
 
-                if (cardBuf) {
-                    await this.sendMessage(id, { image: cardBuf, caption: text, mentions: [user] })
-                } else {
-                    let canvasUrl = `https://api.siputzx.my.id/api/canvas/welcomev1?username=${encodeURIComponent(username)}&guildName=${encodeURIComponent(gcname)}&guildIcon=${encodeURIComponent(ppgc)}&memberCount=${memberCount}&avatar=${encodeURIComponent(pp)}&background=https://api.deline.web.id/8wNQoavbJ6.jpg&quality=80`
-                    await this.sendFile(id, canvasUrl, 'welcome.jpg', text, null, false, { mentions: [user] }).catch(e => {  
-                        this.sendMessage(id, { text, mentions: [user] })  
-                    })  
+                // Fallback jika Dual Message / Button gagal
+                if (!dualSent) {
+                    await this.sendMessage(id, {
+                        image: { url: welcomeUrl },
+                        caption: playerCaption,
+                        mentions: [resolvedPhoneJid]
+                    }).catch(e => {
+                        this.sendMessage(id, { text: playerCaption, mentions: [resolvedPhoneJid] })
+                    })
                 }
-            } catch (e) {  
-                console.error(e)  
-            }  
-        }  
-    }  
+            } catch (e) {
+                console.error('[WELCOME ERROR]:', e)
+            }
+        }
+    }
     break
     case 'remove':
     if (chat.welcome || chat.leave) {
         let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
+        const defaultAvatar = 'https://i.pinimg.com/originals/ca/8c/7d/ca8c7de3ae607348b5d3f124eba8a3ee.jpg'
+        const leaveBg = 'https://telegra.ph/file/0db212539fe8a014017e3.jpg'
+
         for (let user of participants) {
-            let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
-            let gcIcon = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'          
             try {
-                pp = await this.profilePictureUrl(user, 'image').catch(_ => 'https://telegra.ph/file/24fa902ead26340f3df2c.png')
-                gcIcon = await this.profilePictureUrl(id, 'image').catch(_ => 'https://telegra.ph/file/24fa902ead26340f3df2c.png') 
-                let dbName = global.db.data.users[user]?.name
-                let waName = await this.getName(user)
-                let username = dbName || waName || user.split('@')[0]       
-                let gcname = await this.getName(id)
-                let memberCount = groupMetadata.participants ? groupMetadata.participants.length : '0'
-                let text = (chat.sBye || this.bye || conn.bye || 'Bye, @user!').replace('@user', '@' + user.split('@')[0])           
-                let cardBuf
-                try {
-                    cardBuf = await generateGoodbyeCard({ avatarUrl: pp, username, groupName: gcname, memberCount })
-                } catch (e) {
-                    console.error('[GoodbyeCard] Error generating card:', e.message)
+                // 1. Penerjemahan LID -> Nomor / Phone JID
+                let resolvedPhoneJid = user
+                if (resolvedPhoneJid && resolvedPhoneJid.endsWith('@lid')) {
+                    if (this.decodeJid) resolvedPhoneJid = this.decodeJid(resolvedPhoneJid)
+                    if (resolvedPhoneJid.endsWith('@lid') && global.lids?.[user]) resolvedPhoneJid = global.lids[user]
+                    if (resolvedPhoneJid.endsWith('@lid') && global.db?.data?.lids?.[user]) resolvedPhoneJid = global.db.data.lids[user]
+                    if (resolvedPhoneJid.endsWith('@lid')) {
+                        const found = (groupMetadata?.participants || []).find(p => p.lid === user || p.id === user)
+                        if (found?.jid && found.jid.endsWith('@s.whatsapp.net')) resolvedPhoneJid = found.jid
+                        else if (found?.phoneNumber || found?.phone || found?.pn) {
+                            const clean = String(found.phoneNumber || found.phone || found.pn).replace(/\D/g, '')
+                            if (clean) resolvedPhoneJid = `${clean}@s.whatsapp.net`
+                        }
+                    }
+                }
+                if (!resolvedPhoneJid || !resolvedPhoneJid.endsWith('@s.whatsapp.net')) {
+                    const cleanDigits = (resolvedPhoneJid || user || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+                    if (cleanDigits) resolvedPhoneJid = `${cleanDigits}@s.whatsapp.net`
+                }
+                const userNumber = (resolvedPhoneJid || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+
+                // 2. Avatar & Info Profil
+                let pp = await this.profilePictureUrl(user, 'image').catch(() => null)
+                if (!pp && resolvedPhoneJid !== user) {
+                    pp = await this.profilePictureUrl(resolvedPhoneJid, 'image').catch(() => null)
+                }
+                if (!pp) pp = defaultAvatar
+
+                let dbName = global.db?.data?.users?.[resolvedPhoneJid]?.name || global.db?.data?.users?.[user]?.name
+                let waName = await this.getName(resolvedPhoneJid || user)
+                let username = dbName || (waName && !waName.includes('@lid') ? waName : userNumber)
+                let gcname = (await this.getName(id)) || 'Grup'
+                let memberCount = groupMetadata?.participants ? groupMetadata.participants.length : '0'
+
+                // 3. API URL Ryzumi Leave
+                const leaveUrl = `https://api.ryzumi.net/api/image/leave?username=${encodeURIComponent(username)}&group=${encodeURIComponent(gcname)}&avatar=${encodeURIComponent(pp)}&bg=${encodeURIComponent(leaveBg)}&member=${encodeURIComponent(memberCount)}`
+
+                // 4. Caption Zen Shinto (Goodbye)
+                const leaveCaption = `*──  ୨୧ ✧ GOODBYE MEMBER ✧ ୨୧  ──*
+
+> *さようなら!* (ɢᴏᴏᴅʙʏᴇ!)
+> (｡•́︿•̀｡) @${userNumber} telah meninggalkan grup.
+> Semoga kita dapat bertemu kembali di lain waktu ✧
+
+*╭  〔 ❖ ɢ ʀ ᴏ ᴜ ᴘ  ɪ ɴ ꜰ ᴏ 〕*
+*┆* ⟡ ɢʀᴜᴘ   : *${gcname}*
+*┆* ✧ ꜱɪꜱᴀ   : *${toSmallNum(memberCount)} Member*
+*╰───────────────*`.trim()
+
+                let leaveSent = false
+                if (typeof this.Button === 'function') {
+                    try {
+                        const btnLeave = new this.Button(this)
+                        btnLeave.setBody(leaveCaption)
+                        btnLeave.setFooter(`${global.namebot || 'Avelia'} • Parting Words`)
+                        await btnLeave.setImage(leaveUrl).catch(() => null)
+                        btnLeave.addReply('✦ Sampai Jumpa', '.ping')
+                        btnLeave.addReply('❖ Info Owner', '.owner')
+                        btnLeave.setContextInfo({
+                            mentionedJid: [resolvedPhoneJid]
+                        })
+                        await btnLeave.send(id)
+                        leaveSent = true
+                    } catch (errBtn) {
+                        console.warn('[LEAVE BUTTON] Gagal kirim button leave:', errBtn?.message)
+                        leaveSent = false
+                    }
                 }
 
-                if (cardBuf) {
-                    await this.sendMessage(id, { image: cardBuf, caption: text, mentions: [user] })
-                } else {
-                    let canvasUrl = `https://api.siputzx.my.id/api/canvas/goodbyev1?username=${encodeURIComponent(username)}&guildName=${encodeURIComponent(gcname)}&guildIcon=${encodeURIComponent(gcIcon)}&memberCount=${memberCount}&avatar=${encodeURIComponent(pp)}&background=https://api.deline.web.id/49irsGbWmB.jpg&quality=80`
-                    await this.sendFile(id, canvasUrl, 'goodbye.jpg', text, null, false, { mentions: [user] }).catch(e => {  
-                        this.sendMessage(id, { text, mentions: [user] })  
-                    })  
+                // Fallback jika button gagal
+                if (!leaveSent) {
+                    await this.sendMessage(id, {
+                        image: { url: leaveUrl },
+                        caption: leaveCaption,
+                        mentions: [resolvedPhoneJid]
+                    }).catch(e => {
+                        this.sendMessage(id, { text: leaveCaption, mentions: [resolvedPhoneJid] })
+                    })
                 }
             } catch (e) {
-                console.error(e)
+                console.error('[LEAVE ERROR]:', e)
             }
         }
     }
@@ -796,6 +1079,7 @@ export async function participantsUpdate({ id, participants, action }) {
  * @param {import('@whiskeysockets/baileys').BaileysEventMap<unknown>['groups.update']} groupsUpdate 
  */
 export async function groupsUpdate(groupsUpdate) {
+    const conn = this
     if (opts['self'])
         return
     for (const groupUpdate of groupsUpdate) {
@@ -818,23 +1102,23 @@ export async function groupsUpdate(groupsUpdate) {
 
 global.dfail = (type, m, conn) => {
     let msg = {
-        rowner: '〔 ✦ *AKSES DITOLAK* 〕\n> Perintah ini khusus untuk *Real Developer Bot*.',
-        owner: '〔 ✦ *AKSES DITOLAK* 〕\n> Perintah ini hanya dapat digunakan oleh *Owner Bot*.',
-        mods: '〔 ✦ *MODERATOR ONLY* 〕\n> Perintah ini hanya untuk *Moderator Bot*.',
-        premium: '〔 ✦ *FITUR PREMIUM* 〕\n> Fitur ini khusus untuk pengguna *Premium*.\n> Ketik *.sewa* atau hubungi owner untuk upgrade.',
-        group: '〔 ✦ *GRUP SAJA* 〕\n> Perintah ini hanya dapat digunakan di dalam grup chat.',
-        private: '〔 ✦ *CHAT PRIBADI* 〕\n> Perintah ini hanya dapat digunakan di private chat (PC).',
-        admin: '〔 ✦ *ADMIN SAJA* 〕\n> Perintah ini hanya dapat digunakan oleh *Admin Grup*.',
-        botAdmin: '〔 ✦ *BOT HARUS ADMIN* 〕\n> Jadikan bot sebagai *Admin Grup* terlebih dahulu.',
-        unreg: `〔 ✦ *BELUM TERDAFTAR* 〕\n> Silakan daftar terlebih dahulu untuk menggunakan fitur bot:\n> wa.me/${global.nomorbot}?text=.daftar+namamu,umurmu\n\n> _Contoh: wa.me/${global.nomorbot}?text=.daftar+nenel,18_`,
-        restrict: '〔 ✦ *RESTRICTED* 〕\n> Fitur restrict belum diaktifkan di chat ini.',
-        disable: '〔 ✦ *FITUR DINONAKTIFKAN* 〕\n> Perintah ini telah dimatikan sementara oleh Owner.',
+        rowner: '*╭  〔 ⚠ ᴀ ᴋ ꜱ ᴇ ꜱ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Perintah ini khusus untuk *Real Developer Bot*.\n*╰───────────────*',
+        owner: '*╭  〔 ⚠ ᴀ ᴋ ꜱ ᴇ ꜱ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Perintah ini hanya dapat digunakan oleh *Owner Bot*.\n*╰───────────────*',
+        mods: '*╭  〔 ⚠ ᴍ ᴏ ᴅ ᴇ ʀ ᴀ ᴛ ᴏ ʀ  ᴏ ɴ ʟ ʏ 〕*\n> Perintah ini hanya untuk *Moderator Bot*.\n*╰───────────────*',
+        premium: '*╭  〔 Ⓟ ꜰ ɪ ᴛ ᴜ ʀ  ᴘ ʀ ᴇ ᴍ ɪ ᴜ ᴍ 〕*\n> Fitur ini khusus untuk pengguna *Premium*.\n> Ketik *.sewa* atau hubungi owner untuk upgrade.\n*╰───────────────*',
+        group: '*╭  〔 ⟡ ɢ ʀ ᴜ ᴘ  ꜱ ᴀ ᴊ ᴀ 〕*\n> Perintah ini hanya dapat digunakan di dalam grup chat.\n*╰───────────────*',
+        private: '*╭  〔 𝜚 ᴄ ʜ ᴀ ᴛ  ᴘ ʀ ɪ ʙ ᴀ ᴅ ɪ 〕*\n> Perintah ini hanya dapat digunakan di private chat (PC).\n*╰───────────────*',
+        admin: '*╭  〔 ❖ ᴀ ᴅ ᴍ ɪ ɴ  ꜱ ᴀ ᴊ ᴀ 〕*\n> Perintah ini hanya dapat digunakan oleh *Admin Grup*.\n*╰───────────────*',
+        botAdmin: '*╭  〔 ⚙ ʙ ᴏ ᴛ  ʜ ᴀ ʀ ᴜ ꜱ  ᴀ ᴅ ᴍ ɪ ɴ 〕*\n> Jadikan bot sebagai *Admin Grup* terlebih dahulu.\n*╰───────────────*',
+        unreg: `*╭  〔 ✦ ʙ ᴇ ʟ ᴜ ᴍ  ᴛ ᴇ ʀ ᴅ ᴀ ꜰ ᴛ ᴀ ʀ 〕*\n> Silakan daftar terlebih dahulu untuk menggunakan fitur bot:\n> › wa.me/${global.nomorbot}?text=.daftar+namamu,umurmu\n\n> _Contoh: wa.me/${global.nomorbot}?text=.daftar+nenel,18_\n*╰───────────────*`,
+        restrict: '*╭  〔 ⚠ ʀ ᴇ ꜱ ᴛ ʀ ɪ ᴄ ᴛ ᴇ ᴅ 〕*\n> Fitur restrict belum diaktifkan di chat ini.\n*╰───────────────*',
+        disable: '*╭  〔 ✕ ꜰ ɪ ᴛ ᴜ ʀ  ᴅ ɪ ɴ ᴏ ɴ ᴀ ᴋ ᴛ ɪ ꜰ ᴋ ᴀ ɴ 〕*\n> Perintah ini telah dimatikan sementara oleh Owner.\n*╰───────────────*',
     }[type]
     if (msg) return conn.reply(m.chat, msg, m)
 }
 
 
-let file = global.__filename(import.meta.url, true)
+let file = (typeof global.__filename === 'function') ? global.__filename(import.meta.url, true) : fileURLToPath(import.meta.url)
 watchFile(file, async () => {
     unwatchFile(file)
     console.log(chalk.redBright("Update 'handler.js'"))

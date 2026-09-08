@@ -6,7 +6,7 @@ const fallbackThumb = "https://qu.ax/mgyIh"
 let handler = m => m
 
 handler.all = async function (m) {
-    global.wm = global.namebot || "NelBot-MD"
+    global.wm = global.namebot || "Avelia"
 
     // === Thumbnail Buffer Loader ===
     let thumbBuffer
@@ -30,7 +30,7 @@ handler.all = async function (m) {
         },
         message: {
             extendedTextMessage: {
-                text: `${global.namebot || 'NelBot-MD'} Official ✓`
+                text: `${global.namebot || 'Avelia'} Official ✓`
             }
         }
     }
@@ -47,11 +47,11 @@ handler.all = async function (m) {
                     productImage: {
                         jpegThumbnail: thumbBuffer
                     },
-                    title: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                    title: `${global.namebot || 'Avelia'} Official ✓`,
                     description: `${momentGreeting()}`,
                     currencyCode: "IDR",
                     priceAmount1000: "1000000",
-                    retailerId: "NelBot",
+                    retailerId: "Avelia",
                     productImageCount: 1
                 },
                 businessOwnerJid: `0@s.whatsapp.net`
@@ -66,11 +66,11 @@ handler.all = async function (m) {
             forwardingScore: 999,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-                newsletterName: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                newsletterName: `${global.namebot || 'Avelia'} Official ✓`,
                 newsletterJid: global.ch || ""
             },
             externalAdReply: {
-                title: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                title: `${global.namebot || 'Avelia'} Official ✓`,
                 body: `${momentGreeting()}`,
                 mediaType: 1,
                 previewType: "PHOTO",
@@ -92,8 +92,8 @@ handler.all = async function (m) {
         },
         message: {
             contactMessage: {
-                displayName: `${global.namebot || 'NelBot-MD'} Verified ✓`,
-                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;${global.namebot || 'NelBot-MD'};;;\nFN:${global.namebot || 'NelBot-MD'} Verified ✓\nORG:Official Bot Service\nTEL;type=CELL;type=VOICE;waid=${(m.sender || '').split('@')[0]}:${(m.sender || '').split('@')[0]}\nEND:VCARD`,
+                displayName: `${global.namebot || 'Avelia'} Verified ✓`,
+                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;${global.namebot || 'Avelia'};;;\nFN:${global.namebot || 'Avelia'} Verified ✓\nORG:Official Bot Service\nTEL;type=CELL;type=VOICE;waid=${(m.sender || '').split('@')[0]}:${(m.sender || '').split('@')[0]}\nEND:VCARD`,
                 jpegThumbnail: thumbBuffer,
             }
         }
@@ -122,8 +122,8 @@ handler.all = async function (m) {
         },
         message: {
             extendedTextMessage: {
-                text: `${global.namebot || 'NelBot-MD'} Official ✓`,
-                title: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                text: `${global.namebot || 'Avelia'} Official ✓`,
+                title: `${global.namebot || 'Avelia'} Official ✓`,
                 jpegThumbnail: thumbBuffer
             }
         }
@@ -137,11 +137,11 @@ handler.all = async function (m) {
         },
         message: {
             videoMessage: {
-                title: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                title: `${global.namebot || 'Avelia'} Official ✓`,
                 h: "Hmm",
                 seconds: "999",
                 gifPlayback: true,
-                caption: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                caption: `${global.namebot || 'Avelia'} Official ✓`,
                 jpegThumbnail: thumbBuffer
             }
         }
@@ -152,7 +152,7 @@ handler.all = async function (m) {
         key: { participant: '0@s.whatsapp.net' },
         message: {
             documentMessage: {
-                title: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                title: `${global.namebot || 'Avelia'} Official ✓`,
                 jpegThumbnail: thumbBuffer
             }
         }
@@ -168,8 +168,8 @@ handler.all = async function (m) {
             groupInviteMessage: {
                 groupJid: "628xxx-xxx@g.us",
                 inviteCode: "null",
-                groupName: `${global.namebot || 'NelBot-MD'} Community`,
-                caption: `${global.namebot || 'NelBot-MD'} Official ✓`,
+                groupName: `${global.namebot || 'Avelia'} Community`,
+                caption: `${global.namebot || 'Avelia'} Official ✓`,
                 jpegThumbnail: thumbBuffer
             }
         }

@@ -2,7 +2,6 @@ import { format } from 'util'
 
 let handler = async (m, { conn }) => {
     try {
-        await m.react('⏳')
         let metadata = await conn.groupMetadata(m.chat, true)
         
         let rawJson = JSON.stringify(metadata, null, 2)
@@ -46,7 +45,6 @@ let handler = async (m, { conn }) => {
         report += `_Jika "Hasil Fetch Manual" menampilkan deskripsi, berarti Baileys nge-bug. Jika sama-sama kosong, berarti WA memang menyembunyikannya._`
         
         await m.reply(report)
-        await m.react('✅')
     } catch (e) {
         m.reply('Error: ' + format(e))
     }

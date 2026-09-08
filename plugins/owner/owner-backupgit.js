@@ -17,8 +17,8 @@ export async function runGitBackup() {
 
   try {
     // 0. Set Git Identity (Sangat penting untuk server panel)
-    await execPromise('git config user.email "bot@nelbotz.com"').catch(() => {})
-    await execPromise('git config user.name "NelBotz AutoBackup"').catch(() => {})
+    await execPromise('git config user.email "bot@avelia.com"').catch(() => {})
+    await execPromise('git config user.name "Avelia AutoBackup"').catch(() => {})
 
     // 1. Git add khusus database saja
     await execPromise('git add --sparse database.json').catch(() => {})

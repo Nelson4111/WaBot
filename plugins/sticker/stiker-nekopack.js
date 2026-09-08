@@ -24,7 +24,7 @@ let handler = async (m, { conn, command }) => {
   let url = data.url
 
   let stiker = new Sticker(url, {
-    pack: global.namebot || 'NelBot-MD',
+    pack: global.namebot || 'Avelia',
     author: global.author || 'Nenel',
     type: 'full',
     categories: ['Anime'],

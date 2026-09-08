@@ -39,7 +39,7 @@ let handler = async (m, { conn }) => {
     text: caption,
     contextInfo: {
       externalAdReply: {
-        title: `${global.namebot || 'NelBot-MD'} Status`,
+        title: `${global.namebot || 'Avelia'} Status`,
         body: `Created by ${global.author || 'Nenel'}`,
         thumbnail: thumb,
         mediaType: 1,

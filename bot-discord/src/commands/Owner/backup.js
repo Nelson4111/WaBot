@@ -72,10 +72,10 @@ module.exports = {
 
 async function createBackup() {
     const rootDir = path.resolve(__dirname, '../../../');
-    const backupPath = path.join(rootDir, `nelbot_backup.zip`);
+    const backupPath = path.join(rootDir, `avelia_backup.zip`);
 
     fs.readdirSync(rootDir).forEach(file => {
-        if ((file.startsWith('backup_') && file.endsWith('.zip')) || file === 'nelbot_backup.zip') {
+        if ((file.startsWith('backup_') && file.endsWith('.zip')) || file === 'avelia_backup.zip') {
             fs.unlinkSync(path.join(rootDir, file));
         }
     });

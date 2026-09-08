@@ -1,7 +1,7 @@
 {
-  "name": "NelBot-MD",
+  "name": "Avelia",
   "version": "10.0.0",
-  "description": "NelBot Multi-Device WhatsApp Bot",
+  "description": "Avelia Multi-Device WhatsApp Bot",
   "author": "Nenel",
   "main": "index.js",
   "type": "module",
@@ -13,7 +13,7 @@
   "scripts": {
     "start": "node --expose-gc index.js",
     "start:all": "node start-all.js",
-    "test": "node test.js",
+    "test": "node test-conn-buttons.js",
     "dev": "nodemon --experimental-specifier-resolution=node index.js"
   },
   "keywords": [
@@ -34,7 +34,6 @@
     }
   },
   "homepage": "https://github.com/Nelson4111/WaBot",
-  "author": "Nenel",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Nelson4111/WaBot.git"
@@ -47,11 +46,13 @@
     "@bochilteam/scraper": "^5.0.1",
     "@ibaraki-douji/pixivts": "^2.4.1",
     "@napi-rs/canvas": "^1.0.6",
+    "@rexxhayanasi/elaina-baileys": "^1.3.8",
     "@vitalets/google-translate-api": "^9.2.0",
     "@whiskeysockets/baileys": "^6.7.18",
     "archiver": "^7.0.1",
     "awesome-phonenumber": "^5.10.0",
     "axios": "^1.4.0",
+    "baileys_helper": "^1.0.6",
     "bing-translate-api": "^4.0.2",
     "canvas": "file:local-canvas",
     "cfonts": "^3.2.0",

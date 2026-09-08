@@ -1,30 +1,30 @@
-import { generateWelcomeCard } from '../../lib/cardGenerator.js'
-
 let handler = async (m, { conn, command, text, isAdmin, isOwner }) => {
-    if (!m.isGroup) return m.reply('❌ Perintah ini hanya dapat digunakan di dalam grup!')
-    if (!isAdmin && !isOwner) return m.reply('❌ Perintah ini khusus untuk Admin Grup / Owner Bot!')
+  if (!m.isGroup) {
+    return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Perintah ini hanya dapat digunakan di dalam ruang grup.\n*╰───────────────*')
+  }
+  if (!isAdmin && !isOwner) {
+    return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Khusus untuk Administrator atau Owner.\n*╰───────────────*')
+  }
 
-    let targetUser = m.mentionedJid?.[0] || m.sender
-    let isWelcome = /welcome/i.test(command)
-    let chat = global.db.data.chats[m.chat] || {}
+  let targetUser = m.mentionedJid?.[0] || m.sender
+  let isWelcome = /welcome/i.test(command)
+  let chat = global.db?.data?.chats?.[m.chat] || {}
 
-    m.reply(`⏳ *Simulasi ${isWelcome ? 'Welcome' : 'Goodbye'} Card...*`)
+  m.reply(`*╭  〔 ⧗ ꜱ ɪ ᴍ ᴜ ʟ ᴀ ꜱ ɪ 〕*\n> Menjalankan simulasi kartu ${isWelcome ? 'Welcome' : 'Goodbye'}...\n*╰───────────────*`)
 
-    // Panggil event handler utama via participantsUpdate
-    try {
-        await conn.participantsUpdate({
-            id: m.chat,
-            participants: [targetUser],
-            action: isWelcome ? 'add' : 'remove'
-        })
-    } catch (e) {
-        console.error('[TestWelcome] Error:', e)
-    }
+  try {
+    await conn.participantsUpdate({
+      id: m.chat,
+      participants: [targetUser],
+      action: isWelcome ? 'add' : 'remove'
+    })
+  } catch (e) {
+    console.error('[TestWelcome] Error:', e)
+  }
 
-    // Jika fitur welcome grup sedang mati, tampilkan pesan petunjuk
-    if (!chat.welcome) {
-        m.reply(`💡 *Info:* Fitur welcome grup saat ini *NONAKTIF*.\nKetik *#welcome 1* untuk mengaktifkan welcome otomatis saat ada member join/keluar.`)
-    }
+  if (isWelcome && !chat.welcome) {
+    m.reply(`*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Fitur welcome grup saat ini berstatus *NONAKTIF*.\n> Ketik *.enable welcome* untuk mengaktifkan sambutan otomatis.\n*╰───────────────*`)
+  }
 }
 
 handler.help = ['teswelcome [@user]', 'tesbye [@user]']

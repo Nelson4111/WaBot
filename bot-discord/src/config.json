@@ -1,6 +1,6 @@
 {
   "token": "YOUR_BOT_TOKEN",
-  "botName": "NelBot",
+  "botName": "Avelia",
   "ownerName": "Nenel",
   "prefix": ".",
   "ownerID": [
@@ -55,7 +55,7 @@
     "reconnectInterval": 5000,
     "restTimeout": 60000,
     "voiceConnectionTimeout": 30000,
-    "userAgent": "NelBot"
+    "userAgent": "Avelia"
   },
   "youtube_account_pool": [
     {

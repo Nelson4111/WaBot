@@ -1,35 +1,40 @@
-let handler = async (m, { conn, participants }) => {
-    if (!m.isGroup)
-        return m.reply('❌ Perintah ini khusus group')
+let handler = async (m, { conn, participants, text }) => {
+  if (!m.isGroup) {
+    return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Perintah ini hanya dapat digunakan di dalam ruang grup.\n*╰───────────────*')
+  }
 
-    // ambil admin group
-    let admins = participants
-        .filter(p => p.admin)
-        .map(p => p.id)
+  const admins = (participants || [])
+    .filter(p => p.admin === 'admin' || p.admin === 'superadmin' || p.isAdmin || p.isSuperAdmin)
+    .map(p => conn.decodeJid(p.id || p.jid))
+    .filter(Boolean)
 
-    if (!admins.length)
-        return m.reply('❌ Tidak ada admin terdeteksi')
+  if (!admins.length) {
+    return m.reply('*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Tidak ada Administrator yang terdeteksi di grup ini.\n*╰───────────────*')
+  }
 
-    let text = `📣 *TAG ADMIN GROUP*\n\n`
-    let mentions = []
+  const adminList = admins.map((jid, idx) => `*┆* ⟡ @${jid.split('@')[0].replace(/\D/g, '')}`).join('\n')
+  const note = text ? `\n> _"${text.trim()}"_` : ''
 
-    let i = 1
-    for (let jid of admins) {
-        text += `${i}. @${jid.split('@')[0]}\n`
-        mentions.push(jid)
-        i++
-    }
+  const txt = `*──  ୨୧ ✧ PANGGILAN ADMINISTRATOR ✧ ୨୧  ──*
 
-    text += `\n⚠️ Silakan admin merespon pesan ini`
+> *おしらせ!* (ᴘᴀɴɢɢɪʟᴀɴ ᴘᴇɴɢᴜʀᴜꜱ)
+> Panggilan darurat ditujukan kepada seluruh Administrator Grup:${note}
 
-    return conn.sendMessage(m.chat, {
-        text,
-        mentions
-    }, { quoted: m })
+*╭  〔 ❖ ᴅ ᴇ ᴡ ᴀ ɴ  ᴀ ᴅ ᴍ ɪ ɴ ɪ ꜱ ᴛ ʀ ᴀ ᴛ ᴏ ʀ 〕*
+${adminList}
+*╰───────────────*
+
+> ｡˚ ⊹ _Mohon periksa dan tanggapi laporan anggota dengan bijaksana_ ⊹ ˚ ｡`.trim()
+
+  return conn.sendMessage(m.chat, {
+    text: txt,
+    mentions: admins
+  }, { quoted: m })
 }
 
-handler.help = ['tagadmin']
+handler.help = ['tagadmin [pesan]']
 handler.tags = ['group']
 handler.command = /^tagadmin$/i
+handler.group = true
 
 export default handler

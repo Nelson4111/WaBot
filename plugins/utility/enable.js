@@ -1,6 +1,12 @@
+/**
+ * Bot & Group Feature Toggle Manager
+ * Mengatur aktif/tidaknya fitur grup dan fitur global owner
+ * Style: Zen Shinto Aesthetic (STYLE_GUIDE.md)
+ */
+
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
   let isEnable = /true|enable|(turn)?on|1/i.test(command)
-  let chat = global.db.data.chats[m.chat]
+  let chat = global.db.data.chats[m.chat] || {}
   let type = (args[0] || '').toLowerCase()
   let isAll = false
 
@@ -22,23 +28,20 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'antitoxic':
     case 'antisticker':
     case 'antiimage':
+    case 'antitag':
     case 'viewonce':
-    case 'nsfw':
+    case 'document':
     case 'menu':
-    case 'simi':
-    case 'autogpt':
       checkAdmin()
       let dbName = type === 'antilink' ? 'antiLink' : 
                    type === 'antitoxic' ? 'antiToxic' : 
                    type === 'antisticker' ? 'antiSticker' : 
                    type === 'antiimage' ? 'antiImage' : 
-                   type === 'antidelete' ? 'delete' : type
-      chat[dbName] = isEnable
-      break
+                   type === 'antitag' ? 'antiTag' : 
+                   type === 'antidelete' ? 'delete' : 
+                   type === 'document' ? 'useDocument' : type
 
-    case 'document':
-      checkAdmin()
-      chat.useDocument = isEnable
+      chat[dbName] = isEnable
       break
 
     case 'public':
@@ -74,50 +77,54 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     default:
       if (!/[01]/.test(command)) {
-        return m.reply(`
-*≡ SETTINGS ADMIN (GRUP)*
-○ welcome
-○ leave
-○ antispam
-○ antilink
-○ antitoxic
-○ antisticker
-○ antiimage
-○ antidelete
-○ onlyadmin
-○ detect
-○ document
-○ viewonce
-○ nsfw
-○ menu
-○ simi
-○ autogpt
+        const status = (val) => val ? '✓ ᴀᴋᴛɪꜰ' : '✕ ᴍᴀᴛɪ'
 
-*≡ SETTINGS OWNER (GLOBAL)*
-○ public
-○ self
-○ restrict
-○ nyimak
-○ autoread
-○ autobio
-○ gconly
-○ pconly
-○ pconlyprem
-○ owneronly
-○ swonly
+        const helpText = `*──  ୨୧ ✧ PENGATURAN FITUR ✧ ୨୧  ──*
 
-*Contoh:*
-${usedPrefix}enable welcome 
-${usedPrefix}disable welcome 
-`.trim())
+> *おしらせ!* (ꜱᴇᴛᴛɪɴɢꜱ ᴅᴀꜱʜʙᴏᴀʀᴅ)
+> Kelola perlindungan grup dan fungsionalitas bot secara langsung.
+
+*╭  〔 ❖ ꜰ ɪ ᴛ ᴜ ʀ  ɢ ʀ ᴜ ᴘ 〕*
+*┆* ⟡ welcome     : *${status(chat.welcome)}*
+*┆* ✧ leave       : *${status(chat.leave)}*
+*┆* ✦ antispam    : *${status(chat.antispam)}*
+*┆* ◈ antilink    : *${status(chat.antiLink)}*
+*┆* ⟡ antitoxic   : *${status(chat.antiToxic)}*
+*┆* ✧ antisticker : *${status(chat.antiSticker)}*
+*┆* ✦ antiimage   : *${status(chat.antiImage)}*
+*┆* ◈ antitag     : *${status(chat.antiTag)}*
+*┆* ⟡ antidelete  : *${status(chat.delete)}*
+*┆* ✧ onlyadmin   : *${status(chat.onlyadmin)}*
+*┆* ✦ detect      : *${status(chat.detect)}*
+*┆* ◈ document    : *${status(chat.useDocument)}*
+*┆* ⟡ viewonce    : *${status(chat.viewonce)}*
+*┆* ✧ menu        : *${status(chat.menu)}*
+*╰───────────────*
+
+*╭  〔 ⌬ ꜰ ɪ ᴛ ᴜ ʀ  ᴏ ᴡ ɴ ᴇ ʀ 〕*
+*┆* › public • self • restrict • nyimak
+*┆* › autoread • autobio • gconly • pconly
+*┆* › pconlyprem • owneronly • swonly
+*╰───────────────*
+
+*╭  〔 ◈ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*
+*┆* › Mengaktifkan : *${usedPrefix}enable <opsi>*
+*┆* › Mematikan    : *${usedPrefix}disable <opsi>*
+*┆* › Contoh       : *${usedPrefix}enable antilink*
+*╰───────────────*`.trim()
+
+        return m.reply(helpText)
       }
       throw false
   }
 
-  m.reply(`
-*${type}* berhasil di *${isEnable ? 'nyala' : 'mati'}kan*
-${isAll ? 'untuk bot ini' : 'untuk chat ini'}
-`.trim())
+  const successText = `*╭  〔 ❖ ꜱ ᴇ ᴛ ᴛ ɪ ɴ ɢ  ᴅ ɪ ᴘ ᴇ ʀ ʙ ᴀ ʀ ᴜ ɪ 〕*
+*┆* ⟡ ꜰɪᴛᴜʀ  : *${type}*
+*┆* ✧ ꜱᴛᴀᴛᴜꜱ : *${isEnable ? 'Aktif (ON)' : 'Nonaktif (OFF)'}*
+*┆* ✦ ʀᴜᴀɴɢ  : *${isAll ? 'Seluruh Sistem Bot' : 'Grup Ini'}*
+*╰───────────────*`.trim()
+
+  m.reply(successText)
 }
 
 handler.help = ['enable <option>', 'disable <option>']

@@ -1,3 +1,8 @@
+const toSmallNum = (str) => {
+    const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' };
+    return String(str).replace(/[0-9]/g, d => map[d] || d);
+};
+
 function formatDuration(ms) {
     let seconds = Math.floor(ms / 1000);
     const days = Math.floor(seconds / 86400);
@@ -8,10 +13,10 @@ function formatDuration(ms) {
     seconds %= 60;
 
     const result = [];
-    if (days) result.push(`${days} Hari`);
-    if (hours) result.push(`${hours} Jam`);
-    if (minutes) result.push(`${minutes} Menit`);
-    if (seconds) result.push(`${seconds} Detik`);
+    if (days) result.push(`${toSmallNum(days)} Hari`);
+    if (hours) result.push(`${toSmallNum(hours)} Jam`);
+    if (minutes) result.push(`${toSmallNum(minutes)} Menit`);
+    if (seconds) result.push(`${toSmallNum(seconds)} Detik`);
 
     return result.join(' ') || 'beberapa detik';
 }
@@ -27,7 +32,14 @@ handler.before = async function (m, { conn }) {
         const duration = formatDuration(Date.now() - user.afk);
         user.lastAfk = Date.now();
         user.afk = -1;
-        const textReturn = `┌──〔 ✦ *AFK SELESAI* 〕\n│ ⟡ *User* : @${m.sender.split('@')[0]}\n│ ⟡ *Durasi* : ${duration}\n└────────────────────────\n\n· · ─ ─ ✦ ─ ─ · ·\n> _Selamat datang kembali!_`
+        const textReturn = `*──  ୨୧ ✧ ᴀꜰᴋ ꜱᴇʟᴇꜱᴀɪ ✧ ୨୧  ──*
+
+*╭  〔 𝜚 ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ᴀ ꜰ ᴋ 〕*
+*┆* ⟡ ᴜꜱᴇʀ   : @${m.sender.split('@')[0]}
+*┆* ⧗ ᴅᴜʀᴀꜱɪ : *${duration}*
+*╰───────────────*
+
+> _Selamat datang kembali!_`.trim();
         conn.sendMessage(m.chat, { text: textReturn, mentions: [m.sender] }, { quoted: m }).catch(() => {});
     }
 
@@ -50,7 +62,15 @@ handler.before = async function (m, { conn }) {
         const duration = formatDuration(Date.now() - taggedUser.afk);
         const reason = taggedUser.afkReason || 'Tanpa Alasan';
 
-        let warningCaption = `┌──〔 ✦ *USER SEDANG AFK* 〕\n│ ⟡ *User* : @${jid.split('@')[0]}\n│ ⟡ *Alasan* : ${reason}\n│ ⟡ *Durasi* : ${duration} yang lalu\n└────────────────────────\n\n· · ─ ─ ✦ ─ ─ · ·\n> _Harap tidak mengganggu sampai dia kembali online._`;
+        let warningCaption = `*──  ୨୧ ✧ ᴜꜱᴇʀ ꜱᴇᴅᴀɴɢ ᴀꜰᴋ ✧ ୨୧  ──*
+
+*╭  〔 ⚠ ɪ ɴ ꜰ ᴏ  ᴀ ꜰ ᴋ 〕*
+*┆* ⟡ ᴜꜱᴇʀ   : @${jid.split('@')[0]}
+*┆* ✧ ᴀʟᴀꜱᴀɴ : _${reason}_
+*┆* ⧗ ᴅᴜʀᴀꜱɪ : *${duration} yang lalu*
+*╰───────────────*
+
+> _Harap tidak mengganggu sampai dia kembali online._`.trim();
         await conn.sendMessage(m.chat, { text: warningCaption, mentions: [jid] }, { quoted: m });
     }
 

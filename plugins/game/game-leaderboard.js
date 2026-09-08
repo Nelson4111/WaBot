@@ -102,7 +102,7 @@ textRes = '```' + textRes + '```'
       mentions: top.map(u => u.jid),
       contextInfo: {
         externalAdReply: {
-          title: 'NelBot-MD',
+          title: 'Avelia',
           body: bodyAd,
           thumbnailUrl: 'https://files.cloudkuimages.guru/images/4c70abcb66ee.jpeg',
           mediaType: 1,

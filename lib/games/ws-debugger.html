@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebSocket & WebView Diagnostic</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            background: #0b0f19;
+            color: #f1f5f9;
+            font-size: 11px;
+            width: 100%;
+            height: 380px;
+            max-height: 380px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+        }
+        #header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #1e293b;
+        }
+        #title {
+            font-weight: bold;
+            color: #38bdf8;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        .badge-running { background: #0284c7; color: white; }
+        .badge-done { background: #16a34a; color: white; }
+
+        #summary-box {
+            background: #1e293b;
+            border-radius: 5px;
+            padding: 5px 8px;
+            margin: 4px 0;
+            font-size: 10px;
+            line-height: 1.35;
+            color: #e2e8f0;
+            border-left: 3px solid #38bdf8;
+        }
+
+        #actions {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        button {
+            flex: 1;
+            padding: 8px 6px;
+            border: none;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+        }
+        .btn-copy { background: #2563eb; color: white; }
+        .btn-copy.ready { background: #16a34a; box-shadow: 0 0 8px rgba(34, 197, 94, 0.6); }
+        .btn-retry { background: #334155; color: #f8fafc; }
+
+        #console-wrap {
+            height: 235px;
+            max-height: 235px;
+            background: #030712;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        #console {
+            width: 100%;
+            height: 100%;
+            padding: 6px 8px;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.4;
+            font-size: 9.5px;
+        }
+        .log-info { color: #94a3b8; }
+        .log-success { color: #4ade80; font-weight: bold; }
+        .log-warn { color: #fbbf24; }
+        .log-error { color: #f87171; font-weight: bold; }
+        .log-head { color: #38bdf8; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- 1. Header Paling Atas -->
+    <div id="header">
+        <div id="title">🔍 <span>Avelia WS Diagnostic</span></div>
+        <span id="badge-status" class="badge badge-running">RUNNING...</span>
+    </div>
+
+    <!-- 2. Ringkasan Cepat Hasil (Langsung Terbaca Tanpa Scroll) -->
+    <div id="summary-box">
+        <div id="summary-text">⏳ Menjalankan 5 uji koneksi... Mohon tunggu ~4 detik.</div>
+    </div>
+
+    <!-- 3. Tombol Aksi di Atas (Selalu Terlihat & Bisa Diklik) -->
+    <div id="actions">
+        <button id="btn-copy" class="btn-copy" onclick="copyLogs()">📋 SALIN LOG HASIL</button>
+        <button class="btn-retry" onclick="runDiagnostics()">🔄 UJI ULANG</button>
+    </div>
+
+    <!-- 4. Area Konsol Log dengan Anti-Scroll Bubble WhatsApp -->
+    <div id="console-wrap">
+        <div id="console">Memulai pengujian lingkungan WebView WhatsApp...</div>
+    </div>
+
+    <script>
+        const consoleEl = document.getElementById('console');
+        const badgeStatus = document.getElementById('badge-status');
+        const summaryText = document.getElementById('summary-text');
+        const btnCopy = document.getElementById('btn-copy');
+        let fullLogText = '';
+        let testResults = {};
+
+        // Mencegah scroll di console agar tidak menggeser chat WhatsApp
+        ['touchstart', 'touchmove', 'wheel'].forEach(ev => {
+            consoleEl.addEventListener(ev, (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+        });
+
+        function log(msg, type = 'info') {
+            const time = new Date().toTimeString().split(' ')[0];
+            const line = `[${time}] ${msg}\n`;
+            fullLogText += line;
+
+            const span = document.createElement('span');
+            span.className = `log-${type}`;
+            span.textContent = line;
+            consoleEl.appendChild(span);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function clearLog() {
+            consoleEl.innerHTML = '';
+            fullLogText = '';
+            testResults = {};
+        }
+
+        function testWs(name, key, url, timeoutMs = 4000) {
+            log(`\n=== UJI ${name} ===`, 'head');
+            log(`Target: ${url}`);
+
+            return new Promise((resolve) => {
+                let resolved = false;
+                const start = Date.now();
+                let ws = null;
+
+                const timer = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        log(`⏱️ Timeout (${timeoutMs}ms) tidak ada handshake`, 'warn');
+                        testResults[key] = 'TIMEOUT';
+                        try { if (ws) ws.close(); } catch(e){}
+                        resolve({ success: false, reason: 'timeout' });
+                    }
+                }, timeoutMs);
+
+                try {
+                    ws = new WebSocket(url);
+
+                    ws.onopen = () => {
+                        if (resolved) return;
+                        resolved = true;
+                        clearTimeout(timer);
+                        const dur = Date.now() - start;
+                        log(`✅ WebSocket OPEN! Durasi: ${dur}ms`, 'success');
+                        testResults[key] = `OPEN (${dur}ms)`;
+
+                        try {
+                            ws.send(JSON.stringify({ event: 'ping', time: Date.now() }));
+                            log(`Mengirim frame: {"event":"ping"}`, 'info');
+                        } catch(se){}
+
+                        setTimeout(() => {
+                            try { ws.close(); } catch(e){}
+                            resolve({ success: true });
+                        }, 500);
+                    };
+
+                    ws.onmessage = (ev) => {
+                        log(`📩 Server Reply: ${ev.data.substring(0, 70)}`, 'success');
+                    };
+
+                    ws.onerror = (ev) => {
+                        log(`❌ onerror triggered!`, 'error');
+                    };
+
+                    ws.onclose = (ev) => {
+                        const dur = Date.now() - start;
+                        log(`x onclose: Code=${ev.code}, Reason="${ev.reason}", Clean=${ev.wasClean}`, ev.code === 1000 || ev.code === 1005 ? 'info' : 'error');
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timer);
+                            testResults[key] = `CLOSE(${ev.code})`;
+                            resolve({ success: ev.code === 1000 || ev.code === 1005, code: ev.code });
+                        }
+                    };
+                } catch(err) {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timer);
+                        log(`💥 EXCEPTION: ${err.name} - ${err.message}`, 'error');
+                        testResults[key] = `ERR(${err.name})`;
+                        resolve({ success: false, error: err.message });
+                    }
+                }
+            });
+        }
+
+        async function testFetch(name, key, url) {
+            log(`\n=== UJI HTTP FETCH ${name} ===`, 'head');
+            log(`Target: ${url}`);
+            const start = Date.now();
+            try {
+                const res = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+                const dur = Date.now() - start;
+                log(`✅ Fetch OK (${dur}ms)`, 'success');
+                testResults[key] = `OK (${dur}ms)`;
+                return true;
+            } catch(e) {
+                const dur = Date.now() - start;
+                log(`❌ Fetch failed (${dur}ms): ${e.name} - ${e.message}`, 'error');
+                testResults[key] = `BLOCKED (${e.name})`;
+                return false;
+            }
+        }
+
+        async function runDiagnostics() {
+            clearLog();
+            badgeStatus.textContent = 'RUNNING...';
+            badgeStatus.className = 'badge badge-running';
+            btnCopy.className = 'btn-copy';
+            btnCopy.textContent = '📋 SALIN LOG HASIL';
+            summaryText.innerHTML = '⏳ Sedang menguji koneksi... Mohon tunggu sebentar.';
+
+            log(`=== INFORMASI WHATSAPP WEBVIEW ===`, 'head');
+            log(`UA: ${navigator.userAgent.substring(0, 80)}...`);
+            log(`isSecureContext: ${window.isSecureContext}`);
+            log(`Origin: ${window.location.origin}`);
+            log(`Protocol: ${window.location.protocol}`);
+            log(`WebSocket Support: ${typeof window.WebSocket}`);
+
+            const API_KEY = 'OZhgMu47NmZgmMWMIzXUY3NXL26NWHABe3zJGQCF';
+
+            // Uji 1: TikTok exact endpoint
+            await testWs('1. TikTok Demo URL', 'tiktok', 'wss://demo.piesocket.com/v3/channel_123?api_key=YOUR_API_KEY&notify_self', 3500);
+
+            // Uji 2: User key di demo.piesocket.com
+            await testWs('2. PieSocket Demo (API User)', 'demo_user', `wss://demo.piesocket.com/v3/nel_probe?api_key=${API_KEY}&notify_self`, 4000);
+
+            // Uji 3: User key di cluster free.blr2
+            await testWs('3. PieSocket BLR2 Regional', 'blr2_user', `wss://free.blr2.piesocket.com/v3/nel_probe?api_key=${API_KEY}&notify_self`, 4000);
+
+            // Uji 4: Public Echo WebSocket
+            await testWs('4. Public Echo Server', 'echo', 'wss://echo.websocket.org', 3500);
+
+            // Uji 5: Probe HTTP Fetch
+            await testFetch('5. HTTP Fetch Probe', 'fetch', 'https://www.google.com/generate_204');
+
+            log(`\n=== PENGUJIAN SELESAI ===`, 'head');
+            badgeStatus.textContent = 'SELESAI';
+            badgeStatus.className = 'badge badge-done';
+            btnCopy.className = 'btn-copy ready';
+            btnCopy.textContent = '✅ KLIK UNTUK SALIN LOG';
+
+            // Tampilkan ringkasan langsung di box atas
+            summaryText.innerHTML = `<b>📊 HASIL PENGUJIAN:</b><br/>`
+                + `• TikTok URL: <b>${testResults.tiktok || '-'}</b> | BLR2: <b>${testResults.blr2_user || '-'}</b><br/>`
+                + `• Demo User: <b>${testResults.demo_user || '-'}</b> | Echo: <b>${testResults.echo || '-'}</b><br/>`
+                + `• HTTP Fetch: <b>${testResults.fetch || '-'}</b>`;
+        }
+
+        function copyLogs() {
+            const copyContent = fullLogText || 'Log kosong';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(copyContent).then(() => {
+                    alert('✅ Log diagnostik berhasil disalin ke clipboard!\nSilakan paste di chat grup.');
+                }).catch(() => {
+                    fallbackCopy(copyContent);
+                });
+            } else {
+                fallbackCopy(copyContent);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                alert('✅ Log diagnostik berhasil disalin ke clipboard!\nSilakan paste di chat grup.');
+            } catch(e) {
+                prompt('Salin log berikut secara manual:', text);
+            }
+            document.body.removeChild(ta);
+        }
+
+        window.onload = () => {
+            setTimeout(runDiagnostics, 200);
+        };
+    </script>
+</body>
+</html>

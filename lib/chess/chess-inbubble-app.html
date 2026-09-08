@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WhatsApp In-Bubble Chess</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #0f172a;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 380px;
+  max-height: 380px;
+  overflow: hidden;
+  padding: 8px;
+}
+.header {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.title-badge {
+  font-weight: 700;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-pill {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.board-container {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+.square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.square.light { background: #cbd5e1; color: #1e293b; }
+.square.dark { background: #475569; color: #f8fafc; }
+.square.selected { background: #3b82f6 !important; }
+.square.last-move { background: #eab30888 !important; }
+.square.possible::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border-radius: 50%;
+  position: absolute;
+  pointer-events: none;
+}
+.square.possible.capture::after {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 3px solid #ef4444;
+  border-radius: 50%;
+}
+.piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+.footer-bar {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  gap: 6px;
+}
+.btn {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn:hover, .btn:active { background: #10b981; border-color: #10b981; color: #fff; }
+.turn-indicator {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+.turn-indicator.white { color: #f8fafc; }
+.turn-indicator.black { color: #38bdf8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title-badge">♟️ Avelia Chess Mini App</div>
+  <div class="status-pill" id="status">Giliran: Putih</div>
+</div>
+
+<div class="board-container" id="board"></div>
+
+<div class="footer-bar">
+  <button class="btn" id="btnMode">Mode: VS BOT</button>
+  <div class="turn-indicator white" id="turnInfo">Putih (Kamu)</div>
+  <button class="btn" id="btnReset">Mulai Ulang</button>
+</div>
+
+<script>
+(function() {
+  const PIECES = {
+    P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔',
+    p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚'
+  };
+
+  let vsBot = true;
+  let currentTurn = 'w';
+  let selectedSquare = null;
+  let possibleMoves = [];
+  let lastMove = null;
+  let isGameOver = false;
+
+  let boardState = [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+  ];
+
+  // Sound Synthesizer via Web Audio API
+  let audioCtx = null;
+  function playBeep(freq, type, duration) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function playMoveSound(capture) {
+    if (capture) playBeep(600, 'triangle', 0.12);
+    else playBeep(440, 'sine', 0.08);
+  }
+
+  function playVictorySound() {
+    playBeep(523, 'triangle', 0.15);
+    setTimeout(() => playBeep(659, 'triangle', 0.2), 150);
+    setTimeout(() => playBeep(784, 'triangle', 0.3), 350);
+  }
+
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const turnInfoEl = document.getElementById('turnInfo');
+  const btnModeEl = document.getElementById('btnMode');
+  const btnResetEl = document.getElementById('btnReset');
+
+  function isWhite(piece) { return piece && piece === piece.toUpperCase(); }
+  function isBlack(piece) { return piece && piece === piece.toLowerCase(); }
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sq = document.createElement('div');
+        const isLight = (r + c) % 2 === 0;
+        sq.className = 'square ' + (isLight ? 'light' : 'dark');
+        sq.dataset.row = r;
+        sq.dataset.col = c;
+
+        if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+          sq.classList.add('selected');
+        }
+        if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c))) {
+          sq.classList.add('last-move');
+        }
+
+        const isPoss = possibleMoves.find(m => m.r === r && m.c === c);
+        if (isPoss) {
+          sq.classList.add('possible');
+          if (boardState[r][c] !== '') sq.classList.add('capture');
+        }
+
+        const p = boardState[r][c];
+        if (p) {
+          const pieceEl = document.createElement('span');
+          pieceEl.className = 'piece';
+          pieceEl.textContent = PIECES[p] || p;
+          sq.appendChild(pieceEl);
+        }
+
+        sq.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSquareClick(r, c);
+        });
+
+        boardEl.appendChild(sq);
+      }
+    }
+  }
+
+  function getLegalMoves(r, c) {
+    const piece = boardState[r][c];
+    if (!piece) return [];
+    const isW = isWhite(piece);
+    const moves = [];
+
+    function add(nr, nc) {
+      if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) return false;
+      const target = boardState[nr][nc];
+      if (!target) {
+        moves.push({ r: nr, c: nc });
+        return true;
+      }
+      if (isW ? isBlack(target) : isWhite(target)) {
+        moves.push({ r: nr, c: nc });
+      }
+      return false;
+    }
+
+    function scan(dirs) {
+      for (const [dr, dc] of dirs) {
+        let nr = r + dr, nc = c + dc;
+        while (add(nr, nc)) {
+          nr += dr;
+          nc += dc;
+        }
+      }
+    }
+
+    const pUpper = piece.toUpperCase();
+    if (pUpper === 'P') {
+      const dir = isW ? -1 : 1;
+      const startRow = isW ? 6 : 1;
+      if (r + dir >= 0 && r + dir < 8 && !boardState[r + dir][c]) {
+        moves.push({ r: r + dir, c });
+        if (r === startRow && !boardState[r + 2 * dir][c]) {
+          moves.push({ r: r + 2 * dir, c });
+        }
+      }
+      for (const dc of [-1, 1]) {
+        const nr = r + dir, nc = c + dc;
+        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+          const target = boardState[nr][nc];
+          if (target && (isW ? isBlack(target) : isWhite(target))) {
+            moves.push({ r: nr, c: nc });
+          }
+        }
+      }
+    } else if (pUpper === 'N') {
+      for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+        add(r + dr, c + dc);
+      }
+    } else if (pUpper === 'B') {
+      scan([[-1,-1],[-1,1],[1,-1],[1,1]]);
+    } else if (pUpper === 'R') {
+      scan([[-1,0],[1,0],[0,-1],[0,1]]);
+    } else if (pUpper === 'Q') {
+      scan([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]);
+    } else if (pUpper === 'K') {
+      for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]) {
+        add(r + dr, c + dc);
+      }
+    }
+    return moves;
+  }
+
+  function makeMove(fromR, fromC, toR, toC) {
+    const piece = boardState[fromR][fromC];
+    const target = boardState[toR][toC];
+    const isCapture = !!target;
+
+    boardState[toR][toC] = piece;
+    boardState[fromR][fromC] = '';
+
+    // Simple pawn promotion to Queen
+    if (piece === 'P' && toR === 0) boardState[toR][toC] = 'Q';
+    if (piece === 'p' && toR === 7) boardState[toR][toC] = 'q';
+
+    lastMove = { from: { r: fromR, c: fromC }, to: { r: toR, c: toC } };
+    playMoveSound(isCapture);
+
+    // Check King capture (win condition)
+    if (target && target.toUpperCase() === 'K') {
+      isGameOver = true;
+      playVictorySound();
+      statusEl.textContent = (currentTurn === 'w' ? 'PUTIH' : 'HITAM') + ' MENANG!';
+      turnInfoEl.textContent = 'Permainan Selesai';
+      return;
+    }
+
+    currentTurn = currentTurn === 'w' ? 'b' : 'w';
+    statusEl.textContent = 'Giliran: ' + (currentTurn === 'w' ? 'Putih' : 'Hitam');
+    turnInfoEl.className = 'turn-indicator ' + (currentTurn === 'w' ? 'white' : 'black');
+    turnInfoEl.textContent = currentTurn === 'w' ? 'Putih' + (vsBot ? ' (Kamu)' : '') : 'Hitam' + (vsBot ? ' (Bot)' : '');
+
+    if (vsBot && currentTurn === 'b' && !isGameOver) {
+      setTimeout(makeBotMove, 400);
+    }
+  }
+
+  function makeBotMove() {
+    if (isGameOver) return;
+    const allBlackMoves = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        if (isBlack(boardState[r][c])) {
+          const moves = getLegalMoves(r, c);
+          for (const m of moves) {
+            allBlackMoves.push({ fromR: r, fromC: c, toR: m.r, toC: m.c, capture: !!boardState[m.r][m.c] });
+          }
+        }
+      }
+    }
+    if (allBlackMoves.length === 0) {
+      isGameOver = true;
+      statusEl.textContent = 'Stalemate / Putih Menang!';
+      return;
+    }
+
+    // Prioritize captures
+    const captures = allBlackMoves.filter(m => m.capture);
+    const chosen = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : allBlackMoves[Math.floor(Math.random() * allBlackMoves.length)];
+    makeMove(chosen.fromR, chosen.fromC, chosen.toR, chosen.toC);
+    renderBoard();
+  }
+
+  function onSquareClick(r, c) {
+    if (isGameOver) return;
+    if (vsBot && currentTurn === 'b') return;
+
+    const clickedPiece = boardState[r][c];
+    const isCurrentPlayerPiece = currentTurn === 'w' ? isWhite(clickedPiece) : isBlack(clickedPiece);
+
+    if (selectedSquare) {
+      const isMove = possibleMoves.find(m => m.r === r && m.c === c);
+      if (isMove) {
+        const fromR = selectedSquare.r;
+        const fromC = selectedSquare.c;
+        selectedSquare = null;
+        possibleMoves = [];
+        makeMove(fromR, fromC, r, c);
+        renderBoard();
+        return;
+      }
+    }
+
+    if (isCurrentPlayerPiece) {
+      selectedSquare = { r, c };
+      possibleMoves = getLegalMoves(r, c);
+    } else {
+      selectedSquare = null;
+      possibleMoves = [];
+    }
+    renderBoard();
+  }
+
+  btnModeEl.addEventListener('click', () => {
+    vsBot = !vsBot;
+    btnModeEl.textContent = vsBot ? 'Mode: VS BOT' : 'Mode: 2 PLAYER';
+    turnInfoEl.textContent = currentTurn === 'w' ? 'Putih' + (vsBot ? ' (Kamu)' : '') : 'Hitam' + (vsBot ? ' (Bot)' : '');
+  });
+
+  btnResetEl.addEventListener('click', () => {
+    boardState = [
+      ['r','n','b','q','k','b','n','r'],
+      ['p','p','p','p','p','p','p','p'],
+      ['','','','','','','',''],
+      ['','','','','','','',''],
+      ['','','','','','','',''],
+      ['','','','','','','',''],
+      ['P','P','P','P','P','P','P','P'],
+      ['R','N','B','Q','K','B','N','R']
+    ];
+    currentTurn = 'w';
+    selectedSquare = null;
+    possibleMoves = [];
+    lastMove = null;
+    isGameOver = false;
+    statusEl.textContent = 'Giliran: Putih';
+    turnInfoEl.className = 'turn-indicator white';
+    turnInfoEl.textContent = 'Putih' + (vsBot ? ' (Kamu)' : '');
+    renderBoard();
+  });
+
+  renderBoard();
+})();
+</script>
+</body>
+</html>

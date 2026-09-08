@@ -32,11 +32,11 @@ ${muptime}
 💬 *Anime Quote:*
 _${quote}_
 
-🍭 Powered by *${global.namebot || 'NelBot-MD'}*`,
+🍭 Powered by *${global.namebot || 'Avelia'}*`,
 
     contextInfo: {
       externalAdReply: {
-        title: `${global.namebot || 'NelBot-MD'} — Runtime Status`,
+        title: `${global.namebot || 'Avelia'} — Runtime Status`,
         body: 'Bot is running smoothly!',
         mediaType: 1,
         thumbnail: fs.readFileSync('./media/thumbnail.jpg'),

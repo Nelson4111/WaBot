@@ -66,7 +66,7 @@ module.exports = {
                 const textChannel = client.channels.cache.get(twoFourSeven.textId);
                 if (textChannel) {
                   const display = new TextDisplayBuilder()
-                    .setContent(`**NelBot !**\n${client.emoji.blank}${client.emoji.wickarrow} **R__ejoined__** <#${twoFourSeven.voiceId}>`);
+                    .setContent(`**Avelia !**\n${client.emoji.blank}${client.emoji.wickarrow} **R__ejoined__** <#${twoFourSeven.voiceId}>`);
 
                   const container = new ContainerBuilder()
                     .addTextDisplayComponents(display);
@@ -97,7 +97,7 @@ module.exports = {
                 const textChannel = client.channels.cache.get(twoFourSeven.textId);
                 if (textChannel) {
                   const display = new TextDisplayBuilder()
-                    .setContent(`**NelBot !**\n${client.emoji.blank}${client.emoji.wickarrow} **R__ejoined__** <#${twoFourSeven.voiceId}>`);
+                    .setContent(`**Avelia !**\n${client.emoji.blank}${client.emoji.wickarrow} **R__ejoined__** <#${twoFourSeven.voiceId}>`);
 
                   const container = new ContainerBuilder()
                     .addTextDisplayComponents(display);
@@ -160,7 +160,7 @@ module.exports = {
         const textChannel = client.channels.cache.get(player.textId);
         if (textChannel) {
           const display = new TextDisplayBuilder()
-            .setContent(`**NelBot !**\n${client.emoji.blank}${client.emoji.wickarrow} **M__oved__** to another channel`);
+            .setContent(`**Avelia !**\n${client.emoji.blank}${client.emoji.wickarrow} **M__oved__** to another channel`);
 
           const container = new ContainerBuilder()
             .addTextDisplayComponents(display);
@@ -205,7 +205,7 @@ module.exports = {
           const textChannel = client.channels.cache.get(player.textId);
           if (textChannel) {
             const display = new TextDisplayBuilder()
-              .setContent(`**NelBot !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **P__aused__** Waiting for listeners`);
+              .setContent(`**Avelia !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **P__aused__** Waiting for listeners`);
 
             const container = new ContainerBuilder()
               .addTextDisplayComponents(display);
@@ -240,7 +240,7 @@ module.exports = {
               const textChannel = client.channels.cache.get(activePlayer.textId);
               if (textChannel) {
                 const display = new TextDisplayBuilder()
-                  .setContent(`**NelBot !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **Left voice channel** due to empty room.`);
+                  .setContent(`**Avelia !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **Left voice channel** due to empty room.`);
                 const container = new ContainerBuilder()
                   .addTextDisplayComponents(display);
 
@@ -296,7 +296,7 @@ module.exports = {
           const textChannel = client.channels.cache.get(player.textId);
           if (textChannel) {
             const display = new TextDisplayBuilder()
-              .setContent(`**NelBot !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **R__esumed__** Welcome back`);
+              .setContent(`**Avelia !**\n${client.emoji.blank || ""}${client.emoji.wickarrow || "➜"} **R__esumed__** Welcome back`);
 
             const container = new ContainerBuilder()
               .addTextDisplayComponents(display);

@@ -65,7 +65,7 @@ async function handleTikTok(context, url, client, isSlash) {
                 { name: '📊 Statistik', value: stats, inline: true },
                 { name: '🎵 Musik / Audio', value: json.music?.title ? `${json.music.title} (${json.music.author})` : 'Original Sound', inline: true }
             )
-            .setFooter({ text: 'NelBot Downloader Engine' })
+            .setFooter({ text: 'Avelia Downloader Engine' })
             .setTimestamp();
 
         const row = new ActionRowBuilder();

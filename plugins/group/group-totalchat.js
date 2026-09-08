@@ -1,37 +1,48 @@
 import { getChatData } from '../../lib/totalchat.js'
+import { toSmallNum } from '../../lib/style.js'
 
 let handler = async (m, { conn }) => {
-    let gid = m.chat
-    let allChatData = getChatData() 
-    let groupData = allChatData[gid] || {}
+  const gid = m.chat
+  const allChatData = getChatData()
+  const groupData = allChatData[gid] || {}
 
-    let data = Object.entries(groupData)
-        .map(([jid, total]) => ({ jid, total }))
-        .filter(v => 
-            v.jid.endsWith('@s.whatsapp.net') && 
-            !v.jid.includes(':') && 
-            !v.jid.includes('lid') && 
-            v.total > 0
-        )
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 100)
+  const data = Object.entries(groupData)
+    .map(([jid, total]) => ({ jid: conn.decodeJid(jid), total }))
+    .filter(v =>
+      v.jid.endsWith('@s.whatsapp.net') &&
+      !v.jid.includes(':') &&
+      !v.jid.includes('lid') &&
+      v.total > 0
+    )
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 100)
 
-    if (data.length === 0)
-        return m.reply('📭 Belum ada statistik chat.')
+  if (data.length === 0) {
+    return m.reply('*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Belum ada statistik aktivitas pesan yang tercatat di grup ini.\n*╰───────────────*')
+  }
 
-    let text = `━━━ 『 📊 TOP 100 』 ━━━\n\n`
-    let mentions = []
-    
-    data.forEach((v, i) => {
-        let tag = v.jid.split('@')[0]
-        text += `${i + 1}. @${tag}  ➔  *${v.total}* pesan\n`
-        mentions.push(v.jid)
-    })
+  let mentions = []
+  const lines = data.map((v, i) => {
+    const num = v.jid.split('@')[0].replace(/\D/g, '')
+    mentions.push(v.jid)
+    return `*┆*   ${toSmallNum(i + 1)}. @${num} › *${toSmallNum(v.total)} Pesan*`
+  })
 
-    return conn.sendMessage(m.chat, {
-        text: text.trim(),
-        mentions
-    }, { quoted: m })
+  const txt = `*──  ୨୧ ✧ KLASEMEN AKTIVITAS CHAT ✧ ୨୧  ──*
+
+> *おしらせ!* (ᴛᴏᴘ 𝟷𝟶𝟶 ᴘᴇɴɢɪʀɪᴍ ᴘᴇꜱᴀɴ)
+> Rekapitulasi anggota teraktif di dalam ruang percakapan grup:
+
+*╭  〔 ❖ ᴛ ᴏ ᴘ  𝟷 𝟶 𝟶  ᴄ ʜ ᴀ ᴛ 〕*
+${lines.join('\n')}
+*╰───────────────*
+
+> ｡˚ ⊹ _Semakin aktif berdiskusi, semakin hangat persahabatan kita_ ⊹ ˚ ｡`.trim()
+
+  return conn.sendMessage(m.chat, {
+    text: txt,
+    mentions
+  }, { quoted: m })
 }
 
 handler.help = ['totalchat']

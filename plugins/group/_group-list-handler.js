@@ -33,7 +33,7 @@ handler.before = async function (m, { conn }) {
     if (fs.existsSync(entry.filePath)) {
       await conn.sendFile(m.chat, entry.filePath, entry.filename || 'file', entry.caption || '', m, entry.ptt || false)
     } else {
-      await conn.reply(m.chat, `⚠️ File media untuk command *${prefixMatch + cleanCmd}* tidak ditemukan di server.`, m)
+      await conn.reply(m.chat, `*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Berkas media untuk perintah *${prefixMatch + cleanCmd}* tidak ditemukan di server.\n*╰───────────────*`, m)
     }
   }
   

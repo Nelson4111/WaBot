@@ -2,17 +2,17 @@ import fetch from 'node-fetch'
 
 let handler = async (m, { conn, text, participants, isAdmin, isOwner, usedPrefix, command }) => {
   if (!isAdmin && !isOwner) {
-    return m.reply('❌ Perintah ini hanya dapat digunakan oleh Admin Grup!')
+    return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Khusus untuk Administrator grup.\n*╰───────────────*')
   }
 
   let targets = []
 
-  // 1. Dari Reply (pesan baru maupun lama)
+  // 1. Dari Reply
   if (m.quoted && m.quoted.sender) {
     targets.push(m.quoted.sender)
   }
 
-  // 2. Dari Mention (@user)
+  // 2. Dari Mention
   if (m.mentionedJid && m.mentionedJid.length > 0) {
     targets.push(...m.mentionedJid)
   }
@@ -29,18 +29,15 @@ let handler = async (m, { conn, text, participants, isAdmin, isOwner, usedPrefix
   targets = [...new Set(targets)]
 
   if (!targets.length) {
-    return m.reply(`⚠️ Masukkan nomor, tag user, atau reply pesan user yang ingin ditambahkan!\n\n📌 Contoh:\n• *${usedPrefix + command}* 628123456789\n• Reply pesan user lalu ketik *${usedPrefix + command}*\n• *${usedPrefix + command}* @user`)
+    return m.reply(`*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Masukkan nomor, tandai @tag, atau balas pesan pengguna yang ingin ditambahkan!\n> Contoh: *${usedPrefix + command} 628123456789*\n*╰───────────────*`)
   }
 
-  await m.react('⏳')
-
   // Filter user yang sudah ada di grup
-  let memberJids = participants.map(u => conn.decodeJid(u.id || u.jid))
+  let memberJids = (participants || []).map(u => conn.decodeJid(u.id || u.jid))
   let toAdd = targets.filter(u => !memberJids.includes(conn.decodeJid(u)))
 
   if (!toAdd.length) {
-    await m.react('❌')
-    return m.reply('❌ User yang dimaksud sudah ada di dalam grup!')
+    return m.reply('*╭  〔 ◈ ɪ ɴ ꜰ ᴏ 〕*\n> Pengguna yang dituju sudah berada di dalam grup ini!\n*╰───────────────*')
   }
 
   try {
@@ -53,13 +50,13 @@ let handler = async (m, { conn, text, participants, isAdmin, isOwner, usedPrefix
     if (Array.isArray(res)) {
       for (let r of res) {
         let userJid = r.jid || r.participant || toAdd[0]
-        let num = userJid.split('@')[0]
+        let num = userJid.split('@')[0].replace(/\D/g, '')
         let status = String(r.status || '')
 
         if (status === '200') {
-          added.push(`@${num}`)
+          added.push(`*┆* ⟡ @${num} › *Berhasil Masuk Grup*`)
         } else if (status === '403' || r.content?.tag === 'add_request') {
-          // Setting privasi target aktif (tidak bisa di-add langsung) -> kirim pesan undangan
+          // Setting privasi target aktif -> kirim pesan undangan
           try {
             let code = r.content?.attrs?.code || await conn.groupInviteCode(m.chat).catch(() => null)
             let groupName = await conn.getName(m.chat)
@@ -74,45 +71,49 @@ let handler = async (m, { conn, text, participants, isAdmin, isOwner, usedPrefix
                 r.content.attrs.code,
                 exp,
                 groupName,
-                'Undangan untuk bergabung ke grup WhatsApp',
+                'Undangan resmi bergabung ke grup WhatsApp',
                 jpegThumbnail
               )
             } else if (code) {
-              let inviteMsg = `📩 *UNDANGAN GRUP*\n\nHalo! Kamu diundang untuk bergabung ke grup *${groupName}*.\n\nKlik link di bawah ini untuk bergabung:\nhttps://chat.whatsapp.com/${code}`
-              await conn.sendMessage(userJid, { text: inviteMsg })
+              let inviteMsg = `*──  ୨୧ ✧ UNDANGAN RESMI GRUP ✧ ୨୧  ──*\n\n> Halo @${num}! Kamu diundang untuk bergabung ke grup *${groupName}*.\n\n*╭  〔 ⟡ ᴛ ᴀ ᴜ ᴛ ᴀ ɴ 〕*\n> https://chat.whatsapp.com/${code}\n*╰───────────────*`
+              await conn.sendMessage(userJid, { text: inviteMsg, mentions: [userJid] })
             }
-            invited.push(`@${num} (Privasi aktif - Link undangan dikirim ke PM)`)
+            invited.push(`*┆* ✧ @${num} › *Privasi Aktif (Tautan Terkirim ke PC)*`)
           } catch (e) {
-            invited.push(`@${num} (Privasi aktif - Gagal kirim PM undangan)`)
+            invited.push(`*┆* ✧ @${num} › *Privasi Aktif (Gagal Kirim PC)*`)
           }
         } else if (status === '408' || status === '409') {
-          failed.push(`@${num} (Baru keluar/di-kick atau sudah di grup)`)
+          failed.push(`*┆* ◈ @${num} › *Baru Saja Keluar / Sudah di Grup*`)
         } else {
-          failed.push(`@${num} (Status ${status})`)
+          failed.push(`*┆* ◈ @${num} › *Status ${status}*`)
         }
       }
     } else {
-      added.push(toAdd.map(v => `@${v.split('@')[0]}`).join(', '))
+      added.push(toAdd.map(v => `*┆* ⟡ @${v.split('@')[0].replace(/\D/g, '')} › *Berhasil Masuk Grup*`).join('\n'))
     }
 
-    let reportText = `📥 *HASIL PENAMBAHAN ANGGOTA*\n\n`
-    if (added.length) reportText += `✅ *Berhasil Ditambahkan:*\n${added.join('\n')}\n\n`
-    if (invited.length) reportText += `📩 *Diundang via PM (Privasi Target):*\n${invited.join('\n')}\n\n`
-    if (failed.length) reportText += `❌ *Gagal:*\n${failed.join('\n')}\n`
+    let reportCards = []
+    if (added.length) {
+      reportCards.push(`*╭  〔 ⟡ ʙ ᴇ ʀ ʜ ᴀ ꜱ ɪ ʟ  ᴍ ᴀ ꜱ ᴜ ᴋ 〕*\n${added.join('\n')}\n*╰───────────────*`)
+    }
+    if (invited.length) {
+      reportCards.push(`*╭  〔 ✧ ᴜ ɴ ᴅ ᴀ ɴ ɢ ᴀ ɴ  ᴘ ᴄ 〕*\n${invited.join('\n')}\n*╰───────────────*`)
+    }
+    if (failed.length) {
+      reportCards.push(`*╭  〔 ◈ ᴋ ᴇ ɴ ᴅ ᴀ ʟ ᴀ 〕*\n${failed.join('\n')}\n*╰───────────────*`)
+    }
 
-    await conn.sendMessage(m.chat, { text: reportText.trim(), mentions: toAdd }, { quoted: m })
-    await m.react('✅')
+    const reportText = `*──  ୨୧ ✧ HASIL PENAMBAHAN ANGGOTA ✧ ୨୧  ──*\n\n${reportCards.join('\n\n')}\n\n> ｡˚ ⊹ _Selamat datang dan bergabung bersama keluarga besar grup!_ ⊹ ˚ ｡`.trim()
+
+    await conn.sendMessage(m.chat, { text: reportText, mentions: toAdd }, { quoted: m })
 
   } catch (e) {
     console.error('Group Add Error:', e)
-    await m.react('❌')
-    
     let errStr = String(e.message || e)
     if (errStr.includes('account_reachout_restricted') || errStr.includes('463')) {
-      return m.reply('❌ *Gagal menambahkan anggota!*\n\nAkun bot sedang dibatasi (Shadowban) oleh WhatsApp sehingga tidak bisa menambahkan orang ke grup secara langsung. Harap bagikan link grup kepada target.')
+      return m.reply('*╭  〔 ◈ ᴘ ᴇ ᴍ ʙ ᴀ ᴛ ᴀ ꜱ ᴀ ɴ  ᴡ ᴀ 〕*\n> Akun bot sedang dibatasi oleh WhatsApp sehingga tidak bisa menambahkan anggota secara langsung.\n> Silakan bagikan tautan grup kepada target.\n*╰───────────────*')
     }
-    
-    m.reply(`❌ *Gagal menambahkan anggota:* ${errStr}`)
+    m.reply(`*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal menambahkan anggota: ${errStr}\n*╰───────────────*`)
   }
 }
 

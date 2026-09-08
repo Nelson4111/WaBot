@@ -60,6 +60,7 @@ import { format } from 'util'
 import pino from 'pino'
 import ws from 'ws'
 import { initSewaCheck } from './lib/sewaCheck.js';
+import { initAllJadibots } from './lib/jadibot.js';
 
 const Baileys = await import('@whiskeysockets/baileys')
 const {
@@ -99,7 +100,7 @@ import {
 
 const { CONNECTING } = ws
 const { chain } = lodash
-const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3001
 const CUSTOM_PAIRING_CODE = (process.env.PAIRING_CODE || '').trim().toUpperCase()
 
 protoType()
@@ -264,7 +265,7 @@ setInterval(() => {
 const connectionOptions = {
   version,
   logger: pino({ level: 'silent' }),
-  browser: ['Alya Bot', 'Safari', '1.0.0'],
+  browser: [global.namebot || 'Avelia', 'Safari', '1.0.0'],
   msgRetryCounterCache,
   cachedGroupMetadata: async (jid) => {
     // 1. Tier 1: Ambil dari memoryStore Baileys
@@ -557,7 +558,7 @@ if (!opts['test']) {
         let uptime = process.uptime() * 1000
         let h = Math.floor(uptime / 3600000).toString().padStart(2, '0')
         let m = Math.floor((uptime % 3600000) / 60000).toString().padStart(2, '0')
-        let status = `I am NelBotz | Aktif Selama ${h} Jam ${m} Menit ⏳`
+        let status = `I am Avelia | Aktif Selama ${h} Jam ${m} Menit ⏳`
         await global.conn.updateProfileStatus(status)
       } catch (e) {
         console.error('[AUTOBIO ERROR]', e)
@@ -692,6 +693,17 @@ async function connectionUpdate(update) {
       initSewaCheck(conn)
       conn.sewaInit = true
     }
+
+    if (!conn.jadibotInit) {
+      setTimeout(async () => {
+        try {
+          await initAllJadibots(global.conn)
+        } catch (e) {
+          console.error('[JADIBOT AUTO-RECONNECT ERROR]', e?.message || e)
+        }
+      }, 7000)
+      conn.jadibotInit = true
+    }
   } else if (connection === 'connecting') {
     console.log(chalk.green('⏱️ Koneksi connecting'))
   }
@@ -783,22 +795,25 @@ global.reloadHandler = async function (restatConn) {
       conn.ev.off('creds.update', conn.credsUpdate)
     }
 
-    conn.welcome = '❖━━━〔 ようこそ 〕━━━❖\n\n' +
-      '┏━━━━━━━━━━━━━━━\n' +
-      '┃ 🌸 @subject\n' +
-      '┣━━━━━━━━━━━━━━━\n' +
-      '┃ (≧◡≦) ♡ Hai @user\n' +
-      '┃ Selamat datang\n' +
-      '┣━━━〔 自己紹介 〕━━━\n' +
-      '┃ • Nama   : \n' +
-      '┃ • Usia   : \n' +
-      '┃ • Gender : \n' +
-      '┗━━━━━━━━━━━━━━━\n\n' +
-      '━━━〔 グループ情報 〕━━━\n' +
-      '@desc'
-    conn.bye = '❖━━━〔 さようなら 〕━━━❖\n\n' +
-      '(｡•́︿•̀｡) @user telah pergi\n' +
-      'Semoga kita bertemu lagi 🌙'
+    conn.welcome = '*──  ୨୧ ✧ WELCOME TO GROUP ✧ ୨୧  ──*\n\n' +
+      '> *ようこそ!* (ᴡᴇʟᴄᴏᴍᴇ!)\n' +
+      '> (≧◡≦) ♡ Hai @user\n' +
+      '> Selamat datang di *@subject* ✧\n\n' +
+      '*╭  〔 ❖ ɢ ʀ ᴏ ᴜ ᴘ  ɪ ɴ ꜰ ᴏ 〕*\n' +
+      '*┆* ⟡ ɢʀᴜᴘ   : *@subject*\n' +
+      '*╰───────────────*\n\n' +
+      '*╭  〔 𝜚 ᴊ ɪ ᴋ ᴏ ꜱ ʜ ᴏ ᴜ ᴋ ᴀ ɪ 〕*\n' +
+      '*┆* • ɴᴀᴍᴀ   : \n' +
+      '*┆* • ᴜꜱɪᴀ   : \n' +
+      '*┆* • ɢᴇɴᴅᴇʀ : \n' +
+      '*╰───────────────*\n\n' +
+      '*╭  〔 ◈ ᴅ ᴇ ꜱ ᴋ ʀ ɪ ᴘ ꜱ ɪ 〕*\n' +
+      '@desc\n' +
+      '*╰───────────────*'
+    conn.bye = '*──  ୨୧ ✧ GOODBYE MEMBER ✧ ୨୧  ──*\n\n' +
+      '> *さようなら!* (ɢᴏᴏᴅʙʏᴇ!)\n' +
+      '> (｡•́︿•̀｡) @user telah meninggalkan grup.\n' +
+      '> Semoga kita dapat bertemu kembali di lain waktu ✧'
     conn.spromote = '@user Sekarang jadi admin!'
     conn.sdemote = '@user Sekarang bukan lagi admin!'
     conn.sDesc = 'Deskripsi telah diubah menjadi \n@desc'
