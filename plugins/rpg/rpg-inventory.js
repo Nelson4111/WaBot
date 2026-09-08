@@ -60,77 +60,95 @@ let handler = async (m, { conn }) => {
   let totalWood = (user.wood || 0) + (user.inventory?.wood || 0) + (user.ores?.wood || 0)
   let totalStone = (user.stone || 0) + (user.inventory?.stone || 0) + (user.ores?.stone || 0)
 
-  let cap = `*───「 RPG INVENTORY 」───*\n\n`
-  cap += `👤 *Pemain:* ${m.pushName || 'Player'}\n`
-  cap += `🆙 *Level:* ${user.level} (${user.exp}/${threshold} XP)\n`
-  cap += `❤️ *Darah:* ${user.darah}/${maxHP}\n`
-  cap += `💰 *Saldo:* Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n`
+  let cap = `╭─❏「 🎒 RPG INVENTORY 」❏\n`
+cap += `│ 👤 Pemain: ${m.pushName || 'Player'}\n`
+cap += `│ 🆙 Level: ${user.level} (${user.exp}/${threshold} XP)\n`
+cap += `│ ❤️ Darah: ${user.darah}/${maxHP}\n`
+cap += `│ 💰 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  cap += `*───「 EQUIPMENT 」───*\n`
-  cap += `🗡️ *Weapon:* ${user.sword ? getEquipmentName('sword', user.sword) : 'None'}\n`
-  cap += `🛡️ *Armor:* ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n`
-  cap += `⛏️ *Pickaxe:* ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n`
-  cap += `🎣 *Fishing Rod:* ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n`
-  cap += `🐾 *Pet:* ${petTertinggi ? `${petTertinggi.tipe.toUpperCase()} (Lv.${petTertinggi.level})` : 'Tidak Ada'}\n\n`
+cap += `🛡️ *EQUIPMENT*\n`
+cap += `> 🗡️ Weapon: ${user.sword ? getEquipmentName('sword', user.sword) : 'None'}\n`
+cap += `> 🛡️ Armor: ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n`
+cap += `> ⛏️ Pickaxe: ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n`
+cap += `> 🎣 Fishing Rod: ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n`
+cap += `> 🐾 Pet: ${petTertinggi ? `${petTertinggi.tipe.toUpperCase()} (Lv.${petTertinggi.level})` : 'Tidak Ada'}\n`
 
-  cap += `*───「 STORAGE 」───*\n`
-  cap += `💎 Diamond: ${totalDiamond.toLocaleString()}\n`
-  cap += `⛓️ Iron: ${totalIron.toLocaleString()}\n`
-  cap += `✨ Gold: ${totalGold.toLocaleString()}\n`
-  cap += `🪵 Wood: ${totalWood.toLocaleString()}\n`
-  cap += `🪨 Stone: ${totalStone.toLocaleString()}\n`
-  cap += `_Lihat lengkap: *.tas*_\n\n`
+cap += `\n─━━━━━━━━━━━━━━─\n`
+cap += `📦 *STORAGE*\n`
+cap += `> 💎 Diamond: ${totalDiamond.toLocaleString()}\n`
+cap += `> ⛓️ Iron: ${totalIron.toLocaleString()}\n`
+cap += `> ✨ Gold: ${totalGold.toLocaleString()}\n`
+cap += `> 🪵 Wood: ${totalWood.toLocaleString()}\n`
+cap += `> 🪨 Stone: ${totalStone.toLocaleString()}\n`
+cap += `> ↳ Lihat lengkap: *.bag*\n`
 
-  if (user.ikan) {
-    cap += `*───「 FISH TANK 」───*\n`
-    cap += `🐟 Lele: ${user.ikan.lele || 0}\n`
-    cap += `🐠 Nila: ${user.ikan.nila || 0}\n`
-    cap += `🦈 Hiu: ${user.ikan.hiu || 0}\n`
-    cap += `🐡 Bawal: ${user.ikan.bawal || 0}\n`
-    cap += `_Lihat lengkap: *.aquarium*_\n\n`
-  }
-
-  // GARDEN HARVEST: AMBIL DARI INVENTORY KHUSUS ITEM KEBUN
-  let totalKebun = 0
-  const cek = {
-    padi: user.inventory.padi || 0,
-    jagung: user.inventory.jagung || 0,
-    semangka: user.inventory.semangka || 0,
-    jeruk: user.inventory.jeruk || 0,
-    mangga: user.inventory.mangga || 0,
-    apel: (user.inventory.apel_merah || 0) + (user.inventory.apel_hijau || 0), // apel digabung
-    durian: user.inventory.durian || 0,
-    emas: user.inventory.emas || 0,
-    berlian: user.inventory.berlian || 0
-  }
-  for(let i in cek) totalKebun += cek[i]
-
-  if (totalKebun > 0) {
-    cap += `*───「 GARDEN HARVEST 」───*\n`
-    cap += `🌾 Padi: ${cek.padi.toLocaleString()}\n`
-    cap += `🌽 Jagung: ${cek.jagung.toLocaleString()}\n`
-    cap += `🍉 Semangka: ${cek.semangka.toLocaleString()}\n`
-    cap += `🍊 Jeruk: ${cek.jeruk.toLocaleString()}\n`
-    cap += `🥭 Mangga: ${cek.mangga.toLocaleString()}\n`
-    cap += `🍎 Apel: ${cek.apel.toLocaleString()}\n`
-    cap += `🌳 Durian: ${cek.durian.toLocaleString()}\n`
-    cap += `⚜️ Emas: ${cek.emas.toLocaleString()}\n`
-    if (cek.berlian > 0) cap += `💠 Berlian: ${cek.berlian.toLocaleString()}\n`
-    cap += `_Lihat lengkap: *.kebun*_\n\n`
-  }
-
-  cap += `*───「 INVENTORY LAINNYA 」───*\n`
-  cap += `📦 Cek Semua: *.gudang*\n`
-  cap += `⛏️ Cek Material: *.tas*\n`
-  cap += `🍖 Cek Makanan: *.kulkas*\n`
-  cap += `🐾 Cek Peliharaan: *.pet*\n`
-  cap += `🐠 Cek Aquarium: *.aquarium*\n`
-  cap += `🌾 Cek Kebun: *.kebun*`
-
-  return sendRpgMsg(conn, m, cap, pp)
+if (user.ikan) {
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `🐟 *FISH TANK*\n`
+  cap += `> 🐟 Lele: ${user.ikan.lele || 0}\n`
+  cap += `> 🐠 Nila: ${user.ikan.nila || 0}\n`
+  cap += `> 🦈 Hiu: ${user.ikan.hiu || 0}\n`
+  cap += `> 🐡 Bawal: ${user.ikan.bawal || 0}\n`
+  cap += `> ↳ Lihat lengkap: *.aquarium*\n`
 }
 
-handler.help = ['inventory']
+// GARDEN HARVEST
+let totalKebun = 0
+
+const cek = {
+  padi: user.inventory.padi || 0,
+  jagung: user.inventory.jagung || 0,
+  semangka: user.inventory.semangka || 0,
+  jeruk: user.inventory.jeruk || 0,
+  mangga: user.inventory.mangga || 0,
+  apel: (user.inventory.apel_merah || 0) + (user.inventory.apel_hijau || 0),
+  durian: user.inventory.durian || 0,
+  sawit: user.inventory.sawit || 0,
+  emas: user.inventory.emas || 0,
+  berlian: user.inventory.berlian || 0
+}
+
+for (let i in cek) {
+  totalKebun += cek[i]
+}
+
+if (totalKebun > 0) {
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `🌾 *GARDEN HARVEST*\n`
+  cap += `> 🌾 Padi: ${cek.padi.toLocaleString()}\n`
+  cap += `> 🌽 Jagung: ${cek.jagung.toLocaleString()}\n`
+  cap += `> 🍉 Semangka: ${cek.semangka.toLocaleString()}\n`
+  cap += `> 🍊 Jeruk: ${cek.jeruk.toLocaleString()}\n`
+  cap += `> 🥭 Mangga: ${cek.mangga.toLocaleString()}\n`
+  cap += `> 🍎 Apel: ${cek.apel.toLocaleString()}\n`
+  cap += `> 🌳 Durian: ${cek.durian.toLocaleString()}\n`
+  cap += `> 🌴 Sawit: ${cek.sawit.toLocaleString()}\n`
+  cap += `> ⚜️ Emas: ${cek.emas.toLocaleString()}\n`
+
+  if (cek.berlian > 0) {
+    cap += `> 💠 Berlian: ${cek.berlian.toLocaleString()}\n`
+  }
+
+  cap += `> ↳ Lihat lengkap: *.kebun*\n`
+}
+
+cap += `\n─━━━━━━━━━━━━━━─\n`
+cap += `📚 *INVENTORY LAINNYA*\n`
+cap += `> 📦 Cek Semua: *.gudang*\n`
+cap += `> 🎒 Cek Material: *.bag*\n`
+cap += `> 🍖 Cek Makanan: *.kulkas*\n`
+cap += `> 🐾 Cek Peliharaan: *.pet*\n`
+cap += `> 🐠 Cek Aquarium: *.aquarium*\n`
+cap += `> 🌾 Cek Kebun: *.kebun*\n`
+cap += `─━━━━━━━━━━━━━━─`
+
+return sendRpgMsg(conn, m, cap, pp)
+}
+
+handler.help = ['inventory', 'inv']
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory)$/i
+handler.alias = ['inv', 'inventory']
+
 export default handler

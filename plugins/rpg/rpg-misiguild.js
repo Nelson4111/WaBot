@@ -18,36 +18,86 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!myGuild.buffLuck) myGuild.buffLuck = 0
   if (!myGuild.buffMulti) myGuild.buffMulti = 0
   if (!myGuild.warCooldown) myGuild.warCooldown = 0
-  if (!myGuild.missionCooldown) myGuild.missionCooldown = 0 // TAMBAH INI
+  if (!myGuild.missionCooldown) myGuild.missionCooldown = 0 
 
-  // COMMAND BARU
   if(command === 'pestaguild'){
-    let cd = 10800000 // 3 jam
-    if(Date.now() - myGuild.lastParty < cd) return m.reply(`⏳ Pesta guild masih cooldown.\nSisa: ${((cd - (Date.now() - myGuild.lastParty))/60000).toFixed(0)} menit`)
-    let expGain = Date.now() < myGuild.buffMulti? 450 : 300
-    myGuild.exp += expGain
-    myGuild.lastParty = Date.now()
-    saveDB(wdb)
-    return m.reply(`🎉 *PESTA GUILD DIMULAI!*\nSemua anggota bersenang-senang bersama\n✨ +${expGain} Guild Exp${Date.now() < myGuild.buffMulti? ' 📈':''}`)
-  }
+  let cd = 10800000 // 3 jam
+  if(Date.now() - myGuild.lastParty < cd) return m.reply(
+    `╭─❏「 🎉 PESTA GUILD 」❏\n` +
+    `│ ⏳ *COOLDOWN PESTA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pesta guild masih cooldown.\n` +
+    `> ↳ Sisa: ${((cd - (Date.now() - myGuild.lastParty))/60000).toFixed(0)} menit\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-  if(command === 'latihanguild'){
-    let cd = 1800000 // 30 menit
-    if(Date.now() - myGuild.lastTrain < cd) return m.reply(`⏳ Latihan guild masih cooldown.\nSisa: ${((cd - (Date.now() - myGuild.lastTrain))/60000).toFixed(0)} menit`)
-    let expGain = Date.now() < myGuild.buffMulti? 150 : 100
-    myGuild.exp += expGain
-    myGuild.lastTrain = Date.now()
-    saveDB(wdb)
-    return m.reply(`⚔️ *LATIHAN GUILD SELESAI!*\nSemua anggota berlatih bersama\n✨ +${expGain} Guild Exp${Date.now() < myGuild.buffMulti? ' 📈':''}`)
-  }
+  let expGain = Date.now() < myGuild.buffMulti? 450 : 300
+  myGuild.exp += expGain
+  myGuild.lastParty = Date.now()
+  saveDB(wdb)
 
-  if(Date.now() < myGuild.warCooldown) return m.reply('❌ Guild sedang cooldown war. Gabisa misi dulu 1 jam')
+  return m.reply(
+    `╭─❏「 🎉 PESTA GUILD 」❏\n` +
+    `│ 🎉 *PESTA GUILD DIMULAI!*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🎊 *AKTIVITAS GUILD*\n` +
+    `> ↳ Semua anggota bersenang-senang bersama\n\n` +
+    `✨ *GUILD EXP*\n` +
+    `> ↳ +${expGain} Guild Exp${Date.now() < myGuild.buffMulti? ' 📈':''}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
-  // TAMBAHAN: COOLDOWN MISI 2 JAM SETELAH KALAH WAR
-  if(Date.now() < myGuild.missionCooldown){
-    let sisa = ((myGuild.missionCooldown - Date.now())/60000).toFixed(0)
-    return m.reply(`❌ Guild sedang dalam pemulihan setelah kalah war.\nGabisa misi selama ${sisa} menit lagi`)
-  }
+if(command === 'latihanguild'){
+  let cd = 1800000 // 30 menit
+  if(Date.now() - myGuild.lastTrain < cd) return m.reply(
+    `╭─❏「 ⚔️ LATIHAN GUILD 」❏\n` +
+    `│ ⏳ *COOLDOWN LATIHAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Latihan guild masih cooldown.\n` +
+    `> ↳ Sisa: ${((cd - (Date.now() - myGuild.lastTrain))/60000).toFixed(0)} menit\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let expGain = Date.now() < myGuild.buffMulti? 150 : 100
+  myGuild.exp += expGain
+  myGuild.lastTrain = Date.now()
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 ⚔️ LATIHAN GUILD 」❏\n` +
+    `│ ⚔️ *LATIHAN GUILD SELESAI!*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🏋️ *AKTIVITAS GUILD*\n` +
+    `> ↳ Semua anggota berlatih bersama\n\n` +
+    `✨ *GUILD EXP*\n` +
+    `> ↳ +${expGain} Guild Exp${Date.now() < myGuild.buffMulti? ' 📈':''}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if(Date.now() < myGuild.warCooldown) return m.reply(
+  `╭─❏「 ⚔️ GUILD WAR 」❏\n` +
+  `│ ❌ *WAR COOLDOWN*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `> ↳ Guild sedang cooldown war.\n` +
+  `> ↳ Gabisa misi dulu 1 jam\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
+
+// TAMBAHAN: COOLDOWN MISI 2 JAM SETELAH KALAH WAR
+if(Date.now() < myGuild.missionCooldown){
+  let sisa = ((myGuild.missionCooldown - Date.now())/60000).toFixed(0)
+
+  return m.reply(
+    `╭─❏「 ⚔️ GUILD MISSION 」❏\n` +
+    `│ ❌ *MASA PEMULIHAN GUILD*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Guild sedang dalam pemulihan setelah kalah war.\n` +
+    `> ↳ Gabisa misi selama ${sisa} menit lagi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   const missions = [
 { name: 'Pembersihan Selokan Kota', minLevel: 1, reward: { money: 20000, exp: 50, iron: 2 }, contrib: 10 },
@@ -93,16 +143,30 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   ]
 
   if (!text) {
-    let list = `╭──「 📜 GUILD EXPEDITION 」──╮\n\n`
-    missions.forEach((v, i) => {
-      list += `│ ${i + 1}. *${v.name}*\n`
-      list += `│ └ 📊 Syarat: Lv.${v.minLevel}\n`
-      list += `│ └ 🏆 +${v.contrib} Pts | ✨ +${v.reward.exp} Exp\n`
-    })
-    list += `╰───────────────────╯\n*Cara Pilih:* ${usedPrefix}${command} [nomor]`
+  let list = `╭─❏「 📜 GUILD EXPEDITION 」❏\n`
+  list += `│ ⚔️ *DAFTAR MISI GUILD*\n`
+  list += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
-  }
+  list += `📌 *PILIH MISI*\n`
+  list += `> ↳ Pilih misi sesuai level guild dan dapatkan reward untuk semua member.\n\n`
+
+  list += `─━━━━━━━━━━━━━━─\n\n`
+
+  missions.forEach((v, i) => {
+    list += `*${i + 1}. ⚔️ ${v.name}*\n`
+    list += `> ↳ 📊 Syarat: Lv.${v.minLevel}\n`
+    list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
+    list += `> ↳ ✨ Exp: +${v.reward.exp}\n`
+    list += `> ↳ 💰 Uang: Rp ${v.reward.money.toLocaleString()}${v.reward.emerald ? `\n> ↳ 💚 Emerald: ${v.reward.emerald}` : ''}\n\n`
+  })
+
+  list += `─━━━━━━━━━━━━━━─\n\n`
+  list += `📌 *CARA MEMILIH MISI*\n`
+  list += `> ↳ *${usedPrefix}misiguild [nomor]*\n\n`
+  list += `─━━━━━━━━━━━━━━─`
+
+  return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
+}
 
   let index = parseInt(text) - 1
   if (!missions[index]) return m.reply('❌ Nomor misi tidak valid.')
@@ -146,12 +210,19 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   myGuild.members.forEach(jid => {
     let u = wdb.users[jid]?.rpg
     if (u) {
+      if (!u.guildLoot) u.guildLoot = { diamond: 0, emerald: 0 }
       wdb.money[jid] = (wdb.money[jid] || 0) + reward.money
       if (msn.reward.iron) u.iron = (u.iron || 0) + msn.reward.iron
       if (msn.reward.gold) u.gold = (u.gold || 0) + msn.reward.gold
       if (msn.reward.stone) u.stone = (u.stone || 0) + msn.reward.stone
-      if (msn.reward.diamond) u.diamond = (u.diamond || 0) + msn.reward.diamond
-      if (msn.reward.emerald) u.emerald = (u.emerald || 0) + msn.reward.emerald
+      if (msn.reward.diamond) {
+        u.diamond = (u.diamond || 0) + msn.reward.diamond
+        u.guildLoot.diamond += msn.reward.diamond
+      }
+      if (msn.reward.emerald) {
+        u.emerald = (u.emerald || 0) + msn.reward.emerald
+        u.guildLoot.emerald += msn.reward.emerald
+      }
     }
   })
 
@@ -168,16 +239,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let executorName = m.pushName || global.db.data.users[m.sender]?.name || conn.getName(m.sender) || 'Player'
 
-  let cap = `╭──「 ✅ MISSION CLEAR 」──╮\n\n`
-  cap += `│ 📜 *Misi:* ${msn.name}\n`
-  cap += `│ 👤 *Eksekutor:* ${executorName}\n`
-  cap += `│ ✨ *Guild Exp:* +${reward.exp}${extraText}\n`
-  cap += `│ 🏆 *Kontribusi:* +${msn.contrib} Pts\n\n`
-  cap += `│ 🎁 *HADIAH SEMUA MEMBER:* \n`
-  cap += `│ • 💰 Rp ${reward.money.toLocaleString('id-ID')}\n`
-  if (msn.reward.diamond) cap += `│ • 💎 ${msn.reward.diamond}\n`
-  if (msn.reward.emerald) cap += `│ • 🟢 ${msn.reward.emerald}\n`
-  cap += `╰───────────────────╯`
+  let cap = `╭─❏「 ✅ MISSION CLEAR 」❏\n`
+cap += `│ 📜 *MISI SELESAI*\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+cap += `📋 *INFORMASI MISI*\n`
+cap += `> ↳ 📜 Misi: ${msn.name}\n`
+cap += `> ↳ 👤 Eksekutor: ${executorName}\n`
+cap += `> ↳ ✨ Guild Exp: +${reward.exp}${extraText}\n`
+cap += `> ↳ 🏆 Kontribusi: +${msn.contrib} Pts\n\n`
+
+cap += `─━━━━━━━━━━━━━━─\n\n`
+
+cap += `🎁 *HADIAH MEMBER*\n`
+cap += `> ↳ 💰 Money: Rp ${reward.money.toLocaleString('id-ID')}\n`
+if (msn.reward.diamond) cap += `> ↳ 💎 Diamond: ${msn.reward.diamond}\n`
+if (msn.reward.emerald) cap += `> ↳ 💚 Emerald: ${msn.reward.emerald}\n`
+
+cap += `\n╰─━━━━━━━━━━━━━━─`
 
   return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [m.sender] } })
 }

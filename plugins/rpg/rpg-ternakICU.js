@@ -1,12 +1,19 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
-let handler = async (m) => {
-  if(!global.icuTernak ||!global.icuTernak[m.sender])
-    return m.reply('❌ Kamu tidak punya hewan di ICU')
+let handler = async (m, { args }) => {
+  if(!global.icuTernak || !global.icuTernak[m.sender])
+    return m.reply(
+      `╭─❏「 🏥 ICU TERNAK 」❏\n` +
+      `│ ❌ *TIDAK ADA HEWAN DI ICU*\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
 
   let data = global.icuTernak[m.sender]
   const wdb = loadDB()
-  let user = getUserRPG(wdb, m.sender).rpg
+  let userData = getUserRPG(wdb, m.sender)
+  let user = userData?.rpg || userData
+
+  if (!user) return m.reply('❌ Data RPG tidak ditemukan.')
 
   if(!user.ternak) user.ternak = {} // init jaga2
 
@@ -19,8 +26,17 @@ let handler = async (m) => {
   delete global.icuTernak[m.sender]
   saveDB(wdb)
 
-  return m.reply(`┌───❏「 🏥 PENYELAMATAN BERHASIL 」❏\n│\n│ ${data.d1.emoji} ${data.d1.nama} + ${data.d2.emoji} ${data.d2.nama}\n│ Status: SEHAT KEMBALI\n│\n│ 💰 -Rp ${data.biayaObat.toLocaleString()}\n│\n│ Hewan sudah kembali ke kandang\n└───────────────────`)
+  return m.reply(
+    `╭─❏「 🏥 PENYELAMATAN BERHASIL 」❏\n` +
+    `│ 🐄 *${data.d1.nama} ${data.d1.emoji} + ${data.d2.nama}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ 📋 Status : ${args?.[0] === 'auto' ? 'Auto ICU dibayar' : 'Sehat kembali'}\n` +
+    `> ↳ 💰 Biaya : -Rp ${data.biayaObat.toLocaleString()}\n` +
+    `> ↳ 🏡 Hewan sudah kembali ke kandang\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 }
+
 handler.help = ['icu']
 handler.tags = ['rpg']
 handler.command = /^(icu|obati)$/i

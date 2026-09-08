@@ -1,4 +1,11 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
+
+const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
+function safeEmoji(value, fallback = '❓') {
+  if (typeof value !== 'string') return fallback
+  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
+}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -26,35 +33,55 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let choice = text ? text.toLowerCase() : ''
 
-  if (!choice || !resep[choice]) {
-    let listHarga = `*───「 CRAFTING RECIPE 」───*\n\n`
-    for (let i in resep) {
-      let r = resep[i]
-      listHarga += `🛠️ *${i.toUpperCase()}*\n`
-      listHarga += `  - ⛓️ Iron: ${r.iron} | 🪵 Wood: ${r.wood}\n`
-      listHarga += `  - 🪨 Stone: ${r.stone} | 🪙 Gold: ${r.gold}\n`
-      listHarga += `  - 💰 Rp ${r.money.toLocaleString()} | 🌟 Efek: _${r.desc}_\n\n`
-    }
-    listHarga += `*Contoh:* Ketik ${usedPrefix}${command} sword`
+ if (!choice || !resep[choice]) {
+  let listHarga = `╭─❏「 🛠️ CRAFTING RECIPE 」❏\n`
+  listHarga += `│ Resep equipment dan bahan yang dibutuhkan.\n`
+  listHarga += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    return sendRpgMsg(conn, m, listHarga, 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg')
+  for (let i in resep) {
+    let r = resep[i]
+
+    listHarga += `🛠️ *${i.toUpperCase()}*\n`
+    listHarga += `> ⛓️ Iron: ${r.iron}\n`
+    listHarga += `> 🪵 Wood: ${r.wood}\n`
+    listHarga += `> 🪨 Stone: ${r.stone}\n`
+    listHarga += `> 🪙 Gold: ${r.gold}\n`
+    listHarga += `> 💰 Biaya: Rp ${r.money.toLocaleString()}\n`
+    listHarga += `> 🌟 Efek: ${r.desc}\n`
+    listHarga += `\n─━━━━━━━━━━━━━━─\n`
   }
 
-  if (user[choice] && user[choice] > 0) {
-    return m.reply(`❌ Kamu sudah memiliki ${choice.toUpperCase()}! Gunakan *.upgrade ${choice}* untuk memperkuatnya.`)
-  }
+  listHarga += `\n📌 *CONTOH*\n`
+  listHarga += `> ↳ *.craft sword*`
+
+  return sendRpgMsg(
+    conn,
+    m,
+    listHarga,
+    'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg'
+  )
+}
+
+if (user[choice] && user[choice] > 0) {
+  return m.reply(
+    `╭─❏「 ❌ CRAFTING 」❏\n` +
+    `│ 🛠️ Kamu sudah memiliki ${choice.toUpperCase()}!\n` +
+    `│ ↳ Gunakan *.upgrade ${choice}* untuk memperkuatnya.\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
 
   let item = resep[choice]
-  if ((user.iron || 0) < item.iron) return m.reply(`❌ Iron tidak cukup! Butuh ${item.iron}.`)
-  if ((user.wood || 0) < item.wood) return m.reply(`❌ Wood tidak cukup! Butuh ${item.wood}.`)
-  if ((user.stone || 0) < item.stone) return m.reply(`❌ Stone tidak cukup! Butuh ${item.stone}.`)
-  if ((user.gold || 0) < item.gold) return m.reply(`❌ Gold tidak cukup! Butuh ${item.gold}.`)
+  for (const material of ['iron', 'wood', 'stone', 'gold']) {
+    if ((item[material] || 0) > 0 && getMaterialCount(user, material) < item[material]) {
+      return m.reply(`❌ ${material.charAt(0).toUpperCase() + material.slice(1)} tidak cukup! Butuh ${item[material]}.`)
+    }
+  }
   if ((wdb.money[m.sender] || 0) < item.money) return m.reply(`❌ Uang tidak cukup! Butuh Rp ${item.money.toLocaleString()}.`)
 
-  user.iron -= item.iron
-  user.wood -= item.wood
-  user.stone -= item.stone
-  user.gold -= item.gold
+  for (const material of ['iron', 'wood', 'stone', 'gold']) {
+    if (item[material]) consumeMaterial(user, material, item[material])
+  }
   wdb.money[m.sender] -= item.money
   user[choice] = 1
 
@@ -62,7 +89,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
 
-  return sendRpgMsg(conn, m, `✅ *CRAFTING SUCCESS!*\n\nSelamat! Kamu telah berhasil menempa *${choice.toUpperCase()}* Lv.1.\nSekarang item ini bisa ditingkatkan di menu .upgrade.`, 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg')
+  return sendRpgMsg(conn, m, `╭─❏「 ✅ CRAFTING SUCCESS 」❏\n├[ 🛠️ Equipment ] ${choice.toUpperCase()} Lv.1\n├ Item bisa ditingkatkan di menu .upgrade.\n╰─━━━━━━━━━━━━━━─`, 'https://files.cloudkuimages.guru/images/45c908fe1f71.jpeg')
 }
 
 handler.help = ['craft <item>']

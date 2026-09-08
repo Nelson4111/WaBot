@@ -4,124 +4,192 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let sub = (text || '').toLowerCase().trim()
 
   if (sub === 'pet') {
-    let cap = `╭───「 🐾 PANDUAN LENGKAP PET 」───╮\n`
-    cap += `│ Sistem hewan peliharaan Zeta RPG.\n`
-    cap += `╰─────────────────────────────────╯\n\n`
-    cap += `📌 *CARA MENDAPATKAN PET:*\n`
-    cap += `• *${usedPrefix}pet shop* : Lihat katalog pet yang dapat diadopsi langsung.\n`
-    cap += `• *${usedPrefix}pet adopt <nama>* : Beli pet dari shop.\n`
-    cap += `• *${usedPrefix}pet gacha* : Roll gacha pet (Biaya: Rp 2.500.000 / roll, Pity 100 ke Legend).\n\n`
-    cap += `📌 *PERAWATAN & LEVELING:*\n`
-    cap += `• *${usedPrefix}pet status* : Cek seluruh status, energi, dan mood pet kamu.\n`
-    cap += `• *${usedPrefix}pet feed <nomor>* : Beri makan pet agar energinya pulih.\n`
-    cap += `• *${usedPrefix}pet play <nomor>* : Ajak main agar mood & kebahagiaan naik.\n`
-    cap += `• *${usedPrefix}pet train <nomor>* : Latih pet untuk meningkatkan level & EXP.\n`
-    cap += `• *${usedPrefix}pet rest <nomor>* : Istirahatkan pet yang lelah.\n`
-    cap += `• *${usedPrefix}pet clean <nomor>* : Mandikan pet yang kotor.\n\n`
-    cap += `📌 *INCOME & AKTIVITAS:* \n`
-    cap += `• *${usedPrefix}pet claim* : Klaim penghasilan pasif harian dari pet penghasil uang (Kucing Dewa, Numby, Alien, Poop).\n`
-    cap += `• *${usedPrefix}pet dispatch <nomor>* : Kirim pet untuk ekspedisi mencari item langka.\n`
-    cap += `• *${usedPrefix}pet battle <nomor> @user* : Tantang pet pemain lain bertarung.\n`
-    cap += `• *${usedPrefix}pet release / sell* : Lepaskan atau jual pet jika slot penuh.\n`
-    cap += `╰─────────────────────────────────╯`
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
+    let cap = `╭─❏「 🐾 PANDUAN LENGKAP PET 」❏\n`
+    cap += `│ Hewan peliharaan Avelia RPG.\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+    cap += `🐾 *CARA MENDAPATKAN PET*\n`
+    cap += `> *${usedPrefix}pet shop*\n`
+    cap += `> ↳ Lihat katalog pet yang dapat diadopsi langsung.\n`
+    cap += `> *${usedPrefix}pet adopt <nama>*\n`
+    cap += `> ↳ Beli pet dari shop.\n`
+    cap += `> *${usedPrefix}pet gacha*\n`
+    cap += `> ↳ Roll gacha pet dengan biaya Rp 2.500.000 per roll.\n`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n`
+    cap += `🛡️ *PERAWATAN & LEVELING*\n`
+    cap += `> *${usedPrefix}pet status*\n`
+    cap += `> ↳ Cek status, energi, dan mood pet.\n`
+    cap += `> *${usedPrefix}pet feed <nomor>*\n`
+    cap += `> ↳ Beri makan pet agar energinya pulih.\n`
+    cap += `> *${usedPrefix}pet play <nomor>*\n`
+    cap += `> ↳ Ajak pet bermain untuk menaikkan mood.\n`
+    cap += `> *${usedPrefix}pet train <nomor>*\n`
+    cap += `> ↳ Latih pet untuk meningkatkan level dan EXP.\n`
+    cap += `> *${usedPrefix}pet rest <nomor>*\n`
+    cap += `> ↳ Istirahatkan pet yang lelah.\n`
+    cap += `> *${usedPrefix}pet clean <nomor>*\n`
+    cap += `> ↳ Mandikan pet yang kotor.\n`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n`
+    cap += `💰 *INCOME & AKTIVITAS*\n`
+    cap += `> *${usedPrefix}pet claim*\n`
+    cap += `> ↳ Klaim penghasilan pasif harian dari pet penghasil uang.\n`
+    cap += `> *${usedPrefix}pet dispatch <nomor>*\n`
+    cap += `> ↳ Kirim pet mencari item langka.\n`
+    cap += `> *${usedPrefix}pet battle <nomor> @user*\n`
+    cap += `> ↳ Tantang pet pemain lain bertarung.\n`
+    cap += `> *${usedPrefix}pet release / sell*\n`
+    cap += `> ↳ Lepaskan atau jual pet saat slot penuh.\n`
+
+    cap += `╰─━━━━━━━━━━━━━━─`
+
+    return sendRpgMsg(
+      conn,
+      m,
+      cap,
+      'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+    )
   }
 
   if (['rship', 'pasangan', 'nikah', 'kawin', 'harem'].includes(sub)) {
-    let cap = `╭───「 💕 PANDUAN PASANGAN & NIKAH 」───╮\n`
-    cap += `│ Sistem percintaan & pernikahan pemain/NPC.\n`
-    cap += `╰─────────────────────────────────────╯\n\n`
-    cap += `💍 *PERNIKAHAN ANTAR PEMAIN (P2P):*\n`
-    cap += `• *${usedPrefix}lamar @tag* : Mengajukan lamaran pernikahan ke pemain lain.\n`
-    cap += `• *${usedPrefix}terima* : Menerima lamaran (reply pesan atau ketik langsung).\n`
-    cap += `• *${usedPrefix}tolak* : Menolak lamaran pernikahan.\n`
-    cap += `• *${usedPrefix}pasangan* : Cek profil cinta, cincin, dan level bucin bersama pasangan.\n`
-    cap += `• *${usedPrefix}kencan* : Ajak pasangan kencan untuk menaikkan poin bucin.\n`
-    cap += `• *${usedPrefix}belicincin <tipe>* : Beli cincin pernikahan mewah di toko cincin.\n`
-    cap += `• *${usedPrefix}hadiah @tag <jumlah>* : Beri kado romantis ke pasangan.\n`
-    cap += `• *${usedPrefix}kartunikah* : Tampilkan Kartu Nikah Digital resmi.\n`
-    cap += `• *${usedPrefix}cerai @tag* : Mengajukan perceraian sepihak.\n\n`
-    cap += `👑 *SISTEM HAREM & NPC RPG:* \n`
-    cap += `• *${usedPrefix}rship* : Menu utama sistem hubungan karakter NPC.\n`
-    cap += `• *${usedPrefix}date <nomor>* : Kencan dengan waifu/husbando NPC.\n`
-    cap += `• *${usedPrefix}nikahrpg <nomor>* : Menikahi karakter waifu favoritmu.\n`
-    cap += `• *${usedPrefix}anak* : Rawat dan besarkan anak dalam game.\n`
-    cap += `╰─────────────────────────────────────╯`
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
-  }
+    let cap = `╭─❏「 💕 PANDUAN PASANGAN & NIKAH 」❏\n`
+    cap += `│ Hubungan percintaan.\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  if (['csm', 'chainsaw', 'hunter'].includes(sub)) {
-    let cap = `╭───「 ⛓️ PANDUAN DEVIL HUNTER CSM 」───╮\n`
-    cap += `│ Sistem Pemburu Iblis Chainsaw Man.\n`
-    cap += `╰─────────────────────────────────────╯\n\n`
-    cap += `🩸 *FITUR UTAMA:*\n`
-    cap += `• *${usedPrefix}csm* : Buka menu profil, level, lokasi & inventaris Hunter.\n`
-    cap += `• *${usedPrefix}csm gender <pria/wanita>* : Tentukan gender Hunter kamu.\n`
-    cap += `• *${usedPrefix}csm mission* : Lawan iblis liar untuk mengumpulkan Darah & EXP.\n`
-    cap += `• *${usedPrefix}csm visit <lokasi>* : Berpindah tempat (Mall, Neraka, Markas, dll).\n`
-    cap += `• *${usedPrefix}csm rest* : Istirahat untuk memulihkan 40% HP.\n`
-    cap += `• *${usedPrefix}csm blood <jumlah>* : Konversi uang Bank menjadi Darah Iblis.\n\n`
-    cap += `👥 *PARTNER & KONTRAK IBLIS:*\n`
-    cap += `• *${usedPrefix}csm partner database* : Daftar 62 karakter yang dapat direkrut.\n`
-    cap += `• *${usedPrefix}csm partner recruit <nomor>* : Rekrut partner bertarung.\n`
-    cap += `• *${usedPrefix}csm contract* : Katalog kontrak kekuatan iblis berkekuatan tinggi.\n`
-    cap += `• *${usedPrefix}csm contract <nomor> deal* : Ikat kontrak iblis secara permanen.\n\n`
-    cap += `🏆 *PROGRESSI & RAID HARIAN:*\n`
-    cap += `• *${usedPrefix}csm story* : Jelajahi 14 Arc kisah epik Chainsaw Man.\n`
-    cap += `• *${usedPrefix}csm raid* : Bergabung di Raid Boss harian bersama pemain lain.\n`
-    cap += `• *${usedPrefix}csm ending* : Raih salah satu dari 7 takdir akhir perjalananmu.\n`
-    cap += `╰─────────────────────────────────────╯`
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
+    cap += `💍 *PERNIKAHAN ANTAR PEMAIN (P2P)*\n`
+    cap += `> *${usedPrefix}lamar @tag*\n`
+    cap += `> ↳ Mengajukan lamaran pernikahan.\n`
+    cap += `> *${usedPrefix}terima*\n`
+    cap += `> ↳ Menerima lamaran.\n`
+    cap += `> *${usedPrefix}tolak*\n`
+    cap += `> ↳ Menolak lamaran.\n`
+    cap += `> *${usedPrefix}pasangan*\n`
+    cap += `> ↳ Cek profil cinta dan level bucin.\n`
+    cap += `> *${usedPrefix}kencan*\n`
+    cap += `> ↳ Menaikkan poin bucin bersama pasangan.\n`
+    cap += `> *${usedPrefix}belicincin <tipe>*\n`
+    cap += `> ↳ Beli cincin pernikahan.\n`
+    cap += `> *${usedPrefix}hadiah @tag <jumlah>*\n`
+    cap += `> ↳ Beri kado romantis.\n`
+    cap += `> *${usedPrefix}kartunikah*\n`
+    cap += `> ↳ Tampilkan Kartu Nikah Digital.\n`
+    cap += `> *${usedPrefix}cerai @tag*\n`
+    cap += `> ↳ Mengajukan perceraian sepihak.\n`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n`
+    cap += `👑 *SISTEM HAREM & NPC RPG*\n`
+    cap += `> *${usedPrefix}rship*\n`
+    cap += `> ↳ Buka sistem hubungan karakter NPC.\n`
+    cap += `> *${usedPrefix}date <nomor>*\n`
+    cap += `> ↳ Kencan dengan karakter NPC.\n`
+    cap += `> *${usedPrefix}nikahrpg <nomor>*\n`
+    cap += `> ↳ Menikahi karakter waifu pilihanmu.\n`
+    cap += `> *${usedPrefix}anak*\n`
+    cap += `> ↳ Rawat dan besarkan anak dalam game.\n`
+
+    cap += `╰─━━━━━━━━━━━━━━─`
+
+    return sendRpgMsg(
+      conn,
+      m,
+      cap,
+      'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+    )
   }
 
   if (['kebun', 'tanam', 'panen', 'ternak', 'breeding'].includes(sub)) {
-    let cap = `╭───「 🏡 PANDUAN KEBUN & TERNAK 」───╮\n`
-    cap += `│ Sistem Agrikultur & Peternakan Silang.\n`
-    cap += `╰────────────────────────────────────╯\n\n`
-    cap += `🌾 *PERKEBUNAN & PANEN:*\n`
-    cap += `• *${usedPrefix}tanam <bibit> <jumlah>* : Menanam tanaman di ladang kamu.\n`
-    cap += `• *${usedPrefix}kebun* : Pantau kondisi ladang dan tanaman yang siap panen.\n`
-    cap += `• *${usedPrefix}panen* : Panen seluruh hasil kebun dan simpan ke gudang.\n`
-    cap += `• *${usedPrefix}jualpanen* : Jual hasil panen ke pasar dengan harga tinggi!\n\n`
-    cap += `🐄 *PETERNAKAN & KAWIN SILANG (EVOLUSI):*\n`
-    cap += `• *${usedPrefix}ternak* : Lihat seluruh stok hewan ternak yang kamu miliki.\n`
-    cap += `• *${usedPrefix}kawin <hewan1> <hewan2>* : Kawinkan 2 hewan untuk evolusi.\n`
-    cap += `• *${usedPrefix}kawin <hewan1> <hewan2> asuransi* : Kawin dengan jaminan asuransi ICU bila gagal.\n`
-    cap += `• *${usedPrefix}icu* : Rawat dan selamatkan hewan yang sekarat di ICU.\n`
-    cap += `╰────────────────────────────────────╯`
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
+    let cap = `╭─❏「 🏡 PANDUAN KEBUN & TERNAK 」❏\n`
+    cap += `│ Agrikultur & Peternakan.\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+    cap += `🌾 *PERKEBUNAN & PANEN*\n`
+    cap += `> *${usedPrefix}tanam <bibit> <jumlah>*\n`
+    cap += `> ↳ Menanam tanaman di ladang.\n`
+    cap += `> *${usedPrefix}kebun*\n`
+    cap += `> ↳ Melihat hasil panen yang tersimpan.\n`
+    cap += `> *${usedPrefix}panen*\n`
+    cap += `> ↳ Melihat status dan memanen hasil kebun.\n`
+    cap += `> *${usedPrefix}jualpanen*\n`
+    cap += `> ↳ Menjual hasil panen ke koperasi.\n`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n`
+    cap += `🐄 *PETERNAKAN & KAWIN SILANG (EVOLUSI)*\n`
+    cap += `> *${usedPrefix}ternak*\n`
+    cap += `> ↳ Lihat stok hewan ternak.\n`
+    cap += `> *${usedPrefix}kawin <hewan1> <hewan2>*\n`
+    cap += `> ↳ Kawinkan hewan untuk evolusi.\n`
+    cap += `> *${usedPrefix}kawin <hewan1> <hewan2> asuransi*\n`
+    cap += `> ↳ Kawin dengan jaminan asuransi ICU.\n`
+    cap += `> *${usedPrefix}icu*\n`
+    cap += `> ↳ Rawat hewan yang sekarat.\n`
+
+    cap += `╰─━━━━━━━━━━━━━━─`
+
+    return sendRpgMsg(
+      conn,
+      m,
+      cap,
+      'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+    )
   }
 
   // DEFAULT / DIRECTORY MENU
-  let cap = `*╭───「 📖 ZETA RPG GAME GUIDE 」───╮*\n`
-  cap += `│ Selamat datang di Pusat Panduan Zeta RPG!\n`
-  cap += `│ Pilih kategori untuk melihat tutorial lengkap:\n`
-  cap += `*╰────────────────────────────────╯*\n\n`
-  cap += `🐾 *1. PANDUAN SISTEM PET*\n`
-  cap += ` → Ketik: *${usedPrefix}${command} pet*\n`
-  cap += `   _Adopt, Gacha, Training, Battle, & Claim Passive_\n\n`
-  cap += `💕 *2. PANDUAN PASANGAN & NIKAH*\n`
-  cap += ` → Ketik: *${usedPrefix}${command} pasangan*\n`
-  cap += `   _Lamaran, Akad Nikah, Kencan, Cincin, & Harem NPC_\n\n`
-  cap += `⛓️ *3. PANDUAN DEVIL HUNTER CSM*\n`
-  cap += ` → Ketik: *${usedPrefix}${command} csm*\n`
-  cap += `   _Story 14 Arc, Kontrak Iblis, Raid Boss, & Darah_\n\n`
-  cap += `🏡 *4. PANDUAN KEBUN & TERNAK*\n`
-  cap += ` → Ketik: *${usedPrefix}${command} kebun*\n`
-  cap += `   _Tanam, Panen, Kawin Silang Hewan, Asuransi & ICU_\n\n`
-  cap += `⚔️ *5. PANDUAN PETUALANGAN LAIN:*\n`
-  cap += ` • *${usedPrefix}inv* : Cek status & tas pemain\n`
-  cap += ` • *${usedPrefix}dungeon* : Taklukkan bos dungeon\n`
-  cap += ` • *${usedPrefix}mancing* : Menangkap ikan langka\n`
-  cap += ` • *${usedPrefix}mining* & *${usedPrefix}forge* : Tambang & lebur logam\n`
-  cap += ` • *${usedPrefix}upgrade* : Tingkatkan tier senjata & zirah\n`
-  cap += ` • *${usedPrefix}shop* : Jual dan beli kebutuhan RPG\n`
-  cap += `*╰────────────────────────────────╯*`
+  let cap = `╭─❏「 📖 AVELIA RPG GAME GUIDE 」❏\n`
+  cap += `│ Pusat Panduan Avelia RPG!\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
+  cap += `🐾 *1. PANDUAN SISTEM PET*\n`
+  cap += `> *${usedPrefix}${command} pet*\n`
+  cap += `> ↳ Adopt, gacha, training, battle, dan claim passive.\n`
+
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `💕 *2. PANDUAN PASANGAN & NIKAH*\n`
+  cap += `> *${usedPrefix}${command} pasangan*\n`
+  cap += `> ↳ Lamaran, nikah, kencan, cincin, dan harem NPC.\n`
+
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `🏡 *3. PANDUAN KEBUN & TERNAK*\n`
+  cap += `> *${usedPrefix}${command} kebun*\n`
+  cap += `> ↳ Tanam, panen, ternak, asuransi, dan ICU.\n`
+
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `⚔️ *4. PANDUAN PETUALANGAN LAIN*\n`
+  cap += `> *${usedPrefix}inv*\n`
+  cap += `> ↳ Cek status dan inventory pemain.\n`
+  cap += `> *${usedPrefix}bag*\n`
+  cap += `> ↳ Cek isi backpack material dan item adventure.\n`
+  cap += `> *${usedPrefix}ladang*\n`
+  cap += `> ↳ Cek progress tanam dan waktu panen.\n`
+  cap += `> *${usedPrefix}dapur*\n`
+  cap += `> ↳ Cek antrean masakan dan buku resep.\n`
+  cap += `> *${usedPrefix}job*\n`
+  cap += `> ↳ Cek status dan daftar pekerjaan.\n`
+  cap += `> *${usedPrefix}guild loot*\n`
+  cap += `> ↳ Cek diamond dan emerald dari misi guild.\n`
+  cap += `> *${usedPrefix}dungeon*\n`
+  cap += `> ↳ Taklukkan bos dungeon.\n`
+  cap += `> *${usedPrefix}mancing*\n`
+  cap += `> ↳ Menangkap ikan langka.\n`
+  cap += `> *${usedPrefix}mining* / *${usedPrefix}forge*\n`
+  cap += `> ↳ Menambang dan melebur logam.\n`
+  cap += `> *${usedPrefix}upgrade*\n`
+  cap += `> ↳ Meningkatkan tier senjata dan zirah.\n`
+  cap += `> *${usedPrefix}shop*\n`
+  cap += `> ↳ Menjual dan membeli kebutuhan RPG.\n`
+
+  cap += `\n╰─━━━━━━━━━━━━━━─`
+
+  return sendRpgMsg(
+    conn,
+    m,
+    cap,
+    'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+  )
 }
 
 handler.help = ['caramain [kategori]', 'guide [kategori]', 'rpghelp [kategori]']
 handler.tags = ['rpg']
 handler.command = /^(caramain|guide|rpghelp|tutorialrpg|panduanrpg)$/i
+
 export default handler

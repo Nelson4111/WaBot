@@ -32,25 +32,30 @@ let handler = async (m, { conn }) => {
     .sort((a, b) => (wdb.users[b].rpg.diamond || 0) - (wdb.users[a].rpg.diamond || 0))
     .slice(0, 10)
 
-  let text = `*───「 ZETA RPG LEADERBOARD 」───*\n\n`
+  let text = `╭─❏「 🏆 AVELIA RPG LEADERBOARD 」❏\n`
+  text += `│ 🏆 *PERINGKAT PEMAIN*\n`
+  text += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  // Render Top Level
   text += `🆙 *TOP 10 LEVEL*\n`
   topLevel.forEach((id, i) => {
-    text += `${i + 1}. ${formatUser(id)}\n   └─ *Level ${wdb.users[id].rpg.level}*\n`
+    text += `🏆 *${i + 1}. ${formatUser(id)}*\n`
+    text += `> ↳ 🆙 Level ${wdb.users[id].rpg.level}\n`
   })
 
   text += `\n💰 *TOP 10 KEKAYAAN*\n`
   topMoney.forEach((id, i) => {
-    text += `${i + 1}. ${formatUser(id)}\n   └─ *Rp ${(wdb.money[id] || 0).toLocaleString()}*\n`
+    text += `💰 *${i + 1}. ${formatUser(id)}*\n`
+    text += `> ↳ Rp ${(wdb.money[id] || 0).toLocaleString()}\n`
   })
 
   text += `\n💎 *TOP 10 COLLECTOR*\n`
   topDiamond.forEach((id, i) => {
-    text += `${i + 1}. ${formatUser(id)}\n   └─ *${wdb.users[id].rpg.diamond || 0} Diamond*\n`
+    text += `💎 *${i + 1}. ${formatUser(id)}*\n`
+    text += `> ↳ ${wdb.users[id].rpg.diamond || 0} Diamond\n`
   })
 
-  text += `\n_Tingkatkan terus statusmu untuk menjadi nomor satu!_`
+  text += `\n─━━━━━━━━━━━━━━─\n\n`
+  text += `💡 Tingkatkan terus statusmu untuk menjadi nomor satu!`
 
   let pp = 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg'
   

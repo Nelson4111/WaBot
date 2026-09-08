@@ -26,14 +26,15 @@ let handler = async (m, { conn }) => {
   else if (userYT.subs >= 500000) rank = "Gold Play Button"
   else if (userYT.subs >= 100000) rank = "Silver Play Button"
 
-  let caption = `*───「 CHANNEL INFO 」───*\n\n`
-  caption += `Nama: ${userYT.name}\n`
-  caption += `Rank: ${rank}\n`
-  caption += `Level: ${userYT.level}\n\n`
-  caption += `Statistik Seluruh Waktu:\n`
-  caption += `┌ Total *Views*: ${userYT.views.toLocaleString()}\n`
-  caption += `│ Total *Likes*: ${(userYT.likes || 0).toLocaleString()}\n`
-  caption += `└ *Subscribers*: ${userYT.subs.toLocaleString()}\n`
+  let caption = `╭─❏「 📺 CHANNEL INFO 」❏\n`
+  caption += `├[ Nama ] ${userYT.name}\n`
+  caption += `├[ Rank ] ${rank}\n`
+  caption += `├[ Level ] Lv.${userYT.level}\n`
+  caption += `├─━━━━━━━━━━━━━━─\n\n├ 📊 *STATISTIK*\n`
+  caption += `├[ 👁️ Views ] ${userYT.views.toLocaleString()}\n`
+  caption += `├[ 👍 Likes ] ${(userYT.likes || 0).toLocaleString()}\n`
+  caption += `├[ 👥 Subscribers ] ${userYT.subs.toLocaleString()}\n`
+  caption += `╰─━━━━━━━━━━━━━━─`
 
   return sendRpgMsg(conn, m, caption.trim(), ppUrl)
 }

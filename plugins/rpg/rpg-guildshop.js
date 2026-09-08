@@ -25,18 +25,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let durasi = 2 * 60 * 60 * 1000 // 2 jam
 
   if (!text) {
-    let cap = `╭──「 🛍️ GUILD SHOP 」──╮\n`
-    cap += `│ 📊 *Poin Pribadi:* ${userContrib.toLocaleString()} Pts\n╰───────────────────╯\n\n`
-    cap += `╭──「 ITEM BUFF 2 JAM 」──╮\n`
-    cap += `│ 1. ⚔️ *Attack* - 500 Pts\n`
-    cap += `│ 2. 🛡️ *Defense* - 500 Pts\n`
-    cap += `│ 3. 🔮 *Magic* - 500 Pts\n`
-    cap += `│ 4. 💊 *Heal* - 700 Pts\n`
-    cap += `│ 5. 📈 *Multiplier* - 800 Pts\n`
-    cap += `│ 6. 🍀 *Luck* - 900 Pts\n`
-    cap += `│ 7. ⚡ *Speed* - 900 Pts\n`
-    cap += `╰───────────────────╯\n`
-    cap += `_Gunakan ${usedPrefix}${command} [angka]_`
+    let cap = `╭─❏「 🛍️ GUILD SHOP 」❏\n`
+    cap += `├[ 📊 Poin Pribadi ] ${userContrib.toLocaleString()} Pts\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n├ 📦 *ITEM BUFF 2 JAM*\n├[ 1. ⚔️ Attack ] 500 Pts\n├[ 2. 🛡️ Defense ] 500 Pts\n├[ 3. 🔮 Magic ] 500 Pts\n├[ 4. 💊 Heal ] 700 Pts\n├[ 5. 📈 Multiplier ] 800 Pts\n├[ 6. 🍀 Luck ] 900 Pts\n├[ 7. ⚡ Speed ] 900 Pts\n╰─━━━━━━━━━━━━━━─\n├ Gunakan *${usedPrefix}${command} [angka]*`
 
     return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
   }

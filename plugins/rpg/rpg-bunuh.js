@@ -4,7 +4,7 @@ let handler = async (m, { conn }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
   if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
-  if(!userRPG.riwayat) userRPG.riwayat = []
+  if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
   // CEK PENJARA
   if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
@@ -25,8 +25,8 @@ let handler = async (m, { conn }) => {
     return m.reply(`⏳ *COOLDOWN BUNUH*\nTunggu *${jam}j ${menit}m* lagi`)
   }
 
-  let who = m.quoted?.sender
-  if (!who) return m.reply(`❌ Reply pesan target yg mau dibunuh`)
+  let who = m.mentionedJid?.[0] || m.quoted?.sender
+  if (!who) return m.reply(`❌ Tag atau reply pesan target yg mau dibunuh`)
   if (who === m.sender) return m.reply('❌ Ga bisa bunuh diri sendiri')
 
   let target = getUserRPG(wdb, who).rpg
@@ -52,6 +52,7 @@ let handler = async (m, { conn }) => {
       userRPG.penjara = Date.now()
       userRPG.lamaPenjara = 7200000 // 2 jam
       userRPG.tebusan = 2000000 // 2jt
+      userRPG.kasus = '🔪 Bunuh'
       userRPG.sel = sel
       wdb.penjara.push(m.sender)
     }
@@ -61,13 +62,13 @@ let handler = async (m, { conn }) => {
     userRPG.riwayat.unshift(`💀 Mati saat bunuh @${who.split('@')[0]}`)
 
     saveDB(wdb)
-    let txt = `┌───❏「 💀 BUNUH GAGAL 」❏\n`
+    let txt = `╭─❏「 💀 BUNUH GAGAL 」❏\n`
     txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += `│ ⚰️ Kamu dibunuh duluan\n`
     txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n`
     txt += `│ 💰 Tebusan: *Rp 2.000.000*\n`
-    txt += `└───────────────────`
+    txt += `╰─━━━━━━━━━━━━━━─`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
@@ -86,17 +87,20 @@ let handler = async (m, { conn }) => {
   userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Bunuh @${who.split('@')[0]}`)
   saveDB(wdb)
 
-  let txt = `┌───❏「 💀 BUNUH BERHASIL 」❏\n`
-  txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
-  txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
-  txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} *${persen}%*\n`
-  txt += `└───────────────────\n`
-  txt += `⚰️ *TARGET MATI!* Harus.heal dulu`
+let txt = `╭─❏「 💀 BUNUH BERHASIL 」❏\n`
+txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
+txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
+txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} • ${persen}%\n`
+txt += `╰─━━━━━━━━━━━━━━─\n\n`
+txt += `⚰️ *TARGET MATI!*\n`
+txt += `> ↳ Harus *heal* terlebih dahulu.`
 
-  conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
+
 handler.help = ['bunuh (reply)']
 handler.tags = ['rpg']
 handler.command = /^(bunuh|kill)$/i
+handler.alias = ['bunuh', 'kill']
 handler.group = true
 export default handler

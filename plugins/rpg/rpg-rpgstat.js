@@ -16,9 +16,10 @@ let handler = async (m, { conn }) => {
   let topPlayer = 'Tidak ada'
 
   // Hitung saldo global dari wdb.money
-  for (let jid in wdb.money) {
-    totalMoney += wdb.money[jid]
-  }
+  const moneyDB = wdb.money || {}
+  users.forEach(([jid, data]) => {
+    totalMoney += Number(moneyDB[jid] ?? data.money ?? data.rpg?.money ?? 0)
+  })
 
   // Hitung statistik material dan level
   users.forEach(([jid, data]) => {
@@ -37,17 +38,30 @@ let handler = async (m, { conn }) => {
   let avgLevel = (totalLevel / totalUsers).toFixed(1)
   let pp = await conn.profilePictureUrl(conn.user.jid, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
 
-  let cap = `*───「 RPG GLOBAL STATS 」───*\n\n`
-  cap += `📊 *Populasi Pemain:* ${totalUsers} User\n`
-  cap += `💰 *Total Uang Beredar:* Rp ${totalMoney.toLocaleString()}\n`
-  cap += `⛏️ *Total Iron Terkumpul:* ${totalIron.toLocaleString()}\n`
-  cap += `✨ *Total Gold Terkumpul:* ${totalGold.toLocaleString()}\n\n`
-  
-  cap += `*───「 WORLD RECORD 」───*\n`
-  cap += `🏆 *Pemain Terkuat:* ${topPlayer}\n`
-  cap += `📈 *Level Tertinggi:* Lv.${highestLevel}\n`
-  cap += `📚 *Rata-rata Level:* Lv.${avgLevel}\n\n`
-  cap += `_Statistik ini diambil langsung dari database pusat ZETA RPG._`
+  let cap = `╭─❏「 📊 RPG GLOBAL STATS 」❏\n`
+cap += `│ 📊 *STATISTIK RPG GLOBAL*\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+cap += `🌎 *DATA DUNIA*\n`
+cap += `> 👥 *Jumlah Pemain*\n`
+cap += `> ↳ ${totalUsers} User\n\n`
+cap += `> 💰 *Uang Terkumpul*\n`
+cap += `> ↳ Rp ${totalMoney.toLocaleString()}\n\n`
+cap += `> ⛏️ *Iron Terkumpul*\n`
+cap += `> ↳ ${totalIron.toLocaleString()}\n\n`
+cap += `> ✨ *Gold Terkumpul*\n`
+cap += `> ↳ ${totalGold.toLocaleString()}\n\n`
+
+cap += `─━━━━━━━━━━━━━━─\n\n`
+
+cap += `🏆 *WORLD RECORD*\n`
+cap += `> ↳ 🏆 Pemain Terkuat: ${topPlayer}\n`
+cap += `> ↳ 📈 Level Tertinggi: Lv.${highestLevel}\n`
+cap += `> ↳ 📚 Rata-rata Level: Lv.${avgLevel}\n\n`
+
+cap += `─━━━━━━━━━━━━━━─\n\n`
+cap += `📌 *INFO*\n`
+cap += `> ↳ Statistik dari database pusat AVELIA RPG.`
 
   return sendRpgMsg(conn, m, cap, pp)
 }

@@ -50,25 +50,43 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     'legendary': { name: 'Sky Palace', enemy: 'Celestial Dragon', minLevel: 300, minSword: 70, hpEnemy: 500000, dmgEnemy: 7500, reward: { exp: 450000, money: 9000000, gold: 2400, diamond: 500 }, cooldown: 120000 },
     'godlike': { name: 'Temple of Time', enemy: 'Chronos', minLevel: 400, minSword: 80, hpEnemy: 700000, dmgEnemy: 9800, reward: { exp: 650000, money: 13000000, gold: 3500, diamond: 800 }, cooldown: 120000 },
     'divine': { name: 'End of the World', enemy: 'World Eater', minLevel: 550, minSword: 90, hpEnemy: 1000000, dmgEnemy: 13000, reward: { exp: 900000, money: 18000000, gold: 5000, diamond: 1200 }, cooldown: 120000 },
-    'transcendent': { name: 'Astral Ocean', enemy: 'Astral Leviathan', minLevel: 750, minSword: 100, hpEnemy: 1500000, dmgEnemy: 18000, reward: { exp: 1300000, money: 25000000, gold: 7000, limit: 100 }, cooldown: 120000 },
-    'eternity': { name: 'Heavenly Throne', enemy: 'The Fallen Seraph', minLevel: 1000, minSword: 120, hpEnemy: 2200000, dmgEnemy: 25000, reward: { exp: 1900000, money: 35000000, gold: 9500, limit: 250 }, cooldown: 120000 },
-    'cosmic': { name: 'Cosmic Hell', enemy: 'Emperor of Hell', minLevel: 1400, minSword: 140, hpEnemy: 3200000, dmgEnemy: 35000, reward: { exp: 2700000, money: 50000000, gold: 13000, limit: 500 }, cooldown: 120000 },
-    'apocalypse': { name: 'Void Kingdom', enemy: 'Void Emperor', minLevel: 1900, minSword: 170, hpEnemy: 4500000, dmgEnemy: 50000, reward: { exp: 4000000, money: 75000000, gold: 18000, limit: 1000 }, cooldown: 120000 },
-    'final': { name: 'Genesis Realm', enemy: 'The Creator', minLevel: 2500, minSword: 200, hpEnemy: 7000000, dmgEnemy: 75000, reward: { exp: 6000000, money: 120000000, gold: 25000, limit: 2500 }, cooldown: 120000 }
+    'transcendent': { name: 'Astral Ocean', enemy: 'Astral Leviathan', minLevel: 750, minSword: 100, hpEnemy: 1500000, dmgEnemy: 18000, reward: { exp: 1300000, money: 25000000, gold: 7000, limit: 5 }, cooldown: 120000 },
+    'eternity': { name: 'Heavenly Throne', enemy: 'The Fallen Seraph', minLevel: 1000, minSword: 120, hpEnemy: 2200000, dmgEnemy: 25000, reward: { exp: 1900000, money: 35000000, gold: 9500, limit: 10 }, cooldown: 120000 },
+    'cosmic': { name: 'Cosmic Hell', enemy: 'Emperor of Hell', minLevel: 1400, minSword: 140, hpEnemy: 3200000, dmgEnemy: 35000, reward: { exp: 2700000, money: 50000000, gold: 13000, limit: 15 }, cooldown: 120000 },
+    'apocalypse': { name: 'Void Kingdom', enemy: 'Void Emperor', minLevel: 1900, minSword: 170, hpEnemy: 4500000, dmgEnemy: 50000, reward: { exp: 4000000, money: 75000000, gold: 18000, limit: 20 }, cooldown: 120000 },
+    'final': { name: 'Genesis Realm', enemy: 'The Creator', minLevel: 2500, minSword: 200, hpEnemy: 7000000, dmgEnemy: 75000, reward: { exp: 6000000, money: 120000000, gold: 25000, limit: 20 }, cooldown: 120000 }
   }
 
   let type = text?.toLowerCase() || ''
-  if (!type ||!dungeons[type]) {
-    let list = `*───「 RPG DUNGEON 」───*\n\n`
-    for (let i in dungeons) {
-      let d = dungeons[i]
-      let reward = d.reward.diamond? `💎 ${d.reward.diamond}` : d.reward.limit? `🎫 ${d.reward.limit} Limit` : `🪙 ${d.reward.gold}`
-      list += `💀 *${i.toUpperCase()}* (${d.enemy})\n`
-      list += ` - 📊 Syarat: Player Lvl ${d.minLevel} & Sword Lv.${d.minSword}\n`
-      list += ` - 🎁 Reward: ${reward}\n\n`
-    }
-    return m.reply(list + `*Cara Main:* ${usedPrefix}${command} easy`)
+  if (!type || !dungeons[type]) {
+  let list = `╭─❏「 🏰 RPG DUNGEON 」❏\n`
+  list += `│ Pilih dungeon sesuai level dan kekuatan sword.\n`
+  list += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  for (let i in dungeons) {
+    let d = dungeons[i]
+
+    let reward = [
+      d.reward.money ? `💰 Rp ${d.reward.money.toLocaleString()}` : '',
+      d.reward.exp ? `🌟 ${d.reward.exp} XP` : '',
+      d.reward.gold ? `🪙 ${d.reward.gold} Gold` : '',
+      d.reward.diamond ? `💎 ${d.reward.diamond} Diamond` : '',
+      d.reward.limit ? `🎫 ${d.reward.limit} Limit` : ''
+    ].filter(Boolean).join(' - ')
+
+    list += `🏰 *${i.toUpperCase()} • ${d.name}*\n`
+    list += `> 💀 Enemy: ${d.enemy}\n`
+    list += `> ❤️ HP: ${d.hpEnemy.toLocaleString()}\n`
+    list += `> 📊 Syarat: Player Lv.${d.minLevel} • Sword Lv.${d.minSword}\n`
+    list += `> 🎁 Reward: ${reward}\n`
+    list += `\n─━━━━━━━━━━━━━━─\n`
   }
+
+  list += `\n📌 *CARA MAIN*\n`
+  list += `> ↳ *.dungeon easy*`
+
+  return m.reply(list)
+}
 
   let selected = dungeons[type]
 
@@ -95,6 +113,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let dmgReduction = (armorLvl * 15) + Math.floor(bonusDefGuild * 0.1)
   let dmgPerRound = Math.max(Math.ceil(selected.dmgEnemy * 0.15), selected.dmgEnemy - dmgReduction)
+  if (selected.reward.limit) dmgPerRound = Math.ceil(dmgPerRound * 1.35)
   let rawDamage = rounds * dmgPerRound
 
   // Batasi damage proporsional berdasarkan kelebihan level & equipment
@@ -134,20 +153,46 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   saveDB(wdb)
 
-  let winMsg = `*───「 DUNGEON CLEAR 」───*\n\n`
-  winMsg += `✅ Berhasil menaklukkan *${selected.name}*!\n`
-  winMsg += `⚔️ *Total Damage:* ${userDmg.toLocaleString()} ${bonusDmgGuild > 0? '(🛡️ Guild Boost)' : ''}\n`
-  winMsg += `🛡️ *Total Defense:* ${userDef.toLocaleString()} ${bonusDefGuild > 0? '(🛡️ Guild Boost)' : ''}\n`
-  winMsg += `🩸 *HP Terkuras:* -${finalDamage.toLocaleString()}\n`
-  winMsg += `❤️ *Sisa HP:* ${user.darah}/${maxHP}\n\n`
-  winMsg += `🎁 *HADIAH:* \n`
-  winMsg += `• 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
-  winMsg += `• 🌟 XP: +${earnedExp.toLocaleString()}\n`
-  if (earnedGold > 0) winMsg += `• 🪙 Gold: +${earnedGold}\n`
-  if (earnedDiamond > 0) winMsg += `• 💎 Diamond: +${earnedDiamond}\n`
-  if (earnedLimit > 0) winMsg += `• 🎫 Limit: +${earnedLimit}\n`
+  let winMsg = `╭─❏「 🏰 DUNGEON CLEAR 」❏\n`
+winMsg += `│ 🏰 Dungeon: *${selected.name}*\n`
+winMsg += `│ ⚔️ Damage: ${userDmg.toLocaleString()}\n`
 
-  return sendRpgMsg(conn, m, winMsg, 'https://c.termai.cc/i187/iFxwQG')
+if (bonusDmgGuild > 0) {
+  winMsg += `│ ↳ 🏰 Guild Boost Damage: +${bonusDmgGuild}\n`
+}
+
+winMsg += `│ 🛡️ Defense: ${userDef.toLocaleString()}\n`
+
+if (bonusDefGuild > 0) {
+  winMsg += `│ ↳ 🏰 Guild Boost Defense: +${bonusDefGuild}\n`
+}
+
+winMsg += `│ 🩸 HP Terkuras: -${finalDamage.toLocaleString()}\n`
+winMsg += `│ ❤️ Sisa HP: ${user.darah}/${maxHP}\n`
+winMsg += `╰─━━━━━━━━━━━━━━─\n\n`
+
+winMsg += `🎁 *HADIAH*\n`
+winMsg += `> 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
+winMsg += `> 🌟 XP: +${earnedExp.toLocaleString()}\n`
+
+if (earnedGold > 0) {
+  winMsg += `> 🪙 Gold: +${earnedGold}\n`
+}
+
+if (earnedDiamond > 0) {
+  winMsg += `> 💎 Diamond: +${earnedDiamond}\n`
+}
+
+if (earnedLimit > 0) {
+  winMsg += `> 🎫 Limit: +${earnedLimit}\n`
+}
+
+return sendRpgMsg(
+  conn,
+  m,
+  winMsg,
+  'https://c.termai.cc/i187/iFxwQG'
+)
 }
 
 handler.help = ['dungeon']

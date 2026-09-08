@@ -89,16 +89,22 @@ let handler = async (m, { conn, command }) => {
         total += user.inventory[nama]
       }
     }
-    let cap = `*───「 🎒 BACKPACK 」───*\nTitle: ${getAdvTitle(user.adventureLevel)}\nTotal Item: ${total.toLocaleString()} unit\n`
+    let cap = `╭─❏「 🎒 BACKPACK 」❏\n`
+    cap += `│ Title : ${getAdvTitle(user.adventureLevel)}\n`
+    cap += `│ Total : ${total.toLocaleString()} unit\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n`
+    cap += ` Daftar item adventure berdasarkan tier.\n`
     let urutan = ['SECRET','MYTHIC','LEGENDARY','EPIC','RARE','UNCOMMON','COMMON','TRASH']
     for(let t of urutan){
       if(grouped[t]){
-        cap += `\n${tierInfo[t].icon} *${t}*\n`
+        cap += `\n─━━━━━━━━━━━━━━─\n├ ${tierInfo[t].icon} *${t}*\n`
         for(let nama in grouped[t]){
-          cap += `${itemEmoji[nama] || '📦'} ${formatNama(nama).padEnd(20)} x${grouped[t][nama].toLocaleString()}\n`
+          cap += `*${formatNama(nama)} ${itemEmoji[nama] || '📦'}*\n`
+          cap += `> Jumlah: x${grouped[t][nama].toLocaleString()}\n`
         }
       }
     }
+    cap += `─━━━━━━━━━━━━━━─`
     return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
   }
 
@@ -165,33 +171,51 @@ let handler = async (m, { conn, command }) => {
 
   saveDB(wdb)
 
-  let cap = `*───「 🗺️ ADVENTURE 」───*\n\n`
-  cap += `*Title* : ${getAdvTitle(user.adventureLevel)}\n`
-  cap += `*Tier* : ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
-  cap += `🎒 *Hasil Penjelajahan x${jumlahLoot}* :\n`
-  let urutan = ['SECRET','MYTHIC','LEGENDARY','EPIC','RARE','UNCOMMON','COMMON','TRASH']
-  for(let t of urutan){
-    if(groupedLoot[t]){
-      cap += `\n${tierInfo[t].icon} *${t}*\n`
-      for(let item in groupedLoot[t]){
-        cap += `│ ${itemEmoji[item] || '📦'} ${formatNama(item)} x${groupedLoot[t][item]}\n`
-      }
+  let cap = `╭─❏「 🗺️ ADVENTURE 」❏\n`
+cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`
+cap += `│ ⭐ Tier: ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+cap += `🎒 *HASIL PENJELAJAHAN x${jumlahLoot}*\n`
+cap += `> ↳ Item yang ditemukan selama adventure.\n`
+
+let urutan = ['SECRET', 'MYTHIC', 'LEGENDARY', 'EPIC', 'RARE', 'UNCOMMON', 'COMMON', 'TRASH']
+
+for (let t of urutan) {
+  if (groupedLoot[t]) {
+    cap += `\n─━━━━━━━━━━━━━━─\n`
+    cap += `${tierInfo[t].icon} *${t}*\n`
+
+    for (let item in groupedLoot[t]) {
+      cap += `> ${formatNama(item)} ${itemEmoji[item] || '📦'} x${groupedLoot[t][item]}\n`
     }
   }
-  cap += `\n│ 🪵 Kayu : +${baseWood + Math.floor(pickLvl / 3)}\n`
-  cap += `│ ⛓️ Iron : +${baseIron + Math.floor(pickLvl / 4)}\n`
-  cap += `│ 💰 Money : +Rp ${money.toLocaleString()}\n`
-  cap += `└ 🌟 XP : +${totalExp}\n\n`
-  cap += `❤️ *Sisa Darah* : ${user.darah}\n`
-  cap += `🗺️ *AdvLvl* : ${user.adventureLevel} | ⚔️ *Sword* : ${swordLvl} | ⛏️ *Pick* : ${pickLvl}\n`
-  if(bonus > 0) cap += `🍀 *Bonus* : +${bonus.toFixed(1)}%`
-  cap += levelUpMsg
+}
+
+cap += `\n─━━━━━━━━━━━━━━─\n`
+cap += `🪵 *Kayu* +${baseWood + Math.floor(pickLvl / 3)}\n`
+cap += `⛓️ *Iron* +${baseIron + Math.floor(pickLvl / 4)}\n`
+cap += `💰 *Money* +Rp ${money.toLocaleString()}\n`
+cap += `🌟 *XP* +${totalExp}\n`
+
+cap += `\n─━━━━━━━━━━━━━━─\n`
+cap += `❤️ *Sisa Darah:* ${user.darah}\n`
+cap += `🗺️ *Adventure Level:* Lv.${user.adventureLevel}\n`
+cap += `⚔️ *Sword Level:* Lv.${swordLvl}\n`
+cap += `⛏️ *Pickaxe Level:* Lv.${pickLvl}\n`
+
+if (bonus > 0) {
+  cap += `🍀 *Bonus:* +${bonus.toFixed(1)}%\n`
+}
+
+cap += levelUpMsg
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')
 }
 
-handler.help = ['adventure', 'petualang', 'tas', 'backpack']
+handler.help = ['adventure', 'petualang', 'adv']
 handler.tags = ['rpg']
-handler.command = /^(adventure|petualang|tas|backpack)$/i
+handler.command = /^(adventure|petualang|adv)$/i
+handler.alias = ['adventure', 'petualang', 'adv']
 handler.group = true
 export default handler

@@ -1,7 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
-const bibit = {
+export const bibit = {
   'kacang': { emoji: '🥜', harga: 4500, waktu: 480000, exp: 110, hasil: { item: 'kacang', jumlah: 1 } },
   'bawang_putih': { emoji: '🧄', harga: 5000, waktu: 500000, exp: 120, hasil: { item: 'bawang_putih', jumlah: 1 } },
   'padi': { emoji: '🌾', harga: 5000, waktu: 180000, exp: 50, hasil: { item: 'padi', jumlah: 1 } },
@@ -37,12 +37,19 @@ const bibit = {
   'alpukat': { emoji: '🥑', harga: 24000, waktu: 1350000, exp: 420, hasil: { item: 'alpukat', jumlah: 1 } },
   'apel_merah': { emoji: '🍎', harga: 25000, waktu: 1500000, exp: 500, hasil: { item: 'apel_merah', jumlah: 1 } },
   'kelapa': { emoji: '🥥', harga: 25000, waktu: 1400000, exp: 450, hasil: { item: 'kelapa', jumlah: 1 } },
+  'sawit': { emoji: '🌴', harga: 30000, waktu: 1500000, exp: 500, hasil: { item: 'sawit', jumlah: 1 } },
   'exp': { emoji: '✨', harga: 40000, waktu: 1600000, exp: 800, hasil: { item: 'exp', jumlah: 2000 } },
   'durian': { emoji: '🌳', harga: 50000, waktu: 1800000, exp: 800, hasil: { item: 'durian', jumlah: 1 } },
   'uang': { emoji: '💵', harga: 50000, waktu: 1800000, exp: 1000, hasil: { item: 'money', jumlah: 100000 } },
   'koin': { emoji: '🪙', harga: 60000, waktu: 2000000, exp: 1200, hasil: { item: 'koin', jumlah: 150 } },
   'emas': { emoji: '⚜️', harga: 200000, waktu: 3600000, exp: 3000, hasil: { item: 'emas', jumlah: 1 } },
   'berlian': { emoji: '💠', harga: 250000, waktu: 7200000, exp: 5000, hasil: { item: 'berlian', jumlah: 1 } }
+}
+
+const namaBibitLegacy = { diamond: 'berlian' }
+
+function normalizeJenisBibit(jenis) {
+  return namaBibitLegacy[jenis] || jenis
 }
 
 function formatNama(nama) {
@@ -55,6 +62,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let user = data.rpg
   initLadang(user)
   if(!user.inventory) user.inventory = {}
+
+  let ladangDimigrasikan = false
+  for (let i = 1; i <= user.maxLadang; i++) {
+    let ladang = user.ladang[i]
+    if (ladang && namaBibitLegacy[ladang.jenis]) {
+      ladang.jenis = normalizeJenisBibit(ladang.jenis)
+      ladangDimigrasikan = true
+    }
+  }
+  if (ladangDimigrasikan) saveDB(wdb)
 
   function addItem(user, item, jumlah) {
     if(item === 'money') wdb.money[m.sender] = (wdb.money[m.sender] || 0) + jumlah
@@ -71,123 +88,201 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   // CEK STATUS LADANG
   if (!text) {
-    let cap = `┌───❏「 🏡 AREA PERKEBUNAN 」❏\n`
-    cap += `│ 👤 Owner : ${conn.getName(m.sender)}\n`
-    cap += `│ 📦 Ladang : ${user.maxLadang} Slot\n`
-    cap += `└───────────────────\n\n`
+  let cap = `╭─❏「 🏡 AREA PERKEBUNAN 」❏\n`
+  cap += `│ 🌱 *LADANG PERKEBUNAN*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let nomor = 1
-    let adaIsi = false
-    for (let i = 1; i <= user.maxLadang; i++) {
-      if (user.ladang[i]) {
-        adaIsi = true
-        let l = user.ladang[i]
-        let info = bibit[l.jenis]
-        if(!info) continue
-        let sisa = info.waktu - (Date.now() - l.waktuTanam)
-        let ready = sisa <= 0
-        let status = ready? `✅ Siap Panen` : `🌱 ${Math.ceil(sisa / 60000)}m lagi`
-        cap += `│ ${nomor++}. ${info.emoji} ${formatNama(l.jenis)} | ${status}\n`
-      }
+  cap += `👤 *INFORMASI LADANG*\n`
+  cap += `> ↳ Owner: ${conn.getName(m.sender)}\n`
+  cap += `> ↳ 📦 Ladang: ${user.maxLadang} Slot\n\n`
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `🌱 *STATUS LADANG*\n`
+  cap += `> ↳ Status setiap slot dan waktu menuju panen.\n\n`
+
+  let nomor = 1
+  let adaIsi = false
+
+  for (let i = 1; i <= user.maxLadang; i++) {
+    if (user.ladang[i]) {
+      adaIsi = true
+      let l = user.ladang[i]
+      let info = bibit[l.jenis]
+      if(!info) continue
+      let sisa = info.waktu - (Date.now() - l.waktuTanam)
+      let ready = sisa <= 0
+      let status = ready? `✅ Siap Panen` : `🌱 ${Math.ceil(sisa / 60000)}m lagi`
+
+      cap += `*${nomor++}. ${formatNama(l.jenis)} ${info.emoji}*\n`
+      cap += `> ↳ Status: ${status}\n\n`
     }
-
-    if(!adaIsi) cap += `│ 🪾 Semua ladang masih kosong\n`
-    cap += `└───────────────────\n\n`
-    cap += `📌 *CARA PANEN*\n`
-    cap += `├ *${usedPrefix}panen all* → Panen semua\n`
-    cap += `├ *${usedPrefix}panen [nomor]* → Panen 1 slot\n`
-    cap += `└ *${usedPrefix}tanam* → Tanam bibit dulu`
-    return m.reply(cap)
   }
 
-  // PANEN ALL
-  if (text.toLowerCase() === 'all') {
-    let totalExp = 0
-    let hasil = {}
-    let count = 0
-    let listHasil = []
+  if(!adaIsi) cap += `> ↳ 🌱 Ladang kosong\n\n`
 
-    for (let i = 1; i <= user.maxLadang; i++) {
-      if (user.ladang[i]) {
-        let l = user.ladang[i]
-        let dataBibit = bibit[l.jenis]
-        if(!dataBibit) continue
-        let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
-        if (sisaWaktu <= 0) {
-          let h = dataBibit.hasil
-          addItem(user, h.item, h.jumlah)
-          totalExp += dataBibit.exp
-          hasil[l.jenis] = (hasil[l.jenis] || 0) + h.jumlah
-          listHasil.push(`${dataBibit.emoji} ${formatNama(h.item)} x${h.jumlah}`)
-          delete user.ladang[i]
-          count++
-        }
-      }
-    }
+  cap += `─━━━━━━━━━━━━━━─\n\n`
 
-    if (count === 0) return m.reply('❌ Belum ada yang siap dipanen.')
-    user.exp += totalExp
-    cekLevelUp(user)
-    saveDB(wdb)
+  cap += `📌 *CARA PANEN*\n`
+  cap += `> ↳ *${usedPrefix}panen all* — Panen semua\n`
+  cap += `> ↳ *${usedPrefix}panen [nomor]* — Panen 1 slot\n`
+  cap += `> ↳ *${usedPrefix}tanam* — Tanam bibit dulu\n\n`
 
-    let teks = `┌───❏「 🌾 PANEN MASSAL 」❏\n`
-    teks += `│ ✅ Berhasil : ${count} Slot\n`
-    teks += `└───────────────────\n\n`
-    teks += `📦 *HASIL PANEN:*\n`
-    teks += listHasil.map((v, i) => `│ ${i+1}. ${v}`).join('\n')
-    teks += `\n\n│ ✨ XP : +${totalExp.toLocaleString()}\n`
-    teks += `│ 📊 Level : ${user.level}\n`
-    teks += `└───────────────────\n\n`
-    teks += `💰 *MAU JUAL?*\n`
-    teks += `Ketik *${usedPrefix}tokopanen*\n`
-    teks += `Contoh: *${usedPrefix}tokopanen jual berlian all*`
-    return m.reply(teks)
-  }
+  cap += `─━━━━━━━━━━━━━━─`
 
-  // PANEN 1 SLOT
-  let index = parseInt(text)
-  if (isNaN(index) || index < 1 || index > user.maxLadang) return m.reply(`❌ Nomor ladang tidak valid.`)
+  return m.reply(cap)
+}
 
-  let nomorUrut = 0
-  let slotAsli = 0
-  for(let i = 1; i <= user.maxLadang; i++){
-    if(user.ladang[i]){
-      nomorUrut++
-      if(nomorUrut === index){
-        slotAsli = i
-        break
+// PANEN ALL
+if (text.toLowerCase() === 'all') {
+  let totalExp = 0
+  let hasil = {}
+  let count = 0
+  let listHasil = []
+
+  for (let i = 1; i <= user.maxLadang; i++) {
+    if (user.ladang[i]) {
+      let l = user.ladang[i]
+      let dataBibit = bibit[l.jenis]
+      if(!dataBibit) continue
+      let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
+      if (sisaWaktu <= 0) {
+        let h = dataBibit.hasil
+        addItem(user, h.item, h.jumlah)
+        totalExp += dataBibit.exp
+        hasil[l.jenis] = (hasil[l.jenis] || 0) + h.jumlah
+        listHasil.push(`${dataBibit.emoji} ${formatNama(h.item)} x${h.jumlah}`)
+        delete user.ladang[i]
+        count++
       }
     }
   }
-  if(slotAsli === 0) return m.reply(`❌ Ladang nomor *${index}* kosong.`)
 
-  let l = user.ladang[slotAsli]
-  let dataBibit = bibit[l.jenis]
-  if(!dataBibit) return m.reply('❌ Data bibit tidak ditemukan')
-  let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
+  if (count === 0) return m.reply(
+    `╭─❏「 🌾 PANEN MASSAL 」❏\n` +
+    `│ ❌ *BELUM ADA PANEN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Belum ada yang siap dipanen.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-  if (sisaWaktu <= 0) {
-    let h = dataBibit.hasil
-    addItem(user, h.item, h.jumlah)
-    user.exp += dataBibit.exp
-    cekLevelUp(user)
-    delete user.ladang[slotAsli]
-    saveDB(wdb)
+  user.exp += totalExp
+  cekLevelUp(user)
+  saveDB(wdb)
 
-    let teks = `┌───❏「 🌾 PANEN BERHASIL 」❏\n`
-    teks += `│ 📍 Slot : ${index}\n`
-    teks += `│ ☘️ Hasil : ${h.jumlah}x ${dataBibit.emoji} ${formatNama(h.item)}\n`
-    teks += `│ ✨ XP : +${dataBibit.exp}\n`
-    teks += `│ 📊 Level : ${user.level}\n`
-    teks += `└───────────────────\n\n`
-    teks += `💰 *MAU JUAL?*\n`
-    teks += `Ketik *${usedPrefix}tokopanen jual ${h.item} ${h.jumlah}*`
-    return m.reply(teks)
-  } else {
-    let mnt = Math.floor(sisaWaktu / 60000)
-    let dtk = Math.floor((sisaWaktu % 60000) / 1000)
-    return m.reply(`⏳ *${formatNama(l.jenis)}* masih tumbuh\nSisa: *${mnt}m ${dtk}s*`)
+  let teks = `╭─❏「 🌾 PANEN MASSAL 」❏\n`
+  teks += `│ 🌾 *PANEN BERHASIL*\n`
+  teks += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `📊 *RINGKASAN PANEN*\n`
+  teks += `> ↳ ✅ Berhasil: ${count} Slot\n\n`
+
+  teks += `─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `📦 *HASIL PANEN*\n`
+  listHasil.forEach((v, i) => {
+    teks += `> ↳ ${i + 1}. ${v}\n`
+  })
+
+  teks += `\n─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `✨ *HASIL PENGALAMAN*\n`
+  teks += `> ↳ ✨ XP: +${totalExp.toLocaleString()}\n`
+  teks += `> ↳ 📊 Level: Lv.${user.level}\n\n`
+
+  teks += `─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `💰 *MAU JUAL?*\n`
+  teks += `> ↳ Ketik *${usedPrefix}koperasi*\n`
+  teks += `> ↳ Contoh: *${usedPrefix}koperasi jual berlian all*\n\n`
+
+  teks += `─━━━━━━━━━━━━━━─`
+
+  return m.reply(teks)
+}
+
+// PANEN 1 SLOT
+let index = parseInt(text)
+if (isNaN(index) || index < 1 || index > user.maxLadang) return m.reply(
+  `╭─❏「 🌾 PANEN 」❏\n` +
+  `│ ❌ *NOMOR LADANG TIDAK VALID*\n` +
+  `╰─━━━━━━━━━━━━━━─`
+)
+
+let nomorUrut = 0
+let slotAsli = 0
+for(let i = 1; i <= user.maxLadang; i++){
+  if(user.ladang[i]){
+    nomorUrut++
+    if(nomorUrut === index){
+      slotAsli = i
+      break
+    }
   }
+}
+
+if(slotAsli === 0) return m.reply(
+  `╭─❏「 🌾 PANEN 」❏\n` +
+  `│ ❌ *LADANG KOSONG*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `> ↳ Ladang nomor *${index}* kosong.\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
+
+let l = user.ladang[slotAsli]
+let dataBibit = bibit[l.jenis]
+if(!dataBibit) return m.reply(
+  `╭─❏「 🌾 PANEN 」❏\n` +
+  `│ ❌ *DATA BIBIT TIDAK DITEMUKAN*\n` +
+  `╰─━━━━━━━━━━━━━━─`
+)
+
+let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
+
+if (sisaWaktu <= 0) {
+  let h = dataBibit.hasil
+  addItem(user, h.item, h.jumlah)
+  user.exp += dataBibit.exp
+  cekLevelUp(user)
+  delete user.ladang[slotAsli]
+  saveDB(wdb)
+
+  let teks = `╭─❏「 🌾 PANEN BERHASIL 」❏\n`
+  teks += `│ 🌾 *HASIL PANEN*\n`
+  teks += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `📋 *INFORMASI PANEN*\n`
+  teks += `> ↳ 📍 Slot: ${index}\n`
+  teks += `> ↳ ☘️ Hasil: ${h.jumlah}x ${dataBibit.emoji} ${formatNama(h.item)}\n\n`
+
+  teks += `─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `✨ *HASIL PENGALAMAN*\n`
+  teks += `> ↳ ✨ XP: +${dataBibit.exp}\n`
+  teks += `> ↳ 📊 Level: Lv.${user.level}\n\n`
+
+  teks += `─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `💰 *MAU JUAL?*\n`
+  teks += `> ↳ Ketik *${usedPrefix}koperasi jual ${h.item} ${h.jumlah}*\n\n`
+
+  teks += `─━━━━━━━━━━━━━━─`
+
+  return m.reply(teks)
+} else {
+  let mnt = Math.floor(sisaWaktu / 60000)
+  let dtk = Math.floor((sisaWaktu % 60000) / 1000)
+
+  return m.reply(
+    `╭─❏「 🌾 PANEN 」❏\n` +
+    `│ ⏳ *BELUM SIAP PANEN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🌱 *${formatNama(l.jenis)}*\n` +
+    `> ↳ Masih tumbuh\n` +
+    `> ↳ Sisa: *${mnt}m ${dtk}s*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 }
 handler.help = ['panen']
 handler.tags = ['rpg']

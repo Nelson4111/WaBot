@@ -151,7 +151,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     ===================================================== */
 
     if (!args[0] &&!m.mentionedJid?.[0] &&!m.quoted) {
-        return m.reply(`[ 🤥 ]───[ *_FITNAH_* ]───✦
+        return m.reply(`╭─❏「 🤥 FITNAH 」❏
 
 Fitnah orang biar masuk penjara.
 
@@ -275,17 +275,27 @@ Fitnah orang biar masuk penjara.
            ? `│ 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - GAGAL BAYAR\n│ 𖥔 Hukuman : CD 30 menit`
             : `│ 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - LUNAS`
 
-        return conn.reply(m.chat, `[ 🤥 ]───[ *_FITNAH GAGAL_* ]───✦
-
+        return conn.reply(
+  m.chat,
+  `╭─❏「 🤥 FITNAH GAGAL 」❏
+  
 ${story.gagal}
 
-╭──「 💥 GAGAL 」─✦
-│ 𖥔 Target : @${who.split('@')[0]}
-│ 𖥔 Pengeluaran : Rp ${formatMoney(uangTaruhan)}
+─━━━━━━━━━━━━━━─
+
+💥 *GAGAL*
+> 🎯 Target: @${who.split('@')[0]}
+> 💸 Pengeluaran: Rp ${formatMoney(uangTaruhan)}
 ${dendaText}
-│ 𖥔 Uang Hangus
-╰ 𖥔 Polisi malah mencurigaimu.`, m, { mentions: [sender, who] })
-    }
+> 💰 Uang hangus.
+
+> 🚔 Polisi: Malah mencurigaimu.
+
+─━━━━━━━━━━━━━━─`,
+  m,
+  { mentions: [sender, who] }
+)
+}
 
     /* =====================================================
        BERHASIL
@@ -304,23 +314,34 @@ ${dendaText}
     targetRPG.penjara = Date.now()
     targetRPG.lamaPenjara = durasiPenjara
     targetRPG.tebusan = tebusan
+    targetRPG.kasus = '🤥 Fitnah'
     targetRPG.sel = sel
     targetRPG.gagalCopet = 0
 
     saveDB(wdb)
 
-    return conn.reply(m.chat, `[ 🤥 ]───[ *_FITNAH BERHASIL_* ]───✦
-
+   return conn.reply(
+  m.chat,
+  `╭─❏「 🤥 FITNAH BERHASIL 」❏
+  
 ${story.sukses}
 
-╭──「 🚔 HASIL 」─✦
-│ 𖥔 Pelaku : @${sender.split('@')[0]}
-│ 𖥔 Korban : @${who.split('@')[0]}
-│ 𖥔 SEL : ${sel}
-│ 𖥔 Durasi : ${durasiPenjara / 3600000} jam
-│ 𖥔 Keluarin : Rp ${formatMoney(uangTaruhan)}
-│ 𖥔 Tebusan : Rp ${formatMoney(tebusan)}
-╰ 𖥔 Masuk penjara!`, m, { mentions: [sender, who] })
+─━━━━━━━━━━━━━━─
+
+🚔 *HASIL*
+> 👤 Pelaku: @${sender.split('@')[0]}
+> 🎯 Korban: @${who.split('@')[0]}
+> 🔒 Sel: ${sel}
+> ⏰ Durasi: ${durasiPenjara / 3600000} jam
+> 💸 Pengeluaran: Rp ${formatMoney(uangTaruhan)}
+> 💰 Tebusan: Rp ${formatMoney(tebusan)}
+
+> ⚠️ *Status:* Masuk penjara!
+
+╰─━━━━━━━━━━━━━━─`,
+  m,
+  { mentions: [sender, who] }
+)
 }
 
 /* =========================================================

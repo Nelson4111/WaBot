@@ -15,14 +15,19 @@ let handler = async (m, { conn }) => {
 
   if (topYoutuber.length === 0) return m.reply('KESALAHAN: Belum ada YouTuber terdaftar.')
 
-  let caption = `*───「 TOP YOUTUBER 」───*\n\n`
-  topYoutuber.slice(0, 10).forEach((u, i) => {
-    caption += `${i + 1}. ${u.name}\n`
-    caption += `   *Subscribers*: ${u.subs.toLocaleString()}\n`
-    caption += `   *Likes*: ${u.likes.toLocaleString()}\n\n`
-  })
+  let caption = `╭─❏「 🏆 TOP YOUTUBER 」❏\n`
+caption += `│ 🏆 *RANKING CHANNEL*\n`
+caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i174/Uwc')
+topYoutuber.slice(0, 10).forEach((u, i) => {
+  caption += `🏆 *${i + 1}. ${u.name}*\n`
+  caption += `> ↳ Subscribers : ${u.subs.toLocaleString()}\n`
+  caption += `> ↳ Likes : ${u.likes.toLocaleString()}\n`
+})
+
+caption += `\n─━━━━━━━━━━━━━━─`
+
+return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i174/Uwc')
 }
 
 handler.help = ['topyt']

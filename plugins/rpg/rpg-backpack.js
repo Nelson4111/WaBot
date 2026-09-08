@@ -4,6 +4,12 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
+const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
+function safeEmoji(value, fallback = '❓') {
+  if (typeof value !== 'string') return fallback
+  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
+}
+
 const oreEmoji = {
   // MATERIAL BELI/JUAL
   'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎',
@@ -26,6 +32,10 @@ const oreEmoji = {
   'pedang_legendaris': '⚔️👑', 'buku_sihir_kuno': '📚', 'armor_naga': '🐉🛡️', 'mahkota_raja': '👑',
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
 }
+
+Object.keys(oreEmoji).forEach((key) => {
+  oreEmoji[key] = safeEmoji(oreEmoji[key])
+})
 
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
@@ -70,44 +80,53 @@ let handler = async (m, { conn, usedPrefix }) => {
   }
 
   if(totalJenis === 0)
-    return m.reply('┌───❏「 🎒 BACKPACK KOSONG 」❏\n│\n│ Isi tasmu masih kosong.\n│ Mining atau Adventure dulu!\n└───────────────────')
+    return m.reply('╭─❏「 🎒 BACKPACK KOSONG 」❏\n│ Isi tasmu masih kosong.\n│ Mining atau Adventure dulu!\n╰─━━━━━━━━━━━━━━─')
 
   // URUTIN DARI PALING BANYAK
   materialTambang.sort((a,b) => b.jml - a.jml)
   itemAdventure.sort((a,b) => b.jml - a.jml)
 
-  let cap = `┌───❏「 🎒 BACKPACK 」❏\n`
-  cap += `│ 👤 Owner : ${conn.getName(m.sender)}\n`
-  cap += `│ 📦 Total : ${totalItem.toLocaleString()} Item\n`
-  cap += `│ 🧬 Jenis : ${totalJenis}\n`
-  cap += `└───────────────────\n\n`
+  let cap = `╭─❏「 🎒 BACKPACK 」❏\n`
+cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
+cap += `│ 📦 Total: ${totalItem.toLocaleString()} Item\n`
+cap += `│ 🧬 Jenis: ${totalJenis}\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  // 1. MATERIAL TAMBANG + MATERIAL TOKO
-  if(materialTambang.length > 0){
-    cap += `┌───❏「 ⛏️ MATERIAL TAMBANG 」❏\n`
-    materialTambang.forEach((v, i) => {
-      cap += `│ ${i+1}. ${v.emoji} ${formatNama(v.nama)} x${v.jml.toLocaleString()}\n`
-    })
-    cap += `└───────────────────\n\n`
-  }
+// 1. MATERIAL TAMBANG + MATERIAL TOKO
+if (materialTambang.length > 0) {
+  cap += `╭─❏「 ⛏️ MATERIAL TAMBANG 」❏\n`
+  cap += `│ Item tambang dan material.\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n`
 
-  // 2. ITEM ADVENTURE
-  if(itemAdventure.length > 0){
-    cap += `┌───❏「 ⚔️ ITEM ADVENTURE 」❏\n`
-    itemAdventure.forEach((v, i) => {
-      cap += `│ ${i+1}. ${v.emoji} ${formatNama(v.nama)} x${v.jml.toLocaleString()}\n`
-    })
-    cap += `└───────────────────\n\n`
-  }
+  materialTambang.forEach((v, i) => {
+    cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
+  })
 
-  cap += `💡 Mau jual? Ketik *${usedPrefix}tokomaterial*\n`
-  cap += `Contoh: *${usedPrefix}tokomaterial jual stone 100*`
+  cap += `\n`
+}
+
+// 2. ITEM ADVENTURE
+if (itemAdventure.length > 0) {
+  cap += `╭─❏「 ⚔️ ITEM ADVENTURE 」❏\n`
+  cap += `│ Item dari adventure.\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n`
+
+  itemAdventure.forEach((v, i) => {
+    cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
+  })
+
+  cap += `\n`
+}
+
+  cap += `💡 Mau jual? Ketik *${usedPrefix}pabrik*\n`
+  cap += `Contoh: *${usedPrefix}pabrik jual stone 100*`
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
 }
 
-handler.help = ['tas', 'backpack', 'inv']
+handler.help = ['tas', 'backpack', 'bag']
 handler.tags = ['rpg']
-handler.command = /^(tas|backpack|inv)$/i
+handler.command = /^(tas|backpack|bag)$/i
+handler.alias = ['tas', 'backpack', 'bag']
 handler.group = true
 export default handler

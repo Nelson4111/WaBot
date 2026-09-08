@@ -20,31 +20,44 @@ let handler = async (m, { conn, args, isOwner }) => {
     .sort((a, b) => Number(b[1].total) - Number(a[1].total))
     .slice(0, 10)
 
-    if(crimeList.length === 0) return m.reply('📋 Belum ada kriminal di kota ini')
+   if (crimeList.length === 0) {
+  return m.reply(
+    `╭─❏「 🚨 MOST WANTED 」❏\n` +
+    `│ 📋 *BELUM ADA KRIMINAL*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
 
-    let cap = `╭───「 🚨 MOST WANTED 」───╮\n`
-    cap += `│ *TOP 10 BURONAN KOTA* │\n`
-    cap += `╰───────────────────────╯\n\n`
+let cap = `╭─❏「 🚨 MOST WANTED 」❏\n`
+cap += `│ 👮 *TOP 10 BURONAN KOTA*\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let mentioned = []
-    for(let i = 0; i < crimeList.length; i++){
-        let [jid, data] = crimeList[i]
-        mentioned.push(jid)
+let mentioned = []
+for (let i = 0; i < crimeList.length; i++) {
+  let [jid, data] = crimeList[i]
+  mentioned.push(jid)
 
-        let rank = i + 1
-        let medal = rank === 1? '👑' : rank === 2? '🥈' : rank === 3? '🥉' : ` ${rank}.`
+  let rank = i + 1
+  let medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
 
-        cap += `${medal} @${jid.split('@')[0]}\n`
-        cap += `│ 💀 Total : *${Number(data.total)}x Kejahatan*\n`
-        cap += `│ 🕵️${data.rampok || 0} 🏴‍☠️${data.begal || 0} 🔪${data.bunuh || 0} 🤏${data.copet || 0}\n`
-        if(rank < crimeList.length) cap += `├─────────────────────\n`
-    }
+  cap += `${medal} * @${jid.split('@')[0]}*\n`
+  cap += `> ↳ 💀 Total : *${Number(data.total)}x Kejahatan*\n`
+  cap += `> ↳ 🕵️ ${data.rampok || 0}  🏴‍☠️ ${data.begal || 0}  🔪 ${data.bunuh || 0}  🤏 ${data.copet || 0}\n`
 
-    cap += `╰───────────────────────╯\n`
-    cap += `\n⚠️ *WASPADA! JANGAN DEKATI MEREKA*`
-    cap += `\n\n💡 *.buronan reset* - Reset data buronan`
+  if (rank < crimeList.length) cap += `\n`
+}
 
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg', { mentions: mentioned })
+cap += `\n─━━━━━━━━━━━━━━─\n\n`
+cap += `⚠️ *WASPADA! JANGAN DEKATI MEREKA*\n\n`
+if (isOwner) cap += `💡 *.buronan reset* - Reset data buronan`
+
+return sendRpgMsg(
+  conn,
+  m,
+  cap,
+  'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg',
+  { mentions: mentioned }
+)
 }
 
 handler.help = ['buronan']

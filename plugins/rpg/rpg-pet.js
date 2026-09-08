@@ -10,21 +10,38 @@ if (!user.sanctuary) user.sanctuary = []
 if (!user.stats) user.stats = { totalFeed: 0, totalBattle: 0, totalHunt: 0 }
 if (!user.buzzUsed) user.buzzUsed = 0 // [TAMBAH INI] buat nyimpen tanggal terakhir pake buzz
 
-const formatNamaAsli = (name) => name.replace(/_/g, ' ')
+const formatNamaAsli = (name) => name.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())
 const formatNama = (p) => p.nickname? `${p.nickname} (${formatNamaAsli(p.tipe)})` : formatNamaAsli(p.tipe)
 const bar = (val, len = 10) => '`' + '█'.repeat(Math.floor(val / (100/len))) + '░'.repeat(len - Math.floor(val / (100/len))) + '`'
+const isMesin = (tipe) => ['robot', 'drone', 'cyborg', 'mecha'].includes(tipe)
 
-// cek pet mati tiap 24 jam energy 0
 user.pets = user.pets.filter(p => {
   if((p.energy || 100) <= 0 && (Date.now() - (p.lastActivity || 0) > 86400000)) {
-    // auto revive jika ada malaikat
     if(user.pets.some(x => x.tipe === 'malaikat')){
-      p.energy = 50;
-      m.reply(`✨ ${formatNama(p)} dihidupkan oleh Malaikat!`)
+      p.energy = 50
+
+      m.reply(
+        `╭─❏「 ✨ PET 」❏\n` +
+        `│ 😇 *PET DIHIDUPKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ ✨ ${formatNama(p)} dihidupkan oleh Malaikat!\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+
       return true
     }
+
     user.sanctuary.push({...p, mati: Date.now()})
-    m.reply(`💀 ${formatNama(p)} mati karena kelaparan. Ketik.pet sanctuary`)
+
+    m.reply(
+      `╭─❏「 💀 PET 」❏\n` +
+      `│ 💀 *PET MATI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ ${formatNama(p)} mati karena kelaparan.\n` +
+      `> ↳ Ketik *${usedPrefix}pet sanctuary* untuk melihat sanctuary.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+
     return false
   }
   return true
@@ -32,6 +49,18 @@ user.pets = user.pets.filter(p => {
   if (!user.achievements) user.achievements = []
   if (!user.cooldown) user.cooldown = {}
   if (!user.pity) user.pity = 0
+
+  user.pets.sort((a, b) => (b.level || 1) - (a.level || 1) || (b.exp || 0) - (a.exp || 0) || a.tipe.localeCompare(b.tipe))
+  const getSelectedPets = (target, defaultAll = true) => {
+    if (!target && defaultAll) return user.pets.map((pet, index) => ({ pet, index }))
+    if (target?.toLowerCase() === 'all') return user.pets.map((pet, index) => ({ pet, index }))
+    if (target && /^\d+$/.test(target)) {
+      const index = Number(target) - 1
+      return user.pets[index] ? [{ pet: user.pets[index], index }] : []
+    }
+    return target ? user.pets.map((pet, index) => ({ pet, index })).filter(({ pet }) => pet.tipe === target.replace(/ /g, '_').toLowerCase()) : []
+  }
+  const getPending = () => user.pendingPetAction && user.pendingPetAction.expires > Date.now() ? user.pendingPetAction : null
 
   // migrasi data lama
   if (user.pet && user.pet.tipe && user.pet.tipe!== 'none') {
@@ -43,7 +72,7 @@ user.pets = user.pets.filter(p => {
     saveDB(wdb)
   }
 
-  let args = text.split(' ')
+  let args = (text || '').trim().split(/\s+/).filter(Boolean)
   let action = args[0]?.toLowerCase()
   let jam = new Date().getHours()
   let menit = new Date().getMinutes().toString().padStart(2, '0')
@@ -467,14 +496,33 @@ const getCooldown = (base, user) => {
   return Math.max(10000, hasil)
 }
 
-// [TAMBAH FUNCTION BARU DI BAWAHNYA]
+const formatCooldown = (ms) => {
+  if (ms <= 0) return '✅ Siap'
+  const menit = Math.floor(ms / 60000)
+  const detik = Math.floor((ms % 60000) / 1000)
+  return menit > 0 ? `⏳ ${menit}m ${detik}s` : `⏳ ${detik}s`
+}
+
+const getRemaining = (key, base, user) => {
+  const last = Number(user.cooldown[key] || 0)
+  return Math.max(0, getCooldown(base, user) - (Date.now() - last))
+}
+
+const getPetRemaining = (field, base, user) => {
+  const cooldown = getCooldown(base, user)
+  return Math.max(0, ...user.pets.map(p => {
+    const last = Number(p[field] || 0)
+    return last > 0 ? Math.max(0, cooldown - (Date.now() - last)) : 0
+  }))
+}
+
 const cekBuzz = () => {
   let today = new Date().toDateString()
   let lastUsed = user.buzzUsed? new Date(user.buzzUsed).toDateString() : null
   if(user.pets.some(p => p.tipe === 'buzz_lightyear') && lastUsed !== today){
     user.buzzUsed = Date.now()
     saveDB(wdb)
-    m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🚀 *SKILL AKTIF*\n${pets['buzz_lightyear'].emoji} *BUZZ LIGHTYEAR*\n✨ To Infinity And Beyond!\nCooldown kamu di-skip 1x hari ini\n━━━━━━━━━━━`)
+    m.reply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n🚀 *SKILL AKTIF*\n${pets['buzz_lightyear'].emoji} *BUZZ LIGHTYEAR*\n✨ To Infinity And Beyond!\nCooldown kamu di-skip 1x hari ini\n━━━━━━━━━━━`)
     return true
   }
   return false
@@ -498,106 +546,246 @@ const cekBuzz = () => {
     return 'COMMON'
   }
 
-  // === MENU UTAMA ===
-  if (!action) {
-    let cap = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n`
-    cap += `⏰ ${waktu} | ${jam}:${menit} WIB\n`
-    cap += `💰 Saldo : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-    cap += `📦 Total Pet : ${user.pets.length}/10\n`
-
-    if(user.achievements.includes('master_breeder')) cap += `🏆 Achievement: Master Breeder\n\n`
-    else cap += `\n`
-
-    if (user.pets.length > 0) {
-      cap += `🐾 DAFTAR PET KAMU 🐾\n`
-      user.pets.slice(0,10).forEach((p, i) => {
-        let mood = getMood(p)
-        cap += `${i+1}. ${pets[p.tipe]?.emoji || '❓'} *${formatNama(p)}* | Lv.${p.level}\n`
-        cap += ` └ Mood: ${mood}\n`
-      })
-      if(user.pets.length > 10) cap += `...dan ${user.pets.length - 10} pet lainnya\n`
-      cap += `\n📌 Lihat detail:.pet status [no/nama]\n`
-    } else cap += `_📝 Kamu belum punya pet. Ketik ${usedPrefix}pet shop buat beli_\n\n`
-
-    cap += `━━━━━━━━━━━\n`
-    cap += `📌.pet shop | adopt | gacha | sell | release | rename\n`
-    cap += `📌.pet feed | walk | play | train | rest | clean\n`
-    cap += `📌.pet battle | hunt | dispatch | heal | gift | kill | transfer\n`
-    cap += `📌.pet breed | playwith @tag/reply\n`
-    cap += `📌.pet claim | sanctuary | revive | lb\n`
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg')
-  }
-  
-    // === STATUS DETAIL ===
-  if (action === 'status') {
-    if(user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet')
-    let target = args[1]
-    if(!target) return m.reply(`❌ Contoh:.pet status 1 atau.pet status kucing`)
-
-    let p =!isNaN(target)? user.pets[parseInt(target)-1] : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
-    if(!p) return m.reply('❌ Pet tidak ditemukan')
-
-    let bersih = 100 - (p.dirty || 0)
-    let cap = `╭──「 📋 DETAIL PET 」──╮\n\n`
-    cap += `${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n`
-    cap += `🏷️ Jenis : ${formatNamaAsli(p.tipe)}\n`
-    cap += `📈 Level : ${p.level} | 📊 Exp : ${p.exp}/100\n`
-    cap += `✨ Skill : ${pets[p.tipe].skill || 'Tidak ada'}\n`
-    cap += `🌟 Rarity : ${rarities[pets[p.tipe].rarity].emoji} ${pets[p.tipe].rarity}\n\n`
-    cap += `🔋 Energy\n${bar(p.energy || 100)} ${(p.energy || 100)}%\n\n`
-    cap += `😊 Happy\n${bar(p.happy || 50)} ${(p.happy || 50)}%\n\n`
-    cap += `🧼 Kebersihan\n${bar(bersih)} ${bersih}%\n\n`
-    cap += `Mood : ${getMood(p)}\n`
-    cap += `━━━━━━━━━━━`
+  // === DAFTAR COOLDOWN ===
+  if (action === 'cd' || action === 'cooldown') {
+    const rows = [
+      ['🍖 Feed', getPetRemaining('lastFeed', 120000, user)],
+      ['💪 Train', getPetRemaining('lastTrain', 300000, user)],
+      ['🚶 Walk', getPetRemaining('lastActivity', 60000, user)],
+      ['🎮 Play', getPetRemaining('lastActivity', 60000, user)],
+      ['😴 Rest', getPetRemaining('lastRest', 600000, user)],
+      ['⚔️ Battle', getRemaining('petbattle', 300000, user)],
+      ['🎯 Hunt', getRemaining('pethunt', 600000, user)],
+      ['📦 Dispatch', getRemaining('petdispatch', 1800000, user)],
+      ['💕 Breed', getRemaining('petbreed', 86400000, user)]
+    ]
+    let cap = `╭─❏「 ⏰ PET COOLDOWN 」❏\n`
+    cap += `│ Status seluruh aktivitas pet.\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    rows.forEach(([name, remaining]) => { cap += `│ ${name}: ${formatCooldown(remaining)}\n` })
+    cap += `─━━━━━━━━━━━━━━─`
     return m.reply(cap)
   }
+
+  // === MENU UTAMA ===
+  if (!action || action === 'list') {
+  let cap = `╭─❏「 🐾 AVELIA PET CENTER 」❏\n`
+  cap += `│ 🐾 *DAFTAR PET KAMU*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `👤 *INFORMASI PET*\n`
+  cap += `> ↳ ⏰ Waktu: ${waktu} | ${jam}:${menit} WIB\n`
+  cap += `> ↳ 💰 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+  cap += `> ↳ 📦 Total Pet: ${user.pets.length}/10\n`
+
+  if(user.achievements.includes('master_breeder')) {
+    cap += `> ↳ 🏆 Achievement: Master Breeder\n`
+  }
+
+  cap += `\n─━━━━━━━━━━━━━━─\n\n`
+
+  if (user.pets.length > 0) {
+    cap += `🐾 *DAFTAR PET*\n`
+    cap += `> ↳ Status dan kondisi pet kamu.\n\n`
+
+    user.pets.slice(0,10).forEach((p, i) => {
+      let mood = getMood(p)
+
+      cap += `*${i + 1}. ${pets[p.tipe]?.emoji || '❓'} ${formatNama(p)}*\n`
+      cap += `> ↳ 📈 Level: ${p.level}\n`
+      cap += `> ↳ ${isMesin(p.tipe) ? '⚙️ Mesin' : '🍖 Organik'}\n`
+      cap += `> ↳ Mood: ${mood}\n`
+      cap += `> ↳ 🔋 Energy: ${p.energy ?? 100}%\n`
+      cap += `> ↳ 🧼 Kebersihan: ${100 - (p.dirty || 0)}%\n\n`
+    })
+
+    if(user.pets.length > 10) {
+      cap += `> ↳ ...dan ${user.pets.length - 10} pet lainnya\n\n`
+    }
+
+    cap += `📌 *DETAIL PET*\n`
+    cap += `> ↳ *${usedPrefix}pet status <no/nama>*\n`
+  } else {
+    cap += `📝 *BELUM PUNYA PET*\n`
+    cap += `> ↳ Ketik *${usedPrefix}pet shop* untuk membeli pet.\n`
+  }
+
+  cap += `\n─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `💡 *MENU LAINNYA*\n`
+  cap += `> ↳ *${usedPrefix}pet cd* — Lihat semua cooldown\n`
+  cap += `> ↳ *${usedPrefix}pet shop* — Lihat pet tersedia\n`
+
+  cap += `\n╰─━━━━━━━━━━━━━━─`
+
+  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg')
+}
+
+// === STATUS DETAIL ===
+if (action === 'status') {
+  if(user.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 PET STATUS 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let target = args[1]
+
+  if(!target) return m.reply(
+    `╭─❏「 🐾 PET STATUS 」❏\n` +
+    `│ ❌ *TARGET PET KOSONG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: *${usedPrefix}pet status 1*\n` +
+    `> ↳ Atau: *${usedPrefix}pet status kucing*\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let p = !isNaN(target)
+    ? user.pets[parseInt(target)-1]
+    : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
+
+  if(!p) return m.reply(
+    `╭─❏「 🐾 PET STATUS 」❏\n` +
+    `│ ❌ *PET TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet yang kamu cari tidak ditemukan.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let bersih = 100 - (p.dirty || 0)
+
+  let cap = `╭─❏「 📋 DETAIL PET 」❏\n`
+  cap += `│ ${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `📋 *INFORMASI PET*\n`
+  cap += `> ↳ 🏷️ Jenis: ${formatNamaAsli(p.tipe)}\n`
+  cap += `> ↳ 📈 Level: ${p.level}\n`
+  cap += `> ↳ 📊 Exp: ${p.exp}/100\n`
+  cap += `> ↳ ✨ Skill: ${pets[p.tipe].skill || 'Tidak ada'}\n`
+  cap += `> ↳ 🌟 Rarity: ${rarities[pets[p.tipe].rarity].emoji} ${pets[p.tipe].rarity}\n\n`
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `🔋 *ENERGY*\n`
+  cap += `> ↳ ${bar(p.energy || 100)} ${(p.energy || 100)}%\n\n`
+
+  cap += `😊 *HAPPY*\n`
+  cap += `> ↳ ${bar(p.happy || 50)} ${(p.happy || 50)}%\n\n`
+
+  cap += `🧼 *KEBERSIHAN*\n`
+  cap += `> ↳ ${bar(bersih)} ${bersih}%\n\n`
+
+  cap += `💭 *MOOD*\n`
+  cap += `> ↳ ${getMood(p)}\n\n`
+
+  cap += `╰─━━━━━━━━━━━━━━─`
+
+  return m.reply(cap)
+}
 
 // === SHOP ===
-  if (action === 'shop') {
-    let sortedPets = Object.entries(pets).sort((a,b) => a[1].harga - b[1].harga)
-    let totalAll = Object.values(pets).reduce((a,b) => a + b.harga, 0)
+if (action === 'shop') {
+  let sortedPets = Object.entries(pets).sort((a,b) => a[1].harga - b[1].harga)
+  let totalAll = Object.values(pets).reduce((a,b) => a + b.harga, 0)
 
-    // MAP NOMOR -> NAMA PET URUT 1-....
-    const nomorKePet = {}
-    sortedPets.forEach(([k], i) => nomorKePet[i+1] = k)
-    user.nomorKePet = nomorKePet // simpan biar adopt bisa baca
+  // MAP NOMOR -> NAMA PET URUT 1-....
+  const nomorKePet = {}
+  sortedPets.forEach(([k], i) => nomorKePet[i+1] = k)
+  user.nomorKePet = nomorKePet // simpan biar adopt bisa baca
 
-    let cap = `╭───「 🛍️ ZETA PET SHOP 」───╮\n\n💰 Saldo : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-    cap += `🛒 Beli: *.pet adopt <no/nama>*\n\n`
+  let cap = `╭─❏「 🛍️ AVELIA PET SHOP 」❏\n`
+  cap += `│ 🛍️ *DAFTAR PET TERSEDIA*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let nomor = 1
-    cap += `🟢 MURAH < 500RB 🟢\n`
-    sortedPets.filter(([k,v]) => v.harga < 500000).forEach(([k, v]) => {
-      cap += `├ [${nomor++}] ${v.emoji} ${formatNamaAsli(k).padEnd(15)} Rp ${v.harga.toLocaleString()}\n`
-    })
-    cap += `\n🔵 STANDAR 500RB-2JT 🔵\n`
-    sortedPets.filter(([k,v]) => v.harga >= 500000 && v.harga < 2000000).forEach(([k, v]) => {
-      cap += `├ [${nomor++}] ${v.emoji} ${formatNamaAsli(k).padEnd(15)} Rp ${v.harga.toLocaleString()}\n`
-    })
-    cap += `\n🟣 RARE 2JT-10JT 🟣\n`
-    sortedPets.filter(([k,v]) => v.harga >= 2000000 && v.harga < 10000000).forEach(([k, v]) => {
-      cap += `├ [${nomor++}] ${v.emoji} ${formatNamaAsli(k).padEnd(15)} Rp ${v.harga.toLocaleString()}\n`
-    })
-    cap += `\n🔴 LEGEND > 10JT 🔴\n`
-    sortedPets.filter(([k,v]) => v.harga >= 10000000).forEach(([k, v]) => {
-      cap += `├ [${nomor++}] ${v.emoji} ${formatNamaAsli(k).padEnd(15)} Rp ${v.harga.toLocaleString()}\n`
-    })
-    cap += `━━━━━━━━━━━\n💡 Tips: Beli pakai nomor lebih cepat`
-    return m.reply(cap)
+  cap += `💰 *INFORMASI SALDO*\n`
+  cap += `> ↳ Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n`
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `📌 *CARA BELI*\n`
+  cap += `> ↳ *${usedPrefix}pet adopt <no/nama>*\n\n`
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  let nomor = 1
+
+  cap += `🟢 *MURAH < 500RB*\n\n`
+  sortedPets.filter(([k,v]) => v.harga < 500000).forEach(([k, v]) => {
+    cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
+    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+  })
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `🔵 *STANDAR 500RB - 2JT*\n\n`
+  sortedPets.filter(([k,v]) => v.harga >= 500000 && v.harga < 2000000).forEach(([k, v]) => {
+    cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
+    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+  })
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `🟣 *RARE 2JT - 10JT*\n\n`
+  sortedPets.filter(([k,v]) => v.harga >= 2000000 && v.harga < 10000000).forEach(([k, v]) => {
+    cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
+    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+  })
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `🔴 *LEGEND > 10JT*\n\n`
+  sortedPets.filter(([k,v]) => v.harga >= 10000000).forEach(([k, v]) => {
+    cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
+    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+  })
+
+  cap += `─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `💡 *TIPS*\n`
+  cap += `> ↳ Beli memakai nomor agar lebih cepat.\n`
+
+  cap += `\n─━━━━━━━━━━━━━━─`
+
+  return m.reply(cap)
+}
+
+// === ADOPT ===
+if (action === 'adopt') {
+    
+  if(user.pets.length >= 10) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *PET PENUH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Maksimal 10 pet.\n` +
+    `> ↳ Release/Sell/Kill/Transfer pet terlebih dahulu.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let petName = args.slice(1).join(' ').toLowerCase()
+
+  if (!petName) return m.reply(
+    `╭─❏「 🐾 ADOPT PET 」❏\n` +
+    `│ ❌ *PET BELUM DIPILIH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: *${usedPrefix}pet adopt 1*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  // CEK APAKAH INPUTNYA NOMOR DARI SHOP
+  if(!isNaN(petName) && user.nomorKePet){
+    petName = user.nomorKePet[parseInt(petName)]
+
+    if(!petName) return m.reply(
+      `╭─❏「 🐾 ADOPT PET 」❏\n` +
+      `│ ❌ *NOMOR TIDAK VALID*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Cek daftar pet melalui *${usedPrefix}pet shop*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
-
-  // === ADOPT ===
-  if (action === 'adopt') {
-      
-    if(user.pets.length >= 10) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET PENUH*\nMax 10 pet. Release/Sell/Kill/Transfer dulu\n━━━━━━━━━━━`)
-    let petName = args.slice(1).join(' ').toLowerCase()
-    if (!petName) return m.reply(`❌ Contoh: ${usedPrefix}pet adopt 1`)
-
-    // CEK APAKAH INPUTNYA NOMOR DARI SHOP
-    if(!isNaN(petName) && user.nomorKePet){
-      petName = user.nomorKePet[parseInt(petName)]
-      if(!petName) return m.reply('❌ Nomor tidak valid. Cek.pet shop dulu')
-    }
 
     petName = petName.replace(/ /g, '_').replace(/-/g, '_')
     petName = petName.replace(/ /g, '_').replace(/-/g, '_')
@@ -611,79 +799,183 @@ for(let key in aliases){
 }
 
     if (!pets[petName]) return m.reply(`❌ Pilih pet yang benar. Ketik ${usedPrefix}pet shop`)
-    if (getPet(petName)) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *KAMU SUDAH PUNYA*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n━━━━━━━━━━━`)
+    if (getPet(petName)) return m.reply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *KAMU SUDAH PUNYA*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n━━━━━━━━━━━`)
     let harga = pets[petName].harga
-    if ((wdb.money[m.sender] || 0) < harga) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
+    if ((wdb.money[m.sender] || 0) < harga) return m.reply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
     wdb.money[m.sender] -= harga
     user.pets.push({ tipe: petName, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
     saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n✅ *ADOPSI BERHASIL*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n🌟 ${rarities[pets[petName].rarity].emoji} ${pets[petName].rarity}\n✨ Skill : ${pets[petName].skill || 'Tidak ada'}\n💰 Harga : -Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
+    return m.reply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n✅ *ADOPSI BERHASIL*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n🌟 ${rarities[pets[petName].rarity].emoji} ${pets[petName].rarity}\n✨ Skill : ${pets[petName].skill || 'Tidak ada'}\n💰 Harga : -Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
   }
 
 // === GACHA ===
   if (action === 'gacha') {
-    if(user.pets.length >= 10) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET PENUH*\nMax 10 pet. Release/Sell/Kill/Transfer dulu\n━━━━━━━━━━━`)
-    let biaya = 2500000 // 2.5jt
-    if ((wdb.money[m.sender] || 0) < biaya) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
+  if(user.pets.length >= 10) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *PET PENUH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Maksimal 10 pet.\n` +
+    `> ↳ Release/Sell/Kill/Transfer dulu.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
 
-    user.pity++
-    const raritiesNerf = {
-      COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍', rate: 60},
-      UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙', rate: 25},
-      RARE:      {stars: '★★★☆☆☆☆', emoji: '✨', rate: 10},
-      EPIC:      {stars: '★★★★☆☆☆', emoji: '💎', rate: 3.5},
-      LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑', rate: 1.0},
-      MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌', rate: 0.4},
-      SECRET:    {stars: '★★★★★★★', emoji: '🔮', rate: 0.1}
+  let biaya = 2500000 // 2.5jt
+
+  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *UANG TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Butuh: Rp ${biaya.toLocaleString()}\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  user.pity++
+
+  const raritiesNerf = {
+    COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍', rate: 60},
+    UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙', rate: 25},
+    RARE:      {stars: '★★★☆☆☆☆', emoji: '✨', rate: 10},
+    EPIC:      {stars: '★★★★☆☆☆', emoji: '💎', rate: 3.5},
+    LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑', rate: 1.0},
+    MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌', rate: 0.4},
+    SECRET:    {stars: '★★★★★★★', emoji: '🔮', rate: 0.1}
+  }
+
+  let roll = Math.random() * 100
+  let cum = 0
+  let rarity = 'COMMON'
+
+  for(let r of Object.keys(raritiesNerf)){
+    cum += raritiesNerf[r].rate
+    if(roll <= cum){
+      rarity = r
+      break
     }
-
-    let roll = Math.random() * 100
-    let cum = 0
-    let rarity = 'COMMON'
-    for(let r of Object.keys(raritiesNerf)){
-      cum += raritiesNerf[r].rate
-      if(roll <= cum){ rarity = r; break }
-    }
-    
-    // Pity 100 roll ke LEGENDARY
-    if(user.pity >= 100){ 
-      rarity = 'LEGENDARY'
-      user.pity = 0 
-    }
-    if(rarity === 'LEGENDARY' || rarity === 'MYTHIC' || rarity === 'SECRET') user.pity = 0
-
-    let pool = Object.entries(pets).filter(([k,v]) => v.rarity === rarity)
-    let randomPet = pool[Math.floor(Math.random() * pool.length)][0]
-
-    wdb.money[m.sender] -= biaya
-    user.pets.push({ tipe: randomPet, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
-    saveDB(wdb)
-
-    let pitySisa = Math.max(0, 100 - user.pity)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎰 PET GACHA - 2.5JT/ROLL\n${raritiesNerf[rarity].emoji} *${rarity}*\n${raritiesNerf[rarity].stars}\n\n${pets[randomPet].emoji} *${formatNamaAsli(randomPet).toUpperCase()}*\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n📊 Pity: ${pitySisa} lagi ke LEGEND\n━━━━━━━━━━━`)
   }
   
-    // === CEK VAMPIR ===
-  if(['walk','play','feed','rest','train'].includes(action)){
-    if (user.pets.some(p => p.tipe === 'vampir') &&!isMalam) {
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🧛 *VAMPIR TIDUR*\nVampir kamu bersembunyi di peti mati karena matahari!\nAktif lagi jam 18:00 - 05:59 WIB\n━━━━━━━━━━━`)
-    }
+  // Pity 100 roll ke LEGENDARY
+  if(user.pity >= 100){ 
+    rarity = 'LEGENDARY'
+    user.pity = 0 
   }
 
-  const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1
-  const cekCD = (key, durasi) => {
-    let last = user.cooldown[key] || 0
-    let sisa = durasi - (Date.now() - last)
-    return sisa > 0? Math.ceil(sisa / 1000) : 0
+  if(rarity === 'LEGENDARY' || rarity === 'MYTHIC' || rarity === 'SECRET') user.pity = 0
+
+  let pool = Object.entries(pets).filter(([k,v]) => v.rarity === rarity)
+  let randomPet = pool[Math.floor(Math.random() * pool.length)][0]
+
+  wdb.money[m.sender] -= biaya
+
+  user.pets.push({
+    tipe: randomPet,
+    level: 1,
+    exp: 0,
+    energy: 100,
+    happy: 50,
+    dirty: 0,
+    nickname: null,
+    lastFeed: 0,
+    lastActivity: 0,
+    lastRest: 0,
+    lastTrain: 0,
+    revive: true
+  })
+
+  saveDB(wdb)
+
+  let pitySisa = Math.max(0, 100 - user.pity)
+
+  return m.reply(
+    `╭─❏「 🎰 PET GACHA 」❏\n` +
+    `│ 🐾 *HASIL PET GACHA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🎰 *GACHA PET*\n` +
+    `> ↳ Biaya: Rp ${biaya.toLocaleString()}/Roll\n\n` +
+
+    `🌟 *RARITY*\n` +
+    `> ↳ ${raritiesNerf[rarity].emoji} *${rarity}*\n` +
+    `> ↳ ${raritiesNerf[rarity].stars}\n\n` +
+
+    `─━━━━━━━━━━━━━━─\n\n` +
+
+    `🐾 *PET DIDAPATKAN*\n` +
+    `> ↳ ${pets[randomPet].emoji} *${formatNamaAsli(randomPet).toUpperCase()}*\n\n` +
+
+    `💰 *PENGELUARAN*\n` +
+    `> ↳ 💸 Biaya: -Rp ${biaya.toLocaleString()}\n` +
+    `> ↳ 🎯 Pity: ${pitySisa} lagi ke LEGEND\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+  
+// === CEK VAMPIR ===
+if(['walk','play','feed','rest','train'].includes(action)){
+  if (user.pets.some(p => p.tipe === 'vampir') && !isMalam) {
+    return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ 🧛 *VAMPIR TIDUR*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Vampir kamu bersembunyi di peti mati karena matahari!\n` +
+      `> ↳ Aktif lagi jam 18:00 - 05:59 WIB\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
+}
+
+const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1
+
+const cekCD = (key, durasi) => {
+  let last = user.cooldown[key] || 0
+  let sisa = durasi - (Date.now() - last)
+  return sisa > 0? Math.ceil(sisa / 1000) : 0
+}
 
 // === FEED ===
-  if (action === 'feed') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let cd = getCooldown(120000, user)
-    if(cekBuzz()) cd = 0 
-    if (user.pets.some(p => Date.now() - (p.lastFeed || 0) < cd)) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 *MASIH KENYANG*\nPerut pet buncit. Nanti muntah\n⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi\n━━━━━━━━━━━`)
+if (action === 'feed') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 🍖 PET FEED 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
+  const selected = getSelectedPets(args[1])
+
+  if (selected.length === 0) return m.reply(
+    `╭─❏「 🍖 PET FEED 」❏\n` +
+    `│ ❌ *NOMOR PET TIDAK VALID*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Cek daftar pet dengan *${usedPrefix}pet*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  const organic = selected.filter(({ pet }) => !isMesin(pet.tipe))
+  const machines = selected.filter(({ pet }) => isMesin(pet.tipe))
+
+  if (machines.length && !organic.length) return m.reply(
+    `╭─❏「 🍖 PET FEED 」❏\n` +
+    `│ ⚙️ *PET MESIN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet mesin tidak bisa diberi makan.\n` +
+    `> ↳ Gunakan *${usedPrefix}pet charge all*\n` +
+    `> ↳ Atau *${usedPrefix}pet charge <nomor>*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let cd = getCooldown(120000, user)
+  if(cekBuzz()) cd = 0 
+
+  if (organic.some(({ pet }) => Date.now() - (pet.lastFeed || 0) < cd)) return m.reply(
+    `╭─❏「 🍖 PET FEED 」❏\n` +
+    `│ 🍖 *MASIH KENYANG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Perut pet buncit. Nanti muntah.\n` +
+    `> ↳ ⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
     // HARGA FEED BERDASAR RARITY
     const feedCost = {
       COMMON: 5000,
@@ -704,12 +996,11 @@ for(let key in aliases){
       SECRET: 120
     }
 
-    let isMesin = (tipe) => ['robot', 'drone', 'cyborg', 'mecha'].includes(tipe)
     let biayaMakan = 0
     let detailBiaya = []
     let hasRemy = user.pets.some(p => p.tipe === 'remy_ratatouille')
 
-    user.pets.filter(p => !isMesin(p.tipe)).forEach(p => {
+    organic.forEach(({ pet: p }) => {
       let rarity = pets[p.tipe]?.rarity || 'COMMON'
       let cost = feedCost[rarity] || 2000
       if (hasRemy) cost = Math.floor(cost * 0.5)
@@ -717,16 +1008,11 @@ for(let key in aliases){
       detailBiaya.push(`${pets[p.tipe]?.emoji || '🐾'} ${formatNama(p)}: Rp ${cost.toLocaleString()}${hasRemy ? ' (Remy -50%)' : ''}`)
     })
 
-    if (user.pets.every(p => isMesin(p.tipe))) {
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n⚙️ *PET MESIN*\nPet bertipe mesin/robot tidak membutuhkan makanan organik.\n━━━━━━━━━━━`)
-    }
-
-    if ((wdb.money[m.sender] || 0) < biayaMakan) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biayaMakan.toLocaleString()}.\n━━━━━━━━━━━`)
+    if ((wdb.money[m.sender] || 0) < biayaMakan) return m.reply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biayaMakan.toLocaleString()}.\n━━━━━━━━━━━`)
     
     wdb.money[m.sender] -= biayaMakan
     let naik = []
-    user.pets.forEach(p => {
-      if(isMesin(p.tipe)) return
+    organic.forEach(({ pet: p }) => {
       let rarity = pets[p.tipe]?.rarity || 'COMMON'
       let expGain = feedExp[rarity] + (p.tipe === 'anjing_alpha' ? 10 : 0)
       let energyGain = 20 + (p.tipe === 'mermaid' ? 10 : 0)
@@ -743,201 +1029,728 @@ for(let key in aliases){
     })
     saveDB(wdb)
     
-    let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 WAKTU MAKAN TIBA\n🍽️ MEMBERI MAKAN 🍽️\n`
-    teks += `💰 Biaya Total : -Rp ${biayaMakan.toLocaleString()}${hasRemy ? ' ✨ (Remy Passif -50%)' : ''}\n`
-    teks += `📊 Detail:\n${detailBiaya.map(x => `├ ${x}`).join('\n')}\n`
-    teks += `│\n├ Status : Exp bertambah | +20 Energy | +5 Happy`
-    if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe]?.emoji || '🐾'} ${formatNama(n)} (Lv.${n.level})`).join('\n')}`
-    teks += `\n━━━━━━━━━━━`
+    let teks = `╭─❏「 🐾 AVELIA PET CENTER 」❏\n`
+teks += `│ 🍖 *WAKTU MAKAN TIBA*\n`
+teks += `╰─━━━━━━━━━━━━━━─\n\n`
+
+teks += `🍽️ *MEMBERI MAKAN*\n\n`
+
+teks += `💰 *BIAYA MAKAN*\n`
+teks += `> ↳ Total: -Rp ${biayaMakan.toLocaleString()}${hasRemy ? ' ✨ (Remy Passif -50%)' : ''}\n\n`
+
+teks += `📊 *DETAIL BIAYA*\n`
+teks += detailBiaya.map(x => `> ↳ ${x}`).join('\n')
+
+teks += `\n\n─━━━━━━━━━━━━━━─\n\n`
+
+teks += `📈 *STATUS PET*\n`
+teks += `> ↳ Exp bertambah\n`
+teks += `> ↳ 🔋 +20 Energy\n`
+teks += `> ↳ 😊 +5 Happy`
+
+if (machines.length) {
+  teks += `\n> ↳ ⚙️ ${machines.length} pet mesin dilewati; gunakan *${usedPrefix}pet charge* untuk dayanya.`
+}
+
+if(naik.length) {
+  teks += `\n\n🎉 *LEVEL UP!*\n`
+  teks += naik.map(n => `> ↳ ${pets[n.tipe]?.emoji || '🐾'} ${formatNama(n)} (Lv.${n.level})`).join('\n')
+}
+
+teks += `\n\n─━━━━━━━━━━━━━━─`
     return m.reply(teks)
   }
 
-  // === TRAIN ===
-  if (action === 'train') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let cd = getCooldown(300000, user)
-   if(cekBuzz()) cd = 0
-   let naik = [] // [TAMBAH INI]
-   if (user.pets.some(p => Date.now() - (p.lastTrain || 0) < cd)) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💪 *PET MASIH LATIHAN*\nOtot mereka masih sakit. Istirahat dulu\n⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi\n━━━━━━━━━━━`)
-    if (user.pets.some(p => (p.energy || 100) < 30 &&!['batu','zombie'].includes(p.tipe))) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n😵 *ENERGY RENDAH*\nMinimal 30% untuk latihan\n━━━━━━━━━━━`)
-    user.pets.forEach(p => {
-      let expGain = 60 * getDebuff(p) * (p.tipe === 'skeleton'? 1.5 : 1) + (p.tipe === 'orc'? 10 : 0)
-      if(p.tipe === 'vampir' && isMalam) expGain += 20
-      if(p.tipe === 'serigala' && isMalam) expGain += 15
-      let energyLoss = 30 * (p.tipe === 'zombie'? 0.5 : 1)
-      if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 15
-      if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
-      p.exp += expGain; p.happy -= 5; p.dirty = Math.min(100, (p.dirty || 0) + 20); p.lastTrain = Date.now()
-      if (p.exp >= 100) { p.level += 1; p.exp = 0; naik.push(p) }
-    })
-    saveDB(wdb)
-    let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n💪 SESI LATIHAN\n🏋️ MELATIH PET 🏋️`
-    if(user.pets.some(p => p.tipe === 'jin')) teks += `\n🧞 Bonus : Jin mempercepat latihan!`
-    if(getDebuff(user.pets[0]) < 1) teks += `\n💩 Debuff : Pet kotor! Exp -${Math.round((1-getDebuff(user.pets[0]))*100)}%`
-    teks += `\n📊 Status : +60 Exp | -30 Energy | -5 Happy | +20 Dirty`
-    if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')}`
-    teks += `\n━━━━━━━━━━━`
-    return m.reply(teks)
-  }
-  
-    // === WALK ===
-  if (action === 'walk') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let cd = getCooldown(60000, user)
-    if(cekBuzz()) cd = 0 
-    if (user.pets.some(p => (p.energy || 100) < 20 &&!['batu','zombie'].includes(p.tipe))) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n😵 *KECAPEKAN JALAN*\n${pets['anjing']?.emoji || '🐾'} Pet kamu duduk & ngos-ngosan\n🔋 Isi energy dulu minimal 20%\n━━━━━━━━━━━`)
-    if (Date.now() - (user.pets[0].lastActivity || 0) < cd) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🚶 *KAKI MASIH PEGEL*\nPet baru aja jalan-jalan. Kasih napas dulu\n⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi\n━━━━━━━━━━━`)
-    let naik = []
-    user.pets.forEach(p => {
-      let expGain = 30 * getDebuff(p) * (p.tipe === 'skeleton'? 1.5 : 1) + (p.tipe === 'orc'? 5 : 0)
-      if(p.tipe === 'vampir' && isMalam) expGain += 15
-      if(p.tipe === 'serigala' && isMalam) expGain += 10
-      let energyLoss = 20 * (p.tipe === 'zombie'? 0.5 : 1)
-      if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 10
-      if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
-      p.exp += expGain; p.happy = Math.min(100, (p.happy || 50) + 5); p.dirty = Math.min(100, (p.dirty || 0) + 15); p.lastActivity = Date.now()
-      if (p.exp >= 100) { p.level += 1; p.exp = 0; naik.push(p) }
-    })
-    saveDB(wdb)
-    let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n🚶 JALAN-JALAN BERSAMA\n🌳 WALKING 🌳`
-    if(user.pets.some(p => p.tipe === 'jin')) teks += `\n🧞 Bonus : Jin membawamu terbang!`
-    if(user.pets.some(p => p.tipe === 'jack_o_lantern')) teks += `\n🎃 Bonus : Jack o lantern menerangi jalan!`
-    if(getDebuff(user.pets[0]) < 1) teks += `\n💩 Debuff : Pet kotor! Exp -${Math.round((1-getDebuff(user.pets[0]))*100)}%`
-    teks += `\n📊 Status : +30 Exp | -20 Energy | +5 Happy | +15 Dirty`
-    if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')}`
-    teks += `\n━━━━━━━━━━━`
-    return m.reply(teks)
+  // === CHARGE PET MESIN ===
+ if (action === 'charge') {
+  const selected = getSelectedPets(args[1])
+  const machines = selected.filter(({ pet }) => isMesin(pet.tipe))
+
+  if (selected.length === 0) return m.reply(
+    `╭─❏「 ⚡ PET CHARGE 」❏\n` +
+    `│ ❌ *NOMOR PET TIDAK VALID*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Cek daftar pet dengan *${usedPrefix}pet*\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if (machines.length === 0) return m.reply(
+    `╭─❏「 ⚡ PET CHARGE 」❏\n` +
+    `│ ❌ *BUKAN PET MESIN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Charge hanya untuk pet mesin.\n` +
+    `> ↳ Robot, Drone, Cyborg, atau Mecha.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  const biaya = machines.reduce((total, { pet }) => total + 3000 * (pets[pet.tipe]?.rarity === 'SECRET' ? 2 : 1), 0)
+
+  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+    `╭─❏「 ⚡ PET CHARGE 」❏\n` +
+    `│ ❌ *UANG TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Butuh: Rp ${biaya.toLocaleString()}\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  wdb.money[m.sender] -= biaya
+
+  machines.forEach(({ pet }) => {
+    pet.energy = 100
+    pet.lastCharge = Date.now()
+  })
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 ⚡ PET CHARGE 」❏\n` +
+    `│ ⚡ *CHARGE BERHASIL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `⚙️ *PET YANG DI-CHARGE*\n` +
+    machines.map(({ pet }) => `> ↳ ${pets[pet.tipe].emoji} ${formatNama(pet)}`).join('\n') +
+    `\n\n` +
+
+    `─━━━━━━━━━━━━━━─\n\n` +
+
+    `💰 *BIAYA & ENERGY*\n` +
+    `> ↳ 💸 Biaya: -Rp ${biaya.toLocaleString()}\n` +
+    `> ↳ 🔋 Energy: 100%\n\n` +
+
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === TRAIN ===
+if (action === 'train') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 💪 PET TRAIN 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let cd = getCooldown(300000, user)
+  if(cekBuzz()) cd = 0
+
+  let naik = []
+
+  if (user.pets.some(p => Date.now() - (p.lastTrain || 0) < cd)) return m.reply(
+    `╭─❏「 💪 PET TRAIN 」❏\n` +
+    `│ 💪 *PET MASIH LATIHAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Otot mereka masih sakit. Istirahat dulu.\n` +
+    `> ↳ ⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if (user.pets.some(p => (p.energy || 100) < 30 && !['batu','zombie'].includes(p.tipe))) return m.reply(
+    `╭─❏「 💪 PET TRAIN 」❏\n` +
+    `│ 😵 *ENERGY RENDAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Minimal 30% untuk latihan.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  user.pets.forEach(p => {
+    let expGain = 60 * getDebuff(p) * (p.tipe === 'skeleton'? 1.5 : 1) + (p.tipe === 'orc'? 10 : 0)
+    if(p.tipe === 'vampir' && isMalam) expGain += 20
+    if(p.tipe === 'serigala' && isMalam) expGain += 15
+    let energyLoss = 30 * (p.tipe === 'zombie'? 0.5 : 1)
+    if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 15
+    if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
+    p.exp += expGain
+    p.happy -= 5
+    p.dirty = Math.min(100, (p.dirty || 0) + 20)
+    p.lastTrain = Date.now()
+
+    if (p.exp >= 100) {
+      p.level += 1
+      p.exp = 0
+      naik.push(p)
+    }
+  })
+
+  saveDB(wdb)
+
+  let teks = `╭─❏「 💪 PET TRAIN 」❏\n`
+  teks += `│ 💪 *SESI LATIHAN*\n`
+  teks += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `🏋️ *MELATIH PET*\n`
+
+  if(user.pets.some(p => p.tipe === 'jin')) {
+    teks += `> ↳ 🧞 Bonus: Jin mempercepat latihan!\n`
   }
 
-  // === PLAY ===
-  if (action === 'play') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let cd = getCooldown(60000, user)
-    if(cekBuzz()) cd = 0 
-    if (user.pets.some(p => (p.energy || 100) < 20 &&!['batu','zombie'].includes(p.tipe))) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🥵 *KEHABISAN TENAGA*\n${pets['kucing']?.emoji || '🐾'} Pet rebahan minta digendong\n🔋 Kasih rest atau vitamin dulu\n━━━━━━━━━━━`)
-    if (Date.now() - (user.pets[0].lastActivity || 0) < cd) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎮 *KECAPEKAN MAIN*\nPet lagi ngos-ngosan. Ajak main lagi nanti\n⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi\n━━━━━━━━━━━`)
-    let naik = []
-    user.pets.forEach(p => {
-      let expGain = 30 * getDebuff(p) * (p.tipe === 'skeleton'? 1.5 : 1)
-      if(p.tipe === 'vampir' && isMalam) expGain += 15
-      let happyGain = 10 * (p.tipe === 'ghost'? 2 : 1)
-      let energyLoss = 20 * (p.tipe === 'zombie'? 0.5 : 1)
-      if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 10
-      if(p.tipe === 'snowman' &&!isMalam) energyLoss = 30
-      if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
-      p.exp += expGain; p.happy = Math.min(100, (p.happy || 50) + happyGain); p.dirty = Math.min(100, (p.dirty || 0) + 10); p.lastActivity = Date.now()
-      if (p.exp >= 100) { p.level += 1; p.exp = 0; naik.push(p) }
-    })
-    saveDB(wdb)
-    let teks = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎮 WAKTU BERMAIN\n⚽ PLAYING ⚽`
-    if(user.pets.some(p => p.tipe === 'ghost')) teks += `\n👻 Bonus : Ghost membuat suasana lebih seru!`
-    if(!isMalam && user.pets.some(p => p.tipe === 'snowman')) teks += `\n⛄ Debuff : Snowman kepanasan! Energy -30`
-    if(getDebuff(user.pets[0]) < 1) teks += `\n💩 Debuff : Pet kotor! Exp -${Math.round((1-getDebuff(user.pets[0]))*100)}%`
-    teks += `\n📊 Status : +30 Exp | -20 Energy | +10 Happy | +10 Dirty`
-    if(naik.length) teks += `\n\n🎉 LEVEL UP!\n${naik.map(n => `${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')}`
-    teks += `\n━━━━━━━━━━━`
-    return m.reply(teks)
+  if(getDebuff(user.pets[0]) < 1) {
+    teks += `> ↳ 💩 Debuff: Pet kotor! Exp -${Math.round((1-getDebuff(user.pets[0]))*100)}%\n`
   }
+
+  teks += `\n📊 *STATUS LATIHAN*\n`
+  teks += `> ↳ ✨ +60 Exp\n`
+  teks += `> ↳ 🔋 -30 Energy\n`
+  teks += `> ↳ 😊 -5 Happy\n`
+  teks += `> ↳ 🧼 +20 Dirty`
+
+  if(naik.length) {
+    teks += `\n\n🎉 *LEVEL UP!*\n`
+    teks += naik.map(n => `> ↳ ${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')
+  }
+
+  teks += `\n\n╰─━━━━━━━━━━━━━━─`
+
+  return m.reply(teks)
+}
+
+// === WALK ===
+if (action === 'walk') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 🚶 PET WALK 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let cd = getCooldown(60000, user)
+  if(cekBuzz()) cd = 0
+
+  if (user.pets.some(p => (p.energy || 100) < 20 && !['batu','zombie'].includes(p.tipe))) return m.reply(
+    `╭─❏「 🚶 PET WALK 」❏\n` +
+    `│ 😵 *KECAPEKAN JALAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${pets['anjing']?.emoji || '🐾'} Pet kamu duduk & ngos-ngosan.\n` +
+    `> ↳ 🔋 Isi energy dulu minimal 20%.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if (Date.now() - (user.pets[0].lastActivity || 0) < cd) return m.reply(
+    `╭─❏「 🚶 PET WALK 」❏\n` +
+    `│ 🚶 *KAKI MASIH PEGEL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet baru aja jalan-jalan. Kasih napas dulu.\n` +
+    `> ↳ ⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let naik = []
+
+  user.pets.forEach(p => {
+    let expGain = 30 * getDebuff(p) * (p.tipe === 'skeleton'? 1.5 : 1) + (p.tipe === 'orc'? 5 : 0)
+    if(p.tipe === 'vampir' && isMalam) expGain += 15
+    if(p.tipe === 'serigala' && isMalam) expGain += 10
+    let energyLoss = 20 * (p.tipe === 'zombie'? 0.5 : 1)
+    if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 10
+    if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
+    p.exp += expGain
+    p.happy = Math.min(100, (p.happy || 50) + 5)
+    p.dirty = Math.min(100, (p.dirty || 0) + 15)
+    p.lastActivity = Date.now()
+
+    if (p.exp >= 100) {
+      p.level += 1
+      p.exp = 0
+      naik.push(p)
+    }
+  })
+
+  saveDB(wdb)
+
+  let teks = `╭─❏「 🚶 PET WALK 」❏\n`
+  teks += `│ 🚶 *JALAN-JALAN BERSAMA*\n`
+  teks += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `🌳 *WALKING*\n`
+
+  if(user.pets.some(p => p.tipe === 'jin')) {
+    teks += `> ↳ 🧞 Bonus: Jin membawamu terbang!\n`
+  }
+
+  if(user.pets.some(p => p.tipe === 'jack_o_lantern')) {
+    teks += `> ↳ 🎃 Bonus: Jack o lantern menerangi jalan!\n`
+  }
+
+  if(getDebuff(user.pets[0]) < 1) {
+    teks += `> ↳ 💩 Debuff: Pet kotor! Exp -${Math.round((1-getDebuff(user.pets[0]))*100)}%\n`
+  }
+
+  teks += `\n📊 *STATUS WALKING*\n`
+  teks += `> ↳ ✨ +30 Exp\n`
+  teks += `> ↳ 🔋 -20 Energy\n`
+  teks += `> ↳ 😊 +5 Happy\n`
+  teks += `> ↳ 🧼 +15 Dirty`
+
+  if(naik.length) {
+    teks += `\n\n🎉 *LEVEL UP!*\n`
+    teks += naik.map(n => `> ↳ ${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')
+  }
+
+  teks += `\n\n╰─━━━━━━━━━━━━━━─`
+
+  return m.reply(teks)
+}
+
+// === PLAY ===
+if (action === 'play') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 🎮 PET PLAY 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let cd = getCooldown(60000, user)
+  if(cekBuzz()) cd = 0
+
+  if (user.pets.some(p => (p.energy || 100) < 20 && !['batu','zombie'].includes(p.tipe))) return m.reply(
+    `╭─❏「 🎮 PET PLAY 」❏\n` +
+    `│ 🥵 *KEHABISAN TENAGA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${pets['kucing']?.emoji || '🐾'} Pet rebahan minta digendong.\n` +
+    `> ↳ 🔋 Kasih rest atau vitamin dulu.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if (Date.now() - (user.pets[0].lastActivity || 0) < cd) return m.reply(
+    `╭─❏「 🎮 PET PLAY 」❏\n` +
+    `│ 🎮 *KECAPEKAN MAIN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet lagi ngos-ngosan. Ajak main lagi nanti.\n` +
+    `> ↳ ⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let naik = []
+
+  user.pets.forEach(p => {
+    let expGain = 30 * getDebuff(p) * (p.tipe === 'skeleton'? 1.5 : 1)
+    if(p.tipe === 'vampir' && isMalam) expGain += 15
+    let happyGain = 10 * (p.tipe === 'ghost'? 2 : 1)
+    let energyLoss = 20 * (p.tipe === 'zombie'? 0.5 : 1)
+    if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 10
+    if(p.tipe === 'snowman' && !isMalam) energyLoss = 30
+    if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
+    p.exp += expGain
+    p.happy = Math.min(100, (p.happy || 50) + happyGain)
+    p.dirty = Math.min(100, (p.dirty || 0) + 10)
+    p.lastActivity = Date.now()
+
+    if (p.exp >= 100) {
+      p.level += 1
+      p.exp = 0
+      naik.push(p)
+    }
+  })
+
+  saveDB(wdb)
+
+  let teks = `╭─❏「 🎮 PET PLAY 」❏\n`
+  teks += `│ 🎮 *WAKTU BERMAIN*\n`
+  teks += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  teks += `⚽ *PLAYING*\n`
+
+  if(user.pets.some(p => p.tipe === 'ghost')) {
+    teks += `> ↳ 👻 Bonus: Ghost membuat suasana lebih seru!\n`
+  }
+
+  if(!isMalam && user.pets.some(p => p.tipe === 'snowman')) {
+    teks += `> ↳ ⛄ Debuff: Snowman kepanasan! Energy -30\n`
+  }
+
+  if(getDebuff(user.pets[0]) < 1) {
+    teks += `> ↳ 💩 Debuff: Pet kotor! Exp -${Math.round((1-getDebuff(user.pets[0]))*100)}%\n`
+  }
+
+  teks += `\n📊 *STATUS PLAYING*\n`
+  teks += `> ↳ ✨ +30 Exp\n`
+  teks += `> ↳ 🔋 -20 Energy\n`
+  teks += `> ↳ 😊 +10 Happy\n`
+  teks += `> ↳ 🧼 +10 Dirty`
+
+  if(naik.length) {
+    teks += `\n\n🎉 *LEVEL UP!*\n`
+    teks += naik.map(n => `> ↳ ${pets[n.tipe].emoji} ${formatNama(n)}`).join('\n')
+  }
+
+  teks += `\n\n╰─━━━━━━━━━━━━━━─`
+
+  return m.reply(teks)
+}
 
   // === REST ===
-  if (action === 'rest') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    if (user.pets.every(p => p.tipe === 'vampir')) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🧛 *VAMPIR TIDUR*\nVampir tidak perlu istirahat. Mereka begadang selamanya\n━━━━━━━━━━━`)
-    let cd = getCooldown(600000, user)
-    if(cekBuzz()) cd = 0 
-    if (Date.now() - (user.pets[0].lastRest || 0) < cd) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n😴 *MASIH NGANTUK*\nPet belum bangun tidur. Jangan diganggu\n⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi\n━━━━━━━━━━━`)
-    user.pets.forEach(p => {
-      if(p.energy <= 0 && p.tipe === 'phoenix' && p.revive){ p.energy = 100; p.revive = false }
-      let happyGain = 0 + (p.tipe === 'fairy'? 5 : 0)
-      p.energy = Math.min(100, (p.energy || 100) + 30)
-      p.happy = Math.min(100, (p.happy || 50) + happyGain)
-      p.dirty = Math.min(100, (p.dirty || 0) + 5)
-      p.lastRest = Date.now()
-    })
+if (action === 'rest') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 😴 PET REST 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if (user.pets.every(p => p.tipe === 'vampir')) return m.reply(
+    `╭─❏「 😴 PET REST 」❏\n` +
+    `│ 🧛 *VAMPIR TIDUR*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Vampir tidak perlu istirahat.\n` +
+    `> ↳ Mereka begadang selamanya.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let cd = getCooldown(600000, user)
+  if(cekBuzz()) cd = 0
+
+  if (Date.now() - (user.pets[0].lastRest || 0) < cd) return m.reply(
+    `╭─❏「 😴 PET REST 」❏\n` +
+    `│ 😴 *MASIH NGANTUK*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet belum bangun tidur. Jangan diganggu.\n` +
+    `> ↳ ⏰ Tunggu ${Math.ceil(cd/1000)} detik lagi.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  user.pets.forEach(p => {
+    if(p.energy <= 0 && p.tipe === 'phoenix' && p.revive){ p.energy = 100; p.revive = false }
+    let happyGain = 0 + (p.tipe === 'fairy'? 5 : 0)
+    p.energy = Math.min(100, (p.energy || 100) + 30)
+    p.happy = Math.min(100, (p.happy || 50) + happyGain)
+    p.dirty = Math.min(100, (p.dirty || 0) + 5)
+    p.lastRest = Date.now()
+  })
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 😴 PET REST 」❏\n` +
+    `│ 😴 *WAKTU ISTIRAHAT*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🛏️ *RESTING*\n` +
+    `> ↳ 🔋 +30 Energy\n` +
+    `> ↳ 🧼 +5 Dirty\n\n` +
+
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === CLEAN ===
+if (action === 'clean') {
+  const selected = getSelectedPets(args[1])
+
+  if (selected.length === 0) return m.reply(
+    `╭─❏「 🧼 PET CLEAN 」❏\n` +
+    `│ ❌ *NOMOR PET TIDAK VALID*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Cek daftar pet dengan *${usedPrefix}pet*\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let biaya = 2000 * selected.length
+
+  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+    `╭─❏「 🧼 PET CLEAN 」❏\n` +
+    `│ ❌ *UANG TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Butuh: Rp ${biaya.toLocaleString()} untuk sabun + sampo.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if(selected.every(({ pet }) => (pet.dirty || 0) === 0)) return m.reply(
+    `╭─❏「 🧼 PET CLEAN 」❏\n` +
+    `│ ✨ *SUDAH BERSIH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet yang dipilih sudah bersih!\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  wdb.money[m.sender] -= biaya
+  selected.forEach(({ pet }) => {
+    pet.dirty = 0
+    pet.happy = Math.min(100, (pet.happy || 50) + 10)
+  })
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🧼 PET CLEAN 」❏\n` +
+    `│ 🧼 *WAKTU MANDI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🛁 *MEMBERSIHKAN PET*\n` +
+    `> ↳ 💰 Biaya: -Rp ${biaya.toLocaleString()}\n` +
+    `> ↳ 🧼 Status: Semua pet bersih!\n` +
+    `> ↳ 😊 +10 Happy\n\n` +
+
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === HEAL ===
+if (action === 'heal') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 💊 PET HEAL 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let target = args[1]
+
+  if(!target) return m.reply(
+    `╭─❏「 💊 PET HEAL 」❏\n` +
+    `│ ❌ *FORMAT SALAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: *${usedPrefix}pet heal 1*\n` +
+    `> ↳ Atau: *${usedPrefix}pet heal kucing*\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let p = !isNaN(target)
+    ? user.pets[parseInt(target)-1]
+    : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
+
+  if(!p) return m.reply(
+    `╭─❏「 💊 PET HEAL 」❏\n` +
+    `│ ❌ *PET TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet yang kamu cari tidak ditemukan.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let biaya = 5000 * p.level
+
+  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+    `╭─❏「 💊 PET HEAL 」❏\n` +
+    `│ ❌ *UANG TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Butuh: Rp ${biaya.toLocaleString()}\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  wdb.money[m.sender] -= biaya
+  p.energy = 100
+  p.happy = 100
+  p.dirty = 0
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 💊 PET HEAL 」❏\n` +
+    `│ 💊 *WAKTU PENGOBATAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🏥 *MENYEMBUHKAN PET*\n` +
+    `> ↳ ${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n\n` +
+
+    `📊 *STATUS PET*\n` +
+    `> ↳ 🔋 Energy: 100%\n` +
+    `> ↳ 😊 Happy: 100%\n` +
+    `> ↳ 🧼 Bersih\n\n` +
+
+    `💰 *BIAYA*\n` +
+    `> ↳ -Rp ${biaya.toLocaleString()}\n\n` +
+
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === GIFT ===
+if (action === 'gift') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 🎁 PET GIFT 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let target = args[1]
+  let item = args[2]?.toLowerCase()
+
+  if(!target || !item) return m.reply(
+    `╭─❏「 🎁 PET GIFT 」❏\n` +
+    `│ ❌ *FORMAT SALAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: *${usedPrefix}pet gift 1 snack*\n` +
+    `> ↳ Item: snack, mainan, vitamin\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let p = !isNaN(target)
+    ? user.pets[parseInt(target)-1]
+    : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
+
+  if(!p) return m.reply(
+    `╭─❏「 🎁 PET GIFT 」❏\n` +
+    `│ ❌ *PET TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet yang kamu cari tidak ditemukan.\n\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if(item === 'snack'){
+    if((wdb.money[m.sender] || 0) < 3000) return m.reply(
+      `╭─❏「 🎁 PET GIFT 」❏\n` +
+      `│ ❌ *UANG TIDAK CUKUP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Butuh: Rp 3,000\n\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+
+    wdb.money[m.sender] -= 3000
+    p.happy = Math.min(100, (p.happy || 50) + 15)
     saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n😴 WAKTU ISTIRAHAT\n🛏️ RESTING 🛏️\n📊 Status : +30 Energy | +5 Dirty\n━━━━━━━━━━━`)
+
+    return m.reply(
+      `╭─❏「 🎁 PET GIFT 」❏\n` +
+      `│ 🍖 *MEMBERI HADIAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+
+      `🐾 *${pets[p.tipe].emoji} ${formatNama(p).toUpperCase()}*\n` +
+      `> ↳ 😊 +15 Happy\n` +
+      `> ↳ 💰 Biaya: -Rp 3,000\n\n` +
+
+      `╰─━━━━━━━━━━━━━━─`
+    )
   }
 
-  // === CLEAN ===
-  if (action === 'clean') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let biaya = 2000 * user.pets.length
-    if ((wdb.money[m.sender] || 0) < biaya) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biaya.toLocaleString()} untuk sabun + sampo\n━━━━━━━━━━━`)
-    if(user.pets.every(p => (p.dirty || 0) === 0)) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n✨ *SUDAH BERSIH*\nSemua pet kamu sudah bersih!\n━━━━━━━━━━━`)
-    wdb.money[m.sender] -= biaya
-    user.pets.forEach(p => { p.dirty = 0; p.happy = Math.min(100, (p.happy || 50) + 10) })
+  if(item === 'mainan'){
+    if((wdb.money[m.sender] || 0) < 10000) return m.reply(
+      `╭─❏「 🎁 PET GIFT 」❏\n` +
+      `│ ❌ *UANG TIDAK CUKUP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Butuh: Rp 10,000\n\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+
+    wdb.money[m.sender] -= 10000
+    p.happy = Math.min(100, (p.happy || 50) + 30)
+    p.exp += 10
     saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🧼 WAKTU MANDI\n🛁 MEMBERSIHKAN PET 🛁\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n📊 Status : Semua pet bersih! +10 Happy\n━━━━━━━━━━━`)
+
+    return m.reply(
+      `╭─❏「 🎁 PET GIFT 」❏\n` +
+      `│ 🧸 *MEMBERI HADIAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+
+      `🐾 *${pets[p.tipe].emoji} ${formatNama(p).toUpperCase()}*\n` +
+      `> ↳ 😊 +30 Happy\n` +
+      `> ↳ ✨ +10 Exp\n` +
+      `> ↳ 💰 Biaya: -Rp 10,000\n\n` +
+
+      `╰─━━━━━━━━━━━━━━─`
+    )
   }
 
-  // === HEAL ===
-  if (action === 'heal') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let target = args[1]
-    if(!target) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet heal 1 atau.pet heal kucing\n━━━━━━━━━━━`)
-    let p =!isNaN(target)? user.pets[parseInt(target)-1] : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
-    if(!p) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
-    let biaya = 5000 * p.level
-    if ((wdb.money[m.sender] || 0) < biaya) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
-    wdb.money[m.sender] -= biaya
-    p.energy = 100; p.happy = 100; p.dirty = 0
+  if(item === 'vitamin'){
+    if((wdb.money[m.sender] || 0) < 15000) return m.reply(
+      `╭─❏「 🎁 PET GIFT 」❏\n` +
+      `│ ❌ *UANG TIDAK CUKUP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Butuh: Rp 15,000\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+
+    wdb.money[m.sender] -= 15000
+    p.energy = Math.min(100, (p.energy || 100) + 40)
     saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💊 WAKTU PENGOBATAN\n🏥 MENYEMBUHKAN PET 🏥\n${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n📊 Status : Energy 100% | Happy 100% | Bersih\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
-  }
-  
-    // === GIFT ===
-  if (action === 'gift') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let target = args[1]
-    let item = args[2]?.toLowerCase()
-    if(!target ||!item) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet gift 1 snack\nItem: snack, mainan, vitamin\n━━━━━━━━━━━`)
-    let p =!isNaN(target)? user.pets[parseInt(target)-1] : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
-    if(!p) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
 
-    if(item === 'snack'){
-      if((wdb.money[m.sender] || 0) < 3000) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp 3,000\n━━━━━━━━━━━`)
-      wdb.money[m.sender] -= 3000
-      p.happy = Math.min(100, (p.happy || 50) + 15)
-      saveDB(wdb)
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🍖 MEMBERI HADIAH\n${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n📊 Status : +15 Happy\n💰 Biaya : -Rp 3,000\n━━━━━━━━━━━`)
-    }
-    if(item === 'mainan'){
-      if((wdb.money[m.sender] || 0) < 10000) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp 10,000\n━━━━━━━━━━━`)
-      wdb.money[m.sender] -= 10000
-      p.happy = Math.min(100, (p.happy || 50) + 30); p.exp += 10
-      saveDB(wdb)
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🧸 MEMBERI HADIAH\n${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n📊 Status : +30 Happy | +10 Exp\n💰 Biaya : -Rp 10,000\n━━━━━━━━━━━`)
-    }
-    if(item === 'vitamin'){
-      if((wdb.money[m.sender] || 0) < 15000) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp 15,000\n━━━━━━━━━━━`)
-      wdb.money[m.sender] -= 15000
-      p.energy = Math.min(100, (p.energy || 100) + 40)
-      saveDB(wdb)
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💊 MEMBERI HADIAH\n${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n📊 Status : +40 Energy\n💰 Biaya : -Rp 15,000\n━━━━━━━━━━━`)
-    }
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *ITEM TIDAK ADA*\nPilih: snack, mainan, vitamin\n━━━━━━━━━━━`)
+    return m.reply(
+      `╭─❏「 🎁 PET GIFT 」❏\n` +
+      `│ 💊 *MEMBERI HADIAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+
+      `🐾 *${pets[p.tipe].emoji} ${formatNama(p).toUpperCase()}*\n` +
+      `> ↳ 🔋 +40 Energy\n` +
+      `> ↳ 💰 Biaya: -Rp 15,000\n\n` +
+
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  // === RENAME ===
-  if (action === 'rename') {
-    if (user.pets.length === 0) return m.reply('❌ Kamu tidak punya pet.')
-    let target = args[1]
-    let namaBaru = args.slice(2).join(' ')
-    if(!target ||!namaBaru) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet rename 1 SiBulat\n━━━━━━━━━━━`)
-    let p =!isNaN(target)? user.pets[parseInt(target)-1] : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
-    if(!p) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
-    if(namaBaru.length > 15) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *NAMA KEPANJANGAN*\nMax 15 karakter\n━━━━━━━━━━━`)
-    p.nickname = namaBaru
-    saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🏷️ GANTI NAMA PET\n${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n➡️ Nama baru : *${namaBaru}*\n━━━━━━━━━━━`)
-  }
+  return m.reply(
+    `╭─❏「 🎁 PET GIFT 」❏\n` +
+    `│ ❌ *ITEM TIDAK ADA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pilih: snack, mainan, vitamin\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
-  // === RELEASE ===
-  if (action === 'release') {
-    let petName = args.slice(1).join(' ').toLowerCase()
-    if (!petName) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet release kucing\n━━━━━━━━━━━`)
-    petName = petName.replace(/ /g, '_').replace(/-/g, '_')
-    petName = petName.replace(/ /g, '_').replace(/-/g, '_')
+// === RENAME ===
+if (action === 'rename') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 🏷️ PET RENAME 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu tidak punya pet.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let target = args[1]
+  let namaBaru = args.slice(2).join(' ')
+
+  if(!target || !namaBaru) return m.reply(
+    `╭─❏「 🏷️ PET RENAME 」❏\n` +
+    `│ ❌ *FORMAT SALAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: *${usedPrefix}pet rename 1 SiBulat*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let p = !isNaN(target)
+    ? user.pets[parseInt(target)-1]
+    : user.pets.find(x => x.tipe === target.replace(/ /g,'_'))
+
+  if(!p) return m.reply(
+    `╭─❏「 🏷️ PET RENAME 」❏\n` +
+    `│ ❌ *PET TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet yang kamu cari tidak ditemukan.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  if(namaBaru.length > 15) return m.reply(
+    `╭─❏「 🏷️ PET RENAME 」❏\n` +
+    `│ ❌ *NAMA KEPANJANGAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Maksimal 15 karakter.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  p.nickname = namaBaru
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🏷️ PET RENAME 」❏\n` +
+    `│ 🏷️ *GANTI NAMA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🐾 *${pets[p.tipe].emoji} ${formatNama(p).toUpperCase()}*\n` +
+    `> ↳ Nama baru: *${namaBaru}*\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === RELEASE ===
+if (action === 'release') {
+  let petName = args.slice(1).join(' ').toLowerCase()
+
+  if (!petName) return m.reply(
+    `╭─❏「 💔 PET RELEASE 」❏\n` +
+    `│ ❌ *FORMAT SALAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: *${usedPrefix}pet release kucing*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  petName = petName.replace(/ /g, '_').replace(/-/g, '_')
+  petName = petName.replace(/ /g, '_').replace(/-/g, '_')
 
 // CEK ALIAS DULU
 for(let key in aliases){
@@ -946,249 +1759,736 @@ for(let key in aliases){
     break
   }
 }
-    let index = user.pets.findIndex(p => p.tipe === petName)
-    if (index === -1) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
-    let refund = Math.floor(pets[petName].harga * 0.5)
-    wdb.money[m.sender] += refund
-    user.pets.splice(index, 1)
-    saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💔 MELEPASKAN PET\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n💰 Refund : +Rp ${refund.toLocaleString()}\n━━━━━━━━━━━`)
+
+  let index = user.pets.findIndex(p => p.tipe === petName)
+
+  if (index === -1) return m.reply(
+    `╭─❏「 💔 PET RELEASE 」❏\n` +
+    `│ ❌ *PET TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet yang kamu cari tidak ditemukan.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let refund = Math.floor(pets[petName].harga * 0.5)
+  wdb.money[m.sender] += refund
+  user.pets.splice(index, 1)
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 💔 PET RELEASE 」❏\n` +
+    `│ 💔 *MELEPASKAN PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🐾 *${pets[petName].emoji} ${formatNamaAsli(petName).toUpperCase()}*\n` +
+    `> ↳ 💰 Refund: +Rp ${refund.toLocaleString()}\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === SELL ===
+if (action === 'sell') {
+  const pending = getPending()
+
+  if (['yes', 'no'].includes(args[1]?.toLowerCase())) {
+    if (!pending || pending.action !== 'sell') return m.reply(
+      `╭─❏「 💸 PET SELL 」❏\n` +
+      `│ ❌ *TIDAK ADA PENJUALAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Tidak ada penjualan yang menunggu konfirmasi.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+
+    delete user.pendingPetAction
+
+    if (args[1].toLowerCase() === 'no') return m.reply(
+      `╭─❏「 💸 PET SELL 」❏\n` +
+      `│ ✅ *PENJUALAN DIBATALKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Penjualan pet dibatalkan.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  } else {
+    const selected = getSelectedPets(args[1], false)
+
+    if (selected.length === 0) return m.reply(
+      `╭─❏「 💸 PET SELL 」❏\n` +
+      `│ ❌ *PET TIDAK DIPILIH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Pilih pet dengan nomor atau all.\n` +
+      `> ↳ Contoh: *${usedPrefix}pet sell 1*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+
+    user.pendingPetAction = {
+      action: 'sell',
+      indexes: selected.map(({ index }) => index),
+      expires: Date.now() + 60000
+    }
+
+    return m.reply(
+      `╭─❏「 💸 PET SELL 」❏\n` +
+      `│ ⚠️ *KONFIRMASI PENJUALAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Jual ${selected.length} pet?\n` +
+      `> ↳ Ketik *${usedPrefix}pet sell yes* untuk lanjut.\n` +
+      `> ↳ Ketik *${usedPrefix}pet sell no* untuk batal.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  // === SELL ===
-  if (action === 'sell') {
-    let target = args[1]
-    if(!target) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet sell 1\n━━━━━━━━━━━`)
-    let idx =!isNaN(target)? parseInt(target)-1 : user.pets.findIndex(p => p.tipe === target.replace(/ /g,'_'))
-    if(idx === -1) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
-    let p = user.pets[idx]
-    let hargaDasar = pets[p.tipe].harga
-    let multiplier = Math.floor(p.level / 50) + 1
-    let hargaJual = Math.floor(hargaDasar * 0.7 * multiplier)
-    wdb.money[m.sender] += hargaJual
+  const selected = pending.indexes.filter(index => user.pets[index])
+  let total = 0
+  const sold = []
+
+  selected.sort((a, b) => b - a).forEach(idx => {
+    const p = user.pets[idx]
+    const hargaJual = Math.floor(
+      pets[p.tipe].harga *
+      0.7 *
+      (Math.floor(p.level / 50) + 1) *
+      (user.pets.some(x => x.tipe === 'sphinx') ? 1.2 : 1)
+    )
+
+    total += hargaJual
+    sold.push(`${pets[p.tipe].emoji} ${formatNama(p)}`)
     user.pets.splice(idx, 1)
-    saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💸 MENJUAL PET\n${pets[p.tipe].emoji} *${formatNama(p).toUpperCase()}*\n📈 Level : ${p.level}\n💰 Harga Jual : +Rp ${hargaJual.toLocaleString()}\n━━━━━━━━━━━`)
-  }
+  })
+
+  wdb.money[m.sender] += total
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 💸 PET SELL 」❏\n` +
+    `│ 💸 *PENJUALAN BERHASIL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `🐾 *PET TERJUAL*\n` +
+    sold.map(v => `> ↳ ${v}`).join('\n') +
+    `\n\n` +
+
+    `─━━━━━━━━━━━━━━─\n\n` +
+
+    `💰 *HASIL PENJUALAN*\n` +
+    `> ↳ Total: +Rp ${total.toLocaleString()}\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   // === BREED ===
-  if (action === 'breed') {
-    if(user.pets.length >= 10) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET PENUH*\nMax 10 pet. Release/Sell/Kill/Transfer dulu\n━━━━━━━━━━━`)
-    let cd = cekCD('petbreed', 86400000)
-    if(cd > 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n⏰ *MASIH COOLDOWN*\nTunggu ${Math.floor(cd/3600)} jam lagi\n━━━━━━━━━━━`)
+if (action === 'breed') {
+  if(user.pets.length >= 10) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *PET PENUH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Max 10 pet.\n` +
+    `> ↳ Release/Sell/Kill/Transfer dulu\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    let pet1 = args[1]
-    let pet2 = args[2]
-    if(!pet1 ||!pet2) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet breed 1 2\nHarus 2 pet spesies sama\n━━━━━━━━━━━`)
+  let cd = cekCD('petbreed', 86400000)
+  if(cd > 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ⏰ *MASIH COOLDOWN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Tunggu ${Math.floor(cd/3600)} jam lagi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    let p1 =!isNaN(pet1)? user.pets[parseInt(pet1)-1] : user.pets.find(x => x.tipe === pet1.replace(/ /g,'_'))
-    let p2 =!isNaN(pet2)? user.pets[parseInt(pet2)-1] : user.pets.find(x => x.tipe === pet2.replace(/ /g,'_'))
-    if(!p1 ||!p2) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
-    if(p1.tipe!== p2.tipe) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *SPESIES BERBEDA*\nBreed hanya bisa sesama jenis\n━━━━━━━━━━━`)
-    if((p1.energy || 100) < 50 || (p2.energy || 100) < 50) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *ENERGY KURANG*\nMinimal 50% untuk breed\n━━━━━━━━━━━`)
+  let pet1 = args[1]
+  let pet2 = args[2]
+  if(!pet1 ||!pet2) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *FORMAT SALAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: .pet breed 1 2\n` +
+    `> ↳ Harus 2 pet spesies sama\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    let biaya = 100000
-    if ((wdb.money[m.sender] || 0) < biaya) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
+  let p1 =!isNaN(pet1)? user.pets[parseInt(pet1)-1] : user.pets.find(x => x.tipe === pet1.replace(/ /g,'_'))
+  let p2 =!isNaN(pet2)? user.pets[parseInt(pet2)-1] : user.pets.find(x => x.tipe === pet2.replace(/ /g,'_'))
 
-    wdb.money[m.sender] -= biaya
-    p1.energy -= 50; p2.energy -= 50
-    let berhasil = Math.random() < 0.5
+  if(!p1 ||!p2) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *PET TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
 
-    user.cooldown.petbreed = Date.now()
+  if(p1.tipe!== p2.tipe) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *SPESIES BERBEDA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Breed hanya bisa sesama jenis\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  if((p1.energy || 100) < 50 || (p2.energy || 100) < 50) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *ENERGY KURANG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Minimal 50% untuk breed\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let biaya = 100000
+  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *UANG TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Butuh Rp ${biaya.toLocaleString()}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  wdb.money[m.sender] -= biaya
+  p1.energy -= 50; p2.energy -= 50
+  let berhasil = Math.random() < 0.5
+
+  user.cooldown.petbreed = Date.now()
+  saveDB(wdb)
+
+  if(berhasil){
+    user.pets.push({ tipe: p1.tipe, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
     saveDB(wdb)
 
-    if(berhasil){
-      user.pets.push({ tipe: p1.tipe, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
-      saveDB(wdb)
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💕 BREED BERHASIL\n${pets[p1.tipe].emoji} *${formatNamaAsli(p1.tipe).toUpperCase()}* + ${pets[p2.tipe].emoji} *${formatNamaAsli(p2.tipe).toUpperCase()}*\n🎉 Dapat bayi baru!\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
-    } else {
-      return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💔 BREED GAGAL\n${pets[p1.tipe].emoji} *${formatNamaAsli(p1.tipe).toUpperCase()}* + ${pets[p2.tipe].emoji} *${formatNamaAsli(p2.tipe).toUpperCase()}*\n😢 Tidak dapat keturunan\n💰 Biaya : -Rp ${biaya.toLocaleString()}\n━━━━━━━━━━━`)
-    }
+    return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ 💕 *BREED BERHASIL*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${pets[p1.tipe].emoji} *${formatNamaAsli(p1.tipe).toUpperCase()}* + ${pets[p2.tipe].emoji} *${formatNamaAsli(p2.tipe).toUpperCase()}*\n` +
+      `> ↳ 🎉 Dapat bayi baru!\n\n` +
+      `💰 *BIAYA BREED*\n` +
+      `> ↳ -Rp ${biaya.toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  } else {
+    return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ 💔 *BREED GAGAL*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${pets[p1.tipe].emoji} *${formatNamaAsli(p1.tipe).toUpperCase()}* + ${pets[p2.tipe].emoji} *${formatNamaAsli(p2.tipe).toUpperCase()}*\n` +
+      `> ↳ 😢 Tidak dapat keturunan\n\n` +
+      `💰 *BIAYA BREED*\n` +
+      `> ↳ -Rp ${biaya.toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
-  
-    // === BATTLE ===
-  if (action === 'battle') {
-    let cd = cekCD('petbattle', 300000)
-    if(cd > 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n⏰ *MASIH CAFEK BATTLE*\nTunggu ${Math.floor(cd/60)} menit ${cd%60} detik lagi\n━━━━━━━━━━━`)
+}
 
-    let target = m.mentionedJid[0] || m.quoted?.sender
-    if(!target) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TAG TARGET*\nContoh:.pet battle @tag 50000\n━━━━━━━━━━━`)
-    if(target === m.sender) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TIDAK BISA*\nGa bisa battle sama diri sendiri\n━━━━━━━━━━━`)
 
-    let dataTarget = getUserRPG(wdb, target)
-    let userTarget = dataTarget.rpg
-    if(!userTarget.pets) userTarget.pets = []
-    if(userTarget.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TARGET TIDAK PUNYA PET*\n━━━━━━━━━━━`)
-    if(user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *KAMU TIDAK PUNYA PET*\n━━━━━━━━━━━`)
+// === BATTLE ===
+if (action === 'battle') {
+  let cd = cekCD('petbattle', 300000)
+  if(cd > 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ⏰ *MASIH CAFEK BATTLE*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Tunggu ${Math.floor(cd/60)} menit ${cd%60} detik lagi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    let myPet = [...user.pets].sort((a,b) => b.level - a.level || b.exp - a.exp)[0]
-    let enemyPet = [...userTarget.pets].sort((a,b) => b.level - a.level || b.exp - a.exp)[0]
-    let idxA = user.pets.findIndex(p => p.tipe === myPet.tipe)
-    let idxB = userTarget.pets.findIndex(p => p.tipe === enemyPet.tipe)
+  let target = m.mentionedJid[0] || m.quoted?.sender
+  if(!target) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TAG TARGET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: .pet battle @tag 50000\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    if((myPet.energy || 100) < 20) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *ENERGY RENDAH*\nPet ${formatNama(myPet)} energy < 20%\n━━━━━━━━━━━`)
-    if((enemyPet.energy || 100) < 20) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *ENERGY TARGET RENDAH*\n━━━━━━━━━━━`)
+  if(target === m.sender) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TIDAK BISA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Ga bisa battle sama diri sendiri\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    let taruhan = parseInt(args[1]) || 0
-    let uangUser = wdb.money[m.sender] || 0
-    let uangTarget = wdb.money[target] || 0
-    if(taruhan > 0){
-      if(taruhan < 1000) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *MINIMAL TARUHAN*\nRp 1,000\n━━━━━━━━━━━`)
-      if(uangUser < taruhan) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG KAMU KURANG*\n━━━━━━━━━━━`)
-      if(uangTarget < taruhan) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *UANG TARGET KURANG*\n━━━━━━━━━━━`)
-    }
+  let dataTarget = getUserRPG(wdb, target)
+  let userTarget = dataTarget.rpg
+  if(!userTarget.pets) userTarget.pets = []
 
-    let powerA = myPet.level * 10 + myPet.exp + Math.floor(Math.random() * 50)
-let skillA = applySkill(myPet, 'battle')
-powerA = Math.floor(powerA * skillA.multi)
+  if(userTarget.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TARGET TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
 
-let powerB = enemyPet.level * 10 + enemyPet.exp + Math.floor(Math.random() * 50)
-let skillB = applySkill(enemyPet, 'battle')
-powerB = Math.floor(powerB * skillB.multi)
-    if(myPet.tipe === 'vampir' && isMalam) powerA += 30
-    if(enemyPet.tipe === 'vampir' && isMalam) powerB += 30
-    if(myPet.tipe === 'SCP_173') powerA = 999
-if(enemyPet.tipe === 'SCP_173') powerB = 999
+  if(user.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *KAMU TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
 
-    user.pets[idxA].energy = Math.max(0, (myPet.energy || 100) - 20)
-    userTarget.pets[idxB].energy = Math.max(0, (enemyPet.energy || 100) - 20)
+  let myPet = [...user.pets].sort((a,b) => b.level - a.level || b.exp - a.exp)[0]
+  let enemyPet = [...userTarget.pets].sort((a,b) => b.level - a.level || b.exp - a.exp)[0]
+  let idxA = user.pets.findIndex(p => p.tipe === myPet.tipe)
+  let idxB = userTarget.pets.findIndex(p => p.tipe === enemyPet.tipe)
 
-    let cap = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n┌───❏「 ⚔️ PET BATTLE 」❏\n│\n`
-    cap += `│ @${m.sender.split('@')[0]}\n│ ${pets[myPet.tipe].emoji} ${formatNama(myPet)} Lv.${myPet.level}\n│ Power: ${powerA}\n`
-    cap += `│\n│ VS\n│\n`
-    cap += `│ @${target.split('@')[0]}\n│ ${pets[enemyPet.tipe].emoji} ${formatNama(enemyPet)} Lv.${enemyPet.level}\n│ Power: ${powerB}\n│\n`
-    if(taruhan > 0) cap += `│ 💰 Taruhan: Rp ${taruhan.toLocaleString()}\n│\n`
+  if((myPet.energy || 100) < 20) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *ENERGY RENDAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet ${formatNama(myPet)} energy < 20%\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 
-    if(powerA > powerB){
-      if(taruhan > 0){ wdb.money[m.sender] += taruhan; wdb.money[target] -= taruhan }
-      user.pets[idxA].exp += 40; userTarget.pets[idxB].exp += 10
-      if(user.pets[idxA].exp >= 100){ user.pets[idxA].level++; user.pets[idxA].exp = 0; cap += `│ 🎉 ${formatNama(myPet)} LEVEL UP!\n` }
-      cap += `│ 🏆 *PEMENANG*\n│ @${m.sender.split('@')[0]}\n│ +40 Exp`
-      if(taruhan > 0) cap += `\n│ +Rp ${taruhan.toLocaleString()}`
-    } else if(powerB > powerA){
-      if(taruhan > 0){ wdb.money[target] += taruhan; wdb.money[m.sender] -= taruhan }
-      userTarget.pets[idxB].exp += 40; user.pets[idxA].exp += 10
-      if(userTarget.pets[idxB].exp >= 100){ userTarget.pets[idxB].level++; userTarget.pets[idxB].exp = 0; cap += `│ 🎉 ${formatNama(enemyPet)} LEVEL UP!\n` }
-      cap += `│ 🏆 *PEMENANG*\n│ @${target.split('@')[0]}\n│ +40 Exp`
-      if(taruhan > 0) cap += `\n│ +Rp ${taruhan.toLocaleString()}`
-    } else {
-      user.pets[idxA].exp += 20; userTarget.pets[idxB].exp += 20
-      cap += `│ 🤝 *HASIL: SERI*\n│ +20 Exp untuk keduanya`
-    }
-    cap += `\n└───────────────────\n━━━━━━━━━━━`
+  if((enemyPet.energy || 100) < 20) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *ENERGY TARGET RENDAH*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
 
-    user.cooldown.petbattle = Date.now()
-    saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg', [m.sender, target])
+  let taruhan = parseInt(args[1]) || 0
+  let uangUser = wdb.money[m.sender] || 0
+  let uangTarget = wdb.money[target] || 0
+
+  if(taruhan > 0){
+    if(taruhan < 1000) return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ❌ *MINIMAL TARUHAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Rp 1,000\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+
+    if(uangUser < taruhan) return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ❌ *UANG KAMU KURANG*\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+
+    if(uangTarget < taruhan) return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ❌ *UANG TARGET KURANG*\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
   }
 
-  // === HUNT ===
-  if (action === 'hunt') {
-    let cd = cekCD('pethunt', 600000)
-    if(cd > 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n⏰ *MASIH CAFEK BERBURU*\nTunggu ${Math.floor(cd/60)} menit lagi\n━━━━━━━━━━━`)
-    if(user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TIDAK PUNYA PET*\n━━━━━━━━━━━`)
-    if(user.pets.some(p => (p.energy || 100) < 40)) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *ENERGY KURANG*\nMinimal 40%\n━━━━━━━━━━━`)
+  let powerA = myPet.level * 10 + myPet.exp + Math.floor(Math.random() * 50)
+  let skillA = applySkill(myPet, 'battle')
+  powerA = Math.floor(powerA * skillA.multi)
 
-    let hasil = Math.floor(Math.random() * 50000) + 10000
-    let exp = Math.floor(Math.random() * 30) + 10
+  let powerB = enemyPet.level * 10 + enemyPet.exp + Math.floor(Math.random() * 50)
+  let skillB = applySkill(enemyPet, 'battle')
+  powerB = Math.floor(powerB * skillB.multi)
+
+  if(myPet.tipe === 'vampir' && isMalam) powerA += 30
+  if(enemyPet.tipe === 'vampir' && isMalam) powerB += 30
+  if(myPet.tipe === 'SCP_173') powerA = 999
+  if(enemyPet.tipe === 'SCP_173') powerB = 999
+
+  user.pets[idxA].energy = Math.max(0, (myPet.energy || 100) - 20)
+  userTarget.pets[idxB].energy = Math.max(0, (enemyPet.energy || 100) - 20)
+
+  let cap = `╭─❏「 🐾 AVELIA PET CENTER 」❏\n`
+  cap += `│ ⚔️ *PET BATTLE*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `👤 *PESERTA BATTLE*\n`
+  cap += `> ↳ @${m.sender.split('@')[0]}\n`
+  cap += `> ↳ ${pets[myPet.tipe].emoji} ${formatNama(myPet)} Lv.${myPet.level}\n`
+  cap += `> ↳ Power: ${powerA}\n\n`
+
+  cap += `⚔️ *VS*\n\n`
+
+  cap += `> ↳ @${target.split('@')[0]}\n`
+  cap += `> ↳ ${pets[enemyPet.tipe].emoji} ${formatNama(enemyPet)} Lv.${enemyPet.level}\n`
+  cap += `> ↳ Power: ${powerB}\n`
+
+  if(taruhan > 0) cap += `\n💰 *TARUHAN*\n> ↳ Rp ${taruhan.toLocaleString()}\n`
+
+  if(powerA > powerB){
+    if(taruhan > 0){ wdb.money[m.sender] += taruhan; wdb.money[target] -= taruhan }
+    user.pets[idxA].exp += 40; userTarget.pets[idxB].exp += 10
+
+    if(user.pets[idxA].exp >= 100){
+      user.pets[idxA].level++
+      user.pets[idxA].exp = 0
+      cap += `\n🎉 *LEVEL UP!*\n`
+      cap += `> ↳ ${formatNama(myPet)}\n`
+    }
+
+    cap += `\n🏆 *PEMENANG*\n`
+    cap += `> ↳ @${m.sender.split('@')[0]}\n`
+    cap += `> ↳ +40 Exp`
+
+    if(taruhan > 0) cap += `\n> ↳ +Rp ${taruhan.toLocaleString()}`
+  } else if(powerB > powerA){
+    if(taruhan > 0){ wdb.money[target] += taruhan; wdb.money[m.sender] -= taruhan }
+    userTarget.pets[idxB].exp += 40; user.pets[idxA].exp += 10
+
+    if(userTarget.pets[idxB].exp >= 100){
+      userTarget.pets[idxB].level++
+      userTarget.pets[idxB].exp = 0
+      cap += `\n🎉 *LEVEL UP!*\n`
+      cap += `> ↳ ${formatNama(enemyPet)}\n`
+    }
+
+    cap += `\n🏆 *PEMENANG*\n`
+    cap += `> ↳ @${target.split('@')[0]}\n`
+    cap += `> ↳ +40 Exp`
+
+    if(taruhan > 0) cap += `\n> ↳ +Rp ${taruhan.toLocaleString()}`
+  } else {
+    user.pets[idxA].exp += 20
+    userTarget.pets[idxB].exp += 20
+    cap += `\n🤝 *HASIL: SERI*\n`
+    cap += `> ↳ +20 Exp untuk keduanya`
+  }
+
+  cap += `\n\n─━━━━━━━━━━━━━━─`
+
+  user.cooldown.petbattle = Date.now()
+  saveDB(wdb)
+  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg', [m.sender, target])
+}
+
+
+// === HUNT ===
+if (action === 'hunt') {
+  let cd = cekCD('pethunt', 600000)
+
+  if(cd > 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ⏰ *MASIH CAFEK BERBURU*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Tunggu ${Math.floor(cd/60)} menit lagi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  if(user.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if(user.pets.some(p => (p.energy || 100) < 40)) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *ENERGY KURANG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Minimal 40%\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let hasil = Math.floor(Math.random() * 50000) + 10000
+  let exp = Math.floor(Math.random() * 30) + 10
+
+  wdb.money[m.sender] += hasil
+
+  user.pets.forEach(p => {
+    let skill = applySkill(p, 'hunt')
+    let expGain = exp * skill.multi * getDebuff(p)
+    p.exp += expGain
+    p.energy -= 40
+    if(p.exp >= 100){p.level++; p.exp=0}
+  })
+
+  user.cooldown.pethunt = Date.now()
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ 🎯 *PET HUNT*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🏹 *BERBURU BERSAMA*\n` +
+    `> ↳ 💰 Hasil: +Rp ${hasil.toLocaleString()}\n` +
+    `> ↳ 📊 Exp: +${exp} untuk semua pet\n` +
+    `> ↳ 🔋 Energy: -40\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+
+// === DISPATCH ===
+if (action === 'dispatch') {
+  let cd = cekCD('petdispatch', 1800000)
+
+  if(cd > 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ⏰ *PET MASIH MISI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Tunggu ${Math.floor(cd/60000)} menit lagi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  if(user.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  user.cooldown.petdispatch = Date.now()
+  saveDB(wdb)
+
+  setTimeout(() => {
+    let hasil = Math.floor(Math.random() * 100000) + 50000
     wdb.money[m.sender] += hasil
-    user.pets.forEach(p => {
-  let skill = applySkill(p, 'hunt')
-  let expGain = exp * skill.multi * getDebuff(p)
-  p.exp += expGain; p.energy -= 40;
-  if(p.exp >= 100){p.level++; p.exp=0}
-})
-    user.cooldown.pethunt = Date.now()
     saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎯 PET HUNT\n🏹 BERBURU BERSAMA 🏹\n💰 Hasil : +Rp ${hasil.toLocaleString()}\n📊 Exp : +${exp} untuk semua pet\n🔋 Energy : -40\n━━━━━━━━━━━`)
+
+    conn.reply(
+      m.sender,
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ 📦 *MISI SELESAI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📬 *PET KEMBALI*\n` +
+      `> ↳ 💰 Hasil: +Rp ${hasil.toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`,
+      m
+    )
+  }, 1800000)
+
+  return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ 📤 *KIRIM MISI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🚚 *PET BERANGKAT*\n` +
+    `> ↳ ⏱️ Durasi: 30 menit\n` +
+    `> ↳ 📝 Nanti hasil dikirim ke chat pribadi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+  // === KILL ===
+if (action === 'kill') {
+  const pending = getPending()
+
+  if (['yes', 'no'].includes(args[1]?.toLowerCase())) {
+    if (!pending || pending.action !== 'kill') return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ❌ *TIDAK ADA KONFIRMASI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Tidak ada pembunuhan yang menunggu konfirmasi.`
+    )
+
+    delete user.pendingPetAction
+
+    if (args[1].toLowerCase() === 'no') return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ✅ *PEMBUNUHAN DIBATALKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+  } else {
+    const selected = getSelectedPets(args[1], false)
+
+    if (selected.length === 0) return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ❌ *PET TIDAK DIPILIH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Pilih pet dengan nomor atau all.\n` +
+      `> ↳ Contoh: .pet kill 1`
+    )
+
+    user.pendingPetAction = {
+      action: 'kill',
+      indexes: selected.map(({ index }) => index),
+      expires: Date.now() + 60000
+    }
+
+    return m.reply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ⚠️ *KONFIRMASI PEMBUNUHAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Bunuh ${selected.length} pet?\n\n` +
+      `📌 *KONFIRMASI*\n` +
+      `> ↳ Ketik *.pet kill yes* untuk lanjut\n` +
+      `> ↳ Ketik *.pet kill no* untuk batal\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  // === DISPATCH ===
-  if (action === 'dispatch') {
-    let cd = cekCD('petdispatch', 1800000)
-    if(cd > 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n⏰ *PET MASIH MISI*\nTunggu ${Math.floor(cd/60000)} menit lagi\n━━━━━━━━━━━`)
-    if(user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TIDAK PUNYA PET*\n━━━━━━━━━━━`)
-    user.cooldown.petdispatch = Date.now()
-    saveDB(wdb)
-    setTimeout(() => {
-      let hasil = Math.floor(Math.random() * 100000) + 50000
-      wdb.money[m.sender] += hasil
-      saveDB(wdb)
-      conn.reply(m.sender, `╭──「 🐾 ZETA PET CENTER 」──╮\n\n📦 MISI SELESAI\n📬 PET KEMBALI\n💰 Hasil : +Rp ${hasil.toLocaleString()}\n━━━━━━━━━━━`, m)
-    }, 1800000)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n📤 KIRIM MISI\n🚚 PET BERANGKAT\n⏱️ Durasi : 30 menit\n📝 Nanti hasil dikirim ke chat pribadi\n━━━━━━━━━━━`)
-  }
+  const selected = pending.indexes.filter(index => user.pets[index])
+  const killed = []
 
-    // === KILL ===
-  if (action === 'kill') {
-    let target = args[1]
-    if(!target) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet kill 1\n━━━━━━━━━━━`)
-    let idx =!isNaN(target)? parseInt(target)-1 : user.pets.findIndex(p => p.tipe === target.replace(/ /g,'_'))
-    if(idx === -1) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *PET TIDAK DITEMUKAN*\n━━━━━━━━━━━`)
-    let p = user.pets[idx]
-    let nama = formatNama(p)
-    let tipe = p.tipe
+  selected.sort((a, b) => b - a).forEach(idx => {
+    const p = user.pets[idx]
+    killed.push(`${pets[p.tipe].emoji} ${formatNama(p)}`)
+    user.sanctuary.push({ ...p, mati: Date.now() })
     user.pets.splice(idx, 1)
-    saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n☠️ MEMBUNUH PET\n${pets[tipe].emoji} *${nama.toUpperCase()}*\nStatus : Telah mati...\n━━━━━━━━━━━`)
-  }
+  })
 
-  // === TRANSFER ===
-  if (action === 'transfer') {
-    let target = m.mentionedJid[0]
-    let petName = args[2]
-    if(!target ||!petName) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *FORMAT SALAH*\nContoh:.pet transfer @tag kucing\n━━━━━━━━━━━`)
-    let idx = user.pets.findIndex(p => p.tipe === petName.replace(/ /g,'_'))
-    if(idx === -1) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *KAMU TIDAK PUNYA PET ITU*\n━━━━━━━━━━━`)
-    let dataTarget = getUserRPG(wdb, target)
-    if(!dataTarget.rpg.pets) dataTarget.rpg.pets = []
-    wdb.users[target].rpg.pets.push(user.pets[idx])
-    user.pets.splice(idx, 1)
-    saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n📨 TRANSFER PET\n${pets[petName.replace(/ /g,'_')].emoji} *${formatNamaAsli(petName)}*\n➡️ Dikirim ke : @${target.split('@')[0]}\n━━━━━━━━━━━`, null, { mentions: [target] })
-  }
+  saveDB(wdb)
 
-  // === PLAYWITH ===
-  if (action === 'playwith') {
-    let target = m.mentionedJid[0] || m.quoted?.sender
-    if(!target) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TAG/REPLY TARGET*\nContoh:.pet playwith @tag\n━━━━━━━━━━━`)
-    let dataTarget = getUserRPG(wdb, target)
-    if(!dataTarget.rpg.pets || dataTarget.rpg.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TARGET TIDAK PUNYA PET*\n━━━━━━━━━━━`)
-    if(user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *KAMU TIDAK PUNYA PET*\n━━━━━━━━━━━`)
-    let myPet = user.pets[0]
-    let targetPet = dataTarget.rpg.pets[0]
-    myPet.happy = Math.min(100, (myPet.happy || 50) + 20)
-    targetPet.happy = Math.min(100, (targetPet.happy || 50) + 20)
-    saveDB(wdb)
-    return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n🎾 PLAY TOGETHER\n${pets[myPet.tipe].emoji} *${formatNama(myPet)}* + ${pets[targetPet.tipe].emoji} *${formatNama(targetPet)}*\n📊 Status : +20 Happy untuk keduanya\n━━━━━━━━━━━`)
-  }
-  
-  // === SANCTUARY ===
-  if (action === 'sanctuary'){
-  if(!user.sanctuary || user.sanctuary.length === 0) return m.reply(`╭──「 ⚰️ SANCTUARY 」──╮\n\n🌸 *SANCTUARY KOSONG*\nBelum ada pet yg gugur di medan perang\nSelalu jaga energy mereka ya\n━━━━━━━━━━━`)
-  let cap = '╭──「 ⚰️ SANCTUARY 」──╮\n\n'
-  user.sanctuary.forEach((p,i) => cap += `${i+1}. ${pets[p.tipe].emoji} ${formatNamaAsli(p.tipe)}\n`)
-  cap += `\n.pet revive <no> - Gratis jika punya malaikat`
+  return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ☠️ *PET DIBUNUH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📋 *PET YANG DIBUNUH*\n` +
+    killed.map(x => `> ↳ ${x}`).join('\n') +
+    `\n\n` +
+    `📦 *STATUS*\n` +
+    `> ↳ Masuk sanctuary dan bisa direvive.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+
+// === TRANSFER ===
+if (action === 'transfer') {
+  let target = m.mentionedJid[0]
+  let petName = args[2]
+
+  if(!target ||!petName) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *FORMAT SALAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: .pet transfer @tag kucing\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let idx = user.pets.findIndex(p => p.tipe === petName.replace(/ /g,'_'))
+
+  if(idx === -1) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *KAMU TIDAK PUNYA PET ITU*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let dataTarget = getUserRPG(wdb, target)
+  if(!dataTarget.rpg.pets) dataTarget.rpg.pets = []
+
+  wdb.users[target].rpg.pets.push(user.pets[idx])
+  user.pets.splice(idx, 1)
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ 📨 *TRANSFER PET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${pets[petName.replace(/ /g,'_')].emoji} *${formatNamaAsli(petName)}*\n` +
+    `> ↳ Dikirim ke: @${target.split('@')[0]}\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    null,
+    { mentions: [target] }
+  )
+}
+
+
+// === PLAYWITH ===
+if (action === 'playwith') {
+  let target = m.mentionedJid[0] || m.quoted?.sender
+
+  if(!target) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TAG/REPLY TARGET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Contoh: .pet playwith @tag\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let dataTarget = getUserRPG(wdb, target)
+
+  if(!dataTarget.rpg.pets || dataTarget.rpg.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TARGET TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if(user.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *KAMU TIDAK PUNYA PET*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  let myPet = user.pets[0]
+  let targetPet = dataTarget.rpg.pets[0]
+
+  myPet.happy = Math.min(100, (myPet.happy || 50) + 20)
+  targetPet.happy = Math.min(100, (targetPet.happy || 50) + 20)
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ 🎾 *PLAY TOGETHER*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${pets[myPet.tipe].emoji} *${formatNama(myPet)}* + ${pets[targetPet.tipe].emoji} *${formatNama(targetPet)}*\n\n` +
+    `📊 *STATUS*\n` +
+    `> ↳ +20 Happy untuk keduanya\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+
+// === SANCTUARY ===
+if (action === 'sanctuary'){
+  if(!user.sanctuary || user.sanctuary.length === 0) return m.reply(
+    `╭─❏「 ⚰️ SANCTUARY 」❏\n` +
+    `│ 🌸 *SANCTUARY KOSONG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Belum ada pet yg gugur di medan perang.\n` +
+    `> ↳ Selalu jaga energy mereka ya`
+  )
+
+  let cap = `╭─❏「 ⚰️ SANCTUARY 」❏\n`
+  cap += `│ ⚰️ *DAFTAR PET DI SANCTUARY*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  user.sanctuary.forEach((p,i) => {
+    cap += `*${i+1}. ${pets[p.tipe].emoji} ${formatNama(p)}*\n`
+    cap += `> ↳ Lv.${p.level}\n`
+  })
+
+  cap += `\n─━━━━━━━━━━━━━━─\n\n`
+  cap += `📌 *CARA REVIVE*\n`
+  cap += `> ↳ .pet revive <no/all> — Gratis jika punya malaikat\n\n`
+  cap += `─━━━━━━━━━━━━━━─`
+
   return m.reply(cap)
 }
 
+
 // === REVIVE ===
 if (action === 'revive'){
-  let idx = parseInt(args[1])-1
-  let p = user.sanctuary[idx]
-  if(!p) return m.reply(`╭──「 ⚰️ SANCTUARY 」──╮\n\n👻 *GAK ADA ARWAH DI SINI*\nNomor yg kamu pilih kosong\n━━━━━━━━━━━`)
   if(user.pets.some(x => x.tipe === 'malaikat')){
-    user.pets.push(p); user.sanctuary.splice(idx,1)
+    const indexes = args[1]?.toLowerCase() === 'all'
+      ? user.sanctuary.map((_, index) => index)
+      : [parseInt(args[1]) - 1]
+
+    const revived = indexes
+      .filter(index => user.sanctuary[index])
+      .sort((a, b) => b - a)
+      .map(index => user.sanctuary.splice(index, 1)[0])
+
+    if(!revived.length) return m.reply(
+      `╭─❏「 ⚰️ SANCTUARY 」❏\n` +
+      `│ 👻 *GAK ADA ARWAH DI SINI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Nomor yg kamu pilih kosong`
+    )
+
+    user.pets.push(...revived.map(p => ({ ...p, energy: 100, mati: undefined })))
     saveDB(wdb)
-    return m.reply(`✨ ${pets[p.tipe].emoji} ${formatNamaAsli(p.tipe)} dihidupkan oleh Malaikat!`)
+
+    return m.reply(
+      `╭─❏「 ⚰️ SANCTUARY 」❏\n` +
+      `│ ✨ *PET DIHIDUPKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ ${revived.length} pet dihidupkan oleh Malaikat!`
+    )
   }
-  return m.reply('❌ Butuh pet Malaikat untuk revive gratis')
+
+  return m.reply(
+    `╭─❏「 ⚰️ SANCTUARY 」❏\n` +
+    `│ ❌ *REVIVE GAGAL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Butuh pet Malaikat untuk revive gratis`
+  )
 }
+
 
 // === LEADERBOARD ===
 if (action === 'lb'){
   let all = Object.entries(wdb.users).filter(([_,u]) => u.rpg?.pets?.length)
-  if(all.length === 0) return m.reply('╭──「 🏆 TOP 10 PET TRAINER 」──╮\n\n📝 Belum ada yg punya pet\n━━━━━━━━━━━')
+
+  if(all.length === 0) return m.reply(
+    `╭─❏「 🏆 TOP 10 PET TRAINER 」❏\n` +
+    `│ 📝 *BELUM ADA PET TRAINER*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Belum ada yg punya pet`
+  )
 
   all.sort((a,b) => {
     let pa = a[1].rpg.pets.reduce((x,y) => x + y.level, 0)
@@ -1196,65 +2496,106 @@ if (action === 'lb'){
     return pb - pa
   })
 
-  let cap = '╭──「 🏆 TOP 10 PET TRAINER 」──╮\n\n'
+  let cap = `╭─❏「 🏆 TOP 10 PET TRAINER 」❏\n`
+  cap += `│ 🏆 *LEADERBOARD PET*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
   let mention = []
+
   all.slice(0,10).forEach(([jid,u],i) => {
     let totalLv = u.rpg.pets.reduce((x,y) => x + y.level, 0)
     let totalPet = u.rpg.pets.length
-    cap += `│ ${i+1}. @${jid.split('@')[0]}\n│ 𖥔 Lv Total : ${totalLv}\n│ 𖥔 Total Pet : ${totalPet}\n`
-    if(i < 9) cap += `│\n`
+
+    cap += `*${i+1}. @${jid.split('@')[0]}*\n`
+    cap += `> ↳ Lv Total: ${totalLv}\n`
+    cap += `> ↳ Total Pet: ${totalPet}\n`
+
+    if(i < 9) cap += `\n`
     mention.push(jid)
   })
-  cap += `╰───────────────────\n━━━━━━━━━━━`
+
+  cap += `\n─━━━━━━━━━━━━━━─`
+
   return conn.reply(m.chat, cap, m, { mentions: mention })
 }
 
+
 // === CLAIM PASIF HARIAN ===
-  if (action === 'claim') {
-    if (user.pets.length === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n💸 *DOMPET KOSONG*\nKamu belum punya pet yg bisa hasilin uang\nBeli dulu di .pet shop\n━━━━━━━━━━━`)
-    
-    let uang = 0
-    let daftar = []
-    user.pets.forEach(p => {
-      if(p.tipe === 'kucing_dewa'){ 
-        let get = 100000 + (p.level * 25000)
-        uang += get
-        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
-      }
-      if(p.tipe === 'trotter_numby'){ 
-        let get = 150000 + (p.level * 30000)
-        uang += get
-        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
-      }
-      if(p.tipe === 'alien'){ 
-        let get = 75000 + (p.level * 50000)
-        uang += get
-        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
-      }
-      if(p.tipe === 'poop'){ 
-        let get = 50000 + (p.level * 20000)
-        uang += get
-        daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
-      }
-    })
-    
-    if(uang === 0) return m.reply(`╭──「 🐾 ZETA PET CENTER 」──╮\n\n❌ *TIDAK ADA PASSIVE*\nPet kamu tidak ada yg punya skill menghasilkan uang\n━━━━━━━━━━━`)
-    
-    wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uang
-    saveDB(wdb)
-    
-    let cap = `╭──「 🐾 ZETA PET CENTER 」──╮\n\n💰 KLAIM PASSIVE HARIAN\n📦 PET YANG MENGHASILKAN\n`
-    cap += daftar.map(x => `├ ${x}`).join('\n')
-    cap += `\n│\n├ 💵 Total : +Rp ${uang.toLocaleString()}\n`
-    cap += `└───────────────────\n━━━━━━━━━━━`
+if (action === 'claim') {
+  if (user.pets.length === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ 💸 *DOMPET KOSONG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu belum punya pet yg bisa hasilin uang\n` +
+    `> ↳ Beli dulu di .pet shop\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let uang = 0
+  let daftar = []
+
+  user.pets.forEach(p => {
+    if(p.tipe === 'kucing_dewa'){ 
+      let get = 100000 + (p.level * 25000)
+      uang += get
+      daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+    }
+
+    if(p.tipe === 'trotter_numby'){ 
+      let get = 150000 + (p.level * 30000)
+      uang += get
+      daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+    }
+
+    if(p.tipe === 'alien'){ 
+      let get = 75000 + (p.level * 50000)
+      uang += get
+      daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+    }
+
+    if(p.tipe === 'poop'){ 
+      let get = 50000 + (p.level * 20000)
+      uang += get
+      daftar.push(`${pets[p.tipe].emoji} ${formatNama(p)} (+Rp ${get.toLocaleString()})`) 
+    }
+  })
+
+  if(uang === 0) return m.reply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *TIDAK ADA PASSIVE*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pet kamu tidak ada yg punya skill menghasilkan uang\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uang
+  saveDB(wdb)
+
+  let cap = `╭─❏「 🐾 AVELIA PET CENTER 」❏\n`
+  cap += `│ 💰 *KLAIM PASSIVE HARIAN*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `📦 *PET YANG MENGHASILKAN*\n`
+  daftar.forEach(x => {
+    cap += `> ↳ ${x}\n`
+  })
+
+  cap += `\n─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `💵 *TOTAL PENDAPATAN*\n`
+  cap += `> ↳ +Rp ${uang.toLocaleString()}\n\n`
+
+  cap += `─━━━━━━━━━━━━━━─`
+
     return m.reply(cap)
   }
 
   return m.reply(`❌ Command tidak dikenal. Ketik *.pet* buat lihat menu`)
 }
 
-handler.help = ['pet', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
+handler.help = ['pet', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
 handler.tags = ['rpg']
 handler.command = ['pet']
+handler.alias = ['pet']
 handler.group = true
 export default handler

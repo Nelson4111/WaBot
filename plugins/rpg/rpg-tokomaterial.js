@@ -4,9 +4,15 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-const oreEmoji = {
+const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
+function safeEmoji(value, fallback = '❓') {
+  if (typeof value !== 'string') return fallback
+  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
+}
+
+  const oreEmoji = {
   // MATERIAL BELI/JUAL
-  'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎',
+  'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎', 'emerald': '💚',
   // ORE
   'sand_stone': '🏜️', 'copper': '🟠', 'tin': '📎', 'silver': '⚪',
   'mushroomite': '🍄', 'platinum': '💿', 'bananite': '🍌', 'cardboardite': '📦',
@@ -27,6 +33,10 @@ const oreEmoji = {
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
 }
 
+Object.keys(oreEmoji).forEach((key) => {
+  oreEmoji[key] = safeEmoji(oreEmoji[key])
+})
+
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
@@ -45,12 +55,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     'iron': { emoji: '⛓️', harga: 10000 },
     'gold': { emoji: '✨', harga: 100000 },
     'stone': { emoji: '🪨', harga: 5000 },
-    'wood': { emoji: '🪵', harga: 8000 },
-    'diamond': { emoji: '💎', harga: 500000 }
+    'wood': { emoji: '🪵', harga: 9000 },
+    'diamond': { emoji: '💎', harga: 500000 },
+    'kulit': { emoji: '👜', harga: 50000 },
+    'sisik': { emoji: '🐉', harga: 75000 }
   }
 
   // HARGA JUAL = 50% DARI HARGA BELI + ITEM ADVENTURE + ORE DARI TAMBANG
   const hargaJual = {
+    'emerald': 100000,
     // MATERIAL DARI TOKO
     'iron': 5000, 'gold': 50000, 'stone': 2500, 'wood': 4000, 'diamond': 250000,
     // ORE DARI TAMBANG
@@ -81,7 +94,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   materialKeys.forEach((k, i) => nomorKeItemBeli[i+1] = k)
 
   const nomorKeItemJual = {}
-  jualKeys.forEach((k, i) => nomorKeItemJual[i+1] = k)
+  jualKeys.forEach((k, i) => nomorKeItemJual[materialKeys.length + i + 1] = k)
 
   function getItemByInput(input, map) {
     if(!isNaN(input)) return map[parseInt(input)] // kalau angka
@@ -94,32 +107,38 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   // MENU UTAMA
   if (!text) {
     let uang = wdb.money[m.sender] || 0
-    let cap = `╭───「 ⛏️ TOKO MATERIAL 」───╮\n`
+    let cap = `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n`
     cap += `│ 💰 Uang: Rp ${uang.toLocaleString()}\n`
-    cap += `│ ${isPrem? '👑 Premium +10% Jual, -20% Beli' : '👤 User Biasa'}\n`
-    cap += `╰─────────────────╯\n\n`
+    cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
     cap += `📌 *CARA PAKAI*\n`
-    cap += `├ Beli: *${usedPrefix}tokomaterial beli <no/nama> <jumlah>*\n`
-    cap += `├ Jual: *${usedPrefix}tokomaterial jual <no/nama> <jumlah/all>*\n`
-    cap += `└ Jual Semua: *${usedPrefix}tokomaterial jual all*\n\n`
+    cap += `> *${usedPrefix}pabrik beli <no/nama> <jumlah>*\n`
+    cap += `> *${usedPrefix}pabrik jual <no/nama> <jumlah/all>*\n`
+    cap += `> *${usedPrefix}pabrik jual all*\n`
 
-    cap += `*🛒 MATERIAL TOKO*\n`
+    cap += `\n─━━━━━━━━━━━━━━─\n\n`
+    cap += `🛒 *MATERIAL TOKO*\n`
+    cap += `Pilih nomor item untuk membeli.\nHarga jual berlaku untuk item yang kamu punya.\n\n`
     materialKeys.forEach((k, i) => {
       let hBeli = Math.floor(hargaBeli[k].harga * buyDiskon)
       let hJual = Math.floor(hargaJual[k] * sellBonus)
-      cap += `├ [${i+1}] ${hargaBeli[k].emoji} ${formatNama(k).padEnd(15)} Beli: Rp ${hBeli.toLocaleString()} | Jual: Rp ${hJual.toLocaleString()}\n`
+      cap += `*${i + 1}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
+      cap += `> Buy : Rp ${hBeli.toLocaleString()}\n`
+      cap += `> Sell : Rp ${hJual.toLocaleString()}\n`
     })
 
-    cap += `\n*💰 HARGA JUAL ITEM & ORE*\n`
+    cap += `\n─━━━━━━━━━━━━━━─\n\n`
+    cap += `💰 *HARGA JUAL ITEM & ORE*\n`
+    cap += `Daftar item tambang dan barang petualangan yang bisa dijual.\n\n`
     let nomorMulai = materialKeys.length + 1
-    jualKeys.slice(0,30).forEach((k, i) => {
+    jualKeys.forEach((k, i) => {
       let nomor = nomorMulai + i
       let h = Math.floor(hargaJual[k] * sellBonus)
-      cap += `├ [${nomor}] ${oreEmoji[k] || '📦'} ${formatNama(k).padEnd(18)} Rp ${h.toLocaleString()}\n`
+      cap += `*${nomor}. ${formatNama(k)} ${oreEmoji[k] || '📦'}*\n`
+      cap += `> Sell : Rp ${h.toLocaleString()}\n`
     })
-    if(jualKeys.length > 30) cap += `│...dan ${jualKeys.length - 30} item lainnya\n`
-    cap += `━━━━━━━━━━━\n`
-    cap += `💡 Tips: Hasil.tambang bisa dijual semua disini`
+    cap += `\n─━━━━━━━━━━━━━━─\n`
+    cap += `💡 *Tips:* Hasil tambang bisa dijual semua di sini.`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
@@ -127,22 +146,48 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if(tipe === 'beli'){
     let itemInput = args[1]
     let jumlah = parseInt(args[2]) || 1
-    if(!itemInput) return m.reply(`❌ Contoh: *${usedPrefix}tokomaterial beli 1 10*`)
+
+    if(!itemInput) return m.reply(
+      `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+      `│ ❌ *FORMAT PEMBELIAN SALAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ *${usedPrefix}pabrik beli <no/nama> <jumlah>*`
+    )
 
     let item = getItemByInput(itemInput, nomorKeItemBeli)
-    if(!hargaBeli[item]) return m.reply('❌ Item ini tidak dijual di toko material.')
+
+    if(!hargaBeli[item]) return m.reply(
+      `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+      `│ ❌ *ITEM TIDAK TERSEDIA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Item tidak tersedia di toko material.`
+    )
 
     let hargaSatuan = Math.floor(hargaBeli[item].harga * buyDiskon)
     let totalHarga = hargaSatuan * jumlah
 
     if((wdb.money[m.sender] || 0) < totalHarga) {
-      return m.reply(`❌ Uang kamu tidak cukup!\nButuh: Rp ${totalHarga.toLocaleString()}`)
+      return m.reply(
+        `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+        `│ ❌ *UANG TIDAK CUKUP*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Butuh : Rp ${totalHarga.toLocaleString()}\n` +
+        `> ↳ Punya : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}`
+      )
     }
 
     wdb.money[m.sender] -= totalHarga
     user.inventory[item] = (user.inventory[item] || 0) + jumlah
     saveDB(wdb)
-    return m.reply(`╭──「 ⛏️ TOKO MATERIAL 」──╮\n\n✅ *BERHASIL BELI!*\n${hargaBeli[item].emoji} *${formatNama(item)}* x${jumlah}\n💸 -Rp ${totalHarga.toLocaleString()}\n\n━━━━━━━━━━━━━━`)
+
+    return m.reply(
+      `╭─❏「 ⛏️ PEMBELIAN BERHASIL 」❏\n` +
+      `│ ${hargaBeli[item].emoji} *${formatNama(item)}* x${jumlah}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💸 Bayar : -Rp ${totalHarga.toLocaleString()}\n` +
+      `> ↳ 💰 Sisa : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   // ===== SISTEM JUAL =====
@@ -152,50 +197,130 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       let totalHasil = 0
       let listJual = []
       let semuaInv = {...user.inventory,...user.ores,...user.items}
+
+      if (user.diamond > 0) semuaInv.diamond = (semuaInv.diamond || 0) + user.diamond
+      if (user.emerald > 0) semuaInv.emerald = (semuaInv.emerald || 0) + user.emerald
+
       for(let item in semuaInv){
         if(hargaJual[item]){
           let jumlah = semuaInv[item]
           let hasil = Math.floor(hargaJual[item] * sellBonus) * jumlah
           totalHasil += hasil
           listJual.push(`${oreEmoji[item] || '📦'} ${formatNama(item)} x${jumlah}`)
-          delete user.inventory[item]; delete user.ores[item]; delete user.items[item]
+          delete user.inventory[item]
+          delete user.ores[item]
+          delete user.items[item]
+
+          if (item === 'diamond') user.diamond = 0
+          if (item === 'emerald') user.emerald = 0
+          if (user.guildLoot && (item === 'diamond' || item === 'emerald')) user.guildLoot[item] = 0
         }
       }
-      if(totalHasil === 0) return m.reply('❌ Kamu tidak punya item yang bisa dijual.')
+
+      if(totalHasil === 0) return m.reply(
+        `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+        `│ ❌ *TIDAK ADA ITEM UNTUK DIJUAL*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Kamu tidak punya item yang bisa dijual.`
+      )
+
       wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalHasil
       saveDB(wdb)
-      return m.reply(`╭──「 ⛏️ TOKO MATERIAL 」──╮\n\n✅ *BERHASIL JUAL SEMUA!*\n\n${listJual.join('\n')}\n\n💰 *Total:* +Rp ${totalHasil.toLocaleString()}\n\n━━━━━━━━━━━━━━`)
+
+      return m.reply(
+        `╭─❏「 ⛏️ PENJUALAN BERHASIL 」❏\n` +
+        `│ 💰 *DAFTAR ITEM TERJUAL*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${listJual.map(item => `> ↳ ${item}`).join('\n')}\n\n` +
+        `> ↳ 💰 Total : +Rp ${totalHasil.toLocaleString()}\n` +
+        `> ↳ 💵 Saldo : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
 
     let itemInput = args[1]
-    let amount = args[2] === 'all'? 'all' : (parseInt(args[2]) || 1)
-    if(!itemInput) return m.reply(`❌ Contoh: *${usedPrefix}tokomaterial jual 10 5*`)
+    let amount = args[2] === 'all' ? 'all' : (parseInt(args[2]) || 1)
+
+    if(!itemInput) return m.reply(
+      `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+      `│ ❌ *FORMAT PENJUALAN SALAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ *${usedPrefix}pabrik jual <no/nama> <jumlah/all>*`
+    )
 
     let item = getItemByInput(itemInput, nomorKeItemJual)
 
-    if (!hargaJual[item]) return m.reply(`❌ Item "${formatNama(itemInput)}" tidak bisa dijual di sini.`)
+    if (!hargaJual[item]) return m.reply(
+      `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+      `│ ❌ *ITEM TIDAK BISA DIJUAL*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Item "${formatNama(itemInput)}" tidak bisa dijual di sini.`
+    )
 
-    let stok = user.inventory[item] || user.ores[item] || user.items[item] || 0
-    if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(item)}`)
-    let jual = amount === 'all'? stok : amount
-    if (jual > stok) return m.reply(`❌ Stok tidak cukup! Kamu punya ${stok}`)
+    let stok = item === 'diamond'
+      ? (user.diamond || 0)
+      : item === 'emerald'
+        ? (user.emerald || 0)
+        : (user.inventory[item] || user.ores[item] || user.items[item] || 0)
+
+    if (stok <= 0) return m.reply(
+      `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+      `│ ❌ *STOK TIDAK TERSEDIA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kamu tidak punya ${formatNama(item)}.`
+    )
+
+    let jual = amount === 'all' ? stok : amount
+
+    if (jual > stok) return m.reply(
+      `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
+      `│ ❌ *STOK TIDAK CUKUP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Punya : ${stok}`
+    )
 
     let hasil = Math.floor(hargaJual[item] * sellBonus) * jual
 
-    if(user.inventory[item]) { user.inventory[item] -= jual; if(user.inventory[item] <= 0) delete user.inventory[item] }
-    if(user.ores[item]) { user.ores[item] -= jual; if(user.ores[item] <= 0) delete user.ores[item] }
-    if(user.items[item]) { user.items[item] -= jual; if(user.items[item] <= 0) delete user.items[item] }
+    if (item === 'diamond' || item === 'emerald') {
+      user[item] -= jual
+      if (user[item] <= 0) delete user[item]
+      if (user.guildLoot && user.guildLoot[item]) user.guildLoot[item] = Math.max(0, user.guildLoot[item] - jual)
+    }
+
+    if(user.inventory[item]) {
+      user.inventory[item] -= jual
+      if(user.inventory[item] <= 0) delete user.inventory[item]
+    }
+
+    if(user.ores[item]) {
+      user.ores[item] -= jual
+      if(user.ores[item] <= 0) delete user.ores[item]
+    }
+
+    if(user.items[item]) {
+      user.items[item] -= jual
+      if(user.items[item] <= 0) delete user.items[item]
+    }
 
     wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
     saveDB(wdb)
-    return m.reply(`╭──「 ⛏️ TOKO MATERIAL 」──╮\n\n✅ *BERHASIL JUAL!*\n${oreEmoji[item] || '📦'} *${formatNama(item)}* x${jual}\n💰 +Rp ${hasil.toLocaleString()}\n\n━━━━━━━━━━━`)
+
+    return m.reply(
+      `╭─❏「 ⛏️ PENJUALAN BERHASIL 」❏\n` +
+      `│ ${oreEmoji[item] || '📦'} *${formatNama(item)}* x${jual}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💰 Terima : +Rp ${hasil.toLocaleString()}\n` +
+      `> ↳ 💵 Saldo : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   return m.reply(`❌ Tipe salah. Pakai: *beli* atau *jual*`)
 }
 
-handler.help = ['tokomaterial', 'tokomaterial beli <no/nama> <jml>', 'tokomaterial jual <no/nama> <jml/all>', 'tokomaterial jual all']
+handler.help = ['pabrik', 'pabrik beli <no/nama> <jml>', 'pabrik jual <no/nama> <jml/all>', 'pabrik jual all', 'tokomaterial']
 handler.tags = ['rpg']
-handler.command = /^(tokomaterial|jualmaterial)$/i
+handler.command = /^(pabrik|tokomaterial|jualmaterial)$/i
+handler.alias = ['pabrik', 'tokomaterial', 'jualmaterial']
 handler.group = true
 export default handler

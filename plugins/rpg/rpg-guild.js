@@ -15,6 +15,18 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
 
+  if (action === 'loot') {
+    const myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+    if (!myGuild) return m.reply('❌ Kamu belum bergabung dengan Guild.')
+    const loot = user.guildLoot || {}
+    const diamondLoot = Number(loot.diamond || 0)
+    const emeraldLoot = Number(loot.emerald || 0)
+    const totalDiamond = Number(user.diamond || 0)
+    const totalEmerald = Number(user.emerald || 0)
+    const cap = `╭─❏「 🎁 GUILD LOOT 」❏\n├[ 🏰 Guild ] ${myGuild.name}\n├[ 💎 Total Diamond ] ${totalDiamond.toLocaleString()}\n├> Dari Misi Guild : ${diamondLoot.toLocaleString()}\n├[ 💚 Total Emerald ] ${totalEmerald.toLocaleString()}\n├> Dari Misi Guild : ${emeraldLoot.toLocaleString()}\n╰─━━━━━━━━━━━━━━─\n├ Loot misi dicatat terpisah dari sumber lainnya.`
+    return m.reply(cap)
+  }
+
   if (!action) {
     let myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
     if (!myGuild) return m.reply(`🏰 Kamu belum punya Guild.\nKetik *${usedPrefix}${command} create [nama]*`)
@@ -45,7 +57,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         cdText = `│ ⏰ *CD Join/Create:* ${jam}j ${menit}m\n`
     }
 
-    let cap = `╭──「 🏰 GUILD INFO 」──╮\n`
+    let cap = `╭─❏「 🏰 GUILD INFO 」❏\n`
     cap += `│ 📛 *Nama:* ${myGuild.name}\n`
     cap += `│ 👑 *Leader:* @${(myGuild.leader || '').split('@')[0]}\n`
     cap += cdText
@@ -53,18 +65,18 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `│ ✨ *Exp:* ${(myGuild.exp).toLocaleString()} / ${nextExp.toLocaleString()}\n`
     cap += `│ 👥 *Member:* ${(myGuild.members || []).length} / ${maxMembers}\n`
     if(Date.now() < myGuild.warCooldown) cap += `│ ⚠️ *War CD:* Aktif\n`
-    cap += `╰───────────────────╯\n\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    cap += `╭──「 📊 KONTRIBUSI 」──╮\n`
+    cap += `╭─❏「 📊 KONTRIBUSI 」❏\n`
     let members = myGuild.members || []
     let sortedMembers = [...members].sort((a, b) => (myGuild.contribution[b] || 0) - (myGuild.contribution[a] || 0))
     sortedMembers.forEach((v, i) => {
       let contrib = myGuild.contribution[v] || 0
       cap += `│ ${i + 1}. @${v.split('@')[0]} [${contrib.toLocaleString()}]\n`
     })
-    cap += `╰───────────────────╯\n\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    cap += `╭──「 ⚡ BUFF AKTIF 」──╮\n`
+    cap += `╭─❏「 ⚡ BUFF AKTIF 」❏\n`
     if(Date.now() < myGuild.buffAttack) cap += `│ ⚔️ Attack +200\n`
     if(Date.now() < myGuild.buffDefense) cap += `│ 🛡️ Defense +200\n`
     if(Date.now() < myGuild.buffMagic) cap += `│ 🔮 Magic +200\n`
@@ -73,16 +85,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if(Date.now() < myGuild.buffHeal) cap += `│ 💊 Heal +30% HP\n`
     if(Date.now() < myGuild.buffMulti) cap += `│ 📈 Multiplier +50% Exp\n`
     if(Date.now() > myGuild.buffAttack && Date.now() > myGuild.buffDefense && Date.now() > myGuild.buffMagic && Date.now() > myGuild.buffLuck && Date.now() > myGuild.buffSpeed && Date.now() > myGuild.buffHeal && Date.now() > myGuild.buffMulti) cap += `│ - Tidak ada\n`
-    cap += `╰───────────────────╯\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n`
 
-    cap += `╭──「 📜 COMMAND 」──╮\n`
+    cap += `╭─❏「 📜 COMMAND 」❏\n`
     cap += `│ ${usedPrefix}guildshop\n`
     cap += `│ ${usedPrefix}misiguild\n`
     cap += `│ ${usedPrefix}pestaguild\n`
     cap += `│ ${usedPrefix}latihanguild\n`
     cap += `│ ${usedPrefix}guild donate [jumlah]\n`
+    cap += `│ ${usedPrefix}guild loot\n`
     cap += `│ ${usedPrefix}guildwar @tag | acak\n`
-    cap += `╰───────────────────╯`
+    cap += `╰─━━━━━━━━━━━━━━─`
 
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i142/XU7iEW', { contextInfo: { mentionedJid: members } })
   }

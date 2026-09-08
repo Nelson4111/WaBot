@@ -1,7 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
-const bibit = {
+export const bibit = {
   'kacang': { emoji: '🥜', harga: 4500, waktu: 480000, exp: 110, hasil: { item: 'kacang', jumlah: 1 } },
   'bawang_putih': { emoji: '🧄', harga: 5000, waktu: 500000, exp: 120, hasil: { item: 'bawang_putih', jumlah: 1 } },
   'padi': { emoji: '🌾', harga: 5000, waktu: 180000, exp: 50, hasil: { item: 'padi', jumlah: 1 } },
@@ -37,6 +37,7 @@ const bibit = {
   'alpukat': { emoji: '🥑', harga: 24000, waktu: 1350000, exp: 420, hasil: { item: 'alpukat', jumlah: 1 } },
   'apel_merah': { emoji: '🍎', harga: 25000, waktu: 1500000, exp: 500, hasil: { item: 'apel_merah', jumlah: 1 } },
   'kelapa': { emoji: '🥥', harga: 25000, waktu: 1400000, exp: 450, hasil: { item: 'kelapa', jumlah: 1 } },
+  'sawit': { emoji: '🌴', harga: 30000, waktu: 1500000, exp: 500, hasil: { item: 'sawit', jumlah: 1 } },
   'exp': { emoji: '✨', harga: 40000, waktu: 1600000, exp: 800, hasil: { item: 'exp', jumlah: 2000 } },
   'durian': { emoji: '🌳', harga: 50000, waktu: 1800000, exp: 800, hasil: { item: 'durian', jumlah: 1 } },
   'uang': { emoji: '💵', harga: 50000, waktu: 1800000, exp: 1000, hasil: { item: 'money', jumlah: 100000 } },
@@ -64,30 +65,44 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
   if (slotKosong.length === 0) return m.reply(`❌ Semua ladang sudah penuh.`)
 
-  if (!text) {
-    let cap = `┌───❏「 🌱 DAFTAR BIBIT 」❏\n`
-    cap += `│ ${isPrem? '👑 Premium - Diskon 20%' : '👤 User Normal'}\n`
-    cap += `└───────────────────\n\n`
+ if (!text) {
+    let cap = `╭─❏「 🌱 DAFTAR BIBIT 」❏\n`
+    cap += `│ ${isPrem ? '👑 Premium - Diskon 20%' : '👤 User Normal'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    cap += `*─── TERMURAH ───*\n`
+    cap += `📌 *PILIH BIBIT UNTUK MENANAM*\n`
+    cap += `> ↳ Baris kedua menunjukkan harga dan waktu panen.\n\n`
+
+    cap += `🌱 *TERMURAH*\n`
     Object.entries(bibit).slice(0, 10).forEach(([name, info]) => {
       let hargaFinal = Math.floor(info.harga * buyDiscount)
-      cap += `│ ${info.emoji} ${formatNama(name).padEnd(15)} Rp ${hargaFinal.toLocaleString()} | ${Math.floor(info.waktu/60000)}m\n`
+      cap += `${info.emoji} *${formatNama(name)}*\n`
+      cap += `> ↳ Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n`
     })
-    cap += `\n*─── MENENGAH ───*\n`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n\n`
+    cap += `🌿 *MENENGAH*\n`
     Object.entries(bibit).slice(10, 25).forEach(([name, info]) => {
       let hargaFinal = Math.floor(info.harga * buyDiscount)
-      cap += `│ ${info.emoji} ${formatNama(name).padEnd(15)} Rp ${hargaFinal.toLocaleString()} | ${Math.floor(info.waktu/60000)}m\n`
+      cap += `${info.emoji} *${formatNama(name)}*\n`
+      cap += `> ↳ Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n`
     })
-    cap += `\n*─── TERMAHAL ───*\n`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n\n`
+    cap += `💎 *TERMAHAL*\n`
     Object.entries(bibit).slice(25).forEach(([name, info]) => {
       let hargaFinal = Math.floor(info.harga * buyDiscount)
-      cap += `│ ${info.emoji} ${formatNama(name).padEnd(15)} Rp ${hargaFinal.toLocaleString()} | ${Math.floor(info.waktu/60000)}m\n`
+      cap += `${info.emoji} *${formatNama(name)}*\n`
+      cap += `> ↳ Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n`
     })
-    cap += `\n📌 *CARA TANAM:*\n`
-    cap += `├ Per slot: *${usedPrefix}tanam wortel*\n`
-    cap += `├ Slot tertentu: *${usedPrefix}tanam berlian 1*\n`
-    cap += `└ Semua slot: *${usedPrefix}tanam koin all*`
+
+    cap += `\n─━━━━━━━━━━━━━━─\n\n`
+    cap += `📌 *CARA TANAM*\n`
+    cap += `> ↳ Per slot: *${usedPrefix}tanam wortel*\n`
+    cap += `> ↳ Slot tertentu: *${usedPrefix}tanam berlian 1*\n`
+    cap += `> ↳ Semua slot: *${usedPrefix}tanam koin all*\n`
+    cap += `\n─━━━━━━━━━━━━━━─`
+
     return m.reply(cap)
   }
 
@@ -96,7 +111,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let slotTarget = args[args.length - 1]
   let isAll = slotTarget === 'all'
 
-  if (!bibit[jenis]) return m.reply(`❌ Jenis bibit *${formatNama(jenis)}* tidak ada.\nKetik *${usedPrefix}tanam* untuk lihat daftar.`)
+  if (!bibit[jenis]) return m.reply(
+    `╭─❏「 ❌ BIBIT TIDAK DITEMUKAN 」❏\n` +
+    `│ Jenis bibit *${formatNama(jenis)}* tidak ada.\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Ketik *${usedPrefix}tanam* untuk lihat daftar.`
+  )
 
   let info = bibit[jenis]
   let hargaFinal = Math.floor(info.harga * buyDiscount)
@@ -113,22 +133,56 @@ let handler = async (m, { conn, text, usedPrefix }) => {
         count++
       } else break
     }
-    if (count === 0) return m.reply(`❌ Uang tidak cukup. Butuh Rp ${hargaFinal.toLocaleString()}/bibit`)
+
+    if (count === 0) return m.reply(
+      `╭─❏「 ❌ UANG TIDAK CUKUP 」❏\n` +
+      `│ Butuh Rp ${hargaFinal.toLocaleString()}/bibit\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+
     wdb.money[m.sender] = userMoney
     saveDB(wdb)
-    return m.reply(`┌───❏「 🌱 TANAM MASSAL 」❏\n│ ${info.emoji} ${formatNama(jenis).toUpperCase()} x${count}\n│ 💸 Biaya: Rp ${totalBiaya.toLocaleString()}\n│ 💰 Sisa: Rp ${userMoney.toLocaleString()}\n└───────────────────`)
+
+    return m.reply(
+      `╭─❏「 🌱 TANAM MASSAL 」❏\n` +
+      `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}* x${count}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💸 Biaya : Rp ${totalBiaya.toLocaleString()}\n` +
+      `> ↳ 💰 Sisa : Rp ${userMoney.toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   let slotNum = parseInt(slotTarget)
-  let slotPilih =!isNaN(slotNum) && user.ladang[slotNum] === undefined? slotNum : slotKosong[0]
-  if (!slotPilih) return m.reply(`❌ Slot ladang tidak tersedia.`)
-  if (userMoney < hargaFinal) return m.reply(`❌ Uang tidak cukup. Butuh Rp ${hargaFinal.toLocaleString()}`)
+  let slotPilih = !isNaN(slotNum) && user.ladang[slotNum] === undefined ? slotNum : slotKosong[0]
 
+  if (!slotPilih) return m.reply(
+    `╭─❏「 ❌ SLOT TIDAK TERSEDIA 」❏\n` +
+    `│ Slot ladang tidak tersedia.\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if (userMoney < hargaFinal) return m.reply(
+    `╭─❏「 ❌ UANG TIDAK CUKUP 」❏\n` +
+    `│ Butuh Rp ${hargaFinal.toLocaleString()}\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+  
   wdb.money[m.sender] -= hargaFinal
-  user.ladang[slotPilih] = { jenis: jenis, waktuTanam: Date.now() }
-  saveDB(wdb)
-  return m.reply(`┌───❏「 🌱 BERHASIL TANAM 」❏\n│ ${info.emoji} ${formatNama(jenis).toUpperCase()}\n│ 📍 Ladang: ${slotPilih}\n│ 💸 Biaya: Rp ${hargaFinal.toLocaleString()}\n│ 💰 Sisa: Rp ${wdb.money[m.sender].toLocaleString()}\n└───────────────────`)
+user.ladang[slotPilih] = { jenis: jenis, waktuTanam: Date.now() }
+saveDB(wdb)
+
+return m.reply(
+  `╭─❏「 🌱 BERHASIL TANAM 」❏\n` +
+  `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `> ↳ 📍 Ladang : Slot ${slotPilih}\n` +
+  `> ↳ 💸 Biaya : Rp ${hargaFinal.toLocaleString()}\n` +
+  `> ↳ 💰 Sisa : Rp ${wdb.money[m.sender].toLocaleString()}\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
 }
+
 handler.help = ['tanam']
 handler.tags = ['rpg']
 handler.command = /^(tanam|berkebun)$/i

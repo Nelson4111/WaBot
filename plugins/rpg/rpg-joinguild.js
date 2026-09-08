@@ -5,10 +5,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!wdb.guilds) wdb.guilds = {} // FIX: init guild biar ga undefined
   if (!wdb.users) wdb.users = {}
 
-  let user = getUserRPG(m.sender)
+  let user = getUserRPG(wdb, m.sender)
   if (!user) return m.reply('📖 Untuk bermain rpg ketik *.adventure*')
 
-  if (!text) return m.reply(`Masukkan nama guild! Contoh: ${usedPrefix}${command} ZETA`)
+  if (!text) return m.reply(`Masukkan nama guild! Contoh: ${usedPrefix}${command} AVELIA`)
 
   let guildName = text.trim()
   let guild = wdb.guilds[guildName]
@@ -39,7 +39,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   guild.contribution[m.sender] = 0
   saveDB(wdb)
 
-  return sendRpgMsg(conn, m, `✅ Berhasil bergabung dengan Guild *${guildName}*!\nSelamat datang di guild!`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
+  return sendRpgMsg(conn, m, `╭─❏「 🏰 JOIN GUILD 」❏\n├[ Guild ] ${guildName}\n├[ Status ] Berhasil bergabung\n├ Selamat datang di guild!\n╰─━━━━━━━━━━━━━━─`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
 }
 
 handler.help = ['joinguild']

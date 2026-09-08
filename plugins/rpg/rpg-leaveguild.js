@@ -9,7 +9,7 @@ let handler = async (m, { conn }) => {
   if (guild.leader === m.sender) {
     delete wdb.guilds[guildName]
     saveDB(wdb)
-    return m.reply(`⚠️ Guild *${guildName}* telah dibubarkan karena Leader keluar.`)
+    return m.reply(`╭─❏「 🏰 GUILD DIBUBARKAN 」❏\n├[ Guild ] ${guildName}\n├[ Status ] Leader keluar\n╰─━━━━━━━━━━━━━━─`)
   }
 
   let index = guild.members.indexOf(m.sender)
@@ -22,7 +22,7 @@ let handler = async (m, { conn }) => {
 
   saveDB(wdb)
 
-  return sendRpgMsg(conn, m, `✅ Kamu berhasil keluar dari Guild *${guildName}*.\n⏰ Cooldown 24 jam sebelum bisa join/create guild lagi.`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
+  return sendRpgMsg(conn, m, `╭─❏「 🏰 LEAVE GUILD 」❏\n├[ Guild ] ${guildName}\n├[ Status ] Berhasil keluar\n├[ ⏰ Cooldown ] 24 jam sebelum join/create lagi\n╰─━━━━━━━━━━━━━━─`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
 }
 
 handler.help = ['leaveguild']

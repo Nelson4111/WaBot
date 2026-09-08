@@ -4,7 +4,7 @@ let handler = async (m, { conn }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
   if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
-  if(!userRPG.riwayat) userRPG.riwayat = []
+  if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
   // CEK PENJARA
   if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
@@ -25,8 +25,8 @@ let handler = async (m, { conn }) => {
     return m.reply(`⏳ *COOLDOWN COPET*\nTunggu *${menit}m ${detik}d* lagi`)
   }
 
-  let who = m.quoted?.sender
-  if (!who) return m.reply(`❌ Reply pesan target yg mau dicopet`)
+  let who = m.mentionedJid?.[0] || m.quoted?.sender
+  if (!who) return m.reply(`❌ Tag atau reply pesan target yg mau dicopet`)
   if (who === m.sender) return m.reply('❌ Ga bisa copet diri sendiri')
 
   let target = getUserRPG(wdb, who).rpg
@@ -65,6 +65,7 @@ let handler = async (m, { conn }) => {
         userRPG.penjara = Date.now()
         userRPG.lamaPenjara = 3600000 // 1 jam
         userRPG.tebusan = 1000000 // 1jt
+        userRPG.kasus = '🤏 Copet'
         userRPG.sel = sel
         userRPG.gagalCopet = 0
         wdb.penjara.push(m.sender)
@@ -74,12 +75,12 @@ let handler = async (m, { conn }) => {
     }
     saveDB(wdb)
 
-    let txt = `┌───❏「 🤏 COPET GAGAL 」❏\n`
+    let txt = `╭─❏「 🤏 COPET GAGAL 」❏\n`
     txt += `│ 👤 Copet: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += `│ 💸 Denda: Rp ${denda.toLocaleString()}\n`
     txt += `│ ⚠️ Strike: ${userRPG.gagalCopet}/2\n`
-    txt += `└───────────────────`
+    txt += `╰─━━━━━━━━━━━━━━─`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
@@ -97,16 +98,20 @@ let handler = async (m, { conn }) => {
   userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Copet @${who.split('@')[0]}`)
   saveDB(wdb)
 
-  let txt = `┌───❏「 ✅ COPET BERHASIL 」❏\n`
-  txt += `│ 🤏 Copet: @${m.sender.split('@')[0]}\n`
-  txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
-  txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
-  txt += `└───────────────────`
+let txt = `╭─❏「 ✅ COPET BERHASIL 」❏\n`
+txt += `│ 🤏 Copet: @${m.sender.split('@')[0]}\n`
+txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
+txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
+txt += `╰─━━━━━━━━━━━━━━─\n\n`
+txt += `💡 *INFO*\n`
+txt += `> ↳ Cek *.buronan* untuk melihat DPO.`
 
-  conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
+
 handler.help = ['copet (reply)']
 handler.tags = ['rpg']
 handler.command = /^(copet)$/i
+handler.alias = ['copet']
 handler.group = true
 export default handler

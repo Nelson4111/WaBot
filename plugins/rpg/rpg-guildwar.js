@@ -82,7 +82,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       expire: Date.now() + 60000
     }
 
-    let cap = `╭──「 ⚔️ TANTANGAN WAR 」──╮\n`
+    let cap = `╭─❏「 ⚔️ TANTANGAN WAR 」❏\n`
     cap += `│ 📛 *Penyerang:* ${myGuild.name}\n`
     cap += `│ 📛 *Target:* ${enemyGuild.name}\n`
     cap += `│\n`
@@ -90,7 +90,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `│ Ketik *${usedPrefix}guildwar terima* untuk menerima\n`
     cap += `│ Ketik *${usedPrefix}guildwar tolak* untuk menolak\n`
     cap += `│ ⏰ Waktu: 60 detik\n`
-    cap += `╰───────────────────╯`
+    cap += `╰─━━━━━━━━━━━━━━─`
 
     return conn.reply(m.chat, cap, m, {mentions:[target]}) // quote chat penyerang
   }
@@ -183,9 +183,9 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
   saveDB(wdb)
 
   // TAMPILAN RINGKAS
-  let cap = `╭──「 💥 HASIL GUILD WAR 」──╮\n`
+  let cap = `╭─❏「 💥 HASIL GUILD WAR 」❏\n`
   cap += `│ ⚔️ ${myGuild.name} [${myPower}] vs [${enemyPower}] ${enemyGuild.name}\n`
-  cap += `╰────────────────────────╯\n\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
   cap += `🏆 *Pemenang:* ${winner.name}\n`
   cap += `💰 *Rampasan:* Rp ${totalRampasan.toLocaleString()}\n`
   cap += `✨ *Exp Guild:* +${expGuild} / +${Math.floor(expGuild/2)}\n`

@@ -4,7 +4,7 @@ let handler = async (m, { conn }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
   if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
-  if(!userRPG.riwayat) userRPG.riwayat = {}
+  if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
   // CEK PENJARA
   if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
@@ -25,8 +25,8 @@ let handler = async (m, { conn }) => {
     return m.reply(`⏳ *COOLDOWN BEGAL*\nTunggu *${jam}j ${menit}m* lagi`)
   }
 
-  let who = m.quoted?.sender
-  if (!who) return m.reply(`❌ Reply pesan target yg mau dibegal`)
+  let who = m.mentionedJid?.[0] || m.quoted?.sender
+  if (!who) return m.reply(`❌ Tag atau reply pesan target yg mau dibegal`)
   if (who === m.sender) return m.reply('❌ Ga bisa begal diri sendiri')
 
   let target = getUserRPG(wdb, who).rpg
@@ -52,6 +52,7 @@ let handler = async (m, { conn }) => {
       userRPG.penjara = Date.now()
       userRPG.lamaPenjara = 7200000 // 2 jam
       userRPG.tebusan = 2000000 // 2jt
+      userRPG.kasus = '🏴‍☠️ Begal'
       userRPG.sel = sel
       wdb.penjara.push(m.sender)
     }
@@ -61,39 +62,50 @@ let handler = async (m, { conn }) => {
     userRPG.riwayat.unshift(`💀 Mati saat begal @${who.split('@')[0]}`)
 
     saveDB(wdb)
-    let txt = `┌───❏「 💀 BEGAL GAGAL 」❏\n`
-    txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
-    txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-    txt += `│ ⚰️ Kamu tertembak dan mati\n`
-    txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n`
-    txt += `│ 💰 Tebusan: *Rp 2.000.000*\n`
-    txt += `└───────────────────`
-    return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
-  }
+ let txt = `╭─❏「 💀 BEGAL GAGAL 」❏\n`
+txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
+txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
+txt += `│ ⚰️ Kamu tertembak dan mati.\n`
+txt += `│ 🚔 Penjara: *SEL ${userRPG.sel}* • *2 jam*\n`
+txt += `│ 💰 Tebusan: *Rp 2.000.000*\n`
+txt += `╰─━━━━━━━━━━━━━━─`
 
-  // SUKSES
-  let hasil = Math.max(500, Math.floor(uangTarget * 0.1))
-  wdb.money[who] -= hasil
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
-
-  wdb.crime[m.sender].begal += 1
-  wdb.crime[m.sender].total += 1
-
-  target.riwayat.unshift(`-Rp ${hasil.toLocaleString()} Dibegal @${m.sender.split('@')[0]}`)
-  userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Begal @${who.split('@')[0]}`)
-  saveDB(wdb) // cuma 1x save di akhir
-
-  let txt = `┌───❏「 ✅ BEGAL BERHASIL 」❏\n`
-  txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
-  txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
-  txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
-  txt += `└───────────────────\n`
-  txt += `\n💡 Cek *.buronan* untuk lihat DPO`
-
-  conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
+
+// SUKSES
+let hasil = Math.max(500, Math.floor(uangTarget * 0.1))
+
+wdb.money[who] -= hasil
+wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
+
+wdb.crime[m.sender].begal += 1
+wdb.crime[m.sender].total += 1
+
+target.riwayat.unshift(
+  `-Rp ${hasil.toLocaleString()} Dibegal @${m.sender.split('@')[0]}`
+)
+
+userRPG.riwayat.unshift(
+  `+Rp ${hasil.toLocaleString()} Begal @${who.split('@')[0]}`
+)
+
+saveDB(wdb)
+
+let txt = `╭─❏「 ✅ BEGAL BERHASIL 」❏\n`
+txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
+txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
+txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
+txt += `╰─━━━━━━━━━━━━━━─\n\n`
+txt += `💡 *INFO*\n`
+txt += `> ↳ Cek *.buronan* untuk melihat DPO.`
+
+conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+}
+
 handler.help = ['begal (reply)']
 handler.tags = ['rpg']
 handler.command = /^(begal)$/i
+handler.alias = ['begal']
 handler.group = true
 export default handler

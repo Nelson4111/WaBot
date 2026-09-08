@@ -1,7 +1,9 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 
 function formatNama(nama) {
-  return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  if (!nama || typeof nama !== 'string') return ''
+  return nama.replace(/_/g, ' ').split(/\s+/).filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
 const resepEmoji = {
@@ -286,7 +288,11 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if(!user.masakan) user.masakan = {}
+  if(!user.inventory) user.inventory = {}
   if(!user.paketKonfirmasi) user.paketKonfirmasi = {}
+
+  const hasilMigration = migrateHasilTernakInventory(user.inventory)
+  user.inventory = hasilMigration.inventory
 
   // MIGRASI
   let isChanged = false
@@ -317,6 +323,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     'sup_leviathan': { emoji: '🐉', harga: 4500000 }, 'sea_dragon_grill': { emoji: '🐲', harga: 5250000 }, 'hydra_stew': { emoji: '🐍', harga: 6750000 },
     'kura_titan_soup': { emoji: '🐢', harga: 7500000 }, 'paus_putih_steak': { emoji: '🐋', harga: 9000000 }, 'naga_laut_bakar': { emoji: '🐉', harga: 12000000 },
     'raja_ubur_jelly': { emoji: '🪼', harga: 13500000 }, 'steak_godzilla': { emoji: '🦖', harga: 22500000 },
+    'telur_dadar': { emoji: '🍳', harga: 45000 }, 'telur_bebek_asin': { emoji: '🥚', harga: 67500 },
+    'susu_madu': { emoji: '🥛', harga: 90000 }, 'daging_kelinci_bakar': { emoji: '🍖', harga: 127500 },
+    'daging_babi_panggang': { emoji: '🍖', harga: 195000 }, 'sup_susu_sapi': { emoji: '🍲', harga: 225000 },
+    'minyak_sawit': { emoji: '🫗', harga: 150000 },
 
     // ANIME + GAME
     'ramen_ichiraku': { emoji: '🍜', harga: 50000 }, 'onigiri': { emoji: '🍙', harga: 25000 }, 'steak_makima': { emoji: '😈', harga: 5000000 },
@@ -430,8 +440,21 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   const hargaBeli = {...hargaBeliMakanan,...hargaBeliMinuman} // GABUNG PAKE SPREAD
+  for (const [animalKey, animal] of Object.entries(hewanList)) {
+    const recipeKey = `olahan_${animalKey}`
+    if (!hargaBeli[recipeKey]) hargaBeli[recipeKey] = { emoji: '🍲', harga: Math.max(10000, Math.floor(animal.hargaJual * 0.8)) }
+  }
   const hargaJual = {}
   for(let k in hargaBeli){ hargaJual[k] = Math.floor(hargaBeli[k].harga * 0.7) }
+  const hargaJualHasilTernak = {}
+  for (const animal of Object.values(hewanList)) {
+    for (const hasil of [animal.hasil, animal.hasilTelur, animal.hasilDaging]) {
+      if (!hasil) continue
+      const key = getHasilDisplay(hasil).key
+      hargaJualHasilTernak[key] = Math.max(hargaJualHasilTernak[key] || 0, animal.hargaJual)
+    }
+  }
+  if (hasilMigration.changed) saveDB(wdb)
 
 // 25 PAKET - SEMUA MENU MASUK
   const paket = {
@@ -491,14 +514,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   // MENU UTAMA
   if (!text) {
-    let cap = `┌───❏「 🍽️ RESTORAN ZETA 」❏\n`
-    cap += `│ Makanan: ${makananKeys.length} | Minuman: ${minumanKeys.length}\n` // <-- GANTI INI
-    cap += `│ Total Paket: ${Object.keys(paket).length}\n` // <-- TAMBAH INI BIAR PAKET TETEP MUNCUL
-    cap += `└───────────────────\n\n📌 *COMMAND:*\n`
-    cap += `├ *${usedPrefix}restoran menu* → Lihat semua menu\n`
-    cap += `├ *${usedPrefix}restoran info <no/nama>* → Detail makanan\n`
-    cap += `├ *${usedPrefix}restoran paket list* → Lihat paket\n`
-    cap += `└ *${usedPrefix}restoran beli <no>* → Beli\n`
+    let cap = `╭─❏「 🍽️ RESTORAN AVELIA 」❏\n`
+    cap += `│ Makanan: ${makananKeys.length} | Minuman: ${minumanKeys.length}\n`
+    cap += `│ Total Paket: ${Object.keys(paket).length}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `📌 *CARA PAKAI*\n`
+    cap += `> *${usedPrefix}restoran menu*\n`
+    cap += `> *${usedPrefix}restoran info <no/nama>*\n`
+    cap += `> *${usedPrefix}restoran paket list*\n`
+    cap += `> *${usedPrefix}restoran beli <no> <jumlah>*\n`
+    cap += `─━━━━━━━━━━━━━━─`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
@@ -510,49 +535,62 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     if(!hargaBeli[item]) return m.reply('❌ Menu tidak ada.')
     let hBeli = Math.floor(hargaBeli[item].harga * buyDiskon)
     let hJual = Math.floor(hargaJual[item] * sellBonus)
-    let desc = deskripsiMakanan[item] || `Makanan lezat dari Restoran Zeta. Bisa dijual ke restoran.`
-    let cap = `┌───❏「 📖 DETAIL MENU 」❏\n`
-    cap += `│ ${hargaBeli[item].emoji} *${formatNama(item)}*\n`
-    cap += `│ Harga Beli : Rp ${hBeli.toLocaleString()}\n`
-    cap += `│ Harga Jual : Rp ${hJual.toLocaleString()}\n`
-    cap += `└───────────────────\n\n📝 *Deskripsi:*\n${desc}`
+    let desc = deskripsiMakanan[item] || `Makanan lezat dari Restoran Avelia. Bisa dijual ke restoran.`
+    let cap = `╭─❏「 📖 DETAIL MENU 」❏\n`
+    cap += ` ${hargaBeli[item].emoji} *${formatNama(item)}*\n`
+    cap += `> Buy: Rp ${hBeli.toLocaleString()}\n`
+    cap += `> Sell: Rp ${hJual.toLocaleString()}\n`
+    cap += `─━━━━━━━━━━━━━━─\n\n📝 *Deskripsi:*\n${desc}`
     return m.reply(cap)
   }
 
 // MENU SEMUA
   if (tipe === 'menu') {
-    let cap = `┌───❏「 📋 DAFTAR MENU ${beliKeys.length} 」❏\n`
+    let cap = `╭─❏「 📋 DAFTAR MENU ${beliKeys.length} 」❏\n`
     cap += `│ Cara cek detail: *${usedPrefix}restoran info <no/nama>*\n`
-    cap += `└───────────────────\n\n🍖 *MAKANAN ${makananKeys.length}*\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n🍖 *MAKANAN ${makananKeys.length}*\n`
+    cap += `Pilih nomor menu untuk membeli. Gunakan info untuk melihat detail hidangan.\n\n`
 
     makananKeys.forEach((k, i) => {
       let hBeli = Math.floor(hargaBeli[k].harga * buyDiskon)
-      cap += `│ [${i+1}] ${hargaBeli[k].emoji} ${formatNama(k).padEnd(22)} Rp ${hBeli.toLocaleString()}\n`
+      cap += `*${i + 1}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
+      cap += `> Buy: Rp ${hBeli.toLocaleString()}\n`
+      cap += `> Sell: Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n`
     })
 
-    cap += `└───────────────────\n\n🥤 *MINUMAN ${minumanKeys.length}*\n`
+    cap += `\n─━━━━━━━━━━━━━━─\n\n🥤 *MINUMAN ${minumanKeys.length}*\n`
+    cap += `Pilih nomor minuman untuk membeli. Cek detail sebelum membeli menu premium.\n\n`
     minumanKeys.forEach((k, i) => {
       let hBeli = Math.floor(hargaBeli[k].harga * buyDiskon)
       let no = makananKeys.length + i + 1
-      cap += `│ [${no}] ${hargaBeli[k].emoji} ${formatNama(k).padEnd(22)} Rp ${hBeli.toLocaleString()}\n`
+      cap += `*${no}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
+      cap += `> Buy: Rp ${hBeli.toLocaleString()}\n`
+      cap += `> Sell: Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n`
     })
-    cap += `└───────────────────`
+    cap += `─━━━━━━━━━━━━━━─`
     return m.reply(cap)
   }
 
   // LIST PAKET
   if(tipe === 'paket' && args[1] === 'list'){
-    let cap = `┌───❏「 🎁 DAFTAR ${Object.keys(paket).length} PAKET 」❏\n`
+    let cap = `╭─❏「 🎁 DAFTAR ${Object.keys(paket).length} PAKET 」❏\n`
+    cap += `│ Paket berisi beberapa menu dengan harga lebih hemat. Pilih nama paket untuk melihat detailnya.\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n`
     for(let p in paket){
       let dataPaket = paket[p]
       let totalNormal = 0
-      for(let item in dataPaket.isi){ totalNormal += hargaBeli[item].harga * dataPaket.isi[item] }
+      for(let item in dataPaket.isi){
+        const menu = hargaBeli[item]
+        if (menu) totalNormal += menu.harga * dataPaket.isi[item]
+      }
       let hargaPaket = Math.floor(totalNormal * (1 - dataPaket.diskon) * buyDiskon)
       let hemat = totalNormal - hargaPaket
-      cap += `│\n│ 🎁 *${dataPaket.nama}* [${p}]\n`
-      cap += `│ 💰 Rp ${hargaPaket.toLocaleString()} | Hemat Rp ${hemat.toLocaleString()}\n`
+      cap += `*🎁 ${dataPaket.nama}*\n`
+      cap += `> Kode: ${p}\n`
+      cap += `> Harga: Rp ${hargaPaket.toLocaleString()}\n`
+      cap += `> Hemat: Rp ${hemat.toLocaleString()}\n\n`
     }
-    cap += `└───────────────────`
+    cap += `─━━━━━━━━━━━━━━─`
     return m.reply(cap)
   }
 
@@ -569,22 +607,28 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       for(let item in dataPaket.isi){
         let jumlah = dataPaket.isi[item]
         user.masakan[item] = (user.masakan[item] || 0) + jumlah
-        listDapat.push(`${resepEmoji[item]} ${formatNama(item)} x${jumlah}`)
+        listDapat.push(`${resepEmoji[item] || hargaBeli[item]?.emoji || '🍽️'} ${formatNama(item)} x${jumlah}`)
       }
       delete user.paketKonfirmasi[m.sender]; saveDB(wdb)
-      let cap = `┌───❏「 🛍️ TRANSAKSI SUKSES 」❏\n│ Paket : ${dataPaket.nama}\n│ Bayar : -Rp ${dataKonfirmasi.harga.toLocaleString()}\n└───────────────────\n\n📦 *${listDapat.length} Item:*\n${listDapat.slice(0,10).join('\n')}\n\nSelamat menikmati! 😋\n💵 Sisa: Rp ${wdb.money[m.sender].toLocaleString()}`
+      let cap = `╭─❏「 🛍️ TRANSAKSI SUKSES 」❏\n│ Paket : ${dataPaket.nama}\n│ Bayar : -Rp ${dataKonfirmasi.harga.toLocaleString()}\n╰─━━━━━━━━━━━━━━─\n\n├ 📦 *${listDapat.length} ITEM*\n├ Isi paket yang masuk ke gudang masakan:\n${listDapat.slice(0,10).map(item => `├> ${item}`).join('\n')}\n\nSelamat menikmati! 😋\n💵 Sisa: Rp ${wdb.money[m.sender].toLocaleString()}`
       return m.reply(cap)
     }
     if(!namaPaket ||!paket[namaPaket]) return m.reply(`❌ Paket tidak ada.\nLihat: *${usedPrefix}restoran paket list*`)
     let dataPaket = paket[namaPaket]
     let totalNormal = 0
-    for(let item in dataPaket.isi){ totalNormal += hargaBeli[item].harga * dataPaket.isi[item] }
+    for(let item in dataPaket.isi){
+      const menu = hargaBeli[item]
+      if (menu) totalNormal += menu.harga * dataPaket.isi[item]
+    }
     let hargaPaket = Math.floor(totalNormal * (1 - dataPaket.diskon) * buyDiskon)
     let hemat = totalNormal - hargaPaket
     user.paketKonfirmasi[m.sender] = { paket: namaPaket, harga: hargaPaket }; saveDB(wdb)
     let listIsi = []
-    for(let item in dataPaket.isi){ listIsi.push(`${resepEmoji[item]} ${formatNama(item)} x${dataPaket.isi[item]}`) }
-    let cap = `┌───❏「 🎁 DETAIL PAKET 」❏\n│ Nama : ${dataPaket.nama}\n│ Harga Normal : Rp ${totalNormal.toLocaleString()}\n│ Harga Paket : Rp ${hargaPaket.toLocaleString()}\n│ Hemat : Rp ${hemat.toLocaleString()} ✨\n└───────────────────\n\n📦 *Isi Paket:*\n${listIsi.join('\n')}\n\n⚠️ INPO: Lebih murah Rp ${hemat.toLocaleString()}!\n\nKetik *${usedPrefix}restoran paket ya* untuk beli`
+    for(let item in dataPaket.isi){
+      const menu = hargaBeli[item]
+      listIsi.push(`${resepEmoji[item] || menu?.emoji || '🍽️'} ${formatNama(item)} x${dataPaket.isi[item]}${menu ? '' : ' (menu belum tersedia)'}`)
+    }
+    let cap = `╭─❏「 🎁 DETAIL PAKET 」❏\n│ Nama : ${dataPaket.nama}\n│ Harga Normal : Rp ${totalNormal.toLocaleString()}\n│ Harga Paket : Rp ${hargaPaket.toLocaleString()}\n│ Hemat : Rp ${hemat.toLocaleString()} ✨\n╰─━━━━━━━━━━━━━━─\n\n├ 📦 *ISI PAKET*\n├ Daftar menu dan jumlah item yang akan kamu dapatkan.\n${listIsi.map(item => `├> ${item}`).join('\n')}\n\n⚠️ INPO: Lebih murah Rp ${hemat.toLocaleString()}!\n\nKetik *${usedPrefix}restoran paket ya* untuk beli`
     return m.reply(cap)
   }
 
@@ -601,7 +645,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     wdb.money[m.sender] -= totalHarga
     user.masakan[item] = (user.masakan[item] || 0) + jumlah
     saveDB(wdb)
-    let cap = `┌───❏「 🛍️ TRANSAKSI SUKSES 」❏\n│ Item : ${hargaBeli[item].emoji} ${formatNama(item)}\n│ Jumlah : ${jumlah}\n│ Bayar : -Rp ${totalHarga.toLocaleString()}\n└───────────────────\n\nSilakan dinikmati! 😋\n💵 Sisa: Rp ${wdb.money[m.sender].toLocaleString()}`
+    let cap = `╭─❏「 🛍️ TRANSAKSI SUKSES 」❏\n│ Item : ${hargaBeli[item].emoji} ${formatNama(item)}\n│ Jumlah : ${jumlah}\n│ Bayar : -Rp ${totalHarga.toLocaleString()}\n╰─━━━━━━━━━━━━━━─\n\nSilakan dinikmati! 😋\n💵 Sisa: Rp ${wdb.money[m.sender].toLocaleString()}`
     return m.reply(cap)
   }
 
@@ -618,28 +662,46 @@ let handler = async (m, { conn, text, usedPrefix }) => {
           delete user.masakan[item]
         }
       }
+      for(let item in user.inventory){
+        if(hargaJualHasilTernak[item] && user.inventory[item] > 0){
+          let jumlah = user.inventory[item]
+          let hasil = Math.floor(hargaJualHasilTernak[item] * sellBonus) * jumlah
+          totalHasil += hasil
+          listJual.push(`${getHasilDisplay(item).emoji} ${getHasilDisplay(item).nama} x${jumlah}`)
+          delete user.inventory[item]
+        }
+      }
       if(totalHasil === 0) return m.reply('❌ Dapur kosong!')
       wdb.money[m.sender] += totalHasil; saveDB(wdb)
-      let cap = `┌───❏「 💼 PENYETORAN KE RESTORAN 」❏\n│ Koki : ${m.pushName}\n└───────────────────\n\n📤 *${listJual.length} Masakan Disetor*\n\n💰 +Rp ${totalHasil.toLocaleString()}\n💵 Total: Rp ${wdb.money[m.sender].toLocaleString()}\n\n_“Terima kasih sudah memasak untuk pelanggan!”_`
+      let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n│ Koki : ${m.pushName}\n╰─━━━━━━━━━━━━━━─\n\n📤 *${listJual.length} Masakan Disetor*\n\n💰 +Rp ${totalHasil.toLocaleString()}\n💵 Total: Rp ${wdb.money[m.sender].toLocaleString()}\n\n_“Terima kasih sudah memasak untuk pelanggan!”_`
       return m.reply(cap)
     }
     let itemInput = args[1]
     let amount = args[2] === 'all'? 'all' : (parseInt(args[2]) || 1)
-    let item =!isNaN(itemInput)? nomorKeItemBeli[parseInt(itemInput)] : itemInput.replace(/ /g, '_')
-    let stok = user.masakan[item] || 0
+    let itemMenu =!isNaN(itemInput)? nomorKeItemBeli[parseInt(itemInput)] : itemInput.replace(/ /g, '_')
+    let itemHasil = getHasilDisplay(itemInput).key
+    let item = hargaJual[itemMenu] ? itemMenu : itemHasil
+    let stok = hargaJual[item] ? (user.masakan[item] || 0) : (user.inventory[item] || 0)
     if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(item)}`)
     let jual = amount === 'all'? stok : amount
     if (jual > stok) return m.reply(`❌ Stok tidak cukup! Punya: ${stok}`)
-    let hasil = Math.floor(hargaJual[item] * sellBonus) * jual
-    user.masakan[item] -= jual; if(user.masakan[item] <= 0) delete user.masakan[item]
+    const harga = hargaJual[item] || hargaJualHasilTernak[item]
+    let hasil = Math.floor(harga * sellBonus) * jual
+    if (hargaJual[item]) {
+      user.masakan[item] -= jual; if(user.masakan[item] <= 0) delete user.masakan[item]
+    } else {
+      user.inventory[item] -= jual; if(user.inventory[item] <= 0) delete user.inventory[item]
+    }
     wdb.money[m.sender] += hasil; saveDB(wdb)
-    let cap = `┌───❏「 💼 PENYETORAN KE RESTORAN 」❏\n│ Menu : ${resepEmoji[item]} ${formatNama(item)}\n│ Jumlah : ${jual}\n└───────────────────\n\n💰 +Rp ${hasil.toLocaleString()}\n💵 Total: Rp ${wdb.money[m.sender].toLocaleString()}`
+    const display = hargaJual[item] ? `${resepEmoji[item] || '🍽️'} ${formatNama(item)}` : `${getHasilDisplay(item).emoji} ${getHasilDisplay(item).nama}`
+    let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n│ Menu : ${display}\n│ Jumlah : ${jual}\n╰─━━━━━━━━━━━━━━─\n\n💰 +Rp ${hasil.toLocaleString()}\n💵 Total: Rp ${wdb.money[m.sender].toLocaleString()}`
     return m.reply(cap)
   }
 }
 
-handler.help = ['restoran', 'restoran menu', 'restoran info <no/nama>', 'restoran beli <no/nama> <jml>', 'restoran paket <nama>', 'restoran paket list', 'restoran jual <no/nama> <jml/all>']
+handler.help = ['restoran', 'restoran menu', 'restoran info <no/nama>', 'restoran beli <no/nama> <jml>', 'restoran paket <nama>', 'restoran paket list', 'restoran jual <no/nama> <jml/all>', 'jualmasak']
 handler.tags = ['rpg']
-handler.command = /^(restoran|tokomasak)$/i
+handler.command = /^(restoran|tokomasak|jualmasak)$/i
+handler.alias = ['restoran', 'tokomasak', 'jualmasak']
 handler.group = true
 export default handler

@@ -2,63 +2,296 @@ import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 
 function formatNama(ikan) {
-  return ikan.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  return String(ikan || '').replace(/_/g, ' ').split(' ').filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
+const fishRenameMap = {
+  poseidon: 'poseidon',
+  flying_dutchman: 'flying_dutchman',
+  aquaman: 'aquaman',
+  godzilla: 'godzilla',
+  zeus_laut: 'thunderfish',
+  atlas_laut: 'atlas',
+  kitsune_laut: 'rubah_laut',
+  leviathan_primordial: 'leviathan_primordial',
+  davy_jones: 'davy_jones',
+  caylpso: 'ikan_paradise',
+  worm_fish: 'worm_fish',
+  zombie_shark: 'zombie_shark',
+  skeleton_shark: 'skeleton_shark',
+  ariel_little_mermaid: 'putri_laut',
+  treasure_chest: 'peti_harta',
+  ancient_relic: 'artefak_laut',
+  pirate_gold: 'emas_pirate',
+  mermaid_tear: 'air_mata_putri',
+  kraken: 'kraken',
+  megladon: 'megalodon',
+  leviathan: 'leviathan',
+  sea_dragon: 'naga_laut',
+  phoenix_laut: 'ikan_phoenix',
+  hydra_laut: 'hydra',
+  cerberus_laut: 'cerberus',
+  titan_kura: 'kura_raksasa',
+  paus_putih: 'paus_putih',
+  ikan_dewa: 'dewa_laut',
+  naga_laut: 'naga_laut_biru',
+  raja_ubur: 'ubur_utama',
+  penjaga_karang: 'penjaga_karang',
+  putri_duyung: 'putri_duyung',
+  dewa_katak: 'katak_berkilau',
+  kuda_laut_kristal: 'kuda_kristal',
+  peti_karun: 'peti_karun',
+  koin_emas_kuno: 'koin_emas_kuno',
+  mutiara_raja: 'mutiara_raja',
+  mahkota_karang: 'mahkota_karang',
+  hiu_putih: 'hiu_putih',
+  hiu_harimau: 'hiu_macan',
+  hiu_martil: 'hiu_palu',
+  paus_orca: 'paus_orca',
+  paus_biru: 'paus_biru',
+  penyu_raksasa: 'penyu_raksasa',
+  ikan_pari_manta: 'pari_manta',
+  ikan_napoleon: 'napoleon',
+  kerapu_raksasa: 'kerapu_raksasa',
+  marlin: 'marlin',
+  tuna_sirip_biru: 'tuna_biru',
+  pedang_laut: 'pedang_laut',
+  ikan_koi_emas: 'koi_emas',
+  lobster_raja: 'lobster_raja',
+  kepiting_raksasa: 'kepiting_raksasa',
+  gurita_raksasa: 'gurita_raksasa',
+  sotong_raksasa: 'sotong_raksasa',
+  lionfish: 'lionfish',
+  ikan_badut: 'ikan_badut',
+  ikan_kupu: 'ikan_kupu',
+  ikan_malaikat: 'ikan_malaikat',
+  ikan_diskus: 'ikan_diskus',
+  ikan_arwana: 'ikan_arwana',
+  ikan_arapaima: 'ikan_arapaima',
+  piranha: 'piranha',
+  belut_listrik: 'belut_listrik',
+  ikan_duyung: 'ikan_duyung',
+  ubur_ubur_bulan: 'ubur_bulan',
+  bintang_laut: 'bintang_laut',
+  anemon_laut: 'anemon',
+  karang_indah: 'karang_indah',
+  kerang_mutia: 'kerang_mutia',
+  siput_laut: 'siput_laut',
+  landak_laut: 'landak_laut',
+  peti_besi: 'peti_besi',
+  koin_emas: 'koin_emas',
+  mutiara_hitam: 'mutiara_hitam',
+  trisula_patah: 'trisula_patah',
+  hiu_hitam: 'hiu_hitam',
+  hiu_biru: 'hiu_biru',
+  lumba_lumba: 'lumba_lumba',
+  paus_pembunuh: 'paus_pembunuh',
+  penyu_hijau: 'penyu_hijau',
+  ikan_pari: 'pari',
+  kerapu: 'kerapu',
+  tuna: 'tuna',
+  salmon: 'salmon',
+  barakuda: 'barakuda',
+  ikan_todak: 'ikan_todak',
+  ikan_terbang: 'ikan_terbang',
+  ubur_ubur: 'ubur_ubur',
+  ubur_ubur_listrik: 'ubur_listrik',
+  bintang_laut_ungu: 'bintang_ungu',
+  karang_keras: 'karang_keras',
+  kerang: 'kerang',
+  peti_kayu: 'peti_kayu',
+  koin_perak: 'koin_perak',
+  mutiara_biasa: 'mutiara_biasa',
+  karang_antik: 'karang_antik',
+  kaiju: 'kaiju',
+  kadita: 'kadita'
+}
+
+const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
+function safeEmoji(value, fallback = '❓') {
+  if (typeof value !== 'string') return fallback
+  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
+}
+
+function normalizeFishKey(name) {
+  const key = String(name || '').trim().toLowerCase().replace(/\s+/g, '_')
+  const normalized = fishRenameMap[key] || key
+  const keepIkanPrefix = new Set(['ikan_badut', 'ikan_kupu', 'ikan_malaikat', 'ikan_diskus', 'ikan_arwana', 'ikan_arapaima', 'ikan_todak', 'ikan_terbang', 'ikan_duyung', 'ikan_paradise'])
+  return keepIkanPrefix.has(normalized) ? normalized : normalized.replace(/^ikan_/, '')
+}
+
+function migrateLegacyFishInventory(ikanObj = {}) {
+  const migrated = {}
+  for (const key in ikanObj) {
+    const targetKey = normalizeFishKey(key)
+    migrated[targetKey] = (migrated[targetKey] || 0) + Number(ikanObj[key] || 0)
+  }
+  return migrated
 }
 
 const ikanEmoji = {
-  // SECRET
-  'poseidon': '🌊🔱', 'flying_dutchman': '👻⛵', 'aquaman': '🦸‍♂️🌊', 'godzilla': '🦖🌊',
-  'zeus_laut': '⚡🌊', 'atlas_laut': '🏔️🌊', 'kitsune_laut': '🦊🌊', 'leviathan_primordial': '🐉🌊',
-  'davy_jones': '🏴‍☠️🦑', 'caylpso': '🧜‍♀️🌊', 'ariel_little_mermaid': '🧜‍♀️❤️',
-  'treasure_chest': '💎📦', 'ancient_relic': '🏺✨', 'pirate_gold': '💰🏴‍☠️', 'mermaid_tear': '💧🧜‍♀️',
-  // MYTHIC
-  'kraken': '🦑🌊', 'megladon': '🦈👑', 'leviathan': '🐉🌊', 'sea_dragon': '🐲🌊',
-  'phoenix_laut': '🔥🦅', 'hydra_laut': '🐍🌊', 'cerberus_laut': '🐺🌊', 'titan_kura': '🐢🏔️',
-  'paus_putih': '🐋⚪', 'ikan_dewa': '🐟✨', 'naga_laut': '🐉🌊', 'raja_ubur': '🪼👑',
-  'penjaga_karang': '🪸🛡️', 'putri_duyung': '🧜‍♀️👑', 'dewa_katak': '🐸⚡', 'kuda_laut_kristal': '🐴💎',
-  'peti_karun': '💰', 'koin_emas_kuno': '🪙', 'mutiara_raja': '👑⚪', 'mahkota_karang': '👑🪸',
-  // LEGENDARY
-  'hiu_putih': '🦈⬜', 'hiu_harimau': '🦈🐅', 'hiu_martil': '🦈🔨', 'paus_orca': '🐋🖤',
-  'paus_biru': '🐋💙', 'penyu_raksasa': '🐢🏞️', 'ikan_pari_manta': '🛸🌊', 'ikan_napoleon': '🐟👨‍⚖️',
-  'kerapu_raksasa': '🐟🏰', 'marlin': '🐟🏹', 'tuna_sirip_biru': '🐟💙', 'pedang_laut': '⚔️🐟',
-  'ikan_koi_emas': '🐟👑', 'lobster_raja': '🦞👑', 'kepiting_raksasa': '🦀🏰', 'gurita_raksasa': '🐙🏢',
-  'sotong_raksasa': '🦑🏢', 'lionfish': '🐠🦁', 'ikan_badut': '🐠🤡', 'ikan_kupu': '🐠🦋',
-  'ikan_malaikat': '🐠😇', 'ikan_diskus': '🐠💿', 'ikan_arwana': '🐟💎', 'ikan_arapaima': '🐟🏞️',
-  'piranha': '🐟🩸', 'belut_listrik': '🐍⚡', 'ikan_duyung': '🧜‍♀️🐟', 'ubur_ubur_bulan': '🪼🌙',
-  'bintang_laut': '⭐🌊', 'anemon_laut': '🌸🌊', 'karang_indah': '🪸✨', 'kerang_mutia': '🦪💎',
-  'siput_laut': '🐌🌊', 'landak_laut': '🦔🌊',
-  'peti_besi': '📦', 'koin_emas': '🪙', 'mutiara_hitam': '⚫', 'trisula_patah': '🔱',
-  // EPIC
-  'hiu_hitam': '🦈⬛', 'hiu_biru': '🦈💙', 'lumba_lumba': '🐬🌊', 'paus_pembunuh': '🐋🔪',
-  'penyu_hijau': '🐢💚', 'ikan_pari': '🛸🌊', 'kerapu': '🐟🏠', 'tuna': '🐟🥫', 'salmon': '🐟🍣',
-  'barakuda': '🐟🗡️', 'ikan_todak': '🐟⚔️', 'ikan_terbang': '🐟✈️', 'ubur_ubur': '🪼🌊',
-  'ubur_ubur_listrik': '🪼⚡', 'bintang_laut_ungu': '⭐💜', 'karang_keras': '🪸🪨', 'kerang': '🦪🐚',
-  'peti_kayu': '🪵', 'koin_perak': '🪙', 'mutiara_biasa': '⚪', 'karang_antik': '🪸',
-  // RARE
-  'kakap': '🐟🎣', 'kerapu_kecil': '🐟🏡', 'sarden': '🐟🥫', 'makarel': '🐟', 'kembung': '🐟🥫',
-  'tongkol': '🐟🔨', 'cumi': '🦑🌊', 'gurita_kecil': '🐙', 'udang': '🦐🍤', 'kepiting': '🦀🍴',
-  'lobster': '🦞🍽️', 'kerang_hijau': '🦪💚', 'kerang_darah': '🦪🩸', 'siput': '🐌🐚',
-  'landak_laut_kecil': '🦔🌊', 'anemon': '🌸🌊', 'rumput_laut': '🌿🌊', 'karang': '🪸🪨',
-  'peti_karat': '📦', 'koin_tembaga': '🪙', 'mutiara_retak': '🦪', 'cangkir_pecah': '🏺',
-  // UNCOMMON
-  'ikan_mas': '🐟🧡', 'ikan_nila': '🐟💙', 'ikan_lele': '🐟🐈', 'ikan_patin': '🐟🐷',
-  'ikan_gurame': '🐟🍽️', 'ikan_mujair': '🐟😂', 'ikan_gabus': '🐟🔫', 'ikan_wader': '🐟🌾',
-  'ikan_seluang': '🐟⚡',
-  // COMMON
-  'ikan_teri': '🐟📏', 'ikan_pepetek': '🐟👀', 'ikan_layang': '🐟🪁', 'ikan_kembung_kecil': '🐟🥫',
-  'ikan_selar': '🐟🏃', 'ikan_tembang': '🐟🎵', 'ikan_julung': '🐟🪡',
-  // TRASH
-  'sampah_plastik': '🗑️♻️', 'ban_bekas': '🛞🗑️', 'botol_kaca': '🍾🗑️', 'kaleng': '🥫🗑️',
-  'kayu_hanyut': '🪵🌊', 'jaring_rusak': '🕸️💔', 'sepatu': '👟🗑️', 'botol': '🍶🗑️',
-  'kantong_plastik': '🛍️🗑️', 'duri': '🌵🗑️', 'batu': '🪨🌊', 'rumput': '🌱🌊', 'lumpur': '🟤🌊',
-  'daun': '🍃🌊', 'ranting': '🌿🌊', 'tali': '🪢🗑️', 'kawat': '🔩🗑️', 'pecahan_kaca': '💔🗑️',
-  'kaos_kaki': '🧦', 'mie_instan': '🍜', 'pakaian_dalam': '🩲'
+  ikan_aurora: '🌊',
+  ikan_kapal_hantu: '⚓',
+  ikan_pahlawan: '🛡️',
+  ikan_kaiju: '🐉',
+  ikan_petir: '⚡',
+  ikan_puncak: '🏔️',
+  ikan_rubah_laut: '🦊',
+  ikan_leviathan_primordial: '🐉',
+  ikan_kapten_hitam: '🦑',
+  ikan_laut_biru: '💧',
+  ikan_putri_laut: '🌊',
+  peti_harta: '💎',
+  artefak_laut: '🏺',
+  emas_pirate: '💰',
+  air_mata_putri: '💧',
+  ikan_kraken: '🦑',
+  ikan_megalodon: '🦈',
+  ikan_leviathan: '🐉',
+  ikan_leviathan_primordial: '🐉',
+  ikan_naga_laut: '🐲',
+  ikan_berapi: '🔥',
+  worm_fish: '🪱',
+  zombie_shark: '🦈',
+  skeleton_shark: '🦴',
+  ikan_hidra: '🐍',
+  ikan_cerberus: '🐺',
+  ikan_kura_raksasa: '🐢',
+  ikan_paus_putih: '🐋',
+  ikan_dewa_laut: '✨',
+  ikan_naga_laut_biru: '🐉',
+  ikan_ubur_utama: '👑',
+  ikan_penjaga_karang: '🪸',
+  ikan_putri_duyung: '💎',
+  ikan_katak_berkilau: '🐸',
+  ikan_kuda_kristal: '🐴',
+  peti_karun: '💰',
+  koin_emas_kuno: '🪙',
+  mutiara_raja: '👑',
+  mahkota_karang: '👑',
+  ikan_hiu_putih: '🦈',
+  ikan_hiu_macan: '🦈',
+  ikan_hiu_palu: '🦈',
+  ikan_paus_orca: '🐋',
+  ikan_paus_biru: '🐋',
+  ikan_penyu_raksasa: '🐢',
+  ikan_pari_manta: '🪼',
+  ikan_napoleon: '🐟',
+  ikan_kerapu_raksasa: '🐟',
+  ikan_marlin: '🐟',
+  ikan_tuna_biru: '🐟',
+  ikan_pedang_laut: '⚔️',
+  ikan_koi_emas: '🐟',
+  lobster_raja: '🦞',
+  kepiting_raksasa: '🦀',
+  gurita_raksasa: '🐙',
+  sotong_raksasa: '🦑',
+  ikan_lionfish: '🐠',
+  ikan_badut: '🐠',
+  ikan_kupu: '🐠',
+  ikan_malaikat: '🐠',
+  ikan_diskus: '🐠',
+  ikan_arwana: '🐟',
+  ikan_arapaima: '🐟',
+  ikan_piranha: '🐟',
+  ikan_belut_listrik: '🐍',
+  ikan_ubur_bulan: '🌙',
+  ikan_bintang_laut: '⭐',
+  ikan_anemon: '🌸',
+  karang_indah: '🪸',
+  kerang_mutia: '🐚',
+  ikan_siput_laut: '🐌',
+  ikan_landak_laut: '🦔',
+  peti_besi: '📦',
+  koin_emas: '🪙',
+  mutiara_hitam: '⚫',
+  trisula_patah: '🔱',
+  ikan_hiu_hitam: '🦈',
+  ikan_hiu_biru: '🦈',
+  ikan_lumba_lumba: '🐬',
+  ikan_paus_pembunuh: '🐋',
+  ikan_penyu_hijau: '🐢',
+  ikan_pari: '🪼',
+  ikan_kerapu: '🐟',
+  ikan_tuna: '🐟',
+  ikan_salmon: '🐟',
+  ikan_barakuda: '🐟',
+  ikan_todak: '🐟',
+  ikan_terbang: '🐟',
+  ikan_ubur: '🪼',
+  ikan_ubur_listrik: '⚡',
+  ikan_bintang_ungu: '⭐',
+  karang_keras: '🪸',
+  kerang: '🐚',
+  peti_kayu: '🪵',
+  koin_perak: '🪙',
+  mutiara_biasa: '⚪',
+  karang_antik: '🪸',
+  kakap: '🐟',
+  kerapu_kecil: '🐟',
+  sarden: '🐟',
+  makarel: '🐟',
+  kembung: '🐟',
+  tongkol: '🐟',
+  cumi: '🦑',
+  gurita_kecil: '🐙',
+  udang: '🦐',
+  kepiting: '🦀',
+  lobster: '🦞',
+  kerang_hijau: '🐚',
+  kerang_darah: '🐚',
+  siput: '🐌',
+  landak_laut_kecil: '🦔',
+  anemon: '🌸',
+  rumput_laut: '🌿',
+  karang: '🪸',
+  peti_karat: '📦',
+  koin_tembaga: '🪙',
+  mutiara_retak: '🐚',
+  cangkir_pecah: '🏺',
+  ikan_mas: '🐟',
+  ikan_nila: '🐟',
+  ikan_lele: '🐟',
+  ikan_patin: '🐟',
+  ikan_gurame: '🐟',
+  ikan_mujair: '🐟',
+  ikan_gabus: '🐟',
+  ikan_wader: '🐟',
+  ikan_seluang: '🐟',
+  ikan_teri: '🐟',
+  ikan_pepetek: '🐟',
+  ikan_layang: '🐟',
+  ikan_kembung_kecil: '🐟',
+  ikan_selar: '🐟',
+  ikan_tembang: '🐟',
+  ikan_julung: '🐟',
+  sampah_plastik: '🗑️',
+  ban_bekas: '🛞',
+  botol_kaca: '🍶',
+  kaleng: '🥫',
+  kayu_hanyut: '🪵',
+  jaring_rusak: '🕸️',
+  sepatu: '👟',
+  botol: '🍶',
+  kantong_plastik: '🛍️',
+  duri: '🌵',
+  batu: '🪨',
+  rumput: '🌿',
+  lumpur: '🟤',
+  daun: '🍃',
+  ranting: '🌿',
+  tali: '🪢',
+  kawat: '🔩',
+  pecahan_kaca: '💔',
+  kaos_kaki: '🧦',
+  mie_instan: '🍜',
+  pakaian_dalam: '🩲'
 }
 
-let secret = ['poseidon', 'flying_dutchman', 'aquaman', 'godzilla', 'zeus_laut', 'atlas_laut', 'kitsune_laut', 'leviathan_primordial', 'davy_jones', 'caylpso', 'ariel_little_mermaid', 'treasure_chest', 'ancient_relic', 'pirate_gold', 'mermaid_tear'];
-let mythic = ['kraken', 'megladon', 'leviathan', 'sea_dragon', 'phoenix_laut', 'hydra_laut', 'cerberus_laut', 'titan_kura', 'paus_putih', 'ikan_dewa', 'naga_laut', 'raja_ubur', 'penjaga_karang', 'putri_duyung', 'dewa_katak', 'kuda_laut_kristal', 'peti_karun', 'koin_emas_kuno', 'mutiara_raja', 'mahkota_karang'];
-let legendary = ['hiu_putih', 'hiu_harimau', 'hiu_martil', 'paus_orca', 'paus_biru', 'penyu_raksasa', 'ikan_pari_manta', 'ikan_napoleon', 'kerapu_raksasa', 'marlin', 'tuna_sirip_biru', 'pedang_laut', 'ikan_koi_emas', 'lobster_raja', 'kepiting_raksasa', 'gurita_raksasa', 'sotong_raksasa', 'lionfish', 'ikan_badut', 'ikan_kupu', 'ikan_malaikat', 'ikan_diskus', 'ikan_arwana', 'ikan_arapaima', 'piranha', 'belut_listrik', 'ikan_duyung', 'ubur_ubur_bulan', 'bintang_laut', 'anemon_laut', 'karang_indah', 'kerang_mutia', 'siput_laut', 'landak_laut', 'peti_besi', 'koin_emas', 'mutiara_hitam', 'trisula_patah'];
-let epic = ['hiu_hitam', 'hiu_biru', 'lumba_lumba', 'paus_pembunuh', 'penyu_hijau', 'ikan_pari', 'kerapu', 'tuna', 'salmon', 'barakuda', 'ikan_todak', 'ikan_terbang', 'ubur_ubur', 'ubur_ubur_listrik', 'bintang_laut_ungu', 'karang_keras', 'kerang', 'peti_kayu', 'koin_perak', 'mutiara_biasa', 'karang_antik'];
+let secret = ['ikan_aurora', 'ikan_kapal_hantu', 'ikan_pahlawan', 'ikan_kaiju', 'ikan_petir', 'ikan_puncak', 'ikan_rubah_laut', 'ikan_leviathan_primordial', 'ikan_kapten_hitam', 'ikan_laut_biru', 'ikan_putri_laut', 'peti_harta', 'artefak_laut', 'emas_pirate', 'air_mata_putri'];
+let mythic = ['ikan_kraken', 'ikan_megalodon', 'ikan_leviathan', 'ikan_naga_laut', 'ikan_berapi', 'ikan_hidra', 'ikan_cerberus', 'ikan_kura_raksasa', 'ikan_paus_putih', 'ikan_dewa_laut', 'ikan_naga_laut_biru', 'ikan_ubur_utama', 'ikan_penjaga_karang', 'ikan_putri_duyung', 'ikan_katak_berkilau', 'ikan_kuda_kristal', 'peti_karun', 'koin_emas_kuno', 'mutiara_raja', 'mahkota_karang'];
+let legendary = ['ikan_hiu_putih', 'ikan_hiu_macan', 'ikan_hiu_palu', 'ikan_paus_orca', 'ikan_paus_biru', 'ikan_penyu_raksasa', 'ikan_pari_manta', 'ikan_napoleon', 'ikan_kerapu_raksasa', 'ikan_marlin', 'ikan_tuna_biru', 'ikan_pedang_laut', 'ikan_koi_emas', 'lobster_raja', 'kepiting_raksasa', 'gurita_raksasa', 'sotong_raksasa', 'ikan_lionfish', 'ikan_badut', 'ikan_kupu', 'ikan_malaikat', 'ikan_diskus', 'ikan_arwana', 'ikan_arapaima', 'ikan_piranha', 'ikan_belut_listrik', 'ikan_putri_laut', 'ikan_ubur_bulan', 'ikan_bintang_laut', 'ikan_anemon', 'karang_indah', 'kerang_mutia', 'ikan_siput_laut', 'ikan_landak_laut', 'peti_besi', 'koin_emas', 'mutiara_hitam', 'trisula_patah', 'worm_fish', 'zombie_shark', 'skeleton_shark'];
+let epic = ['ikan_hiu_hitam', 'ikan_hiu_biru', 'ikan_lumba_lumba', 'ikan_paus_pembunuh', 'ikan_penyu_hijau', 'ikan_pari', 'ikan_kerapu', 'ikan_tuna', 'ikan_salmon', 'ikan_barakuda', 'ikan_todak', 'ikan_terbang', 'ikan_ubur', 'ikan_ubur_listrik', 'ikan_bintang_ungu', 'karang_keras', 'kerang', 'peti_kayu', 'koin_perak', 'mutiara_biasa', 'karang_antik'];
 let rare = ['kakap', 'kerapu_kecil', 'sarden', 'makarel', 'kembung', 'tongkol', 'cumi', 'gurita_kecil', 'udang', 'kepiting', 'lobster', 'kerang_hijau', 'kerang_darah', 'siput', 'landak_laut_kecil', 'anemon', 'rumput_laut', 'karang', 'peti_karat', 'koin_tembaga', 'mutiara_retak', 'cangkir_pecah'];
 let uncommon = ['ikan_mas', 'ikan_nila', 'ikan_lele', 'ikan_patin', 'ikan_gurame', 'ikan_mujair', 'ikan_gabus', 'ikan_wader', 'ikan_seluang'];
 let common = ['ikan_teri', 'ikan_pepetek', 'ikan_layang', 'ikan_kembung_kecil', 'ikan_selar', 'ikan_tembang', 'ikan_julung'];
@@ -70,11 +303,12 @@ let handler = async (m, { conn }) => {
   if (!user) return m.reply('Ketik #adventure dulu.')
   if (!user.ikan) user.ikan = {}
 
-  // MIGRASI DATA LAMA spasi -> _
-  for(let ikanLama in user.ikan){
-    if(ikanLama.includes(' ')){
-      let ikanBaru = ikanLama.replace(/ /g, '_')
-      user.ikan[ikanBaru] = (user.ikan[ikanBaru] || 0) + user.ikan[ikanLama]
+  user.ikan = migrateLegacyFishInventory(user.ikan)
+
+  for (const ikanLama in user.ikan) {
+    if (ikanLama.includes(' ')) {
+      const ikanBaru = ikanLama.replace(/ /g, '_')
+      user.ikan[ikanBaru] = (user.ikan[ikanBaru] || 0) + (user.ikan[ikanLama] || 0)
       delete user.ikan[ikanLama]
     }
   }
@@ -88,7 +322,6 @@ let handler = async (m, { conn }) => {
   let rodLvl = user.fishingrod || 0
   let bonus = Math.min(rodLvl * 2, 40)
 
-  // Probabilitas realistis terdistribusi sesuai level pancingan
   let pSecret = rodLvl >= 15 ? Math.min(0.2 + (rodLvl - 15) * 0.15, 2.5) : 0
   let pMythic = rodLvl >= 8 ? Math.min(0.8 + (rodLvl - 8) * 0.35, 6.0) : (rodLvl >= 3 ? 0.3 : 0)
   let pLegend = Math.min(2.0 + (rodLvl * 0.8), 15.0)
@@ -168,14 +401,24 @@ let handler = async (m, { conn }) => {
     TRASH:     {stars: '☆☆☆☆☆☆☆', emoji: '🗑️'}
   }
 
-  let caption = `*───「 🎣 FISHING RESULT 」───*\n\n`
-  caption += `*Tier* : ${tierData[tier].stars} ${tier} ${tierData[tier].emoji}\n\n`
-  caption += `🏆 *Hasil Tangkapan*\n`
-  caption += `🪝 ${ikanEmoji[ikan] || '🐟'} ${formatNama(ikan)}\n\n`
-  caption += `✨ *XP Didapat* : +${exp}\n`
-  caption += `🎣 *Level Pancingan* : ${rodLvl}\n`
-  if(bonus > 0) caption += `🍀 *Bonus Rod* : +${bonus.toFixed(1)}%\n`
-  caption += `\n────────────────`
+  let caption = `╭─❏「 🎣 FISHING RESULT 」❏\n`
+caption += `│ 🐟 *HASIL MEMANCING*\n`
+caption += `╰─━━━━━━━━━━━━━━─\n\n`
+
+caption += `⭐ *TIER TANGKAPAN*\n`
+caption += `> ↳ ${tierData[tier].stars} ${tier} ${tierData[tier].emoji}\n\n`
+
+caption += `🏆 *HASIL TANGKAPAN*\n`
+caption += `> ↳ ${formatNama(ikan)} ${ikanEmoji[ikan] || '🐟'} ×1\n\n`
+
+caption += `─━━━━━━━━━━━━━━─\n\n`
+
+caption += `✨ *HASIL PENGALAMAN*\n`
+caption += `> ↳ ✨ XP Didapat: +${exp}\n`
+caption += `> ↳ 🎣 Level Pancingan: Lv.${rodLvl}\n`
+if(bonus > 0) caption += `> ↳ 🍀 Bonus Rod: +${bonus.toFixed(1)}%\n`
+
+caption += `\n─━━━━━━━━━━━━━━─`
 
   let username = conn.getName(m.sender) || m.pushName || 'Player'
   try {

@@ -8,6 +8,7 @@ const resepEmoji = {
   'roti_tawar': '🍞','mie_goreng': '🍜','sate_ikan': '🍢','salad_buah': '🥗','sup_ikan': '🍲','taco_ikan': '🌮',
   'udang_goreng': '🍤','jus_durian': '🥛','cumi_goreng': '🦑','wine': '🍷','kepiting_rebus': '🦀','sushi': '🍣',
   'sashimi': '🍣','lobster_bakar': '🦞','tuna_panggang': '🐟','salmon_asap': '🐟','steak_hiu': '🦈','pari_bakar': '🛸',
+  'telur_dadar': '🍳','telur_bebek_asin': '🥚','susu_madu': '🥛','daging_kelinci_bakar': '🍖','daging_babi_panggang': '🍖','sup_susu_sapi': '🍲','minyak_sawit': '🫗',
   'penyu_panggang': '🐢','steak_emas': '🥩','diamond_cake': '🎂','sop_kraken': '🦑','sate_megalodon': '🦈',
   'sup_leviathan': '🐉','sea_dragon_grill': '🐲','hydra_stew': '🐍','kura_titan_soup': '🐢','paus_putih_steak': '🐋',
   'naga_laut_bakar': '🐉','raja_ubur_jelly': '🪼','steak_godzilla': '🦖'
@@ -54,26 +55,29 @@ let handler = async (m, { conn, usedPrefix }) => {
   }
 
   if(totalJenis === 0)
-    return m.reply('┌───❏「 🧊 KULKAS KOSONG 」❏\n│\n│ _Perut keroncongan... Masak dulu yuk!_\n│\n│ 💡 Masak: *.masak [nama]*\n└───────────────────')
+    return m.reply(`╭─❏「 🧊 KULKAS KOSONG 」❏\n│ _Perut keroncongan... Masak dulu yuk!_\n│ 💡 Masak: *${usedPrefix}masak [nama]*\n╰─━━━━━━━━━━━━━━─`)
 
   // URUTIN DARI PALING BANYAK
   listMasakan.sort((a,b) => b.jml - a.jml)
 
-  let cap = `┌───❏「 🧊 KULKAS PRIBADI 」❏\n`
+    let cap = `╭─❏「 🧊 KULKAS PRIBADI 」❏\n`
   cap += `│ 👤 Owner : ${m.pushName}\n`
   cap += `│ 📦 Total : ${totalItem.toLocaleString()} Porsi\n`
   cap += `│ 🧬 Jenis : ${totalJenis} Macam\n`
-  cap += `└───────────────────\n\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  cap += `┌───❏「 🍽️ STOK MAKANAN 」❏\n`
+  cap += `🍽️ *STOK MAKANAN*\n`
+  cap += `> ↳ Daftar masakan yang siap dimakan atau dibagikan.\n`
+
   listMasakan.forEach((v, i) => {
-    cap += `│ ${i+1}. ${v.emoji} ${formatNama(v.nama).padEnd(18)} x${v.jml.toLocaleString()}\n`
+    cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
   })
-  cap += `└───────────────────\n\n`
 
-  cap += `😋 *Makan:* ${usedPrefix}makan sushi\n`
-  cap += `💞 *Traktir:* ${usedPrefix}makan sushi @tag\n`
-  cap += `🍳 *Masak Lagi:* ${usedPrefix}masak [nama]`
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `📌 *AKTIVITAS*\n`
+  cap += `> 😋 Makan: *${usedPrefix}makan sushi*\n`
+  cap += `> 💞 Traktir: *${usedPrefix}makan sushi @tag*\n`
+  cap += `> 🍳 Masak Lagi: *${usedPrefix}masak [nama]*`
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
 }

@@ -4,7 +4,13 @@ function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-const oreEmoji = {
+const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
+function safeEmoji(value, fallback = '❓') {
+  if (typeof value !== 'string') return fallback
+  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
+}
+
+export const oreEmoji = {
   'stone': '🪨', 'sand_stone': '🏜️', 'copper': '🟠', 'iron': '⛓️', 'tin': '📎', 'silver': '⚪',
   'gold': '✨', 'mushroomite': '🍄', 'platinum': '💿', 'bananite': '🍌', 'cardboardite': '📦',
   'poopite': '💩', 'fillium': '🧪', 'cobalt': '🔵', 'titanium': '⚙️', 'obsidian': '🖤',
@@ -15,6 +21,12 @@ const oreEmoji = {
   'galaxy': '🌠', 'tungsten': '🔩', 'sulfur': '💛', 'pumice': '🫧', 'cuprite': '🔺',
   'massacerit': '🩸', 'ethereal_light': '👼'
 }
+
+export const miningOreKeys = Object.keys(oreEmoji)
+
+Object.keys(oreEmoji).forEach((key) => {
+  oreEmoji[key] = safeEmoji(oreEmoji[key])
+})
 
 let secret = ['ethereal_light'];
 let mythic = ['arcane_crystal', 'voidar', 'galaxy', 'tungsten', 'massacerit'];
@@ -61,7 +73,7 @@ let handler = async (m, { conn }) => {
   let cooldown = 120000 // 2 menit
   if (Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
-    return m.reply(`┌───❏「 ⛏️ MINING 」❏\n│\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n└───────────────────`)
+    return m.reply(`╭─❏「 ⛏️ MINING 」❏\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n╰─━━━━━━━━━━━━━━─`)
   }
 
   let pickLvl = user.pickaxe || 0
@@ -111,24 +123,36 @@ let handler = async (m, { conn }) => {
   }
 
 
-  let caption = `┌───❏「 ⛏️ MINING RESULT 」❏\n`
-  caption += `│ ◈ Tier Tertinggi : ${tierData[tierTertinggi].stars} ${tierTertinggi} ${tierData[tierTertinggi].emoji}\n`
-  caption += `│ 🏆 Hasil : ${jumlahJenisDrop} jenis | Total x${totalOreDidapat} ore\n`
-  caption += `└───────────────────\n\n`
+  let caption = `╭─❏「 ⛏️ MINING RESULT 」❏\n`
+caption += `│ ⛏️ *HASIL TAMBANG*\n`
+caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  let nomor = 1
-  for(let ore in hasilTambang){
-    caption += `│ ${nomor++}. ${oreEmoji[ore] || '🪨'} ${formatNama(ore)} x${hasilTambang[ore].toLocaleString()}\n`
-  }
+caption += `⭐ *TIER TERTINGGI*\n`
+caption += `> ↳ ${tierTertinggi}\n`
+caption += `> ↳ ${tierData[tierTertinggi].stars} ${tierData[tierTertinggi].emoji}\n\n`
 
-  caption += `\n│ ✨ Total XP : +${totalExp.toLocaleString()}\n`
-  caption += `│ 💰 +Rp ${uangDidapat.toLocaleString()}\n`
-  caption += `│ ◆ Level Pickaxe : ${pickLvl}\n`
-  if(bonus > 0) caption += `│ ◆ Bonus Pick : +${bonus.toFixed(1)}%\n`
-  if(pickLvl < 25) caption += `│ ◆ Secret : Buka di Pick Lvl 25\n`
-  caption += `└───────────────────`
+caption += `🏆 *RINGKASAN HASIL*\n`
+caption += `> ↳ ${jumlahJenisDrop} jenis\n`
+caption += `> ↳ Total: x${totalOreDidapat} ore\n\n`
 
-  return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i140/srjE7x6')
+let nomor = 1
+for(let ore in hasilTambang){
+  caption += `*${nomor++}. ${formatNama(ore)} ${oreEmoji[ore] || '📦'}*\n`
+  caption += `> ↳ Jumlah: x${hasilTambang[ore].toLocaleString()}\n\n`
+}
+
+caption += `─━━━━━━━━━━━━━━─\n\n`
+
+caption += `✨ *HASIL PENGALAMAN*\n`
+caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
+caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
+caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
+if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
+if(pickLvl < 25) caption += `> ↳ 🔮 Secret: Buka di Pick Lvl 25\n`
+
+caption += `\n─━━━━━━━━━━━━━━─`
+
+return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i140/srjE7x6')
 }
 
 handler.help = ['mining', 'tambang']

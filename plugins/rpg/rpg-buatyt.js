@@ -8,7 +8,7 @@ let handler = async (m, { text }) => {
   let userYT = wdb.users[m.sender]
 
   if (userYT.youtube) return m.reply(`KESALAHAN: Kamu sudah memiliki channel: ${userYT.youtube.name}`)
-  if (!text) return m.reply(`*───「 BUAT CHANNEL 」───*\n\nSilakan masukkan nama channel kamu!\nContoh: .buatyt Windah KW`)
+  if (!text) return m.reply(`╭─❏「 📺 BUAT CHANNEL 」❏\n├ Masukkan nama channel kamu.\n├ Contoh : .buatyt Windah KW\n╰─━━━━━━━━━━━━━━─`)
 
   userYT.youtube = {
     name: text,
@@ -22,9 +22,10 @@ let handler = async (m, { text }) => {
 
   saveDB(wdb)
   
-  let teks = `*「 CHANNEL CREATED 」*\n\n`
-  teks += `Selamat! Channel ${text} resmi dibuka.\n`
-  teks += `Gunakan command *.liveyt judul* untuk mulai.`
+  let teks = `╭─❏「 📺 CHANNEL CREATED 」❏\n`
+  teks += `├[ Channel ] ${text}\n`
+  teks += `├ Gunakan *.liveyt judul* untuk mulai.\n`
+  teks += `╰─━━━━━━━━━━━━━━─`
   
   m.reply(teks)
 }

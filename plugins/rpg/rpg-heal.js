@@ -36,17 +36,20 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   user.darah = maxHP
   saveDB(wdb)
 
-  let cap = `*───「 HEAL SUCCESS 」───*\n\n`
-  cap += `🏥 *Status Kesehatan:* Pulih Total!\n`
-  cap += `❤️ *HP Sekarang:* ${user.darah} / ${maxHP}\n`
-  cap += `💰 *Biaya Awal:* Rp ${biaya.toLocaleString()}\n`
-  cap += `🛡️ *Asuransi:* ${(asuransi*100).toFixed(0)}%\n`
-  cap += `💸 *Yang Dibayar:* Rp ${biayaBayar.toLocaleString()}\n\n`
-  cap += `_Sekarang kamu siap untuk masuk ke Dungeon lagi!_`
+  let cap = `╭─❏「 🏥 HEAL SUCCESS 」❏\n`
+cap += `│ ❤️ Status: *Pulih Total*\n`
+cap += `│ ❤️ HP: ${user.darah}/${maxHP}\n`
+cap += `│ 💰 Biaya Awal: Rp ${biaya.toLocaleString()}\n`
+cap += `│ 🛡️ Asuransi: ${(asuransi * 100).toFixed(0)}%\n`
+cap += `│ 💸 Yang Dibayar: Rp ${biayaBayar.toLocaleString()}\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+cap += `📌 *STATUS*\n`
+cap += `> ↳ Sekarang kamu siap masuk ke Dungeon lagi!`
 
-  let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
+let pp = await conn.profilePictureUrl(m.sender, 'image')
+  .catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
 
-  return sendRpgMsg(conn, m, cap, pp)
+return sendRpgMsg(conn, m, cap, pp)
 }
 
 handler.help = ['heal']

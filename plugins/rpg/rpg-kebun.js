@@ -4,6 +4,12 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
+const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
+function safeEmoji(value, fallback = '❓') {
+  if (typeof value !== 'string') return fallback
+  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
+}
+
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
@@ -52,8 +58,13 @@ let handler = async (m, { conn, usedPrefix }) => {
     'uang': { emoji: '💵' },
     'koin': { emoji: '🪙' },
     'emas': { emoji: '⚜️' },
-    'berlian': { emoji: '💠' } // TAMBAH BERLIAN HASIL PANEN
+    'berlian': { emoji: '💠' },
+    'sawit': { emoji: '🌴' }
   }
+
+  Object.keys(bibit).forEach((key) => {
+    bibit[key].emoji = safeEmoji(bibit[key].emoji)
+  })
 
   let hasilKebun = {}
   let total = 0
@@ -64,27 +75,48 @@ let handler = async (m, { conn, usedPrefix }) => {
     }
   }
 
-  if(total === 0) return m.reply(`*🌾 GUDANG KEBUN KOSONG*\n\nTanam dulu pake *${usedPrefix}tanam [bibit]*\nPanen pake *${usedPrefix}panen*`)
-
-  let cap = `┌───❏「 🌾 GUDANG KEBUN 」❏\n`
-  cap += `│ Total Item : ${total.toLocaleString()}\n`
-  cap += `└───────────────────\n\n`
-
-  Object.entries(hasilKebun)
- .sort((a,b) => b[1] - a[1]) // urut dari yg paling banyak
- .forEach(([nama, jumlah]) => {
-      cap += `│ ${bibit[nama].emoji} ${formatNama(nama).padEnd(15)} x${jumlah.toLocaleString()}\n`
-    })
-
-  cap += `\n💰 *JUAL:* ${usedPrefix}tokopanen jual all`
-  cap += `\n🌱 *TANAM:* ${usedPrefix}tanam [bibit]`
-  cap += `\n🏡 *STATUS:* ${usedPrefix}panen`
-
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  if (total === 0) { 
+  return m.reply( 
+    `╭─❏「 🌾 GUDANG KEBUN KOSONG 」❏\n` + 
+    `│ Belum ada hasil panen yang tersimpan.\n` + 
+    `│ ↳ Tanam: *${usedPrefix}tanam [bibit]*\n` + 
+    `│ ↳ Panen: *${usedPrefix}panen*\n` + 
+    `╰─━━━━━━━━━━━━━━─` 
+  ) 
+} 
+ 
+let cap = `╭─❏「 🌾 GUDANG KEBUN 」❏\n` 
+cap += `│ 📦 Total Item: ${total.toLocaleString()}\n` 
+cap += `╰─━━━━━━━━━━━━━━─\n\n` 
+ 
+cap += `🌾 *HASIL PANEN*\n` 
+cap += `> ↳ Daftar hasil panen yang tersimpan di kebun.\n` 
+ 
+Object.entries(hasilKebun) 
+  .sort((a, b) => b[1] - a[1]) 
+  .forEach(([nama, jumlah]) => { 
+    cap += `> ${formatNama(nama)} ${bibit[nama].emoji} x${jumlah.toLocaleString()}\n` 
+  }) 
+ 
+cap += `\n─━━━━━━━━━━━━━━─\n` 
+cap += `📌 *AKTIVITAS*\n` 
+cap += `> 💰 Jual: *${usedPrefix}koperasi jual all*\n` 
+cap += `> 🌱 Tanam: *${usedPrefix}tanam [bibit]*\n` 
+cap += `> 🏡 Status: *${usedPrefix}panen*` 
+ 
+cap += `\n─━━━━━━━━━━━━━━─` 
+ 
+return sendRpgMsg( 
+  conn, 
+  m, 
+  cap, 
+  'https://c.termai.cc/i108/l3q'
+)
 }
 
 handler.help = ['kebun', 'hasilpanen']
 handler.tags = ['rpg']
 handler.command = /^(kebun|hasilpanen)$/i
 handler.group = true
+
 export default handler

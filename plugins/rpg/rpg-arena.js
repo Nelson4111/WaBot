@@ -1,272 +1,243 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
-function getTitleJambak(menang) {
-  if(menang >= 100) return '👑 Legenda Jambak'
-  if(menang >= 50) return '💎 Dewi Jambak'
-  if(menang >= 10) return '💅 Ratu Jambak'
-  if(menang >= 1) return '✨ Penantang Baru'
-  return '🌸 Pemula'
+const MODES = {
+  jambak: { nama: 'Jambak', emoji: '💇', verb: 'dijambak' },
+  panco: { nama: 'Panco', emoji: '💪', verb: 'diajak panco' },
+  dance: { nama: 'Dance Battle', emoji: '💃', verb: 'dance battle' },
+  tampar: { nama: 'Tampar', emoji: '🖐️', verb: 'ditampar' },
+  tinju: { nama: 'Tinju', emoji: '🥊', verb: 'tinju' }
 }
 
-function getTitlePanco(menang) {
-  if(menang >= 100) return '👑 Legenda Panco'
-  if(menang >= 50) return '⚡ Dewa Panco'
-  if(menang >= 10) return '💪 Raja Panco'
-  if(menang >= 1) return '✨ Penantang Baru'
-  return '🥊 Pemula'
+const OLD_KEYS = {
+  jambak: ['jambakMenang', 'jambakKalah'],
+  panco: ['pancoMenang', 'pancoKalah']
 }
 
-function getPenantang(m, args, conn) {
-  let tagDariArgs = args.find(v => v.includes('@'))
-  if (tagDariArgs) {
-    return conn.decodeJid(tagDariArgs.replace(/[^0-9]/g, '') + '@s.whatsapp.net')
-  }
-  let penantang = m.mentionedJid[0] || m.quoted?.sender
-  if (penantang) return conn.decodeJid(penantang)
-  return penantang
+function getArenaTitle(wins, mode) {
+  const nama = MODES[mode]?.nama || 'Arena'
+  if (wins >= 1000) return `👑 Legenda ${nama}`
+  if (wins >= 700) return `💎 Master ${nama}`
+  if (wins >= 500) return `🏆 Veteran ${nama}`
+  if (wins >= 400) return `🌟 Juara ${nama}`
+  if (wins >= 250) return `⭐ Bintang ${nama}`
+  if (wins >= 200) return `🎯 Spesialis ${nama}`
+  if (wins >= 100) return `⚔️ Ahli ${nama}`
+  if (wins >= 50) return `🔥 Jagoan ${nama}`
+  if (wins >= 10) return `✨ Pemula ${nama}`
+  return `🌱 Pendatang ${nama}`
 }
 
-// fungsi auto fix stats biar ga undefined
 function initStats(user) {
-  user.stats = user.stats || { jambakMenang: 0, jambakKalah: 0, pancoMenang: 0, pancoKalah: 0 }
+  user.stats = user.stats || {}
+  user.arenaStats = user.arenaStats || {}
+
+  for (const mode of Object.keys(MODES)) {
+    const [oldWin, oldLose] = OLD_KEYS[mode] || []
+    const current = user.arenaStats[mode] || {}
+    user.arenaStats[mode] = {
+      menang: Number(current.menang ?? (oldWin ? user.stats[oldWin] : 0)) || 0,
+      kalah: Number(current.kalah ?? (oldLose ? user.stats[oldLose] : 0)) || 0
+    }
+  }
+
+  return user.arenaStats
+}
+
+function totalWins(stats) {
+  return Object.values(stats).reduce((total, value) => total + Number(value.menang || 0), 0)
+}
+
+function getMode(command, args) {
+  if (MODES[command]) return command
+  const mode = args[0]?.toLowerCase()
+  return MODES[mode] ? mode : null
+}
+
+function getTarget(m, conn) {
+  const target = m.mentionedJid?.[0] || m.quoted?.sender
+  return target ? conn.decodeJid(target) : null
+}
+
+function getTaggedTarget(args, conn) {
+  const raw = args.find(value => value.includes('@'))
+  if (!raw) return null
+  const number = raw.replace(/[^0-9]/g, '')
+  return number ? conn.decodeJid(`${number}@s.whatsapp.net`) : null
+}
+
+function formatRecord(stats, mode) {
+  const value = stats[mode]
+  return `${getArenaTitle(value.menang, mode)}\n> ↳ ${value.menang} menang - ${value.kalah} kalah`
+}
+
+function getPower(user, stats) {
+  return Math.max(
+    1,
+    (Number(user.level) || 1) * 10 +
+    Math.floor((Number(user.exp) || 0) / 500) +
+    stats.menang * 3 -
+    stats.kalah +
+    Math.floor(Math.random() * 200)
+  )
+}
+
+function removeChallenge(id) {
+  if (global.arena?.[id]) delete global.arena[id]
 }
 
 let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   const wdb = loadDB()
   global.arena = global.arena || {}
+  wdb.money = wdb.money || {}
 
-  let senderJid = conn.decodeJid(m.sender)
-  let data = getUserRPG(wdb, senderJid)
-  let user = data.rpg
+  const sender = conn.decodeJid(m.sender)
+  const data = getUserRPG(wdb, sender)
+  const user = data?.rpg || data
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
-  initStats(user) // auto fix
+  const stats = initStats(user)
 
-  // Dukungan sub-command: .jambak terima / .jambak tolak / .panco terima / .panco tolak
-  let sub = args[0]?.toLowerCase()
-  if (command === 'jambak' && sub === 'terima') command = 'jambakterima'
-  if (command === 'jambak' && (sub === 'tolak' || sub === 'batal')) command = 'jambaktolak'
-  if (command === 'panco' && sub === 'terima') command = 'pancoterima'
-  if (command === 'panco' && (sub === 'tolak' || sub === 'batal')) command = 'pancotolak'
+  const action = command === 'arena' ? args[0]?.toLowerCase() : null
+  const modeKey = getMode(command, args)
+  const mode = modeKey ? MODES[modeKey] : null
+  const subAction = command === 'arena' ? args[1]?.toLowerCase() : args[0]?.toLowerCase()
 
-  // 1. JAMBAK - BUAT NANTANG
-  if (command === 'jambak') {
-    let targetRaw = m.mentionedJid?.[0] || m.quoted?.sender
-    if(!targetRaw) return m.reply(`❌ Tag orang yang mau kamu jambak!\nContoh: *${usedPrefix}jambak @tag 50000*`)
-    let target = conn.decodeJid(targetRaw)
-    if(target === senderJid) return m.reply('❌ Ga bisa jambak diri sendiri lah 😭')
-
-    let dataTarget = getUserRPG(wdb, target)
-    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa ditantang!')
-    let userTarget = dataTarget.rpg
-    if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
-    initStats(userTarget) // auto fix target
-
-    let uangUser = wdb.money[senderJid] || 0
-    let uangTarget = wdb.money[target] || 0
-    let taruhanInput = parseInt(args[1])
-    let taruhanDefault = Math.floor(Math.min(uangUser, uangTarget) * 0.1)
-    if(taruhanDefault < 1000) taruhanDefault = 1000
-    let taruhan = taruhanInput? taruhanInput : taruhanDefault
-
-    if(taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1000')
-    if(uangUser < taruhan) return m.reply(`❌ Uang kamu kurang! Punya Rp ${uangUser.toLocaleString()}`)
-    if(uangTarget < taruhan) return m.reply(`❌ Uang target kurang! Punya Rp ${uangTarget.toLocaleString()}`)
-
-    let arenaId = `jambak_${Date.now()}_${senderJid}`
-
-    let cap = `┌───❏「 💇 ARENA JAMBAK 」❏\n│\n`
-    cap += `│ 👤 *PENANTANG*\n│ @${senderJid.split('@')[0]}\n│ ${getTitleJambak(user.stats.jambakMenang)}\n│ Lv.${user.level} | W-L : ${user.stats.jambakMenang}W - ${user.stats.jambakKalah}L\n`
-    cap += `│\n│ ⚔️ *VS*\n│\n`
-    cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitleJambak(userTarget.stats.jambakMenang)}\n│ Lv.${userTarget.level} | W-L : ${userTarget.stats.jambakMenang}W - ${userTarget.stats.jambakKalah}L\n`
-    cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ 📌 *Ketik Perintah untuk Merespons:*\n`
-    cap += `│ • Terima: *${usedPrefix}jambakterima @${senderJid.split('@')[0]}*\n`
-    cap += `│ • Tolak: *${usedPrefix}jambaktolak @${senderJid.split('@')[0]}*\n`
-    cap += `│ ⏰ Batas waktu: 2 menit\n`
-    cap += `└───────────────────`
-
-    global.arena[arenaId] = { type: 'jambak', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
-    
-    // Auto hapus setelah 2 menit
-    setTimeout(() => {
-        if (global.arena[arenaId]) {
-            delete global.arena[arenaId]
-            conn.sendMessage(m.chat, { text: `❌ Tantangan Jambak dari @${senderJid.split('@')[0]} kepada @${target.split('@')[0]} telah kedaluwarsa.`, mentions: [senderJid, target] }).catch(() => {})
-        }
-    }, 120000)
-
-    return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
+  if (command === 'arena' && (!action || ['menu', 'help'].includes(action))) {
+    let cap = `╭─❏「 ⚔️ ARENA AVELIA 」❏\n│ Pilih salah satu mode battle.\n╰─━━━━━━━━━━━━━━─\n\n`
+    cap += Object.entries(MODES).map(([key, value]) => `> *${usedPrefix}${key} @tag [taruhan]* ${value.emoji}`).join('\n')
+    cap += `\n\n> *${usedPrefix}arena stats* - Statistik arena\n> *${usedPrefix}arena top [halaman]* - Leaderboard`
+    return m.reply(cap)
   }
 
-  // 2. PANCO - BUAT NANTANG
-  if (command === 'panco') {
-    let targetRaw = m.mentionedJid?.[0] || m.quoted?.sender
-    if(!targetRaw) return m.reply(`❌ Tag orang yang mau diajak panco!\nContoh: *${usedPrefix}panco @tag 50000*`)
-    let target = conn.decodeJid(targetRaw)
-    if(target === senderJid) return m.reply('❌ Ga bisa panco diri sendiri lah 😭')
-
-    let dataTarget = getUserRPG(wdb, target)
-    if(dataTarget.isDummy) return m.reply('❌ Target belum pernah mendaftar/chat dengan bot. Tidak bisa ditantang!')
-    let userTarget = dataTarget.rpg
-    if(!userTarget) return m.reply('❌ Target belum memiliki data RPG.')
-    initStats(userTarget) // auto fix target
-
-    let uangUser = wdb.money[senderJid] || 0
-    let uangTarget = wdb.money[target] || 0
-    let taruhanInput = parseInt(args[1])
-    let taruhanDefault = Math.floor(Math.min(uangUser, uangTarget) * 0.1)
-    if(taruhanDefault < 1000) taruhanDefault = 1000
-    let taruhan = taruhanInput? taruhanInput : taruhanDefault
-
-    if(taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1000')
-    if(uangUser < taruhan) return m.reply(`❌ Uang kamu kurang! Punya Rp ${uangUser.toLocaleString()}`)
-    if(uangTarget < taruhan) return m.reply(`❌ Uang target kurang! Punya Rp ${uangTarget.toLocaleString()}`)
-
-    let arenaId = `panco_${Date.now()}_${senderJid}`
-
-    let cap = `┌───❏「 💪 ARENA PANCO 」❏\n│\n`
-    cap += `│ 👤 *PENANTANG*\n│ @${senderJid.split('@')[0]}\n│ ${getTitlePanco(user.stats.pancoMenang)}\n│ Lv.${user.level} | ✨ ${user.exp}\n│ W-L : ${user.stats.pancoMenang}W - ${user.stats.pancoKalah}L\n`
-    cap += `│\n│ ⚔️ *VS*\n│\n`
-    cap += `│ 👤 *LAWAN*\n│ @${target.split('@')[0]}\n│ ${getTitlePanco(userTarget.stats.pancoMenang)}\n│ Lv.${userTarget.level} | ✨ ${userTarget.exp}\n│ W-L : ${userTarget.stats.pancoMenang}W - ${userTarget.stats.pancoKalah}L\n`
-    cap += `│\n│ 💰 Taruhan : Rp ${taruhan.toLocaleString()}\n`
-    cap += `│\n│ 📌 *Ketik Perintah untuk Merespons:*\n`
-    cap += `│ • Terima: *${usedPrefix}pancoterima @${senderJid.split('@')[0]}*\n`
-    cap += `│ • Tolak: *${usedPrefix}pancotolak @${senderJid.split('@')[0]}*\n`
-    cap += `│ ⏰ Batas waktu: 2 menit\n`
-    cap += `└───────────────────`
-
-    global.arena[arenaId] = { type: 'panco', chat: m.chat, penantang: senderJid, target: target, taruhan: taruhan, waktu: Date.now() }
-    
-    // Auto hapus setelah 2 menit
-    setTimeout(() => {
-        if (global.arena[arenaId]) {
-            delete global.arena[arenaId]
-            conn.sendMessage(m.chat, { text: `❌ Tantangan Panco dari @${senderJid.split('@')[0]} kepada @${target.split('@')[0]} telah kedaluwarsa.`, mentions: [senderJid, target] }).catch(() => {})
-        }
-    }, 120000)
-
-    return conn.sendMessage(m.chat, { text: cap, mentions: [senderJid, target] }, { quoted: m })
+  if (command === 'arena' && action === 'stats') {
+    let cap = `╭─❏「 📊 ARENA STATS 」❏\n│ 👤 @${sender.split('@')[0]}\n╰─━━━━━━━━━━━━━━─\n\n`
+    for (const [key, value] of Object.entries(MODES)) {
+      cap += `${value.emoji} *${value.nama}*\n> ↳ ${formatRecord(stats, key)}\n\n`
+    }
+    cap += `🏆 *TOTAL MENANG:* ${totalWins(stats)}\n─━━━━━━━━━━━━━━─`
+    return conn.reply(m.chat, cap, m, { mentions: [sender] })
   }
 
-  // 3. TERIMA - LEWAT COMMAND
-  if (command === 'jambakterima' || command === 'pancoterima') {
-    let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getPenantang(m, args, conn)
-    let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
-    let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
-    
-    let meta = await conn.groupMetadata(m.chat).catch(() => null)
-    let arenaKey = null
-    for (let k in global.arena) {
-      let a = global.arena[k]
-      if (a.type !== type || a.chat !== m.chat) continue
-      
-      let isTarget = (a.target === senderJid)
-      if (!isTarget && meta && meta.participants) {
-         let pTarget = meta.participants.find(p => p.id === a.target || p.lid === a.target)
-         let pSender = meta.participants.find(p => p.id === senderJid || p.lid === senderJid)
-         if (pTarget && pSender && pTarget.id === pSender.id) isTarget = true
-      }
-      
-      let match = isTarget
-      if (penantangTag && !isBot) match = match && a.penantang === penantangTag
-      
-      if (match) {
-         arenaKey = k
-         break
-      }
+  if (command === 'arena' && action === 'top') {
+    const page = Math.max(1, parseInt(args[1]) || 1)
+    const rows = Object.entries(wdb.users || {})
+      .map(([jid, entry]) => {
+        const player = entry?.rpg || entry
+        if (!player) return null
+        return { jid, total: totalWins(initStats(player)) }
+      })
+      .filter(row => row && row.total > 0)
+      .sort((first, second) => second.total - first.total)
+
+    const ownRank = rows.findIndex(row => row.jid === sender) + 1
+    const start = (page - 1) * 10
+    const visible = rows.slice(start, start + 10)
+    let cap = `🏆 *RANK KAMU: ${ownRank || '-'}*\n\n`
+    cap += `╭─❏「 🏆 ARENA TOP ${page} 」❏\n│ Total pemain: ${rows.length}\n╰─━━━━━━━━━━━━━━─\n\n`
+
+    if (!visible.length) cap += `❌ Halaman ${page} belum memiliki data.\n`
+    for (const [index, row] of visible.entries()) {
+      const rank = start + index + 1
+      const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
+      cap += `${medal} @${row.jid.split('@')[0]}\n> ↳ Total menang: *${row.total}x*\n\n`
     }
-    if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
 
-    let arena = global.arena[arenaKey]
-    
-    // VALIDASI ULANG UANG SEBELUM MAIN (Mencegah uang minus)
-    let uangP = wdb.money[arena.penantang] || 0
-    let uangT = wdb.money[arena.target] || 0
-    if (uangP < arena.taruhan) {
-        delete global.arena[arenaKey]
-        return m.reply(`❌ Pertarungan dibatalkan! Penantang (@${arena.penantang.split('@')[0]}) tidak memiliki cukup uang lagi.`, null, { mentions: [arena.penantang] })
+    cap += `─━━━━━━━━━━━━━━─\n> Halaman: ${page}`
+    if (start + 10 < rows.length) cap += ` | Berikutnya: ${usedPrefix}arena top ${page + 1}`
+    return conn.reply(m.chat, cap, m, { mentions: visible.map(row => row.jid).concat(sender) })
+  }
+
+  if (!mode) return m.reply(`❌ Mode arena tidak dikenal. Gunakan *${usedPrefix}arena* untuk melihat pilihan.`)
+
+  const isAccept = subAction === 'terima' || subAction === 'accept'
+  const isReject = ['tolak', 'batal', 'reject'].includes(subAction)
+
+  if (isAccept || isReject) {
+    const requestedBy = command === 'arena' ? getTaggedTarget(args.slice(2), conn) : getTaggedTarget(args.slice(1), conn)
+    const challengeId = Object.keys(global.arena).find(id => {
+      const challenge = global.arena[id]
+      return challenge.type === modeKey && challenge.chat === m.chat && challenge.target === sender && (!requestedBy || challenge.penantang === requestedBy)
+    })
+
+    if (!challengeId) return m.reply(`❌ Tidak ada tantangan ${mode.nama} yang menunggumu.`)
+    const challenge = global.arena[challengeId]
+    removeChallenge(challengeId)
+
+    if (isReject) {
+      return conn.reply(m.chat, `❌ @${sender.split('@')[0]} menolak tantangan ${mode.nama}.`, m, { mentions: [sender, challenge.penantang] })
     }
-    if (uangT < arena.taruhan) {
-        delete global.arena[arenaKey]
-        return m.reply(`❌ Pertarungan dibatalkan! Kamu tidak memiliki cukup uang untuk membayar taruhan Rp ${arena.taruhan.toLocaleString()}.`)
+
+    const playerAData = getUserRPG(wdb, challenge.penantang)
+    const playerBData = getUserRPG(wdb, challenge.target)
+    const playerA = playerAData?.rpg || playerAData
+    const playerB = playerBData?.rpg || playerBData
+    if (!playerA || !playerB) return m.reply('❌ Data salah satu pemain sudah tidak tersedia.')
+
+    const statsA = initStats(playerA)
+    const statsB = initStats(playerB)
+    const wager = Number(challenge.taruhan) || 0
+    if ((wdb.money[challenge.penantang] || 0) < wager || (wdb.money[challenge.target] || 0) < wager) {
+      return m.reply('❌ Pertarungan dibatalkan karena saldo taruhan tidak mencukupi.')
     }
-    let dataP = getUserRPG(wdb, arena.penantang)
-    let dataT = getUserRPG(wdb, arena.target)
-    let userP = dataP.rpg
-    let userT = dataT.rpg
-    initStats(userP) // auto fix
-    initStats(userT) // auto fix
 
-    let powerP = userP.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userP.exp / 500)
-    let powerT = userT.level * 10 + Math.floor(Math.random() * 200) + Math.floor(userT.exp / 500)
+    const powerA = getPower(playerA, statsA[modeKey])
+    const powerB = getPower(playerB, statsB[modeKey])
+    let cap = `╭─❏「 ${mode.emoji} ARENA 」❏\n│ Mode: *${mode.nama}*\n╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `👤 @${challenge.penantang.split('@')[0]} ⚡ ${powerA}\n⚔️ *VS*\n👤 @${challenge.target.split('@')[0]} ⚡ ${powerB}\n`
 
-    let cap = `┌───❏「 ⚔️ PERTARUNGAN ${type.toUpperCase()} 」❏\n│\n`
-    cap += `│ @${arena.penantang.split('@')[0]} ⚡ ${powerP}\n│ VS\n│ @${arena.target.split('@')[0]} ⚡ ${powerT}\n│\n`
-
-    if(powerP > powerT){
-      wdb.money[arena.penantang] += arena.taruhan
-      wdb.money[arena.target] -= arena.taruhan
-      userP.exp += 50
-      if(type === 'jambak'){ userP.stats.jambakMenang++; userT.stats.jambakKalah++ }
-      else { userP.stats.pancoMenang++; userT.stats.pancoKalah++ }
-      cap += `│ 🏆 *PEMENANG*\n│ @${arena.penantang.split('@')[0]}\n│\n│ 💰 +Rp ${arena.taruhan.toLocaleString()}\n│ ✨ +50 Exp`
-    } else if(powerT > powerP){
-      wdb.money[arena.target] += arena.taruhan
-      wdb.money[arena.penantang] -= arena.taruhan
-      userT.exp += 50
-      if(type === 'jambak'){ userT.stats.jambakMenang++; userP.stats.jambakKalah++ }
-      else { userT.stats.pancoMenang++; userP.stats.pancoKalah++ }
-      cap += `│ 🏆 *PEMENANG*\n│ @${arena.target.split('@')[0]}\n│\n│ 💰 +Rp ${arena.taruhan.toLocaleString()}\n│ ✨ +50 Exp`
+    if (powerA === powerB) {
+      cap += `\n🤝 *HASIL: SERI*\n> ↳ Taruhan dikembalikan.`
     } else {
-      cap += `│ 🤝 *HASIL: SERI*\n│ Taruhan dikembalikan`
+      const winnerIsA = powerA > powerB
+      const winner = winnerIsA ? playerA : playerB
+      const loser = winnerIsA ? playerB : playerA
+      const winnerJid = winnerIsA ? challenge.penantang : challenge.target
+      const loserJid = winnerIsA ? challenge.target : challenge.penantang
+      winner.arenaStats[modeKey].menang++
+      loser.arenaStats[modeKey].kalah++
+      winner.exp = (winner.exp || 0) + 50
+      wdb.money[winnerJid] = (wdb.money[winnerJid] || 0) + wager
+      wdb.money[loserJid] = (wdb.money[loserJid] || 0) - wager
+      const winnerTitle = getArenaTitle(winner.arenaStats[modeKey].menang, modeKey)
+      cap += `\n🏆 *PEMENANG*\n> ↳ @${winnerJid.split('@')[0]}\n> ↳ Title: *${winnerTitle}*\n> ↳ Hadiah: +Rp ${wager.toLocaleString()}\n> ↳ EXP: +50\n\n💸 *TRANSFER TARUHAN*\n> ↳ Yang kalah: -Rp ${wager.toLocaleString()}`
     }
-    cap += `\n└───────────────────`
 
-    delete global.arena[arenaKey]
+    cap += `\n\n─━━━━━━━━━━━━━━─`
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [arena.penantang, arena.target] })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [challenge.penantang, challenge.target] })
   }
 
-  // 4. TOLAK - LEWAT COMMAND
-  if (command === 'jambaktolak' || command === 'pancotolak') {
-    let type = command.includes('jambak')? 'jambak' : 'panco'
-    let penantangTag = getPenantang(m, args, conn)
-    let botJid = conn.user.id ? conn.user.id.split(':')[0] + '@s.whatsapp.net' : ''
-    let isBot = penantangTag && botJid && penantangTag.includes(botJid.split('@')[0])
+  const target = getTarget(m, conn)
+  if (!target) return m.reply(`❌ Tag atau reply target yang mau ${mode.verb}.\nContoh: *${usedPrefix}${modeKey} @tag 50000*`)
+  if (target === sender) return m.reply('❌ Tidak bisa menantang diri sendiri.')
 
-    let meta = await conn.groupMetadata(m.chat).catch(() => null)
-    let arenaKey = null
-    for (let k in global.arena) {
-      let a = global.arena[k]
-      if (a.type !== type || a.chat !== m.chat) continue
-      
-      let isTarget = (a.target === senderJid)
-      if (!isTarget && meta && meta.participants) {
-         let pTarget = meta.participants.find(p => p.id === a.target || p.lid === a.target)
-         let pSender = meta.participants.find(p => p.id === senderJid || p.lid === senderJid)
-         if (pTarget && pSender && pTarget.id === pSender.id) isTarget = true
-      }
-      
-      let match = isTarget
-      if (penantangTag && !isBot) match = match && a.penantang === penantangTag
-      
-      if (match) {
-         arenaKey = k
-         break
-      }
-    }
-    if(!arenaKey) return m.reply(`❌ Tidak ada tantangan ${type} yang sedang menunggumu saat ini.`)
+  const targetData = getUserRPG(wdb, target)
+  const targetUser = targetData?.rpg || targetData
+  if (!targetUser) return m.reply('❌ Target belum memiliki data RPG.')
+  initStats(targetUser)
 
-    let penantangAsli = global.arena[arenaKey].penantang
-    delete global.arena[arenaKey]
-    return m.reply(`❌ @${senderJid.split('@')[0]} menolak tantangan ${type} dari @${penantangAsli.split('@')[0]}`, null, { mentions: [senderJid, penantangAsli] })
-  }
+  const taruhanInput = parseInt(command === 'arena' ? args[2] : args[1])
+  const taruhanDefault = Math.max(1000, Math.floor(Math.min(wdb.money[sender] || 0, wdb.money[target] || 0) * 0.1))
+  const taruhan = taruhanInput || taruhanDefault
+  if (taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1.000.')
+  if ((wdb.money[sender] || 0) < taruhan || (wdb.money[target] || 0) < taruhan) return m.reply('❌ Saldo salah satu pemain tidak cukup untuk taruhan.')
+
+  const challengeId = `${modeKey}_${Date.now()}_${sender}`
+  global.arena[challengeId] = { type: modeKey, chat: m.chat, penantang: sender, target, taruhan, waktu: Date.now() }
+  setTimeout(() => {
+    if (!global.arena[challengeId]) return
+    delete global.arena[challengeId]
+    conn.sendMessage(m.chat, { text: `❌ Tantangan ${mode.nama} kedaluwarsa.` }).catch(() => {})
+  }, 120000)
+
+  const cap = `╭─❏「 ${mode.emoji} ARENA 」❏\n│ Mode: *${mode.nama}*\n╰─━━━━━━━━━━━━━━─\n\n` +
+    `👤 Penantang: @${sender.split('@')[0]}\n👤 Lawan: @${target.split('@')[0]}\n💰 Taruhan: Rp ${taruhan.toLocaleString()}\n\n` +
+    `> Terima: *${usedPrefix}${modeKey} terima*\n> Tolak: *${usedPrefix}${modeKey} tolak*\n> Berlaku selama 2 menit.`
+  return conn.sendMessage(m.chat, { text: cap, mentions: [sender, target] }, { quoted: m })
 }
 
-handler.help = ['jambak @tag [taruhan]', 'panco @tag [taruhan]']
+handler.help = ['arena', 'arena stats', 'arena top [halaman]', 'jambak @tag [taruhan]', 'panco @tag [taruhan]', 'dance @tag [taruhan]', 'tampar @tag [taruhan]', 'tinju @tag [taruhan]']
 handler.tags = ['rpg']
-handler.command = /^(jambak|jambakterima|jambaktolak|panco|pancoterima|pancotolak)$/i
+handler.command = /^(arena|jambak|panco|dance|tampar|tinju)$/i
 handler.group = true
 
 export default handler

@@ -129,7 +129,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
     cap += `◈ Total Bunga : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n\n`
     if(userRPG.kartuBeku) cap += `🚨 AKSI DIBUTUHKAN\n Isi saldo Rp ${tier.biayaBulanan.toLocaleString()} untuk \n mengaktifkan kartu otomatis\n\n❌ FITUR NONAKTIF\n Bunga • Transfer • Pinjaman • Heal Bank\n`
-    cap += `─━━━━━━━━━─\n📌 .bank simpan | tarik | tf | pinjam | bayar | riwayat | kartu`
+    cap += `─━━━━━━━━━─\n📌 *CARA PAKAI*\n> *${usedPrefix}bank simpan <jumlah>*\n> *${usedPrefix}bank tarik <jumlah>*\n> *${usedPrefix}bank tf / pinjam / bayar / riwayat / kartu*`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
   }
 
@@ -138,25 +138,36 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let userMoney = wdb.money[m.sender] || 0
 
   // LIST KARTU
-  if (action === 'card' || action === 'kartu') {
-    let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n◈ DAFTAR KARTU BANK ◈\n`
-    for(let i in BANK_TIERS){
-      let t = BANK_TIERS[i]
-      let punya = userRPG.bankTier == i? '✅ KAMU' : ''
-      cap += `${t.color} *Lv.${i} ${t.name}* ${punya}\n`
-      cap += `◆ Limit : Rp ${t.limit.toLocaleString()}\n`
-      cap += `◆ Bunga : ${(t.bunga*100).toFixed(2)}%/minggu\n`
-      cap += `◆ Harga Upgrade : Rp ${t.price.toLocaleString()}\n`
-      cap += `◆ Biaya Bulanan : Rp ${t.biayaBulanan.toLocaleString()}\n`
-      cap += `◆ Asuransi : ${(t.asuransi*100).toFixed(0)}%\n`
-      cap += `◆ Fasilitas:\n`
-      t.fasilitas.forEach(f => { cap += ` • ${f}\n` })
-      cap += `\n`
-    }
-    cap += `Cara upgrade : *.upgradebank beli* / *.upgradebank 5*\n`
-    cap += `─━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
+if (action === 'card' || action === 'kartu') {
+  let cap = `╭─❏「 🏦 RPG BANK CENTER 」❏\n`
+  cap += `│ 💳 *DAFTAR KARTU BANK*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  for (let i in BANK_TIERS) {
+    let t = BANK_TIERS[i]
+    let punya = userRPG.bankTier == i ? ' ✅ *KAMU*' : ''
+
+    cap += `🏦 *Lv.${i} ${t.name}*${punya}\n`
+    cap += `> ${t.color} Limit: Rp ${t.limit.toLocaleString()}\n`
+    cap += `> ↳ Bunga: ${(t.bunga * 100).toFixed(2)}%/minggu\n`
+    cap += `> ↳ Harga Upgrade: Rp ${t.price.toLocaleString()}\n`
+    cap += `> ↳ Biaya Bulanan: Rp ${t.biayaBulanan.toLocaleString()}\n`
+    cap += `> ↳ Asuransi: ${(t.asuransi * 100).toFixed(0)}%\n`
+    cap += `> ↳ Fasilitas:\n`
+
+    t.fasilitas.forEach(f => {
+      cap += `> • ${f}\n`
+    })
+
+    cap += `\n─━━━━━━━━━━━━━━─\n`
   }
+
+  cap += `\n📌 *CARA UPGRADE*\n`
+  cap += `> ↳ *.upgradebank beli*\n`
+  cap += `> ↳ *.upgradebank 5*`
+
+  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
+}
 
   // SIMPAN + ALIAS "all"
   if (action === 'simpan' || action === 'all') {

@@ -42,12 +42,29 @@ let handler = async (m, { conn }) => {
   }
 
   saveDB(wdb)
-  let cap = ``
-  if(list.length > 0) cap += `✅ *MASAKAN BERHASIL DIAMBIL*\n\n${list.join('\n')}\n\n✨ Exp: +${expTotal}${levelup}\n\n`
-  if(listGosong.length > 0) cap += `🔥 *ADUH MASAKANNYA GOSONG*\n\n${listGosong.join('\n')}\n\n`
-  cap += `💸 *Apresiasi Chef Zeta*\nTotal: Rp ${apresiasiTotal.toLocaleString()}\n\n`
-  cap += `📝 *Pesan Chef Zeta*: "Terima kasih sudah berusaha memasak. Karena kelupaan diambil, aku beri apresiasi ini sebagai ganti. Lain kali diambil ya dalam 5 jam setelah matang biar nggak gosong lagi. Semangat terus!"`
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+let cap = `╭─❏「 📦 AMBIL MASAKAN 」❏\n`
+
+if (list.length > 0) {
+  cap += `│ ✅ *MASAKAN BERHASIL DIAMBIL*\n`
+  cap += list.map(item => `> ${item}`).join('\n') + `\n`
+  cap += `> ✨ Exp: +${expTotal}${levelup}\n`
+}
+
+if (listGosong.length > 0) {
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `🔥 *MASAKAN GOSONG*\n`
+  cap += listGosong.map(item => `> ${item}`).join('\n') + `\n`
+}
+
+cap += `\n─━━━━━━━━━━━━━━─\n`
+cap += `💸 *Apresiasi Chef Avelia:* Rp ${apresiasiTotal.toLocaleString()}\n`
+
+cap += `\n─━━━━━━━━━━━━━━─\n`
+cap += `📌 *PESAN*\n`
+cap += `> ↳ Ambil masakan maksimal 5 jam setelah matang.\n`
+cap += `─━━━━━━━━━━━━━━─`
+
+return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
 }
 handler.help = ['ambilmasak']
 handler.tags = ['rpg']

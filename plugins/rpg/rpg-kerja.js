@@ -12,10 +12,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (userRPG.level === undefined) userRPG.level = 1
     if (userRPG.exp === undefined) userRPG.exp = 0
 
-    let cooldown = 120000 
-    let timers = (cooldown - (Date.now() - userRPG.lastkerja))
-    if (Date.now() - userRPG.lastkerja < cooldown) return m.reply(`👷 Kamu masih lelah! Istirahat dulu selama *${Math.ceil(timers / 1000)} detik* lagi.`)
-
     let listJobs = [
       { lv: 1, job: "Pemulung", gaji: 5000 },
       { lv: 2, job: "Pengamen", gaji: 8000 },
@@ -99,61 +95,147 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let args = (text || '').toLowerCase()
 
-    // LIST KERJA
-    if (args === 'list' || args === 'l') {
-        let caption = `💼 *DAFTAR PEKERJAAN*\n`
-        caption += `Level Kamu: *[ Lv.${userRPG.level} ]*\n\n`
-        
-        let jobBisa = listJobs.filter(j => userRPG.level >= j.lv)
-        let jobTerkini = jobBisa[jobBisa.length - 1]
-        caption += `⚡ *Job Sekarang*: ${jobTerkini.job} | Rp ${jobTerkini.gaji.toLocaleString()}\n\n`
+    let currentJob = listJobs.filter(j => userRPG.level >= j.lv).at(-1)
 
-        listJobs.forEach((v, i) => {
-            let bisa = userRPG.level >= v.lv ? '✅' : '🔒'
-            caption += `${i + 1}. ${bisa} *${v.job}* Lv.${v.lv}\n`
-        })
-        caption += `\nKetik *${usedPrefix + command}* untuk kerja otomatis di job tertinggi`
-        return m.reply(caption)
-    }
+    // STATUS DAN LIST KERJA
+    if (args === '' && command === 'job') {
+  let cooldown = 120000
+  let sisa = Math.max(0, cooldown - (Date.now() - userRPG.lastkerja))
+  let status = sisa > 0
+    ? `⏳ ${Math.ceil(sisa / 1000)} detik lagi`
+    : '✅ Siap bekerja'
 
-    // KERJA OTOMATIS
-    let availableJobs = listJobs.filter(j => userRPG.level >= j.lv)
-    if (availableJobs.length === 0) return m.reply('❌ Level kamu terlalu rendah untuk bekerja.')
+  let caption = `╭─❏「 💼 JOB STATUS 」❏\n`
+  caption += `│ Lv.${userRPG.level} | ${currentJob?.job || 'Belum ada pekerjaan'}\n`
+  caption += `│ 💰 Gaji: Rp ${(currentJob?.gaji || 0).toLocaleString()}\n`
+  caption += `│ ⏰ Status: ${status}\n`
+  caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let selected = availableJobs[availableJobs.length - 1]
+  caption += `📌 *MENU PEKERJAAN*\n`
+  caption += `> 📋 Daftar: *${usedPrefix}job list*\n`
+  caption += `> 👷 Kerja: *${usedPrefix}job work*\n`
+  caption += `> ↳ Alias: *${usedPrefix}kerja* / *${usedPrefix}work*`
 
-    try {
-        wdb.money[m.sender] = (wdb.money[m.sender] || 0) + selected.gaji
-        userRPG.exp += selected.exp
-        userRPG.lastkerja = Date.now()
-        
-        let naikLevel = false
-        if (userRPG.exp >= userRPG.level * 500) { 
-          userRPG.level++; 
-          userRPG.exp = 0 
-          naikLevel = true
-        }
-        
-        saveDB(wdb)
-        
-        let msg = `💼 *KERJA BERHASIL*\n\n`
-        msg += `Pekerjaan: *${selected.job}*\n`
-        msg += `Pendapatan: *+Rp ${selected.gaji.toLocaleString()}*\n`
-        msg += `XP: *+${selected.exp.toLocaleString()}*\n`
-        msg += `Level: *Lv.${userRPG.level}* (${userRPG.exp}/${userRPG.level * 500})`
-        if(naikLevel) msg += `\n\n🎉 *LEVEL UP!*`
-
-        m.reply(msg)
-
-    } catch (e) {
-        console.error(e)
-        m.reply('❌ Terjadi kesalahan saat bekerja.')
-    }
+  return m.reply(caption)
 }
 
-handler.help = ['kerja', 'kerja list']
+if (args === 'list' || args === 'l') {
+  let caption = `╭─❏「 💼 DAFTAR PEKERJAAN 」❏\n`
+  caption += `│ 📊 Level kamu: Lv.${userRPG.level}\n`
+  caption += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  caption += `💼 *PEKERJAAN TERSEDIA*\n`
+  caption += `> ↳ Pekerjaan terbuka mengikuti level.\n`
+
+  let jobBisa = listJobs.filter(j => userRPG.level >= j.lv)
+  let jobTerkini = jobBisa[jobBisa.length - 1]
+
+  if (jobTerkini) {
+    caption += `\n─━━━━━━━━━━━━━━─\n`
+    caption += `⚡ *JOB SEKARANG*\n`
+    caption += `> ↳ ${jobTerkini.job}\n`
+    caption += `> 💰 Gaji: Rp ${jobTerkini.gaji.toLocaleString()}\n`
+    caption += `> ✨ XP: +${jobTerkini.exp}\n`
+  }
+
+  caption += `\n─━━━━━━━━━━━━━━─\n`
+
+  listJobs.forEach((v, i) => {
+    let bisa = userRPG.level >= v.lv ? '✅' : '🔒'
+
+    caption += `💼 *${i + 1}. ${bisa} ${v.job}*\n`
+    caption += `> 📊 Syarat: Lv.${v.lv}\n`
+    caption += `> 💰 Gaji: Rp ${v.gaji.toLocaleString()}\n`
+    caption += `> ✨ XP: +${v.exp}\n`
+  })
+
+  caption += `\n─━━━━━━━━━━━━━━─\n`
+  caption += `📌 *CARA KERJA*\n`
+  caption += `> ↳ *${usedPrefix}job work*`
+
+  return m.reply(caption)
+}
+
+if (args === 'job' || args === 'work') {
+  args = ''
+}
+
+let cooldown = 120000
+let timers = cooldown - (Date.now() - userRPG.lastkerja)
+
+if (Date.now() - userRPG.lastkerja < cooldown) {
+  return m.reply(
+    `╭─❏「 ⏳ JOB COOLDOWN 」❏\n` +
+    `│ 👷 Kamu masih lelah!\n` +
+    `│ ↳ Istirahat selama *${Math.ceil(timers / 1000)} detik* lagi.\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+// KERJA OTOMATIS
+let availableJobs = listJobs.filter(j => userRPG.level >= j.lv)
+
+if (availableJobs.length === 0) {
+  return m.reply(
+    `╭─❏「 ❌ JOB 」❏\n` +
+    `│ 📊 Level kamu terlalu rendah untuk bekerja.\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+let selected = availableJobs[availableJobs.length - 1]
+
+try {
+  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + selected.gaji
+  userRPG.exp += selected.exp
+  userRPG.lastkerja = Date.now()
+
+  let naikLevel = false
+  let expButuh = userRPG.level * 500
+
+  if (userRPG.exp >= expButuh) {
+    userRPG.level++
+    userRPG.exp = 0
+    naikLevel = true
+  }
+
+  saveDB(wdb)
+
+  let msg = `╭─❏「 💼 KERJA BERHASIL 」❏\n`
+  msg += `│ 👷 Pekerjaan: *${selected.job}*\n`
+  msg += `│ 💰 Pendapatan: +Rp ${selected.gaji.toLocaleString()}\n`
+  msg += `│ ✨ XP: +${selected.exp.toLocaleString()}\n`
+  msg += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  msg += `📊 *STATUS*\n`
+  msg += `> ↳ Level: Lv.${userRPG.level}\n`
+  msg += `> ↳ XP: ${userRPG.exp}/${userRPG.level * 500}\n`
+
+  if (naikLevel) {
+    msg += `> 🎉 *LEVEL UP!* Lv.${userRPG.level}\n`
+  }
+
+  msg += `\n─━━━━━━━━━━━━━━─\n`
+  msg += `⏰ *Cooldown:* 2 menit`
+
+  return m.reply(msg)
+
+} catch (e) {
+  console.error(e)
+
+  return m.reply(
+    `╭─❏「 ❌ JOB ERROR 」❏\n` +
+    `│ Terjadi kesalahan saat bekerja.\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
+}
+
+handler.help = ['job', 'job list', 'job work', 'kerja', 'work']
 handler.tags = ['rpg']
-handler.command = /^(kerja|work)$/i
+handler.command = /^(job|kerja|work)$/i
+handler.alias = ['job', 'kerja', 'work']
 handler.group = true
 
 export default handler

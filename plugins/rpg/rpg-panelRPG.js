@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { hewanList, getHewan, prosesKawin } from '../../lib/rpg-libternakData.js'
+import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-libternakData.js'
 import { BANK_TIERS } from './rpg-bank.js'
 
 import fs from 'fs'
@@ -33,81 +33,112 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   let aksi = rawArgs[0]?.toLowerCase()
   let remaining = rawArgs.slice(1)
 
-  if (!aksi) return m.reply(`*╭───「 👑 RPG PANEL OWNER 」───╮*
-│ *Fitur Admin RPG ZETA*
-╰────────────────────╯
+ if (!aksi) return m.reply(
+  `╭─❏「 👑 RPG PANEL OWNER 」❏\n` +
+  `│ 👑 *FITUR ADMIN RPG AVELIA*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
 
-*───「 📊 GLOBAL 」───*
-├ ${usedPrefix}rpgpanel toprpg
-├ ${usedPrefix}rpgpanel rpgstat
-└ ${usedPrefix}rpgpanel topyt
+  `📊 *GLOBAL*\n` +
+  `> ↳ *${usedPrefix}rpgpanel toprpg*\n` +
+  `> ↳ *${usedPrefix}rpgpanel rpgstat*\n` +
+  `> ↳ *${usedPrefix}rpgpanel topyt*\n\n` +
 
-*───「 👤 USER STAT 」───*
-├ ${usedPrefix}rpgpanel set/add/del money @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del level @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del exp @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del darah @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del diamond @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del gold @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del iron @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del wood @tag <jml>
-├ ${usedPrefix}rpgpanel set/add/del stone @tag <jml>
-├ ${usedPrefix}rpgpanel set maxhp @tag <jml>
-├ ${usedPrefix}rpgpanel set sword/armor/pickaxe/fishingrod @tag <lvl>
-└ ${usedPrefix}rpgpanel inv @tag
+  `─━━━━━━━━━━━━━━─\n\n` +
 
-*───「 📦 GUDANG 」───*
-├ ${usedPrefix}rpgpanel add @tag <item> <jml>
-├ ${usedPrefix}rpgpanel del @tag <item> <jml>
-├ ${usedPrefix}rpgpanel addikan @tag <nama_ikan> <jml>
-├ ${usedPrefix}rpgpanel delikan @tag <nama_ikan> <jml>
-├ ${usedPrefix}rpgpanel addore @tag <nama_ore> <jml>
-├ ${usedPrefix}rpgpanel delore @tag <nama_ore> <jml>
-├ ${usedPrefix}rpgpanel addmasak @tag <nama_masakan> <jml>
-├ ${usedPrefix}rpgpanel delmasak @tag <nama_masakan> <jml>
-├ ${usedPrefix}rpgpanel wipe @tag
-└ ${usedPrefix}rpgpanel cek @tag
+  `👤 *USER STAT*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del level @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del exp @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del darah @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del diamond @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del gold @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del iron @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del wood @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del stone @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del cont @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set maxhp @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set sword/armor/pickaxe/fishingrod @tag <lvl>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel inv @tag*\n\n` +
 
-*───「 🏡 TERNAK 」───*
-├ ${usedPrefix}rpgpanel addternak @tag <hewan> <jml>
-├ ${usedPrefix}rpgpanel delternak @tag <hewan> <jml>
-├ ${usedPrefix}rpgpanel kawinforce @tag <h1> <h2>
-└ ${usedPrefix}rpgpanel icuforce @tag
+  `─━━━━━━━━━━━━━━─\n\n` +
 
-*───「 🗺️ ADVENTURE 」───*
-├ ${usedPrefix}rpgpanel additem @tag <item> <jml>
-├ ${usedPrefix}rpgpanel delitem @tag <item> <jml>
-├ ${usedPrefix}rpgpanel setadvlevel @tag <lvl>
-└ ${usedPrefix}rpgpanel addadvlevel @tag <jml>
+  `📦 *GUDANG*\n` +
+  `> ↳ *${usedPrefix}rpgpanel add @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel del @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addikan @tag <nama_ikan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delikan @tag <nama_ikan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addore @tag <nama_ore> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delore @tag <nama_ore> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addmasak @tag <nama_masakan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delmasak @tag <nama_masakan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel wipe @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel cek @tag*\n\n` +
 
-*───「 🏦 BANK 」───*
-├ ${usedPrefix}rpgpanel setbank @tag <jml>
-├ ${usedPrefix}rpgpanel setbanktier @tag <0-14>
-├ ${usedPrefix}rpgpanel freezebank @tag
-└ ${usedPrefix}rpgpanel unfreezebank @tag
+  `─━━━━━━━━━━━━━━─\n\n` +
 
-*───「 💕 RSHIP 」───*
-├ ${usedPrefix}rpgpanel addharem @tag <nama> <cowok/cewek>
-├ ${usedPrefix}rpgpanel delharem @tag <no>
-├ ${usedPrefix}rpgpanel setharem @tag <no> <level/love/exp/nikah> <val>
-├ ${usedPrefix}rpgpanel addanak @tag <nama_anak>
-└ ${usedPrefix}rpgpanel delanak @tag <no_anak>
+  `🏡 *TERNAK*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addternak @tag <hewan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delternak @tag <hewan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel kawinforce @tag <h1> <h2>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel icuforce @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}kawin <h1> <h2> [asuransi]*\n` +
+  `> ↳ *${usedPrefix}kawin proses / batal / guide*\n` +
+  `> ↳ *${usedPrefix}ternak / ${usedPrefix}kandang*\n` +
+  `> ↳ *${usedPrefix}ternak list / beli / ambil / sembelih / jual*\n` +
+  `> ↳ *${usedPrefix}hybrid* atau *${usedPrefix}ternak hybrid*\n\n` +
 
-*───「 ⛓️ CSM PANEL 」───*
-├ ${usedPrefix}rpgpanel cekcsm @tag
-├ ${usedPrefix}rpgpanel setcsm @tag <stat> <jml>
-├ ${usedPrefix}rpgpanel addcsm @tag <stat> <jml>
-├ ${usedPrefix}rpgpanel delcsm @tag <stat> <jml>
-├ ${usedPrefix}rpgpanel setcontract @tag <nama>
-├ ${usedPrefix}rpgpanel delcontract @tag
-├ ${usedPrefix}rpgpanel giveending @tag <ending>
-└ ${usedPrefix}rpgpanel resetcsm @tag
+  `─━━━━━━━━━━━━━━─\n\n` +
 
-*───「 💊 LAINNYA 」───*
-├ ${usedPrefix}rpgpanel heal @tag
-├ ${usedPrefix}rpgpanel resetlevel @tag
-├ ${usedPrefix}rpgpanel resetmoney @tag
-└ ${usedPrefix}rpgpanel resetdiamond @tag`)
+  `🗺️ *ADVENTURE*\n` +
+  `> ↳ *${usedPrefix}rpgpanel additem @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delitem @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setadvlevel @tag <lvl>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addadvlevel @tag <jml>*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🏦 *BANK*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setbank @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setbanktier @tag <0-14>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel freezebank @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel unfreezebank @tag*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `💕 *RSHIP*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addharem @tag <nama> <cowok/cewek>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delharem @tag <no>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <level/love/exp/nikah> <val>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addanak @tag <nama_anak>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `⛓️ *CSM PANEL*\n` +
+  `> ↳ *${usedPrefix}rpgpanel cekcsm @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setcsm @tag <stat> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addcsm @tag <stat> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delcsm @tag <stat> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setcontract @tag <nama>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delcontract @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel giveending @tag <ending>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetcsm @tag*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `💊 *LAINNYA*\n` +
+  `> ↳ *${usedPrefix}rpgpanel blockcasino @tag/reply*\n` +
+  `> ↳ *${usedPrefix}rpgpanel unblockcasino @tag/reply*\n` +
+  `> ↳ *${usedPrefix}rp unblockcasino @tag/reply*\n` +
+  `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n\n` +
+
+  `─━━━━━━━━━━━━━━─`
+)
 
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
@@ -122,7 +153,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     let topMoney = Object.keys(wdb.money).sort((a,b) => (wdb.money[b] || 0) - (wdb.money[a] || 0)).slice(0, 10)
     let topDiamond = [...users].sort((a,b) => (wdb.users[b].rpg.diamond || 0) - (wdb.users[a].rpg.diamond || 0)).slice(0, 10)
 
-    let text = `*───「 ZETA RPG LEADERBOARD 」───*\n\n`
+    let text = `*───「 AVELIA RPG LEADERBOARD 」───*\n\n`
     text += `🆙 *TOP 10 LEVEL*\n`
     topLevel.forEach((id, i) => { text += `${i + 1}. ${formatUser(id)}\n └─ *Level ${wdb.users[id].rpg.level}*\n` })
     text += `\n💰 *TOP 10 KEKAYAAN*\n`
@@ -171,7 +202,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   // 2. Normalisasi 2-kata aksi (misal: "set money", "add diamond", "del wood")
   const statAliases = [
-    'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood',
+    'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood', 'cont',
     'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
     'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item'
   ];
@@ -300,12 +331,36 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   user.sword = user.sword || 0
   user.pickaxe = user.pickaxe || 0
   user.fishingrod = user.fishingrod || 0
+
+  if (aksi === 'blockcasino') {
+    user.casinoBlocked = true
+    saveDB(wdb)
+    return m.reply(`🚫 Akses casino @${who.split('@')[0]} berhasil diblokir tanpa batas waktu.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'unblockcasino') {
+    if (!user.casinoBlocked) return m.reply(`ℹ️ Akses casino @${who.split('@')[0]} tidak sedang diblokir.`, null, { mentions: [who] })
+    user.casinoBlocked = false
+    saveDB(wdb)
+    return m.reply(`✅ Akses casino @${who.split('@')[0]} berhasil dibuka kembali.`, null, { mentions: [who] })
+  }
   user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
 
   let args = remaining
   let jumlah = parseInt(remaining.find(a => !isNaN(parseInt(a)))) || 0
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
   let item = itemInput?.toLowerCase().replace(/ /g, '_')
+
+  if (['setcont', 'addcont', 'delcont'].includes(aksi)) {
+    if (jumlah < 0 || (aksi !== 'setcont' && jumlah < 1)) return m.reply('❌ Jumlah kontribusi tidak valid')
+    const guild = Object.values(wdb.guilds).find(g => g.members?.includes(who))
+    if (!guild) return m.reply('❌ Target belum bergabung dengan Guild.')
+    guild.contribution = guild.contribution || {}
+    const current = Number(guild.contribution[who] || 0)
+    guild.contribution[who] = aksi === 'setcont' ? jumlah : aksi === 'addcont' ? current + jumlah : Math.max(0, current - jumlah)
+    saveDB(wdb)
+    return m.reply(`✅ *${aksi.toUpperCase()} CONTRIBUTION*\n@${who.split('@')[0]} = ${guild.contribution[who].toLocaleString()} Pts`, null, { mentions: [who] })
+  }
 
   // 1. SET STAT
   if(['setmoney','setlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod'].includes(aksi)){
@@ -479,8 +534,8 @@ if(aksi === 'delmasak'){
   // 4.8 KAWIN FORCE - LANGSUNG HASIL
   if(aksi === 'kawinforce'){
     user.ternak = user.ternak || {}
-    let h1 = args[1]?.toLowerCase()
-    let h2 = args[2]?.toLowerCase()
+    let h1 = getHewanKey(args[0]) || args[0]?.toLowerCase()
+    let h2 = getHewanKey(args[1]) || args[1]?.toLowerCase()
     if(!h1 ||!h2) return m.reply(`Contoh: *${usedPrefix}rpgpanel kawinforce @tag sapi ayam*`)
 
     let d1 = getHewan(h1)
@@ -488,7 +543,8 @@ if(aksi === 'delmasak'){
     if(!d1 ||!d2) return m.reply(`❌ Hewan tidak ada di database`)
 
     let hasil = prosesKawin(h1,h2)
-    let keyHasil = hasil.data.nama.toLowerCase()
+    if(!hasil?.hasil || !hasil.data) return m.reply(`❌ Hasil kawin gagal dibuat`, null, {mentions: [who]})
+    let keyHasil = hasil.hasil.toLowerCase()
     user.ternak[keyHasil] = (user.ternak[keyHasil] || 0) + 1
     saveDB(wdb)
     return m.reply(`✅ Langsung lahir: ${hasil.data.emoji} ${hasil.data.nama} [E${hasil.data.evolusi}] ke @${who.split('@')[0]}`, null, {mentions: [who]})
@@ -499,7 +555,7 @@ if(aksi === 'delmasak'){
     if(!global.icuTernak[who]) return m.reply(`❌ @${who.split('@')[0]} tidak ada hewan di ICU`, null, {mentions: [who]})
 
     let data = global.icuTernak[who]
-    let keyHasil = data.d1.nama.toLowerCase()
+    let keyHasil = getHewanKey(data.d1.nama) || data.h1.toLowerCase()
     user.ternak[keyHasil] = (user.ternak[keyHasil] || 0) + 1 // balikin 1 induk. Mau 2 juga boleh
     delete global.icuTernak[who]
     saveDB(wdb)
@@ -576,6 +632,28 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   if(aksi === 'resetlevel'){ user.level = 1; user.exp = 0; saveDB(wdb); return m.reply(`🔄 Reset level @${who.split('@')[0]}`, null, {mentions: [who]}) }
   if(aksi === 'resetmoney'){ wdb.money[who] = 0; saveDB(wdb); return m.reply(`🔄 Reset money @${who.split('@')[0]}`, null, {mentions: [who]}) }
   if(aksi === 'resetdiamond'){ user.diamond = 0; saveDB(wdb); return m.reply(`🔄 Reset diamond @${who.split('@')[0]}`, null, {mentions: [who]}) }
+
+  if(aksi === 'resetcd' || aksi === 'resetcooldown' || aksi === 'clearcd'){
+    user.cooldown = {}
+    user.casinoCooldowns = {}
+    user.lastcasino = 0
+    user.lastkerja = 0
+    user.lastWork = 0
+    user.lastRest = 0
+    user.lastGacha = 0
+    user.lastVisit = 0
+    user.lastLoveHeal = 0
+    user.lastAdventure = 0
+    user.lastMining = 0
+    user.lastDungeon = 0
+    user.lastFishing = 0
+    user.lastMancing = 0
+    user.pinjaman = user.pinjaman || { jumlah: 0, waktu: 0 }
+    user.pinjaman.waktu = 0
+    if (wdb.temp?.kawin) delete wdb.temp.kawin[who]
+    saveDB(wdb)
+    return m.reply(`🔄 Semua cooldown RPG, rship, kawin, dan ternak direset untuk @${who.split('@')[0]}`, null, {mentions: [who]})
+  }
   
     // 8 BANK PANEL
   if(['setbank','setbanktier','freezebank','unfreezebank'].includes(aksi)){
@@ -656,7 +734,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 
     if(aksi === 'addanak'){
       let nama = args.join(' ')
-      if(!nama) return m.reply(`Contoh: *${usedPrefix}rpgpanel addanak @tag Bayi Zeta*`)
+      if(!nama) return m.reply(`Contoh: *${usedPrefix}rpgpanel addanak @tag Bayi Avelia*`)
       user.kids.push({ nama, jenis: 'Laki-laki', umur: 0, ortu: 'Admin' })
       saveDB(wdb)
       return m.reply(`✅ Tambah anak *${nama}* ke @${who.split('@')[0]}`, null, {mentions: [who]})
@@ -775,7 +853,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 
 handler.help = ['rpgpanel']
 handler.tags = ['owner']
-handler.command = /^(rpgpanel|rpgowner)$/i
+handler.command = /^(rpgpanel|rpgowner|rp)$/i
 handler.owner = true
 handler.group = true
 export default handler

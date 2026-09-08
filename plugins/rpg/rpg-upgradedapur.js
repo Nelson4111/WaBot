@@ -16,8 +16,14 @@ let handler = async (m, { conn }) => {
   user.dapur.slot += 1
   saveDB(wdb)
 
-  let cap = `✅ *DAPUR DIUPGRADE!*\n\nSlot baru: ${user.dapur.slot}/10\nBiaya: Rp ${harga.toLocaleString()}\nUpgrade berikutnya: Rp ${(user.dapur.slot * 5000000).toLocaleString()}`
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  let cap = `╭─❏「 👨‍🍳 UPGRADE DAPUR 」❏\n`
+cap += `│ 📦 *Slot Baru* : ${user.dapur.slot}/10\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+cap += `> ↳ 💸 Biaya : Rp ${harga.toLocaleString()}\n`
+cap += `> ↳ 🔧 Upgrade Berikutnya : Rp ${(user.dapur.slot * 5000000).toLocaleString()}\n`
+cap += `\n─━━━━━━━━━━━━━━─`
+
+return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
 }
 handler.help = ['upgradedapur']
 handler.tags = ['rpg']

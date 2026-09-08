@@ -5,7 +5,7 @@ let handler = async (m, { conn }) => {
     const wdb = loadDB()
     let userRPG = wdb.users[m.sender]?.rpg
     if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
-    if(!userRPG.riwayat) userRPG.riwayat = []
+    if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
     // CEK PENJARA
     if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
@@ -26,13 +26,13 @@ let handler = async (m, { conn }) => {
         return m.reply(`⏳ *COOLDOWN RAMPOK*\nTunggu *${jam}j ${menit}m* lagi`)
     }
 
-    let who = m.quoted?.sender
-    if (!who) return m.reply(`❌ Reply pesan target yg mau dirampok`)
+    let who = m.mentionedJid?.[0] || m.quoted?.sender
+    if (!who) return m.reply(`❌ Tag atau reply pesan target yg mau dirampok`)
     if (who === m.sender) return m.reply('🗿 Ga bisa rampok diri sendiri')
 
     let target = getUserRPG(wdb, who).rpg
     if(!target) return m.reply('❌ Target belum punya data RPG')
-    if(!target.riwayat) target.riwayat = []
+    if (!Array.isArray(target.riwayat)) target.riwayat = []
     if(target.kartuBeku) return m.reply('❌ Kartu bank target sedang beku')
 
     let bankTarget = target.bank || 0
@@ -55,6 +55,7 @@ let handler = async (m, { conn }) => {
           userRPG.penjara = Date.now()
           userRPG.lamaPenjara = 14400000 // 4 jam
           userRPG.tebusan = 4000000 // 4jt
+          userRPG.kasus = '🕵️ Rampok'
           userRPG.sel = sel
           wdb.penjara.push(m.sender)
         }
@@ -64,13 +65,13 @@ let handler = async (m, { conn }) => {
         userRPG.riwayat.unshift(`🚔 Ditangkap saat rampok @${who.split('@')[0]}`)
 
         saveDB(wdb)
-        let txt = `┌───❏「 🚓 RAMPOK GAGAL 」❏\n`
+        let txt = `╭─❏「 🚓 RAMPOK GAGAL 」❏\n`
         txt += `│ 👤 Perampok: @${m.sender.split('@')[0]}\n`
         txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
         txt += `│ ⚰️ Ketahuan polisi\n`
         txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *4 jam*\n`
         txt += `│ 💰 Tebusan: *Rp 4.000.000*\n`
-        txt += `└───────────────────`
+        txt += `╰─━━━━━━━━━━━━━━─`
         return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
     }
 
@@ -88,17 +89,18 @@ let handler = async (m, { conn }) => {
     userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Rampok @${who.split('@')[0]}`)
     saveDB(wdb)
 
-    let txt = `┌───❏「 🕵️ RAMPOK BERHASIL 」❏\n`
+    let txt = `╭─❏「 🕵️ RAMPOK BERHASIL 」❏\n`
     txt += `│ 👤 Perampok: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} *${(persen*100).toFixed(1)}%*\n`
     txt += `│ 🛡️ Asuransi Target: ${(tier.asuransi*100).toFixed(0)}%\n`
-    txt += `└───────────────────`
+    txt += `╰─━━━━━━━━━━━━━━─`
 
     conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
 handler.help = ['rampok (reply)']
 handler.tags = ['rpg']
-handler.command = ['rampok']
+handler.command = /^(rampok)$/i
+handler.alias = ['rampok']
 handler.group = true
 export default handler

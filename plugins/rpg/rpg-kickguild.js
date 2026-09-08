@@ -13,7 +13,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     target = text.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
   }
 
-  if (!target) return m.reply(`*Format Salah!*\n\n*Reply:* Balas chat member lalu ketik *${usedPrefix}${command}*\n*Nomor:* ${usedPrefix}${command} 628xxx`)
+  if (!target) return m.reply(`╭─❏「 🦶 KICK GUILD 」❏\n├[ Reply ] Balas chat member lalu ketik *${usedPrefix}${command}*\n├[ Nomor ] ${usedPrefix}${command} 628xxx\n╰─━━━━━━━━━━━━━━─`)
 
   let index = myGuild.members.indexOf(target)
   if (index === -1) return m.reply('❌ Orang tersebut bukan member guild kamu.')
@@ -23,13 +23,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (myGuild.contribution) delete myGuild.contribution[target]
 
   // COOLDOWN 12 JAM UNTUK YANG DI KICK
-  let targetUser = getUserRPG(target)
+  let targetUser = getUserRPG(wdb, target).rpg
+  if (!targetUser) return m.reply('❌ Data RPG member tidak ditemukan.')
   targetUser.lastGuildCooldown = Date.now()
   targetUser.lastGuildCooldownType = 'kick'
 
   saveDB(wdb)
 
-  return sendRpgMsg(conn, m, `✅ Berhasil mengeluarkan @${target.split('@')[0]} dari Guild *${myGuild.name}*\n⏰ Dia terkena cooldown 12 jam.`, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [target] } })
+  return sendRpgMsg(conn, m, `╭─❏「 🦶 KICK GUILD 」❏\n├[ 👤 Member ] @${target.split('@')[0]}\n├[ 🏰 Guild ] ${myGuild.name}\n├[ Status ] Berhasil dikeluarkan\n├[ ⏰ Cooldown ] 12 jam\n╰─━━━━━━━━━━━━━━─`, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [target] } })
 }
 
 handler.help = ['kickguild <nomor/reply>']
