@@ -146,6 +146,10 @@ async function sendVoiceAudioFromKeyword(m, conn, keyword) {
 
     // Siapkan voice note (konversi otomatis ke opus jika mp3/m4a, ekstrak gelombang dynamic non-flat, dan di-cache)
     const { opusBuffer, waveform, seconds } = await prepareVoiceNote(filePath)
+    if (!opusBuffer || opusBuffer.length < 100) {
+      console.warn('[voice-note] File audio tidak valid atau kosong:', filePath)
+      return false
+    }
     const wfArray = waveform ? new Uint8Array(waveform) : undefined
 
     if (client && typeof client.sendMessage === 'function') {
