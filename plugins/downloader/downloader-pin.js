@@ -5,6 +5,7 @@ import {
   jidNormalizedUser
 } from "@whiskeysockets/baileys"
 import { randomBytes } from "crypto"
+import { status, toSmallNum } from '../../lib/style.js'
 
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -14,10 +15,12 @@ function shuffle(array) {
   return array
 }
 
-const handler = async (m, { conn, text, command }) => {
-  if (!text) return m.reply(`Example: .${command} elaina`)
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text) {
+    return m.reply(status.warning(`Masukkan kata kunci pencarian Pinterest!\n> Contoh: *${usedPrefix + command} elaina*`))
+  }
 
-  await conn.sendMessage(m.chat, { react: { text: "🕓", key: m.key } })
+  await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
 
   let urls = []
   try {
@@ -37,17 +40,17 @@ const handler = async (m, { conn, text, command }) => {
       }
     })
 
-    if (!res.ok) throw new Error(`Error ${res.status}`)
+    if (!res.ok) throw new Error(`HTTP Error ${res.status}`)
 
     const linkHeader = res.headers.get("Link")
-    if (!linkHeader) throw new Error(`Hasil kosong untuk "${text}"`)
+    if (!linkHeader) throw new Error(`Hasil pencarian kosong untuk "${text}"`)
 
     urls = shuffle(
       [...linkHeader.matchAll(/<(.*?)>/gm)].map(a => a[1])
     )
 
   } catch (e) {
-    return m.reply(String(e.message))
+    return m.reply(status.error(`Gagal mencari di Pinterest.\n> ${e.message || e}`))
   }
 
   const mediaList = []
@@ -62,14 +65,23 @@ const handler = async (m, { conn, text, command }) => {
       const arr = await r.arrayBuffer()
       const buffer = Buffer.from(arr)
 
+      const caption = `*──  ୨୧ ✧ PINTEREST SEARCH ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
+*┆* ⟡ ᴘᴇɴᴄᴀʀɪᴀɴ : *${text}*
+*┆* ◈ ꜱʟɪᴅᴇ     : *${toSmallNum(mediaList.length + 1)} / ${toSmallNum(5)}*
+*╰───────────────*`.trim()
+
       mediaList.push({
         image: buffer,
-        caption: `📌 Pinterest Result\n🔎 Query: ${text}`
+        caption
       })
     } catch {}
   }
 
-  if (!mediaList.length) return m.reply("❌ Tidak ada gambar valid.")
+  if (!mediaList.length) {
+    return m.reply(status.error("Tidak ada gambar valid yang berhasil diunduh."))
+  }
 
   const opener = generateWAMessageFromContent(
     m.chat,
@@ -113,7 +125,7 @@ const handler = async (m, { conn, text, command }) => {
 }
 
 handler.help = ["pin <query>"]
-handler.tags = ["internet"]
+handler.tags = ["internet", "downloader"]
 handler.command = /^pin$/i
 
 export default handler

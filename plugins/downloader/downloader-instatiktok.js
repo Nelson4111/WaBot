@@ -1,20 +1,20 @@
-/*
-fitur : InstaTiktok download 
-desk : support fb,ig,tiktok
-source scarape : https://whatsapp.com/channel/0029VakezCJDp2Q68C61RH2C/3951
-*/
-
 import axios from 'axios'
-import cheerio from 'cheerio'
+import * as cheerio from 'cheerio'
+import { status, toSmallNum } from '../../lib/style.js'
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
-  if (args.length < 2) return m.reply(`Contoh:\n${usedPrefix + command} tiktok https://vt.tiktok.com/ZSBKKk4HS/`)
+  if (args.length < 2) {
+    return m.reply(status.warning(`Format input salah!\n> Contoh: *${usedPrefix + command} tiktok https://vt.tiktok.com/...*\n> Pilihan platform: *instagram*, *tiktok*, *facebook*`))
+  }
 
   const platform = args[0].toLowerCase()
   const inputUrl = args[1]
 
-  if (!['instagram', 'tiktok', 'facebook'].includes(platform))
-    return m.reply('Platform tidak valid! Gunakan: instagram, tiktok, atau facebook')
+  if (!['instagram', 'tiktok', 'facebook'].includes(platform)) {
+    return m.reply(status.warning('Platform tidak valid! Gunakan: *instagram*, *tiktok*, atau *facebook*'))
+  }
+
+  await m.reply(status.wait(`Sedang memproses unduhan ${platform}...`))
 
   const SITE_URL = 'https://instatiktok.com/'
   const form = new URLSearchParams()
@@ -28,13 +28,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'Origin': SITE_URL,
         'Referer': SITE_URL,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      timeout: 15000
     })
 
     const html = res?.data?.html
-    if (!html || res?.data?.status !== 'success') throw 'Gagal ambil data'
+    if (!html || res?.data?.status !== 'success') throw new Error('Gagal mengekstrak data media.')
 
     const $ = cheerio.load(html)
     const links = []
@@ -44,7 +45,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       if (link && !links.includes(link)) links.push(link)
     })
 
-    if (links.length === 0) throw 'Link download tidak ditemukan'
+    if (links.length === 0) throw new Error('Link download tidak ditemukan.')
 
     let download
     if (platform === 'instagram') {
@@ -56,15 +57,33 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     }
 
     if (Array.isArray(download)) {
-      for (let link of download) {
-        await conn.sendFile(m.chat, link, 'media.mp4', `✅ Hasil download dari ${platform}`, m)
+      for (let i = 0; i < download.length; i++) {
+        const caption = `*──  ୨୧ ✧ INSTATIKTOK DOWNLOADER ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
+*┆* ⟡ ᴘʟᴀᴛꜰᴏʀᴍ : *${platform.toUpperCase()}*
+*┆* ◈ ꜱʟɪᴅᴇ     : *${toSmallNum(i + 1)} / ${toSmallNum(download.length)}*
+*╰───────────────*
+
+> _Media berhasil diunduh_`.trim()
+
+        await conn.sendFile(m.chat, download[i], 'media.mp4', caption, m)
       }
     } else {
-      await conn.sendFile(m.chat, download, 'media.mp4', `✅ Berhasil download dari ${platform}`, m)
+      const caption = `*──  ୨୧ ✧ INSTATIKTOK DOWNLOADER ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
+*┆* ⟡ ᴘʟᴀᴛꜰᴏʀᴍ : *${platform.toUpperCase()}*
+*┆* ◈ ᴛɪᴘᴇ     : *Video MP4*
+*╰───────────────*
+
+> _Media berhasil diunduh_`.trim()
+
+      await conn.sendFile(m.chat, download, 'media.mp4', caption, m)
     }
 
   } catch (e) {
-    m.reply(`❌ Gagal: ${e.message || e}`)
+    m.reply(status.error(`Gagal mengunduh media:\n> ${e.message || e}`))
   }
 }
 

@@ -16,43 +16,44 @@ export const CATEGORY_MAP = {
   anime: {
     title: 'ANIME & MANGA MENU',
     tags: ['anime'],
-    aliases: ['anime', 'menuanime', 'animemenu']
+    aliases: ['menuanime', 'animemenu']
   },
   audio: {
     title: 'MANIPULASI AUDIO MENU',
-    tags: ['audio'],
-    aliases: ['audio', 'menuaudio', 'audiomenu']
+    tags: ['audio', 'sound'],
+    aliases: ['menuaudio', 'audiomenu', 'menusound', 'soundmenu'],
+    type: 'audio'
   },
   csm: {
     title: 'CHAINSAW MAN RPG MENU',
     tags: ['csm'],
-    aliases: ['csm', 'menucsm', 'csmmenu'],
+    aliases: ['menucsm', 'csmmenu'],
     type: 'csm'
   },
   download: {
     title: 'DOWNLOADER MENU',
     tags: ['downloader'],
-    aliases: ['download', 'downloader', 'menudownload', 'downloadmenu', 'menudownloader']
+    aliases: ['menudownload', 'downloadmenu', 'menudownloader']
   },
   fun: {
     title: 'FITUR HIBURAN MENU',
     tags: ['fun'],
-    aliases: ['fun', 'menufun', 'funmenu']
+    aliases: [ 'menufun', 'funmenu']
   },
   game: {
     title: 'MINI GAMES MENU',
     tags: ['game'],
-    aliases: ['game', 'menugame', 'gamemenu']
+    aliases: [ 'menugame', 'gamemenu']
   },
   arcade: {
     title: 'IN-BUBBLE ARCADE MENU',
     tags: ['arcade'],
-    aliases: ['arcade', 'menuarcade', 'arcademenu', 'minigame', 'minigames']
+    aliases: [ 'menuarcade', 'arcademenu', 'minigame', 'minigames']
   },
   group: {
     title: 'GROUP MANAGEMENT MENU',
     tags: ['group'],
-    aliases: ['group', 'menugroup', 'groupmenu']
+    aliases: ['menugroup', 'groupmenu']
   },
   info: {
     title: 'INFORMASI BOT MENU',
@@ -62,17 +63,17 @@ export const CATEGORY_MAP = {
   internet: {
     title: 'INTERNET & SEARCH MENU',
     tags: ['internet'],
-    aliases: ['internet', 'menuinternet', 'internetmenu']
+    aliases: [ 'menuinternet', 'internetmenu']
   },
   maker: {
     title: 'IMAGE MAKER MENU',
     tags: ['maker'],
-    aliases: ['maker', 'menumaker', 'makermenu']
+    aliases: [ 'menumaker', 'makermenu']
   },
   moneytrack: {
     title: 'CATATAN KEUANGAN MENU',
     tags: ['moneytrack'],
-    aliases: ['moneytrack', 'menumoneytrack', 'moneytrackmenu']
+    aliases: ['menumoneytrack', 'moneytrackmenu']
   },
   owner: {
     title: 'OWNER ONLY MENU',
@@ -82,34 +83,44 @@ export const CATEGORY_MAP = {
   pasangan: {
     title: 'PASANGAN & ROMANSA MENU',
     tags: ['pasangan', 'romansa'],
-    aliases: ['pasangan', 'menupasangan', 'pasanganmenu', 'romansa', 'menuromansa'],
+    aliases: [ 'menupasangan', 'pasanganmenu', 'romansa', 'menuromansa'],
     type: 'pasangan'
   },
   rpg: {
     title: 'RPG ADVENTURE MENU',
     tags: ['rpg'],
-    aliases: ['rpg', 'menurpg', 'rpgmenu'],
+    aliases: ['menurpg', 'rpgmenu'],
     type: 'rpg'
+  },
+  quotes: {
+    title: 'QUOTES & KATA BIJAK MENU',
+    tags: ['quotes'],
+    aliases: ['menuquotes', 'quotesmenu']
+  },
+  random: {
+    title: 'RANDOM & CECAN MENU',
+    tags: ['random'],
+    aliases: ['menurandom', 'randommenu', 'cecan', 'menucecan']
   },
   search: {
     title: 'DATABASE SEARCH MENU',
     tags: ['search'],
-    aliases: ['search', 'menusearch', 'searchmenu']
+    aliases: ['menusearch', 'searchmenu']
   },
   stalk: {
     title: 'STALKER SOSMED MENU',
     tags: ['stalk'],
-    aliases: ['stalk', 'stalker', 'menustalk', 'stalkmenu', 'menustalker', 'stalkermenu']
+    aliases: ['menustalk', 'stalkmenu', 'menustalker', 'stalkermenu']
   },
   sticker: {
     title: 'STICKER MAKER MENU',
     tags: ['sticker'],
-    aliases: ['sticker', 'menusticker', 'stickermenu']
+    aliases: ['menusticker', 'stickermenu']
   },
   tools: {
     title: 'UTILITY TOOLS MENU',
     tags: ['tools'],
-    aliases: ['tools', 'menutools', 'toolsmenu']
+    aliases: ['menutools', 'toolsmenu']
   },
   thanksto: {
     title: 'THANKS TO & DONATUR',
@@ -293,10 +304,12 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
 *┆*   _Teka-teki susun blok 8x8 santai & taktis_
 *┆* ✦ *Tetris Retro Mini* : \`${_p}tetris\`
 *┆*   _Klasik susun balok dengan tombol sentuh_
-*┆* ◈ *Star Arena Mabar* : \`${_p}mabar\`
+*┆* ◈ *Star Arena Mabar* : \`${_p}mabar [nama_room]\`
 *┆*   _Pertarungan real-time multipemain PieSocket_
 *┆* ❖ *Catur Interaktif* : \`${_p}chess html\`
 *┆*   _Papan catur digital in-bubble & web_
+*┆* ⟡ *Menu Arcade Ringkas* : \`${_p}arcade\`
+*┆*   _Tampilan tombol cepat game arcade_
 *╰───────────────*`
 
     let arcadeTools = `*╭  〔 ⚙ ᴀ ʟ ᴀ ᴛ  ᴅ ɪ ᴀ ɢ ɴ ᴏ ꜱ ᴛ ɪ ᴋ 〕*
@@ -306,6 +319,29 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
 
     commandCards.push(arcadeKatalog, arcadeTools)
     notesBlock = `> ｡˚ ⊹ *ᴋᴇᴛᴜᴋ ᴘᴇʀɪɴᴛᴀʜ ᴅɪ ᴀᴛᴀꜱ ᴜɴᴛᴜᴋ ᴍᴀɪɴ ʟᴀɴɢꜱᴜɴɢ ᴅɪ ᴡʜᴀᴛꜱᴀᴘᴘ* ⊹ ˚ ｡\n> _Semua game berjalan di dalam gelembung obrolan tanpa instal aplikasi._`
+  } else if (targetCategory.key === 'audio') {
+    const effects = [
+      'bass', 'blown', 'deep', 'earrape', 'fast', 'fat', 'nightcore',
+      'reverse', 'robot', 'slow', 'smooth', 'tupai', 'reverb', 'chorus',
+      'flanger', 'distortion', 'pitch', 'highpass', 'lowpass', 'underwater'
+    ].map(cmd => `*┆* ⟡ \`${_p}${cmd}\` _(reply audio/vn)_`).join('\n')
+
+    let audioEffectCard = `*╭  〔 ❖ ᴍ ᴀ ɴ ɪ ᴘ ᴜ ʟ ᴀ ꜱ ɪ  ᴇ ꜰ ᴇ ᴋ  ꜱ ᴜ ᴀ ʀ ᴀ 〕*\n${effects}\n*╰───────────────*`
+
+    let soundCard = `*╭  〔 ⟡ ꜱ ᴏ ᴜ ɴ ᴅ ʙ ᴏ ᴀ ʀ ᴅ  &  ᴍ ᴇ ᴍ ᴇ 〕*
+*┆* ⟡ *\`${_p}sound <1-119>\`* : _Preset suara soundboard (1-119)_
+*┆* ✧ *\`${_p}sad <1-30>\`* : _Koleksi audio bertema sedih (1-30)_
+*┆* ✦ *\`${_p}soundmeme\`* : _Koleksi meme audio acak instan_
+*╰───────────────*`
+
+    let utilCard = `*╭  〔 ✧ ᴜ ᴛ ɪ ʟ ɪ ᴛ ᴀ ꜱ  ᴀ ᴜ ᴅ ɪ ᴏ 〕*
+*┆* ⟡ *\`${_p}toaudio\`* : _Ekstrak video reply jadi file MP3_
+*┆* ✧ *\`${_p}transcibe <url>\`* : _Transkrip percakapan YouTube ke teks_
+*┆* ✦ *\`${_p}soundcloud <query>\`* : _Cari & download audio SoundCloud_
+*╰───────────────*`
+
+    commandCards.push(audioEffectCard, soundCard, utilCard)
+    notesBlock = `> ｡˚ ⊹ *ʀᴇᴘʟʏ ᴀᴜᴅɪᴏ/ᴠɴ ᴅᴇɴɢᴀɴ ᴘᴇʀɪɴᴛᴀʜ ᴅɪ ᴀᴛᴀꜱ ᴜɴᴛᴜᴋ ᴍᴇɴɢᴜʙᴀʜ ꜱᴜᴀʀᴀ* ⊹ ˚ ｡\n> _Semua Voice Note terkirim dengan visualisasi gelombang suara dinamis._`
   } else if (targetCategory.type === 'pasangan') {
     let pasanganFeatures = Object.values(global.plugins)
       .filter(p => !p.disabled && p.tags && p.tags.includes('pasangan'))
@@ -374,12 +410,12 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
             { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: `${_p}allmenu` },
             { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: `${_p}menuai` },
             { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: `${_p}menuanime` },
-            { header: 'Audio', title: 'Manipulasi Audio', description: 'Sound effect, convert audio, TTS', id: `${_p}menuaudio` },
+            { header: 'Audio', title: 'Audio & Soundboard', description: '20+ efek suara, VN, sound meme, toaudio', id: `${_p}menuaudio` },
             { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: `${_p}menucsm` },
             { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: `${_p}menudownload` },
             { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: `${_p}menufun` },
             { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: `${_p}menugame` },
-            { header: 'Arcade', title: 'In-Bubble Arcade', description: 'Game HTML5, GD, Block Blast, Tetris', id: `${_p}menuarcade` },
+            { header: 'Arcade', title: 'In-Bubble Arcade Games', description: 'Game HTML5: GD, Block Blast, Tetris, Mabar', id: `${_p}menuarcade` },
             { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: `${_p}menugroup` },
             { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: `${_p}menuinfo` },
             { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: `${_p}menuinternet` },
@@ -387,6 +423,8 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
             { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: `${_p}menumoneytrack` },
             { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: `${_p}menuowner` },
             { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: `${_p}menupasangan` },
+            { header: 'Quotes', title: 'Quotes & Kata Bijak', description: 'Anime, motivasi, bucin, senja, dll', id: `${_p}menuquotes` },
+            { header: 'Random', title: 'Random & Media', description: 'Foto cecan, wallpaper, media acak', id: `${_p}menurandom` },
             { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: `${_p}menurpg` },
             { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: `${_p}menusearch` },
             { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: `${_p}menustalker` },

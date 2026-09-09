@@ -87,7 +87,7 @@ let handler = async (m, { conn }) => {
 }
 
 handler.help = ['soundmeme']
-handler.tags = ['sound', 'fun']
+handler.tags = ['audio', 'sound', 'fun']
 handler.command = /^soundmeme$/i
 handler.limit = true
 

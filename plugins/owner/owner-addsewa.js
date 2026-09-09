@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { sendBotGroupIntro } from '../../lib/bot-intro.js'
 
 const dbPath = './lib/database/sewa.json'
 
@@ -26,6 +27,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         
         let id = dataGrup.id
         await conn.groupAcceptInvite(inviteCode).catch(() => {})
+        const groupJid = id.endsWith('@g.us') ? id : `${id}@g.us`
+        sendBotGroupIntro(conn, groupJid).catch(err => console.error('[addsewa sendBotGroupIntro error]:', err))
 
         if (!fs.existsSync(path.dirname(dbPath))) fs.mkdirSync(path.dirname(dbPath), { recursive: true })
         if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify([], null, 2))

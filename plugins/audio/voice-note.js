@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { VOICE_NOTE_GROUPS, VOICE_NOTE_DIR, MIME_TYPES } from '../../lib/voice-noteData.js'
+import { VOICE_NOTE_GROUPS, VOICE_NOTE_DIR, MIME_TYPES, prepareVoiceNote } from '../../lib/voice-noteData.js'
 
 const buildVoiceNotes = () => Object.fromEntries(
   VOICE_NOTE_GROUPS.filter(group => group.enabled !== false)
@@ -111,8 +111,11 @@ function resolveTarget(m, remaining = []) {
 }
 
 function writeDataFile(groups) {
-  const exported = `import path from 'path'\n\nexport const VOICE_NOTE_DIR = path.resolve(\n  './media/voice-notes',\n)\n\nexport const MIME_TYPES = {\n  '.mp3': 'audio/mpeg',\n  '.m4a': 'audio/mp4',\n  '.ogg': 'audio/ogg; codecs=opus',\n  '.opus': 'audio/ogg; codecs=opus',\n  '.wav': 'audio/wav',\n}\n\nexport const VOICE_NOTE_GROUPS = ${JSON.stringify(groups, null, 2)}\n`
-  fs.writeFileSync(path.resolve('../../lib/voice-noteData.js'), exported)
+  const targetPath = path.resolve('./lib/voice-noteData.js')
+  const currentContent = fs.readFileSync(targetPath, 'utf8')
+  const regex = /export const VOICE_NOTE_GROUPS = [\s\S]*$/
+  const newContent = currentContent.replace(regex, `export const VOICE_NOTE_GROUPS = ${JSON.stringify(groups, null, 2)}\n`)
+  fs.writeFileSync(targetPath, newContent, 'utf8')
 }
 
 function resolveVoiceAudioFile(keyword) {
@@ -128,29 +131,50 @@ async function sendVoiceAudioFromKeyword(m, conn, keyword) {
   if (!fileName) return false
 
   const filePath = path.resolve(VOICE_NOTE_DIR, fileName)
-  const ext = path.extname(fileName).toLowerCase()
-  const mime = MIME_TYPES[ext] || 'audio/mpeg'
-  const sendAsPtt = ['.ogg', '.opus'].includes(ext)
+  if (!fs.existsSync(filePath)) return false
+
+  const client = conn || m.conn || global.conn
+
+  // Tampilkan animasi sedang merekam suara sebelum voice note dikirim
+  if (client && typeof client.sendPresenceUpdate === 'function') {
+    await client.sendPresenceUpdate('recording', m.chat).catch(() => {})
+  }
 
   try {
-    const buffer = fs.readFileSync(filePath)
-    if (typeof conn.sendMessage === 'function') {
-      await conn.sendMessage(m.chat, {
-        audio: buffer,
-        mimetype: mime,
-        ptt: sendAsPtt,
-        fileName,
-        caption: '',
+    // Jeda agar animasi VN ("sedang merekam suara...") terlihat oleh penerima
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // Siapkan voice note (konversi otomatis ke opus jika mp3/m4a, ekstrak gelombang dynamic non-flat, dan di-cache)
+    const { opusBuffer, waveform, seconds } = await prepareVoiceNote(filePath)
+    const wfArray = waveform ? new Uint8Array(waveform) : undefined
+
+    if (client && typeof client.sendMessage === 'function') {
+      await client.sendMessage(m.chat, {
+        audio: opusBuffer,
+        mimetype: 'audio/ogg; codecs=opus',
+        ptt: true,
+        seconds: seconds || 1,
+        waveform: wfArray
       }, { quoted: m })
       return true
     }
-  } catch (e) {
-    console.error(e)
-  }
 
-  if (typeof conn.sendFile === 'function') {
-    await conn.sendFile(m.chat, filePath, fileName, '', null, sendAsPtt)
-    return true
+    if (client && typeof client.sendFile === 'function') {
+      await client.sendFile(m.chat, opusBuffer, `${keyword}.opus`, '', m, true, {
+        mimetype: 'audio/ogg; codecs=opus',
+        ptt: true,
+        seconds: seconds || 1,
+        waveform: wfArray
+      })
+      return true
+    }
+  } catch (e) {
+    console.error('[voice-note] Error sending voice note:', e)
+  } finally {
+    // Hentikan status recording
+    if (client && typeof client.sendPresenceUpdate === 'function') {
+      await client.sendPresenceUpdate('paused', m.chat).catch(() => {})
+    }
   }
 
   return false

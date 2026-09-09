@@ -28,6 +28,7 @@ process.on('uncaughtException', (err) => {
     console.error('[UNCAUGHT EXCEPTION]', err);
 });
 import store from './lib/store.js'
+import { sendBotGroupIntro } from './lib/bot-intro.js' // Official Avelia group intro greeting with dynamic acoustic waveform
 
 import './config.js'
 
@@ -791,6 +792,7 @@ global.reloadHandler = async function (restatConn) {
       conn.ev.off('messages.upsert', conn.handler)
       conn.ev.off('group-participants.update', conn.participantsUpdate)
       conn.ev.off('groups.update', conn.groupsUpdate)
+      if (conn.groupsUpsert) conn.ev.off('groups.upsert', conn.groupsUpsert)
       conn.ev.off('connection.update', conn.connectionUpdate)
       conn.ev.off('creds.update', conn.credsUpdate)
     }
@@ -828,6 +830,14 @@ global.reloadHandler = async function (restatConn) {
     conn.handler = handler.handler.bind(global.conn)
     conn.participantsUpdate = handler.participantsUpdate.bind(global.conn)
     conn.groupsUpdate = handler.groupsUpdate.bind(global.conn)
+    conn.groupsUpsert = async (groups) => {
+      for (const group of (groups || [])) {
+        if (group && group.id) {
+          console.log(chalk.green(`🎉 [groups.upsert] Bot dimasukkan ke grup baru: ${group.id}`))
+          sendBotGroupIntro(global.conn || conn, group.id).catch(console.error)
+        }
+      }
+    }
     conn.connectionUpdate = connectionUpdate.bind(global.conn)
     conn.credsUpdate = saveCreds.bind(global.conn)
     conn.callHandler = async (call) => {
@@ -842,6 +852,7 @@ global.reloadHandler = async function (restatConn) {
     conn.ev.on('messages.upsert', conn.handler)
     conn.ev.on('group-participants.update', conn.participantsUpdate)
     conn.ev.on('groups.update', conn.groupsUpdate)
+    conn.ev.on('groups.upsert', conn.groupsUpsert)
     conn.ev.on('connection.update', conn.connectionUpdate)
     conn.ev.on('creds.update', conn.credsUpdate)
     isInit = false

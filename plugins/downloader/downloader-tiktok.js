@@ -1,5 +1,6 @@
 // downloader tiktok - fix: download buffer dulu untuk URL yg butuh headers khusus
 import axios from 'axios'
+import { status, toSmallNum } from '../../lib/style.js'
 
 // ─── UTIL: Download video/audio sebagai Buffer ──────────────────────────────
 async function downloadBuffer(url, referer = '') {
@@ -406,28 +407,17 @@ async function searchTikTok(query) {
 
 // ─── HANDLER UTAMA ────────────────────────────────────────────────────────────
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  await m.react('⏳')
-
   const input = (m.quoted ? m.quoted.text : text)?.trim()
   if (!input) {
-    return m.reply(
-      `╭──『 *TikTok Downloader* 』\n` +
-      `│\n` +
-      `│ *Cara pakai:*\n` +
-      `│ ${usedPrefix + command} <link tiktok>\n` +
-      `│ ${usedPrefix + command} <kata kunci>\n` +
-      `│\n` +
-      `│ *Contoh:*\n` +
-      `│ ${usedPrefix + command} https://vt.tiktok.com/xxx\n` +
-      `│ ${usedPrefix + command} elaina edit amv\n` +
-      `╰─────────────────────`
-    )
+    return m.reply(status.warning(`Masukkan tautan atau kata kunci TikTok!\n> Contoh:\n> › *${usedPrefix + command} https://vt.tiktok.com/...*\n> › *${usedPrefix + command} elaina edit amv*`))
   }
+
+  await m.react('⏳')
 
   try {
     let url = input
     if (!/^https?:\/\//i.test(input)) {
-      await m.reply(`🔍 Mencari *"${input}"* di TikTok...`)
+      await m.reply(status.wait(`Mencari video TikTok untuk *"${input}"*...`))
       url = await searchTikTok(input)
     }
 
@@ -435,12 +425,26 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     // ── Slide / Image Post ──────────────────────────────────────────
     if (Array.isArray(res.images) && res.images.length > 0) {
-      await m.reply(`📸 *${res.title}*\n🖼️ ${res.images.length} slide, mengirim...`)
+      await m.reply(status.wait(`Ditemukan ${toSmallNum(res.images.length)} slide gambar, sedang mengirim...`))
+      const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
       for (let i = 0; i < res.images.length; i++) {
-        await conn.sendMessage(m.chat, {
-          image: { url: res.images[i] },
-          caption: `🚩 Slide ${i + 1}/${res.images.length}`
-        }, { quoted: m })
+        const caption = `*──  ୨୧ ✧ TIKTOK SLIDE ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
+*┆* ◈ ꜱʟɪᴅᴇ : *${toSmallNum(i + 1)} / ${toSmallNum(res.images.length)}*
+*╰───────────────*`.trim()
+
+        await conn.sendButtonV2(m.chat, {
+          title: '⛩️ TIKTOK SLIDE',
+          subtitle: `Slide ${toSmallNum(i + 1)} / ${toSmallNum(res.images.length)}`,
+          text: caption,
+          footer,
+          buffer: res.images[i],
+          buttons: [
+            ['📜 Menu Utama', `${usedPrefix}menu`]
+          ]
+        }, m)
         await new Promise(r => setTimeout(r, 700))
       }
       if (res.music) {
@@ -458,7 +462,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       let videoData
 
       if (res.needBuffer) {
-        // Download dulu sebagai buffer (untuk URL yang butuh headers khusus)
         console.log(`[TikTok] Downloading buffer from: ${res.play.substring(0, 80)}...`)
         try {
           videoData = await downloadBuffer(res.play, res.referer)
@@ -469,18 +472,25 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         }
       }
 
+      const caption = `*──  ୨୧ ✧ TIKTOK DOWNLOADER ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
+*┆* ◈ ᴛɪᴘᴇ  : *Video MP4 (No Watermark)*
+*╰───────────────*
+
+> _Media berhasil diunduh_`.trim()
+
       if (videoData) {
-        // Kirim sebagai buffer
         await conn.sendMessage(m.chat, {
           video: videoData,
-          caption: `✨ *${res.title}*`,
+          caption,
           mimetype: 'video/mp4'
         }, { quoted: m })
       } else {
-        // Kirim sebagai URL langsung (fallback)
         await conn.sendMessage(m.chat, {
           video: { url: res.play },
-          caption: `✨ *${res.title}*`
+          caption
         }, { quoted: m })
       }
     }
@@ -497,9 +507,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   } catch (e) {
     await m.react('❌')
     console.error('[TikTok Handler]', e)
-    throw String(e.message || e)
+    m.reply(status.error(`Gagal memproses video TikTok:\n> ${e?.message || e}`))
   }
 }
+
 
 handler.help = ['tt <link/kata kunci>', 'tiktok <link>', 'ttsearch <kata kunci>']
 handler.tags = ['downloader']

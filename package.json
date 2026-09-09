@@ -14,7 +14,8 @@
     "start": "node --expose-gc index.js",
     "start:all": "node start-all.js",
     "test": "node test-conn-buttons.js",
-    "dev": "nodemon --experimental-specifier-resolution=node index.js"
+    "dev": "nodemon --experimental-specifier-resolution=node index.js",
+    "postinstall": "node scripts/patch-baileys.js"
   },
   "keywords": [
     "termux-whatsapp-bot",

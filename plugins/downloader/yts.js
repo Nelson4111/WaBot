@@ -1,42 +1,55 @@
 import yts from 'yt-search'
+import { getMenuThumbnail, toSmallNum, status } from '../../lib/style.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) throw `Cari apa?\nContoh: *${usedPrefix + command} Alan Walker Faded*`
-  await conn.reply(m.chat, global.wait || '⏳ Sedang mencari...', m)
+  if (!text) {
+    return m.reply(status.warning(`Masukkan kata kunci pencarian YouTube!\n> Contoh: *${usedPrefix + command} Alan Walker Faded*`))
+  }
 
-  let results = await yts(text)
-  let videos = results.all.filter(v => v.type === 'video') 
-  
-  if (videos.length === 0) throw 'Video tidak ditemukan!'
+  await m.reply(status.wait('Sedang mencari video di YouTube...'))
 
-  let video = videos[0] 
+  try {
+    const results = await yts(text)
+    const videos = results.all?.filter(v => v.type === 'video') || []
+    if (videos.length === 0) throw new Error(`Video tidak ditemukan untuk kata kunci "${text}"`)
 
-  let caption = `
-🍙 *YOUTUBE SEARCH*
+    const video = videos[0]
+    const thumb = video.thumbnail || await getMenuThumbnail()
 
-📌 *Judul:* ${video.title}
-🔗 *Link:* ${video.url}
-🍜 *Durasi:* ${video.timestamp}
-🍡 *Views:* ${video.views ? video.views.toLocaleString('id-ID') : '-'}
-🍵 *Uploaded:* ${video.ago}
+    const caption = `*──  ୨୧ ✧ YOUTUBE SEARCH ✧ ୨୧  ──*
 
-─────────────────
-🔻 *Pilih Format Download:*
-🎵 *Audio (MP3):*
-${usedPrefix}ytmp3 ${video.url}
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ    : *${video.title}*
+*┆* ✧ ᴄʜᴀɴɴᴇʟ  : *${video.author?.name || '-'}*
+*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(video.timestamp || '0:00')}*
+*┆* ◈ ᴠɪᴇᴡꜱ    : *${toSmallNum(video.views ? video.views.toLocaleString('id-ID') : '-')}*
+*┆* ⏱ ᴜᴘʟᴏᴀᴅ   : *${video.ago || '-'}*
+*╰───────────────*
 
-🎬 *Video (MP4):*
-${usedPrefix}ytmp4 ${video.url}
-─────────────────
-`.trim()
+> *Pilihan Unduh:*
+> 🎵 *Audio:* *${usedPrefix}ytmp3 ${video.url}*
+> 🎥 *Video:* *${usedPrefix}ytmp4 ${video.url}*`.trim()
 
-  await conn.sendMessage(m.chat, {
-    image: { url: video.thumbnail },
-    caption: caption
-  }, { quoted: m })
+    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
+
+    const buttons = [
+      ['📜 Menu Utama', `${usedPrefix}menu`]
+    ]
+
+    await conn.sendButtonV2(m.chat, {
+      title: '⛩️ YOUTUBE DISCOVERY',
+      subtitle: 'Avelia • Video & Audio Discovery',
+      text: caption,
+      footer,
+      buffer: thumb,
+      buttons
+    }, m)
+  } catch (e) {
+    m.reply(status.error(`Gagal melakukan pencarian YouTube.\n> ${e?.message || e}`))
+  }
 }
 
-handler.help = ['yts <query>']
+handler.help = ['yts <query>', 'ytsearch <query>']
 handler.tags = ['tools', 'downloader']
 handler.command = /^yts(earch)?$/i
 handler.limit = true

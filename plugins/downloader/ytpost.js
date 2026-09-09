@@ -1,32 +1,65 @@
-/*
-Fitur : ytpost <link post YouTube>
-Type: Plugin ESM
-API: https://api.siputzx.my.id
-*/
-
-import fetch from 'node-fetch'
+import axios from 'axios'
+import { getMenuThumbnail, toSmallNum, status } from '../../lib/style.js'
 
 let handler = async (m, { conn, args, text, usedPrefix, command }) => {
-  if (!text) return m.reply(`Contoh:\n${usedPrefix + command} https://youtube.com/post/UgkxKYnMaVme5KtjTUDIolHW91uaIGL4UYJK`)
+  if (!text) {
+    return m.reply(status.warning(`Masukkan URL postingan YouTube!\n> Contoh: *${usedPrefix + command} https://youtube.com/post/...*`))
+  }
 
-  const api = `https://api.siputzx.my.id/api/d/ytpost?url=${encodeURIComponent(text)}`
-  let res = await fetch(api)
-  if (!res.ok) return m.reply('❌ Gagal mengambil data post.')
+  await m.reply(status.wait('Sedang mengambil data postingan YouTube...'))
 
-  const json = await res.json()
-  if (!json.status || !json.data) return m.reply('❌ Post tidak ditemukan atau link salah.')
+  try {
+    const api = `https://api.siputzx.my.id/api/d/ytpost?url=${encodeURIComponent(text)}`
+    const res = await axios.get(api, { timeout: 15000 })
+    const json = res.data
 
-  const { postId, content, images } = json.data
+    if (!json?.status || !json?.data) throw new Error('Postingan YouTube tidak ditemukan atau tautan salah.')
 
-  let caption = `📢 *YouTube Post ID:* ${postId}\n\n📝 *Konten:*\n${content}`
+    const { postId, content, images } = json.data
 
-  if (images && images.length) {
-    for (let img of images) {
-      await conn.sendFile(m.chat, img, 'ytpost.jpg', caption, m)
-      caption = '' // Hanya kirim caption di gambar pertama
+    const caption = `*──  ୨୧ ✧ YOUTUBE POST ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴘ ᴏ ꜱ ᴛ 〕*
+*┆* ⟡ ᴘᴏꜱᴛ ɪᴅ : *${postId || '-'}*
+*╰───────────────*
+
+> *Konten:*
+${content ? content.split('\n').map(l => `> ${l}`).join('\n') : '> (Tidak ada teks)'}`.trim()
+
+    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
+
+    if (images && images.length) {
+      // Ada gambar: gunakan button ke .menu sesuai aturan
+      await conn.sendButtonV2(m.chat, {
+        title: '⛩️ YOUTUBE POST',
+        subtitle: 'Avelia • Community Feed',
+        text: caption,
+        footer,
+        buffer: images[0],
+        buttons: [
+          ['📜 Menu Utama', `${usedPrefix}menu`]
+        ]
+      }, m)
+
+      // Jika ada gambar berikutnya (slide 2 dst), kirim sisanya dengan sendButtonV2
+      for (let i = 1; i < images.length; i++) {
+        await conn.sendButtonV2(m.chat, {
+          title: '⛩️ YOUTUBE POST',
+          subtitle: `Slide ${toSmallNum(i + 1)} / ${toSmallNum(images.length)}`,
+          text: `*Slide ${toSmallNum(i + 1)} / ${toSmallNum(images.length)}*`,
+          footer,
+          buffer: images[i],
+          buttons: [
+            ['📜 Menu Utama', `${usedPrefix}menu`]
+          ]
+        }, m)
+      }
+    } else {
+      m.reply(caption)
     }
-  } else {
-    m.reply(caption)
+
+  } catch (e) {
+    m.reply(status.error(`Gagal memproses YouTube Post:\n> ${e.message || e}`))
   }
 }
 

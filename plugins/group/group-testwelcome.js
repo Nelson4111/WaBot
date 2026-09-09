@@ -16,7 +16,8 @@ let handler = async (m, { conn, command, text, isAdmin, isOwner }) => {
     await conn.participantsUpdate({
       id: m.chat,
       participants: [targetUser],
-      action: isWelcome ? 'add' : 'remove'
+      action: isWelcome ? 'add' : 'remove',
+      force: true
     })
   } catch (e) {
     console.error('[TestWelcome] Error:', e)

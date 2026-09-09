@@ -1,80 +1,63 @@
-/*• Nama Fitur : Play
-• Type : Plugin ESM
-• Link Channel : https://whatsapp.com/channel/0029VbB8WYS4CrfhJCelw33j
-• Author : Agas
-*/
-
-import axios from "axios";
+import yts from 'yt-search'
+import { downloadYouTubeMedia } from '../../lib/youtube.js'
+import { getMenuThumbnail, toSmallNum, status } from '../../lib/style.js'
 
 const handler = async (m, { conn, usedPrefix, text, command }) => {
-  if (!text)
-    return m.reply(
-      `Ketikkan judul lagu\nContoh: ${usedPrefix + command} kau masih kekasihku`
-    );
+  if (!text) {
+    return m.reply(status.warning(`Ketikkan judul lagu yang ingin diputar!\n> Contoh: *${usedPrefix + command} Kau Masih Kekasihku*`))
+  }
 
-  await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
+  await m.reply(status.wait('Sedang memproses permintaan lagu...'))
 
   try {
-    const res = await axios.get(
-      `https://api.deline.web.id/downloader/ytplay?q=${encodeURIComponent(text)}`,
-      { timeout: 30000 }
-    );
+    const search = await yts(text)
+    const videos = search.videos || []
+    if (!videos.length) throw new Error(`Lagu "${text}" tidak ditemukan.`)
 
-    if (!res.data?.status || !res.data?.result)
-      throw new Error("Gagal mengambil data dari API.");
+    const video = videos[0]
+    const { title, author, timestamp: duration, url, thumbnail } = video
+    const thumb = thumbnail || await getMenuThumbnail()
 
-    const { url, title, thumbnail, pick, dlink } = res.data.result;
+    const caption = `*──  ୨୧ ✧ YOUTUBE PLAY 2 ✧ ୨୧  ──*
 
-    const caption = `⬣─ 〔 *Y T - A U D I O* 〕 ─⬣
-- *Title:* ${title}
-- *Quality:* ${pick?.quality || "N/A"}
-- *Size:* ${pick?.size || "N/A"}
-- *YouTube:* ${url}
-⬣────────────────⬣`;
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ʟ ᴀ ɢ ᴜ 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ    : *${title}*
+*┆* ✧ ᴀᴜᴛʜᴏʀ   : *${author?.name || '-'}*
+*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
+*╰───────────────*
 
-    await conn.sendMessage(
-      m.chat,
-      {
-        text: caption,
-        contextInfo: {
-          mentionedJid: [m.sender],
-          externalAdReply: {
-            title,
-            body: global.namebot || "Audio Player",
-            thumbnailUrl: thumbnail,
-            mediaType: 1,
-            renderLargerThumbnail: true,
-            sourceUrl: url,
-          },
-        },
-      },
-      { quoted: m }
-    );
+> _Sedang mengunduh file audio ke ruang obrolan..._`.trim()
 
-    await conn.sendMessage(
-      m.chat,
-      {
-        audio: { url: dlink },
-        mimetype: "audio/mp4",
-        fileName: `${title}.mp3`,
-      },
-      { quoted: m }
-    );
+    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
 
-    await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
+    const buttons = [
+      ['📜 Menu Utama', `${usedPrefix}menu`]
+    ]
+
+    await conn.sendButtonV2(m.chat, {
+      title: '⛩️ YOUTUBE AUDIO',
+      subtitle: 'Avelia • Media Service',
+      text: caption,
+      footer,
+      buffer: thumb,
+      buttons
+    }, m)
+
+    const mp3 = await downloadYouTubeMedia(url, 'mp3')
+    await conn.sendMessage(m.chat, {
+      audio: mp3.buffer,
+      mimetype: 'audio/mpeg',
+      fileName: `${title}.mp3`
+    }, { quoted: m })
+
   } catch (err) {
-    console.error(err);
-    let msg;
-    if (err.code === "ECONNABORTED") msg = "Timeout: server terlalu lama merespons.";
-    else msg = "Terjadi kesalahan:\n" + err.message;
-
-    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-    m.reply(msg);
+    m.reply(status.error(`Terjadi kesalahan:\n> ${err.message || err}`))
   }
-};
+}
 
-handler.help = ["play2"];
-handler.tags = ["downloader"];
+handler.help = ['play2 <judul>']
+handler.tags = ['downloader']
 handler.command = ['play2']
+handler.limit = true
 
-export default handler;
+export default handler

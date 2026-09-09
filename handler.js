@@ -10,6 +10,7 @@ import { addChat } from './lib/totalchat.js'
 import { generateWelcomeCard, generateGoodbyeCard } from './lib/cardGenerator.js'
 import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
+import { sendBotGroupIntro } from './lib/bot-intro.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -785,7 +786,7 @@ async function processMessage(m, chatUpdate) {
  * Handle groups participants update
  * @param {import('@whiskeysockets/baileys').BaileysEventMap<unknown>['group-participants.update']} groupsUpdate 
  */
-export async function participantsUpdate({ id, participants, action }) {
+export async function participantsUpdate({ id, participants, action, force = false }) {
     const conn = this
     if (opts['self'])
         return
@@ -798,38 +799,106 @@ export async function participantsUpdate({ id, participants, action }) {
     let text = ''
     switch (action) {
     case 'add':
-    if (chat.welcome) {
+        // Log untuk tracking event add peserta di grup
+        console.log(chalk.cyan(`[participantsUpdate:add] Group: ${id}, Participants:`), participants)
+
+        // Cek jika bot sendiri yang baru bergabung / dimasukkan ke grup oleh admin
+        {
+            const botJid = conn.decodeJid ? conn.decodeJid(conn.user?.id || conn.user?.jid || '') : (conn.user?.id || conn.user?.jid || '')
+            const botUserNum = String(botJid || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+            const botLid = conn.user?.lid || ''
+            const botLidNum = String(botLid || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+            const rawUserId = conn.user?.id || ''
+            const rawUserJid = conn.user?.jid || ''
+
+            const checkIsBot = (u) => {
+                if (!u) return false
+                const uNum = String(u || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+                if (botUserNum && uNum === botUserNum) return true
+                if (botLidNum && uNum === botLidNum) return true
+                if (u === botJid || u === botLid || u === rawUserId || u === rawUserJid) return true
+                return false
+            }
+
+            const isBotAdded = (participants || []).some(checkIsBot)
+
+            if (isBotAdded) {
+                console.log(chalk.green(`🎉 [participantsUpdate] Terdeteksi bot ditambahkan ke grup ${id} oleh admin!`))
+                // Picu sapaan perkenalan bot (asinkron agar tidak memblokir event loop)
+                sendBotGroupIntro(conn, id).catch(err => console.error('[handler participantsUpdate] sendBotGroupIntro error:', err))
+
+                // Keluarkan bot dari daftar participants agar tidak memicu pesan welcome member baru untuk bot sendiri
+                participants = participants.filter(u => !checkIsBot(u))
+                if (participants.length === 0) return
+            }
+        }
+
+        if (chat.welcome || force) {
+        // 1. Penundaan di latar belakang (Background Staggered Delay)
+        // Beri jeda 2.5 detik agar server WhatsApp selesai sinkronisasi member baru
+        await new Promise(r => setTimeout(r, 2500))
+
+        // 2. Tarik metadata terbaru secara paksa (Bypass Cache)
         let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
+        if (groupMetadata && global.updateGroupMetadataCache) global.updateGroupMetadataCache(id, groupMetadata)
+        if (global.memoryStore?.groupMetadata) global.memoryStore.groupMetadata[id] = groupMetadata
+
         const defaultAvatar = 'https://i.pinimg.com/originals/ca/8c/7d/ca8c7de3ae607348b5d3f124eba8a3ee.jpg'
         const welcomeBg = 'https://telegra.ph/file/666ccbfc3201704454ba5.jpg'
 
         for (let user of participants) {
             try {
-                // 1. Penerjemahan LID -> Nomor / Phone JID
+                // 3. Resolusi identitas akurat: Phone JID & LID
                 let resolvedPhoneJid = user
-                if (resolvedPhoneJid && resolvedPhoneJid.endsWith('@lid')) {
+                let resolvedUserLid = null
+
+                const cleanDigits = (user || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+                const foundInGroup = (groupMetadata?.participants || []).find(p => {
+                    const pId = p.id || ''
+                    const pLid = p.lid || ''
+                    const pIdDigits = pId.split('@')[0].split(':')[0].replace(/\D/g, '')
+                    const pLidDigits = pLid.split('@')[0].split(':')[0].replace(/\D/g, '')
+                    return pId === user || pLid === user || (cleanDigits && (pIdDigits === cleanDigits || pLidDigits === cleanDigits))
+                })
+
+                if (foundInGroup) {
+                    if (foundInGroup.lid) resolvedUserLid = foundInGroup.lid
+                    if (foundInGroup.jid && foundInGroup.jid.endsWith('@s.whatsapp.net')) resolvedPhoneJid = foundInGroup.jid
+                    else if (foundInGroup.id && foundInGroup.id.endsWith('@s.whatsapp.net')) resolvedPhoneJid = foundInGroup.id
+                }
+
+                if (!resolvedUserLid && user.endsWith('@lid')) resolvedUserLid = user
+                if (resolvedPhoneJid.endsWith('@lid')) {
                     if (this.decodeJid) resolvedPhoneJid = this.decodeJid(resolvedPhoneJid)
                     if (resolvedPhoneJid.endsWith('@lid') && global.lids?.[user]) resolvedPhoneJid = global.lids[user]
                     if (resolvedPhoneJid.endsWith('@lid') && global.db?.data?.lids?.[user]) resolvedPhoneJid = global.db.data.lids[user]
-                    if (resolvedPhoneJid.endsWith('@lid')) {
-                        const found = (groupMetadata?.participants || []).find(p => p.lid === user || p.id === user)
-                        if (found?.jid && found.jid.endsWith('@s.whatsapp.net')) resolvedPhoneJid = found.jid
-                        else if (found?.phoneNumber || found?.phone || found?.pn) {
-                            const clean = String(found.phoneNumber || found.phone || found.pn).replace(/\D/g, '')
-                            if (clean) resolvedPhoneJid = `${clean}@s.whatsapp.net`
-                        }
-                    }
                 }
                 if (!resolvedPhoneJid || !resolvedPhoneJid.endsWith('@s.whatsapp.net')) {
-                    const cleanDigits = (resolvedPhoneJid || user || '').split('@')[0].split(':')[0].replace(/\D/g, '')
-                    if (cleanDigits) resolvedPhoneJid = `${cleanDigits}@s.whatsapp.net`
+                    const cd = (resolvedPhoneJid || user || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+                    if (cd) resolvedPhoneJid = `${cd}@s.whatsapp.net`
                 }
                 const userNumber = (resolvedPhoneJid || '').split('@')[0].split(':')[0].replace(/\D/g, '')
 
-                // 2. Avatar & Info Profil
+                // Simpan mapping ke global.lids & global.db
+                if (resolvedUserLid && resolvedPhoneJid) {
+                    if (!global.lids) global.lids = {}
+                    global.lids[resolvedUserLid] = resolvedPhoneJid
+                    if (global.db?.data) {
+                        if (!global.db.data.lids) global.db.data.lids = {}
+                        global.db.data.lids[resolvedUserLid] = resolvedPhoneJid
+                        if (global.db.data.users?.[resolvedPhoneJid]) {
+                            global.db.data.users[resolvedPhoneJid].lid = resolvedUserLid
+                        }
+                    }
+                }
+
+                // 4. Avatar & Info Profil
                 let pp = await this.profilePictureUrl(user, 'image').catch(() => null)
                 if (!pp && resolvedPhoneJid !== user) {
                     pp = await this.profilePictureUrl(resolvedPhoneJid, 'image').catch(() => null)
+                }
+                if (!pp && resolvedUserLid) {
+                    pp = await this.profilePictureUrl(resolvedUserLid, 'image').catch(() => null)
                 }
                 if (!pp) pp = defaultAvatar
 
@@ -840,10 +909,35 @@ export async function participantsUpdate({ id, participants, action }) {
                 let memberCount = groupMetadata?.participants ? groupMetadata.participants.length : '1'
                 let groupDesc = groupMetadata?.desc?.toString()?.trim() || ''
 
-                // 3. API URL Ryzumi Welcome
+                // 5. Cek API Ryzumi dengan batas timeout 3.5s; Jika tidak respons / error, langsung fallback ke PP user asli
                 const welcomeUrl = `https://api.ryzumi.net/api/image/welcome?username=${encodeURIComponent(username)}&group=${encodeURIComponent(gcname)}&avatar=${encodeURIComponent(pp)}&bg=${encodeURIComponent(welcomeBg)}&member=${encodeURIComponent(memberCount)}`
+                let playerHeaderImage = pp
+                let isRyzumiSuccess = false
 
-                // 4. Caption Zen Shinto (Member Baru)
+                try {
+                    const controller = new AbortController()
+                    const timeoutTimer = setTimeout(() => controller.abort(), 3500)
+                    const fetchRes = await fetch(welcomeUrl, { signal: controller.signal })
+                    clearTimeout(timeoutTimer)
+                    if (fetchRes.ok) {
+                        const imgBuf = Buffer.from(await fetchRes.arrayBuffer())
+                        if (imgBuf && imgBuf.length > 500) {
+                            playerHeaderImage = imgBuf
+                            isRyzumiSuccess = true
+                        }
+                    }
+                } catch (errApi) {
+                    console.log('[WELCOME] Ryzumi API tidak merespons (timeout/error), langsung gunakan PP user tanpa edit:', errApi?.message)
+                }
+
+                if (!isRyzumiSuccess) {
+                    playerHeaderImage = pp || defaultAvatar
+                }
+
+                // Gambar untuk Penonton (Spectator): Gunakan gambar Welcome Card API (bukan PP mentah)
+                const spectatorHeaderImage = playerHeaderImage || pp || defaultAvatar
+
+                // 6. Caption Zen Shinto (Member Baru)
                 const descBlock = groupDesc 
                     ? `*╭  〔 ◈ ᴅ ᴇ ꜱ ᴋ ʀ ɪ ᴘ ꜱ ɪ 〕*\n${groupDesc.split('\n').map(l => `*┆* ${l}`).join('\n')}\n*╰───────────────*`
                     : `*╭  〔 ◈ ᴅ ᴇ ꜱ ᴋ ʀ ɪ ᴘ ꜱ ɪ 〕*\n*┆* _Belum ada deskripsi grup._\n*╰───────────────*`
@@ -869,79 +963,116 @@ ${descBlock}
 
 > ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴍᴇɴᴊᴇʟᴀᴊᴀʜɪ ꜰɪᴛᴜʀ* ⊹ ˚ ｡`.trim()
 
-                // 5. Caption Penonton (Member Grup Lainnya)
-                const spectatorCaption = `*──  ୨୧ ✧ MEMBER BARU BERGABUNG ✧ ୨୧  ──*
+                // 7. Caption Penonton (Member Grup Lainnya)
+                const spectatorCaption = `*──  ୨୧ ✧ MEMBER BARU ✧ ୨୧  ──*
 
 > *おしらせ!* (ᴘᴇɴɢᴜᴍᴜᴍᴀɴ!)
 > Ada member baru @${userNumber} telah bergabung ke grup!
 > Silakan beri sambutan hangat untuknya ♡`.trim()
 
+                const menuCategories = [
+                    { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: '.allmenu' },
+                    { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: '.menuai' },
+                    { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: '.menuanime' },
+                    { header: 'Audio', title: 'Manipulasi Audio', description: 'Sound effect, convert audio, TTS', id: '.menuaudio' },
+                    { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: '.menucsm' },
+                    { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: '.menudownload' },
+                    { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: '.menufun' },
+                    { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: '.menugame' },
+                    { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: '.menugroup' },
+                    { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: '.menuinfo' },
+                    { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: '.menuinternet' },
+                    { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: '.menumaker' },
+                    { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: '.menumoneytrack' },
+                    { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: '.menuowner' },
+                    { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: '.menupasangan' },
+                    { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: '.menurpg' },
+                    { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: '.menusearch' },
+                    { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: '.menustalker' },
+                    { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: '.menusticker' },
+                    { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: '.menutools' }
+                ]
+
                 let dualSent = false
                 if (typeof this.Button === 'function') {
                     try {
-                        // A. Buat Kartu Sambutan Interaktif untuk Member Baru (Pemain)
-                        const btnPlayer = new this.Button(this)
-                        btnPlayer.setBody(playerCaption)
-                        btnPlayer.setFooter(`${global.namebot || 'Avelia'} • Welcoming Service`)
-                        await btnPlayer.setImage(welcomeUrl).catch(() => null)
-                        
-                        const menuCategories = [
-                            { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: '.allmenu' },
-                            { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: '.menuai' },
-                            { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: '.menuanime' },
-                            { header: 'Audio', title: 'Manipulasi Audio', description: 'Sound effect, convert audio, TTS', id: '.menuaudio' },
-                            { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: '.menucsm' },
-                            { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: '.menudownload' },
-                            { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: '.menufun' },
-                            { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: '.menugame' },
-                            { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: '.menugroup' },
-                            { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: '.menuinfo' },
-                            { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: '.menuinternet' },
-                            { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: '.menumaker' },
-                            { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: '.menumoneytrack' },
-                            { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: '.menuowner' },
-                            { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: '.menupasangan' },
-                            { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: '.menurpg' },
-                            { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: '.menusearch' },
-                            { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: '.menustalker' },
-                            { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: '.menusticker' },
-                            { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: '.menutools' }
-                        ]
+                        // A. Buat Kartu Sambutan Interaktif untuk Member Baru (Pemain) DENGAN GAMBAR
+                        let playerBuilt = null
+                        try {
+                            const btnPlayer = new this.Button(this)
+                            btnPlayer.setBody(playerCaption)
+                            btnPlayer.setFooter(`${global.namebot || 'Avelia'} • Welcoming Service`)
+                            btnPlayer.setImage(playerHeaderImage)
+                            
+                            btnPlayer.addSelection('✦ PILIH KATEGORI')
+                            btnPlayer.makeSection('✦ DAFTAR KATEGORI MENU', 'Populer')
+                            for (const cat of menuCategories) {
+                                btnPlayer.makeRow(cat.header, cat.title, cat.description, cat.id)
+                            }
 
-                        btnPlayer.addSelection('✦ PILIH KATEGORI')
-                        btnPlayer.makeSection('✦ DAFTAR KATEGORI MENU', 'Populer')
-                        for (const cat of menuCategories) {
-                            btnPlayer.makeRow(cat.header, cat.title, cat.description, cat.id)
+                            btnPlayer.addReply('❖ Info Owner', '.owner')
+                            btnPlayer.addReply('⟡ Donasi', '.donasi')
+                            btnPlayer.setContextInfo({
+                                mentionedJid: [resolvedPhoneJid]
+                            })
+                            playerBuilt = await btnPlayer.build(id)
+                        } catch (eImg) {
+                            console.warn('[WELCOME DUAL] Gambar header pemain gagal, fallback ke tombol bersih:', eImg?.message)
+                            const btnPlayerClean = new this.Button(this)
+                            btnPlayerClean.setBody(playerCaption)
+                            btnPlayerClean.setFooter(`${global.namebot || 'Avelia'} • Welcoming Service`)
+                            btnPlayerClean.addSelection('✦ PILIH KATEGORI')
+                            btnPlayerClean.makeSection('✦ DAFTAR KATEGORI MENU', 'Populer')
+                            for (const cat of menuCategories) {
+                                btnPlayerClean.makeRow(cat.header, cat.title, cat.description, cat.id)
+                            }
+                            btnPlayerClean.addReply('❖ Info Owner', '.owner')
+                            btnPlayerClean.addReply('⟡ Donasi', '.donasi')
+                            btnPlayerClean.setContextInfo({
+                                mentionedJid: [resolvedPhoneJid]
+                            })
+                            playerBuilt = await btnPlayerClean.build(id)
                         }
 
-                        btnPlayer.addReply('❖ Info Owner', '.owner')
-                        btnPlayer.addReply('⟡ Donasi', '.donasi')
-                        btnPlayer.setContextInfo({
-                            mentionedJid: [resolvedPhoneJid]
-                        })
+                        // B. Buat Pesan Sapaan untuk Penonton DENGAN GAMBAR (Welcome Card API)
+                        let spectatorBuilt = null
+                        try {
+                            const btnSpectator = new this.Button(this)
+                            btnSpectator.setBody(spectatorCaption)
+                            btnSpectator.setFooter(`${global.namebot || 'Avelia'} • Sapaan Hangat`)
+                            btnSpectator.setImage(spectatorHeaderImage)
+                            btnSpectator.addReply('✦ Sapa Member', `Halo selamat datang @${userNumber}!`)
+                            btnSpectator.addReply('✧ Salam Kenal', `Halo @${userNumber}, salam kenal ya!`)
+                            btnSpectator.setContextInfo({
+                                mentionedJid: [resolvedPhoneJid]
+                            })
+                            spectatorBuilt = await btnSpectator.build(id)
+                        } catch (eImgSpec) {
+                            console.warn('[WELCOME DUAL] Gambar penonton gagal, fallback ke tombol teks:', eImgSpec?.message)
+                            const btnSpectatorClean = new this.Button(this)
+                            btnSpectatorClean.setBody(spectatorCaption)
+                            btnSpectatorClean.setFooter(`${global.namebot || 'Avelia'} • Sapaan Hangat`)
+                            btnSpectatorClean.addReply('✦ Sapa Member', `Halo selamat datang @${userNumber}!`)
+                            btnSpectatorClean.addReply('✧ Salam Kenal', `Halo @${userNumber}, salam kenal ya!`)
+                            btnSpectatorClean.setContextInfo({
+                                mentionedJid: [resolvedPhoneJid]
+                            })
+                            spectatorBuilt = await btnSpectatorClean.build(id)
+                        }
 
-                        const playerBuilt = await btnPlayer.build(id)
-
-                        // B. Buat Pesan Sapaan Cepat untuk Penonton
-                        const btnSpectator = new this.Button(this)
-                        btnSpectator.setBody(spectatorCaption)
-                        btnSpectator.setFooter(`${global.namebot || 'Avelia'} • Member Sapaan`)
-                        btnSpectator.addReply('✦ Sapa Member', `Halo selamat datang @${userNumber}!`)
-                        btnSpectator.addReply('❖ Info Owner', '.owner')
-                        btnSpectator.setContextInfo({
-                            mentionedJid: [resolvedPhoneJid]
-                        })
-
-                        const spectatorBuilt = await btnSpectator.build(id)
-
-                        // C. Kirim via Dual-Group-Message (Target menerima kartu sambutan, Penonton menerima tombol sapa)
+                        // C. Kirim 1 PESAN TUNGGAL Dual-Visibility ke Grup (Pure Isolated Sender Key Engine)
+                        // Member baru melihat Welcome Card, Member lama melihat Kartu Sapaan!
                         await sendDualGroupMessage(
                             this,
                             id,
-                            user,
+                            resolvedPhoneJid || user,
                             playerBuilt.message,
                             spectatorBuilt.message,
-                            { contextInfo: { mentionedJid: [resolvedPhoneJid] } }
+                            {
+                                contextInfo: { mentionedJid: [resolvedPhoneJid] },
+                                phoneJid: resolvedPhoneJid,
+                                userLid: resolvedUserLid
+                            }
                         )
                         dualSent = true
                     } catch (errDual) {
@@ -950,13 +1081,13 @@ ${descBlock}
                     }
                 }
 
-                // Fallback jika Dual Message / Button gagal
+                // Fallback jika Dual Message gagal
                 if (!dualSent) {
                     await this.sendMessage(id, {
-                        image: { url: welcomeUrl },
+                        image: typeof playerHeaderImage === 'string' ? { url: playerHeaderImage } : playerHeaderImage,
                         caption: playerCaption,
                         mentions: [resolvedPhoneJid]
-                    }).catch(e => {
+                    }).catch(_ => {
                         this.sendMessage(id, { text: playerCaption, mentions: [resolvedPhoneJid] })
                     })
                 }
@@ -967,7 +1098,41 @@ ${descBlock}
     }
     break
     case 'remove':
-    if (chat.welcome || chat.leave) {
+        // Log untuk tracking event remove peserta di grup
+        console.log(chalk.yellow(`[participantsUpdate:remove] Group: ${id}, Participants:`), participants)
+
+        // Cek jika bot sendiri yang dikeluarkan atau keluar dari grup
+        {
+            const botJid = conn.decodeJid ? conn.decodeJid(conn.user?.id || conn.user?.jid || '') : (conn.user?.id || conn.user?.jid || '')
+            const botUserNum = String(botJid || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+            const botLid = conn.user?.lid || ''
+            const botLidNum = String(botLid || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+            const rawUserId = conn.user?.id || ''
+            const rawUserJid = conn.user?.jid || ''
+
+            const checkIsBot = (u) => {
+                if (!u) return false
+                const uNum = String(u || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
+                if (botUserNum && uNum === botUserNum) return true
+                if (botLidNum && uNum === botLidNum) return true
+                if (u === botJid || u === botLid || u === rawUserId || u === rawUserJid) return true
+                return false
+            }
+
+            const isBotRemoved = (participants || []).some(checkIsBot)
+            if (isBotRemoved) {
+                console.log(chalk.red(`🚪 [participantsUpdate] Bot dikeluarkan atau keluar dari grup ${id}. Mengabaikan respon goodbye agar tidak memicu error 401/403/ban.`))
+                // Bersihkan cache grup lokal karena bot sudah bukan anggota
+                if (conn.chats?.[id]) delete conn.chats[id]
+                if (global.memoryStore?.groupMetadata?.[id]) delete global.memoryStore.groupMetadata[id]
+                if (global.groupMetadataCache?.has(id)) global.groupMetadataCache.delete(id)
+                // Hapus bot dari list peserta
+                participants = participants.filter(u => !checkIsBot(u))
+                if (participants.length === 0) return
+            }
+        }
+
+        if (chat.welcome || chat.leave || force) {
         let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
         const defaultAvatar = 'https://i.pinimg.com/originals/ca/8c/7d/ca8c7de3ae607348b5d3f124eba8a3ee.jpg'
         const leaveBg = 'https://telegra.ph/file/0db212539fe8a014017e3.jpg'
@@ -1008,8 +1173,30 @@ ${descBlock}
                 let gcname = (await this.getName(id)) || 'Grup'
                 let memberCount = groupMetadata?.participants ? groupMetadata.participants.length : '0'
 
-                // 3. API URL Ryzumi Leave
+                // 3. API URL Ryzumi Leave dengan Fast Timeout & Direct PP Fallback
                 const leaveUrl = `https://api.ryzumi.net/api/image/leave?username=${encodeURIComponent(username)}&group=${encodeURIComponent(gcname)}&avatar=${encodeURIComponent(pp)}&bg=${encodeURIComponent(leaveBg)}&member=${encodeURIComponent(memberCount)}`
+                let leaveHeaderImage = pp
+                let isLeaveRyzumiSuccess = false
+
+                try {
+                    const controller = new AbortController()
+                    const timeoutTimer = setTimeout(() => controller.abort(), 3500)
+                    const fetchRes = await fetch(leaveUrl, { signal: controller.signal })
+                    clearTimeout(timeoutTimer)
+                    if (fetchRes.ok) {
+                        const imgBuf = Buffer.from(await fetchRes.arrayBuffer())
+                        if (imgBuf && imgBuf.length > 500) {
+                            leaveHeaderImage = imgBuf
+                            isLeaveRyzumiSuccess = true
+                        }
+                    }
+                } catch (errApi) {
+                    console.log('[LEAVE] Ryzumi API tidak merespons (timeout/error), langsung gunakan PP user tanpa edit:', errApi?.message)
+                }
+
+                if (!isLeaveRyzumiSuccess) {
+                    leaveHeaderImage = pp || defaultAvatar
+                }
 
                 // 4. Caption Zen Shinto (Goodbye)
                 const leaveCaption = `*──  ୨୧ ✧ GOODBYE MEMBER ✧ ୨୧  ──*
@@ -1026,16 +1213,29 @@ ${descBlock}
                 let leaveSent = false
                 if (typeof this.Button === 'function') {
                     try {
-                        const btnLeave = new this.Button(this)
-                        btnLeave.setBody(leaveCaption)
-                        btnLeave.setFooter(`${global.namebot || 'Avelia'} • Parting Words`)
-                        await btnLeave.setImage(leaveUrl).catch(() => null)
-                        btnLeave.addReply('✦ Sampai Jumpa', '.ping')
-                        btnLeave.addReply('❖ Info Owner', '.owner')
-                        btnLeave.setContextInfo({
-                            mentionedJid: [resolvedPhoneJid]
-                        })
-                        await btnLeave.send(id)
+                        try {
+                            const btnLeave = new this.Button(this)
+                            btnLeave.setBody(leaveCaption)
+                            btnLeave.setFooter(`${global.namebot || 'Avelia'} • Parting Words`)
+                            btnLeave.setImage(leaveHeaderImage)
+                            btnLeave.addReply('✦ Sampai Jumpa', '.ping')
+                            btnLeave.addReply('❖ Info Owner', '.owner')
+                            btnLeave.setContextInfo({
+                                mentionedJid: [resolvedPhoneJid]
+                            })
+                            await btnLeave.send(id)
+                        } catch (eImgLeave) {
+                            console.warn('[LEAVE BUTTON] Gambar gagal dimuat, fallback ke tombol teks:', eImgLeave?.message)
+                            const btnLeaveClean = new this.Button(this)
+                            btnLeaveClean.setBody(leaveCaption)
+                            btnLeaveClean.setFooter(`${global.namebot || 'Avelia'} • Parting Words`)
+                            btnLeaveClean.addReply('✦ Sampai Jumpa', '.ping')
+                            btnLeaveClean.addReply('❖ Info Owner', '.owner')
+                            btnLeaveClean.setContextInfo({
+                                mentionedJid: [resolvedPhoneJid]
+                            })
+                            await btnLeaveClean.send(id)
+                        }
                         leaveSent = true
                     } catch (errBtn) {
                         console.warn('[LEAVE BUTTON] Gagal kirim button leave:', errBtn?.message)
@@ -1046,7 +1246,7 @@ ${descBlock}
                 // Fallback jika button gagal
                 if (!leaveSent) {
                     await this.sendMessage(id, {
-                        image: { url: leaveUrl },
+                        image: typeof leaveHeaderImage === 'string' ? { url: leaveHeaderImage } : leaveHeaderImage,
                         caption: leaveCaption,
                         mentions: [resolvedPhoneJid]
                     }).catch(e => {

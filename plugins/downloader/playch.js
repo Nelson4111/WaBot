@@ -1,35 +1,41 @@
-import fetch from 'node-fetch'
+import yts from 'yt-search'
+import { downloadYouTubeMedia } from '../../lib/youtube.js'
 import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import { status, toSmallNum } from '../../lib/style.js'
 
-let isSending = false 
+let isSending = false
 
-let handler = async (m, { conn, text, command }) => {
-  const channelId = '120363407318005025@newsletter' // ID channel kamu
-  if (isSending) return m.reply('⏳ Tunggu dulu, sedang mengirim ke channel...')
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  const channelId = global.ch?.includes('@newsletter') ? global.ch : '120363407318005025@newsletter'
+  if (isSending) return m.reply(status.wait('Sedang ada antrean pengiriman audio ke saluran...'))
+  if (!text) {
+    return m.reply(status.warning(`Masukkan judul lagu yang ingin dikirim ke saluran!\n> Contoh: *${usedPrefix + command} dj 30 detik*`))
+  }
+
   isSending = true
+  await m.reply(status.wait('Sedang memproses audio dan konversi suara untuk saluran...'))
+
+  const tmpDir = path.join(process.cwd(), 'tmp')
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+
+  const timestamp = Date.now()
+  const inputPath = path.join(tmpDir, `input_${timestamp}.mp3`)
+  const outputPath = path.join(tmpDir, `output_${timestamp}.opus`)
 
   try {
-    if (!text) return m.reply(`Masukkan judul lagu!\n\nContoh:\n.${command} dj 30 detik`)
+    const search = await yts(text)
+    const videos = search.videos || []
+    if (!videos.length) throw new Error(`Lagu dengan judul "${text}" tidak ditemukan.`)
 
-    const res = await fetch(`https://api.nekolabs.my.id/downloader/youtube/play/v1?q=${encodeURIComponent(text)}`)
-    const json = await res.json()
-    if (!json.success || !json.result?.downloadUrl) throw new Error('Gagal mengambil data dari API.')
+    const video = videos[0]
+    const { title, author, timestamp: duration, thumbnail, url } = video
 
-    const { title, channel, duration, cover, url } = json.result.metadata
-    const audioUrl = json.result.downloadUrl
+    const mp3 = await downloadYouTubeMedia(url, 'mp3')
+    fs.writeFileSync(inputPath, mp3.buffer)
 
-    const audioBuffer = Buffer.from(await (await fetch(audioUrl)).arrayBuffer())
-
-    const tmpDir = path.join(process.cwd(), 'tmp')
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
-
-    const timestamp = Date.now()
-    const inputPath = path.join(tmpDir, `input_${timestamp}.mp3`)
-    const outputPath = path.join(tmpDir, `output_${timestamp}.opus`)
-    fs.writeFileSync(inputPath, audioBuffer)
-  
+    // Convert ke format VN (Ogg Opus)
     await new Promise((resolve, reject) => {
       const ffmpeg = spawn('ffmpeg', [
         '-i', inputPath,
@@ -45,15 +51,15 @@ let handler = async (m, { conn, text, command }) => {
       ])
 
       let stderr = ''
-      ffmpeg.stderr.on('data', (data) => (stderr += data.toString()))
-      ffmpeg.on('close', (code) => {
+      ffmpeg.stderr.on('data', data => (stderr += data.toString()))
+      ffmpeg.on('close', code => {
         if (code === 0) resolve()
-        else reject(new Error(`ffmpeg gagal convert: ${stderr}`))
+        else reject(new Error(`ffmpeg gagal konversi opus: ${stderr}`))
       })
     })
 
     const opusBuffer = fs.readFileSync(outputPath)
-   
+
     await conn.sendMessage(channelId, {
       audio: opusBuffer,
       mimetype: 'audio/ogg; codecs=opus',
@@ -61,8 +67,8 @@ let handler = async (m, { conn, text, command }) => {
       contextInfo: {
         externalAdReply: {
           title,
-          body: channel,
-          thumbnailUrl: cover,
+          body: author?.name || 'YouTube Music',
+          thumbnailUrl: thumbnail,
           sourceUrl: url,
           mediaType: 1,
           renderLargerThumbnail: true
@@ -70,20 +76,28 @@ let handler = async (m, { conn, text, command }) => {
       }
     }, { ephemeralExpiration: 0, quoted: null })
 
-    fs.unlinkSync(inputPath)
-    fs.unlinkSync(outputPath)
+    const captionSuccess = `*──  ୨୧ ✧ SALURAN VOICE NOTE ✧ ୨୧  ──*
 
-    await m.reply(`✅ Lagu berhasil dikirim ke saluran!\n\n📀 *${title}*\n🎤 ${channel}\n⏱️ ${duration}`)
+*╭  〔 ✦ ʟ ᴀ ɢ ᴜ  ᴛ ᴇ ʀ ᴋ ɪ ʀ ɪ ᴍ 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ    : *${title}*
+*┆* ✧ ᴀᴜᴛʜᴏʀ   : *${author?.name || '-'}*
+*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
+*╰───────────────*
 
+> _Lagu berhasil dikirimkan ke saluran WhatsApp sebagai Voice Note!_`.trim()
+
+    await m.reply(captionSuccess)
   } catch (e) {
     console.error('❌ playch PTT Error:', e)
-    await m.reply('❌ Gagal mengirim audio ke saluran (VN). Pastikan ffmpeg terinstall dan file tidak korup.')
+    m.reply(status.error(`Gagal mengirimkan audio ke saluran.\n> ${e?.message || e}`))
   } finally {
+    if (fs.existsSync(inputPath)) try { fs.unlinkSync(inputPath) } catch {}
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath) } catch {}
     isSending = false
   }
 }
 
-handler.help = ['playch']
+handler.help = ['playch <judul>']
 handler.tags = ['downloader']
 handler.command = /^playch$/i
 handler.limit = false

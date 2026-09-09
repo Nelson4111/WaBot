@@ -28,6 +28,13 @@ console.log(chalk.cyan('│') + ` [+] SYSTEM : ${name || 'Avelia'}`.padEnd(56) +
 console.log(chalk.cyan('│') + ` [+] ENGINE : Baileys Multi-Device Official`.padEnd(56) + chalk.cyan('│'));
 console.log(chalk.cyan('└────────────────────────────────────────────────────────┘'));
 
+// Otomatis verifikasi & patch Baileys agar waveform VN aktif (di VPS / Local)
+try {
+  await import('./scripts/patch-baileys.js');
+} catch (errPatch) {
+  console.warn('[Baileys Patch] Startup check failed:', errPatch?.message);
+}
+
 console.log(chalk.green('🐾 Starting engine...')); 
 
 var isRunning = false;

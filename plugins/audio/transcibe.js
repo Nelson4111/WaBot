@@ -42,7 +42,7 @@ let handler = async (m, {
 };
 
 handler.help = ['transcibe url-video-yt'];
-handler.tags = ['tools'];
+handler.tags = ['audio', 'tools'];
 handler.command = /^transcibe$/i;
 handler.limit = true;
 
