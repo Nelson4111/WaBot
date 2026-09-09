@@ -1,113 +1,16 @@
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
+import { VOICE_NOTE_GROUPS, VOICE_NOTE_DIR, MIME_TYPES } from '../../lib/voice-noteData.js'
 
-const VOICE_NOTE_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'media',
-  'voice-notes',
+const buildVoiceNotes = () => Object.fromEntries(
+  VOICE_NOTE_GROUPS.filter(group => group.enabled !== false)
+    .flatMap(({ files, commands }) => commands.map(command => [command, files.length === 1 ? files[0] : files]))
 )
 
-const VOICE_NOTE_GROUPS = [
-  { files: ['onichan.mp3'], commands: ['onichan'] },
-  { files: ['araara.m4a'], commands: ['ara', 'ara ara'] },
-  { files: ['araa.mp3'], commands: ['araa'] },
-  { files: ['vn.mp3'], commands: ['araaa'] },
-  { files: ['kiyomasa.opus'], commands: ['oyy', 'oy', 'kiyomasa', 'nande', 'baka', 'oi', 'oii'] },
-  { files: ['moshi.opus'], commands: ['moshi', 'araaaa'] },
-  { files: ['night.opus'], commands: ['night', 'good', 'goodnight', 'good night', 'malam', 'malem', 'mlm'] },
-  { files: ['k1.mp3'], commands: ['konser1'] },
-  { files: ['k2.mp3'], commands: ['konser2'] },
-  { files: ['definisihalal.m4a'], commands: ['halal'] },
-  { files: ['yntkts.m4a'], commands: ['yntkts'] },
-  { files: ['sound13.mp3'], commands: ['maaf', 'maap', 'sorry'] },
-  { files: ['woahh.mp3'], commands: ['woah'] },
-  { files: ['wibu.m4a'], commands: ['wibu','wibupride'] },
-  { files: ['sholawat.m4a'], commands: ['sholawat'] },
-  { files: ['tobat.opus'], commands: ['astagfirullah', 'astaghfirullah', 'tobat'] },
-  { files: ['jelek.mp3'], commands: ['jelek'] },
-  { files: ['saveOwnerku.mp3'], commands: ['save', 'sv', 'sve', 'svb'] },
-  { files: ['pembohong.mp3'], commands: ['pembohong', 'boong', 'bohong', 'ngapusi'] },
-  { files: ['penampilan.mp3'], commands: ['penampilan', 'outfit'] },
-  { files: ['sad1.mp3', 'segala.mp3', 'hanyasatu.mp3'], commands: ['sad'] },
-  { files: ['Turu.mp3'], commands: ['turu', 'sleep', 'tidur'] },
-  {
-    files: ['apasih.mp3'],
-    commands: [
-      'kontol', 'koncol', 'woi ajg', 'memek', 'asu', 'ajim', 'jancok', 'cok',
-      'goblog', 'goblok', 'tolol', 'gblg', 'kontl', 'gblog', 'gblok', 'kntl',
-      'mmk', 'ajg', 'anj', 'anjj', 'titit', 'tytyd', 'titid', 'puki', 'babi',
-      'anjg', 'tai', 'taek', 'bangsat', 'bangst', 'wtf', 'shit', 'fuck', 'bgst',
-      'ajing', 'bacot', 'anjing', 'bot ajg', 'bot babi',
-    ],
-  },
-  {
-    files: ['adaapa.m4a'],
-    commands: ['tes', 'test', 'woi', 'p', 'pp', 'woy', 'weh', 'min', 'admin', 'eh', 'pe'],
-  },
-  { files: ['SayaRobot.opus'], commands: ['bot', 'bott', 'robot'] },
-  { files: ['gaboleh.m4a'], commands: ['sc', 'script', 'code'] },
-  { files: ['gmao.m4a'], commands: ['mau'] },
-  { files: [').m4a'], commands: ['shalawat','ngaji'] },
-  { files: ['baka.m4a'], commands: ['baka'] },
-  { files: ['Buat apa.mp3'], commands: ['buat','buatapa','buat apa'] },
-  { files: ['dakwah1.m4a'], commands: ['dakwah'] },
-  { files: ['Gaboleh gitu.mp3'], commands: ['gaboleh gitu','gaboleh'] },
-  { files: ['gamau.mp3'], commands: ['gamau'] },
-  { files: ['Gay.mp3'], commands: ['gay'] },
-  { files: ['Hihi.mp3'], commands: ['hihi'] },
-  { files: ['hirobot.m4a'], commands: ['hi robot'] },
-  { files: ['I like you.mp3'], commands: ['ilikeyou','i like you','i like u'] },
-  { files: ['Imut.mp3'], commands: ['sok imut'] },
-  { files: ['ingat.m4a'], commands: ['ingat','salah'] },
-  { files: ['janganToxic.mp3'], commands: ['toxic'] },
-  { files: ['Karna lo wibu.mp3'], commands: ['karnalowibu','karena lo wibu','pertanyaan'] },
-  { files: ['KarnaKamu.mp3'], commands: ['karnakamu','karena kamu','karena','karna'] },
-  { files: ['Loli Toxic.mp3'], commands: ['loli','loli toxic'] },
-  { files: ['mimpi.mp3'], commands: ['mimpi','menyeramkan'] },
-  { files: ['Ngelag.mp3'], commands: ['ngelag','lag','lemot'] },
-  { files: ['Ownerku.mp3'], commands: ['ownerku'] },
-  { files: ['Pap.mp3'], commands: ['pap'] },
-  { files: ['sad4.mp3'], commands: ['anak desa'] },
-  { files: ['Sayang.mp3'], commands: ['sayang','say','syg','syng','sayng'] },
-  { files: ['sound1.mp3'], commands: ['sound1'] },
-  { files: ['sound12.mp3'], commands: ['sound12'] },
-  { files: ['sound14.mp3'], commands: ['sound14'] },
-  { files: ['sound15.mp3'], commands: ['gugur','sound15','nenek'] },
-  { files: ['sound17.mp3'], commands: ['sound17'] },
-  { files: ['sound25.mp3'], commands: ['sound25'] },
-  { files: ['sound33.mp3'], commands: ['sound33'] },
-  { files: ['sound4.mp3'], commands: ['sound4'] },
-  { files: ['sound55.mp3'], commands: ['sound55'] },
-  { files: ['sound58.mp3'], commands: ['sound58'] },
-  { files: ['sound9.mp3'], commands: ['sound9'] },
-  { files: ['tarhim.m4a'], commands: ['tarhim'] },
-  { files: ['tersangka.m4a'], commands: ['tersangka'] },
-  { files: ['Uwu.mp3'], commands: ['kimochi','yamete'] },
-  { files: ['Uwuii.mp3'], commands: ['uwu','uwuii'] },
-  { files: ['Uwuuu.mp3'], commands: ['uwuuu','uwuu'] },
-  { files: ['avelia.ogg'], commands: ['avelia','fungsi bot','ada bot','manfaat bot','fitur','janneta','jannet'] }
-]
-
-const VOICE_NOTES = Object.fromEntries(
-  VOICE_NOTE_GROUPS.flatMap(({ files, commands }) =>
-    commands.map(command => [command, files.length === 1 ? files[0] : files]),
-  ),
-)
-
-const MIME_TYPES = {
-  '.mp3': 'audio/mpeg',
-  '.m4a': 'audio/mp4',
-  '.ogg': 'audio/ogg; codecs=opus',
-  '.opus': 'audio/ogg; codecs=opus',
-  '.wav': 'audio/wav',
-}
-
-const findVoiceCommand = text => {
+const findVoiceCommand = (text) => {
   const normalizedText = (text || '').trim().toLowerCase()
-  return Object.keys(VOICE_NOTES)
+  const voiceNotes = buildVoiceNotes()
+  return Object.keys(voiceNotes)
     .sort((first, second) => second.length - first.length)
     .find(keyword => {
       const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -116,81 +19,326 @@ const findVoiceCommand = text => {
     })
 }
 
-const handler = async (m, { conn, command, usedPrefix }) => {
-  const messageText = (m.text || '').trim()
-  const commandText = messageText
-    .replace(new RegExp(`^${usedPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'), '')
-    .trim()
-    .toLowerCase()
-  const matchedCommand = findVoiceCommand(commandText)
-  const activeCommand = matchedCommand || command.toLowerCase()
-
-if (activeCommand === 'autovnkeyword') {
-  let message = `╭─❏「 🎙️ AUTO VN KEYWORD 」❏\n`
-  message += `│ 🎧 *Total VN* : ${VOICE_NOTE_GROUPS.length}\n`
-  message += `│ 🔑 *Total Keyword* : ${Object.keys(VOICE_NOTES).length}\n`
-  message += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  for (const [index, { files, commands }] of VOICE_NOTE_GROUPS.entries()) {
-    message += `🎧 *VN ${index + 1}*\n`
-    message += `> ↳ File : ${files.join(', ')}\n`
-    message += `> ↳ Keyword : ${commands.map(keyword => `\`${keyword}\``).join(', ')}\n\n`
-  }
-
-  message += `─━━━━━━━━━━━━━━─`
-
-  return m.reply(message)
+function getVoiceStore() {
+  const db = global.db?.data || global.db || {}
+  db.voice = db.voice || {}
+  db.voice.groups = db.voice.groups || {}
+  db.voice.users = db.voice.users || {}
+  return db.voice
 }
 
-  const configuredFiles = VOICE_NOTES[activeCommand]
-  const filename = Array.isArray(configuredFiles)
-    ? configuredFiles[Math.floor(Math.random() * configuredFiles.length)]
-    : configuredFiles
+function isGroupDisabled(chatId) {
+  const store = getVoiceStore()
+  return !!store.groups?.[chatId]?.disabled
+}
 
-  if (!filename) return
+function isUserMuted(jid) {
+  const store = getVoiceStore()
+  return !!store.users?.[jid]?.muted
+}
 
-  const filePath = path.join(VOICE_NOTE_DIR, filename)
+function userHasAccess(m, isOwner = false) {
+  if (isOwner) return true
+  const sender = m.sender || m.from || ''
+  const list = global.rpgPanelVoiceAccess || global.rpgPanelUsers || []
+  if (Array.isArray(list)) return list.includes(sender)
+  if (list && typeof list === 'object') return !!list[sender]
+  return false
+}
 
-  if (!fs.existsSync(filePath)) {
-    console.error(`Voice note tidak ditemukan: ${filePath}`)
-    return m.reply(`⚠️ Voice note untuk *${usedPrefix + command}* belum tersedia.`)
+function resolveTarget(m, remaining = []) {
+  let who = null
+  let targetArgIndex = -1
+
+  if (m.mentionedJid && m.mentionedJid.length > 0) {
+    who = m.mentionedJid[0]
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i].startsWith('@') || remaining[i].includes('@s.whatsapp.net') || remaining[i].includes('@lid')) {
+        targetArgIndex = i
+        break
+      }
+    }
+  } else if (m.quoted && m.quoted.sender) {
+    who = m.quoted.sender
+  } else {
+    for (let i = 0; i < remaining.length; i++) {
+      let arg = remaining[i].trim()
+      let clean = arg.replace(/^@/, '')
+      if (clean.includes('@s.whatsapp.net') || clean.includes('@lid')) {
+        who = clean
+        targetArgIndex = i
+        break
+      }
+      let digits = clean.replace(/[^0-9]/g, '')
+      if (digits.length >= 8 && digits.length <= 16) {
+        if (digits.startsWith('08')) digits = '628' + digits.slice(2)
+        who = digits + '@s.whatsapp.net'
+        targetArgIndex = i
+        break
+      }
+    }
   }
 
-  const extension = path.extname(filename).toLowerCase()
+  if (targetArgIndex !== -1) remaining.splice(targetArgIndex, 1)
+
+  if (who) {
+    try {
+      if (global.conn && typeof global.conn.decodeJid === 'function') {
+        who = global.conn.decodeJid(who)
+      }
+    } catch (_) {}
+
+    if (who.endsWith('@lid')) {
+      const resolvedLid = global.lids?.[who] || global.db?.data?.lids?.[who]
+      if (resolvedLid) who = resolvedLid
+      else if (global.db?.data?.users) {
+        for (const [realJid, uData] of Object.entries(global.db.data.users)) {
+          if (uData.lid === who || realJid.split('@')[0] === who.split('@')[0]) {
+            who = realJid
+            break
+          }
+        }
+      }
+    }
+
+    if (!who.includes('@')) who = who + '@s.whatsapp.net'
+    else if (!who.endsWith('@s.whatsapp.net') && !who.endsWith('@lid')) who = who.split('@')[0] + '@s.whatsapp.net'
+
+    if (who === '@s.whatsapp.net' || who.startsWith('NaN') || who === 'undefined@s.whatsapp.net') who = null
+  }
+
+  return who
+}
+
+function writeDataFile(groups) {
+  const exported = `import path from 'path'\n\nexport const VOICE_NOTE_DIR = path.resolve(\n  './media/voice-notes',\n)\n\nexport const MIME_TYPES = {\n  '.mp3': 'audio/mpeg',\n  '.m4a': 'audio/mp4',\n  '.ogg': 'audio/ogg; codecs=opus',\n  '.opus': 'audio/ogg; codecs=opus',\n  '.wav': 'audio/wav',\n}\n\nexport const VOICE_NOTE_GROUPS = ${JSON.stringify(groups, null, 2)}\n`
+  fs.writeFileSync(path.resolve('../../lib/voice-noteData.js'), exported)
+}
+
+function resolveVoiceAudioFile(keyword) {
+  const data = buildVoiceNotes()
+  const mapped = data[keyword]
+  if (!mapped) return null
+  if (Array.isArray(mapped)) return mapped[0]
+  return mapped
+}
+
+async function sendVoiceAudioFromKeyword(m, conn, keyword) {
+  const fileName = resolveVoiceAudioFile(keyword)
+  if (!fileName) return false
+
+  const filePath = path.resolve(VOICE_NOTE_DIR, fileName)
+  const ext = path.extname(fileName).toLowerCase()
+  const mime = MIME_TYPES[ext] || 'audio/mpeg'
+  const sendAsPtt = ['.ogg', '.opus'].includes(ext)
 
   try {
-    await conn.sendMessage(
-      m.chat,
-      {
-        audio: fs.readFileSync(filePath),
-        mimetype: MIME_TYPES[extension] || 'audio/mpeg',
-        ptt: false,
-        fileName: filename,
-      },
-      { quoted: m },
-    )
-  } catch (error) {
-    console.error(`Gagal mengirim voice note ${filename}:`, error)
-    await m.reply('❌ Voice note gagal dikirim.')
+    const buffer = fs.readFileSync(filePath)
+    if (typeof conn.sendMessage === 'function') {
+      await conn.sendMessage(m.chat, {
+        audio: buffer,
+        mimetype: mime,
+        ptt: sendAsPtt,
+        fileName,
+        caption: '',
+      }, { quoted: m })
+      return true
+    }
+  } catch (e) {
+    console.error(e)
   }
+
+  if (typeof conn.sendFile === 'function') {
+    await conn.sendFile(m.chat, filePath, fileName, '', null, sendAsPtt)
+    return true
+  }
+
+  return false
 }
 
-handler.help = ['voice-note', 'autovnkeyword']
+const handler = async (m, { conn, text = '', usedPrefix = '.', command = 'voice', isOwner = false }) => {
+  const rawArgs = (text || '').trim().split(/\s+/).filter(Boolean)
+  const sub = rawArgs[0]?.toLowerCase()
+  const remaining = rawArgs.slice(1)
+
+if (!sub) {
+  return m.reply(
+    `╭─❏「 🎙️ VOICE NOTE PANEL 」❏\n` +
+    `│ 🎙️ *DAFTAR COMMAND*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `📌 *COMMAND*\n` +
+    `> ↳ *${usedPrefix}voice keyword*\n` +
+    `> ↳ *${usedPrefix}voice add <reply> <namafilenya.ogg> <keyword|keyword|dst>*\n` +
+    `> ↳ *${usedPrefix}voice edit <reply> <namafilenya.ogg> <keyword|keyword|dst>*\n` +
+    `> ↳ *${usedPrefix}voice mute <tag/reply>*\n` +
+    `> ↳ *${usedPrefix}voice unmute <tag/reply>*\n` +
+    `> ↳ *${usedPrefix}voice enable*\n` +
+    `> ↳ *${usedPrefix}voice disable*\n\n` +
+
+    `⚠️ *Hanya owner yang bisa mute/add/edit.*\n` +
+    `⚠️ *disable/enable untuk admin grup.*\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+  if (sub === 'keyword') {
+    const list = VOICE_NOTE_GROUPS.filter(group => group.enabled !== false)
+    let msg = '╭─❏「 🎙️ AUTO VN KEYWORD 」❏\n'
+    msg += '│ 🎧 *Total VN* : ' + list.length + '\n'
+    msg += '│ 🔑 *Total Keyword* : ' + Object.keys(buildVoiceNotes()).length + '\n'
+    msg += '╰─━━━━━━━━━━━━━━─\n\n'
+
+    for (const [index, { files, commands }] of list.entries()) {
+      msg += '🎧 *VN ' + (index + 1) + '*\n'
+      msg += '> ↳ File : ' + files.join(', ') + '\n'
+      msg += '> ↳ Keyword : ' + commands.map(keyword => '`' + keyword + '`').join(', ') + '\n\n'
+    }
+
+    msg += '─━━━━━━━━━━━━━━─'
+    return m.reply(msg)
+  }
+
+  if (sub === 'disable' || sub === 'enable') {
+    if (!m.isGroup) return m.reply('❌ Fitur ini hanya untuk grup.')
+    if (!m.isAdmin && !m.isOwner && !isOwner) return m.reply('❌ Khusus admin grup.')
+
+    const store = getVoiceStore()
+    store.groups[m.chat] = store.groups[m.chat] || {}
+
+    if (sub === 'disable') {
+      store.groups[m.chat].disabled = true
+      return m.reply('✅ Semua keyword .voice note ditolak di grup ini.')
+    }
+
+    if (sub === 'enable') {
+      store.groups[m.chat].disabled = false
+      return m.reply('✅ Voice note keyword di grup ini diaktifkan lagi.')
+    }
+  }
+
+  if (sub === 'mute' || sub === 'unmute') {
+    const target = resolveTarget(m, [...remaining])
+    if (!target) return m.reply('❌ Tag / reply / masukkan nomor target dulu untuk mute voice note!')
+
+    const store = getVoiceStore()
+    store.users[target] = store.users[target] || {}
+
+    if (sub === 'mute') {
+      store.users[target].muted = true
+      return m.reply('✅ @' + target.split('@')[0] + ' dimute voice-note keyword.', null, { mentions: [target] })
+    }
+
+    if (store.users[target]?.muted) {
+      store.users[target].muted = false
+      return m.reply('✅ @' + target.split('@')[0] + ' diunmute.', null, { mentions: [target] })
+    }
+
+    return m.reply('ℹ️ @' + target.split('@')[0] + ' belum dimute.', null, { mentions: [target] })
+  }
+
+  if (sub === 'add' || sub === 'edit') {
+    if (!userHasAccess(m, isOwner)) return m.reply('❌ Fitur ini khusus user dengan akses panel RPG.')
+
+    if (!m.quoted || !m.quoted.message || !(m.quoted.message.audio || m.quoted.message.ptt || m.quoted.message.voice)) {
+      return m.reply('❌ Reply voice note yang ada di grup dulu untuk menambah atau mengedit data voice note.')
+    }
+
+    const fileName = remaining[0]
+    const keywordsRaw = remaining.slice(1).join(' ')
+
+    if (!fileName || !/^.+\.(mp3|m4a|ogg|opus|wav)$/i.test(fileName)) {
+      return m.reply('❌ Format: .voice add <reply> <namafilenya.ogg> <keyword|keyword|dst>')
+    }
+
+    const keywords = keywordsRaw.split('|').map(k => k.trim().toLowerCase()).filter(Boolean)
+    if (keywords.length === 0) return m.reply('❌ Minimal satu keyword dipisahkan dengan |.')
+
+    const fileOut = path.resolve(VOICE_NOTE_DIR, fileName)
+
+    let buffer = null
+    try {
+      if (typeof conn.downloadMediaMessage === 'function') {
+        buffer = await conn.downloadMediaMessage(m.quoted)
+      } else if (m.quoted.download) {
+        buffer = await m.quoted.download()
+      }
+    } catch (e) {
+      console.error(e)
+    }
+
+    if (!buffer) return m.reply('❌ Gagal mengambil audio yang direply.')
+
+    try {
+      fs.writeFileSync(fileOut, buffer)
+    } catch (e) {
+      return m.reply('❌ Gagal menyimpan voice note baru ke folder media.')
+    }
+
+    const conflicts = []
+    for (const existing of VOICE_NOTE_GROUPS) {
+      if (existing.enabled === false) continue
+      for (const kw of keywords) {
+        if ((existing.commands || []).includes(kw)) {
+          conflicts.push({ file: existing.files.join(', '), keyword: kw })
+        }
+      }
+    }
+
+    if (conflicts.length > 0) {
+      for (const existing of VOICE_NOTE_GROUPS) {
+        if (existing.enabled !== false && (existing.commands || []).some(cmd => keywords.includes(cmd))) {
+          existing.enabled = false
+        }
+      }
+
+      const conflictText = conflicts
+        .map(item => '- File: ' + item.file + ' | Keyword: ' + item.keyword)
+        .join('\n')
+
+      return m.reply('⚠️ Keyword bentrok, maka kedua voice note dinonaktifkan:\n' + conflictText)
+    }
+
+    if (sub === 'add') {
+      const newGroup = { files: [fileName], commands: keywords, enabled: true }
+      VOICE_NOTE_GROUPS.push(newGroup)
+      writeDataFile(VOICE_NOTE_GROUPS)
+      return m.reply('✅ Ditambah voice note *' + fileName + '* dengan keyword: ' + keywords.map(k => '`' + k + '`').join(', '))
+    }
+
+    if (sub === 'edit') {
+      const idx = VOICE_NOTE_GROUPS.findIndex(group => group.files.includes(fileName))
+      if (idx < 0) return m.reply('❌ Voice note *' + fileName + '* tidak ada di database.')
+      VOICE_NOTE_GROUPS[idx] = { files: [fileName], commands: keywords, enabled: true }
+      writeDataFile(VOICE_NOTE_GROUPS)
+      return m.reply('✅ Diedit voice note *' + fileName + '* dengan keyword: ' + keywords.map(k => '`' + k + '`').join(', '))
+    }
+  }
+
+  return m.reply('❌ Command .voice tidak dikenal.')
+}
+
+handler.help = ['voice', 'autovnkeyword']
 handler.tags = ['audio']
-handler.command = ['autovnkeyword', ...Object.keys(VOICE_NOTES)]
+handler.command = ['voice', 'autovnkeyword']
+
 handler.before = async function (m, { match, ...context }) {
   if (match?.[0]) return false
+  if (!m.text) return false
 
-  const matchedCommand = findVoiceCommand(m.text)
-  if (!matchedCommand) return false
+  if (m.isGroup && isGroupDisabled(m.chat)) return true
+  if (m.isGroup && isUserMuted(m.sender)) return true
 
-  await handler.call(this, m, {
-    ...context,
-    conn: this,
-    command: matchedCommand,
-    usedPrefix: '',
-  })
-  return true
+  const matchedKeyword = findVoiceCommand(m.text)
+  if (!matchedKeyword) return false
+
+  if (m.isGroup && isGroupDisabled(m.chat)) return true
+  if (m.isGroup && isUserMuted(m.sender)) return true
+
+  const sent = await sendVoiceAudioFromKeyword(m, this, matchedKeyword)
+  return sent
+
 }
 
 export default handler
