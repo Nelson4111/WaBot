@@ -24,10 +24,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const caption = `*──  ୨୧ ✧ YOUTUBE AUDIO PLAYER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ʟ ᴀ ɢ ᴜ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ    : *${title}*
-*┆* ✧ ᴄʜᴀɴɴᴇʟ  : *${channel}*
-*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
-*┆* ◈ ᴠɪᴇᴡꜱ    : *${toSmallNum(views)}*
+> ⟡ ᴊᴜᴅᴜʟ    : *${title}*
+> ✧ ᴄʜᴀɴɴᴇʟ  : *${channel}*
+> ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
+> ◈ ᴠɪᴇᴡꜱ    : *${toSmallNum(views)}*
 *╰───────────────*
 
 > _Sedang mengunduh file audio ke ruang obrolan..._`.trim()

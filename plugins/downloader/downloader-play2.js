@@ -21,9 +21,9 @@ const handler = async (m, { conn, usedPrefix, text, command }) => {
     const caption = `*──  ୨୧ ✧ YOUTUBE PLAY 2 ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ʟ ᴀ ɢ ᴜ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ    : *${title}*
-*┆* ✧ ᴀᴜᴛʜᴏʀ   : *${author?.name || '-'}*
-*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
+> ⟡ ᴊᴜᴅᴜʟ    : *${title}*
+> ✧ ᴀᴜᴛʜᴏʀ   : *${author?.name || '-'}*
+> ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
 *╰───────────────*
 
 > _Sedang mengunduh file audio ke ruang obrolan..._`.trim()

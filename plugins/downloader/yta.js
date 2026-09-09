@@ -46,10 +46,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const caption = `*──  ୨୧ ✧ YOUTUBE DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ    : *${displayTitle}*
-*┆* ✧ ᴀᴜᴛʜᴏʀ   : *${author || '-'}*
-*┆* ◈ ᴋᴜᴀʟɪᴛᴀꜱ : *${toSmallNum(quality || (format === 'mp3' ? '128kbps' : '720p'))}*
-*┆* ⚙ ꜰᴏʀᴍᴀᴛ   : *${format.toUpperCase()}*
+> ⟡ ᴊᴜᴅᴜʟ    : *${displayTitle}*
+> ✧ ᴀᴜᴛʜᴏʀ   : *${author || '-'}*
+> ◈ ᴋᴜᴀʟɪᴛᴀꜱ : *${toSmallNum(quality || (format === 'mp3' ? '128kbps' : '720p'))}*
+> ⚙ ꜰᴏʀᴍᴀᴛ   : *${format.toUpperCase()}*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()

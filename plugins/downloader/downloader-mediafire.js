@@ -57,8 +57,8 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     const caption = `*──  ୨୧ ✧ MEDIAFIRE DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ꜰ ɪ ʟ ᴇ 〕*
-*┆* ⟡ ɴᴀᴍᴀ     : *${fileName}*
-*┆* ◈ ᴜᴋᴜʀᴀɴ   : *${size ? toSmallNum(size) : '-'}*
+> ⟡ ɴᴀᴍᴀ     : *${fileName}*
+> ◈ ᴜᴋᴜʀᴀɴ   : *${size ? toSmallNum(size) : '-'}*
 *╰───────────────*
 
 > _Mengirimkan dokumen ke ruang obrolan..._`.trim()

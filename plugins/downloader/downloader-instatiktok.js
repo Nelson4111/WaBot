@@ -61,8 +61,8 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         const caption = `*──  ୨୧ ✧ INSTATIKTOK DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
-*┆* ⟡ ᴘʟᴀᴛꜰᴏʀᴍ : *${platform.toUpperCase()}*
-*┆* ◈ ꜱʟɪᴅᴇ     : *${toSmallNum(i + 1)} / ${toSmallNum(download.length)}*
+> ⟡ ᴘʟᴀᴛꜰᴏʀᴍ : *${platform.toUpperCase()}*
+> ◈ ꜱʟɪᴅᴇ     : *${toSmallNum(i + 1)} / ${toSmallNum(download.length)}*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()
@@ -73,8 +73,8 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       const caption = `*──  ୨୧ ✧ INSTATIKTOK DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
-*┆* ⟡ ᴘʟᴀᴛꜰᴏʀᴍ : *${platform.toUpperCase()}*
-*┆* ◈ ᴛɪᴘᴇ     : *Video MP4*
+> ⟡ ᴘʟᴀᴛꜰᴏʀᴍ : *${platform.toUpperCase()}*
+> ◈ ᴛɪᴘᴇ     : *Video MP4*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()

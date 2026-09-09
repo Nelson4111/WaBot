@@ -3,6 +3,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Chess } from 'chess.js';
 import { sendChessBoard } from '../../lib/chess/chess-board-sender.js';
+import * as Elaina from '@rexxhayanasi/elaina-baileys';
+import * as Baileys from '@whiskeysockets/baileys';
+
+const proto = Elaina.proto || Baileys.proto;
+const generateWAMessageFromContent = Elaina.generateWAMessageFromContent || Baileys.generateWAMessageFromContent;
+const generateMessageIDV2 = Elaina.generateMessageIDV2 || Baileys.generateMessageIDV2;
+const lockHeight = Elaina.lockHeight;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -74,24 +81,129 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         return;
     }
 
-    // 5. Perintah HTML MINI APP (In-Bubble WebView Meta AI)
-    if (args[0] === 'html' || args[0] === 'app') {
+    // 5. Perintah HTML MINI APP (In-Bubble WebView Meta AI dengan Lobby, Solo Bot & Mabar Multiplayer)
+    if (args[0] === 'html' || args[0] === 'app' || args[0] === 'mabar' || args[0] === 'lobby' || args[0] === 'online') {
         const chessHtmlPath = path.resolve(__dirname, '../../lib/chess/chess-inbubble-app.html');
         if (fs.existsSync(chessHtmlPath)) {
-            const htmlContent = fs.readFileSync(chessHtmlPath, 'utf8');
-            await conn.reply(m.chat, '⏳ *Membuka papan catur interaktif di bubble WhatsApp...*', m);
+            const rawHtml = fs.readFileSync(chessHtmlPath, 'utf8');
+
+            const rawGroupId = (m.isGroup ? m.chat.split('@')[0] : m.sender.split('@')[0]).replace(/[^a-z0-9_-]/g, '');
+            const groupId = rawGroupId.substring(0, 18) || 'global';
+            const playerName = (m.pushName || 'Pemain').substring(0, 15).replace(/[<>"']/g, '');
+
+            // Exact WebSocket URL from working arcade-tesproto.js (PieSocket free.blr2 channel 1)
+            const WS_URL = 'wss://free.blr2.piesocket.com/v3/1?api_key=OZhgMu47NmZgmMWMIzXUY3NXL26NWHABe3zJGQCF&notify_self=1';
+
+            const finalHtml = rawHtml
+                .replace(/\{\{GROUP_ID\}\}/g, groupId)
+                .replace(/\{\{PLAYER_NAME\}\}/g, playerName)
+                .replace(/\{\{WS_URL\}\}/g, WS_URL);
+
+            // Lock height to 440px to prevent clipping / cutoff on WhatsApp Android
+            const wrappedPayload = (typeof lockHeight === 'function' ? lockHeight(440) : '') + finalHtml;
+
+            await conn.reply(m.chat, '⏳ *Membuka Chess Lobby & Mabar di bubble WhatsApp...*', m);
+
+            const sources = [
+                {
+                    source_type: 'THIRD_PARTY',
+                    source_display_name: 'WebSocket Server',
+                    source_subtitle: 'Realtime Stream',
+                    source_url: WS_URL,
+                    favicon: {
+                        url: 'https://mmg.whatsapp.net/o1/v/t24/f2/m239/CONTOH?ccb=9-4&oh=x&oe=y&_nc_sid=z&mms3=true',
+                        mime_type: 'image/jpeg',
+                        width: 16,
+                        height: 16
+                    }
+                }
+            ];
+
+            const subMessageType = proto.AIRichResponseSubMessageType?.AI_RICH_RESPONSE_TEXT || 2;
+
+            const isi = {
+                messageContextInfo: {
+                    deviceListMetadata: {},
+                    deviceListMetadataVersion: 2,
+                    botMetadata: {
+                        messageDisclaimerText: 'Avelia Chess Multiplayer',
+                        richResponseSourcesMetadata: {
+                            sources
+                        }
+                    }
+                },
+                botForwardedMessage: {
+                    message: {
+                        richResponseMessage: {
+                            messageType: 1,
+                            submessages: [
+                                {
+                                    messageType: subMessageType,
+                                    messageText: '♟️ Avelia Chess Lobby & Multiplayer'
+                                }
+                            ],
+                            unifiedResponse: {
+                                data: Buffer.from(
+                                    JSON.stringify({
+                                        response_id: generateMessageIDV2 ? generateMessageIDV2() : 'RES_' + Date.now(),
+                                        sections: [
+                                            {
+                                                view_model: {
+                                                    primitive: {
+                                                        __typename: 'GenAIaeacdsnwHtmlPrimitive',
+                                                        payload: wrappedPayload,
+                                                        trusted_sources: sources.map(x => x.source_url)
+                                                    },
+                                                    __typename: 'GenAISingleLayoutViewModel'
+                                                }
+                                            }
+                                        ]
+                                    })
+                                ).toString('base64')
+                            },
+                            contextInfo: {
+                                forwardingScore: 1,
+                                isForwarded: true,
+                                forwardedAiBotMessageInfo: {
+                                    botJid: '0@bot'
+                                },
+                                forwardOrigin: 4
+                            }
+                        }
+                    }
+                }
+            };
+
             try {
-                return await conn.sendHtmlApp(m.chat, htmlContent, {
-                    title: 'AVELIA CHESS IN-BUBBLE APP',
-                    label: '♟️ Buka Papan Catur Interaktif',
-                    height: 380,
-                    trustedSources: ['nixel.dev']
-                });
+                const msg = generateWAMessageFromContent(
+                    m.chat,
+                    isi,
+                    {
+                        messageId: generateMessageIDV2 ? generateMessageIDV2() : undefined
+                    }
+                );
+
+                await conn.relayMessage(
+                    m.chat,
+                    msg.message,
+                    {
+                        messageId: msg.key.id
+                    }
+                );
+                return;
             } catch (err) {
-                console.error('[CHESS HTML ERROR]:', err);
-                const webBaseUrl = global.serverUrl || `http://localhost:${process.env.PORT || 3000}`;
-                const webGameUrl = `${webBaseUrl}/chess/${userSession.id}`;
-                return m.reply(`⚠️ In-bubble WebView gagal dimuat (${err?.message || err}).\nKamu tetap bisa membuka via browser:\n🔗 ${webGameUrl}`);
+                console.error('[CHESS PROTO ERROR]:', err);
+                // Fallback to sendHtmlApp if relayMessage fails
+                try {
+                    return await conn.sendHtmlApp(m.chat, finalHtml, {
+                        title: '♟️ AVELIA CHESS • LOBBY & MULTIPLAYER',
+                        label: '🎮 Buka Lobby Catur (Solo / Mabar)',
+                        height: 380,
+                        trustedSources: [WS_URL, 'piesocket.com', `${PIESOCKET_CLUSTER}.piesocket.com`, 'nixel.dev']
+                    });
+                } catch (e2) {
+                    return m.reply(`⚠️ Gagal memuat in-bubble app: ${err?.message || err}`);
+                }
             }
         }
     }
@@ -175,17 +287,17 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     // Bantuan / Menu
     let help = `♟️ *MENU CATUR INTERAKTIF (HTML5)*\n\n`;
-    help += `• *${usedPrefix + command} html* ➔ Buka papan catur di gelembung chat (Mini App)\n`;
-    help += `• *${usedPrefix + command} bot* ➔ Main catur melawan Bot AI\n`;
-    help += `• *${usedPrefix + command} <nomor>* ➔ Tantang teman main catur\n`;
-    help += `• *${usedPrefix + command} link* ➔ Dapatkan link papan catur HTML5\n`;
+    help += `• *${usedPrefix + command} html* ➔ Buka Lobby Catur (Solo Bot & Mabar Multiplayer Online)\n`;
+    help += `• *${usedPrefix + command} bot* ➔ Main catur teks klasik melawan Bot AI\n`;
+    help += `• *${usedPrefix + command} <nomor>* ➔ Tantang teman main catur teks di grup\n`;
+    help += `• *${usedPrefix + command} link* ➔ Dapatkan link papan catur HTML5 web browser\n`;
     help += `• *${usedPrefix + command} nyerah* ➔ Menyerah dari pertandingan\n`;
     help += `• *${usedPrefix + command} end* ➔ Hapus sesi permainan saat ini\n\n`;
-    help += `_Fitur ini dilengkapi dengan in-bubble HTML WebView dan papan catur interaktif!_`;
+    help += `_Fitur ini dilengkapi Mini App in-bubble dengan pilihan mode Solo Bot, Room Multiplayer otomatis, dan Mode Penonton live!_`;
 
     let buttons = [
-        ['🎮 Buka Mini App (In-Bubble)', `${usedPrefix + command} html`],
-        ['🤖 Main Lawan Bot', `${usedPrefix + command} bot`]
+        ['🎮 Buka Chess Lobby & Mabar', `${usedPrefix + command} html`],
+        ['🤖 Main Lawan Bot (Teks)', `${usedPrefix + command} bot`]
     ];
 
     await conn.sendButton(m.chat, help, 'Avelia • Chess Game', null, buttons, m);

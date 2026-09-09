@@ -3,49 +3,371 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WhatsApp In-Bubble Chess</title>
+<title>Avelia Chess In-Bubble App</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-body {
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #0f172a;
+  background: #090d16;
   color: #f8fafc;
-  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#__wrap {
+  width: 100%;
+  height: 440px;
+  max-height: 440px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Common App Container */
+.screen {
+  width: 100%;
+  min-height: 440px;
+  box-sizing: border-box;
+  display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  height: 380px;
-  max-height: 380px;
-  overflow: hidden;
-  padding: 8px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  position: relative;
 }
-.header {
+.screen.active {
+  display: flex;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+/* Connection Pill */
+.conn-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* --- SCREEN 1: LOBBY --- */
+#screenLobby {
+  justify-content: space-between;
+  padding: 14px 14px;
+  min-height: 440px;
+}
+.lobby-header {
   width: 100%;
-  max-width: 340px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
-  font-size: 12px;
 }
-.title-badge {
-  font-weight: 700;
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
   color: #10b981;
+  letter-spacing: 0.5px;
+}
+.player-tag {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.status-pill {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2px 8px;
-  border-radius: 12px;
+.lobby-hero {
+  text-align: center;
+  margin: 6px 0;
+}
+.lobby-hero h1 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.lobby-hero p {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.mode-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mode-card {
+  width: 100%;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.mode-card:hover, .mode-card:active {
+  transform: translateY(-1px);
+  border-color: #10b981;
+  background: rgba(30, 41, 59, 0.95);
+}
+.mode-card.mabar {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+.mode-card.mabar:hover, .mode-card.mabar:active {
+  border-color: #38bdf8;
+}
+.mode-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mode-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+.mode-texts h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mode-texts p {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.badge-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+.badge-bot { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.badge-mabar { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.lobby-footer {
+  font-size: 10px;
+  color: #475569;
+  text-align: center;
+}
+
+/* --- SCREEN 2: ROOM SELECTION --- */
+#screenRooms {
+  padding: 10px 14px;
+  justify-content: flex-start;
+  min-height: 440px;
+}
+.rooms-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.btn-back {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 4px 8px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
+  cursor: pointer;
 }
+.btn-back:hover { background: #334155; color: #fff; }
+.rooms-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.conn-bar {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #94a3b8;
+}
+.conn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
+.dot.connected { background: #10b981; box-shadow: 0 0 8px #10b981; }
+.dot.error { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+.btn-quickplay {
+  width: 100%;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #fff;
+  border: none;
+  padding: 7px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 6px;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-quickplay:active { transform: scale(0.98); }
+.room-list {
+  width: 100%;
+  height: 220px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 2px;
+}
+.room-item {
+  width: 100%;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.room-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.room-item-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.room-item-status {
+  font-size: 10px;
+  font-weight: 600;
+}
+.status-empty { color: #10b981; }
+.status-waiting { color: #f59e0b; }
+.status-full { color: #ef4444; }
+.btn-join {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-join.join-white { background: #f8fafc; color: #090d16; }
+.btn-join.join-black { background: #38bdf8; color: #090d16; }
+.btn-join.join-spec { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+.btn-join:hover { opacity: 0.9; transform: scale(1.03); }
+.btn-new-room {
+  width: 100%;
+  padding: 5px;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  font-size: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.btn-new-room:hover { border-color: #38bdf8; color: #38bdf8; }
+
+/* --- SCREEN 3: CHESS GAME --- */
+#screenGame {
+  padding: 6px 10px;
+  justify-content: flex-start;
+  min-height: 440px;
+  gap: 6px;
+}
+.game-topbar {
+  width: 100%;
+  max-width: 280px;
+  height: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.game-badge {
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.role-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.role-badge.white { color: #f8fafc; border: 1px solid #f8fafc; }
+.role-badge.black { color: #38bdf8; border: 1px solid #38bdf8; }
+.role-badge.spec { color: #f43f5e; border: 1px solid #f43f5e; }
+.net-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+.net-status.reconnecting { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.net-status.offline { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+/* Board Container */
 .board-container {
   width: 100%;
-  max-width: 320px;
+  max-width: 270px;
   aspect-ratio: 1 / 1;
   background: #1e293b;
   border: 2px solid #334155;
@@ -53,7 +375,7 @@ body {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   position: relative;
   overflow: hidden;
 }
@@ -62,28 +384,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 22px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.1s ease;
 }
-.square.light { background: #cbd5e1; color: #1e293b; }
+.square.light { background: #cbd5e1; color: #0f172a; }
 .square.dark { background: #475569; color: #f8fafc; }
-.square.selected { background: #3b82f6 !important; }
+.square.selected { background: #2563eb !important; }
 .square.last-move { background: #eab30888 !important; }
+.square.in-check { background: #ef4444aa !important; }
 .square.possible::after {
   content: '';
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   background: #10b981;
   border-radius: 50%;
   position: absolute;
   pointer-events: none;
 }
 .square.possible.capture::after {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: transparent;
-  border: 3px solid #ef4444;
+  border: 2px solid #ef4444;
   border-radius: 50%;
 }
 .piece {
@@ -96,49 +419,186 @@ body {
   pointer-events: none;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
 }
-.footer-bar {
+
+/* Game Bottom Controls */
+.game-bottombar {
   width: 100%;
-  max-width: 340px;
+  max-width: 280px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 4px;
   gap: 6px;
 }
-.btn {
-  background: #334155;
-  border: 1px solid #475569;
-  color: #f8fafc;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn:hover, .btn:active { background: #10b981; border-color: #10b981; color: #fff; }
-.turn-indicator {
+.turn-pill {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.turn-indicator.white { color: #f8fafc; }
-.turn-indicator.black { color: #38bdf8; }
+.turn-pill.w { color: #f8fafc; border-color: #f8fafc; }
+.turn-pill.b { color: #38bdf8; border-color: #38bdf8; }
+.action-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.action-btn:hover { background: #334155; }
+.spec-toast {
+  position: absolute;
+  top: 32px;
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  z-index: 20;
+  pointer-events: none;
+  display: none;
+}
+.game-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(9, 13, 22, 0.88);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 30;
+}
+.game-overlay.active { display: flex; }
+.game-overlay h2 { font-size: 16px; font-weight: 800; color: #eab308; }
+.game-overlay p { font-size: 12px; color: #cbd5e1; }
+.btn-overlay {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-overlay.sec { background: #334155; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="title-badge">♟️ Avelia Chess Mini App</div>
-  <div class="status-pill" id="status">Giliran: Putih</div>
+<!-- SCREEN 1: LOBBY -->
+<div class="screen active" id="screenLobby">
+  <div class="lobby-header">
+    <div class="app-brand">♟️ Avelia Chess</div>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <div class="conn-pill" id="lobbyNetPill">
+        <span class="dot" id="lobbyDot"></span>
+        <span id="lobbyNetText">Connecting...</span>
+      </div>
+      <div class="player-tag">👤 <span id="lobbyPlayerName">{{PLAYER_NAME}}</span></div>
+    </div>
+  </div>
+
+  <div class="lobby-hero">
+    <h1>Papan Catur Interaktif</h1>
+    <p>Main catur langsung di gelembung chat WhatsApp</p>
+  </div>
+
+  <div class="mode-container">
+    <div class="mode-card glass-card" id="cardSolo">
+      <div class="mode-info">
+        <div class="mode-icon">🤖</div>
+        <div class="mode-texts">
+          <h3>Main Lawan Bot <span class="badge-pill badge-bot">AI Solo</span></h3>
+          <p>Bermain santai melawan Bot AI tanpa delay.</p>
+        </div>
+      </div>
+      <div style="color: #64748b; font-size: 14px;">➔</div>
+    </div>
+
+    <div class="mode-card glass-card mabar" id="cardMultiplayer">
+      <div class="mode-info">
+        <div class="mode-icon">⚔️</div>
+        <div class="mode-texts">
+          <h3>Multiplayer Online <span class="badge-pill badge-mabar">Mabar Live</span></h3>
+          <p>Tanding real-time dengan teman atau tonton live!</p>
+        </div>
+      </div>
+      <div style="color: #38bdf8; font-size: 14px;">➔</div>
+    </div>
+  </div>
+
+  <div class="lobby-footer">
+    💡 Jika room sudah penuh (2/2), kamu otomatis menjadi penonton live!
+  </div>
 </div>
 
-<div class="board-container" id="board"></div>
+<!-- SCREEN 2: ROOM SELECTION -->
+<div class="screen" id="screenRooms">
+  <div class="rooms-header">
+    <button class="btn-back" id="btnBackToLobby">⬅️ Lobby</button>
+    <div class="rooms-title">⚔️ Room Catur Online</div>
+    <div style="width: 50px;"></div>
+  </div>
 
-<div class="footer-bar">
-  <button class="btn" id="btnMode">Mode: VS BOT</button>
-  <div class="turn-indicator white" id="turnInfo">Putih (Kamu)</div>
-  <button class="btn" id="btnReset">Mulai Ulang</button>
+  <div class="conn-bar">
+    <div class="conn-indicator">
+      <div class="dot" id="roomDot"></div>
+      <span id="roomNetStatus">Menghubungkan ke Server...</span>
+    </div>
+    <span id="activeRoomsCount">2 Room</span>
+  </div>
+
+  <button class="btn-quickplay" id="btnQuickPlay">
+    ⚡ Masuk Cepat (Auto Matchmaking)
+  </button>
+
+  <div class="room-list" id="roomContainer">
+    <!-- Rendered dynamically -->
+  </div>
+
+  <button class="btn-new-room" id="btnCreateRoom">
+    ➕ Buat Room Baru
+  </button>
+</div>
+
+<!-- SCREEN 3: GAME BOARD -->
+<div class="screen" id="screenGame">
+  <div class="spec-toast" id="specToast">👁️ Mode Penonton (Hanya Melihat)</div>
+
+  <div class="game-topbar">
+    <button class="action-btn" id="btnExitGame">🚪 Keluar</button>
+    <div class="game-badge" id="gameRoomTitle">Room #1</div>
+    <div class="role-badge white" id="gameRoleBadge">⚪ Putih</div>
+    <div class="net-status" id="netStatus" title="Status Online"></div>
+  </div>
+
+  <div class="board-container" id="board"></div>
+
+  <div class="game-bottombar">
+    <div class="turn-pill w" id="turnIndicator">Giliran: Putih</div>
+    <div style="display: flex; gap: 4px;">
+      <button class="action-btn" id="btnFlipBoard" title="Putar Papan">🔄 Putar</button>
+      <button class="action-btn" id="btnSurrender" title="Nyerah">🏳️ Nyerah</button>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div class="game-overlay" id="gameOverOverlay">
+    <h2 id="overlayTitle">🏁 SKAKMAT!</h2>
+    <p id="overlayMessage">Putih Memenangkan Pertandingan</p>
+    <div style="display: flex; gap: 8px; margin-top: 6px;">
+      <button class="btn-overlay" id="btnRematch">🔄 Main Lagi</button>
+      <button class="btn-overlay sec" id="btnOverlayExit">🚪 Ke Lobby</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -148,14 +608,35 @@ body {
     p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚'
   };
 
-  let vsBot = true;
+  const CONFIG = {
+    playerName: '{{PLAYER_NAME}}' || 'Pemain',
+    groupId: '{{GROUP_ID}}' || 'global',
+    wsUrl: '{{WS_URL}}'
+  };
+
+  let myPlayerId = 'p_' + Math.random().toString(36).slice(2, 9);
+  let currentMode = 'solo'; // 'solo' or 'multi'
+  let currentRoomId = 1;
+  let myRole = 'w'; // 'w', 'b', or 'spectator'
+  let isFlipped = false;
+  let ws = null;
+  let wsConnected = false;
+  let wsPingInterval = null;
+
+  // Active rooms in this group
+  let rooms = [
+    { id: 1, name: 'Room #1', players: { w: null, b: null }, spectators: 0 },
+    { id: 2, name: 'Room #2', players: { w: null, b: null }, spectators: 0 }
+  ];
+
+  // Chess Game State
   let currentTurn = 'w';
   let selectedSquare = null;
   let possibleMoves = [];
   let lastMove = null;
   let isGameOver = false;
 
-  let boardState = [
+  const INITIAL_BOARD = [
     ['r','n','b','q','k','b','n','r'],
     ['p','p','p','p','p','p','p','p'],
     ['','','','','','','',''],
@@ -166,86 +647,418 @@ body {
     ['R','N','B','Q','K','B','N','R']
   ];
 
-  // Sound Synthesizer via Web Audio API
+  let boardState = JSON.parse(JSON.stringify(INITIAL_BOARD));
+
+  // Web Audio API Synthesizer
   let audioCtx = null;
-  function playBeep(freq, type, duration) {
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone(freq, type, duration, vol = 0.08) {
     try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = type || 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    } catch (e) {}
+      osc.stop(ctx.currentTime + duration);
+    } catch (_) {}
   }
 
-  function playMoveSound(capture) {
-    if (capture) playBeep(600, 'triangle', 0.12);
-    else playBeep(440, 'sine', 0.08);
+  function soundMove(capture) {
+    if (capture) playTone(580, 'triangle', 0.12, 0.12);
+    else playTone(440, 'sine', 0.07, 0.08);
   }
 
-  function playVictorySound() {
-    playBeep(523, 'triangle', 0.15);
-    setTimeout(() => playBeep(659, 'triangle', 0.2), 150);
-    setTimeout(() => playBeep(784, 'triangle', 0.3), 350);
+  function soundVictory() {
+    playTone(523, 'triangle', 0.12, 0.1);
+    setTimeout(() => playTone(659, 'triangle', 0.15, 0.1), 120);
+    setTimeout(() => playTone(784, 'triangle', 0.25, 0.12), 240);
   }
+
+  // DOM Elements
+  const screenLobby = document.getElementById('screenLobby');
+  const screenRooms = document.getElementById('screenRooms');
+  const screenGame = document.getElementById('screenGame');
+
+  const cardSolo = document.getElementById('cardSolo');
+  const cardMultiplayer = document.getElementById('cardMultiplayer');
+  const btnBackToLobby = document.getElementById('btnBackToLobby');
+  const btnQuickPlay = document.getElementById('btnQuickPlay');
+  const btnCreateRoom = document.getElementById('btnCreateRoom');
+  const roomContainer = document.getElementById('roomContainer');
+  const activeRoomsCount = document.getElementById('activeRoomsCount');
+  const roomDot = document.getElementById('roomDot');
+  const roomNetStatus = document.getElementById('roomNetStatus');
+  const lobbyDot = document.getElementById('lobbyDot');
+  const lobbyNetText = document.getElementById('lobbyNetText');
 
   const boardEl = document.getElementById('board');
-  const statusEl = document.getElementById('status');
-  const turnInfoEl = document.getElementById('turnInfo');
-  const btnModeEl = document.getElementById('btnMode');
-  const btnResetEl = document.getElementById('btnReset');
+  const gameRoomTitle = document.getElementById('gameRoomTitle');
+  const gameRoleBadge = document.getElementById('gameRoleBadge');
+  const netStatus = document.getElementById('netStatus');
+  const turnIndicator = document.getElementById('turnIndicator');
+  const specToast = document.getElementById('specToast');
+  const btnExitGame = document.getElementById('btnExitGame');
+  const btnFlipBoard = document.getElementById('btnFlipBoard');
+  const btnSurrender = document.getElementById('btnSurrender');
 
-  function isWhite(piece) { return piece && piece === piece.toUpperCase(); }
-  function isBlack(piece) { return piece && piece === piece.toLowerCase(); }
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayMessage = document.getElementById('overlayMessage');
+  const btnRematch = document.getElementById('btnRematch');
+  const btnOverlayExit = document.getElementById('btnOverlayExit');
 
-  function renderBoard() {
-    boardEl.innerHTML = '';
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const sq = document.createElement('div');
-        const isLight = (r + c) % 2 === 0;
-        sq.className = 'square ' + (isLight ? 'light' : 'dark');
-        sq.dataset.row = r;
-        sq.dataset.col = c;
+  function switchScreen(screen) {
+    [screenLobby, screenRooms, screenGame].forEach(s => s.classList.remove('active'));
+    screen.classList.add('active');
+  }
 
-        if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
-          sq.classList.add('selected');
-        }
-        if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c))) {
-          sq.classList.add('last-move');
-        }
+  function setNetIndicator(state, customText) {
+    if (state === 'online') {
+      if (lobbyDot) lobbyDot.className = 'dot connected';
+      if (lobbyNetText) lobbyNetText.textContent = customText || 'Online';
+      if (roomDot) roomDot.className = 'dot connected';
+      if (roomNetStatus) roomNetStatus.textContent = customText || '🟢 Terhubung (Mabar Live OK)';
+      if (netStatus) netStatus.className = 'net-status';
+    } else if (state === 'connecting') {
+      if (lobbyDot) lobbyDot.className = 'dot';
+      if (lobbyNetText) lobbyNetText.textContent = 'Connecting...';
+      if (roomDot) roomDot.className = 'dot';
+      if (roomNetStatus) roomNetStatus.textContent = '🔄 Menghubungkan ke Server...';
+      if (netStatus) netStatus.className = 'net-status reconnecting';
+    } else {
+      if (lobbyDot) lobbyDot.className = 'dot error';
+      if (lobbyNetText) lobbyNetText.textContent = 'Offline';
+      if (roomDot) roomDot.className = 'dot error';
+      if (roomNetStatus) roomNetStatus.textContent = customText || '⚠️ Terputus (Mencoba ulang...)';
+      if (netStatus) netStatus.className = 'net-status offline';
+    }
+  }
 
-        const isPoss = possibleMoves.find(m => m.r === r && m.c === c);
-        if (isPoss) {
-          sq.classList.add('possible');
-          if (boardState[r][c] !== '') sq.classList.add('capture');
-        }
+  // --- WEBSOCKET ENGINE (Matching .tesproto pattern) ---
+  function connectWebSocket() {
+    if (!CONFIG.wsUrl || CONFIG.wsUrl.includes('{{WS_URL}}')) {
+      setNetIndicator('error', 'URL Server Invalid');
+      return;
+    }
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
 
-        const p = boardState[r][c];
-        if (p) {
-          const pieceEl = document.createElement('span');
-          pieceEl.className = 'piece';
-          pieceEl.textContent = PIECES[p] || p;
-          sq.appendChild(pieceEl);
-        }
+    setNetIndicator('connecting');
 
-        sq.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onSquareClick(r, c);
+    try {
+      ws = new WebSocket(CONFIG.wsUrl);
+      ws.binaryType = 'arraybuffer';
+
+      ws.onopen = function() {
+        wsConnected = true;
+        setNetIndicator('online', '🟢 Online (Realtime OK)');
+
+        // Handshake test ping matching working arcade-tesproto.js pattern
+        const testPing = {
+          type: 'test',
+          message: 'HELLO_FROM_AI_RICH',
+          id: myPlayerId,
+          group: CONFIG.groupId,
+          timestamp: Date.now()
+        };
+        try { ws.send(JSON.stringify(testPing)); } catch(_) {}
+
+        // Broadcast presence
+        broadcast({
+          type: 'presence',
+          group: CONFIG.groupId,
+          id: myPlayerId,
+          name: CONFIG.playerName,
+          room: currentRoomId,
+          role: myRole
         });
 
-        boardEl.appendChild(sq);
+        // Request presence from other peers in this group
+        broadcast({
+          type: 'ask_presence',
+          group: CONFIG.groupId,
+          id: myPlayerId
+        });
+
+        if (wsPingInterval) clearInterval(wsPingInterval);
+        wsPingInterval = setInterval(() => {
+          broadcast({
+            type: 'ping',
+            group: CONFIG.groupId,
+            id: myPlayerId
+          });
+        }, 15000);
+      };
+
+      ws.onmessage = function(event) {
+        try {
+          const raw = typeof event.data === 'string' ? event.data : new TextDecoder().decode(event.data);
+          const data = JSON.parse(raw);
+          if (!data) return;
+
+          // Handshake echo received from PieSocket (due to &notify_self=1)
+          if (data.type === 'test') {
+            setNetIndicator('online', '🟢 Online (Realtime OK)');
+            return;
+          }
+
+          // Filter by group to isolate matches
+          if (data.group && data.group !== CONFIG.groupId) {
+            return;
+          }
+
+          if (data.id === myPlayerId) return;
+
+          handleWsMessage(data);
+        } catch (_) {}
+      };
+
+      ws.onerror = function() {
+        wsConnected = false;
+        setNetIndicator('error', '⚠️ WebSocket Gagal');
+      };
+
+      ws.onclose = function() {
+        wsConnected = false;
+        setNetIndicator('error', '⚠️ Terputus (Reconnecting...)');
+        setTimeout(connectWebSocket, 3000);
+      };
+    } catch (e) {
+      wsConnected = false;
+      setNetIndicator('error', '⚠️ Error Koneksi');
+      setTimeout(connectWebSocket, 4000);
+    }
+  }
+
+  function broadcast(payload) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        if (!payload.group) payload.group = CONFIG.groupId;
+        ws.send(JSON.stringify(payload));
+      } catch (_) {}
+    }
+  }
+
+  function handleWsMessage(data) {
+    if (data.type === 'ask_presence') {
+      // Respond with my current room and role
+      broadcast({
+        type: 'announce_presence',
+        id: myPlayerId,
+        name: CONFIG.playerName,
+        room: currentRoomId,
+        role: myRole
+      });
+      return;
+    }
+
+    if (data.type === 'presence' || data.type === 'announce_presence' || data.type === 'join_room') {
+      if (data.room) {
+        let r = rooms.find(rm => rm.id === Number(data.room));
+        if (!r) {
+          r = { id: Number(data.room), name: 'Room #' + data.room, players: { w: null, b: null }, spectators: 0 };
+          rooms.push(r);
+        }
+        if (data.role === 'w') r.players.w = { id: data.id, name: data.name };
+        if (data.role === 'b') r.players.b = { id: data.id, name: data.name };
+        if (data.role === 'spectator') r.spectators++;
+        ensureAvailableRoom();
+        renderRoomList();
+      }
+      return;
+    }
+
+    // Room-specific events
+    if (Number(data.room) === currentRoomId) {
+      if (data.type === 'move') {
+        applyMoveLocally(data.fromR, data.fromC, data.toR, data.toC, false);
+      } else if (data.type === 'rematch') {
+        resetBoard();
+        gameOverOverlay.classList.remove('active');
+      } else if (data.type === 'surrender') {
+        const winner = data.role === 'w' ? 'HITAM' : 'PUTIH';
+        endGame(winner + ' MENANG!', 'Lawan menyerah.');
+      } else if (data.type === 'request_sync') {
+        // Only White / Host answers sync
+        if (myRole === 'w') {
+          broadcast({
+            type: 'response_sync',
+            room: currentRoomId,
+            boardState,
+            currentTurn,
+            lastMove
+          });
+        }
+      } else if (data.type === 'response_sync') {
+        if (myRole === 'spectator' || myRole === 'b') {
+          boardState = data.boardState;
+          currentTurn = data.currentTurn;
+          lastMove = data.lastMove;
+          updateTurnIndicator();
+          renderBoard();
+        }
       }
     }
   }
 
+  // --- ROOM MANAGEMENT ---
+  function renderRoomList() {
+    roomContainer.innerHTML = '';
+    activeRoomsCount.textContent = rooms.length + ' Room';
+
+    rooms.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'room-item';
+
+      let statusClass = 'status-empty';
+      let statusText = '0/2 Kosong';
+      let btnClass = 'join-white';
+      let btnLabel = 'Masuk (Putih ⚪)';
+
+      if (r.players.w && r.players.b) {
+        statusClass = 'status-full';
+        statusText = '2/2 Penuh (Live)';
+        btnClass = 'join-spec';
+        btnLabel = '👁️ Tonton';
+      } else if (r.players.w || r.players.b) {
+        statusClass = 'status-waiting';
+        statusText = '1/2 Menunggu Lawan';
+        btnClass = 'join-black';
+        btnLabel = 'Tantang (Hitam ⚫)';
+      }
+
+      div.innerHTML = `
+        <div class="room-item-info">
+          <div class="room-item-name">♟️ ${r.name}</div>
+          <div class="room-item-status ${statusClass}">${statusText}</div>
+        </div>
+        <button class="btn-join ${btnClass}" data-room="${r.id}">${btnLabel}</button>
+      `;
+
+      div.querySelector('button').addEventListener('click', () => {
+        joinRoom(r.id);
+      });
+
+      roomContainer.appendChild(div);
+    });
+  }
+
+  function ensureAvailableRoom() {
+    const allFull = rooms.every(r => r.players.w && r.players.b);
+    if (allFull) {
+      const nextId = rooms.length + 1;
+      rooms.push({
+        id: nextId,
+        name: 'Room #' + nextId,
+        players: { w: null, b: null },
+        spectators: 0
+      });
+      renderRoomList();
+    }
+  }
+
+  function joinRoom(roomId) {
+    let room = rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    currentMode = 'multi';
+    currentRoomId = roomId;
+
+    if (!room.players.w) {
+      room.players.w = { id: myPlayerId, name: CONFIG.playerName };
+      myRole = 'w';
+      isFlipped = false;
+    } else if (!room.players.b) {
+      room.players.b = { id: myPlayerId, name: CONFIG.playerName };
+      myRole = 'b';
+      isFlipped = true;
+    } else {
+      room.spectators++;
+      myRole = 'spectator';
+      isFlipped = false;
+      showSpecToast();
+      broadcast({ type: 'request_sync', room: currentRoomId, id: myPlayerId });
+    }
+
+    // Broadcast that I joined this room
+    broadcast({
+      type: 'join_room',
+      room: currentRoomId,
+      id: myPlayerId,
+      name: CONFIG.playerName,
+      role: myRole
+    });
+
+    ensureAvailableRoom();
+    startMultiplayerGame(room);
+  }
+
+  function showSpecToast() {
+    specToast.style.display = 'block';
+    setTimeout(() => { specToast.style.display = 'none'; }, 3000);
+  }
+
+  // --- GAME START ---
+  function startSoloGame() {
+    currentMode = 'solo';
+    myRole = 'w';
+    isFlipped = false;
+    resetBoard();
+
+    gameRoomTitle.textContent = '🤖 VS BOT AI';
+    gameRoleBadge.className = 'role-badge white';
+    gameRoleBadge.textContent = '⚪ Kamu (Putih)';
+    netStatus.className = 'net-status';
+
+    switchScreen(screenGame);
+    renderBoard();
+  }
+
+  function startMultiplayerGame(room) {
+    resetBoard();
+    gameRoomTitle.textContent = room.name;
+
+    if (myRole === 'w') {
+      gameRoleBadge.className = 'role-badge white';
+      gameRoleBadge.textContent = '⚪ Kamu (Putih)';
+    } else if (myRole === 'b') {
+      gameRoleBadge.className = 'role-badge black';
+      gameRoleBadge.textContent = '⚫ Kamu (Hitam)';
+    } else {
+      gameRoleBadge.className = 'role-badge spec';
+      gameRoleBadge.textContent = '👁️ Penonton Live';
+    }
+
+    switchScreen(screenGame);
+    renderBoard();
+  }
+
+  function resetBoard() {
+    boardState = JSON.parse(JSON.stringify(INITIAL_BOARD));
+    currentTurn = 'w';
+    selectedSquare = null;
+    possibleMoves = [];
+    lastMove = null;
+    isGameOver = false;
+    updateTurnIndicator();
+    gameOverOverlay.classList.remove('active');
+  }
+
+  function isWhite(p) { return p && p === p.toUpperCase(); }
+  function isBlack(p) { return p && p === p.toLowerCase(); }
+
+  // --- CHESS ENGINE RULES ---
   function getLegalMoves(r, c) {
     const piece = boardState[r][c];
     if (!piece) return [];
@@ -312,7 +1125,7 @@ body {
     return moves;
   }
 
-  function makeMove(fromR, fromC, toR, toC) {
+  function applyMoveLocally(fromR, fromC, toR, toC, isMyAction) {
     const piece = boardState[fromR][fromC];
     const target = boardState[toR][toC];
     const isCapture = !!target;
@@ -320,29 +1133,38 @@ body {
     boardState[toR][toC] = piece;
     boardState[fromR][fromC] = '';
 
-    // Simple pawn promotion to Queen
+    // Pawn Promotion
     if (piece === 'P' && toR === 0) boardState[toR][toC] = 'Q';
     if (piece === 'p' && toR === 7) boardState[toR][toC] = 'q';
 
     lastMove = { from: { r: fromR, c: fromC }, to: { r: toR, c: toC } };
-    playMoveSound(isCapture);
+    soundMove(isCapture);
 
-    // Check King capture (win condition)
+    // Win condition: King captured
     if (target && target.toUpperCase() === 'K') {
-      isGameOver = true;
-      playVictorySound();
-      statusEl.textContent = (currentTurn === 'w' ? 'PUTIH' : 'HITAM') + ' MENANG!';
-      turnInfoEl.textContent = 'Permainan Selesai';
+      const winner = currentTurn === 'w' ? 'PUTIH' : 'HITAM';
+      endGame(winner + ' MENANG!', 'Raja lawan telah gugur.');
       return;
     }
 
     currentTurn = currentTurn === 'w' ? 'b' : 'w';
-    statusEl.textContent = 'Giliran: ' + (currentTurn === 'w' ? 'Putih' : 'Hitam');
-    turnInfoEl.className = 'turn-indicator ' + (currentTurn === 'w' ? 'white' : 'black');
-    turnInfoEl.textContent = currentTurn === 'w' ? 'Putih' + (vsBot ? ' (Kamu)' : '') : 'Hitam' + (vsBot ? ' (Bot)' : '');
+    updateTurnIndicator();
 
-    if (vsBot && currentTurn === 'b' && !isGameOver) {
-      setTimeout(makeBotMove, 400);
+    if (isMyAction && currentMode === 'multi') {
+      broadcast({
+        type: 'move',
+        id: myPlayerId,
+        room: currentRoomId,
+        fromR, fromC, toR, toC,
+        currentTurn
+      });
+    }
+
+    renderBoard();
+
+    // Solo Bot response
+    if (currentMode === 'solo' && currentTurn === 'b' && !isGameOver) {
+      setTimeout(makeBotMove, 450);
     }
   }
 
@@ -360,34 +1182,98 @@ body {
       }
     }
     if (allBlackMoves.length === 0) {
-      isGameOver = true;
-      statusEl.textContent = 'Stalemate / Putih Menang!';
+      endGame('PUTIH MENANG!', 'Bot kehabisan langkah legal.');
       return;
     }
-
-    // Prioritize captures
     const captures = allBlackMoves.filter(m => m.capture);
     const chosen = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : allBlackMoves[Math.floor(Math.random() * allBlackMoves.length)];
-    makeMove(chosen.fromR, chosen.fromC, chosen.toR, chosen.toC);
-    renderBoard();
+    applyMoveLocally(chosen.fromR, chosen.fromC, chosen.toR, chosen.toC, true);
+  }
+
+  function updateTurnIndicator() {
+    turnIndicator.className = 'turn-pill ' + currentTurn;
+    turnIndicator.textContent = currentTurn === 'w' ? 'Giliran: Putih ⚪' : 'Giliran: Hitam ⚫';
+  }
+
+  function endGame(title, msg) {
+    isGameOver = true;
+    soundVictory();
+    overlayTitle.textContent = title;
+    overlayMessage.textContent = msg;
+    gameOverOverlay.classList.add('active');
+  }
+
+  // --- BOARD RENDERING ---
+  function renderBoard() {
+    boardEl.innerHTML = '';
+
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        const r = isFlipped ? 7 - i : i;
+        const c = isFlipped ? 7 - j : j;
+
+        const sq = document.createElement('div');
+        const isLight = (r + c) % 2 === 0;
+        sq.className = 'square ' + (isLight ? 'light' : 'dark');
+
+        if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+          sq.classList.add('selected');
+        }
+        if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c))) {
+          sq.classList.add('last-move');
+        }
+
+        const isPoss = possibleMoves.find(m => m.r === r && m.c === c);
+        if (isPoss) {
+          sq.classList.add('possible');
+          if (boardState[r][c] !== '') sq.classList.add('capture');
+        }
+
+        const p = boardState[r][c];
+        if (p) {
+          const pieceEl = document.createElement('span');
+          pieceEl.className = 'piece';
+          pieceEl.textContent = PIECES[p] || p;
+          sq.appendChild(pieceEl);
+        }
+
+        sq.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSquareClick(r, c);
+        });
+
+        boardEl.appendChild(sq);
+      }
+    }
   }
 
   function onSquareClick(r, c) {
     if (isGameOver) return;
-    if (vsBot && currentTurn === 'b') return;
 
-    const clickedPiece = boardState[r][c];
-    const isCurrentPlayerPiece = currentTurn === 'w' ? isWhite(clickedPiece) : isBlack(clickedPiece);
+    if (currentMode === 'multi' && myRole === 'spectator') {
+      showSpecToast();
+      return;
+    }
+
+    if (currentMode === 'multi' && myRole !== currentTurn) {
+      return;
+    }
+
+    if (currentMode === 'solo' && currentTurn === 'b') {
+      return;
+    }
+
+    const piece = boardState[r][c];
+    const isCurrentPlayerPiece = currentTurn === 'w' ? isWhite(piece) : isBlack(piece);
 
     if (selectedSquare) {
-      const isMove = possibleMoves.find(m => m.r === r && m.c === c);
-      if (isMove) {
+      const isTargetMove = possibleMoves.find(m => m.r === r && m.c === c);
+      if (isTargetMove) {
         const fromR = selectedSquare.r;
         const fromC = selectedSquare.c;
         selectedSquare = null;
         possibleMoves = [];
-        makeMove(fromR, fromC, r, c);
-        renderBoard();
+        applyMoveLocally(fromR, fromC, r, c, true);
         return;
       }
     }
@@ -402,35 +1288,85 @@ body {
     renderBoard();
   }
 
-  btnModeEl.addEventListener('click', () => {
-    vsBot = !vsBot;
-    btnModeEl.textContent = vsBot ? 'Mode: VS BOT' : 'Mode: 2 PLAYER';
-    turnInfoEl.textContent = currentTurn === 'w' ? 'Putih' + (vsBot ? ' (Kamu)' : '') : 'Hitam' + (vsBot ? ' (Bot)' : '');
+  // --- EVENT LISTENERS ---
+  cardSolo.addEventListener('click', startSoloGame);
+
+  cardMultiplayer.addEventListener('click', () => {
+    switchScreen(screenRooms);
+    renderRoomList();
+    connectWebSocket(); // Connect WebSocket immediately when entering multiplayer
   });
 
-  btnResetEl.addEventListener('click', () => {
-    boardState = [
-      ['r','n','b','q','k','b','n','r'],
-      ['p','p','p','p','p','p','p','p'],
-      ['','','','','','','',''],
-      ['','','','','','','',''],
-      ['','','','','','','',''],
-      ['','','','','','','',''],
-      ['P','P','P','P','P','P','P','P'],
-      ['R','N','B','Q','K','B','N','R']
-    ];
-    currentTurn = 'w';
-    selectedSquare = null;
-    possibleMoves = [];
-    lastMove = null;
-    isGameOver = false;
-    statusEl.textContent = 'Giliran: Putih';
-    turnInfoEl.className = 'turn-indicator white';
-    turnInfoEl.textContent = 'Putih' + (vsBot ? ' (Kamu)' : '');
+  btnBackToLobby.addEventListener('click', () => {
+    switchScreen(screenLobby);
+  });
+
+  btnQuickPlay.addEventListener('click', () => {
+    let target = rooms.find(r => !r.players.w || !r.players.b);
+    if (!target) {
+      ensureAvailableRoom();
+      target = rooms[rooms.length - 1];
+    }
+    joinRoom(target.id);
+  });
+
+  btnCreateRoom.addEventListener('click', () => {
+    const newId = rooms.length + 1;
+    rooms.push({
+      id: newId,
+      name: 'Room #' + newId,
+      players: { w: null, b: null },
+      spectators: 0
+    });
+    renderRoomList();
+    joinRoom(newId);
+  });
+
+  btnExitGame.addEventListener('click', () => {
+    if (currentMode === 'multi') {
+      broadcast({ type: 'leave', id: myPlayerId, room: currentRoomId, role: myRole });
+      const r = rooms.find(rm => rm.id === currentRoomId);
+      if (r) {
+        if (myRole === 'w') r.players.w = null;
+        if (myRole === 'b') r.players.b = null;
+        if (myRole === 'spectator' && r.spectators > 0) r.spectators--;
+      }
+    }
+    switchScreen(screenRooms);
+    renderRoomList();
+  });
+
+  btnFlipBoard.addEventListener('click', () => {
+    isFlipped = !isFlipped;
     renderBoard();
   });
 
-  renderBoard();
+  btnSurrender.addEventListener('click', () => {
+    if (isGameOver) return;
+    if (currentMode === 'multi' && myRole === 'spectator') return;
+
+    const winner = myRole === 'w' ? 'HITAM' : 'PUTIH';
+    if (currentMode === 'multi') {
+      broadcast({ type: 'surrender', id: myPlayerId, room: currentRoomId, role: myRole });
+    }
+    endGame(winner + ' MENANG!', 'Kamu telah menyerah.');
+  });
+
+  btnRematch.addEventListener('click', () => {
+    resetBoard();
+    if (currentMode === 'multi') {
+      broadcast({ type: 'rematch', id: myPlayerId, room: currentRoomId });
+    }
+    renderBoard();
+  });
+
+  btnOverlayExit.addEventListener('click', () => {
+    gameOverOverlay.classList.remove('active');
+    btnExitGame.click();
+  });
+
+  renderRoomList();
+  connectWebSocket(); // Connect WebSocket immediately on load (like .tesproto)
 })();
 </script>
 </body>

@@ -68,8 +68,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
       const caption = `*──  ୨୧ ✧ PINTEREST SEARCH ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
-*┆* ⟡ ᴘᴇɴᴄᴀʀɪᴀɴ : *${text}*
-*┆* ◈ ꜱʟɪᴅᴇ     : *${toSmallNum(mediaList.length + 1)} / ${toSmallNum(5)}*
+> ⟡ ᴘᴇɴᴄᴀʀɪᴀɴ : *${text}*
+> ◈ ꜱʟɪᴅᴇ     : *${toSmallNum(mediaList.length + 1)} / ${toSmallNum(5)}*
 *╰───────────────*`.trim()
 
       mediaList.push({

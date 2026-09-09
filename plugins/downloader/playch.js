@@ -79,9 +79,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const captionSuccess = `*──  ୨୧ ✧ SALURAN VOICE NOTE ✧ ୨୧  ──*
 
 *╭  〔 ✦ ʟ ᴀ ɢ ᴜ  ᴛ ᴇ ʀ ᴋ ɪ ʀ ɪ ᴍ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ    : *${title}*
-*┆* ✧ ᴀᴜᴛʜᴏʀ   : *${author?.name || '-'}*
-*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
+> ⟡ ᴊᴜᴅᴜʟ    : *${title}*
+> ✧ ᴀᴜᴛʜᴏʀ   : *${author?.name || '-'}*
+> ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)}*
 *╰───────────────*
 
 > _Lagu berhasil dikirimkan ke saluran WhatsApp sebagai Voice Note!_`.trim()

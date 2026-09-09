@@ -19,11 +19,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const caption = `*──  ୨୧ ✧ YOUTUBE SEARCH ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ    : *${video.title}*
-*┆* ✧ ᴄʜᴀɴɴᴇʟ  : *${video.author?.name || '-'}*
-*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(video.timestamp || '0:00')}*
-*┆* ◈ ᴠɪᴇᴡꜱ    : *${toSmallNum(video.views ? video.views.toLocaleString('id-ID') : '-')}*
-*┆* ⏱ ᴜᴘʟᴏᴀᴅ   : *${video.ago || '-'}*
+> ⟡ ᴊᴜᴅᴜʟ    : *${video.title}*
+> ✧ ᴄʜᴀɴɴᴇʟ  : *${video.author?.name || '-'}*
+> ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(video.timestamp || '0:00')}*
+> ◈ ᴠɪᴇᴡꜱ    : *${toSmallNum(video.views ? video.views.toLocaleString('id-ID') : '-')}*
+> ⏱ ᴜᴘʟᴏᴀᴅ   : *${video.ago || '-'}*
 *╰───────────────*
 
 > *Pilihan Unduh:*

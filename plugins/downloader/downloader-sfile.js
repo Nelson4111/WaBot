@@ -23,9 +23,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       const caption = `*──  ୨୧ ✧ SFILE DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ꜰ ɪ ʟ ᴇ 〕*
-*┆* ⟡ ɴᴀᴍᴀ   : *${res.filename || 'sfile'}*
-*┆* ◈ ᴜᴋᴜʀᴀɴ : *${toSmallNum(res.filesize || '-')}*
-*┆* ✧ ᴛɪᴘᴇ   : *${res.mimetype || 'Dokumen'}*
+> ⟡ ɴᴀᴍᴀ   : *${res.filename || 'sfile'}*
+> ◈ ᴜᴋᴜʀᴀɴ : *${toSmallNum(res.filesize || '-')}*
+> ✧ ᴛɪᴘᴇ   : *${res.mimetype || 'Dokumen'}*
 *╰───────────────*
 
 > _Mengirimkan dokumen ke ruang obrolan..._`.trim()

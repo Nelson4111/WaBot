@@ -19,8 +19,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const caption = `*──  ୨୧ ✧ VIDEY DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
-*┆* ⟡ ɪᴅ    : *${id}*
-*┆* ◈ ᴛɪᴘᴇ  : *Video MP4*
+> ⟡ ɪᴅ    : *${id}*
+> ◈ ᴛɪᴘᴇ  : *Video MP4*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()

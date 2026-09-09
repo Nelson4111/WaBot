@@ -431,8 +431,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         const caption = `*──  ୨୧ ✧ TIKTOK SLIDE ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
-*┆* ◈ ꜱʟɪᴅᴇ : *${toSmallNum(i + 1)} / ${toSmallNum(res.images.length)}*
+> ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
+> ◈ ꜱʟɪᴅᴇ : *${toSmallNum(i + 1)} / ${toSmallNum(res.images.length)}*
 *╰───────────────*`.trim()
 
         await conn.sendButtonV2(m.chat, {
@@ -475,8 +475,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       const caption = `*──  ୨୧ ✧ TIKTOK DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
-*┆* ◈ ᴛɪᴘᴇ  : *Video MP4 (No Watermark)*
+> ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
+> ◈ ᴛɪᴘᴇ  : *Video MP4 (No Watermark)*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()

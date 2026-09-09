@@ -54,9 +54,9 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     const caption = `*──  ୨୧ ✧ SPOTIFY DOWNLOADER 2 ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ʟ ᴀ ɢ ᴜ 〕*
-*┆* ⟡ ᴊᴜᴅᴜʟ    : *${displayTitle}*
-*┆* ✧ ᴀʀᴛɪꜱ    : *${displayAuthor}*
-*┆* ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(displayDuration)}*
+> ⟡ ᴊᴜᴅᴜʟ    : *${displayTitle}*
+> ✧ ᴀʀᴛɪꜱ    : *${displayAuthor}*
+> ⧗ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(displayDuration)}*
 *╰───────────────*
 
 > _Sedang mengirimkan file audio ke ruang obrolan..._`.trim()
