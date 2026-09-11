@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration } from '../../lib/pasanganHelper.js'
+import { formatDuration, getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
 
 /**
  * Kencan Harian Pasangan Plugin
@@ -11,6 +11,10 @@ let handler = async (m, { conn, usedPrefix }) => {
   const users = global.db.data.users
   const sender = conn.decodeJid(m.sender)
   const pList = users[sender]?.pasangan || []
+
+  if (isPasanganHidden(users[sender] || {})) {
+    return m.reply(getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
+  }
 
   if (pList.length === 0) {
     return m.reply(`*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk diajak kencan.\n> Lamar seseorang terlebih dahulu dengan *${usedPrefix}lamar @user*!\n*╰───────────────*`)

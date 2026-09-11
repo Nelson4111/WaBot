@@ -1,4 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
+import { getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
 
 /**
  * Hadiah Pasangan Plugin
@@ -10,6 +11,10 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   const users = global.db.data.users
   const sender = conn.decodeJid(m.sender)
   const pList = users[sender]?.pasangan || []
+
+  if (isPasanganHidden(users[sender] || {})) {
+    return m.reply(getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
+  }
 
   if (pList.length === 0) {
     return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu tidak memiliki pasangan untuk diberi hadiah.\n*╰───────────────*')

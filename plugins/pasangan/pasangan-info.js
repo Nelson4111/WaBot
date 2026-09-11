@@ -1,5 +1,6 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration, getIntimacyRank } from '../../lib/pasanganHelper.js'
+import { saveDB } from '../../lib/waifuHelper.js'
+import { formatDuration, getIntimacyRank, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 /**
  * Status Pernikahan Plugin
@@ -7,14 +8,36 @@ import { formatDuration, getIntimacyRank } from '../../lib/pasanganHelper.js'
  * Style: Zen Shinto Aesthetic (STYLE_GUIDE.md)
  */
 
-let handler = async (m, { conn }) => {
-  const users = global.db.data.users
+let handler = async (m, { conn, args }) => {
+  const users = migrateLegacyRingData(global.db.data.users || {})
   const sender = conn.decodeJid(m.sender)
   const who = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || sender)
   const whoNum = who.split('@')[0].replace(/\D/g, '')
   const isSelf = who === sender
+  const action = (args[0] || '').toLowerCase()
+
+  if (action === 'hide') {
+    users[sender] = users[sender] || {}
+    users[sender].pasanganHidden = true
+    saveDB(global.db)
+    return m.reply(getPasanganHiddenNotice(whoNum, true))
+  }
+
+  if (action === 'unhide') {
+    users[sender] = users[sender] || {}
+    users[sender].pasanganHidden = false
+    saveDB(global.db)
+    return m.reply(`*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Status pasanganmu sudah dibuka kembali.\n> Ketik *.pasangan* untuk melihat profil pernikahanmu.\n*╰───────────────*`)
+  }
 
   const pList = users[who]?.pasangan || []
+
+  if (isPasanganHidden(users[who] || {})) {
+    return conn.sendMessage(m.chat, {
+      text: getPasanganHiddenNotice(whoNum, isSelf),
+      mentions: [who]
+    }, { quoted: m })
+  }
 
   if (pList.length === 0) {
     const notMarriedText = isSelf
@@ -46,7 +69,7 @@ let handler = async (m, { conn }) => {
 *┆* ᰔ ᴘᴏɪɴ ʙᴜᴄɪɴ : *${toSmallNum(p.poinBucin || 0)} Poin*
 *┆* ◈ ᴛɪɴɢᴋᴀᴛ    : *${rank.title}*
 *┆* ✧ ʙᴜꜰꜰ       : *${rank.buff}*
-*┆* ❖ ᴄɪɴᴄɪɴ     : *${p.cincin || 'Cincin Perak'}*
+*┆* ❖ ᴄɪɴᴄɪɴ     : *${normalizeRingName(p.cincin || 'Silver Ring')}*
 *╰───────────────*`
     cards.push(card)
   })
@@ -66,8 +89,8 @@ ${cards.join('\n\n')}
   }, { quoted: m })
 }
 
-handler.help = ['pasangan [@user]', 'ceknikah [@user]', 'istri', 'suami']
+handler.help = ['pasangan [@user]', 'ceknikah [@user]', 'istri', 'suami', 'pasangan hide', 'pasangan unhide']
 handler.tags = ['pasangan']
-handler.command = /^(pasangan|ceknikah|istri|suami)$/i
+handler.command = /^(pasangan|ceknikah|istri|suami|pasangan\s+(hide|unhide))$/i
 
 export default handler

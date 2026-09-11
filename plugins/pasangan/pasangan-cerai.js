@@ -1,4 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
+import { getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
 
 /**
  * Perceraian Pasangan Plugin
@@ -11,6 +12,10 @@ let handler = async (m, { conn }) => {
   const sender = conn.decodeJid(m.sender)
   const senderNum = sender.split('@')[0].replace(/\D/g, '')
   const senderPasangan = users[sender]?.pasangan || []
+
+  if (isPasanganHidden(users[sender] || {})) {
+    return m.reply(getPasanganHiddenNotice(senderNum, true))
+  }
 
   if (senderPasangan.length === 0) {
     return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu saat ini berstatus single (tidak memiliki ikatan pernikahan).\n*╰───────────────*')

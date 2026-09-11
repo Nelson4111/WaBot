@@ -85,15 +85,15 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     if (!users[sender].pasangan) users[sender].pasangan = []
 
     const now = Date.now()
-    users[fromJid].pasangan.push({ jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' })
-    users[sender].pasangan.push({ jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' })
+    users[fromJid].pasangan.push({ jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Silver Ring' })
+    users[sender].pasangan.push({ jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Silver Ring' })
 
     const ann = `*──  ୨୧ ✧ PERNIKAHAN RESMI SAH ✧ ୨୧  ──*
 
 *╭  〔 ᰔ ꜱ ᴇ ʟ ᴀ ᴍ ᴀ ᴛ  ɴ ɪ ᴋ ᴀ ʜ 〕*
 *┆* ⟡ ᴘᴀꜱᴀɴɢᴀɴ : @${fromNum} ♡ @${senderNum}
-*┆* ✧ ꜱᴛᴀᴛᴜꜱ   : Sah Menjadi Suami & Istri
-*┆* ✦ ᴄɪɴᴄɪɴ   : Cincin Perak (Bawaan)
+*┆* ✧ ꜱᴛᴀᴛᴄꜱ   : Sah Menjadi Suami & Istri
+*┆* ✦ ᴄɪɴᴄɪɴ   : Silver Ring (Free)
 *╰───────────────*
 
 > ｡˚ ⊹ _Ketik .pasangan untuk cek profil atau .kartunikah untuk kartu digital!_ ⊹ ˚ ｡`.trim()
@@ -165,15 +165,15 @@ handler.before = async function (m, { conn }) {
     if (!users[sender].pasangan) users[sender].pasangan = []
 
     const now = Date.now()
-    users[fromJid].pasangan.push({ jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' })
-    users[sender].pasangan.push({ jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Cincin Perak' })
+    users[fromJid].pasangan.push({ jid: sender, nikahTime: now, poinBucin: 10, cincin: 'Silver Ring' })
+    users[sender].pasangan.push({ jid: fromJid, nikahTime: now, poinBucin: 10, cincin: 'Silver Ring' })
 
     const ann = `*──  ୨୧ ✧ PERNIKAHAN RESMI SAH ✧ ୨୧  ──*
 
 *╭  〔 ᰔ ꜱ ᴇ ʟ ᴀ ᴍ ᴀ ᴛ  ɴ ɪ ᴋ ᴀ ʜ 〕*
 *┆* ⟡ ᴘᴀꜱᴀɴɢᴀɴ : @${fromNum} ♡ @${senderNum}
-*┆* ✧ ꜱᴛᴀᴛᴜꜱ   : Sah Menjadi Suami & Istri
-*┆* ✦ ᴄɪɴᴄɪɴ   : Cincin Perak (Bawaan)
+*┆* ✧ ꜱᴛᴀᴛᴄꜱ   : Sah Menjadi Suami & Istri
+*┆* ✦ ᴄɪɴᴄɪɴ   : Silver Ring (Free)
 *╰───────────────*
 
 > ｡˚ ⊹ _Ketik .pasangan untuk cek status atau .kartunikah untuk kartu digital!_ ⊹ ˚ ｡`.trim()
