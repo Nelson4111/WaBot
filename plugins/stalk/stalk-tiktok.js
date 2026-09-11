@@ -45,17 +45,21 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // Helper untuk format caption seragam di seluruh layer fallback
   const makeCaption = ({ name, username, verified, isPrivate, followers, following, likes, videos, bio }) => {
-    let caption = `📤 *TIKTOK STALKER*\n\n`
-    caption += `👤 *Nama:* ${name || '-'}\n`
-    caption += `🏷️ *Username:* @${username}\n`
-    caption += `🔗 *Link:* https://www.tiktok.com/@${username}\n`
-    caption += `✔️ *Verified:* ${verified ? 'Ya ✅' : 'Tidak ❌'}\n`
-    if (isPrivate !== undefined) caption += `🔒 *Private:* ${isPrivate ? 'Ya 🔒' : 'Tidak 🔓'}\n`
-    caption += `👥 *Followers:* ${Number(followers || 0).toLocaleString('id-ID')}\n`
-    caption += `🏃 *Following:* ${Number(following || 0).toLocaleString('id-ID')}\n`
-    caption += `❤️ *Likes:* ${Number(likes || 0).toLocaleString('id-ID')}\n`
-    if (videos !== undefined) caption += `🎬 *Videos:* ${Number(videos || 0).toLocaleString('id-ID')}\n`
-    if (bio && bio !== '-') caption += `📝 *Bio:* ${bio}\n`
+let caption = `╭─❏「 📤 AKUN TIKTOK 」❏\n`
+caption += `│ 📤 *TIKTOK STALKER*\n`
+caption += `╰─━━━━━━━━━━━━━━─\n\n`
+
+caption += `👤 *INFORMASI AKUN*\n`
+caption += `> ↳ Nama : ${name || '-'}\n`
+caption += `> ↳ Username : @${username}\n`
+caption += `> ↳ Link : https://www.tiktok.com/@${username}\n`
+caption += `> ↳ Verified : ${verified ? 'Ya ✅' : 'Tidak ❌'}\n`
+if (isPrivate !== undefined) caption += `> ↳ Private : ${isPrivate ? 'Ya 🔒' : 'Tidak 🔓'}\n`
+caption += `> ↳ Followers : ${Number(followers || 0).toLocaleString('id-ID')}\n`
+caption += `> ↳ Following : ${Number(following || 0).toLocaleString('id-ID')}\n`
+caption += `> ↳ Likes : ${Number(likes || 0).toLocaleString('id-ID')}\n`
+if (videos !== undefined) caption += `> ↳ Videos : ${Number(videos || 0).toLocaleString('id-ID')}\n`
+if (bio && bio !== '-') caption += `> ↳ Bio : ${bio}\n`
     return caption.trim()
   }
 
