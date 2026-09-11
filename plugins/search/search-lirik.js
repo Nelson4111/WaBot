@@ -29,11 +29,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let artist = item.artistName || '-'
     let album = item.albumName || '-'
 
-    let cap = `🎤 *LIRIK LAGU*\n\n`
-    cap += `🪷 *Judul:* ${title}\n`
-    cap += `🎀 *Artis:* ${artist}\n`
-    if (album && album !== '-') cap += `💿 *Album:* ${album}\n`
-    cap += `───···\n\n`
+    let cap = `╭─❏「 🎤 LIRIK LAGU 」❏\n`
+cap += `│ 🎤 *${title}*\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+cap += `🪷 *INFORMASI LAGU*\n`
+cap += `> ↳ Judul : ${title}\n`
+cap += `> ↳ Artis : ${artist}\n`
+if (album && album !== '-') cap += `> ↳ Album : ${album}\n`
+cap += `\n─━━━━━━━━━━━━━━─\n\n`
     cap += lyrics.trim()
 
     await m.reply(cap)
