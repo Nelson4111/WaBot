@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { xpRange } from '../../lib/levelling.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
-import { getIntimacyRank } from '../../lib/pasanganHelper.js'
+import { getIntimacyRank, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -108,7 +108,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
       let p = pasangan[0]
       let partnerNum = p.jid.split('@')[0].replace(/\D/g, '')
       let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
-      let ring = p.cincin || user.pasanganCincin || 'Cincin Perak'
+      let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
       let rank = getIntimacyRank(p.poinBucin || 0)
       mentions.push(p.jid)
 
@@ -123,7 +123,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
       let spouseList = pasangan.map((p, i) => {
         let partnerNum = p.jid.split('@')[0].replace(/\D/g, '')
         let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
-        let ring = p.cincin || 'Cincin Perak'
+        let ring = normalizeRingName(p.cincin || 'Silver Ring')
         let rank = getIntimacyRank(p.poinBucin || 0)
         mentions.push(p.jid)
 
