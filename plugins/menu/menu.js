@@ -2,6 +2,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
+import { getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
 
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 
@@ -47,12 +48,16 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   let users = global.db.data.users || {}
   let user = users[m.sender] || {}
   const wdb = loadDB()
+  const persistedUser = wdb.users?.[m.sender] || users[m.sender] || {}
   const uang = wdb.money?.[m.sender] || 0
   let { limit = 0, role = 'User', premiumTime = 0, pasangan = [] } = user
   let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
+  const pasanganHidden = isPasanganHidden(persistedUser) || isPasanganHidden(user)
 
   let partnerDisplay = '― (Single)'
-  if (pasangan && pasangan.length > 0) {
+  if (pasanganHidden) {
+      partnerDisplay = '🔒 DIKUNCI'
+  } else if (pasangan && pasangan.length > 0) {
       if (pasangan.length === 1) {
           let dur = formatDuration(Date.now() - pasangan[0].nikahTime)
           partnerDisplay = `@${pasangan[0].jid.split('@')[0]} (${toSmallNum(dur)})`
@@ -187,7 +192,7 @@ ${donorText}
   }
 
   let mentions = [m.sender, ...donorMentions]
-  if (pasangan && pasangan.length > 0) {
+  if (!pasanganHidden && pasangan && pasangan.length > 0) {
       pasangan.forEach(p => mentions.push(p.jid))
   }
 
