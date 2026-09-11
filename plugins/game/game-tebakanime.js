@@ -7,25 +7,35 @@ let limit = 5
 let handler = async (m, { conn, usedPrefix }) => {
   conn.tebakanime = conn.tebakanime || {}
   let id = m.chat
+
   if (id in conn.tebakanime)
-    return conn.reply(m.chat, 'Masih ada soal belum terjawab di chat ini', conn.tebakanime[id][0])
+    return conn.reply(
+      m.chat,
+      `╭─❏「 🎌 TEBAK ANIME 」❏\n` +
+      `│ ⏳ *Masih ada soal belum terjawab di chat ini.*\n` +
+      `╰─━━━━━━━━━━━━━━─`,
+      conn.tebakanime[id][0]
+    )
 
   try {
     let res = await axios.get('https://api.deline.web.id/game/tebakanime')
     let json = res.data
-    
+
     if (!json.status || !json.result) throw 'Gagal mengambil data dari API'
 
     let { soal, jawaban } = json.result
 
-    let caption = `
-Apa judul anime pada gambar ini?
-Timeout *${(timeout / 1000).toFixed(2)} detik*
-Ketik ${usedPrefix}hanime untuk bantuan
-Bonus: ${poin} XP & ${limit} Limit
+    let caption = `╭─❏「 🎌 TEBAK ANIME 」❏\n`
+    caption += `│ 🎌 *APA JUDUL ANIME NYA?*\n`
+    caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-*Note: Balas/Reply pesan ini untuk menjawab!*
-`.trim()
+    caption += `📋 *INFORMASI PERMAINAN*\n`
+    caption += `> ↳ ⏱️ Timeout : *${(timeout / 1000).toFixed(2)} detik*\n`
+    caption += `> ↳ 💡 Ketik *${usedPrefix}hanime* untuk bantuan\n`
+    caption += `> ↳ ⭐ Bonus : ${poin} XP & ${limit} Limit\n\n`
+
+    caption += `📌 *Note:* Balas/Reply pesan ini untuk menjawab!\n\n`
+    caption += `─━━━━━━━━━━━━━━─`
 
     conn.tebakanime[id] = [
       await conn.sendMessage(
@@ -43,7 +53,12 @@ Bonus: ${poin} XP & ${limit} Limit
         if (conn.tebakanime[id]) {
           await conn.reply(
             m.chat,
-            `Waktu habis!\nJawabannya adalah *${jawaban}*`,
+            `╭─❏「 ⏰ TEBAK ANIME 」❏\n` +
+            `│ ⏰ *Waktu habis!*\n` +
+            `╰─━━━━━━━━━━━━━━─\n\n` +
+            `📋 *JAWABAN*\n` +
+            `> ↳ *${jawaban}*\n\n` +
+            `─━━━━━━━━━━━━━━─`,
             conn.tebakanime[id][0]
           )
           delete conn.tebakanime[id]
@@ -51,7 +66,13 @@ Bonus: ${poin} XP & ${limit} Limit
       }, timeout)
     ]
   } catch (e) {
-    m.reply('❌ Gagal mengambil soal. Pastikan API sedang aktif.')
+    m.reply(
+      `╭─❏「 ❌ TEBAK ANIME 」❏\n` +
+      `│ ❌ *Gagal mengambil soal.*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Pastikan API sedang aktif.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 }
 

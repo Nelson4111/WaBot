@@ -1,7 +1,8 @@
 import fs from 'fs'
 
+const FAMILY100_IMAGE = 'https://c.termai.cc/i129/q4f.jpg'
 const winScore = 4999
-const GAME_TIME = 1000 * 60 * 5 
+const GAME_TIME = 1000 * 60 * 5
 
 async function handler(m) {
     this.game = this.game ? this.game : {}
@@ -17,22 +18,37 @@ async function handler(m) {
     let src = JSON.parse(fs.readFileSync('./json/family100.json', 'utf-8'))
     let json = src[Math.floor(Math.random() * src.length)]
 
-    let caption = `
-*Soal:* ${json.soal}
-Terdapat *${json.jawaban.length}* jawaban
-⏱️ Waktu: *5 menit*
-🆘 Ketik *menyerah* untuk mengakhiri permainan
-+${winScore} XP tiap jawaban benar
-`.trim()
+    let caption = `╭─❏「 FAMILY 100 」❏\n`
+    caption += `│ 🧩 *JAWAB SOAL DI BAWAH INI!*\n`
+    caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let msg = await m.reply(caption)
+    caption += `🧩 *PERTANYAAN*\n`
+    caption += `> ↳ ${json.soal}\n\n`
+
+    caption += `📋 *INFORMASI PERMAINAN*\n`
+    caption += `> ↳ Terdapat *${json.jawaban.length}* jawaban\n`
+    caption += `> ↳ ⏱️ Waktu : *5 menit*\n`
+    caption += `> ↳ 🆘 Ketik *menyerah* untuk mengakhiri permainan\n`
+    caption += `> ↳ ⭐ +${winScore} XP tiap jawaban benar\n\n`
+
+    caption += `─━━━━━━━━━━━━━━─`
+
+    let msg = await this.sendMessage(m.chat, {
+        image: { url: FAMILY100_IMAGE },
+        caption
+    }, { quoted: m })
 
     let timeout = setTimeout(() => {
         if (!this.game[id]) return
 
         this.reply(
             m.chat,
-            `⏰ *Waktu habis!*\n\nJawaban:\n- ${json.jawaban.join('\n- ')}`,
+            `╭─❏「 ⏰ FAMILY 100 」❏\n` +
+            `│ ⏰ *Waktu habis!*\n` +
+            `╰─━━━━━━━━━━━━━━─\n\n` +
+            `📋 *JAWABAN*\n` +
+            `> • ${json.jawaban.join('\n> • ')}\n\n` +
+            `─━━━━━━━━━━━━━━─`,
             msg
         )
 

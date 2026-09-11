@@ -40,20 +40,33 @@ export async function before(m) {
         if (isWin || isSurrender || room.terjawab[i]) {
             let userJid = room.terjawab[i] ? (this.decodeJid ? this.decodeJid(room.terjawab[i]) : room.terjawab[i]) : null
             let userTag = userJid ? `@${userJid.split('@')[0]}` : ''
-            return `(${i + 1}) ${j} ${userJid ? '👤 ' + userTag : ''}`
+            return `> ${i + 1}. ${j} ${userJid ? '👤 ' + userTag : ''}`
         }
         return null
     }).filter(Boolean).join('\n')
 
-    let caption = `
-*Soal:* ${room.soal}
-Terdapat *${room.jawaban.length}* jawaban
-${isWin ? '*🎉 SEMUA JAWABAN TERJAWAB!*' : isSurrender ? '*🏳️ MENYERAH!*' : ''}
+    let caption = `╭─❏「 FAMILY 100 」❏\n`
+    caption += `│ 🧩 *${room.soal}*\n`
+    caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-${answersList}
+    caption += `📋 *STATUS JAWABAN*\n`
+    caption += `> ↳ Terdapat *${room.jawaban.length}* jawaban\n`
 
-${isWin || isSurrender ? '' : `+${room.winScore} XP tiap jawaban benar`}
-`.trim()
+    if (isWin) {
+        caption += `> ↳ 🎉 *SEMUA JAWABAN TERJAWAB!*\n\n`
+    } else if (isSurrender) {
+        caption += `> ↳ 🏳️ *MENYERAH!*\n\n`
+    } else {
+        caption += `\n`
+    }
+
+    caption += `${answersList}\n`
+
+    if (!isWin && !isSurrender) {
+        caption += `\n> ↳ ⭐ +${room.winScore} XP tiap jawaban benar\n`
+    }
+
+    caption += `\n─━━━━━━━━━━━━━━─`
 
     let mentions = room.terjawab.filter(Boolean).map(v => this.decodeJid ? this.decodeJid(v) : v)
 
@@ -65,7 +78,7 @@ ${isWin || isSurrender ? '' : `+${room.winScore} XP tiap jawaban benar`}
 
     room.msg = msg
 
-    // clear timer 
+    // clear timer
     if (isWin || isSurrender) {
         if (room.timeout) clearTimeout(room.timeout)
         delete this.game[id]
