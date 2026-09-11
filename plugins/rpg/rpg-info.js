@@ -10,6 +10,7 @@ const CORE_COMMANDS = [
   ['.kerja', 'Bekerja dan mendapatkan penghasilan'],
   ['.daily', 'Mengambil hadiah harian'],
   ['.shop', 'Membeli item dan equipment'],
+  ['.lottery', 'Ikut lotteri harian'],
   ['.craft', 'Membuat item'],
   ['.forge', 'Melebur atau meningkatkan material'],
   ['.ternak', 'Mengelola peternakan'],

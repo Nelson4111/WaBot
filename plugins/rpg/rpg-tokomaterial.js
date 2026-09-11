@@ -4,12 +4,6 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-function safeEmoji(value, fallback = '❓') {
-  if (typeof value !== 'string') return fallback
-  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
-}
-
   const oreEmoji = {
   // MATERIAL BELI/JUAL
   'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎', 'emerald': '💚',
@@ -32,10 +26,6 @@ function safeEmoji(value, fallback = '❓') {
   'pedang_legendaris': '⚔️👑', 'buku_sihir_kuno': '📚', 'armor_naga': '🐉🛡️', 'mahkota_raja': '👑',
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
 }
-
-Object.keys(oreEmoji).forEach((key) => {
-  oreEmoji[key] = safeEmoji(oreEmoji[key])
-})
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()

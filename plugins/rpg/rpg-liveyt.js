@@ -58,7 +58,7 @@ let handler = async (m, { conn, text }) => {
 ─━━━━━━━━━━━━━━─
 ⏰ *Live Selesai:* ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`
 
-  return conn.reply(m.chat, caption, m)
+  return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i165/qxnHa.jpg')
 }
 
 handler.help = ['liveyt <judul>']

@@ -1,14 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 
-function formatNama(nama) {
-  if (!nama || typeof nama !== 'string') return ''
-  return nama
-    .replace(/_/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
+const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
@@ -25,44 +18,17 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const sellBonus = isPrem ? 1.1 : 1
   const buyDiskon = isPrem ? 0.8 : 1
 
-  const fishRenameMap = {
-    poseidon: 'poseidon', flying_dutchman: 'flying_dutchman', aquaman: 'aquaman', godzilla: 'godzilla', zeus_laut: 'thunderfish', atlas_laut: 'atlas', kitsune_laut: 'rubah_laut', leviathan_primordial: 'leviathan_primordial', davy_jones: 'davy_jones', caylpso: 'ikan_paradise', worm_fish: 'worm_fish', zombie_shark: 'zombie_shark', skeleton_shark: 'skeleton_shark', ariel_little_mermaid: 'putri_laut', treasure_chest: 'peti_harta', ancient_relic: 'artefak_laut', pirate_gold: 'emas_pirate', mermaid_tear: 'air_mata_putri',
-    kraken: 'kraken', megladon: 'megalodon', leviathan: 'leviathan', sea_dragon: 'naga_laut', phoenix_laut: 'ikan_phoenix', hydra_laut: 'hydra', cerberus_laut: 'cerberus', titan_kura: 'kura_raksasa', paus_putih: 'paus_putih', ikan_dewa: 'dewa_laut', naga_laut: 'naga_laut_biru', raja_ubur: 'ubur_utama', penjaga_karang: 'penjaga_karang', putri_duyung: 'putri_duyung', dewa_katak: 'katak_berkilau', kuda_laut_kristal: 'kuda_kristal', peti_karun: 'peti_karun', koin_emas_kuno: 'koin_emas_kuno', mutiara_raja: 'mutiara_raja', mahkota_karang: 'mahkota_karang',
-    hiu_putih: 'hiu_putih', hiu_harimau: 'hiu_macan', hiu_martil: 'hiu_palu', paus_orca: 'paus_orca', paus_biru: 'paus_biru', penyu_raksasa: 'penyu_raksasa', ikan_pari_manta: 'pari_manta', ikan_napoleon: 'napoleon', kerapu_raksasa: 'kerapu_raksasa', marlin: 'marlin', tuna_sirip_biru: 'tuna_biru', pedang_laut: 'pedang_laut', ikan_koi_emas: 'koi_emas', lobster_raja: 'lobster_raja', kepiting_raksasa: 'kepiting_raksasa', gurita_raksasa: 'gurita_raksasa', sotong_raksasa: 'sotong_raksasa', lionfish: 'lionfish', ikan_badut: 'ikan_badut', ikan_kupu: 'ikan_kupu', ikan_malaikat: 'ikan_malaikat', ikan_diskus: 'ikan_diskus', ikan_arwana: 'ikan_arwana', ikan_arapaima: 'ikan_arapaima', piranha: 'piranha', belut_listrik: 'belut_listrik', ikan_duyung: 'ikan_duyung', ubur_ubur_bulan: 'ubur_bulan', bintang_laut: 'bintang_laut', anemon_laut: 'anemon', karang_indah: 'karang_indah', kerang_mutia: 'kerang_mutia', siput_laut: 'siput_laut', landak_laut: 'landak_laut', peti_besi: 'peti_besi', koin_emas: 'koin_emas', mutiara_hitam: 'mutiara_hitam', trisula_patah: 'trisula_patah',
-    hiu_hitam: 'hiu_hitam', hiu_biru: 'hiu_biru', lumba_lumba: 'lumba_lumba', paus_pembunuh: 'paus_pembunuh', penyu_hijau: 'penyu_hijau', ikan_pari: 'pari', kerapu: 'kerapu', tuna: 'tuna', salmon: 'salmon', barakuda: 'barakuda', ikan_todak: 'ikan_todak', ikan_terbang: 'ikan_terbang', ubur_ubur: 'ubur_ubur', ubur_ubur_listrik: 'ubur_listrik', bintang_laut_ungu: 'bintang_ungu', karang_keras: 'karang_keras', kerang: 'kerang', peti_kayu: 'peti_kayu', koin_perak: 'koin_perak', mutiara_biasa: 'mutiara_biasa', karang_antik: 'karang_antik', kaiju: 'kaiju', kadita: 'kadita'
-  }
-
-  const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-  function safeEmoji(value, fallback = '❓') {
-    if (typeof value !== 'string') return fallback
-    return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
-  }
-
-  function normalizeFishKey(name) {
-    const key = String(name || '').trim().toLowerCase().replace(/\s+/g, '_')
-    const normalized = fishRenameMap[key] || key
-    const keepIkanPrefix = new Set(['ikan_badut', 'ikan_kupu', 'ikan_malaikat', 'ikan_diskus', 'ikan_arwana', 'ikan_arapaima', 'ikan_todak', 'ikan_terbang', 'ikan_duyung', 'ikan_paradise'])
-    return keepIkanPrefix.has(normalized) ? normalized : normalized.replace(/^ikan_/, '')
-  }
-
-  function migrateLegacyFishInventory(obj = {}) {
-    const migrated = {}
-    for (const key in obj) {
-      const targetKey = normalizeFishKey(key)
-      migrated[targetKey] = (migrated[targetKey] || 0) + Number(obj[key] || 0)
-    }
-    return migrated
-  }
-
   user.ikan = migrateLegacyFishInventory(user.ikan)
   saveDB(wdb)
 
-  const hargaBeli = {
-    iron: { emoji: '⛓️', harga: 10000 },
-    gold: { emoji: '✨', harga: 100000 },
-    stone: { emoji: '🪨', harga: 5000 },
-    wood: { emoji: '🪵', harga: 8000 },
-    diamond: { emoji: '💎', harga: 500000 }
+   const hargaBeli = {
+    'iron': { emoji: '⛓️', harga: 10000 },
+    'gold': { emoji: '✨', harga: 100000 },
+    'stone': { emoji: '🪨', harga: 5000 },
+    'wood': { emoji: '🪵', harga: 9000 },
+    'diamond': { emoji: '💎', harga: 500000 },
+    'kulit': { emoji: '👜', harga: 50000 },
+    'sisik': { emoji: '🐉', harga: 75000 }
   }
 
   const raw = typeof text === 'string' ? text.trim() : ''
@@ -85,6 +51,40 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return semuaItem
   }
 
+if (mode === 'guide') {
+  let cap = `╭─❏「 🧭 SHOP GUIDE 」❏\n`
+  cap += `│ 🛒 *Panduan Toko*\n`
+  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  cap += `📦 *SUMBER ITEM YANG BISA DIJUAL*\n`
+  cap += `> • Adventure / Mining → jual di .pabrik\n`
+  cap += `> • Mancing / Aquarium → jual di .pasar\n`
+  cap += `> • Panen / Kebun → jual di .koperasi\n`
+  cap += `> • Masak / Dapur → jual di .restoran\n`
+  cap += `> ↳ Setelah dijual, uang masuk ke saldo akun.\n\n`
+
+  cap += `🛒 *PEMBELIAN ITEM*\n`
+  cap += `> ↳ Yang dibeli dari toko masuk ke gudang utama:\n`
+  cap += `> ↳ Cek .money sebelum membeli.\n\n`
+
+  cap += `📌 *TUJUAN PEMBELIAN ITEM*\n`
+  cap += `> ↳ Bahan untuk upgrade, craft, makan, atau sumber material.\n`
+
+  cap += `📌 *ARUS UMUM*\n`
+  cap += `> ↳ cari item di RPG → jual ke shop → dapat uang\n`
+  cap += `> ↳ beli → upgrade/craft/makan\n\n`
+
+  cap += `⚙️ *PERINTAH*\n`
+  cap += `> ↳ ${usedPrefix || '.'}shop guide\n`
+  cap += `> ↳ ${usedPrefix || '.'}shop beli <item> <jumlah>\n`
+  cap += `> ↳ ${usedPrefix || '.'}shop jual all\n`
+  cap += `> ↳ ${usedPrefix || '.'}shop jual <item> <jumlah>\n\n`
+
+  cap += `─━━━━━━━━━━━━━━─`
+
+   return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
+}
+
   if (isBeli) {
     const item = args[1]
     const jumlah = parseInt(args[2]) || 1
@@ -101,7 +101,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       })
       cap += `\n📝 *Cara:* ${usedPrefix || '.'}beli [item] [jumlah]\n`
       cap += `💡 *Contoh:* ${usedPrefix || '.'}beli iron 3`
-      return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+      return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
     }
 
     const itemName = hargaBeli[item] ? item : null
@@ -145,7 +145,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
     user.jualAllConfirm = { items: semuaItem, time: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+    return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
   }
 
   if (isJualYa) {
@@ -155,6 +155,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
     const hargaGabung = {
       iron: 5000, gold: 50000, stone: 2500, wood: 4000, diamond: 250000,
+      kulit: 50000, sisik: 75000,
       grass: 400, sand_stone: 600, graphite: 700, pumice: 800, sulfur: 900,
       poopite: 1000, copper: 1200, tin: 1500, cardboardite: 2000,
       silver: 5000, bananite: 5000, cuprite: 3500, mushroomite: 4000, platinum: 25000,
@@ -253,7 +254,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     `> ↳ ${usedPrefix || '.'}gudang - Lihat Gudang\n\n` +
     `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
 }
 
 handler.help = ['shop', 'market', 'toko', 'jual all', 'beli [item] [jumlah]']

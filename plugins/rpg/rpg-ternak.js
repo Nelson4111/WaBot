@@ -1,10 +1,13 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay } from '../../lib/rpg-libternakData.js'
 
-let handler = async (m, { args, command }) => {
+let handler = async (m, { conn, args, command }) => {
+  const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
+  const safeReply = (text, options = {}) => sendRpgMsg(conn, m, text, ternakImageUrl, options)
+
   const wdb = loadDB()
   let user = getUserRPG(wdb, m.sender).rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return safeReply('❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}
 
@@ -23,14 +26,14 @@ let handler = async (m, { args, command }) => {
   }
   if(needSave || hasilMigration.changed) saveDB(wdb)
 
-  if (command?.toLowerCase() === 'hybrid') return m.reply(listHybrid())
+  if (command?.toLowerCase() === 'hybrid') return safeReply(listHybrid())
 
   let [sub, hewan1, jml] = args
   hewan1 = getHewanKey(hewan1) || hewan1?.toLowerCase() // PENTING: gunakan key canonical
   jml = parseInt(jml) || 1
 
   if (sub === 'command' || sub === 'commands' || sub === 'cmd') {
-    return m.reply(
+    return safeReply(
       `╭─❏「 📋 TERNAK COMMAND 」❏\n` +
       `│ 📌 *PERINTAH TERNAK*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -73,11 +76,11 @@ let handler = async (m, { args, command }) => {
       `> ↳ Status ladang tidak termasuk hitungan peternakan.\n\n` +
       `─━━━━━━━━━━━━━━─`
 
-    return m.reply(cap)
+    return safeReply(cap)
   }
 
   if(!sub || sub === 'kandang') {
-    if(Object.keys(user.ternak).length === 0) return m.reply(
+    if(Object.keys(user.ternak).length === 0) return safeReply(
       `╭─❏「 🏡 KANDANG KOSONG 」❏\n` +
       `│ 🏡 *KANDANG KOSONG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -103,7 +106,7 @@ let handler = async (m, { args, command }) => {
       `> ↳ ✨ Exp : ${user.exp || 0}\n\n` +
       `─━━━━━━━━━━━━━━─`
 
-    return m.reply(txt)
+    return safeReply(txt)
   }
 
   if(sub === 'list') {
@@ -115,7 +118,7 @@ let handler = async (m, { args, command }) => {
       legenda: animal => animal.evolusi >= 5,
       all: () => true
     }
-    if (!kategori) return m.reply(
+    if (!kategori) return safeReply(
       `╭─❏「 🛒 PASAR TERNAK 」❏\n` +
       `│ Pilih kategori hewan yang ingin dilihat.\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -125,7 +128,7 @@ let handler = async (m, { args, command }) => {
       `> *.ternak list legenda*\n` +
       `> *.ternak list all*`
     )
-    if (!kategoriList[kategori]) return m.reply('❌ Kategori tidak tersedia. Pilih dasar, langka, epik, legenda, atau all.')
+    if (!kategoriList[kategori]) return safeReply('❌ Kategori tidak tersedia. Pilih dasar, langka, epik, legenda, atau all.')
 
     let txt =
       `╭─❏「 🛒 PASAR TERNAK 」❏\n` +
@@ -148,24 +151,24 @@ let handler = async (m, { args, command }) => {
       `> ↳ *.kawin [hewan1] [hewan2]*\n\n` +
       `─━━━━━━━━━━━━━━─`
 
-    return m.reply(txt)
+    return safeReply(txt)
   }
 
-  if(sub === 'hybrid') return m.reply(listHybrid())
+  if(sub === 'hybrid') return safeReply(listHybrid())
 
   if(sub === 'beli') {
     let h = getHewan(hewan1)
-    if(!h) return m.reply('❌ Hewan tidak ada')
-    if(h.hargaBibit === 0) return m.reply('❌ Hewan ini hanya bisa didapat dari kawin')
+    if(!h) return safeReply('❌ Hewan tidak ada')
+    if(h.hargaBibit === 0) return safeReply('❌ Hewan ini hanya bisa didapat dari kawin')
     let total = h.hargaBibit * jml
-    if((wdb.money[m.sender] || 0) < total) return m.reply(`❌ Uang kurang: Rp ${total.toLocaleString()}`)
+    if((wdb.money[m.sender] || 0) < total) return safeReply(`❌ Uang kurang: Rp ${total.toLocaleString()}`)
 
     wdb.money[m.sender] -= total
     let key = getHewanKey(hewan1) || hewan1
     user.ternak[key] = (user.ternak[key] || 0) + jml
     saveDB(wdb)
 
-    return m.reply(
+    return safeReply(
       `╭─❏「 🛒 PEMBELIAN BERHASIL 」❏\n` +
       `│ ✅ *${h.nama} ${h.emoji}* x${jml}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -176,9 +179,9 @@ let handler = async (m, { args, command }) => {
   }
 
   if(sub === 'ambil') {
-    if(!user.ternak[hewan1]) return m.reply('❌ Kamu tidak punya hewan itu') // cek dulu
+    if(!user.ternak[hewan1]) return safeReply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
-    if(!h) return m.reply('❌ Data hewan tidak ditemukan')
+    if(!h) return safeReply('❌ Data hewan tidak ditemukan')
     let hasil = dapatkanHasil(h).ambil
     const hasilDisplay = getHasilDisplay(hasil)
     user.inventory[hasil] = (user.inventory[hasil] || 0) + user.ternak[hewan1]
@@ -186,7 +189,7 @@ let handler = async (m, { args, command }) => {
     user.exp += exp
     saveDB(wdb)
 
-    return m.reply(
+    return safeReply(
       `╭─❏「 🌾 HASIL TERNAK 」❏\n` +
       `│ 🐄 *${h.nama} ${h.emoji}* x${user.ternak[hewan1]}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -198,9 +201,9 @@ let handler = async (m, { args, command }) => {
   }
 
   if(sub === 'sembelih') {
-    if(!user.ternak[hewan1]) return m.reply('❌ Kamu tidak punya hewan itu') // cek dulu
+    if(!user.ternak[hewan1]) return safeReply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
-    if(!h) return m.reply('❌ Data hewan tidak ditemukan')
+    if(!h) return safeReply('❌ Data hewan tidak ditemukan')
     let punya = user.ternak[hewan1]
     let sembelih = Math.min(jml, punya)
     let hasil = dapatkanHasil(h).sembelih
@@ -210,7 +213,7 @@ let handler = async (m, { args, command }) => {
     if(user.ternak[hewan1] <= 0) delete user.ternak[hewan1]
     saveDB(wdb)
 
-    return m.reply(
+    return safeReply(
       `╭─❏「 🔪 PENYEMBELIHAN 」❏\n` +
       `│ 🐄 *${h.nama} ${h.emoji}* x${sembelih}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -221,7 +224,7 @@ let handler = async (m, { args, command }) => {
 
   if(sub === 'jual') {
     let item = normalizeHasilKey(hewan1)
-    if(!user.inventory[item]) return m.reply('❌ Item tidak ada di inventory')
+    if(!user.inventory[item]) return safeReply('❌ Item tidak ada di inventory')
     let hargaItem = 1000
     let total = hargaItem * jml
     user.inventory[item] -= jml
@@ -229,7 +232,7 @@ let handler = async (m, { args, command }) => {
     wdb.money[m.sender] += total
     saveDB(wdb)
 
-    return m.reply(
+    return safeReply(
       `╭─❏「 💰 PENJUALAN 」❏\n` +
       `│ 📦 *${item}* x${jml}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +

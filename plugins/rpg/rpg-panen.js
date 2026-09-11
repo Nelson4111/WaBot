@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -57,6 +57,17 @@ function formatNama(nama) {
 }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
+  const ladangImageUrl = 'https://c.termai.cc/i181/UTTbZ.jpg'
+
+  const safeReply = async (text, options = {}) => {
+    try {
+      return await sendRpgMsg(conn, m, text, ladangImageUrl, options)
+    } catch {
+      const mentions = options.mentions || options.contextInfo?.mentionedJid || []
+      return conn.sendMessage(m.chat, { text, mentions: mentions.length ? mentions : undefined }, { quoted: m })
+    }
+  }
+
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -130,7 +141,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   cap += `─━━━━━━━━━━━━━━─`
 
-  return m.reply(cap)
+  return safeReply(cap)
 }
 
 // PANEN ALL
@@ -158,7 +169,7 @@ if (text.toLowerCase() === 'all') {
     }
   }
 
-  if (count === 0) return m.reply(
+  if (count === 0) return safeReply(
     `╭─❏「 🌾 PANEN MASSAL 」❏\n` +
     `│ ❌ *BELUM ADA PANEN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -198,12 +209,12 @@ if (text.toLowerCase() === 'all') {
 
   teks += `─━━━━━━━━━━━━━━─`
 
-  return m.reply(teks)
+  return safeReply(teks)
 }
 
 // PANEN 1 SLOT
 let index = parseInt(text)
-if (isNaN(index) || index < 1 || index > user.maxLadang) return m.reply(
+if (isNaN(index) || index < 1 || index > user.maxLadang) return safeReply(
   `╭─❏「 🌾 PANEN 」❏\n` +
   `│ ❌ *NOMOR LADANG TIDAK VALID*\n` +
   `╰─━━━━━━━━━━━━━━─`
@@ -221,7 +232,7 @@ for(let i = 1; i <= user.maxLadang; i++){
   }
 }
 
-if(slotAsli === 0) return m.reply(
+if(slotAsli === 0) return safeReply(
   `╭─❏「 🌾 PANEN 」❏\n` +
   `│ ❌ *LADANG KOSONG*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -231,7 +242,7 @@ if(slotAsli === 0) return m.reply(
 
 let l = user.ladang[slotAsli]
 let dataBibit = bibit[l.jenis]
-if(!dataBibit) return m.reply(
+if(!dataBibit) return safeReply(
   `╭─❏「 🌾 PANEN 」❏\n` +
   `│ ❌ *DATA BIBIT TIDAK DITEMUKAN*\n` +
   `╰─━━━━━━━━━━━━━━─`
@@ -268,12 +279,12 @@ if (sisaWaktu <= 0) {
 
   teks += `─━━━━━━━━━━━━━━─`
 
-  return m.reply(teks)
+  return safeReply(teks)
 } else {
   let mnt = Math.floor(sisaWaktu / 60000)
   let dtk = Math.floor((sisaWaktu % 60000) / 1000)
 
-  return m.reply(
+  return safeReply(
     `╭─❏「 🌾 PANEN 」❏\n` +
     `│ ⏳ *BELUM SIAP PANEN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +

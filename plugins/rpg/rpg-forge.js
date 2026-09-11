@@ -6,12 +6,6 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-function safeEmoji(value, fallback = '❓') {
-  if (typeof value !== 'string') return fallback
-  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
-}
-
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)

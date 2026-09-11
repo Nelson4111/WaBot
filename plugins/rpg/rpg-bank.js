@@ -130,7 +130,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `◈ Total Bunga : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n\n`
     if(userRPG.kartuBeku) cap += `🚨 AKSI DIBUTUHKAN\n Isi saldo Rp ${tier.biayaBulanan.toLocaleString()} untuk \n mengaktifkan kartu otomatis\n\n❌ FITUR NONAKTIF\n Bunga • Transfer • Pinjaman • Heal Bank\n`
     cap += `─━━━━━━━━━─\n📌 *CARA PAKAI*\n> *${usedPrefix}bank simpan <jumlah>*\n> *${usedPrefix}bank tarik <jumlah>*\n> *${usedPrefix}bank tf / pinjam / bayar / riwayat / kartu*`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i162/PqqrMC.jpg')
   }
 
   if(userRPG.kartuBeku && action!== 'tarik') return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Kartu kamu sedang BEKU\nIsi saldo untuk aktif otomatis\n─━━━━━━━━━─`)

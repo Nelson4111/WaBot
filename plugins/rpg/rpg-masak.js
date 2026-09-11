@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
+import { masakanResep, normalizeMasakanKey, formatMasakanNama, resepEmoji, deskripsiMakanan } from '../../lib/rpg-masakanData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -14,51 +15,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   user.inventory = inventoryMigration.inventory
   if (inventoryMigration.changed) saveDB(wdb)
 
-  const resep = {
-    // === MURAH ===
-    'roti_tawar': { emoji: '🍞', jual: 8000, bahan: { 'padi': 3 }, biaya: 0, waktu: 60000, exp: 20 },
-    'mie_goreng': { emoji: '🍜', jual: 18000, bahan: { 'padi': 2, 'wortel': 1 }, biaya: 8000, waktu: 120000, exp: 40 },
-    'sate_ikan': { emoji: '🍢', jual: 35000, bahan: { 'ikan_teri': 3, 'cabai': 1 }, biaya: 0, waktu: 180000, exp: 60 },
-    'salad_buah': { emoji: '🥗', jual: 40000, bahan: { 'apel_merah': 1, 'jeruk': 1, 'anggur': 1, 'semangka': 1, 'stroberi': 1 }, biaya: 0, waktu: 180000, exp: 80 },
-    'sup_ikan': { emoji: '🍲', jual: 40000, bahan: { 'ikan_nila': 1, 'wortel': 1, 'kentang': 1 }, biaya: 0, waktu: 240000, exp: 70 },
-    'taco_ikan': { emoji: '🌮', jual: 45000, bahan: { 'jagung': 2, 'ikan_kembung': 1, 'tomat': 1 }, biaya: 0, waktu: 300000, exp: 65 },
-    'udang_goreng': { emoji: '🍤', jual: 90000, bahan: { 'udang': 3 }, biaya: 0, waktu: 360000, exp: 90 },
-    'cumi_goreng': { emoji: '🦑', jual: 110000, bahan: { 'cumi': 2 }, biaya: 0, waktu: 360000, exp: 100 },
-    'kepiting_rebus': { emoji: '🦀', jual: 120000, bahan: { 'kepiting': 2 }, biaya: 0, waktu: 420000, exp: 110 },
-    'telur_dadar': { emoji: '🍳', jual: 30000, bahan: { 'telur_ayam': 2 }, biaya: 0, waktu: 90000, exp: 35 },
-    'telur_bebek_asin': { emoji: '🥚', jual: 45000, bahan: { 'telur_bebek': 2, 'garam': 1 }, biaya: 0, waktu: 120000, exp: 45 },
-    'susu_madu': { emoji: '🥛', jual: 60000, bahan: { 'susu_kambing': 1, 'madu': 1 }, biaya: 0, waktu: 120000, exp: 55 },
-    'daging_kelinci_bakar': { emoji: '🍖', jual: 85000, bahan: { 'daging_kelinci': 1, 'cabai': 1 }, biaya: 0, waktu: 240000, exp: 80 },
-    'daging_babi_panggang': { emoji: '🍖', jual: 130000, bahan: { 'daging_babi': 1, 'bawang_merah': 1 }, biaya: 0, waktu: 300000, exp: 100 },
-    'sup_susu_sapi': { emoji: '🍲', jual: 150000, bahan: { 'susu_sapi': 1, 'wortel': 1, 'kentang': 1 }, biaya: 0, waktu: 300000, exp: 110 },
-    'minyak_sawit': { emoji: '🫗', jual: 100000, bahan: { 'sawit': 2 }, biaya: 0, waktu: 240000, exp: 90 },
-
-    // === MAHAL ===
-    'jus_durian': { emoji: '🥛', jual: 100000, bahan: { 'durian': 1, 'kelapa': 1 }, biaya: 0, waktu: 600000, exp: 200 },
-    'wine': { emoji: '🍷', jual: 120000, bahan: { 'anggur': 5 }, biaya: 0, waktu: 900000, exp: 150 },
-    'sushi': { emoji: '🍣', jual: 400000, bahan: { 'padi': 2, 'salmon': 2 }, biaya: 0, waktu: 600000, exp: 130 },
-    'sashimi': { emoji: '🍣', jual: 500000, bahan: { 'tuna': 2 }, biaya: 0, waktu: 600000, exp: 140 },
-    'lobster_bakar': { emoji: '🦞', jual: 600000, bahan: { 'lobster': 1 }, biaya: 0, waktu: 900000, exp: 150 },
-    'tuna_panggang': { emoji: '🐟', jual: 600000, bahan: { 'tuna': 2 }, biaya: 0, waktu: 900000, exp: 180 },
-    'salmon_asap': { emoji: '🐟', jual: 600000, bahan: { 'salmon': 2 }, biaya: 0, waktu: 1200000, exp: 185 },
-    'steak_hiu': { emoji: '🦈', jual: 900000, bahan: { 'hiu_hitam': 1, 'hiu_biru': 1 }, biaya: 20000, waktu: 1200000, exp: 200 },
-
-    // === LEGEND ===
-    'pari_bakar': { emoji: '🛸', jual: 1000000, bahan: { 'ikan_pari': 1 }, biaya: 0, waktu: 1500000, exp: 210 },
-    'penyu_panggang': { emoji: '🐢', jual: 1200000, bahan: { 'penyu_hijau': 1 }, biaya: 50000, waktu: 1800000, exp: 230 },
-    'steak_emas': { emoji: '🥩', jual: 1500000, bahan: { 'emas': 1 }, biaya: 100000, waktu: 1800000, exp: 500 },
-    'diamond_cake': { emoji: '🎂', jual: 3000000, bahan: { 'diamond': 1, 'apel_merah': 3, 'stroberi': 3 }, biaya: 0, waktu: 3600000, exp: 1000 },
-    'sop_kraken': { emoji: '🦑', jual: 2000000, bahan: { 'kraken': 1, 'rumput_laut': 3 }, biaya: 100000, waktu: 3600000, exp: 800 },
-    'sate_megalodon': { emoji: '🦈', jual: 2500000, bahan: { 'megalodon': 1 }, biaya: 150000, waktu: 4500000, exp: 900 },
-    'sup_leviathan': { emoji: '🐉', jual: 3000000, bahan: { 'leviathan': 1 }, biaya: 200000, waktu: 5400000, exp: 1000 },
-    'sea_dragon_grill': { emoji: '🐲', jual: 3500000, bahan: { 'sea_dragon': 1 }, biaya: 250000, waktu: 5400000, exp: 1100 },
-    'hydra_stew': { emoji: '🐍', jual: 4500000, bahan: { 'hydra_laut': 1 }, biaya: 300000, waktu: 7200000, exp: 1300 },
-    'kura_titan_soup': { emoji: '🐢', jual: 5000000, bahan: { 'titan_kura': 1 }, biaya: 400000, waktu: 7200000, exp: 1500 },
-    'paus_putih_steak': { emoji: '🐋', jual: 6000000, bahan: { 'paus_putih': 1 }, biaya: 500000, waktu: 9000000, exp: 1600 },
-    'naga_laut_bakar': { emoji: '🐉', jual: 8000000, bahan: { 'naga_laut': 1 }, biaya: 700000, waktu: 9000000, exp: 1800 },
-    'raja_ubur_jelly': { emoji: '🦑', jual: 9000000, bahan: { 'raja_ubur': 1 }, biaya: 800000, waktu: 10800000, exp: 1900 },
-    'steak_godzilla': { emoji: '🦖', jual: 15000000, bahan: { 'godzilla': 1 }, biaya: 2000000, waktu: 14400000, exp: 15000 }
-  }
+  const resep = masakanResep
 
   for (const [animalKey, animal] of Object.entries(hewanList)) {
     const result = dapatkanHasil(animal).ambil
@@ -87,7 +44,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   daftarResep.forEach((k, i) => nomorKeResep[i+1] = k)
 
   function formatNamaItem(nama){
-    return nama.replace(/_/g, ' ')
+    return formatMasakanNama(nama)
   }
   function getItemCount(nama){
     nama = nama.replace(/ /g, '_')
@@ -137,7 +94,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   cap += `⏰ *STATUS DAPUR*\n`
   cap += `> ↳ Slot: ${user.dapur.antrian.length}/${user.dapur.slot}\n`
-  cap += `> ↳ Ambil dalam 5 jam setelah matang\n\n`
+  cap += `> ↳ Ambil maksimal 5 jam setelah matang\n\n`
 
   cap += `─━━━━━━━━━━━━━━─\n\n`
 
@@ -167,14 +124,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   cap += `\n─━━━━━━━━━━━━━━─\n\n`
 
   cap += `📌 *MENU DAPUR*\n`
-  cap += `> ↳ *${usedPrefix}dapur resep* — Lihat resep\n`
-  cap += `> ↳ *${usedPrefix}dapur buku masak* — Buka buku resep\n`
-  cap += `> ↳ *${usedPrefix}dapur resep <no/nama>* — Detail resep\n`
-  cap += `> ↳ *${usedPrefix}masak <no/nama>* — Masak menu\n`
+  cap += `> ↳ *${usedPrefix}dapur resep*\n`
+  cap += `> ↳ *${usedPrefix}dapur buku masak*\n`
+  cap += `> ↳ *${usedPrefix}dapur resep <no/nama>*\n`
+  cap += `> ↳ *${usedPrefix}masak <no/nama>*\n`
 
   cap += `\n─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i175/LdcwE3Z.jpg')
 }
 
 if (!text && !isDapurCommand) {
@@ -276,7 +233,7 @@ if (isDapurCommand && action === 'masak') {
 }
 
 // PROSES MASAK
-let keyMasak =!isNaN(action)? nomorKeResep[parseInt(action)] : action.replace(/ /g, '_')
+let keyMasak =!isNaN(action)? nomorKeResep[parseInt(action)] : normalizeMasakanKey(action)
 if(!resep[keyMasak]) return m.reply(
   `╭─❏「 👨‍🍳 MASAK 」❏\n` +
   `│ ❌ *MASAKAN TIDAK DITEMUKAN*\n` +

@@ -11,6 +11,24 @@ let handler = async (m, { conn }) => {
   initLadang(user)
   if(!user.inventory) user.inventory = {}
 
+  const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
+  function normalizeMaterialKey(key) {
+    const raw = String(key || '').trim().toLowerCase().replace(/\s+/g, '_')
+    return materialAlias[raw] || raw
+  }
+  function normalizeUserMaterial(obj = {}) {
+    const out = {}
+    for (const key in obj) {
+      const target = normalizeMaterialKey(key)
+      out[target] = (out[target] || 0) + Number(obj[key] || 0)
+    }
+    return out
+  }
+
+  user.inventory = normalizeUserMaterial(user.inventory)
+  user.ores = normalizeUserMaterial(user.ores || {})
+  user.items = normalizeUserMaterial(user.items || {})
+
   let isChanged = false
 
   // MIGRASI DATA LAMA: hasilKebun -> inventory biar sinkron sama kebun.js

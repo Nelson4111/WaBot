@@ -1,13 +1,21 @@
-import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
+
+const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
+function normalizeMaterialKey(key) {
+  const raw = String(key || '').trim().toLowerCase().replace(/\s+/g, '_')
+  return materialAlias[raw] || raw
+}
+function normalizeUserMaterial(obj = {}) {
+  const out = {}
+  for (const key in obj) {
+    const target = normalizeMaterialKey(key)
+    out[target] = (out[target] || 0) + Number(obj[key] || 0)
+  }
+  return out
+}
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-}
-
-const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-function safeEmoji(value, fallback = '❓') {
-  if (typeof value !== 'string') return fallback
-  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
 }
 
 const oreEmoji = {
@@ -33,19 +41,15 @@ const oreEmoji = {
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
 }
 
-Object.keys(oreEmoji).forEach((key) => {
-  oreEmoji[key] = safeEmoji(oreEmoji[key])
-})
-
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
 
-  user.inventory = user.inventory || {}
-  user.ores = user.ores || {}
-  user.items = user.items || {}
+  user.inventory = normalizeUserMaterial(user.inventory || {})
+  user.ores = normalizeUserMaterial(user.ores || {})
+  user.items = normalizeUserMaterial(user.items || {})
 
   let totalItem = 0
   let totalJenis = 0

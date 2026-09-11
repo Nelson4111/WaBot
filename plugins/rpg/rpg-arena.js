@@ -105,7 +105,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     let cap = `╭─❏「 ⚔️ ARENA AVELIA 」❏\n│ Pilih salah satu mode battle.\n╰─━━━━━━━━━━━━━━─\n\n`
     cap += Object.entries(MODES).map(([key, value]) => `> *${usedPrefix}${key} @tag [taruhan]* ${value.emoji}`).join('\n')
     cap += `\n\n> *${usedPrefix}arena stats* - Statistik arena\n> *${usedPrefix}arena top [halaman]* - Leaderboard`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg')
   }
 
   if (command === 'arena' && action === 'stats') {

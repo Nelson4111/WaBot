@@ -1,11 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
 
-const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-function safeEmoji(value, fallback = '❓') {
-  if (typeof value !== 'string') return fallback
-  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
-}
+const UPGRADE_IMAGE = 'https://c.termai.cc/i108/l3q'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -99,7 +95,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   listUpgrade += `📌 *Contoh:* Ketik ${usedPrefix}${command} guide atau ${usedPrefix}${command} sword\n\n`
   listUpgrade += `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, listUpgrade, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
+  return sendRpgMsg(conn, m, listUpgrade, UPGRADE_IMAGE)
 }
 
 if (!user[item] || user[item] < 1) {
@@ -233,7 +229,7 @@ if (totalSisik > 0) capSuccess += `> ↳ 🐉 Sisik : ${totalSisik}\n`
 if (totalDiamond > 0) capSuccess += `> ↳ 💎 Diamond : ${totalDiamond}\n`
 capSuccess += `\n─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, capSuccess, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
+return sendRpgMsg(conn, m, capSuccess, UPGRADE_IMAGE)
 }
 
 handler.help = ['upgrade <item>', 'upgrade guide']

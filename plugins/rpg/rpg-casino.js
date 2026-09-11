@@ -12,12 +12,15 @@ const games = {
   uno: { name: 'UNO', emoji: '🃏', aliases: ['uno'] },
   darts: { name: 'Darts', emoji: '🎯', aliases: ['darts'] },
   bingo: { name: 'Bingo', emoji: '🎱', aliases: ['bingo'] },
-  hanafuda: { name: 'Hanafuda', emoji: '🎴', aliases: ['hanafuda'] },
+  hanafuda: { name: 'Hanafuda', emoji: '🎴', aliases: ['hanafuda', 'hf'] },
   horserace: { name: 'Balap Kuda', emoji: '🏇', aliases: ['horserace', 'balapkuda', 'bk', 'hr'] },
   pool: { name: 'Pool', emoji: '🎱', aliases: ['pool', 'billiard'] },
   rps: { name: 'Rock Paper Scissors', emoji: '✂️', aliases: ['rps'] },
   poker: { name: 'Poker', emoji: '♠️', aliases: ['poker'] },
-  chess: { name: 'Chess', emoji: '♟️', aliases: ['chess'] }
+  chess: { name: 'Chess', emoji: '♟️', aliases: ['chess'] },
+  blacksapphire: { name: 'Black Sapphire', emoji: '💠', aliases: ['blacksapphire', 'black-sapphire', 'bs'] },
+  keno: { name: 'Keno', emoji: '🎟️', aliases: ['keno'] },
+  mines: { name: 'Mines', emoji: '💣', aliases: ['mines'] }
 }
 
 const GAME_COOLDOWN = 60000
@@ -70,33 +73,43 @@ function getCasinoTitle(gamesPlayed) {
 }
 
 function resultFor(game) {
-  if (game === 'slot') {
-    const symbols = ['🎰', '🔔', '💎', '🍋', '🍒', '💰', '⭐', '🍀', '🍇']
-    const reels = Array.from({ length: 9 }, () => pick(symbols))
-    const middle = reels.slice(3, 6)
-    const jackpot = middle[0] === middle[1] && middle[1] === middle[2]
-    const pair = middle[0] === middle[1] || middle[1] === middle[2] || middle[0] === middle[2]
-    return { multiplier: jackpot ? 10 : pair ? 1.5 : 0, text: `│ ${reels[0]} | ${reels[1]} | ${reels[2]}\n│ ${reels[3]} | ${reels[4]} | ${reels[5]} ◀\n│ ${reels[6]} | ${reels[7]} | ${reels[8]}` }
-  }
+if (game === 'slot') {
+  const symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🔔', '7️⃣', '💎', '⭐', '👑', '💰', '💵', '🍀', '🃏', '🎰']
+  const reels = Array.from({ length: 9 }, () => pick(symbols))
+  const middle = reels.slice(3, 6)
+  const jackpot = middle[0] === middle[1] && middle[1] === middle[2]
+  const pair = middle[0] === middle[1] || middle[1] === middle[2] || middle[0] === middle[2]
 
-  const outcomes = {
-    roulette: () => { const value = number(0, 36); return { multiplier: value === 0 ? 3 : Math.random() < 0.45 ? 1.5 : 0, text: `├[ 🎡 Angka ] ${value}\n├[ 🎨 Warna ] ${value === 0 ? 'Hijau' : value % 2 ? 'Hitam' : 'Merah'}` } },
-    blackjack: () => { const player = number(15, 21); const dealer = number(15, 21); return { multiplier: player > dealer ? 2 : player === dealer ? 1 : 0, text: `├[ 🃏 Kamu ] ${player}\n├[ 🏦 Dealer ] ${dealer}` } },
-    dice: () => { const first = number(1, 6); const second = number(1, 6); return { multiplier: first === second ? 2.5 : first + second >= 8 ? 1.5 : 0, text: `├[ 🎲 Dadu ] ${first} + ${second}\n├[ Total ] ${first + second}` } },
-    coinflip: () => ({ multiplier: Math.random() < 0.5 ? 2 : 0, text: `├[ 🔄 Hasil ] ${pick(['Head', 'Tail'])}` }),
-    mahjong: () => ({ multiplier: Math.random() < 0.2 ? 4 : Math.random() < 0.45 ? 1.5 : 0, text: `├[ 🀄 Tile ] ${pick(['Dragon', 'Wind', 'Bamboo', 'Circle'])}\n├[ Kombinasi ] ${pick(['Pung', 'Chow', 'Kong', 'Pair'])}` }),
-    cups: () => { const choice = number(1, 3); const ball = number(1, 3); return { multiplier: choice === ball ? 3 : 0, text: `├[ 🥤 Pilihan ] Cup ${choice}\n├[ Bola ] Cup ${ball}` } },
-    domino: () => { const first = number(0, 6); const second = number(0, 6); return { multiplier: first === second ? 3 : first + second >= 7 ? 1.5 : 0, text: `├[ 🁣 Domino ] [${first}|${second}]\n├[ Total ] ${first + second}` } },
-    uno: () => ({ multiplier: Math.random() < 0.1 ? 4 : Math.random() < 0.45 ? 1.5 : 0, text: `├[ 🃏 Kartu ] ${pick(['Skip', 'Reverse', '+2', 'Wild', 'UNO'])}\n├[ Warna ] ${pick(['Merah', 'Kuning', 'Hijau', 'Biru'])}` }),
-    darts: () => { const score = number(1, 60); return { multiplier: score >= 50 ? 3 : score >= 30 ? 1.5 : 0, text: `├[ 🎯 Skor ] ${score}\n├[ Target ] Bullseye` } },
-    bingo: () => ({ multiplier: Math.random() < 0.08 ? 5 : Math.random() < 0.4 ? 1.5 : 0, text: `├[ 🎱 Nomor ] ${Array.from({ length: 3 }, () => number(1, 75)).join(' - ')}\n├[ Papan ] ${pick(['B-I-N-G-O', 'Hampir Bingo', 'Belum Bingo'])}` }),
-    hanafuda: () => ({ multiplier: Math.random() < 0.2 ? 3 : Math.random() < 0.5 ? 1.5 : 0, text: `├[ 🎴 Kartu ] ${pick(['Crane', 'Moon', 'Rain Man', 'Cherry Blossom'])}\n├[ Set ] ${pick(['Bright', 'Ribbon', 'Animal', 'Plain'])}` }),
-    horserace: () => { const winner = number(1, 8); return { multiplier: winner === 1 ? 3 : winner <= 3 ? 1.5 : 0, text: `├[ 🏇 Pemenang ] Kuda ${winner}\n├[ Lintasan ] 8 kuda` } },
-    pool: () => { const ball = number(1, 15); return { multiplier: ball === 8 ? 4 : ball >= 10 ? 1.5 : 0, text: `├[ 🎱 Bola Masuk ] ${ball}\n├[ Target ] Bola 8` } },
-    rps: () => ({ multiplier: Math.random() < 0.33 ? 2 : Math.random() < 0.5 ? 1 : 0, text: `├[ ✊ Kamu ] ${pick(['Rock', 'Paper', 'Scissors'])}\n├[ 🤖 Lawan ] ${pick(['Rock', 'Paper', 'Scissors'])}` }),
-    poker: () => ({ multiplier: Math.random() < 0.08 ? 5 : Math.random() < 0.4 ? 2 : 0, text: `├[ ♠️ Hand ] ${pick(['Pair', 'Two Pair', 'Straight', 'Flush', 'Full House'])}\n├[ 🃏 Kartu ] 5 kartu` }),
-    chess: () => ({ multiplier: Math.random() < 0.25 ? 2.5 : Math.random() < 0.5 ? 1 : 0, text: `├[ ♟️ Hasil ] ${pick(['Checkmate', 'Menang Posisi', 'Draw', 'Kalah Posisi'])}\n├[ Langkah ] ${number(12, 48)}` })
+  return {
+    multiplier: jackpot ? 10 : pair ? 1.5 : 0,
+    text:
+      `> ${reels[0]} | ${reels[1]} | ${reels[2]}\n` +
+      `> ${reels[3]} | ${reels[4]} | ${reels[5]} ❮\n` +
+      `> ${reels[6]} | ${reels[7]} | ${reels[8]}`
   }
+}
+
+const outcomes = {
+  roulette: () => { const value = number(0, 36); return { multiplier: value === 0 ? 3 : Math.random() < 0.45 ? 1.5 : 0, text: `🎡 *Angka* : ${value}\n> ↳ 🎨 Warna : ${value === 0 ? 'Hijau' : value % 2 ? 'Hitam' : 'Merah'}` } },
+  blackjack: () => { const player = number(15, 21), dealer = number(15, 21); return { multiplier: player > dealer ? 2 : player === dealer ? 1 : 0, text: `🃏 *Kamu* : ${player}\n> ↳ 🏦 Dealer : ${dealer}` } },
+  dice: () => { const first = number(1, 6), second = number(1, 6); return { multiplier: first === second ? 2.5 : first + second >= 8 ? 1.5 : 0, text: `🎲 *Dadu* : ${first} + ${second}\n> ↳ Total : ${first + second}` } },
+  coinflip: () => ({ multiplier: Math.random() < 0.5 ? 2 : 0, text: `🔄 *Hasil* : ${pick(['Head', 'Tail'])}` }),
+  mahjong: () => ({ multiplier: Math.random() < 0.2 ? 4 : Math.random() < 0.45 ? 1.5 : 0, text: `🀄 *Tile* : ${pick(['Dragon', 'Wind', 'Bamboo', 'Circle'])}\n> ↳ Kombinasi : ${pick(['Pung', 'Chow', 'Kong', 'Pair'])}` }),
+  cups: () => { const choice = number(1, 3), ball = number(1, 3); return { multiplier: choice === ball ? 3 : 0, text: `🥤 *Pilihan* : Cup ${choice}\n> ↳ Bola : Cup ${ball}` } },
+  domino: () => { const first = number(0, 6), second = number(0, 6); return { multiplier: first === second ? 3 : first + second >= 7 ? 1.5 : 0, text: `🁣 *Domino* : [${first}|${second}]\n> ↳ Total : ${first + second}` } },
+  uno: () => ({ multiplier: Math.random() < 0.1 ? 4 : Math.random() < 0.45 ? 1.5 : 0, text: `🃏 *Kartu* : ${pick(['Skip', 'Reverse', '+2', 'Wild', 'UNO'])}\n> ↳ Warna : ${pick(['Merah', 'Kuning', 'Hijau', 'Biru'])}` }),
+  darts: () => { const score = number(1, 60); return { multiplier: score >= 50 ? 3 : score >= 30 ? 1.5 : 0, text: `🎯 *Skor* : ${score}\n> ↳ Target : Bullseye` } },
+  bingo: () => ({ multiplier: Math.random() < 0.08 ? 5 : Math.random() < 0.4 ? 1.5 : 0, text: `🎱 *Nomor* : ${Array.from({ length: 3 }, () => number(1, 75)).join(' - ')}\n> ↳ Papan : ${pick(['B-I-N-G-O', 'Hampir Bingo', 'Belum Bingo'])}` }),
+  hanafuda: () => ({ multiplier: Math.random() < 0.2 ? 3 : Math.random() < 0.5 ? 1.5 : 0, text: `🎴 *Kartu* : ${pick(['Crane', 'Moon', 'Rain Man', 'Cherry Blossom'])}\n> ↳ Set : ${pick(['Bright', 'Ribbon', 'Animal', 'Plain'])}` }),
+  horserace: () => { const winner = number(1, 8); return { multiplier: winner === 1 ? 3 : winner <= 3 ? 1.5 : 0, text: `🏇 *Pemenang* : Kuda ${winner}\n> ↳ Lintasan : 8 kuda` } },
+  pool: () => { const ball = number(1, 15); return { multiplier: ball === 8 ? 4 : ball >= 10 ? 1.5 : 0, text: `🎱 *Bola Masuk* : ${ball}\n> ↳ Target : Bola 8` } },
+  rps: () => ({ multiplier: Math.random() < 0.33 ? 2 : Math.random() < 0.5 ? 1 : 0, text: `✊ *Kamu* : ${pick(['Rock', 'Paper', 'Scissors'])}\n> ↳ 🤖 Lawan : ${pick(['Rock', 'Paper', 'Scissors'])}` }),
+  poker: () => ({ multiplier: Math.random() < 0.08 ? 5 : Math.random() < 0.4 ? 2 : 0, text: `♠️ *Hand* : ${pick(['Pair', 'Two Pair', 'Straight', 'Flush', 'Full House'])}\n> ↳ 🃏 Kartu : 5 kartu` }),
+  chess: () => ({ multiplier: Math.random() < 0.25 ? 2.5 : Math.random() < 0.5 ? 1 : 0, text: `♟️ *Hasil* : ${pick(['Checkmate', 'Menang Posisi', 'Draw', 'Kalah Posisi'])}\n> ↳ Langkah : ${number(12, 48)}` }),
+  blacksapphire: () => { const result = pick(['Sapphire', 'Black Sapphire', 'Crystal']), multiplier = result === 'Black Sapphire' ? 5 : result === 'Sapphire' ? 2 : 0; return { multiplier, text: `💠 *Hasil* : ${result}\n> ↳ ✨ Bonus : ${result === 'Black Sapphire' ? 'Jadwal keberuntungan' : result === 'Sapphire' ? 'Beruntung sedang naik' : 'Coba lagi'}` } },
+  keno: () => { const drawn = Array.from({ length: 6 }, () => number(1, 10)), lucky = drawn[0], multiplier = lucky === 7 ? 4 : lucky <= 3 ? 1.5 : 0; return { multiplier, text: `🎟️ *Nomor* : ${drawn.join(' - ')}\n> ↳ 🎯 Lucky : ${lucky}` } },
+  mines: () => { const mineCount = number(1, 4), safe = number(1, 3), multiplier = mineCount === safe ? 5 : safe >= 2 ? 2 : 0; return { multiplier, text: `💣 *Mine Count* : ${mineCount}\n> ↳ 🧭 Safe Tile : ${safe}` } }
+}
   return outcomes[game]()
 }
 
@@ -144,7 +157,7 @@ function menu(prefix) {
     .join('\n\n')
 
   return `╭─❏「 🎰 AVELIA CASINO 」❏\n` +
-    `│ 🎲 Pilih permainan dan masukkan jumlah taruhan.\n` +
+    `│ 🎲 Pilih permainan di casino.\n` +
     `│ 💰 Minimal taruhan: ${money(100)}\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${list}\n\n` +
@@ -267,47 +280,53 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
 
   if (stats.dailyGames >= DAILY_LIMIT) {
-    return m.reply(
-      `╭─❏「 🛑 BATAS CASINO 」❏\n` +
-      `│ Kamu sudah bermain ${DAILY_LIMIT}x hari ini.\n` +
-      `│ Akses casino diblokir sampai hari berganti.\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `⚠️ Istirahat dulu dan main secukupnya.`
-    )
-  }
+  return m.reply(
+    `╭─❏「 🛑 BATAS CASINO 」❏\n` +
+    `│ 🛑 *Batas permainan tercapai.*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📊 *STATUS*\n` +
+    `> ↳ Kamu sudah bermain ${DAILY_LIMIT}x hari ini.\n` +
+    `> ↳ Akses casino diblokir sampai hari berganti.\n\n` +
+    `⚠️ Istirahat dulu dan main secukupnya.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
-  const bet = Number(legacySlot ? input : args[1])
+const bet = Number(legacySlot ? input : args[1])
 
-  if (!Number.isInteger(bet) || bet < 100) {
-    return m.reply(
-      `╭─❏「 ❌ TARUHAN 」❏\n` +
-      `│ 💰 Minimal taruhan: ${money(100)}\n` +
-      `│ 📌 Contoh:\n` +
-      `> ↳ *${usedPrefix}casino ${game} 1000*\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
-  }
+if (!Number.isInteger(bet) || bet < 100) {
+  return m.reply(
+    `╭─❏「 ❌ TARUHAN 」❏\n` +
+    `│ ❌ *Taruhan tidak valid.*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📌 *BATAS TARUHAN*\n` +
+    `> ↳ 💰 Minimal taruhan : ${money(100)}\n` +
+    `> ↳ 📌 Contoh : *${usedPrefix}casino ${game} 1000*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
-  if ((wdb.money[m.sender] || 0) < bet) {
-    return m.reply(
-      `╭─❏「 ❌ TARUHAN 」❏\n` +
-      `│ 💸 Uang di saku kamu tidak cukup!\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
-  }
+if ((wdb.money[m.sender] || 0) < bet) {
+  return m.reply(
+    `╭─❏「 ❌ TARUHAN 」❏\n` +
+    `│ 💸 *Uang di saku kamu tidak cukup!*\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
 
-  const cooldowns = getCooldowns(user)
-  const lastPlayed = cooldowns[game] || 0
-  const elapsed = Date.now() - lastPlayed
+const cooldowns = getCooldowns(user)
+const lastPlayed = cooldowns[game] || 0
+const elapsed = Date.now() - lastPlayed
 
-  if (elapsed < GAME_COOLDOWN) {
-    return m.reply(
-      `╭─❏「 ⏳ CASINO 」❏\n` +
-      `│ ${games[game].name} masih cooldown.\n` +
-      `│ Tunggu ${formatRemaining(GAME_COOLDOWN - elapsed)} lagi.\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
-  }
+if (elapsed < GAME_COOLDOWN) {
+  return m.reply(
+    `╭─❏「 ⏳ CASINO 」❏\n` +
+    `│ ⏳ *${games[game].name} masih cooldown.*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Tunggu ${formatRemaining(GAME_COOLDOWN - elapsed)} lagi.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   const result = normalizeResult(resultFor(game))
   const payout = Math.floor(bet * result.multiplier)

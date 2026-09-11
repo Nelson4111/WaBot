@@ -86,7 +86,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   cap += `> 🌾 Panen: *${usedPrefix}panen [nomor]*\n`
   cap += `> 🌱 Tanam: *${usedPrefix}tanam [bibit]*`
 
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i181/UTTbZ.jpg')
 }
 
 handler.help = ['ladang']

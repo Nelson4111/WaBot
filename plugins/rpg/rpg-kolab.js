@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -107,10 +107,11 @@ let handler = async (m, { conn }) => {
   teks += `\n─━━━━━━━━━━━━━━─\n`
   teks += `✅ *Status:* Kolaborasi berhasil!`
 
-  return conn.reply(
-    m.chat,
-    teks,
+  return sendRpgMsg(
+    conn,
     m,
+    teks,
+    'https://c.termai.cc/i165/qxnHa.jpg',
     { mentions: [m.sender, who] }
   )
 }

@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -51,6 +51,17 @@ function formatNama(nama) {
 }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
+  const ladangImageUrl = 'https://c.termai.cc/i181/UTTbZ.jpg'
+
+  const safeReply = async (text, options = {}) => {
+    try {
+      return await sendRpgMsg(conn, m, text, ladangImageUrl, options)
+    } catch {
+      const mentions = options.mentions || options.contextInfo?.mentionedJid || []
+      return conn.sendMessage(m.chat, { text, mentions: mentions.length ? mentions : undefined }, { quoted: m })
+    }
+  }
+
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -63,7 +74,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   for (let i = 1; i <= user.maxLadang; i++) {
     if (!user.ladang[i]) slotKosong.push(i)
   }
-  if (slotKosong.length === 0) return m.reply(`❌ Semua ladang sudah penuh.`)
+  if (slotKosong.length === 0) return safeReply(`❌ Semua ladang sudah penuh.`)
 
  if (!text) {
     let cap = `╭─❏「 🌱 DAFTAR BIBIT 」❏\n`
@@ -103,7 +114,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `> ↳ Semua slot: *${usedPrefix}tanam koin all*\n`
     cap += `\n─━━━━━━━━━━━━━━─`
 
-    return m.reply(cap)
+    return safeReply(cap)
   }
 
   let args = text.toLowerCase().split(' ')
@@ -111,7 +122,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let slotTarget = args[args.length - 1]
   let isAll = slotTarget === 'all'
 
-  if (!bibit[jenis]) return m.reply(
+  if (!bibit[jenis]) return safeReply(
     `╭─❏「 ❌ BIBIT TIDAK DITEMUKAN 」❏\n` +
     `│ Jenis bibit *${formatNama(jenis)}* tidak ada.\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -134,7 +145,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       } else break
     }
 
-    if (count === 0) return m.reply(
+    if (count === 0) return safeReply(
       `╭─❏「 ❌ UANG TIDAK CUKUP 」❏\n` +
       `│ Butuh Rp ${hargaFinal.toLocaleString()}/bibit\n` +
       `╰─━━━━━━━━━━━━━━─`
@@ -143,7 +154,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     wdb.money[m.sender] = userMoney
     saveDB(wdb)
 
-    return m.reply(
+    return safeReply(
       `╭─❏「 🌱 TANAM MASSAL 」❏\n` +
       `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}* x${count}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -156,13 +167,13 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let slotNum = parseInt(slotTarget)
   let slotPilih = !isNaN(slotNum) && user.ladang[slotNum] === undefined ? slotNum : slotKosong[0]
 
-  if (!slotPilih) return m.reply(
+  if (!slotPilih) return safeReply(
     `╭─❏「 ❌ SLOT TIDAK TERSEDIA 」❏\n` +
     `│ Slot ladang tidak tersedia.\n` +
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  if (userMoney < hargaFinal) return m.reply(
+  if (userMoney < hargaFinal) return safeReply(
     `╭─❏「 ❌ UANG TIDAK CUKUP 」❏\n` +
     `│ Butuh Rp ${hargaFinal.toLocaleString()}\n` +
     `╰─━━━━━━━━━━━━━━─`
@@ -172,7 +183,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 user.ladang[slotPilih] = { jenis: jenis, waktuTanam: Date.now() }
 saveDB(wdb)
 
-return m.reply(
+return safeReply(
   `╭─❏「 🌱 BERHASIL TANAM 」❏\n` +
   `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +

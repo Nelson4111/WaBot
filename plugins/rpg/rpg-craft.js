@@ -1,12 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
 
-const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-function safeEmoji(value, fallback = '❓') {
-  if (typeof value !== 'string') return fallback
-  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
-}
-
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg

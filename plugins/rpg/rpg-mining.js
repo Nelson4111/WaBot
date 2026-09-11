@@ -4,12 +4,6 @@ function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-const unsafeEmojiPattern = /🪨|🪵|🪙|🪢|🪡|🛞|🪼|🪸|🌊|🌙|✨|🫐|🫒|🧄|🧅/u
-function safeEmoji(value, fallback = '❓') {
-  if (typeof value !== 'string') return fallback
-  return unsafeEmojiPattern.test(value) ? fallback : (value || fallback)
-}
-
 export const oreEmoji = {
   'stone': '🪨', 'sand_stone': '🏜️', 'copper': '🟠', 'iron': '⛓️', 'tin': '📎', 'silver': '⚪',
   'gold': '✨', 'mushroomite': '🍄', 'platinum': '💿', 'bananite': '🍌', 'cardboardite': '📦',
@@ -23,10 +17,6 @@ export const oreEmoji = {
 }
 
 export const miningOreKeys = Object.keys(oreEmoji)
-
-Object.keys(oreEmoji).forEach((key) => {
-  oreEmoji[key] = safeEmoji(oreEmoji[key])
-})
 
 let secret = ['ethereal_light'];
 let mythic = ['arcane_crystal', 'voidar', 'galaxy', 'tungsten', 'massacerit'];
@@ -78,25 +68,35 @@ let handler = async (m, { conn }) => {
 
   let pickLvl = user.pickaxe || 0
   let bonus = Math.min(pickLvl * 1.5, 30)
-  let jumlahJenisDrop = Math.min(Math.floor(pickLvl / 10) + 1, 5)
+  const jumlahJenisDrop = Math.min(2 + Math.floor(Math.random() * 4), 5)
 
-  let hasilTambang = {}
+  let hasilTambang = { stone: 0 }
   let totalExp = 0
   let totalOreDidapat = 0
   let tierTertinggi = 'COMMON'
 
-  for(let i = 0; i < jumlahJenisDrop; i++){
+  const stoneQty = Math.floor(Math.random() * 2) + 1
+  hasilTambang.stone = stoneQty
+  totalOreDidapat += stoneQty
+  totalExp += 15 * stoneQty
+  const stoneTier = 'COMMON'
+  const urutanTier = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
+  if (urutanTier.indexOf(stoneTier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = stoneTier
+
+  for (let i = 1; i < jumlahJenisDrop; i++) {
     let hance = Math.random() * 100
     let {ore, tier, exp} = rollOre(hance, bonus, pickLvl)
+    if (ore === 'stone') continue
+    if (hasilTambang[ore]) continue
+
     let maxJumlah = Math.min(Math.floor(pickLvl / 15) + 2, 5)
     let jumlahPerOre = Math.floor(Math.random() * maxJumlah) + 1
 
-    hasilTambang[ore] = (hasilTambang[ore] || 0) + jumlahPerOre
+    hasilTambang[ore] = jumlahPerOre
     totalExp += exp * jumlahPerOre
     totalOreDidapat += jumlahPerOre
 
-    let urutanTier = ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC','SECRET']
-    if(urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
+    if (urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
   }
 
   // Simpan hasil
@@ -128,8 +128,8 @@ caption += `│ ⛏️ *HASIL TAMBANG*\n`
 caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
 caption += `⭐ *TIER TERTINGGI*\n`
-caption += `> ↳ ${tierTertinggi}\n`
-caption += `> ↳ ${tierData[tierTertinggi].stars} ${tierData[tierTertinggi].emoji}\n\n`
+caption += `> ↳ ${tierData[tierTertinggi].stars}\n`
+caption += `> ↳ ${tierTertinggi} ${tierData[tierTertinggi].emoji}\n\n`
 
 caption += `🏆 *RINGKASAN HASIL*\n`
 caption += `> ↳ ${jumlahJenisDrop} jenis\n`
@@ -148,8 +148,7 @@ caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
 caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
 caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
-if(pickLvl < 25) caption += `> ↳ 🔮 Secret: Buka di Pick Lvl 25\n`
-
+if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk mendapatkan secret\n`
 caption += `\n─━━━━━━━━━━━━━━─`
 
 return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i140/srjE7x6')

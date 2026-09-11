@@ -127,18 +127,30 @@ let handler = async (m, { conn, command }) => {
   let baseMoney = Math.floor(Math.random() * 5000) + 1000
   let baseWood = Math.floor(Math.random() * 10) + 5
   let baseIron = Math.floor(Math.random() * 5) + 1
-  let jumlahLoot = Math.min(1 + Math.floor(advLvl / 10) + Math.floor(swordLvl / 5) + Math.floor(pickLvl / 5), 8)
+  let jumlahLoot = 2 + Math.floor(Math.random() * 3)
 
+  const urutanTier = ['TRASH','COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC','SECRET']
   let hasilLoot = {}; let groupedLoot = {}; let totalExp = baseExp; let tierTertinggi = 'TRASH'
 
-  for(let i = 0; i < jumlahLoot; i++){
+  const woodQty = baseWood + Math.floor(pickLvl / 3)
+  const woodKey = 'kayu'
+  hasilLoot[woodKey] = (hasilLoot[woodKey] || 0) + woodQty
+  groupedLoot.COMMON = groupedLoot.COMMON || {}
+  groupedLoot.COMMON[woodKey] = (groupedLoot.COMMON[woodKey] || 0) + woodQty
+  if (urutanTier.indexOf('COMMON') > urutanTier.indexOf(tierTertinggi)) tierTertinggi = 'COMMON'
+
+  const seen = new Set([woodKey])
+
+  while (Object.keys(hasilLoot).length < jumlahLoot) {
     let hance = Math.random() * 100
     let {item, tier, exp} = rollItem(hance, bonus, advLvl, swordLvl, pickLvl)
+    if (seen.has(item)) continue
+    seen.add(item)
+
     hasilLoot[item] = (hasilLoot[item] || 0) + 1
     if(!groupedLoot[tier]) groupedLoot[tier] = {}
     groupedLoot[tier][item] = (groupedLoot[tier][item] || 0) + 1
     totalExp += exp
-    let urutanTier = ['TRASH','COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC','SECRET']
     if(urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
   }
 
@@ -173,8 +185,11 @@ let handler = async (m, { conn, command }) => {
 
   let cap = `╭─❏「 🗺️ ADVENTURE 」❏\n`
 cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`
-cap += `│ ⭐ Tier: ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+cap += `⭐ *TIER TANGKAPAN*\n`
+cap += `> ↳ ${tierInfo[tierTertinggi].stars}\n`
+cap += `> ↳ ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
 
 cap += `🎒 *HASIL PENJELAJAHAN x${jumlahLoot}*\n`
 cap += `> ↳ Item yang ditemukan selama adventure.\n`

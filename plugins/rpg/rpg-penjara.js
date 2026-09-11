@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 /* =========================================================
    DIALOG VISIT 20x20
@@ -450,7 +450,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
     const prisonMode = (args[0] || '').toLowerCase()
     if (prisonMode !== 'sel') {
-  return m.reply(
+  return sendRpgMsg(conn, m,
     `╭─❏「 🚔 PENJARA 」❏\n` +
     `│ 🚔 *SISTEM PENJARA*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -470,8 +470,8 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     `> ↳ Kabur: *${usedPrefix}penjara kabur*\n` +
     `> ↳ Tebus: *${usedPrefix}tebus sel 1*\n\n` +
 
-    `─━━━━━━━━━━━━━━─`
-  )
+    `─━━━━━━━━━━━━━━─`,
+    'https://c.termai.cc/i106/p1Vn.jpg')
 }
 
 if (!args[1]) {
