@@ -21,6 +21,11 @@ const CORE_COMMANDS = [
   ['.rship', 'Mengelola relationship'],
   ['.guild', 'Mengelola guild'],
   ['.guildwar', 'Mengikuti perang guild'],
+  ['.room', 'Mengelola room/channel YouTube'],
+  ['.buatyt', 'Membuat channel YouTube baru'],
+  ['.akunyt', 'Melihat detail akun/channel YouTube'],
+  ['.liveyt', 'Mulai live streaming channel'],
+  ['.topyt', 'Melihat ranking channel YouTube'],
   ['.kolab', 'Kolaborasi channel YouTube'],
   ['.buronan', 'Melihat daftar buronan'],
   ['.guide', 'Membuka panduan detail RPG']

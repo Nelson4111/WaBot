@@ -8,13 +8,22 @@ const MODES = {
   tinju: { nama: 'Tinju', emoji: '🥊', verb: 'tinju' }
 }
 
+const RACE_TYPES = {
+  lari: { nama: 'Balap Lari', emoji: '🏃', verb: 'lari' },
+  mobil: { nama: 'Balap Mobil', emoji: '🚗', verb: 'mobil' },
+  motor: { nama: 'Balap Motor', emoji: '🏍️', verb: 'motor' },
+  sepeda: { nama: 'Balap Sepeda', emoji: '🚲', verb: 'sepeda' }
+}
+
+const ALL_MODE_DETAILS = { ...MODES, ...RACE_TYPES }
+
 const OLD_KEYS = {
   jambak: ['jambakMenang', 'jambakKalah'],
   panco: ['pancoMenang', 'pancoKalah']
 }
 
 function getArenaTitle(wins, mode) {
-  const nama = MODES[mode]?.nama || 'Arena'
+  const nama = ALL_MODE_DETAILS[mode]?.nama || 'Arena'
   if (wins >= 1000) return `👑 Legenda ${nama}`
   if (wins >= 700) return `💎 Master ${nama}`
   if (wins >= 500) return `🏆 Veteran ${nama}`
@@ -96,19 +105,29 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   const stats = initStats(user)
 
-  const action = command === 'arena' ? args[0]?.toLowerCase() : null
-  const modeKey = getMode(command, args)
-  const mode = modeKey ? MODES[modeKey] : null
-  const subAction = command === 'arena' ? args[1]?.toLowerCase() : args[0]?.toLowerCase()
+  const isVersusCommand = command === 'versus'
+  const isBalapCommand = command === 'balap'
+  const action = (command === 'arena' || isVersusCommand) ? args[0]?.toLowerCase() : null
+  const explicitVersusMode = isVersusCommand && args[0] && MODES[args[0].toLowerCase()] ? args[0].toLowerCase() : null
+  const explicitBalapMode = isBalapCommand && args[0] && RACE_TYPES[args[0].toLowerCase()] ? args[0].toLowerCase() : null
+  const modeKey = explicitVersusMode || explicitBalapMode || getMode(command, args)
+  const mode = modeKey ? (MODES[modeKey] || RACE_TYPES[modeKey]) : null
+  const subAction = (command === 'arena' || isVersusCommand || isBalapCommand) ? args[1]?.toLowerCase() : args[0]?.toLowerCase()
 
-  if (command === 'arena' && (!action || ['menu', 'help'].includes(action))) {
-    let cap = `╭─❏「 ⚔️ ARENA AVELIA 」❏\n│ Pilih salah satu mode battle.\n╰─━━━━━━━━━━━━━━─\n\n`
+  if ((command === 'arena' || command === 'versus') && (!action || ['menu', 'help'].includes(action))) {
+    let cap = `╭─❏「 ⚔️ VERSUS AVELIA 」❏\n│ Pilih salah satu mode battle.\n╰─━━━━━━━━━━━━━━─\n\n`
     cap += Object.entries(MODES).map(([key, value]) => `> *${usedPrefix}${key} @tag [taruhan]* ${value.emoji}`).join('\n')
-    cap += `\n\n> *${usedPrefix}arena stats* - Statistik arena\n> *${usedPrefix}arena top [halaman]* - Leaderboard`
+    cap += `\n\n> *${usedPrefix}versus stats* - Statistik arena\n> *${usedPrefix}versus top [halaman]* - Leaderboard`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg')
   }
 
-  if (command === 'arena' && action === 'stats') {
+  if (command === 'balap' && !explicitBalapMode) {
+    let cap = `╭─❏「 🏁 BALAP AVELIA 」❏\n│ Pilih jenis balap yang mau diadu.\n╰─━━━━━━━━━━━━━━─\n\n`
+    cap += Object.entries(RACE_TYPES).map(([key, value]) => `> *${usedPrefix}balap ${key} @tag [taruhan]* ${value.emoji}`).join('\n')
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg')
+  }
+
+  if ((command === 'arena' || command === 'versus') && action === 'stats') {
     let cap = `╭─❏「 📊 ARENA STATS 」❏\n│ 👤 @${sender.split('@')[0]}\n╰─━━━━━━━━━━━━━━─\n\n`
     for (const [key, value] of Object.entries(MODES)) {
       cap += `${value.emoji} *${value.nama}*\n> ↳ ${formatRecord(stats, key)}\n\n`
@@ -117,7 +136,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     return conn.reply(m.chat, cap, m, { mentions: [sender] })
   }
 
-  if (command === 'arena' && action === 'top') {
+  if ((command === 'arena' || command === 'versus') && action === 'top') {
     const page = Math.max(1, parseInt(args[1]) || 1)
     const rows = Object.entries(wdb.users || {})
       .map(([jid, entry]) => {
@@ -142,11 +161,11 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     }
 
     cap += `─━━━━━━━━━━━━━━─\n> Halaman: ${page}`
-    if (start + 10 < rows.length) cap += ` | Berikutnya: ${usedPrefix}arena top ${page + 1}`
+    if (start + 10 < rows.length) cap += ` | Berikutnya: ${usedPrefix}versus top ${page + 1}`
     return conn.reply(m.chat, cap, m, { mentions: visible.map(row => row.jid).concat(sender) })
   }
 
-  if (!mode) return m.reply(`❌ Mode arena tidak dikenal. Gunakan *${usedPrefix}arena* untuk melihat pilihan.`)
+  if (!mode) return m.reply(`❌ Mode versus tidak dikenal. Gunakan *${usedPrefix}versus* untuk melihat pilihan.`)
 
   const isAccept = subAction === 'terima' || subAction === 'accept'
   const isReject = ['tolak', 'batal', 'reject'].includes(subAction)
@@ -215,7 +234,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   if (!targetUser) return m.reply('❌ Target belum memiliki data RPG.')
   initStats(targetUser)
 
-  const taruhanInput = parseInt(command === 'arena' ? args[2] : args[1])
+  const taruhanInput = parseInt((command === 'arena' || command === 'versus' || command === 'balap') ? args[2] : args[1])
   const taruhanDefault = Math.max(1000, Math.floor(Math.min(wdb.money[sender] || 0, wdb.money[target] || 0) * 0.1))
   const taruhan = taruhanInput || taruhanDefault
   if (taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1.000.')
@@ -235,9 +254,9 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   return conn.sendMessage(m.chat, { text: cap, mentions: [sender, target] }, { quoted: m })
 }
 
-handler.help = ['arena', 'arena stats', 'arena top [halaman]', 'jambak @tag [taruhan]', 'panco @tag [taruhan]', 'dance @tag [taruhan]', 'tampar @tag [taruhan]', 'tinju @tag [taruhan]']
+handler.help = ['versus', 'versus stats', 'versus top [halaman]', 'balap lari|mobil|motor|sepeda @tag [taruhan]', 'jambak @tag [taruhan]', 'panco @tag [taruhan]', 'dance @tag [taruhan]', 'tampar @tag [taruhan]', 'tinju @tag [taruhan]']
 handler.tags = ['rpg']
-handler.command = /^(arena|jambak|panco|dance|tampar|tinju)$/i
+handler.command = /^(versus|balap|jambak|panco|dance|tampar|tinju)$/i
 handler.group = true
 
 export default handler

@@ -1,4 +1,22 @@
-import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+﻿import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+
+function normalizeYoutube(data = {}) {
+  return {
+    name: data.name || '',
+    level: Number(data.level || 1),
+    roomLevel: Number(data.roomLevel || 0),
+    content: data.content || 'streamer',
+    gender: data.gender || 'none',
+    subs: Number(data.subs || 0),
+    views: Number(data.views || 0),
+    likes: Number(data.likes || 0),
+    income: Number(data.income || 0),
+    lastLive: Number(data.lastLive || 0),
+    lastCollab: Number(data.lastCollab || data.lastKolab || 0),
+    lastKolab: Number(data.lastCollab || data.lastKolab || 0),
+    createdAt: Number(data.createdAt || Date.now())
+  }
+}
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -33,14 +51,17 @@ let handler = async (m, { conn }) => {
     )
   }
 
-  let ytA = wdb.users[m.sender].youtube
-  let ytB = wdb.users[who].youtube
+  const ytA = normalizeYoutube(wdb.users[m.sender].youtube)
+  const ytB = normalizeYoutube(wdb.users[who].youtube)
 
-  let cooldown = 60000
-  let elapsed = Date.now() - (ytA.lastKolab || 0)
+  wdb.users[m.sender].youtube = ytA
+  wdb.users[who].youtube = ytB
+
+  const cooldown = 60000
+  const elapsed = Date.now() - (ytA.lastCollab || 0)
 
   if (elapsed < cooldown) {
-    let sisa = Math.ceil((cooldown - elapsed) / 1000)
+    const sisa = Math.ceil((cooldown - elapsed) / 1000)
 
     return m.reply(
       `╭─❏「 ⏳ COLLAB COOLDOWN 」❏\n` +
@@ -49,18 +70,11 @@ let handler = async (m, { conn }) => {
     )
   }
 
-  let moneyGain = Math.floor(
-    Math.random() * (200000 - 50000 + 1)
-  ) + 50000
-
-  let viewers = Math.floor(Math.random() * 20000) + 2000
-
-  let likesGain = Math.floor(
-    viewers * (Math.random() * (0.5 - 0.2) + 0.2)
-  )
-
-  let subsGain = Math.floor(viewers / 8)
-  let xpGain = Math.floor(moneyGain / 10)
+  const moneyGain = Math.floor(Math.random() * (200000 - 50000 + 1)) + 50000
+  const viewers = Math.floor(Math.random() * 20000) + 2000
+  const likesGain = Math.floor(viewers * (Math.random() * (0.5 - 0.2) + 0.2))
+  const subsGain = Math.floor(viewers / 8)
+  const xpGain = Math.floor(moneyGain / 10)
 
   if (!wdb.money) {
     wdb.money = {}
@@ -69,17 +83,19 @@ let handler = async (m, { conn }) => {
   const participants = [m.sender, who]
 
   participants.forEach(jid => {
-    let yt = wdb.users[jid].youtube
+    const yt = normalizeYoutube(wdb.users[jid].youtube)
 
     yt.subs += subsGain
     yt.views += viewers
     yt.likes = (yt.likes || 0) + likesGain
-    yt.lastKolab = Date.now()
+    yt.lastCollab = Date.now()
+    yt.lastKolab = yt.lastCollab
     yt.lastLive = Date.now()
 
+    wdb.users[jid].youtube = yt
     wdb.money[jid] = (wdb.money[jid] || 0) + moneyGain
 
-    let nLvl = Math.floor(yt.subs / 10000) + 1
+    const nLvl = Math.floor(yt.subs / 10000) + 1
 
     if (nLvl > yt.level) {
       yt.level = nLvl
@@ -116,7 +132,7 @@ let handler = async (m, { conn }) => {
   )
 }
 
-handler.help = ['kolab <reply>']
+handler.help = ['kolab <reply>', 'collab <reply>']
 handler.command = ['kolab', 'collab']
 handler.tags = ['rpg']
 
