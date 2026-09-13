@@ -2,21 +2,40 @@ import fs from 'fs'
 import path from 'path'
 import { VOICE_NOTE_GROUPS, VOICE_NOTE_DIR, MIME_TYPES, prepareVoiceNote } from '../../lib/voice-noteData.js'
 
-const buildVoiceNotes = () => Object.fromEntries(
-  VOICE_NOTE_GROUPS.filter(group => group.enabled !== false)
+const isVoiceCategoryEnabled = (chatId, category) => {
+  if (!category) return true
+  const defaults = { toxic: false }
+  const configured = getVoiceStore().groups?.[chatId]?.categories?.[category]
+  return configured === undefined ? defaults[category] !== false : configured === true
+}
+
+const buildVoiceNotes = (chatId) => Object.fromEntries(
+  VOICE_NOTE_GROUPS.filter(group => group.enabled !== false && isVoiceCategoryEnabled(chatId, group.category))
     .flatMap(({ files, commands }) => commands.map(command => [command, files.length === 1 ? files[0] : files]))
 )
 
-const findVoiceCommand = (text) => {
+const findVoiceMatches = (text, chatId) => {
   const normalizedText = (text || '').trim().toLowerCase()
-  const voiceNotes = buildVoiceNotes()
-  return Object.keys(voiceNotes)
-    .sort((first, second) => second.length - first.length)
-    .find(keyword => {
-      const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const groups = VOICE_NOTE_GROUPS.filter(group => group.enabled !== false && isVoiceCategoryEnabled(chatId, group.category))
+  const matches = []
+
+  for (const group of groups) {
+    for (const keyword of group.commands || []) {
+      const normalizedKeyword = String(keyword).toLowerCase()
+      const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       const keywordPattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapedKeyword}(?:$|[^\\p{L}\\p{N}])`, 'u')
-      return keywordPattern.test(normalizedText)
-    })
+      if (keywordPattern.test(normalizedText)) {
+        matches.push({ keyword: normalizedKeyword, files: group.files || [], category: group.category })
+      }
+    }
+  }
+
+  const longestKeywordLength = Math.max(0, ...matches.map(match => match.keyword.length))
+  return matches.filter(match => match.keyword.length === longestKeywordLength)
+}
+
+const findVoiceCommand = (text, chatId) => {
+  return findVoiceMatches(text, chatId)[0]?.keyword || null
 }
 
 function getVoiceStore() {
@@ -118,16 +137,16 @@ function writeDataFile(groups) {
   fs.writeFileSync(targetPath, newContent, 'utf8')
 }
 
-function resolveVoiceAudioFile(keyword) {
-  const data = buildVoiceNotes()
+function resolveVoiceAudioFile(keyword, chatId) {
+  const data = buildVoiceNotes(chatId)
   const mapped = data[keyword]
   if (!mapped) return null
-  if (Array.isArray(mapped)) return mapped[0]
+  if (Array.isArray(mapped)) return mapped[Math.floor(Math.random() * mapped.length)]
   return mapped
 }
 
 async function sendVoiceAudioFromKeyword(m, conn, keyword) {
-  const fileName = resolveVoiceAudioFile(keyword)
+  const fileName = resolveVoiceAudioFile(keyword, m.chat)
   if (!fileName) return false
 
   const filePath = path.resolve(VOICE_NOTE_DIR, fileName)
@@ -201,6 +220,7 @@ if (!sub) {
     `> ↳ *${usedPrefix}voice edit <reply> <namafilenya.ogg> <keyword|keyword|dst>*\n` +
     `> ↳ *${usedPrefix}voice mute <tag/reply>*\n` +
     `> ↳ *${usedPrefix}voice unmute <tag/reply>*\n` +
+    `> ↳ *${usedPrefix}voice toxic enable|disable*\n` +
     `> ↳ *${usedPrefix}voice enable*\n` +
     `> ↳ *${usedPrefix}voice disable*\n\n` +
 
@@ -212,10 +232,10 @@ if (!sub) {
 }
 
   if (sub === 'keyword') {
-    const list = VOICE_NOTE_GROUPS.filter(group => group.enabled !== false)
+    const list = VOICE_NOTE_GROUPS.filter(group => group.enabled !== false && isVoiceCategoryEnabled(m.chat, group.category))
     let msg = '╭─❏「 🎙️ AUTO VN KEYWORD 」❏\n'
     msg += '│ 🎧 *Total VN* : ' + list.length + '\n'
-    msg += '│ 🔑 *Total Keyword* : ' + Object.keys(buildVoiceNotes()).length + '\n'
+    msg += '│ 🔑 *Total Keyword* : ' + Object.keys(buildVoiceNotes(m.chat)).length + '\n'
     msg += '╰─━━━━━━━━━━━━━━─\n\n'
 
     for (const [index, { files, commands }] of list.entries()) {
@@ -226,6 +246,24 @@ if (!sub) {
 
     msg += '─━━━━━━━━━━━━━━─'
     return m.reply(msg)
+  }
+
+  if (sub === 'toxic') {
+    if (!m.isGroup) return m.reply('❌ Fitur ini hanya untuk grup.')
+    if (!m.isAdmin && !m.isOwner && !isOwner) return m.reply('❌ Khusus admin grup.')
+
+    const action = remaining[0]?.toLowerCase()
+    if (action !== 'disable' && action !== 'enable') {
+      return m.reply(`❌ Gunakan: ${usedPrefix}voice toxic disable atau ${usedPrefix}voice toxic enable`)
+    }
+
+    const store = getVoiceStore()
+    store.groups[m.chat] = store.groups[m.chat] || {}
+    store.groups[m.chat].categories = store.groups[m.chat].categories || {}
+    store.groups[m.chat].categories.toxic = action === 'enable'
+    return m.reply(action === 'enable'
+      ? '✅ Voice note toxic diaktifkan di grup ini.'
+      : '✅ Voice note toxic dinonaktifkan di grup ini.')
   }
 
   if (sub === 'disable' || sub === 'enable') {
@@ -315,17 +353,11 @@ if (!sub) {
     }
 
     if (conflicts.length > 0) {
-      for (const existing of VOICE_NOTE_GROUPS) {
-        if (existing.enabled !== false && (existing.commands || []).some(cmd => keywords.includes(cmd))) {
-          existing.enabled = false
-        }
-      }
-
       const conflictText = conflicts
         .map(item => '- File: ' + item.file + ' | Keyword: ' + item.keyword)
         .join('\n')
 
-      return m.reply('⚠️ Keyword bentrok, maka kedua voice note dinonaktifkan:\n' + conflictText)
+      return m.reply('❌ Gagal ' + sub + ' voice note karena keyword bentrok:\n' + conflictText + '\n\nGunakan keyword lain agar semua VN tetap bisa dipicu.')
     }
 
     if (sub === 'add') {
@@ -358,13 +390,27 @@ handler.before = async function (m, { match, ...context }) {
   if (m.isGroup && isGroupDisabled(m.chat)) return true
   if (m.isGroup && isUserMuted(m.sender)) return true
 
-  const matchedKeyword = findVoiceCommand(m.text)
+  const matches = findVoiceMatches(m.text, m.chat)
+  if (matches.length > 1) {
+    const conflictText = matches
+      .map(match => `- Keyword: *${match.keyword}* | File: ${match.files.join(', ')}`)
+      .join('\n')
+    await m.reply(`❌ *Gagal mengirim voice note.*\nKeyword *${matches[0].keyword}* bentrok dengan beberapa VN:\n${conflictText}\n\nSilakan gunakan keyword yang lebih spesifik.`)
+    return true
+  }
+
+  const matchedKeyword = findVoiceCommand(m.text, m.chat)
   if (!matchedKeyword) return false
 
   if (m.isGroup && isGroupDisabled(m.chat)) return true
   if (m.isGroup && isUserMuted(m.sender)) return true
 
   const sent = await sendVoiceAudioFromKeyword(m, this, matchedKeyword)
+  if (!sent) {
+    const match = matches[0]
+    await m.reply(`❌ *Gagal mengirim voice note.*\nKeyword: *${matchedKeyword}*\nFile: ${(match?.files || []).join(', ') || 'tidak ditemukan'}\n\nPeriksa apakah file VN masih ada di folder media/voice-notes.`)
+    return true
+  }
   return sent
 
 }
