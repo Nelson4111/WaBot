@@ -1218,7 +1218,7 @@ ${descBlock}
                             btnLeave.setBody(leaveCaption)
                             btnLeave.setFooter(`${global.namebot || 'Avelia'} • Parting Words`)
                             btnLeave.setImage(leaveHeaderImage)
-                            btnLeave.addReply('✦ Sampai Jumpa', '.ping')
+                            btnLeave.addReply('✦ Sampai Jumpa', 'dadah')
                             btnLeave.addReply('❖ Info Owner', '.owner')
                             btnLeave.setContextInfo({
                                 mentionedJid: [resolvedPhoneJid]
@@ -1229,7 +1229,7 @@ ${descBlock}
                             const btnLeaveClean = new this.Button(this)
                             btnLeaveClean.setBody(leaveCaption)
                             btnLeaveClean.setFooter(`${global.namebot || 'Avelia'} • Parting Words`)
-                            btnLeaveClean.addReply('✦ Sampai Jumpa', '.ping')
+                            btnLeaveClean.addReply('✦ Sampai Jumpa', 'dadah')
                             btnLeaveClean.addReply('❖ Info Owner', '.owner')
                             btnLeaveClean.setContextInfo({
                                 mentionedJid: [resolvedPhoneJid]
