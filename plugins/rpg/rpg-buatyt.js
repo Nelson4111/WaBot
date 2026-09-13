@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 function normalizeYoutube(data = {}) {
   return {
@@ -63,7 +63,7 @@ teks += `> ↳ *.liveyt judul* untuk mulai live.\n\n`
 
 teks += `─━━━━━━━━━━━━━━─`
 
-  m.reply(teks)
+  return sendRpgMsg(conn, m, teks, 'https://c.termai.cc/i189/AS4Mvv.webp')
 }
 
 handler.help = ['buatyt <nama>', 'createyt <nama>']

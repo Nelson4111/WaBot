@@ -1,5 +1,7 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
+const DEFAULT_YOUTUBE_IMAGE = 'https://c.termai.cc/i189/AS4Mvv.webp'
+
 const genderImage = {
   male: 'https://c.termai.cc/i165/qxnHa.jpg',
   female: 'https://c.termai.cc/i153/Q8sa.jpg'
@@ -130,7 +132,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `> ${usedPrefix || '.'}room live\n`
     cap += `> ${usedPrefix || '.'}room collab\n`
     cap += `─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg')
+    return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
   }
 
   // room setup routes
@@ -167,7 +169,7 @@ cap += `> ↳ Ketik: *${usedPrefix}room set gender male|female|none*\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i162/PqqrMC.jpg')
+return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
   }
 
   // edit/set gender flows
@@ -227,7 +229,7 @@ return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i162/PqqrMC.jpg')
       let cap = `╭─❏「 🎬 CONTENT LIST 」❏\n`
       cap += `${contentListText(usedPrefix)}\n`
       cap += `╰─━━━━━━━━━━━━━━─`
-      return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg')
+      return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
     }
 
     if (!contentMap[what]) {
@@ -270,7 +272,7 @@ cap += `> ↳ Efek : income +${Math.round(cfg.bonus * 100)}%, view +${Math.round
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i162/PqqrMC.jpg')
+return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
  }
 
   if (sub === 'live') {

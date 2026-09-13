@@ -44,7 +44,7 @@ let handler = async (m, { conn }) => {
 
   caption += `\n─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i174/Uwc')
+  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i189/AS4Mvv.webp')
 }
 
 handler.help = ['topyt', 'rankyt']

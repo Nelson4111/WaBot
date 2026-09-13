@@ -102,7 +102,7 @@ caption += `> ↳ 👥 Subscribers : ${userYT.subs.toLocaleString()}\n\n`
 
 caption += `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, caption.trim(), ppUrl)
+  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i189/AS4Mvv.webp')
 }
 
 handler.help = ['akunyt', 'channelyt']
