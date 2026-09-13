@@ -1,4 +1,34 @@
-let handler = async (m) => {
+let handler = async (m, { text = '' }) => {
+  if (text.trim().toLowerCase() === 'info') {
+    return m.reply(`
+★───「 *𝗧𝗪𝗜𝗟𝗬 𝗜𝗡𝗙𝗢* 」───★
+
+╭─❏「 👥 *𝗔𝗥𝗧𝗜 𝗧𝗪𝗜𝗟𝗬* 」❏
+│
+│ *TWILY* adalah singkatan dari
+│ *Two And Family* atau
+│ *Keluarga Kedua*
+│
+│ Kami berusaha menjadi keluarga
+│ untuk kalian, tempat untuk saling
+│ mengenal, berbagi, dan bertumbuh
+│ bersama.
+╰─━━━━━━━━━━━━━━─
+
+╭─❏「 ✦ *𝗧𝗘𝗡𝗧𝗔𝗡𝗚 𝗧𝗪𝗜𝗟𝗬* 」❏
+│• Berdiri sejak 5 November 2021
+│• Founder : *Eza*
+│• Rules : *Baca deskripsi grup*
+│• Tiktok 
+│↳  https://www.tiktok.com/@twily.ofc 
+╰─━━━━━━━━━━━━━━─
+
+
+> Terima kasih sudah menjadi bagian
+> dari keluarga kecil TWILY ♡
+`.trim())
+  }
+
   const anu = `
 ★───「 *𝗪𝗲𝗹𝗰𝗼𝗺𝗲* 」 ───★
 
