@@ -1,15 +1,42 @@
-let handler = async (m) => {
+let handler = async (m, { conn }) => {
+  let groupName = 'grup ini'
 
-let anu =`ㅤ [ *CARD INTRO* ]
-│● *Name               :* 
-│● *Gender             :* 
-│● *Umυr                :* 
-│● *Asαl                  :*
-│● *Anime fav        :* 
-│● *Husbu/waifu   :* 
-♡══════༻❁༺══════♡`
-await m.reply(anu)
+  if (m.isGroup && conn && typeof conn.groupMetadata === 'function') {
+    try {
+      const metadata = await conn.groupMetadata(m.chat)
+      groupName = metadata?.subject || groupName
+    } catch {
+      // fallback ke nama grup default
+    }
+  }
+
+
+let anu = `
+╭─❏「 ✨ INTRO CARD 」❏
+│👋 *HALO SEMUANYA!*
+│
+│Aku member baru di
+│↳ *${groupName}*
+├─━━━━━━━━━━━━━━─
+│👤 *PROFIL*
+│• Nama   : 
+│• Gender : (Cowo/Cewe)
+│• Status : (Single/Taken)
+│• Umur   : -
+│• Asal   : -
+│• Hobi   : -
+├─━━━━━━━━━━━━━━─
+│💬 Salam kenal semuanya!
+│
+│ Gunakan - jika privasi 😊
+╰─━━━━━━━━━━━━━━─
+`
+
+
+  await m.reply(anu.trim())
 }
+
 handler.customPrefix = /^(intro)$/i
-handler.command = new RegExp
+handler.command = /^(intro)$/i
+
 export default handler
