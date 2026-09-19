@@ -12,6 +12,9 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Perintah ini hanya dapat digunakan di dalam grup!\n*╰───────────────*');
   }
 
+  // Helper untuk memberi reaksi emoji status proses ke pesan user
+  const react = (emoji) => conn.sendMessage(m.chat, { react: { text: emoji, key: m.key } }).catch(() => {});
+
   // Inisialisasi penyimpanan status grup di database
   global.db.data = global.db.data || {};
   global.db.data.chats = global.db.data.chats || {};
@@ -56,6 +59,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
         return m.reply('*╭  〔 ◈ ᴘ ᴇ ɴ ᴛ ɪ ɴ ɢ 〕*\n> Tidak ada status grup aktif yang tersimpan untuk dihapus.\n*╰───────────────*');
       }
 
+      await react('⏳');
       let count = 0;
       for (const st of chat.groupStatuses) {
         try {
@@ -74,6 +78,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       }
 
       chat.groupStatuses = [];
+      await react('🗑️');
       return m.reply(`*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus ${count} status grup ✦\n*╰───────────────*`);
     }
 
@@ -81,9 +86,11 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
     if (/^\d+$/.test(rawArg)) {
       const idx = parseInt(rawArg) - 1;
       if (idx < 0 || idx >= chat.groupStatuses.length) {
+        await react('❌');
         return m.reply(`*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Nomor status tidak valid! Silakan cek daftar dengan *${usedPrefix + command} list*.\n*╰───────────────*`);
       }
 
+      await react('⏳');
       const target = chat.groupStatuses[idx];
       try {
         await conn.sendMessage(m.chat, {
@@ -95,8 +102,10 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
           }
         });
         chat.groupStatuses.splice(idx, 1);
+        await react('🗑️');
         return m.reply(`*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status nomor ${idx + 1} (${target.type}) ✦\n*╰───────────────*`);
       } catch (e) {
+        await react('❌');
         return m.reply(`*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal menghapus status: ${e.message}\n*╰───────────────*`);
       }
     }
@@ -121,6 +130,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     if (targetStatusId) {
+      await react('⏳');
       try {
         await conn.sendMessage(m.chat, {
           delete: {
@@ -133,14 +143,17 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
 
         // Hapus dari riwayat jika ada
         chat.groupStatuses = chat.groupStatuses.filter(s => s.id !== targetStatusId);
+        await react('🗑️');
         return m.reply('*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup terpilih ✦\n*╰───────────────*');
       } catch (e) {
+        await react('❌');
         return m.reply(`*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal menghapus status: ${e.message}\n*╰───────────────*`);
       }
     }
 
     // 5. Opsi Default: Hapus Status Grup Terakhir
     if (chat.groupStatuses.length > 0) {
+      await react('⏳');
       const latest = chat.groupStatuses.pop();
       try {
         await conn.sendMessage(m.chat, {
@@ -151,8 +164,10 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
             participant: conn.user?.id ? conn.decodeJid(conn.user.id) : undefined
           }
         });
+        await react('🗑️');
         return m.reply(`*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup terakhir (${latest.type}) ✦\n*╰───────────────*`);
       } catch (e) {
+        await react('❌');
         return m.reply(`*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal menghapus status grup: ${e.message}\n*╰───────────────*`);
       }
     }
@@ -213,6 +228,8 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       sender: m.sender
     });
 
+    await react('✅');
+
     return conn.reply(
       m.chat,
       `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n` +
@@ -226,8 +243,12 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
 
   // 1. MEDIA GAMBAR / FOTO
   if (/image/.test(mime)) {
+    await react('⏳');
     const buffer = await quoted.download().catch(() => null);
-    if (!buffer) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh gambar.\n*╰───────────────*');
+    if (!buffer) {
+      await react('❌');
+      return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh gambar.\n*╰───────────────*');
+    }
 
     const sta = await groupStatus(conn, id, {
       image: buffer,
@@ -238,8 +259,12 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
 
   // 2. MEDIA VIDEO (DENGAN AUTO-SPLIT JIKA > 30 DETIK)
   else if (/video/.test(mime)) {
+    await react('⏳');
     const rawBuffer = await quoted.download().catch(() => null);
-    if (!rawBuffer) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh video.\n*╰───────────────*');
+    if (!rawBuffer) {
+      await react('❌');
+      return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh video.\n*╰───────────────*');
+    }
 
     // Potong video menjadi bagian-bagian 30 detik (maksimal 5 bagian / 2.5 menit)
     const parts = await splitVideoForStatus(rawBuffer, 5);
@@ -273,6 +298,8 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       }
     }
 
+    await react('✅');
+
     if (parts.length > 1) {
       return conn.reply(
         m.chat,
@@ -299,8 +326,12 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
 
   // 3. MEDIA AUDIO / VOICE NOTE (VN)
   else if (/audio/.test(mime)) {
+    await react('⏳');
     const buffer = await quoted.download().catch(() => null);
-    if (!buffer) return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh audio.\n*╰───────────────*');
+    if (!buffer) {
+      await react('❌');
+      return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal mengunduh audio.\n*╰───────────────*');
+    }
 
     const audioVn = await toVN(buffer);
     const audioWaveform = await generateWaveform(buffer);
@@ -316,6 +347,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
 
   // 4. TEKS STATUS (BERWARNA)
   else if (cap || textInput) {
+    await react('⏳');
     const statusText = cap || textInput;
 
     const warnaStatusWA = new Map([
