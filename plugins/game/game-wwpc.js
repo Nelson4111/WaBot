@@ -10,6 +10,8 @@ import {
     getPlayerById2,
     killWerewolf,
     killww,
+    hunterShoot,
+    witchAction,
     dreamySeer,
     sorcerer,
     protectGuardian,
@@ -47,22 +49,26 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 
     if (playerOnGame(sender, ww) === false)
         return m.reply("Kamu tidak dalam sesi game")
-    if (dataPlayer(sender, ww).status === true)
+    const playerData = dataPlayer(sender, ww)
+    const isHunterShot = value === "hunter" && playerData.role === "hunter" && playerData.canShoot === true
+    const isWitchAction = ["poison", "revive"].includes(value) && playerData.role === "sorcerer"
+    if (playerData.status === true && !isHunterShot && !isWitchAction)
         return m.reply("Skill telah digunakan, skill hanya bisa digunakan sekali setiap malam")
-    if (dataPlayer(sender, ww).isdead === true)
+    if (playerData.isdead === true && !isHunterShot)
         return m.reply("Kamu sudah mati")
     if (!target || target.length < 1 || target.split('').length > 2) 
         return m.reply(`Masukan nomor player \nContoh : \n${usedPrefix + command} kill 1`)
     if (isNaN(target)) 
         return m.reply("Gunakan hanya nomor")
     let byId = getPlayerById2(sender, parseInt(target), ww)
-    if (byId.db.isdead === true) 
+    if (!byId) return m.reply("Player tidak terdaftar")
+    if (byId.db.isDummy)
+        return m.reply("Target dummy tidak valid untuk aksi interaksi. Gunakan pemain asli saja.")
+    const isWitchRevive = value === "revive" && playerData.role === "sorcerer"
+    if (byId.db.isdead === true && !isWitchRevive)
         return m.reply("Player sudah mati")
     if (byId.db.id === sender)
         return m.reply("Tidak bisa menggunakan skill untuk diri sendiri")
-    if (byId === false) 
-        return m.reply("Player tidak terdaftar")
-        
     if (value === "kill") {
         if (dataPlayer(sender, ww).role !== "werewolf")
             return m.reply("Peran ini bukan untuk kamu")
@@ -93,11 +99,19 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     } else if (value === "sorcerer") {
         if (dataPlayer(sender, ww).role !== "sorcerer") 
             return m.reply("Peran ini bukan untuk kamu")
-
-        let sorker = sorcerer(sender, parseInt(target), ww)
-        return m.reply(`Berhasil membuka identitas player ${target} adalah ${sorker}`).then(() => {
+        return m.reply(`Gunakan *.wwpc poison nomor* untuk meracuni atau *.wwpc revive nomor* untuk menghidupkan pemain.`)
+    } else if (value === "poison" || value === "revive") {
+        if (playerData.role !== "sorcerer")
+            return m.reply("Peran ini bukan untuk kamu")
+        if (!witchAction(sender, parseInt(target), value, ww))
+            return m.reply("Target tidak valid untuk aksi Penyihir")
+        return m.reply(`Berhasil menggunakan ${value === "poison" ? "racun" : "ramuan hidup"} pada player ${target}`).then(() => {
             dataPlayer(sender, ww).status = true
         })
+    } else if (value === "hunter") {
+        if (!isHunterShot) return m.reply("Kamu tidak bisa menggunakan tembakan Hunter sekarang")
+        if (!hunterShoot(sender, parseInt(target), ww)) return m.reply("Target tembakan tidak valid")
+        return m.reply(`🏹 Tembakan Hunter mengenai player ${target}`)
     }
 }
 
