@@ -133,7 +133,33 @@ const SAFE_WHITELIST = new Set([
 ])
 
 const ANTI_TOXIC_MAX_WARNS = 4
+const ANTI_TOXIC_PAGE_SIZE = 10
 const ANTI_TOXIC_COMMANDS = new Set(['antitoxic', 'antitoksik', 'antikasar'])
+
+function paginateItems(items, page, pageSize = ANTI_TOXIC_PAGE_SIZE) {
+  const safeItems = Array.isArray(items) ? items : []
+  const totalPages = Math.max(1, Math.ceil(safeItems.length / Math.max(1, pageSize)))
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages)
+  const start = (currentPage - 1) * pageSize
+  return {
+    currentPage,
+    totalPages,
+    items: safeItems.slice(start, start + pageSize)
+  }
+}
+
+function pageLinks(currentPage, totalPages) {
+  const pages = []
+  const limit = Math.min(totalPages, 5)
+  for (let i = 1; i <= limit; i++) {
+    pages.push(i === currentPage ? `*${i}*` : String(i))
+  }
+  if (totalPages > limit) {
+    pages.push('…')
+    pages.push(String(totalPages))
+  }
+  return pages.join(' / ')
+}
 
 function isAntiToxicCommandText(text) {
   if (!text || typeof text !== 'string') return false
@@ -245,34 +271,50 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
   }
 
   if (/^(history|kickhistory|log)$/i.test(sub)) {
-    const history = Array.isArray(chat.toxicKickHistory) ? chat.toxicKickHistory.slice(-10).reverse() : []
-    if (!history.length) {
-      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜱᴛᴏʀʏ : *Belum ada user yang di-kick*\n*╰───────────────*`)
+    const action = (args[1] || '').toLowerCase()
+    if (/^(reset|clear|hapus|delete)$/i.test(action)) {
+      chat.toxicKickHistory = []
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜛᴛᴏʀʏ : *Direset*\n*┆* ✧ ᴄᴀᴛᴀᴛᴀɴ : *Semua riwayat kick otomatis telah dibersihkan*\n*╰───────────────*`)
     }
 
-    const lines = history.map((entry, idx) => {
+    const history = Array.isArray(chat.toxicKickHistory) ? [...chat.toxicKickHistory].reverse() : []
+    if (!history.length) {
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜛᴛᴏʀʏ : *Belum ada user yang di-kick*\n*╰───────────────*`)
+    }
+
+    const page = Number(args[1]) || 1
+    const { currentPage, totalPages, items } = paginateItems(history, page)
+    const lines = items.map((entry, idx) => {
       const user = (entry.user || '').replace(/@s\\.whatsapp\\.net$/, '')
       const date = entry.date ? new Date(entry.date).toLocaleString('id-ID', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
       }) : 'N/A'
-      return `${idx + 1}. @${user} • ${date}`
+      return `${(currentPage - 1) * ANTI_TOXIC_PAGE_SIZE + idx + 1}. @${user} • ${date}`
     }).join('\n')
 
-    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜱᴛᴏʀʏ ᴋɪᴄᴋ ᴛᴇʀᴀᴋʜɪʀ\n*┆* ${lines}\n*╰───────────────*`)
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜛᴛᴏʀʏ ᴋɪᴄᴋ • ʜᴀʟ. ${currentPage}/${totalPages}\n*┆* ${lines}\n*┆* ᴩᴀɢᴇ : ${pageLinks(currentPage, totalPages)}\n*╰───────────────*`)
   }
 
   if (/^(warn|warnings?|warnlist|strikes?|warninglist|listwarn)$/i.test(sub)) {
+    const action = (args[1] || '').toLowerCase()
+    if (/^(reset|clear|hapus|delete)$/i.test(action)) {
+      chat.toxicWarn = {}
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡᴀʀɴ : *Direset*\n*┆* ✧ ᴄᴀᴛᴀᴛᴀɴ : *Semua data warn pengguna telah dibersihkan*\n*╰───────────────*`)
+    }
+
     const entries = Object.entries(chat.toxicWarn || {}).filter(([, count]) => Number(count) > 0)
     if (!entries.length) {
       return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡᴀʀɴɪɴɢ : *Belum ada user yang kena warn*\n*┆* ✧ ᴄᴀᴛᴀᴛᴀɴ : *Belum ada pelanggaran toxic tercatat*\n*╰───────────────*`)
     }
 
-    const lines = entries
-      .sort((a, b) => Number(b[1]) - Number(a[1]))
-      .map(([jid, count], idx) => `${idx + 1}. @${(jid || '').split('@')[0]} • ${Number(count)}/${ANTI_TOXIC_MAX_WARNS}`)
+    const sortedEntries = entries.sort((a, b) => Number(b[1]) - Number(a[1]))
+    const page = Number(args[1]) || 1
+    const { currentPage, totalPages, items } = paginateItems(sortedEntries, page)
+    const lines = items
+      .map(([jid, count], idx) => `${(currentPage - 1) * ANTI_TOXIC_PAGE_SIZE + idx + 1}. @${(jid || '').split('@')[0]} • ${Number(count)}/${ANTI_TOXIC_MAX_WARNS}`)
       .join('\n')
 
-    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴅᴀꜰᴛᴀʀ ʏᴀɴɢ ᴋᴇɴᴀ ᴡᴀʀɴ\n*┆* ${lines}\n*╰───────────────*`)
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴅᴀꜛᴛᴀʀ ʏᴀɴɢ ᴋᴇɴᴀ ᴡᴀʀɴ • ʜᴀʟ. ${currentPage}/${totalPages}\n*┆* ${lines}\n*┆* ᴩᴀɢᴇ : ${pageLinks(currentPage, totalPages)}\n*╰───────────────*`)
   }
 
   if (/^(wl|whitelist)$/i.test(sub)) {
