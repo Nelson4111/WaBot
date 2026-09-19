@@ -12,6 +12,7 @@ import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
 import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave } from './lib/securityProtocol.js'
+import { globalMessageQueue, isMessageStale } from './lib/messageQueue.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -159,8 +160,6 @@ function withTimeout(promise, ms, label) {
     ])
 }
 
-const chatQueues = new Map()
-
 export async function handler(chatUpdate) {
     console.log('[EVENT MASUK]', new Date().toISOString(), 
         'jumlah pesan:', chatUpdate?.messages?.length, 
@@ -173,17 +172,14 @@ export async function handler(chatUpdate) {
         const msgId = message.key?.id
         const jid = message.key?.remoteJid
         
-        const prevQueue = chatQueues.get(jid) || Promise.resolve()
-        const nextQueue = prevQueue.then(async () => {
-            await withTimeout(
-                processMessage.call(this, message, chatUpdate),
-                15000,
-                `processMessage untuk pesan id=${msgId} dari=${jid}`
-            ).catch((err) => {
-                console.error('[PROCESS MESSAGE GAGAL/TIMEOUT]', err.message)
-            })
-        }).catch(console.error)
-        chatQueues.set(jid, nextQueue)
+        globalMessageQueue.enqueue(jid, message, async () => {
+            await processMessage.call(this, message, chatUpdate)
+        }, {
+            msgId,
+            timeoutMs: 30000
+        }).catch((err) => {
+            console.error('[MESSAGE QUEUE PROCESS ERROR]', err?.message || err)
+        })
     }
 }
 
@@ -282,14 +278,9 @@ async function processMessage(m, chatUpdate) {
             }, { quoted: m }).catch(err => console.error('[SECURITY REMINDER]', err?.message))
         }
         
-        // --- TIMESTAMP FRESHNESS GUARD (Mencegah Stale Replay Burst pasca reconnect) ---
-        const rawTimestamp = m.messageTimestamp ? (typeof m.messageTimestamp === 'object' ? (m.messageTimestamp.low || m.messageTimestamp) : m.messageTimestamp) : null
-        if (rawTimestamp) {
-            const msgAgeSec = Math.floor((Date.now() - (rawTimestamp * 1000)) / 1000)
-            if (msgAgeSec > 60) {
-                console.log(chalk.yellow(`⏱️ [STALE MSG DROP] Pesan kadaluarsa (${msgAgeSec}s yang lalu), id=${m.key?.id} chat=${m.chat}`))
-                return
-            }
+        // --- SMART STALE GUARD (Mencegah Stale Replay tapi toleran terhadap antrean command) ---
+        if (isMessageStale(m)) {
+            return
         }
         
         m.exp = 0
