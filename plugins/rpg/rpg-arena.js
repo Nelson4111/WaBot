@@ -222,7 +222,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
     cap += `\n\n─━━━━━━━━━━━━━━─`
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { mentions: [challenge.penantang, challenge.target] })
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg', { mentions: [challenge.penantang, challenge.target] })
   }
 
   const target = getTarget(m, conn)

@@ -7,9 +7,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
       return await sendRpgMsg(conn, m, text, petImageUrl, options)
     } catch {
+      options = options || {}
       const mentions = options.mentions || options.contextInfo?.mentionedJid || []
       return conn.sendMessage(m.chat, { text, mentions: mentions.length ? mentions : undefined }, { quoted: m })
     }
+  }
+
+  const normalizeJid = (jid) => {
+    if (!jid) return ''
+    const decoded = typeof conn.decodeJid === 'function' ? conn.decodeJid(jid) : jid
+    if (decoded?.endsWith('@lid')) return global.lids?.[decoded] || global.db?.data?.lids?.[decoded] || decoded
+    return decoded
   }
 
   const wdb = loadDB()
@@ -70,6 +78,11 @@ user.pets = user.pets.filter(p => {
       return user.pets[index] ? [{ pet: user.pets[index], index }] : []
     }
     return target ? user.pets.map((pet, index) => ({ pet, index })).filter(({ pet }) => pet.tipe === target.replace(/ /g, '_').toLowerCase()) : []
+  }
+  const normalizePetInput = (value) => String(value || '').trim().toLowerCase().replace(/_/g, ' ')
+  const resolvePetType = (value) => {
+    const input = normalizePetInput(value)
+    return Object.keys(pets).find(type => normalizePetInput(type) === input || (aliases[type] || []).some(alias => normalizePetInput(alias) === input))
   }
   const getPending = () => user.pendingPetAction && user.pendingPetAction.expires > Date.now() ? user.pendingPetAction : null
 
@@ -2450,40 +2463,83 @@ if (action === 'kill') {
 
 // === TRANSFER ===
 if (action === 'transfer') {
-  let target = m.mentionedJid[0]
-  let petName = args[2]
+  const transferStore = wdb.temp.petTransfers || (wdb.temp.petTransfers = {})
+  const currentSender = normalizeJid(m.sender)
+  const now = Date.now()
+  for (const [recipient, transfer] of Object.entries(transferStore)) {
+    if (!transfer?.expires || transfer.expires <= now) delete transferStore[recipient]
+  }
+  const decision = args[1]?.toLowerCase()
 
-  if(!target ||!petName) return safeReply(
+  if (decision === 'terima' || decision === 'tolak') {
+    const pendingTransfer = transferStore[currentSender]
+    if (!pendingTransfer) {
+      saveDB(wdb)
+      return safeReply('❌ Tidak ada transfer pet yang menunggu konfirmasi atau waktunya sudah habis.')
+    }
+
+    delete transferStore[currentSender]
+    if (decision === 'tolak') {
+      saveDB(wdb)
+      return safeReply(`❌ Transfer ${formatNama(pendingTransfer.pet)} ditolak.`)
+    }
+
+    const senderData = getUserRPG(wdb, pendingTransfer.from)
+    const senderPets = senderData?.rpg?.pets || []
+    const transferredIndex = senderPets.findIndex(pet => JSON.stringify(pet) === JSON.stringify(pendingTransfer.pet))
+    if (senderData?.isDummy || transferredIndex < 0) {
+      saveDB(wdb)
+      return safeReply('❌ Transfer gagal karena pet sudah tidak dimiliki pengirim atau datanya berubah.')
+    }
+
+    user.pets.push(senderPets.splice(transferredIndex, 1)[0])
+    saveDB(wdb)
+    return safeReply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `│ ✅ *TRANSFER DITERIMA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${pets[pendingTransfer.pet.tipe]?.emoji || '🐾'} *${formatNama(pendingTransfer.pet)}*\n` +
+      `> ↳ Pet berhasil masuk ke koleksimu.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const target = normalizeJid(m.mentionedJid?.[0] || m.quoted?.sender)
+  const petInput = args.slice(2).join(' ')
+  const petIndex = /^\d+$/.test(petInput)
+    ? Number(petInput) - 1
+    : (() => {
+        const petType = resolvePetType(petInput)
+        return petType ? user.pets.findIndex(pet => pet.tipe === petType) : -1
+      })()
+
+  if (!target || !petInput) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ❌ *FORMAT SALAH*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Contoh: .pet transfer @tag kucing\n\n` +
+    `> ↳ Contoh: .pet transfer @tag 1\n` +
+    `> ↳ Bisa juga reply pesan user.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 
-  let idx = user.pets.findIndex(p => p.tipe === petName.replace(/ /g,'_'))
+  if (target === currentSender) return safeReply('❌ Kamu tidak bisa mentransfer pet ke diri sendiri.')
+  if (petIndex < 0) return safeReply('❌ Pet tidak ditemukan. Gunakan nomor dari daftar pet atau nama/alias pet yang kamu miliki.')
 
-  if(idx === -1) return safeReply(
-    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
-    `│ ❌ *KAMU TIDAK PUNYA PET ITU*\n` +
-    `╰─━━━━━━━━━━━━━━─`
-  )
+  const targetData = getUserRPG(wdb, target)
+  if (targetData?.isDummy || !targetData?.rpg) return safeReply('❌ Penerima belum terdaftar di RPG.')
+  if (transferStore[target]) return safeReply('❌ Penerima masih memiliki transfer pet yang belum diputuskan. Tunggu 1 menit sampai request lama batal, atau minta penerima mengetik terima/tolak.')
 
-  let dataTarget = getUserRPG(wdb, target)
-  if(!dataTarget.rpg.pets) dataTarget.rpg.pets = []
-
-  wdb.users[target].rpg.pets.push(user.pets[idx])
-  user.pets.splice(idx, 1)
+  const pet = user.pets[petIndex]
+  transferStore[target] = {
+    from: currentSender,
+    pet: JSON.parse(JSON.stringify(pet)),
+    expires: Date.now() + 60000
+  }
   saveDB(wdb)
 
   return safeReply(
-    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
-    `│ 📨 *TRANSFER PET*\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${pets[petName.replace(/ /g,'_')].emoji} *${formatNamaAsli(petName)}*\n` +
-    `> ↳ Dikirim ke: @${target.split('@')[0]}\n\n` +
-    `─━━━━━━━━━━━━━━─`,
-    null,
+    `✅ Permintaan transfer ${formatNama(pet)} telah dikirim ke @${target.split('@')[0]}.\n` +
+    `Pet baru berpindah setelah penerima mengetik *.pet transfer terima*.`,
     { mentions: [target] }
   )
 }

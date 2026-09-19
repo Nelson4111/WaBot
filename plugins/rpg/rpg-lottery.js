@@ -6,7 +6,14 @@ const LOTTERY_PRIZE = 500000
 const LOTTERY_IMAGE = 'https://c.termai.cc/i180/qPrLP.jpg'
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10)
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date())
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  return `${values.year}-${values.month}-${values.day}`
 }
 
 function money(value) {
@@ -38,11 +45,15 @@ function ensureLotteryState(wdb) {
     pool: {},
     pendingWinner: null,
     pendingWinnerDate: '',
-    pendingPrize: LOTTERY_PRIZE,
+    jackpot: LOTTERY_PRIZE,
+    basePrize: LOTTERY_PRIZE,
+    pendingPrize: 0,
     claimed: false
   }
 
-  wdb.lottery.pendingPrize = Number(wdb.lottery.pendingPrize || LOTTERY_PRIZE)
+  wdb.lottery.basePrize = Number(wdb.lottery.basePrize || LOTTERY_PRIZE)
+  wdb.lottery.jackpot = Number(wdb.lottery.jackpot || wdb.lottery.pendingPrize || wdb.lottery.basePrize)
+  wdb.lottery.pendingPrize = Number(wdb.lottery.pendingPrize || 0)
 
   if (!wdb.lottery.dailyDate) {
     wdb.lottery.dailyDate = todayKey()
@@ -56,20 +67,21 @@ function ensureLotteryState(wdb) {
     const eligiblePlayers = Object.entries(previousPool)
       .filter(([, count]) => Number(count) >= MIN_TICKETS_TO_WIN)
 
-    const currentPrize = Number(wdb.lottery.pendingPrize || LOTTERY_PRIZE)
+    const currentPrize = Number(wdb.lottery.jackpot || wdb.lottery.basePrize)
 
     if (eligiblePlayers.length) {
       wdb.lottery.pendingWinner = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)][0]
       wdb.lottery.pendingWinnerDate = previousDate
-      wdb.lottery.pendingPrize = LOTTERY_PRIZE
+      wdb.lottery.pendingPrize = currentPrize
       wdb.lottery.claimed = false
     } else {
       wdb.lottery.pendingWinner = null
       wdb.lottery.pendingWinnerDate = previousDate
-      wdb.lottery.pendingPrize = currentPrize * 2
+      wdb.lottery.pendingPrize = 0
       wdb.lottery.claimed = false
     }
 
+    wdb.lottery.jackpot = currentPrize + wdb.lottery.basePrize
     wdb.lottery.dailyDate = todayKey()
     wdb.lottery.pool = {}
   }
@@ -99,7 +111,7 @@ function buildMenu(wdb, sender, usedPrefix) {
   const totalAttempts = Number(user.rpg.lottery.totalAttempts || 0)
   const totalPurchased = Number(user.rpg.lottery.totalTickets || 0)
   const totalPool = Object.values(state.pool || {}).reduce((sum, value) => sum + Number(value || 0), 0)
-  const currentPrize = Number(state.pendingPrize || LOTTERY_PRIZE)
+  const currentPrize = Number(state.jackpot || state.basePrize || LOTTERY_PRIZE)
 
   let chance = 0
   if (totalPool > 0 && currentTickets >= MIN_TICKETS_TO_WIN) {
@@ -233,7 +245,7 @@ if (saldo < totalHarga) {
 
     state.pendingWinner = null
     state.pendingWinnerDate = ''
-    state.pendingPrize = LOTTERY_PRIZE
+    state.pendingPrize = 0
     state.claimed = true
 
     saveDB(wdb)

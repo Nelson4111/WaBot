@@ -15,10 +15,13 @@ let handler = async (m, { conn, args }) => {
         let jid = premiumUsers[i]
         let name = users[jid].name || "User"
         let remain = users[jid].premiumTime - new Date().getTime()
+        let duration = users[jid].premiumTime >= 9999999999999
+            ? 'Permanen'
+            : remain > 0 ? clockString(remain) : 'Expired'
         
         txt += `┌ *${i + 1}. ${name}*\n`
         txt += `┊ ID: @${jid.split('@')[0]}\n`
-        txt += `┊ Sisa: ${remain > 0 ? clockString(remain) : 'Expired'}\n`
+        txt += `┊ Sisa: ${duration}\n`
         txt += `└───────────────\n\n`
     }
 

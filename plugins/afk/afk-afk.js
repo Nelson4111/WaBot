@@ -7,12 +7,19 @@ const toSmallNum = (str) => {
 
 let handler = async (m, { conn, text }) => {
     let user = global.db.data.users[m.sender] || {};
+
+    if (user.afk > -1) {
+        return m.reply('> Kamu masih sedang AFK. Kirim pesan lain terlebih dahulu untuk menonaktifkan status AFK.');
+    }
     
-    // Cooldown setelah selesai AFK (60 detik)
-    const cooldown = 60000;
+    // Cooldown setelah selesai AFK (5 menit)
+    const cooldown = 5 * 60 * 1000;
     if (user.lastAfk && (Date.now() - user.lastAfk < cooldown)) {
-        let sisa = Math.ceil((cooldown - (Date.now() - user.lastAfk)) / 1000);
-        let warnMsg = `*╭  〔 ⧗ ᴍ ᴏ ʜ ᴏ ɴ  ᴛ ᴜ ɴ ɢ ɢ ᴜ 〕*\n> Kamu baru saja selesai AFK.\n> Tunggu *${toSmallNum(sisa)} detik* lagi sebelum mengaktifkan AFK kembali.\n*╰───────────────*`;
+        let sisa = cooldown - (Date.now() - user.lastAfk);
+        let menit = Math.floor((sisa % (60 * 60 * 1000)) / (60 * 1000));
+        let detik = Math.ceil((sisa % (60 * 1000)) / 1000);
+        let durasi = `${menit} menit ${detik} detik`;
+        let warnMsg = `*╭  〔 ⧗ ᴍ ᴏ ʜ ᴏ ɴ  ᴛ ᴜ ɴ ɢ ɢ ᴜ 〕*\n> Kamu baru saja selesai AFK.\n> Tunggu *${toSmallNum(durasi)}* lagi sebelum mengaktifkan AFK kembali.\n*╰───────────────*`;
         return m.reply(warnMsg);
     }
 

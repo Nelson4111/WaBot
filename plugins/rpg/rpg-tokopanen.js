@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { bibit } from './rpg-tanam.js'
 
 function formatNama(nama) {
   if (!nama || typeof nama !== 'string') return ''
@@ -12,11 +13,33 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if(!user.inventory) user.inventory = {}
 
-  const isPrem = global.db.data.users[m.sender]?.premium
-  const sellBonus = isPrem? 1.1 : 1
+  const isPrem = global.db.data.users[m.sender]?.premium === true
+  const sellBonus = isPrem ? 1.1 : 1
 
-  // HARGA BUFF HASIL PANEN
-  const harga = {
+  let legacyMigrated = false
+  for (const key of ['uang', 'money']) {
+    const amount = Number(user.inventory[key]) || 0
+    if (amount > 0) {
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      delete user.inventory[key]
+      legacyMigrated = true
+    }
+  }
+  const legacyExp = Number(user.inventory.exp) || 0
+  if (legacyExp > 0) {
+    user.exp = (Number(user.exp) || 0) + legacyExp
+    delete user.inventory.exp
+    user.level = Number(user.level) || 1
+    while (user.exp >= user.level * 500) {
+      user.exp -= user.level * 500
+      user.level++
+    }
+    legacyMigrated = true
+  }
+  if (legacyMigrated) await saveDB(wdb)
+
+  // Harga panen mengikuti harga dasar bibit di rpg-tanam.js.
+  const hargaLegacy = {
     'kacang': { emoji: '🥜', harga: 6500 },
     'bawang_putih': { emoji: '🧄', harga: 7500 },
     'padi': { emoji: '🌾', harga: 7500 },
@@ -61,6 +84,13 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     'berlian': { emoji: '💠', harga: 350000 } // DARI PERKEBUNAN
   }
 
+  const harga = Object.fromEntries(Object.entries(bibit).filter(([item]) => !['uang', 'exp'].includes(item)).map(([item, info]) => [item, {
+    emoji: info.emoji,
+    harga: info.harga
+  }]))
+
+  void hargaLegacy
+
   const keys = Object.keys(harga).sort((a,b) => harga[a].harga - harga[b].harga)
   const nomorKeItem = {}
   keys.forEach((k, i) => nomorKeItem[i+1] = k)
@@ -74,7 +104,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!text) {
     let cap = `╭─❏「 🏪 KOPERASI AVELIA 」❏\n`
     cap += `│ 💰 Uang: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-    cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n`
+    cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User Normal'}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
     cap += `📌 *MENU JUAL*\n`
@@ -110,6 +140,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
 
   args = args.slice(1)
+
+  if (['uang', 'money', 'exp'].includes(args[0])) {
+    return m.reply(
+      `ℹ️ *HASIL PANEN OTOMATIS*\n\n` +
+      (args[0] === 'exp'
+        ? `EXP hasil panen langsung masuk ke EXP RPG dan tidak bisa dijual.`
+        : `Uang hasil panen langsung masuk ke uang saku dan tidak bisa dijual.`)
+    )
+  }
 
   // JUAL ALL
   if(args[0] === 'all' && args.length === 1){

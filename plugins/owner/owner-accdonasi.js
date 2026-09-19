@@ -35,6 +35,9 @@ export async function before(m, { conn, isROwner }) {
     if (text === '1') {
         // Terima & Verifikasi
         users[targetJid].totalDonasi = (users[targetJid].totalDonasi || 0) + nominal
+        users[targetJid].premium = true
+        users[targetJid].premiumTime = 9999999999999
+        users[targetJid].role = 'Premium user'
         if (alias) {
             users[targetJid].namaDonasi = alias
         }
@@ -46,7 +49,7 @@ export async function before(m, { conn, isROwner }) {
         m.reply(`✅ *BERHASIL!* Donasi sebesar Rp ${nominal.toLocaleString('id-ID')} dari @${targetNumber} telah diverifikasi dan masuk database.`, null, { mentions: [targetJid] })
 
         // Kirim japri ke user
-        let userTeks = `🎊 *YEAY! DONASI DITERIMA!* 🎊\n\nTerima kasih banyak atas donasi sebesar *Rp ${nominal.toLocaleString('id-ID')}*!\nDonasimu sangat berarti bagi kami dan kamu telah otomatis masuk ke papan peringkat Top Donatur. 💖`
+        let userTeks = `🎊 *YEAY! DONASI DITERIMA!* 🎊\n\nTerima kasih banyak atas donasi sebesar *Rp ${nominal.toLocaleString('id-ID')}*!\n\nDonasimu sangat berarti bagi kami dan kamu telah mendapatkan *Premium Permanen* untuk saat ini serta otomatis masuk ke papan peringkat Top Donatur apabila nominal donasi mencapai batas minimum. 💖`
         await conn.sendMessage(targetJid, { text: userTeks })
     } else if (text === '2') {
         // Tolak

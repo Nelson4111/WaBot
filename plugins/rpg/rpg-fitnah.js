@@ -186,6 +186,8 @@ Fitnah orang biar masuk penjara.
     let sender = resolveJid(m.sender)
 
     if (who === sender) return m.reply('❌ Kamu tidak bisa memfitnah diri sendiri.')
+    const targetRPG = getUserRPG(who)
+    if (targetRPG && Number(targetRPG.darah) <= 0) return m.reply(`💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`)
     if (cekPenjara(wdb, who)) return m.reply(`❌ @${who.split('@')[0]} sudah di penjara.`, { mentions: [who] })
 
     /* =====================================================
@@ -301,7 +303,6 @@ ${dendaText}
        BERHASIL
     ===================================================== */
 
-    let targetRPG = getUserRPG(who)
     if (!targetRPG) return m.reply('❌ Data RPG target tidak tersedia.')
 
     wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)

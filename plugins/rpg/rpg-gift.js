@@ -2,7 +2,8 @@ import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let args = text.split(' ')
+  if (!wdb.money) wdb.money = {}
+  let args = (text || '').trim().split(/\s+/).filter(Boolean)
   let who, type, count
 
   const items = ['money', 'diamond', 'gold', 'iron', 'stone', 'wood']
@@ -11,8 +12,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!wdb.users[m.sender]?.rpg) return m.reply('Kamu belum punya data RPG.')
 
   // DAPATKAN TARGET
-  if (m.mentionedJid[0]) {
-    who = m.mentionedJid[0]
+  const mentionedJid = m.mentionedJid || []
+  if (mentionedJid[0]) {
+    who = mentionedJid[0]
     type = (args[1] || '').toLowerCase()
     count = parseInt(args[2])
   } else if (m.quoted) {

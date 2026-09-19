@@ -203,7 +203,7 @@ async function sendVoiceAudioFromKeyword(m, conn, keyword) {
   return false
 }
 
-const handler = async (m, { conn, text = '', usedPrefix = '.', command = 'voice', isOwner = false }) => {
+const handler = async (m, { conn, text = '', usedPrefix = '.', command = 'voice', isAdmin = false, isOwner = false }) => {
   const rawArgs = (text || '').trim().split(/\s+/).filter(Boolean)
   const sub = rawArgs[0]?.toLowerCase()
   const remaining = rawArgs.slice(1)
@@ -250,7 +250,7 @@ if (!sub) {
 
   if (sub === 'toxic') {
     if (!m.isGroup) return m.reply('❌ Fitur ini hanya untuk grup.')
-    if (!m.isAdmin && !m.isOwner && !isOwner) return m.reply('❌ Khusus admin grup.')
+    if (!isAdmin && !m.isAdmin && !isOwner) return m.reply('❌ Khusus admin grup.')
 
     const action = remaining[0]?.toLowerCase()
     if (action !== 'disable' && action !== 'enable') {
@@ -268,7 +268,7 @@ if (!sub) {
 
   if (sub === 'disable' || sub === 'enable') {
     if (!m.isGroup) return m.reply('❌ Fitur ini hanya untuk grup.')
-    if (!m.isAdmin && !m.isOwner && !isOwner) return m.reply('❌ Khusus admin grup.')
+    if (!isAdmin && !m.isAdmin && !isOwner) return m.reply('❌ Khusus admin grup.')
 
     const store = getVoiceStore()
     store.groups[m.chat] = store.groups[m.chat] || {}

@@ -1,8 +1,21 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-libternakData.js'
 import { BANK_TIERS } from './rpg-bank.js'
+import { bibit } from './rpg-panen.js'
+import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 import fs from 'fs'
+
+function getJakartaDate(timestamp) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date(timestamp))
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -42,6 +55,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel toprpg*\n` +
   `> ↳ *${usedPrefix}rpgpanel rpgstat*\n` +
   `> ↳ *${usedPrefix}rpgpanel topyt*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel setlottery <hadiah>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -58,7 +72,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel set/add/del cont @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set maxhp @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set sword/armor/pickaxe/fishingrod @tag <lvl>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel inv @tag*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel inv @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel gudang @tag*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -82,6 +97,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel kawinforce @tag <h1> <h2>*\n` +
   `> ↳ *${usedPrefix}rpgpanel icuforce @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n` +
   `> ↳ *${usedPrefix}kawin <h1> <h2> [asuransi]*\n` +
   `> ↳ *${usedPrefix}kawin proses / batal / guide*\n` +
   `> ↳ *${usedPrefix}ternak / ${usedPrefix}kandang*\n` +
@@ -107,6 +125,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `─━━━━━━━━━━━━━━─\n\n` +
 
   `💕 *RSHIP*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del jadian @tag/reply <pasangan/all> <tanggal/durasi/poin/tingkat/cincin> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addharem @tag <nama> <cowok/cewek>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delharem @tag <no>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <level/love/exp/nikah> <val>*\n` +
@@ -134,8 +153,12 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n\n` +
 
   `─━━━━━━━━━━━━━━─`
 )
@@ -170,19 +193,16 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     let users = Object.entries(wdb.users).filter(([_,d]) => d.rpg)
     let totalUsers = users.length
     let totalMoney = Object.values(wdb.money || {}).reduce((a,b) => a+b, 0)
-    let totalIron = 0, totalGold = 0, totalLevel = 0
-    let highestLevel = 0, topPlayer = 'Tidak ada'
-    users.forEach(([jid, data]) => {
-      totalIron += (data.rpg.iron || 0)
-      totalGold += (data.rpg.gold || 0)
-      totalLevel += (data.rpg.level || 1)
-      if (data.rpg.level > highestLevel) {
-        highestLevel = data.rpg.level
-        topPlayer = conn.getName(jid) || jid.split('@')[0]
-      }
+    let totalDiamond = 0, totalIron = 0, totalGold = 0
+    users.forEach(([, data]) => {
+      const rpg = data.rpg
+      totalDiamond += (rpg.diamond || 0) + (rpg.inventory?.diamond || 0) + (rpg.ores?.diamond || 0)
+      totalIron += (rpg.iron || 0) + (rpg.inventory?.iron || 0) + (rpg.ores?.iron || 0)
+      totalGold += (rpg.gold || 0) + (rpg.inventory?.gold || 0) + (rpg.ores?.gold || 0)
     })
-    let avgLevel = totalUsers > 0? (totalLevel / totalUsers).toFixed(1) : 0
-    let cap = `*───「 RPG GLOBAL STATS 」───*\n\n📊 *Populasi:* ${totalUsers} User\n💰 *Total Uang:* Rp ${totalMoney.toLocaleString()}\n⛓️ *Total Iron:* ${totalIron.toLocaleString()}\n✨ *Total Gold:* ${totalGold.toLocaleString()}\n🏆 *Lv Tertinggi:* ${topPlayer} Lv.${highestLevel}\n📚 *Rata2:* Lv.${avgLevel}`
+    const chats = global.db?.data?.chats || {}
+    const totalGroups = Object.keys(chats).filter(id => id.endsWith('@g.us')).length
+    let cap = `*───「 RPG GLOBAL STATS 」───*\n\n👥 *Groupchat:* ${totalGroups.toLocaleString()}\n👤 *Pemain:* ${totalUsers.toLocaleString()}\n💰 *Uang:* Rp ${totalMoney.toLocaleString()}\n💎 *Diamond:* ${totalDiamond.toLocaleString()}\n⛓️ *Iron:* ${totalIron.toLocaleString()}\n✨ *Gold:* ${totalGold.toLocaleString()}`
     return conn.sendMessage(m.chat, { 
       image: { url: 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg' }, 
       caption: cap 
@@ -204,7 +224,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   const statAliases = [
     'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood', 'cont',
     'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
-    'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item'
+    'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item', 'jadian'
   ];
 
   if (['set', 'add', 'del', 'tambah', 'kurang', 'reset'].includes(aksi) && remaining.length > 0) {
@@ -216,6 +236,36 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     }
   }
 
+  if (aksi === 'clearmoneykey') {
+    const rawKey = remaining.join(' ').trim()
+    if (!rawKey) return m.reply(`❌ Masukkan key money. Contoh: ${usedPrefix}rpgpanel clearmoneykey +500000`)
+    const candidates = new Set([rawKey])
+    if (!rawKey.includes('@')) candidates.add(`${rawKey}@s.whatsapp.net`)
+    let removed = 0
+    for (const key of candidates) {
+      const record = global.db?.data?.users?.[key]
+      if (record) removed += Number(record.money) || 0
+      if (global.db?.data?.users) delete global.db.data.users[key]
+    }
+    await saveDB(wdb)
+    return m.reply(removed > 0
+      ? `✅ Data money malformed *${rawKey}* dihapus.\n💰 Saldo yang dibersihkan: Rp ${removed.toLocaleString()}`
+      : `ℹ️ Key *${rawKey}* tidak ditemukan di database.`)
+  }
+
+
+  if (aksi === 'setlottery' || aksi === 'lotteryset') {
+    const prize = Number(remaining[0])
+    if (!Number.isSafeInteger(prize) || prize <= 0) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setlottery <jumlah hadiah>*\nContoh: *${usedPrefix}rpgpanel setlottery 500000*`)
+    }
+    wdb.lottery = wdb.lottery || {}
+    wdb.lottery.basePrize = prize
+    wdb.lottery.pendingPrize = prize
+    wdb.lottery.jackpot = prize
+    saveDB(wdb)
+    return m.reply(`✅ Hadiah dasar lottery diatur menjadi *Rp ${prize.toLocaleString()}*.`)
+  }
   // 3. Resolusi Target User (Mendukung: Tag / Mention, Reply / Quoted, Nomor HP, JID, LID)
   let who = null;
   let targetArgIndex = -1;
@@ -302,7 +352,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   if (!wdb.users[who].rpg) wdb.users[who].rpg = {}
   if (wdb.money[who] === undefined) wdb.money[who] = 0
 
-  let user = wdb.users[who].rpg
+  const account = wdb.users[who]
+  let user = account.rpg
+  account.inventory = account.inventory || {}
   user.inventory = user.inventory || {}
   user.ikan = user.ikan || {}
   user.ores = user.ores || {}
@@ -331,6 +383,111 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   user.sword = user.sword || 0
   user.pickaxe = user.pickaxe || 0
   user.fishingrod = user.fishingrod || 0
+
+  // ========== ADMIN EDIT DATA JADIAN ==========
+  if (['setjadian', 'addjadian', 'deljadian'].includes(aksi)) {
+    const mode = aksi.replace('jadian', '')
+    const pasanganList = Array.isArray(account.pasangan) ? account.pasangan : []
+    if (!pasanganList.length) return m.reply(`❌ @${who.split('@')[0]} belum memiliki pasangan.`, null, { mentions: [who] })
+
+    const pairSelector = String(remaining[0] || '').toLowerCase()
+    const field = String(remaining[1] || '').toLowerCase()
+    const value = remaining.slice(2).join(' ').trim()
+    const validFields = ['tanggal', 'date', 'durasi', 'duration', 'poin', 'point', 'tingkat', 'level', 'cincin', 'ring']
+    if (!['all', 'semua'].includes(pairSelector) && (!/^\d+$/.test(pairSelector) || Number(pairSelector) < 1)) {
+      return m.reply(`❌ Pilih pasangan dengan nomor atau all. Contoh: *${usedPrefix}rpgpanel setjadian @tag 1 poin 100*`)
+    }
+    if (!validFields.includes(field)) {
+      return m.reply(`❌ Field tidak valid. Pilih: tanggal, durasi, poin, tingkat, atau cincin.`)
+    }
+    if (!value) return m.reply(`❌ Nilai wajib diisi.`)
+
+    const selected = ['all', 'semua'].includes(pairSelector)
+      ? pasanganList
+      : [pasanganList[Number(pairSelector) - 1]].filter(Boolean)
+    if (!selected.length) return m.reply(`❌ Nomor pasangan tidak tersedia. Total pasangan: ${pasanganList.length}`)
+
+    const parseDate = input => {
+      if (/^\d{10,13}$/.test(input)) {
+        const number = Number(input)
+        return input.length === 10 ? number * 1000 : number
+      }
+      const parsed = Date.parse(input)
+      return Number.isFinite(parsed) ? parsed : NaN
+    }
+    const parseDuration = input => {
+      const match = String(input).toLowerCase().match(/^(\d+(?:\.\d+)?)\s*(detik|second|s|menit|minute|m|jam|hour|h|hari|day|d|minggu|week|w)$/)
+      if (!match) return NaN
+      const units = { detik: 1000, second: 1000, s: 1000, menit: 60000, minute: 60000, m: 60000, jam: 3600000, hour: 3600000, h: 3600000, hari: 86400000, day: 86400000, d: 86400000, minggu: 604800000, week: 604800000, w: 604800000 }
+      return Number(match[1]) * units[match[2]]
+    }
+    const rankThresholds = [0, 50, 75, 100, 150, 200, 350, 500, 750, 1000]
+
+    for (const pasangan of selected) {
+      pasangan.nikahTime = Number(pasangan.nikahTime) || Date.now()
+      pasangan.poinBucin = Number(pasangan.poinBucin) || 0
+      if (['tanggal', 'date'].includes(field)) {
+        const date = parseDate(value)
+        if (!Number.isFinite(date)) return m.reply('❌ Format tanggal tidak valid. Gunakan YYYY-MM-DD atau timestamp.')
+        pasangan.nikahTime = mode === 'set' ? date : mode === 'add' ? pasangan.nikahTime + date : pasangan.nikahTime - date
+      } else if (['durasi', 'duration'].includes(field)) {
+        const duration = parseDuration(value)
+        if (!Number.isFinite(duration) || duration < 0) return m.reply('❌ Durasi tidak valid. Contoh: 30d, 12h, 45m.')
+        pasangan.nikahTime = mode === 'set' ? Date.now() - duration : mode === 'add' ? pasangan.nikahTime - duration : pasangan.nikahTime + duration
+      } else if (['poin', 'point'].includes(field)) {
+        const points = Number(value)
+        if (!Number.isFinite(points) || points < 0 || (mode !== 'set' && !Number.isInteger(points))) return m.reply('❌ Poin harus berupa angka yang valid.')
+        pasangan.poinBucin = mode === 'set' ? points : mode === 'add' ? pasangan.poinBucin + points : Math.max(0, pasangan.poinBucin - points)
+      } else if (['tingkat', 'level'].includes(field)) {
+        const level = Number(value)
+        if (!Number.isInteger(level) || level < 1 || level > rankThresholds.length) return m.reply(`❌ Tingkat harus 1-${rankThresholds.length}.`)
+        const currentLevel = rankThresholds.filter(threshold => pasangan.poinBucin >= threshold).length
+        const nextLevel = mode === 'set' ? level : mode === 'add' ? currentLevel + level : currentLevel - level
+        const boundedLevel = Math.max(1, Math.min(rankThresholds.length, nextLevel))
+        pasangan.poinBucin = rankThresholds[boundedLevel - 1]
+      } else {
+        const ringKey = value.toLowerCase().replace(/\s+/g, '')
+        const ring = CINCIN_SHOP[ringKey]?.name || normalizeRingName(value)
+        const validRing = Object.values(CINCIN_SHOP).some(item => item.name.toLowerCase() === ring.toLowerCase())
+        if (!validRing) return m.reply(`❌ Cincin tidak dikenal. Gunakan nama dari katalog cincin.`)
+        if (mode !== 'set') return m.reply('❌ Cincin hanya bisa memakai aksi set.')
+        pasangan.cincin = ring
+      }
+
+      const partner = wdb.users[pasangan.jid]
+      const partnerPair = partner?.pasangan?.find(item => item.jid === who)
+      if (partnerPair) {
+        partnerPair.nikahTime = pasangan.nikahTime
+        partnerPair.poinBucin = pasangan.poinBucin
+        partnerPair.cincin = pasangan.cincin
+      }
+    }
+
+    saveDB(wdb)
+    return m.reply(`✅ Data jadian @${who.split('@')[0]} berhasil diubah.\nPasangan: ${pairSelector}\nField: ${field}\nAksi: ${mode}`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'skippanen') {
+    user.ladang = user.ladang || {}
+    let skipped = 0
+    for (const ladang of Object.values(user.ladang)) {
+      const dataBibit = bibit[ladang?.jenis]
+      if (!dataBibit) continue
+      ladang.waktuTanam = Date.now() - dataBibit.waktu
+      skipped++
+    }
+    saveDB(wdb)
+    return m.reply(`✅ Waktu panen @${who.split('@')[0]} berhasil dilewati.\n🌱 Slot siap dipanen: ${skipped}`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'skipmasak') {
+    user.dapur = user.dapur || { slot: 1, antrian: [] }
+    user.dapur.antrian = user.dapur.antrian || []
+    const skipped = user.dapur.antrian.length
+    user.dapur.antrian.forEach(item => { item.selesai = Date.now() })
+    saveDB(wdb)
+    return m.reply(`✅ Waktu masak @${who.split('@')[0]} berhasil dilewati.\n🍳 Masakan siap diambil: ${skipped}`, null, { mentions: [who] })
+  }
 
   if (aksi === 'blockcasino') {
     user.casinoBlocked = true
@@ -608,14 +765,30 @@ if(aksi === 'delmasak'){
   
 if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   // 5. INVENTORY CEK
-  if(aksi === 'inv'){
+  if(aksi === 'inv' || aksi === 'gudang'){
     let threshold = user.level * 500
     let cap = `*───「 INVENTORY @${who.split('@')[0]} 」───*\n\n`
     cap += `🆙 *Level:* ${user.level} (${user.exp}/${threshold} XP)\n`
     cap += `❤️ *Darah:* ${user.darah}/${user.maxDarah}\n`
-    cap += `💰 *Saldo:* Rp ${wdb.money[who].toLocaleString()}\n\n`
+    cap += `💰 *Uang Saku:* Rp ${(Number(wdb.money[who]) || 0).toLocaleString()}\n`
+    cap += `🏦 *Saldo Bank:* Rp ${(Number(user.bank) || 0).toLocaleString()}\n\n`
     cap += `*EQUIPMENT*\n🗡️ Sword: Lv.${user.sword}\n🛡️ Armor: Lv.${user.armor}\n⛏️ Pickaxe: Lv.${user.pickaxe}\n🎣 Fishingrod: Lv.${user.fishingrod}\n\n`
-    cap += `*STORAGE*\n💎 Diamond: ${user.diamond}\n⛓️ Iron: ${user.iron}\n✨ Gold: ${user.gold}\n🪵 Wood: ${user.wood}\n🪨 Stone: ${user.stone}`
+    cap += `*STORAGE RPG*\n💎 Diamond: ${Number(user.diamond) || 0}\n⛓️ Iron: ${Number(user.iron) || 0}\n✨ Gold: ${Number(user.gold) || 0}\n🪵 Wood: ${Number(user.wood) || 0}\n🪨 Stone: ${Number(user.stone) || 0}\n\n`
+
+    const gudang = [
+      ['HASIL PANEN', user.inventory],
+      ['IKAN', user.ikan],
+      ['MATERIAL TAMBAHAN', user.ores],
+      ['ITEM', user.items],
+      ['MASAKAN', user.masakan]
+    ]
+    for (const [label, storage] of gudang) {
+      const entries = Object.entries(storage || {}).filter(([, jumlah]) => Number(jumlah) > 0)
+      if (!entries.length) continue
+      cap += `*${label}*\n`
+      cap += entries.map(([nama, jumlah]) => `• ${formatNama(nama)} x${Number(jumlah).toLocaleString()}`).join('\n') + '\n\n'
+    }
+    cap += `📦 *Catatan:* Data gudang tersimpan di database RPG.`
     return conn.reply(m.chat, cap, m, {mentions: [who]})
   }
 
@@ -635,24 +808,64 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 
   if(aksi === 'resetcd' || aksi === 'resetcooldown' || aksi === 'clearcd'){
     user.cooldown = {}
+    account.cooldown = {}
     user.casinoCooldowns = {}
+    account.casinoCooldowns = {}
     user.lastcasino = 0
+    account.lastcasino = 0
     user.lastkerja = 0
+    account.lastkerja = 0
     user.lastWork = 0
+    account.lastWork = 0
     user.lastRest = 0
+    account.lastRest = 0
     user.lastGacha = 0
+    account.lastGacha = 0
     user.lastVisit = 0
+    account.lastVisit = 0
     user.lastLoveHeal = 0
+    account.lastLoveHeal = 0
+
+    const previousDayMs = Date.now() - 24 * 60 * 60 * 1000
+    const previousDayDate = getJakartaDate(previousDayMs)
+    user.lastDaily = previousDayMs
+    account.lastDaily = previousDayMs
+    user.dailyDate = previousDayDate
+    account.dailyDate = previousDayDate
+    user.dailySavedAt = previousDayMs
+    account.dailySavedAt = previousDayMs
     user.lastAdventure = 0
+    account.lastAdventure = 0
     user.lastMining = 0
+    account.lastMining = 0
     user.lastDungeon = 0
+    account.lastDungeon = 0
     user.lastFishing = 0
+    account.lastFishing = 0
     user.lastMancing = 0
+    account.lastMancing = 0
     user.pinjaman = user.pinjaman || { jumlah: 0, waktu: 0 }
+    account.pinjaman = account.pinjaman || { jumlah: 0, waktu: 0 }
     user.pinjaman.waktu = 0
+    account.pinjaman.waktu = 0
     if (wdb.temp?.kawin) delete wdb.temp.kawin[who]
     saveDB(wdb)
-    return m.reply(`🔄 Semua cooldown RPG, rship, kawin, dan ternak direset untuk @${who.split('@')[0]}`, null, {mentions: [who]})
+    return m.reply(`🔄 Semua cooldown RPG telah direset untuk @${who.split('@')[0]}`, null, {mentions: [who]})
+  }
+
+  if(aksi === 'resetstreak'){
+    const previousDayMs = Date.now() - 24 * 60 * 60 * 1000
+    const previousDayDate = getJakartaDate(previousDayMs)
+    user.dailyStreak = 0
+    account.dailyStreak = 0
+    user.lastDaily = previousDayMs
+    account.lastDaily = previousDayMs
+    user.dailyDate = previousDayDate
+    account.dailyDate = previousDayDate
+    user.dailySavedAt = previousDayMs
+    account.dailySavedAt = previousDayMs
+    saveDB(wdb)
+    return m.reply(`🔄 Daily streak @${who.split('@')[0]} berhasil direset ke 0.`, null, {mentions: [who]})
   }
   
     // 8 BANK PANEL

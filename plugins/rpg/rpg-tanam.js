@@ -46,6 +46,10 @@ export const bibit = {
   'berlian': { emoji: '💠', harga: 250000, waktu: 7200000, exp: 5000, hasil: { item: 'berlian', jumlah: 1 } } // GANTI DARI DIAMOND
 }
 
+for (const info of Object.values(bibit)) {
+  if (info.hasil.item !== 'money') info.hasil.jumlah = 2
+}
+
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
@@ -68,7 +72,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   initLadang(user)
 
   const isPrem = global.db.data.users[m.sender]?.premium
-  const buyDiscount = isPrem? 0.8 : 1
+  const buyDiscount = isPrem ? 0.8 : 1
 
   let slotKosong = []
   for (let i = 1; i <= user.maxLadang; i++) {

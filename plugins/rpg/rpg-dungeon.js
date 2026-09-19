@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -14,6 +15,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if(!user.diamond) user.diamond = 0
   if(!user.limit) user.limit = 0
   if(!user.darah) user.darah = 100
+  user.inventory = user.inventory || {}
+  if (migrateRpgCurrencies(user)) await saveDB(wdb)
 
   // HITUNG MAX HP - SAMA KAYA GYM & HEAL
   let maxHP = 100 + (armorLvl * 20) + user.maxDarahBonus
@@ -146,9 +149,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   user.darah -= Math.floor(finalDamage)
   user.exp += earnedExp
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
-  user.gold += earnedGold
-  user.diamond += earnedDiamond
-  user.limit += earnedLimit
+  user.inventory.coin = (Number(user.inventory.coin) || 0) + earnedGold
+  user.diamond = (Number(user.diamond) || 0) + earnedDiamond
+  user.limit = (Number(user.limit) || 0) + earnedLimit
   user.lastDungeon = Date.now()
 
   saveDB(wdb)
@@ -176,7 +179,7 @@ winMsg += `> 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
 winMsg += `> 🌟 XP: +${earnedExp.toLocaleString()}\n`
 
 if (earnedGold > 0) {
-  winMsg += `> 🪙 Gold: +${earnedGold}\n`
+  winMsg += `> 🪙 Coin: +${earnedGold}\n`
 }
 
 if (earnedDiamond > 0) {

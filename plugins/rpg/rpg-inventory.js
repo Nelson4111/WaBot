@@ -1,13 +1,34 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, command }) => {
+  command = String(command || '').toLowerCase()
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
+
+  if (['level', 'blood', 'darah', 'equipment', 'equip'].includes(command)) {
+    const armorLvl = Number(user.armor) || 0
+    const maxHP = 100 + (armorLvl * 20) + (Number(user.maxDarahBonus) || 0)
+    if (typeof user.darah === 'undefined') user.darah = maxHP
+
+    if (command === 'level') return m.reply(`🆙 *LEVEL RPG*\nLevel: ${user.level}\nEXP: ${user.exp}/${(Number(user.level) || 1) * 500}`)
+    if (['blood', 'darah'].includes(command)) return m.reply(`❤️ *DARAH*\n${user.darah}/${maxHP}`)
+    return m.reply(
+      `🛡️ *EQUIPMENT*\n` +
+      `> 🗡️ Weapon: ${user.sword ? getEquipmentName('sword', user.sword) : 'None'}\n` +
+      `> 🛡️ Armor: ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n` +
+      `> ⛏️ Pickaxe: ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n` +
+      `> 🎣 Fishing Rod: ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n` +
+      `> 🐾 Pet: ${user.pet?.tipe && user.pet.tipe !== 'none' ? `${user.pet.tipe.toUpperCase()} (Lv.${user.pet.level || 0})` : 'Tidak Ada'}`
+    )
+  }
+
+  if (migrateRpgCurrencies(user)) saveDB(wdb)
   initLadang(user)
   if(!user.inventory) user.inventory = {}
 
@@ -77,6 +98,8 @@ let handler = async (m, { conn }) => {
   let totalGold = (user.gold || 0) + (user.inventory?.gold || 0) + (user.ores?.gold || 0)
   let totalWood = (user.wood || 0) + (user.inventory?.wood || 0) + (user.ores?.wood || 0)
   let totalStone = (user.stone || 0) + (user.inventory?.stone || 0) + (user.ores?.stone || 0)
+  let totalCoin = Number(user.inventory?.coin || 0)
+  let totalGemstone = Number(user.inventory?.gemstone || 0)
 
   let cap = `╭─❏「 🎒 RPG INVENTORY 」❏\n`
 cap += `│ 👤 Pemain: ${m.pushName || 'Player'}\n`
@@ -95,6 +118,8 @@ cap += `> 🐾 Pet: ${petTertinggi ? `${petTertinggi.tipe.toUpperCase()} (Lv.${p
 cap += `\n─━━━━━━━━━━━━━━─\n`
 cap += `📦 *STORAGE*\n`
 cap += `> 💎 Diamond: ${totalDiamond.toLocaleString()}\n`
+cap += `> 🪙 Coin: ${totalCoin.toLocaleString()}\n`
+cap += `> 💚 Gemstone: ${totalGemstone.toLocaleString()}\n`
 cap += `> ⛓️ Iron: ${totalIron.toLocaleString()}\n`
 cap += `> ✨ Gold: ${totalGold.toLocaleString()}\n`
 cap += `> 🪵 Wood: ${totalWood.toLocaleString()}\n`
@@ -166,7 +191,7 @@ return sendRpgMsg(conn, m, cap, pp)
 
 handler.help = ['inventory', 'inv']
 handler.tags = ['rpg']
-handler.command = /^(inv|inventory)$/i
+handler.command = /^(inv|inventory|level|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']
 
 export default handler

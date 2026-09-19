@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay } from '../../lib/rpg-libternakData.js'
+import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
 
 let handler = async (m, { conn, args, command }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
@@ -28,9 +28,47 @@ let handler = async (m, { conn, args, command }) => {
 
   if (command?.toLowerCase() === 'hybrid') return safeReply(listHybrid())
 
-  let [sub, hewan1, jml] = args
-  hewan1 = getHewanKey(hewan1) || hewan1?.toLowerCase() // PENTING: gunakan key canonical
-  jml = parseInt(jml) || 1
+  let [sub, ...rawAnimalArgs] = args
+  sub = sub?.toLowerCase()
+
+  const kategoriList = {
+    dasar: animal => animal.evolusi === 0,
+    langka: animal => animal.evolusi >= 1 && animal.evolusi <= 2,
+    epik: animal => animal.evolusi >= 3 && animal.evolusi <= 4,
+    legenda: animal => animal.evolusi >= 5,
+    all: () => true
+  }
+
+  const getListedAnimals = kategori => Object.entries(hewanList)
+    .filter(([, animal]) => kategoriList[kategori]?.(animal))
+
+  const resolveAnimal = (tokens, start = 0, ownedOnly = false, marketCategory = 'all') => {
+    const ownedKeys = Object.keys(user.ternak).filter(key => user.ternak[key] > 0)
+    const candidates = ownedOnly
+      ? ownedKeys.map(key => [key, getHewan(key)]).filter(([, animal]) => animal)
+      : [...Object.entries(hewanList), ...ownedKeys.map(key => [key, getHewan(key)]).filter(([, animal]) => animal)]
+
+    const number = Number(tokens[start])
+    if (Number.isInteger(number) && number > 0) {
+      const key = ownedOnly
+        ? ownedKeys[number - 1]
+        : getListedAnimals(marketCategory)[number - 1]?.[0]
+      if (key) return { key, consumed: 1 }
+    }
+
+    for (let end = tokens.length; end > start; end--) {
+      const text = tokens.slice(start, end).join(' ').trim().toLowerCase()
+      const match = candidates.find(([key, animal]) => key.toLowerCase() === text || animal.nama.toLowerCase() === text)
+      if (match) return { key: match[0], consumed: end - start }
+    }
+    return null
+  }
+
+  let hewan1 = null
+  let jml = 1
+  const hasMarketCategory = kategoriList[rawAnimalArgs[0]?.toLowerCase()]
+  const quantity = rawAnimalArgs.length > (hasMarketCategory ? 2 : 1) && /^\d+$/.test(rawAnimalArgs.at(-1)) ? Number(rawAnimalArgs.pop()) : 1
+  jml = quantity > 0 ? quantity : 1
 
   if (sub === 'command' || sub === 'commands' || sub === 'cmd') {
     return safeReply(
@@ -93,10 +131,12 @@ let handler = async (m, { conn, args, command }) => {
       `│ 🐄 *TERNAK YANG DIMILIKI*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n`
 
+    let kandangIndex = 0
     for(let h in user.ternak) {
       let data = getHewan(h)
       if(data) {
-        txt += `${data.emoji} *${data.nama}* E${data.evolusi} x${user.ternak[h]}\n`
+        kandangIndex++
+        txt += `${kandangIndex}. ${data.emoji} *${data.nama}* E${data.evolusi} x${user.ternak[h]}\n`
       }
     }
 
@@ -110,14 +150,7 @@ let handler = async (m, { conn, args, command }) => {
   }
 
   if(sub === 'list') {
-    const kategori = args[1]?.toLowerCase()
-    const kategoriList = {
-      dasar: animal => animal.evolusi === 0,
-      langka: animal => animal.evolusi >= 1 && animal.evolusi <= 2,
-      epik: animal => animal.evolusi >= 3 && animal.evolusi <= 4,
-      legenda: animal => animal.evolusi >= 5,
-      all: () => true
-    }
+    const kategori = rawAnimalArgs[0]?.toLowerCase()
     if (!kategori) return safeReply(
       `╭─❏「 🛒 PASAR TERNAK 」❏\n` +
       `│ Pilih kategori hewan yang ingin dilihat.\n` +
@@ -135,16 +168,15 @@ let handler = async (m, { conn, args, command }) => {
       `│ 🐄 *DAFTAR HEWAN - ${kategori.toUpperCase()}*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n`
 
-    for(let k in hewanList) {
-      let h = hewanList[k]
-      if (!kategoriList[kategori](h)) continue
+    const listedAnimals = getListedAnimals(kategori)
+    listedAnimals.forEach(([k, h], index) => {
       let harga = h.hargaBibit === 0 ? 'Hasil Kawin' : `Rp ${h.hargaBibit.toLocaleString()}`
 
       txt +=
-        `${h.emoji} *${h.nama}* E${h.evolusi}\n` +
+        `${index + 1}. ${h.emoji} *${h.nama}* E${h.evolusi}\n` +
         `> ↳ Buy : ${harga}\n` +
         `> ↳ Hasil kawin : ${h.hargaBibit === 0 ? 'Ya' : 'Tidak'}\n\n`
-    }
+    })
 
     txt +=
       `📌 *KAWIN*\n` +
@@ -157,6 +189,13 @@ let handler = async (m, { conn, args, command }) => {
   if(sub === 'hybrid') return safeReply(listHybrid())
 
   if(sub === 'beli') {
+    const marketCategory = kategoriList[rawAnimalArgs[0]?.toLowerCase()] ? rawAnimalArgs.shift().toLowerCase() : 'all'
+    const resolved = resolveAnimal(rawAnimalArgs, 0, false, marketCategory)
+    hewan1 = resolved?.key
+    if (resolved && rawAnimalArgs.length > resolved.consumed) {
+      const trailing = rawAnimalArgs[resolved.consumed]
+      if (/^\d+$/.test(trailing)) jml = Math.max(1, Number(trailing))
+    }
     let h = getHewan(hewan1)
     if(!h) return safeReply('❌ Hewan tidak ada')
     if(h.hargaBibit === 0) return safeReply('❌ Hewan ini hanya bisa didapat dari kawin')
@@ -179,6 +218,7 @@ let handler = async (m, { conn, args, command }) => {
   }
 
   if(sub === 'ambil') {
+    hewan1 = resolveAnimal(rawAnimalArgs, 0, true)?.key
     if(!user.ternak[hewan1]) return safeReply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
     if(!h) return safeReply('❌ Data hewan tidak ditemukan')
@@ -201,6 +241,12 @@ let handler = async (m, { conn, args, command }) => {
   }
 
   if(sub === 'sembelih') {
+    const resolved = resolveAnimal(rawAnimalArgs, 0, true)
+    hewan1 = resolved?.key
+    if (resolved && rawAnimalArgs.length > resolved.consumed) {
+      const trailing = rawAnimalArgs[resolved.consumed]
+      if (/^\d+$/.test(trailing)) jml = Math.max(1, Number(trailing))
+    }
     if(!user.ternak[hewan1]) return safeReply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
     if(!h) return safeReply('❌ Data hewan tidak ditemukan')
@@ -223,6 +269,14 @@ let handler = async (m, { conn, args, command }) => {
   }
 
   if(sub === 'jual') {
+    if (/^\d+$/.test(rawAnimalArgs.at(-1))) jml = Math.max(1, Number(rawAnimalArgs.at(-1)))
+    const itemToken = rawAnimalArgs[0]
+    if (/^\d+$/.test(itemToken)) {
+      const hasilItems = Object.keys(user.inventory).filter(key => isHasilTernakKey(key) && Number(user.inventory[key]) > 0)
+      hewan1 = hasilItems[Number(itemToken) - 1]
+    } else {
+      hewan1 = rawAnimalArgs.filter(value => !/^\d+$/.test(value)).join(' ')
+    }
     let item = normalizeHasilKey(hewan1)
     if(!user.inventory[item]) return safeReply('❌ Item tidak ada di inventory')
     let hargaItem = 1000

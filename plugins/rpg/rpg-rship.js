@@ -7,6 +7,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let uData = getUserRPG(wdb, m.sender)
   let user = wdb.users[m.sender]?.rpg || uData?.rpg || uData
   if (!user) return m.reply(`╭─❏「 ❌ ERROR 」❏\n├ Ketik .adventure dulu buat daftar RPG.\n╰─━━━━━━━━━━━━━━─`)
+  if (user.bank === undefined) user.bank = 0
   if (!wdb.users[m.sender]) wdb.users[m.sender] = { rpg: user }
   if (!wdb.users[m.sender].rpg) wdb.users[m.sender].rpg = user
 
@@ -27,7 +28,39 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return Math.min(slot, 10)
   }
 
-  const bar = (val, len = 10) => '█'.repeat(Math.floor(val / (100/len))) + '░'.repeat(len - Math.floor(val / (100/len)))
+  const bar = (val, len = 10) => {
+    const safeValue = Math.max(0, Math.min(100, Number(val) || 0))
+    const filled = Math.round((safeValue / 100) * len)
+    return '█'.repeat(filled) + '░'.repeat(len - filled)
+  }
+
+  const giftGuide = () => `╭─❏「 🎁 RSHIP GIFT GUIDE 」❏
+│ 🎁 *FORMAT HADIAH PASANGAN*
+╰─━━━━━━━━━━━━━━─
+
+📋 *LIHAT DAFTAR HADIAH*
+> ${usedPrefix}rship gift list
+
+💝 *HADIAH ITEM*
+> ${usedPrefix}rship gift item <nomor> <jumlah>
+> Contoh: ${usedPrefix}rship gift item 5 2
+> ${usedPrefix}rship gift item <nama> <jumlah>
+> Contoh: ${usedPrefix}rship gift item baju 1
+
+💰 *HADIAH UANG*
+> ${usedPrefix}rship gift money <jumlah>
+> Contoh: ${usedPrefix}rship gift money 50000000
+
+👤 *PILIH PASANGAN*
+> ${usedPrefix}rship gift <no> item 5 1
+> ${usedPrefix}rship gift <nama> item baju 1
+> ${usedPrefix}rship gift <no> money 50000000
+
+👶 *HADIAH ANAK*
+> ${usedPrefix}rship gift anak <no> item 5 1
+> ${usedPrefix}rship gift anak <no> money 50000
+
+─━━━━━━━━━━━━━━─`
 
   const getTitle = (lvl, custom) => {
     if(custom) return custom
@@ -36,7 +69,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if(lvl >= 50) return '👨‍👩‍👧‍👦 Keluarga'
     if(lvl >= 40) return '💍 Suami/Istri'
     if(lvl >= 27) return '💘 Pasangan' 
-    if(lvl >= 20) return '💑 Pacar'
+    if(lvl >= 20) return '💞 Pacar'
     if(lvl >= 10) return '🤝 Sahabat'
     if(lvl >= 5) return '😊 Teman Dekat'
     return '👋 Kenalan'
@@ -127,8 +160,23 @@ const GIFT_LIST = [
     return `${careCount}/${nextStage.care} kali ke ${nextStage.name}`
   }
 
+  const formatRemaining = seconds => {
+    const totalSeconds = Math.max(0, Math.ceil(Number(seconds) || 0))
+    const days = Math.floor(totalSeconds / 86400)
+    const hours = Math.floor((totalSeconds % 86400) / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const secs = totalSeconds % 60
+    const parts = []
+    if (days) parts.push(`${days}hari`)
+    if (hours) parts.push(`${hours}j`)
+    if (minutes) parts.push(`${minutes}m`)
+    if (!days && !hours && !minutes) parts.push(`${secs}detik`)
+    return parts.join(' ') || '0detik'
+  }
+
   const cekCD = (key, durasi) => {
-    let last = user.cooldown[key] || 0
+    const legacyKeys = Object.keys(user.cooldown).filter(storedKey => storedKey.startsWith(key) && /^\d+$/.test(storedKey.slice(key.length)))
+    const last = Math.max(0, ...[key, ...legacyKeys].map(storedKey => Number(user.cooldown[storedKey]) || 0))
     let sisa = durasi - (Date.now() - last)
     return sisa > 0? Math.ceil(sisa / 1000) : 0
   }
@@ -144,18 +192,21 @@ const GIFT_LIST = [
       kiss: ['Kiss', 4 * 60 * 60 * 1000], nonton: ['Nonton', 3 * 60 * 60 * 1000],
       swim: ['Swim', 4 * 60 * 60 * 1000], wohoo: ['Wohoo', 6 * 60 * 60 * 1000],
       anak: ['Anak', 24 * 60 * 60 * 1000], urusanak: ['Urus anak', 4 * 60 * 60 * 1000],
-      duel: ['Duel', 6 * 60 * 60 * 1000], kill: ['Kill', 7 * 24 * 60 * 60 * 1000]
+      duel: ['Duel', 6 * 60 * 60 * 1000], kill: ['Kill', 7 * 24 * 60 * 60 * 1000],
+      debat: ['Debat', 30 * 60 * 1000], prank: ['Prank', 60 * 60 * 1000],
+      rampok: ['Rampok', 6 * 60 * 60 * 1000], staycation: ['Staycation', 6 * 60 * 60 * 1000],
+      santet: ['Santet', 2 * 60 * 60 * 1000]
     }
     let cap = `╭─❏「 ⏰ RSHIP COOLDOWN 」❏\n│ 📋 *STATUS SEMUA AKTIVITAS*\n╰─━━━━━━━━━━━━━━─\n\n`
     for (const [key, [label, duration]] of Object.entries(cooldownNames)) {
-      const partnerEntries = user.harem.map((partner, index) => ({
-        index,
-        remaining: cekCD(`${key}${index}`, duration)
-      }))
-      const status = partnerEntries.length
-        ? partnerEntries.map(item => `${item.index + 1}: ${item.remaining ? formatRemaining(item.remaining) : 'READY'}`).join(' | ')
-        : 'Belum ada pasangan'
-      cap += `> *${label}*: ${status}\n`
+      if (!user.harem.length) {
+        cap += `🔴 ${label} : Tidak Aktif\n`
+        continue
+      }
+      const remaining = cekCD(key, duration)
+      cap += remaining
+        ? `⏳ ${label} : ${formatRemaining(remaining)} tersisa\n`
+        : `🟢 ${label} : Ready\n`
     }
     return m.reply(cap + `\n─━━━━━━━━━━━━━━─`)
   }
@@ -177,6 +228,39 @@ const GIFT_LIST = [
     if((p.level || 1) < lvl) return `╭─❏「 ❌ LEVEL KURANG 」❏\n\nButuh Lv.${lvl} ${getTitle(lvl)}.\nSekarang Lv.${p.level}\nFitur: ${fitur}\n╰─━━━━━━━━━━━━━━─`
     return null
   }
+
+  const conflictEffect = (partner, intensity) => {
+    const level = partner.level || 1
+    if (level < 5) return -Math.floor(Math.random() * intensity) - 1
+    if (level < 10) return Math.random() < 0.55 ? -Math.floor(Math.random() * intensity) - 1 : Math.floor(Math.random() * 3) + 1
+    return Math.floor(Math.random() * 4) + 1
+  }
+
+  const formatLoveChange = change => `${change >= 0 ? '+' : ''}${change}`
+
+  const findPartner = value => {
+    if (!value) return null
+    const index = Number(value) - 1
+    if (Number.isInteger(index) && index >= 0 && user.harem[index]) return { partner: user.harem[index], index }
+    const normalized = String(value).toLowerCase().replace(/_/g, ' ')
+    const foundIndex = user.harem.findIndex(partner => String(partner.name || '').toLowerCase() === normalized)
+    return foundIndex >= 0 ? { partner: user.harem[foundIndex], index: foundIndex } : null
+  }
+
+  // === PANDUAN RSHIP ===
+if (action === 'guide' || action === 'panduan') {
+  return m.reply(
+    `RSHIP GUIDE\n\n` +
+    `1. Buat pasangan: ${usedPrefix}rship tembak <nama> <cowok/cewek>\n` +
+    `2. Lihat pasangan: ${usedPrefix}rship harem\n` +
+    `3. Jalankan aktivitas: ${usedPrefix}rship date <no>\n` +
+    `4. Cek level dan fitur: ${usedPrefix}rship status <no>\n` +
+    `5. Lihat cooldown: ${usedPrefix}rship cd\n` +
+    `6. Lihat daftar hadiah: ${usedPrefix}rship gift list\n\n` +
+    `Aktivitas memakai nomor pasangan dari menu harem. Cooldown aktivitas berlaku untuk semua pasangan.\n` +
+    `Gunakan ${usedPrefix}rship command untuk daftar command lengkap dan ${usedPrefix}rship fitur untuk syarat level.`
+  )
+}
 
   // === DAFTAR COMMAND RSHIP ===
 if (action === 'command' || action === 'commands' || action === 'cmd') {
@@ -213,6 +297,10 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Memeluk pasangan.\n`
   cap += `> *${usedPrefix}rship usil <no>*\n`
   cap += `> ↳ Mengusili pasangan.\n`
+  cap += `> *${usedPrefix}rship prank <no>*\n`
+  cap += `> ↳ Mengerjai pasangan.\n`
+  cap += `> *${usedPrefix}rship debat <no>*\n`
+  cap += `> ↳ Berdebat dengan pasangan.\n`
   cap += `> *${usedPrefix}rship maaf <no>*\n`
   cap += `> ↳ Meminta maaf kepada pasangan.\n`
   cap += `> *${usedPrefix}rship mandi <no>*\n`
@@ -227,6 +315,12 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Berbelanja bersama pasangan.\n`
   cap += `> *${usedPrefix}rship marah <no>*\n`
   cap += `> ↳ Melampiaskan amarah kepada pasangan.\n`
+  cap += `> *${usedPrefix}rship rampok <no>*\n`
+  cap += `> ↳ Merampok pasangan dan mengambil uang.\n`
+  cap += `> *${usedPrefix}rship staycation <no>*\n`
+  cap += `> ↳ Staycation romantis bersama pasangan.\n`
+  cap += `> *${usedPrefix}rship santet <uang>*\n`
+  cap += `> ↳ Mencoba mendapatkan pasangan dengan ritual.\n`
   cap += `> *${usedPrefix}rship kerja <no>*\n`
   cap += `> ↳ Bekerja bersama pasangan.\n`
   cap += `> *${usedPrefix}rship kiss <no>*\n`
@@ -247,6 +341,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Memberikan item kepada anak.\n`
   cap += `> *${usedPrefix}rship gift anak <no> money ...*\n`
   cap += `> ↳ Memberikan uang kepada anak.\n`
+  cap += `> *${usedPrefix}rship gift <no/nama> item/money ...*\n`
+  cap += `> ↳ Memilih pasangan tertentu dengan nomor atau nama.\n`
   cap += `> *${usedPrefix}rship belicincin <no> <tipe>*\n`
   cap += `> ↳ Membeli cincin pernikahan.\n`
   cap += `> *${usedPrefix}rship nikah <no>*\n`
@@ -358,7 +454,7 @@ if (action === 'status') {
   cap += `${getGenderEmoji(p.gender)} *Nama: ${p.name}*\n`
   cap += `> ↳ 📊 Level: Lv.${p.level} ${getTitle(p.level, p.customTitle)}\n`
   cap += `> ↳ 📈 EXP: ${p.exp || 0}/${need}\n`
-  cap += `> ↳ 💍 Status: ${p.menikah ? 'Menikah 💍' : 'Pacaran 💑'}\n`
+  cap += `> ↳ 💍 Status: ${p.menikah ? 'Menikah 💍' : 'Pacaran 💞'}\n`
   cap += `> ↳ 💌 Love: ${p.love}% ${bar(p.love)}\n`
   cap += `> ↳ 😊 Mood: ${getMood(p.love)}\n`
 
@@ -465,13 +561,13 @@ if (action === 'fitur') {
   cap += `> ↳ Fitur terbuka mengikuti level pasangan dan status nikah.\n\n`
 
   cap += `*Lv.1* ${getLock(1)}\n`
-  cap += `> ↳ date, talk, makan, marah, maaf, usil, kill, duel, putus\n\n`
+  cap += `> ↳ date, talk, makan, marah, maaf, usil, prank, debat, santet, kill, duel, putus\n\n`
 
   cap += `*Lv.10* ${getLock(10)}\n`
-  cap += `> ↳ peluk, belanja\n\n`
+  cap += `> ↳ peluk, belanja, staycation\n\n`
 
   cap += `*Lv.20* ${getLock(20)}\n`
-  cap += `> ↳ nonton, swim, liburan\n\n`
+  cap += `> ↳ nonton, swim, liburan, rampok\n\n`
 
   cap += `*Lv.27* ${getLock(27, true)}\n`
   cap += `> ↳ kiss - Harus Nikah\n\n`
@@ -562,21 +658,81 @@ if (user.harem.length === 0) return m.reply(
   `╰─━━━━━━━━━━━━━━─`
 )
 
-let no = parseInt(args[1]) - 1
+// === SANTET LV1 ===
+if (action === 'santet') {
+  let targetNo = 0
+  let amountText = args[1]
+  if (args[2] && /^\d+$/.test(args[1] || '')) {
+    targetNo = Number(args[1]) - 1
+    amountText = args[2]
+  }
+  const target = user.harem[targetNo]
+  const amount = Number(amountText)
+  if (!target) return m.reply(`❌ Nomor pasangan tidak valid.`)
+  if (!Number.isSafeInteger(amount) || amount <= 0) return m.reply(`❌ Masukkan jumlah uang yang valid.`)
+  if (cekCD('santet', 2 * 60 * 60 * 1000) > 0) return m.reply(`⏰ Santet masih cooldown. Tunggu 2 jam.`)
+  if (user.bank < amount) return m.reply(`❌ Saldo bank tidak cukup.`)
 
-if(isNaN(no) || !user.harem[no]) return m.reply(
-  `╭─❏「 ❌ SALAH 」❏\n` +
-  `│ ❌ *NOMOR PASANGAN TIDAK VALID*\n` +
-  `╰─━━━━━━━━━━━━━━─\n\n` +
-  `> ↳ Pilih nomor dari .rship harem`
-)
+  user.bank -= amount
+  user.cooldown.santet = Date.now()
+  const successChance = amount > 100000000
+    ? 1
+    : amount < 10000000
+      ? Math.min(0.08, 0.01 + (amount / 10000000) * 0.07)
+      : 0.08 + ((amount - 10000000) / 90000000) * 0.92
+  const success = Math.random() < successChance
+  if (success) {
+    target.level = Math.max(20, target.level || 1)
+    target.love = Math.max(50, target.love || 0)
+    delete target.customTitle
+    target.waitTitleUp = true
+  }
+  saveDB(wdb)
+
+  const story = success
+    ? [
+      `${target.name} tiba-tiba makin dekat dan mengajakmu memulai hubungan baru.`,
+      `Ritualmu membuat ${target.name} melihatmu dengan perasaan yang berbeda.`,
+      `${target.name} datang membawa kabar bahwa hatinya sudah berubah.`,
+      `Hubungan kalian mendadak naik drastis setelah malam ritual itu.`,
+      `${target.name} mengakui bahwa ia mulai benar-benar menyukaimu.`
+    ][Math.floor(Math.random() * 5)]
+    : [
+      `Asap ritual menghilang, sementara ${target.name} hanya merasa sedikit pusing.`,
+      `Ritualnya gagal dan ${target.name} malah menjauh sementara.`,
+      `Mantra yang kamu ucapkan tidak bekerja pada ${target.name}.`,
+      `${target.name} sama sekali tidak terpengaruh oleh ritualmu.`,
+      `Malam itu berlalu tanpa perubahan apa pun pada hubungan kalian.`
+    ][Math.floor(Math.random() * 5)]
+
+  return m.reply(success
+    ? `╭─❏「 🕯️ SANTET BERHASIL 」❏\n╰─━━━━━━━━━━━━━━─\n\n${story}\n\n${target.name} sekarang naik ke Lv.${target.level}.\n\n💰 Uang: -Rp ${amount.toLocaleString()}\n\n─━━━━━━━━━━━━━━─`
+    : `╭─❏「 🕯️ SANTET GAGAL 」❏\n╰─━━━━━━━━━━━━━━─\n\n${story}\n\n💰 Uang: -Rp ${amount.toLocaleString()}\n\n─━━━━━━━━━━━━━━─`)
+}
+
+const activityCooldowns = {
+  date: 3600000, liburan: 12 * 3600000, makan: 2 * 3600000, peluk: 1800000,
+  mandi: 3600000, tidur: 8 * 3600000, belanja: 2 * 3600000, kerja: 4 * 3600000,
+  usil: 3600000, marah: 3600000, maaf: 1800000, talk: 900000, kiss: 4 * 3600000,
+  nonton: 3 * 3600000, swim: 4 * 3600000, wohoo: 6 * 3600000, duel: 6 * 3600000,
+  kill: 7 * 24 * 3600000, debat: 1800000, prank: 3600000, rampok: 6 * 3600000,
+  staycation: 6 * 3600000, santet: 2 * 3600000
+}
+let no = parseInt(args[1]) - 1
+if (Number.isNaN(no) || !user.harem[no]) {
+  const available = user.harem
+    .map((partner, index) => ({ partner, index }))
+    .filter(({ partner }) => !activityCooldowns[action] || !cekCD(action, activityCooldowns[action]))
+  if (!available.length) return m.reply(`❌ Tidak ada pasangan yang siap untuk kegiatan *${action}*.`)
+  no = available[Math.floor(Math.random() * available.length)].index
+}
 
 let p = user.harem[no]
 
 
 // === DATE LV1 ===
 if (action === 'date') {
-  if(cekCD('date'+no, 3600000) > 0) return m.reply(
+  if(cekCD('date', 3600000) > 0) return m.reply(
     `╭─❏「 ⏰ SIBUK 」❏\n` +
     `│ ⏰ *PASANGAN SEDANG SIBUK*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -586,13 +742,13 @@ if (action === 'date') {
   p.love = Math.min(100, p.love + 10)
   let up = addExp(p, 20)
   user.dateStats.totalDate++
-  user.cooldown['date'+no] = Date.now()
+  user.cooldown.date = Date.now()
   saveDB(wdb)
 
   const tempat = ['Cafe', 'Taman', 'Mall', 'Alun-alun', 'Pantai', 'Bioskop', 'Museum', 'Kebun Binatang', 'Warung', 'Gunung', 'Sawah', 'Dermaga']
   const judul = [
-    '💑 KENCAN ROMANTIS', '☕ NGEDATE SANTAI', '🌆 JALAN SORE', '🎬 MOVIE DATE', '🍽️ MAKAN BARENG',
-    '💑 DATE ROMANTIS', '🌃 KENCAN MALAM', '🥂 BERDUA AJA',
+    '💞 KENCAN ROMANTIS', '☕ NGEDATE SANTAI', '🌆 JALAN SORE', '🎬 MOVIE DATE', '🍽️ MAKAN BARENG',
+    '💞 DATE ROMANTIS', '🌃 KENCAN MALAM', '🥂 BERDUA AJA',
     '🎡 MAIN BARENG', '📸 HUNTING FOTO', '🛍️ SHOPPING DATE', '🎨 DATE KREATIF'
   ]
 
@@ -634,7 +790,7 @@ if (action === 'liburan') {
   let err = cekLevel(p, 20, 'Liburan')
   if(err) return m.reply(err)
 
-  if(cekCD('liburan'+no, 43200000) > 0) return m.reply(
+  if(cekCD('liburan', 43200000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH DALAM LIBURAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -643,7 +799,7 @@ if (action === 'liburan') {
 
   const biaya = 250000
 
-  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+  if (user.bank < biaya) return m.reply(
     `╭─❏「 ❌ UANG 」❏\n` +
     `│ ❌ *UANG TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -658,10 +814,10 @@ if (action === 'liburan') {
     `Petualangan singkat bersama *${p.name}* ${waktu.toLowerCase()}\n Capeknya hilang karena kalian menikmati semuanya berdua`,
   ]
 
-  wdb.money[m.sender] -= biaya
+  user.bank -= biaya
   p.love = Math.min(100, p.love + 20)
   const up = addExp(p, 40)
-  user.cooldown['liburan'+no] = Date.now()
+  user.cooldown.liburan = Date.now()
   saveDB(wdb)
 
   const ceritaRand = cerita[Math.floor(Math.random() * cerita.length)]
@@ -685,24 +841,24 @@ if (action === 'makan') {
   let err = cekLevel(p, 1, 'Makan')
   if(err) return m.reply(err)
   
-  if(cekCD('makan'+no, 7200000) > 0) return m.reply(
+  if(cekCD('makan', 7200000) > 0) return m.reply(
     `╭─❏「 ⏰ KENYANG 」❏\n` +
     `│ ⏰ *MASIH KENYANG*\n` +
     `╰─━━━━━━━━━━━━━━─`
   )
   
   let biaya = Math.floor(Math.random() * 10000) + 15000
-  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+  if (user.bank < biaya) return m.reply(
     `╭─❏「 ❌ UANG 」❏\n` +
     `│ ❌ *UANG TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Butuh Rp ${biaya.toLocaleString()}`
   )
   
-  wdb.money[m.sender] -= biaya
+  user.bank -= biaya
   p.love = Math.min(100, p.love + 8)
   let up = addExp(p, 12)
-  user.cooldown['makan'+no] = Date.now()
+  user.cooldown.makan = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -750,7 +906,7 @@ if (action === 'peluk') {
     `> ↳ Pacaran dulu baru bisa peluk`
   )
 
-  if(cekCD('peluk'+no, 1800000) > 0) return m.reply(
+  if(cekCD('peluk', 1800000) > 0) return m.reply(
     `╭─❏「 ⏰ MALU 」❏\n` +
     `│ ⏰ *MASIH MALU*\n` +
     `╰─━━━━━━━━━━━━━━─`
@@ -758,7 +914,7 @@ if (action === 'peluk') {
   
   p.love = Math.min(100, p.love + 5)
   let up = addExp(p, 8)
-  user.cooldown['peluk'+no] = Date.now()
+  user.cooldown.peluk = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -798,7 +954,7 @@ if (action === 'mandi') {
   let err = cekLevel(p, 40, 'Mandi')
   if(err) return m.reply(err)
 
-  if(cekCD('mandi'+no, 3600000) > 0) return m.reply(
+  if(cekCD('mandi', 3600000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH DALAM COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -807,7 +963,7 @@ if (action === 'mandi') {
 
   p.love = Math.min(100, p.love + 8)
   let up = addExp(p, 12)
-  user.cooldown['mandi'+no] = Date.now()
+  user.cooldown.mandi = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -850,7 +1006,7 @@ if (action === 'tidur') {
   let err = cekLevel(p, 40, 'Tidur')
   if(err) return m.reply(err)
 
-  if(cekCD('tidur'+no, 28800000) > 0) return m.reply(
+  if(cekCD('tidur', 28800000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH DALAM COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -859,7 +1015,7 @@ if (action === 'tidur') {
 
   p.love = Math.min(100, p.love + 10)
   let up = addExp(p, 15)
-  user.cooldown['tidur'+no] = Date.now()
+  user.cooldown.tidur = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -903,7 +1059,7 @@ if (action === 'belanja') {
   let err = cekLevel(p, 10, 'Belanja')
   if(err) return m.reply(err)
 
-  if(cekCD('belanja'+no, 7200000) > 0) return m.reply(
+  if(cekCD('belanja', 7200000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -912,14 +1068,14 @@ if (action === 'belanja') {
 
   let biaya = Math.floor(Math.random() * 20000) + 10000
 
-  if ((wdb.money[m.sender] || 0) < biaya) return m.reply(
+  if (user.bank < biaya) return m.reply(
     `╭─❏「 ❌ UANG 」❏\n` +
     `│ ❌ *UANG TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Butuh Rp ${biaya.toLocaleString()}`
   )
 
-  wdb.money[m.sender] -= biaya
+  user.bank -= biaya
   p.love = Math.min(100, p.love + 10)
   let up = addExp(p, 15)
   saveDB(wdb)
@@ -968,7 +1124,7 @@ if (action === 'kerja') {
     `> ↳ Harus nikah dulu`
   )
 
-  if(cekCD('kerja'+no, 14400000) > 0) return m.reply(
+  if(cekCD('kerja', 14400000) > 0) return m.reply(
     `╭─❏「 ⏰ CAPEK 」❏\n` +
     `│ ⏰ *MASIH CAPEK*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -976,10 +1132,10 @@ if (action === 'kerja') {
   )
 
   let gaji = Math.floor(Math.random() * 30000) + 15000
-  wdb.money[m.sender] += gaji
+  user.bank += gaji
   p.love += 8
   let up = addExp(p, 15)
-  user.cooldown['kerja'+no] = Date.now()
+  user.cooldown.kerja = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -1032,6 +1188,9 @@ if (action === 'gift') {
     cap += `> ↳ Item: .rship gift item 5 2\n`
     cap += `> ↳ Nama: .rship gift item baju 1\n`
     cap += `> ↳ Uang: .rship gift money 50000000\n\n`
+    cap += `📌 *TARGET PASANGAN*\n`
+    cap += `> ↳ Nomor: .rship gift 2 item 5 1\n`
+    cap += `> ↳ Nama: .rship gift NamaPasangan item baju 1\n\n`
     cap += `─━━━━━━━━━━━━━━─`
 
     return m.reply(cap)
@@ -1103,7 +1262,7 @@ if (action === 'gift') {
       )
     }
 
-    if ((user.bank || 0) < totalHarga) return m.reply(
+    if (user.bank < totalHarga) return m.reply(
       `╭─❏「 ❌ BANK KOSONG 」❏\n` +
       `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -1127,7 +1286,30 @@ if (action === 'gift') {
     )
   }
 
-  let p = user.harem[0] // ganti sesuai sistem pilih pasangan kamu
+  let p = user.harem[0]
+  let pIndex = 0
+  const explicitPartner = findPartner(args[1])
+  if (explicitPartner && (args[2] === 'item' || args[2] === 'money' || args[2] === 'uang')) {
+    p = explicitPartner.partner
+    pIndex = explicitPartner.index
+    args = [args[0], args[2], ...args.slice(3)]
+  }
+  tipe = args[1]?.toLowerCase()
+
+  const hasMultiWordGift = tipe === 'item' && GIFT_LIST.some(gift => gift.nama === args.slice(2, 4).join(' ').toLowerCase())
+  const itemPartner = args.length >= (hasMultiWordGift ? 7 : 6) ? findPartner(args[args.length - 1]) : null
+  if (tipe === 'item' && itemPartner) {
+    p = itemPartner.partner
+    pIndex = itemPartner.index
+    args = args.slice(0, -1)
+  }
+
+  const moneyPartner = args.length >= 5 ? findPartner(args[args.length - 1]) : null
+  if ((tipe === 'money' || tipe === 'uang') && moneyPartner) {
+    p = moneyPartner.partner
+    pIndex = moneyPartner.index
+    args = args.slice(0, -1)
+  }
 
   if(!p) return m.reply(
     `╭─❏「 ❌ BELUM PUNYA PASANGAN 」❏\n` +
@@ -1147,7 +1329,7 @@ if (action === 'gift') {
       `> ↳ Contoh: .rship gift money 50000000`
     )
 
-    if ((user.bank || 0) < jumlah) return m.reply(
+    if (user.bank < jumlah) return m.reply(
       `╭─❏「 ❌ BANK KOSONG 」❏\n` +
       `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -1212,7 +1394,13 @@ if (action === 'gift') {
   // MODE 2: GIFT ITEM
   if(tipe === 'item'){
     let input = args[2]
-    let jumlah = parseInt(args[3]) || 1
+    let jumlahIndex = 3
+    const multiWordGift = GIFT_LIST.find(gift => gift.nama === args.slice(2, 4).join(' ').toLowerCase())
+    if (multiWordGift) {
+      input = multiWordGift.nama
+      jumlahIndex = 4
+    }
+    let jumlah = parseInt(args[jumlahIndex]) || 1
 
     if(!input) return m.reply(
       `╭─❏「 ❌ SALAH 」❏\n` +
@@ -1221,11 +1409,11 @@ if (action === 'gift') {
       `> ↳ Contoh: .rship gift item 5 2`
     )
 
-    let gift
+    let gift = multiWordGift
     let noGift = parseInt(input) - 1
 
-    if(!isNaN(noGift)) gift = GIFT_LIST[noGift]
-    else gift = GIFT_LIST.find(g => g.nama === input.toLowerCase())
+    if(!gift && !isNaN(noGift)) gift = GIFT_LIST[noGift]
+    else if(!gift) gift = GIFT_LIST.find(g => g.nama === input.toLowerCase())
 
     if(!gift) return m.reply(
       `╭─❏「 ❌ SALAH 」❏\n` +
@@ -1251,7 +1439,7 @@ if (action === 'gift') {
       )
     }
 
-    if ((user.bank || 0) < totalHarga) return m.reply(
+    if (user.bank < totalHarga) return m.reply(
       `╭─❏「 ❌ BANK KOSONG 」❏\n` +
       `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -1309,32 +1497,80 @@ if (action === 'gift') {
     return m.reply(msg)
   }
 
-  return m.reply(
-    `╭─❏「 ❌ FORMAT 」❏\n` +
-    `│ ❌ *FORMAT GIFT*\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Item: .rship gift item 5 2\n` +
-    `> ↳ Uang: .rship gift money 50000000\n` +
-    `> ↳ List: .rship gift list`
-  )
+  return m.reply(giftGuide())
 }
 
 
-// === USIL LV30 ===
+// === DEBAT LV1 ===
+if (action === 'debat') {
+  let err = cekLevel(p, 1, 'Debat')
+  if(err) return m.reply(err)
+  if(cekCD('debat', 1800000) > 0) return m.reply(`⏰ Debat masih cooldown. Tunggu 30 menit.`)
+
+  const loveChange = conflictEffect(p, 5)
+  p.love = Math.max(0, Math.min(100, p.love + loveChange))
+  const up = addExp(p, 10)
+  user.cooldown.debat = Date.now()
+  saveDB(wdb)
+  const story = [
+    `Perdebatan soal film berubah jadi adu argumen panjang sama *${p.name}*.`,
+    `Kamu dan *${p.name}* beda pendapat soal makanan, tapi tetap saling dengar.`,
+    `*${p.name}* menantangmu debat receh sampai kalian lupa waktu.`,
+    `Debat kecil dengan *${p.name}* berakhir dengan saling menertawakan argumen sendiri.`,
+    `Kamu dan *${p.name}* berdebat sengit, lalu diam-diam masih saling memperhatikan.`
+  ][Math.floor(Math.random() * 5)]
+  return m.reply(
+    `╭─❏「 🗣️ DEBAT 」❏\n│ 🗣️ *PERDEBATAN BERSAMA*\n╰─━━━━━━━━━━━━━━─\n\n` +
+    `${story}\n\n` +
+    `💌 *Love*: ${formatLoveChange(loveChange)}\n` +
+    `📈 *EXP*: +10\n` +
+    `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}\n─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === PRANK LV1 ===
+if (action === 'prank') {
+  let err = cekLevel(p, 1, 'Prank')
+  if(err) return m.reply(err)
+  if(cekCD('prank', 3600000) > 0) return m.reply(`⏰ Prank masih cooldown. Tunggu 1 jam.`)
+
+  const loveChange = conflictEffect(p, 7)
+  p.love = Math.max(0, Math.min(100, p.love + loveChange))
+  const up = addExp(p, 12)
+  user.cooldown.prank = Date.now()
+  saveDB(wdb)
+  const story = [
+    `Kamu mengganti wallpaper HP *${p.name}* dengan foto paling kocak.`,
+    `Kamu mengirim stiker aneh bertubi-tubi ke chat *${p.name}*.`,
+    `Kamu pura-pura lupa nama panggilan *${p.name}* sampai dia curiga.`,
+    `Kamu menyembunyikan camilan *${p.name}*, lalu pura-pura ikut mencari.`,
+    `Kamu mengerjai *${p.name}* dengan kejutan kecil yang tidak disangka-sangka.`
+  ][Math.floor(Math.random() * 5)]
+  return m.reply(
+    `╭─❏「 😈 PRANK 」❏\n│ 😈 *MENGERJAI PASANGAN*\n╰─━━━━━━━━━━━━━━─\n\n` +
+    `${story}\n\n` +
+    `💌 *Love*: ${formatLoveChange(loveChange)}\n` +
+    `📈 *EXP*: +12\n` +
+    `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}\n─━━━━━━━━━━━━━━─`
+  )
+}
+
+// === USIL LV1 ===
 if (action === 'usil') {
   let err = cekLevel(p, 1, 'Usil')
   if(err) return m.reply(err)
 
-  if(cekCD('usil'+no, 3600000) > 0) return m.reply(
+  if(cekCD('usil', 3600000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Tunggu 1 jam`
   )
 
-  p.love = Math.max(0, p.love - 2)
+  const loveChange = conflictEffect(p, 3)
+  p.love = Math.max(0, Math.min(100, p.love + loveChange))
   let up = addExp(p, 10)
-  user.cooldown['usil'+no] = Date.now()
+  user.cooldown.usil = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -1368,7 +1604,7 @@ if (action === 'usil') {
   msg += `│ 😈 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💌 *Love*: -2\n`
+  msg += `💌 *Love*: ${formatLoveChange(loveChange)}\n`
   msg += `📈 *EXP*: +10`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1384,16 +1620,17 @@ if (action === 'marah') {
   let err = cekLevel(p, 1, 'Marah')
   if(err) return m.reply(err)
 
-  if(cekCD('marah'+no, 3600000) > 0) return m.reply(
+  if(cekCD('marah', 3600000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Tunggu 1 jam`
   )
 
-  p.love = Math.max(0, p.love - 8)
+  const loveChange = conflictEffect(p, 8)
+  p.love = Math.max(0, Math.min(100, p.love + loveChange))
   let up = addExp(p, 5)
-  user.cooldown['marah'+no] = Date.now()
+  user.cooldown.marah = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -1427,7 +1664,7 @@ if (action === 'marah') {
   msg += `│ 😤 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💔 *Love*: -8\n`
+  msg += `${loveChange < 0 ? '💔' : '💖'} *Love*: ${formatLoveChange(loveChange)}\n`
   msg += `📈 *EXP*: +5`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1443,7 +1680,7 @@ if (action === 'maaf') {
   let err = cekLevel(p, 1, 'Maaf')
   if(err) return m.reply(err)
 
-  if(cekCD('maaf'+no, 1800000) > 0) return m.reply(
+  if(cekCD('maaf', 1800000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -1452,7 +1689,7 @@ if (action === 'maaf') {
 
   p.love = Math.min(100, p.love + 12)
   let up = addExp(p, 8)
-  user.cooldown['maaf'+no] = Date.now()
+  user.cooldown.maaf = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -1502,7 +1739,7 @@ if (action === 'talk') {
   let err = cekLevel(p, 1, 'Talk')
   if(err) return m.reply(err)
 
-  if(cekCD('talk'+no, 900000) > 0) return m.reply(
+  if(cekCD('talk', 900000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -1511,7 +1748,7 @@ if (action === 'talk') {
 
   p.love = Math.min(100, p.love + 4)
   let up = addExp(p, 3)
-  user.cooldown['talk'+no] = Date.now()
+  user.cooldown.talk = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -1561,7 +1798,7 @@ if (action === 'kiss') {
   let err = cekLevel(p, 27, 'Kiss')
   if(err) return m.reply(err)
 
-  if(cekCD('kiss'+no, 14400000) > 0) return m.reply(
+  if(cekCD('kiss', 14400000) > 0) return m.reply(
     `╭─❏「 ⏰ COOLDOWN 」❏\n` +
     `│ ⏰ *MASIH COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -1570,7 +1807,7 @@ if (action === 'kiss') {
 
   p.love = Math.min(100, p.love + 15)
   let up = addExp(p, 30)
-  user.cooldown['kiss'+no] = Date.now()
+  user.cooldown.kiss = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -1608,14 +1845,70 @@ if (action === 'kiss') {
   return m.reply(msg)
 }
 
+  // === STAYCATION LV10 ===
+  if (action === 'staycation') {
+    let err = cekLevel(p, 10, 'Staycation')
+    if(err) return m.reply(err)
+    if(cekCD('staycation', 21600000) > 0) return m.reply(`⏰ Staycation masih cooldown. Tunggu 6 jam.`)
+
+    const biaya = 500000
+    if (user.bank < biaya) return m.reply(`❌ Saldo bank tidak cukup. Butuh Rp ${biaya.toLocaleString()}.`)
+    user.bank -= biaya
+    p.love = Math.min(100, (p.love || 0) + 18)
+    const up = addExp(p, 30)
+    user.cooldown.staycation = Date.now()
+    saveDB(wdb)
+    const story = [
+      `Kamu dan *${p.name}* menginap di hotel dengan pemandangan kota.`,
+      `Seharian rebahan, pesan makanan, dan maraton film bersama *${p.name}*.`,
+      `*${p.name}* menyiapkan kamar dengan lilin dan makanan favorit kalian.`,
+      `Kamu dan *${p.name}* menikmati kolam renang hotel sampai malam.`,
+      `Staycation sederhana berubah jadi kenangan manis bersama *${p.name}*.`
+    ][Math.floor(Math.random() * 5)]
+    return m.reply(
+      `╭─❏「 🏨 STAYCATION 」❏\n│ 🏨 *QUALITY TIME*\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `${story}\n\n` +
+      `💰 *Uang*: -Rp ${biaya.toLocaleString()}\n` +
+      `💌 *Love*: +18\n📈 *EXP*: +30\n` +
+      `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}\n─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  // === RAMPOK LV20 ===
+  if (action === 'rampok') {
+    let err = cekLevel(p, 20, 'Rampok')
+    if(err) return m.reply(err)
+    if(cekCD('rampok', 21600000) > 0) return m.reply(`⏰ Rampok masih cooldown. Tunggu 6 jam.`)
+
+    const hasil = Math.floor(Math.random() * 75001) + 25000
+    user.bank += hasil
+    p.love = Math.max(0, (p.love || 0) - 5)
+    const up = addExp(p, 20)
+    user.cooldown.rampok = Date.now()
+    saveDB(wdb)
+    const story = [
+      `Kamu mengambil dompet *${p.name}* saat ia sedang lengah.`,
+      `*${p.name}* kaget ketika uang jajannya tiba-tiba berpindah ke tanganmu.`,
+      `Kamu menjalankan aksi nekat dan berhasil membawa kabur uang *${p.name}*.`,
+      `Rencana rahasiamu berhasil, meski *${p.name}* mulai memasang wajah curiga.`,
+      `Kamu merampok uang *${p.name}* lalu pura-pura tidak tahu apa-apa.`
+    ][Math.floor(Math.random() * 5)]
+    return m.reply(
+      `╭─❏「 🦹 RAMPOK 」❏\n│ 🦹 *AKSI BERHASIL*\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `${story}\n\n` +
+      `💰 *Uang*: +Rp ${hasil.toLocaleString()}\n💔 *Love*: -5\n📈 *EXP*: +20\n` +
+      `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}\n─━━━━━━━━━━━━━━─`
+    )
+  }
+
   // === NONTON LV20 ===
   if (action === 'nonton') {
     let err = cekLevel(p, 20, 'Nonton')
     if(err) return m.reply(err)
-    if(cekCD('nonton'+no, 10800000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 3 jam\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('nonton', 10800000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 3 jam\n╰─━━━━━━━━━━━━━━─`)
     p.love = Math.min(100, p.love + 12)
     let up = addExp(p, 18)
-    user.cooldown['nonton'+no] = Date.now()
+    user.cooldown.nonton = Date.now()
     saveDB(wdb)
 
     const judul = ['🎬 NONTON BARENG','🍿 MOVIE DATE','📺 MARATON FILM','🌃 BIOSKOP ROMANTIS']
@@ -1644,10 +1937,10 @@ if (action === 'kiss') {
   if (action === 'swim') {
     let err = cekLevel(p, 20, 'Swim')
     if(err) return m.reply(err)
-    if(cekCD('swim'+no, 14400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 4 jam\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('swim', 14400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 4 jam\n╰─━━━━━━━━━━━━━━─`)
     p.love = Math.min(100, p.love + 20)
     let up = addExp(p, 50)
-    user.cooldown['swim'+no] = Date.now()
+    user.cooldown.swim = Date.now()
     saveDB(wdb)
 
     const judul = ['🏊 RENANG BARENG','🌊 PANTAI ROMANTIS','☀️ LIBURAN BERDUA']
@@ -1690,9 +1983,9 @@ if (action === 'kiss') {
       `> ↳ Platina: Rp 5.000.000\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
-    if ((wdb.money[m.sender] || 0) < harga[jenis]) return m.reply(`╭─❏「 ❌ UANG 」❏\n\nButuh Rp ${harga[jenis].toLocaleString()}\n╰─━━━━━━━━━━━━━━─`)
+    if (user.bank < harga[jenis]) return m.reply(`╭─❏「 ❌ BANK 」❏\n\nButuh Rp ${harga[jenis].toLocaleString()}\n╰─━━━━━━━━━━━━━━─`)
 
-    wdb.money[m.sender] -= harga[jenis]
+    user.bank -= harga[jenis]
     p.cincin = namaCincin[jenis]
     saveDB(wdb)
 
@@ -1734,11 +2027,11 @@ if (action === 'kiss') {
   if (action === 'wohoo') {
     let err = cekLevel(p, 40, 'Wohoo')
     if(err) return m.reply(err)
-    if(cekCD('wohoo'+no, 21600000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 6 jam\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('wohoo', 21600000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 6 jam\n╰─━━━━━━━━━━━━━━─`)
     p.love = Math.min(100, p.love + 25)
     let up = addExp(p, 60)
     user.dateStats.wohoo++
-    user.cooldown['wohoo'+no] = Date.now()
+    user.cooldown.wohoo = Date.now()
     saveDB(wdb)
 
     const judul = ['🌙 MALAM ROMANTIS','💞 QUALITY TIME','✨ WAKTU BERDUA','🔥 MOMEN PANAS','💋 PRIVAT TIME']
@@ -1769,12 +2062,12 @@ if (action === 'kiss') {
     if(err) return m.reply(err)
     if (!p.menikah) return m.reply(`╭─❏「 ❌ NIKAH 」❏\n\nHarus nikah dulu\n╰─━━━━━━━━━━━━━━─`)
     if (p.love < 70) return m.reply(`╭─❏「 ❌ LOVE 」❏\n\nLove minimal 90%\n╰─━━━━━━━━━━━━━━─`)
-    if(cekCD('anak'+no, 86400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 24 jam\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('anak', 86400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 24 jam\n╰─━━━━━━━━━━━━━━─`)
     let jenis = Math.random() < 0.5? 'Laki-laki' : 'Perempuan'
     let namaAnak = args.slice(2).join(' ') || `Bayi ${p.name}`
     user.kids.push({ nama: namaAnak, jenis, umur: 0, careCount: 0, ortu: p.name })
     addExp(p, 40)
-    user.cooldown['anak'+no] = Date.now()
+    user.cooldown.anak = Date.now()
     saveDB(wdb)
 
     return m.reply(
@@ -1805,7 +2098,7 @@ if (action === 'kiss') {
       )
     }
 
-    if(cekCD('urusanak'+no, 14400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nAnak masih kenyang\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('urusanak', 14400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nAnak masih kenyang\n╰─━━━━━━━━━━━━━━─`)
     anak.careCount = previousCareCount + 1
     anak.umur = anak.careCount / 10
     const previousStage = getChildStage(previousCareCount)
@@ -1814,7 +2107,7 @@ if (action === 'kiss') {
     let cariOrtu = user.harem.find(p => p.name === anak.ortu)
     if(cariOrtu) addExp(cariOrtu, expOrtu)
     user.dateStats.urusAnak++
-    user.cooldown['urusanak'+no] = Date.now()
+    user.cooldown.urusanak = Date.now()
     saveDB(wdb)
 
     const stageUp = previousStage.name !== currentStage.name
@@ -1836,9 +2129,9 @@ if (action === 'kiss') {
   if (action === 'duel') {
     let err = cekLevel(p, 1, 'Duel')
     if(err) return m.reply(err)
-    if(cekCD('duel'+no, 21600000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 6 jam\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('duel', 21600000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 6 jam\n╰─━━━━━━━━━━━━━━─`)
     let win = Math.random() < 0.5
-    user.cooldown['duel'+no] = Date.now()
+    user.cooldown.duel = Date.now()
 
     if(win){
       let up = addExp(p, 40)
@@ -1859,7 +2152,7 @@ if (action === 'kiss') {
       )
     } else {
       let hadiah = Math.floor(Math.random() * 50000) + 25000
-      wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hadiah
+      user.bank += hadiah
       p.love = Math.min(100, p.love + 15)
       let up = addExp(p, 60)
       saveDB(wdb)
@@ -1904,15 +2197,15 @@ if (action === 'kiss') {
 
   // === KILL LV100 ===
   if (action === 'kill') {
-    let err = cekLevel(p, 10, 'Kill')
+    let err = cekLevel(p, 1, 'Kill')
     if(err) return m.reply(err)
-    if(cekCD('kill'+no, 604800000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 7 hari\n╰─━━━━━━━━━━━━━━─`)
+    if(cekCD('kill', 604800000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 7 hari\n╰─━━━━━━━━━━━━━━─`)
     
     let nama = p.name
     user.ex.push(p)
     user.harem.splice(no, 1)
     user.dateStats.kill++
-    user.cooldown['kill'+no] = Date.now()
+    user.cooldown.kill = Date.now()
     saveDB(wdb)
 
     const judul = ['💔 HUBUNGAN BERAKHIR', '😢 PERPISAHAN', '💀 FINISH']

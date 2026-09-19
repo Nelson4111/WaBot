@@ -9,11 +9,13 @@ let handler = async (m, { conn }) => {
   
   // Variabel penampung statistik
   let totalMoney = 0
+  let totalDiamond = 0
   let totalIron = 0
   let totalGold = 0
   let totalLevel = 0
   let highestLevel = 0
   let topPlayer = 'Tidak ada'
+  const totalGroups = Object.keys(global.db?.data?.chats || {}).filter(id => id.endsWith('@g.us')).length
 
   // Hitung saldo global dari wdb.money
   const moneyDB = wdb.money || {}
@@ -24,8 +26,10 @@ let handler = async (m, { conn }) => {
   // Hitung statistik material dan level
   users.forEach(([jid, data]) => {
     if (data.rpg) {
-      totalIron += (data.rpg.iron || 0)
-      totalGold += (data.rpg.gold || 0)
+      const rpg = data.rpg
+      totalDiamond += Number(rpg.diamond || 0) + Number(rpg.inventory?.diamond || 0) + Number(rpg.inventory?.berlian || 0) + Number(rpg.ores?.diamond || 0)
+      totalIron += Number(rpg.iron || 0) + Number(rpg.inventory?.iron || 0) + Number(rpg.ores?.iron || 0)
+      totalGold += Number(rpg.gold || 0) + Number(rpg.inventory?.gold || 0) + Number(rpg.ores?.gold || 0)
       totalLevel += (data.rpg.level || 1)
       
       if (data.rpg.level > highestLevel) {
@@ -43,10 +47,14 @@ cap += `│ 📊 *STATISTIK RPG GLOBAL*\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `🌎 *DATA DUNIA*\n`
+cap += `> 🌐 *Jumlah Groupchat*\n`
+cap += `> ↳ ${totalGroups.toLocaleString()} Groupchat\n\n`
 cap += `> 👥 *Jumlah Pemain*\n`
-cap += `> ↳ ${totalUsers} User\n\n`
+cap += `> ↳ ${totalUsers.toLocaleString()} User\n\n`
 cap += `> 💰 *Uang Terkumpul*\n`
 cap += `> ↳ Rp ${totalMoney.toLocaleString()}\n\n`
+cap += `> 💎 *Diamond Terkumpul*\n`
+cap += `> ↳ ${totalDiamond.toLocaleString()} Diamond\n\n`
 cap += `> ⛏️ *Iron Terkumpul*\n`
 cap += `> ↳ ${totalIron.toLocaleString()}\n\n`
 cap += `> ✨ *Gold Terkumpul*\n`

@@ -17,6 +17,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
     
     user.afk = -1;
+    user.lastAfk = Date.now();
     user.afkReason = '';
     
     let successMsg = `*──  ୨୧ ✧ ᴜ ɴ ᴀ ꜰ ᴋ ✧ ୨୧  ──*

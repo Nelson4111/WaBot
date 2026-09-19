@@ -3,7 +3,14 @@ import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory 
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+const formatNama = nama => String(nama)
+  .replace(/_/g, ' ')
+  .split(' ')
+  .filter(Boolean)
+  .map(kata => kata.charAt(0).toUpperCase() + kata.slice(1))
+  .join(' ')
+
+let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   const data = getUserRPG(wdb, m.sender)
   const user = data?.rpg || {}
@@ -13,6 +20,28 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!user.ikan) user.ikan = {}
   if (!user.ores) user.ores = {}
   if (!user.masakan) user.masakan = {}
+
+  let legacyMigrated = false
+  for (const key of ['uang', 'money']) {
+    const amount = Number(user.inventory[key]) || 0
+    if (amount > 0) {
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      delete user.inventory[key]
+      legacyMigrated = true
+    }
+  }
+  const legacyExp = Number(user.inventory.exp) || 0
+  if (legacyExp > 0) {
+    user.exp = (Number(user.exp) || 0) + legacyExp
+    delete user.inventory.exp
+    user.level = Number(user.level) || 1
+    while (user.exp >= user.level * 500) {
+      user.exp -= user.level * 500
+      user.level++
+    }
+    legacyMigrated = true
+  }
+  if (legacyMigrated) await saveDB(wdb)
 
   const isPrem = global.db?.data?.users?.[m.sender]?.premium === true
   const sellBonus = isPrem ? 1.1 : 1
@@ -36,15 +65,28 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const mode = args[0] || 'shop'
   const arg0 = args[0] || ''
   const arg1 = args[1] || ''
+  const invokedCommand = String(command || '').toLowerCase()
+  const directSell = invokedCommand === 'jual' || invokedCommand === 'sell'
 
   const isBeli = mode === 'beli'
-  const isJualAll = mode === 'jual' && arg1 === 'all'
-  const isJualYa = mode === 'jual' && (arg1 === 'ya' || arg1 === 'yes')
-  const isJualTidak = mode === 'jual' && (arg1 === 'tidak' || arg1 === 'batal' || arg1 === 'no')
+  const isSellCommand = directSell || mode === 'jual' || mode === 'sell'
+  const sellAction = directSell ? mode : arg1
+  const isJualAll = isSellCommand && sellAction === 'all'
+  const isJualYa = isSellCommand && (sellAction === 'ya' || sellAction === 'yes')
+  const isJualTidak = isSellCommand && (sellAction === 'tidak' || sellAction === 'batal' || sellAction === 'no')
+
+  if (isSellCommand && ['uang', 'money', 'exp'].includes(sellAction)) {
+    return m.reply(
+      `ℹ️ *HASIL PANEN OTOMATIS*\n\n` +
+      (sellAction === 'exp'
+        ? `EXP hasil panen langsung masuk ke EXP RPG dan tidak bisa dijual.`
+        : `Uang hasil panen langsung masuk ke uang saku dan tidak bisa dijual.`)
+    )
+  }
 
   function getAllItems() {
     const semuaItem = {}
-    for (const item in user.inventory) if ((user.inventory[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.inventory[item]
+    for (const item in user.inventory) if (!['uang', 'money'].includes(item) && (user.inventory[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.inventory[item]
     for (const item in user.ikan) if ((user.ikan[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.ikan[item]
     for (const item in user.ores) if ((user.ores[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.ores[item]
     for (const item in user.masakan) if ((user.masakan[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.masakan[item]
@@ -120,7 +162,7 @@ if (mode === 'guide') {
     return m.reply(`✅ *BERHASIL BELI!*\n\n${hargaBeli[item].emoji} ${formatNama(item)} x${jumlah}\n💸 -Rp ${totalHarga.toLocaleString()}`)
   }
 
-  if (mode === 'jual' && (arg0 === 'tidak' || arg0 === 'batal' || arg0 === 'no')) {
+  if (isJualTidak) {
     if (user.jualAllConfirm) {
       delete user.jualAllConfirm
       saveDB(wdb)
@@ -175,7 +217,7 @@ if (mode === 'guide') {
       nanas: 28500, kiwi: 28500, pir: 30000, persik: 30000,
       melon: 31500, anggur: 33000, mangga: 34500, apel_hijau: 36000,
       alpukat: 36000, apel_merah: 37500, kelapa: 37500, exp: 50000,
-      durian: 75000, uang: 75000, koin: 90000, emas: 300000, berlian: 350000,
+      durian: 75000, koin: 90000, emas: 300000, berlian: 350000,
       sampah_plastik: 5000, ban_bekas: 5000, botol_kaca: 5000, kaleng: 5000,
       kayu_hanyut: 5000, jaring_rusak: 5000, sepatu: 5000, botol: 5000,
       kantong_plastik: 5000, duri: 5000, batu: 5000, rumput: 5000,
@@ -220,6 +262,7 @@ if (mode === 'guide') {
     let totalDapat = 0
     let terjual = 0
     for (const nama in user.jualAllConfirm.items) {
+      if (['uang', 'money'].includes(nama)) continue
       const cleanNama = normalizeFishKey(nama)
       const jumlah = user.jualAllConfirm.items[nama]
       const hrgSatuan = hargaGabungNorm[cleanNama] || hargaGabung[nama] || 1000
@@ -259,7 +302,7 @@ if (mode === 'guide') {
 
 handler.help = ['shop', 'market', 'toko', 'jual all', 'beli [item] [jumlah]']
 handler.tags = ['rpg']
-handler.command = /^(shop|market|toko|jual|beli)$/i
-handler.alias = ['toko', 'shop', 'market']
+handler.command = /^(shop|market|toko|jual|sell|beli)$/i
+handler.alias = ['toko', 'shop', 'market', 'sell']
 handler.group = true
 export default handler

@@ -15,6 +15,58 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
 
+  if (action === 'guide') {
+    const guide = `╭─❏「 📖 GUILD GUIDE 」❏
+│ Tutorial Guild Avelia
+╰─━━━━━━━━━━━━━━─
+
+📌 *1. Buat Guild Baru*
+> ${usedPrefix}guild create <nama>
+> Contoh: ${usedPrefix}guild create Avelia
+> Biaya pembuatan: Rp 500.000
+
+📌 *2. Lihat Guild yang Tersedia*
+> ${usedPrefix}listguild
+
+📌 *3. Bergabung ke Guild*
+> ${usedPrefix}joinguild <nama guild>
+> Contoh: ${usedPrefix}joinguild Avelia
+
+📌 *4. Cek Status Guild Kamu*
+> ${usedPrefix}guild
+
+📌 *5. Naikkan Level Guild*
+> ${usedPrefix}misiguild
+> ${usedPrefix}misiguild <nomor misi>
+> Selesaikan misi untuk mendapatkan kontribusi dan EXP Guild.
+
+📌 *6. Aktivitas Guild*
+> ${usedPrefix}latihanguild
+> ${usedPrefix}pestaguild
+> ${usedPrefix}guild donate <jumlah>
+> Donasi dibagikan ke seluruh anggota guild.
+
+📌 *7. Gunakan Poin Guild*
+> ${usedPrefix}guildshop
+> Beli buff menggunakan poin kontribusi pribadi.
+
+📌 *8. Ambil Loot Guild*
+> ${usedPrefix}guild loot
+> Cek hasil loot dari misi guild.
+
+📌 *9. Guild War*
+> ${usedPrefix}guildwar @tag
+> ${usedPrefix}guildwar acak
+> Tantang guild lain dan ikuti instruksi penerimaan war.
+
+📌 *10. Keluar dari Guild*
+> ${usedPrefix}leaveguild
+> Setelah keluar, ada cooldown sebelum bisa join/create lagi.
+
+⚠️ *Catatan:* Satu user hanya bisa berada di satu guild dan beberapa aktivitas memiliki cooldown.`
+    return m.reply(guide)
+  }
+
   if (action === 'loot') {
     const myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
     if (!myGuild) return m.reply('❌ Kamu belum bergabung dengan Guild.')

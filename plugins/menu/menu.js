@@ -79,8 +79,14 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   let donorMentions = []
   if (topDonors.length > 0) {
       donorText = topDonors.map(([jid, data], i) => {
-          donorMentions.push(jid)
-          return `*┆* ⟡ *${toSmallNum(i + 1)}.* @${jid.split('@')[0]} : *Rp ${toSmallNum(data.totalDonasi.toLocaleString('id-ID'))}*`
+          let nameDisplay = ''
+          if (data.namaDonasi) {
+            nameDisplay = `*${data.namaDonasi}*`
+          } else {
+            nameDisplay = `@${jid.split('@')[0]}`
+            donorMentions.push(jid)
+          }
+          return `*┆* ⟡ *${toSmallNum(i + 1)}.* ${nameDisplay} : *Rp ${toSmallNum(data.totalDonasi.toLocaleString('id-ID'))}*`
       }).join('\n')
   } else {
       donorText = `*┆* ⟡ *Ketik ${_p}donasi untuk mendukung bot!*`

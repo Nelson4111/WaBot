@@ -13,7 +13,7 @@ let handler = async (m, { conn, isAdmin, isOwner, isBotAdmin }) => {
   let text = m.text || m.caption || (m.msg && m.msg.caption) || ''
   if (!text) return
 
-  const linkRegex = /(https?:\/\/|www\.|chat\.whatsapp\.com\/[0-9A-Za-z]{20,24}|wa\.me\/)/i
+  const linkRegex = /(?:https?:\/\/)?(?:www\.)?(?:chat\.whatsapp\.com\/[0-9A-Za-z]{20,24}|wa\.me\/[0-9]+|discord\.gg\/[A-Za-z0-9-]+|discord(?:app)?\.com\/invite\/[A-Za-z0-9-]+)/i
   if (!linkRegex.test(text)) return
 
   // Abaikan jika tautan adalah link undangan grup ini sendiri

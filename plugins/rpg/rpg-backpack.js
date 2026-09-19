@@ -1,4 +1,5 @@
-import { loadDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, sendRpgMsg, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -20,7 +21,7 @@ function formatNama(nama) {
 
 const oreEmoji = {
   // MATERIAL BELI/JUAL
-  'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎',
+  'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎', 'coin': '🪙', 'gemstone': '💚',
   // ORE
   'sand_stone': '🏜️', 'copper': '🟠', 'tin': '📎', 'silver': '⚪',
   'mushroomite': '🍄', 'platinum': '💿', 'bananite': '🍌', 'cardboardite': '📦',
@@ -50,6 +51,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   user.inventory = normalizeUserMaterial(user.inventory || {})
   user.ores = normalizeUserMaterial(user.ores || {})
   user.items = normalizeUserMaterial(user.items || {})
+  if (migrateRpgCurrencies(user)) await saveDB(wdb)
 
   let totalItem = 0
   let totalJenis = 0
