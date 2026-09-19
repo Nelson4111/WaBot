@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -181,6 +182,7 @@ if(Date.now() < myGuild.missionCooldown){
   }
 
   let user = wdb.users[m.sender]?.rpg || (getUserRPG(wdb, m.sender).rpg)
+  migrateRpgCurrencies(user)
   if (user.level < msn.minLevel) return m.reply(`❌ Butuh Player Lv.${msn.minLevel} untuk misi ini.`)
 
   if (typeof myGuild.exp!== 'number') myGuild.exp = 0
@@ -210,6 +212,7 @@ if(Date.now() < myGuild.missionCooldown){
   myGuild.members.forEach(jid => {
     let u = wdb.users[jid]?.rpg
     if (u) {
+      u.inventory = u.inventory || {}
       if (!u.guildLoot) u.guildLoot = { diamond: 0, emerald: 0 }
       wdb.money[jid] = (wdb.money[jid] || 0) + reward.money
       if (msn.reward.iron) u.iron = (u.iron || 0) + msn.reward.iron
@@ -220,8 +223,7 @@ if(Date.now() < myGuild.missionCooldown){
         u.guildLoot.diamond += msn.reward.diamond
       }
       if (msn.reward.emerald) {
-        u.emerald = (u.emerald || 0) + msn.reward.emerald
-        u.guildLoot.emerald += msn.reward.emerald
+        u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + msn.reward.emerald
       }
     }
   })

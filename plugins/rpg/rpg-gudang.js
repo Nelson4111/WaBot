@@ -1,4 +1,5 @@
 import { loadDB, sendRpgMsg, saveDB } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 
@@ -51,7 +52,7 @@ const oreEmoji = {
 
 const itemEmoji = {
   'tulang': '🦴', 'kayu': '🪵', 'batu': '🪨', 'jamur': '🍄', 'daun_kering': '🍂',
-  'koin_tembaga': '🪙', 'ramuan_kecil': '🧪', 'tali': '🪢', 'kain_lusuh': '👕', 'wood': '🪵',
+  'koin_tembaga': '🪙', 'coin': '🪙', 'gemstone': '💚', 'ramuan_kecil': '🧪', 'tali': '🪢', 'kain_lusuh': '👕', 'wood': '🪵',
   'koin_perak': '🪙', 'ramuan_sedang': '🧪', 'belati_karat': '🔪', 'perisai_kayu': '🛡️', 'iron': '⛓️',
   'koin_emas': '🪙', 'ramuan_besar': '🧪', 'pedang_baja': '⚔️', 'armor_kulit': '🥋', 'diamond': '💎',
   'permata_biru': '💎', 'permata_merah': '❤️', 'permata_hijau': '💚', 'peta_harta': '🗺️',
@@ -75,6 +76,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('❌ Kamu belum punya data RPG')
+  if (migrateRpgCurrencies(user)) saveDB(wdb)
 
   user.inventory = normalizeUserMaterial(user.inventory || {})
   user.ikan = user.ikan || {}
@@ -136,6 +138,17 @@ let handler = async (m, { conn, usedPrefix, args }) => {
       let emoji = itemEmoji[item] || '⚔️'
       grouped['MATERIAL'].list.push({ nama: item, emoji, jml: user.items[item] })
     }
+  }
+
+  if (Number(user.diamond) > 0) {
+    totalItem += Number(user.diamond)
+    totalJenis++
+    grouped.MATERIAL.list.push({ nama: 'diamond', emoji: '💎', jml: Number(user.diamond) })
+  }
+  if (Number(user.limit) > 0) {
+    totalItem += Number(user.limit)
+    totalJenis++
+    grouped.MATERIAL.list.push({ nama: 'limit', emoji: '🎫', jml: Number(user.limit) })
   }
 
   for (let item in user.masakan) {

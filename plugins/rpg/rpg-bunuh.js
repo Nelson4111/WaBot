@@ -31,6 +31,7 @@ let handler = async (m, { conn }) => {
 
   let target = getUserRPG(wdb, who).rpg
   if(!target) return m.reply('❌ Target belum punya data RPG')
+  if (Number(target.darah) <= 0) return m.reply(`💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`)
   if(!target.riwayat) target.riwayat = []
 
   let uangTarget = wdb.money[who] || 0

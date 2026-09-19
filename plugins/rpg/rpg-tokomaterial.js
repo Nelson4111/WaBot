@@ -1,10 +1,11 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-  const oreEmoji = {
+const oreEmoji = {
   // MATERIAL BELI/JUAL
   'iron': '⛓️', 'gold': '✨', 'stone': '🪨', 'wood': '🪵', 'diamond': '💎', 'emerald': '💚',
   // ORE
@@ -35,6 +36,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if(!user.inventory) user.inventory = {}
   if(!user.ores) user.ores = {}
   if(!user.items) user.items = {}
+  if (migrateRpgCurrencies(user)) saveDB(wdb)
 
   const isPrem = global.db.data.users[m.sender]?.premium
   const sellBonus = isPrem? 1.1 : 1 // +10% pas jual
@@ -53,7 +55,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   // HARGA JUAL = 50% DARI HARGA BELI + ITEM ADVENTURE + ORE DARI TAMBANG
   const hargaJual = {
-    'emerald': 100000,
+    'gemstone': 100000, 'coin': 50000,
     // MATERIAL DARI TOKO
     'iron': 5000, 'gold': 50000, 'stone': 2500, 'wood': 4000, 'diamond': 250000,
     // ORE DARI TAMBANG
@@ -189,7 +191,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       let semuaInv = {...user.inventory,...user.ores,...user.items}
 
       if (user.diamond > 0) semuaInv.diamond = (semuaInv.diamond || 0) + user.diamond
-      if (user.emerald > 0) semuaInv.emerald = (semuaInv.emerald || 0) + user.emerald
+      if (user.inventory.gemstone > 0) semuaInv.gemstone = (semuaInv.gemstone || 0) + user.inventory.gemstone
 
       for(let item in semuaInv){
         if(hargaJual[item]){
@@ -202,8 +204,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
           delete user.items[item]
 
           if (item === 'diamond') user.diamond = 0
-          if (item === 'emerald') user.emerald = 0
-          if (user.guildLoot && (item === 'diamond' || item === 'emerald')) user.guildLoot[item] = 0
+          if (item === 'gemstone' || item === 'coin') user.inventory[item] = 0
+          if (user.guildLoot && item === 'diamond') user.guildLoot[item] = 0
         }
       }
 
@@ -249,8 +251,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
     let stok = item === 'diamond'
       ? (user.diamond || 0)
-      : item === 'emerald'
-        ? (user.emerald || 0)
+      : item === 'gemstone' || item === 'coin'
+        ? (user.inventory[item] || 0)
         : (user.inventory[item] || user.ores[item] || user.items[item] || 0)
 
     if (stok <= 0) return m.reply(
@@ -271,13 +273,13 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
     let hasil = Math.floor(hargaJual[item] * sellBonus) * jual
 
-    if (item === 'diamond' || item === 'emerald') {
-      user[item] -= jual
-      if (user[item] <= 0) delete user[item]
-      if (user.guildLoot && user.guildLoot[item]) user.guildLoot[item] = Math.max(0, user.guildLoot[item] - jual)
+    if (item === 'diamond' || item === 'gemstone' || item === 'coin') {
+      if (item === 'gemstone' || item === 'coin') user.inventory[item] = Math.max(0, (user.inventory[item] || 0) - jual)
+      else user[item] -= jual
+      if (item === 'diamond' && user.diamond <= 0) user.diamond = 0
     }
 
-    if(user.inventory[item]) {
+    if(!['diamond', 'gemstone', 'coin'].includes(item) && user.inventory[item]) {
       user.inventory[item] -= jual
       if(user.inventory[item] <= 0) delete user.inventory[item]
     }

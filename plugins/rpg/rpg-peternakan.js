@@ -41,8 +41,9 @@ const hasilTernak = Object.entries(user.inventory)
   .filter(([key, jumlah]) => isHasilTernakKey(key) && Number(jumlah) > 0)
   .map(([key, jumlah]) => {
     const hasil = getHasilDisplay(key)
-    return `${hasil.emoji} *${hasil.nama}* x${jumlah}`
+    return { nama: `${hasil.emoji} *${hasil.nama}* x${jumlah}` }
   })
+  .map((hasil, index) => `${index + 1}. ${hasil.nama}`)
 
 cap += `\n📦 *HASIL TERNAK TERKUMPUL*\n`
 cap += hasilTernak.length ? hasilTernak.join('\n') + '\n' : `> ↳ Belum ada hasil ternak.\n`

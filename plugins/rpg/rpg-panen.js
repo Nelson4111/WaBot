@@ -38,12 +38,16 @@ export const bibit = {
   'apel_merah': { emoji: '🍎', harga: 25000, waktu: 1500000, exp: 500, hasil: { item: 'apel_merah', jumlah: 1 } },
   'kelapa': { emoji: '🥥', harga: 25000, waktu: 1400000, exp: 450, hasil: { item: 'kelapa', jumlah: 1 } },
   'sawit': { emoji: '🌴', harga: 30000, waktu: 1500000, exp: 500, hasil: { item: 'sawit', jumlah: 1 } },
-  'exp': { emoji: '✨', harga: 40000, waktu: 1600000, exp: 800, hasil: { item: 'exp', jumlah: 2000 } },
+  'exp': { emoji: '✨', harga: 40000, waktu: 1600000, exp: 800, hasil: { item: 'exp', jumlah: 800 } },
   'durian': { emoji: '🌳', harga: 50000, waktu: 1800000, exp: 800, hasil: { item: 'durian', jumlah: 1 } },
-  'uang': { emoji: '💵', harga: 50000, waktu: 1800000, exp: 1000, hasil: { item: 'money', jumlah: 100000 } },
-  'koin': { emoji: '🪙', harga: 60000, waktu: 2000000, exp: 1200, hasil: { item: 'koin', jumlah: 150 } },
+  'uang': { emoji: '💵', harga: 50000, waktu: 1800000, exp: 1000, hasil: { item: 'money', jumlah: 50000 } },
+  'koin': { emoji: '🪙', harga: 60000, waktu: 2000000, exp: 1200, hasil: { item: 'koin', jumlah: 1 } },
   'emas': { emoji: '⚜️', harga: 200000, waktu: 3600000, exp: 3000, hasil: { item: 'emas', jumlah: 1 } },
   'berlian': { emoji: '💠', harga: 250000, waktu: 7200000, exp: 5000, hasil: { item: 'berlian', jumlah: 1 } }
+}
+
+for (const info of Object.values(bibit)) {
+  if (info.hasil.item !== 'money') info.hasil.jumlah = 2
 }
 
 const namaBibitLegacy = { diamond: 'berlian' }
@@ -73,6 +77,35 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let user = data.rpg
   initLadang(user)
   if(!user.inventory) user.inventory = {}
+  let hasilLamaDimigrasikan = false
+  for (const key of ['uang', 'money']) {
+    const amount = Number(user.inventory[key]) || 0
+    if (amount > 0) {
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      delete user.inventory[key]
+      hasilLamaDimigrasikan = true
+    }
+  }
+  const expLama = Number(user.inventory.exp) || 0
+  if (expLama > 0) {
+    user.exp = (Number(user.exp) || 0) + expLama
+    delete user.inventory.exp
+    hasilLamaDimigrasikan = true
+  }
+  if (hasilLamaDimigrasikan) {
+    cekLevelUpAfterMigration(user)
+    await saveDB(wdb)
+  }
+  if (user.inventory.diamond) {
+    user.inventory.berlian = (user.inventory.berlian || 0) + user.inventory.diamond
+    delete user.inventory.diamond
+    await saveDB(wdb)
+  }
+  if (user.berlian) {
+    user.inventory.berlian = (user.inventory.berlian || 0) + user.berlian
+    delete user.berlian
+    await saveDB(wdb)
+  }
 
   let ladangDimigrasikan = false
   for (let i = 1; i <= user.maxLadang; i++) {
@@ -82,15 +115,31 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       ladangDimigrasikan = true
     }
   }
-  if (ladangDimigrasikan) saveDB(wdb)
+  if (ladangDimigrasikan) await saveDB(wdb)
 
   function addItem(user, item, jumlah) {
-    if(item === 'money') wdb.money[m.sender] = (wdb.money[m.sender] || 0) + jumlah
-    else if(item === 'exp') user.exp += jumlah
-    else user.inventory[item] = (user.inventory[item] || 0) + jumlah
+    const amount = Math.max(0, Number(jumlah) || 0)
+    if(item === 'money') {
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+    } else if(item === 'exp') {
+      user.exp = (Number(user.exp) || 0) + amount
+    } else {
+      user.inventory[item] = (Number(user.inventory[item]) || 0) + amount
+    }
+  }
+
+  function cekLevelUpAfterMigration(user) {
+    user.exp = Number(user.exp) || 0
+    user.level = Number(user.level) || 1
+    while (user.exp >= user.level * 500) {
+      user.exp -= user.level * 500
+      user.level++
+    }
   }
 
   function cekLevelUp(user) {
+    user.exp = Number(user.exp) || 0
+    user.level = Number(user.level) || 1
     while(user.exp >= user.level * 500) {
       user.exp -= user.level * 500
       user.level++
@@ -179,7 +228,7 @@ if (text.toLowerCase() === 'all') {
 
   user.exp += totalExp
   cekLevelUp(user)
-  saveDB(wdb)
+  await saveDB(wdb)
 
   let teks = `╭─❏「 🌾 PANEN MASSAL 」❏\n`
   teks += `│ 🌾 *PANEN BERHASIL*\n`
@@ -256,7 +305,7 @@ if (sisaWaktu <= 0) {
   user.exp += dataBibit.exp
   cekLevelUp(user)
   delete user.ladang[slotAsli]
-  saveDB(wdb)
+  await saveDB(wdb)
 
   let teks = `╭─❏「 🌾 PANEN BERHASIL 」❏\n`
   teks += `│ 🌾 *HASIL PANEN*\n`

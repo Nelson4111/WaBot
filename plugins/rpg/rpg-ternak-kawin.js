@@ -28,14 +28,24 @@ let handler = async (m, { conn, args }) => {
 
   let sub = args[0]?.toLowerCase()
   let h1 = null, h2 = null, asuransi = false
-  const resolveHewan = value => {
-    if (!value) return null
-    const number = Number(value)
+  const resolveHewan = (tokens, start = 0) => {
+    if (!tokens[start]) return null
+    const ownedKeys = Object.keys(user.ternak).filter(key => user.ternak[key] > 0)
+    const number = Number(tokens[start])
     if (Number.isInteger(number) && number > 0) {
-      const key = Object.keys(user.ternak).filter(key => user.ternak[key] > 0)[number - 1]
-      if (key) return key
+      const key = ownedKeys[number - 1]
+      if (key) return { key, consumed: 1 }
     }
-    return getHewanKey(value) || value.toLowerCase()
+
+    const candidates = ownedKeys
+      .map(key => [key, getHewan(key)])
+      .filter(([, animal]) => animal)
+    for (let end = tokens.length; end > start; end--) {
+      const text = tokens.slice(start, end).join(' ').trim().toLowerCase()
+      const match = candidates.find(([key, animal]) => key.toLowerCase() === text || animal.nama.toLowerCase() === text)
+      if (match) return { key: match[0], consumed: end - start }
+    }
+    return null
   }
 
   if (sub === 'guide' || sub === 'tutorial' || sub === 'panduan') {
@@ -122,9 +132,12 @@ let handler = async (m, { conn, args }) => {
       `╰─━━━━━━━━━━━━━━─`
     )
   } else {
-    h1 = resolveHewan(args[0])
-    h2 = resolveHewan(args[1])
-    asuransi = (args[2]?.toLowerCase() === 'asuransi') || (args[3]?.toLowerCase() === 'asuransi')
+    const kawinArgs = args.slice(0).filter(arg => arg.toLowerCase() !== 'asuransi')
+    const first = resolveHewan(kawinArgs, 0)
+    const second = first ? resolveHewan(kawinArgs, first.consumed) : null
+    h1 = first?.key
+    h2 = second?.key
+    asuransi = args.some(arg => arg.toLowerCase() === 'asuransi')
   }
 
   if(!h1 || !h2) return m.reply(
