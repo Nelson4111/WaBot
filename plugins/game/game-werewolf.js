@@ -347,18 +347,38 @@ ${playerListText.trim()}
 · · ─ ─ ✦ ─ ─ · ·
 > _Pilihlah dengan bijak, jangan biarkan Werewolf memperdaya kalian!_`
 
-    const voteButtons = []
-    livingPlayers.forEach((p) => {
-        const pName = p.displayName || `@${p.id.split('@')[0]}`
-        let label = `🗳️ Vote (${toSmallNum(p.number)}) ${pName}`
-        if (label.length > 25) label = label.slice(0, 24) + '…'
-        voteButtons.push([label, `.ww vote ${p.number}`])
-    })
-    voteButtons.push(['⏩ Lewati Voting', '.ww vote skip'])
+    const btn = new Button(conn)
+    btn.setBody(votingCard)
+    btn.setFooter('Avelia • Werewolf Day Voting')
+    btn.setImage(thumbVoting)
 
-    await conn.sendButton(chat, votingCard, 'Avelia • Werewolf Day Voting', null, voteButtons, null, {
-        contextInfo: { mentionedJid: mentions }
+    const voteRows = livingPlayers.map((p) => {
+        const pName = p.displayName || `@${p.id.split('@')[0]}`
+        return {
+            header: `Warga Nomor (${toSmallNum(p.number)})`,
+            title: `Vote ${pName}`.slice(0, 24),
+            description: `Tuduh & eksekusi warga nomor (${toSmallNum(p.number)})`,
+            id: `.ww vote ${p.number}`
+        }
     })
+
+    voteRows.push({
+        header: 'Opsi Khusus',
+        title: '⏩ Lewati Voting',
+        description: 'Tidak memilih siapa pun pada sidang hari ini',
+        id: '.ww vote skip'
+    })
+
+    btn.addButton('single_select', JSON.stringify({
+        title: '✦ PILIH TERSANGKA SIDANG',
+        sections: [{
+            title: '✦ DAFTAR WARGA HIDUP',
+            rows: voteRows
+        }]
+    }))
+
+    btn.setContextInfo({ mentionedJid: mentions })
+    await btn.send(chat)
 
     if (room.phaseTimeout) clearTimeout(room.phaseTimeout)
     room.phaseTimeout = setTimeout(async () => {
@@ -719,16 +739,16 @@ ${rosterText.trim()}
         if (!ww[chat] || ww[chat].status === false || ww[chat].time !== "voting") {
             return m.reply(status.warning("Sesi voting siang belum dibuka."))
         }
-        if (playerOnRoom(sender, chat, ww) === false || dataPlayer(sender, ww)?.isdead) {
+        const voter = ww[chat].player.find((p) => p.id === sender)
+        if (!voter || voter.isdead || voter.isDummy) {
             return m.reply(status.error("Hanya pemain yang masih hidup yang memiliki hak suara."))
         }
-        if (dataPlayer(sender, ww)?.isvote) {
+        if (voter.isvote) {
             return m.reply(status.warning("Kamu sudah memberikan suara pada sidang hari ini."))
         }
 
         if (target === "skip" || target === "0") {
-            const voter = dataPlayer(sender, ww)
-            if (voter) voter.isvote = true
+            voter.isvote = true
             await m.react('✅')
 
             const allVoted = ww[chat].player.filter((p) => !p.isdead && !p.isDummy).every((p) => p.isvote)
@@ -741,8 +761,8 @@ ${rosterText.trim()}
         if (!target || isNaN(target)) return m.reply(status.warning("Masukkan nomor pemain yang valid atau pilih tombol vote."))
 
         const targetNum = parseInt(target)
-        const targetPlayer = getPlayerById(chat, sender, targetNum, ww)
-        if (!targetPlayer || targetPlayer.db.isdead) {
+        const targetPlayer = ww[chat].player.find((p) => p.number === targetNum && !p.isDummy)
+        if (!targetPlayer || targetPlayer.isdead) {
             return m.reply(status.error("Pemain target tidak ditemukan atau sudah gugur."))
         }
 
