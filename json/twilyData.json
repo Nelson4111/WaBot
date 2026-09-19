@@ -1,0 +1,551 @@
+{
+  "concept": "Mafia",
+  "comeback": "yes, setelah sekian lama hiatus akhirnya kita mutusin buat comeback. karena banyak bet dari kalian yg kaga berhenti nyuruh gw (owner) buat balikin twily. jadi yaudah daripada kalian nunggu kelamaan lagi karena kesibukan gw, so here we are. twily is officially back.\n\ntapi kali ini kita bikin sesimpel mungkin, cuma ada satu rules yang harus kalian turuti, yaitu no baperan. kita semua di sini udah gede, udah bukan bocah lagi yang dikit-dikit ngambek, dikit-dikit bawa perasaan, dikit-dikit keluar grup. kalau kaga bisa bedain mana bercanda mana serius, mending kaga usah masuk dari awal. paham kan maksud gw? woilah, udah gede masa hal simple kek gini aja kaga paham. harusnya paham sendiri mana yang sopan mana yang kaga tanpa harus gw jelasin. jadi kalau masih gak paham hal basic kek gini, berarti emang lu nya aja yang bermasalah. balik TK atau SD aja, biar sekolah dari awal lagi.\n\nif u know mafia lu pasti paham, twily sekarang kayak gitu. it's not just a group concept, it's a family. di sini kaga ada yang paling atas dan gak ada yang paling bawah, semua sama rata. yang ada cuma loyalitas. lu respect ke twily, twily bakal terima lu dengan baik. kalau lu join cuma karena ikut-ikutan hype, mending jauh-jauh dah. tapi kalau lu join karena emang mau jadi bagian dari keluarga virtual kita, welcome home twiliess.\n\ndan kita juga kaga lupa sama tujuan awal grup twily ini dibuat karena apa. kita ada bukan cuma buat seru-seruan doang, kita ada karena pengen jadi rumah or keluarga kedua buat kalian. tempat curhat, tempat paling nyaman buat cerita apa aja, and yang paling penting tempat yang kaga bakal bisa lu cari di mana-mana. kita bukan sebatas marga, clan, squad, ataupun grup random. sekali lu join, lu selamanya bakal jadi bagian dari keluarga twily.\n\ntwily is back and this time we don't play nice.",
+  "generations": {
+    "0": [
+      "Abhi",
+      "Aca",
+      "Ade",
+      "Ainun",
+      "Aiqa",
+      "Aisyah",
+      "Aliya",
+      "Aneira",
+      "Anggun",
+      "Anz",
+      "Ara",
+      "Arachu",
+      "Atha",
+      "Audrey",
+      "Aura",
+      "Chila",
+      "Cinta",
+      "Clarissa",
+      "Dea",
+      "Desty",
+      "Dev",
+      "Dilara",
+      "Dilzy",
+      "Diza",
+      "Egy",
+      "Faren",
+      "Fel",
+      "Fini",
+      "Ghina",
+      "Harul",
+      "Hilma",
+      "Humi",
+      "Imty",
+      "Ita",
+      "Jahram",
+      "Maela",
+      "Mala",
+      "Mei",
+      "Nadin",
+      "Nathan",
+      "Nenel",
+      "Novita",
+      "Prita",
+      "Sasha",
+      "Savira Aulia",
+      "Siti",
+      "Starla",
+      "Tasya",
+      "Verina",
+      "Yusuf",
+      "Zaza",
+      "Eza",
+      "Bonyo",
+      "Levina",
+      "Satria",
+      "Zahra",
+      "Wiki",
+      "Kimi",
+      "wahyu",
+      "Dilla"
+    ],
+    "I": [
+      "Aila",
+      "Aii",
+      "Aisha",
+      "Alia",
+      "Albhi",
+      "Aliza",
+      "Alya",
+      "Amira",
+      "Anggi",
+      "Aurel",
+      "Arramita",
+      "Berliana",
+      "Chacha",
+      "Chusi",
+      "Dwi",
+      "Eka Lestari",
+      "Ela",
+      "Eyla",
+      "Fanny Nurtavia",
+      "Fany",
+      "Fazya",
+      "Hanun",
+      "Harini",
+      "Intan",
+      "Isma",
+      "Jihan",
+      "Keisha",
+      "Kiya",
+      "Laila",
+      "Lala",
+      "Nabil",
+      "Nabila",
+      "Naya",
+      "Nay",
+      "Nuryani",
+      "Puan",
+      "Rans",
+      "Riela",
+      "Sesilia",
+      "Shafa",
+      "Widia",
+      "Zahra"
+    ],
+    "II": [
+      "Akbar",
+      "April",
+      "Asa",
+      "Aya",
+      "Billa",
+      "Biya",
+      "Cia",
+      "Citra",
+      "Dini",
+      "Dita",
+      "Elisa",
+      "Elvareta Dirgantara",
+      "Fayyana",
+      "Fira",
+      "Fitria",
+      "Hana",
+      "Hypatia",
+      "Izza",
+      "justin",
+      "Kia",
+      "Laila",
+      "Misca",
+      "Nana",
+      "Putri",
+      "Ririn",
+      "Siti",
+      "Syifa",
+      "Tata",
+      "Tya",
+      "Umam",
+      "Yura",
+      "Zara",
+      "Nadil",
+      "Retno",
+      "Ahmad"
+    ],
+    "III": [
+      "Alisa",
+      "Aulia",
+      "Aul",
+      "Berlian",
+      "Casey",
+      "Dara",
+      "Dayah",
+      "Delfina",
+      "Dila",
+      "Dynari",
+      "Ghina",
+      "Gina",
+      "Helni",
+      "Ida",
+      "Ica",
+      "Iraa",
+      "Ira",
+      "Isti",
+      "Melia",
+      "Maisa",
+      "Nanad",
+      "Putri",
+      "Rani",
+      "Rizky",
+      "Sopi",
+      "Syifa",
+      "Tabita",
+      "Vania Utami",
+      "Ziana"
+    ],
+    "IV": [
+      "Adel",
+      "Agustin",
+      "Alana",
+      "Anisa",
+      "Asya",
+      "Aufa",
+      "Cici",
+      "Cindy",
+      "Cinta",
+      "Feby",
+      "Frisca",
+      "Ira",
+      "Justina",
+      "Karin",
+      "Key",
+      "Memey",
+      "Nachlah",
+      "Nawar",
+      "Nazwa",
+      "Selpi",
+      "Shofa",
+      "Veya",
+      "Vynn",
+      "Zyen"
+    ],
+    "V": [
+      "Allia",
+      "Athar",
+      "Dinda",
+      "Fira",
+      "Ghadiza",
+      "Hafizh",
+      "Icha",
+      "Lia",
+      "Ryan",
+      "Rizki",
+      "Shofa",
+      "Suci",
+      "Syakila",
+      "Vania",
+      "Widia",
+      "Yaya"
+    ],
+    "VI": [
+      "Adel",
+      "Aira",
+      "Alila",
+      "Anindya",
+      "Ayu Sindi",
+      "Balqis",
+      "brandon",
+      "Cala",
+      "Clara",
+      "El",
+      "Kia",
+      "Lawca",
+      "Maisa",
+      "Meili",
+      "Nabila",
+      "Nesya",
+      "Nova",
+      "Puput",
+      "Ralesa",
+      "Rehan",
+      "Riela",
+      "Yulia",
+      "Yurika"
+    ],
+    "VII": [
+      "Afni",
+      "Amel",
+      "Ayu",
+      "Caca",
+      "Cipa",
+      "Dijah",
+      "Febby",
+      "Harti",
+      "Jennifer",
+      "Jeje",
+      "Jenita",
+      "Pitri",
+      "Putri KN",
+      "Rain",
+      "Rachel",
+      "Vio",
+      "Zahra"
+    ],
+    "VIII": [
+      "Aulia",
+      "Dea",
+      "Dini",
+      "Kaila",
+      "Mina",
+      "Naomi",
+      "Okta"
+    ],
+    "IX": [
+      "Salsabila",
+      "Zena",
+      "Biel",
+      "Eva",
+      "Excel",
+      "Hisyam",
+      "Ica",
+      "Ikhsan",
+      "Irene",
+      "Jua",
+      "Miku",
+      "Ocha",
+      "Piyan",
+      "Qisty",
+      "Zahra",
+      "Zeyya",
+      "Chelsy",
+      "Adel",
+      "Raida",
+      "Heri",
+      "Xaviera",
+      "Arel",
+      "Aulia",
+      "Rafly",
+      "Lily",
+      "Iruhan",
+      "Kai"
+    ],
+    "X": [
+      "Vaniara",
+      "Aira",
+      "Marcel",
+      "Dew",
+      "Rara",
+      "Reyna",
+      "Aska",
+      "Alfin",
+      "Dina",
+      "Ella",
+      "Ckaa",
+      "Ica",
+      "Kenzo",
+      "Mar",
+      "Rayna"
+    ]
+  },
+  "generationDescriptions": {
+    "0": "Generasi Zero, berasal dari grup lama seperti AUI, PI, dan VG. Mereka adalah generasi pertama yang membentuk komunitas Twily.",
+    "I": "Generasi yang bergabung setelah generasi Zero dan ikut membangun komunitas Twily.",
+    "II": "Generasi yang membawa semangat baru dan ide-ide segar untuk Twily.",
+    "III": "Generasi yang ikut memberi kontribusi dalam pengembangan komunitas Twily.",
+    "IV": "Generasi yang terus memperkuat dan memperluas komunitas Twily.",
+    "V": "Generasi yang membawa inovasi dan energi baru untuk komunitas Twily.",
+    "VI": "Generasi yang terus berkontribusi dalam pembangunan Twily.",
+    "VII": "Generasi dengan visi dan misi baru untuk komunitas Twily.",
+    "VIII": "Generasi yang memperkuat semangat kebersamaan dalam komunitas Twily.",
+    "IX": "Generasi yang membawa teknologi dan inovasi untuk komunitas Twily.",
+    "X": "Generasi terbaru dalam sejarah komunitas Twily."
+  },
+  "admins": [
+    "Anez",
+    "Nyo",
+    "Fazya",
+    "Sasha",
+    "Mina",
+    "Zahra"
+  ],
+  "exAdmins": [
+    "Ara",
+    "Diza"
+  ],
+  "partners": [
+    "Avelia Co.",
+    "Cosla",
+    "HNS"
+  ],
+  "ml": [
+    {
+      "name": "Eza",
+      "jid": "6282228638623@s.whatsapp.net"
+    },
+    {
+      "name": "Nyo",
+      "jid": "6282332888898@s.whatsapp.net"
+    },
+    {
+      "name": "Sasha",
+      "jid": "628385848829@s.whatsapp.net"
+    },
+    {
+      "name": "Mina",
+      "jid": "6287716300353@s.whatsapp.net"
+    },
+    {
+      "name": "Diza",
+      "jid": "628993226000@s.whatsapp.net"
+    },
+    {
+      "name": "Fazya",
+      "jid": "6281936185786@s.whatsapp.net"
+    },
+    {
+      "name": "Harul",
+      "jid": "6282181187547@s.whatsapp.net"
+    },
+    {
+      "name": "Aina",
+      "jid": "6283138889372@s.whatsapp.net"
+    },
+    {
+      "name": "Vira",
+      "jid": "6285773257135@s.whatsapp.net"
+    },
+    {
+      "name": "Citra",
+      "jid": "6289673551713@s.whatsapp.net"
+    },
+    {
+      "name": "Abhi",
+      "jid": "62895801390899@s.whatsapp.net"
+    },
+    {
+      "name": "Vania",
+      "jid": "6288228611303@s.whatsapp.net"
+    },
+    {
+      "name": "Vaniara",
+      "jid": "6281252931147@s.whatsapp.net"
+    },
+    {
+      "name": "Zahra",
+      "jid": "6281370424543@s.whatsapp.net"
+    }
+  ],
+  "ww": [
+    {
+      "name": "Eza",
+      "jid": "6282228638623@s.whatsapp.net"
+    },
+    {
+      "name": "Sasha",
+      "jid": "628385848829@s.whatsapp.net"
+    },
+    {
+      "name": "Nyo",
+      "jid": "6282332888898@s.whatsapp.net"
+    },
+    {
+      "name": "Anez",
+      "jid": "6281234921845@s.whatsapp.net"
+    },
+    {
+      "name": "Diza",
+      "jid": "628993226000@s.whatsapp.net"
+    },
+    {
+      "name": "Nathan",
+      "jid": "6281335750641@s.whatsapp.net"
+    },
+    {
+      "name": "Nenel",
+      "jid": "79223679360@s.whatsapp.net"
+    },
+    {
+      "name": "Fazya",
+      "jid": "6281936185786@s.whatsapp.net"
+    },
+    {
+      "name": "Harul",
+      "jid": "6282181187547@s.whatsapp.net"
+    },
+    {
+      "name": "salsa",
+      "jid": "6285759925240@s.whatsapp.net"
+    },
+    {
+      "name": "Vaniara",
+      "jid": "6281252931147@s.whatsapp.net"
+    },
+    {
+      "name": "Zahra",
+      "jid": "6281370424543@s.whatsapp.net"
+    }
+  ],
+  "music": [
+    {
+      "name": "Eza",
+      "jid": "6282228638623@s.whatsapp.net"
+    },
+    {
+      "name": "Zahra",
+      "jid": "6281370424543@s.whatsapp.net"
+    }
+  ],
+  "photo": [
+    {
+      "name": "Eza",
+      "jid": "6282228638623@s.whatsapp.net"
+    }
+  ],
+  "birthdays": {
+    "05-11|twily": {
+      "name": "Twily",
+      "date": "05-11"
+    },
+    "09-12|eza": {
+      "name": "Eza",
+      "date": "09-12"
+    },
+    "09-09|diza": {
+      "name": "Diza",
+      "date": "09-09"
+    },
+    "09-09|aila": {
+      "name": "Aila",
+      "date": "09-09"
+    },
+    "23-01|ade": {
+      "name": "Ade",
+      "date": "23-01"
+    },
+    "04-09|zahra": {
+      "name": "Zahra",
+      "date": "04-09"
+    },
+    "23-06|vira": {
+      "name": "Vira",
+      "date": "23-06"
+    },
+    "30-05|fazya": {
+      "name": "Fazya",
+      "date": "30-05"
+    },
+    "31-05|nazwa": {
+      "name": "Nazwa",
+      "date": "31-05"
+    },
+    "27-08|sasha": {
+      "name": "Sasha",
+      "date": "27-08"
+    },
+    "12-08|nadil": {
+      "name": "Nadil",
+      "date": "12-08"
+    }
+  },
+  "profiles": {
+    "6282228638623@s.whatsapp.net": {
+      "birthday": "09-12",
+      "gen": "0",
+      "askot": "MKP",
+      "hobi": "Banyak",
+      "status": "Taken by Lucy",
+      "jabatan": "Owner",
+      "gender": "Male"
+    },
+    "628385848829@s.whatsapp.net": {
+      "jabatan": "Editor"
+    },
+    "628993226000@s.whatsapp.net": {
+      "nama": "dza",
+      "birthday": "09-09",
+      "gen": "Zero",
+      "askot": "xmntn",
+      "hobi": "game and gym",
+      "gender": "woman",
+      "status": "msh hidup",
+      "jabatan": "Ex-Admin"
+    },
+    "6282181187547@s.whatsapp.net": {
+      "jabatan": "Trusted Member"
+    }
+  },
+  "newGen": 10
+}
