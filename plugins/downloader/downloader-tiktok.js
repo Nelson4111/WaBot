@@ -1,6 +1,10 @@
 // downloader tiktok - fix: download buffer dulu untuk URL yg butuh headers khusus
 import axios from 'axios'
 import crypto from 'crypto'
+import { spawn } from 'child_process'
+import { promises as fs } from 'fs'
+import { join } from 'path'
+import os from 'os'
 import * as Baileys from '@whiskeysockets/baileys'
 import * as Elaina from '@rexxhayanasi/elaina-baileys'
 import { status, toSmallNum } from '../../lib/style.js'
@@ -8,8 +12,6 @@ import { status, toSmallNum } from '../../lib/style.js'
 const generateWAMessage = Elaina.generateWAMessage || Baileys.generateWAMessage
 const generateWAMessageFromContent = Elaina.generateWAMessageFromContent || Baileys.generateWAMessageFromContent
 const jidNormalizedUser = Elaina.jidNormalizedUser || Baileys.jidNormalizedUser
-
-
 
 // ─── UTIL: Download video/audio sebagai Buffer ──────────────────────────────
 async function downloadBuffer(url, referer = '') {
@@ -26,6 +28,82 @@ async function downloadBuffer(url, referer = '') {
     }
   })
   return Buffer.from(resp.data)
+}
+
+// ─── UTIL: Optimasi Video TikTok untuk WhatsApp ────────────────────────────
+/**
+ * Memastikan video TikTok dapat diputar langsung di WhatsApp:
+ * 1. Transcoding ke H.264 (yuv420p) + AAC bila codec HEVC/H.265 atau ukuran > 16MB.
+ * 2. Mengatur moov atom di awal file (+faststart) agar bisa streaming di HP.
+ * 3. Mengompresi video besar (> 20MB) dengan CRF 26 agar tidak melebihi batas WhatsApp.
+ */
+async function optimizeTikTokVideo(inputBuffer) {
+  const tmpIn = join(os.tmpdir(), `tt_in_${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`);
+  const tmpOut = join(os.tmpdir(), `tt_out_${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`);
+
+  try {
+    await fs.writeFile(tmpIn, inputBuffer);
+
+    // Cek apakah video > 16MB atau menggunakan codec HEVC/H.265
+    let needReencode = inputBuffer.length > 16 * 1024 * 1024;
+    try {
+      const probe = spawn('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'stream=codec_name',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        tmpIn
+      ]);
+      let out = '';
+      probe.stdout.on('data', d => out += d);
+      await new Promise(r => probe.on('close', r));
+      if (out.includes('hevc') || out.includes('h265') || out.includes('vp9') || out.includes('av1')) {
+        needReencode = true;
+      }
+    } catch {}
+
+    const ffmpegArgs = needReencode
+      ? [
+          '-y',
+          '-i', tmpIn,
+          '-c:v', 'libx264',
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'fast',
+          '-crf', '26',
+          '-maxrate', '3M',
+          '-bufsize', '6M',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          '-ar', '44100',
+          '-movflags', '+faststart',
+          tmpOut
+        ]
+      : [
+          '-y',
+          '-i', tmpIn,
+          '-c', 'copy',
+          '-movflags', '+faststart',
+          tmpOut
+        ];
+
+    await new Promise((resolve) => {
+      const proc = spawn('ffmpeg', ffmpegArgs);
+      proc.on('close', resolve);
+      proc.on('error', resolve);
+    });
+
+    if (await fs.access(tmpOut).then(() => true).catch(() => false)) {
+      const optimized = await fs.readFile(tmpOut);
+      await fs.unlink(tmpOut).catch(() => {});
+      return optimized;
+    }
+
+    return inputBuffer;
+  } catch (e) {
+    console.warn('[TikTok] optimizeTikTokVideo error:', e?.message || e);
+    return inputBuffer;
+  } finally {
+    await fs.unlink(tmpIn).catch(() => {});
+  }
 }
 
 // ─── UTIL: Expand URL pendek (vt.tiktok.com → www.tiktok.com/...) ──────────
@@ -524,15 +602,18 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (res.play) {
       let videoData
 
-      if (res.needBuffer) {
-        console.log(`[TikTok] Downloading buffer from: ${res.play.substring(0, 80)}...`)
-        try {
-          videoData = await downloadBuffer(res.play, res.referer)
-          console.log(`[TikTok] Buffer downloaded: ${(videoData.length / 1024 / 1024).toFixed(2)} MB`)
-        } catch (e) {
-          console.log(`[TikTok] Buffer download failed: ${e.message}, trying direct URL...`)
-          videoData = null
-        }
+      // Selalu unduh buffer video untuk memeriksa ukuran, codec, dan mengoptimalkan untuk WhatsApp
+      try {
+        console.log(`[TikTok] Downloading video buffer from: ${res.play.substring(0, 80)}...`)
+        videoData = await downloadBuffer(res.play, res.referer)
+        console.log(`[TikTok] Raw video size: ${(videoData.length / 1024 / 1024).toFixed(2)} MB`)
+
+        // Optimasi video: H.264 + YUV420P + AAC + faststart + kompresi bila > 16MB agar selalu bisa diputar di WhatsApp
+        videoData = await optimizeTikTokVideo(videoData)
+        console.log(`[TikTok] Optimized video size: ${(videoData.length / 1024 / 1024).toFixed(2)} MB`)
+      } catch (e) {
+        console.warn(`[TikTok] Buffer download/optimize failed: ${e.message}, fallback to direct URL...`)
+        videoData = null
       }
 
       const caption = `*──  ୨୧ ✧ TIKTOK DOWNLOADER ✧ ୨୧  ──*
