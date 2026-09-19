@@ -19,5 +19,8 @@ database.db
 *.db-journal
 *.db-wal
 *.db-shm
+database_backup/
+backup_db/
+*.backup.json
 local-lavalink-test/
 scratch/

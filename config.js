@@ -3,6 +3,7 @@ Base : Avelia
 Owner: Nenel
 */
 
+import 'dotenv/config'
 import { watchFile, unwatchFile } from 'fs'
 import chalk from 'chalk'
 import { fileURLToPath, pathToFileURL } from 'url'
@@ -53,11 +54,15 @@ global.prems = []
 global.autotyping = false // default mati
 global.autorecording = false // default mati
 global.usePairingCode = false // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
+global.multiplier = 36 // Multiplier kurva Leveling & EXP (seimbang untuk interaksi bot)
 
 // Mode Hardening WhatsApp 2026: Group Only (Owner tetap bisa chat di PC)
 global.opts = global.opts || {}
 if (global.opts['gconly'] === undefined) {
     global.opts['gconly'] = true // Lindungi bot dari Error 463 & Reachout Timelock di Private Chat
+}
+if (global.opts['antispamOffline'] === undefined) {
+    global.opts['antispamOffline'] = true // Abaikan antrean pesan yang terkirim saat bot offline saat baru menyala / reconnect
 }
 
 /*============= WATERMARK =============*/

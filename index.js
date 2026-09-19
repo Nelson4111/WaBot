@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import yargs from 'yargs';
 import cfonts from 'cfonts';
 import chalk from 'chalk';

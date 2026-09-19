@@ -1,3 +1,4 @@
+import 'dotenv/config';
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1';
 
 // Filter spam log internal libsignal agar terminal tetap bersih
@@ -122,6 +123,8 @@ import {
   mongoDB,
   mongoDBV2
 } from './lib/mongoDB.js'
+import supabaseDBAdapter from './lib/supabaseDBAdapter.js'
+import SupabaseRelationalAdapter from './lib/supabaseRelationalAdapter.js'
 
 const { CONNECTING } = ws
 const { chain } = lodash
@@ -143,6 +146,19 @@ global.opts = new Object(yargs(process.argv.slice(2)).exitProcess(false).parse()
 global.prefix = new RegExp('^[' + (opts['prefix'] || '‎!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']')
 
 global.db = new Low(
+  process.env.SUPABASE_URL && process.env.SUPABASE_KEY ?
+    (process.env.SUPABASE_MODE === 'monolithic' ?
+      new supabaseDBAdapter({
+        url: process.env.SUPABASE_URL,
+        key: process.env.SUPABASE_KEY,
+        table: process.env.SUPABASE_TABLE || 'bot_database',
+        fallbackFile: `${opts._[0] ? opts._[0] + '_' : ''}database.json`
+      }) :
+      new SupabaseRelationalAdapter({
+        url: process.env.SUPABASE_URL,
+        key: process.env.SUPABASE_KEY
+      })
+    ) :
   /https?:\/\//.test(opts['db'] || '') ?
     new cloudDBAdapter(opts['db']) : /mongodb(\+srv)?:\/\//i.test(opts['db']) ?
       (opts['mongodbv2'] ? new mongoDBV2(opts['db']) : new mongoDB(opts['db'])) :
@@ -156,20 +172,33 @@ global.loadDatabase = async function loadDatabase() {
       resolve(db.data == null ? global.loadDatabase() : db.data)
     }
   }, 1 * 1000))
-  if (db.data !== null) return
+  if (db.data !== null) return db.data
   db.READ = true
-  await db.read().catch(console.error)
-  db.READ = null
-  db.data = {
-    users: {},
-    chats: {},
-    stats: {},
-    msgs: {},
-    sticker: {},
-    settings: {},
-    ...(db.data || {})
+  let readSuccess = false
+  try {
+    await db.read()
+    if (db.data !== null && db.data !== undefined) {
+      readSuccess = true
+    } else if (!process.env.SUPABASE_URL) {
+      readSuccess = true
+    }
+  } catch (err) {
+    console.error(chalk.red('[DATABASE LOAD FAILED]:'), err?.message || err)
+    db.data = null
   }
-  global.db.chain = chain(db.data)
+  db.READ = null
+
+  if (readSuccess) {
+    db.data = {
+      users: {},
+      chats: {},
+      stats: {},
+      msgs: {},
+      sticker: {},
+      settings: {},
+      ...(db.data || {})
+    }
+    global.db.chain = chain(db.data)
 
   // Auto-clean & merge any remaining @lid ghost accounts into canonical @s.whatsapp.net accounts
   try {
@@ -195,8 +224,12 @@ global.loadDatabase = async function loadDatabase() {
   } catch (e) {
     console.error('LID DB Cleanup Error:', e)
   }
+  } else {
+    console.warn(chalk.yellow('⚠️ [DATABASE OFFLINE] Database gagal dimuat dari Supabase. Akses fitur yang membutuhkan database dinonaktifkan sementara.'))
+  }
+  return db.data
 }
-loadDatabase()
+await loadDatabase()
 const usePairingCode = global.usePairingCode !== undefined ? global.usePairingCode : !process.argv.includes('--use-pairing-code')
 const useMobile = process.argv.includes('--mobile')
 
@@ -425,6 +458,8 @@ function bindSocketStores(sock) {
 global.conn = makeWASocket(connectionOptions)
 bindSocketStores(global.conn)
 conn.isInit = false
+conn.connectTime = Date.now()
+conn.isOnline = false
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -689,6 +724,8 @@ async function connectionUpdate(update) {
       )
     )
     global.timestamp.connect = new Date()
+    conn.connectTime = Date.now()
+    conn.isOnline = true
 
     // Pre-fetch semua metadata grup sekaligus (1 IQ query total, bukan 1 per grup).
     setTimeout(async () => {
@@ -750,6 +787,8 @@ async function connectionUpdate(update) {
     connection === 'close' &&
     conn.ws.readyState !== CONNECTING
   ) {
+    conn.isOnline = false
+    conn.lastDisconnectTime = Date.now()
     const statusCode = lastDisconnect?.error?.output?.statusCode
     const reason = disconnectReasonName(statusCode)
     const message = lastDisconnect?.error?.message || lastDisconnect?.error?.output?.payload?.message || 'Unknown reason'
@@ -775,8 +814,10 @@ async function connectionUpdate(update) {
   }
   
   // Persist global options from DB
-  if (!global.db.data.settings['bot']) global.db.data.settings['bot'] = {}
-  Object.assign(global.opts, global.db.data.settings['bot'])
+  if (global.db.data?.settings) {
+    if (!global.db.data.settings['bot']) global.db.data.settings['bot'] = {}
+    Object.assign(global.opts, global.db.data.settings['bot'])
+  }
 process.on('uncaughtException', console.error)
 // let strQuot = /(["'])(?:(?=(\\?))\2.)*?\1/
 

@@ -1,4 +1,4 @@
-import { xpRange } from '../../lib/levelling.js'
+import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import fs from 'fs'
 import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
@@ -20,7 +20,7 @@ const defaultMenu = {
 
 *╭  〔 𝜚 ᴜ ꜱ ᴇ ʀ 〕*
 *┆* ⟡ ɴᴀᴍᴀ     : *%name*
-*┆* ✧ ʀᴏʟᴇ     : *%role ㋡*
+*┆* ✧ ʟᴇᴠᴇʟ    : *Lv.%level (%role) ㋡*
 *┆* ✦ ꜱᴛᴀᴛᴜꜱ   : *%prems*
 *┆* ⌬ ʟɪᴍɪᴛ    : *%limit*
 *┆* ❖ ꜱᴀʟᴅᴏ    : *Rp %uang*
@@ -92,8 +92,9 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     user.name = name
 
     let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
-    const owners = global.owner.map(v => v[0] + '@s.whatsapp.net')
-    let role = owners.includes(m.sender) ? 'Owner' : dbRole
+    const owners = (global.owner || []).map(v => (Array.isArray(v) ? v[0] : v).replace(/\D/g, '') + '@s.whatsapp.net')
+    const senderNumber = m.sender.split('@')[0]
+    let role = owners.some(o => o.includes(senderNumber)) ? 'Owner ❖' : (user.isCoOwner ? 'Co-Owner ✦' : getLevelRole(user.level || 0))
     let greeting = getGreeting(name, d.getHours())
     let totalFitur = Object.keys(global.plugins || {}).length || 750
 
@@ -181,6 +182,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
       totalFitur: toSmallNum(totalFitur),
       uang: toSmallNum(uang.toLocaleString('id-ID')), 
       limit: toSmallNum(limit),
+      level: toSmallNum(user.level || 0),
       role, 
       tanggal: toSmallNum(tanggal),
       hari,

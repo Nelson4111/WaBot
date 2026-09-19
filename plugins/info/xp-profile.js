@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import sharp from 'sharp'
 import { loadDB } from '../../lib/waifuHelper.js'
-import { xpRange } from '../../lib/levelling.js'
+import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getIntimacyRank, normalizeRingName } from '../../lib/pasanganHelper.js'
 
@@ -70,13 +70,15 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   let username = registered ? (name || conn.getName(who)) : conn.getName(who)
   if (!username) username = 'User'
 
-  // Periksa Role Khusus (Owner / Co-Owner)
+  // Periksa Role Khusus (Owner / Co-Owner / Level Rank)
   const owners = (global.owner || []).map(v => (Array.isArray(v) ? v[0] : v).replace(/\D/g, '') + '@s.whatsapp.net')
   const senderNumber = who.split('@')[0]
   if (owners.some(o => o.includes(senderNumber))) {
     role = 'Owner ❖'
   } else if (user.isCoOwner) {
     role = 'Co-Owner ✦'
+  } else {
+    role = getLevelRole(level)
   }
 
   let isPremium = (premiumTime || 0) > Date.now() || user.premium
@@ -93,7 +95,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   const totalAset = uang + bank
 
   // 4. Data Leveling & Progres EXP
-  let { min, max, xp: reqXp } = xpRange(level)
+  let { min, max, xp: reqXp } = xpRange(level, global.multiplier || 36)
   let currentExpInLevel = Math.max(0, exp - min)
   let percent = Math.min(100, Math.max(0, Math.floor((currentExpInLevel / (reqXp || 1)) * 100)))
   let remainingExp = Math.max(0, max - exp)

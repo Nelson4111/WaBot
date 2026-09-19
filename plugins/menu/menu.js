@@ -5,6 +5,7 @@ import { toPTT } from '../../lib/converter.js'
 import { getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
 
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
+import { getLevelRole } from '../../lib/levelling.js'
 
 const toSmallNum = (str) => {
     const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -53,6 +54,17 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   let { limit = 0, role = 'User', premiumTime = 0, pasangan = [] } = user
   let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
   const pasanganHidden = isPasanganHidden(persistedUser) || isPasanganHidden(user)
+
+  const owners = (global.owner || []).map(v => (Array.isArray(v) ? v[0] : v).replace(/\D/g, '') + '@s.whatsapp.net')
+  const senderNumber = m.sender.split('@')[0]
+  let displayRole = 'Wanderer'
+  if (owners.some(o => o.includes(senderNumber))) {
+    displayRole = 'Owner ❖'
+  } else if (user.isCoOwner) {
+    displayRole = 'Co-Owner ✦'
+  } else {
+    displayRole = getLevelRole(user.level || 0)
+  }
 
   let partnerDisplay = '― (Single)'
   if (pasanganHidden) {
@@ -126,7 +138,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 
   let userCard = `*╭  〔 𝜚 ᴜ ꜱ ᴇ ʀ 〕*
 *┆* ⟡ ɴᴀᴍᴀ     : *${name}*
-*┆* ✧ ʀᴏʟᴇ     : *${role} ㋡*
+*┆* ✧ ʟᴇᴠᴇʟ    : *Lv.${toSmallNum(user.level || 0)} (${displayRole}) ㋡*
 *┆* ✦ ꜱᴛᴀᴛᴜꜱ   : *${prems}*
 *┆* ⌬ ʟɪᴍɪᴛ    : *${toSmallNum(limit)}*
 *┆* ❖ ꜱᴀʟᴅᴏ    : *Rp ${toSmallNum(uang.toLocaleString('id-ID'))}*

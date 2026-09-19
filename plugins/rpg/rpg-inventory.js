@@ -11,12 +11,12 @@ let handler = async (m, { conn, command }) => {
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
 
-  if (['level', 'blood', 'darah', 'equipment', 'equip'].includes(command)) {
+  if (['rpglevel', 'blood', 'darah', 'equipment', 'equip'].includes(command)) {
     const armorLvl = Number(user.armor) || 0
     const maxHP = 100 + (armorLvl * 20) + (Number(user.maxDarahBonus) || 0)
     if (typeof user.darah === 'undefined') user.darah = maxHP
 
-    if (command === 'level') return m.reply(`🆙 *LEVEL RPG*\nLevel: ${user.level}\nEXP: ${user.exp}/${(Number(user.level) || 1) * 500}`)
+    if (command === 'rpglevel') return m.reply(`🆙 *LEVEL RPG*\nLevel: ${user.level}\nEXP: ${user.exp}/${(Number(user.level) || 1) * 500}`)
     if (['blood', 'darah'].includes(command)) return m.reply(`❤️ *DARAH*\n${user.darah}/${maxHP}`)
     return m.reply(
       `🛡️ *EQUIPMENT*\n` +
@@ -191,7 +191,7 @@ return sendRpgMsg(conn, m, cap, pp)
 
 handler.help = ['inventory', 'inv']
 handler.tags = ['rpg']
-handler.command = /^(inv|inventory|level|equipment|equip|blood|darah)$/i
+handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']
 
 export default handler
