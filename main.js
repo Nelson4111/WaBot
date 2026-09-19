@@ -240,16 +240,19 @@ global.updateGroupMetadataCache = function (jid, metadata) {
     if (!global.lids) global.lids = {};
     if (global.db && global.db.data && !global.db.data.lids) global.db.data.lids = {};
     for (const p of metadata.participants) {
-      const lid = p.lid || (p.id?.endsWith('@lid') ? p.id : null);
-      const phoneJid = p.jid || p.phoneNumber || (p.id?.endsWith('@s.whatsapp.net') ? p.id : null);
-      if (lid && lid.endsWith('@lid') && phoneJid && phoneJid.endsWith('@s.whatsapp.net')) {
-        const cleanLid = lid.split(':')[0].replace(/@.+/, '') + '@lid';
-        const cleanJid = phoneJid.split(':')[0].replace(/@.+/, '') + '@s.whatsapp.net';
-        global.lids[cleanLid] = cleanJid;
-        global.lids[lid] = cleanJid;
-        if (global.db && global.db.data && global.db.data.lids) {
-          global.db.data.lids[cleanLid] = cleanJid;
-          global.db.data.lids[lid] = cleanJid;
+      const rawLid = p.lid || (p.id?.endsWith('@lid') ? p.id : null);
+      const rawPhone = p.jid || p.phoneNumber || p.phone || p.pn || (p.id?.endsWith('@s.whatsapp.net') ? p.id : null);
+      if (rawLid && rawPhone) {
+        const cleanLid = rawLid.split(':')[0].replace(/@.+/, '') + '@lid';
+        const digits = String(rawPhone).split('@')[0].replace(/\D/g, '');
+        if (digits.length >= 7 && digits.length <= 16) {
+          const cleanJid = digits + '@s.whatsapp.net';
+          global.lids[cleanLid] = cleanJid;
+          global.lids[rawLid] = cleanJid;
+          if (global.db && global.db.data && global.db.data.lids) {
+            global.db.data.lids[cleanLid] = cleanJid;
+            global.db.data.lids[rawLid] = cleanJid;
+          }
         }
       }
     }
