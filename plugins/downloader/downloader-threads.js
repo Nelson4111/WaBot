@@ -51,16 +51,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
         sent = true
       } else if (imageUrl) {
-        await conn.sendButtonV2(m.chat, {
-          title: '⛩️ THREADS DOWNLOADER',
-          subtitle: 'Avelia • Media Service',
-          text: `*──  ୨୧ ✧ THREADS DOWNLOADER ✧ ୨୧  ──*\n\n> _Gambar berhasil diunduh_`,
-          footer: `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`,
-          buffer: imageUrl,
-          buttons: [
-            ['📜 Menu Utama', `${usedPrefix}menu`]
-          ]
-        }, m)
+        await conn.sendMessage(m.chat, {
+          image: { url: imageUrl },
+          caption: `*──  ୨୧ ✧ THREADS DOWNLOADER ✧ ୨୧  ──*\n\n> _Gambar berhasil diunduh_`
+        }, { quoted: m })
         sent = true
       }
     }

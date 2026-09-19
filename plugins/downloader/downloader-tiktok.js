@@ -1,6 +1,15 @@
 // downloader tiktok - fix: download buffer dulu untuk URL yg butuh headers khusus
 import axios from 'axios'
+import crypto from 'crypto'
+import * as Baileys from '@whiskeysockets/baileys'
+import * as Elaina from '@rexxhayanasi/elaina-baileys'
 import { status, toSmallNum } from '../../lib/style.js'
+
+const generateWAMessage = Elaina.generateWAMessage || Baileys.generateWAMessage
+const generateWAMessageFromContent = Elaina.generateWAMessageFromContent || Baileys.generateWAMessageFromContent
+const jidNormalizedUser = Elaina.jidNormalizedUser || Baileys.jidNormalizedUser
+
+
 
 // ─── UTIL: Download video/audio sebagai Buffer ──────────────────────────────
 async function downloadBuffer(url, referer = '') {
@@ -423,30 +432,84 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     const res = await getTikTok(url)
 
-    // ── Slide / Image Post ──────────────────────────────────────────
+    // ── Slide / Image Post (WhatsApp Native Album) ──────────────────
     if (Array.isArray(res.images) && res.images.length > 0) {
-      await m.reply(status.wait(`Ditemukan ${toSmallNum(res.images.length)} slide gambar, sedang mengirim...`))
-      const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
-      for (let i = 0; i < res.images.length; i++) {
-        const caption = `*──  ୨୧ ✧ TIKTOK SLIDE ✧ ୨୧  ──*
+      await m.reply(status.wait(`Ditemukan ${toSmallNum(res.images.length)} slide gambar, sedang mengunduh & menyiapkan album...`))
+
+      const mediaList = (await Promise.all(
+        res.images.map(async (imgUrl, i) => {
+          try {
+            const buf = await downloadBuffer(imgUrl, res.referer || 'https://www.tiktok.com/')
+            const caption = `*──  ୨୧ ✧ TIKTOK SLIDE ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
 > ⟡ ᴊᴜᴅᴜʟ : *${res.title || '-'}*
 > ◈ ꜱʟɪᴅᴇ : *${toSmallNum(i + 1)} / ${toSmallNum(res.images.length)}*
 *╰───────────────*`.trim()
+            return { image: buf, caption }
+          } catch (err) {
+            console.error(`[TikTok Slide Download Error ${i}]`, err?.message || err)
+            return null
+          }
+        })
+      )).filter(Boolean)
 
-        await conn.sendButtonV2(m.chat, {
-          title: '⛩️ TIKTOK SLIDE',
-          subtitle: `Slide ${toSmallNum(i + 1)} / ${toSmallNum(res.images.length)}`,
-          text: caption,
-          footer,
-          buffer: res.images[i],
-          buttons: [
-            ['📜 Menu Utama', `${usedPrefix}menu`]
-          ]
-        }, m)
-        await new Promise(r => setTimeout(r, 700))
+      if (!mediaList.length) {
+        return m.reply(status.error('Gagal mengunduh slide gambar TikTok.'))
       }
+
+      let sentAlbum = false
+      try {
+        const opener = generateWAMessageFromContent(
+          m.chat,
+          {
+            messageContextInfo: { messageSecret: crypto.randomBytes(32) },
+            albumMessage: {
+              expectedImageCount: mediaList.length,
+              expectedVideoCount: 0
+            }
+          },
+          {
+            userJid: jidNormalizedUser(conn.user.id),
+            quoted: m,
+            upload: conn.waUploadToServer
+          }
+        )
+
+        await conn.relayMessage(opener.key.remoteJid, opener.message, {
+          messageId: opener.key.id
+        })
+
+        for (const content of mediaList) {
+          const msg = await generateWAMessage(opener.key.remoteJid, content, {
+            upload: conn.waUploadToServer
+          })
+
+          msg.message.messageContextInfo = {
+            messageSecret: crypto.randomBytes(32),
+            messageAssociation: {
+              associationType: 1,
+              parentMessageKey: opener.key
+            }
+          }
+
+          await conn.relayMessage(msg.key.remoteJid, msg.message, {
+            messageId: msg.key.id
+          })
+        }
+        sentAlbum = true
+      } catch (albumErr) {
+        console.error('[TikTok Album Error]', albumErr)
+      }
+
+      // Fallback jika albumMessage gagal: kirim gambar biasa tanpa button
+      if (!sentAlbum) {
+        for (const content of mediaList) {
+          await conn.sendMessage(m.chat, content, { quoted: m })
+          await new Promise(r => setTimeout(r, 700))
+        }
+      }
+
       if (res.music) {
         await conn.sendMessage(m.chat, {
           audio: { url: res.music },

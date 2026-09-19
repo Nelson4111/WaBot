@@ -68,17 +68,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (mediaUrl.type === 'video') {
       await conn.sendMessage(m.chat, { video: { url: mediaUrl.url }, caption }, { quoted: m })
     } else {
-      // Tombol fallback ke .menu jika ada image
-      await conn.sendButtonV2(m.chat, {
-        title: '⛩️ PINTEREST MEDIA',
-        subtitle: 'Avelia • Snappin Service',
-        text: caption,
-        footer,
-        buffer: mediaUrl.url,
-        buttons: [
-          ['📜 Menu Utama', `${usedPrefix}menu`]
-        ]
-      }, m)
+      await conn.sendMessage(m.chat, { image: { url: mediaUrl.url }, caption }, { quoted: m })
     }
 
   } catch (e) {

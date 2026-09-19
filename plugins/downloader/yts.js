@@ -30,20 +30,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > 🎵 *Audio:* *${usedPrefix}ytmp3 ${video.url}*
 > 🎥 *Video:* *${usedPrefix}ytmp4 ${video.url}*`.trim()
 
-    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
-
-    const buttons = [
-      ['📜 Menu Utama', `${usedPrefix}menu`]
-    ]
-
-    await conn.sendButtonV2(m.chat, {
-      title: '⛩️ YOUTUBE DISCOVERY',
-      subtitle: 'Avelia • Video & Audio Discovery',
-      text: caption,
-      footer,
-      buffer: thumb,
-      buttons
-    }, m)
+    await conn.sendMessage(m.chat, {
+      image: (typeof thumb === 'string' ? { url: thumb } : thumb),
+      caption
+    }, { quoted: m })
   } catch (e) {
     m.reply(status.error(`Gagal melakukan pencarian YouTube.\n> ${e?.message || e}`))
   }

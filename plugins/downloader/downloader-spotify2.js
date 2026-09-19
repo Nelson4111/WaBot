@@ -61,20 +61,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
 > _Sedang mengirimkan file audio ke ruang obrolan..._`.trim()
 
-    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
-
-    const buttons = [
-      ['📜 Menu Utama', `${usedPrefix}menu`]
-    ]
-
-    await conn.sendButtonV2(m.chat, {
-      title: '⛩️ SPOTIFY STREAM',
-      subtitle: 'Avelia • SpotiSong Downloader',
-      text: caption,
-      footer,
-      buffer: cover,
-      buttons
-    }, m)
+    await conn.sendMessage(m.chat, {
+      image: (typeof cover === 'string' ? { url: cover } : cover),
+      caption
+    }, { quoted: m })
 
     const mp3 = await downloadYouTubeMedia(video.url, 'mp3')
     await conn.sendMessage(m.chat, {

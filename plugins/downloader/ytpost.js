@@ -29,30 +29,17 @@ ${content ? content.split('\n').map(l => `> ${l}`).join('\n') : '> (Tidak ada te
     const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
 
     if (images && images.length) {
-      // Ada gambar: gunakan button ke .menu sesuai aturan
-      await conn.sendButtonV2(m.chat, {
-        title: '⛩️ YOUTUBE POST',
-        subtitle: 'Avelia • Community Feed',
-        text: caption,
-        footer,
-        buffer: images[0],
-        buttons: [
-          ['📜 Menu Utama', `${usedPrefix}menu`]
-        ]
-      }, m)
+      await conn.sendMessage(m.chat, {
+        image: { url: images[0] },
+        caption
+      }, { quoted: m })
 
-      // Jika ada gambar berikutnya (slide 2 dst), kirim sisanya dengan sendButtonV2
+      // Jika ada gambar berikutnya (slide 2 dst), kirim sisanya
       for (let i = 1; i < images.length; i++) {
-        await conn.sendButtonV2(m.chat, {
-          title: '⛩️ YOUTUBE POST',
-          subtitle: `Slide ${toSmallNum(i + 1)} / ${toSmallNum(images.length)}`,
-          text: `*Slide ${toSmallNum(i + 1)} / ${toSmallNum(images.length)}*`,
-          footer,
-          buffer: images[i],
-          buttons: [
-            ['📜 Menu Utama', `${usedPrefix}menu`]
-          ]
-        }, m)
+        await conn.sendMessage(m.chat, {
+          image: { url: images[i] },
+          caption: `*Slide ${toSmallNum(i + 1)} / ${toSmallNum(images.length)}*`
+        }, { quoted: m })
       }
     } else {
       m.reply(caption)

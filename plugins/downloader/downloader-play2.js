@@ -28,20 +28,10 @@ const handler = async (m, { conn, usedPrefix, text, command }) => {
 
 > _Sedang mengunduh file audio ke ruang obrolan..._`.trim()
 
-    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
-
-    const buttons = [
-      ['📜 Menu Utama', `${usedPrefix}menu`]
-    ]
-
-    await conn.sendButtonV2(m.chat, {
-      title: '⛩️ YOUTUBE AUDIO',
-      subtitle: 'Avelia • Media Service',
-      text: caption,
-      footer,
-      buffer: thumb,
-      buttons
-    }, m)
+    await conn.sendMessage(m.chat, {
+      image: (typeof thumb === 'string' ? { url: thumb } : thumb),
+      caption
+    }, { quoted: m })
 
     const mp3 = await downloadYouTubeMedia(url, 'mp3')
     await conn.sendMessage(m.chat, {

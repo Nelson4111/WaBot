@@ -100,16 +100,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
 *┆* ⟡ ꜱʟɪᴅᴇ   : *${toSmallNum(i + 1)} / ${toSmallNum(result.download.length)}*
 *╰───────────────*`.trim()
-                await conn.sendButtonV2(m.chat, {
-                    title: '⛩️ X (TWITTER) DOWNLOADER',
-                    subtitle: `Slide ${toSmallNum(i + 1)} / ${toSmallNum(result.download.length)}`,
-                    text: caption,
-                    footer,
-                    buffer: img.url,
-                    buttons: [
-                        ['📜 Menu Utama', `${usedPrefix}menu`]
-                    ]
-                }, m)
+                await conn.sendMessage(m.chat, {
+                    image: { url: img.url },
+                    caption
+                }, { quoted: m })
             }
         } else {
             throw new Error("Tidak ada media yang dapat diunduh pada tautan ini.")

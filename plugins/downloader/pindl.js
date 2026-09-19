@@ -61,17 +61,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 caption
             }, { quoted: m })
         } else if (result.image) {
-            // Sesuai aturan: jika ada image, gunakan button (ke .menu jika tidak ada aksi lain)
-            await conn.sendButtonV2(m.chat, {
-                title: '⛩️ PINTEREST MEDIA',
-                subtitle: 'Avelia • Media Service',
-                text: caption,
-                footer,
-                buffer: result.image,
-                buttons: [
-                    ['📜 Menu Utama', `${usedPrefix}menu`]
-                ]
-            }, m)
+            await conn.sendMessage(m.chat, {
+                image: { url: result.image },
+                caption
+            }, { quoted: m })
         } else {
             m.reply(status.error('Media tidak ditemukan pada halaman ini.'))
         }

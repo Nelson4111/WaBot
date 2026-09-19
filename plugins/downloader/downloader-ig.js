@@ -38,20 +38,65 @@ async function scrapeSaveInsta(url) {
   const $ = cheerio.load(html)
   const results = []
 
-  $('.download-box li, .download-items').each((_, el) => {
-    const dlBtn = $(el).find('a[title*="Download"], a.download-items__btn, a.btn-download').attr('href')
-    const thumb = $(el).find('img').attr('src')
-    if (dlBtn && dlBtn.startsWith('http')) {
-      results.push({ url: dlBtn, thumb })
+  let list = $('.download-box > li')
+  if (!list.length) list = $('.download-items')
+
+  list.each((_, el) => {
+    // 1. Prioritaskan tombol video
+    const videoBtn = $(el).find('a[title*="Video"], a:contains("Download Video")').attr('href')
+    // 2. Tombol foto / image
+    const photoBtn = $(el).find('a[title*="Photo"], a[title*="Image"], a:contains("Download Photo"), a:contains("Download Image")').attr('href')
+    // 3. Tombol download normal (bukan tombol thumbnail .dl-thumb)
+    const normalBtn = $(el).find('.download-items__btn:not(.dl-thumb) a').attr('href')
+    const anyBtn = $(el).find('a.download-items__btn, a.btn-download').attr('href')
+
+    let dlUrl = videoBtn || photoBtn || normalBtn || anyBtn
+    if (!dlUrl || !dlUrl.startsWith('http')) return
+
+    let isVideo = false
+    if (videoBtn) {
+      isVideo = true
+    } else if ($(el).find('.format-icon .icon-dlvideo').length > 0) {
+      isVideo = true
     }
+
+    // Decode JWT token snapcdn jika ada untuk mendapatkan direct URL Instagram CDN & deteksi tipe media akurat
+    let directUrl = dlUrl
+    try {
+      const token = dlUrl.match(/token=([^&]+)/)?.[1]
+      if (token) {
+        const jwtPayload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'))
+        if (jwtPayload.url) directUrl = jwtPayload.url
+        if (jwtPayload.filename) {
+          if (/\.mp4/i.test(jwtPayload.filename)) isVideo = true
+          else if (/\.(jpe?g|png|webp)/i.test(jwtPayload.filename)) isVideo = false
+        }
+        if (jwtPayload.url && (/\.mp4/i.test(jwtPayload.url) || /video/i.test(jwtPayload.url))) {
+          isVideo = true
+        }
+      }
+    } catch {}
+
+    if (!isVideo && (/\/reel(s)?\//i.test(url) || /\.mp4/i.test(directUrl) || /video/i.test(directUrl))) {
+      isVideo = true
+    }
+
+    results.push({
+      url: directUrl,
+      type: isVideo ? 'video' : 'image'
+    })
   })
 
-  // Fallback direct anchor scan
+  // Fallback direct scan jika list kosong
   if (!results.length) {
     $('a[href^="http"]').each((_, el) => {
       const href = $(el).attr('href')
-      if (href.includes('download') || /video|photo/i.test($(el).text())) {
-        results.push({ url: href })
+      const text = $(el).text().trim()
+      const title = $(el).attr('title') || ''
+      if (/thumbnail/i.test(text) || /thumbnail/i.test(title) || /saveinsta app/i.test(text)) return
+      if (href.includes('download') || /video|photo/i.test(text)) {
+        const isVid = /video/i.test(text) || /video/i.test(title) || /\/reel(s)?\//i.test(url)
+        results.push({ url: href, type: isVid ? 'video' : 'image' })
       }
     })
   }
@@ -63,18 +108,42 @@ async function getInstagramMedia(url) {
   // 1. Coba SaveInsta Scraper
   try {
     const res = await scrapeSaveInsta(url)
-    if (res && res.length > 0) return res.map(r => r.url)
+    if (res && res.length > 0) return res
   } catch (e) {
     console.warn('[Instagram SaveInsta Failed]:', e.message)
   }
 
-  // 2. Fallback Ryzen API
+  // 2. Fallback API FAA
+  try {
+    const faa = await axios.get(`https://api-faa.my.id/faa/igdl?url=${encodeURIComponent(url)}`, { timeout: 15000 })
+    if (faa.data?.status && faa.data?.result) {
+      const res = faa.data.result
+      const isVid = res.metadata?.isVideo ?? /\/reel(s)?\//i.test(url)
+      const urls = res.url || []
+      if (urls.length > 0) {
+        return urls.map(u => ({
+          url: u,
+          type: isVid || /\.mp4/i.test(u) ? 'video' : 'image'
+        }))
+      }
+    }
+  } catch (e) {
+    console.warn('[Instagram FAA Failed]:', e.message)
+  }
+
+  // 3. Fallback Ryzen API
   try {
     const rz = await axios.get(`https://api.ryzumi.net/api/downloader/instagram?url=${encodeURIComponent(url)}`, { timeout: 15000 })
     if (rz.data?.success && rz.data?.result) {
       const d = rz.data.result
-      if (Array.isArray(d)) return d.map(x => x.url || x)
-      if (d.url) return Array.isArray(d.url) ? d.url : [d.url]
+      const list = Array.isArray(d) ? d : (d.url ? (Array.isArray(d.url) ? d.url : [d.url]) : [])
+      if (list.length) {
+        return list.map(item => {
+          const dlUrl = typeof item === 'string' ? item : (item.url || item)
+          const isVid = /video|\.mp4/i.test(dlUrl) || /\/reel(s)?\//i.test(url)
+          return { url: dlUrl, type: isVid ? 'video' : 'image' }
+        })
+      }
     }
   } catch (e) {
     console.warn('[Instagram Ryzen Failed]:', e.message)
@@ -91,35 +160,35 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   await m.reply(status.wait('Sedang memproses tautan Instagram...'))
 
   try {
-    const mediaUrls = await getInstagramMedia(text)
-    if (!mediaUrls || !mediaUrls.length) throw new Error('Media tidak ditemukan.')
+    const mediaItems = await getInstagramMedia(text)
+    if (!mediaItems || !mediaItems.length) throw new Error('Media tidak ditemukan.')
 
-    for (let i = 0; i < mediaUrls.length; i++) {
-      const dlUrl = mediaUrls[i]
-      const isVideo = /\.mp4/i.test(dlUrl) || dlUrl.includes('video')
+    for (let i = 0; i < mediaItems.length; i++) {
+      const item = mediaItems[i]
+      const dlUrl = item.url || item
+      const isVideo = item.type === 'video' || /\.mp4/i.test(dlUrl) || /video/i.test(dlUrl) || /\/reel(s)?\//i.test(text)
 
       const caption = `*──  ୨୧ ✧ INSTAGRAM DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
-*┆* ⟡ ᴍᴇᴅɪᴀ   : *${toSmallNum(i + 1)} / ${toSmallNum(mediaUrls.length)}*
+*┆* ⟡ ᴍᴇᴅɪᴀ   : *${toSmallNum(i + 1)} / ${toSmallNum(mediaItems.length)}*
 *┆* ◈ ᴛɪᴘᴇ    : *${isVideo ? 'Video MP4' : 'Foto / Gambar'}*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()
 
       if (isVideo) {
-        await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption }, { quoted: m })
+        await conn.sendMessage(m.chat, {
+          video: { url: dlUrl },
+          mimetype: 'video/mp4',
+          fileName: 'instagram.mp4',
+          caption
+        }, { quoted: m })
       } else {
-        await conn.sendButtonV2(m.chat, {
-          title: '⛩️ INSTAGRAM MEDIA',
-          subtitle: 'Avelia • Media Service',
-          text: caption,
-          footer: `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`,
-          buffer: dlUrl,
-          buttons: [
-            ['📜 Menu Utama', `${usedPrefix}menu`]
-          ]
-        }, m)
+        await conn.sendMessage(m.chat, {
+          image: { url: dlUrl },
+          caption
+        }, { quoted: m })
       }
     }
   } catch (e) {

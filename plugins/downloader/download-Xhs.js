@@ -77,16 +77,10 @@ let handler = async (m, { text, conn, usedPrefix, command }) => {
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
 *┆* ⟡ ꜱʟɪᴅᴇ : *${toSmallNum(i + 1)} / ${toSmallNum(media.images.length)}*
 *╰───────────────*`.trim()
-            await conn.sendButtonV2(m.chat, {
-                title: '⛩️ XIAOHONGSHU SLIDE',
-                subtitle: `Slide ${toSmallNum(i + 1)} / ${toSmallNum(media.images.length)}`,
-                text: slideCap,
-                footer,
-                buffer: media.images[i],
-                buttons: [
-                    ['📜 Menu Utama', `${usedPrefix}menu`]
-                ]
-            }, m)
+            await conn.sendMessage(m.chat, {
+                image: { url: media.images[i] },
+                caption: slideCap
+            }, { quoted: m })
         }
     } else {
         m.reply(status.error('Tidak ada media yang ditemukan pada catatan ini.'))

@@ -61,20 +61,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 > _Sedang mengunduh file audio ke ruang obrolan..._`.trim()
 
-    const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
-
-    const buttons = [
-      ['📜 Menu Utama', `${usedPrefix}menu`]
-    ]
-
-    await conn.sendButtonV2(m.chat, {
-      title: '⛩️ SPOTIFY MUSIC',
-      subtitle: 'Avelia • High Quality Stream',
-      text: caption,
-      footer,
-      buffer: cover,
-      buttons
-    }, m)
+    await conn.sendMessage(m.chat, {
+      image: (typeof cover === 'string' ? { url: cover } : cover),
+      caption
+    }, { quoted: m })
 
     // Unduh buffer audio YouTube dengan header referer aman
     const mp3 = await downloadYouTubeMedia(video.url, 'mp3')
