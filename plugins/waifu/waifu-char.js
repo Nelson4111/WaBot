@@ -9,7 +9,10 @@ let handler = async (m, { args, conn }) => {
   }
 
   const c = await searchMALCharacter(q)
-  if (!c) return m.reply('❌ Karakter tidak ditemukan di MyAnimeList')
+  if (!c) return m.reply(
+    `❌ Karakter *${q}* tidak ditemukan atau layanan Jikan sedang tidak tersedia.\n\n` +
+    `Coba lagi beberapa saat. Contoh yang tersedia: *.char rem* atau *.char 34785*`
+  )
 
   const db = loadDB()
   if (!db.chars) db.chars = {}
