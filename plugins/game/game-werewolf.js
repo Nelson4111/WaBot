@@ -323,8 +323,8 @@ const startDayVoting = async (conn, chat, ww) => {
     resetVote(chat, ww)
     clearAllVote(chat, ww)
 
-    const livingPlayers = room.player.filter((p) => !p.isdead && !p.isDummy)
-    const mentions = livingPlayers.map((p) => p.id)
+    const livingPlayers = room.player.filter((p) => !p.isdead)
+    const mentions = livingPlayers.filter((p) => !p.isDummy).map((p) => p.id)
 
     let playerListText = ''
     livingPlayers.forEach((p) => {
@@ -580,7 +580,6 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     p.nightDone = true
                     p.lastNightAction = { type: "skip", label: "Simulasi" }
                 })
-                ww[chat].nightTarget = null
             }
 
             // Cek apakah seluruh pemain hidup telah beraksi
@@ -761,7 +760,7 @@ ${rosterText.trim()}
         if (!target || isNaN(target)) return m.reply(status.warning("Masukkan nomor pemain yang valid atau pilih tombol vote."))
 
         const targetNum = parseInt(target)
-        const targetPlayer = ww[chat].player.find((p) => p.number === targetNum && !p.isDummy)
+        const targetPlayer = ww[chat].player.find((p) => p.number === targetNum)
         if (!targetPlayer || targetPlayer.isdead) {
             return m.reply(status.error("Pemain target tidak ditemukan atau sudah gugur."))
         }
