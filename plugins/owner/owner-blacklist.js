@@ -1,5 +1,3 @@
-import fs from 'fs'
-
 let handler = async (m, { conn, text, isOwner, isAdmin }) => {
     // Cek permission: hanya owner atau admin grup
     if (!isOwner && !isAdmin) return m.reply('❌ Hanya owner atau admin grup yang bisa menggunakan fitur ini!')
@@ -13,13 +11,13 @@ let handler = async (m, { conn, text, isOwner, isAdmin }) => {
 
     // Ambil database blacklist
     let db = global.db.data
-    db.blacklist = db.blacklist || []
+    db.blacklist = Array.isArray(db.blacklist) ? db.blacklist : []
 
     if (db.blacklist.includes(who)) return m.reply('❌ User ini sudah diblacklist!')
 
     db.blacklist.push(who)
 
-    fs.writeFileSync('./lib/database/blacklist.json', JSON.stringify(db.blacklist, null, 2))
+    await global.db.write().catch(err => console.error('[BLACKLIST SYNC ERROR]', err))
 
     m.reply(`✅ Berhasil menambahkan user ke blacklist:\n@${who.split('@')[0]}`, null, { mentions: [who] })
 }

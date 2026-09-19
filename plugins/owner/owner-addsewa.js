@@ -1,8 +1,4 @@
-import fs from 'fs'
-import path from 'path'
 import { sendBotGroupIntro } from '../../lib/bot-intro.js'
-
-const dbPath = './lib/database/sewa.json'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!text) return m.reply(`Format Salah!\nContoh: *${usedPrefix + command}* https://chat.whatsapp.com/xxx 30d`)
@@ -30,10 +26,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         const groupJid = id.endsWith('@g.us') ? id : `${id}@g.us`
         sendBotGroupIntro(conn, groupJid).catch(err => console.error('[addsewa sendBotGroupIntro error]:', err))
 
-        if (!fs.existsSync(path.dirname(dbPath))) fs.mkdirSync(path.dirname(dbPath), { recursive: true })
-        if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify([], null, 2))
+        if (!global.db.data) global.db.data = {}
+        if (!Array.isArray(global.db.data.sewa)) {
+            global.db.data.sewa = Array.isArray(global.db.data.aux_sewa) ? global.db.data.aux_sewa : []
+        }
         
-        let sewa = JSON.parse(fs.readFileSync(dbPath, 'utf-8'))
+        let sewa = global.db.data.sewa
         let now = Date.now()
         let index = sewa.findIndex(s => s.id === id)
 
@@ -45,7 +43,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             index = sewa.length - 1
         }
 
-        fs.writeFileSync(dbPath, JSON.stringify(sewa, null, 2))
+        await global.db.write().catch(err => console.error('[ADDSEWA SYNC ERROR]', err))
 
         let expiryDate = new Date(sewa[index].expired).toLocaleString('id-ID', { 
             timeZone: 'Asia/Jakarta',

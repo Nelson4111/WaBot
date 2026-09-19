@@ -24,3 +24,4 @@ backup_db/
 *.backup.json
 local-lavalink-test/
 scratch/
+lib/database/

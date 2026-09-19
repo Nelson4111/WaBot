@@ -162,7 +162,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
         }
 
         // 5. Simpan full raw JSON ke file lokal
-        const dumpDir = path.join(process.cwd(), 'lib', 'database')
+        const dumpDir = path.join(process.cwd(), 'tmp')
         if (!fs.existsSync(dumpDir)) fs.mkdirSync(dumpDir, { recursive: true })
         const dumpPath = path.join(dumpDir, 'last_inspected_proto.json')
         fs.writeFileSync(dumpPath, JSON.stringify({
@@ -232,7 +232,7 @@ handler.before = async function (m) {
             console.log('Raw Message Payload:', JSON.stringify(m.message, null, 2))
             console.log('-------------------------------------------\n')
 
-            const dumpDir = path.join(process.cwd(), 'lib', 'database')
+            const dumpDir = path.join(process.cwd(), 'tmp')
             if (!fs.existsSync(dumpDir)) fs.mkdirSync(dumpDir, { recursive: true })
             
             const dumpData = {

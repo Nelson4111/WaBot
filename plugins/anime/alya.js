@@ -1,5 +1,4 @@
 import axios from 'axios'
-import fs from 'fs'
 import fetch from "node-fetch"
 
 const headersYT = {
@@ -91,7 +90,13 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let selectedImage
 
     try {
-        let listThumb = JSON.parse(fs.readFileSync('./lib/database/alya.json'))
+        let listThumb = Array.isArray(global.db?.data?.alya) && global.db.data.alya.length > 0 ? global.db.data.alya : [
+            "https://c.termai.cc/i132/4zA9",
+            "https://c.termai.cc/i132/RW1x6n",
+            "https://c.termai.cc/i197/kfB",
+            "https://c.termai.cc/i176/p0Ez4mk",
+            "https://c.termai.cc/i187/zHYf98T"
+        ]
         selectedImage = listThumb[Math.floor(Math.random() * listThumb.length)]
     } catch (e) {
         selectedImage = 'https://c.termai.cc/i116/KpKV'

@@ -1,22 +1,17 @@
-import fs from 'fs'
-import path from 'path'
 import { toSmallNum } from '../../lib/style.js'
 
-const databasePath = path.join(process.cwd(), 'lib/database/absen.json')
-
 const readDB = () => {
-  if (!fs.existsSync(databasePath)) return {}
-  try {
-    return JSON.parse(fs.readFileSync(databasePath, 'utf-8'))
-  } catch {
-    return {}
+  if (!global.db?.data) return {}
+  if (!global.db.data.absen || typeof global.db.data.absen !== 'object') {
+    global.db.data.absen = (global.db.data.aux_absen && typeof global.db.data.aux_absen === 'object') ? global.db.data.aux_absen : {}
   }
+  return global.db.data.absen
 }
 
 const writeDB = (data) => {
-  const dir = path.dirname(databasePath)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(databasePath, JSON.stringify(data, null, 2))
+  if (!global.db?.data) return
+  global.db.data.absen = data
+  global.db.write().catch(err => console.error('[ABSEN SYNC ERROR]', err))
 }
 
 const getTodayWIB = () => {

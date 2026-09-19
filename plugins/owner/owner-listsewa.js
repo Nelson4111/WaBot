@@ -1,10 +1,5 @@
-import fs from 'fs'
-
 let handler = async (m, { conn }) => {
-    let pathSewa = './lib/database/sewa.json'
-    if (!fs.existsSync(pathSewa)) return m.reply('Belum ada data sewa.')
-
-    let sewaData = JSON.parse(fs.readFileSync(pathSewa))
+    let sewaData = Array.isArray(global.db?.data?.sewa) ? global.db.data.sewa : (Array.isArray(global.db?.data?.aux_sewa) ? global.db.data.aux_sewa : [])
     if (sewaData.length === 0) return m.reply('Daftar sewa kosong.')
 
     let now = Date.now()

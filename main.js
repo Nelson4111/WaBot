@@ -198,6 +198,18 @@ global.loadDatabase = async function loadDatabase() {
       settings: {},
       ...(db.data || {})
     }
+    // Inisialisasi struktur database auxiliary dari Supabase bot_metadata
+    db.data.sewa = Array.isArray(db.data.sewa) ? db.data.sewa : (Array.isArray(db.data.aux_sewa) ? db.data.aux_sewa : [])
+    db.data.absen = db.data.absen && typeof db.data.absen === 'object' ? db.data.absen : (db.data.aux_absen && typeof db.data.aux_absen === 'object' ? db.data.aux_absen : {})
+    db.data.totalchat = db.data.totalchat && typeof db.data.totalchat === 'object' ? db.data.totalchat : (db.data.aux_totalchat && typeof db.data.aux_totalchat === 'object' ? db.data.aux_totalchat : {})
+    db.data.blacklist = Array.isArray(db.data.blacklist) ? db.data.blacklist : (Array.isArray(db.data.aux_blacklist) ? db.data.aux_blacklist : [])
+    db.data.alya = Array.isArray(db.data.alya) ? db.data.alya : (Array.isArray(db.data.aux_alya) ? db.data.aux_alya : [
+      "https://c.termai.cc/i132/4zA9",
+      "https://c.termai.cc/i132/RW1x6n",
+      "https://c.termai.cc/i197/kfB",
+      "https://c.termai.cc/i176/p0Ez4mk",
+      "https://c.termai.cc/i187/zHYf98T"
+    ])
     global.db.chain = chain(db.data)
 
   // Auto-clean & merge any remaining @lid ghost accounts into canonical @s.whatsapp.net accounts

@@ -1,5 +1,3 @@
-import fs from 'fs'
-
 let handler = async (m, { conn, text, isOwner, isAdmin }) => {
     // Cek permission
     if (!isOwner && !isAdmin) return m.reply('❌ Hanya owner atau admin grup yang bisa menggunakan fitur ini!')
@@ -12,13 +10,13 @@ let handler = async (m, { conn, text, isOwner, isAdmin }) => {
     else if (text) who = text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' // hanya nomor
 
     let db = global.db.data
-    db.blacklist = db.blacklist || []
+    db.blacklist = Array.isArray(db.blacklist) ? db.blacklist : []
 
     if (!db.blacklist.includes(who)) return m.reply('❌ User ini tidak ada di blacklist!')
 
     db.blacklist = db.blacklist.filter(jid => jid !== who)
 
-    fs.writeFileSync('./lib/database/blacklist.json', JSON.stringify(db.blacklist, null, 2))
+    await global.db.write().catch(err => console.error('[UNBLACKLIST SYNC ERROR]', err))
 
     m.reply(`✅ Berhasil menghapus user dari blacklist:\n@${who.split('@')[0]}`, null, { mentions: [who] })
 }

@@ -1,10 +1,5 @@
-import fs from 'fs'
-
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    let pathSewa = './lib/database/sewa.json'
-    if (!fs.existsSync(pathSewa)) return m.reply('Belum ada data sewa.')
-
-    let sewaData = JSON.parse(fs.readFileSync(pathSewa))
+    let sewaData = Array.isArray(global.db?.data?.sewa) ? global.db.data.sewa : (Array.isArray(global.db?.data?.aux_sewa) ? global.db.data.aux_sewa : [])
     if (sewaData.length === 0) return m.reply('Daftar sewa kosong.')
 
     if (!text || isNaN(text)) return m.reply(`Masukkan nomor urut dari listsewa!\nContoh: *${usedPrefix + command}* 1`)
@@ -15,7 +10,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let deletedId = sewaData[index].id
     sewaData.splice(index, 1)
-    fs.writeFileSync(pathSewa, JSON.stringify(sewaData, null, 2))
+    global.db.data.sewa = sewaData
+    await global.db.write().catch(err => console.error('[DELSEWA SYNC ERROR]', err))
 
     m.reply(`Berhasil menghapus sewa untuk grup:\n${deletedId}`)
 }
