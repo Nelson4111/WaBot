@@ -49,7 +49,7 @@ const ROOT_AFFIXES = [
   'spank', 'spanking', 'blowjob', 'handjob', 'deepthroat', 'rimjob', 'footjob', 'cum', 'cumming', 'cumshot', 'facial',
   'creampie', 'bukkake', 'gangbang', 'orgy', 'orgasme', 'climax', 'ejaculate', 'ejaculation', 'semen', 'sperm', 'pussy',
   'dick', 'cock', 'cunt', 'asshole', 'bitch', 'fuck', 'fucking', 'fucker', 'motherfucker', 'shit', 'bullshit', 'whore',
-  'slut', 'bastard', 'damn', 'dickhead', 'prick', 'crap', 'wanker', 'jerkoff', 'jackoff', 'jerking', 'horny', 'porn',
+  'slut', 'bastard', 'dickhead', 'prick', 'crap', 'wanker', 'jerkoff', 'jackoff', 'jerking', 'horny', 'porn',
   'porno', 'nsfw', 'lewd', 'lewding', 'sexual', 'sexually', 'naked', 'nakedness', 'xxx', 'xxxvideo', 'adult',
   'adultcontent', 'explicit', 'obscene', 'obscenity', 'prostitute', 'prostitution', 'escort', 'escortservice', 'hooker',
   'slutty', 'whorish', 'pervert', 'perverted', 'perversion', 'molest', 'molestation', 'pedofil', 'pedophile', 'pedophilia',
@@ -133,6 +133,15 @@ const SAFE_WHITELIST = new Set([
 ])
 
 const ANTI_TOXIC_MAX_WARNS = 4
+const ANTI_TOXIC_COMMANDS = new Set(['antitoxic', 'antitoksik', 'antikasar'])
+
+function isAntiToxicCommandText(text) {
+  if (!text || typeof text !== 'string') return false
+  const raw = text.trim()
+  if (!raw) return false
+  const normalized = raw.replace(/^[^\w]+/, '').split(/\s+/)[0].toLowerCase()
+  return ANTI_TOXIC_COMMANDS.has(normalized) || /^anti(?:toxic|kasar)\b/i.test(raw)
+}
 
 export function detectToxic(text) {
   if (!text || typeof text !== 'string') return null
@@ -252,22 +261,49 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
     return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜱᴛᴏʀʏ ᴋɪᴄᴋ ᴛᴇʀᴀᴋʜɪʀ\n*┆* ${lines}\n*╰───────────────*`)
   }
 
+  if (/^(warn|warnings?|warnlist|strikes?|warninglist|listwarn)$/i.test(sub)) {
+    const entries = Object.entries(chat.toxicWarn || {}).filter(([, count]) => Number(count) > 0)
+    if (!entries.length) {
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡᴀʀɴɪɴɢ : *Belum ada user yang kena warn*\n*┆* ✧ ᴄᴀᴛᴀᴛᴀɴ : *Belum ada pelanggaran toxic tercatat*\n*╰───────────────*`)
+    }
+
+    const lines = entries
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .map(([jid, count], idx) => `${idx + 1}. @${(jid || '').split('@')[0]} • ${Number(count)}/${ANTI_TOXIC_MAX_WARNS}`)
+      .join('\n')
+
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴅᴀꜰᴛᴀʀ ʏᴀɴɢ ᴋᴇɴᴀ ᴡᴀʀɴ\n*┆* ${lines}\n*╰───────────────*`)
+  }
+
   if (/^(wl|whitelist)$/i.test(sub)) {
-    const target = (args[1] || '').trim()
+    const action = (args[1] || '').toLowerCase()
+    if (!args[1] || /^(list|lihat|daftar|show)$/i.test(action)) {
+      const entries = Object.keys(chat.toxicWhitelist || {}).filter(Boolean)
+      if (!entries.length) {
+        return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪsᴛ : *Belum ada data*\n*┆* ✧ ᴄᴀᴛᴀᴛᴀɴ : *Masih kosong, belum ada user yang aman dari auto-kick*\n*╰───────────────*`)
+      }
+
+      const listText = entries.map((jid, idx) => `${idx + 1}. @${jid.split('@')[0]}`).join('\n')
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴅᴀꜰᴛᴀʀ ᴡʜɪᴛᴇʟɪsᴛ\n*┆* ${listText}\n*╰───────────────*`)
+    }
+
+    const isRemoveMode = /^(remove|del|hapus|delete)$/i.test((args[1] || '').trim()) || /^(remove|del|hapus|delete)$/i.test((args[2] || '').trim())
+    const targetToken = /^(remove|del|hapus|delete)$/i.test((args[1] || '').trim()) ? (args[2] || '').trim() : (args[1] || '').trim()
+    const mode = (args[2] || '').toLowerCase()
+    const target = targetToken
     const who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : (target ? target.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null)
 
     if (!who) {
-      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Tambah : *${usedPrefix + command} whitelist @user*\n*┆* › Hapus  : *${usedPrefix + command} whitelist remove @user*\n*╰───────────────*`)
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Tambah : *${usedPrefix + command} whitelist @user*\n*┆* › Hapus  : *${usedPrefix + command} whitelist remove @user*\n*┆* › Lihat  : *${usedPrefix + command} whitelist*\n*╰───────────────*`)
     }
 
-    const mode = (args[2] || '').toLowerCase()
-    if (mode === 'remove' || mode === 'del' || mode === 'hapus') {
+    if (isRemoveMode || mode === 'remove' || mode === 'del' || mode === 'hapus') {
       delete chat.toxicWhitelist[who]
-      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪꜛᴛ : *Dihapus*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*╰───────────────*`)
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪsᴛ : *Dihapus*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*╰───────────────*`)
     }
 
     chat.toxicWhitelist[who] = true
-    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪꜛᴛ : *Ditambahkan*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*┆* ✦ ᴋᴇᴛᴇʀᴀɴɢᴀɴ : *Tidak auto-kick walau strike 4x*\n*╰───────────────*`)
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪsᴛ : *Ditambahkan*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*┆* ✦ ᴋᴇᴛᴇʀᴀɴɢᴀɴ : *Tidak auto-kick walau strike 4x*\n*╰───────────────*`)
   }
 
   if (/^reset$/i.test(sub)) {
@@ -317,6 +353,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
 *┆* › Mematikan    : *${usedPrefix + command} off*
 *┆* › Reset User   : *${usedPrefix + command} reset @user*
 *┆* › Reset Semua  : *${usedPrefix + command} reset all*
+*┆* › Warn List    : *${usedPrefix + command} warn*
 *┆* › History Kick: *${usedPrefix + command} history*
 *┆* › WhiteList   : *${usedPrefix + command} whitelist @user*
 *╰───────────────*`.trim()
@@ -338,6 +375,8 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
 
   let text = m.text || m.caption || (m.msg && m.msg.caption) || ''
   if (!text) return false
+
+  if (isAntiToxicCommandText(text)) return false
 
   const toxicHit = detectToxic(text)
   if (!toxicHit) return false
@@ -431,7 +470,28 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
     }).catch(() => null)
 
     if (isBotAdmin) {
-      await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove').catch(() => null)
+      try {
+        const meta = await conn.groupMetadata(m.chat).catch(() => null)
+        const targetParticipant = meta?.participants?.find(p => p.id === m.sender)
+        const isTargetOwner = !!(meta && meta.owner && meta.owner === m.sender)
+        const isTargetAdmin = !!(targetParticipant && ['admin', 'superadmin'].includes(targetParticipant.admin))
+
+        if (isTargetOwner) {
+          throw new Error('target adalah owner grup, bot tidak bisa mengeluarkan owner')
+        }
+        if (isTargetAdmin) {
+          throw new Error('target adalah admin grup, bot tidak bisa mengeluarkan admin')
+        }
+
+        await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
+      } catch (err) {
+        const errText = err?.message || 'error tidak diketahui'
+        const userNumber = (m.sender || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+        await conn.sendMessage(m.chat, {
+          text: `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴄᴀᴛᴀᴛᴀɴ : *Gagal kick otomatis*\n*┆* ✧ ᴜꜱᴇʀ : @${userNumber}\n*┆* ✦ ᴀʟᴀꜛᴀɴ : *${errText}*\n*╰───────────────*`,
+          mentions: [m.sender]
+        }).catch(() => null)
+      }
     }
   }
 
