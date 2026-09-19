@@ -7,7 +7,7 @@ import { join } from "path";
 import os from "os";
 import ffmpeg from "fluent-ffmpeg";
 
-let Izumi = async (m, { conn, text, usedPrefix, command }) => {
+let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
   if (!m.isGroup) {
     return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Perintah ini hanya dapat digunakan di dalam grup!\n*╰───────────────*');
   }
@@ -63,14 +63,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       let count = 0;
       for (const st of chat.groupStatuses) {
         try {
-          await conn.sendMessage(m.chat, {
-            delete: {
-              remoteJid: m.chat,
-              fromMe: true,
-              id: st.id,
-              participant: conn.user?.id ? conn.decodeJid(conn.user.id) : undefined
-            }
-          });
+          await revokeGroupStatus(conn, m.chat, { id: st.id, fromMe: true });
           count++;
         } catch (e) {
           console.error('[group-tagsw] Gagal menghapus status:', st.id, e);
@@ -93,14 +86,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       await react('⏳');
       const target = chat.groupStatuses[idx];
       try {
-        await conn.sendMessage(m.chat, {
-          delete: {
-            remoteJid: m.chat,
-            fromMe: true,
-            id: target.id,
-            participant: conn.user?.id ? conn.decodeJid(conn.user.id) : undefined
-          }
-        });
+        await revokeGroupStatus(conn, m.chat, { id: target.id, fromMe: true });
         chat.groupStatuses.splice(idx, 1);
         await react('🗑️');
         return m.reply(`*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status nomor ${idx + 1} (${target.type}) ✦\n*╰───────────────*`);
@@ -110,41 +96,62 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       }
     }
 
-    // 4. Opsi Hapus Berdasarkan Reply (Quoted Pesan Status / Konfirmasi)
+    // 4. Opsi Hapus Berdasarkan Reply (Quoted Pesan Status / Konfirmasi / Status Anomali)
     let targetStatusId = null;
+    let targetParticipant = undefined;
+    let isTargetFromMe = true;
+
     if (m.quoted) {
       const matchInDb = chat.groupStatuses.find(s => s.id === m.quoted.id);
       if (matchInDb) {
         targetStatusId = matchInDb.id;
+        isTargetFromMe = true;
+        targetParticipant = undefined;
       } else {
         // Cek apakah teks pesan yang di-quote berisi ID status
         const textMatch = (m.quoted.text || '').match(/ID:\s*`?([A-Za-z0-9_\-+=]+)`?/i);
         if (textMatch && textMatch[1]) {
           targetStatusId = textMatch[1];
-        } else if (m.quoted.fromMe) {
+          isTargetFromMe = true;
+          targetParticipant = undefined;
+        } else {
+          // Status/pesan yang di-reply langsung (bisa buatan bot atau anomali/member lain)
           targetStatusId = m.quoted.id;
+          isTargetFromMe = !!m.quoted.fromMe;
+          targetParticipant = isTargetFromMe
+            ? undefined
+            : (m.quoted.sender || m.quoted.participant);
         }
       }
     } else if (rawArg && rawArg.length > 10) {
       targetStatusId = rawArg;
+      isTargetFromMe = true;
+      targetParticipant = undefined;
     }
 
     if (targetStatusId) {
+      // Jika status/pesan milik anomali atau anggota lain, bot WAJIB menjadi Admin Grup
+      if (!isTargetFromMe && !isBotAdmin) {
+        await react('❌');
+        return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Bot harus menjadi *Admin Grup* untuk menghapus status atau pesan dari anggota lain (Admin Delete)!\n*╰───────────────*');
+      }
+
       await react('⏳');
       try {
-        await conn.sendMessage(m.chat, {
-          delete: {
-            remoteJid: m.chat,
-            fromMe: true,
-            id: targetStatusId,
-            participant: conn.user?.id ? conn.decodeJid(conn.user.id) : undefined
-          }
+        await revokeGroupStatus(conn, m.chat, {
+          id: targetStatusId,
+          fromMe: isTargetFromMe,
+          participant: targetParticipant
         });
 
         // Hapus dari riwayat jika ada
         chat.groupStatuses = chat.groupStatuses.filter(s => s.id !== targetStatusId);
         await react('🗑️');
-        return m.reply('*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup terpilih ✦\n*╰───────────────*');
+        const targetDesc = isTargetFromMe ? 'terpilih' : `milik @${(targetParticipant || '').split('@')[0]}`;
+        return conn.sendMessage(m.chat, {
+          text: `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup ${targetDesc} ✦\n*╰───────────────*`,
+          mentions: targetParticipant ? [targetParticipant] : []
+        }, { quoted: m });
       } catch (e) {
         await react('❌');
         return m.reply(`*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Gagal menghapus status: ${e.message}\n*╰───────────────*`);
@@ -156,14 +163,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command }) => {
       await react('⏳');
       const latest = chat.groupStatuses.pop();
       try {
-        await conn.sendMessage(m.chat, {
-          delete: {
-            remoteJid: m.chat,
-            fromMe: true,
-            id: latest.id,
-            participant: conn.user?.id ? conn.decodeJid(conn.user.id) : undefined
-          }
-        });
+        await revokeGroupStatus(conn, m.chat, { id: latest.id, fromMe: true });
         await react('🗑️');
         return m.reply(`*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup terakhir (${latest.type}) ✦\n*╰───────────────*`);
       } catch (e) {
@@ -434,13 +434,8 @@ async function groupStatus(conn, jid, content) {
 
   const messageSecret = crypto.randomBytes(32);
   const m = baileys.generateWAMessageFromContent(jid, {
-    messageContextInfo: { messageSecret },
-    groupStatusMessageV2: {
-      message: {
-        ...inside,
-        messageContextInfo: { messageSecret }
-      }
-    }
+    ...inside,
+    messageContextInfo: { messageSecret }
   }, {});
 
   // Lampirkan tag meta is_group_status="true" agar WhatsApp mengenali & merender media status dengan benar
@@ -455,6 +450,86 @@ async function groupStatus(conn, jid, content) {
     ]
   });
   return m;
+}
+
+/**
+ * Mencabut / menghapus Status Grup di WhatsApp untuk semua anggota grup.
+ * 1. Mengirim pesan REVOKE via relayMessage dengan tag <meta is_group_status="true"> agar WhatsApp menghapusnya dari status/story grup.
+ * 2. Mengirim standard sendMessage delete dengan key bersih (menghilangkan participant jika fromMe: true).
+ * 3. Jika status buatan bot sendiri, bersihkan juga di status@broadcast.
+ */
+async function revokeGroupStatus(conn, chatJid, { id, fromMe = true, participant = undefined }) {
+  const isFromMe = !!fromMe;
+  const cleanKey = {
+    remoteJid: chatJid,
+    fromMe: isFromMe,
+    id: id,
+    participant: isFromMe ? undefined : participant
+  };
+
+  const protoMsg = {
+    protocolMessage: {
+      key: cleanKey,
+      type: baileys.proto.Message.ProtocolMessage.Type.REVOKE
+    }
+  };
+
+  // 1. Jalur Utama: Relay REVOKE ke grup dengan meta is_group_status="true"
+  try {
+    await conn.relayMessage(chatJid, protoMsg, {
+      additionalAttributes: {
+        edit: isFromMe ? '7' : '8'
+      },
+      additionalNodes: [
+        {
+          tag: 'meta',
+          attrs: { is_group_status: 'true' },
+          content: undefined
+        }
+      ]
+    });
+  } catch (err) {
+    console.warn('[group-tagsw] revokeGroupStatus relay error:', err?.message || err);
+  }
+
+  // 2. Jalur Standar: sendMessage delete
+  try {
+    await conn.sendMessage(chatJid, {
+      delete: cleanKey
+    });
+  } catch (err) {
+    console.warn('[group-tagsw] sendMessage delete error:', err?.message || err);
+  }
+
+  // 3. Jika status bot sendiri, bersihkan referensi di status@broadcast
+  if (isFromMe) {
+    try {
+      await conn.relayMessage('status@broadcast', {
+        protocolMessage: {
+          key: {
+            remoteJid: 'status@broadcast',
+            fromMe: true,
+            id: id
+          },
+          type: baileys.proto.Message.ProtocolMessage.Type.REVOKE
+        }
+      }, {
+        additionalAttributes: { edit: '7' }
+      });
+    } catch {}
+
+    try {
+      if (typeof conn.chatModify === 'function') {
+        await conn.chatModify({
+          clear: {
+            messages: [{ id, fromMe: true, timestamp: Date.now() }]
+          }
+        }, 'status@broadcast');
+      }
+    } catch {}
+  }
+
+  return true;
 }
 
 Izumi.help = ["swgc", "upswgc", "delswgc", "hapusswgc"];
