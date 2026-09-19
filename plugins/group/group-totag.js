@@ -4,9 +4,13 @@ let handler = async (m, { conn, participants }) => {
   }
 
   const botJid = conn.decodeJid(conn.user.id || conn.user.jid)
-  const users = (participants || [])
-    .map(u => conn.decodeJid(u.id || u.jid))
-    .filter(v => v && v !== botJid)
+  const users = []
+  for (const u of (participants || [])) {
+    const jid = conn.decodeJid(u.id || u.jid)
+    if (jid && jid !== botJid && !jid.endsWith('@g.us')) users.push(jid)
+    const lid = u.lid || (u.id && typeof u.id === 'string' && u.id.endsWith('@lid') ? u.id : null)
+    if (lid && !users.includes(lid)) users.push(lid)
+  }
 
   await conn.sendMessage(m.chat, {
     forward: m.quoted.fakeObj,
