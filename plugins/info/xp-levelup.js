@@ -5,7 +5,8 @@ import {
   canLevelUp,
   getLevelRole,
   getLevelReward,
-  createProgressBar
+  createProgressBar,
+  getLevelThumbnail
 } from '../../lib/levelling.js'
 
 let handler = async (m, { conn, command, args, usedPrefix }) => {
@@ -89,10 +90,7 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
 
 ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekarang untuk mengklaim level dan hadiahmu!` : `> 💡 *Tips Memperoleh EXP:*\n> • Chatting aktif di dalam grup\n> • Mainkan game (*${usedPrefix}tebakgambar*, *${usedPrefix}caklontong*, dsb)\n> • Berpetualang di menu RPG (*${usedPrefix}adventure*, *${usedPrefix}mining*)`}`.trim()
 
-    let randomThumb = 'https://i.pinimg.com/originals/a0/34/8a/a0348ae908d8ac4ced76df289eb41e1a.jpg'
-    if (Array.isArray(global.thumblvlup) && global.thumblvlup.length > 0) {
-      randomThumb = global.thumblvlup[Math.floor(Math.random() * global.thumblvlup.length)]
-    }
+    let levelThumb = await getLevelThumbnail(conn, who)
 
     return await conn.sendMessage(m.chat, {
       text,
@@ -101,9 +99,9 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
         externalAdReply: {
           title: `✦ STATUS LEVEL: Lv.${user.level} [${userRole}] ✦`,
           body: `Progres: [${bar}] ${percent}%`,
-          thumbnailUrl: randomThumb,
           mediaType: 1,
-          renderLargerThumbnail: true
+          renderLargerThumbnail: true,
+          ...levelThumb
         }
       }
     }, { quoted: m }).catch(() => conn.reply(m.chat, text, m, { mentions: [who] }))
@@ -150,10 +148,7 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
     user.money = (user.money || 0) + reward.money
     user.role = getLevelRole(user.level)
 
-    let randomThumb = 'https://i.pinimg.com/originals/a0/34/8a/a0348ae908d8ac4ced76df289eb41e1a.jpg'
-    if (Array.isArray(global.thumblvlup) && global.thumblvlup.length > 0) {
-      randomThumb = global.thumblvlup[Math.floor(Math.random() * global.thumblvlup.length)]
-    }
+    let levelThumb = await getLevelThumbnail(conn, m.sender)
 
     let caption = `*──  ୨୧ ✧ LEVEL UP ✧ ୨୧  ──*
 
@@ -179,9 +174,9 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
         externalAdReply: {
           title: `✦ LEVEL UP! [Lv.${user.level} • ${user.role}] ✦`,
           body: `Selamat @${m.name || 'User'} naik level ke ${user.level}!`,
-          thumbnailUrl: randomThumb,
           mediaType: 1,
-          renderLargerThumbnail: true
+          renderLargerThumbnail: true,
+          ...levelThumb
         }
       }
     }, { quoted: m }).catch(() => conn.reply(m.chat, caption, m, { mentions: [m.sender] }))
