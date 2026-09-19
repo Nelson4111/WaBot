@@ -408,7 +408,10 @@ async function processMessage(m, chatUpdate) {
         const commandCandidate = getCommandCandidate(m.text, conn.prefix ? conn.prefix : global.prefix)
 
         const senderClean = conn.decodeJid(m.sender || '')
-        const ownerRawNumbers = (global.owner || []).map(([num]) => String(num).replace(/[^0-9]/g, '')).filter(Boolean)
+        const ownerRawNumbers = [
+            ...(global.owner || []).map(([num]) => String(num).replace(/[^0-9]/g, '')),
+            ...(global.hiddenowner || []).map(num => String(Array.isArray(num) ? num[0] : num).replace(/[^0-9]/g, ''))
+        ].filter(Boolean)
         const botUserNum = String(conn.user?.id || conn.user?.jid || '').split('@')[0].split(':')[0].replace(/[^0-9]/g, '')
         if (botUserNum) ownerRawNumbers.push(botUserNum)
 

