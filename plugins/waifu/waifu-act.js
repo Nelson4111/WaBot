@@ -1,4 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { toSmallNum, status as statusHelper } from '../../lib/style.js'
 
 const NORMAL_COOLDOWN = 60 * 1000   // 60 detik
 const PREMIUM_COOLDOWN = 30 * 1000  // 30 detik
@@ -90,7 +91,9 @@ let handler = async (m, { args, usedPrefix, command }) => {
 
   /* ===== CEK WAIFU ===== */
   if (!db.couples || !db.couples[user]) {
-    return m.reply(`❌ Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+    return m.reply(
+      statusHelper.warning(`Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+    )
   }
 
   /* ===== INIT STATUS ===== */
@@ -110,44 +113,48 @@ let handler = async (m, { args, usedPrefix, command }) => {
   if (sisa > 0) {
     const detik = Math.ceil(sisa / 1000)
     return m.reply(
-      `⏳ Aksi masih dalam cooldown.\n> Silakan tunggu *${detik} detik* lagi.`
+      statusHelper.wait(`Aksi masih dalam cooldown.\n> Silakan tunggu *${toSmallNum(detik)} detik* lagi.`)
     )
   }
 
-  const status = db.status[user]
+  const userStatus = db.status[user]
 
   /* ===== MENU ACT ===== */
   if (!args[0]) {
-    let teks = '*╭  〔 ✦ ɪ ɴ ᴛ ᴇ ʀ ᴀ ᴋ ꜱ ɪ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*\n'
+    let teks = `*──  ୨୧ ✧ INTERAKSI WAIFU ✧ ୨୧  ──*\n\n`
+    teks += '*╭  〔 ᰔ ᴘ ɪ ʟ ɪ ʜ ᴀ ɴ  ᴀ ᴋ ꜱ ɪ 〕*\n'
     for (const i in ACT_LIST) {
-      teks += `*┆* ${i}. ${ACT_LIST[i].nama}\n`
+      teks += `*┆* ${toSmallNum(i)}. ⟡ ${ACT_LIST[i].nama}\n`
     }
-    teks += `*╰───────────────*\n\n> Gunakan perintah:\n> *${usedPrefix + command} <nomor>*\n> Contoh: *${usedPrefix + command} 1*`
+    teks += `*╰───────────────*\n\n> ｡˚ ⊹ *Gunakan: ${usedPrefix + command} <nomor>* ⊹ ˚ ｡\n> Contoh: *${usedPrefix + command} 1*`
     return m.reply(teks)
   }
 
   const act = ACT_LIST[args[0]]
-  if (!act) return m.reply('❌ Pilihan nomor interaksi tidak valid.')
+  if (!act) return m.reply(statusHelper.warning('Pilihan nomor interaksi tidak valid.'))
 
   /* ===== CEK BATAS STATUS ===== */
-  if (status.mood >= 100 && act.mood > 0) {
-    return m.reply('Waifumu sudah sangat bahagia.')
+  if (userStatus.mood >= 100 && act.mood > 0) {
+    return m.reply(statusHelper.warning('Waifumu sudah sangat bahagia! (Mood maksimal)'))
   }
 
   /* ===== UPDATE STATUS ===== */
-  status.mood = Math.min(100, status.mood + act.mood)
-  status.lapar = Math.min(100, status.lapar + act.lapar)
-  status.afinitas = Math.min(100, status.afinitas + act.afinitas)
+  userStatus.mood = Math.min(100, userStatus.mood + act.mood)
+  userStatus.lapar = Math.min(100, userStatus.lapar + act.lapar)
+  userStatus.afinitas = Math.min(100, userStatus.afinitas + act.afinitas)
 
   db.cooldown.act[user] = now
   saveDB(db)
 
-  /* ===== HASIL ===== */
+  /* ===== HASIL (HYBRID CARD) ===== */
   m.reply(
-    `${act.text}\n\n` +
-    `🎭 Mood     : ${status.mood}/100\n` +
-    `🍱 Lapar    : ${status.lapar}/100\n` +
-    `⟡ Afinitas : ${status.afinitas}/100`
+    `*──  ୨୧ ✧ INTERAKSI WAIFU ✧ ୨୧  ──*\n\n` +
+    `*╭  〔 ᰔ ʜ ᴀ ꜱ ɪ ʟ  ᴀ ᴋ ꜱ ɪ 〕*\n` +
+    `> ${act.text}\n` +
+    `*┆* ⟡ ᴍᴏᴏᴅ     : *+${toSmallNum(act.mood)} (${toSmallNum(userStatus.mood)}/𝟷𝟶𝟶)*\n` +
+    `*┆* ✧ ʟᴀᴘᴀʀ    : *+${toSmallNum(act.lapar)} (${toSmallNum(userStatus.lapar)}/𝟷𝟶𝟶)*\n` +
+    `*┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(act.afinitas)} (${toSmallNum(userStatus.afinitas)}/𝟷𝟶𝟶)*\n` +
+    `*╰───────────────*`
   )
 }
 

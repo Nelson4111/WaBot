@@ -1,4 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { toSmallNum, status } from '../../lib/style.js'
 
 const JOBS = [
   {
@@ -38,7 +39,7 @@ const JOBS = [
   }
 ]
 
-const rupiah = n => 'Rp' + n.toLocaleString('id-ID')
+const rupiah = n => 'Rp ' + Number(n).toLocaleString('id-ID')
 const FAIL_CHANCE = 0.08 // 8% chance gagal
 const COOLDOWN = 2 * 60 * 1000 // 2 menit dalam milidetik
 
@@ -47,7 +48,9 @@ let handler = async (m, { usedPrefix, command }) => {
 
   // ===== CEK WAIFU =====
   if (!db.couples || !db.couples[m.sender]) {
-    return m.reply(`❌ Kamu belum memiliki waifu untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+    return m.reply(
+      status.warning(`Kamu belum memiliki waifu untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+    )
   }
 
   const waifuName = db.couples[m.sender].charName
@@ -58,7 +61,9 @@ let handler = async (m, { usedPrefix, command }) => {
   const now = Date.now()
   if (now - last < COOLDOWN) {
     const sisa = Math.ceil((COOLDOWN - (now - last)) / 1000)
-    return m.reply(`⏳ Waifumu sedang istirahat. Tunggu *${sisa} detik* sebelum bekerja lagi.`)
+    return m.reply(
+      status.wait(`Waifumu sedang istirahat.\n> Silakan tunggu *${toSmallNum(sisa)} detik* sebelum bekerja lagi.`)
+    )
   }
 
   const job = JOBS[Math.floor(Math.random() * JOBS.length)]
@@ -67,18 +72,20 @@ let handler = async (m, { usedPrefix, command }) => {
   // UPDATE WAKTU COOLDOWN
   db.cooldown[m.sender] = now
 
-  // ===== GAGAL =====
+  // ===== GAGAL (HYBRID CARD) =====
   if (isFail) {
     return m.reply(
-      `❌ *KESALAHAN KERJA!*\n\n` +
-      `💖 Waifu : ${waifuName}\n` +
-      `💼 Pekerjaan : ${job.name}\n` +
-      `⚠️ Kendala : ${job.fail}\n\n` +
-      `💸 ${waifuName} tidak mendapatkan gaji kali ini.`
+      `*──  ୨୧ ✧ KENDALA PEKERJAAN ✧ ୨୧  ──*\n\n` +
+      `*╭  〔 ⚠ ᴋ ᴇ ɴ ᴅ ᴀ ʟ ᴀ  ᴋ ᴇ ʀ ᴊ ᴀ 〕*\n` +
+      `*┆* 𝜚 ᴡᴀɪꜰᴜ     : *${waifuName}*\n` +
+      `*┆* ◈ ᴘᴇᴋᴇʀᴊᴀᴀɴ : *${job.name}*\n` +
+      `> ✦ ᴋᴇɴᴅᴀʟᴀ : ${job.fail}\n` +
+      `*╰───────────────*\n` +
+      `> _${waifuName} tidak mendapatkan upah kali ini._`
     )
   }
 
-  // ===== BERHASIL =====
+  // ===== BERHASIL (HYBRID CARD) =====
   const earn =
     Math.floor(Math.random() * (job.max - job.min + 1)) + job.min
 
@@ -86,12 +93,14 @@ let handler = async (m, { usedPrefix, command }) => {
   saveDB(db)
 
   m.reply(
-    `✅ *WAIFU SELESAI BEKERJA!*\n\n` +
-    `💖 Waifu : ${waifuName}\n` +
-    `💼 Pekerjaan : ${job.name}\n` +
-    `✨ Hasil : ${job.success}\n\n` +
-    `💰 Pendapatan : +${rupiah(earn)}\n` +
-    `💳 Saldo uang sekarang : ${rupiah(db.money[m.sender])}`
+    `*──  ୨୧ ✧ WAIFU PEKERJAAN ✧ ୨୧  ──*\n\n` +
+    `*╭  〔 ⚙ ʜ ᴀ ꜱ ɪ ʟ  ᴋ ᴇ ʀ ᴊ ᴀ 〕*\n` +
+    `*┆* 𝜚 ᴡᴀɪꜰᴜ      : *${waifuName}*\n` +
+    `*┆* ◈ ᴘᴇᴋᴇʀᴊᴀᴀɴ  : *${job.name}*\n` +
+    `*┆* ❖ ᴘᴇɴᴅᴀᴘᴀᴛᴀɴ : *+${toSmallNum(rupiah(earn))}*\n` +
+    `*┆* ⌬ ꜱᴀʟᴅᴏ      : *${toSmallNum(rupiah(db.money[m.sender]))}*\n` +
+    `> ✦ ʜᴀꜱɪʟ : ${job.success}\n` +
+    `*╰───────────────*`
   )
 }
 

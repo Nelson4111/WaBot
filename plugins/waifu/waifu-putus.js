@@ -1,9 +1,12 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { status } from '../../lib/style.js'
 
 let handler = async (m) => {
   const db = loadDB()
   const c = db.couples[m.sender]
-  if (!c) return m.reply('❌ Kamu belum memiliki waifu.')
+  if (!c) {
+    return status.warning(m, 'Kamu belum memiliki pasangan waifu untuk dilepaskan.')
+  }
 
   const charName = c.charName
 
@@ -12,7 +15,13 @@ let handler = async (m) => {
   delete db.status?.[m.sender]   // reset status mood/lapar
   saveDB(db)
 
-  m.reply(`💔 Kamu telah melepaskan / putus hubungan dengan waifu *${charName}*.\n> Karakter ini sekarang tersedia kembali di MyAnimeList untuk dilamar.`)
+  const caption = `*╭  〔 💔 ᴘ ᴜ ᴛ ᴜ ꜱ  ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+*┆* ⟡ ᴍᴀɴᴛᴀɴ ᴡᴀɪꜰᴜ : *${charName}*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Telah Berpisah*
+*╰───────────────*
+> Kamu telah melepaskan ikatan dengan ${charName}. Karakter ini sekarang bebas dan dapat dilamar kembali oleh pengembara lain.`
+
+  m.reply(caption)
 }
 
 handler.command = /^(waifuputus|wputus|putuswaifu|putus)$/i

@@ -3,15 +3,17 @@ hitamin waifu bisa pilih filter
 type plugins esm
 sumber : https://whatsapp.com/channel/0029VbAYjQgKrWQulDTYcg2K
 sumber scarape : https://whatsapp.com/channel/0029VakezCJDp2Q68C61RH2C/3637
-
 */
 import axios from 'axios'
+import { status } from '../../lib/style.js'
 
 const FILTERS = ['Coklat', 'Hitam', 'Nerd', 'Piggy', 'Carbon', 'Botak']
 
 async function Hytamkan(imageUrl, filter = 'Hitam') {
   const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase())
-  if (!selected) throw `Filter *${filter}* tidak tersedia.\n\nFilter tersedia:\n${FILTERS.join(', ')}`
+  if (!selected) {
+    throw new Error(`FILTER_INVALID:${filter}`)
+  }
 
   const imgRes = await axios.get(imageUrl, { responseType: 'arraybuffer' })
   const base64Input = Buffer.from(imgRes.data).toString('base64')
@@ -24,49 +26,57 @@ async function Hytamkan(imageUrl, filter = 'Hitam') {
       'Content-Type': 'application/json',
       'Origin': 'https://wpw.my.id',
       'Referer': 'https://wpw.my.id/',
-    }
+    },
+    timeout: 20000
   })
 
   const dataUrl = res.data?.processedImageUrl
-  if (!dataUrl?.startsWith('data:image/')) throw 'Gagal memproses gambar.'
+  if (!dataUrl?.startsWith('data:image/')) throw new Error('RESPONSE_INVALID')
 
   return dataUrl
 }
 
 let handler = async (m, { conn, args, command }) => {
-  await conn.sendMessage(m.chat, { react: { text: '🕒', key: m.key }})
-
   try {
-    if (command == 'waifufilterlist') {
-      const listText = `🎨 *Daftar Filter Penghitaman Waifu:*\n\n${FILTERS.map(f => `• ${f}`).join('\n')}
+    if (command === 'waifufilterlist') {
+      const listText = `*╭  〔 🎨 ꜰ ɪ ʟ ᴛ ᴇ ʀ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
+${FILTERS.map(f => `*┆* ⟡ *${f}*`).join('\n')}
+*╰───────────────*
+> Reply gambar waifu dan ketik *.waifuhtm [filter]* untuk mengaplikasikan filter.`
 
-📌 *Cara pakai:*
-1. Reply gambar waifu-nya
-2. Ketik *.waifuhtm [filter]*
-
-*Contoh:* .waifuhtm Hitam`
-
-      await conn.reply(m.chat, listText, m)
-      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key }})
-      return
+      return m.reply(listText)
     }
 
-    if (!m.quoted) throw 'Reply gambar waifu-nya dulu bang!'
-    if (!/image/.test(m.quoted.mimetype)) throw 'Yang direply harus gambar!'
+    if (!m.quoted) {
+      return status.warning(m, 'Balas (reply) gambar waifu yang ingin diubah filternya!')
+    }
+    if (!/image/.test(m.quoted.mimetype || m.quoted.mtype)) {
+      return status.warning(m, 'Pesan yang direply harus berupa media gambar!')
+    }
 
     const filter = args[0] || 'Hitam'
+    const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase())
+    if (!selected) {
+      return status.warning(m, `Filter *${filter}* tidak ditemukan.`, [
+        'Ketik *.waifufilterlist* untuk melihat daftar filter yang tersedia.'
+      ])
+    }
+
+    await conn.sendMessage(m.chat, { react: { text: '🕒', key: m.key } })
+
     const media = await m.quoted.download()
-    const url = `data:${m.quoted.mimetype};base64,${media.toString('base64')}`
+    const url = `data:${m.quoted.mimetype || 'image/jpeg'};base64,${media.toString('base64')}`
 
     const result = await Hytamkan(url, filter)
-    await conn.sendFile(m.chat, result, 'waifu.png', `✅ *Berhasil di-${filter} kan!*`, m)
-
-    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key }})
+    await conn.sendFile(m.chat, result, 'waifu.png', `*╭  〔 ✨ ꜰ ɪ ʟ ᴛ ᴇ ʀ  ʙ ᴇ ʀ ʜ ᴀ ꜱ ɪ ʟ 〕*\n*┆* ⟡ ꜰɪʟᴛᴇʀ : *${selected}*\n*╰───────────────*`, m)
+    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
   } catch (e) {
-    console.error(e)
-    await conn.reply(m.chat, `❌ *Error:* ${e}`, m)
-    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key }})
+    console.error('[WAIFUHTM ERROR]', e)
+    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+    return status.error(m, 'Gagal memproses filter gambar waifu.', [
+      'Layanan API pemrosesan eksternal (wpw.my.id) saat ini tidak dapat dijangkau atau sedang offline.'
+    ])
   }
 }
 

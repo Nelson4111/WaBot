@@ -1,4 +1,5 @@
 import { loadDB } from '../../lib/waifuHelper.js'
+import { toSmallNum, status } from '../../lib/style.js'
 
 const MAX = 100
 const clamp = v => Math.max(0, Math.min(MAX, v || 0))
@@ -31,9 +32,11 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   const c = db.couples[m.sender]
   if (!c) {
     return m.reply(
-      `❌ Kamu belum memiliki waifu!\n\n` +
-      `> Cari karakter: *${usedPrefix}waifuchar <nama>*\n` +
-      `> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`
+      status.warning(
+        `Kamu belum memiliki waifu!\n` +
+        `> Cari karakter: *${usedPrefix}waifuchar <nama>*\n` +
+        `> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`
+      )
     )
   }
 
@@ -43,26 +46,28 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     afinitas: 0
   }
 
+  const masterName = await conn.getName(m.sender)
+
   const caption = `*──  ୨୧ ✧ VIRTUAL WAIFU STATUS ✧ ୨୧  ──*
 
-*╭  〔 ✦ ɪ ɴ ꜰ ᴏ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
-*┆* 👤 ᴍᴀꜱᴛᴇʀ    : *${conn.getName(m.sender)}*
-*┆* 💖 ᴡᴀɪꜰᴜ     : *${c.charName}*
-*┆* 🆔 ᴜɪᴅ ᴍᴀʟ   : *${c.charId}*
-*┆* ⟡ ᴀꜰɪɴɪᴛᴀꜱ   : *${st.afinitas} Poin*
+*╭  〔 𝜚 ɪ ɴ ꜰ ᴏ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
+*┆* ⟡ ᴍᴀꜱᴛᴇʀ    : *${masterName}*
+*┆* ᰔ ᴡᴀɪꜰᴜ     : *${c.charName}*
+*┆* ◈ ᴜɪᴅ ᴍᴀʟ   : *${toSmallNum(c.charId)}*
+*┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ   : *${toSmallNum(st.afinitas)} Poin*
 *┆*
-*┆* 🎭 ᴍᴏᴏᴅ      : *${moodText(st.mood)}*
-*┆*    ${bar(st.mood)} *${clamp(st.mood)}/${MAX}*
+*┆* ✧ ᴍᴏᴏᴅ      : *${moodText(st.mood)}*
+*┆*    ${bar(st.mood)} *${toSmallNum(clamp(st.mood))}/${toSmallNum(MAX)}*
 *┆*
 *┆* 🍱 ꜰᴏᴏᴅ      : *${foodText(st.lapar)}*
-*┆*    ${bar(st.lapar)} *${clamp(st.lapar)}/${MAX}*
+*┆*    ${bar(st.lapar)} *${toSmallNum(clamp(st.lapar))}/${toSmallNum(MAX)}*
 *╰───────────────*
 
 > *Menu Interaksi:*
-> • *${usedPrefix}waifuact* (Berinteraksi)
-> • *${usedPrefix}waifufood* (Beri makan)
-> • *${usedPrefix}waifukerja* (Suruh bekerja)
-> • *${usedPrefix}waifuputus* (Lepaskan waifu)`.trim()
+> › *${usedPrefix}waifuact* (Berinteraksi)
+> › *${usedPrefix}waifufood* (Beri makan)
+> › *${usedPrefix}waifukerja* (Suruh bekerja)
+> › *${usedPrefix}waifuputus* (Lepaskan waifu)`.trim()
 
   const pp = db.profilePP[c.charId]
 

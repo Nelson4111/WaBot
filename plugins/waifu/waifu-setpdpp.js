@@ -5,18 +5,20 @@ import {
   uploadCatbox,
   sendToOwner
 } from '../../lib/waifuHelper.js'
+import { toSmallNum, status } from '../../lib/style.js'
 
 let handler = async (m, { conn }) => {
   const db = loadDB()
   const c = db.couples[m.sender]
-  if (!c) return m.reply('❌ Kamu belum punya pasangan')
+  if (!c) return status.warning(m, 'Kamu belum memiliki pasangan waifu.')
 
-  if (!m.quoted) return m.reply('❌ Reply gambar yang ingin dijadikan PP')
-  if (!/image/.test(m.quoted.mtype))
-    return m.reply('❌ Yang direply harus gambar')
+  if (!m.quoted) return status.warning(m, 'Balas (reply) gambar yang ingin dijadikan foto profil waifu!')
+  if (!/image/.test(m.quoted.mtype)) {
+    return status.warning(m, 'Pesan yang direply harus berupa media gambar!')
+  }
 
   const img = await m.quoted.download()
-  if (!img) return m.reply('❌ Gagal mengambil gambar')
+  if (!img) return status.error(m, 'Gagal mengunduh file gambar.')
 
   const tmp = `./tmp_pp_${Date.now()}.jpg`
   fs.writeFileSync(tmp, img)
@@ -24,7 +26,7 @@ let handler = async (m, { conn }) => {
   const url = await uploadCatbox(tmp)
   fs.unlinkSync(tmp)
 
-  if (!url) return m.reply('❌ Upload gagal')
+  if (!url) return status.error(m, 'Gagal mengunggah foto ke server penyimpanan.')
 
   if (!db.pendingPP) db.pendingPP = {}
 
@@ -36,19 +38,27 @@ let handler = async (m, { conn }) => {
   }
   saveDB(db)
 
+  const ownerCaption = `*╭  〔 🖼️ ʀ ᴇ Q ᴜ ᴇ ꜱ ᴛ  ɢ ᴀ ɴ ᴛ ɪ  ᴘ ᴘ 〕*
+*┆* ⟡ ᴜꜱᴇʀ : *@${m.sender.split('@')[0]}*
+*┆* ⟡ ᴘᴀꜱᴀɴɢᴀɴ : *${c.charName}*
+*┆* ⟡ ᴜɪᴅ ᴍᴀʟ : *#${toSmallNum(c.charId)}*
+*╰───────────────*
+> Pengguna mengajukan foto profil khusus untuk karakter waifu mereka.
+
+*╭  〔 ⚙️ ᴛ ɪ ɴ ᴅ ᴀ ᴋ ᴀ ɴ  ᴏ ᴡ ɴ ᴇ ʀ 〕*
+*┆* ⟡ *Terima* : *.waifuterimapp ${c.charId}*
+*┆* ⟡ *Tolak*  : *.waifutolakpp ${c.charId}*
+*╰───────────────*`
+
   await sendToOwner(conn, {
     image: { url },
-    caption:
-      `🖼️ *REQUEST GANTI PP*\n\n` +
-      `👤 User : @${m.sender.split('@')[0]}\n` +
-      `💖 Pasangan : ${c.charName}\n` +
-      `🆔 UID MAL : ${c.charId}\n\n` +
-      `✅ Terima : .waifuterimapp ${c.charId}\n` +
-      `❌ Tolak  : .waifutolakpp ${c.charId}`,
+    caption: ownerCaption,
     mentions: [m.sender]
   })
 
-  m.reply('✅ Foto profil waifu berhasil dikirim ke owner untuk dikonfirmasi.')
+  status.success(m, 'Foto profil waifu berhasil dikirim ke Owner untuk diverifikasi.', [
+    'Mohon tunggu persetujuan dari Owner sebelum foto profil aktif.'
+  ])
 }
 
 handler.command = /^(waifusetpp|setpdpp)$/i

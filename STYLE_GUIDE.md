@@ -36,24 +36,40 @@ Dokumen ini adalah panduan resmi format teks dan visual untuk **Avelia**. Gunaka
      > ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴘɪʟɪʜ ᴋᴀᴛᴇɢᴏʀɪ* ⊹ ˚ ｡
      ```
 
-3. **Gaya Bingkai Card (Border Style) Simetris**:
-   Gunakan struktur bingkai modern berikut untuk membungkus grup informasi:
-   ```text
-   *╭  〔 [IKON] [JUDUL SMALL CAPS] 〕*
-   *┆* [SIMBOL] [LABEL SMALL CAPS] : *[Nilai]*
-   *╰───────────────*
-   ```
-   *Contoh:*
-   ```text
-   *╭  〔 𝜚 ᴜ ꜱ ᴇ ʀ 〕*
-   *┆* ⟡ ɴᴀᴍᴀ     : *Nenel*
-   *┆* ✧ ʀᴏʟᴇ     : *User ㋡*
-   *┆* ✦ ꜱᴛᴀᴛᴜꜱ   : *ꜰʀᴇᴇ Ⓛ*
-   *┆* ⌬ ʟɪᴍɪᴛ    : *𝟸𝟶*
-   *┆* ❖ ꜱᴀʟᴅᴏ    : *Rp 𝟻𝟶.𝟶𝟶𝟶*
-   *┆* ᰔ ᴘᴀꜱᴀɴɢᴀɴ : *― (Single)*
-   *╰───────────────*
-   ```
+3. **Gaya Bingkai Card Simetris & Aturan Teks (Hybrid System)**:
+   - **Teks Pendek / Key-Value Ringkas (Tetap Gunakan `*┆*`)**:
+     Untuk data 1 baris yang pasti muat (misal: nama, role, status, saldo, limit, jam, uptime), gunakan bingkai:
+     ```text
+     *╭  〔 [IKON] [JUDUL SMALL CAPS] 〕*
+     *┆* [SIMBOL] [LABEL SMALL CAPS] : *[Nilai]*
+     *╰───────────────*
+     ```
+     *Contoh:*
+     ```text
+     *╭  〔 𝜚 ᴜ ꜱ ᴇ ʀ 〕*
+     *┆* ⟡ ɴᴀᴍᴀ     : *Nenel*
+     *┆* ✧ ʀᴏʟᴇ     : *User ㋡*
+     *┆* ✦ ꜱᴛᴀᴛᴜꜱ   : *ꜰʀᴇᴇ Ⓛ*
+     *┆* ⌬ ʟɪᴍɪᴛ    : *𝟸𝟶*
+     *┆* ❖ ꜱᴀʟᴅᴏ    : *Rp 𝟻𝟶.𝟶𝟶𝟶*
+     *╰───────────────*
+     ```
+   - **Teks Panjang / Paragraf / Multi-baris (Wajib Gunakan `>` di Dalam Card Tanpa Enter Manual)**:
+     Jika data di dalam card berupa teks panjang (deskripsi, sinopsis, bio, pesan peringatan, panduan), **GANTI tanda `*┆*` dengan `>` tepat di dalam bingkai card**.
+     **Cukup beri `>` satu kali di awal kalimat dan JANGAN di-enter manual** di tengah kalimat. WhatsApp akan otomatis membungkus teksnya (*auto-wrap*) dengan garis aksen vertikal abu-abu yang utuh di dalam bingkai:
+     ```text
+     *╭  〔 📖 ꜱ ɪ ɴ ᴏ ᴘ ꜱ ɪ ꜱ 〕*
+     > Mengisahkan perjalanan seorang pemuda yang terjebak di dunia lain dan harus berjuang bertahan hidup bersama teman-temannya.
+     *╰───────────────*
+     ```
+     Atau jika digabung dengan data pendek dalam satu card:
+     ```text
+     *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ 〕*
+     *┆* ⟡ ᴊᴜᴅᴜʟ    : *Re:Zero kara Hajimeru Isekai Seikatsu*
+     *┆* ◈ ᴋᴀᴛᴇɢᴏʀɪ : *Isekai / Fantasy*
+     > ✦ ꜱɪɴᴏᴘꜱɪꜱ : Natsuki Subaru tiba-tiba dipanggil ke dunia lain saat pulang dari toserba. Tanpa kekuatan super apapun selain kemampuan kembali dari kematian, ia harus berjuang menyelamatkan orang-orang yang disayanginya.
+     *╰───────────────*
+     ```
 
 4. **Tipografi Small Caps & Angka Kecil (`toSmallNum`)**:
    - Teks label informasi gunakan **Small Caps** (Contoh: `ɴᴀᴍᴀ`, `ʀᴏʟᴇ`, `ꜱᴛᴀᴛᴜꜱ`, `ʟɪᴍɪᴛ`, `ꜱᴀʟᴅᴏ`, `ᴘᴀꜱᴀɴɢᴀɴ`, `ʙᴏᴛ`, `ᴠᴇʀꜱɪ`, `ᴄʀᴇᴀᴛᴏʀ`, `ᴜᴘᴛɪᴍᴇ`, `ᴍᴏᴅᴇ`, `ᴛᴏᴛᴀʟ ꜰɪᴛᴜʀ`, `ʜᴀʀɪ`, `ᴛᴀɴɢɢᴀʟ`, `ᴊᴀᴍ`).
@@ -256,10 +272,9 @@ Buatkan plugin WhatsApp bot (ES Modules) untuk fitur [SEBUTKAN NAMA FITUR].
 Ikuti standar format "Zen Shinto / Celestial Japanese Aesthetic" Avelia:
 1. Gunakan palet simbol bervariasi: `𝜚`, `ᰔ`, `㋡`, `⚙`, `⌬`, `❖`, `⧗`, `⏱`, `◈`, `⟡`, `✧`, `✦`, `›`. Hindari pengulangan simbol tunggal yang monoton.
 2. Pertahankan penggunaan blockquote WhatsApp `>` untuk sapaan, kutipan, catatan, dan petunjuk.
-3. Gunakan gaya bingkai Card Button 6:
-   *╭  〔 [IKON] [JUDUL SMALL CAPS] 〕*
-   *┆* [SIMBOL] [LABEL SMALL CAPS] : *[Nilai]*
-   *╰───────────────*
+3. Gunakan gaya bingkai Card Button 6 (Hybrid):
+   - Data pendek (1 baris): `*┆* [SIMBOL] [LABEL] : *[Nilai]*`
+   - Data panjang / deskripsi / sinopsis / paragraf: gunakan blockquote `>` sekali di awal kalimat tanpa enter manual (WhatsApp otomatis menyesuaikan pembungkusan teks).
 4. Gunakan tipografi Small Caps untuk label data dan fungsi `toSmallNum` untuk angka statistik/tanggal.
 5. Header menggunakan pita estetik: `*──  ୨୧ ✧ [JUDUL] ✧ ୨୧  ──*`.
 6. Jangan menumpuk emoji warna-warni yang ramai; utamakan simbol Unicode yang elegan.

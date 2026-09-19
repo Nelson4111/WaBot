@@ -1,50 +1,53 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { toSmallNum, status } from '../../lib/style.js'
 
 const MAX = 100
 
 /* ===== MAKANAN BIASA ===== */
 const FOOD = {
-  1: { name: '🍗 Ayam Goreng', price: 15000, feed: 30, mood: 0, afk: 0 },
-  2: { name: '🐟 Ikan Goreng', price: 20000, feed: 40, mood: 0, afk: 0 },
-  3: { name: '🍛 Nasi Padang', price: 50000, feed: 80, mood: 5, afk: 0 }
+  1: { name: 'Ayam Goreng 🍗', price: 15000, feed: 30, mood: 0, afk: 0 },
+  2: { name: 'Ikan Goreng 🐟', price: 20000, feed: 40, mood: 0, afk: 0 },
+  3: { name: 'Nasi Padang 🍛', price: 50000, feed: 80, mood: 5, afk: 0 }
 }
 
 /* ===== MAKANAN SPESIAL ===== */
 const SPECIAL = {
   101: {
-    name: '🍣 Sushi Premium',
+    name: 'Sushi Premium 🍣',
     price: 120000,
     feed: 100,
     mood: 20,
     afk: 10,
-    desc: 'Makanan khas Jepang'
+    desc: 'Hidangan segar khas Jepang favorit waifu'
   },
   102: {
-    name: '🍰 Strawberry Cake',
+    name: 'Strawberry Cake 🍰',
     price: 90000,
     feed: 50,
     mood: 30,
     afk: 15,
-    desc: 'Makanan manis favorit waifu'
+    desc: 'Kue manis lembut penambah suasana hati'
   },
   103: {
-    name: '🍱 Bento',
+    name: 'Bento Spesial 🍱',
     price: 150000,
     feed: 80,
     mood: 25,
     afk: 30,
-    desc: 'Dibuat penuh cinta'
+    desc: 'Bekal makan siang buatan penuh cinta'
   }
 }
 
-const rupiah = n => 'Rp' + n.toLocaleString('id-ID')
+const rupiah = n => 'Rp ' + Number(n).toLocaleString('id-ID')
 const clamp = v => Math.max(0, Math.min(MAX, v || 0))
 
 let handler = async (m, { args, usedPrefix, command }) => {
   const db = loadDB()
 
   if (!db.couples || !db.couples[m.sender]) {
-    return m.reply(`❌ Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+    return m.reply(
+      status.warning(`Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+    )
   }
 
   const money = db.money[m.sender] || 0
@@ -58,27 +61,28 @@ let handler = async (m, { args, usedPrefix, command }) => {
 
   /* ===== TAMPILKAN MENU ===== */
   if (!args[0] || !ALL[args[0]]) {
-    let txt = '*╭  〔 🍱 ᴍ ᴇ ɴ ᴜ  ᴍ ᴀ ᴋ ᴀ ɴ ᴀ ɴ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*\n'
+    let txt = `*──  ୨୧ ✧ MENU KAFE WAIFU ✧ ୨୧  ──*\n\n`
 
-    txt += '*┆* ── *Makanan Biasa*\n'
+    txt += '*╭  〔 🍱 ᴍ ᴀ ᴋ ᴀ ɴ ᴀ ɴ  ʙ ɪ ᴀ ꜱ ᴀ 〕*\n'
     for (const i in FOOD) {
       const f = FOOD[i]
       txt +=
-        `*┆* *${i}.* ${f.name}\n` +
-        `*┆*    Harga: ${rupiah(f.price)} | Lapar +${f.feed}\n`
+        `*┆* ${toSmallNum(i)}. ⟡ ${f.name}\n` +
+        `*┆*    ◈ ʜᴀʀɢᴀ: *${toSmallNum(rupiah(f.price))}* | ✧ ʟᴀᴘᴀʀ: *+${toSmallNum(f.feed)}*\n`
     }
+    txt += '*╰───────────────*\n\n'
 
-    txt += '*┆*\n*┆* ── *Makanan Spesial*\n'
+    txt += '*╭  〔 🍣 ᴍ ᴀ ᴋ ᴀ ɴ ᴀ ɴ  ꜱ ᴘ ᴇ ꜱ ɪ ᴀ ʟ 〕*\n'
     for (const i in SPECIAL) {
       const f = SPECIAL[i]
       txt +=
-        `*┆* *${i}.* ${f.name}\n` +
-        `*┆*    Harga: ${rupiah(f.price)}\n` +
-        `*┆*    Lapar +${f.feed} | Mood +${f.mood} | Afinitas +${f.afk}\n` +
-        `*┆*    _${f.desc}_\n`
+        `*┆* ${toSmallNum(i)}. ✦ ${f.name}\n` +
+        `*┆*    ◈ ʜᴀʀɢᴀ: *${toSmallNum(rupiah(f.price))}*\n` +
+        `*┆*    ✧ ʟᴀᴘᴀʀ: *+${toSmallNum(f.feed)}* | ⟡ ᴍᴏᴏᴅ: *+${toSmallNum(f.mood)}* | ᰔ ᴀꜰɪɴɪᴛᴀꜱ: *+${toSmallNum(f.afk)}*\n` +
+        `> _${f.desc}_\n`
     }
     txt += '*╰───────────────*\n\n'
-    txt += `> *Gunakan:* *${usedPrefix + command} <nomor>*\n> Contoh: *${usedPrefix + command} 1*`
+    txt += `> ｡˚ ⊹ *Gunakan: ${usedPrefix + command} <nomor>* ⊹ ˚ ｡\n> Contoh: *${usedPrefix + command} 1*`
     return m.reply(txt)
   }
 
@@ -87,7 +91,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
 
   if (money < f.price)
     return m.reply(
-      `❌ Saldo uang tidak cukup!\n> Harga: ${rupiah(f.price)}\n> Saldo kamu: ${rupiah(money)}`
+      status.error(`Saldo uang tidak cukup!\n> Harga: ${toSmallNum(rupiah(f.price))}\n> Saldo kamu: ${toSmallNum(rupiah(money))}`)
     )
 
   db.money[m.sender] -= f.price
@@ -98,11 +102,14 @@ let handler = async (m, { args, usedPrefix, command }) => {
   saveDB(db)
 
   m.reply(
-    `✅ *${f.name} berhasil disuapkan ke waifu!*\n\n` +
-    `🍱 Lapar +${f.feed || 0}\n` +
-    (f.mood ? `🎭 Mood +${f.mood}\n` : '') +
-    (f.afk ? `⟡ Afinitas +${f.afk}\n` : '') +
-    `\n💳 Sisa uang: ${rupiah(db.money[m.sender])}`
+    `*──  ୨୧ ✧ MAKANAN WAIFU ✧ ୨୧  ──*\n\n` +
+    `*╭  〔 🍱 ꜱ ᴜ ᴀ ᴘ  ᴍ ᴀ ᴋ ᴀ ɴ 〕*\n` +
+    `> ${f.name} berhasil disuapkan ke waifumu!\n` +
+    `*┆* ✧ ʟᴀᴘᴀʀ    : *+${toSmallNum(f.feed || 0)}*\n` +
+    (f.mood ? `*┆* ⟡ ᴍᴏᴏᴅ     : *+${toSmallNum(f.mood)}*\n` : '') +
+    (f.afk ? `*┆* ᰔ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(f.afk)}*\n` : '') +
+    `*┆* ⌬ ꜱɪꜱᴀ ᴜᴀɴɢ : *${toSmallNum(rupiah(db.money[m.sender]))}*\n` +
+    `*╰───────────────*`
   )
 }
 

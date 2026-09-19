@@ -1,4 +1,5 @@
 import { loadDB } from '../../lib/waifuHelper.js'
+import { toSmallNum, status } from '../../lib/style.js'
 
 let handler = async (m) => {
   const db = loadDB()
@@ -6,25 +7,19 @@ let handler = async (m) => {
 
   const entries = Object.values(pending)
   if (!entries.length) {
-    return m.reply('✅ Tidak ada permintaan PP yang pending')
+    return status.info(m, 'Tidak ada antrean foto profil waifu yang menunggu verifikasi.')
   }
 
-  let text = '*📋 DAFTAR PP PENDING*\n\n'
-
+  let text = `*╭  〔 📋 ᴀ ɴ ᴛ ʀ ᴇ ᴀ ɴ  ᴘ ᴘ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*\n`
   entries.forEach((v, i) => {
     const num = v.userJid.split('@')[0]
-    text +=
-      `${i + 1}. 🧩 *${v.charName}*\n` +
-      `   🆔 UID  : ${v.charId}\n` +
-      `   👤 User : ${num}\n\n`
+    text += `*┆* ⟡ ${toSmallNum(i + 1)}. *${v.charName}* (#${toSmallNum(v.charId)})\n`
+    text += `*┆*   ╰ ᴘᴇᴍᴏʜᴏɴ : @${num}\n`
   })
+  text += `*╰───────────────*\n`
+  text += `> Ketik *.waifuterimapp <uid>* untuk menerima atau *.waifutolakpp <uid>* untuk menolak.`
 
-  text +=
-    '_Gunakan perintah:_\n' +
-    '• *.waifuterimapp <uid>*\n' +
-    '• *.waifutolakpp <uid>*'
-
-  m.reply(text)
+  m.reply(text, null, { mentions: entries.map(e => e.userJid) })
 }
 
 handler.command = ['waifulistpp', 'listpp']
