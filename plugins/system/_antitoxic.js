@@ -31,36 +31,108 @@ function collapseRepeated(str) {
 }
 
 // Akar kata umpatan multi-karakter yang dapat membawa imbuhan / afiks Indonesia (contoh: dianjingin, kontolmu)
+// Akar kata umpatan multi-karakter yang dapat membawa imbuhan / afiks Indonesia
 const ROOT_AFFIXES = [
-  'anjing', 'bangsat', 'kontol', 'memek', 'ngentot', 'bajingan',
-  'goblok', 'tolol', 'jancok', 'jancuk', 'pantek', 'puki', 'jembut', 'peler'
+  'anjing', 'bangsat', 'kontol', 'memek', 'ngentot', 'bajingan', 'goblok', 'tolol', 'jancok', 'jancuk', 'pantek', 'puki',
+  'jembut', 'peler', 'asu', 'anjir', 'anjrit', 'anjg', 'bangke', 'bangkean', 'kampret', 'keparat', 'brengsek', 'bedebah',
+  'bego', 'bloon', 'idiot', 'bahlul', 'dungu', 'oon', 'sinting', 'gila', 'tai', 'taik', 'babi', 'lonte', 'lonthe',
+  'pelacur', 'perek', 'sundal', 'jalang', 'bencong', 'banci', 'itil', 'tempik', 'kimak', 'titit', 'pepek', 'coli',
+  'colmek', 'kenthu', 'ngaceng', 'nenen', 'tetek', 'tetek', 'bokep', 'vcs', 'wot', 'trisom', 'threesome', 'sex',
+  'seks', 'porno', 'porn', 'pornografi', 'mesum', 'bugil', 'telanjang', 'sange', 'birahi', 'sperma', 'mani', 'vagina',
+  'penis', 'zakar', 'dubur', 'pantat', 'bokong', 'payudara', 'puting', 'ngewe', 'ewe', 'ewean', 'masturbasi', 'masturbate',
+  'orgasme', 'ejakulasi', 'sodomi', 'sodomi', 'anal', 'oral', 'erotis', 'erotic', 'fetish', 'hentai', 'ecchi', 'topless',
+  'nude', 'nudity', 'striptease', 'stripper', 'prostitusi', 'pelacuran', 'cabul', 'pencabulan', 'crot', 'ngocok', 'onani', 'sangean',
+  'memek', 'kontol', 'ngentot', 'ngewe', 'ngentod', 'ngentd', 'ngentot', 'entot', 'entod', 'ewe', 'ewean', 'enen', 'ngocok',
+  'kocok', 'colay', 'coli', 'colmek', 'colmekan', 'masturbasi', 'masturbate', 'wikwik', 'wikwik', 'crot', 'ngecrot',
+  'ngocrot', 'sange', 'sangean', 'sangeh', 'desah', 'desahan', 'desahdesah', 'vcs', 'vc', 'bokep', 'bokepan', 'video porno',
+  'video sex', 'sex tape', 'sextape', 'nudes', 'nude', 'pornhub', 'xvideos', 'xnxx', 'redtube', 'youporn', 'xhamster',
+  'spank', 'spanking', 'blowjob', 'handjob', 'deepthroat', 'rimjob', 'footjob', 'cum', 'cumming', 'cumshot', 'facial',
+  'creampie', 'bukkake', 'gangbang', 'orgy', 'orgasme', 'climax', 'ejaculate', 'ejaculation', 'semen', 'sperm', 'pussy',
+  'dick', 'cock', 'cunt', 'asshole', 'bitch', 'fuck', 'fucking', 'fucker', 'motherfucker', 'shit', 'bullshit', 'whore',
+  'slut', 'bastard', 'damn', 'dickhead', 'prick', 'crap', 'wanker', 'jerkoff', 'jackoff', 'jerking', 'horny', 'porn',
+  'porno', 'nsfw', 'lewd', 'lewding', 'sexual', 'sexually', 'naked', 'nakedness', 'xxx', 'xxxvideo', 'adult',
+  'adultcontent', 'explicit', 'obscene', 'obscenity', 'prostitute', 'prostitution', 'escort', 'escortservice', 'hooker',
+  'slutty', 'whorish', 'pervert', 'perverted', 'perversion', 'molest', 'molestation', 'pedofil', 'pedophile', 'pedophilia',
+  'pedo', 'childporn', 'cp', 'lolicon', 'shotacon', 'lolita', 'incest', 'incestuous', 'bestiality', 'zoophilia', 'rape',
+  'raped', 'raping', 'rapist', 'pemerkosa', 'pemerkosaan', 'perkosa', 'memperkosa', 'rudapaksa', 'pelecehan', 'melecehkan',
+  'cabul', 'cabuli', 'mencabuli', 'pencabul', 'pencabulan', 'mesum', 'kemesuman', 'asusila', 'susila', 'tidaksenonoh', 'senonoh',
+  'pornoaksi', 'pornografi', 'pornografi', 'pornomedia', 'pornstar', 'pornstar', 'onlyfans', 'fansly', 'camgirl', 'camboy',
+  'webcamsex', 'cybersex', 'phone sex', 'sexting', 'sext', 'dickpic', 'dickpic', 'nudes', 'sendnudes', 'send nude', 'boobs',
+  'boob', 'breast', 'tit', 'tits', 'nipple', 'nipples', 'ass', 'butt', 'butthole', 'arse', 'arsehole', 'balls', 'ballsy',
+  'testicle', 'testicles', 'scrotum', 'vulva', 'clitoris', 'clit', 'labia', 'anus', 'anal', 'rectum', 'penis', 'vagina',
+  'vulgar', 'vulgarity', 'dirtytalk', 'dirty talk', 'sextalk', 'sexchat', 'hornychat', 'nsfwchat', '18plus', '21plus',
+  'kontolmu', 'kontolku', 'kontolnya', 'kontolan', 'mengontol', 'dikontol', 'terkontol', 'memekmu', 'memekku', 'memeknya',
+  'memekan', 'mememek', 'ngentotin', 'ngentotin', 'ngentotin', 'ngentotmu', 'ngentotku', 'ngentotnya', 'dientot', 'diwewe',
+  'ngewein', 'ngewean', 'ngewein', 'coliannya', 'coliin', 'dicolikan', 'masturbasian', 'masturbator', 'masturbatory',
+  'anjingin', 'anjingin', 'anjingmu', 'anjingku', 'anjingnya', 'menganjing', 'dianggapanjing', 'bangsatmu', 'bangsatnya',
+  'bangsatku', 'membangsat', 'dibangsatkan', 'goblokmu', 'gobloknya', 'goblokku', 'menggoblokkan', 'digoblokkan',
+  'tololmu', 'tololnya', 'tololku', 'menololkan', 'ditololkan', 'begoan', 'begomu', 'begonya', 'idiotmu', 'idiotnya',
+  'jancokmu', 'jancoknya', 'jancukmu', 'jancuknya', 'pukimak', 'pukima', 'pukimakmu', 'pukimakannya', 'kimakmu', 'kimaknya'
 ]
 
 // Daftar kata kasar / toxic persis (token-level matching)
 const EXACT_TOXIC = new Set([
-  'anjing', 'anjg', 'ajg', 'anjir', 'anjrit', 'asw', 'asu',
-  'bangsat', 'bgst', 'bngst', 'bajingan', 'bjngn',
-  'kontol', 'kntl', 'kntil', 'titit', 'memek', 'mmk', 'pepek', 'peler', 'pler', 'jembut', 'jmbt',
-  'ngentot', 'ngntt', 'kenthu', 'ngaceng', 'coli', 'colmek',
-  'pantek', 'panteq', 'puki', 'pukimak', 'pukima',
-  'goblok', 'gblg', 'tolol', 'tlol', 'bego', 'bloon', 'idiot', 'bahlul',
-  'jancok', 'jancuk', 'dancok', 'cok', 'cuk',
-  'babi', 'tai', 'taik', 'lonte', 'lonthe', 'pelacur', 'perek',
-  'kimak', 'itil', 'tempik',
-  'fuck', 'fucking', 'fucker', 'motherfucker', 'shit', 'bitch', 'bastard', 'asshole', 'cunt', 'dick', 'pussy', 'whore', 'slut'
+  'anjing', 'anjg', 'ajg', 'anjir', 'anjrit', 'anjrot', 'anjrut', 'anjay', 'anjayy', 'anjg', 'anj', 'asw',
+  'asu', 'asu', 'bangsat', 'bgst', 'bngst', 'bngsat', 'bangke', 'bajingan', 'bjngn', 'bajing', 'kampret', 'kmprt',
+  'keparat', 'kprat', 'brengsek', 'brngsek', 'bedebah', 'sialan', 'sial', 'celeng', 'monyet', 'kera', 'babi',
+  'goblok', 'gblg', 'gblk', 'tolol', 'tlol', 'tll', 'bego', 'bgo', 'bloon', 'blon', 'idiot', 'id10t', 'bahlul',
+  'dungu', 'dng', 'oon', 'o\'on', 'sinting', 'edan', 'gila', 'gila2', 'bodoh', 'bodohh', 'bodohhh', 'dongo', 'dongok',
+  'jancok', 'jancuk', 'jancok', 'jancuq', 'dancok', 'dancuk', 'cok', 'cuk', 'coq', 'cokkk', 'cukkk',
+  'pantek', 'panteq', 'pntk', 'pantek', 'puki', 'pukimak', 'pukima', 'pukimak', 'kimak', 'kimaq', 'kimak',
+  'kontol', 'kntl', 'kntil', 'kntol', 'knt1l', 'kont0l', 'kontolmu', 'kontolnya', 'titit', 't1t1t', 'tltlt', 'peler',
+  'pler', 'plr', 'pepek', 'ppek', 'ppk', 'memek', 'mmk', 'm3m3k', 'mem3k', 'memeq', 'jembut', 'jmbt', 'jmbut',
+  'ngentot', 'ngntt', 'ngnt0t', 'ngentod', 'ngentd', 'ngent0d', 'entot', 'entod', 'ewe', 'ewean', 'wewe',
+  'kenthu', 'kenthut', 'ngaceng', 'ngacengg', 'cangkem', 'cangkeman', 'coli', 'colay', 'colmek', 'clmk', 'clmek',
+  'ngocok', 'ngocok2', 'ngocrot', 'crot', 'ngecrot', 'masturbasi', 'masturbate', 'onani', 'onan1', 'sange', 'sangean',
+  'sangeh', 'horny', 'hornie', 'hornyaf', 'birahi', 'birahian', 'desah', 'desahan', 'desah2', 'nenen', 'enen',
+  'tetek', 'teteq', 'tet3k', 'tetekmu', 'teteknya', 'boobs', 'boob', 'tit', 'tits', 'nipple', 'nipples',
+  'payudara', 'dada', 'puting', 'putingmu', 'putingnya', 'bokong', 'pantat', 'pantad', 'pntt', 'pntat', 'pantatmu',
+  'pantatnya', 'pantatku', 'bokep', 'bokepan', 'bokepmu', 'bokepnya', 'bokepindo', 'vcs', 'vcsex', 'vcsan', 'vcsexan',
+  'videosex', 'videosx', 'videosex', 'sex', 'seks', 'sexy', 'seksy', 'sexs', 's3x', 's3ks', 'porn', 'porno', 'p0rn',
+  'p0rno', 'pornografi', 'pornhub', 'xvideos', 'xnxx', 'xhamster', 'redtube', 'youporn', 'xxx', 'nsfw', '18+', '18plus',
+  'nude', 'nudes', 'nud3', 'nudity', 'bugil', 'bugilmu', 'bugilnya', 'telanjang', 'telanjangmu', 'telanjangnya',
+  'topless', 'striptease', 'stripper', 'erotis', 'erotic', 'er0tic', 'fetish', 'fetishism', 'hentai', 'h3ntai', 'ecchi',
+  'threesome', '3some', 'trisom', 'tr1som', 'threesom', 'gangbang', 'gangb4ng', 'gangbangs', 'orgy', 'orgi', 'orgy',
+  'bukkake', 'bukk4ke', 'blowjob', 'bl0wjob', 'bj', 'handjob', 'hj', 'deepthroat', 'rimjob', 'footjob', 'cum',
+  'cumming', 'cumshot', 'creampie', 'facial', 'squirting', 'squirt', 'pussy', 'puss', 'pussi', 'pusi', 'dick',
+  'd1ck', 'cock', 'c0ck', 'cunt', 'c*nt', 'asshole', 'a55hole', 'bitch', 'b1tch', 'fuck', 'fck', 'fuk', 'fckk',
+  'fucking', 'fcking', 'fucker', 'fckr', 'motherfucker', 'mofo', 'shit', 'sh1t', 'sht', 'bullshit', 'whore', 'wh0re',
+  'slut', 'slutt', 'bastard', 'b4stard', 'damn', 'd4mn', 'prick', 'dickhead', 'dickhed', 'wanker', 'jackoff',
+  'jerkoff', 'jerkingoff', 'ass', 'a55', 'arse', 'arsehole', 'butt', 'butthole', 'balls', 'ballz', 'testicle', 'scrotum',
+  'vagina', 'v4gina', 'vajina', 'pussy', 'vulva', 'clitoris', 'clit', 'labia', 'anus', 'anal', 'dubur', 'zakar', 'penis',
+  'p3nis', 'sperma', 'sperm', 'sperm4', 'mani', 'semen', 'ejakulasi', 'ejaculate', 'ejaculation', 'orgasme', 'orgasm',
+  'oral', 'seksoral', 'sexoral', 'anal', 'seksanal', 'sexanal', 'sodomi', 'sodom1', 'incest', 'inc3st', 'pedofil',
+  'pedophile', 'pedophilia', 'pedo', 'cp', 'childporn', 'lolicon', 'l0licon', 'shotacon', 'bestiality', 'zoophilia',
+  'rape', 'raped', 'raping', 'rapist', 'perkosa', 'diperkosa', 'memperkosa', 'pemerkosa', 'pemerkosaan', 'rudapaksa',
+  'pelecehan', 'melecehkan', 'cabul', 'cabuli', 'mencabuli', 'pencabul', 'pencabulan', 'asusila', 'tidaksenonoh',
+  'prostitusi', 'prostitute', 'pelacur', 'pelacuran', 'lonte', 'lonthe', 'perek', 'sundal', 'jalang', 'pelacur',
+  'hooker', 'whor3', 'escort', 'escortgirl', 'escortboy', 'camgirl', 'camboy', 'onlyfans', 'fansly', 'sexting',
+  'sext', 'sexchat', 'cybersex', 'webcamsex', 'phone sex', 'dickpic', 'sendnudes', 'sendnude', 'nudesend', 'dirtytalk',
+  'dirtytalking', 'dirtychat', 'sexchat', 'nsfwchat', 'explicit', 'obscene', 'obscenity', 'lewd', 'lewdness', 'pervert',
+  'perverted', 'perversion', 'mesum', 'kemesuman', 'pornoaksi', 'pornomedia', 'pornstar', 'adultcontent', 'adultvideo',
+  'xxxvideo', 'xxxvid', 'sexvideo', 'sexvid', 'sexcam', 'camsex', 'wot', 'wotsex', 'vcssex', 'vcsbokep', 'vcbokep',
+  'vcsex', 'videochatsex', 'sangevideo', 'sangean', 'bokepan', 'bokepin', 'bokepmu', 'bokepnya', 'bokepgratis',
+  'bokepindo', 'bokepindonesia', 'bokepjav', 'jav', 'japaneseadult', 'javporn', 'javxxx'
 ])
 
-// Daftar kata aman bahasa Indonesia yang mengandung substring mirip kata kasar (Zero False Positive Guarantee)
+// Daftar kata aman bahasa Indonesia yang mengandung substring mirip kata kasar
 const SAFE_WHITELIST = new Set([
-  'pantai', 'santai', 'lantai', 'rantai', 'petai', 'teratai', 'intai', 'mengintai',
-  'asumsi', 'asuhan', 'mengasuh', 'pengasuh', 'asuransi', 'masukan', 'kemasukan',
-  'basuh', 'membasuh', 'pembasuh', 'kasur', 'bukan', 'makan', 'tekan', 'pakan',
-  'rekan', 'kocok', 'cocok', 'cokelat', 'coki', 'cokil', 'soto', 'toko', 'foto',
-  'titik', 'titip', 'menitip', 'penitipan', 'babiq', 'membabi', 'tahu',
-  'paku', 'saku', 'baku', 'beku', 'daku', 'laku', 'kaku', 'suka', 'duka',
-  'kotak', 'botak', 'otak', 'tolong', 'menolong', 'penolong',
-  'menepuki', 'ditepuki', 'tepuk', 'bertepuk'
+  'pantai', 'santai', 'lantai', 'rantai', 'petai', 'teratai', 'intai', 'mengintai', 'diintai', 'pengintai', 'pengintaian', 'mengintip',
+  'asumsi', 'asuhan', 'mengasuh', 'pengasuh', 'asuransi', 'masukan', 'kemasukan', 'memasukkan', 'basuh', 'membasuh', 'pembasuh', 'terbasuh',
+  'kasur', 'bukan', 'makan', 'tekan', 'pakan', 'rekan', 'kocok', 'cocok', 'cokelat', 'coklat', 'coki', 'cokil', 'soto', 'toko',
+  'foto', 'titik', 'titip', 'menitip', 'penitipan', 'dititipkan', 'babiq', 'membabi', 'tahu', 'paku', 'saku', 'baku', 'beku',
+  'daku', 'laku', 'kaku', 'suka', 'duka', 'kotak', 'botak', 'otak', 'tolong', 'menolong', 'penolong', 'menepuki', 'ditepuki',
+  'tepuk', 'bertepuk', 'tepukan', 'tepuk tangan', 'assalam', 'assalamualaikum', 'shitake', 'shitakei', 'shitake mushroom',
+  'pantauan', 'memantau', 'pemantauan', 'santai', 'bersantai', 'kesantaian', 'lantunan', 'melantun', 'ranting', 'rantingnya',
+  'perantingan', 'petani', 'pertanian', 'peternakan', 'teratak', 'teratai', 'intan', 'mengintai', 'pengintaian', 'asuhan',
+  'pengasuhan', 'kasual', 'kasualisasi', 'masuk', 'masukan', 'kemasukan', 'rekanan', 'berekan', 'cocokan', 'mencocokkan',
+  'pencocokan', 'coklat', 'cokelat', 'cokelatan', 'tokoh', 'toko', 'tokonya', 'fotografi', 'fotografer', 'fotokopi', 'fotokopian',
+  'titiknya', 'titipan', 'penitipan', 'penitip', 'dititipi', 'pakunya', 'sakunya', 'bakunya', 'bekunya', 'lakunya', 'kakunya',
+  'sukanya', 'dukanya', 'kotaknya', 'botaknya', 'otaknya', 'tolonglah', 'menolongnya', 'penolongnya', 'tepukan', 'bertepuk',
+  'ditepuk', 'menepuk', 'menepuknya', 'tepukannya'
 ])
+
+const ANTI_TOXIC_MAX_WARNS = 4
 
 export function detectToxic(text) {
   if (!text || typeof text !== 'string') return null
@@ -141,6 +213,8 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
   let chat = global.db.data.chats[m.chat]
   if (!chat) return
   if (!chat.toxicWarn || typeof chat.toxicWarn !== 'object') chat.toxicWarn = {}
+  if (!chat.toxicWhitelist || typeof chat.toxicWhitelist !== 'object') chat.toxicWhitelist = {}
+  if (!chat.toxicKickHistory || !Array.isArray(chat.toxicKickHistory)) chat.toxicKickHistory = []
 
   let sub = (args[0] || '').toLowerCase()
   const statusStr = (val) => val ? '✓ ᴀᴋᴛɪꜰ (ᴏɴ)' : '✕ ɴᴏɴᴀᴋᴛɪꜰ (ᴏꜰꜰ)'
@@ -150,7 +224,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
       return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Sudah Aktif!*\n*╰───────────────*`)
     }
     chat.antiToxic = true
-    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ     : *Aktif (ON)*\n*┆* ✧ ᴛɪɴᴅᴀᴋᴀɴ   : Auto-delete kata kasar + 3x strike kick\n*┆* ✦ ʙᴏᴛ ᴀᴅᴍɪɴ : *${isBotAdmin ? '✓ ᴀᴅᴍɪɴ' : '✕ ʙᴜᴋᴀɴ ᴀᴅᴍɪɴ (jadikan admin agar bisa delete/kick)'}*\n*╰───────────────*\n> _Grup sekarang dilindungi dari tutur kata kasar / toxic._`)
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ     : *Aktif (ON)*\n*┆* ✧ ᴛɪɴᴅᴀᴄᴋᴀɴ   : Auto-delete kata kasar + ${ANTI_TOXIC_MAX_WARNS}x strike kick\n*┆* ✦ ʙᴏᴛ ᴀᴅᴍɪɴ : *${isBotAdmin ? '✓ ᴀᴅᴍɪɴ' : '✕ ʙᴜᴄᴀɴ ᴀᴅᴍɪɴ (jadikan admin agar bisa delete/kick)'}*\n*╰───────────────*\n> _Grup sekarang dilindungi dari tutur kata kasar / toxic, termasuk admin dan owner._`)
   }
 
   if (/^(off|disable|0)$/i.test(sub)) {
@@ -159,6 +233,41 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
     }
     chat.antiToxic = false
     return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Nonaktif (OFF)*\n*╰───────────────*\n> _Perlindungan anti-toxic telah dimatikan._`)
+  }
+
+  if (/^(history|kickhistory|log)$/i.test(sub)) {
+    const history = Array.isArray(chat.toxicKickHistory) ? chat.toxicKickHistory.slice(-10).reverse() : []
+    if (!history.length) {
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜱᴛᴏʀʏ : *Belum ada user yang di-kick*\n*╰───────────────*`)
+    }
+
+    const lines = history.map((entry, idx) => {
+      const user = (entry.user || '').replace(/@s\\.whatsapp\\.net$/, '')
+      const date = entry.date ? new Date(entry.date).toLocaleString('id-ID', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : 'N/A'
+      return `${idx + 1}. @${user} • ${date}`
+    }).join('\n')
+
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ʜɪꜱᴛᴏʀʏ ᴋɪᴄᴋ ᴛᴇʀᴀᴋʜɪʀ\n*┆* ${lines}\n*╰───────────────*`)
+  }
+
+  if (/^(wl|whitelist)$/i.test(sub)) {
+    const target = (args[1] || '').trim()
+    const who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : (target ? target.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null)
+
+    if (!who) {
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Tambah : *${usedPrefix + command} whitelist @user*\n*┆* › Hapus  : *${usedPrefix + command} whitelist remove @user*\n*╰───────────────*`)
+    }
+
+    const mode = (args[2] || '').toLowerCase()
+    if (mode === 'remove' || mode === 'del' || mode === 'hapus') {
+      delete chat.toxicWhitelist[who]
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪꜛᴛ : *Dihapus*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*╰───────────────*`)
+    }
+
+    chat.toxicWhitelist[who] = true
+    return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪꜛᴛ : *Ditambahkan*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*┆* ✦ ᴋᴇᴛᴇʀᴀɴɢᴀɴ : *Tidak auto-kick walau strike 4x*\n*╰───────────────*`)
   }
 
   if (/^reset$/i.test(sub)) {
@@ -199,7 +308,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
 *╭  〔 ❖ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*
 *┆* ⟡ ꜰɪᴛᴜʀ       : *${statusStr(chat.antiToxic)}*
 *┆* ✧ ʙᴏᴛ ᴀᴅᴍɪɴ   : *${isBotAdmin ? '✓ ᴀᴅᴍɪɴ' : '✕ ʙᴜᴋᴀɴ ᴀᴅᴍɪɴ'}*
-*┆* ✦ ᴍᴀᴋꜱ ꜱᴛʀɪᴋᴇ : *3x Peringatan (Auto Kick)*
+*┆* ✦ ᴍᴀᴋꜱ ꜱᴛʀɪᴋᴇ : *${ANTI_TOXIC_MAX_WARNS}x Peringatan (Auto Kick)*
 *┆* ◈ ᴛᴇʀᴄᴀᴛᴀᴛ    : *${totalViolators} Anggota Terkena Strike*
 *╰───────────────*
 
@@ -208,6 +317,8 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
 *┆* › Mematikan    : *${usedPrefix + command} off*
 *┆* › Reset User   : *${usedPrefix + command} reset @user*
 *┆* › Reset Semua  : *${usedPrefix + command} reset all*
+*┆* › History Kick: *${usedPrefix + command} history*
+*┆* › WhiteList   : *${usedPrefix + command} whitelist @user*
 *╰───────────────*`.trim()
 
   return m.reply(infoText)
@@ -223,7 +334,7 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
   if (!m.isGroup) return false
   const chat = global.db.data?.chats?.[m.chat]
   if (!chat?.antiToxic) return false
-  if (m.fromMe || isAdmin || isOwner) return false
+  if (m.fromMe) return false
 
   let text = m.text || m.caption || (m.msg && m.msg.caption) || ''
   if (!text) return false
@@ -232,10 +343,13 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
   if (!toxicHit) return false
 
   if (!chat.toxicWarn || typeof chat.toxicWarn !== 'object') chat.toxicWarn = {}
+  if (!chat.toxicWhitelist || typeof chat.toxicWhitelist !== 'object') chat.toxicWhitelist = {}
+  if (!chat.toxicKickHistory || !Array.isArray(chat.toxicKickHistory)) chat.toxicKickHistory = []
+
+  const isWhitelisted = !!chat.toxicWhitelist[m.sender]
   chat.toxicWarn[m.sender] = (chat.toxicWarn[m.sender] || 0) + 1
 
   const strikes = chat.toxicWarn[m.sender]
-  const MAX_WARNS = 3
   const userNumber = (m.sender || '').split('@')[0].split(':')[0].replace(/\D/g, '')
 
   // Hapus pesan toxic terlebih dahulu tanpa quote
@@ -249,12 +363,26 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
       }
     }).catch(() => null)
   }
+  if (isWhitelisted && strikes >= ANTI_TOXIC_MAX_WARNS) {
+    const wlText = `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*
+*┆* ⟡ ᴘᴇɴɢɪʀɪᴍ    : @${userNumber}
+*┆* ✧ ᴘᴇʟᴀɴɢɢᴀʀᴀɴ : Tutur kata kasar / toxic
+*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ  : *[ ${strikes} / ${ANTI_TOXIC_MAX_WARNS} ]*
+*┆* ◈ ᴛɪɴᴅᴀᴄᴋᴀɴ    : *Whitelist aktif, tidak auto-kick*
+*╰───────────────*
+> _User masuk daftar whitelist, jadi tetap aman dari kick otomatis._`.trim()
 
-  if (strikes < MAX_WARNS) {
+    await conn.sendMessage(m.chat, {
+      text: wlText,
+      mentions: [m.sender]
+    }).catch(() => null)
+    return true
+  }
+  if (strikes < ANTI_TOXIC_MAX_WARNS) {
     const warnText = `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*
 *┆* ⟡ ᴘᴇɴɢɪʀɪᴍ    : @${userNumber}
 *┆* ✧ ᴘᴇʟᴀɴɢɢᴀʀᴀɴ : Tutur kata kasar / toxic
-*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ  : *[ ${strikes} / ${MAX_WARNS} ]*
+*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ  : *[ ${strikes} / ${ANTI_TOXIC_MAX_WARNS} ]*
 *┆* ◈ ᴛɪɴᴅᴀᴋᴀɴ    : ${isBotAdmin ? 'Pesan telah dihapus otomatis.' : 'Pesan terdeteksi (bot butuh admin).'}
 *╰───────────────*
 > _Jaga kesopanan dan ketertiban saat berinteraksi di grup ini!_`.trim()
@@ -264,12 +392,35 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
       mentions: [m.sender]
     }).catch(() => null)
   } else {
-    chat.toxicWarn[m.sender] = 0 // Reset strike setelah batas hukuman tercapai
+    if (isWhitelisted) {
+      chat.toxicWarn[m.sender] = ANTI_TOXIC_MAX_WARNS
+      const protectedText = `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*
+*┆* ⟡ ᴘᴇɴɢɪʀɪᴍ    : @${userNumber}
+*┆* ✧ ᴘᴇʟᴀɴɢɢᴀʀᴀɴ : Warnings sudah mencapai batas
+*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ  : *[ ${ANTI_TOXIC_MAX_WARNS} / ${ANTI_TOXIC_MAX_WARNS} ]*
+*┆* ◈ ᴛɪɴᴅᴀᴄᴋᴀɴ    : *Whitelist diproteksi, tidak auto-kick*
+*╰───────────────*
+> _User masuk whitelist, jadi tidak otomatis dikeluarkan._`.trim()
+
+      await conn.sendMessage(m.chat, {
+        text: protectedText,
+        mentions: [m.sender]
+      }).catch(() => null)
+      return true
+    }
+
+    chat.toxicWarn[m.sender] = 0
+    chat.toxicKickHistory = Array.isArray(chat.toxicKickHistory) ? chat.toxicKickHistory : []
+    chat.toxicKickHistory.push({
+      user: m.sender,
+      date: new Date().toISOString()
+    })
+    chat.toxicKickHistory = chat.toxicKickHistory.slice(-30)
 
     const kickText = `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*
 *┆* ⟡ ᴘᴇɴɢɪʀɪᴍ    : @${userNumber}
 *┆* ✧ ᴘᴇʟᴀɴɢɢᴀʀᴀɴ : Batas maksimum tercapai!
-*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ  : *[ ${MAX_WARNS} / ${MAX_WARNS} ]*
+*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ  : *[ ${ANTI_TOXIC_MAX_WARNS} / ${ANTI_TOXIC_MAX_WARNS} ]*
 *┆* ◈ ᴛɪɴᴅᴀᴋᴀɴ    : ${isBotAdmin ? 'Pelanggar dikeluarkan dari grup.' : 'Peringatan maksimal (jadikan bot admin untuk kick).'}
 *╰───────────────*
 > _Pelanggar telah mencapai batas toleransi tutur kata kasar._`.trim()
