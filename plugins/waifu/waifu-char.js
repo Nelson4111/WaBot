@@ -1,15 +1,15 @@
 import { searchMALCharacter, loadDB } from '../../lib/waifuHelper.js'
 
-let handler = async (m, { args, conn }) => {
+let handler = async (m, { args, conn, usedPrefix, command }) => {
   const q = args.join(' ')
   if (!q) {
     return m.reply(
-      '❌ Masukkan *nama karakter* atau *UID MAL*\n\nContoh:\n• .char rem\n• .char 118763'
+      `❌ Masukkan *nama karakter* atau *UID MAL*\n\nContoh:\n• ${usedPrefix + command} rem\n• ${usedPrefix + command} 118763`
     )
   }
 
   const c = await searchMALCharacter(q)
-  if (!c) return m.reply('❌ Karakter tidak ditemukan di MyAnimeList')
+  if (!c) return m.reply('❌ Karakter tidak ditemukan. Coba periksa ejaan nama anime atau gunakan UID.')
 
   const db = loadDB()
   if (!db.chars) db.chars = {}
@@ -21,14 +21,14 @@ let handler = async (m, { args, conn }) => {
   const caption = `
 🧩 *${c.nama}*
 ━━━━━━━━━━━━━━
-🆔 UID MAL : ${c.id}
+🆔 UID     : ${c.id}
 📌 Status  : ${status}
 
 📖 *Sumber*
-MyAnimeList (MAL)
+AniList / MyAnimeList
 
 💬 Gunakan:
-• *.lamar ${c.id}*
+• *${usedPrefix}waifulamar ${c.id}*
 untuk melamar karakter ini
 `.trim()
 
@@ -46,9 +46,9 @@ untuk melamar karakter ini
   }
 }
 
-handler.command = /^(char)$/i
+handler.command = /^(waifuchar|wchar|char)$/i
 handler.tags = ['waifu']
-handler.help = ['char <nama|uid>']
+handler.help = ['waifuchar <nama|uid>']
 handler.register = true
 
 export default handler

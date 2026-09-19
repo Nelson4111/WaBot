@@ -21,15 +21,15 @@ let handler = async (m) => {
 
   text +=
     '_Gunakan perintah:_\n' +
-    '• *.terimapp <uid>*\n' +
-    '• *.tolakpp <uid>*'
+    '• *.waifuterimapp <uid>*\n' +
+    '• *.waifutolakpp <uid>*'
 
   m.reply(text)
 }
 
-handler.command = ['listpp']
+handler.command = ['waifulistpp', 'listpp']
 handler.tags = ['waifu']
-handler.help = ['listpp']
+handler.help = ['waifulistpp']
 handler.owner = true
 
 export default handler

@@ -21,7 +21,7 @@ const foodText = v =>
   v >= 50 ? 'Kenyang' :
   v >= 30 ? 'Cukup' : 'Sangat Lapar'
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix, command }) => {
   const db = loadDB()
 
   if (!db.couples) db.couples = {}
@@ -29,7 +29,13 @@ let handler = async (m, { conn }) => {
   if (!db.profilePP) db.profilePP = {}
 
   const c = db.couples[m.sender]
-  if (!c) return m.reply('Kamu belum punya pasangan')
+  if (!c) {
+    return m.reply(
+      `❌ Kamu belum memiliki waifu!\n\n` +
+      `> Cari karakter: *${usedPrefix}waifuchar <nama>*\n` +
+      `> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`
+    )
+  }
 
   const st = db.status[m.sender] || {
     mood: 0,
@@ -37,20 +43,26 @@ let handler = async (m, { conn }) => {
     afinitas: 0
   }
 
-  const caption = `
-────────────────────
-${conn.getName(m.sender)} ❤️ ${c.charName}
-────────────────────
+  const caption = `*──  ୨୧ ✧ VIRTUAL WAIFU STATUS ✧ ୨୧  ──*
 
-➤ Poin Hubungan  : ${st.afinitas}
+*╭  〔 ✦ ɪ ɴ ꜰ ᴏ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
+*┆* 👤 ᴍᴀꜱᴛᴇʀ    : *${conn.getName(m.sender)}*
+*┆* 💖 ᴡᴀɪꜰᴜ     : *${c.charName}*
+*┆* 🆔 ᴜɪᴅ ᴍᴀʟ   : *${c.charId}*
+*┆* ⟡ ᴀꜰɪɴɪᴛᴀꜱ   : *${st.afinitas} Poin*
+*┆*
+*┆* 🎭 ᴍᴏᴏᴅ      : *${moodText(st.mood)}*
+*┆*    ${bar(st.mood)} *${clamp(st.mood)}/${MAX}*
+*┆*
+*┆* 🍱 ꜰᴏᴏᴅ      : *${foodText(st.lapar)}*
+*┆*    ${bar(st.lapar)} *${clamp(st.lapar)}/${MAX}*
+*╰───────────────*
 
-➤ Mood Pasangan   : ${moodText(st.mood)}
-   ${bar(st.mood)} ${clamp(st.mood)}/${MAX}
-
-➤ Food Pasangan   : ${foodText(st.lapar)}
-   ${bar(st.lapar)} ${clamp(st.lapar)}/${MAX}
-────────────────────
-`.trim()
+> *Menu Interaksi:*
+> • *${usedPrefix}waifuact* (Berinteraksi)
+> • *${usedPrefix}waifufood* (Beri makan)
+> • *${usedPrefix}waifukerja* (Suruh bekerja)
+> • *${usedPrefix}waifuputus* (Lepaskan waifu)`.trim()
 
   const pp = db.profilePP[c.charId]
 
@@ -69,14 +81,13 @@ ${conn.getName(m.sender)} ❤️ ${c.charName}
 
   await m.reply(
     caption +
-    '\n\nFoto pasangan belum tersedia\n' +
-    'Reply gambar dengan perintah *.setpdpp*'
+    `\n\n_Foto waifu belum diset custom. Owner dapat mengatur via *${usedPrefix}waifusetpp*_`
   )
 }
 
-handler.command = ['mypd']
+handler.command = /^(mywaifu|waifustatus|mypd)$/i
 handler.tags = ['waifu']
-handler.help = ['mypd']
+handler.help = ['mywaifu']
 handler.register = true
 
 export default handler

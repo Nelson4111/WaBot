@@ -35,20 +35,20 @@ let handler = async (m, { args, conn }) => {
   try {
     await conn.sendMessage(
       data.userJid,
-      { text: `✅ PP pasangan *${data.charName}* telah disetujui owner` }
+      { text: `✅ Foto profil waifu *${data.charName}* telah disetujui owner.` }
     )
   } catch {}
 
   m.reply(
-    `✅ *PP Disetujui*\n` +
+    `✅ *PP Waifu Disetujui*\n` +
     `👤 Karakter : ${data.charName}\n` +
     `🆔 UID      : ${uid}`
   )
 }
 
-handler.command = ['terimapp']
+handler.command = ['waifuterimapp', 'terimapp']
 handler.tags = ['waifu']
-handler.help = ['terimapp <uid>']
+handler.help = ['waifuterimapp <uid>']
 handler.owner = true
 
 export default handler

@@ -77,15 +77,10 @@ const ACT_LIST = {
   }
 }
 
-let handler = async (m, { args }) => {
+let handler = async (m, { args, usedPrefix, command }) => {
   const db = loadDB()
   const user = m.sender
   const now = Date.now()
-
-  /* ===== CEK PASANGAN ===== */
-  if (!db.couples || !db.couples[user]) {
-    return m.reply('Kamu belum memiliki pasangan.')
-  }
 
   /* ===== DATA USER ===== */
   if (!db.users) db.users = {}
@@ -93,7 +88,13 @@ let handler = async (m, { args }) => {
 
   const isPremium = db.users[user].premiumTime > 0
 
+  /* ===== CEK WAIFU ===== */
+  if (!db.couples || !db.couples[user]) {
+    return m.reply(`❌ Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+  }
+
   /* ===== INIT STATUS ===== */
+  if (!db.status) db.status = {}
   if (!db.status[user]) {
     db.status[user] = { mood: 50, lapar: 50, afinitas: 0 }
   }
@@ -109,7 +110,7 @@ let handler = async (m, { args }) => {
   if (sisa > 0) {
     const detik = Math.ceil(sisa / 1000)
     return m.reply(
-      `Aksi masih dalam cooldown.\nSilakan tunggu ${detik} detik lagi.`
+      `⏳ Aksi masih dalam cooldown.\n> Silakan tunggu *${detik} detik* lagi.`
     )
   }
 
@@ -117,16 +118,21 @@ let handler = async (m, { args }) => {
 
   /* ===== MENU ACT ===== */
   if (!args[0]) {
-    let teks = '*AKSI PASANGAN*\n\n'
+    let teks = '*╭  〔 ✦ ɪ ɴ ᴛ ᴇ ʀ ᴀ ᴋ ꜱ ɪ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*\n'
     for (const i in ACT_LIST) {
-      teks += `${i}. ${ACT_LIST[i].nama}\n`
+      teks += `*┆* ${i}. ${ACT_LIST[i].nama}\n`
     }
-    teks += '\nGunakan perintah:\nact <nomor>\nContoh: act 1'
+    teks += `*╰───────────────*\n\n> Gunakan perintah:\n> *${usedPrefix + command} <nomor>*\n> Contoh: *${usedPrefix + command} 1*`
     return m.reply(teks)
   }
 
   const act = ACT_LIST[args[0]]
-  if (!act) return m.reply('Pilihan tidak valid.')
+  if (!act) return m.reply('❌ Pilihan nomor interaksi tidak valid.')
+
+  /* ===== CEK BATAS STATUS ===== */
+  if (status.mood >= 100 && act.mood > 0) {
+    return m.reply('Waifumu sudah sangat bahagia.')
+  }
 
   /* ===== UPDATE STATUS ===== */
   status.mood = Math.min(100, status.mood + act.mood)
@@ -139,16 +145,16 @@ let handler = async (m, { args }) => {
   /* ===== HASIL ===== */
   m.reply(
     `${act.text}\n\n` +
-    `Mood     : ${status.mood}/100\n` +
-    `Lapar    : ${status.lapar}/100\n` +
-    `Afinitas : ${status.afinitas}/100`
+    `🎭 Mood     : ${status.mood}/100\n` +
+    `🍱 Lapar    : ${status.lapar}/100\n` +
+    `⟡ Afinitas : ${status.afinitas}/100`
   )
 }
 
 /* ===== META ===== */
-handler.command = /^(act)$/i
+handler.command = /^(waifuact|wact|act)$/i
 handler.tags = ['waifu']
-handler.help = ['act', 'act <nomor>']
+handler.help = ['waifuact', 'waifuact <nomor>']
 handler.register = true
 
 export default handler

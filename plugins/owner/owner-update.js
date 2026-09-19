@@ -3,28 +3,62 @@ import { promisify } from 'util'
 
 const execPromise = promisify(exec)
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+  const p = usedPrefix || '.'
+  const isForce = args && (args[0] === '--force' || args[0] === 'force' || args[0] === '-f')
+
   await m.react('⏳')
-  await m.reply('🔄 *Menarik update terbaru dari GitHub...*')
+  await m.reply(isForce ? '⚡ *Melakukan force update dari GitHub...*' : '🔄 *Menarik update terbaru dari GitHub...*')
 
   try {
-    const { stdout, stderr } = await execPromise('git pull --rebase origin main')
-    
-    if (stdout.includes('Already up to date.') || stdout.includes('Already up-to-date.')) {
+    const cmd = isForce
+      ? 'git fetch origin && git reset --hard origin/main && git clean -fd'
+      : 'git pull --rebase origin main'
+
+    const { stdout, stderr } = await execPromise(cmd)
+    const out = stdout.trim() || stderr.trim() || 'Selesai tanpa output tambahan.'
+
+    if (!isForce && (stdout.includes('Already up to date.') || stdout.includes('Already up-to-date.'))) {
       await m.react('✅')
-      m.reply('✅ *Bot sudah berada di versi terbaru!*')
+      const msg = '✅ *Bot sudah berada di versi terbaru!*'
+      const buttons = [
+        ['🔄 Cek Lagi', `${p + command}`],
+        ['⚡ Force Update', `${p + command} --force`]
+      ]
+      if (typeof conn.sendButton === 'function') {
+        await conn.sendButton(m.chat, msg, `${global.namebot || 'Avelia'} • System Update`, null, buttons, m)
+      } else {
+        await m.reply(msg)
+      }
     } else {
       await m.react('🚀')
-      m.reply(`🚀 *Berhasil Diupdate!*\n\n📝 *Detail:*\n${stdout.trim()}\n\n_Catatan: Jika fitur baru belum muncul, restart bot di panel._`)
+      const msg = `🚀 *${isForce ? 'Force Update Berhasil' : 'Berhasil Diupdate'}!*\n\n📝 *Detail:*\n\`\`\`\n${out}\n\`\`\`\n\n_Catatan: Jika fitur baru belum muncul, silakan restart bot._`
+      const buttons = [
+        ['⚡ Restart Bot', `${p}restart`],
+        ['📜 Menu Utama', `${p}menu`]
+      ]
+      if (typeof conn.sendButton === 'function') {
+        await conn.sendButton(m.chat, msg, `${global.namebot || 'Avelia'} • System Update`, null, buttons, m)
+      } else {
+        await m.reply(msg)
+      }
     }
   } catch (e) {
     await m.react('❌')
-    let errText = `❌ *Gagal Update!*\n\n⚠️ *Error:*\n${e.message}\n\n*Aksi Manual:*\n• Force Update: \`$ git fetch origin && git reset --hard origin/main && git clean -fd\`\n• Coba Lagi: \`.update\``
-    await m.reply(errText)
+    const errText = `❌ *Gagal Update!*\n\n⚠️ *Error:*\n\`\`\`\n${e.message}\n\`\`\`\n\n*Pilihan Aksi:*\n• Tekan tombol *Force Update* di bawah untuk menimpa perubahan lokal.\n• Tekan tombol *Coba Lagi* untuk mencoba kembali.\n\n*Perintah Manual:*\n\`git fetch origin && git reset --hard origin/main && git clean -fd\``
+    const buttons = [
+      ['⚡ Force Update', `${p + command} --force`],
+      ['🔄 Coba Lagi', `${p + command}`]
+    ]
+    if (typeof conn.sendButton === 'function') {
+      await conn.sendButton(m.chat, errText, `${global.namebot || 'Avelia'} • System Update`, null, buttons, m)
+    } else {
+      await m.reply(errText)
+    }
   }
 }
 
-handler.help = ['update', 'gitpull']
+handler.help = ['update', 'update --force', 'gitpull']
 handler.tags = ['owner']
 handler.command = /^(update|gitpull)$/i
 handler.owner = true

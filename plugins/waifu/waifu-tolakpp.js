@@ -8,12 +8,12 @@ let handler = async (m, { args, conn }) => {
   delete db.pendingPP[args[0]]
   saveDB(db)
 
-  conn.sendMessage(d.userJid, { text: 'PP ditolak' })
-  m.reply('❌ Ditolak')
+  conn.sendMessage(d.userJid, { text: `❌ Foto profil untuk waifu *${d.charName}* ditolak oleh owner.` })
+  m.reply('❌ Permintaan ganti PP waifu ditolak.')
 }
 
-handler.command = ['tolakpp']
+handler.command = ['waifutolakpp', 'tolakpp']
 handler.tags = ['waifu']
-handler.help = ['tolakpp <uid>']
+handler.help = ['waifutolakpp <uid>']
 handler.owner = true
 export default handler

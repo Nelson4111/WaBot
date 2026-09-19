@@ -48,6 +48,7 @@ let handler = async (m, { conn, usedPrefix: _p, command }) => {
       { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: `${_p}menustalker` },
       { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: `${_p}menusticker` },
       { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: `${_p}menutools` },
+      { header: 'Waifu', title: 'Virtual Waifu Anime', description: 'Simulasi & rawat karakter MyAnimeList', id: `${_p}menuwaifu` },
       { header: 'Apresiasi', title: 'Thanks To & Donatur', description: 'Kontributor & daftar donatur bot', id: `${_p}thanksto` }
     ]
 

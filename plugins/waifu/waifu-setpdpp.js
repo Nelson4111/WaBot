@@ -43,17 +43,17 @@ let handler = async (m, { conn }) => {
       `👤 User : @${m.sender.split('@')[0]}\n` +
       `💖 Pasangan : ${c.charName}\n` +
       `🆔 UID MAL : ${c.charId}\n\n` +
-      `✅ Terima : .terimapp ${c.charId}\n` +
-      `❌ Tolak  : .tolakpp ${c.charId}`,
+      `✅ Terima : .waifuterimapp ${c.charId}\n` +
+      `❌ Tolak  : .waifutolakpp ${c.charId}`,
     mentions: [m.sender]
   })
 
-  m.reply('✅ PP berhasil dikirim ke owner untuk dikonfirmasi')
+  m.reply('✅ Foto profil waifu berhasil dikirim ke owner untuk dikonfirmasi.')
 }
 
-handler.command = ['setpdpp']
+handler.command = /^(waifusetpp|setpdpp)$/i
 handler.tags = ['waifu']
-handler.help = ['setpdpp (reply gambar)']
+handler.help = ['waifusetpp (reply gambar)']
 handler.register = true
 
 export default handler

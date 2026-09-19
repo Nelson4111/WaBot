@@ -40,10 +40,16 @@ const SPECIAL = {
 const rupiah = n => 'Rp' + n.toLocaleString('id-ID')
 const clamp = v => Math.max(0, Math.min(MAX, v || 0))
 
-let handler = async (m, { args }) => {
+let handler = async (m, { args, usedPrefix, command }) => {
   const db = loadDB()
+
+  if (!db.couples || !db.couples[m.sender]) {
+    return m.reply(`❌ Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+  }
+
   const money = db.money[m.sender] || 0
 
+  if (!db.status) db.status = {}
   if (!db.status[m.sender]) {
     db.status[m.sender] = { mood: 50, lapar: 50, afinitas: 0 }
   }
@@ -52,27 +58,27 @@ let handler = async (m, { args }) => {
 
   /* ===== TAMPILKAN MENU ===== */
   if (!args[0] || !ALL[args[0]]) {
-    let txt = '*DAFTAR MAKANAN*\n\n'
+    let txt = '*╭  〔 🍱 ᴍ ᴇ ɴ ᴜ  ᴍ ᴀ ᴋ ᴀ ɴ ᴀ ɴ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*\n'
 
-    txt += '*Makanan Biasa*\n'
+    txt += '*┆* ── *Makanan Biasa*\n'
     for (const i in FOOD) {
       const f = FOOD[i]
       txt +=
-        `${i}. ${f.name}\n` +
-        `   Harga: ${rupiah(f.price)} | Lapar +${f.feed}\n\n`
+        `*┆* *${i}.* ${f.name}\n` +
+        `*┆*    Harga: ${rupiah(f.price)} | Lapar +${f.feed}\n`
     }
 
-    txt += '*Makanan Spesial*\n'
+    txt += '*┆*\n*┆* ── *Makanan Spesial*\n'
     for (const i in SPECIAL) {
       const f = SPECIAL[i]
       txt +=
-        `${i}. ${f.name}\n` +
-        `   Harga: ${rupiah(f.price)}\n` +
-        `   Lapar +${f.feed} | Mood +${f.mood} | Afinitas +${f.afk}\n` +
-        `   ${f.desc}\n\n`
+        `*┆* *${i}.* ${f.name}\n` +
+        `*┆*    Harga: ${rupiah(f.price)}\n` +
+        `*┆*    Lapar +${f.feed} | Mood +${f.mood} | Afinitas +${f.afk}\n` +
+        `*┆*    _${f.desc}_\n`
     }
-
-    txt += '_Gunakan: .belifood <nomor>_'
+    txt += '*╰───────────────*\n\n'
+    txt += `> *Gunakan:* *${usedPrefix + command} <nomor>*\n> Contoh: *${usedPrefix + command} 1*`
     return m.reply(txt)
   }
 
@@ -81,7 +87,7 @@ let handler = async (m, { args }) => {
 
   if (money < f.price)
     return m.reply(
-      `Uang tidak cukup\nSaldo kamu: ${rupiah(money)}`
+      `❌ Saldo uang tidak cukup!\n> Harga: ${rupiah(f.price)}\n> Saldo kamu: ${rupiah(money)}`
     )
 
   db.money[m.sender] -= f.price
@@ -92,17 +98,17 @@ let handler = async (m, { args }) => {
   saveDB(db)
 
   m.reply(
-    `*${f.name} telah dikonsumsi*\n` +
-    `Lapar +${f.feed || 0}\n` +
-    (f.mood ? `Mood +${f.mood}\n` : '') +
-    (f.afk ? `Afinitas +${f.afk}\n` : '') +
-    `Sisa uang: ${rupiah(db.money[m.sender])}`
+    `✅ *${f.name} berhasil disuapkan ke waifu!*\n\n` +
+    `🍱 Lapar +${f.feed || 0}\n` +
+    (f.mood ? `🎭 Mood +${f.mood}\n` : '') +
+    (f.afk ? `⟡ Afinitas +${f.afk}\n` : '') +
+    `\n💳 Sisa uang: ${rupiah(db.money[m.sender])}`
   )
 }
 
-handler.command = ['belifood']
+handler.command = /^(waifufood|waifumakan|belifood)$/i
 handler.tags = ['waifu']
-handler.help = ['belifood']
+handler.help = ['waifufood [nomor]']
 handler.register = true
 
 export default handler

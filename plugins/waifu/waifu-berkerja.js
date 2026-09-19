@@ -42,8 +42,15 @@ const rupiah = n => 'Rp' + n.toLocaleString('id-ID')
 const FAIL_CHANCE = 0.08 // 8% chance gagal
 const COOLDOWN = 2 * 60 * 1000 // 2 menit dalam milidetik
 
-let handler = async (m) => {
+let handler = async (m, { usedPrefix, command }) => {
   const db = loadDB()
+
+  // ===== CEK WAIFU =====
+  if (!db.couples || !db.couples[m.sender]) {
+    return m.reply(`❌ Kamu belum memiliki waifu untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+  }
+
+  const waifuName = db.couples[m.sender].charName
 
   // ===== CEK COOLDOWN =====
   if (!db.cooldown) db.cooldown = {}
@@ -51,7 +58,7 @@ let handler = async (m) => {
   const now = Date.now()
   if (now - last < COOLDOWN) {
     const sisa = Math.ceil((COOLDOWN - (now - last)) / 1000)
-    return m.reply(`⏳ Tunggu ${sisa} detik sebelum bekerja lagi`)
+    return m.reply(`⏳ Waifumu sedang istirahat. Tunggu *${sisa} detik* sebelum bekerja lagi.`)
   }
 
   const job = JOBS[Math.floor(Math.random() * JOBS.length)]
@@ -63,10 +70,11 @@ let handler = async (m) => {
   // ===== GAGAL =====
   if (isFail) {
     return m.reply(
-      `❌ KESALAHAN KERJA!\n\n` +
-      `Pekerjaan: ${job.name}\n` +
-      `⚠️ ${job.fail}\n\n` +
-      `💸 Kamu tidak mendapatkan gaji hari ini`
+      `❌ *KESALAHAN KERJA!*\n\n` +
+      `💖 Waifu : ${waifuName}\n` +
+      `💼 Pekerjaan : ${job.name}\n` +
+      `⚠️ Kendala : ${job.fail}\n\n` +
+      `💸 ${waifuName} tidak mendapatkan gaji kali ini.`
     )
   }
 
@@ -78,17 +86,18 @@ let handler = async (m) => {
   saveDB(db)
 
   m.reply(
-    `✅ KERJA BERHASIL!\n\n` +
-    `Pekerjaan: ${job.name}\n` +
-    `✨ ${job.success}\n\n` +
-    `💰 Pendapatan: ${rupiah(earn)}\n` +
-    `💳 Saldo sekarang: ${rupiah(db.money[m.sender])}`
+    `✅ *WAIFU SELESAI BEKERJA!*\n\n` +
+    `💖 Waifu : ${waifuName}\n` +
+    `💼 Pekerjaan : ${job.name}\n` +
+    `✨ Hasil : ${job.success}\n\n` +
+    `💰 Pendapatan : +${rupiah(earn)}\n` +
+    `💳 Saldo uang sekarang : ${rupiah(db.money[m.sender])}`
   )
 }
 
-handler.command = ['berkerja']
+handler.command = /^(waifukerja|wkerja|berkerja)$/i
 handler.tags = ['waifu']
-handler.help = ['berkerja']
+handler.help = ['waifukerja']
 handler.register = true
 
 export default handler
