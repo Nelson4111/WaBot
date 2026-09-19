@@ -167,6 +167,9 @@ let handler = async (m, { conn, command }) => {
 
   let money = baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)
   user.exp += totalExp
+  if (global.db?.data?.users?.[m.sender]) {
+    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + totalExp
+  }
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money
   user.darah -= darahKurang
   user.lastAdventure = Date.now()

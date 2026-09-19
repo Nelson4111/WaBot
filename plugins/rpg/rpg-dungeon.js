@@ -148,6 +148,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   user.darah -= Math.floor(finalDamage)
   user.exp += earnedExp
+  if (global.db?.data?.users?.[m.sender]) {
+    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + earnedExp
+  }
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
   user.inventory.coin = (Number(user.inventory.coin) || 0) + earnedGold
   user.diamond = (Number(user.diamond) || 0) + earnedDiamond

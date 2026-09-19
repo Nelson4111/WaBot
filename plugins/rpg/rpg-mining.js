@@ -107,6 +107,9 @@ let handler = async (m, { conn }) => {
   let uangDidapat = (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uangDidapat
   user.exp += totalExp
+  if (global.db?.data?.users?.[m.sender]) {
+    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + totalExp
+  }
   user.lastMining = Date.now()
   if (user.exp >= user.level * 500) { user.level++; user.exp = 0 }
   saveDB(wdb)

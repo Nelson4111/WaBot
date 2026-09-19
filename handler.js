@@ -341,6 +341,7 @@ async function processMessage(m, chatUpdate) {
                 global.db.data.users[m.sender] = {}
             if (user) {
                 if (!isNumber(user.exp)) user.exp = 0
+                if (!isNumber(user.level)) user.level = 0
                 if (!isNumber(user.limit)) user.limit = 100
                 if (user.registered !== true) user.registered = true
                 if (!('name' in user) || !user.name) user.name = m.name

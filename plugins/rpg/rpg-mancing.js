@@ -191,6 +191,9 @@ let handler = async (m, { conn }) => {
     user.ikan[fish.ikan] = (user.ikan[fish.ikan] || 0) + 1
   }
   user.exp += totalExp
+  if (global.db?.data?.users?.[m.sender]) {
+    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + totalExp
+  }
   user.lastMancing = Date.now()
   if (user.exp >= user.level * 500) { user.level++; user.exp = 0 }
   saveDB(wdb)

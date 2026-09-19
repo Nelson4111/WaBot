@@ -91,19 +91,31 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
 ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekarang untuk mengklaim level dan hadiahmu!` : `> 💡 *Tips Memperoleh EXP:*\n> • Chatting aktif di dalam grup\n> • Mainkan game (*${usedPrefix}tebakgambar*, *${usedPrefix}caklontong*, dsb)\n> • Berpetualang di menu RPG (*${usedPrefix}adventure*, *${usedPrefix}mining*)`}`.trim()
 
     let levelThumb = await getLevelThumbnail(conn, who)
+    const footer = `${global.namebot || 'Avelia'} • Leveling System`
+    const buttons = canUp
+      ? [['🆙 Level Up', `${usedPrefix}levelup`], ['👤 Profil', `${usedPrefix}profile`]]
+      : [['👤 Profil', `${usedPrefix}profile`], ['📋 Menu', `${usedPrefix}allmenu`]]
+    const thumbBuffer = levelThumb?.thumbnail || levelThumb?.thumbnailUrl
+
+    if (typeof conn.sendButtonV2 === 'function') {
+      try {
+        return await conn.sendButtonV2(m.chat, {
+          title: `✦ STATUS LEVEL: Lv.${user.level} ✦`,
+          subtitle: `${userRole} • ${percent}% EXP`,
+          text,
+          footer,
+          buffer: thumbBuffer,
+          buttons,
+          contextInfo: { mentions: [who] }
+        }, m)
+      } catch (e) {
+        console.warn('[.level sendButtonV2 failed]:', e?.message)
+      }
+    }
 
     return await conn.sendMessage(m.chat, {
       text,
-      mentions: [who],
-      contextInfo: {
-        externalAdReply: {
-          title: `✦ STATUS LEVEL: Lv.${user.level} [${userRole}] ✦`,
-          body: `Progres: [${bar}] ${percent}%`,
-          mediaType: 1,
-          renderLargerThumbnail: true,
-          ...levelThumb
-        }
-      }
+      mentions: [who]
     }, { quoted: m }).catch(() => conn.reply(m.chat, text, m, { mentions: [who] }))
   }
 
@@ -133,6 +145,25 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
 *╰───────────────*
 
 > _Semangat! Terus gunakan bot dan mainkan game untuk mengumpulkan EXP!_`.trim()
+
+      if (typeof conn.sendButtonV2 === 'function') {
+        try {
+          let levelThumb = await getLevelThumbnail(conn, m.sender)
+          return await conn.sendButtonV2(m.chat, {
+            title: '✦ EXP BELUM CUKUP ✦',
+            subtitle: `Lv.${user.level} • Butuh ${remainingExp} XP lagi`,
+            text: textFail,
+            footer: `${global.namebot || 'Avelia'} • Leveling System`,
+            buffer: levelThumb?.thumbnail || levelThumb?.thumbnailUrl,
+            buttons: [
+              ['⚔️ Petualangan', `${usedPrefix}adventure`],
+              ['⛏️ Menambang', `${usedPrefix}mining`]
+            ]
+          }, m)
+        } catch (e) {
+          console.warn('[.levelup fail sendButtonV2 failed]:', e?.message)
+        }
+      }
 
       return conn.reply(m.chat, textFail, m)
     }
@@ -167,18 +198,32 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
 > _Selamat! Kamu berhasil naik ${user.level - before} tingkatan level!_
 > _Tingkatkan terus keaktifanmu untuk meraih gelar Mythic Immortal!_`.trim()
 
+    const footer = `${global.namebot || 'Avelia'} • Leveling System`
+    const buttons = [
+      ['👤 Profil', `${usedPrefix}profile`],
+      ['📋 Menu', `${usedPrefix}allmenu`]
+    ]
+    const thumbBuffer = levelThumb?.thumbnail || levelThumb?.thumbnailUrl
+
+    if (typeof conn.sendButtonV2 === 'function') {
+      try {
+        return await conn.sendButtonV2(m.chat, {
+          title: '✦ LEVEL UP BERHASIL! ✦',
+          subtitle: `Lv.${user.level} • ${user.role}`,
+          text: caption,
+          footer,
+          buffer: thumbBuffer,
+          buttons,
+          contextInfo: { mentions: [m.sender] }
+        }, m)
+      } catch (e) {
+        console.warn('[.levelup success sendButtonV2 failed]:', e?.message)
+      }
+    }
+
     await conn.sendMessage(m.chat, {
       text: caption,
-      mentions: [m.sender],
-      contextInfo: {
-        externalAdReply: {
-          title: `✦ LEVEL UP! [Lv.${user.level} • ${user.role}] ✦`,
-          body: `Selamat @${m.name || 'User'} naik level ke ${user.level}!`,
-          mediaType: 1,
-          renderLargerThumbnail: true,
-          ...levelThumb
-        }
-      }
+      mentions: [m.sender]
     }, { quoted: m }).catch(() => conn.reply(m.chat, caption, m, { mentions: [m.sender] }))
   }
 }

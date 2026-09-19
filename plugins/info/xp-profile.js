@@ -101,6 +101,18 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   let remainingExp = Math.max(0, max - exp)
   let progressBar = createProgressBar(percent, 10)
 
+  // 4b. Data RPG Petualangan (Option A: Dual Level System)
+  const rpg = user.rpg || {}
+  const rpgLevel = rpg.level || 1
+  const rpgExp = rpg.exp || 0
+  const rpgMaxExp = rpgLevel * 500
+  const rpgDarah = rpg.darah ?? 100
+  const rpgArmor = rpg.armor || 0
+  const rpgSword = rpg.sword || 0
+  const rpgMaxDarah = 100 + (rpgArmor * 20) + (rpg.maxDarahBonus || 0)
+  const rpgPercent = Math.min(100, Math.max(0, Math.floor((rpgExp / (rpgMaxExp || 1)) * 100)))
+  const rpgBar = createProgressBar(rpgPercent, 10)
+
   // 5. Data Hubungan & Asmara (Mendukung Sistem Poligami Multi-Pasangan)
   let mentions = [who]
   let hubunganCard = ''
@@ -188,11 +200,19 @@ ${spouseList}
 *┆* ⌬ ꜱɴ ᴋᴇʏ    : \`${sn}\`
 *╰──────────────────────*
 
-*╭  〔 ✮ ʟ ᴇ ᴠ ᴇ ʟ  &  ᴇ x ᴘ 〕*
-*┆* ⟡ ʟᴇᴠᴇʟ     : *${toSmallNum(level)}*
-*┆* ✧ ᴇxᴘ       : *${toSmallNum(exp.toLocaleString('id-ID'))}*
+*╭  〔 ✮ ʟ ᴇ ᴠ ᴇ ʟ  ᴜ ᴛ ᴀ ᴍ ᴀ  (ᴀ ᴋ ᴜ ɴ) 〕*
+*┆* ⟡ ʟᴇᴠᴇʟ ʙᴏᴛ : *${toSmallNum(level)} (${role})*
+*┆* ✧ ᴛᴏᴛᴀʟ ᴇxᴘ : *${toSmallNum(exp.toLocaleString('id-ID'))} XP*
 *┆* ✦ xᴘ ᴋᴇ ʟᴠʟ : *${toSmallNum(remainingExp.toLocaleString('id-ID'))} EXP lagi*
 *┆* ◈ ᴘʀᴏɢʀᴇꜱ   : *[${progressBar}] (${toSmallNum(percent)}%)*
+*╰──────────────────────*
+
+*╭  〔 ⚔️ ʀ ᴘ ɢ  ᴘ ᴇ ᴛ ᴜ ᴀ ʟ ᴀ ɴ ɢ 〕*
+*┆* ⟡ ʟᴇᴠᴇʟ ʀᴘɢ : *${toSmallNum(rpgLevel)}*
+*┆* ✧ ᴇxᴘ ʀᴘɢ   : *${toSmallNum(rpgExp.toLocaleString('id-ID'))} / ${toSmallNum(rpgMaxExp.toLocaleString('id-ID'))} XP*
+*┆* ✦ ᴅᴀʀᴀʜ     : *${toSmallNum(rpgDarah)} / ${toSmallNum(rpgMaxDarah)} HP*
+*┆* ◈ ᴇǫᴜɪᴘ     : *🗡️ Lv.${toSmallNum(rpgSword)}* • *🛡️ Lv.${toSmallNum(rpgArmor)}*
+*┆* ⟡ ᴘʀᴏɢʀᴇꜱ   : *[${rpgBar}] (${toSmallNum(rpgPercent)}%)*
 *╰──────────────────────*
 
 *╭  〔 ❖ ᴋ ᴇ ᴜ ᴀ ɴ ɢ ᴀ ɴ 〕*

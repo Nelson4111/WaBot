@@ -110,22 +110,34 @@ ${pos + 1}. ${me.name}${isPremMe}${myRole}
 textRes += `━━━━━━━━━━━━━━━━━━━━`
 textRes = '```' + textRes + '```'
 
+  const footer = `${global.namebot || 'Avelia'} • Leaderboard System`
+  const buttons = [
+    ['👤 Profil Saya', '.profile'],
+    ['📊 Cek Level', '.level']
+  ]
+  const bannerUrl = 'https://files.cloudkuimages.guru/images/4c70abcb66ee.jpeg'
+
+  if (typeof conn.sendButtonV2 === 'function') {
+    try {
+      return await conn.sendButtonV2(m.chat, {
+        title: '🏆 TOP LEADERBOARD 🏆',
+        subtitle: bodyAd,
+        text: textRes,
+        footer,
+        buffer: bannerUrl,
+        buttons,
+        contextInfo: { mentions: top.map(u => u.jid) }
+      }, m)
+    } catch (e) {
+      console.warn('[Leaderboard sendButtonV2 failed]:', e?.message)
+    }
+  }
+
   await conn.sendMessage(
     m.chat,
     {
       text: textRes,
-      mentions: top.map(u => u.jid),
-      contextInfo: {
-        externalAdReply: {
-          title: 'Avelia Leaderboard',
-          body: bodyAd,
-          thumbnailUrl: 'https://files.cloudkuimages.guru/images/4c70abcb66ee.jpeg',
-          mediaType: 1,
-          previewType: 'PHOTO',
-          renderLargerThumbnail: true,
-          sourceUrl: ''
-        }
-      }
+      mentions: top.map(u => u.jid)
     },
     { quoted: m }
   )
