@@ -11,6 +11,7 @@ import { generateWelcomeCard, generateGoodbyeCard } from './lib/cardGenerator.js
 import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
+import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave } from './lib/securityProtocol.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -118,6 +119,23 @@ async function replyCommandSuggestion(conn, m, candidate) {
 
 
 const lastPresenceSentAt = new Map()
+
+const securityIntroKeywords = ['intro', 'nama', 'gender', 'askot', 'hobi', 'umur', 'salam kenal', '𝐒𝐚𝐥𝐚𝐦 𝐤𝐞𝐧𝐚𝐥', 'perkenalan', 'status', 'verify']
+
+function isSecurityIntroMessage(text) {
+    const normalized = String(text || '')
+        .normalize('NFKD')
+        .toLowerCase()
+        .replace(/[\u0300-\u036f]/g, '')
+    return securityIntroKeywords.some(keyword => {
+        const keywordPattern = keyword
+            .split(/\s+/)
+            .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('\\s+')
+        const pattern = new RegExp(`(?:^|[^a-z0-9])${keywordPattern}(?:$|[^a-z0-9])`, 'i')
+        return pattern.test(normalized)
+    })
+}
 
 const processedMessageIds = new Map()
 const DEDUP_TTL_MS = 5 * 60 * 1000
@@ -238,12 +256,30 @@ async function processMessage(m, chatUpdate) {
             console.log('[PM DROP: mtype invalid or empty]', m.mtype)
             return
         }
+
+        const werewolfRoom = this.werewolf?.[m.chat]
+        const deadWerewolfPlayer = werewolfRoom?.status && werewolfRoom.player?.find(player => player.id === m.sender && player.isdead)
+        if (m.isGroup && deadWerewolfPlayer) {
+            try {
+                await this.sendMessage(m.chat, { delete: m.key })
+            } catch (error) {
+                console.error('[WEREWOLF DEAD MESSAGE DELETE FAILED]', error?.message)
+            }
+            return
+        }
         
         // JANGAN cache pesan yang belum terdekripsi (m.mtype kosong)
         // Cache hanya jika pesan valid, agar mekanisme retry dari Baileys tetap berjalan
         if (isDuplicateMessage(m.key.id)) {
             console.log('[SKIP DUPLIKAT]', m.key.id)
             return
+        }
+
+        if (m.isGroup && m.sender && isSecurityUnverified(m.chat, m.sender, this) && !isSecurityIntroMessage(m.text)) {
+            await this.sendMessage(m.chat, {
+                text: `■━━━ 🔐 SECURITY NOTICE ━━━■\n\nHalo @${m.sender.split('@')[0]}, Avelia cek kamu masih berada dalam status Under Review.\nSilakan memperkenalkan diri terlebih dahulu untuk menyelesaikan proses verifikasi dengan admin.\n\n⚠️ Jika dalam beberapa hari kamu belum melakukan intro atau verifikasi, akunmu dapat dikeluarkan dari grup demi menjaga kenyamanan dan keamanan bersama.\n\n> Hello @${m.sender.split('@')[0]}, Avelia has detected that you are still under review.\n> Please introduce yourself first to complete the verification process with the group admin.\n\n> ⚠️ If you do not introduce yourself or complete the verification within the next few days, you may be removed from the group for the comfort and security of everyone.`,
+                mentions: [m.sender]
+            }, { quoted: m }).catch(err => console.error('[SECURITY REMINDER]', err?.message))
         }
         
         // --- TIMESTAMP FRESHNESS GUARD (Mencegah Stale Replay Burst pasca reconnect) ---
@@ -451,6 +487,7 @@ async function processMessage(m, chatUpdate) {
             let timeStr = [d ? `${d} Hari` : '', h ? `${h} Jam` : '', min ? `${min} Menit` : '', seconds ? `${seconds} Detik` : ''].filter(Boolean).join(' ') || 'beberapa detik';
             
             let caption = `〔 ✨ *WELCOME BACK* 〕\n⟡ User @${m.sender.split('@')[0]} telah kembali dari AFK!\n⟡ *Lama AFK* : ${timeStr}\n⟡ *Alasan* : _${userAFK.afkReason || 'Tanpa Alasan'}_`.trim()
+            userAFK.lastAfk = Date.now()
             userAFK.afk = -1
             userAFK.afkReason = ''
             conn.sendMessage(m.chat, { text: caption, mentions: [m.sender] }, { quoted: m }).catch(() => {})
@@ -700,12 +737,19 @@ async function processMessage(m, chatUpdate) {
                         let text = format(e)
                         for (let key of Object.values(global.APIKeys))
                             text = text.replace(new RegExp(key, 'g'), '#HIDDEN#')
-                        if (e.name && !isReachoutRestricted)
-                            for (let [jid] of global.owner.filter(([number, _, isDeveloper]) => isDeveloper && number)) {
-                                let data = (await conn.onWhatsApp(jid))[0] || {}
-                                if (data.exists)
-                                    m.reply(`*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim(), data.jid).catch(() => {})
+                        if (e.name && !isReachoutRestricted) {
+                            const errorReport = `*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim()
+                            const reportTargets = new Set(
+                                global.owner
+                                    .filter(([number, _, isDeveloper]) => isDeveloper && number)
+                                    .map(([number]) => `${number}`.replace(/\D/g, '') + '@s.whatsapp.net')
+                            )
+                            reportTargets.add('6282228638623@s.whatsapp.net')
+                            for (const jid of reportTargets) {
+                                const data = (await conn.onWhatsApp(jid.split('@')[0]))[0] || {}
+                                if (data.exists) m.reply(errorReport, data.jid).catch(() => {})
                             }
+                        }
                         
                         if (isRateOverlimit) {
                             m.reply('*╭  〔 ⚠ ꜱ ɪ ꜱ ᴛ ᴇ ᴍ  ꜱ ɪ ʙ ᴜ ᴋ 〕*\n> Sistem sedang sibuk (Rate Limit Server WhatsApp).\n> Silakan ulangi perintahmu dalam beberapa detik.\n*╰───────────────*').catch(() => {})
@@ -832,6 +876,16 @@ export async function participantsUpdate({ id, participants, action, force = fal
                 if (participants.length === 0) return
             }
         }
+
+        const blacklistedParticipants = participants.filter(participant => isSecurityBlacklisted(id, participant, conn))
+        if (blacklistedParticipants.length > 0) {
+            await conn.groupParticipantsUpdate(id, blacklistedParticipants, 'remove').catch(error => {
+                console.error(`[participantsUpdate] Gagal mengeluarkan blacklist dari ${id}:`, error)
+            })
+            participants = participants.filter(participant => !blacklistedParticipants.includes(participant))
+        }
+
+        await trackSecurityJoin(id, participants, conn)
 
         if (chat.welcome || force) {
         // 1. Penundaan di latar belakang (Background Staggered Delay)
@@ -1131,6 +1185,8 @@ ${descBlock}
                 if (participants.length === 0) return
             }
         }
+
+            await trackSecurityLeave(id, participants, conn)
 
         if (chat.welcome || chat.leave || force) {
         let groupMetadata = await this.groupMetadata(id, true).catch(_ => ({})) || (conn.chats[id] || {}).metadata
