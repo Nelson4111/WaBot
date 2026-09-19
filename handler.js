@@ -12,7 +12,6 @@ import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
 import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave } from './lib/securityProtocol.js'
-import { globalMessageQueue, isMessageStale } from './lib/messageQueue.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -151,15 +150,6 @@ function isDuplicateMessage(id) {
     return false
 }
 
-function withTimeout(promise, ms, label) {
-    return Promise.race([
-        promise,
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error(`TIMEOUT setelah ${ms}ms: ${label}`)), ms)
-        )
-    ])
-}
-
 export async function handler(chatUpdate) {
     console.log('[EVENT MASUK]', new Date().toISOString(), 
         'jumlah pesan:', chatUpdate?.messages?.length, 
@@ -169,16 +159,8 @@ export async function handler(chatUpdate) {
     this.pushMessage(chatUpdate.messages).catch(console.error)
     
     for (const message of chatUpdate.messages) {
-        const msgId = message.key?.id
-        const jid = message.key?.remoteJid
-        
-        globalMessageQueue.enqueue(jid, message, async () => {
-            await processMessage.call(this, message, chatUpdate)
-        }, {
-            msgId,
-            timeoutMs: 30000
-        }).catch((err) => {
-            console.error('[MESSAGE QUEUE PROCESS ERROR]', err?.message || err)
+        processMessage.call(this, message, chatUpdate).catch((err) => {
+            console.error('[PROCESS MESSAGE ERROR]', err?.message || err)
         })
     }
 }
@@ -278,10 +260,6 @@ async function processMessage(m, chatUpdate) {
             }, { quoted: m }).catch(err => console.error('[SECURITY REMINDER]', err?.message))
         }
         
-        // --- SMART STALE GUARD (Mencegah Stale Replay tapi toleran terhadap antrean command) ---
-        if (isMessageStale(m)) {
-            return
-        }
         
         m.exp = 0
         m.limit = false
