@@ -24,7 +24,7 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
       registered: true,
       name: conn.getName(who) || 'User',
       level: 0,
-      role: 'Wanderer',
+      role: 'Pendatang',
       autolevelup: true
     }
     user = global.db.data.users[who]
