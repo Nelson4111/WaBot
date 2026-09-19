@@ -164,6 +164,47 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
         const rTitle = roleTitles[role] || role.toUpperCase()
         const rDesc = roleDescriptions[role] || 'Pilihlah tindakan malammu dengan bijak.'
 
+        const secretCodes = p.secretCodes || {}
+        const cheatSheetLines = []
+        for (const [code, action] of Object.entries(secretCodes)) {
+            let actionDesc = ''
+            if (action.type === 'kill') {
+                const target = room.player.find((x) => x.number === action.targetNumber)
+                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
+                actionDesc = `🐺 Terkam (${toSmallNum(action.targetNumber)}) ${tName}`
+            } else if (action.type === 'check') {
+                const target = room.player.find((x) => x.number === action.targetNumber)
+                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
+                actionDesc = `🔮 Terawang (${toSmallNum(action.targetNumber)}) ${tName}`
+            } else if (action.type === 'guard') {
+                const target = room.player.find((x) => x.number === action.targetNumber)
+                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
+                actionDesc = `🛡️ Lindungi (${toSmallNum(action.targetNumber)}) ${tName}`
+            } else if (action.type === 'poison') {
+                const target = room.player.find((x) => x.number === action.targetNumber)
+                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
+                actionDesc = `☠️ Racuni (${toSmallNum(action.targetNumber)}) ${tName}`
+            } else if (action.type === 'revive') {
+                const target = room.player.find((x) => x.number === action.targetNumber)
+                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
+                actionDesc = `⚰️ Hidupkan (${toSmallNum(action.targetNumber)}) ${tName}`
+            } else if (action.type === 'hunter') {
+                const target = room.player.find((x) => x.number === action.targetNumber)
+                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
+                actionDesc = `🏹 Tembak (${toSmallNum(action.targetNumber)}) ${tName}`
+            } else if (action.type === 'skip') {
+                actionDesc = `⏩ Lewati Malam`
+            } else if (action.type === 'dummy') {
+                actionDesc = `🌙 ${action.label || 'Aktivitas Malam'}`
+            } else {
+                actionDesc = `✦ ${action.label || 'Pilihan'}`
+            }
+
+            cheatSheetLines.push(`> ⟡ [${code}] ➔ ${actionDesc}`)
+        }
+
+        const cheatSheetSection = cheatSheetLines.length > 0 ? `*╭  〔 📋 ᴅᴀꜰᴛᴀʀ ᴋᴏᴅᴇ ᴀᴋꜱɪ 〕*\n${cheatSheetLines.join('\n')}\n*╰───────────────*\n\n` : ''
+
         const bodyCard = `*──  ୨୧ ✧ FASE MALAM TIBA ✧ ୨୧  ──*
 > 🌙 _Bulan purnama bersinar terang di atas langit desa..._
 
@@ -173,10 +214,9 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
 > ⟡ Petunjuk : *${rDesc}*
 *╰───────────────*
 
-*╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋꜱɪ 〕*
-> ⟡ Tekan tombol di bawah untuk beraksi.
-> ⟡ Tombol bersifat rahasia & eksklusif.
-> ⟡ Chat aksi otomatis disamarkan.
+${cheatSheetSection}*╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋꜱɪ 〕*
+> ⟡ Tekan tombol kode di bawah untuk bertindak.
+> ⟡ Kode acak menjamin kerahasiaan aksi malammu.
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _Pilihanmu menentukan keselamatan desa saat fajar._`
@@ -186,46 +226,8 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
         btn.setFooter('Avelia • Werewolf Secret Night Phase')
         btn.addButton('', '{}') // Dummy button untuk kompatibilitas WhatsApp Android
 
-        const secretCodes = p.secretCodes || {}
-        for (const [code, action] of Object.entries(secretCodes)) {
-            let label = ''
-            if (action.type === 'kill') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                label = `🐺 Terkam (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'check') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                label = `🔮 Terawang (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'guard') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                label = `🛡️ Lindungi (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'poison') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                label = `☠️ Racuni (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'revive') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                label = `⚰️ Hidupkan (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'hunter') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                label = `🏹 Tembak (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'skip') {
-                label = `⏩ Lewati Malam`
-            } else if (action.type === 'dummy') {
-                label = `🌙 ${action.label || 'Aktivitas Malam'}`
-            } else {
-                label = `✦ ${action.label || 'Pilihan'}`
-            }
-
-            if (label.length > 25) {
-                label = label.slice(0, 24) + '…'
-            }
-
-            btn.addReply(label, `.ww ${code}`)
+        for (const code of Object.keys(secretCodes)) {
+            btn.addReply(`🔑 ${code}`, `.ww ${code}`)
         }
 
         btn.setContextInfo({ mentionedJid: aliveJids })
@@ -442,10 +444,24 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     const { sender, chat } = m
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
+    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "info", "role", "guide", "add", "del"]
     let value = args[0]
     const target = args[1]
     const normalizedValue = String(value || "").toLowerCase()
-    const isSecretCode = /^[A-Z0-9]{4,5}$/i.test(String(value || ""))
+
+    let detectedSecretCode = null
+    if (/^[A-Z0-9]{4,5}$/i.test(String(value || "")) && !standardCommands.includes(normalizedValue)) {
+        detectedSecretCode = String(value).toUpperCase()
+    } else if (target && /^[A-Z0-9]{4,5}$/i.test(String(target || "")) && !standardCommands.includes(String(target).toLowerCase())) {
+        detectedSecretCode = String(target).toUpperCase()
+    } else {
+        const textRaw = String(m.text || "").replace(/^[.\/#!]ww\s*/i, "").trim()
+        const codeMatch = textRaw.match(/\b([A-Z0-9]{4,5})\b/i)
+        if (codeMatch && !standardCommands.includes(codeMatch[1].toLowerCase())) {
+            detectedSecretCode = codeMatch[1].toUpperCase()
+        }
+    }
+    const isSecretCode = Boolean(detectedSecretCode)
     const currentRoomPlayer = ww[chat]?.player?.find((player) => player.id === sender) || null
     const isDeadInRoom = !!(currentRoomPlayer && currentRoomPlayer.isdead)
     const allowedDeadCommands = ["delete", "info", "role", "player", "create", "join", "start", "exit", "guide"]
@@ -501,17 +517,12 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     }
 
     // Penanganan Klik Tombol Kode Rahasia (.ww <KODE>)
-    if (ww[chat] && ww[chat].status && isSecretCode && !["create", "join", "start", "vote", "exit", "delete", "player", "info", "role", "guide"].includes(normalizedValue)) {
+    if (ww[chat] && ww[chat].status && isSecretCode && !standardCommands.includes(normalizedValue)) {
         const phase = ww[chat].time === "voting" ? "vote" : "night"
-        const result = resolveSecretCodeAction(chat, sender, value, ww, phase)
+        const result = resolveSecretCodeAction(chat, sender, detectedSecretCode || value, ww, phase)
 
         if (result.ok) {
             await m.react('✅')
-
-            // Hapus chat klik tombol pengguna agar chat tetap bersih dan rahasia tidak bocor
-            try {
-                await conn.sendMessage(chat, { delete: m.key })
-            } catch (e) {}
 
             // Pengiriman Hasil Penerawangan Khusus Seer via Dual Message
             if (phase === "night" && result.action === "check") {
@@ -531,7 +542,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _Gunakan informasi ini dengan bijak saat sidang desa besok!_`
 
-                const seerSpectatorLock = `> 🔒 _[Penerawangan Seer telah dicatat oleh semesta desa...]_\n> 🔮 _Kabut malam menyelimuti rahasia yang terungkap._`
+                const seerSpectatorLock = `> 🔒 _[Aksi malam telah dicatat oleh semesta desa...]_\n> 🌙 _Kabut malam menyelimuti desa yang sunyi._`
 
                 await sendDualGroupMessage(conn, chat, sender, {
                     text: seerPrivateText,
