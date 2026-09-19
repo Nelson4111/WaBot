@@ -13,7 +13,31 @@ console.info = function (...args) {
     _origConsoleInfo.apply(console, args);
 };
 console.error = function (...args) {
-    if (typeof args[0] === 'string' && args[0].includes('Decrypted message with closed session')) return;
+    const errText = args.map(a => typeof a === 'string' ? a : (a?.message || a?.stack || '')).join(' ');
+    if (
+        errText.includes('Decrypted message with closed session') ||
+        errText.includes('Over 2000 messages into the future') ||
+        errText.includes('Failed to decrypt message with any known session') ||
+        errText.includes('Session error:SessionError')
+    ) {
+        // Auto-heal: jika ada ID sesi corrupted, hapus file sesi tersebut agar Baileys menegosiasi ulang
+        const match = errText.match(/(\d{8,}\.\d+)/);
+        if (match && match[1]) {
+            const baseId = match[1].split('.')[0];
+            try {
+                const sessDir = path.resolve('./sessions');
+                if (existsSync(sessDir)) {
+                    const files = readdirSync(sessDir);
+                    for (const f of files) {
+                        if (f.includes(baseId) && (f.startsWith('session-') || f.startsWith('sender-key-'))) {
+                            try { unlinkSync(path.join(sessDir, f)); } catch {}
+                        }
+                    }
+                }
+            } catch {}
+        }
+        return;
+    }
     _origConsoleError.apply(console, args);
 };
 
@@ -258,7 +282,7 @@ global.groupMetadataQueryHourly = 0;
 global.groupMetadataCacheHits = 0;
 
 setInterval(() => {
-  console.log(chalk.cyan(`📊 [METADATA STATS 1-JAM] Query Server WA: ${global.groupMetadataQueryHourly || 0} | Cache Hits: ${global.groupMetadataCacheHits || 0}`));
+  // console.log(chalk.cyan(`📊 [METADATA STATS 1-JAM] Query Server WA: ${global.groupMetadataQueryHourly || 0} | Cache Hits: ${global.groupMetadataCacheHits || 0}`));
   global.groupMetadataQueryHourly = 0;
   global.groupMetadataCacheHits = 0;
 }, 60 * 60 * 1000);
@@ -296,7 +320,7 @@ const connectionOptions = {
     //    memanggil groupMetadata(jid) secara paralel (yang menyebabkan rate-overlimit).
     //    cachedGroupMetadata TIDAK BOLEH return undefined untuk group JID.
     global.groupMetadataQueryHourly = (global.groupMetadataQueryHourly || 0) + 1;
-    console.log(chalk.yellow(`⚠️ [METADATA QUERY #${global.groupMetadataQueryHourly}] Cache miss ${jid}, fetching inline...`))
+    // console.log(chalk.yellow(`⚠️ [METADATA QUERY #${global.groupMetadataQueryHourly}] Cache miss ${jid}, fetching inline...`))
     
     if (!global._cachedMetaInFlight) global._cachedMetaInFlight = new Map()
     if (global._cachedMetaInFlight.has(jid)) {
@@ -916,7 +940,8 @@ async function filesInit() {
     }
   }
 }
-filesInit().then(_ => console.log(Object.keys(global.plugins))).catch(console.error)
+// filesInit().then(_ => console.log(Object.keys(global.plugins))).catch(console.error)
+filesInit().catch(console.error)
 
 global.reload = async (_ev, filename) => {
   if (!filename) return filesInit()
@@ -993,7 +1018,7 @@ async function _quickTest() {
   }));
 
   let [ffmpeg, ffprobe, ffmpegWebp, convert, magick, gm, find] = test;
-  console.log(test);
+  // console.log(test);
 
   let s = global.support = {
     ffmpeg,

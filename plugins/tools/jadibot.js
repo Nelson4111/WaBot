@@ -246,7 +246,7 @@ handler.before = async (m, { conn, usedPrefix }) => {
 }
 
 handler.help = ['jadibot <nomor/me>', 'stopjadibot [nomor]', 'listjadibot']
-handler.tags = ['tools']
+handler.tags = ['jadibot', 'tools']
 handler.command = /^(jadibot|subbot|clonebot|stopjadibot|delsesi|stopbot|listjadibot|jadibotlist)$/i
 
 export default handler

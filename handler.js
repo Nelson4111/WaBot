@@ -137,23 +137,24 @@ function isSecurityIntroMessage(text) {
     })
 }
 
-const processedMessageIds = new Map()
 const DEDUP_TTL_MS = 5 * 60 * 1000
 
-function isDuplicateMessage(id) {
+function isDuplicateMessage(instance, id) {
+    if (!instance || !id) return false
+    if (!instance._processedMessageIds) instance._processedMessageIds = new Map()
     const now = Date.now()
-    for (const [key, ts] of processedMessageIds) {
-        if (now - ts > DEDUP_TTL_MS) processedMessageIds.delete(key)
+    for (const [key, ts] of instance._processedMessageIds) {
+        if (now - ts > DEDUP_TTL_MS) instance._processedMessageIds.delete(key)
     }
-    if (processedMessageIds.has(id)) return true
-    processedMessageIds.set(id, now)
+    if (instance._processedMessageIds.has(id)) return true
+    instance._processedMessageIds.set(id, now)
     return false
 }
 
 export async function handler(chatUpdate) {
-    console.log('[EVENT MASUK]', new Date().toISOString(), 
-        'jumlah pesan:', chatUpdate?.messages?.length, 
-        'type:', chatUpdate?.type)
+    // console.log('[EVENT MASUK]', new Date().toISOString(), 
+    //     'jumlah pesan:', chatUpdate?.messages?.length, 
+    //     'type:', chatUpdate?.type)
     this.msgqueque = this.msgqueque || []
     if (!chatUpdate || chatUpdate.type !== 'notify') return
     this.pushMessage(chatUpdate.messages).catch(console.error)
@@ -167,7 +168,7 @@ export async function handler(chatUpdate) {
 
 async function processMessage(m, chatUpdate) {
     const conn = this
-    console.log('[PM START]', new Date().toISOString(), m?.key?.id)
+    // console.log('[PM START]', new Date().toISOString(), m?.key?.id)
     
     try {
         if (opts['autoread']) await this.readMessages([m.key])
@@ -176,7 +177,7 @@ async function processMessage(m, chatUpdate) {
     }
 
     if (!m) {
-        console.log('[PM DROP: !m]')
+        // console.log('[PM DROP: !m]')
         return  
     }
     
@@ -186,20 +187,20 @@ async function processMessage(m, chatUpdate) {
     try {
         m = smsg(this, m) || m
         if (!m) {
-            console.log('[PM DROP: !smsg(m)]')
+            // console.log('[PM DROP: !smsg(m)]')
             return
         }
         
-        console.log('[PM MSG DETAIL]', {
-            id: m.key?.id,
-            fromMe: m.fromMe,
-            sender: m.sender,
-            chat: m.chat,
-            mtype: m.mtype,
-            text: m.text,
-            isGroup: m.isGroup,
-            hasMessage: !!m.message
-        })
+        // console.log('[PM MSG DETAIL]', {
+        //     id: m.key?.id,
+        //     fromMe: m.fromMe,
+        //     sender: m.sender,
+        //     chat: m.chat,
+        //     mtype: m.mtype,
+        //     text: m.text,
+        //     isGroup: m.isGroup,
+        //     hasMessage: !!m.message
+        // })
 
         // ANTIDELETE: Tangkap pesan yang dihapus sebelum protocolMessage di-drop
         if (m.mtype === 'protocolMessage' || m.message?.protocolMessage) {
@@ -227,11 +228,11 @@ async function processMessage(m, chatUpdate) {
 
         // Cek langsung ke raw message object untuk menghindari bug getter mtype
         if (m.message && (m.message.protocolMessage || m.message.senderKeyDistributionMessage)) {
-            console.log('[PM DROP: protocol/senderKey in raw message]')
+            // console.log('[PM DROP: protocol/senderKey in raw message]')
             return
         }
         if (m.mtype === 'protocolMessage' || m.mtype === 'senderKeyDistributionMessage' || !m.mtype) {
-            console.log('[PM DROP: mtype invalid or empty]', m.mtype)
+            // console.log('[PM DROP: mtype invalid or empty]', m.mtype)
             return
         }
 
@@ -248,8 +249,8 @@ async function processMessage(m, chatUpdate) {
         
         // JANGAN cache pesan yang belum terdekripsi (m.mtype kosong)
         // Cache hanya jika pesan valid, agar mekanisme retry dari Baileys tetap berjalan
-        if (isDuplicateMessage(m.key.id)) {
-            console.log('[SKIP DUPLIKAT]', m.key.id)
+        if (isDuplicateMessage(this, m.key.id)) {
+            // console.log('[SKIP DUPLIKAT]', m.key.id)
             return
         }
 
@@ -340,6 +341,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('antispam' in chat)) chat.antispam = false 
                 if (!('viewonce' in chat)) chat.viewonce = false
                 if (!('antiToxic' in chat)) chat.antiToxic = false
+                if (!('toxicWarn' in chat) || typeof chat.toxicWarn !== 'object') chat.toxicWarn = {}
                 if (!('antiImage' in chat)) chat.antiImage = false
                 if (!('antiSticker' in chat)) chat.antiSticker = false
                 if (!('antiTag' in chat)) chat.antiTag = false
@@ -364,6 +366,7 @@ async function processMessage(m, chatUpdate) {
                     antispam: false, 
                     viewonce: false,
                     antiToxic: false,
+                    toxicWarn: {},
                     antiImage: false,
                     antiSticker: false,
                     antiTag: false,
@@ -426,14 +429,14 @@ async function processMessage(m, chatUpdate) {
 
         // Options Check (Owner exempt)
         if (!isOwner) {
-            if (opts['nyimak']) { console.log('[PM DROP: opts nyimak]'); return }
-            if (opts['pconly'] && m.chat.endsWith('g.us')) { console.log('[PM DROP: opts pconly]'); return }
-            if (opts['gconly'] && !m.chat.endsWith('g.us')) { console.log('[PM DROP: opts gconly]'); return }
-            if (opts['swonly'] && m.chat !== 'status@broadcast') { console.log('[PM DROP: opts swonly]'); return }
+            if (opts['nyimak']) { /* console.log('[PM DROP: opts nyimak]'); */ return }
+            if (opts['pconly'] && m.chat.endsWith('g.us')) { /* console.log('[PM DROP: opts pconly]'); */ return }
+            if (opts['gconly'] && !m.chat.endsWith('g.us')) { /* console.log('[PM DROP: opts gconly]'); */ return }
+            if (opts['swonly'] && m.chat !== 'status@broadcast') { /* console.log('[PM DROP: opts swonly]'); */ return }
         }
 
-        if (!isOwner && !m.fromMe && opts['self']) { console.log('[PM DROP: opts self]'); return }
-        if (!isOwner && !m.fromMe && global.db.data.settings?.[this.user?.jid]?.self) { console.log('[PM DROP: settings self]'); return }
+        if (!isOwner && !m.fromMe && opts['self']) { /* console.log('[PM DROP: opts self]'); */ return }
+        if (!isOwner && !m.fromMe && global.db.data.settings?.[this.user?.jid]?.self) { /* console.log('[PM DROP: settings self]'); */ return }
 
         // Message Queue (Dihapus agar bot langsung membalas tanpa delay)
         /*
@@ -563,7 +566,7 @@ async function processMessage(m, chatUpdate) {
         }
 
         // PLUGIN LOADER
-        console.log('[PM BEFORE SEND]', new Date().toISOString(), m.key?.id)
+        // console.log('[PM BEFORE SEND]', new Date().toISOString(), m.key?.id)
         const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
@@ -672,13 +675,13 @@ async function processMessage(m, chatUpdate) {
 
                 m.isCommand = true
                 let xp = 'exp' in plugin ? parseInt(plugin.exp) : 17
-                if (xp > 200) console.log("ngecit -_-");
+                if (xp > 200) { /* console.log("ngecit -_-"); */ }
                 else m.exp += xp
 
                 if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
-                    console.log('[LIMIT HABIS]', new Date().toISOString(), 
-                        'jid:', m.chat, 
-                        'limit saat ini:', global.db.data.users[m.sender].limit)
+                    // console.log('[LIMIT HABIS]', new Date().toISOString(), 
+                    //     'jid:', m.chat, 
+                    //     'limit saat ini:', global.db.data.users[m.sender].limit)
                     this.reply(m.chat, `*╭  〔 ⌬ ʟ ɪ ᴍ ɪ ᴛ  ʜ ᴀ ʙ ɪ ꜱ 〕*\n> Limit harian kamu sudah habis.\n> Tunggu reset limit besok atau ketik *.buylimit* untuk membeli limit.\n*╰───────────────*`, m).catch((err) => console.error('[GAGAL KIRIM PESAN LIMIT HABIS]', err.message))
                     continue
                 }
@@ -743,7 +746,7 @@ async function processMessage(m, chatUpdate) {
             }
         }
         if (commandCandidate && !m.plugin) await replyCommandSuggestion(this, m, commandCandidate)
-        console.log('[PM AFTER SEND]', new Date().toISOString(), m.key?.id)
+        // console.log('[PM AFTER SEND]', new Date().toISOString(), m.key?.id)
     } catch (e) {
         console.error(e)
     } finally {
@@ -755,7 +758,7 @@ async function processMessage(m, chatUpdate) {
         let user, stats = global.db.data.stats
         if (m) {
             if (m.mtype === 'templateButtonReplyMessage') {
-                console.log('[DEBUG BUTTON REPLY RAW]', JSON.stringify(m.message, null, 2))
+                // console.log('[DEBUG BUTTON REPLY RAW]', JSON.stringify(m.message, null, 2))
             }
             if (m.sender && (user = global.db.data.users[m.sender])) {
                 user.exp += m.exp
@@ -789,13 +792,13 @@ async function processMessage(m, chatUpdate) {
         }
 
         try {
-            if (!opts['noprint'] && m.mtype !== 'protocolMessage' && m.mtype !== 'senderKeyDistributionMessage') {
+            if (!this.isJadibot && !opts['noprint'] && m.mtype !== 'protocolMessage' && m.mtype !== 'senderKeyDistributionMessage') {
                 (await import('./lib/print.js')).default(m, this)
             }
         } catch (e) {
-            console.log(m, m.quoted, e)
+            console.error(e)
         }
-        console.log('[PM END]', new Date().toISOString(), m.key?.id)
+        // console.log('[PM END]', new Date().toISOString(), m.key?.id)
     }
 }
 /**

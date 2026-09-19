@@ -60,6 +60,11 @@ export const CATEGORY_MAP = {
     tags: ['info'],
     aliases: ['menuinfo', 'infomenu']
   },
+  jadibot: {
+    title: 'JADIBOT (SUB-BOT) MENU',
+    tags: ['jadibot'],
+    aliases: ['menujadibot', 'jadibotmenu', 'subbotmenu']
+  },
   internet: {
     title: 'INTERNET & SEARCH MENU',
     tags: ['internet'],
@@ -423,6 +428,7 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
             { header: 'Arcade', title: 'In-Bubble Arcade Games', description: 'Game HTML5: GD, Block Blast, Tetris, Mabar', id: `${_p}menuarcade` },
             { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: `${_p}menugroup` },
             { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: `${_p}menuinfo` },
+            { header: 'Jadibot', title: 'Jadibot (Clone Bot)', description: 'Jadikan nomor WA pribadi sebagai bot', id: `${_p}menujadibot` },
             { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: `${_p}menuinternet` },
             { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: `${_p}menumaker` },
             { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: `${_p}menumoneytrack` },
