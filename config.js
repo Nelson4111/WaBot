@@ -30,7 +30,7 @@ const readMore = more.repeat(4001)
 /*============= MAIN INFO =============*/
 // Identitas & Nama Owner (Cukup ganti di sini, otomatis berubah di seluruh bot)
 global.nameown = 'Nenel' // Nama Owner Utama
-global.namecoown = 'Co-Owner' // Nama Co-Owner / Asisten
+global.namecoown = 'Eza' // Nama Co-Owner / Asisten
 
 // Nomor Telepon Bot & Owner (Gunakan nomor tanpa tanda +)
 global.nomorown = '79223679360' // Nomor Owner Utama
