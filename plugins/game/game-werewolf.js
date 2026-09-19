@@ -168,15 +168,15 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
 > 🌙 _Bulan purnama bersinar terang di atas langit desa..._
 
 *╭  〔 ${rEmoji} ʀᴏʟᴇ: ${rTitle} 〕*
-*┆* ⟡ Pemain : *${p.displayName || `@${p.id.split('@')[0]}`}*
-*┆* ⟡ Nomor : *${toSmallNum(p.number)}*
-*┆* ⟡ Petunjuk : *${rDesc}*
+> ⟡ Pemain : *${p.displayName || `@${p.id.split('@')[0]}`}*
+> ⟡ Nomor : *${toSmallNum(p.number)}*
+> ⟡ Petunjuk : *${rDesc}*
 *╰───────────────*
 
 *╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋꜱɪ 〕*
-*┆* ⟡ Tekan tombol di bawah untuk beraksi.
-*┆* ⟡ Tombol bersifat rahasia & eksklusif.
-*┆* ⟡ Chat aksi otomatis disamarkan.
+> ⟡ Tekan tombol di bawah untuk beraksi.
+> ⟡ Tombol bersifat rahasia & eksklusif.
+> ⟡ Chat aksi otomatis disamarkan.
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _Pilihanmu menentukan keselamatan desa saat fajar._`
@@ -237,9 +237,9 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
 > 🌙 _Bulan purnama bersinar terang di atas langit desa..._
 
 *╭  〔 ✦ ꜱᴜᴀꜱᴀɴᴀ ᴍᴀʟᴀᴍ 〕*
-*┆* ⟡ Status : *Warga terlelap di kediaman masing-masing*
-*┆* ⟡ Waktu Aksi : *𝟿𝟶 Detik*
-*┆* ⟡ Suasana : *Mencekam & sunyi senyap*
+> ⟡ Status : *Warga terlelap di kediaman masing-masing*
+> ⟡ Waktu Aksi : *𝟿𝟶 Detik*
+> ⟡ Suasana : *Mencekam & sunyi senyap*
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _[Fase Malam Berlangsung — Aksi rahasia hanya dapat diakses oleh pemain yang masih hidup]_`
@@ -327,7 +327,7 @@ const startDayVoting = async (conn, chat, ww) => {
     let playerListText = ''
     livingPlayers.forEach((p) => {
         const pLabel = p.displayName || `@${p.id.split('@')[0]}`
-        playerListText += `*┆* (${toSmallNum(p.number)}) ⟡ ${pLabel}\n`
+        playerListText += `> (${toSmallNum(p.number)}) ⟡ ${pLabel}\n`
     })
 
     const votingCard = `*──  ୨୧ ✧ SIDANG BALAI DESA ✧ ୨୧  ──*
@@ -338,9 +338,9 @@ ${playerListText.trim()}
 *╰───────────────*
 
 *╭  〔 ✦ ɪɴꜰᴏ ᴠᴏᴛɪɴɢ 〕*
-*┆* ⟡ Waktu : *𝟿𝟶 Detik*
-*┆* ⟡ Tekan tombol di bawah untuk memilih
-*┆* ⟡ Atau ketik: *.ww vote <nomor>*
+> ⟡ Waktu : *𝟿𝟶 Detik*
+> ⟡ Tekan tombol di bawah untuk memilih
+> ⟡ Atau ketik: *.ww vote <nomor>*
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Pilihlah dengan bijak, jangan biarkan Werewolf memperdaya kalian!_`
@@ -406,9 +406,9 @@ const resolveDayVoting = async (conn, chat, ww) => {
 > ⚖️ _Warga desa telah sepakat menjatuhkan hukuman gantung!_
 
 *╭  〔 ☠️ ᴡᴀʀɢᴀ ʏᴀɴɢ ᴅɪᴇᴋꜱᴇᴋᴜꜱɪ 〕*
-*┆* ⟡ Nama : *${kTag}*
-*┆* ⟡ Nomor : *${toSmallNum(killed.number)}*
-*┆* ⟡ Identitas Asli : *${kTitle} ${kEmoji}*
+> ⟡ Nama : *${kTag}*
+> ⟡ Nomor : *${toSmallNum(killed.number)}*
+> ⟡ Identitas Asli : *${kTitle} ${kEmoji}*
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > 🌙 _Senja telah usai. Bersiaplah menghadapi malam yang mencekam..._`
@@ -525,8 +525,8 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 > 🔮 _Bola kristal mistis memancarkan aura kebenaran..._
 
 *╭  〔 ✦ ʜᴀꜱɪʟ ᴘᴇɴᴇʀᴀᴡᴀɴɢᴀɴ 〕*
-*┆* ⟡ Target : *${targetTag}*
-*┆* ⟡ Identitas : *${tTitle} ${tEmoji}*
+> ⟡ Target : *${targetTag}*
+> ⟡ Identitas : *${tTitle} ${tEmoji}*
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _Gunakan informasi ini dengan bijak saat sidang desa besok!_`
@@ -588,9 +588,9 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 > 🏰 _Balai desa telah dibuka untuk petualangan baru..._
 
 *╭  〔 ✦ ɪɴꜰᴏ ʀᴏᴏᴍ 〕*
-*┆* ⟡ Pemilik : *@${sender.split('@')[0]}*
-*┆* ⟡ Minimal : *𝟻 Pemain*
-*┆* ⟡ Maksimal : *𝟷𝟻 Pemain*
+> ⟡ Pemilik : *@${sender.split('@')[0]}*
+> ⟡ Minimal : *𝟻 Pemain*
+> ⟡ Maksimal : *𝟷𝟻 Pemain*
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Tekan tombol di bawah atau ketik *.ww join* untuk bergabung._`
@@ -632,7 +632,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         const jids = ww[chat].player.filter((p) => !p.isDummy).map((p) => p.id)
         let rosterText = ''
         ww[chat].player.forEach((p) => {
-            rosterText += `*┆* (${toSmallNum(p.number)}) ⟡ ${getDisplayPlayerLabel(p)}\n`
+            rosterText += `> (${toSmallNum(p.number)}) ⟡ ${getDisplayPlayerLabel(p)}\n`
         })
 
         const totalPlayers = ww[chat].player.length
@@ -776,7 +776,7 @@ ${rosterText.trim()}
             p.number = index + 1
             const pLabel = getDisplayPlayerLabel(p)
             const roleInfo = p.isdead ? `☠️ [${(p.role || '—').toUpperCase()}]` : `💚 Hidup`
-            text += `*┆* (${toSmallNum(p.number)}) ⟡ ${pLabel} - ${roleInfo}\n`
+            text += `> (${toSmallNum(p.number)}) ⟡ ${pLabel} - ${roleInfo}\n`
         })
         text += `*╰───────────────*\n· · ─ ─ ✦ ─ ─ · ·\n> _Pemain gugur tidak dapat beraksi._`
 
@@ -791,18 +791,18 @@ ${rosterText.trim()}
 > 🐺 _Permainan deduksi sosial, strategi, dan intrik antar warga desa._
 
 *╭  〔 ✦ ꜱɪꜱᴛᴇᴍ 𝟷𝟶𝟶% ɪɴ-ɢʀᴏᴜᴘ 〕*
-*┆* ⟡ Tidak ada aksi via PC/DM (.wwpc dihapus)
-*┆* ⟡ Semua role & tombol dikirim via 1 Dual Stanza grup
-*┆* ⟡ Tombol aksi malam menggunakan tombol cepat Native Flow
-*┆* ⟡ Penonton grup TIDAK menerima tombol apapun
-*┆* ⟡ Aksi Seer langsung terungkap via Dual Message
+> ⟡ Tidak ada aksi via PC/DM (.wwpc dihapus)
+> ⟡ Semua role & tombol dikirim via 1 Dual Stanza grup
+> ⟡ Tombol aksi malam menggunakan tombol cepat Native Flow
+> ⟡ Penonton grup TIDAK menerima tombol apapun
+> ⟡ Aksi Seer langsung terungkap via Dual Message
 *╰───────────────*
 
 *╭  〔 ✦ ᴀʟᴜʀ ᴘᴇʀᴍᴀɪɴᴀɴ 〕*
-*┆* 🌙 *Malam*: Pemain hidup memilih aksi rahasia lewat tombol.
-*┆* ☀️ *Fajar*: Pengumuman korban dan hasil perlindungan.
-*┆* ⚖️ *Siang*: Diskusi dan voting gantung tersangka Werewolf.
-*┆* 🔁 Siklus berulang hingga salah satu pihak menang.
+> 🌙 *Malam*: Pemain hidup memilih aksi rahasia lewat tombol.
+> ☀️ *Fajar*: Pengumuman korban dan hasil perlindungan.
+> ⚖️ *Siang*: Diskusi dan voting gantung tersangka Werewolf.
+> 🔁 Siklus berulang hingga salah satu pihak menang.
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Ketik *.ww guide* untuk panduan lengkap atau *.ww role* untuk daftar peran._`
@@ -813,24 +813,24 @@ ${rosterText.trim()}
 > 📖 _Langkah-langkah memulai dan memainkan Werewolf:_
 
 *╭  〔 ✦ 𝟷. ᴍᴇᴍʙᴜᴀᴛ ʀᴏᴏᴍ 〕*
-*┆* Ketik *.ww create* untuk membuka room.
-*┆* Pemain lain ketik *.ww join* (Minimal 𝟻, Maksimal 𝟷𝟻).
+> Ketik *.ww create* untuk membuka room.
+> Pemain lain ketik *.ww join* (Minimal 𝟻, Maksimal 𝟷𝟻).
 *╰───────────────*
 
 *╭  〔 ✦ 𝟸. ᴍᴇᴍᴜʟᴀɪ ɢᴀᴍᴇ 〕*
-*┆* Owner room mengetik *.ww start*.
-*┆* Bot otomatis mengirimkan pesan terenkripsi ke grup.
-*┆* Hanya kamu yang bisa melihat role & tombol tokomu!
+> Owner room mengetik *.ww start*.
+> Bot otomatis mengirimkan pesan terenkripsi ke grup.
+> Hanya kamu yang bisa melihat role & tombol tokomu!
 *╰───────────────*
 
 *╭  〔 ✦ 𝟹. ꜰᴀꜱᴇ ᴍᴀʟᴀᴍ 〕*
-*┆* Tekan salah satu tombol aksi di bawah gelembung pesanmu.
-*┆* Chat tombol otomatis disamarkan agar rahasiamu aman.
+> Tekan salah satu tombol aksi di bawah gelembung pesanmu.
+> Chat tombol otomatis disamarkan agar rahasiamu aman.
 *╰───────────────*
 
 *╭  〔 ✦ 𝟺. ꜰᴀꜱᴇ ᴠᴏᴛɪɴɢ 〕*
-*┆* Tekan tombol vote di grup atau ketik *.ww vote <nomor>*.
-*┆* Suara terbanyak akan dieksekusi di balai desa.
+> Tekan tombol vote di grup atau ketik *.ww vote <nomor>*.
+> Suara terbanyak akan dieksekusi di balai desa.
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Jaga kerahasiaan identitasmu dan bawa timmu menuju kemenangan!_`
@@ -841,21 +841,21 @@ ${rosterText.trim()}
 > 🎭 _Kenali setiap peran dan kekuatannya di desa:_
 
 *╭  〔 ✦ ᴛɪᴍ ᴡᴇʀᴇᴡᴏʟꜰ 〕*
-*┆* 🐺 *Werewolf* : Memilih mangsa setiap malam.
-*┆* 🔮 *Sorcerer* : Membantu Werewolf (racun & revive).
+> 🐺 *Werewolf* : Memilih mangsa setiap malam.
+> 🔮 *Sorcerer* : Membantu Werewolf (racun & revive).
 *╰───────────────*
 
 *╭  〔 ✦ ᴛɪᴍ ᴡᴀʀɢᴀ ᴅᴇꜱᴀ 〕*
-*┆* 👱‍♂️ *Warga* : Menemukan & mengeksekusi Werewolf.
-*┆* 👳 *Seer* : Menerawang identitas asli pemain setiap malam.
-*┆* 👼 *Guardian* : Melindungi 1 pemain dari terkaman malam.
-*┆* 🏹 *Hunter* : Menembak 1 target jika dirinya gugur.
-*┆* 👑 *Mayor* : Suara voting bernilai ganda (x𝟸).
-*┆* ⚒️ *Blacksmith* : Memiliki armor penahan 𝟷 kali serangan.
+> 👱‍♂️ *Warga* : Menemukan & mengeksekusi Werewolf.
+> 👳 *Seer* : Menerawang identitas asli pemain setiap malam.
+> 👼 *Guardian* : Melindungi 1 pemain dari terkaman malam.
+> 🏹 *Hunter* : Menembak 1 target jika dirinya gugur.
+> 👑 *Mayor* : Suara voting bernilai ganda (x𝟸).
+> ⚒️ *Blacksmith* : Memiliki armor penahan 𝟷 kali serangan.
 *╰───────────────*
 
 *╭  〔 ✦ ɪɴᴅᴇᴘᴇɴᴅᴇɴ 〕*
-*┆* 🃏 *Jester* : Menang tunggal jika berhasil digantung warga.
+> 🃏 *Jester* : Menang tunggal jika berhasil digantung warga.
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Setiap peran memiliki peran krusial dalam menentukan nasib desa!_`
@@ -866,20 +866,20 @@ ${rosterText.trim()}
 > 🐺 _Perintah yang tersedia untuk permainan Werewolf:_
 
 *╭  〔 ✦ ᴄᴏᴍᴍᴀɴᴅ ᴜᴛᴀᴍᴀ 〕*
-*┆* ⟡ *.ww create* : Buat room baru
-*┆* ⟡ *.ww join* : Gabung ke room
-*┆* ⟡ *.ww start* : Mulai game (Owner)
-*┆* ⟡ *.ww player* : Lihat daftar pemain & status
-*┆* ⟡ *.ww exit* : Keluar dari room sebelum mulai
-*┆* ⟡ *.ww delete* : Hapus room (Owner/Mod)
+> ⟡ *.ww create* : Buat room baru
+> ⟡ *.ww join* : Gabung ke room
+> ⟡ *.ww start* : Mulai game (Owner)
+> ⟡ *.ww player* : Lihat daftar pemain & status
+> ⟡ *.ww exit* : Keluar dari room sebelum mulai
+> ⟡ *.ww delete* : Hapus room (Owner/Mod)
 *╰───────────────*
 
 *╭  〔 ✦ ɪɴꜰᴏʀᴍᴀꜱɪ & ʙᴀɴᴛᴜᴀɴ 〕*
-*┆* ⟡ *.ww info* : Ringkasan sistem in-group
-*┆* ⟡ *.ww guide* : Panduan cara bermain
-*┆* ⟡ *.ww role* : Daftar lengkap peran
-*┆* ⟡ *.ww add warga <n>* : Tambah simulasi
-*┆* ⟡ *.ww del warga* : Hapus simulasi
+> ⟡ *.ww info* : Ringkasan sistem in-group
+> ⟡ *.ww guide* : Panduan cara bermain
+> ⟡ *.ww role* : Daftar lengkap peran
+> ⟡ *.ww add warga <n>* : Tambah simulasi
+> ⟡ *.ww del warga* : Hapus simulasi
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Permainan 𝟷𝟶𝟶% di grup tanpa perlu berpindah ke PC/DM._`
