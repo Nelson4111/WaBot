@@ -176,37 +176,9 @@ let handler = async (m, { conn, args, text = '', usedPrefix, command, isOwner })
         `6. Masukkan kode di bawah ini.\n\n` +
         `_⚠️ Kode pairing akan kedaluwarsa dalam 180 detik. Jangan spam!_`
 
-      // Jika dijalankan di dalam grup, kirim kode ke Private Chat (PC) demi keamanan privasi
-      if (m.isGroup) {
-        const mentionsGroup = [m.sender, requesterPhoneJid].filter(Boolean)
-        const senderTag = m.sender.split('@')[0]
-        await conn.sendMessage(m.chat, {
-          text: `📩 *KODE PAIRING BERHASIL DIBUAT!*\n\nHalo @${senderTag}, demi privasi dan keamanan Anda, kode pairing telah dikirimkan ke *Chat Pribadi (PC)* Anda.\nSilakan cek pesan masuk dari bot.`,
-          mentions: mentionsGroup
-        }, { quoted: m })
-
-        // Kirim panduan & kode terpisah ke PC
-        let sentPc = false
-        try {
-          await conn.sendMessage(requesterPhoneJid, { text: stepMessage })
-          await conn.sendMessage(requesterPhoneJid, { text: code })
-          sentPc = true
-        } catch (e) {
-          console.error('[JADIBOT SEND PC FAIL]', e?.message || e)
-        }
-
-        // Fallback kirim ke m.sender jika requesterPhoneJid berbeda dan tadi gagal
-        if (!sentPc && m.sender !== requesterPhoneJid) {
-          try {
-            await conn.sendMessage(m.sender, { text: stepMessage })
-            await conn.sendMessage(m.sender, { text: code })
-          } catch {}
-        }
-      } else {
-        // Jika dijalankan di PC, langsung kirim di chat ini
-        await conn.sendMessage(m.chat, { text: stepMessage }, { quoted: m })
-        await conn.sendMessage(m.chat, { text: code })
-      }
+      // Kirim panduan & kode pairing langsung di chat saat ini (konsisten dengan command bot lainnya & bebas 'Menunggu pesan ini')
+      await conn.sendMessage(m.chat, { text: stepMessage }, { quoted: m })
+      await conn.sendMessage(m.chat, { text: code })
     }
   } catch (err) {
     console.error('[JADIBOT PLUGIN ERROR]', err)
