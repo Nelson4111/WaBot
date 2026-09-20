@@ -61,9 +61,7 @@ global.opts = global.opts || {}
 if (global.opts['gconly'] === undefined) {
     global.opts['gconly'] = true // Lindungi bot dari Error 463 & Reachout Timelock di Private Chat
 }
-if (global.opts['antispamOffline'] === undefined) {
-    global.opts['antispamOffline'] = true // Abaikan antrean pesan yang terkirim saat bot offline saat baru menyala / reconnect
-}
+
 
 /*============= WATERMARK =============*/
 global.readMore = readMore

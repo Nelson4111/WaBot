@@ -151,45 +151,7 @@ function isDuplicateMessage(instance, id) {
     return false
 }
 
-/**
- * Anti-Spam: Mendeteksi apakah pesan dikirim saat bot sedang offline / sebelum online.
- * Menghindari bot membalas tumpukan pesan lama saat baru dinyalakan atau reconnect.
- * @param {Object} instance Socket connection instance
- * @param {Object} m Pesan Baileys
- * @returns {boolean} true jika pesan adalah pesan backlog/offline yang harus diabaikan
- */
-function isOfflineBacklogMessage(instance, m) {
-    if (!m) return false
-    if (global.opts && global.opts['antispamOffline'] === false) return false
 
-    const rawTs = m.messageTimestamp
-    const sec = typeof rawTs === 'object' && rawTs !== null ? (rawTs.low || Number(rawTs)) : Number(rawTs)
-    if (!sec || isNaN(sec)) return false
-    const msgTime = sec * 1000
-    const now = Date.now()
-
-    // 1. Pesan basi/lama (usia pesan > 45 detik dari waktu sekarang)
-    // Normal pesan WhatsApp masuk secara live dalam 1-3 detik
-    if (now - msgTime > 45000) {
-        return true
-    }
-
-    // 2. Pesan yang dikirim sebelum bot tersambung online (margin 3 detik untuk clock skew)
-    const connectTime = instance?.connectTime || global.timestamp?.connect?.getTime() || global.timestamp?.start?.getTime() || 0
-    if (connectTime > 0) {
-        if (msgTime < (connectTime - 3000)) {
-            return true
-        }
-
-        // 3. Masa transisi sync awal (8 detik pertama pasca 'open'):
-        // Drop pesan yang bertimestamp sebelum atau tepat saat bot terhubung
-        if ((now - connectTime < 8000) && msgTime <= connectTime) {
-            return true
-        }
-    }
-
-    return false
-}
 
 export async function handler(chatUpdate) {
     // console.log('[EVENT MASUK]', new Date().toISOString(), 
@@ -221,16 +183,7 @@ async function processMessage(m, chatUpdate) {
         return  
     }
 
-    // Anti-Spam: Abaikan antrean pesan yang masuk saat bot sedang offline / sebelum online
-    if (isOfflineBacklogMessage(this, m)) {
-        if (m.key?.id) isDuplicateMessage(this, m.key.id)
-        const now = Date.now()
-        if (!this._lastOfflineLog || now - this._lastOfflineLog > 5000) {
-            console.log(chalk.yellow('🛡️ [ANTI-SPAM OFFLINE] Mengabaikan antrean pesan lama yang terkirim saat bot offline untuk mencegah spam.'))
-            this._lastOfflineLog = now
-        }
-        return
-    }
+
 
     // Deduplikasi dipindah ke bawah setelah validasi m.mtype selesai
 
