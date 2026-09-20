@@ -12,6 +12,7 @@ import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
 import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave } from './lib/securityProtocol.js'
+import { botArbitrator } from './lib/botArbitrator.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -538,6 +539,11 @@ async function processMessage(m, chatUpdate) {
         const isAdmin = isOwner || isRAdmin || user?.admin === 'admin' || user?.isAdmin || false
         const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin' || bot?.isAdmin || bot?.isSuperAdmin || false
         
+        // FAILOVER & ARBITRATION: Main Bot vs JadiBot in same group
+        if (m.isGroup && !(await botArbitrator.coordinate(this, m, groupMetadata))) {
+            return
+        }
+
         // ONLY ADMIN LOGIC
         if (m.isGroup && global.db.data.chats[m.chat]?.onlyadmin && !isAdmin && !isOwner) {
         return false
@@ -702,6 +708,7 @@ async function processMessage(m, chatUpdate) {
                     await plugin.call(this, m, extra)
                     if (!isPrems)
                         m.limit = m.limit || plugin.limit || false
+                    botArbitrator.resolve(m.key?.id, this)
                 } catch (e) {
                     // Error occured
                     m.error = e
@@ -752,11 +759,17 @@ async function processMessage(m, chatUpdate) {
                 break
             }
         }
-        if (commandCandidate && !m.plugin) await replyCommandSuggestion(this, m, commandCandidate)
+        if (commandCandidate && !m.plugin) {
+            await replyCommandSuggestion(this, m, commandCandidate)
+            botArbitrator.resolve(m.key?.id, this)
+        }
         // console.log('[PM AFTER SEND]', new Date().toISOString(), m.key?.id)
     } catch (e) {
         console.error(e)
     } finally {
+        if (m?.isGroup && m?.key?.id) {
+            botArbitrator.resolve(m.key.id, this)
+        }
         if (opts['queque'] && m.text) {
             const queque = this.msgqueque
             const index = queque.indexOf(m.id || m.key.id)
