@@ -51,9 +51,9 @@ global.hiddenowner = ['6281241100804']
 
 global.mods = []
 global.prems = []
-global.autotyping = false // default mati
+global.autotyping = true // default mati
 global.autorecording = false // default mati
-global.usePairingCode = false // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
+global.usePairingCode = true // Setel ke true jika ingin menggunakan Pairing Code, false untuk QR Code
 global.multiplier = 36 // Multiplier kurva Leveling & EXP (seimbang untuk interaksi bot)
 
 // Mode Hardening WhatsApp 2026: Group Only (Owner tetap bisa chat di PC)
