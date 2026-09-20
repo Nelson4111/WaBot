@@ -1,4 +1,6 @@
 import chalk from 'chalk'
+import { syncTwilyFromDb } from '../../lib/twilyGenData.js'
+
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!global.db) return m.reply('❌ Sistem database tidak aktif.')
@@ -31,6 +33,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
                 const refreshedData = await global.db.adapter.read()
                 if (refreshedData && typeof refreshedData === 'object') {
                     global.db.data = refreshedData
+                    syncTwilyFromDb(true)
                     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
                     const userCount = Object.keys(global.db.data?.users || {}).length
                     const chatCount = Object.keys(global.db.data?.chats || {}).length

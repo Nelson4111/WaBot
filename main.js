@@ -88,6 +88,8 @@ import ws from 'ws'
 import { initSewaCheck } from './lib/sewaCheck.js';
 import { initAllJadibots } from './lib/jadibot.js';
 import { handleBadMac } from './lib/sessionRecovery.js';
+import { syncTwilyFromDb } from './lib/twilyGenData.js';
+
 
 // Filter console.error khusus noise Bad MAC dari libsignal agar log terminal tetap bersih & terbaca
 const originalConsoleError = console.error;
@@ -225,7 +227,11 @@ global.loadDatabase = async function loadDatabase() {
       "https://c.termai.cc/i176/p0Ez4mk",
       "https://c.termai.cc/i187/zHYf98T"
     ])
+    // Inisialisasi struktur database TWILY dari Supabase bot_metadata
+    db.data.twily = db.data.twily && typeof db.data.twily === 'object' ? db.data.twily : (db.data.aux_twily && typeof db.data.aux_twily === 'object' ? db.data.aux_twily : {})
+    syncTwilyFromDb(true)
     global.db.chain = chain(db.data)
+
 
   // Auto-clean & merge any remaining @lid ghost accounts into canonical @s.whatsapp.net accounts
   try {
