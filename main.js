@@ -87,6 +87,21 @@ import pino from 'pino'
 import ws from 'ws'
 import { initSewaCheck } from './lib/sewaCheck.js';
 import { initAllJadibots } from './lib/jadibot.js';
+import { handleBadMac } from './lib/sessionRecovery.js';
+
+// Filter console.error khusus noise Bad MAC dari libsignal agar log terminal tetap bersih & terbaca
+const originalConsoleError = console.error;
+console.error = function (...args) {
+  const firstArg = typeof args[0] === 'string' ? args[0] : '';
+  if (
+    firstArg.includes('Failed to decrypt message with any known session') ||
+    firstArg.startsWith('Session error:Error: Bad MAC')
+  ) {
+    // Redam spam dari libsignal karena [Signal Recovery] sudah menangani auto-healing & logging
+    return;
+  }
+  return originalConsoleError.apply(console, args);
+};
 
 const Baileys = await import('@whiskeysockets/baileys')
 const {
@@ -335,11 +350,35 @@ setInterval(() => {
   global.groupMetadataCacheHits = 0;
 }, 60 * 60 * 1000);
 
+const defaultMakeSignalRepo = Baileys.DEFAULT_CONNECTION_CONFIG?.makeSignalRepository;
+
+const makeCustomSignalRepository = (auth) => {
+  const repo = defaultMakeSignalRepo ? defaultMakeSignalRepo(auth) : Baileys.makeLibSignalRepository(auth);
+  const originalDecryptMessage = repo.decryptMessage;
+
+  repo.decryptMessage = async ({ jid, type, ciphertext }) => {
+    try {
+      return await originalDecryptMessage({ jid, type, ciphertext });
+    } catch (err) {
+      const errStr = String(err?.message || err);
+      const isBadMac = errStr.includes('Bad MAC') || errStr.includes('No matching sessions');
+      if (isBadMac && type === 'msg') {
+        const addr = repo.jidToSignalProtocolAddress(jid);
+        await handleBadMac(addr, auth, './sessions');
+      }
+      throw err;
+    }
+  };
+
+  return repo;
+};
+
 const connectionOptions = {
   version,
   logger: pino({ level: 'silent' }),
   browser: [global.namebot || 'Avelia', 'Safari', '1.0.0'],
   msgRetryCounterCache,
+  makeSignalRepository: makeCustomSignalRepository,
   cachedGroupMetadata: async (jid) => {
     // 1. Tier 1: Ambil dari memoryStore Baileys
     if (memoryStore && memoryStore.groupMetadata && memoryStore.groupMetadata[jid]) {
