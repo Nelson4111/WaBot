@@ -34,8 +34,8 @@ function collapseRepeated(str) {
 // Akar kata umpatan multi-karakter yang dapat membawa imbuhan / afiks Indonesia
 const ROOT_AFFIXES = [
   'anjing', 'bangsat', 'kontol', 'memek', 'ngentot', 'bajingan', 'goblok', 'tolol', 'jancok', 'jancuk', 'pantek', 'puki',
-  'jembut', 'peler', 'asu', 'anjir', 'anjrit', 'anjg', 'bangke', 'bangkean', 'kampret', 'keparat', 'brengsek', 'bedebah',
-  'bego', 'bloon', 'idiot', 'bahlul', 'dungu', 'oon', 'sinting', 'gila', 'tai', 'taik', 'babi', 'lonte', 'lonthe',
+  'jembut', 'peler', 'asu', 'anjg', 'bangke', 'bangkean', 'kampret', 'keparat', 'brengsek', 'bedebah',
+  'bego', 'bloon', 'idiot', 'bahlul', 'dungu', 'oon', 'sinting', 'tai', 'taik', 'babi', 'lonte', 'lonthe',
   'pelacur', 'perek', 'sundal', 'jalang', 'bencong', 'banci', 'itil', 'tempik', 'kimak', 'titit', 'pepek', 'coli',
   'colmek', 'kenthu', 'ngaceng', 'nenen', 'tetek', 'tetek', 'bokep', 'vcs', 'wot', 'trisom', 'threesome', 'sex',
   'seks', 'porno', 'porn', 'pornografi', 'mesum', 'bugil', 'telanjang', 'sange', 'birahi', 'sperma', 'mani', 'vagina',
@@ -53,7 +53,7 @@ const ROOT_AFFIXES = [
   'porno', 'nsfw', 'lewd', 'lewding', 'sexual', 'sexually', 'naked', 'nakedness', 'xxx', 'xxxvideo', 'adult',
   'adultcontent', 'explicit', 'obscene', 'obscenity', 'prostitute', 'prostitution', 'escort', 'escortservice', 'hooker',
   'slutty', 'whorish', 'pervert', 'perverted', 'perversion', 'molest', 'molestation', 'pedofil', 'pedophile', 'pedophilia',
-  'pedo', 'childporn', 'cp', 'lolicon', 'shotacon', 'lolita', 'incest', 'incestuous', 'bestiality', 'zoophilia', 'rape',
+  'pedo', 'childporn', 'lolicon', 'shotacon', 'incest', 'incestuous', 'bestiality', 'zoophilia', 'rape',
   'raped', 'raping', 'rapist', 'pemerkosa', 'pemerkosaan', 'perkosa', 'memperkosa', 'rudapaksa', 'pelecehan', 'melecehkan',
   'cabul', 'cabuli', 'mencabuli', 'pencabul', 'pencabulan', 'mesum', 'kemesuman', 'asusila', 'susila', 'tidaksenonoh', 'senonoh',
   'pornoaksi', 'pornografi', 'pornografi', 'pornomedia', 'pornstar', 'pornstar', 'onlyfans', 'fansly', 'camgirl', 'camboy',
@@ -68,15 +68,16 @@ const ROOT_AFFIXES = [
   'bangsatku', 'membangsat', 'dibangsatkan', 'goblokmu', 'gobloknya', 'goblokku', 'menggoblokkan', 'digoblokkan',
   'tololmu', 'tololnya', 'tololku', 'menololkan', 'ditololkan', 'begoan', 'begomu', 'begonya', 'idiotmu', 'idiotnya',
   'jancokmu', 'jancoknya', 'jancukmu', 'jancuknya', 'pukimak', 'pukima', 'pukimakmu', 'pukimakannya', 'kimakmu', 'kimaknya'
+  , 'cuki', 'puqi', 'kanyut', 'kehet', 'henceut', 'goblog','kondom', 'mmg', 'mmq', 'koncol'
 ]
 
 // Daftar kata kasar / toxic persis (token-level matching)
 const EXACT_TOXIC = new Set([
-  'anjing', 'anjg', 'ajg', 'anjir', 'anjrit', 'anjrot', 'anjrut', 'anjay', 'anjayy', 'anjg', 'anj', 'asw',
+  'anjing', 'anjg', 'ajg', 'anjrit', 'anjrot', 'anjrut', 'anjg', 'anj', 'asw',
   'asu', 'asu', 'bangsat', 'bgst', 'bngst', 'bngsat', 'bangke', 'bajingan', 'bjngn', 'bajing', 'kampret', 'kmprt',
-  'keparat', 'kprat', 'brengsek', 'brngsek', 'bedebah', 'sialan', 'sial', 'celeng', 'monyet', 'kera', 'babi',
+  'keparat', 'kprat', 'brengsek', 'brngsek', 'bedebah', 'sial', 'celeng', 'kera',
   'goblok', 'gblg', 'gblk', 'tolol', 'tlol', 'tll', 'bego', 'bgo', 'bloon', 'blon', 'idiot', 'id10t', 'bahlul',
-  'dungu', 'dng', 'oon', 'o\'on', 'sinting', 'edan', 'gila', 'gila2', 'bodoh', 'bodohh', 'bodohhh', 'dongo', 'dongok',
+  'dungu', 'dng', 'oon', 'o\'on', 'sinting', 'edan', 'bodoh', 'bodohh', 'bodohhh', 'dongo', 'dongok',
   'jancok', 'jancuk', 'jancok', 'jancuq', 'dancok', 'dancuk', 'cok', 'cuk', 'coq', 'cokkk', 'cukkk',
   'pantek', 'panteq', 'pntk', 'pantek', 'puki', 'pukimak', 'pukima', 'pukimak', 'kimak', 'kimaq', 'kimak',
   'kontol', 'kntl', 'kntil', 'kntol', 'knt1l', 'kont0l', 'kontolmu', 'kontolnya', 'titit', 't1t1t', 'tltlt', 'peler',
@@ -238,6 +239,23 @@ export function detectToxic(text) {
     }
   }
 
+  // Fallback: cek juga kalimat panjang / bubble pesan yang berisi toxic di bagian tengah kalimat
+  const compactWords = cleaned.replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean)
+  for (let i = 0; i < compactWords.length; i++) {
+    for (let span = 1; span <= 5 && i + span <= compactWords.length; span++) {
+      const phrase = compactWords.slice(i, i + span).join(' ')
+      const phraseNorm = collapseRepeated(normalizeLeet(phrase))
+      if (SAFE_WHITELIST.has(phrase) || SAFE_WHITELIST.has(phraseNorm)) continue
+      if (EXACT_TOXIC.has(phrase) || EXACT_TOXIC.has(phraseNorm)) return phrase
+
+      for (let root of ROOT_AFFIXES) {
+        if ((phrase.includes(root) || phraseNorm.includes(root)) && !SAFE_WHITELIST.has(phrase) && !SAFE_WHITELIST.has(phraseNorm)) {
+          return phrase
+        }
+      }
+    }
+  }
+
   return null
 }
 
@@ -297,9 +315,60 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
 
   if (/^(warn|warnings?|warnlist|strikes?|warninglist|listwarn)$/i.test(sub)) {
     const action = (args[1] || '').toLowerCase()
+    const targetArg = args[2] || args[1] || ''
+    const manualTarget = (m.mentionedJid && m.mentionedJid[0]) || (
+      /^(add|manual|tambah|warn\+|set)$/i.test(action) ? ((args[2] && args[2].startsWith('@')) ? args[2] : null) : null
+    )
+
     if (/^(reset|clear|hapus|delete)$/i.test(action)) {
       chat.toxicWarn = {}
       return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡᴀʀɴ : *Direset*\n*┆* ✧ ᴄᴀᴛᴀᴛᴀɴ : *Semua data warn pengguna telah dibersihkan*\n*╰───────────────*`)
+    }
+
+    if (/^(remove|del|minus|hapuswarn|clearwarn)$/i.test(action)) {
+      const targetJid = (m.mentionedJid && m.mentionedJid[0]) || (() => {
+        const raw = (args[2] || args[1] || '').trim()
+        if (!raw) return null
+        if (raw.startsWith('@')) return raw.replace(/^@/, '') + '@s.whatsapp.net'
+        const cleaned = raw.replace(/[^0-9]/g, '')
+        return cleaned.length >= 8 ? cleaned + '@s.whatsapp.net' : null
+      })()
+
+      if (!targetJid) {
+        return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Hapus warn : *${usedPrefix + command} warn remove @user*\n*┆* › Warn list  : *${usedPrefix + command} warn*\n*╰───────────────*`)
+      }
+
+      const prevWarn = Number(chat.toxicWarn[targetJid] || 0)
+      delete chat.toxicWarn[targetJid]
+      const userNumber = (targetJid || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+      return conn.sendMessage(m.chat, {
+        text: `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴄʟᴇᴀʀ ᴡᴀʀɴ : *Dihapus*\n*┆* ✧ ᴜꜱᴇʀ     : @${userNumber}\n*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ : *${prevWarn} → 0*\n*╰───────────────*\n> *Admin berhasil menghapus warn user tertentu.*`,
+        mentions: [targetJid]
+      })
+    }
+
+    if (/^(add|manual|tambah|warn\+|set)$/i.test(action) || (m.mentionedJid && m.mentionedJid[0] && !/^\d+$/.test(action) && !/^(list|show|lihat|daftar|reset|clear|delete|hapus|remove|del|minus|warnremove|clearwarn)$/i.test(action))) {
+      const manualJid = (m.mentionedJid && m.mentionedJid[0]) || (() => {
+        const raw = (args[2] || args[1] || '').trim()
+        if (!raw || raw.startsWith('@')) return raw ? raw.replace(/^@/, '') + '@s.whatsapp.net' : null
+        const cleaned = raw.replace(/[^0-9]/g, '')
+        return cleaned.length >= 8 ? cleaned + '@s.whatsapp.net' : null
+      })()
+
+      if (!manualJid) {
+        return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Warn manual : *${usedPrefix + command} warn add @user*\n*┆* › Warn list   : *${usedPrefix + command} warn*\n*╰───────────────*`)
+      }
+
+      const addCount = Number((args[3] || args[2] || '1').replace(/[^0-9]/g, '')) || 1
+      const prevWarn = Number(chat.toxicWarn[manualJid] || 0)
+      const nextWarn = Math.min(prevWarn + addCount, ANTI_TOXIC_MAX_WARNS)
+      chat.toxicWarn[manualJid] = nextWarn
+
+      const userNumber = (manualJid || '').split('@')[0].split(':')[0].replace(/\D/g, '')
+      return conn.sendMessage(m.chat, {
+        text: `*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴍᴀɴᴜᴀʟ ᴡᴀʀɴ : *Ditambahkan*\n*┆* ✧ ᴜꜱᴇʀ     : @${userNumber}\n*┆* ✦ ᴘᴇʀɪɴɢᴀᴛᴀɴ : *${prevWarn} → ${nextWarn}/${ANTI_TOXIC_MAX_WARNS}*\n*╰───────────────*\n> *Admin memberi peringatan manual ke user ini.*`,
+        mentions: [manualJid]
+      })
     }
 
     const entries = Object.entries(chat.toxicWarn || {}).filter(([, count]) => Number(count) > 0)
@@ -336,10 +405,11 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
     const who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : (target ? target.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null)
 
     if (!who) {
-      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Tambah : *${usedPrefix + command} whitelist @user*\n*┆* › Hapus  : *${usedPrefix + command} whitelist remove @user*\n*┆* › Lihat  : *${usedPrefix + command} whitelist*\n*╰───────────────*`)
+      return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* › Tambah : *${usedPrefix + command} whitelist @user*\n*┆* › Hapus  : *${usedPrefix + command} whitelist remove @user*\n*┆* › Hapus2 : *${usedPrefix + command} whitelist del @user*\n*┆* › Lihat  : *${usedPrefix + command} whitelist*\n*╰───────────────*`)
     }
 
-    if (isRemoveMode || mode === 'remove' || mode === 'del' || mode === 'hapus') {
+    const removeAliases = ['remove', 'del', 'delete', 'hapus', 'minus']
+    if (isRemoveMode || removeAliases.includes(mode) || removeAliases.includes((args[1] || '').toLowerCase())) {
       delete chat.toxicWhitelist[who]
       return m.reply(`*╭  〔 ◈ ᴀ ɴ ᴛ ɪ  ᴛ ᴏ x ɪ ᴄ 〕*\n*┆* ⟡ ᴡʜɪᴛᴇʟɪsᴛ : *Dihapus*\n*┆* ✧ ᴜꜱᴇʀ : @${who.split('@')[0]}\n*╰───────────────*`)
     }
@@ -396,8 +466,11 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
 *┆* › Reset User   : *${usedPrefix + command} reset @user*
 *┆* › Reset Semua  : *${usedPrefix + command} reset all*
 *┆* › Warn List    : *${usedPrefix + command} warn*
+*┆* › Warn Manual  : *${usedPrefix + command} warn add @user*
+*┆* › Remove Warn  : *${usedPrefix + command} warn remove @user*
 *┆* › History Kick: *${usedPrefix + command} history*
 *┆* › WhiteList   : *${usedPrefix + command} whitelist @user*
+*┆* › Remove WL   : *${usedPrefix + command} whitelist remove @user*
 *╰───────────────*`.trim()
 
   return m.reply(infoText)
