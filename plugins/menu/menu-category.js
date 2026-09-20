@@ -201,7 +201,7 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
 
   const owners = (global.owner || []).map(v => (Array.isArray(v) ? v[0] : v).replace(/\D/g, '') + '@s.whatsapp.net')
   const senderNumber = m.sender.split('@')[0]
-  let displayRole = 'Wanderer'
+  let displayRole = 'Pendatang'
   if (owners.some(o => o.includes(senderNumber))) {
     displayRole = 'Owner ❖'
   } else if (user.isCoOwner) {
