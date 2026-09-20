@@ -305,7 +305,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('banned' in user)) user.banned = false
                 if (!('banReason' in user)) user.banReason = ''
                 if (!('role' in user)) user.role = 'Free user'
-                if (!('autolevelup' in user)) user.autolevelup = true
+                if (!('autolevelup' in user)) user.autolevelup = false
                 if (!isNumber(user.balance)) user.balance = 0
             } else {
                 global.db.data.users[m.sender] = {
@@ -325,7 +325,7 @@ async function processMessage(m, chatUpdate) {
                     warn: 0,
                     level: 0,
                     role: 'Free user',
-                    autolevelup: true,
+                    autolevelup: false,
                 }
             }
 
@@ -770,7 +770,7 @@ async function processMessage(m, chatUpdate) {
             if (m.sender && (user = global.db.data.users[m.sender])) {
                 user.exp += m.exp
                 user.limit -= m.limit * 1
-                if (user.autolevelup !== false) {
+                if (user.autolevelup) {
                     import('./lib/levelling.js').then(({ checkLevelUp }) => {
                         checkLevelUp(m, this).catch(() => {})
                     }).catch(() => {})

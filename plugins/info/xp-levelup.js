@@ -25,14 +25,14 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
       name: conn.getName(who) || 'User',
       level: 0,
       role: 'Pendatang',
-      autolevelup: true
+      autolevelup: false
     }
     user = global.db.data.users[who]
   }
 
   if (typeof user.exp !== 'number' || isNaN(user.exp)) user.exp = 0
   if (typeof user.level !== 'number' || isNaN(user.level)) user.level = 0
-  if (typeof user.autolevelup !== 'boolean') user.autolevelup = true
+  if (typeof user.autolevelup !== 'boolean') user.autolevelup = false
 
   const multiplier = global.multiplier || 36
   const name = user.name || conn.getName(who) || 'User'
@@ -181,10 +181,41 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
 
     let levelThumb = await getLevelThumbnail(conn, m.sender)
 
+    const senderJid = conn.decodeJid ? conn.decodeJid(m.sender) : m.sender
+    let phoneJid = senderJid
+    let userLid = null
+
+    if (m.isGroup) {
+      const groupMeta = (conn.chats?.[m.chat] || {}).metadata || await conn.groupMetadata(m.chat).catch(() => null)
+      const found = (groupMeta?.participants || []).find(p => p.id === m.sender || p.lid === m.sender || p.jid === m.sender)
+      if (found) {
+        if (found.lid) userLid = found.lid
+        if (found.jid && found.jid.endsWith('@s.whatsapp.net')) phoneJid = found.jid
+        else if (found.id && found.id.endsWith('@s.whatsapp.net')) phoneJid = found.id
+        else if (found.phoneNumber || found.phone || found.pn) {
+          const clean = String(found.phoneNumber || found.phone || found.pn).replace(/\D/g, '')
+          if (clean) phoneJid = `${clean}@s.whatsapp.net`
+        }
+      }
+    }
+
+    if (phoneJid.endsWith('@lid')) {
+      if (global.lids?.[phoneJid]) phoneJid = global.lids[phoneJid]
+      if (global.db?.data?.lids?.[phoneJid]) phoneJid = global.db.data.lids[phoneJid]
+    }
+
+    const userNumber = phoneJid.split('@')[0].split(':')[0].replace(/\D/g, '') || m.sender.split('@')[0].split(':')[0].replace(/\D/g, '')
+    const mentionJids = Array.from(new Set([
+      `${userNumber}@s.whatsapp.net`,
+      phoneJid,
+      userLid,
+      m.sender
+    ].filter(Boolean)))
+
     let caption = `*──  ୨୧ ✧ LEVEL UP ✧ ୨୧  ──*
 
 *╭  〔 ✮ ꜱ ᴇ ʟ ᴀ ᴍ ᴀ ᴛ ! 〕*
-*┆* ⟡ ᴘᴇɴɢɢᴜɴᴀ   : *@${m.sender.split('@')[0]}*
+*┆* ⟡ ᴘᴇɴɢɢᴜɴᴀ   : *@${userNumber}*
 *┆* ✧ ʟᴇᴠᴇʟ ʟᴀᴍᴀ : *${toSmallNum(before)}*
 *┆* ✦ ʟᴇᴠᴇʟ ʙᴀʀᴜ : *${toSmallNum(user.level)} ㋡*
 *┆* ◈ ɢᴇʟᴀʀ ʙᴀʀᴜ : *${user.role}*
@@ -214,7 +245,10 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
           footer,
           buffer: thumbBuffer,
           buttons,
-          contextInfo: { mentions: [m.sender] }
+          contextInfo: {
+            mentionedJid: mentionJids,
+            mentions: mentionJids
+          }
         }, m)
       } catch (e) {
         console.warn('[.levelup success sendButtonV2 failed]:', e?.message)
@@ -223,8 +257,9 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
 
     await conn.sendMessage(m.chat, {
       text: caption,
-      mentions: [m.sender]
-    }, { quoted: m }).catch(() => conn.reply(m.chat, caption, m, { mentions: [m.sender] }))
+      mentions: mentionJids,
+      contextInfo: { mentionedJid: mentionJids }
+    }, { quoted: m }).catch(() => conn.reply(m.chat, caption, m, { mentions: mentionJids }))
   }
 }
 

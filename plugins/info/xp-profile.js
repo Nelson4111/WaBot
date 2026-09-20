@@ -34,13 +34,14 @@ const createProgressBar = (percent, length = 10) => {
 
 let handler = async (m, { conn, text, usedPrefix: _p }) => {
   let rawNumber = text ? text.replace(/[^0-9]/g, '') : ''
+  const botJid = conn.decodeJid(conn.user?.id || conn.user?.jid || '')
   let who
   if (m.mentionedJid && m.mentionedJid[0]) {
     who = m.mentionedJid[0]
-  } else if (m.quoted && m.quoted.sender) {
-    who = m.quoted.sender
   } else if (rawNumber && rawNumber.length >= 10) {
     who = rawNumber + '@s.whatsapp.net'
+  } else if (m.quoted && m.quoted.sender && !m.quoted.fromMe && conn.decodeJid(m.quoted.sender) !== botJid) {
+    who = m.quoted.sender
   } else {
     who = m.sender
   }
