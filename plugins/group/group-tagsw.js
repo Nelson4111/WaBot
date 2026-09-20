@@ -186,8 +186,7 @@ let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
         const noticeText = isTargetFromMe
           ? `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup ${targetDesc} ✦\n*╰───────────────*`
           : `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n` +
-            `> Berhasil menghapus status/mention grup ${targetDesc} dari obrolan ✦\n\n` +
-            `> ℹ️ _Catatan: Pesan di ruang obrolan grup telah dihapus. Sesuai arsitektur enkripsi WhatsApp, cerita status di tab Status pribadi anggota hanya dapat dicabut oleh pemiliknya sendiri._\n` +
+            `> Berhasil menghapus status/mention grup ${targetDesc} dari obrolan ✦\n` +
             `*╰───────────────*`;
 
         const mentionList = [targetParticipant, alternateParticipant, m.quoted?.sender].filter(v => v && !v.endsWith('@g.us'));

@@ -4,12 +4,9 @@ let handler = async (m, { conn, isAdmin, isOwner }) => {
   }
 
   const { fromMe, id, sender } = m.quoted
-  const key = {
-    remoteJid: m.chat,
-    fromMe: fromMe,
-    id: id,
-    participant: sender
-  }
+  const rawPart = m.msg?.contextInfo?.participant || m.quoted.vM?.key?.participant || ''
+  const primaryPart = (m.isGroup && !fromMe) ? (rawPart || sender) : undefined
+  const altPart = (m.isGroup && !fromMe && rawPart && sender && rawPart !== sender) ? sender : undefined
 
   if (m.isGroup) {
     if (!(isAdmin || isOwner)) {
@@ -19,7 +16,24 @@ let handler = async (m, { conn, isAdmin, isOwner }) => {
     }
   }
 
-  return conn.sendMessage(m.chat, { delete: key })
+  // 1. Coba hapus langsung dengan m.quoted.delete()
+  if (typeof m.quoted.delete === 'function') {
+    await m.quoted.delete().catch(() => {})
+  }
+
+  // 2. Kirim delete dengan raw LID
+  const key = {
+    remoteJid: m.chat,
+    fromMe: fromMe,
+    id: id,
+    ...(primaryPart ? { participant: primaryPart } : {})
+  }
+  await conn.sendMessage(m.chat, { delete: key }).catch(() => {})
+
+  // 3. Cadangan jika WhatsApp membutuhkan format Phone JID
+  if (altPart) {
+    await conn.sendMessage(m.chat, { delete: { ...key, participant: altPart } }).catch(() => {})
+  }
 }
 
 handler.help = ['delete']
