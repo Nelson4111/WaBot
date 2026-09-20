@@ -14,7 +14,7 @@ function formatUptime(ms) {
   return [d ? `${d}h` : '', h ? `${h}j` : '', m ? `${m}m` : '', `${s}d`].filter(Boolean).join(' ') || '0d'
 }
 
-let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
+let handler = async (m, { conn, args, text = '', usedPrefix, command, isOwner }) => {
   // Cegah pemanggilan jadibot secara rekursif dari sub-bot
   if (conn.isJadibot) {
     return m.reply('❌ Perintah *Jadibot* hanya dapat dijalankan melalui *Bot Utama*.')
@@ -58,7 +58,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
 
   // 2. COMMAND: STOP JADIBOT
   if (cmd === 'stopjadibot' || cmd === 'delsesi' || cmd === 'stopbot') {
-    let rawInput = args[0]
+    let rawInput = (text || '').trim() || (args && args.length > 0 ? args.join(' ').trim() : '')
     if (!rawInput && m.quoted && m.quoted.sender) {
       rawInput = m.quoted.sender
     } else if (!rawInput && Array.isArray(m.mentionedJid) && m.mentionedJid.length > 0) {
@@ -97,7 +97,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
   }
 
   // 3. COMMAND: JADIBOT (START / PAIRING)
-  let rawTarget = args[0]
+  let rawTarget = (text || '').trim() || (args && args.length > 0 ? args.join(' ').trim() : '')
   if (!rawTarget && m.quoted && m.quoted.sender) {
     rawTarget = m.quoted.sender
   } else if (!rawTarget && Array.isArray(m.mentionedJid) && m.mentionedJid.length > 0) {
@@ -174,7 +174,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isOwner }) => {
         `4. Ketuk *Tautkan Perangkat* (Link a Device).\n` +
         `5. Pilih *Tautkan dengan nomor telepon saja* (Link with phone number instead) di bagian bawah layar.\n` +
         `6. Masukkan kode di bawah ini.\n\n` +
-        `_⚠️ Kode pairing akan kedaluwarsa dalam 120 detik. Jangan spam!_`
+        `_⚠️ Kode pairing akan kedaluwarsa dalam 180 detik. Jangan spam!_`
 
       // Jika dijalankan di dalam grup, kirim kode ke Private Chat (PC) demi keamanan privasi
       if (m.isGroup) {
@@ -238,6 +238,7 @@ handler.before = async (m, { conn, usedPrefix }) => {
     return handler(m, {
       conn,
       args: [resolved.phoneNumber],
+      text: resolved.phoneNumber,
       usedPrefix: usedPrefix || '.',
       command: 'jadibot',
       isOwner: false
