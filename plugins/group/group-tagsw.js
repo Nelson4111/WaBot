@@ -6,6 +6,7 @@ import { promises as fs } from "fs";
 import { join } from "path";
 import os from "os";
 import ffmpeg from "fluent-ffmpeg";
+import { revokeGroupStatus } from "../../lib/statusHelper.js";
 
 let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
   if (!m.isGroup) {
@@ -452,85 +453,7 @@ async function groupStatus(conn, jid, content) {
   return m;
 }
 
-/**
- * Mencabut / menghapus Status Grup di WhatsApp untuk semua anggota grup.
- * 1. Mengirim pesan REVOKE via relayMessage dengan tag <meta is_group_status="true"> agar WhatsApp menghapusnya dari status/story grup.
- * 2. Mengirim standard sendMessage delete dengan key bersih (menghilangkan participant jika fromMe: true).
- * 3. Jika status buatan bot sendiri, bersihkan juga di status@broadcast.
- */
-async function revokeGroupStatus(conn, chatJid, { id, fromMe = true, participant = undefined }) {
-  const isFromMe = !!fromMe;
-  const cleanKey = {
-    remoteJid: chatJid,
-    fromMe: isFromMe,
-    id: id,
-    participant: isFromMe ? undefined : participant
-  };
 
-  const protoMsg = {
-    protocolMessage: {
-      key: cleanKey,
-      type: baileys.proto.Message.ProtocolMessage.Type.REVOKE
-    }
-  };
-
-  // 1. Jalur Utama: Relay REVOKE ke grup dengan meta is_group_status="true"
-  try {
-    await conn.relayMessage(chatJid, protoMsg, {
-      additionalAttributes: {
-        edit: isFromMe ? '7' : '8'
-      },
-      additionalNodes: [
-        {
-          tag: 'meta',
-          attrs: { is_group_status: 'true' },
-          content: undefined
-        }
-      ]
-    });
-  } catch (err) {
-    console.warn('[group-tagsw] revokeGroupStatus relay error:', err?.message || err);
-  }
-
-  // 2. Jalur Standar: sendMessage delete
-  try {
-    await conn.sendMessage(chatJid, {
-      delete: cleanKey
-    });
-  } catch (err) {
-    console.warn('[group-tagsw] sendMessage delete error:', err?.message || err);
-  }
-
-  // 3. Jika status bot sendiri, bersihkan referensi di status@broadcast
-  if (isFromMe) {
-    try {
-      await conn.relayMessage('status@broadcast', {
-        protocolMessage: {
-          key: {
-            remoteJid: 'status@broadcast',
-            fromMe: true,
-            id: id
-          },
-          type: baileys.proto.Message.ProtocolMessage.Type.REVOKE
-        }
-      }, {
-        additionalAttributes: { edit: '7' }
-      });
-    } catch {}
-
-    try {
-      if (typeof conn.chatModify === 'function') {
-        await conn.chatModify({
-          clear: {
-            messages: [{ id, fromMe: true, timestamp: Date.now() }]
-          }
-        }, 'status@broadcast');
-      }
-    } catch {}
-  }
-
-  return true;
-}
 
 Izumi.help = ["swgc", "upswgc", "delswgc", "hapusswgc"];
 Izumi.command = /^(swgc|upswgc|statusgc|delswgc|hapusswgc|deleteswgc)$/i;

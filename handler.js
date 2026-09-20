@@ -350,6 +350,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('antiImage' in chat)) chat.antiImage = false
                 if (!('antiSticker' in chat)) chat.antiSticker = false
                 if (!('antiTag' in chat)) chat.antiTag = false
+                if (!('antiSwgc' in chat)) chat.antiSwgc = false
                 if (!('delete' in chat)) chat.delete = false
                 if (!('autoSticker' in chat)) chat.autoSticker = false
                 if (!('premium' in chat)) chat.premium = false
@@ -375,6 +376,7 @@ async function processMessage(m, chatUpdate) {
                     antiImage: false,
                     antiSticker: false,
                     antiTag: false,
+                    antiSwgc: false,
                     delete: false,
                     expired: 0,
                     autoSticker: false,

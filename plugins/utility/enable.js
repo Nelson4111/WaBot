@@ -29,6 +29,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'antisticker':
     case 'antiimage':
     case 'antitag':
+    case 'antiswgc':
+    case 'antistatusgc':
+    case 'antisw':
     case 'viewonce':
     case 'document':
     case 'menu':
@@ -38,6 +41,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
                    type === 'antisticker' ? 'antiSticker' : 
                    type === 'antiimage' ? 'antiImage' : 
                    type === 'antitag' ? 'antiTag' : 
+                   (type === 'antiswgc' || type === 'antistatusgc' || type === 'antisw') ? 'antiSwgc' : 
                    type === 'antidelete' ? 'delete' : 
                    type === 'document' ? 'useDocument' : type
 
@@ -93,6 +97,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 *┆* ✧ antisticker : *${status(chat.antiSticker)}*
 *┆* ✦ antiimage   : *${status(chat.antiImage)}*
 *┆* ◈ antitag     : *${status(chat.antiTag)}*
+*┆* ✦ antiswgc    : *${status(chat.antiSwgc)}*
 *┆* ⟡ antidelete  : *${status(chat.delete)}*
 *┆* ✧ onlyadmin   : *${status(chat.onlyadmin)}*
 *┆* ✦ detect      : *${status(chat.detect)}*

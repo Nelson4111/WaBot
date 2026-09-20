@@ -47,6 +47,7 @@ ${listAdmin || '*┆* _(Tidak ada admin terdeteksi)_'}
 *┆* ⟡ ᴡᴇʟᴄᴏᴍᴇ     : ${st(chat.welcome)}
 *┆* ✧ ᴅᴇᴛᴇᴄᴛ      : ${st(chat.detect)}
 *┆* ✦ ᴀɴᴛɪ ʟɪɴᴋ   : ${st(chat.antiLink)}
+*┆* ⟡ ᴀɴᴛɪ ꜱᴡɢᴄ   : ${st(chat.antiSwgc)}
 *┆* ◈ ᴀɴᴛɪ ᴅᴇʟᴇᴛᴇ : ${st(!chat.delete)}
 *┆* ❖ ꜱᴛᴀᴛᴜꜱ ʙᴀɴ  : ${st(chat.isBanned)}
 *╰───────────────*
