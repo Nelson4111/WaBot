@@ -842,7 +842,7 @@ async function connectionUpdate(update) {
 
   if (
     connection === 'close' &&
-    conn.ws.readyState !== CONNECTING
+    conn.ws?.readyState !== CONNECTING
   ) {
     conn.isOnline = false
     conn.lastDisconnectTime = Date.now()

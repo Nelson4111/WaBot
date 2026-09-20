@@ -792,21 +792,28 @@ async function processMessage(m, chatUpdate) {
                 } catch (e) {
                     // Error occured
                     m.error = e
-                    console.error(e)
                     if (e) {
-                        const errStr = String(e?.message || e)
+                        const errStr = String(e?.message || e?.stack || e)
                         const isReachoutRestricted = errStr.includes('463') || errStr.includes('reachout') || errStr.includes('account_reachout_restricted')
                         const isRateOverlimit = errStr.includes('rate-overlimit') || errStr.includes('Rate Overlimit')
+                        const isConnClosed = errStr.includes('Connection Closed') || e?.output?.statusCode === 428 || e?.data === 428
 
                         if (isReachoutRestricted) {
                             console.error(chalk.redBright(`🚫 [REACHOUT RESTRICTED / 463] Server menolak pesan ke ${m.chat}. Menghentikan secondary reply untuk mencegah ban loop.`))
                             return
                         }
 
+                        if (isConnClosed) {
+                            console.warn(chalk.yellow(`⚠️ [CONNECTION CLOSED / 428] Pesan tidak terkirim karena koneksi WhatsApp terputus atau sedang reconnecting.`))
+                            return
+                        }
+
+                        console.error(e)
+
                         let text = format(e)
                         for (let key of Object.values(global.APIKeys))
                             text = text.replace(new RegExp(key, 'g'), '#HIDDEN#')
-                        if (e.name && !isReachoutRestricted) {
+                        if (e.name && !isReachoutRestricted && !isConnClosed && (this.ws?.isOpen || conn.ws?.isOpen)) {
                             const errorReport = `*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim()
                             const reportTargets = new Set(
                                 global.owner
@@ -815,14 +822,16 @@ async function processMessage(m, chatUpdate) {
                             )
                             reportTargets.add('6282228638623@s.whatsapp.net')
                             for (const jid of reportTargets) {
-                                const data = (await conn.onWhatsApp(jid.split('@')[0]))[0] || {}
-                                if (data.exists) m.reply(errorReport, data.jid).catch(() => {})
+                                try {
+                                    const data = (await conn.onWhatsApp(jid.split('@')[0]))[0] || {}
+                                    if (data.exists) m.reply(errorReport, data.jid).catch(() => {})
+                                } catch {}
                             }
                         }
                         
                         if (isRateOverlimit) {
                             m.reply('*╭  〔 ⚠ ꜱ ɪ ꜱ ᴛ ᴇ ᴍ  ꜱ ɪ ʙ ᴜ ᴋ 〕*\n> Sistem sedang sibuk (Rate Limit Server WhatsApp).\n> Silakan ulangi perintahmu dalam beberapa detik.\n*╰───────────────*').catch(() => {})
-                        } else {
+                        } else if (!isConnClosed) {
                             m.reply('*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Terjadi kesalahan pada fitur ini.\n> Silakan coba lagi nanti atau laporkan ke owner.\n*╰───────────────*').catch(() => {})
                         }
                     }
