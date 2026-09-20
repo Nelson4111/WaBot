@@ -35,6 +35,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'viewonce':
     case 'document':
     case 'menu':
+    case 'voice':
+    case 'autovn':
+    case 'vn':
       checkAdmin()
       let dbName = type === 'antilink' ? 'antiLink' : 
                    type === 'antitoxic' ? 'antiToxic' : 
@@ -43,9 +46,16 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
                    type === 'antitag' ? 'antiTag' : 
                    (type === 'antiswgc' || type === 'antistatusgc' || type === 'antisw') ? 'antiSwgc' : 
                    type === 'antidelete' ? 'delete' : 
-                   type === 'document' ? 'useDocument' : type
+                   type === 'document' ? 'useDocument' : 
+                   (type === 'autovn' || type === 'vn') ? 'voice' : type
 
       chat[dbName] = isEnable
+      if (type === 'voice' || type === 'autovn' || type === 'vn') {
+        if (global.db?.data?.voice?.groups) {
+          global.db.data.voice.groups[m.chat] = global.db.data.voice.groups[m.chat] || {}
+          global.db.data.voice.groups[m.chat].disabled = !isEnable
+        }
+      }
       break
 
     case 'public':
@@ -62,18 +72,27 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'grouponly':
     case 'swonly':
     case 'statusonly':
+    case 'voicegc':
+    case 'voicepc':
       isAll = true
-      if (!isROwner) {
+      if (!isROwner && !isOwner) {
         global.dfail('rowner', m, conn)
         throw false
       }
       if (type === 'public') global.opts.self = !isEnable
       else if (type === 'self') global.opts.self = isEnable
-      else {
+      else if (type === 'voicegc' || type === 'voicepc') {
+        if (!global.db.data.voice) global.db.data.voice = {}
+        if (!global.db.data.voice.settings) global.db.data.voice.settings = {}
+        if (type === 'voicegc') global.db.data.voice.settings.group = isEnable
+        if (type === 'voicepc') global.db.data.voice.settings.pc = isEnable
+        break
+      } else {
         let optKey = type.replace('only', 'only').replace('private', 'pc').replace('group', 'gc').replace('status', 'sw')
         global.opts[optKey] = isEnable
       }
       
+      if (!global.db.data.settings) global.db.data.settings = {}
       if (!global.db.data.settings['bot']) global.db.data.settings['bot'] = {}
       let finalOptKey = type === 'public' || type === 'self' ? 'self' : type.replace('only', 'only').replace('private', 'pc').replace('group', 'gc').replace('status', 'sw')
       global.db.data.settings['bot'][finalOptKey] = (type === 'public' || type === 'self') ? global.opts.self : isEnable
@@ -104,12 +123,14 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 *┆* ◈ document    : *${status(chat.useDocument)}*
 *┆* ⟡ viewonce    : *${status(chat.viewonce)}*
 *┆* ✧ menu        : *${status(chat.menu)}*
+*┆* ⟡ voice       : *${status(chat.voice !== false && !global.db?.data?.voice?.groups?.[m.chat]?.disabled)}*
 *╰───────────────*
 
 *╭  〔 ⌬ ꜰ ɪ ᴛ ᴜ ʀ  ᴏ ᴡ ɴ ᴇ ʀ 〕*
 *┆* › public • self • restrict • nyimak
 *┆* › autoread • autobio • gconly • pconly
 *┆* › pconlyprem • owneronly • swonly
+*┆* › voicegc • voicepc
 *╰───────────────*
 
 *╭  〔 ◈ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*

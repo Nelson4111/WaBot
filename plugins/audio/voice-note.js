@@ -43,12 +43,33 @@ function getVoiceStore() {
   db.voice = db.voice || {}
   db.voice.groups = db.voice.groups || {}
   db.voice.users = db.voice.users || {}
+  db.voice.chats = db.voice.chats || {}
+  db.voice.settings = db.voice.settings || {}
+  if (db.voice.settings.group === undefined) db.voice.settings.group = true
+  if (db.voice.settings.pc === undefined) db.voice.settings.pc = true
   return db.voice
 }
 
-function isGroupDisabled(chatId) {
+function isVoiceDisabledForChat(chatId, isGroup = false) {
   const store = getVoiceStore()
-  return !!store.groups?.[chatId]?.disabled
+  if (isGroup) {
+    if (store.settings?.group === false) return true
+    if (store.groups?.[chatId]?.disabled) return true
+    if (global.db?.data?.chats?.[chatId]?.voice === false) return true
+    return false
+  } else {
+    if (store.settings?.pc === false) return true
+    if (store.chats?.[chatId]?.disabled) return true
+    return false
+  }
+}
+
+function isGroupDisabled(chatId) {
+  return isVoiceDisabledForChat(chatId, true)
+}
+
+function isPcDisabled(chatId) {
+  return isVoiceDisabledForChat(chatId, false)
 }
 
 function isUserMuted(jid) {
@@ -214,73 +235,114 @@ if (!sub) {
     `│ 🎙️ *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
 
-    `📌 *COMMAND*\n` +
+    `📌 *PENGATURAN CHAT SAAT INI*\n` +
+    `> ↳ *${usedPrefix}voice enable / on*\n` +
+    `> ↳ *${usedPrefix}voice disable / off*\n` +
+    `> ↳ *${usedPrefix}voice status*\n\n` +
+
+    `📌 *PENGATURAN GLOBAL (OWNER)*\n` +
+    `> ↳ *${usedPrefix}voice gc enable / disable*\n` +
+    `> ↳ *${usedPrefix}voice pc enable / disable*\n\n` +
+
+    `📌 *PENGELOLAAN VN*\n` +
     `> ↳ *${usedPrefix}voice keyword*\n` +
     `> ↳ *${usedPrefix}voice add <reply> <namafilenya.ogg> <keyword|keyword|dst>*\n` +
     `> ↳ *${usedPrefix}voice edit <reply> <namafilenya.ogg> <keyword|keyword|dst>*\n` +
     `> ↳ *${usedPrefix}voice mute <tag/reply>*\n` +
     `> ↳ *${usedPrefix}voice unmute <tag/reply>*\n` +
-    `> ↳ *${usedPrefix}voice toxic enable|disable*\n` +
-    `> ↳ *${usedPrefix}voice enable*\n` +
-    `> ↳ *${usedPrefix}voice disable*\n\n` +
+    `> ↳ *${usedPrefix}voice toxic enable|disable*\n\n` +
 
-    `⚠️ *Hanya owner yang bisa mute/add/edit.*\n` +
-    `⚠️ *disable/enable untuk admin grup.*\n\n` +
+    `⚠️ *enable/disable: Admin di grup, bebas di chat pribadi (PC).*\n` +
+    `⚠️ *gc/pc enable/disable: Khusus Owner bot.*\n\n` +
 
     `─━━━━━━━━━━━━━━─`
   )
 }
 
-  if (sub === 'keyword') {
-    const list = VOICE_NOTE_GROUPS.filter(group => group.enabled !== false && isVoiceCategoryEnabled(m.chat, group.category))
-    let msg = '╭─❏「 🎙️ AUTO VN KEYWORD 」❏\n'
-    msg += '│ 🎧 *Total VN* : ' + list.length + '\n'
-    msg += '│ 🔑 *Total Keyword* : ' + Object.keys(buildVoiceNotes(m.chat)).length + '\n'
-    msg += '╰─━━━━━━━━━━━━━━─\n\n'
+  if (sub === 'status' || sub === 'info') {
+    const store = getVoiceStore()
+    const isGcGlobal = store.settings?.group !== false
+    const isPcGlobal = store.settings?.pc !== false
+    const isThisDisabled = isVoiceDisabledForChat(m.chat, m.isGroup)
+    const isToxicOn = isVoiceCategoryEnabled(m.chat, 'toxic')
 
-    for (const [index, { files, commands }] of list.entries()) {
-      msg += '🎧 *VN ' + (index + 1) + '*\n'
-      msg += '> ↳ File : ' + files.join(', ') + '\n'
-      msg += '> ↳ Keyword : ' + commands.map(keyword => '`' + keyword + '`').join(', ') + '\n\n'
-    }
+    const statusBadge = (val) => val ? '✓ Aktif' : '✕ Nonaktif'
 
-    msg += '─━━━━━━━━━━━━━━─'
-    return m.reply(msg)
+    return m.reply(
+      `╭─❏「 🎙️ STATUS VOICE NOTE 」❏\n` +
+      `│ 🌐 *Global Grup (GC)* : ${statusBadge(isGcGlobal)}\n` +
+      `│ 💬 *Global Private (PC)* : ${statusBadge(isPcGlobal)}\n` +
+      `│ 📍 *Chat Saat Ini* : ${statusBadge(!isThisDisabled)}\n` +
+      `│ ☣️ *Kategori Toxic* : ${statusBadge(isToxicOn)}\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
   }
 
-  if (sub === 'toxic') {
-    if (!m.isGroup) return m.reply('❌ Fitur ini hanya untuk grup.')
-    if (!isAdmin && !m.isAdmin && !isOwner) return m.reply('❌ Khusus admin grup.')
-
+  if (sub === 'gc' || sub === 'group' || sub === 'grup') {
+    if (!isOwner) return m.reply('❌ Pengaturan global grup hanya untuk Owner.')
     const action = remaining[0]?.toLowerCase()
-    if (action !== 'disable' && action !== 'enable') {
-      return m.reply(`❌ Gunakan: ${usedPrefix}voice toxic disable atau ${usedPrefix}voice toxic enable`)
+    if (!['enable', 'disable', 'on', 'off'].includes(action)) {
+      return m.reply(`❌ Gunakan: *${usedPrefix}voice ${sub} enable/on* atau *${usedPrefix}voice ${sub} disable/off*`)
     }
-
     const store = getVoiceStore()
-    store.groups[m.chat] = store.groups[m.chat] || {}
-    store.groups[m.chat].categories = store.groups[m.chat].categories || {}
-    store.groups[m.chat].categories.toxic = action === 'enable'
-    return m.reply(action === 'enable'
-      ? '✅ Voice note toxic diaktifkan di grup ini.'
-      : '✅ Voice note toxic dinonaktifkan di grup ini.')
+    const isEnable = action === 'enable' || action === 'on'
+    store.settings.group = isEnable
+    if (typeof global.db?.write === 'function') global.db.write().catch(() => {})
+    return m.reply(`✅ Voice note untuk *seluruh grup (GC)* berhasil ${isEnable ? 'diaktifkan' : 'dinonaktifkan'}.`)
   }
 
-  if (sub === 'disable' || sub === 'enable') {
-    if (!m.isGroup) return m.reply('❌ Fitur ini hanya untuk grup.')
-    if (!isAdmin && !m.isAdmin && !isOwner) return m.reply('❌ Khusus admin grup.')
-
+  if (sub === 'pc' || sub === 'private') {
+    if (!isOwner) return m.reply('❌ Pengaturan global private chat (PC) hanya untuk Owner.')
+    const action = remaining[0]?.toLowerCase()
+    if (!['enable', 'disable', 'on', 'off'].includes(action)) {
+      return m.reply(`❌ Gunakan: *${usedPrefix}voice ${sub} enable/on* atau *${usedPrefix}voice ${sub} disable/off*`)
+    }
     const store = getVoiceStore()
-    store.groups[m.chat] = store.groups[m.chat] || {}
+    const isEnable = action === 'enable' || action === 'on'
+    store.settings.pc = isEnable
+    if (typeof global.db?.write === 'function') global.db.write().catch(() => {})
+    return m.reply(`✅ Voice note untuk *seluruh chat pribadi (PC)* berhasil ${isEnable ? 'diaktifkan' : 'dinonaktifkan'}.`)
+  }
 
-    if (sub === 'disable') {
-      store.groups[m.chat].disabled = true
-      return m.reply('✅ Semua keyword .voice note ditolak di grup ini.')
+  if (['enable', 'disable', 'on', 'off'].includes(sub)) {
+    const isEnable = sub === 'enable' || sub === 'on'
+    const targetScope = remaining[0]?.toLowerCase()
+
+    if (['gc', 'group', 'grup'].includes(targetScope)) {
+      if (!isOwner) return m.reply('❌ Pengaturan global grup hanya untuk Owner.')
+      const store = getVoiceStore()
+      store.settings.group = isEnable
+      if (typeof global.db?.write === 'function') global.db.write().catch(() => {})
+      return m.reply(`✅ Voice note untuk *seluruh grup (GC)* berhasil ${isEnable ? 'diaktifkan' : 'dinonaktifkan'}.`)
     }
 
-    if (sub === 'enable') {
-      store.groups[m.chat].disabled = false
-      return m.reply('✅ Voice note keyword di grup ini diaktifkan lagi.')
+    if (['pc', 'private'].includes(targetScope)) {
+      if (!isOwner) return m.reply('❌ Pengaturan global private chat (PC) hanya untuk Owner.')
+      const store = getVoiceStore()
+      store.settings.pc = isEnable
+      if (typeof global.db?.write === 'function') global.db.write().catch(() => {})
+      return m.reply(`✅ Voice note untuk *seluruh chat pribadi (PC)* berhasil ${isEnable ? 'diaktifkan' : 'dinonaktifkan'}.`)
+    }
+
+    const store = getVoiceStore()
+    if (m.isGroup) {
+      if (!isAdmin && !m.isAdmin && !isOwner) return m.reply('❌ Khusus admin grup atau owner.')
+      store.groups[m.chat] = store.groups[m.chat] || {}
+      store.groups[m.chat].disabled = !isEnable
+      if (global.db?.data?.chats?.[m.chat]) {
+        global.db.data.chats[m.chat].voice = isEnable
+      }
+      if (typeof global.db?.write === 'function') global.db.write().catch(() => {})
+      return m.reply(isEnable
+        ? '✅ Voice note keyword di grup ini telah diaktifkan.'
+        : '✅ Voice note keyword di grup ini telah dinonaktifkan.')
+    } else {
+      store.chats[m.chat] = store.chats[m.chat] || {}
+      store.chats[m.chat].disabled = !isEnable
+      if (typeof global.db?.write === 'function') global.db.write().catch(() => {})
+      return m.reply(isEnable
+        ? '✅ Voice note keyword di chat pribadi ini telah diaktifkan.'
+        : '✅ Voice note keyword di chat pribadi ini telah dinonaktifkan.')
     }
   }
 
@@ -387,8 +449,19 @@ handler.before = async function (m, { match, ...context }) {
   if (match?.[0]) return false
   if (!m.text) return false
 
-  if (m.isGroup && isGroupDisabled(m.chat)) return true
-  if (m.isGroup && isUserMuted(m.sender)) return true
+  // 1. Cegah respon jika bot sendiri yang mengirim pesan teks
+  const botJid = this.user?.jid || global.conn?.user?.jid
+  const botNumber = (botJid || '').split('@')[0].split(':')[0]
+  const senderNumber = (m.sender || '').split('@')[0].split(':')[0]
+  if (m.fromMe || m.isBaileys || m.key?.fromMe || (botNumber && senderNumber === botNumber)) {
+    return false
+  }
+
+  // 2. Cek apakah voice note dinonaktifkan di grup / chat pribadi (PC)
+  if (isVoiceDisabledForChat(m.chat, m.isGroup)) return false
+
+  // 3. Cek apakah user sedang dimute
+  if (isUserMuted(m.sender)) return false
 
   const matches = findVoiceMatches(m.text, m.chat)
   if (matches.length > 1) {
@@ -402,8 +475,8 @@ handler.before = async function (m, { match, ...context }) {
   const matchedKeyword = findVoiceCommand(m.text, m.chat)
   if (!matchedKeyword) return false
 
-  if (m.isGroup && isGroupDisabled(m.chat)) return true
-  if (m.isGroup && isUserMuted(m.sender)) return true
+  if (isVoiceDisabledForChat(m.chat, m.isGroup)) return false
+  if (isUserMuted(m.sender)) return false
 
   const sent = await sendVoiceAudioFromKeyword(m, this, matchedKeyword)
   if (!sent) {
