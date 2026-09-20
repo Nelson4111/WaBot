@@ -1,4 +1,4 @@
-import { smsg } from './lib/simple.js'
+import { smsg, resolveLid } from './lib/simple.js'
 import { format } from 'util'
 import { fileURLToPath } from 'url'
 import path, { join } from 'path'
@@ -152,7 +152,71 @@ function isDuplicateMessage(instance, id) {
     return false
 }
 
+/**
+ * Resolves both bot and user participant objects from groupMetadata
+ * Supporting phone JID, LID addressing, and numerical digits matching.
+ */
+export function resolveGroupMembers(conn, groupMetadata, sender) {
+    const participants = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : []
+    const decode = (id) => (conn?.decodeJid ? conn.decodeJid(id) : id) || ''
 
+    // 1. Identify Bot
+    const botJids = [
+        decode(conn.user?.id || ''),
+        decode(conn.user?.jid || ''),
+        conn.user?.lid ? decode(conn.user.lid) : '',
+        conn.user?.lid ? decode(conn.user.lid).split(':')[0] + '@lid' : '',
+        conn.user?.id ? decode(conn.user.id).split(':')[0] + '@s.whatsapp.net' : ''
+    ].filter(Boolean)
+
+    const botDigits = [
+        botJids[0]?.split('@')[0]?.replace(/\D/g, ''),
+        conn.user?.lid ? decode(conn.user.lid).split('@')[0]?.split(':')[0]?.replace(/\D/g, '') : ''
+    ].filter(Boolean)
+
+    const bot = participants.find(u => {
+        const pId = decode(u.id || u.jid || '')
+        const pLid = decode(u.lid || '')
+        const pPhone = decode(u.phoneNumber || '')
+        const pDigits = [pId, pLid, pPhone].map(v => v.split('@')[0]?.replace(/\D/g, '')).filter(Boolean)
+
+        if (botJids.some(bJid => [pId, pLid, pPhone].includes(bJid))) return true
+        if (botDigits.some(bDig => pDigits.includes(bDig))) return true
+        return false
+    }) || {}
+
+    // 2. Identify User / Sender
+    const senderClean = decode(sender || '')
+    const senderResolved = typeof resolveLid === 'function' ? resolveLid(senderClean) : ''
+    const senderMapped = global.lids?.[sender] || global.lids?.[senderClean] || global.db?.data?.lids?.[sender] || global.db?.data?.lids?.[senderClean] || ''
+    const senderJids = [
+        senderClean,
+        sender || '',
+        senderResolved,
+        senderMapped
+    ].filter(Boolean)
+
+    const senderDigits = [
+        senderClean.split('@')[0]?.replace(/\D/g, ''),
+        senderResolved ? senderResolved.split('@')[0]?.replace(/\D/g, '') : '',
+        senderMapped ? senderMapped.split('@')[0]?.replace(/\D/g, '') : ''
+    ].filter(Boolean)
+
+    const user = participants.find(u => {
+        const pId = decode(u.id || u.jid || '')
+        const pLid = decode(u.lid || '')
+        const pPhone = decode(u.phoneNumber || '')
+        const pResolved = typeof resolveLid === 'function' ? (resolveLid(pId) || resolveLid(pLid)) : ''
+        const pMapped = global.lids?.[pId] || global.lids?.[pLid] || ''
+        const pDigits = [pId, pLid, pPhone, pResolved, pMapped].map(v => v.split('@')[0]?.replace(/\D/g, '')).filter(Boolean)
+
+        if (senderJids.some(sJid => [pId, pLid, pPhone, pResolved, pMapped].includes(sJid))) return true
+        if (senderDigits.some(sDig => pDigits.includes(sDig))) return true
+        return false
+    }) || {}
+
+    return { bot, user }
+}
 
 export async function handler(chatUpdate) {
     // console.log('[EVENT MASUK]', new Date().toISOString(), 
@@ -523,16 +587,9 @@ async function processMessage(m, chatUpdate) {
         let bot = {}
 
         if (m.isGroup) {
-            const senderJid = conn.decodeJid(m.sender)
-            const botJid = conn.decodeJid(conn.user.id)
-            user = participants.find(u => {
-                const check = [u.id, u.jid, u.phoneNumber, u.lid].map(v => v ? conn.decodeJid(v) : '')
-                return check.includes(senderJid) || [u.id, u.jid, u.phoneNumber, u.lid].includes(senderJid)
-            }) || {}
-            bot = participants.find(u => {
-                const check = [u.id, u.jid, u.phoneNumber, u.lid].map(v => v ? conn.decodeJid(v) : '')
-                return check.includes(botJid) || [u.id, u.jid, u.phoneNumber, u.lid].includes(botJid)
-            }) || {}
+            const members = resolveGroupMembers(conn, groupMetadata, m.sender)
+            user = members.user
+            bot = members.bot
         }
 
         const isRAdmin = user?.admin === 'superadmin' || user?.isSuperAdmin || false
@@ -649,6 +706,29 @@ async function processMessage(m, chatUpdate) {
                 if (plugin.mods && !isMods) { fail('mods', m, this); continue }
                 if (plugin.premium && !isPrems) { fail('premium', m, this); continue }
                 if (plugin.group && !m.isGroup) { fail('group', m, this); continue }
+
+                // Verifikasi segar on-demand jika botAdmin atau admin gagal di grup
+                if (m.isGroup && ((plugin.botAdmin && !isBotAdmin) || (plugin.admin && !isAdmin))) {
+                    try {
+                        const freshMeta = await conn.groupMetadata(m.chat)
+                        if (freshMeta && Array.isArray(freshMeta.participants)) {
+                            let chatStore = conn.chats?.[m.chat] || (conn.chats[m.chat] = {})
+                            chatStore.metadata = freshMeta
+                            chatStore.metadataTime = Date.now()
+                            if (global.updateGroupMetadataCache) global.updateGroupMetadataCache(m.chat, freshMeta)
+                            groupMetadata = freshMeta
+                            const refreshed = resolveGroupMembers(conn, freshMeta, m.sender)
+                            user = refreshed.user
+                            bot = refreshed.bot
+                            const refreshedRAdmin = user?.admin === 'superadmin' || user?.isSuperAdmin || false
+                            isAdmin = isOwner || refreshedRAdmin || user?.admin === 'admin' || user?.isAdmin || false
+                            isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin' || bot?.isAdmin || bot?.isSuperAdmin || false
+                        }
+                    } catch (e) {
+                        // abaikan jika network error
+                    }
+                }
+
                 if (plugin.botAdmin && !isBotAdmin) { fail('botAdmin', m, this); continue }
                 if (plugin.admin && !isAdmin) { fail('admin', m, this); continue }
                 if (plugin.private && m.isGroup) { fail('private', m, this); continue }
@@ -841,6 +921,53 @@ export async function participantsUpdate({ id, participants, action, force = fal
         await loadDatabase()
     let chat = global.db.data.chats[id] || {}
     let text = ''
+
+    // REAL-TIME METADATA CACHE UPDATE & INVALIDATION
+    try {
+        conn.chats = conn.chats || {}
+        const chatStore = conn.chats[id] || (conn.chats[id] = {})
+        if (chatStore.metadata && Array.isArray(chatStore.metadata.participants)) {
+            const decode = (jid) => (conn?.decodeJid ? conn.decodeJid(jid) : jid) || ''
+            for (const p of (participants || [])) {
+                const pClean = decode(p)
+                const pNum = pClean.split('@')[0].split(':')[0].replace(/\D/g, '')
+                const found = chatStore.metadata.participants.find(u => {
+                    const uClean = decode(u.id || u.jid || u.lid || '')
+                    const uNum = uClean.split('@')[0].split(':')[0].replace(/\D/g, '')
+                    return (pNum && uNum === pNum) || uClean === pClean || u.id === p || u.lid === p
+                })
+
+                if (action === 'promote') {
+                    if (found) found.admin = 'admin'
+                    else chatStore.metadata.participants.push({ id: p, admin: 'admin' })
+                } else if (action === 'demote') {
+                    if (found) found.admin = null
+                } else if (action === 'add') {
+                    if (!found) chatStore.metadata.participants.push({ id: p, admin: null })
+                } else if (action === 'remove') {
+                    if (found) {
+                        chatStore.metadata.participants = chatStore.metadata.participants.filter(u => u !== found)
+                    }
+                }
+            }
+        }
+        // Invalidate cache metadataTime agar pemanggilan berikutnya langsung sync
+        chatStore.metadataTime = 0
+        if (global.groupMetadataCache?.has(id)) {
+            global.groupMetadataCache.delete(id)
+        }
+        // Background sync metadata lengkap dari WhatsApp
+        conn.groupMetadata(id).then(meta => {
+            if (meta) {
+                chatStore.metadata = meta
+                chatStore.metadataTime = Date.now()
+                if (global.updateGroupMetadataCache) global.updateGroupMetadataCache(id, meta)
+            }
+        }).catch(() => {})
+    } catch (errSync) {
+        console.warn('[PARTICIPANTS UPDATE SYNC WARN]:', errSync?.message || errSync)
+    }
+
     switch (action) {
     case 'add':
         // Log untuk tracking event add peserta di grup
