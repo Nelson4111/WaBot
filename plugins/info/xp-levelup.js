@@ -9,7 +9,7 @@ import {
   getLevelThumbnail
 } from '../../lib/levelling.js'
 
-let handler = async (m, { conn, command, args, usedPrefix }) => {
+let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) => {
   command = String(command || '').toLowerCase()
   let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : (m.quoted ? m.quoted.sender : m.sender)
   who = conn.decodeJid(who)
@@ -25,14 +25,17 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
       name: conn.getName(who) || 'User',
       level: 0,
       role: 'Pendatang',
-      autolevelup: false
+      autolevelup: true
     }
     user = global.db.data.users[who]
   }
 
+  const groupChat = m.isGroup ? (global.db?.data?.chats?.[m.chat] || {}) : null
+  if (groupChat && typeof groupChat.autolevelup !== 'boolean') groupChat.autolevelup = true
+
   if (typeof user.exp !== 'number' || isNaN(user.exp)) user.exp = 0
   if (typeof user.level !== 'number' || isNaN(user.level)) user.level = 0
-  if (typeof user.autolevelup !== 'boolean') user.autolevelup = false
+  if (typeof user.autolevelup !== 'boolean') user.autolevelup = true
 
   const multiplier = global.multiplier || 36
   const name = user.name || conn.getName(who) || 'User'
@@ -42,16 +45,41 @@ let handler = async (m, { conn, command, args, usedPrefix }) => {
   // 1. Perintah: .autolevelup [on/off]
   // ═══════════════════════════════════════════════
   if (command === 'autolevelup') {
-    let type = (args[0] || '').toLowerCase()
-    if (['on', 'enable', '1', 'true', 'aktif'].includes(type)) {
+    const firstArg = (args[0] || '').toLowerCase()
+    const secondArg = (args[1] || '').toLowerCase()
+    const useGroupMode = m.isGroup && ['group', 'grup', 'all', 'semua', 'everyone'].includes(firstArg)
+    const targetValue = useGroupMode ? secondArg : firstArg
+    const isGroupAdmin = !!(m.isGroup && (isAdmin || isOwner || m.isAdmin || m.isOwner))
+
+    if (useGroupMode) {
+      if (!m.isGroup) {
+        return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ᴍᴏᴅᴇ : *Pribadi*\n*┆* ✧ ɴᴏᴛɪꜛ : *Perintah grup hanya bisa dipakai di group*\n*╰───────────────*`)
+      }
+      if (!isGroupAdmin) {
+        return m.reply(`*╭  〔 ⚙ ᴀ ᴅ ᴍ ɪ ɴ 〕*\n*┆* ⟡ ᴀᴅᴍɪɴ : *Hanya admin grup*\n*┆* ✧ ɴᴏᴛɪꜛ : *Admin bisa menyembunyikan notifikasi level-up untuk semua member grup*\n*╰───────────────*`)
+      }
+      if (['on', 'enable', '1', 'true', 'aktif'].includes(targetValue)) {
+        groupChat.autolevelup = true
+        return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ɢʀᴜᴩ : *Aktif (ON) ✓*\n> Notifikasi auto level-up di grup ini sudah dibuka kembali untuk semua member.\n*╰───────────────*`)
+      }
+      if (['off', 'disable', '0', 'false', 'mati'].includes(targetValue)) {
+        groupChat.autolevelup = false
+        return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ɢʀᴜᴩ : *Nonaktif (OFF) ✕*\n> Notifikasi auto level-up kini disembunyikan untuk semua member di grup ini.\n*╰───────────────*`)
+      }
+      const groupStatus = groupChat.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕'
+      return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ sᴛᴀᴛᴜꜛ ɢʀᴜᴩ : *${groupStatus}*\n*┆* ✧ ᴄᴀʀᴀ : *${usedPrefix}autolevelup group on/off*\n*╰───────────────*`)
+    }
+
+    if (['on', 'enable', '1', 'true', 'aktif'].includes(targetValue)) {
       user.autolevelup = true
       return m.reply(`*╭  〔 ⚙ ᴀ ᴜ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Aktif (ON) ✓*\n> Bot akan otomatis memberi tahu dan membagikan reward setiap kali kamu naik level.\n*╰───────────────*`)
-    } else if (['off', 'disable', '0', 'false', 'mati'].includes(type)) {
+    } else if (['off', 'disable', '0', 'false', 'mati'].includes(targetValue)) {
       user.autolevelup = false
       return m.reply(`*╭  〔 ⚙ ᴀ ᴜ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Nonaktif (OFF) ✕*\n> Notifikasi otomatis dimatikan. Kamu bisa naik level secara manual kapan saja dengan mengetik *${usedPrefix}levelup*.\n*╰───────────────*`)
     } else {
-      let status = user.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕'
-      return m.reply(`*╭  〔 ⚙ ᴀ ᴜ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ꜱᴛᴀᴛᴜꜱ ꜱᴀᴀᴛ ɪɴɪ : *${status}*\n*╰───────────────*\n\n> 💡 *Pengaturan:*\n> • *${usedPrefix}autolevelup on* (Nyalakan notifikasi auto level)\n> • *${usedPrefix}autolevelup off* (Matikan notifikasi auto level)`)
+      const selfStatus = user.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕'
+      const groupStatus = m.isGroup && groupChat ? (groupChat.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕') : '—'
+      return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ꜛʀɪʙᴀᴅɪ : *${selfStatus}*\n${m.isGroup ? `*┆* ✧ ɢʀᴄᴩ     : *${groupStatus}*\n` : ''}*╰───────────────*\n\n> 💡 *Pengaturan:*\n> • *${usedPrefix}autolevelup on/off* = ubah notif diri sendiri\n> • *${usedPrefix}autolevelup group on/off* = ubah notif semua member grup (hanya admin)`)
     }
   }
 
