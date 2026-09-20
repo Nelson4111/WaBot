@@ -100,7 +100,9 @@ let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
     // 4. Opsi Hapus Berdasarkan Reply (Quoted Pesan Status / Konfirmasi / Status Anomali)
     let targetStatusId = null;
     let targetParticipant = undefined;
+    let alternateParticipant = undefined;
     let isTargetFromMe = true;
+    let innerStatusKey = null;
 
     if (m.quoted) {
       const matchInDb = chat.groupStatuses.find(s => s.id === m.quoted.id);
@@ -118,10 +120,22 @@ let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
         } else {
           // Status/pesan yang di-reply langsung (bisa buatan bot atau anomali/member lain)
           targetStatusId = m.quoted.id;
-          isTargetFromMe = !!m.quoted.fromMe;
-          targetParticipant = isTargetFromMe
-            ? undefined
-            : (m.quoted.sender || m.quoted.participant);
+          isTargetFromMe = !!m.quoted.fromMe || (conn.user?.id && baileys.areJidsSameUser(m.quoted.sender, conn.user.id));
+
+          // Ekstrak identitas raw LID dan Phone JID pengirim secara akurat
+          const rawPart = m.msg?.contextInfo?.participant || m.quoted.vM?.key?.participant || '';
+          const senderJid = m.quoted.sender || '';
+          targetParticipant = rawPart || senderJid || undefined;
+          alternateParticipant = (senderJid && senderJid !== targetParticipant)
+            ? senderJid
+            : (rawPart && rawPart !== targetParticipant ? rawPart : undefined);
+
+          // Cek jika pesan adalah groupStatusMentionMessage yang menyimpan inner key status
+          const innerKey = m.quoted.msg?.message?.protocolMessage?.key ||
+                           m.quoted.message?.groupStatusMentionMessage?.message?.protocolMessage?.key;
+          if (innerKey && innerKey.id) {
+            innerStatusKey = innerKey;
+          }
         }
       }
     } else if (rawArg && rawArg.length > 10) {
@@ -139,19 +153,48 @@ let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
 
       await react('⏳');
       try {
-        await revokeGroupStatus(conn, m.chat, {
+        // 1. Coba hapus langsung melalui helper m.quoted.delete() jika tersedia
+        if (m.quoted && typeof m.quoted.delete === 'function') {
+          await m.quoted.delete().catch(() => {});
+        }
+
+        // 2. Cabut status via revokeGroupStatus dengan multi-partisipan (LID & Phone JID)
+        const ok = await revokeGroupStatus(conn, m.chat, {
           id: targetStatusId,
           fromMe: isTargetFromMe,
-          participant: targetParticipant
+          participant: targetParticipant,
+          alternateParticipant: alternateParticipant
         });
 
-        // Hapus dari riwayat jika ada
-        chat.groupStatuses = chat.groupStatuses.filter(s => s.id !== targetStatusId);
+        // 3. Jika ada inner status key dari groupStatusMentionMessage, coba bersihkan juga
+        if (innerStatusKey?.id) {
+          await revokeGroupStatus(conn, innerStatusKey.remoteJid || m.chat, {
+            id: innerStatusKey.id,
+            fromMe: false,
+            participant: innerStatusKey.participant || targetParticipant,
+            alternateParticipant: alternateParticipant
+          }).catch(() => {});
+        }
+
+        // Hapus dari riwayat lokal jika ada
+        chat.groupStatuses = chat.groupStatuses.filter(s => s.id !== targetStatusId && (!innerStatusKey || s.id !== innerStatusKey.id));
         await react('🗑️');
-        const targetDesc = isTargetFromMe ? 'terpilih' : `milik @${(targetParticipant || '').split('@')[0]}`;
+
+        const targetUserNum = (targetParticipant || alternateParticipant || m.quoted?.sender || '').split('@')[0].split(':')[0].replace(/\D/g, '');
+        const targetDesc = isTargetFromMe ? 'terpilih' : `milik @${targetUserNum || 'pengguna'}`;
+
+        const noticeText = isTargetFromMe
+          ? `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup ${targetDesc} ✦\n*╰───────────────*`
+          : `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n` +
+            `> Berhasil menghapus status/mention grup ${targetDesc} dari obrolan ✦\n\n` +
+            `> ℹ️ _Catatan: Pesan di ruang obrolan grup telah dihapus. Sesuai arsitektur enkripsi WhatsApp, cerita status di tab Status pribadi anggota hanya dapat dicabut oleh pemiliknya sendiri._\n` +
+            `*╰───────────────*`;
+
+        const mentionList = [targetParticipant, alternateParticipant, m.quoted?.sender].filter(v => v && !v.endsWith('@g.us'));
+
         return conn.sendMessage(m.chat, {
-          text: `*╭  〔 ⟡ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ 〕*\n> Berhasil menghapus status grup ${targetDesc} ✦\n*╰───────────────*`,
-          mentions: targetParticipant ? [targetParticipant] : []
+          text: noticeText,
+          mentions: [...new Set(mentionList)]
         }, { quoted: m });
       } catch (e) {
         await react('❌');

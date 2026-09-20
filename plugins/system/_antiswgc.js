@@ -42,7 +42,8 @@ let handler = async (m, { conn, isAdmin, isOwner, isBotAdmin }) => {
       await revokeGroupStatus(conn, m.chat, {
         id: m.key.id,
         fromMe: false,
-        participant: m.key.participant || m.sender
+        participant: m.key.participant || m.sender,
+        alternateParticipant: m.sender
       })
     } catch (err) {
       console.error('[antiSwgc] Gagal menghapus status grup:', err?.message || err)
