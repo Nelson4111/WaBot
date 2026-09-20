@@ -60,13 +60,39 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     // 2. Jika user me-reply foto, hapus juga pesan foto yang di-reply
     if (m.quoted) {
       try {
-        const qKey = m.quoted.vM?.key || {
-          remoteJid: m.chat,
-          fromMe: m.quoted.fromMe || false,
-          id: m.quoted.id,
-          participant: m.quoted.sender || m.quoted.participant
+        const rawPart = m.msg?.contextInfo?.participant ||
+          m.message?.[m.mtype]?.contextInfo?.participant ||
+          m.quoted.sender ||
+          m.quoted.participant ||
+          ''
+
+        const stored = (typeof conn.loadMessage === 'function' ? conn.loadMessage(m.quoted.id) : null) ||
+          conn.chats?.[m.chat]?.messages?.[m.quoted.id]
+        const storedKey = stored?.key
+
+        if (storedKey && storedKey.participant) {
+          await conn.sendMessage(m.chat, { delete: storedKey }).catch(() => {})
+        } else {
+          const qKey = {
+            remoteJid: m.chat,
+            fromMe: m.quoted.fromMe || false,
+            id: m.quoted.id,
+            ...(m.isGroup && !m.quoted.fromMe && rawPart ? { participant: rawPart } : {})
+          }
+          await conn.sendMessage(m.chat, { delete: qKey })
+
+          // Fallback: Jika rawPart adalah LID dan sender adalah JID (atau sebaliknya), coba juga delete dengan sender
+          if (m.isGroup && !m.quoted.fromMe && m.quoted.sender && m.quoted.sender !== rawPart) {
+            await conn.sendMessage(m.chat, {
+              delete: {
+                remoteJid: m.chat,
+                fromMe: false,
+                id: m.quoted.id,
+                participant: m.quoted.sender
+              }
+            }).catch(() => {})
+          }
         }
-        await conn.sendMessage(m.chat, { delete: qKey })
       } catch (errDelQ) {
         console.warn('[PRIVASI SMEME] Gagal menghapus quoted foto di grup:', errDelQ?.message)
       }
