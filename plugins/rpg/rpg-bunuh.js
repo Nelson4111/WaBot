@@ -1,4 +1,6 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { isAfk } from '../../lib/afkHelper.js'
+import { computeCrimeScore } from '../../lib/crimeHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -28,6 +30,10 @@ let handler = async (m, { conn }) => {
   let who = m.mentionedJid?.[0] || m.quoted?.sender
   if (!who) return m.reply(`❌ Tag atau reply pesan target yg mau dibunuh`)
   if (who === m.sender) return m.reply('❌ Ga bisa bunuh diri sendiri')
+  const senderUser = (global.db?.data?.users || {})[m.sender] || wdb.users?.[m.sender] || {}
+  const targetUser = (global.db?.data?.users || {})[who] || wdb.users?.[who] || {}
+  if (isAfk(senderUser)) return m.reply('❌ Kamu sedang AFK. Nonaktifkan dulu status AFK sebelum melakukan aksi kriminal.')
+  if (isAfk(targetUser)) return m.reply('❌ Target sedang AFK dan tidak bisa dijadikan sasaran tindakan kriminal.')
 
   let target = getUserRPG(wdb, who).rpg
   if(!target) return m.reply('❌ Target belum punya data RPG')
@@ -58,8 +64,7 @@ let handler = async (m, { conn }) => {
       wdb.penjara.push(m.sender)
     }
 
-    wdb.crime[m.sender].bunuh += 1
-    wdb.crime[m.sender].total += 1
+    wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
     userRPG.riwayat.unshift(`💀 Mati saat bunuh @${who.split('@')[0]}`)
 
     saveDB(wdb)
@@ -81,8 +86,8 @@ let handler = async (m, { conn }) => {
   wdb.money[who] -= hasil
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
 
-  wdb.crime[m.sender].bunuh += 1
-  wdb.crime[m.sender].total += 1
+  wdb.crime[m.sender].bunuh = (Number(wdb.crime[m.sender].bunuh) || 0) + 1
+  wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
 
   target.riwayat.unshift(`-Rp ${hasil.toLocaleString()} Dibunuh @${m.sender.split('@')[0]}`)
   userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Bunuh @${who.split('@')[0]}`)

@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { setAfk } from '../../lib/afkHelper.js'
 import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-libternakData.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { bibit } from './rpg-panen.js'
@@ -154,6 +155,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel blockcasino @tag/reply*\n` +
   `> ↳ *${usedPrefix}rpgpanel unblockcasino @tag/reply*\n` +
   `> ↳ *${usedPrefix}rp unblockcasino @tag/reply*\n` +
+  `> ↳ *${usedPrefix}rpgpanel afk @tag <alasan>*\n` +
   `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
@@ -166,6 +168,18 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   `─━━━━━━━━━━━━━━─`
 )
+
+  if (['afk', 'forceafk', 'setafk'].includes(aksi)) {
+    if (!isOwner) return m.reply('❌ Fitur AFK paksa hanya untuk owner.')
+    const target = m.mentionedJid?.[0] || m.quoted?.sender
+    const reason = remaining.join(' ') || 'Diperintah oleh Owner'
+    if (!target) return m.reply('❌ Tag atau reply target yang mau di-AFK-kan.')
+
+    wdb.users[target] = wdb.users[target] || {}
+    setAfk(wdb.users[target], reason)
+    saveDB(wdb)
+    return m.reply(`✅ Status AFK berhasil dipaksa aktif untuk @${target.split('@')[0]} dengan alasan: *${reason}*`, null, { mentions: [target] })
+  }
 
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
