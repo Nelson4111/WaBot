@@ -188,7 +188,8 @@ let handler = async (m, { conn }) => {
   const totalExp = draws.reduce((sum, x) => sum + x.exp, 0)
 
   for (const fish of draws) {
-    user.ikan[fish.ikan] = (user.ikan[fish.ikan] || 0) + 1
+    const normalizedKey = normalizeFishKey(fish.ikan)
+    user.ikan[normalizedKey] = (user.ikan[normalizedKey] || 0) + 1
   }
   user.exp += totalExp
   if (global.db?.data?.users?.[m.sender]) {

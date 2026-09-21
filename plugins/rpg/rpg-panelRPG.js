@@ -1,5 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { setAfk } from '../../lib/afkHelper.js'
+import { normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
 import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-libternakData.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { bibit } from './rpg-panen.js'
@@ -548,7 +549,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   let args = remaining
   let jumlah = parseInt(remaining.find(a => !isNaN(parseInt(a)))) || 0
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
-  let item = itemInput?.toLowerCase().replace(/ /g, '_')
+  let item = normalizeFishKey(itemInput?.toLowerCase().replace(/ /g, '_'))
 
   if (['setcont', 'addcont', 'delcont'].includes(aksi)) {
     if (jumlah < 0 || (aksi !== 'setcont' && jumlah < 1)) return m.reply('❌ Jumlah kontribusi tidak valid')
@@ -666,7 +667,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   // 4.5 IKAN
   if(['addikan','delikan'].includes(aksi)){
     if(!itemInput || jumlah < 1) return m.reply(`Contoh: *${usedPrefix}rpgpanel addikan @user kraken 5*`)
-    let ikan = itemInput.toLowerCase().replace(/ /g, '_')
+    let ikan = normalizeFishKey(itemInput.toLowerCase().replace(/ /g, '_'))
 
     if(aksi === 'addikan'){
       user.ikan[ikan] = (user.ikan[ikan] || 0) + jumlah

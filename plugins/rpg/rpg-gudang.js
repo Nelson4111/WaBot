@@ -211,7 +211,10 @@ for (let t of selectedCategories) {
 }
 
 cap += `📌 *PANDUAN*\n`
-cap += `> ↳ Jual: *.shop jual <nama> <jumlah>*\n`
+cap += `> ↳ Jual Ikan: *.pasar jual <no/nama> <jumlah/all>*\n`
+cap += `> ↳ Jual Material: *.pabrik jual <no/nama> <jumlah/all>*\n`
+cap += `> ↳ Jual Panen: *.koperasi jual <no/nama> <jumlah/all>*\n`
+cap += `> ↳ Jual Masakan: *.restoran jual <no/nama> <jml/all>*\n`
 cap += `> ↳ Masak: *.masak <nama>*\n`
 cap += `> ↳ Ambil Masakan: *.ambilmasak*`
 
