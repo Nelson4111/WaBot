@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
-import { getIntimacyRank, normalizeRingName } from '../../lib/pasanganHelper.js'
+import { getIntimacyRank, isPasanganHidden, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -117,8 +117,14 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   // 5. Data Hubungan & Asmara (Mendukung Sistem Poligami Multi-Pasangan)
   let mentions = [who]
   let hubunganCard = ''
+  const pasanganHidden = isPasanganHidden(user) || isPasanganHidden((global.db?.data?.users || {})[who] || {})
 
-  if (pasangan && pasangan.length > 0) {
+  if (pasanganHidden) {
+    hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *🔒 DIKUNCI*
+*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *Rahasia / disembunyikan*
+*╰──────────────────────*`
+  } else if (pasangan && pasangan.length > 0) {
     if (pasangan.length === 1) {
       let p = pasangan[0]
       let partnerNum = p.jid.split('@')[0].replace(/\D/g, '')

@@ -489,12 +489,33 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
       if (!birthdayEntries.length) return m.reply('🎂 Belum ada data birthday TWILY.')
       const now = new Date()
       const currentMonth = now.getMonth() + 1
+      const monthGroups = new Map()
+
+      for (const [jid, value] of birthdayEntries) {
+        const month = birthdayDate(value).month || currentMonth
+        if (!monthGroups.has(month)) monthGroups.set(month, [])
+        monthGroups.get(month).push({ jid, value })
+      }
+
+      const monthBlocks = [...monthGroups.entries()]
+        .sort(([left], [right]) => left - right)
+        .map(([month, items]) => {
+          const sortedItems = items.sort((leftEntry, rightEntry) => {
+            const left = birthdayDate(leftEntry.value)
+            const right = birthdayDate(rightEntry.value)
+            return left.day - right.day || String(leftEntry.value.name).localeCompare(String(rightEntry.value.name), 'id')
+          })
+          const title = `${MONTH_NAMES[month] || 'Bulan'} (${sortedItems.length} orang)`
+          const lines = sortedItems.map(({ value }, index) => `${index + 1}. ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
+          return `╭─━━━━━━━━━━━━━━─\n│ ${title}\n╰─━━━━━━━━━━━━━━─\n${lines}`
+        })
+        .join('\n\n')
+
       const monthEntries = birthdayEntries.filter(([, value]) => birthdayDate(value).month === currentMonth)
       const upcomingEntries = birthdayEntries
         .slice()
         .sort(([, left], [, right]) => birthdayDistance(left, now) - birthdayDistance(right, now))
         .slice(0, Math.min(5, birthdayEntries.length))
-      const lines = birthdayEntries.map(([, value], index) => `${index + 1}. ${value.name} - ${formatBirthdayDate(value.date)}`)
       const monthLines = monthEntries.length
         ? monthEntries.map(([, value]) => `• ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
         : '• Tidak ada birthday bulan ini.'
@@ -503,7 +524,7 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
 │• Total birthday: *${birthdayEntries.length}*
 ╰─━━━━━━━━━━━━━━─
 
-> Bagian bawah menampilkan birthday bulan ini dan yang paling dekat.
+> Birthday dibagi per bulan, lalu diurutkan dari tanggal paling awal.
 
 ╭─━━━━━━━━━━━━━━─
 │• Birthday bulan ini:
@@ -511,8 +532,10 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
 ${monthLines}
 
 ╭─━━━━━━━━━━━━━━─
-${lines.join('\n')}
-╰─━━━━━━━━━━━━━━─`)
+${upcomingLines}
+╰─━━━━━━━━━━━━━━─
+
+${monthBlocks}`)
     }
 
     const birthdayQuery = [action, ...args].join(' ').trim()
