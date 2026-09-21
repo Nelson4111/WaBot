@@ -17,6 +17,7 @@ import {
   findTwilySuggestions,
   formatTwilyGeneration,
   normalizeTwilyGeneration,
+  parseTwilyBatchInput,
   saveTwilyGenerations,
   setTwilyNewGen,
   setTwilyConcept,
@@ -370,10 +371,10 @@ const helpText = `
 │  Lihat anggota tiap generasi
 │• *.twily gen <nama>*
 │  Cek nama tersebut generasi berapa
-│• *.twily gen add <nama> <gen>*
-│  Tambah anggota, khusus admin
-│• *.twily gen remove <nama> [gen]*
-│  Hapus anggota, khusus admin
+│• *.twily gen add <nama1|nama2|dst> <gen>*
+│  Tambah banyak anggota sekaligus, khusus admin
+│• *.twily gen remove <nama1|nama2|dst> [gen]*
+│  Hapus banyak anggota sekaligus, khusus admin
 │• *.twily gen edit <n> <g> <n> <g>*
 │  Edit nama atau generasi, khusus admin
 │• *.twily admin add/remove/edit ...*
@@ -795,20 +796,21 @@ ${genOverview().split('\n').map(line => `│• ${line}`).join('\n')}
     if (action.toLowerCase() === 'add') {
       if (!m.isGroup || (!isAdmin && !isOwner)) return m.reply('❌ Fitur tambah gen hanya bisa digunakan admin grup.')
 
-      const generation = normalizeTwilyGeneration(args.pop() || '')
-      const name = args.join(' ').trim()
-      if (!name || !Object.prototype.hasOwnProperty.call(TWILY_GENERATIONS, generation)) {
-        return m.reply('❌ Format: `.twily gen add <nama> <gen>`\nContoh: `.twily gen add Budi XI`')
+      const { names, generation } = parseTwilyBatchInput(args)
+      if (!names.length || !generation || !Object.prototype.hasOwnProperty.call(TWILY_GENERATIONS, generation)) {
+        return m.reply('❌ Format: `.twily gen add <nama1|nama2|dst> <gen>`\nContoh: `.twily gen add Budi|Ayu|Raka XI`')
       }
 
-      const duplicate = TWILY_GENERATIONS[generation].some(member => member.toLowerCase() === name.toLowerCase())
-      if (duplicate) {
-        return m.reply(`❌ Nama *${name}* sudah ada di ${genLabel(generation)}. Beri pembeda pada namanya, misalnya *${name}1* atau gunakan nama lain.`)
+      const normalizedNames = [...new Set(names.map(name => name.replace(/\s+/g, ' ').trim()).filter(Boolean))]
+      const duplicates = normalizedNames.filter(name => TWILY_GENERATIONS[generation].some(member => member.toLowerCase() === name.toLowerCase()))
+      if (duplicates.length) {
+        const firstDuplicate = duplicates[0]
+        return m.reply(`❌ Nama *${firstDuplicate}* sudah ada di ${genLabel(generation)}. Beri pembeda pada namanya, misalnya *${firstDuplicate}1* atau gunakan nama lain.`)
       }
 
-      TWILY_GENERATIONS[generation].push(name)
+      TWILY_GENERATIONS[generation].push(...normalizedNames)
       saveTwilyGenerations()
-      return m.reply(`✅ *${name}* berhasil ditambahkan ke ${genLabel(generation)}.`)
+      return m.reply(`✅ ${normalizedNames.map(name => `*${name}*`).join(', ')} berhasil ditambahkan ke ${genLabel(generation)}.`)
     }
 
     if (action.toLowerCase() === 'edit') {
@@ -847,32 +849,50 @@ ${genOverview().split('\n').map(line => `│• ${line}`).join('\n')}
     if (['remove', 'del', 'delete', 'hapus'].includes(action.toLowerCase())) {
       if (!m.isGroup || (!isAdmin && !isOwner)) return m.reply('❌ Fitur hapus gen hanya bisa digunakan admin grup.')
 
-      let requestedGeneration = ''
-      const lastArg = args.at(-1)
-      const normalizedLastArg = normalizeTwilyGeneration(lastArg || '')
-      if (Object.prototype.hasOwnProperty.call(TWILY_GENERATIONS, normalizedLastArg) && args.length > 1) {
-        requestedGeneration = normalizedLastArg
-        args.pop()
+      const { names, generation: requestedGeneration } = parseTwilyBatchInput(args)
+      if (!names.length) return m.reply('❌ Format: `.twily gen remove <nama1|nama2|dst> [gen]`\nContoh: `.twily gen remove Putri|Ayu III`')
+
+      const missingNames = []
+      const ambiguousNames = []
+      const namesToRemove = []
+
+      for (const name of names) {
+        const found = findTwilyMembers(name)
+        const candidates = requestedGeneration
+          ? found.filter(item => item.generation === requestedGeneration)
+          : found
+
+        if (!candidates.length) {
+          missingNames.push(name)
+          continue
+        }
+
+        if (candidates.length > 1 && !requestedGeneration) {
+          ambiguousNames.push({ name, generations: candidates.map(item => genLabel(item.generation)) })
+          continue
+        }
+
+        const target = candidates[0]
+        namesToRemove.push(target)
       }
 
-      const name = args.join(' ').trim()
-      if (!name) return m.reply('❌ Format: `.twily gen remove <nama> [gen]`\nContoh: `.twily gen remove Putri III`')
-
-      const found = findTwilyMembers(name)
-      const candidates = requestedGeneration
-        ? found.filter(item => item.generation === requestedGeneration)
-        : found
-
-      if (!candidates.length) return m.reply(`❌ Nama *${name}* tidak ditemukan${requestedGeneration ? ` di ${genLabel(requestedGeneration)}` : ''}.`)
-      if (candidates.length > 1) {
-        return m.reply(`⚠️ Nama *${name}* ada di beberapa generasi: ${candidates.map(item => genLabel(item.generation)).join(', ')}.\nGunakan: .twily gen remove ${name} <gen>`)
+      if (missingNames.length) {
+        const detail = missingNames.map(name => `*${name}*`).join(', ')
+        return m.reply(`❌ Nama ${detail} tidak ditemukan${requestedGeneration ? ` di ${genLabel(requestedGeneration)}` : ''}.`)
       }
 
-      const target = candidates[0]
-      const memberIndex = TWILY_GENERATIONS[target.generation].findIndex(member => member.toLowerCase() === target.name.toLowerCase())
-      TWILY_GENERATIONS[target.generation].splice(memberIndex, 1)
+      if (ambiguousNames.length) {
+        const detail = ambiguousNames.map(item => `${item.name} (${item.generations.join(', ')})`).join('\n')
+        return m.reply(`⚠️ Nama berikut ada di beberapa generasi:\n${detail}\n\nGunakan format: .twily gen remove ${ambiguousNames[0].name} <gen>`)
+      }
+
+      for (const target of namesToRemove) {
+        const memberIndex = TWILY_GENERATIONS[target.generation].findIndex(member => member.toLowerCase() === target.name.toLowerCase())
+        if (memberIndex >= 0) TWILY_GENERATIONS[target.generation].splice(memberIndex, 1)
+      }
+
       saveTwilyGenerations()
-      return m.reply(`✅ *${target.name}* berhasil dihapus dari ${genLabel(target.generation)}.`)
+      return m.reply(`✅ ${namesToRemove.map(item => `*${item.name}*`).join(', ')} berhasil dihapus${requestedGeneration ? ` dari ${genLabel(requestedGeneration)}` : ''}.`)
     }
 
     const generation = normalizeTwilyGeneration(action)
