@@ -278,7 +278,6 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
     let sortedDonors = Object.entries(allUsers)
       .filter(([_, data]) => data.totalDonasi && data.totalDonasi > 0)
       .sort((a, b) => b[1].totalDonasi - a[1].totalDonasi)
-      .slice(0, 15)
 
     let totalGlobal = settings.totalDonasi || sortedDonors.reduce((acc, curr) => acc + (curr[1].totalDonasi || 0), 0)
 

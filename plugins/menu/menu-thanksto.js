@@ -10,11 +10,10 @@ let handler = async (m, { conn, usedPrefix }) => {
   const settings = (global.db.data.settings && global.db.data.settings[conn.user.jid]) || {}
   const customThanks = global.db.data.thanks || []
 
-  // 1. Ambil & Urutkan Donatur Teratas
+  // 1. Ambil & Urutkan Seluruh Donatur
   const sortedDonors = Object.entries(users)
     .filter(([_, data]) => data.totalDonasi && data.totalDonasi > 0)
     .sort((a, b) => b[1].totalDonasi - a[1].totalDonasi)
-    .slice(0, 15)
 
   // Hitung total donasi global
   const totalGlobal = settings.totalDonasi || sortedDonors.reduce((acc, curr) => acc + (curr[1].totalDonasi || 0), 0)
