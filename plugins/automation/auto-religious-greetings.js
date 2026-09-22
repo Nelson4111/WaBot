@@ -225,8 +225,8 @@ async function broadcastReligiousGreeting(conn) {
     settings.religiousGreetings[id] = sentKey
     changed = true
 
-    // Humanized randomized delay: 8 - 15 detik (bukan 2.5 detik konstan)
-    const randomDelay = Math.floor(Math.random() * 7000) + 8000
+    // Jeda lebih panjang per grup agar pengiriman terasa natural dan tidak spammy
+    const randomDelay = Math.floor(Math.random() * 11000) + 16000
     await new Promise(resolve => setTimeout(resolve, randomDelay))
   }
 
@@ -244,4 +244,4 @@ export async function before() {
   setInterval(() => broadcastReligiousGreeting(this).catch(() => {}), 30 * 60 * 1000)
 }
 
-export const disabled = true
+export const disabled = false
