@@ -25,7 +25,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const isPrem = global.db.data.users[m.sender]?.premium
   const sellBonus = isPrem ? 1.1 : 1
 
-  const harga = {
+  const harga = Object.fromEntries(Object.entries({
     sampah_plastik: { emoji: '🗑️', harga: 5000 },
     ban_bekas: { emoji: '🛞', harga: 5000 },
     botol_kaca: { emoji: '🍶', harga: 5000 },
@@ -178,15 +178,38 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     artefak_laut: { emoji: '🏺', harga: 2500000 },
     emas_pirate: { emoji: '💰', harga: 2500000 },
     air_mata_putri: { emoji: '💧', harga: 2500000 }
-  }
+  }).map(([key, value]) => [normalizeFishKey(key), value]))
 
   const keys = Object.keys(harga).sort((a, b) => harga[a].harga - harga[b].harga)
   const nomorKeItem = {}
   keys.forEach((k, i) => nomorKeItem[i + 1] = k)
 
   function getItemByInput(input) {
-    if (!isNaN(input)) return nomorKeItem[parseInt(input)]
-    return normalizeFishKey(input)
+    if (input === undefined || input === null || input === '') return null
+    if (!isNaN(input)) {
+      const idx = parseInt(input, 10)
+      return nomorKeItem[idx] || null
+    }
+
+    const raw = String(input).trim().toLowerCase()
+    const candidateSet = new Set()
+    candidateSet.add(raw)
+    candidateSet.add(raw.replace(/\s+/g, '_'))
+    candidateSet.add(raw.replace(/^ikan\s+/, ''))
+    candidateSet.add(raw.replace(/^ikan_/, ''))
+    candidateSet.add(raw.replace(/^ikan\s+/, '').replace(/\s+/g, '_'))
+    candidateSet.add(raw.replace(/\s+/g, ' ').trim())
+
+    for (const candidate of candidateSet) {
+      const normalized = normalizeFishKey(candidate)
+      if (harga[normalized]) return normalized
+
+      const labelMatch = Object.keys(harga).find(key => formatNama(key).toLowerCase() === formatNama(normalized).toLowerCase())
+      if (labelMatch) return labelMatch
+    }
+
+    const fallback = normalizeFishKey(raw)
+    return harga[fallback] ? fallback : null
   }
 
   if (!text) {
@@ -275,7 +298,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     itemInput = getItemByInput(args.join(' '))
   }
 
-  if (!harga[itemInput]) return m.reply(`❌ Ikan "${formatNama(itemInput)}" tidak ada di list.\nLihat: *${usedPrefix}pasar*`)
+  const rawLookup = (args || []).join(' ') || 'yang kamu masukkan'
+  if (!itemInput || !harga[itemInput]) return m.reply(`❌ Ikan "${String(rawLookup).trim()}" tidak ada di list.\nLihat: *${usedPrefix}pasar*`)
 
   let stok = user.ikan[itemInput] || 0
   if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(itemInput)}`)

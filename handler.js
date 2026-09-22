@@ -420,6 +420,8 @@ async function processMessage(m, chatUpdate) {
                 if (!('antiSwgc' in chat)) chat.antiSwgc = false
                 if (!('delete' in chat)) chat.delete = false
                 if (!('autoSticker' in chat)) chat.autoSticker = false
+                if (!('autolevelup' in chat)) chat.autolevelup = true
+                if (!('autolevelupLevel' in chat) || typeof chat.autolevelupLevel !== 'number') chat.autolevelupLevel = 0
                 if (!('premium' in chat)) chat.premium = false
                 if (!('premiumTime' in chat)) chat.premiumTime = false
                 if (!('menu' in chat)) chat.menu = false
@@ -449,6 +451,8 @@ async function processMessage(m, chatUpdate) {
                     delete: false,
                     expired: 0,
                     autoSticker: false,
+                    autolevelup: true,
+                    autolevelupLevel: 0,
                     premium: false,
                     premiumTime: false,
                     menu: true,
@@ -876,7 +880,8 @@ async function processMessage(m, chatUpdate) {
             if (m.sender && (user = global.db.data.users[m.sender])) {
                 user.exp += m.exp
                 user.limit -= m.limit * 1
-                if (user.autolevelup) {
+                const chat = global.db.data.chats?.[m.chat]
+                if (user.autolevelup && !(chat && chat.autolevelup === false)) {
                     import('./lib/levelling.js').then(({ checkLevelUp }) => {
                         checkLevelUp(m, this).catch(() => {})
                     }).catch(() => {})

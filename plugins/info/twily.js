@@ -6,6 +6,8 @@ import {
   TWILY_PARTNERS,
   TWILY_ML,
   TWILY_WW,
+  TWILY_MC,
+  TWILY_ROBLOX,
   TWILY_MUSIC,
   TWILY_PHOTO,
   TWILY_BIRTHDAYS,
@@ -17,6 +19,7 @@ import {
   findTwilySuggestions,
   formatTwilyGeneration,
   normalizeTwilyGeneration,
+  parseTwilyBatchInput,
   saveTwilyGenerations,
   setTwilyNewGen,
   setTwilyConcept,
@@ -32,12 +35,18 @@ const introText = `
 │
 │👋 *𝐏𝐞𝐫𝐤𝐞𝐧𝐚𝐥𝐚𝐧 𝐃𝐢𝐫𝐢* ⎯´ˎ˗
 ├─━━━━━━━━━━━━━━─
-│• 𝐍𝐚𝐦𝐚 :
+│• 𝐍𝐚𝐦𝐚 : 𝐖𝐚𝐣𝐢𝐛
 │• 𝐆𝐞𝐧𝐝𝐞𝐫 : -
-│• 𝐀𝐬𝐤𝐨𝐭 : -
+│• 𝐅𝐫𝐨𝐦 : -
+│• 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 : -
+│• 𝐓𝐢𝐤𝐭𝐨𝐤 : -
 │• 𝐁𝐢𝐫𝐭𝐡𝐝𝐚𝐲 : -
 │• 𝐒𝐭𝐚𝐭𝐮𝐬 : 𝐒𝐢𝐧𝐠𝐥𝐞 / 𝐓𝐚𝐤𝐞𝐧
 │• 𝐇𝐨𝐛𝐢 : -
+│• 𝐆𝐚𝐦𝐞 𝐟𝐚𝐯𝐨𝐫𝐢𝐭 : -
+│
+│📩 𝐊𝐢𝐫𝐢𝐦 𝐢𝐧𝐭𝐫𝐨 𝐤𝐞
+│ ↳ https://wa.me/6282228638623
 ├─━━━━━━━━━━━━━━─
 │💬 𝐒𝐚𝐥𝐚𝐦 𝐤𝐞𝐧𝐚𝐥 𝐬𝐞𝐦𝐮𝐚𝐧𝐲𝐚!
 │
@@ -370,10 +379,10 @@ const helpText = `
 │  Lihat anggota tiap generasi
 │• *.twily gen <nama>*
 │  Cek nama tersebut generasi berapa
-│• *.twily gen add <nama> <gen>*
-│  Tambah anggota, khusus admin
-│• *.twily gen remove <nama> [gen]*
-│  Hapus anggota, khusus admin
+│• *.twily gen add <nama1|nama2|dst> <gen>*
+│  Tambah banyak anggota sekaligus, khusus admin
+│• *.twily gen remove <nama1|nama2|dst> [gen]*
+│  Hapus banyak anggota sekaligus, khusus admin
 │• *.twily gen edit <n> <g> <n> <g>*
 │  Edit nama atau generasi, khusus admin
 │• *.twily admin add/remove/edit ...*
@@ -404,6 +413,12 @@ const helpText = `
 │  Atur daftar PHOTO, khusus admin
 │• *.twily ww/konser/jj <teks custom>*
 │  Tag anggota yang sudah masuk daftar
+│• *.twily mc/roblox <teks custom>*
+│  Tag anggota yang masuk daftar MC / Roblox
+│• *.twily mc add/remove ...*
+│  Atur daftar MC, khusus admin
+│• *.twily roblox add/remove ...*
+│  Atur daftar Roblox, khusus admin
 │• *.twily birthday add/remove ...*
 │  Atur daftar ulang tahun, khusus admin
 │• *.twily me*
@@ -488,12 +503,33 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
       if (!birthdayEntries.length) return m.reply('🎂 Belum ada data birthday TWILY.')
       const now = new Date()
       const currentMonth = now.getMonth() + 1
+      const monthGroups = new Map()
+
+      for (const [jid, value] of birthdayEntries) {
+        const month = birthdayDate(value).month || currentMonth
+        if (!monthGroups.has(month)) monthGroups.set(month, [])
+        monthGroups.get(month).push({ jid, value })
+      }
+
+      const monthBlocks = [...monthGroups.entries()]
+        .sort(([left], [right]) => left - right)
+        .map(([month, items]) => {
+          const sortedItems = items.sort((leftEntry, rightEntry) => {
+            const left = birthdayDate(leftEntry.value)
+            const right = birthdayDate(rightEntry.value)
+            return left.day - right.day || String(leftEntry.value.name).localeCompare(String(rightEntry.value.name), 'id')
+          })
+          const title = `${MONTH_NAMES[month] || 'Bulan'} (${sortedItems.length} orang)`
+          const lines = sortedItems.map(({ value }, index) => `${index + 1}. ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
+          return `╭─━━━━━━━━━━━━━━─\n│ ${title}\n╰─━━━━━━━━━━━━━━─\n${lines}`
+        })
+        .join('\n\n')
+
       const monthEntries = birthdayEntries.filter(([, value]) => birthdayDate(value).month === currentMonth)
       const upcomingEntries = birthdayEntries
         .slice()
         .sort(([, left], [, right]) => birthdayDistance(left, now) - birthdayDistance(right, now))
         .slice(0, Math.min(5, birthdayEntries.length))
-      const lines = birthdayEntries.map(([, value], index) => `${index + 1}. ${value.name} - ${formatBirthdayDate(value.date)}`)
       const monthLines = monthEntries.length
         ? monthEntries.map(([, value]) => `• ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
         : '• Tidak ada birthday bulan ini.'
@@ -502,7 +538,7 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
 │• Total birthday: *${birthdayEntries.length}*
 ╰─━━━━━━━━━━━━━━─
 
-> Bagian bawah menampilkan birthday bulan ini dan yang paling dekat.
+> Birthday dibagi per bulan, lalu diurutkan dari tanggal paling awal.
 
 ╭─━━━━━━━━━━━━━━─
 │• Birthday bulan ini:
@@ -510,8 +546,10 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
 ${monthLines}
 
 ╭─━━━━━━━━━━━━━━─
-${lines.join('\n')}
-╰─━━━━━━━━━━━━━━─`)
+${upcomingLines}
+╰─━━━━━━━━━━━━━━─
+
+${monthBlocks}`)
     }
 
     const birthdayQuery = [action, ...args].join(' ').trim()
@@ -566,6 +604,7 @@ ${lines.join('\n')}
     if (!action) {
       const shownName = profile.nama || m.name || 'Belum diisi'
       const status = profile.status ? profile.status.replace(/^taken by /i, 'Taken by ') : 'Not set'
+      const fromValue = profile.from || profile.askot || 'Not set'
       return m.reply(`╭─━━━━━━━━━━━━━━─╮
     │ *TWILY ME*
   │
@@ -575,7 +614,7 @@ ${lines.join('\n')}
   │ Status: ${status}
   │ Gender: ${profileGenderText(profile.gender) || 'Not set'}
   │ Gen: ${profileGenText(profile.gen) || 'Not set'}
-  │ City: ${profile.askot || 'Not set'}
+  │ From: ${fromValue}
   │ Hobby: ${profile.hobi || 'Not set'}
   │
   ╰─━━━━━━━━━━━━━━─`)
@@ -618,13 +657,13 @@ ${lines.join('\n')}
         if (!partner) return m.reply('❌ Format: `.twily me status Taken <name>`')
         profile.status = `Taken by ${partner}`
       } else return m.reply('❌ Status options: Single, Taken <name>, or ??.')
-    } else if (['nama', 'name', 'askot', 'city', 'hobi', 'hobby', 'hobbies'].includes(action)) {
+    } else if (['nama', 'name', 'askot', 'city', 'from', 'hobi', 'hobby', 'hobbies'].includes(action)) {
       const value = args.join(' ').trim()
       if (!value) return m.reply(`❌ Isi ${action} tidak boleh kosong.`)
-      const field = { name: 'nama', city: 'askot', hobby: 'hobi', hobbies: 'hobi' }[action] || action
+      const field = { name: 'nama', city: 'from', from: 'from', askot: 'from', hobby: 'hobi', hobbies: 'hobi' }[action] || action
       profile[field] = value
     } else {
-      return m.reply('❌ Fields: name, role, birthday, status, gender, gen, city, hobby.')
+      return m.reply('❌ Fields: name, role, birthday, status, gender, gen, from, hobby.')
     }
     saveTwilyGenerations()
     return m.reply(`✅ Profil *${action}* berhasil diperbarui. Ketik *.twily me* untuk melihatnya.`)
@@ -635,6 +674,9 @@ ${lines.join('\n')}
     mole: { list: TWILY_ML, label: 'ML TWILY' },
     'mobile legends': { list: TWILY_ML, label: 'ML TWILY' },
     ww: { list: TWILY_WW, label: 'WW TWILY' },
+    mc: { list: TWILY_MC, label: 'MC TWILY' },
+    minecraft: { list: TWILY_MC, label: 'MC TWILY' },
+    roblox: { list: TWILY_ROBLOX, label: 'ROBLOX TWILY' },
     konser: { list: TWILY_MUSIC, label: 'MUSIC TWILY' },
     lyrics: { list: TWILY_MUSIC, label: 'MUSIC TWILY' },
     lyric: { list: TWILY_MUSIC, label: 'MUSIC TWILY' },
@@ -795,20 +837,21 @@ ${genOverview().split('\n').map(line => `│• ${line}`).join('\n')}
     if (action.toLowerCase() === 'add') {
       if (!m.isGroup || (!isAdmin && !isOwner)) return m.reply('❌ Fitur tambah gen hanya bisa digunakan admin grup.')
 
-      const generation = normalizeTwilyGeneration(args.pop() || '')
-      const name = args.join(' ').trim()
-      if (!name || !Object.prototype.hasOwnProperty.call(TWILY_GENERATIONS, generation)) {
-        return m.reply('❌ Format: `.twily gen add <nama> <gen>`\nContoh: `.twily gen add Budi XI`')
+      const { names, generation } = parseTwilyBatchInput(args)
+      if (!names.length || !generation || !Object.prototype.hasOwnProperty.call(TWILY_GENERATIONS, generation)) {
+        return m.reply('❌ Format: `.twily gen add <nama1|nama2|dst> <gen>`\nContoh: `.twily gen add Budi|Ayu|Raka XI`')
       }
 
-      const duplicate = TWILY_GENERATIONS[generation].some(member => member.toLowerCase() === name.toLowerCase())
-      if (duplicate) {
-        return m.reply(`❌ Nama *${name}* sudah ada di ${genLabel(generation)}. Beri pembeda pada namanya, misalnya *${name}1* atau gunakan nama lain.`)
+      const normalizedNames = [...new Set(names.map(name => name.replace(/\s+/g, ' ').trim()).filter(Boolean))]
+      const duplicates = normalizedNames.filter(name => TWILY_GENERATIONS[generation].some(member => member.toLowerCase() === name.toLowerCase()))
+      if (duplicates.length) {
+        const firstDuplicate = duplicates[0]
+        return m.reply(`❌ Nama *${firstDuplicate}* sudah ada di ${genLabel(generation)}. Beri pembeda pada namanya, misalnya *${firstDuplicate}1* atau gunakan nama lain.`)
       }
 
-      TWILY_GENERATIONS[generation].push(name)
+      TWILY_GENERATIONS[generation].push(...normalizedNames)
       saveTwilyGenerations()
-      return m.reply(`✅ *${name}* berhasil ditambahkan ke ${genLabel(generation)}.`)
+      return m.reply(`✅ ${normalizedNames.map(name => `*${name}*`).join(', ')} berhasil ditambahkan ke ${genLabel(generation)}.`)
     }
 
     if (action.toLowerCase() === 'edit') {
@@ -847,32 +890,50 @@ ${genOverview().split('\n').map(line => `│• ${line}`).join('\n')}
     if (['remove', 'del', 'delete', 'hapus'].includes(action.toLowerCase())) {
       if (!m.isGroup || (!isAdmin && !isOwner)) return m.reply('❌ Fitur hapus gen hanya bisa digunakan admin grup.')
 
-      let requestedGeneration = ''
-      const lastArg = args.at(-1)
-      const normalizedLastArg = normalizeTwilyGeneration(lastArg || '')
-      if (Object.prototype.hasOwnProperty.call(TWILY_GENERATIONS, normalizedLastArg) && args.length > 1) {
-        requestedGeneration = normalizedLastArg
-        args.pop()
+      const { names, generation: requestedGeneration } = parseTwilyBatchInput(args)
+      if (!names.length) return m.reply('❌ Format: `.twily gen remove <nama1|nama2|dst> [gen]`\nContoh: `.twily gen remove Putri|Ayu III`')
+
+      const missingNames = []
+      const ambiguousNames = []
+      const namesToRemove = []
+
+      for (const name of names) {
+        const found = findTwilyMembers(name)
+        const candidates = requestedGeneration
+          ? found.filter(item => item.generation === requestedGeneration)
+          : found
+
+        if (!candidates.length) {
+          missingNames.push(name)
+          continue
+        }
+
+        if (candidates.length > 1 && !requestedGeneration) {
+          ambiguousNames.push({ name, generations: candidates.map(item => genLabel(item.generation)) })
+          continue
+        }
+
+        const target = candidates[0]
+        namesToRemove.push(target)
       }
 
-      const name = args.join(' ').trim()
-      if (!name) return m.reply('❌ Format: `.twily gen remove <nama> [gen]`\nContoh: `.twily gen remove Putri III`')
-
-      const found = findTwilyMembers(name)
-      const candidates = requestedGeneration
-        ? found.filter(item => item.generation === requestedGeneration)
-        : found
-
-      if (!candidates.length) return m.reply(`❌ Nama *${name}* tidak ditemukan${requestedGeneration ? ` di ${genLabel(requestedGeneration)}` : ''}.`)
-      if (candidates.length > 1) {
-        return m.reply(`⚠️ Nama *${name}* ada di beberapa generasi: ${candidates.map(item => genLabel(item.generation)).join(', ')}.\nGunakan: .twily gen remove ${name} <gen>`)
+      if (missingNames.length) {
+        const detail = missingNames.map(name => `*${name}*`).join(', ')
+        return m.reply(`❌ Nama ${detail} tidak ditemukan${requestedGeneration ? ` di ${genLabel(requestedGeneration)}` : ''}.`)
       }
 
-      const target = candidates[0]
-      const memberIndex = TWILY_GENERATIONS[target.generation].findIndex(member => member.toLowerCase() === target.name.toLowerCase())
-      TWILY_GENERATIONS[target.generation].splice(memberIndex, 1)
+      if (ambiguousNames.length) {
+        const detail = ambiguousNames.map(item => `${item.name} (${item.generations.join(', ')})`).join('\n')
+        return m.reply(`⚠️ Nama berikut ada di beberapa generasi:\n${detail}\n\nGunakan format: .twily gen remove ${ambiguousNames[0].name} <gen>`)
+      }
+
+      for (const target of namesToRemove) {
+        const memberIndex = TWILY_GENERATIONS[target.generation].findIndex(member => member.toLowerCase() === target.name.toLowerCase())
+        if (memberIndex >= 0) TWILY_GENERATIONS[target.generation].splice(memberIndex, 1)
+      }
+
       saveTwilyGenerations()
-      return m.reply(`✅ *${target.name}* berhasil dihapus dari ${genLabel(target.generation)}.`)
+      return m.reply(`✅ ${namesToRemove.map(item => `*${item.name}*`).join(', ')} berhasil dihapus${requestedGeneration ? ` dari ${genLabel(requestedGeneration)}` : ''}.`)
     }
 
     const generation = normalizeTwilyGeneration(action)

@@ -32,6 +32,7 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
 
   const groupChat = m.isGroup ? (global.db?.data?.chats?.[m.chat] || {}) : null
   if (groupChat && typeof groupChat.autolevelup !== 'boolean') groupChat.autolevelup = true
+  if (groupChat && (typeof groupChat.autolevelupLevel !== 'number' || isNaN(groupChat.autolevelupLevel))) groupChat.autolevelupLevel = 0
 
   if (typeof user.exp !== 'number' || isNaN(user.exp)) user.exp = 0
   if (typeof user.level !== 'number' || isNaN(user.level)) user.level = 0
@@ -42,9 +43,9 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
   const userRole = getLevelRole(user.level)
 
   // ═══════════════════════════════════════════════
-  // 1. Perintah: .autolevelup [on/off]
+  // 1. Perintah: .level / .autolevelup [on/off|group on/off|group <angka>]
   // ═══════════════════════════════════════════════
-  if (command === 'autolevelup') {
+  if ((command === 'autolevelup' || command === 'level') && args.length) {
     const firstArg = (args[0] || '').toLowerCase()
     const secondArg = (args[1] || '').toLowerCase()
     const useGroupMode = m.isGroup && ['group', 'grup', 'all', 'semua', 'everyone'].includes(firstArg)
@@ -58,6 +59,10 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
       if (!isGroupAdmin) {
         return m.reply(`*╭  〔 ⚙ ᴀ ᴅ ᴍ ɪ ɴ 〕*\n*┆* ⟡ ᴀᴅᴍɪɴ : *Hanya admin grup*\n*┆* ✧ ɴᴏᴛɪꜛ : *Admin bisa menyembunyikan notifikasi level-up untuk semua member grup*\n*╰───────────────*`)
       }
+      if (Number.isFinite(Number(targetValue)) && Number(targetValue) >= 0) {
+        groupChat.autolevelupLevel = Number(targetValue)
+        return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ɢʀᴜᴩ : *Level minimum notif* = *${groupChat.autolevelupLevel}*\n> Notifikasi level-up baru akan muncul mulai dari level itu.\n*╰───────────────*`)
+      }
       if (['on', 'enable', '1', 'true', 'aktif'].includes(targetValue)) {
         groupChat.autolevelup = true
         return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ɢʀᴜᴩ : *Aktif (ON) ✓*\n> Notifikasi auto level-up di grup ini sudah dibuka kembali untuk semua member.\n*╰───────────────*`)
@@ -67,7 +72,8 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
         return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ɢʀᴜᴩ : *Nonaktif (OFF) ✕*\n> Notifikasi auto level-up kini disembunyikan untuk semua member di grup ini.\n*╰───────────────*`)
       }
       const groupStatus = groupChat.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕'
-      return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ sᴛᴀᴛᴜꜛ ɢʀᴜᴩ : *${groupStatus}*\n*┆* ✧ ᴄᴀʀᴀ : *${usedPrefix}autolevelup group on/off*\n*╰───────────────*`)
+      const thresholdStatus = Number(groupChat.autolevelupLevel || 0) > 0 ? `\n*┆* ✧ ʟᴇᴠᴇʟ ᴍɪɴ : *${groupChat.autolevelupLevel}*` : ''
+      return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ sᴛᴀᴛᴜꜛ ɢʀᴜᴩ : *${groupStatus}*${thresholdStatus}\n*┆* ✧ ᴄᴀʀᴀ : *${usedPrefix}level group on/off*\n*┆* ✧ ʟᴇᴠᴇʟ : *${usedPrefix}level group <angka>*\n*╰───────────────*`)
     }
 
     if (['on', 'enable', '1', 'true', 'aktif'].includes(targetValue)) {
@@ -79,7 +85,7 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
     } else {
       const selfStatus = user.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕'
       const groupStatus = m.isGroup && groupChat ? (groupChat.autolevelup ? 'Aktif (ON) ✓' : 'Nonaktif (OFF) ✕') : '—'
-      return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ꜛʀɪʙᴀᴅɪ : *${selfStatus}*\n${m.isGroup ? `*┆* ✧ ɢʀᴄᴩ     : *${groupStatus}*\n` : ''}*╰───────────────*\n\n> 💡 *Pengaturan:*\n> • *${usedPrefix}autolevelup on/off* = ubah notif diri sendiri\n> • *${usedPrefix}autolevelup group on/off* = ubah notif semua member grup (hanya admin)`)
+      return m.reply(`*╭  〔 ⚙ ᴀ ᴄ ᴛ ᴏ  ʟ ᴇ ᴠ ᴇ ʟ ᴜ ᴘ 〕*\n*┆* ⟡ ꜛʀɪʙᴀᴅɪ : *${selfStatus}*\n${m.isGroup ? `*┆* ✧ ɢʀᴄᴩ     : *${groupStatus}*\n` : ''}*╰───────────────*\n\n> 💡 *Pengaturan:*\n> • *${usedPrefix}level on/off* = ubah notif diri sendiri\n> • *${usedPrefix}level group on/off* = ubah notif semua member grup (hanya admin)\n> • *${usedPrefix}level group <angka>* = set level minimum notifikasi grup`)
     }
   }
 

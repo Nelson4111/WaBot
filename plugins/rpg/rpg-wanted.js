@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { computeCrimeScore } from '../../lib/crimeHelper.js'
 
 let handler = async (m, { conn, args, isOwner }) => {
     const wdb = loadDB()
@@ -16,8 +17,8 @@ let handler = async (m, { conn, args, isOwner }) => {
         return m.reply('📋 Belum ada data kriminal di kota ini')
 
     let crimeList = Object.entries(wdb.crime)
-    .filter(([jid, data]) => data && Number(data.total) > 0)
-    .sort((a, b) => Number(b[1].total) - Number(a[1].total))
+    .filter(([jid, data]) => data && computeCrimeScore(data) > 0)
+    .sort((a, b) => computeCrimeScore(b[1]) - computeCrimeScore(a[1]))
     .slice(0, 10)
 
    if (crimeList.length === 0) {
@@ -39,9 +40,10 @@ for (let i = 0; i < crimeList.length; i++) {
 
   let rank = i + 1
   let medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
+  let totalScore = computeCrimeScore(data)
 
   cap += `${medal} * @${jid.split('@')[0]}*\n`
-  cap += `> ↳ 💀 Total : *${Number(data.total)}x Kejahatan*\n`
+  cap += `> ↳ 💀 Total Kejahatan : *${totalScore} poin*\n`
   cap += `> ↳ 🕵️ ${data.rampok || 0}  🏴‍☠️ ${data.begal || 0}  🔪 ${data.bunuh || 0}  🤏 ${data.copet || 0}\n`
 
   if (rank < crimeList.length) cap += `\n`

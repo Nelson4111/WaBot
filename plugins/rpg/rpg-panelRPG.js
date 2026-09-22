@@ -1,4 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { setAfk } from '../../lib/afkHelper.js'
+import { normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
 import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-libternakData.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { bibit } from './rpg-panen.js'
@@ -55,12 +57,16 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel toprpg*\n` +
   `> ↳ *${usedPrefix}rpgpanel rpgstat*\n` +
   `> ↳ *${usedPrefix}rpgpanel topyt*\n\n` +
-  `> ↳ *${usedPrefix}rpgpanel setlottery <hadiah>*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel setlottery <hadiah>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setautolevelup <level>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setgroupnotiflevel <level>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel autolevelup on/off*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del level @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del exp @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del darah @tag <jml>*\n` +
@@ -150,6 +156,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel blockcasino @tag/reply*\n` +
   `> ↳ *${usedPrefix}rpgpanel unblockcasino @tag/reply*\n` +
   `> ↳ *${usedPrefix}rp unblockcasino @tag/reply*\n` +
+  `> ↳ *${usedPrefix}rpgpanel afk @tag <alasan>*\n` +
   `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
@@ -162,6 +169,18 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   `─━━━━━━━━━━━━━━─`
 )
+
+  if (['afk', 'forceafk', 'setafk'].includes(aksi)) {
+    if (!isOwner) return m.reply('❌ Fitur AFK paksa hanya untuk owner.')
+    const target = m.mentionedJid?.[0] || m.quoted?.sender
+    const reason = remaining.join(' ') || 'Diperintah oleh Owner'
+    if (!target) return m.reply('❌ Tag atau reply target yang mau di-AFK-kan.')
+
+    wdb.users[target] = wdb.users[target] || {}
+    setAfk(wdb.users[target], reason)
+    saveDB(wdb)
+    return m.reply(`✅ Status AFK berhasil dipaksa aktif untuk @${target.split('@')[0]} dengan alasan: *${reason}*`, null, { mentions: [target] })
+  }
 
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
@@ -265,6 +284,30 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     wdb.lottery.jackpot = prize
     saveDB(wdb)
     return m.reply(`✅ Hadiah dasar lottery diatur menjadi *Rp ${prize.toLocaleString()}*.`)
+  }
+
+  if (['autolevelup', 'notiflevel', 'setnotiflevel', 'setlevelnotif', 'groupnotiflevel', 'setgroupnotiflevel'].includes(aksi)) {
+    const chatData = global.db?.data?.chats?.[m.chat] || (global.db.data.chats[m.chat] = {})
+    const action = (remaining[0] || '').toLowerCase()
+    if (!['on', 'off', 'enable', 'disable', '1', '0', 'true', 'false', 'aktif', 'mati'].includes(action)) {
+      const current = chatData.autolevelup === false ? 'OFF' : 'ON'
+      return m.reply(`⚙️ Status auto level-up grup: *${current}*\nContoh: *${usedPrefix}rpgpanel autolevelup off*\n> Ini beda dari *${usedPrefix}rpgpanel setuserlevel @tag <lvl>* (level karakter user).`)
+    }
+    chatData.autolevelup = ['on', 'enable', '1', 'true', 'aktif'].includes(action)
+    saveDB(global.db)
+    return m.reply(`✅ Auto level-up grup diubah menjadi *${chatData.autolevelup ? 'ON' : 'OFF'}*.`)
+  }
+
+  if (['setautolevelup', 'setnotiflevel', 'setlevelnotif', 'setgroupnotiflevel', 'groupnotiflevel'].includes(aksi)) {
+    const level = Number(remaining[0])
+    const chatData = global.db?.data?.chats?.[m.chat] || (global.db.data.chats[m.chat] = {})
+    if (!Number.isInteger(level) || level < 0) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setautolevelup <level>*\nContoh: *${usedPrefix}rpgpanel setautolevelup 25*\n> Bedakan dengan *${usedPrefix}rpgpanel setuserlevel @tag <lvl>* (level karakter user).`)
+    }
+    chatData.autolevelupLevel = level
+    if (level === 0) chatData.autolevelup = chatData.autolevelup ?? true
+    saveDB(global.db)
+    return m.reply(`✅ Notifikasi level-up grup akan mulai dari level *${level}*.`)
   }
   // 3. Resolusi Target User (Mendukung: Tag / Mention, Reply / Quoted, Nomor HP, JID, LID)
   let who = null;
@@ -506,7 +549,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   let args = remaining
   let jumlah = parseInt(remaining.find(a => !isNaN(parseInt(a)))) || 0
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
-  let item = itemInput?.toLowerCase().replace(/ /g, '_')
+  let item = normalizeFishKey(itemInput?.toLowerCase().replace(/ /g, '_'))
 
   if (['setcont', 'addcont', 'delcont'].includes(aksi)) {
     if (jumlah < 0 || (aksi !== 'setcont' && jumlah < 1)) return m.reply('❌ Jumlah kontribusi tidak valid')
@@ -520,14 +563,15 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   }
 
   // 1. SET STAT
-  if(['setmoney','setlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod'].includes(aksi)){
+  if(['setmoney','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod'].includes(aksi)){
     if(jumlah < 0) return m.reply('❌ Jumlah tidak boleh minus')
 
     if(aksi === 'setmoney') wdb.money[who] = jumlah
     else if(aksi === 'setmaxhp') user.maxDarahBonus = jumlah
+    else if (aksi === 'setuserlevel') user.level = jumlah
     else user[aksi.replace('set','')] = jumlah
 
-    if(['setlevel','setarmor','setmaxhp','setsword','setpickaxe','setfishingrod'].includes(aksi)){
+    if(['setlevel','setuserlevel','setarmor','setmaxhp','setsword','setpickaxe','setfishingrod'].includes(aksi)){
       user.exp = 0
       user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
       user.darah = user.maxDarah
@@ -537,12 +581,12 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   }
 
   // 2. ADD STAT
-  if(['addmoney','addlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod'].includes(aksi)){
+  if(['addmoney','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
     if(aksi === 'addmoney') wdb.money[who] += jumlah
     else if(aksi === 'adddarah') user.darah = Math.min(user.maxDarah, user.darah + jumlah)
-    else if(aksi === 'addlevel'){
+    else if(aksi === 'addlevel' || aksi === 'adduserlevel'){
       user.level += jumlah
       user.exp = 0
       user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
@@ -565,12 +609,12 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   }
 
   // 3. DEL STAT
-  if(['delmoney','dellevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod'].includes(aksi)){
+  if(['delmoney','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
     if(aksi === 'delmoney') wdb.money[who] = Math.max(0, wdb.money[who] - jumlah)
     else if(aksi === 'deldarah') user.darah = Math.max(0, user.darah - jumlah)
-    else if(aksi === 'dellevel'){
+    else if(aksi === 'dellevel' || aksi === 'deluserlevel'){
       user.level = Math.max(1, user.level - jumlah)
       user.exp = 0
       user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
@@ -623,7 +667,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   // 4.5 IKAN
   if(['addikan','delikan'].includes(aksi)){
     if(!itemInput || jumlah < 1) return m.reply(`Contoh: *${usedPrefix}rpgpanel addikan @user kraken 5*`)
-    let ikan = itemInput.toLowerCase().replace(/ /g, '_')
+    let ikan = normalizeFishKey(itemInput.toLowerCase().replace(/ /g, '_'))
 
     if(aksi === 'addikan'){
       user.ikan[ikan] = (user.ikan[ikan] || 0) + jumlah

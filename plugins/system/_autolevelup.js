@@ -5,6 +5,8 @@ export async function before(m) {
     const chat = global.db?.data?.chats?.[m.chat]
     let user = global.db?.data?.users?.[m.sender]
     if (!user || user.autolevelup === false) return
+    if (chat && typeof chat.autolevelup !== 'boolean') chat.autolevelup = true
+    if (chat && typeof chat.autolevelupLevel !== 'number') chat.autolevelupLevel = 0
     if (chat && chat.autolevelup === false) return
 
     try {
