@@ -291,6 +291,49 @@ function birthdayDistance(value, now = new Date()) {
   return date.getTime() - today.getTime()
 }
 
+function isPastBirthday(value, now = new Date()) {
+  const { day, month } = birthdayDate(value)
+  return month === now.getMonth() + 1 && day < now.getDate()
+}
+
+function formatBirthdayLine(value, now = new Date()) {
+  const text = `${value.name} - ${formatBirthdayDate(value.date)}`
+  return isPastBirthday(value, now) ? `~${text}~` : text
+}
+
+export function buildBirthdayMonthSummary(entries, now = new Date()) {
+  const currentMonth = now.getMonth() + 1
+  const monthEntries = entries.filter(([, value]) => birthdayDate(value).month === currentMonth)
+  if (!monthEntries.length) return '• Tidak ada birthday bulan ini.'
+  return monthEntries.map(([, value]) => `• ${formatBirthdayLine(value, now)}`).join('\n')
+}
+
+export function buildBirthdayMonthBlocks(entries, now = new Date()) {
+  const monthGroups = new Map()
+  for (const [, value] of entries) {
+    const month = birthdayDate(value).month || now.getMonth() + 1
+    if (!monthGroups.has(month)) monthGroups.set(month, [])
+    monthGroups.get(month).push(value)
+  }
+
+  return [...monthGroups.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([month, items]) => {
+      const sortedItems = [...items].sort((left, right) => {
+        const leftDate = birthdayDate(left)
+        const rightDate = birthdayDate(right)
+        return leftDate.day - rightDate.day || String(left.name).localeCompare(String(right.name), 'id')
+      })
+      const title = `• ${MONTH_NAMES[month] || 'Bulan'} (${sortedItems.length} orang)`
+      const lines = sortedItems.map(value => {
+        const rawLine = `${String(birthdayDate(value).day).padStart(2, '0')}. ${value.name}`
+        return isPastBirthday(value, now) ? `~${rawLine}~` : rawLine
+      }).join('\n')
+      return `${title}\n─━━━━━━━━━━━━━━─\n${lines}`
+    })
+    .join('\n\n')
+}
+
 function genOverview() {
   const generationOrder = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
   return Object.keys(TWILY_GENERATIONS).sort((a, b) => {
@@ -419,6 +462,10 @@ const helpText = `
 │  Atur daftar MC, khusus admin
 │• *.twily roblox add/remove ...*
 │  Atur daftar Roblox, khusus admin
+│• *.twily birthday* / *.tw bday*
+│  Lihat birthday bulan ini
+│• *.twily birthday list* / *.tw bday list*
+│  Lihat daftar birthday lengkap
 │• *.twily birthday add/remove ...*
 │  Atur daftar ulang tahun, khusus admin
 │• *.twily me*
@@ -495,45 +542,33 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
     return conn.sendMessage(m.chat, { text, mentions: members.map(member => member.jid) }, { quoted: m })
   }
 
-  if (sub === 'birthday') {
+  if (['birthday', 'bday'].includes(sub)) {
     let action = (args.shift() || '').toLowerCase()
     if (action === 'role') action = 'jabatan'
     const birthdayEntries = Object.entries(TWILY_BIRTHDAYS).sort(([, left], [, right]) => String(left.name).localeCompare(String(right.name), 'id'))
+    const now = new Date()
+    const currentMonth = now.getMonth() + 1
+
     if (!action) {
       if (!birthdayEntries.length) return m.reply('🎂 Belum ada data birthday TWILY.')
-      const now = new Date()
-      const currentMonth = now.getMonth() + 1
-      const monthGroups = new Map()
+      if (sub === 'bday') {
+        const monthLines = buildBirthdayMonthSummary(birthdayEntries, now)
+        return m.reply(`╭─❏「 🎂 *𝗕𝗜𝗥𝗧𝗛𝗗𝗔𝗬 𝗧𝗪𝗜𝗟𝗬* 」❏
+│• Total birthday: *${birthdayEntries.length}*
+│• Bulan ini: *${MONTH_NAMES[currentMonth]}*
+╰─━━━━━━━━━━━━━━─
 
-      for (const [jid, value] of birthdayEntries) {
-        const month = birthdayDate(value).month || currentMonth
-        if (!monthGroups.has(month)) monthGroups.set(month, [])
-        monthGroups.get(month).push({ jid, value })
+╭─━━━━━━━━━━━━━━─
+│• Birthday bulan ini:
+╰─━━━━━━━━━━━━━━─
+${monthLines}`)
       }
 
-      const monthBlocks = [...monthGroups.entries()]
-        .sort(([left], [right]) => left - right)
-        .map(([month, items]) => {
-          const sortedItems = items.sort((leftEntry, rightEntry) => {
-            const left = birthdayDate(leftEntry.value)
-            const right = birthdayDate(rightEntry.value)
-            return left.day - right.day || String(leftEntry.value.name).localeCompare(String(rightEntry.value.name), 'id')
-          })
-          const title = `${MONTH_NAMES[month] || 'Bulan'} (${sortedItems.length} orang)`
-          const lines = sortedItems.map(({ value }, index) => `${index + 1}. ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
-          return `╭─━━━━━━━━━━━━━━─\n│ ${title}\n╰─━━━━━━━━━━━━━━─\n${lines}`
-        })
-        .join('\n\n')
-
+      const monthBlocks = buildBirthdayMonthBlocks(birthdayEntries, now)
       const monthEntries = birthdayEntries.filter(([, value]) => birthdayDate(value).month === currentMonth)
-      const upcomingEntries = birthdayEntries
-        .slice()
-        .sort(([, left], [, right]) => birthdayDistance(left, now) - birthdayDistance(right, now))
-        .slice(0, Math.min(5, birthdayEntries.length))
       const monthLines = monthEntries.length
-        ? monthEntries.map(([, value]) => `• ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
+        ? monthEntries.map(([, value]) => `• ${formatBirthdayLine(value, now)}`).join('\n')
         : '• Tidak ada birthday bulan ini.'
-      const upcomingLines = upcomingEntries.map(([, value]) => `• ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
       return m.reply(`╭─❏「 🎂 *𝗕𝗜𝗥𝗧𝗛𝗗𝗔𝗬 𝗧𝗪𝗜𝗟𝗬* 」❏
 │• Total birthday: *${birthdayEntries.length}*
 ╰─━━━━━━━━━━━━━━─
@@ -545,11 +580,18 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
 ╰─━━━━━━━━━━━━━━─
 ${monthLines}
 
-╭─━━━━━━━━━━━━━━─
-${upcomingLines}
+${monthBlocks}`)
+    }
+
+    if (['list', 'full', 'semua', 'all'].includes(action)) {
+      if (!birthdayEntries.length) return m.reply('🎂 Belum ada data birthday TWILY.')
+      return m.reply(`╭─❏「 🎂 *𝗕𝗜𝗥𝗧𝗛𝗗𝗔𝗬 𝗧𝗪𝗜𝗟𝗬* 」❏
+│• Total birthday: *${birthdayEntries.length}*
 ╰─━━━━━━━━━━━━━━─
 
-${monthBlocks}`)
+> Birthday dibagi per bulan, lalu diurutkan dari tanggal paling awal.
+
+${buildBirthdayMonthBlocks(birthdayEntries, now)}`)
     }
 
     const birthdayQuery = [action, ...args].join(' ').trim()
@@ -954,11 +996,12 @@ ${genOverview().split('\n').map(line => `│• ${line}`).join('\n')}
   return m.reply(helpText)
 }
 
-handler.command = /^(twily)$/i
+handler.command = /^(twily|tw)$/i
 
 handler.before = async function (m, { match }) {
   if (match?.[0]) return false
-  if (m.text?.trim().toLowerCase() !== 'twily') return false
+  const text = m.text?.trim().toLowerCase()
+  if (text !== 'twily' && text !== 'tw') return false
   await m.reply(plainTwilyText)
   return true
 }
