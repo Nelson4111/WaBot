@@ -415,6 +415,8 @@ async function processMessage(m, chatUpdate) {
                 if (!('antiImage' in chat)) chat.antiImage = false
                 if (!('antiSticker' in chat)) chat.antiSticker = false
                 if (!('antiTag' in chat)) chat.antiTag = false
+                if (!('antiTagSw' in chat)) chat.antiTagSw = chat.antitagsw?.status || false
+                if (!('antiTagSwCount' in chat) || typeof chat.antiTagSwCount !== 'object') chat.antiTagSwCount = chat.antitagsw?.count || {}
                 if (!('antiSwgc' in chat)) chat.antiSwgc = false
                 if (!('delete' in chat)) chat.delete = false
                 if (!('autoSticker' in chat)) chat.autoSticker = false
@@ -441,6 +443,8 @@ async function processMessage(m, chatUpdate) {
                     antiImage: false,
                     antiSticker: false,
                     antiTag: false,
+                    antiTagSw: false,
+                    antiTagSwCount: {},
                     antiSwgc: false,
                     delete: false,
                     expired: 0,
@@ -1161,26 +1165,32 @@ ${descBlock}
 > Silakan beri sambutan hangat untuknya ♡`.trim()
 
                 const menuCategories = [
-                    { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: '.allmenu' },
-                    { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: '.menuai' },
-                    { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: '.menuanime' },
-                    { header: 'Audio', title: 'Manipulasi Audio', description: 'Sound effect, convert audio, TTS', id: '.menuaudio' },
-                    { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: '.menucsm' },
-                    { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: '.menudownload' },
-                    { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: '.menufun' },
-                    { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: '.menugame' },
-                    { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: '.menugroup' },
-                    { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: '.menuinfo' },
-                    { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: '.menuinternet' },
-                    { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: '.menumaker' },
-                    { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: '.menumoneytrack' },
-                    { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: '.menuowner' },
-                    { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: '.menupasangan' },
-                    { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: '.menurpg' },
-                    { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: '.menusearch' },
-                    { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: '.menustalker' },
-                    { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: '.menusticker' },
-                    { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: '.menutools' }
+            { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: `${_p}allmenu` },
+            { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: `${_p}menuai` },
+            { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: `${_p}menuanime` },
+            { header: 'Audio', title: 'Audio & Soundboard', description: '20+ efek suara, VN, sound meme, toaudio', id: `${_p}menuaudio` },
+            { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: `${_p}menucsm` },
+            { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: `${_p}menudownload` },
+            { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: `${_p}menufun` },
+            { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: `${_p}menugame` },
+            { header: 'Arcade', title: 'In-Bubble Arcade Games', description: 'Game HTML5: GD, Block Blast, Tetris, Mabar', id: `${_p}menuarcade` },
+            { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: `${_p}menugroup` },
+            { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: `${_p}menuinfo` },
+            { header: 'Jadibot', title: 'Jadibot (Clone Bot)', description: 'Jadikan nomor WA pribadi sebagai bot', id: `${_p}menujadibot` },
+            { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: `${_p}menuinternet` },
+            { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: `${_p}menumaker` },
+            { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: `${_p}menumoneytrack` },
+            { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: `${_p}menuowner` },
+            { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: `${_p}menupasangan` },
+            { header: 'Quotes', title: 'Quotes & Kata Bijak', description: 'Anime, motivasi, bucin, senja, dll', id: `${_p}menuquotes` },
+            { header: 'Random', title: 'Random & Media', description: 'Foto cecan, wallpaper, media acak', id: `${_p}menurandom` },
+            { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: `${_p}menurpg` },
+            { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: `${_p}menusearch` },
+            { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: `${_p}menustalker` },
+            { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: `${_p}menusticker` },
+            { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: `${_p}menutools` },
+            { header: 'Waifu', title: 'Virtual Waifu Anime', description: 'Simulasi & rawat karakter MyAnimeList', id: `${_p}menuwaifu` },
+            { header: 'Apresiasi', title: 'Thanks To & Donatur', description: 'Kontributor & daftar donatur bot', id: `${_p}thanksto` }
                 ]
 
                 let dualSent = false

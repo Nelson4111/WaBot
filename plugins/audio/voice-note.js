@@ -252,8 +252,8 @@ if (!sub) {
     `> ↳ *${usedPrefix}voice unmute <tag/reply>*\n` +
     `> ↳ *${usedPrefix}voice toxic enable|disable*\n\n` +
 
-    `⚠️ *enable/disable: Admin di grup, bebas di chat pribadi (PC).*\n` +
-    `⚠️ *gc/pc enable/disable: Khusus Owner bot.*\n\n` +
+    `*enable/disable: Admin di grup, bebas di chat pribadi (PC).*\n` +
+    `*gc/pc enable/disable: Khusus Owner bot.*\n\n` +
 
     `─━━━━━━━━━━━━━━─`
   )
@@ -269,11 +269,11 @@ if (!sub) {
     const statusBadge = (val) => val ? '✓ Aktif' : '✕ Nonaktif'
 
     return m.reply(
-      `╭─❏「 🎙️ STATUS VOICE NOTE 」❏\n` +
-      `│ 🌐 *Global Grup (GC)* : ${statusBadge(isGcGlobal)}\n` +
-      `│ 💬 *Global Private (PC)* : ${statusBadge(isPcGlobal)}\n` +
-      `│ 📍 *Chat Saat Ini* : ${statusBadge(!isThisDisabled)}\n` +
-      `│ ☣️ *Kategori Toxic* : ${statusBadge(isToxicOn)}\n` +
+      `╭─❏「 STATUS VOICE NOTE 」❏\n` +
+      `│ *Global Grup (GC)* : ${statusBadge(isGcGlobal)}\n` +
+      `│ *Global Private (PC)* : ${statusBadge(isPcGlobal)}\n` +
+      `│ *Chat Saat Ini* : ${statusBadge(!isThisDisabled)}\n` +
+      `│ *Kategori Toxic* : ${statusBadge(isToxicOn)}\n` +
       `╰─━━━━━━━━━━━━━━─`
     )
   }

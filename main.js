@@ -688,18 +688,42 @@ if (!opts['test']) {
 }
 
 let isExiting = false;
-async function gracefulExit() {
+async function gracefulExit(signal = 'SIGTERM') {
   if (isExiting) return;
   isExiting = true;
+  console.log(chalk.yellow(`\n🛑 [Avelia] Menerima sinyal ${signal}. Menjalankan graceful shutdown...`));
+
   try {
     if (global.opts['autobio'] && global.conn) {
-      await global.conn.updateProfileStatus('Bot sedang offline ❌. Akan aktif kembali nanti.')
+      await global.conn.updateProfileStatus('Bot sedang offline ❌. Akan aktif kembali nanti.').catch(() => {});
     }
   } catch (e) {}
+
+  try {
+    if (global.db && global.db.data) {
+      console.log(chalk.cyan('💾 [Avelia] Menyimpan database RAM ke Supabase sebelum shutdown...'));
+      const writePromise = global.db.write();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout simpan database (15s)')), 15000)
+      );
+      await Promise.race([writePromise, timeoutPromise]);
+      console.log(chalk.green('✅ [Avelia] Database berhasil disimpan dengan aman ke Supabase!'));
+    }
+  } catch (e) {
+    console.error(chalk.red('❌ [Avelia] Gagal menyimpan database saat shutdown:'), e?.message || e);
+  }
+
   process.exit(0);
 }
-process.on('SIGINT', gracefulExit)
-process.on('SIGTERM', gracefulExit)
+process.on('SIGINT', () => gracefulExit('SIGINT'))
+process.on('SIGTERM', () => gracefulExit('SIGTERM'))
+process.on('beforeExit', async () => {
+  if (global.db && global.db.data && !isExiting) {
+    try {
+      await global.db.write();
+    } catch {}
+  }
+})
 
 function clearTmp() {
   const tmp = [tmpdir(), join(__dirname, './tmp')]

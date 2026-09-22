@@ -11,6 +11,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (action === 'push') {
         m.reply('⏳ *[SUPABASE SYNC]* Mendorong seluruh data memori ke Supabase Cloud...')
         try {
+            if (global.db.data) global.db.data._forceFullSync = true
             await global.db.write()
             const duration = ((Date.now() - startTime) / 1000).toFixed(2)
             const userCount = Object.keys(global.db.data?.users || {}).length

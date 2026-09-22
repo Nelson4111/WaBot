@@ -30,6 +30,9 @@ let handler = async (m, { args, conn }) => {
 
   // === SET PP ===
   db.profilePP[uid] = data.url
+  if (db.couples?.[data.userJid] && String(db.couples[data.userJid].charId) === String(uid)) {
+    db.couples[data.userJid].image = data.url
+  }
   delete db.pendingPP[uid]
   saveDB(db)
 

@@ -1,88 +1,103 @@
-/* 
-hitamin waifu bisa pilih filter
-type plugins esm
-sumber : https://whatsapp.com/channel/0029VbAYjQgKrWQulDTYcg2K
-sumber scarape : https://whatsapp.com/channel/0029VakezCJDp2Q68C61RH2C/3637
-*/
-import axios from 'axios'
+import sharp from 'sharp'
 import { status } from '../../lib/style.js'
 
 const FILTERS = ['Coklat', 'Hitam', 'Nerd', 'Piggy', 'Carbon', 'Botak']
 
-async function Hytamkan(imageUrl, filter = 'Hitam') {
+/**
+ * Menerapkan filter gambar waifu secara lokal dengan sharp
+ * @param {Buffer} inputBuffer
+ * @param {string} filter
+ * @returns {Promise<Buffer>}
+ */
+async function applyWaifuFilter(inputBuffer, filter = 'Hitam') {
   const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase())
   if (!selected) {
     throw new Error(`FILTER_INVALID:${filter}`)
   }
 
-  const imgRes = await axios.get(imageUrl, { responseType: 'arraybuffer' })
-  const base64Input = Buffer.from(imgRes.data).toString('base64')
+  const s = sharp(inputBuffer)
 
-  const res = await axios.post('https://wpw.my.id/api/process-image', {
-    imageData: base64Input,
-    filter: selected.toLowerCase()
-  }, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Origin': 'https://wpw.my.id',
-      'Referer': 'https://wpw.my.id/',
-    },
-    timeout: 20000
-  })
+  switch (selected.toLowerCase()) {
+    case 'hitam':
+      return await s.grayscale().jpeg({ quality: 90 }).toBuffer()
 
-  const dataUrl = res.data?.processedImageUrl
-  if (!dataUrl?.startsWith('data:image/')) throw new Error('RESPONSE_INVALID')
+    case 'carbon':
+      return await s.grayscale().linear(1.3, -40).jpeg({ quality: 90 }).toBuffer()
 
-  return dataUrl
+    case 'coklat':
+      return await s.grayscale().tint({ r: 112, g: 66, b: 20 }).jpeg({ quality: 90 }).toBuffer()
+
+    case 'piggy':
+      return await s.grayscale().tint({ r: 255, g: 182, b: 193 }).jpeg({ quality: 90 }).toBuffer()
+
+    case 'nerd':
+      return await s.grayscale().tint({ r: 70, g: 130, b: 180 }).jpeg({ quality: 90 }).toBuffer()
+
+    case 'botak':
+      return await s.grayscale().modulate({ brightness: 1.3 }).jpeg({ quality: 90 }).toBuffer()
+
+    default:
+      return await s.grayscale().jpeg({ quality: 90 }).toBuffer()
+  }
 }
 
-let handler = async (m, { conn, args, command }) => {
-  try {
-    if (command === 'waifufilterlist') {
-      const listText = `*╭  〔 🎨 ꜰ ɪ ʟ ᴛ ᴇ ʀ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
+let handler = async (m, { conn, args, command, usedPrefix }) => {
+  if (command === 'waifufilterlist') {
+    const listText = `*──  ୨୧ ✧ DAFTAR FILTER WAIFU ✧ ୨୧  ──*
+
+*╭  〔 🎨 ꜰ ɪ ʟ ᴛ ᴇ ʀ 〕*
 ${FILTERS.map(f => `*┆* ⟡ *${f}*`).join('\n')}
 *╰───────────────*
-> Reply gambar waifu dan ketik *.waifuhtm [filter]* untuk mengaplikasikan filter.`
 
-      return m.reply(listText)
-    }
+> ｡˚ ⊹ *Balas gambar dan ketik ${usedPrefix}waifuhtm [filter] untuk mengaplikasikan* ⊹ ˚ ｡`.trim()
 
-    if (!m.quoted) {
-      return status.warning(m, 'Balas (reply) gambar waifu yang ingin diubah filternya!')
-    }
-    if (!/image/.test(m.quoted.mimetype || m.quoted.mtype)) {
-      return status.warning(m, 'Pesan yang direply harus berupa media gambar!')
-    }
+    return m.reply(listText)
+  }
 
-    const filter = args[0] || 'Hitam'
-    const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase())
-    if (!selected) {
-      return status.warning(m, `Filter *${filter}* tidak ditemukan.`, [
-        'Ketik *.waifufilterlist* untuk melihat daftar filter yang tersedia.'
-      ])
-    }
+  if (!m.quoted) {
+    return status.warning(m, 'Balas (reply) gambar waifu yang ingin diubah filternya!')
+  }
+  if (!/image/.test(m.quoted.mimetype || m.quoted.mtype || '')) {
+    return status.warning(m, 'Pesan yang direply harus berupa media gambar!')
+  }
 
+  const filter = args[0] || 'Hitam'
+  const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase())
+  if (!selected) {
+    return status.warning(m, `Filter *${filter}* tidak ditemukan.`, [
+      `Ketik *${usedPrefix}waifufilterlist* untuk melihat daftar filter yang tersedia.`
+    ])
+  }
+
+  try {
     await conn.sendMessage(m.chat, { react: { text: '🕒', key: m.key } })
 
     const media = await m.quoted.download()
-    const url = `data:${m.quoted.mimetype || 'image/jpeg'};base64,${media.toString('base64')}`
+    if (!media) throw new Error('Gagal mengunduh gambar.')
 
-    const result = await Hytamkan(url, filter)
-    await conn.sendFile(m.chat, result, 'waifu.png', `*╭  〔 ✨ ꜰ ɪ ʟ ᴛ ᴇ ʀ  ʙ ᴇ ʀ ʜ ᴀ ꜱ ɪ ʟ 〕*\n*┆* ⟡ ꜰɪʟᴛᴇʀ : *${selected}*\n*╰───────────────*`, m)
+    const resultBuffer = await applyWaifuFilter(media, filter)
+
+    const caption = `*──  ୨୧ ✧ FILTER WAIFU ✧ ୨୧  ──*
+
+*╭  〔 ✨ ʜ ᴀ ꜱ ɪ ʟ 〕*
+*┆* ⟡ ꜰɪʟᴛᴇʀ : *${selected}*
+*╰───────────────*`
+
+    await conn.sendFile(m.chat, resultBuffer, 'waifu.jpg', caption, m)
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
-
   } catch (e) {
     console.error('[WAIFUHTM ERROR]', e)
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     return status.error(m, 'Gagal memproses filter gambar waifu.', [
-      'Layanan API pemrosesan eksternal (wpw.my.id) saat ini tidak dapat dijangkau atau sedang offline.'
+      e.message || 'Terjadi kesalahan internal saat memproses gambar.'
     ])
   }
 }
 
 handler.help = ['waifuhtm [filter]', 'waifufilterlist']
-handler.tags = ['tools']
+handler.tags = ['waifu', 'tools']
 handler.command = /^(waifuhtm|waifufilterlist)$/i
 handler.limit = true
+handler.register = true
 
 export default handler

@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
 
 const JOBS = [
@@ -49,39 +49,62 @@ let handler = async (m, { usedPrefix, command }) => {
   // ===== CEK WAIFU =====
   if (!db.couples || !db.couples[m.sender]) {
     return m.reply(
-      status.warning(`Kamu belum memiliki waifu untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+      status.warning(`Kamu belum memiliki waifu untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`)
     )
   }
 
   const waifuName = db.couples[m.sender].charName
 
-  // ===== CEK COOLDOWN =====
-  if (!db.cooldown) db.cooldown = {}
-  const last = db.cooldown[m.sender] || 0
+  // ===== CEK COOLDOWN TERPUSAT =====
+  if (!db.cooldown) db.cooldown = { act: {}, kerja: {} }
+  if (!db.cooldown.kerja) db.cooldown.kerja = {}
+
+  const last = db.cooldown.kerja[m.sender] || 0
   const now = Date.now()
   if (now - last < COOLDOWN) {
     const sisa = Math.ceil((COOLDOWN - (now - last)) / 1000)
     return m.reply(
-      status.wait(`Waifumu sedang istirahat.\n> Silakan tunggu *${toSmallNum(sisa)} detik* sebelum bekerja lagi.`)
+      status.wait(`Waifumu sedang beristirahat setelah bekerja.\n> Silakan tunggu *${toSmallNum(sisa)} detik* sebelum bekerja lagi.`)
+    )
+  }
+
+  // ===== CEK STATUS FISIK / LAPAR WAIFU =====
+  decayWaifuStatus(m.sender)
+  if (!db.status) db.status = {}
+  if (!db.status[m.sender]) {
+    db.status[m.sender] = { mood: 50, lapar: 50, afinitas: 0 }
+  }
+  const st = db.status[m.sender]
+
+  if ((st.lapar || 0) < 20) {
+    return m.reply(
+      status.warning(
+        `Waifumu (*${waifuName}*) terlalu lemas dan kelaparan untuk bekerja!\n` +
+        `> Energi Kenyang : *${toSmallNum(st.lapar || 0)}/𝟷𝟶𝟶*\n` +
+        `> Silakan beri makan terlebih dahulu dengan *${usedPrefix}waifufood* agar tenaganya pulih.`
+      )
     )
   }
 
   const job = JOBS[Math.floor(Math.random() * JOBS.length)]
   const isFail = Math.random() < FAIL_CHANCE
 
-  // UPDATE WAKTU COOLDOWN
-  db.cooldown[m.sender] = now
+  // UPDATE WAKTU COOLDOWN & KONSUMSI ENERGI
+  db.cooldown.kerja[m.sender] = now
+  st.lapar = Math.max(0, (st.lapar || 50) - 15)
 
   // ===== GAGAL (HYBRID CARD) =====
   if (isFail) {
+    saveDB(db)
     return m.reply(
       `*──  ୨୧ ✧ KENDALA PEKERJAAN ✧ ୨୧  ──*\n\n` +
       `*╭  〔 ⚠ ᴋ ᴇ ɴ ᴅ ᴀ ʟ ᴀ  ᴋ ᴇ ʀ ᴊ ᴀ 〕*\n` +
       `*┆* 𝜚 ᴡᴀɪꜰᴜ     : *${waifuName}*\n` +
       `*┆* ◈ ᴘᴇᴋᴇʀᴊᴀᴀɴ : *${job.name}*\n` +
+      `*┆* 🍱 ᴇɴᴇʀɢɪ   : *${toSmallNum(st.lapar)}/𝟷𝟶𝟶* (-𝟷𝟻)\n` +
       `> ✦ ᴋᴇɴᴅᴀʟᴀ : ${job.fail}\n` +
       `*╰───────────────*\n` +
-      `> _${waifuName} tidak mendapatkan upah kali ini._`
+      `> _${waifuName} kelelahan dan tidak mendapatkan upah kali ini._`
     )
   }
 
@@ -98,6 +121,7 @@ let handler = async (m, { usedPrefix, command }) => {
     `*┆* 𝜚 ᴡᴀɪꜰᴜ      : *${waifuName}*\n` +
     `*┆* ◈ ᴘᴇᴋᴇʀᴊᴀᴀɴ  : *${job.name}*\n` +
     `*┆* ❖ ᴘᴇɴᴅᴀᴘᴀᴛᴀɴ : *+${toSmallNum(rupiah(earn))}*\n` +
+    `*┆* 🍱 ꜱɪꜱᴀ ᴇɴᴇʀɢɪ: *${toSmallNum(st.lapar)}/𝟷𝟶𝟶* (-𝟷𝟻)\n` +
     `*┆* ⌬ ꜱᴀʟᴅᴏ      : *${toSmallNum(rupiah(db.money[m.sender]))}*\n` +
     `> ✦ ʜᴀꜱɪʟ : ${job.success}\n` +
     `*╰───────────────*`

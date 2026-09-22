@@ -103,6 +103,10 @@ let handler = async (m, {
             quoted: m
         });
 
+        if (global.db && global.db.data) {
+            await global.db.write().catch(err => console.error('[CLEARSESI DB WRITE ERROR]', err));
+        }
+
         if (process.send) {
             process.send('reset');
         }

@@ -1,7 +1,7 @@
 import { loadDB, saveDB, searchMALCharacter } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
 
-let handler = async (m, { args, usedPrefix, command }) => {
+let handler = async (m, { conn, args, usedPrefix, command }) => {
   const db = loadDB()
   if (db.couples[m.sender]) {
     return status.warning(m, `Kamu sudah memiliki waifu (${db.couples[m.sender].charName}).`, [
@@ -12,8 +12,8 @@ let handler = async (m, { args, usedPrefix, command }) => {
   const q = args.join(' ')
   if (!q) {
     return status.warning(m, 'Masukkan nama karakter atau UID MyAnimeList!', [
-      `Contoh: *${usedPrefix + command} Rem*`,
-      `Contoh UID: *${usedPrefix + command} 118763*`
+      `Contoh Nama: *${usedPrefix + command} Rem*`,
+      `Contoh UID  : *${usedPrefix + command} 220209*`
     ])
   }
 
@@ -32,15 +32,22 @@ let handler = async (m, { args, usedPrefix, command }) => {
 
   db.couples[m.sender] = {
     charId: c.id,
-    charName: c.nama
+    charName: c.nama,
+    image: c.image || null
   }
   db.chars[c.id] = m.sender
+  if (c.image && (!db.profilePP || !db.profilePP[c.id])) {
+    if (!db.profilePP) db.profilePP = {}
+    db.profilePP[c.id] = c.image
+  }
 
   db.status[m.sender] = {
     mood: 50,
     lapar: 50,
     afinitas: 0
   }
+  if (!db.lastMoodTick) db.lastMoodTick = {}
+  db.lastMoodTick[m.sender] = Date.now()
 
   saveDB(db)
 
@@ -48,7 +55,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
 *┆* ⟡ ɴᴀᴍᴀ : *${c.nama}*
 *┆* ⟡ ᴜɪᴅ ᴍᴀʟ : *#${toSmallNum(c.id)}*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Menikah (Resmi)*
-*┆* ⟡ ᴀꜰɪɴɪᴛᴀꜱ ᴀᴡᴀʟ : *${toSmallNum(0)}%*
+*┆* ⟡ ᴀꜰɪɴɪᴛᴀꜱ ᴀᴡᴀʟ : *${toSmallNum(0)} Poin*
 *┆* ⟡ ᴍᴏᴏᴅ / ʟᴀᴘᴀʀ : *${toSmallNum(50)}% / ${toSmallNum(50)}%*
 *╰───────────────*
 > Selamat! Rawatlah waifu kesayanganmu dengan penuh perhatian dan kasih sayang.
@@ -60,7 +67,11 @@ let handler = async (m, { args, usedPrefix, command }) => {
 *┆* ⟡ *${usedPrefix}waifukerja* : Bekerja bersama
 *╰───────────────*`
 
-  m.reply(caption)
+  if (c.image) {
+    await conn.sendMessage(m.chat, { image: { url: c.image }, caption }, { quoted: m }).catch(() => m.reply(caption))
+  } else {
+    m.reply(caption)
+  }
 }
 
 /* ===== META ===== */

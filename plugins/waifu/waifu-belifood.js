@@ -87,17 +87,26 @@ let handler = async (m, { args, usedPrefix, command }) => {
   }
 
   /* ===== PROSES BELI ===== */
+  decayWaifuStatus(m.sender)
   const f = ALL[args[0]]
 
-  if (money < f.price)
+  if (money < f.price) {
     return m.reply(
       status.error(`Saldo uang tidak cukup!\n> Harga: ${toSmallNum(rupiah(f.price))}\n> Saldo kamu: ${toSmallNum(rupiah(money))}`)
     )
+  }
+
+  // Cek jika waifu sudah kenyang penuh untuk makanan biasa
+  if ((db.status[m.sender].lapar || 0) >= MAX && !f.mood && !f.afk) {
+    return m.reply(
+      status.warning(`Waifumu sudah sangat kenyang!\n> Tingkat kenyang: *${toSmallNum(MAX)}/${toSmallNum(MAX)}*\n> Biarkan waifumu beraktivitas atau bekerja terlebih dahulu sebelum disuap lagi.`)
+    )
+  }
 
   db.money[m.sender] -= f.price
-  db.status[m.sender].lapar = clamp(db.status[m.sender].lapar + (f.feed || 0))
-  db.status[m.sender].mood = clamp(db.status[m.sender].mood + (f.mood || 0))
-  db.status[m.sender].afinitas += f.afk || 0
+  db.status[m.sender].lapar = clamp((db.status[m.sender].lapar || 50) + (f.feed || 0))
+  db.status[m.sender].mood = clamp((db.status[m.sender].mood || 50) + (f.mood || 0))
+  db.status[m.sender].afinitas = (db.status[m.sender].afinitas || 0) + (f.afk || 0)
 
   saveDB(db)
 
@@ -105,9 +114,9 @@ let handler = async (m, { args, usedPrefix, command }) => {
     `*──  ୨୧ ✧ MAKANAN WAIFU ✧ ୨୧  ──*\n\n` +
     `*╭  〔 🍱 ꜱ ᴜ ᴀ ᴘ  ᴍ ᴀ ᴋ ᴀ ɴ 〕*\n` +
     `> ${f.name} berhasil disuapkan ke waifumu!\n` +
-    `*┆* ✧ ʟᴀᴘᴀʀ    : *+${toSmallNum(f.feed || 0)}*\n` +
+    `*┆* 🍱 ᴋᴇɴʏᴀɴɢ  : *${toSmallNum(db.status[m.sender].lapar)}/${toSmallNum(MAX)}* (+${toSmallNum(f.feed || 0)})\n` +
     (f.mood ? `*┆* ⟡ ᴍᴏᴏᴅ     : *+${toSmallNum(f.mood)}*\n` : '') +
-    (f.afk ? `*┆* ᰔ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(f.afk)}*\n` : '') +
+    (f.afk ? `*┆* ᰔ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(f.afk)} Poin*\n` : '') +
     `*┆* ⌬ ꜱɪꜱᴀ ᴜᴀɴɢ : *${toSmallNum(rupiah(db.money[m.sender]))}*\n` +
     `*╰───────────────*`
   )

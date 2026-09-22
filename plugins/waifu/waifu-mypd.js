@@ -1,4 +1,4 @@
-import { loadDB } from '../../lib/waifuHelper.js'
+import { loadDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
 
 const MAX = 100
@@ -13,14 +13,14 @@ const bar = (val, max = MAX) => {
 
 // ===== STATUS TEKS =====
 const moodText = v =>
-  v >= 80 ? 'Sangat Bahagia' :
-  v >= 50 ? 'Senang' :
-  v >= 30 ? 'Biasa' : 'Sedih'
+  v >= 80 ? 'Sangat Bahagia (Senang Banget ♡)' :
+  v >= 50 ? 'Bahagia (Senang)' :
+  v >= 30 ? 'Biasa Saja' : 'Murung (Sedih 💔)'
 
 const foodText = v =>
-  v >= 80 ? 'Sangat Kenyang' :
-  v >= 50 ? 'Kenyang' :
-  v >= 30 ? 'Cukup' : 'Sangat Lapar'
+  v >= 80 ? 'Sangat Kenyang (Penuh)' :
+  v >= 50 ? 'Kenyang (Cukup)' :
+  v >= 30 ? 'Mulai Lapar' : 'Sangat Lapar (Butuh Makan ⚠)'
 
 let handler = async (m, { conn, usedPrefix, command }) => {
   const db = loadDB()
@@ -34,15 +34,18 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     return m.reply(
       status.warning(
         `Kamu belum memiliki waifu!\n` +
-        `> Cari karakter: *${usedPrefix}waifuchar <nama>*\n` +
+        `> Cari karakter : *${usedPrefix}waifuchar <nama|uid>*\n` +
         `> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`
       )
     )
   }
 
+  // Hitung decay status alami
+  decayWaifuStatus(m.sender)
+
   const st = db.status[m.sender] || {
-    mood: 0,
-    lapar: 0,
+    mood: 50,
+    lapar: 50,
     afinitas: 0
   }
 
@@ -53,7 +56,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 *╭  〔 𝜚 ɪ ɴ ꜰ ᴏ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
 *┆* ⟡ ᴍᴀꜱᴛᴇʀ    : *${masterName}*
 *┆* ᰔ ᴡᴀɪꜰᴜ     : *${c.charName}*
-*┆* ◈ ᴜɪᴅ ᴍᴀʟ   : *${toSmallNum(c.charId)}*
+*┆* ◈ ᴜɪᴅ ᴍᴀʟ   : *#${toSmallNum(c.charId)}*
 *┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ   : *${toSmallNum(st.afinitas)} Poin*
 *┆*
 *┆* ✧ ᴍᴏᴏᴅ      : *${moodText(st.mood)}*
@@ -67,9 +70,10 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 > › *${usedPrefix}waifuact* (Berinteraksi)
 > › *${usedPrefix}waifufood* (Beri makan)
 > › *${usedPrefix}waifukerja* (Suruh bekerja)
+> › *${usedPrefix}waifusetpp* (Ajukan foto custom)
 > › *${usedPrefix}waifuputus* (Lepaskan waifu)`.trim()
 
-  const pp = db.profilePP[c.charId]
+  const pp = db.profilePP[c.charId] || c.image
 
   if (pp) {
     try {
@@ -80,14 +84,11 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       )
       return
     } catch {
-      // fallback ke teks
+      // fallback ke teks jika media gagal di-fetch
     }
   }
 
-  await m.reply(
-    caption +
-    `\n\n_Foto waifu belum diset custom. Owner dapat mengatur via *${usedPrefix}waifusetpp*_`
-  )
+  await m.reply(caption)
 }
 
 handler.command = /^(mywaifu|waifustatus|mypd)$/i

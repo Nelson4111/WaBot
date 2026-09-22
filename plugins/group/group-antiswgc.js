@@ -58,7 +58,7 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
 
 handler.help = ['antiswgc on/off']
 handler.tags = ['group']
-handler.command = /^(antiswgc|antistatusgc|antisw)$/i
+handler.command = /^(antiswgc|antistatusgc)$/i
 handler.group = true
 handler.admin = true
 

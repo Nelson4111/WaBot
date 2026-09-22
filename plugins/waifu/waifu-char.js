@@ -4,30 +4,43 @@ import { toSmallNum, status } from '../../lib/style.js'
 let handler = async (m, { args, conn, usedPrefix, command }) => {
   const q = args.join(' ')
   if (!q) {
-    return m.reply(
-      status.warning(`Masukkan *nama karakter* atau *UID MAL*\n> Contoh: *${usedPrefix + command} rem* atau *${usedPrefix + command} 118763*`)
+    return status.warning(
+      m,
+      `Masukkan *nama karakter* atau *UID MAL*`,
+      `Contoh: *${usedPrefix + command} 220209* atau *${usedPrefix + command} rem*`
     )
   }
 
   const c = await searchMALCharacter(q)
-  if (!c) return m.reply(status.error('Karakter tidak ditemukan di MyAnimeList. Periksa ejaan nama atau gunakan UID.'))
+  if (!c) return status.error(m, 'Karakter tidak ditemukan di MyAnimeList. Periksa ejaan nama atau gunakan UID.')
 
   const db = loadDB()
   if (!db.chars) db.chars = {}
 
-  const statusText = db.chars[c.id]
-    ? 'Sudah Dilamar Ⓛ'
-    : 'Tersedia ㋡'
+  const isMine = db.chars[c.id] === m.sender
+  const isTaken = !isMine && !!db.chars[c.id]
+
+  let statusText = 'Tersedia ㋡'
+  let footerHint = `Ketik *${usedPrefix}waifulamar ${c.id}* untuk melamar karakter ini`
+  if (isMine) {
+    statusText = 'Pasanganmu ♡'
+    footerHint = `Ketik *${usedPrefix}mywaifu* untuk berinteraksi dengan pasanganmu`
+  } else if (isTaken) {
+    statusText = 'Sudah Dimiliki Ⓛ'
+    footerHint = 'Karakter ini sudah memiliki ikatan suci dengan pengembara lain'
+  }
+
+  const animeLine = c.anime ? `\n*┆* ❀ ᴀɴɪᴍᴇ  : *${c.anime}*` : ''
 
   const caption = `*──  ୨୧ ✧ DETAIL WAIFU ✧ ୨୧  ──*
 
 *╭  〔 𝜚 ᴄ ʜ ᴀ ʀ ᴀ ᴄ ᴛ ᴇ ʀ 〕*
-*┆* ⟡ ɴᴀᴍᴀ   : *${c.nama}*
-*┆* ◈ ᴜɪᴅ    : *${toSmallNum(c.id)}*
+*┆* ⟡ ɴᴀᴍᴀ   : *${c.nama}*${animeLine}
+*┆* ◈ ᴜɪᴅ    : *#${toSmallNum(c.id)}*
 *┆* ✦ ꜱᴛᴀᴛᴜꜱ : *${statusText}*
 *╰───────────────*
 
-> ｡˚ ⊹ *Ketik ${usedPrefix}waifulamar ${c.id} untuk melamar karakter ini* ⊹ ˚ ｡`.trim()
+> ｡˚ ⊹ *${footerHint}* ⊹ ˚ ｡`.trim()
 
   if (c.image) {
     await conn.sendMessage(
@@ -48,4 +61,5 @@ handler.tags = ['waifu']
 handler.help = ['waifuchar <nama|uid>']
 handler.register = true
 
-export default handler
+export default handler
+

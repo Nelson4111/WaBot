@@ -1,4 +1,6 @@
 import fs from 'fs'
+import os from 'os'
+import path from 'path'
 import {
   loadDB,
   saveDB,
@@ -9,22 +11,32 @@ import { toSmallNum, status } from '../../lib/style.js'
 
 let handler = async (m, { conn }) => {
   const db = loadDB()
-  const c = db.couples[m.sender]
+  const c = db.couples?.[m.sender]
   if (!c) return status.warning(m, 'Kamu belum memiliki pasangan waifu.')
 
   if (!m.quoted) return status.warning(m, 'Balas (reply) gambar yang ingin dijadikan foto profil waifu!')
-  if (!/image/.test(m.quoted.mtype)) {
+  if (!/image/.test(m.quoted.mtype || m.quoted.mimetype || '')) {
     return status.warning(m, 'Pesan yang direply harus berupa media gambar!')
   }
 
   const img = await m.quoted.download()
   if (!img) return status.error(m, 'Gagal mengunduh file gambar.')
 
-  const tmp = `./tmp_pp_${Date.now()}.jpg`
-  fs.writeFileSync(tmp, img)
+  const tmp = path.join(os.tmpdir(), `tmp_pp_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`)
+  let url = null
 
-  const url = await uploadCatbox(tmp)
-  fs.unlinkSync(tmp)
+  try {
+    fs.writeFileSync(tmp, img)
+    url = await uploadCatbox(tmp)
+  } catch (err) {
+    console.error('[WAIFU SETPP ERROR]', err)
+  } finally {
+    if (fs.existsSync(tmp)) {
+      try {
+        fs.unlinkSync(tmp)
+      } catch {}
+    }
+  }
 
   if (!url) return status.error(m, 'Gagal mengunggah foto ke server penyimpanan.')
 

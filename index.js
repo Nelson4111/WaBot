@@ -21,7 +21,7 @@ say('Avelia', { font: 'block', align: 'center', gradient: ['cyan', 'blue'] });
 say(`By ${author?.name || author || 'Nenel'}`, { font: 'console', align: 'center', gradient: ['magenta', 'red'] });
 
 console.log(chalk.cyan('┌────────────────────────────────────────────────────────┐'));
-console.log(chalk.cyan('│') + chalk.black.bgCyan('             AVELIA SYSTEM INITIALIZED                       ') + chalk.cyan('│'));
+console.log(chalk.cyan('│') + chalk.black.bgCyan('        AVELIA SYSTEM INITIALIZED                   ') + chalk.cyan('│'));
 console.log(chalk.cyan('├────────────────────────────────────────────────────────┤'));
 console.log(chalk.cyan('│') + ` [+] TIME   : ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`.padEnd(56) + chalk.cyan('│'));
 console.log(chalk.cyan('│') + ` [+] OWNER  : ${author?.name || author || 'Nenel'}`.padEnd(56) + chalk.cyan('│'));
@@ -59,7 +59,9 @@ function start(file) {
     console.log('[✅RECEIVED]', data);
     switch (data) {
       case 'reset':
-        p.kill(); // Trigger process exit, allowing 'exit' listener to cleanly restart it.
+        if (p && !p.killed) {
+          p.kill('SIGTERM'); // Kirim SIGTERM agar worker menjalankan gracefulExit dan menyimpan database
+        }
         break;
       case 'uptime':
         p.send(process.uptime());
@@ -107,21 +109,28 @@ function start(file) {
 
 start('main.js');
 
-// --- GRACEFUL SHUTDOWN UNTUK MENCEGAH ORPHAN PROCESS ---
-const cleanupAndExit = () => {
+// --- GRACEFUL SHUTDOWN UNTUK MENCEGAH ORPHAN PROCESS & DATA LOSS ---
+let isIndexExiting = false;
+const cleanupAndExit = async (signal = 'SIGTERM') => {
+  if (isIndexExiting) return;
+  isIndexExiting = true;
   isRunning = false;
-  console.log(chalk.red('\n🛑 [Index] Menerima sinyal berhenti, mematikan worker...'));
+  console.log(chalk.red(`\n🛑 [Index] Menerima sinyal ${signal}, menunggu worker menyimpan data ke Supabase...`));
   if (p && !p.killed) {
     try {
-      if (process.platform === 'win32' && p.process?.pid) {
-        execSync(`taskkill /pid ${p.process.pid} /T /F`, { stdio: 'ignore' });
-      } else {
-        p.kill('SIGTERM');
-      }
+      p.kill('SIGTERM');
+      // Berikan waktu hingga 12 detik agar worker dapat menyelesaikan penyimpanan database
+      await new Promise((resolve) => {
+        const timeout = setTimeout(resolve, 12000);
+        p.on('exit', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
     } catch {}
   }
   process.exit(0);
 };
 
-process.on('SIGINT', cleanupAndExit);
-process.on('SIGTERM', cleanupAndExit);
+process.on('SIGINT', () => cleanupAndExit('SIGINT'));
+process.on('SIGTERM', () => cleanupAndExit('SIGTERM'));

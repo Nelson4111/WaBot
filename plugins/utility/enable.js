@@ -29,9 +29,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'antisticker':
     case 'antiimage':
     case 'antitag':
+    case 'antitagsw':
+    case 'antisw':
     case 'antiswgc':
     case 'antistatusgc':
-    case 'antisw':
     case 'viewonce':
     case 'document':
     case 'menu':
@@ -44,12 +45,17 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
                    type === 'antisticker' ? 'antiSticker' : 
                    type === 'antiimage' ? 'antiImage' : 
                    type === 'antitag' ? 'antiTag' : 
-                   (type === 'antiswgc' || type === 'antistatusgc' || type === 'antisw') ? 'antiSwgc' : 
+                   (type === 'antitagsw' || type === 'antisw') ? 'antiTagSw' : 
+                   (type === 'antiswgc' || type === 'antistatusgc') ? 'antiSwgc' : 
                    type === 'antidelete' ? 'delete' : 
                    type === 'document' ? 'useDocument' : 
                    (type === 'autovn' || type === 'vn') ? 'voice' : type
 
       chat[dbName] = isEnable
+      if (type === 'antitagsw' || type === 'antisw') {
+        chat.antiTagSwCount = {}
+        chat.antitagsw = { status: isEnable, count: {} }
+      }
       if (type === 'voice' || type === 'autovn' || type === 'vn') {
         if (global.db?.data?.voice?.groups) {
           global.db.data.voice.groups[m.chat] = global.db.data.voice.groups[m.chat] || {}
@@ -116,6 +122,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 *┆* ✧ antisticker : *${status(chat.antiSticker)}*
 *┆* ✦ antiimage   : *${status(chat.antiImage)}*
 *┆* ◈ antitag     : *${status(chat.antiTag)}*
+*┆* ⟡ antitagsw   : *${status(chat.antiTagSw || chat.antitagsw?.status)}*
 *┆* ✦ antiswgc    : *${status(chat.antiSwgc)}*
 *┆* ⟡ antidelete  : *${status(chat.delete)}*
 *┆* ✧ onlyadmin   : *${status(chat.onlyadmin)}*

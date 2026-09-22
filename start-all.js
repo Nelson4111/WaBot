@@ -173,22 +173,35 @@ async function startAll() {
     startWA();
 
     // --- GRACEFUL SHUTDOWN HANDLER ---
-    const cleanupAll = () => {
-        console.log(chalk.red('\n🛑 Menghentikan seluruh proses Avelia, Discord & Hermes...'));
+    let isShuttingDown = false;
+    const cleanupAll = async (signal = 'SIGTERM') => {
+        if (isShuttingDown) return;
+        isShuttingDown = true;
+        console.log(chalk.red(`\n🛑 Menghentikan seluruh proses Avelia, Discord & Hermes (${signal})...`));
         hermesManager.stop();
+        
+        const exitPromises = [];
         for (const { name, proc } of runningProcesses) {
             try {
                 if (proc && !proc.killed) {
-                    console.log(chalk.gray(`Stopping ${name}...`));
+                    console.log(chalk.gray(`Mengirim sinyal berhenti ke ${name}...`));
                     proc.kill('SIGTERM');
+                    exitPromises.push(new Promise(resolve => {
+                        const timeout = setTimeout(resolve, 12000);
+                        proc.on('exit', () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        });
+                    }));
                 }
             } catch (e) {}
         }
+        await Promise.all(exitPromises);
         process.exit(0);
     };
 
-    process.on('SIGINT', cleanupAll);
-    process.on('SIGTERM', cleanupAll);
+    process.on('SIGINT', () => cleanupAll('SIGINT'));
+    process.on('SIGTERM', () => cleanupAll('SIGTERM'));
 }
 
 startAll().catch((err) => {

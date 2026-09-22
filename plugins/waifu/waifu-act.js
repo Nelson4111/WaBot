@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status as statusHelper } from '../../lib/style.js'
 
 const NORMAL_COOLDOWN = 60 * 1000   // 60 detik
@@ -11,70 +11,70 @@ const ACT_LIST = {
     mood: 10,
     lapar: 5,
     afinitas: 5,
-    text: 'Pasanganmu terlihat menikmati waktu berjalan bersamamu.'
+    text: 'Pasanganmu terlihat sangat menikmati waktu berjalan bersamamu.'
   },
   2: {
-    nama: 'Pelukan',
+    nama: 'Pelukan hangat',
     mood: 8,
-    lapar: 0,
+    lapar: 1,
     afinitas: 6,
-    text: 'Pasanganmu membalas pelukanmu dan terlihat merasa nyaman.'
+    text: 'Pasanganmu membalas pelukanmu dan merasa nyaman serta terlindungi.'
   },
   3: {
-    nama: 'Cium',
+    nama: 'Kecupan manis',
     mood: 12,
-    lapar: 0,
+    lapar: 1,
     afinitas: 8,
-    text: 'Pasanganmu tersenyum pelan setelah menerima perhatian darimu.'
+    text: 'Wajah pasanganmu merona merah dan tersenyum malu-malu kepadamu.'
   },
   4: {
     nama: 'Ngobrol santai',
     mood: 6,
-    lapar: 0,
+    lapar: 2,
     afinitas: 4,
-    text: 'Pasanganmu mendengarkan ceritamu dengan penuh perhatian.'
+    text: 'Pasanganmu mendengarkan ceritamu dengan penuh perhatian dan antusias.'
   },
   5: {
     nama: 'Memberi perhatian',
     mood: 7,
-    lapar: 0,
+    lapar: 1,
     afinitas: 6,
-    text: 'Pasanganmu merasa dihargai oleh perhatian yang kamu berikan.'
+    text: 'Pasanganmu merasa dihargai oleh kasih sayang yang kamu berikan.'
   },
   6: {
-    nama: 'Bercanda',
+    nama: 'Bercanda & tertawa',
     mood: 9,
-    lapar: 0,
+    lapar: 3,
     afinitas: 5,
-    text: 'Pasanganmu tertawa kecil dan suasana menjadi lebih hangat.'
+    text: 'Pasanganmu tertawa ceria dan suasana menjadi jauh lebih hangat.'
   },
   7: {
-    nama: 'Menemani diam-diam',
+    nama: 'Menemani di sisinya',
     mood: 5,
-    lapar: 0,
+    lapar: 1,
     afinitas: 7,
-    text: 'Pasanganmu merasa tenang dengan kehadiranmu di sisinya.'
+    text: 'Pasanganmu merasa tenang dan damai dengan kehadiranmu di sampingnya.'
   },
   8: {
     nama: 'Memberi hadiah kecil',
-    mood: 10,
-    lapar: 0,
+    mood: 12,
+    lapar: 1,
     afinitas: 10,
-    text: 'Pasanganmu terlihat terkejut dan senang menerima pemberianmu.'
+    text: 'Mata pasanganmu berbinar-binar gembira menerima hadiah darimu.'
   },
   9: {
-    nama: 'Menghibur',
-    mood: 12,
-    lapar: 0,
+    nama: 'Menghibur & menyemangati',
+    mood: 10,
+    lapar: 2,
     afinitas: 6,
-    text: 'Pasanganmu perlahan merasa lebih baik setelah kamu menenangkannya.'
+    text: 'Pasanganmu perlahan merasa lebih bersemangat setelah kamu menenangkannya.'
   },
   10: {
     nama: 'Menghabiskan waktu bersama',
     mood: 8,
-    lapar: 3,
+    lapar: 4,
     afinitas: 8,
-    text: 'Pasanganmu menikmati kebersamaan yang terjalin di antara kalian.'
+    text: 'Pasanganmu menikmati setiap detik kebersamaan yang terjalin di antara kalian.'
   }
 }
 
@@ -92,34 +92,11 @@ let handler = async (m, { args, usedPrefix, command }) => {
   /* ===== CEK WAIFU ===== */
   if (!db.couples || !db.couples[user]) {
     return m.reply(
-      statusHelper.warning(`Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+      statusHelper.warning(`Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`)
     )
   }
 
-  /* ===== INIT STATUS ===== */
-  if (!db.status) db.status = {}
-  if (!db.status[user]) {
-    db.status[user] = { mood: 50, lapar: 50, afinitas: 0 }
-  }
-
-  /* ===== INIT COOLDOWN ===== */
-  if (!db.cooldown) db.cooldown = {}
-  if (!db.cooldown.act) db.cooldown.act = {}
-
-  const cooldownTime = isPremium ? PREMIUM_COOLDOWN : NORMAL_COOLDOWN
-  const last = db.cooldown.act[user] || 0
-  const sisa = cooldownTime - (now - last)
-
-  if (sisa > 0) {
-    const detik = Math.ceil(sisa / 1000)
-    return m.reply(
-      statusHelper.wait(`Aksi masih dalam cooldown.\n> Silakan tunggu *${toSmallNum(detik)} detik* lagi.`)
-    )
-  }
-
-  const userStatus = db.status[user]
-
-  /* ===== MENU ACT ===== */
+  /* ===== MENU ACT (TAMPILKAN DAFTAR TANPA TERHALANG COOLDOWN) ===== */
   if (!args[0]) {
     let teks = `*──  ୨୧ ✧ INTERAKSI WAIFU ✧ ୨୧  ──*\n\n`
     teks += '*╭  〔 ᰔ ᴘ ɪ ʟ ɪ ʜ ᴀ ɴ  ᴀ ᴋ ꜱ ɪ 〕*\n'
@@ -131,29 +108,52 @@ let handler = async (m, { args, usedPrefix, command }) => {
   }
 
   const act = ACT_LIST[args[0]]
-  if (!act) return m.reply(statusHelper.warning('Pilihan nomor interaksi tidak valid.'))
-
-  /* ===== CEK BATAS STATUS ===== */
-  if (userStatus.mood >= 100 && act.mood > 0) {
-    return m.reply(statusHelper.warning('Waifumu sudah sangat bahagia! (Mood maksimal)'))
+  if (!act) {
+    return m.reply(statusHelper.warning(`Pilihan nomor interaksi tidak valid.\n> Ketik *${usedPrefix + command}* untuk melihat daftar nomor aksi.`))
   }
 
-  /* ===== UPDATE STATUS ===== */
-  userStatus.mood = Math.min(100, userStatus.mood + act.mood)
-  userStatus.lapar = Math.min(100, userStatus.lapar + act.lapar)
-  userStatus.afinitas = Math.min(100, userStatus.afinitas + act.afinitas)
+  /* ===== CEK COOLDOWN SAAT MELAKUKAN AKSI ===== */
+  const cooldownTime = isPremium ? PREMIUM_COOLDOWN : NORMAL_COOLDOWN
+  const last = db.cooldown?.act?.[user] || 0
+  const sisa = cooldownTime - (now - last)
 
+  if (sisa > 0) {
+    const detik = Math.ceil(sisa / 1000)
+    return m.reply(
+      statusHelper.wait(`Waifumu masih beristirahat.\n> Silakan tunggu *${toSmallNum(detik)} detik* lagi sebelum berinteraksi kembali.`)
+    )
+  }
+
+  /* ===== UPDATE STATUS & DECAY ===== */
+  decayWaifuStatus(user)
+  if (!db.status) db.status = {}
+  if (!db.status[user]) {
+    db.status[user] = { mood: 50, lapar: 50, afinitas: 0 }
+  }
+
+  const userStatus = db.status[user]
+
+  // Berinteraksi meningkatkan mood dan afinitas, serta mengonsumsi sedikit energi (kenyang)
+  const oldMood = userStatus.mood || 50
+  userStatus.mood = Math.min(100, oldMood + act.mood)
+  userStatus.lapar = Math.max(0, (userStatus.lapar || 50) - (act.lapar || 0))
+  userStatus.afinitas = (userStatus.afinitas || 0) + act.afinitas
+
+  if (!db.cooldown.act) db.cooldown.act = {}
   db.cooldown.act[user] = now
   saveDB(db)
 
   /* ===== HASIL (HYBRID CARD) ===== */
+  const moodNotice = oldMood >= 100 ? ' (Sudah Maksimal ♡)' : ` (+${toSmallNum(act.mood)})`
+  const foodNotice = act.lapar > 0 ? ` (-${toSmallNum(act.lapar)})` : ''
+
   m.reply(
     `*──  ୨୧ ✧ INTERAKSI WAIFU ✧ ୨୧  ──*\n\n` +
     `*╭  〔 ᰔ ʜ ᴀ ꜱ ɪ ʟ  ᴀ ᴋ ꜱ ɪ 〕*\n` +
     `> ${act.text}\n` +
-    `*┆* ⟡ ᴍᴏᴏᴅ     : *+${toSmallNum(act.mood)} (${toSmallNum(userStatus.mood)}/𝟷𝟶𝟶)*\n` +
-    `*┆* ✧ ʟᴀᴘᴀʀ    : *+${toSmallNum(act.lapar)} (${toSmallNum(userStatus.lapar)}/𝟷𝟶𝟶)*\n` +
-    `*┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(act.afinitas)} (${toSmallNum(userStatus.afinitas)}/𝟷𝟶𝟶)*\n` +
+    `*┆* ⟡ ᴍᴏᴏᴅ     : *${toSmallNum(userStatus.mood)}/𝟷𝟶𝟶*${moodNotice}\n` +
+    `*┆* ✧ ʟᴀᴘᴀʀ    : *${toSmallNum(userStatus.lapar)}/𝟷𝟶𝟶*${foodNotice}\n` +
+    `*┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(act.afinitas)} (${toSmallNum(userStatus.afinitas)} Poin)*\n` +
     `*╰───────────────*`
   )
 }
