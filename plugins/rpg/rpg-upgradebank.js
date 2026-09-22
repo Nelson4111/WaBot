@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { BANK_TIERS } from './rpg-bank.js'
+import { BANK_TIERS, getBankPrice, isPremiumUser } from './rpg-bank.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
@@ -9,7 +9,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   let args = text?.toLowerCase().split(' ') || []
   let action = args[0]
+  const isPremium = isPremiumUser(m.sender, wdb)
   let currentTier = BANK_TIERS[user.bankTier]
+  let currentTierPrice = getBankPrice(currentTier.price, m.sender, wdb)
 
   // UPGRADE LANGSUNG PAKE ANGKA.upgradebank 5
 if (!isNaN(action)) {
@@ -45,19 +47,20 @@ if (!isNaN(action)) {
   }
 
   let tierBaru = BANK_TIERS[targetTier]
+  let tierBaruPrice = getBankPrice(tierBaru.price, m.sender, wdb)
 
-  if ((wdb.money[m.sender] || 0) < tierBaru.price) {
+  if ((wdb.money[m.sender] || 0) < tierBaruPrice) {
     return m.reply(
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Butuh : Rp ${tierBaru.price.toLocaleString()}\n` +
+      `> ↳ Butuh : Rp ${tierBaruPrice.toLocaleString()}\n` +
       `> ↳ Punya : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  wdb.money[m.sender] -= tierBaru.price
+  wdb.money[m.sender] -= tierBaruPrice
   user.bankTier = targetTier
   user.kartuBeku = false
   saveDB(wdb)
@@ -86,17 +89,19 @@ if (action === 'beli') {
     )
   }
 
-  if ((wdb.money[m.sender] || 0) < nextTier.price) {
+  let nextTierPrice = getBankPrice(nextTier.price, m.sender, wdb)
+
+  if ((wdb.money[m.sender] || 0) < nextTierPrice) {
     return m.reply(
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Butuh : Rp ${nextTier.price.toLocaleString()}\n\n` +
+      `> ↳ Butuh : Rp ${nextTierPrice.toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  wdb.money[m.sender] -= nextTier.price
+  wdb.money[m.sender] -= nextTierPrice
   user.bankTier += 1
   user.kartuBeku = false
   saveDB(wdb)
@@ -117,10 +122,11 @@ cap += `│ ${currentTier.color} *${currentTier.name}* [Lv.${user.bankTier}]\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `📊 *INFORMASI BANK*\n`
+cap += `> ↳ Status : ${isPremium ? '👑 Premium (Diskon 75%)' : '👤 User Biasa'}\n`
 cap += `> ↳ Limit : Rp ${currentTier.limit.toLocaleString()}\n`
 cap += `> ↳ Bunga : ${(currentTier.bunga * 100).toFixed(2)}%/minggu\n`
 cap += `> ↳ Asuransi : ${(currentTier.asuransi * 100).toFixed(0)}%\n`
-cap += `> ↳ Biaya Bulanan : Rp ${currentTier.biayaBulanan.toLocaleString()}\n`
+cap += `> ↳ Biaya Bulanan : Rp ${getBankPrice(currentTier.biayaBulanan, m.sender, wdb).toLocaleString()}\n`
 cap += `> ↳ Keamanan : ${currentTier.fasilitas.find(f => f.includes('Penjaga'))}\n`
 cap += `> ↳ Fasilitas :\n`
 
@@ -131,10 +137,12 @@ currentTier.fasilitas.forEach(f => {
 cap += `\n─━━━━━━━━━━━━━━─\n\n`
 
 if (nextTier) {
+  const nextTierDiscountedPrice = getBankPrice(nextTier.price, m.sender, wdb)
+  const nextTierDiscountedFee = getBankPrice(nextTier.biayaBulanan, m.sender, wdb)
   cap += `⬆️ *NEXT TIER*\n`
   cap += `> ↳ ${nextTier.color} *${nextTier.name}* [Lv.${user.bankTier + 1}]\n`
-  cap += `> ↳ Harga : Rp ${nextTier.price.toLocaleString()}\n`
-  cap += `> ↳ Biaya/Bulan : Rp ${nextTier.biayaBulanan.toLocaleString()}\n\n`
+  cap += `> ↳ Harga : Rp ${nextTierDiscountedPrice.toLocaleString()}\n`
+  cap += `> ↳ Biaya/Bulan : Rp ${nextTierDiscountedFee.toLocaleString()}\n\n`
   cap += `📌 *CARA UPGRADE*\n`
   cap += `> ↳ ${usedPrefix}upgradebank beli\n`
   cap += `> ↳ ${usedPrefix}upgradebank ${user.bankTier + 1}`

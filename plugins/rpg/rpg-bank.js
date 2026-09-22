@@ -18,6 +18,25 @@ export const BANK_TIERS = {
  14: { name: 'Cosmic Card', limit: 1_000_000_000_000, bunga: 0.02, price: 250_000_000_000, biayaBulanan: 12_500_000_000, color: '🌐', keamanan: 15, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] }
 }
 
+export function isPremiumUser(jid, db = global.db) {
+  if (!jid) return false
+  const user = db?.users?.[jid] || db?.data?.users?.[jid] || global.db?.data?.users?.[jid]
+  if (!user) return false
+  return user.premium === true || Number(user.premiumTime || 0) > Date.now()
+}
+
+export function getBankDiscountRate(jid, db = global.db) {
+  return isPremiumUser(jid, db) ? 0.75 : 0
+}
+
+export function getBankPrice(basePrice, jid, db = global.db) {
+  return Math.floor(basePrice * (1 - getBankDiscountRate(jid, db)))
+}
+
+export function getBankMonthlyFee(baseFee, jid, db = global.db) {
+  return Math.floor(baseFee * (1 - getBankDiscountRate(jid, db)))
+}
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let userRPG = getUserRPG(wdb, m.sender).rpg
@@ -34,7 +53,13 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (userRPG.kartuBeku === undefined) userRPG.kartuBeku = false
   if (userRPG.lastDendaHarian === undefined) userRPG.lastDendaHarian = Date.now()
 
-  let tier = BANK_TIERS[userRPG.bankTier]
+  const isPremium = isPremiumUser(m.sender, wdb)
+  const tierBase = BANK_TIERS[userRPG.bankTier] || BANK_TIERS[0]
+  const tier = {
+    ...tierBase,
+    price: getBankPrice(tierBase.price, m.sender, wdb),
+    biayaBulanan: getBankMonthlyFee(tierBase.biayaBulanan, m.sender, wdb)
+  }
   let args = text.split(' ')
   let action = args[0]?.toLowerCase()
   let amount = parseInt(args[1])
@@ -146,12 +171,14 @@ if (action === 'card' || action === 'kartu') {
   for (let i in BANK_TIERS) {
     let t = BANK_TIERS[i]
     let punya = userRPG.bankTier == i ? ' ✅ *KAMU*' : ''
+    let hargaDiskon = getBankPrice(t.price, m.sender, wdb)
+    let biayaBulananDiskon = getBankMonthlyFee(t.biayaBulanan, m.sender, wdb)
 
     cap += `🏦 *Lv.${i} ${t.name}*${punya}\n`
     cap += `> ${t.color} Limit: Rp ${t.limit.toLocaleString()}\n`
     cap += `> ↳ Bunga: ${(t.bunga * 100).toFixed(2)}%/minggu\n`
-    cap += `> ↳ Harga Upgrade: Rp ${t.price.toLocaleString()}\n`
-    cap += `> ↳ Biaya Bulanan: Rp ${t.biayaBulanan.toLocaleString()}\n`
+    cap += `> ↳ Harga Upgrade: Rp ${hargaDiskon.toLocaleString()}\n`
+    cap += `> ↳ Biaya Bulanan: Rp ${biayaBulananDiskon.toLocaleString()}\n`
     cap += `> ↳ Asuransi: ${(t.asuransi * 100).toFixed(0)}%\n`
     cap += `> ↳ Fasilitas:\n`
 
@@ -171,7 +198,11 @@ if (action === 'card' || action === 'kartu') {
 
   // SIMPAN + ALIAS "all"
   if (action === 'simpan' || action === 'all') {
-    if (args[1] === 'all' || action === 'all') amount = userMoney
+    if (args[1] === 'all' || action === 'all') {
+      if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
+      amount = userMoney
+    }
+    if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (userMoney < amount) return m.reply('❌ Uang saku tidak cukup')
     if (userRPG.bank + amount > tier.limit) return m.reply(`❌ Melebihi limit. Sisa: Rp ${(tier.limit - userRPG.bank).toLocaleString()}`)
