@@ -26,7 +26,7 @@ export function isPremiumUser(jid, db = global.db) {
 }
 
 export function getBankDiscountRate(jid, db = global.db) {
-  return isPremiumUser(jid, db) ? 0.75 : 0
+  return isPremiumUser(jid, db) ? 0.25 : 0
 }
 
 export function getBankPrice(basePrice, jid, db = global.db) {
@@ -135,6 +135,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
     if(tier.fasilitas.includes('Lounge VIP')) cap += `✧ Selamat Datang di Lounge VIP ✧\n Nikmati kenyamanan eksklusif anda\n`
     cap += `◈ ${tier.color} ${tier.name.toUpperCase()} ${userRPG.kartuBeku? '❌ BEKU':''} ◈\n`
+    cap += `◆ Status : ${isPremium ? '👑 PREMIUM - Diskon 25% dari harga normal' : '👤 USER BIASA'}\n`
     cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
     cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
     cap += `◆ Limit Kartu : Rp ${tier.limit.toLocaleString()}\n\n`
@@ -195,6 +196,32 @@ if (action === 'card' || action === 'kartu') {
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
 }
+
+  if (action === 'benefit' || action === 'benefits') {
+    const showAll = args[1] === 'list' || args[2] === 'list'
+    let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
+    if (showAll) {
+      cap += `◈ SEMUA BENEFIT BANK ◈\n\n`
+      for (let i in BANK_TIERS) {
+        const t = BANK_TIERS[i]
+        cap += `${t.color} *Lv.${i} ${t.name}*\n`
+        cap += `> ${t.fasilitas.map(f => `• ${f}`).join('\n> ')}\n\n`
+      }
+      cap += `👑 PREMIUM STATUS\n`
+      cap += isPremium
+        ? `> Diskon 25% untuk upgrade bank dan biaya bulanan.\n`
+        : `> Belum premium, diskon bank belum aktif.\n`
+    } else {
+      cap += `◈ BENEFIT ${tier.color} ${tier.name.toUpperCase()} ◈\n\n`
+      cap += `${tier.fasilitas.map(f => `• ${f}`).join('\n')}\n\n`
+      cap += `👑 PREMIUM STATUS\n`
+      cap += isPremium
+        ? `> Kamu mendapat diskon 25% untuk upgrade dan biaya bulanan.\n`
+        : `> User biasa, belum mendapat diskon premium.\n`
+    }
+    cap += `\n─━━━━━━━━━─`
+    return m.reply(cap)
+  }
 
   // SIMPAN + ALIAS "all"
   if (action === 'simpan' || action === 'all') {
@@ -296,6 +323,6 @@ if (action === 'card' || action === 'kartu') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank all', 'bank simpan', 'bank tarik', 'bank tf', 'bank pinjam', 'bank bayar', 'bank riwayat', 'bank card', 'money', 'uang']
+handler.help = ['bank', 'bank all', 'bank simpan', 'bank tarik', 'bank tf', 'bank pinjam', 'bank bayar', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'uang']
 handler.group = false
 export default handler

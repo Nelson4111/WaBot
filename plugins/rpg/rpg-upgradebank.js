@@ -12,6 +12,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const isPremium = isPremiumUser(m.sender, wdb)
   let currentTier = BANK_TIERS[user.bankTier]
   let currentTierPrice = getBankPrice(currentTier.price, m.sender, wdb)
+  let currentTierNormalPrice = currentTier.price
 
   // UPGRADE LANGSUNG PAKE ANGKA.upgradebank 5
 if (!isNaN(action)) {
@@ -48,13 +49,15 @@ if (!isNaN(action)) {
 
   let tierBaru = BANK_TIERS[targetTier]
   let tierBaruPrice = getBankPrice(tierBaru.price, m.sender, wdb)
+  let tierBaruNormalPrice = tierBaru.price
 
   if ((wdb.money[m.sender] || 0) < tierBaruPrice) {
     return m.reply(
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Butuh : Rp ${tierBaruPrice.toLocaleString()}\n` +
+      `> ↳ Harga Normal : Rp ${tierBaruNormalPrice.toLocaleString()}\n` +
+      `> ↳ Harga Premium : Rp ${tierBaruPrice.toLocaleString()}\n` +
       `> ↳ Punya : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -90,13 +93,15 @@ if (action === 'beli') {
   }
 
   let nextTierPrice = getBankPrice(nextTier.price, m.sender, wdb)
+  let nextTierNormalPrice = nextTier.price
 
   if ((wdb.money[m.sender] || 0) < nextTierPrice) {
     return m.reply(
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Butuh : Rp ${nextTierPrice.toLocaleString()}\n\n` +
+      `> ↳ Harga Normal : Rp ${nextTierNormalPrice.toLocaleString()}\n` +
+      `> ↳ Harga Premium : Rp ${nextTierPrice.toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -122,11 +127,12 @@ cap += `│ ${currentTier.color} *${currentTier.name}* [Lv.${user.bankTier}]\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `📊 *INFORMASI BANK*\n`
-cap += `> ↳ Status : ${isPremium ? '👑 Premium (Diskon 75%)' : '👤 User Biasa'}\n`
+cap += `> ↳ Status : ${isPremium ? '👑 Premium (Diskon 25%)' : '👤 User Biasa'}\n`
 cap += `> ↳ Limit : Rp ${currentTier.limit.toLocaleString()}\n`
 cap += `> ↳ Bunga : ${(currentTier.bunga * 100).toFixed(2)}%/minggu\n`
 cap += `> ↳ Asuransi : ${(currentTier.asuransi * 100).toFixed(0)}%\n`
-cap += `> ↳ Biaya Bulanan : Rp ${getBankPrice(currentTier.biayaBulanan, m.sender, wdb).toLocaleString()}\n`
+cap += `> ↳ Biaya Bulanan Normal : Rp ${currentTier.biayaBulanan.toLocaleString()}\n`
+cap += `> ↳ Biaya Bulanan Premium : Rp ${getBankPrice(currentTier.biayaBulanan, m.sender, wdb).toLocaleString()}\n`
 cap += `> ↳ Keamanan : ${currentTier.fasilitas.find(f => f.includes('Penjaga'))}\n`
 cap += `> ↳ Fasilitas :\n`
 
@@ -141,8 +147,10 @@ if (nextTier) {
   const nextTierDiscountedFee = getBankPrice(nextTier.biayaBulanan, m.sender, wdb)
   cap += `⬆️ *NEXT TIER*\n`
   cap += `> ↳ ${nextTier.color} *${nextTier.name}* [Lv.${user.bankTier + 1}]\n`
-  cap += `> ↳ Harga : Rp ${nextTierDiscountedPrice.toLocaleString()}\n`
-  cap += `> ↳ Biaya/Bulan : Rp ${nextTierDiscountedFee.toLocaleString()}\n\n`
+  cap += `> ↳ Harga Normal : Rp ${nextTier.price.toLocaleString()}\n`
+  cap += `> ↳ Harga Premium : Rp ${nextTierDiscountedPrice.toLocaleString()}\n`
+  cap += `> ↳ Biaya/Bulan Normal : Rp ${nextTier.biayaBulanan.toLocaleString()}\n`
+  cap += `> ↳ Biaya/Bulan Premium : Rp ${nextTierDiscountedFee.toLocaleString()}\n\n`
   cap += `📌 *CARA UPGRADE*\n`
   cap += `> ↳ ${usedPrefix}upgradebank beli\n`
   cap += `> ↳ ${usedPrefix}upgradebank ${user.bankTier + 1}`
