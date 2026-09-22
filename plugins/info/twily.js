@@ -6,6 +6,8 @@ import {
   TWILY_PARTNERS,
   TWILY_ML,
   TWILY_WW,
+  TWILY_MC,
+  TWILY_ROBLOX,
   TWILY_MUSIC,
   TWILY_PHOTO,
   TWILY_BIRTHDAYS,
@@ -33,12 +35,18 @@ const introText = `
 │
 │👋 *𝐏𝐞𝐫𝐤𝐞𝐧𝐚𝐥𝐚𝐧 𝐃𝐢𝐫𝐢* ⎯´ˎ˗
 ├─━━━━━━━━━━━━━━─
-│• 𝐍𝐚𝐦𝐚 :
+│• 𝐍𝐚𝐦𝐚 : 𝐖𝐚𝐣𝐢𝐛
 │• 𝐆𝐞𝐧𝐝𝐞𝐫 : -
-│• 𝐀𝐬𝐤𝐨𝐭 : -
+│• 𝐅𝐫𝐨𝐦 : -
+│• 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 : -
+│• 𝐓𝐢𝐤𝐭𝐨𝐤 : -
 │• 𝐁𝐢𝐫𝐭𝐡𝐝𝐚𝐲 : -
 │• 𝐒𝐭𝐚𝐭𝐮𝐬 : 𝐒𝐢𝐧𝐠𝐥𝐞 / 𝐓𝐚𝐤𝐞𝐧
 │• 𝐇𝐨𝐛𝐢 : -
+│• 𝐆𝐚𝐦𝐞 𝐟𝐚𝐯𝐨𝐫𝐢𝐭 : -
+│
+│📩 𝐊𝐢𝐫𝐢𝐦 𝐢𝐧𝐭𝐫𝐨 𝐤𝐞
+│ ↳ https://wa.me/6282228638623
 ├─━━━━━━━━━━━━━━─
 │💬 𝐒𝐚𝐥𝐚𝐦 𝐤𝐞𝐧𝐚𝐥 𝐬𝐞𝐦𝐮𝐚𝐧𝐲𝐚!
 │
@@ -405,6 +413,12 @@ const helpText = `
 │  Atur daftar PHOTO, khusus admin
 │• *.twily ww/konser/jj <teks custom>*
 │  Tag anggota yang sudah masuk daftar
+│• *.twily mc/roblox <teks custom>*
+│  Tag anggota yang masuk daftar MC / Roblox
+│• *.twily mc add/remove ...*
+│  Atur daftar MC, khusus admin
+│• *.twily roblox add/remove ...*
+│  Atur daftar Roblox, khusus admin
 │• *.twily birthday add/remove ...*
 │  Atur daftar ulang tahun, khusus admin
 │• *.twily me*
@@ -590,6 +604,7 @@ ${monthBlocks}`)
     if (!action) {
       const shownName = profile.nama || m.name || 'Belum diisi'
       const status = profile.status ? profile.status.replace(/^taken by /i, 'Taken by ') : 'Not set'
+      const fromValue = profile.from || profile.askot || 'Not set'
       return m.reply(`╭─━━━━━━━━━━━━━━─╮
     │ *TWILY ME*
   │
@@ -599,7 +614,7 @@ ${monthBlocks}`)
   │ Status: ${status}
   │ Gender: ${profileGenderText(profile.gender) || 'Not set'}
   │ Gen: ${profileGenText(profile.gen) || 'Not set'}
-  │ City: ${profile.askot || 'Not set'}
+  │ From: ${fromValue}
   │ Hobby: ${profile.hobi || 'Not set'}
   │
   ╰─━━━━━━━━━━━━━━─`)
@@ -642,13 +657,13 @@ ${monthBlocks}`)
         if (!partner) return m.reply('❌ Format: `.twily me status Taken <name>`')
         profile.status = `Taken by ${partner}`
       } else return m.reply('❌ Status options: Single, Taken <name>, or ??.')
-    } else if (['nama', 'name', 'askot', 'city', 'hobi', 'hobby', 'hobbies'].includes(action)) {
+    } else if (['nama', 'name', 'askot', 'city', 'from', 'hobi', 'hobby', 'hobbies'].includes(action)) {
       const value = args.join(' ').trim()
       if (!value) return m.reply(`❌ Isi ${action} tidak boleh kosong.`)
-      const field = { name: 'nama', city: 'askot', hobby: 'hobi', hobbies: 'hobi' }[action] || action
+      const field = { name: 'nama', city: 'from', from: 'from', askot: 'from', hobby: 'hobi', hobbies: 'hobi' }[action] || action
       profile[field] = value
     } else {
-      return m.reply('❌ Fields: name, role, birthday, status, gender, gen, city, hobby.')
+      return m.reply('❌ Fields: name, role, birthday, status, gender, gen, from, hobby.')
     }
     saveTwilyGenerations()
     return m.reply(`✅ Profil *${action}* berhasil diperbarui. Ketik *.twily me* untuk melihatnya.`)
@@ -659,6 +674,9 @@ ${monthBlocks}`)
     mole: { list: TWILY_ML, label: 'ML TWILY' },
     'mobile legends': { list: TWILY_ML, label: 'ML TWILY' },
     ww: { list: TWILY_WW, label: 'WW TWILY' },
+    mc: { list: TWILY_MC, label: 'MC TWILY' },
+    minecraft: { list: TWILY_MC, label: 'MC TWILY' },
+    roblox: { list: TWILY_ROBLOX, label: 'ROBLOX TWILY' },
     konser: { list: TWILY_MUSIC, label: 'MUSIC TWILY' },
     lyrics: { list: TWILY_MUSIC, label: 'MUSIC TWILY' },
     lyric: { list: TWILY_MUSIC, label: 'MUSIC TWILY' },
