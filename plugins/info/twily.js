@@ -519,9 +519,9 @@ ${members.map(member => `• @${member.jid.split('@')[0]} - ${member.name}`).joi
             const right = birthdayDate(rightEntry.value)
             return left.day - right.day || String(leftEntry.value.name).localeCompare(String(rightEntry.value.name), 'id')
           })
-          const title = `${MONTH_NAMES[month] || 'Bulan'} (${sortedItems.length} orang)`
-          const lines = sortedItems.map(({ value }, index) => `${index + 1}. ${value.name} - ${formatBirthdayDate(value.date)}`).join('\n')
-          return `╭─━━━━━━━━━━━━━━─\n│ ${title}\n╰─━━━━━━━━━━━━━━─\n${lines}`
+          const title = `• ${MONTH_NAMES[month] || 'Bulan'} (${sortedItems.length} orang)`
+          const lines = sortedItems.map(({ value }) => `${String(birthdayDate(value).day).padStart(2, '0')}. ${value.name}`).join('\n')
+          return `${title}\n─━━━━━━━━━━━━━━─\n${lines}`
         })
         .join('\n\n')
 
