@@ -8,7 +8,7 @@ import os from "os";
 import ffmpeg from "fluent-ffmpeg";
 import { revokeGroupStatus } from "../../lib/statusHelper.js";
 
-let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
+let Izumi = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner, isBotAdmin }) => {
   if (!m.isGroup) {
     return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Perintah ini hanya dapat digunakan di dalam grup!\n*╰───────────────*');
   }
@@ -229,8 +229,75 @@ let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
   }
 
   // ==========================================
-  // ALUR 2: UPLOAD STATUS GRUP (GROUP STATUS V2)
+  // ALUR 2: PENGATURAN PEMBATASAN ADMIN SWGC
   // ==========================================
+  const firstWord = (text || '').trim().split(/\s+/)[0]?.toLowerCase() || '';
+  const secondWord = (text || '').trim().split(/\s+/)[1]?.toLowerCase() || '';
+  const isSettingCmd = /^(admin|onlyadmin|atur|rule|mode)$/i.test(firstWord) ||
+                       (/^(on|off|enable|disable|status)$/i.test(firstWord) && !m.quoted && !text.includes('|'));
+
+  if (isSettingCmd && !m.quoted && !m.msg?.url && !m.msg?.directPath) {
+    if (!isAdmin && !isOwner) {
+      return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Pengaturan pembatasan status grup hanya dapat diubah oleh *Admin Grup*!\n*╰───────────────*');
+    }
+
+    let mode = /^(admin|onlyadmin|atur|rule|mode)$/i.test(firstWord) ? secondWord : firstWord;
+
+    if (mode === 'on' || mode === 'enable' || mode === '1') {
+      chat.antiSwgc = true;
+      await react('✅');
+      const botAdminNotice = !isBotAdmin ? '\n> ⚠️ *Peringatan:* Bot belum menjadi Admin grup. Jadikan bot admin agar dapat menghapus status otomatis.' : '';
+      return m.reply(
+        `*──  ୨୧ ✧ PENGATURAN STATUS GRUP ✧ ୨୧  ──*\n\n` +
+        `> *おしらせ!* (ꜱʏꜱᴛᴇᴍ ᴜᴘᴅᴀᴛᴇ)\n` +
+        `> Pembatasan *Hanya Admin* untuk Status Grup (SWGC) berhasil *DIAKTIFKAN* ✦\n\n` +
+        `*╭  〔 ⚙ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ꜱ ɪ ꜱ ᴛ ᴇ ᴍ 〕*\n` +
+        `*┆* ⟡ ᴍᴏᴅᴇ       : *Hanya Admin (Aktif) ✓*\n` +
+        `*┆* ✧ ᴋᴇʙɪᴊᴀᴋᴀɴ   : Hanya Admin yang dapat mengunggah Status Grup\n` +
+        `*┆* ✦ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ : *${isBotAdmin ? 'Siap Hapus Otomatis (Bot Admin) ✦' : 'Perlu Hak Admin Bot ✕'}*\n` +
+        `*╰───────────────*\n` +
+        `> _Setiap bot anomali atau anggota biasa yang mengunggah status grup akan otomatis dihapus oleh bot._` +
+        botAdminNotice
+      );
+    }
+
+    if (mode === 'off' || mode === 'disable' || mode === '0') {
+      chat.antiSwgc = false;
+      await react('❌');
+      return m.reply(
+        `*──  ୨୧ ✧ PENGATURAN STATUS GRUP ✧ ୨୧  ──*\n\n` +
+        `> *おしらせ!* (ꜱʏꜱᴛᴇᴍ ᴜᴘᴅᴀᴛᴇ)\n` +
+        `> Pembatasan *Hanya Admin* untuk Status Grup (SWGC) berhasil *DINONAKTIFKAN* ✕\n\n` +
+        `*╭  〔 ⚙ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ꜱ ɪ ꜱ ᴛ ᴇ ᴍ 〕*\n` +
+        `*┆* ⟡ ᴍᴏᴅᴇ     : *Semua Anggota (Bebas) ✕*\n` +
+        `*┆* ✧ ᴋᴇʙɪᴊᴀᴋᴀɴ : Semua anggota grup diizinkan mengunggah status grup\n` +
+        `*╰───────────────*`
+      );
+    }
+
+    const currentStatus = chat.antiSwgc ? 'Hanya Admin (Aktif) ✓' : 'Semua Anggota (Bebas) ✕';
+    return m.reply(
+      `*──  ୨୧ ✧ PENGATURAN STATUS GRUP ✧ ୨୧  ──*\n\n` +
+      `> *おしらせ!* (ꜱᴛᴀᴛᴜꜱ ɢʀᴜᴘ ꜱᴇᴄᴜʀɪᴛʏ)\n` +
+      `> Cegah bot anomali dan anggota biasa mengunggah Status Grup (SWGC) tanpa izin admin.\n\n` +
+      `*╭  〔 ⚙ ɪ ɴ ꜰ ᴏ ʀ ᴍ ᴀ ꜱ ɪ 〕*\n` +
+      `*┆* ⟡ ꜱᴛᴀᴛᴜꜱ ꜱᴀᴀᴛ ɪɴɪ : *${currentStatus}*\n` +
+      `*┆* ✧ ʙᴏᴛ ᴀᴅᴍɪɴ       : *${isBotAdmin ? 'Ya (Siap Hapus Otomatis) ✦' : 'Tidak (Perlu Hak Admin) ✕'}*\n` +
+      `*╰───────────────*\n\n` +
+      `*╭  〔 ◈ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*\n` +
+      `*┆* › Aktifkan : *${usedPrefix + command} admin on*\n` +
+      `*┆* › Matikan  : *${usedPrefix + command} admin off*\n` +
+      `*╰───────────────*`
+    );
+  }
+
+  // ==========================================
+  // ALUR 3: UPLOAD STATUS GRUP (GROUP STATUS V2)
+  // ==========================================
+  if (chat.antiSwgc && !isAdmin && !isOwner) {
+    return m.reply('*╭  〔 ◈ ɪ ᴢ ɪ ɴ  ᴅ ɪ ᴛ ᴏ ʟ ᴀ ᴋ 〕*\n> Fitur upload SWGC di grup ini dibatasi hanya untuk *Admin Grup*!\n*╰───────────────*');
+  }
+
   let textInput = '';
   let warna = '';
   let url = '';
@@ -435,18 +502,26 @@ let Izumi = async (m, { conn, text, usedPrefix, command, isBotAdmin }) => {
 
   // 5. BANTUAN CARA PAKAI
   else {
+    const currentStatus = chat.antiSwgc ? 'Hanya Admin (Aktif) ✓' : 'Semua Anggota (Bebas) ✕';
     return m.reply(
-      `*╭  〔 ◈ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*\n` +
-      `*• Upload Status Grup:* \n` +
+      `*╭  〔 ◈ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ɢ ʀ ᴜ ᴘ  (ꜱ ᴡ ɢ ᴄ) 〕*\n` +
+      `*┆* ⟡ ᴘʀᴏᴛᴇᴋꜱɪ ꜱᴡɢᴄ : *${currentStatus}*\n` +
+      `*┆* ✧ ʙᴏᴛ ᴀᴅᴍɪɴ    : *${isBotAdmin ? 'Siap Hapus Otomatis ✦' : 'Perlu Hak Admin ✕'}*\n` +
+      `*╰──────────────────────────*\n\n` +
+      `*• 1. Upload Status Grup (Tambah):* \n` +
       `  - *Teks:* \`${usedPrefix + command} Halo grup | biru\`\n` +
       `  - *Foto/Video:* Kirim/balas foto atau video dengan caption \`${usedPrefix + command} <caption opsional>\`\n` +
       `  - *Audio/VN:* Balas audio dengan \`${usedPrefix + command}\`\n\n` +
-      `*• Hapus Status Grup:* \n` +
+      `*• 2. Hapus Status Grup (Hapus):* \n` +
       `  - *${usedPrefix}delswgc* (Hapus status terakhir)\n` +
       `  - *${usedPrefix}delswgc list* (Lihat daftar status aktif)\n` +
       `  - *${usedPrefix}delswgc <nomor>* (Hapus berdasarkan nomor)\n` +
       `  - *${usedPrefix}delswgc all* (Hapus semua status aktif)\n` +
-      `*╰───────────────*`
+      `  - Balas pesan status anomali dengan *${usedPrefix}delswgc*\n\n` +
+      `*• 3. Pembatasan Status (Khusus Admin):* \n` +
+      `  - *${usedPrefix + command} admin on* (Hanya Admin yang bisa up status)\n` +
+      `  - *${usedPrefix + command} admin off* (Semua anggota bisa up status)\n` +
+      `  - *Anti-Anomali:* Bot otomatis mendeteksi & menghapus status dari bot anomali!`
     );
   }
 };
@@ -497,7 +572,7 @@ async function groupStatus(conn, jid, content) {
 
 
 
-Izumi.help = ["swgc", "upswgc", "delswgc", "hapusswgc"];
+Izumi.help = ["swgc", "swgc admin on/off", "upswgc", "delswgc", "hapusswgc"];
 Izumi.command = /^(swgc|upswgc|statusgc|delswgc|hapusswgc|deleteswgc)$/i;
 Izumi.tags = ["group"];
 Izumi.admin = true;

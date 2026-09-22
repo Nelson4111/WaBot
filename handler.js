@@ -548,9 +548,9 @@ async function processMessage(m, chatUpdate) {
             conn.sendMessage(m.chat, { text: caption, mentions: [m.sender] }, { quoted: m }).catch(() => {})
         }
 
-        if (m.isBaileys && !commandCandidate) return
-
-        m.exp += Math.ceil(Math.random() * 10)
+        if (!m.isBaileys) {
+            m.exp += Math.ceil(Math.random() * 10)
+        }
         let usedPrefix
         let _user = global.db.data?.users?.[m.sender]
         let groupMetadata = {}
@@ -677,6 +677,9 @@ async function processMessage(m, chatUpdate) {
                     chatUpdate, __dirname: ___dirname, __filename
                 })) continue
             }
+
+            // Pesan Baileys / bot anomali tanpa prefix/command dilewati dari eksekusi command biasa
+            if (m.isBaileys && !commandCandidate) continue
 
             if (typeof plugin !== 'function') continue
 

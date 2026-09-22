@@ -50,8 +50,8 @@ let handler = async (m, { conn, args, usedPrefix, command, isAdmin, isOwner, isB
     `*┆* ✧ ʙᴏᴛ ᴀᴅᴍɪɴ       : *${isBotAdmin ? 'Ya (Siap Hapus) ✦' : 'Tidak (Perlu Admin) ✕'}*\n` +
     `*╰───────────────*\n\n` +
     `*╭  〔 ◈ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*\n` +
-    `*┆* › Mengaktifkan : *${usedPrefix + command} on*\n` +
-    `*┆* › Mematikan    : *${usedPrefix + command} off*\n` +
+    `*┆* › Mengaktifkan : *${usedPrefix + command} on* (atau *${usedPrefix}swgc admin on*)\n` +
+    `*┆* › Mematikan    : *${usedPrefix + command} off* (atau *${usedPrefix}swgc admin off*)\n` +
     `*╰───────────────*`
   )
 }
