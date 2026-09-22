@@ -67,6 +67,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del level @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del exp @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del darah @tag <jml>*\n` +
@@ -131,7 +132,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `─━━━━━━━━━━━━━━─\n\n` +
 
   `💕 *RSHIP*\n` +
-  `> ↳ *${usedPrefix}rpgpanel set/add/del jadian @tag/reply <pasangan/all> <tanggal/durasi/poin/tingkat/cincin> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del jadian @tag/reply <pasangan/all> <tanggal/durasi/poin/tingkat/status/cincin> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addharem @tag <nama> <cowok/cewek>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delharem @tag <no>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <level/love/exp/nikah> <val>*\n` +
@@ -436,7 +437,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     const pairSelector = String(remaining[0] || '').toLowerCase()
     const field = String(remaining[1] || '').toLowerCase()
     const value = remaining.slice(2).join(' ').trim()
-    const validFields = ['tanggal', 'date', 'durasi', 'duration', 'poin', 'point', 'tingkat', 'level', 'cincin', 'ring']
+    const validFields = ['tanggal', 'date', 'durasi', 'duration', 'poin', 'point', 'tingkat', 'level', 'status', 'menikah', 'nikah', 'cincin', 'ring']
     if (!['all', 'semua'].includes(pairSelector) && (!/^\d+$/.test(pairSelector) || Number(pairSelector) < 1)) {
       return m.reply(`❌ Pilih pasangan dengan nomor atau all. Contoh: *${usedPrefix}rpgpanel setjadian @tag 1 poin 100*`)
     }
@@ -488,6 +489,25 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
         const nextLevel = mode === 'set' ? level : mode === 'add' ? currentLevel + level : currentLevel - level
         const boundedLevel = Math.max(1, Math.min(rankThresholds.length, nextLevel))
         pasangan.poinBucin = rankThresholds[boundedLevel - 1]
+      } else if (['status', 'menikah', 'nikah'].includes(field)) {
+        const normalized = String(value).trim().toLowerCase()
+        const statusMap = {
+          'menikah': true,
+          'nikah': true,
+          'single': false,
+          'jomblo': false,
+          'true': true,
+          'false': false,
+          '1': true,
+          '0': false,
+          'ya': true,
+          'tidak': false
+        }
+        const nextStatus = Object.prototype.hasOwnProperty.call(statusMap, normalized) ? statusMap[normalized] : null
+        if (nextStatus === null) return m.reply('❌ Status hanya bisa berupa menikah/single/true/false/ya/tidak.')
+        pasangan.status = nextStatus ? 'menikah' : 'single'
+        pasangan.menikah = nextStatus
+        if (mode === 'set' && nextStatus) pasangan.nikahTime = pasangan.nikahTime || Date.now()
       } else {
         const ringKey = value.toLowerCase().replace(/\s+/g, '')
         const ring = CINCIN_SHOP[ringKey]?.name || normalizeRingName(value)
@@ -562,17 +582,76 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     return m.reply(`✅ *${aksi.toUpperCase()} CONTRIBUTION*\n@${who.split('@')[0]} = ${guild.contribution[who].toLocaleString()} Pts`, null, { mentions: [who] })
   }
 
+  if (['setbot', 'addbot', 'delbot'].includes(aksi)) {
+    const field = String(remaining[0] || '').toLowerCase()
+    const fieldMap = { level: 'level', lvl: 'level', xp: 'exp', exp: 'exp', limit: 'limit' }
+    const key = fieldMap[field]
+    if (!key || remaining.length < 2) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\nContoh: *${usedPrefix}rpgpanel setbot @tag level 26*`)
+    }
+
+    const targetValue = Number(remaining[1])
+    if (!Number.isFinite(targetValue) || targetValue < 0) return m.reply('❌ Nilai tidak valid.')
+
+    if (aksi === 'setbot') {
+      account[key] = targetValue
+      if (key === 'level') {
+        account.exp = 0
+        user.level = targetValue
+        user.exp = 0
+      }
+      if (key === 'exp') {
+        account.exp = targetValue
+        user.exp = targetValue
+      }
+      if (key === 'limit') {
+        account.limit = targetValue
+        user.limit = targetValue
+      }
+    } else {
+      const currentValue = Number(account[key] ?? user[key] ?? 0)
+      const nextValue = aksi === 'addbot' ? currentValue + targetValue : Math.max(0, currentValue - targetValue)
+      account[key] = nextValue
+      if (key === 'level') {
+        user.level = nextValue
+        user.exp = 0
+        account.exp = 0
+      }
+      if (key === 'exp') {
+        user.exp = nextValue
+        account.exp = nextValue
+      }
+      if (key === 'limit') {
+        user.limit = nextValue
+      }
+    }
+
+    saveDB(wdb)
+    return m.reply(`✅ *${aksi.toUpperCase()} BOT ${key.toUpperCase()}*\n@${who.split('@')[0]} = ${(account[key] ?? user[key] ?? 0).toLocaleString()}`, null, {mentions: [who]})
+  }
+
   // 1. SET STAT
-  if(['setmoney','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod'].includes(aksi)){
+  if(['setmoney','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod','setbotlevel','setbotxp','setbotlimit'].includes(aksi)){
     if(jumlah < 0) return m.reply('❌ Jumlah tidak boleh minus')
 
     if(aksi === 'setmoney') wdb.money[who] = jumlah
     else if(aksi === 'setmaxhp') user.maxDarahBonus = jumlah
-    else if (aksi === 'setuserlevel') user.level = jumlah
-    else user[aksi.replace('set','')] = jumlah
+    else if (['setuserlevel', 'setbotlevel'].includes(aksi)) {
+      account.level = jumlah
+      user.level = jumlah
+    } else if (['setexp', 'setbotxp'].includes(aksi)) {
+      account.exp = jumlah
+      user.exp = jumlah
+    } else if (aksi === 'setbotlimit') {
+      account.limit = jumlah
+      user.limit = jumlah
+    } else {
+      user[aksi.replace('set','')] = jumlah
+    }
 
-    if(['setlevel','setuserlevel','setarmor','setmaxhp','setsword','setpickaxe','setfishingrod'].includes(aksi)){
+    if(['setlevel','setuserlevel','setbotlevel','setarmor','setmaxhp','setsword','setpickaxe','setfishingrod'].includes(aksi)){
       user.exp = 0
+      account.exp = 0
       user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
       user.darah = user.maxDarah
     }
@@ -581,18 +660,21 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   }
 
   // 2. ADD STAT
-  if(['addmoney','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod'].includes(aksi)){
+  if(['addmoney','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod','addbotlevel','addbotxp','addbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
     if(aksi === 'addmoney') wdb.money[who] += jumlah
     else if(aksi === 'adddarah') user.darah = Math.min(user.maxDarah, user.darah + jumlah)
-    else if(aksi === 'addlevel' || aksi === 'adduserlevel'){
+    else if(['addlevel','adduserlevel','addbotlevel'].includes(aksi)){
+      account.level = (Number(account.level) || 0) + jumlah
       user.level += jumlah
       user.exp = 0
+      account.exp = 0
       user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
       user.darah = user.maxDarah
     }
-    else if(aksi === 'addexp'){
+    else if(['addexp','addbotxp'].includes(aksi)){
+      account.exp = (Number(account.exp) || 0) + jumlah
       user.exp += jumlah
       while(user.exp >= user.level * 500){
         user.exp -= user.level * 500
@@ -601,27 +683,38 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
         user.darah = user.maxDarah
       }
     }
+    else if(aksi === 'addbotlimit'){
+      account.limit = (Number(account.limit) || 0) + jumlah
+      user.limit = (Number(user.limit) || 0) + jumlah
+    }
     else user[aksi.replace('add','')] += jumlah
 
     saveDB(wdb)
-    let total = aksi === 'addmoney'? wdb.money[who] : user[aksi.replace('add','')]
+    const total = aksi === 'addmoney' ? wdb.money[who] : (aksi === 'addbotlimit' ? account.limit : user[aksi.replace('add','')])
     return m.reply(`✅ *TAMBAH ${aksi.toUpperCase().replace('ADD','')}*\n@${who.split('@')[0]} +${jumlah.toLocaleString()}\nTotal: ${total.toLocaleString()}`, null, {mentions: [who]})
   }
 
   // 3. DEL STAT
-  if(['delmoney','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod'].includes(aksi)){
+  if(['delmoney','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod','delbotlevel','delbotxp','delbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
     if(aksi === 'delmoney') wdb.money[who] = Math.max(0, wdb.money[who] - jumlah)
     else if(aksi === 'deldarah') user.darah = Math.max(0, user.darah - jumlah)
-    else if(aksi === 'dellevel' || aksi === 'deluserlevel'){
+    else if(['dellevel','deluserlevel','delbotlevel'].includes(aksi)){
+      account.level = Math.max(0, (Number(account.level) || 0) - jumlah)
       user.level = Math.max(1, user.level - jumlah)
       user.exp = 0
+      account.exp = 0
       user.maxDarah = 100 + (user.armor * 20) + user.maxDarahBonus
       user.darah = Math.min(user.darah, user.maxDarah)
     }
-    else if(aksi === 'delexp'){
+    else if(['delexp','delbotxp'].includes(aksi)){
+      account.exp = Math.max(0, (Number(account.exp) || 0) - jumlah)
       user.exp = Math.max(0, user.exp - jumlah)
+    }
+    else if(aksi === 'delbotlimit'){
+      account.limit = Math.max(0, (Number(account.limit) || 0) - jumlah)
+      user.limit = Math.max(0, (Number(user.limit) || 0) - jumlah)
     }
     else {
       let stat = aksi.replace('del','')
@@ -629,7 +722,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     }
 
     saveDB(wdb)
-    let total = aksi === 'delmoney'? wdb.money[who] : user[aksi.replace('del','')]
+    const total = aksi === 'delmoney' ? wdb.money[who] : (aksi === 'delbotlimit' ? account.limit : user[aksi.replace('del','')])
     return m.reply(`✅ *KURANGI ${aksi.toUpperCase().replace('DEL','')}*\n@${who.split('@')[0]} -${jumlah.toLocaleString()}\nTotal: ${total.toLocaleString()}`, null, {mentions: [who]})
   }
 
