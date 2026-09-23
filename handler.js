@@ -565,22 +565,7 @@ async function processMessage(m, chatUpdate) {
         }
         */
 
-        // -- AFK CLEAR (Dipindah ke sini agar tidak terblokir oleh isBaileys / WA Mods) --
-        let userAFK = global.db.data.users[m.sender]
-        if (userAFK && userAFK.afk > -1 && !m.fromMe) {
-            let duration = Date.now() - userAFK.afk;
-            let seconds = Math.floor(duration / 1000);
-            let d = Math.floor(seconds / 86400); seconds %= 86400;
-            let h = Math.floor(seconds / 3600); seconds %= 3600;
-            let min = Math.floor(seconds / 60); seconds %= 60;
-            let timeStr = [d ? `${d} Hari` : '', h ? `${h} Jam` : '', min ? `${min} Menit` : '', seconds ? `${seconds} Detik` : ''].filter(Boolean).join(' ') || 'beberapa detik';
-            
-            let caption = `〔 ✨ *WELCOME BACK* 〕\n⟡ User @${m.sender.split('@')[0]} telah kembali dari AFK!\n⟡ *Lama AFK* : ${timeStr}\n⟡ *Alasan* : _${userAFK.afkReason || 'Tanpa Alasan'}_`.trim()
-            userAFK.lastAfk = Date.now()
-            userAFK.afk = -1
-            userAFK.afkReason = ''
-            conn.sendMessage(m.chat, { text: caption, mentions: [m.sender] }, { quoted: m }).catch(() => {})
-        }
+        // -- AFK RESTORATION ditangani oleh plugins/afk/afk-_afk.js secara terarbitrase dengan Zen Shinto style --
 
         if (!m.isBaileys) {
             m.exp += Math.ceil(Math.random() * 10)
@@ -976,6 +961,11 @@ export async function participantsUpdate({ id, participants, action, force = fal
         await loadDatabase()
     let chat = global.db.data.chats[id] || {}
     let text = ''
+
+    // ARBITRASE: Cegah respon ganda (Welcome/Leave/Promote/Demote) antara Bot Utama & JadiBot
+    if (!force && !(await botArbitrator.coordinateGroupEvent(this, id, action, participants))) {
+        return
+    }
 
     // REAL-TIME METADATA CACHE UPDATE & INVALIDATION
     try {
@@ -1529,6 +1519,7 @@ export async function groupsUpdate(groupsUpdate) {
     for (const groupUpdate of groupsUpdate) {
         const id = groupUpdate.id
         if (!id) continue
+        if (!(await botArbitrator.coordinateGroupEvent(this, id, 'groupsUpdate'))) continue
         let chats = global.db.data.chats[id], text = ''
         if (!chats?.detect) continue
         if (groupUpdate.desc) text = (chats.sDesc || this.sDesc || conn.sDesc || '```Description has been changed to```\n@desc').replace('@desc', groupUpdate.desc)
