@@ -104,6 +104,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel kawinforce @tag <h1> <h2>*\n` +
   `> ↳ *${usedPrefix}rpgpanel icuforce @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setstreak @tag <angka>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addstreak @tag <angka>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n` +
@@ -164,6 +166,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setstreak @tag <angka>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addstreak @tag <angka>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n\n` +
   `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n\n` +
@@ -1003,6 +1007,17 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     account.dailySavedAt = previousDayMs
     saveDB(wdb)
     return m.reply(`🔄 Daily streak @${who.split('@')[0]} berhasil direset ke 0.`, null, {mentions: [who]})
+  }
+
+  if(['setstreak', 'addstreak'].includes(aksi)){
+    let val = parseInt(args[0])
+    if(isNaN(val) || val < 0) return m.reply(`Contoh: *${usedPrefix}rpgpanel ${aksi} @tag 15*`)
+    let oldStreak = Number(account.dailyStreak) || Number(user.dailyStreak) || 0
+    let newStreak = aksi === 'setstreak' ? val : oldStreak + val
+    user.dailyStreak = newStreak
+    account.dailyStreak = newStreak
+    saveDB(wdb)
+    return m.reply(`✅ Daily streak @${who.split('@')[0]} berhasil diubah dari *${oldStreak}* menjadi *${newStreak}* hari.`, null, {mentions: [who]})
   }
   
     // 8 BANK PANEL
