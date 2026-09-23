@@ -27,7 +27,8 @@ if (m.quoted && !trade) {
   let partner = m.quoted.sender
   if (partner === sender) return m.reply('❌ Tidak bisa trade dengan diri sendiri!')
   let pData = getUserRPG(wdb, partner)
-  let pUser = pData.rpg
+  let pUser = pData?.rpg
+  if (!pUser || pData?.isDummy) return m.reply('❌ Partner belum memiliki data RPG.')
   initLadang(pUser)
   if (!pUser.inventory) pUser.inventory = {}
   if (!pUser.ikan) pUser.ikan = {}
@@ -60,7 +61,8 @@ if (m.mentionedJid[0] && !trade) {
   let partner = m.mentionedJid[0]
   if (partner === sender) return m.reply('❌ Tidak bisa trade dengan diri sendiri!')
   let pData = getUserRPG(wdb, partner)
-  let pUser = pData.rpg
+  let pUser = pData?.rpg
+  if (!pUser || pData?.isDummy) return m.reply('❌ Partner belum memiliki data RPG.')
   initLadang(pUser)
   if (!pUser.inventory) pUser.inventory = {}
   if (!pUser.ikan) pUser.ikan = {}
@@ -124,35 +126,41 @@ let pData = getUserRPG(wdb, partner)
 let pUser = pData.rpg
 
 // FUNGSI AMBIL STOK DARI SEMUA KATEGORI
-const getStok = (user, item) => {
-  if (item === 'money') return wdb.money[m.sender] || 0
-  if (item === 'bank') return user.bank || 0
-  if (user.inventory && user.inventory[item]) return user.inventory[item]
-  if (user.ikan && user.ikan[item]) return user.ikan[item]
-  if (user.ores && user.ores[item]) return user.ores[item]
-  if (user.items && user.items[item]) return user.items[item]
-  if (user.masakan && user.masakan[item]) return user.masakan[item]
+const getStok = (jid, user, item) => {
+  if (item === 'money') return wdb.money[jid] || 0
+  if (item === 'bank') return user?.bank || 0
+  if (user?.inventory && user.inventory[item]) return user.inventory[item]
+  if (user?.ikan && user.ikan[item]) return user.ikan[item]
+  if (user?.ores && user.ores[item]) return user.ores[item]
+  if (user?.items && user.items[item]) return user.items[item]
+  if (user?.masakan && user.masakan[item]) return user.masakan[item]
   return 0
 }
 
-const kurangStok = (user, item, qty) => {
-  if (item === 'money') wdb.money[m.sender] -= qty
-  else if (item === 'bank') user.bank -= qty
-  else if (user.inventory && user.inventory[item] !== undefined) user.inventory[item] -= qty
-  else if (user.ikan && user.ikan[item] !== undefined) user.ikan[item] -= qty
-  else if (user.ores && user.ores[item] !== undefined) user.ores[item] -= qty
-  else if (user.items && user.items[item] !== undefined) user.items[item] -= qty
-  else if (user.masakan && user.masakan[item] !== undefined) user.masakan[item] -= qty
+const kurangStok = (jid, user, item, qty) => {
+  if (item === 'money') wdb.money[jid] = Math.max(0, (wdb.money[jid] || 0) - qty)
+  else if (item === 'bank') {
+    if (user) user.bank = Math.max(0, (user.bank || 0) - qty)
+    if (wdb.users?.[jid]) wdb.users[jid].bank = user ? user.bank : 0
+  }
+  else if (user?.inventory && user.inventory[item] !== undefined) user.inventory[item] -= qty
+  else if (user?.ikan && user.ikan[item] !== undefined) user.ikan[item] -= qty
+  else if (user?.ores && user.ores[item] !== undefined) user.ores[item] -= qty
+  else if (user?.items && user.items[item] !== undefined) user.items[item] -= qty
+  else if (user?.masakan && user.masakan[item] !== undefined) user.masakan[item] -= qty
 }
 
-const tambahStok = (user, item, qty) => {
-  if (item === 'money') wdb.money[m.sender] = (wdb.money[m.sender] || 0) + qty
-  else if (item === 'bank') user.bank = (user.bank || 0) + qty
-  else if (user.inventory) user.inventory[item] = (user.inventory[item] || 0) + qty
-  else if (user.ikan) user.ikan[item] = (user.ikan[item] || 0) + qty
-  else if (user.ores) user.ores[item] = (user.ores[item] || 0) + qty
-  else if (user.items) user.items[item] = (user.items[item] || 0) + qty
-  else if (user.masakan) user.masakan[item] = (user.masakan[item] || 0) + qty
+const tambahStok = (jid, user, item, qty) => {
+  if (item === 'money') wdb.money[jid] = (wdb.money[jid] || 0) + qty
+  else if (item === 'bank') {
+    if (user) user.bank = (user.bank || 0) + qty
+    if (wdb.users?.[jid]) wdb.users[jid].bank = user ? user.bank : (wdb.users[jid].bank || 0) + qty
+  }
+  else if (user?.inventory) user.inventory[item] = (user.inventory[item] || 0) + qty
+  else if (user?.ikan) user.ikan[item] = (user.ikan[item] || 0) + qty
+  else if (user?.ores) user.ores[item] = (user.ores[item] || 0) + qty
+  else if (user?.items) user.items[item] = (user.items[item] || 0) + qty
+  else if (user?.masakan) user.masakan[item] = (user.masakan[item] || 0) + qty
 }
 
 if (action === 'add') {
@@ -168,7 +176,7 @@ if (action === 'add') {
     )
   }
 
-  let stok = getStok(sUser, type)
+  let stok = getStok(sender, sUser, type)
   if (stok < count) {
     return m.reply(
       `╭─❏「 🔄 TRADE 」❏\n` +
@@ -253,12 +261,15 @@ if (action === 'deal') {
 
   let p1Data = getUserRPG(wdb, trade.p1)
   let p2Data = getUserRPG(wdb, trade.p2)
-  let p1User = p1Data.rpg
-  let p2User = p2Data.rpg
+  let p1User = p1Data?.rpg
+  let p2User = p2Data?.rpg
+  if (!p1User || !p2User || p1Data?.isDummy || p2Data?.isDummy) {
+    return m.reply('❌ Salah satu peserta trade belum memiliki data RPG.')
+  }
 
   // cek stok lagi
   for (let [item, qty] of Object.entries(trade.p1Offer)) {
-    let stok = getStok(p1User, item)
+    let stok = getStok(trade.p1, p1User, item)
     if (stok < qty) {
       return m.reply(
         `╭─❏「 🔄 TRADE 」❏\n` +
@@ -273,7 +284,7 @@ if (action === 'deal') {
   }
 
   for (let [item, qty] of Object.entries(trade.p2Offer)) {
-    let stok = getStok(p2User, item)
+    let stok = getStok(trade.p2, p2User, item)
     if (stok < qty) {
       return m.reply(
         `╭─❏「 🔄 TRADE 」❏\n` +
@@ -289,13 +300,13 @@ if (action === 'deal') {
 
   // eksekusi
   for (let [item, qty] of Object.entries(trade.p1Offer)) {
-    kurangStok(p1User, item, qty)
-    tambahStok(p2User, item, qty)
+    kurangStok(trade.p1, p1User, item, qty)
+    tambahStok(trade.p2, p2User, item, qty)
   }
 
   for (let [item, qty] of Object.entries(trade.p2Offer)) {
-    kurangStok(p2User, item, qty)
-    tambahStok(p1User, item, qty)
+    kurangStok(trade.p2, p2User, item, qty)
+    tambahStok(trade.p1, p1User, item, qty)
   }
 
   saveDB(wdb)

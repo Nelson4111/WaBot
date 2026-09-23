@@ -157,7 +157,6 @@ let handler = async (m, { conn, command }) => {
   // === MIGRATE KE 2 TEMPAT ===
   // 1. Masuk inventory buat.tas
   for(let item in hasilLoot){ user.inventory[item] = (user.inventory[item] || 0) + hasilLoot[item] }
-  user.inventory['kayu'] = (user.inventory['kayu'] || 0) + baseWood + Math.floor(pickLvl / 3)
   user.inventory['iron'] = (user.inventory['iron'] || 0) + baseIron + Math.floor(pickLvl / 4)
 
   // 2. Masuk user.diamond dll biar nongol di.inventory

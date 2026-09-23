@@ -392,11 +392,15 @@ async function processMessage(m, chatUpdate) {
                 if (!('role' in user)) user.role = 'Free user'
                 if (!('autolevelup' in user)) user.autolevelup = false
                 if (!isNumber(user.balance)) user.balance = 0
+                if (!isNumber(user.money)) user.money = 0
+                if (!isNumber(user.bank)) user.bank = 0
             } else {
                 global.db.data.users[m.sender] = {
                     exp: 0,
                     limit: 100,
                     balance: 0,
+                    money: 0,
+                    bank: 0,
                     totalDonasi: 0,
                     lastclaim: 0,
                     registered: true,

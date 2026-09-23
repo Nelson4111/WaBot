@@ -199,7 +199,7 @@ Fitnah orang biar masuk penjara.
     let durasiPenjara = DEFAULT_DURATION
     let tebusan = 0
 
-    if (uangTaruhan >= 100000) { // 100jt keatas = 100%
+    if (uangTaruhan >= 100000000) { // 100jt keatas = 100%
         peluang = 1.0
         durasiPenjara = HIGH_DURATION // 5 jam
         tebusan = Math.floor(uangTaruhan / 2)

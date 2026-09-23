@@ -15,7 +15,7 @@
     "commands": "Tebak-tebakan: .tebakgambar, .family100, .caklontong, .susunkata, .tebakangka, .asahotak. Kasino/Kartu: .blackjack [taruhan], .slot."
   },
   "sticker_media": {
-    "keywords": ["stiker", "sticker", "meme", "smeme", "toimg", "tomp3"],
+    "keywords": ["stiker", "sticker", "meme", "smeme", "toimg", "tomp3", "brat"],
     "menu": ".menusticker",
     "commands": "Buat Stiker: .stiker / .s (reply foto/video), Stiker Meme: .smeme teks_atas | teks_bawah, Konversi: .toimg, .tomp3."
   },

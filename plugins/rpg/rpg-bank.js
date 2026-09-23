@@ -275,7 +275,12 @@ if (action === 'card' || action === 'kartu') {
 
     if (userRPG.bank < totalPotong) return m.reply(`❌ Saldo bank tidak cukup\nButuh: Rp ${totalPotong.toLocaleString()} = Transfer + Admin Rp ${biayaAdmin.toLocaleString()}`)
 
-    let targetRPG = getUserRPG(wdb, who).rpg; if (!targetRPG) return m.reply('❌ Target belum punya data RPG')
+    let targetData = getUserRPG(wdb, who)
+    let targetRPG = targetData?.rpg
+    if (!targetRPG || targetData?.isDummy) return m.reply('❌ Target belum punya data RPG')
+
+    if (!Array.isArray(targetRPG.riwayat)) targetRPG.riwayat = []
+    if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
     userRPG.bank -= totalPotong; targetRPG.bank += amount
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} TF ke @${who.split('@')[0]} + Admin Rp ${biayaAdmin.toLocaleString()}`)

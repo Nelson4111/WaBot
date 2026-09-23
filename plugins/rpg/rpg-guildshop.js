@@ -47,7 +47,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (text === '4') {
     if (userContrib < 700) return m.reply('❌ Poin tidak cukup. Butuh 700 Pts')
-    myGuild.contribution[m.sender] -= 700
+    myGuild.contribution[sender] -= 700
 
     // Heal semua member
     myGuild.buffHeal = Date.now() + durasi

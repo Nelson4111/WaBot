@@ -55,7 +55,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
 > *おしらせ!* (ꜱᴘᴇᴄɪᴀʟ ᴛʜᴀɴᴋꜱ!)
 > ${userGreeting}
-> _Apresiasi setulus hati kepada seluruh pihak yang telah mendedikasikan waktu, tenaga, dan dukungan finansial untuk keberlangsungan Avelia Bot._
+> _Apresiasi setulus hati kepada seluruh pihak yang telah mendedikasikan waktu, tenaga, dan dukungan finansial untuk keberlangsungan Avelia Bot 💖._
 
 *╭  〔 ❖ ᴋ ᴏ ɴ ᴛ ʀ ɪ ʙ ᴜ ᴛ ᴏ ʀ 〕*
 ${contribLines}

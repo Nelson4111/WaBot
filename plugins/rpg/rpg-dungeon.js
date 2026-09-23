@@ -152,7 +152,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + earnedExp
   }
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
-  user.inventory.coin = (Number(user.inventory.coin) || 0) + earnedGold
+  user.gold = (Number(user.gold) || 0) + earnedGold
   user.diamond = (Number(user.diamond) || 0) + earnedDiamond
   user.limit = (Number(user.limit) || 0) + earnedLimit
   user.lastDungeon = Date.now()
@@ -182,7 +182,7 @@ winMsg += `> 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
 winMsg += `> 🌟 XP: +${earnedExp.toLocaleString()}\n`
 
 if (earnedGold > 0) {
-  winMsg += `> 🪙 Coin: +${earnedGold}\n`
+  winMsg += `> 🪙 Gold: +${earnedGold}\n`
 }
 
 if (earnedDiamond > 0) {
