@@ -1,4 +1,4 @@
-import { smsg, resolveLid } from './lib/simple.js'
+import { smsg, resolveLid, mergeUserData } from './lib/simple.js'
 import { format } from 'util'
 import { fileURLToPath } from 'url'
 import path, { join } from 'path'
@@ -354,6 +354,26 @@ async function processMessage(m, chatUpdate) {
         }
         try {
             // DATABASE USER
+            let rawSender = m.sender
+            let canonicalSender = m.sender
+            if (m.sender && m.sender.endsWith('@lid')) {
+                const resolved = typeof resolveLid === 'function' ? resolveLid(m.sender) : (global.lids?.[m.sender] || global.db?.data?.lids?.[m.sender])
+                if (resolved && resolved.endsWith('@s.whatsapp.net')) {
+                    canonicalSender = resolved
+                    m.sender = canonicalSender
+                }
+            }
+
+            // Jika ada data di key LID lama dan sekarang terpetakan ke canonicalSender,
+            // lakukan deep merge agar RPG, inventory, dan saldo tidak tercecer / bertabrakan
+            if (rawSender && rawSender !== canonicalSender && global.db.data.users[rawSender]) {
+                if (typeof global.db.data.users[canonicalSender] !== 'object') {
+                    global.db.data.users[canonicalSender] = {}
+                }
+                mergeUserData(global.db.data.users[canonicalSender], global.db.data.users[rawSender])
+                delete global.db.data.users[rawSender]
+            }
+
             let user = global.db.data.users[m.sender]
             if (typeof user !== 'object')
                 global.db.data.users[m.sender] = {}
@@ -460,9 +480,17 @@ async function processMessage(m, chatUpdate) {
                 }
             }
 
-            // DATABASE SETTINGS
-            let settings = global.db.data.settings[this.user.jid]
-            if (typeof settings !== 'object') global.db.data.settings[this.user.jid] = {}
+            // DATABASE SETTINGS (Terisolasi per instance bot / Jadibot)
+            const rawBotJid = this.user?.jid || this.user?.id || ''
+            const botJid = (this.decodeJid ? this.decodeJid(rawBotJid) : rawBotJid).split('@')[0].split(':')[0] + '@s.whatsapp.net'
+            let settings = global.db.data.settings[botJid]
+            if (typeof settings !== 'object') global.db.data.settings[botJid] = {}
+            if (this.user?.jid && this.user.jid !== botJid) {
+                global.db.data.settings[this.user.jid] = global.db.data.settings[botJid]
+            }
+            if (this.user?.id && this.user.id !== botJid) {
+                global.db.data.settings[this.user.id] = global.db.data.settings[botJid]
+            }
             if (settings) {
                 if (!('self' in settings)) settings.self = false
                 if (!('autoread' in settings)) settings.autoread = false
@@ -471,7 +499,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('restartDB' in settings)) settings.restartDB = 0
                 if (!isNumber(settings.totalDonasi)) settings.totalDonasi = 0
             } else {
-                global.db.data.settings[this.user.jid] = {
+                global.db.data.settings[botJid] = {
                     self: false,
                     autoread: false,
                     anticall: true,
@@ -479,6 +507,8 @@ async function processMessage(m, chatUpdate) {
                     restrict: false,
                     totalDonasi: 0
                 }
+                if (this.user?.jid && this.user.jid !== botJid) global.db.data.settings[this.user.jid] = global.db.data.settings[botJid]
+                if (this.user?.id && this.user.id !== botJid) global.db.data.settings[this.user.id] = global.db.data.settings[botJid]
             }
         } catch (e) {
             console.error(e)

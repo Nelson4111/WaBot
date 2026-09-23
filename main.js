@@ -134,7 +134,7 @@ if (typeof makeInMemoryStore !== 'function') {
   })
 }
 import { Low, JSONFile } from 'lowdb'
-import { makeWASocket, protoType, serialize } from './lib/simple.js'
+import { makeWASocket, protoType, serialize, mergeUserData } from './lib/simple.js'
 import cloudDBAdapter from './lib/cloudDBAdapter.js'
 import {
   mongoDB,
@@ -162,6 +162,9 @@ const __dirname = global.__dirname(import.meta.url)
 global.opts = new Object(yargs(process.argv.slice(2)).exitProcess(false).parse())
 global.prefix = new RegExp('^[' + (opts['prefix'] || '‎!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']')
 
+const sessionTag = opts._[0] ? String(opts._[0]).replace(/[^a-zA-Z0-9_-]/g, '_') : ''
+const dbFileName = `${sessionTag ? sessionTag + '_' : ''}database.json`
+
 global.db = new Low(
   process.env.SUPABASE_URL && process.env.SUPABASE_KEY ?
     (process.env.SUPABASE_MODE === 'monolithic' ?
@@ -169,17 +172,18 @@ global.db = new Low(
         url: process.env.SUPABASE_URL,
         key: process.env.SUPABASE_KEY,
         table: process.env.SUPABASE_TABLE || 'bot_database',
-        fallbackFile: `${opts._[0] ? opts._[0] + '_' : ''}database.json`
+        fallbackFile: dbFileName
       }) :
       new SupabaseRelationalAdapter({
         url: process.env.SUPABASE_URL,
-        key: process.env.SUPABASE_KEY
+        key: process.env.SUPABASE_KEY,
+        fallbackFile: dbFileName
       })
     ) :
   /https?:\/\//.test(opts['db'] || '') ?
     new cloudDBAdapter(opts['db']) : /mongodb(\+srv)?:\/\//i.test(opts['db']) ?
       (opts['mongodbv2'] ? new mongoDBV2(opts['db']) : new mongoDB(opts['db'])) :
-      new JSONFile(`${opts._[0] ? opts._[0] + '_' : ''}database.json`)
+      new JSONFile(dbFileName)
 )
 global.DATABASE = global.db // Backwards Compatibility
 global.loadDatabase = async function loadDatabase() {
@@ -233,7 +237,7 @@ global.loadDatabase = async function loadDatabase() {
     global.db.chain = chain(db.data)
 
 
-  // Auto-clean & merge any remaining @lid ghost accounts into canonical @s.whatsapp.net accounts
+  // Auto-clean & deep-merge any remaining @lid ghost accounts into canonical @s.whatsapp.net accounts
   try {
     if (global.db.data?.lids && global.db.data?.users) {
       for (const [lid, phoneJid] of Object.entries(global.db.data.lids)) {
@@ -241,16 +245,10 @@ global.loadDatabase = async function loadDatabase() {
           if (!global.db.data.users[phoneJid]) {
             global.db.data.users[phoneJid] = global.db.data.users[lid]
           } else {
-            for (const [k, v] of Object.entries(global.db.data.users[lid])) {
-              if (typeof v === 'number' && typeof global.db.data.users[phoneJid][k] === 'number') {
-                global.db.data.users[phoneJid][k] = Math.max(global.db.data.users[phoneJid][k], v)
-              } else if (global.db.data.users[phoneJid][k] === undefined) {
-                global.db.data.users[phoneJid][k] = v
-              }
-            }
+            global.db.data.users[phoneJid] = mergeUserData(global.db.data.users[phoneJid], global.db.data.users[lid])
           }
           delete global.db.data.users[lid]
-          console.log(chalk.green(`🧹 [LID CLEANUP] Merged ghost user ${lid} -> ${phoneJid}`))
+          console.log(chalk.green(`🧹 [LID CLEANUP] Deep-merged ghost user ${lid} -> ${phoneJid} (All RPG & inventory preserved)`))
         }
       }
     }

@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
 
 const MAX = 100

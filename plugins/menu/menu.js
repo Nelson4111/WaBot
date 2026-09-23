@@ -2,7 +2,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
-import { getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
+import { getPasanganHiddenNotice, isPasanganHidden, getUserRelationship } from '../../lib/pasanganHelper.js'
 
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getLevelRole } from '../../lib/levelling.js'
@@ -66,20 +66,8 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     displayRole = getLevelRole(user.level || 0)
   }
 
-  let partnerDisplay = '― (Single)'
-  if (pasanganHidden) {
-      partnerDisplay = '🔒 DIKUNCI'
-  } else if (pasangan && pasangan.length > 0) {
-      if (pasangan.length === 1) {
-          let dur = formatDuration(Date.now() - pasangan[0].nikahTime)
-          partnerDisplay = `@${pasangan[0].jid.split('@')[0]} (${toSmallNum(dur)})`
-      } else {
-          partnerDisplay = '\n' + pasangan.map((p, i) => {
-              let dur = formatDuration(Date.now() - p.nikahTime)
-              return `*┆*     ${toSmallNum(i + 1)}. @${p.jid.split('@')[0]} (${toSmallNum(dur)})`
-          }).join('\n')
-      }
-  }
+  const rel = getUserRelationship(m.sender)
+  let partnerDisplay = rel.menuDisplay
 
   // Ambil Top 3 Donatur secara dinamis
   let topDonors = Object.entries(users)
@@ -211,10 +199,7 @@ ${donorText}
     })
   }
 
-  let mentions = [m.sender, ...donorMentions]
-  if (!pasanganHidden && pasangan && pasangan.length > 0) {
-      pasangan.forEach(p => mentions.push(p.jid))
-  }
+  let mentions = [...new Set([m.sender, ...donorMentions, ...rel.mentions])]
 
   let contextInfo = {
     mentionedJid: mentions,

@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
-import { getIntimacyRank, isPasanganHidden, normalizeRingName } from '../../lib/pasanganHelper.js'
+import { getIntimacyRank, isPasanganHidden, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -114,39 +114,66 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   const rpgPercent = Math.min(100, Math.max(0, Math.floor((rpgExp / (rpgMaxExp || 1)) * 100)))
   const rpgBar = createProgressBar(rpgPercent, 10)
 
-  // 5. Data Hubungan & Asmara (Mendukung Sistem Poligami Multi-Pasangan)
+  // 5. Data Hubungan & Asmara (Mendukung Multi-Pasangan Real & Waifu Virtual 2D)
   let mentions = [who]
   let hubunganCard = ''
-  const pasanganHidden = isPasanganHidden(user) || isPasanganHidden((global.db?.data?.users || {})[who] || {})
+  const rel = getUserRelationship(who)
 
-  if (pasanganHidden) {
+  if (rel.pasanganHidden) {
     hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *🔒 DIKUNCI*
 *┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *Rahasia / disembunyikan*
 *╰──────────────────────*`
-  } else if (pasangan && pasangan.length > 0) {
-    if (pasangan.length === 1) {
-      let p = pasangan[0]
-      let partnerNum = p.jid.split('@')[0].replace(/\D/g, '')
+  } else if (rel.hasRealPartner && rel.hasWaifu) {
+    mentions.push(...rel.mentions)
+    let partnerInfo = ''
+    if (rel.realPartners.length === 1) {
+      let p = rel.realPartners[0]
+      let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
       let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
       let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
       let rank = getIntimacyRank(p.poinBucin || 0)
-      mentions.push(p.jid)
+      partnerInfo = `*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *@${partnerNum}* (${dur})\n*┆*    ◈ ᴄɪɴᴄɪɴ: *${ring}* | ᰔ: *${toSmallNum(p.poinBucin || 0)} Poin* (${rank.title})`
+    } else {
+      partnerInfo = `*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *${toSmallNum(rel.realPartners.length)} Pasangan*\n` + rel.realPartners.map((p, i) => {
+        let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
+        return `*┆*    ⟡ [${toSmallNum(i + 1)}] *@${partnerNum}*`
+      }).join('\n')
+    }
+
+    const w = rel.waifu
+    const wst = rel.waifuStatus || {}
+    const afinitas = wst.afinitas || 0
+    const mood = wst.mood !== undefined ? wst.mood : 50
+
+    hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
+${partnerInfo}
+*┆* 𝜚 ᴡᴀɪꜰᴜ 𝟸ᴅ  : *${w.charName || 'Waifu'}* (Virtual)
+*┆*    ✦ ᴀꜰɪɴɪᴛᴀꜱ: *${toSmallNum(afinitas)} Poin* | ⟡ ᴍᴏᴏᴅ: *${toSmallNum(mood)}%*
+*╰──────────────────────*`
+  } else if (rel.hasRealPartner) {
+    mentions.push(...rel.mentions)
+    if (rel.realPartners.length === 1) {
+      let p = rel.realPartners[0]
+      let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
+      let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
+      let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
+      let rank = getIntimacyRank(p.poinBucin || 0)
 
       hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
-*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *Menikah ᰔ*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
 *┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *@${partnerNum}*
 *┆* ✦ ᴅᴜʀᴀꜱɪ    : *${dur}*
 *┆* ◈ ᴄɪɴᴄɪɴ    : *${ring}*
 *┆* ᰔ ᴋᴇɪɴᴛɪᴍᴀɴ : *${toSmallNum(p.poinBucin || 0)} Poin* (${rank.title})
 *╰──────────────────────*`
     } else {
-      let spouseList = pasangan.map((p, i) => {
-        let partnerNum = p.jid.split('@')[0].replace(/\D/g, '')
+      let spouseList = rel.realPartners.map((p, i) => {
+        let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
         let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
         let ring = normalizeRingName(p.cincin || 'Silver Ring')
         let rank = getIntimacyRank(p.poinBucin || 0)
-        mentions.push(p.jid)
 
         return `*┆*   ⟡ [${toSmallNum(i + 1)}] *@${partnerNum}*
 *┆*       ◈ ᴅᴜʀᴀꜱɪ : *${dur}* • *${ring}*
@@ -154,27 +181,31 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
       }).join('\n')
 
       hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
-*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *Poligami (${toSmallNum(pasangan.length)} Pasangan) ᰔ*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
 *┆* ✧ ᴅᴀꜰᴛᴀʀ ᴘᴀꜱᴀɴɢᴀɴ :
 ${spouseList}
 *╰──────────────────────*`
     }
-  } else {
-    const couple = wdb.couples?.[who]
-    if (couple) {
-      hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
-*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *Pacaran ᰔ*
-*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *${couple.charName || 'Waifu'}*
-*┆* ✦ ᴋᴇᴛᴇʀᴀɴɢᴀɴ: *Waifu Virtual*
+  } else if (rel.hasWaifu) {
+    const w = rel.waifu
+    const wst = rel.waifuStatus || {}
+    const afinitas = wst.afinitas || 0
+    const mood = wst.mood !== undefined ? wst.mood : 50
+
+    hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
+*┆* 𝜚 ᴡᴀɪꜰᴜ 𝟸ᴅ  : *${w.charName || 'Waifu'}*
+*┆* ◈ ᴜɪᴅ ᴍᴀʟ   : *#${toSmallNum(w.charId || 0)}*
+*┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ  : *${toSmallNum(afinitas)} Poin*
+*┆* ⟡ ᴍᴏᴏᴅ      : *${toSmallNum(mood)}%*
 *╰──────────────────────*`
-    } else {
-      hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+  } else {
+    hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *Single (Bebas)*
 *┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *― (Belum ada)*
 *┆* ◈ ᴄɪɴᴄɪɴ    : *―*
-*┆* ᰔ ꜱᴀʀᴀɴ     : _.lamar @user untuk menikah_
+*┆* ᰔ ꜱᴀʀᴀɴ     : _.lamar @user_ atau _.waifulamar <nama>_
 *╰──────────────────────*`
-    }
   }
 
   // 6. Serial Number Key

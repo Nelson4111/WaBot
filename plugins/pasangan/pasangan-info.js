@@ -40,9 +40,17 @@ let handler = async (m, { conn, args }) => {
   }
 
   if (pList.length === 0) {
-    const notMarriedText = isSelf
-      ? `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu saat ini berstatus single (Jomblo).\n> Gunakan perintah *.lamar @user* untuk mencari pasangan!\n*╰───────────────*`
-      : `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> @${whoNum} saat ini belum memiliki pasangan (Jomblo).\n*╰───────────────*`
+    const waifu = global.db?.data?.couples?.[who]
+    let notMarriedText = ''
+    if (waifu) {
+      notMarriedText = isSelf
+        ? `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan di dunia nyata (WhatsApp).\n> Namun, kamu saat ini telah memiliki *Waifu Virtual*: *${waifu.charName}* ♡\n> _Gunakan perintah *.lamar @user* jika ingin menikah di WhatsApp._\n*╰───────────────*`
+        : `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> @${whoNum} belum memiliki pasangan di WhatsApp, namun telah menjalin hubungan dengan *Waifu Virtual*: *${waifu.charName}* ♡\n*╰───────────────*`
+    } else {
+      notMarriedText = isSelf
+        ? `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu saat ini berstatus single (Jomblo).\n> Gunakan perintah *.lamar @user* untuk mencari pasangan!\n*╰───────────────*`
+        : `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> @${whoNum} saat ini belum memiliki pasangan (Jomblo).\n*╰───────────────*`
+    }
 
     return conn.sendMessage(m.chat, {
       text: notMarriedText,
