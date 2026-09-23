@@ -59,8 +59,6 @@ handler.before = async function (m, { conn }) {
         ...(m.quoted ? [m.quoted.sender] : [])
     ])];
 
-    global.afkCooldown = global.afkCooldown || new Map();
-
     for (const jid of jids) {
         if (jid === m.sender) continue;
         
@@ -69,12 +67,6 @@ handler.before = async function (m, { conn }) {
 
         const taggedUser = DB[jid];
         if (!taggedUser || !(taggedUser.afk > -1)) continue;
-
-        // Cooldown per user per chat selama 20 detik untuk mencegah spam
-        const cooldownKey = `${m.chat}:${jid}`;
-        const lastWarned = global.afkCooldown.get(cooldownKey) || 0;
-        if (Date.now() - lastWarned < 20000) continue;
-        global.afkCooldown.set(cooldownKey, Date.now());
 
         const duration = formatDuration(Date.now() - taggedUser.afk);
         const reason = taggedUser.afkReason || 'Tanpa Alasan';
