@@ -32,7 +32,7 @@ const handler = async (m, { conn }) => {
     uploadCloudku(media, ft.ext, ft.mime).catch(() => "Gagal")
   ])
 
-  const caption = `📤 *T O U R L - ZETA*
+  const caption = `📤 *T O U R L - A V E L I A*
 
 📦 *Size:* ${formatBytes(media.length)}
 📁 *Type:* ${ft.mime}
@@ -42,7 +42,6 @@ const handler = async (m, { conn }) => {
 *Quax:* ${quax}
 *Cloudku:* ${cloudku}`
 
-  // Hapus tombol interaktif karena sudah tidak disupport WA standar
   await m.reply(caption)
   await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
 }

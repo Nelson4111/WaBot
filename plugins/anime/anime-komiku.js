@@ -1,14 +1,14 @@
-/*• Nama Fitur : komiku support search detail and download
-• Type : Plugin ESM
-• Link Channel : https://whatsapp.com/channel/0029VbBt4432f3ENa8ULoM1J
-• Author : Z7
-*/
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import fs from 'fs'
 import path from 'path'
 import PDFDocument from 'pdfkit'
 import { finished } from 'stream/promises'
+
+const toSmallNum = (str) => {
+  const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
+  return String(str || '').replace(/[0-9]/g, d => map[d] || d)
+}
 
 const BASE_URL = "https://komiku.id/"
 const TMP_DIR = './tmp'
@@ -39,7 +39,7 @@ async function komikuDownloadChapter(chapterUrl, pdfFileName) {
     let src = $(el).attr('src')
     if (src && src.startsWith('http')) images.push(src)
   })
-  if (!images.length) throw 'Gambar tidak ditemukan, link salah atau chapter terkunci.'
+  if (!images.length) throw new Error('Gambar tidak ditemukan, link salah atau chapter terkunci.')
   const downloadedImages = []
   for (let i = 0; i < images.length; i++) {
     const imgUrl = images[i]
@@ -71,69 +71,19 @@ async function scrapeKomikuSearch(keyword) {
     const $ = cheerio.load(data)
     const mangas = []
     $('.bge').each((i, el) => {
-      const manga = {}
       const bgei = $(el).find('.bgei > a')
-      manga.href = `https://komiku.id${bgei.attr('href')}`
-      manga.thumbnail = bgei.find('img').attr('src')
+      const href = `https://komiku.id${bgei.attr('href')}`
+      const thumbnail = bgei.find('img').attr('src')
       const tipeGenreText = bgei.find('.tpe1_inf').text().trim()
       const tipe = bgei.find('b').text().trim()
       const genre = tipeGenreText.replace(tipe, '').trim()
-      manga.type = tipe
-      manga.genre = genre
-      manga.title = $(el).find('.kan > a > h3').text().trim()
-      manga.last_update = $(el).find('.kan > p').text().trim()
-      mangas.push(manga)
+      const title = $(el).find('.kan > a > h3').text().trim()
+      mangas.push({ title, href, thumbnail, type: tipe, genre })
     })
     return mangas
   } catch {
     return []
   }
-}
-
-async function getAllEpisodes(comicUrl) {
-  const episodes = []
-  let pageNum = 1
-  let hasMorePages = true
-
-  while (hasMorePages) {
-    try {
-      const pageUrl = pageNum === 1 ? comicUrl : `${comicUrl}?page=${pageNum}`
-      const { data } = await axios.get(pageUrl, { 
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        timeout: 10000 
-      })
-      const $ = cheerio.load(data)
-      let foundEpisodes = 0
-      const selectors = ['#Daftar_Chapter tbody tr', '.chapter-list tr', '.episode-list .episode', '.list-chapter .chapter']
-      
-      for (const selector of selectors) {
-        if ($(selector).length > 0) {
-          $(selector).each((i, el) => {
-            if (i === 0 && $(el).find('th').length > 0) return
-            const chapterLinkElement = $(el).find('td.judulseries a, .chapter-title a, .episode-title a, a')
-            const chapterTitle = chapterLinkElement.find('span').text().trim() || chapterLinkElement.text().trim()
-            const relativeChapterLink = chapterLinkElement.attr('href')
-            if (chapterTitle && relativeChapterLink) {
-              const chapterLink = getAbsoluteUrl(relativeChapterLink)
-              const views = $(el).find('td.pembaca i, .views, .reader-count').text().trim()
-              const date = $(el).find('td.tanggalseries, .date, .release-date').text().trim()
-              if (!episodes.find(ep => ep.link === chapterLink)) {
-                episodes.push({ title: chapterTitle, link: chapterLink, views: views || 'N/A', release_date: date || 'N/A' })
-                foundEpisodes++
-              }
-            }
-          })
-          break
-        }
-      }
-      if (foundEpisodes === 0) hasMorePages = false
-      else pageNum++
-      if (episodes.length > 500) hasMorePages = false
-    } catch (error) {
-      hasMorePages = false
-    }
-  }
-  return episodes
 }
 
 async function getComicDetails(comicUrl) {
@@ -152,86 +102,216 @@ async function getComicDetails(comicUrl) {
       if (label === 'Judul Komik') details.metaInfo.original_title = value
       else if (label === 'Judul Indonesia') details.metaInfo.indonesian_title = value
       else if (label === 'Jenis Komik') details.metaInfo.type = value
-      else if (label === 'Konsep Cerita') details.metaInfo.concept = value
       else if (label === 'Pengarang') details.metaInfo.author = value
       else if (label === 'Status') details.metaInfo.status = value
-      else if (label === 'Umur Pembaca') details.metaInfo.age_rating = value
-      else if (label === 'Cara Baca') details.metaInfo.read_direction = value
     })
     details.genres = []
     $('ul.genre li.genre a span[itemprop="genre"]').each((i, el) => {
       details.genres.push($(el).text().trim())
     })
-    details.thumbnail_url = $('img[itemprop="image"]').attr('src') || 'N/A'
-    details.episodes = await getAllEpisodes(comicUrl)
-    details.episodes.sort((a, b) => {
-      const aNum = parseFloat(a.title.match(/\d+(\.\d+)?/)?.[0] || 0)
-      const bNum = parseFloat(b.title.match(/\d+(\.\d+)?/)?.[0] || 0)
-      return bNum - aNum
+    details.thumbnail_url = $('img[itemprop="image"]').attr('src') || ''
+    details.episodes = []
+    $('#Daftar_Chapter tbody tr').each((i, el) => {
+      const a = $(el).find('td.judulseries a')
+      const title = a.find('span').text().trim() || a.text().trim()
+      const link = a.attr('href')
+      if (title && link) {
+        details.episodes.push({ title, link: getAbsoluteUrl(link) })
+      }
     })
     return details
-  } catch (error) {
+  } catch {
     return null
   }
 }
 
 let handler = async (m, { args, conn, usedPrefix, command }) => {
   const subcommand = (args[0] || '').toLowerCase()
-  switch(subcommand) {
-    case 'search': {
-      const keyword = args.slice(1).join(' ')
-      if (!keyword) return conn.sendMessage(m.chat, { text: `Masukkan judul manga\nContoh: ${usedPrefix}${command} search one piece` }, { quoted: m })
-      
-      conn.sendMessage(m.chat, { text: 'Mencari...' }, { quoted: m })
-      let results = await scrapeKomikuSearch(keyword)
-      if (!results.length) return conn.sendMessage(m.chat, { text: 'Tidak ditemukan.' }, { quoted: m })
-      
-      let teks = `Hasil pencarian untuk *${keyword}*\n\n`
-      results.slice(0, 10).forEach((manga, i) => {
-        teks += `${i + 1}. *${manga.title}*\n`
-        teks += `   Tipe: ${manga.type}\n`
-        teks += `   Link: ${manga.href}\n\n`
-      })
-      teks += `Gunakan *${usedPrefix}${command} detail <url>* untuk melihat detail.`
-      
-      conn.sendMessage(m.chat, { text: teks }, { quoted: m })
-      break
+
+  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
+
+  switch (subcommand) {
+    // 1. Komik Terbaru
+    case 'terbaru':
+    case 'latest': {
+      try {
+        const res = await axios.get('https://api.ryzumi.net/api/komiku/terbaru', {
+          timeout: 20000,
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+
+        const comics = res.data?.comics || []
+        if (comics.length === 0) throw new Error('Komik terbaru tidak ditemukan.')
+
+        await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+
+        const maxComics = Math.min(comics.length, 6)
+        const cards = []
+        for (let i = 0; i < maxComics; i++) {
+          const c = comics[i]
+          cards.push(`*╭  〔 📚 ᴋ ᴏ ᴍ ɪ ᴋ  [${toSmallNum(i + 1)}] 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ : *${c.title}*
+> › 🔗 *Link:* ${c.link}
+*╰───────────────*`)
+        }
+
+        const caption = `*──  ୨୧ ✧ ᴋᴏᴍɪᴋ ᴛᴇʀʙᴀʀᴜ ✧ ୨୧  ──*
+
+${cards.join('\n\n')}
+
+> _Ketik .komiku detail <url> untuk melihat daftar episode._`.trim()
+
+        return m.reply(caption)
+      } catch (err) {
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+        return m.reply(`*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Gagal memuat komik terbaru: ${err.message}\n*╰───────────────*`)
+      }
     }
+
+    // 2. Komik Populer
+    case 'populer':
+    case 'popular': {
+      try {
+        const res = await axios.get('https://api.ryzumi.net/api/komiku/populer', {
+          timeout: 20000,
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+
+        const comics = res.data?.comics || []
+        if (comics.length === 0) throw new Error('Komik populer tidak ditemukan.')
+
+        await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+
+        const maxComics = Math.min(comics.length, 6)
+        const cards = []
+        for (let i = 0; i < maxComics; i++) {
+          const c = comics[i]
+          cards.push(`*╭  〔 🏆 ᴛ ᴏ ᴘ  ᴋ ᴏ ᴍ ɪ ᴋ  [${toSmallNum(i + 1)}] 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ : *${c.title}*
+> › 🔗 *Link:* ${c.link}
+*╰───────────────*`)
+        }
+
+        const caption = `*──  ୨୧ ✧ ᴋᴏᴍɪᴋ ᴛᴇʀᴘᴏᴘᴜʟᴇʀ ✧ ୨୧  ──*
+
+${cards.join('\n\n')}
+
+> _Komik paling banyak dibaca di Komiku._`.trim()
+
+        return m.reply(caption)
+      } catch (err) {
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+        return m.reply(`*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Gagal memuat komik populer: ${err.message}\n*╰───────────────*`)
+      }
+    }
+
+    // 3. Cari Komik
+    case 'search':
+    case 'cari': {
+      const keyword = args.slice(1).join(' ')
+      if (!keyword) {
+        return m.reply(`*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> Masukkan judul komik!\n> Contoh: *${usedPrefix + command} search One Piece*\n*╰───────────────*`)
+      }
+
+      let results = []
+      // Primary: Ryzumi Komiku Search
+      try {
+        const res = await axios.get(`https://api.ryzumi.net/api/komiku/search?q=${encodeURIComponent(keyword)}`, {
+          timeout: 15000,
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+        const items = res.data?.data || []
+        results = items.map(it => ({
+          title: it.title,
+          type: it.type || 'Manga',
+          genre: it.genre || '-',
+          href: `https://komiku.id/detail-komik/${it.slug}/`,
+          thumbnail: it.thumbnail
+        }))
+      } catch (e1) {}
+
+      // Fallback: Scrape
+      if (results.length === 0) {
+        results = await scrapeKomikuSearch(keyword)
+      }
+
+      if (results.length === 0) {
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+        return m.reply(`*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Komik "${keyword}" tidak ditemukan.\n*╰───────────────*`)
+      }
+
+      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+
+      const maxResults = Math.min(results.length, 5)
+      const cards = []
+
+      for (let i = 0; i < maxResults; i++) {
+        const it = results[i]
+        cards.push(`*╭  〔 📖 ᴋ ᴏ ᴍ ɪ ᴋ  [${toSmallNum(i + 1)}] 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ : *${it.title}*
+*┆* ◈ ᴛɪᴘᴇ  : *${it.type}*
+*┆* ⚙ ɢᴇɴʀᴇ : *${it.genre}*
+> › 🔗 *Link:* ${it.href}
+*╰───────────────*`)
+      }
+
+      const caption = `*──  ୨୧ ✧ ʜᴀꜱɪʟ ᴘᴇɴᴄᴀʀɪᴀɴ ᴋᴏᴍɪᴋ ✧ ୨୧  ──*
+
+${cards.join('\n\n')}
+
+> _Gunakan .komiku detail <link> untuk melihat chapter._`.trim()
+
+      return m.reply(caption)
+    }
+
+    // 4. Detail Komik
     case 'detail': {
       const url = args[1]
-      if (!url) return conn.sendMessage(m.chat, { text: 'Link komik tidak valid!' }, { quoted: m })
-      
-      conn.sendMessage(m.chat, { text: 'Mengambil detail... mohon tunggu.' }, { quoted: m })
-      let data = await getComicDetails(url)
-      if (!data) return conn.sendMessage(m.chat, { text: 'Gagal mendapatkan detail komik.' }, { quoted: m })
-      
-      let teks = `*${data.title}*\n(${data.title_indonesian})\n\n`
-      teks += `*Deskripsi:* ${data.short_description}\n`
-      teks += `*Genre:* ${data.genres.join(', ')}\n\n`
-      Object.entries(data.metaInfo).forEach(([key, val]) => {
-        teks += `*${key.replace(/_/g, ' ')}:* ${val}\n`
-      })
-      teks += `\n*Total Episode:* ${data.episodes.length}\n\n`
-      teks += `*DAFTAR EPISODE:*\n`
-      
-      data.episodes.slice(0, 30).forEach((ep) => {
-        teks += `- ${ep.title}\n  URL: ${ep.link}\n`
-      })
-      
-      if (data.episodes.length > 30) teks += `\n... (hanya menampilkan 30 terbaru)\n`
-      teks += `\nGunakan *${usedPrefix}${command} download <url>* untuk mengunduh.`
-      
-      await conn.sendMessage(m.chat, {
-        image: { url: data.thumbnail_url },
-        caption: teks
-      }, { quoted: m })
-      break
+      if (!url) {
+        return m.reply(`*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> Masukkan link detail komik!\n> Contoh: *${usedPrefix + command} detail https://komiku.id/detail-komik/...*\n*╰───────────────*`)
+      }
+
+      const data = await getComicDetails(url)
+      if (!data) {
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+        return m.reply(`*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Gagal mengambil rincian komik.\n*╰───────────────*`)
+      }
+
+      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+
+      const genres = data.genres.join(', ') || '-'
+      const epList = data.episodes.slice(0, 10).map(e => `*┆* ⟡ ${e.title} -> \`${e.link}\``).join('\n')
+
+      const caption = `*──  ୨୧ ✧ ʀɪɴᴄɪᴀɴ ᴋᴏᴍɪᴋ ✧ ୨୧  ──*
+
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ 〕*
+*┆* ⟡ ᴊᴜᴅᴜʟ   : *${data.title}*
+*┆* ◈ ᴛɪᴘᴇ    : *${data.metaInfo?.type || 'Manga'}*
+*┆* ⚙ ɢᴇɴʀᴇ   : *${genres}*
+*┆* ⏱ ꜱᴛᴀᴛᴜꜱ  : *${data.metaInfo?.status || '-'}*
+*┆* ✦ ᴄʜᴀᴘᴛᴇʀ : *${toSmallNum(data.episodes.length)} Episode*
+> ✦ ꜱɪɴᴏᴘꜱɪꜱ : ${data.short_description}
+*╰───────────────*
+
+*╭  〔 📑 𝟷𝟶 ᴄ ʜ ᴀ ᴘ ᴛ ᴇ ʀ  ᴛ ᴇ ʀ ʙ ᴀ ʀ ᴜ 〕*
+${epList || '*┆* ⟡ Tidak ada chapter'}
+*╰───────────────*
+
+> _Gunakan .komiku download <url_chapter> untuk mendownload PDF._`.trim()
+
+      if (data.thumbnail_url) {
+        return conn.sendMessage(m.chat, { image: { url: data.thumbnail_url }, caption }, { quoted: m })
+      }
+      return m.reply(caption)
     }
+
+    // 5. Download Chapter to PDF
     case 'download': {
       const url = args[1]
-      if (!url || !url.startsWith('http')) return conn.sendMessage(m.chat, { text: `Link ga valid!\nContoh: ${usedPrefix}${command} download <url_chapter>` }, { quoted: m })
-      
-      conn.sendMessage(m.chat, { text: 'Sedang memproses PDF...' }, { quoted: m })
+      if (!url || !url.startsWith('http')) {
+        return m.reply(`*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> Masukkan link chapter komik!\n> Contoh: *${usedPrefix + command} download <url_chapter>*\n*╰───────────────*`)
+      }
+
       const pdfName = `komiku-chapter-${Date.now()}.pdf`
       try {
         const pdfPath = await komikuDownloadChapter(url, pdfName)
@@ -239,23 +319,33 @@ let handler = async (m, { args, conn, usedPrefix, command }) => {
           document: { url: pdfPath },
           mimetype: 'application/pdf',
           fileName: pdfName,
-          caption: 'Nih PDF-nya. Jangan lupa traktir Z7 ya ☕'
+          caption: `*──  ୨୧ ✧ ᴋᴏᴍɪᴋᴜ ᴄʜᴀᴘᴛᴇʀ ᴘᴅꜰ ✧ ୨୧  ──*\n\n> _Chapter komik berhasil dikonversi menjadi dokumen PDF._`
         }, { quoted: m })
+
         if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath)
+        await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
       } catch (e) {
-        conn.sendMessage(m.chat, { text: 'Gagal download chapter.' }, { quoted: m })
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+        return m.reply(`*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Gagal download chapter komik: ${e.message}\n*╰───────────────*`)
       }
       break
     }
+
     default:
-      conn.sendMessage(m.chat, { text: `Format salah, gunakan:\n${usedPrefix}${command} search <keyword>\n${usedPrefix}${command} detail <url>\n${usedPrefix}${command} download <url>` }, { quoted: m })
+      return m.reply(`*╭  〔 📚 ᴋ ᴏ ᴍ ɪ ᴋ ᴜ  ᴍ ᴇ ɴ ᴜ 〕*
+> Panduan Perintah Komiku:
+> › *${usedPrefix + command} search <judul>* (Cari komik)
+> › *${usedPrefix + command} terbaru* (Daftar rilis baru)
+> › *${usedPrefix + command} populer* (Daftar komik top)
+> › *${usedPrefix + command} detail <url>* (Info & daftar chapter)
+> › *${usedPrefix + command} download <url_chapter>* (Download PDF)
+*╰───────────────*`)
   }
 }
 
-handler.command = /^(komiku)$/i
-handler.help = ['komiku search', 'komiku detail', 'komiku download']
+handler.command = /^(komiku|mangaid)$/i
+handler.help = ['komiku search <judul>', 'komiku terbaru', 'komiku populer', 'komiku detail <url>', 'komiku download <url>']
 handler.tags = ['anime']
 handler.limit = true
-handler.register = true
 
 export default handler

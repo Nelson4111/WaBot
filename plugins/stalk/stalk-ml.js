@@ -1,85 +1,119 @@
-import axios from "axios";
-import fs from "fs/promises";
+import axios from "axios"
+import { status, toSmallNum } from '../../lib/style.js'
 
-async function getToken(url) {
-  try {
-    const response = await axios.get(url);
-    const cookies = response.headers["set-cookie"];
-    const joinedCookies = cookies ? cookies.join("; ") : null;
-
-    const csrfTokenMatch = response.data.match(/<meta name="csrf-token" content="(.*?)">/);
-    const csrfToken = csrfTokenMatch ? csrfTokenMatch[1] : null;
-
-    if (!csrfToken || !joinedCookies) {
-      throw new Error("Gagal mendapatkan CSRF token atau cookie.");
+// ─── Ryzumi Primary ──────────────────────────────────────────────────────────
+async function mlStalkRyzumi(userId, zoneId) {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/stalk/mobile-legends?userId=${encodeURIComponent(userId)}&zoneId=${encodeURIComponent(zoneId)}`,
+    {
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
     }
+  )
 
-    return { csrfToken, joinedCookies };
-  } catch (error) {
-    console.error("❌ Error fetching cookies or CSRF token:", error.message);
-    throw error;
+  if (data?.status !== 'success' || !data?.data?.username) {
+    throw new Error(data?.message || 'Data Mobile Legends tidak ditemukan')
+  }
+
+  const d = data.data
+  const age = data.accountAge || {}
+  let ageStr = ''
+  if (age.years || age.months || age.days) {
+    const parts = []
+    if (age.years) parts.push(`${age.years} Tahun`)
+    if (age.months) parts.push(`${age.months} Bulan`)
+    if (age.days) parts.push(`${age.days} Hari`)
+    ageStr = parts.join(' ')
+  }
+
+  return {
+    username: d.username,
+    country: d.create_role_country || d.this_login_country || 'ID',
+    regTime: d.user_reg_time || '-',
+    accountAge: ageStr || '-'
+  }
+}
+
+// ─── Fallback Scraper ───────────────────────────────────────────────────────
+async function mlStalkFallback(userId, zoneId) {
+  const home = await axios.get("https://www.gempaytopup.com", { timeout: 10000 })
+  const cookies = home.headers["set-cookie"]?.join("; ") || ""
+  const csrfToken = home.data.match(/<meta name="csrf-token" content="(.*?)">/)?.[1]
+  if (!csrfToken) throw new Error("Gagal mengambil token verifikasi.")
+
+  const { data } = await axios.post(
+    "https://www.gempaytopup.com/stalk-ml",
+    { uid: userId, zone: zoneId },
+    {
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+        Cookie: cookies
+      },
+      timeout: 12000
+    }
+  )
+
+  if (!data?.username) throw new Error("ID atau Zone ID Mobile Legends tidak ditemukan.")
+  return {
+    username: data.username,
+    country: data.region || 'ID',
+    regTime: '-',
+    accountAge: '-'
   }
 }
 
 async function mlStalk(userId, zoneId) {
   try {
-    const { csrfToken, joinedCookies } = await getToken("https://www.gempaytopup.com");
-
-    const payload = {
-      uid: userId,
-      zone: zoneId,
-    };
-
-    const { data } = await axios.post(
-      "https://www.gempaytopup.com/stalk-ml",
-      payload,
-      {
-        headers: {
-          "X-CSRF-Token": csrfToken,
-          "Content-Type": "application/json",
-          Cookie: joinedCookies,
-        },
-      }
-    );
-
-    return data;
-  } catch (error) {
-    console.error("❌ Error:", error.message);
-    console.error("Response:", error.response?.data || "No response data");
+    return await mlStalkRyzumi(userId, zoneId)
+  } catch (e) {
+    console.warn('[ML Stalk Ryzumi failed]:', e.message)
+    return await mlStalkFallback(userId, zoneId)
   }
 }
 
-// Handler untuk command
-const handler = async (m, { conn, text }) => {
-  const [userId, zoneId] = text.split(' '); // Mengambil userId dan zoneId dari query
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+  const [userId, zoneId] = (text || '').trim().split(/\s+/)
 
   if (!userId || !zoneId) {
-    return m.reply("Silakan masukkan userId dan zoneId. Contoh: .mlstalk 12345678 1234");
+    return m.reply(
+      status.warning(
+        `Masukkan User ID dan Zone ID Mobile Legends!\n` +
+        `> Contoh: *${usedPrefix + command} 12345678 1234*`
+      )
+    )
   }
 
-  const result = await mlStalk(userId, zoneId);
-  
-  if (result) {
-    // Format hasil yang lebih rapi
-    const formattedResult = `
-Username: ${result.username || 'Tidak tersedia'}
-Region: ${result.region || 'Tidak tersedia'}
-Success: ${result.success ? 'Ya' : 'Tidak'}
-    `;
+  await m.react('⏳')
 
-    // Ganti 'https://link.to/your/image.jpg' dengan URL gambar yang ingin Anda kirim
-    const imageUrl = 'https://www.pic.surf/2kk'; 
+  try {
+    const res = await mlStalk(userId, zoneId)
 
-    // Mengirim gambar dari URL dan hasil dalam satu pesan
-    await conn.sendFile(m.chat, imageUrl, 'image.jpg', `Hasil Stalk:\n${formattedResult}`, m);
-  } else {
-    m.reply("Gagal mendapatkan data.");
+    const caption = `*──  ୨୧ ✧ MOBILE LEGENDS STALKER ✧ ୨୧  ──*
+
+*╭  〔 🎮 ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴀ ᴋ ᴜ ɴ 〕*
+*┆* ⟡ ᴜꜱᴇʀɴᴀᴍᴇ : *${res.username}*
+*┆* ◈ ᴜꜱᴇʀ ɪᴅ  : *${toSmallNum(userId)}*
+*┆* ✧ ᴢᴏɴᴇ ɪᴅ  : *(${toSmallNum(zoneId)})*
+*┆* ❖ ɴᴇɢᴀʀᴀ   : *${res.country}*
+${res.accountAge !== '-' ? `*┆* ⧗ ᴜᴍᴜʀ     : *${toSmallNum(res.accountAge)}*\n` : ''}${res.regTime !== '-' ? `*┆* ⏱ ᴛᴇʀᴅᴀꜰᴛᴀʀ: *${toSmallNum(res.regTime)}*\n` : ''}*╰───────────────*
+
+> _Informasi akun berhasil ditemukan_`.trim()
+
+    await m.reply(caption)
+    await m.react('✅')
+  } catch (e) {
+    await m.react('❌')
+    m.reply(status.error(`Gagal mendapatkan data Mobile Legends:\n> ${e?.message || e}`))
   }
-};
+}
 
-handler.help = ['mlstalk <userId> <zoneId>'];
-handler.tags = ["stalk"];
-handler.command = /^(mlstalk)$/i;
-handler.limit = false;
+handler.help = ['mlstalk <userId> <zoneId>']
+handler.tags = ['stalk']
+handler.command = /^(mlstalk|stalkml)$/i
+handler.limit = true
 
-export default handler;
+export default handler

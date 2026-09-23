@@ -44,9 +44,15 @@ const clamp = v => Math.max(0, Math.min(MAX, v || 0))
 let handler = async (m, { args, usedPrefix, command }) => {
   const db = loadDB()
 
-  if (!db.couples || !db.couples[m.sender]) {
+  const c = db.couples?.[m.sender]
+  const isHusbu = Boolean(c?.isHusbu) || /husbu/i.test(command)
+  const label = isHusbu ? 'Husbu' : 'Waifu'
+  const partnerLabel = isHusbu ? 'husbu' : 'waifu'
+  const prefixCmd = isHusbu ? 'husbu' : 'waifu'
+
+  if (!c) {
     return m.reply(
-      status.warning(`Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama>*`)
+      status.warning(`Kamu belum memiliki ${partnerLabel}!\n> Lamar karakter: *${usedPrefix}${prefixCmd}lamar <nama>*`)
     )
   }
 
@@ -111,9 +117,9 @@ let handler = async (m, { args, usedPrefix, command }) => {
   saveDB(db)
 
   m.reply(
-    `*──  ୨୧ ✧ MAKANAN WAIFU ✧ ୨୧  ──*\n\n` +
+    `*──  ୨୧ ✧ MAKANAN ${label.toUpperCase()} ✧ ୨୧  ──*\n\n` +
     `*╭  〔 🍱 ꜱ ᴜ ᴀ ᴘ  ᴍ ᴀ ᴋ ᴀ ɴ 〕*\n` +
-    `> ${f.name} berhasil disuapkan ke waifumu!\n` +
+    `> ${f.name} berhasil disuapkan ke ${partnerLabel}mu!\n` +
     `*┆* 🍱 ᴋᴇɴʏᴀɴɢ  : *${toSmallNum(db.status[m.sender].lapar)}/${toSmallNum(MAX)}* (+${toSmallNum(f.feed || 0)})\n` +
     (f.mood ? `*┆* ⟡ ᴍᴏᴏᴅ     : *+${toSmallNum(f.mood)}*\n` : '') +
     (f.afk ? `*┆* ᰔ ᴀꜰɪɴɪᴛᴀꜱ : *+${toSmallNum(f.afk)} Poin*\n` : '') +
@@ -122,9 +128,9 @@ let handler = async (m, { args, usedPrefix, command }) => {
   )
 }
 
-handler.command = /^(waifufood|waifumakan|belifood)$/i
-handler.tags = ['waifu']
-handler.help = ['waifufood [nomor]']
+handler.command = /^(waifufood|waifumakan|belifood|husbufood|husbumakan)$/i
+handler.tags = ['waifu', 'husbu']
+handler.help = ['waifufood [nomor]', 'husbufood [nomor]']
 handler.register = true
 
 export default handler

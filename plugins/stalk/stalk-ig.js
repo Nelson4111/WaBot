@@ -1,117 +1,111 @@
 import axios from 'axios'
+import { status, toSmallNum } from '../../lib/style.js'
+
+async function igStalkRyzumi(username) {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/stalk/instagram?username=${encodeURIComponent(username)}`,
+    {
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    }
+  )
+
+  if (!data || (!data.username && !data.name)) {
+    throw new Error('Data Instagram tidak ditemukan di Ryzumi')
+  }
+
+  return {
+    name: data.name || username,
+    username: data.username || username,
+    verified: !!data.isVerified,
+    isPrivate: !!data.isPrivate,
+    followers: data.followers || 0,
+    following: data.following || 0,
+    posts: data.posts || 0,
+    bio: data.bio || '-',
+    avatar: data.avatar || null
+  }
+}
+
+async function igStalkDeline(username) {
+  const res = await axios.get(`https://api.deline.web.id/stalker/igstalk?username=${encodeURIComponent(username)}`, { timeout: 12000 })
+  const r = res.data?.result
+  if (!r?.username) throw new Error('Data Deline tidak ditemukan.')
+
+  return {
+    name: r.fullname || username,
+    username: r.username,
+    verified: !!r.is_verified,
+    isPrivate: !!r.is_private,
+    followers: r.followers || 0,
+    following: r.following || 0,
+    posts: r.posts || 0,
+    bio: r.biography || '-',
+    avatar: r.profile_pic || null
+  }
+}
+
+async function getInstagramProfile(username) {
+  try {
+    return await igStalkRyzumi(username)
+  } catch (e) {
+    console.warn('[IG Stalk Ryzumi failed]:', e.message)
+    return await igStalkDeline(username)
+  }
+}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) {
-    return m.reply(`📸 *Instagram Stalker*\n\nContoh penggunaan:\n*${usedPrefix + command}* nelson_randanan`)
+  const username = text?.replace(/^@/, '').trim()
+  if (!username) {
+    return m.reply(
+      status.warning(
+        `Masukkan username Instagram!\n` +
+        `> Contoh: *${usedPrefix + command} nelson_randanan*`
+      )
+    )
   }
 
-  let username = text.replace(/^@/, '').trim()
   await m.react('⏳')
 
-  // Helper untuk format caption seragam di semua layer
-  const makeCaption = ({ name, username, verified, isPrivate, followers, following, posts, bio }) => {
-    let caption = `📸 *INSTAGRAM STALKER*\n\n`
-    caption += `👤 *Nama:* ${name || '-'}\n`
-    caption += `🏷️ *Username:* @${username}\n`
-    caption += `🔗 *Link:* https://www.instagram.com/${username}\n`
-    caption += `✔️ *Verified:* ${verified ? 'Ya ✅' : 'Tidak ❌'}\n`
-    caption += `🔒 *Private:* ${isPrivate ? 'Ya 🔒' : 'Tidak 🔓'}\n`
-    caption += `👥 *Followers:* ${Number(followers || 0).toLocaleString('id-ID')}\n`
-    caption += `👥 *Following:* ${Number(following || 0).toLocaleString('id-ID')}\n`
-    caption += `🖼️ *Posts:* ${Number(posts || 0).toLocaleString('id-ID')}\n`
-    if (bio && bio !== '-') caption += `📝 *Bio:* ${bio}\n`
-    return caption.trim()
-  }
-
-  // 1. Coba Kyzzz API (Utama)
   try {
-    let kRes = await axios.get(`https://api.kyzzz.xyz/api/stalker/ig?username=${encodeURIComponent(username)}&apikey=kyzz84647492486568`, { timeout: 15000 })
-    let data = kRes.data
-    if (data && data.status && data.result) {
-      let meta = data.result.metadata || {}
-      let user = data.result.stories?.data?.user || {}
+    const res = await getInstagramProfile(username)
 
-      let caption = makeCaption({
-        name: user.full_name || username,
-        username,
-        verified: !!user.is_verified,
-        isPrivate: !!user.is_private,
-        followers: meta.followers || user.edge_followed_by || 0,
-        following: meta.following || user.edge_follow || 0,
-        posts: meta.posts || user.edges_count || 0,
-        bio: user.biography || '-'
-      })
+    const caption = `*──  ୨୧ ✧ INSTAGRAM STALKER ✧ ୨୧  ──*
 
-      let avatar = meta.avatar || user.profile_pic_url || ''
+*╭  〔 𝜚 ᴘ ʀ ᴏ ꜰ ɪ ʟ 〕*
+*┆* ⟡ ɴᴀᴍᴀ      : *${res.name}*
+*┆* ◈ ᴜꜱᴇʀɴᴀᴍᴇ  : *@${res.username}*
+*┆* ✧ ᴠᴇʀɪꜰɪᴇᴅ  : *${res.verified ? 'Ya ❖' : 'Tidak'}*
+*┆* ❖ ᴘʀɪᴠᴀᴛᴇ   : *${res.isPrivate ? 'Ya 🔒' : 'Tidak 🔓'}*
+*┆* 👥 ꜰᴏʟʟᴏᴡᴇʀꜱ : *${toSmallNum(Number(res.followers).toLocaleString('id-ID'))}*
+*┆* ᰔ ꜰᴏʟʟᴏᴡɪɴɢ : *${toSmallNum(Number(res.following).toLocaleString('id-ID'))}*
+*┆* ⌬ ᴘᴏꜱᴛɪɴɢᴀɴ : *${toSmallNum(Number(res.posts).toLocaleString('id-ID'))}*
+*╰───────────────*
 
-      if (avatar) {
-        await conn.sendMessage(m.chat, { image: { url: avatar }, caption }, { quoted: m })
-      } else {
-        await m.reply(caption)
-      }
-      return await m.react('✅')
+${res.bio && res.bio !== '-' ? `*╭  〔 📝 ʙ ɪ ᴏ 〕*\n> ${res.bio}\n*╰───────────────*\n\n` : ''}> _https://www.instagram.com/${res.username}_`.trim()
+
+    if (res.avatar) {
+      await conn.sendMessage(m.chat, {
+        image: { url: res.avatar },
+        caption
+      }, { quoted: m })
+    } else {
+      await m.reply(caption)
     }
+
+    await m.react('✅')
   } catch (e) {
-    console.error('Kyzzz IG Stalk failed, trying fallbacks:', e?.message || e)
+    await m.react('❌')
+    console.error('[IG Stalk Error]:', e)
+    m.reply(status.error(`Gagal mengambil data Instagram @${username}:\n> Akun mungkin di-private atau tidak ditemukan.`))
   }
-
-  // 2. Fallback ke Ryzumi API
-  try {
-    let rRes = await axios.get(`https://api.ryzumi.net/api/stalk/instagram?username=${encodeURIComponent(username)}`, { timeout: 10000 })
-    let data = rRes.data
-
-    if (data && data.username) {
-      let caption = makeCaption({
-        name: data.name || username,
-        username: data.username,
-        verified: !!data.verified,
-        isPrivate: false,
-        followers: data.followers || 0,
-        following: data.following || 0,
-        posts: data.posts || 0,
-        bio: data.bio || '-'
-      })
-
-      if (data.avatar) {
-        await conn.sendMessage(m.chat, { image: { url: data.avatar }, caption }, { quoted: m })
-      } else {
-        await m.reply(caption)
-      }
-      return await m.react('✅')
-    }
-  } catch (e) {}
-
-  // 3. Fallback ke Deline API
-  try {
-    let fRes = await axios.get(`https://api.deline.web.id/stalker/igstalk?username=${encodeURIComponent(username)}`, { timeout: 10000 })
-    let r = fRes.data?.result
-    if (r && r.username) {
-      let caption = makeCaption({
-        name: r.fullname || username,
-        username: r.username,
-        verified: !!r.is_verified,
-        isPrivate: !!r.is_private,
-        followers: r.followers || 0,
-        following: r.following || 0,
-        posts: r.posts || 0,
-        bio: r.biography || '-'
-      })
-
-      if (r.profile_pic) {
-        await conn.sendMessage(m.chat, { image: { url: r.profile_pic }, caption }, { quoted: m })
-      } else {
-        await m.reply(caption)
-      }
-      return await m.react('✅')
-    }
-  } catch (fErr) {}
-
-  await m.react('❌')
-  m.reply(`❌ *Gagal mengambil data Instagram untuk @${username}.* Pastikan akun publik dan username benar.`)
 }
 
 handler.help = ['igstalk <username>', 'stalkig <username>']
-handler.tags = ['stalk', 'tools']
+handler.tags = ['stalk']
 handler.command = /^(igstalk|stalkig)$/i
 handler.limit = true
 

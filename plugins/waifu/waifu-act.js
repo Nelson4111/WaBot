@@ -89,16 +89,22 @@ let handler = async (m, { args, usedPrefix, command }) => {
 
   const isPremium = db.users[user].premiumTime > 0
 
-  /* ===== CEK WAIFU ===== */
-  if (!db.couples || !db.couples[user]) {
+  /* ===== CEK PASANGAN ===== */
+  const c = db.couples?.[user]
+  const isHusbu = Boolean(c?.isHusbu) || /husbu|hact/i.test(command)
+  const label = isHusbu ? 'Husbu' : 'Waifu'
+  const partnerLabel = isHusbu ? 'husbu' : 'waifu'
+  const prefixCmd = isHusbu ? 'husbu' : 'waifu'
+
+  if (!c) {
     return m.reply(
-      statusHelper.warning(`Kamu belum memiliki waifu!\n> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`)
+      statusHelper.warning(`Kamu belum memiliki ${partnerLabel}!\n> Lamar karakter: *${usedPrefix}${prefixCmd}lamar <nama|uid>*`)
     )
   }
 
   /* ===== MENU ACT (TAMPILKAN DAFTAR TANPA TERHALANG COOLDOWN) ===== */
   if (!args[0]) {
-    let teks = `*──  ୨୧ ✧ INTERAKSI WAIFU ✧ ୨୧  ──*\n\n`
+    let teks = `*──  ୨୧ ✧ INTERAKSI ${label.toUpperCase()} ✧ ୨୧  ──*\n\n`
     teks += '*╭  〔 ᰔ ᴘ ɪ ʟ ɪ ʜ ᴀ ɴ  ᴀ ᴋ ꜱ ɪ 〕*\n'
     for (const i in ACT_LIST) {
       teks += `*┆* ${toSmallNum(i)}. ⟡ ${ACT_LIST[i].nama}\n`
@@ -148,7 +154,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
   const foodNotice = act.lapar > 0 ? ` (-${toSmallNum(act.lapar)})` : ''
 
   m.reply(
-    `*──  ୨୧ ✧ INTERAKSI WAIFU ✧ ୨୧  ──*\n\n` +
+    `*──  ୨୧ ✧ INTERAKSI ${label.toUpperCase()} ✧ ୨୧  ──*\n\n` +
     `*╭  〔 ᰔ ʜ ᴀ ꜱ ɪ ʟ  ᴀ ᴋ ꜱ ɪ 〕*\n` +
     `> ${act.text}\n` +
     `*┆* ⟡ ᴍᴏᴏᴅ     : *${toSmallNum(userStatus.mood)}/𝟷𝟶𝟶*${moodNotice}\n` +
@@ -159,9 +165,9 @@ let handler = async (m, { args, usedPrefix, command }) => {
 }
 
 /* ===== META ===== */
-handler.command = /^(waifuact|wact|act)$/i
-handler.tags = ['waifu']
-handler.help = ['waifuact', 'waifuact <nomor>']
+handler.command = /^(waifuact|wact|act|husbuact|hact)$/i
+handler.tags = ['waifu', 'husbu']
+handler.help = ['waifuact', 'husbuact']
 handler.register = true
 
 export default handler

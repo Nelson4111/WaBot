@@ -30,12 +30,17 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   if (!db.profilePP) db.profilePP = {}
 
   const c = db.couples[m.sender]
+  const isHusbu = Boolean(c?.isHusbu) || /husbu/i.test(command)
+  const label = isHusbu ? 'Husbu' : 'Waifu'
+  const partnerLabel = isHusbu ? 'husbu' : 'waifu'
+  const prefixCmd = isHusbu ? 'husbu' : 'waifu'
+
   if (!c) {
     return m.reply(
       status.warning(
-        `Kamu belum memiliki waifu!\n` +
-        `> Cari karakter : *${usedPrefix}waifuchar <nama|uid>*\n` +
-        `> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`
+        `Kamu belum memiliki ${partnerLabel}!\n` +
+        `> Cari karakter : *${usedPrefix}${prefixCmd}char <nama|uid>*\n` +
+        `> Lamar karakter: *${usedPrefix}${prefixCmd}lamar <nama|uid>*`
       )
     )
   }
@@ -51,11 +56,11 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
   const masterName = await conn.getName(m.sender)
 
-  const caption = `*──  ୨୧ ✧ VIRTUAL WAIFU STATUS ✧ ୨୧  ──*
+  const caption = `*──  ୨୧ ✧ VIRTUAL ${label.toUpperCase()} STATUS ✧ ୨୧  ──*
 
-*╭  〔 𝜚 ɪ ɴ ꜰ ᴏ  ᴡ ᴀ ɪ ꜰ ᴜ 〕*
+*╭  〔 𝜚 ɪ ɴ ꜰ ᴏ  ${label.toUpperCase()} 〕*
 *┆* ⟡ ᴍᴀꜱᴛᴇʀ    : *${masterName}*
-*┆* ᰔ ᴡᴀɪꜰᴜ     : *${c.charName}*
+*┆* ᰔ ${label.toUpperCase()}     : *${c.charName}*
 *┆* ◈ ᴜɪᴅ ᴍᴀʟ   : *#${toSmallNum(c.charId)}*
 *┆* ✦ ᴀꜰɪɴɪᴛᴀꜱ   : *${toSmallNum(st.afinitas)} Poin*
 *┆*
@@ -67,11 +72,11 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 *╰───────────────*
 
 > *Menu Interaksi:*
-> › *${usedPrefix}waifuact* (Berinteraksi)
-> › *${usedPrefix}waifufood* (Beri makan)
-> › *${usedPrefix}waifukerja* (Suruh bekerja)
-> › *${usedPrefix}waifusetpp* (Ajukan foto custom)
-> › *${usedPrefix}waifuputus* (Lepaskan waifu)`.trim()
+> › *${usedPrefix}${prefixCmd}act* (Berinteraksi)
+> › *${usedPrefix}${prefixCmd}food* (Beri makan)
+> › *${usedPrefix}${prefixCmd}kerja* (Suruh bekerja)
+> › *${usedPrefix}${prefixCmd}setpp* (Ajukan foto custom)
+> › *${usedPrefix}${prefixCmd}putus* (Lepaskan ${partnerLabel})`.trim()
 
   const pp = db.profilePP[c.charId] || c.image
 
@@ -91,9 +96,9 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   await m.reply(caption)
 }
 
-handler.command = /^(mywaifu|waifustatus|mypd)$/i
-handler.tags = ['waifu']
-handler.help = ['mywaifu']
+handler.command = /^(mywaifu|waifustatus|mypd|myhusbu|husbustatus)$/i
+handler.tags = ['waifu', 'husbu']
+handler.help = ['mywaifu', 'myhusbu']
 handler.register = true
 
 export default handler

@@ -1,88 +1,98 @@
-/*
-wa.me/6282285357346
-github: https://github.com/sadxzyq
-Instagram: https://instagram.com/tulisan.ku.id
-ini wm gw cok jan di hapus
-*/
+import axios from 'axios'
+import { status } from '../../lib/style.js'
 
-import fetch from "node-fetch";
+async function translateRyzumi(text, targetLang = 'id', sourceLang = 'auto') {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/tool/translate?text=${encodeURIComponent(text)}&to=${encodeURIComponent(targetLang)}&from=${encodeURIComponent(sourceLang)}`,
+    {
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    }
+  )
+
+  if (data?.ok && data.result?.translated) {
+    return {
+      translated: data.result.translated,
+      detected: data.result.detected || sourceLang
+    }
+  }
+  throw new Error('Ryzumi translate gagal')
+}
+
+async function translateGoogleFallback(query, targetLang = 'id') {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=${targetLang}&q=${encodeURIComponent(query)}`
+  const { data } = await axios.get(url, { timeout: 10000 })
+  if (data && data[0]) {
+    return {
+      translated: data[0].map(item => item[0].trim()).join('\n'),
+      detected: data[2] || 'auto'
+    }
+  }
+  throw new Error('Google translate fallback gagal')
+}
+
+async function doTranslate(text, targetLang) {
+  try {
+    return await translateRyzumi(text, targetLang)
+  } catch (e) {
+    console.warn('[Translate Ryzumi failed]:', e.message)
+    return await translateGoogleFallback(text, targetLang)
+  }
+}
 
 let handler = async (m, { args, usedPrefix, command }) => {
-	let lang, text;
-	if (args.length >= 2) {
-		(lang = args[0] ? args[0] : "id"), (text = args.slice(1).join(" "));
-	} else if (m.quoted && m.quoted.text) {
-		(lang = args[0] ? args[0] : "id"), (text = m.quoted.text);
-	} else throw `Ex: ${usedPrefix + command} id hello i am robot`;
-	try {
-		const prompt = text.trim();
-		let res = await translate(prompt, lang);
-		let lister = Object.keys(await langList());
-		let supp = `Error : Bahasa "${lang}" Tidak Support`;
-		if (!lister.includes(lang))
-			return m.reply(
-				supp +
-					"\n\n*Example:*\n." +
-					command +
-					" id hello\n\n*Pilih kode yg ada*\n" +
-					lister.map((v, index) => `${index + 1}. ${v}`).join("\n"),
-			);
+  let lang = 'id'
+  let text = ''
 
-		let Detect = res[1].toUpperCase() ? res[1].toUpperCase() : "US";
-		let ToLang = lang.toUpperCase();
-		let caption = `*❲•❳ Terdeteksi ❲•❳*
-- ${Detect}
+  if (args.length >= 2) {
+    lang = args[0].toLowerCase()
+    text = args.slice(1).join(' ')
+  } else if (m.quoted && m.quoted.text) {
+    lang = args[0] ? args[0].toLowerCase() : 'id'
+    text = m.quoted.text
+  } else {
+    return m.reply(
+      status.warning(
+        `Masukkan bahasa tujuan dan teks yang ingin diterjemahkan!\n` +
+        `> Contoh: *${usedPrefix + command} en Selamat pagi kawan*\n` +
+        `> Contoh reply pesan: *${usedPrefix + command} ja* (sambil reply teks)`
+      )
+    )
+  }
 
-*❲•❳ Ke Bahasa ❲•❳*
-- ${ToLang}
+  await m.react('⏳')
 
-*❲•❳ Terjemahan ❲•❳*
-- ${res[0].trim()}
-`;
-		await m.reply(
-			caption,
-			null,
-			m.mentionedJid
-				? {
-						mentions: conn.parseMention(caption),
-				  }
-				: {},
-		);
-	} catch (e) {
-		await m.reply(eror);
-	}
-};
-handler.help = ["translate"].map((v) => v + " *ᴛᴇxᴛ*");
-handler.tags = ['tools'];
-handler.command = /^(tran(slate)|tr?)$/i
+  try {
+    const res = await doTranslate(text.trim(), lang)
 
-export default handler;
+    const caption = `*──  ୨୧ ✧ GOOGLE TRANSLATE ✧ ୨୧  ──*
 
-async function langList() {
-	let data = await fetch(
-		"https://translate.google.com/translate_a/l?client=webapp&sl=auto&tl=en&v=1.0&hl=en&pv=1&tk=&source=bh&ssel=0&tsel=0&kc=1&tk=626515.626515&q=",
-	).then((response) => response.json());
-	return data.tl;
+*╭  〔 🌐 ᴛ ᴇ ʀ ᴊ ᴇ ᴍ ᴀ ʜ ᴀ ɴ 〕*
+*┆* ⟡ ᴅᴀʀɪ   : *${res.detected.toUpperCase()}*
+*┆* ◈ ᴋᴇ     : *${lang.toUpperCase()}*
+*╰───────────────*
+
+*╭  〔 📝 ʜ ᴀ ꜱ ɪ ʟ 〕*
+> ${res.translated}
+*╰───────────────*
+
+> _Terjemahan selesai diproses_`.trim()
+
+    await m.reply(caption)
+    await m.react('✅')
+  } catch (e) {
+    console.error('[Translate Error]:', e)
+    await m.react('❌')
+    m.reply(status.error(`Gagal menerjemahkan teks:\n> ${e?.message || e}`))
+  }
 }
 
-async function translate(query = "", lang) {
-	if (!query.trim()) return "";
-	const url = new URL("https://translate.googleapis.com/translate_a/single");
-	url.searchParams.append("client", "gtx");
-	url.searchParams.append("sl", "auto");
-	url.searchParams.append("dt", "t");
-	url.searchParams.append("tl", lang);
-	url.searchParams.append("q", query);
+handler.help = ['translate <kode_bahasa> <teks>', 'tr <kode_bahasa> <teks>']
+handler.tags = ['tools']
+handler.command = /^(tran(slate)?|tr)$/i
+handler.limit = true
 
-	try {
-		const response = await fetch(url.href);
-		const data = await response.json();
-		if (data) {
-			return [data[0].map((item) => item[0].trim()).join("\n"), data[2]];
-		} else {
-			return "";
-		}
-	} catch (err) {
-		throw err;
-	}
-}
+export default handler

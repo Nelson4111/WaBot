@@ -2,115 +2,161 @@ import axios from "axios"
 import * as cheerio from "cheerio"
 import { status, toSmallNum } from '../../lib/style.js'
 
-export async function twitter(url) {
-    if (!/(twitter\.com|x\.com)\/.*?\/status/gi.test(url)) {
-        throw new Error("URL tidak valid! Pastikan menggunakan link Twitter / X status yang benar.")
+// ─── Ryzumi Primary ──────────────────────────────────────────────────────────
+async function twitterRyzumi(url) {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/downloader/twitter?url=${encodeURIComponent(url)}`,
+    {
+      timeout: 20000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
     }
+  )
 
-    const base_url = "https://x2twitter.com"
-    const base_headers = {
-        accept: "*/*",
-        "accept-language": "en-US,en;q=0.9,id;q=0.8",
-        "cache-control": "no-cache",
-        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "x-requested-with": "XMLHttpRequest",
-        Referer: "https://x2twitter.com/en"
-    }
+  if (!data?.media || !data.media.length) {
+    throw new Error('Media tidak ditemukan di respon Ryzumi.')
+  }
 
-    const tokenRes = await axios.post(
-        `${base_url}/api/userverify`,
-        new URLSearchParams({ url }).toString(),
-        { headers: base_headers, timeout: 15000 }
-    ).catch(() => { throw new Error("Gagal verifikasi token X2Twitter.") })
+  const text = (data.text || '').trim()
+  const author = data.user?.name || data.user?.username || ''
+  const likes = data.likes || 0
+  const retweets = data.retweets || 0
 
-    const token = tokenRes.data?.token
-    if (!token) throw new Error("Token verifikasi X2Twitter kosong.")
+  const items = data.media.map(m => ({
+    type: m.type === 'video' || /\.mp4/i.test(m.url) ? 'video' : 'image',
+    url: m.url
+  }))
 
-    const r = await axios.post(
-        `${base_url}/api/ajaxSearch`,
-        new URLSearchParams({ q: url, lang: "id", cftoken: token }).toString(),
-        { headers: base_headers, timeout: 15000 }
-    ).then(v => v.data).catch(() => { throw new Error("Gagal mengambil data dari server X2Twitter.") })
+  return {
+    source: 'Ryzumi',
+    text,
+    author,
+    likes,
+    retweets,
+    items
+  }
+}
 
-    if (r.status !== "ok" || !r.data) {
-        throw new Error(r.msg || "Media tidak ditemukan pada postingan X / Twitter ini.")
-    }
+// ─── Scraper Fallback (X2Twitter) ───────────────────────────────────────────
+async function twitterScraper(url) {
+  const base_url = "https://x2twitter.com"
+  const base_headers = {
+    accept: "*/*",
+    "accept-language": "en-US,en;q=0.9,id;q=0.8",
+    "cache-control": "no-cache",
+    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "x-requested-with": "XMLHttpRequest",
+    Referer: "https://x2twitter.com/en"
+  }
 
-    const $ = cheerio.load(r.data)
-    let type = $("div").eq(0).attr("class") || ""
+  const tokenRes = await axios.post(
+    `${base_url}/api/userverify`,
+    new URLSearchParams({ url }).toString(),
+    { headers: base_headers, timeout: 15000 }
+  )
+  const token = tokenRes.data?.token
+  if (!token) throw new Error("Token verifikasi X2Twitter kosong.")
 
-    type = type.includes("tw-video") ? "video"
-        : type.includes("video-data") && $(".photo-list").length ? "image"
-        : "hybrid"
+  const r = await axios.post(
+    `${base_url}/api/ajaxSearch`,
+    new URLSearchParams({ q: url, lang: "id", cftoken: token }).toString(),
+    { headers: base_headers, timeout: 15000 }
+  ).then(v => v.data)
 
-    let d = { type, download: [] }
-    if (type === "video") {
-        d.download = $(".dl-action p").map((i, el) => {
-            let name = $(el).text().trim()
-            let fileType = name.includes("MP4") ? "mp4" : null
-            let reso = fileType === "mp4" ? name.split(" ").pop().replace(/[()]/g, "") : null
+  if (r.status !== "ok" || !r.data) throw new Error(r.msg || "Media tidak ditemukan.")
+  const $ = cheerio.load(r.data)
 
-            return {
-                type: fileType,
-                reso,
-                url: $(el).find("a").attr("href")
-            }
-        }).get().filter(v => v.url)
-    } else if (type === "image") {
-        d.download = $("ul.download-box li").map((i, el) => ({
-            type: "image",
-            url: $(el).find("a").attr("href")
-        })).get().filter(v => v.url)
-    }
+  const items = []
+  $(".dl-action p a").each((_, el) => {
+    const href = $(el).attr("href")
+    if (href) items.push({ type: 'video', url: href })
+  })
+  $("ul.download-box li a").each((_, el) => {
+    const href = $(el).attr("href")
+    if (href) items.push({ type: 'image', url: href })
+  })
 
-    return d
+  if (!items.length) throw new Error("Tidak ada media.")
+
+  return {
+    source: 'X2Twitter',
+    text: '',
+    author: '',
+    likes: 0,
+    retweets: 0,
+    items
+  }
+}
+
+async function getTwitterMedia(url) {
+  try {
+    const rz = await twitterRyzumi(url)
+    if (rz?.items?.length) return rz
+  } catch (e) {
+    console.warn('[Twitter Ryzumi failed]:', e.message)
+  }
+  return await twitterScraper(url)
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) {
-        return m.reply(status.warning(`Masukkan URL X / Twitter yang valid!\n> Contoh: *${usedPrefix + command} https://x.com/.../status/...*`))
+  const input = (text || (m.quoted ? m.quoted.text : ''))?.trim()
+  if (!input) {
+    return m.reply(
+      status.warning(
+        `Masukkan URL X / Twitter yang valid!\n` +
+        `> Contoh: *${usedPrefix + command} https://x.com/.../status/...*`
+      )
+    )
+  }
+
+  const match = input.match(/https?:\/\/(www\.)?(twitter\.com|x\.com)\/[^\s]+/i)
+  const url = match ? match[0] : input
+
+  await m.react('⏳')
+
+  try {
+    const res = await getTwitterMedia(url)
+    const items = res.items
+    if (!items?.length) throw new Error("Media tidak ditemukan pada postingan ini.")
+
+    let cleanText = res.text || ''
+    if (cleanText.length > 180) {
+      cleanText = cleanText.substring(0, 177) + '...'
     }
 
-    await m.reply(status.wait('Sedang memproses unduhan dari X / Twitter...'))
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const caption = `*──  ୨୧ ✧ X (TWITTER) DOWNLOADER ✧ ୨୧  ──*
 
-    try {
-        let result = await twitter(text)
-
-        if (result.type === "video" && result.download.length > 0) {
-            let selectedVideo = result.download.find(v => v.type === "mp4" && (v.reso === "1024p" || v.reso === "720p")) || result.download[0]
-            if (!selectedVideo?.url) throw new Error("URL video tidak ditemukan.")
-
-            const caption = `*──  ୨୧ ✧ X (TWITTER) DOWNLOADER ✧ ୨୧  ──*
-
-*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
-*┆* ◈ ᴋᴜᴀʟɪᴛᴀꜱ : *${selectedVideo.reso ? toSmallNum(selectedVideo.reso) : 'HD'}*
-*┆* ⟡ ꜰᴏʀᴍᴀᴛ   : *Video MP4*
+*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴍ ᴇ ᴅ ɪ ᴀ 〕*
+${cleanText ? `*┆* ⟡ ᴛᴇᴋꜱ    : *${cleanText}*\n` : ''}${res.author ? `*┆* ✧ ᴀᴜᴛʜᴏʀ  : *@${res.author}*\n` : ''}${res.likes ? `*┆* ᰔ ʟɪᴋᴇ    : *${toSmallNum(res.likes)}*\n` : ''}${res.retweets ? `*┆* ◈ ʀᴇᴛᴡᴇᴇᴛ : *${toSmallNum(res.retweets)}*\n` : ''}*┆* ❖ ꜱʟɪᴅᴇ   : *${toSmallNum(i + 1)} / ${toSmallNum(items.length)}*
+*┆* ⌬ ᴛɪᴘᴇ    : *${item.type === 'video' ? 'Video MP4' : 'Foto / Gambar'}*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()
 
-            await conn.sendMessage(m.chat, { video: { url: selectedVideo.url }, caption }, { quoted: m })
-        } else if (result.type === "image" && result.download.length > 0) {
-            const footer = `${global.namebot} • Versi ${toSmallNum(global.versi || '4.0.0')}`
-            for (let i = 0; i < result.download.length; i++) {
-                const img = result.download[i]
-                const caption = `*──  ୨୧ ✧ X (TWITTER) DOWNLOADER ✧ ୨୧  ──*
-
-*╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
-*┆* ⟡ ꜱʟɪᴅᴇ   : *${toSmallNum(i + 1)} / ${toSmallNum(result.download.length)}*
-*╰───────────────*`.trim()
-                await conn.sendMessage(m.chat, {
-                    image: { url: img.url },
-                    caption
-                }, { quoted: m })
-            }
-        } else {
-            throw new Error("Tidak ada media yang dapat diunduh pada tautan ini.")
-        }
-    } catch (e) {
-        m.reply(status.error(`Gagal memproses media Twitter / X.\n> ${e?.message || e}`))
+      if (item.type === 'video') {
+        await conn.sendMessage(m.chat, {
+          video: { url: item.url },
+          caption,
+          mimetype: 'video/mp4'
+        }, { quoted: m })
+      } else {
+        await conn.sendMessage(m.chat, {
+          image: { url: item.url },
+          caption
+        }, { quoted: m })
+      }
     }
+
+    await m.react('✅')
+  } catch (e) {
+    await m.react('❌')
+    m.reply(status.error(`Gagal memproses media Twitter / X:\n> ${e?.message || e}`))
+  }
 }
 
 handler.help = ['twitter <url>', 'x <url>']

@@ -1,6 +1,7 @@
 import axios from "axios"
 import { status, toSmallNum } from '../../lib/style.js'
 
+// ─── Scraper Fallback ────────────────────────────────────────────────────────
 async function getToken() {
   const url = "https://fbdownloader.to/id"
   const { data: html } = await axios.get(url, {
@@ -21,92 +22,136 @@ async function getToken() {
   }
 }
 
-async function fbDownloader(fbUrl) {
-  try {
-    const { k_exp, k_token } = await getToken()
+async function fbScraperFallback(fbUrl) {
+  const { k_exp, k_token } = await getToken()
+  const payload = new URLSearchParams({
+    k_exp,
+    k_token,
+    p: "home",
+    q: fbUrl,
+    lang: "id",
+    v: "v2",
+    W: ""
+  })
 
-    const payload = new URLSearchParams({
-      k_exp,
-      k_token,
-      p: "home",
-      q: fbUrl,
-      lang: "id",
-      v: "v2",
-      W: ""
-    })
+  const { data } = await axios.post("https://fbdownloader.to/api/ajaxSearch", payload, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "User-Agent": "Mozilla/5.0",
+      "X-Requested-With": "XMLHttpRequest",
+      "Origin": "https://fbdownloader.to",
+      "Referer": "https://fbdownloader.to/id"
+    },
+    timeout: 15000
+  })
 
-    const { data } = await axios.post("https://fbdownloader.to/api/ajaxSearch", payload, {
+  if (!data?.data) throw new Error("Gagal mengambil data video Facebook.")
+  const html = data.data
+  const results = []
+  const rowRegex = /<td class="video-quality">(.*?)<\/td>[\s\S]*?(?:href="(.*?)"|data-videourl="(.*?)")/g
+  let match
+  while ((match = rowRegex.exec(html)) !== null) {
+    const quality = match[1].trim()
+    const url = match[2] || match[3]
+    if (quality && url) results.push({ quality, url })
+  }
+  if (!results.length) throw new Error("Video tidak ditemukan.")
+  return {
+    title: 'Facebook Video',
+    videoUrl: results[0].url,
+    quality: results[0].quality || 'HD'
+  }
+}
+
+// ─── Ryzumi Primary ──────────────────────────────────────────────────────────
+async function getFacebookViaRyzumi(url) {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/downloader/facebook?url=${encodeURIComponent(url)}`,
+    {
+      timeout: 20000,
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "User-Agent": "Mozilla/5.0",
-        "X-Requested-With": "XMLHttpRequest",
-        "Origin": "https://fbdownloader.to",
-        "Referer": "https://fbdownloader.to/id"
-      },
-      timeout: 15000
-    })
-
-    if (data?.data) {
-      const html = data.data
-      const results = []
-      const rowRegex = /<td class="video-quality">(.*?)<\/td>[\s\S]*?(?:href="(.*?)"|data-videourl="(.*?)")/g
-      let match
-      while ((match = rowRegex.exec(html)) !== null) {
-        const quality = match[1].trim()
-        const url = match[2] || match[3]
-        if (quality && url) results.push({ quality, url })
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
-      if (results.length > 0) return results
     }
-  } catch (e) {
-    console.warn('[FBDownloader.to failed]:', e.message)
+  )
+
+  if (!data?.success || !data?.result) {
+    throw new Error(data?.message || 'Gagal memproses Facebook melalui server Ryzumi')
   }
 
-  // Fallback ke Ryzen Facebook API
+  const res = data.result
+  const title = (res.title || res.caption || 'Facebook Video').trim()
+  const videos = res.media?.videos || []
+  let selected = videos.find(v => v.quality === 'HD') || videos.find(v => v.quality === 'SD') || videos[0]
+  const videoUrl = selected?.url || res.url
+
+  if (!videoUrl) throw new Error('URL video Facebook tidak ditemukan.')
+
+  return {
+    title,
+    videoUrl,
+    quality: selected?.quality || 'HD',
+    cover: res.cover || null
+  }
+}
+
+async function fbDownloader(fbUrl) {
+  // 1. Coba Ryzumi API
   try {
-    const rz = await axios.get(`https://api.ryzumi.net/api/downloader/facebook?url=${encodeURIComponent(fbUrl)}`, { timeout: 15000 })
-    if (rz.data?.success && rz.data?.result?.url) {
-      return [{
-        quality: 'HD / SD',
-        url: rz.data.result.url
-      }]
-    }
+    const rz = await getFacebookViaRyzumi(fbUrl)
+    if (rz?.videoUrl) return rz
   } catch (e) {
-    console.warn('[FB Ryzen Fallback failed]:', e.message)
+    console.warn('[Facebook Ryzumi failed]:', e.message)
   }
 
-  throw new Error("Gagal mengambil data video Facebook.")
+  // 2. Fallback Scraper
+  return await fbScraperFallback(fbUrl)
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) {
-    return m.reply(status.warning(`Masukkan tautan video Facebook!\n> Contoh: *${usedPrefix + command} https://www.facebook.com/...*`))
+  const input = (text || (m.quoted ? m.quoted.text : ''))?.trim()
+  if (!input) {
+    return m.reply(
+      status.warning(
+        `Masukkan tautan video Facebook!\n` +
+        `> Contoh: *${usedPrefix + command} https://www.facebook.com/...*`
+      )
+    )
   }
 
-  await m.reply(status.wait('Sedang memproses tautan Facebook...'))
+  const match = input.match(/https?:\/\/(www\.)?(facebook\.com|fb\.watch)\/[^\s]+/i)
+  const url = match ? match[0] : input
+
+  await m.react('⏳')
 
   try {
-    const results = await fbDownloader(text)
-    if (!results.length) throw new Error("Tidak ada video yang ditemukan.")
+    const result = await fbDownloader(url)
 
-    const videoUrl = results[0].url
-    const quality = results[0].quality || 'HD'
+    let cleanTitle = result.title || ''
+    if (cleanTitle.length > 180) {
+      cleanTitle = cleanTitle.substring(0, 177) + '...'
+    }
 
     const caption = `*──  ୨୧ ✧ FACEBOOK DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
-*┆* ◈ ᴋᴜᴀʟɪᴛᴀꜱ : *${toSmallNum(quality)}*
-*┆* ⟡ ꜰᴏʀᴍᴀᴛ   : *Video MP4*
+${cleanTitle ? `*┆* ⟡ ᴊᴜᴅᴜʟ    : *${cleanTitle}*\n` : ''}*┆* ◈ ᴋᴜᴀʟɪᴛᴀꜱ : *${toSmallNum(result.quality)}*
+*┆* ✧ ꜰᴏʀᴍᴀᴛ   : *Video MP4*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()
 
     await conn.sendMessage(m.chat, {
-      video: { url: videoUrl },
-      caption
+      video: { url: result.videoUrl },
+      caption,
+      mimetype: 'video/mp4',
+      fileName: 'facebook.mp4'
     }, { quoted: m })
 
+    await m.react('✅')
   } catch (e) {
+    await m.react('❌')
     m.reply(status.error(`Gagal mengunduh video Facebook:\n> ${e?.message || e}`))
   }
 }

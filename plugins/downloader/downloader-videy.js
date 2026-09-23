@@ -1,33 +1,66 @@
+import axios from 'axios'
 import { status, toSmallNum } from '../../lib/style.js'
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) {
-    return m.reply(status.warning(`Masukkan tautan Videy yang valid!\n> Contoh: *${usedPrefix + command} https://videy.co/v?id=4F2uO7k21*`))
+async function getVideyUrl(url) {
+  // 1. Ryzumi API
+  try {
+    const res = await axios.get(`https://api.ryzumi.net/api/downloader/videy?url=${encodeURIComponent(url)}`, { timeout: 15000 })
+    if (res.data?.directUrl) {
+      return res.data.directUrl
+    }
+  } catch (e) {
+    console.warn('[Videy Ryzumi failed]:', e.message)
   }
 
+  // 2. Direct Fallback
+  const parsed = new URL(url)
+  const id = parsed.searchParams.get('id') || parsed.pathname.replace(/^\//, '')
+  if (id) {
+    return `https://cdn.videy.co/${id}.mp4`
+  }
+
+  throw new Error('Gagal mendapatkan URL video Videy.')
+}
+
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+  const input = (text || (m.quoted ? m.quoted.text : ''))?.trim()
+  if (!input) {
+    return m.reply(
+      status.warning(
+        `Masukkan tautan Videy yang valid!\n` +
+        `> Contoh: *${usedPrefix + command} https://videy.co/v?id=4F2uO7k21*`
+      )
+    )
+  }
+
+  const match = input.match(/https?:\/\/(www\.)?videy\.co\/[^\s]+/i)
+  const url = match ? match[0] : input
+
+  await m.react('⏳')
+
   try {
-    const parsed = new URL(text)
-    const id = parsed.searchParams.get('id')
-
-    if (!id) {
-      return m.reply(status.warning('URL tidak valid! Harus menyertakan parameter id.\n> Contoh: *https://videy.co/v?id=abc123*'))
-    }
-
-    const videoUrl = `https://cdn.videy.co/${id}.mp4`
-    const filename = `videy_${id}.mp4`
+    const videoUrl = await getVideyUrl(url)
 
     const caption = `*──  ୨୧ ✧ VIDEY DOWNLOADER ✧ ୨୧  ──*
 
 *╭  〔 ✦ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴠ ɪ ᴅ ᴇ ᴏ 〕*
-> ⟡ ɪᴅ    : *${id}*
-> ◈ ᴛɪᴘᴇ  : *Video MP4*
+*┆* ⟡ ꜱᴜᴍʙᴇʀ : *Videy.co*
+*┆* ◈ ᴛɪᴘᴇ   : *Video MP4*
 *╰───────────────*
 
 > _Media berhasil diunduh_`.trim()
 
-    await conn.sendFile(m.chat, videoUrl, filename, caption, m)
+    await conn.sendMessage(m.chat, {
+      video: { url: videoUrl },
+      caption,
+      mimetype: 'video/mp4',
+      fileName: 'videy.mp4'
+    }, { quoted: m })
+
+    await m.react('✅')
   } catch (e) {
-    m.reply(status.error(`Gagal mengunduh media Videy.\n> ${e?.message || e}`))
+    await m.react('❌')
+    m.reply(status.error(`Gagal mengunduh media Videy:\n> ${e?.message || e}`))
   }
 }
 

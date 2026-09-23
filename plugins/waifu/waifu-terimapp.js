@@ -36,29 +36,32 @@ let handler = async (m, { args, conn }) => {
   delete db.pendingPP[uid]
   saveDB(db)
 
+  const label = data.isHusbu ? 'Husbu' : 'Waifu'
+  const partnerLabel = data.isHusbu ? 'husbu' : 'waifu'
+
   // === NOTIF USER ===
   try {
-    const userMsg = `*╭  〔 🌸 ᴘ ᴘ  ᴡ ᴀ ɪ ꜰ ᴜ  ᴅ ɪ ꜱ ᴇ ᴛ ᴜ ᴊ ᴜ ɪ 〕*
+    const userMsg = `*╭  〔 🌸 ᴘ ᴘ  ${label.toUpperCase()}  ᴅ ɪ ꜱ ᴇ ᴛ ᴜ ᴊ ᴜ ɪ 〕*
 *┆* ⟡ ᴋᴀʀᴀᴋᴛᴇʀ : *${data.charName}*
 *┆* ⟡ ᴜɪᴅ ᴍᴀʟ : *#${toSmallNum(uid)}*
 *╰───────────────*
-> Foto profil waifu pilihanmu telah diverifikasi dan disetujui oleh Owner!`
+> Foto profil ${partnerLabel} pilihanmu telah diverifikasi dan disetujui oleh Owner!`
     await conn.sendMessage(data.userJid, { text: userMsg })
   } catch {}
 
-  const ownerMsg = `*╭  〔 ✅ ᴘ ᴘ  ᴡ ᴀ ɪ ꜰ ᴜ  ᴅ ɪ ᴛ ᴇ ʀ ɪ ᴍ ᴀ 〕*
+  const ownerMsg = `*╭  〔 ✅ ᴘ ᴘ  ${label.toUpperCase()}  ᴅ ɪ ᴛ ᴇ ʀ ɪ ᴍ ᴀ 〕*
 *┆* ⟡ ᴋᴀʀᴀᴋᴛᴇʀ : *${data.charName}*
 *┆* ⟡ ᴜɪᴅ ᴍᴀʟ : *#${toSmallNum(uid)}*
 *┆* ⟡ ᴘᴇᴍᴏʜᴏɴ : *@${data.userJid.split('@')[0]}*
 *╰───────────────*
-> Foto profil waifu berhasil diperbarui ke dalam sistem.`
+> Foto profil ${partnerLabel} berhasil diperbarui ke dalam sistem.`
 
   m.reply(ownerMsg, null, { mentions: [data.userJid] })
 }
 
-handler.command = ['waifuterimapp', 'terimapp']
-handler.tags = ['waifu']
-handler.help = ['waifuterimapp <uid>']
+handler.command = ['waifuterimapp', 'terimapp', 'husbuterimapp']
+handler.tags = ['waifu', 'husbu']
+handler.help = ['waifuterimapp <uid>', 'husbuterimapp <uid>']
 handler.owner = true
 
 export default handler

@@ -56,9 +56,9 @@ let handler = async (m, { args, conn, usedPrefix, command }) => {
   }
 }
 
-handler.command = /^(waifuchar|wchar|char)$/i
-handler.tags = ['waifu']
-handler.help = ['waifuchar <nama|uid>']
+handler.command = /^(waifuchar|wchar|char|husbuchar|hchar)$/i
+handler.tags = ['waifu', 'husbu']
+handler.help = ['waifuchar <nama|uid>', 'husbuchar <nama|uid>']
 handler.register = true
 
 export default handler

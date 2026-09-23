@@ -1,66 +1,107 @@
 import axios from 'axios'
+import { status, toSmallNum } from '../../lib/style.js'
+
+async function genshinRyzumi(uid) {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/stalk/genshin?userId=${encodeURIComponent(uid)}`,
+    {
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    }
+  )
+
+  const meta = data?.meta || data?.playerInfo || data?.player || data
+  if (!meta || (!meta.nickname && !meta.uid)) {
+    throw new Error('Data Genshin Impact tidak ditemukan di Ryzumi')
+  }
+
+  const abyss = meta.spiralAbyss || {}
+  const abyssStr = abyss.floor ? `Lantai ${abyss.floor}-${abyss.chamber} (${abyss.stars}★)` : '-'
+
+  return {
+    nickname: meta.nickname || '-',
+    uid: meta.uid || uid,
+    level: meta.level || '-',
+    worldLevel: meta.worldLevel || '-',
+    achievements: meta.achievements || 0,
+    signature: meta.signature || '-',
+    abyss: abyssStr
+  }
+}
+
+async function genshinEnkaFallback(uid) {
+  const res = await axios.get(`https://enka.network/api/uid/${encodeURIComponent(uid)}`, {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+    timeout: 15000
+  })
+  const player = res.data?.playerInfo
+  if (!player) throw new Error('UID tidak ditemukan atau profil Enka disembunyikan.')
+
+  const abyssStr = player.towerFloorIndex ? `Lantai ${player.towerFloorIndex}-${player.towerLevelIndex}` : '-'
+  return {
+    nickname: player.nickname || '-',
+    uid,
+    level: player.level || '-',
+    worldLevel: player.worldLevel || '-',
+    achievements: player.finishAchievementNum || 0,
+    signature: player.signature || '-',
+    abyss: abyssStr
+  }
+}
+
+async function getGenshin(uid) {
+  try {
+    return await genshinRyzumi(uid)
+  } catch (e) {
+    console.warn('[Genshin Ryzumi failed]:', e.message)
+    return await genshinEnkaFallback(uid)
+  }
+}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) return m.reply(`⚔️ *Genshin Impact Stalker*\n\nContoh penggunaan:\n*${usedPrefix + command}* 800000000`)
+  const uid = text?.trim()
+  if (!uid) {
+    return m.reply(
+      status.warning(
+        `Masukkan UID Genshin Impact!\n` +
+        `> Contoh: *${usedPrefix + command} 800000000*`
+      )
+    )
+  }
 
-  let uid = text.trim()
-  await conn.sendMessage(m.chat, { react: { text: "⏰", key: m.key } })
+  await m.react('⏳')
 
-  // 1. Coba Ryzumi Genshin Stalk API
   try {
-    let ryzRes = await axios.get(`https://api.ryzumi.net/api/stalk/genshin?userId=${encodeURIComponent(uid)}`, { timeout: 15000 })
-    let data = ryzRes.data
-    if (data && (data.nickname || data.player || data.playerInfo)) {
-      let player = data.playerInfo || data.player || data
-      let nick = player.nickname || data.nickname || '-'
-      let ar = player.level || data.level || '-'
-      let wl = player.worldLevel || data.worldLevel || '-'
-      let sig = player.signature || data.signature || '-'
-      let ach = player.finishAchievementNum || data.achievements || '-'
+    const res = await getGenshin(uid)
 
-      let caption = `⚔️ *GENSHIN IMPACT STALKER*\n\n`
-      caption += `👤 *Nickname:* ${nick}\n`
-      caption += `🆔 *UID:* ${uid}\n`
-      caption += `🌟 *Adventure Rank (AR):* ${ar}\n`
-      caption += `🌍 *World Level (WL):* ${wl}\n`
-      caption += `🏆 *Achievements:* ${ach}\n`
-      if (sig !== '-') caption += `📝 *Signature:* ${sig}\n`
+    const caption = `*──  ୨୧ ✧ GENSHIN IMPACT STALKER ✧ ୨୧  ──*
 
-      await conn.sendMessage(m.chat, { text: caption }, { quoted: m })
-      return await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
-    }
-  } catch (e) {}
+*╭  〔 ⚔ ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ᴀ ᴋ ᴜ ɴ 〕*
+*┆* ⟡ ɴɪᴄᴋɴᴀᴍᴇ   : *${res.nickname}*
+*┆* ◈ ᴜɪᴅ        : *${toSmallNum(res.uid)}*
+*┆* ✧ ᴀʀ (ʟᴇᴠᴇʟ) : *${toSmallNum(res.level)}*
+*┆* ❖ ᴡᴏʀʟᴅ ʟᴠʟ  : *${toSmallNum(res.worldLevel)}*
+*┆* 🏆 ᴘᴇɴᴄᴀᴘᴀɪᴀɴ : *${toSmallNum(res.achievements)}*
+*┆* 🏰 ᴀʙʏꜱꜱ      : *${toSmallNum(res.abyss)}*
+*╰───────────────*
 
-  // 2. Fallback ke Enka Network API
-  try {
-    let res = await axios.get(`https://enka.network/api/uid/${encodeURIComponent(uid)}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      timeout: 15000
-    })
-    let player = res.data?.playerInfo
-    if (!player) throw new Error('UID tidak ditemukan atau profil Enka disembunyikan.')
+${res.signature && res.signature !== '-' ? `*╭  〔 📝 ꜱ ɪ ɢ ɴ ᴀ ᴛ ᴜ ʀ ᴇ 〕*\n> ${res.signature}\n*╰───────────────*\n\n` : ''}> _Informasi profil Genshin Impact berhasil ditemukan_`.trim()
 
-    let caption = `⚔️ *GENSHIN IMPACT STALKER (FALLBACK)*\n\n`
-    caption += `👤 *Nickname:* ${player.nickname || '-'}\n`
-    caption += `🆔 *UID:* ${uid}\n`
-    caption += `🌟 *Adventure Rank (AR):* ${player.level || '-'}\n`
-    caption += `🌍 *World Level (WL):* ${player.worldLevel || '-'}\n`
-    caption += `🏆 *Achievements:* ${player.finishAchievementNum || '-'}\n`
-    caption += `🏰 *Abyss:* Spiral ${player.towerFloorIndex || '-'}-${player.towerLevelIndex || '-'}\n`
-    if (player.signature) caption += `📝 *Signature:* ${player.signature}\n`
-
-    await conn.sendMessage(m.chat, { text: caption }, { quoted: m })
-    await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+    await m.reply(caption)
+    await m.react('✅')
   } catch (err) {
-    console.error('Genshin Stalk Error:', err)
-    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
-    m.reply(`❌ *Gagal mengambil data Genshin:* ${err.message || 'UID tidak valid atau profil di-private.'}`)
+    console.error('[Genshin Stalk Error]:', err)
+    await m.react('❌')
+    m.reply(status.error(`Gagal mengambil data Genshin:\n> ${err.message || 'UID tidak valid atau akun di-private.'}`))
   }
 }
 
 handler.help = ['genshinstalk <uid>', 'gistalk <uid>']
 handler.tags = ['stalk']
-handler.command = /^(genshinstalk|gistalk)$/i
+handler.command = /^(genshinstalk|gistalk|stalkgi)$/i
 handler.limit = true
 
 export default handler

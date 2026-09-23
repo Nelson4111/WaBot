@@ -1,62 +1,67 @@
-import fetch from 'node-fetch'
+import axios from 'axios'
 
-let handler = async (m, { conn, text, args, usedPrefix, command }) => {
+const toSmallNum = (str) => {
+  const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
+  return String(str || '').replace(/[0-9]/g, d => map[d] || d)
+}
+
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text) {
+    return m.reply(`*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*
+> Format input salah! Masukkan prompt deskripsi gambar:
+> › *${usedPrefix + command}* <prompt_deskripsi>
+>
+> Contoh:
+> › *${usedPrefix + command} anime girl white hair crying, cinematic lighting*
+> › *${usedPrefix + command} futuristic cyberpunk city at midnight 8k*
+*╰───────────────*`)
+  }
+
+  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
+
   try {
-    let prompt = (text || args?.join(" ") || (m.quoted && (m.quoted.text || m.quoted?.message?.conversation)))?.trim()
-    if (!prompt) return conn.sendMessage(m.chat, { text: `Masukkan prompt.\nContoh:\n${usedPrefix + (command || 'flux')} langit malam penuh bintang gaya anime` }, { quoted: m })
-
-    await conn.sendMessage(m.chat, { text: `🔎 Menghasilkan gambar untuk prompt:\n"${prompt}"\nTunggu sebentar...` }, { quoted: m })
-
-    const endpoint = `https://fast-flux-demo.replicate.workers.dev/api/generate-image?text=${encodeURIComponent(prompt)}`
-    const res = await fetch(endpoint, { method: 'GET', headers: { 'Accept': 'application/json' } })
-    const contentType = res.headers.get('content-type') || ''
-
-    if (contentType.includes('application/json')) {
-      const j = await res.json().catch(() => null)
-      if (!j) throw new Error('Response JSON tidak bisa dibaca.')
-
-      if (j.url) return conn.sendMessage(m.chat, { image: { url: j.url }, caption: `Prompt: ${prompt}` }, { quoted: m })
-      if (Array.isArray(j.images) && j.images.length) return conn.sendMessage(m.chat, { image: { url: j.images[0] }, caption: `Prompt: ${prompt}` }, { quoted: m })
-      if (j.image && typeof j.image === 'string') {
-        let b64 = j.image.replace(/^data:.*;base64,/, '')
-        let buffer = Buffer.from(b64, 'base64')
-        return conn.sendMessage(m.chat, { image: buffer, caption: `Prompt: ${prompt}` }, { quoted: m })
+    const res = await axios.get(`https://api.ryzumi.net/api/ai/flux-schnell?prompt=${encodeURIComponent(text.trim())}`, {
+      responseType: 'arraybuffer',
+      timeout: 45000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
+    })
 
-      const maybe = j.output || j.result || j.data
-      if (maybe) {
-        if (typeof maybe === 'string' && maybe.startsWith('http')) return conn.sendMessage(m.chat, { image: { url: maybe }, caption: `Prompt: ${prompt}` }, { quoted: m })
-        if (Array.isArray(maybe) && maybe.length) {
-          const first = maybe[0]
-          if (typeof first === 'string' && first.startsWith('http')) return conn.sendMessage(m.chat, { image: { url: first }, caption: `Prompt: ${prompt}` }, { quoted: m })
-          if (typeof first === 'string' && first.startsWith('data:')) {
-            let b64 = first.replace(/^data:.*;base64,/, '')
-            let buffer = Buffer.from(b64, 'base64')
-            return conn.sendMessage(m.chat, { image: buffer, caption: `Prompt: ${prompt}` }, { quoted: m })
-          }
-        }
-      }
-
-      throw new Error('Tidak menemukan URL atau image di response.')
+    const buffer = Buffer.from(res.data)
+    if (!buffer || buffer.length === 0) {
+      throw new Error('Gagal menghasilkan gambar AI dari prompt.')
     }
 
-    if (contentType.startsWith('image/') || contentType === '') {
-      const arrayBuffer = await res.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      return conn.sendMessage(m.chat, { image: buffer, caption: `Prompt: ${prompt}` }, { quoted: m })
-    }
+    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
-    const textRes = await res.text().catch(() => null)
-    throw new Error(`Gagal memproses response API. Response: ${textRes || 'empty'}`)
+    const caption = `*──  ୨୧ ✧ ꜰʟᴜx ᴀɪ ɢᴇɴᴇʀᴀᴛᴏʀ ✧ ୨୧  ──*
+
+*╭  〔 🎨 ɢ ᴇ ɴ ᴇ ʀ ᴀ ꜱ ɪ  ɢ ᴀ ᴍ ʙ ᴀ ʀ 〕*
+*┆* ⟡ ᴍᴏᴅᴇʟ  : *Flux Schnell*
+*┆* ⚙ ᴇɴɢɪɴᴇ : *Black Forest Labs*
+*┆* ⏱ ᴡᴀᴋᴛᴜ  : *${toSmallNum(new Date().toLocaleTimeString('id-ID'))} WIB*
+> ✦ ᴘʀᴏᴍᴘᴛ : ${text.trim()}
+*╰───────────────*
+
+> _Gambar visual artistik beresolusi tinggi di-generate otomatis oleh AI._`.trim()
+
+    return conn.sendMessage(m.chat, {
+      image: buffer,
+      caption
+    }, { quoted: m })
   } catch (err) {
-    const em = err?.message || String(err)
-    return conn.sendMessage(m.chat, { text: `❌ Gagal menghasilkan gambar:\n${em}` }, { quoted: m })
+    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
+    const msg = err.response?.data?.message || err.message
+    return m.reply(`*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*
+> Gagal generate gambar Flux AI: ${msg}
+*╰───────────────*`)
   }
 }
 
-handler.help = ['flux <prompt>']
-handler.tags = ['image', 'ai']
-handler.command = /^((flux|fluximg|flux-image))$/i
+handler.help = ['flux <prompt>', 'txt2img <prompt>']
+handler.tags = ['ai']
+handler.command = /^(flux|txt2img|fluxai)$/i
 handler.limit = true
 
 export default handler

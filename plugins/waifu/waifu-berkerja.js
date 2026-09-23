@@ -46,10 +46,16 @@ const COOLDOWN = 2 * 60 * 1000 // 2 menit dalam milidetik
 let handler = async (m, { usedPrefix, command }) => {
   const db = loadDB()
 
-  // ===== CEK WAIFU =====
-  if (!db.couples || !db.couples[m.sender]) {
+  // ===== CEK PASANGAN =====
+  const c = db.couples?.[m.sender]
+  const isHusbu = Boolean(c?.isHusbu) || /husbu|hkerja/i.test(command)
+  const label = isHusbu ? 'Husbu' : 'Waifu'
+  const partnerLabel = isHusbu ? 'husbu' : 'waifu'
+  const prefixCmd = isHusbu ? 'husbu' : 'waifu'
+
+  if (!c) {
     return m.reply(
-      status.warning(`Kamu belum memiliki waifu untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}waifulamar <nama|uid>*`)
+      status.warning(`Kamu belum memiliki ${partnerLabel} untuk disuruh bekerja!\n> Lamar karakter: *${usedPrefix}${prefixCmd}lamar <nama|uid>*`)
     )
   }
 
@@ -116,9 +122,9 @@ let handler = async (m, { usedPrefix, command }) => {
   saveDB(db)
 
   m.reply(
-    `*──  ୨୧ ✧ WAIFU PEKERJAAN ✧ ୨୧  ──*\n\n` +
+    `*──  ୨୧ ✧ ${label.toUpperCase()} PEKERJAAN ✧ ୨୧  ──*\n\n` +
     `*╭  〔 ⚙ ʜ ᴀ ꜱ ɪ ʟ  ᴋ ᴇ ʀ ᴊ ᴀ 〕*\n` +
-    `*┆* 𝜚 ᴡᴀɪꜰᴜ      : *${waifuName}*\n` +
+    `*┆* 𝜚 ${label.toUpperCase()}      : *${waifuName}*\n` +
     `*┆* ◈ ᴘᴇᴋᴇʀᴊᴀᴀɴ  : *${job.name}*\n` +
     `*┆* ❖ ᴘᴇɴᴅᴀᴘᴀᴛᴀɴ : *+${toSmallNum(rupiah(earn))}*\n` +
     `*┆* 🍱 ꜱɪꜱᴀ ᴇɴᴇʀɢɪ: *${toSmallNum(st.lapar)}/𝟷𝟶𝟶* (-𝟷𝟻)\n` +
@@ -128,9 +134,9 @@ let handler = async (m, { usedPrefix, command }) => {
   )
 }
 
-handler.command = /^(waifukerja|wkerja|berkerja)$/i
-handler.tags = ['waifu']
-handler.help = ['waifukerja']
+handler.command = /^(waifukerja|wkerja|berkerja|husbukerja|hkerja)$/i
+handler.tags = ['waifu', 'husbu']
+handler.help = ['waifukerja', 'husbukerja']
 handler.register = true
 
 export default handler

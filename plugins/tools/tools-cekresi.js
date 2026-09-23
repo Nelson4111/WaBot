@@ -1,8 +1,43 @@
 import axios from 'axios'
-import cheerio from 'cheerio'
+import * as cheerio from 'cheerio'
 import FormData from 'form-data'
 import CryptoJS from 'crypto-js'
+import { status, toSmallNum } from '../../lib/style.js'
 
+// ─── Ryzumi Primary ──────────────────────────────────────────────────────────
+async function cekresiRyzumi(resi) {
+  const { data } = await axios.get(
+    `https://api.ryzumi.net/api/tool/cek-resi?resi=${encodeURIComponent(resi)}`,
+    {
+      timeout: 20000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    }
+  )
+
+  if (!data?.success || !data?.result) {
+    throw new Error(data?.message || 'Nomor resi tidak ditemukan di Ryzumi')
+  }
+
+  const r = data.result
+  return {
+    resi: r.noResi || resi,
+    ekspedisi: r.expedisi || 'Ekspedisi',
+    status: r.status || '-',
+    pengirim: r.pengirim || '-',
+    tujuan: r.tujuan || '-',
+    tanggalKirim: r.tanggalKirim || '-',
+    lastPosition: r.posisiTerakhir || '-',
+    history: (r.riwayat || []).map(h => ({
+      tanggal: h.tanggal || '',
+      keterangan: h.keterangan || ''
+    }))
+  }
+}
+
+// ─── Fallback Scraper ───────────────────────────────────────────────────────
 function createTimers(resi) {
   try {
     const keyHex = '79540e250fdb16afac03e19c46dbdeb3'
@@ -20,161 +55,106 @@ function createTimers(resi) {
   }
 }
 
+async function cekresiFallback(noresi, ekspedisi = 'shopee-express') {
+  const _ekspedisi = {
+    'shopee-express': 'SPX',
+    'ninja': 'NINJA',
+    'lion-parcel': 'LIONPARCEL',
+    'pos-indonesia': 'POS',
+    'tiki': 'TIKI',
+    'jne': 'JNE',
+    'jnt': 'JNT',
+    'sicepat': 'SICEPAT'
+  }
+
+  const form = new FormData()
+  form.append('e', _ekspedisi[ekspedisi] || 'SPX')
+  form.append('noresi', noresi.toUpperCase().replace(/\s/g, ''))
+  form.append('timers', createTimers(noresi))
+
+  const { data } = await axios.post(
+    `https://apa2.cekresi.com/cekresi/resi/initialize.php?ui=e0ad7e971ce77822056ba7a155f85c11&p=1`,
+    form,
+    {
+      headers: {
+        ...form.getHeaders(),
+        'user-agent': 'Mozilla/5.0'
+      },
+      timeout: 15000
+    }
+  )
+
+  const $res = cheerio.load(data)
+  return {
+    resi: noresi,
+    ekspedisi: $res('#nama_expedisi').text().trim() || ekspedisi,
+    status: $res('table.table-striped tbody tr:contains("Status") td:last-child').text().trim() || '-',
+    pengirim: '-',
+    tujuan: '-',
+    tanggalKirim: '-',
+    lastPosition: $res('#last_position').text().trim() || '-',
+    history: []
+  }
+}
+
 async function cekresi(noresi, ekspedisi) {
   try {
-    const _ekspedisi = {
-      'shopee-express': 'SPX',
-      'ninja': 'NINJA',
-      'lion-parcel': 'LIONPARCEL',
-      'pos-indonesia': 'POS',
-      'tiki': 'TIKI',
-      'acommerce': 'ACOMMERCE',
-      'gtl-goto-logistics': 'GTL',
-      'paxel': 'PAXEL',
-      'sap-express': 'SAP',
-      'indah-logistik-cargo': 'INDAH',
-      'lazada-express-lex': 'LEX',
-      'lazada-logistics': 'LEL',
-      'janio-asia': 'JANIO',
-      'jet-express': 'JETEXPRESS',
-      'pcp-express': 'PCP',
-      'pt-ncs': 'NCS',
-      'nss-express': 'NSS',
-      'grab-express': 'GRAB',
-      'rcl-red-carpet-logistics': 'RCL',
-      'qrim-express': 'QRIM',
-      'ark-xpress': 'ARK',
-      'standard-express-lwe': 'LWE',
-      'luar-negeri-bea-cukai': 'BEACUKAI'
-    }
-
-    if (!noresi) throw new Error('Nomor resi kosong!')
-    if (!Object.keys(_ekspedisi).includes(ekspedisi)) throw new Error(`Ekspedisi salah! Pilih: ${Object.keys(_ekspedisi).join(', ')}`)
-
-    const { data: html } = await axios.get('https://cekresi.com/')
-    const $ = cheerio.load(html)
-
-    const timers = createTimers(noresi.toUpperCase().replace(/\s/g, ''))
-    const form = new FormData()
-    form.append('viewstate', $('input[name="viewstate"]').attr('value'))
-    form.append('secret_key', $('input[name="secret_key"]').attr('value'))
-    form.append('e', _ekspedisi[ekspedisi])
-    form.append('noresi', noresi.toUpperCase().replace(/\s/g, ''))
-    form.append('timers', timers)
-
-    const { data } = await axios.post(
-      `https://apa2.cekresi.com/cekresi/resi/initialize.php?ui=e0ad7e971ce77822056ba7a155f85c11&p=1&w=${Math.random().toString(36).substring(7)}`,
-      form,
-      {
-        headers: {
-          'content-type': 'application/x-www-form-urlencoded',
-          referer: 'https://cekresi.com/',
-          origin: 'https://cekresi.com',
-          'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
-        }
-      }
-    )
-
-    const $res = cheerio.load(data)
-    const result = {
-      success: false,
-      message: '',
-      data: {
-        resi: noresi,
-        ekspedisi: '',
-        ekspedisiCode: _ekspedisi[ekspedisi],
-        status: '',
-        tanggalKirim: '',
-        customerService: '',
-        lastPosition: '',
-        shareLink: '',
-        history: []
-      }
-    }
-
-    const alertSuccess = $res('.alert.alert-success')
-    if (alertSuccess.length > 0) {
-      result.success = true
-      result.message = alertSuccess.text().trim()
-      result.data.ekspedisi = $res('#nama_expedisi').text().trim()
-
-      const infoTable = $res('table.table-striped tbody tr')
-      infoTable.each((_, el) => {
-        const cells = $res(el).find('td')
-        if (cells.length >= 3) {
-          const label = $res(cells[0]).text().trim()
-          const value = $res(cells[2]).text().trim()
-          if (label === 'Tanggal Pengiriman') result.data.tanggalKirim = value
-          if (label === 'Status') result.data.status = value
-        }
-      })
-
-      const lastPos = $res('#last_position').text().trim()
-      if (lastPos) result.data.lastPosition = lastPos
-
-      const shareLink = $res('#linkcekresi').attr('value')
-      if (shareLink) result.data.shareLink = shareLink
-
-      const historyTable = $res('h4:contains("History")').next('table').find('tbody tr')
-      historyTable.each((_, el) => {
-        const cells = $res(el).find('td')
-        if (cells.length >= 2) {
-          const tanggal = $res(cells[0]).text().trim()
-          const ket = $res(cells[1]).text().trim()
-          if (tanggal && ket) {
-            result.data.history.push({ tanggal, keterangan: ket })
-          }
-        }
-      })
-    } else {
-      const alertError = $res('.alert.alert-danger, .alert.alert-warning')
-      result.message = alertError.length > 0 ? alertError.text().trim() : 'Tidak dapat mengambil informasi resi'
-    }
-
-    return result
+    return await cekresiRyzumi(noresi)
   } catch (e) {
-    return {
-      success: false,
-      message: e.message,
-      data: null
-    }
+    console.warn('[CekResi Ryzumi failed]:', e.message)
+    return await cekresiFallback(noresi, ekspedisi)
   }
 }
 
-// Handler Command ESM
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
-
-  if (!text) throw `Contoh:\n${usedPrefix + command} SPXID054330680586|shopee-express`
-
-  const [resi, ekspedisi] = text.split('|').map(v => v.trim().toLowerCase())
-  if (!resi || !ekspedisi) throw `Format salah!\nContoh: ${usedPrefix + command} SPXID054330680586|shopee-express`
-
-  const result = await cekresi(resi, ekspedisi)
-
-  if (!result.success) {
-    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-    throw result.message
+  if (!text) {
+    return m.reply(
+      status.warning(
+        `Masukkan nomor resi paket!\n` +
+        `> Contoh: *${usedPrefix + command} SPXID054330680586*\n` +
+        `> Contoh dengan kurir: *${usedPrefix + command} SPXID054330680586|shopee-express*`
+      )
+    )
   }
 
-  await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
-  const hasil = `
-📦 *Cek Resi*
-• No Resi: *${result.data.resi}*
-• Ekspedisi: *${result.data.ekspedisi}*
-• Status: *${result.data.status}*
-• Tanggal Kirim: *${result.data.tanggalKirim}*
-• Posisi Terakhir: *${result.data.lastPosition}*
-• History:
-${result.data.history.map(h => `- ${h.tanggal}: ${h.keterangan}`).join('\n')}
+  const [resi, ekspedisi] = text.split('|').map(v => v.trim())
+  await m.react('⏳')
 
-🔗 *Link Cekresi:* ${result.data.shareLink}
-`.trim()
+  try {
+    const data = await cekresi(resi, ekspedisi)
 
-  await conn.reply(m.chat, hasil, m)
+    let caption = `*──  ୨୧ ✧ STATUS PENGIRIMAN PAKET ✧ ୨୧  ──*
+
+*╭  〔 📦 ᴅ ᴇ ᴛ ᴀ ɪ ʟ  ʀ ᴇ ꜱ ɪ 〕*
+*┆* ⟡ ɴᴏ. ʀᴇꜱɪ  : *${data.resi}*
+*┆* ◈ ᴇᴋꜱᴘᴇᴅɪꜱɪ : *${data.ekspedisi}*
+*┆* ✧ ꜱᴛᴀᴛᴜꜱ    : *${data.status}*
+${data.pengirim !== '-' ? `*┆* 👤 ᴘᴇɴɢɪʀɪᴍ : *${data.pengirim}*\n` : ''}${data.tujuan !== '-' ? `*┆* 📍 ᴛᴜᴊᴜᴀɴ   : *${data.tujuan}*\n` : ''}${data.tanggalKirim !== '-' ? `*┆* ⏱ ᴛɢʟ ᴋɪʀɪᴍ : *${toSmallNum(data.tanggalKirim)}*\n` : ''}*╰───────────────*
+
+${data.lastPosition !== '-' ? `*╭  〔 📍 ᴘ ᴏ ꜱ ɪ ꜱ ɪ  ᴛ ᴇ ʀ ᴀ ᴋ ʜ ɪ ʀ 〕*\n> ${data.lastPosition}\n*╰───────────────*\n\n` : ''}`
+
+    if (data.history && data.history.length > 0) {
+      caption += `*╭  〔 📜 ʀ ɪ ᴡ ᴀ ʏ ᴀ ᴛ  ᴛ ᴇ ʀ ᴀ ᴋ ʜ ɪ ʀ 〕*\n`
+      const list = data.history.slice(-4).reverse()
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i]
+        caption += `> ⟡ *${item.tanggal || '-'}*\n> ${item.keterangan || '-'}\n`
+      }
+      caption += `*╰───────────────*\n\n`
+    }
+
+    caption += `> _Data pelacakan paket berhasil diperbarui_`
+
+    await m.reply(caption.trim())
+    await m.react('✅')
+  } catch (e) {
+    await m.react('❌')
+    console.error('[CekResi Error]:', e)
+    m.reply(status.error(`Gagal melacak nomor resi:\n> ${e?.message || e}`))
+  }
 }
 
-handler.help = ['cekresi'].map(v => v + ' <no resi>|<ekspedisi>')
+handler.help = ['cekresi <noresi>']
 handler.tags = ['tools']
 handler.command = /^cekresi$/i
 handler.limit = true

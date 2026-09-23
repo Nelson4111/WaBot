@@ -2,17 +2,21 @@ import { loadDB, saveDB, searchMALCharacter } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
+  const isHusbu = /husbu|hlamar/i.test(command)
+  const label = isHusbu ? 'Husbu' : 'Waifu'
+  const partnerLabel = isHusbu ? 'husbu' : 'waifu'
+
   const db = loadDB()
   if (db.couples[m.sender]) {
-    return status.warning(m, `Kamu sudah memiliki waifu (${db.couples[m.sender].charName}).`, [
-      `Gunakan *${usedPrefix}waifuputus* terlebih dahulu jika ingin berpaling.`
+    return status.warning(m, `Kamu sudah memiliki pasangan (${db.couples[m.sender].charName}).`, [
+      `Gunakan *${usedPrefix}waifuputus* atau *${usedPrefix}husbuputus* terlebih dahulu jika ingin berpaling.`
     ])
   }
 
   const q = args.join(' ')
   if (!q) {
-    return status.warning(m, 'Masukkan nama karakter atau UID MyAnimeList!', [
-      `Contoh Nama: *${usedPrefix + command} Rem*`,
+    return status.warning(m, `Masukkan nama karakter atau UID MyAnimeList!`, [
+      `Contoh Nama: *${usedPrefix + command} ${isHusbu ? 'Levi' : 'Rem'}*`,
       `Contoh UID  : *${usedPrefix + command} 220209*`
     ])
   }
@@ -26,14 +30,15 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
   if (db.chars[c.id]) {
     return status.error(m, `Karakter *${c.nama}* sudah dilamar oleh pengembara lain.`, [
-      'Setiap karakter waifu bersifat eksklusif hanya untuk satu pasangan.'
+      `Setiap karakter ${partnerLabel} bersifat eksklusif hanya untuk satu pasangan.`
     ])
   }
 
   db.couples[m.sender] = {
     charId: c.id,
     charName: c.nama,
-    image: c.image || null
+    image: c.image || null,
+    isHusbu
   }
   db.chars[c.id] = m.sender
   if (c.image && (!db.profilePP || !db.profilePP[c.id])) {
@@ -51,20 +56,24 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
   saveDB(db)
 
-  const caption = `*╭  〔 💍 ᴡ ᴀ ɪ ꜰ ᴜ  ʙ ᴇ ʀ ʜ ᴀ ꜱ ɪ ʟ  ᴅ ɪ ʟ ᴀ ᴍ ᴀ ʀ 〕*
+  const prefixCmd = isHusbu ? 'husbu' : 'waifu'
+  const myCmd = isHusbu ? 'myhusbu' : 'mywaifu'
+
+  const caption = `*╭  〔 💍 ${label.toUpperCase()}  ʙ ᴇ ʀ ʜ ᴀ ꜱ ɪ ʟ  ᴅ ɪ ʟ ᴀ ᴍ ᴀ ʀ 〕*
 *┆* ⟡ ɴᴀᴍᴀ : *${c.nama}*
 *┆* ⟡ ᴜɪᴅ ᴍᴀʟ : *#${toSmallNum(c.id)}*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ : *Menikah (Resmi)*
+*┆* ⟡ ᴛɪᴘᴇ : *${label}*
 *┆* ⟡ ᴀꜰɪɴɪᴛᴀꜱ ᴀᴡᴀʟ : *${toSmallNum(0)} Poin*
 *┆* ⟡ ᴍᴏᴏᴅ / ʟᴀᴘᴀʀ : *${toSmallNum(50)}% / ${toSmallNum(50)}%*
 *╰───────────────*
-> Selamat! Rawatlah waifu kesayanganmu dengan penuh perhatian dan kasih sayang.
+> Selamat! Rawatlah ${partnerLabel} kesayanganmu dengan penuh perhatian dan kasih sayang.
 
 *╭  〔 ୨୧ ᴘ ᴀ ɴ ᴅ ᴜ ᴀ ɴ  ɪ ɴ ᴛ ᴇ ʀ ᴀ ᴋ ꜱ ɪ 〕*
-*┆* ⟡ *${usedPrefix}mywaifu* : Cek profil & status
-*┆* ⟡ *${usedPrefix}waifuact* : Berinteraksi harian
-*┆* ⟡ *${usedPrefix}waifufood* : Beri makan & energi
-*┆* ⟡ *${usedPrefix}waifukerja* : Bekerja bersama
+*┆* ⟡ *${usedPrefix}${myCmd}* : Cek profil & status
+*┆* ⟡ *${usedPrefix}${prefixCmd}act* : Berinteraksi harian
+*┆* ⟡ *${usedPrefix}${prefixCmd}food* : Beri makan & energi
+*┆* ⟡ *${usedPrefix}${prefixCmd}kerja* : Bekerja bersama
 *╰───────────────*`
 
   if (c.image) {
@@ -75,9 +84,9 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 }
 
 /* ===== META ===== */
-handler.command = /^(waifulamar|wlamar|claimwaifu)$/i
-handler.tags = ['waifu']
-handler.help = ['waifulamar <nama|uid>']
+handler.command = /^(waifulamar|wlamar|claimwaifu|husbulamar|hlamar|claimhusbu)$/i
+handler.tags = ['waifu', 'husbu']
+handler.help = ['waifulamar <nama|uid>', 'husbulamar <nama|uid>']
 
 handler.register = true
 
