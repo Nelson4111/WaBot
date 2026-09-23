@@ -1,4 +1,5 @@
 import { botArbitrator } from '../../lib/botArbitrator.js'
+import { resolveLid } from '../../lib/simple.js'
 
 const toSmallNum = (str) => {
     const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' };
@@ -26,12 +27,16 @@ function formatDuration(ms) {
 let handler = m => m;
 
 handler.before = async function (m, { conn }) {
-    // 1. Abaikan pesan dari bot sendiri (Baileys), Bot Utama, atau JadiBot mana pun
+    // 1. Abaikan jika pesan dikirim oleh bot sendiri (Baileys) atau socket bot aktif
     if (m.fromMe || m.isBaileys || botArbitrator.isAnyBot(m.sender)) return false;
-    if (m.text && /──  ୨୧ ✧ (ᴜꜱᴇʀ ꜱᴇᴅᴀɴɢ ᴀꜰᴋ|ᴀꜰᴋ ꜱᴇʟᴇꜱᴀɪ) ✧ ୨୧  ──/i.test(m.text)) return false;
 
     const DB = global.db?.data?.users || {};
-    const user = DB[m.sender];
+    
+    // Resolusi sender jika dalam format LID
+    const senderPhone = (m.sender && m.sender.endsWith('@lid') && typeof resolveLid === 'function')
+        ? (resolveLid(m.sender) || m.sender)
+        : (m.sender || '');
+    const user = DB[senderPhone] || DB[m.sender];
 
     // 2. Otomatis selesai AFK saat user mengirim pesan
     if (user && user.afk > -1 && m.text && !m.text.startsWith('.afk')) {
@@ -39,8 +44,8 @@ handler.before = async function (m, { conn }) {
         user.lastAfk = Date.now();
         user.afk = -1;
         user.afkReason = '';
-        let userName = user.name || (await conn.getName(m.sender)) || m.sender.split('@')[0];
-        userName = String(userName).trim() || m.sender.split('@')[0];
+        let userName = user.name || (await conn.getName(senderPhone)) || senderPhone.split('@')[0];
+        userName = String(userName).trim() || senderPhone.split('@')[0];
 
         const textReturn = `*──  ୨୧ ✧ ᴀꜰᴋ ꜱᴇʟᴇꜱᴀɪ ✧ ୨୧  ──*
 
@@ -53,19 +58,38 @@ handler.before = async function (m, { conn }) {
         conn.sendMessage(m.chat, { text: textReturn }, { quoted: m }).catch(() => {});
     }
 
-    // 3. Peringatan saat member lain men-tag user AFK
-    const jids = [...new Set([
+    // 3. Peringatan saat member lain men-tag atau me-reply user AFK
+    const rawJids = [...new Set([
         ...(m.mentionedJid || []),
         ...(m.quoted ? [m.quoted.sender] : [])
     ])];
 
-    for (const jid of jids) {
-        if (jid === m.sender) continue;
+    // Jika member me-reply pesan kartu AFK buatan bot, ekstrak nama user yang tertera di kartu
+    if (m.quoted && (m.quoted.fromMe || botArbitrator.isAnyBot(m.quoted.sender)) && m.quoted.text) {
+        const matchName = m.quoted.text.match(/⟡ ᴜꜱᴇʀ\s*:\s*\*([^*]+)\*/i);
+        if (matchName) {
+            const targetName = matchName[1].trim().toLowerCase();
+            const foundUser = Object.entries(DB).find(([k, v]) => v.name && v.name.toLowerCase() === targetName);
+            if (foundUser) {
+                rawJids.push(foundUser[0]);
+            }
+        }
+    }
+
+    for (const rawJid of rawJids) {
+        if (!rawJid) continue;
+
+        // Resolusi LID ke Phone JID agar akurat dengan database
+        const jid = (rawJid.endsWith('@lid') && typeof resolveLid === 'function')
+            ? (resolveLid(rawJid) || rawJid)
+            : rawJid;
+
+        if (jid === senderPhone || jid === m.sender) continue;
         
-        // Jangan peringatkan kalau yang di-reply/di-tag adalah Bot
+        // Jangan peringatkan jika yang di-tag/di-reply adalah Bot
         if (botArbitrator.isAnyBot(jid)) continue;
 
-        const taggedUser = DB[jid];
+        const taggedUser = DB[jid] || DB[rawJid];
         if (!taggedUser || !(taggedUser.afk > -1)) continue;
 
         const duration = formatDuration(Date.now() - taggedUser.afk);
