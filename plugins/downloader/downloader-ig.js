@@ -1,5 +1,6 @@
 import axios from 'axios'
 import crypto from 'crypto'
+import { spawn } from 'child_process'
 import * as cheerio from 'cheerio'
 import qs from 'querystring'
 import * as Baileys from '@whiskeysockets/baileys'
@@ -25,6 +26,47 @@ async function downloadBuffer(url, referer = 'https://www.instagram.com/') {
     }
   })
   return Buffer.from(resp.data)
+}
+
+// ─── UTIL: Convert to Playable MP3 Buffer ────────────────────────────────────
+async function convertToMp3(input) {
+  let buf
+  if (Buffer.isBuffer(input)) {
+    buf = input
+  } else if (typeof input === 'string' && input.startsWith('http')) {
+    buf = await downloadBuffer(input)
+  } else {
+    throw new Error('Input audio tidak valid')
+  }
+
+  return new Promise((resolve, reject) => {
+    const ffmpegProc = spawn('ffmpeg', [
+      '-i', 'pipe:0',
+      '-vn',
+      '-c:a', 'libmp3lame',
+      '-b:a', '128k',
+      '-f', 'mp3',
+      'pipe:1'
+    ])
+
+    const chunks = []
+    let errLog = ''
+
+    ffmpegProc.stdout.on('data', chunk => chunks.push(chunk))
+    ffmpegProc.stderr.on('data', d => { errLog += d.toString() })
+    ffmpegProc.on('error', reject)
+    ffmpegProc.on('close', code => {
+      if (code === 0 && chunks.length > 0) {
+        resolve(Buffer.concat(chunks))
+      } else {
+        reject(new Error(`ffmpeg exit code ${code}: ${errLog.slice(-200)}`))
+      }
+    })
+
+    ffmpegProc.stdin.on('error', () => {})
+    ffmpegProc.stdin.write(buf)
+    ffmpegProc.stdin.end()
+  })
 }
 
 // ─── API 1: Ryzumi Instagram Downloader ───────────────────────────────────────
@@ -343,6 +385,7 @@ ${cleanTitle ? `> ⟡ ᴊᴜᴅᴜʟ : *${cleanTitle}*\n` : ''}${res.author ? `>
           throw new Error('Gagal mengunduh gambar slide Instagram.')
         }
 
+        let sentAlbum = false
         const userJid = jidNormalizedUser(conn.user.id)
         try {
           const opener = generateWAMessageFromContent(
@@ -400,20 +443,16 @@ ${cleanTitle ? `> ⟡ ᴊᴜᴅᴜʟ : *${cleanTitle}*\n` : ''}${res.author ? `>
       // Kirim Audio jika ada
       if (res.audio) {
         try {
-          const audioBuf = await downloadBuffer(res.audio)
+          const mp3Buf = await convertToMp3(res.audio)
+          const safeName = (res.author || 'instagram').replace(/[^\w\d_-]/g, '_')
           await conn.sendMessage(m.chat, {
-            audio: audioBuf,
-            mimetype: 'audio/mp4',
-            fileName: `${res.author || 'instagram'}_audio.m4a`,
+            audio: mp3Buf,
+            mimetype: 'audio/mpeg',
+            fileName: `${safeName}_audio.mp3`,
             ptt: false
           }, { quoted: m })
-        } catch {
-          await conn.sendMessage(m.chat, {
-            audio: { url: res.audio },
-            mimetype: 'audio/mp4',
-            fileName: `${res.author || 'instagram'}_audio.m4a`,
-            ptt: false
-          }, { quoted: m })
+        } catch (audErr) {
+          console.warn('[Instagram Slide Audio Convert Error]:', audErr?.message || audErr)
         }
       }
 
@@ -460,22 +499,19 @@ ${cleanTitle ? `> ⟡ ᴊᴜᴅᴜʟ   : *${cleanTitle}*\n` : ''}${res.author ? 
       }
 
       // Kirim Audio pengiring (seperti TikTok downloader)
-      if (res.audio) {
+      const audioSource = res.audio || videoBuf
+      if (audioSource) {
         try {
-          const audioBuf = await downloadBuffer(res.audio)
+          const mp3Buf = await convertToMp3(audioSource)
+          const safeName = (res.author || 'instagram').replace(/[^\w\d_-]/g, '_')
           await conn.sendMessage(m.chat, {
-            audio: audioBuf,
-            mimetype: 'audio/mp4',
-            fileName: `${res.author || 'instagram'}_audio.m4a`,
+            audio: mp3Buf,
+            mimetype: 'audio/mpeg',
+            fileName: `${safeName}_audio.mp3`,
             ptt: false
           }, { quoted: m })
-        } catch {
-          await conn.sendMessage(m.chat, {
-            audio: { url: res.audio },
-            mimetype: 'audio/mp4',
-            fileName: `${res.author || 'instagram'}_audio.m4a`,
-            ptt: false
-          }, { quoted: m })
+        } catch (audErr) {
+          console.warn('[Instagram Video Audio Convert Error]:', audErr?.message || audErr)
         }
       }
 
