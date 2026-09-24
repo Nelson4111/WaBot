@@ -12,6 +12,27 @@ const EPIC_SAGAS = [
   { id: 'ithaca', name: 'The Ithaca Saga', detail: 'Setelah perjalanan panjang melewati perang, monster, dan badai, Odysseus akhirnya kembali mendekati rumahnya. Namun Ithaca membawa ujian terakhir berupa masa lalu, keluarga, dan keputusan yang menentukan akhir perjalanannya.' }
 ]
 
+const EPIC_IMAGES = [
+  { name: "Cyclops Saga Song", url: "https://c.termai.cc/i126/ZdJvX2" },
+  { name: "Troy Saga Song", url: "https://c.termai.cc/i109/iZhL" },
+  { name: "Ithaca Saga Song", url: "https://c.termai.cc/i177/TIWGsyf" },
+  { name: "Vengeance Saga Song", url: "https://c.termai.cc/i131/XSNbM3u" },
+  { name: "Circe Saga Song", url: "https://c.termai.cc/i107/X6PJB" },
+  { name: "Wisdom Saga Song", url: "https://c.termai.cc/i120/luLKkm" },
+  { name: "Ocean Saga Song", url: "https://c.termai.cc/i160/shHO" },
+  { name: "Underworld Saga Song", url: "https://c.termai.cc/i140/uuEtl" },
+  { name: "Underworld Saga", url: "https://c.termai.cc/i101/Na17" },
+  { name: "Thunder Saga Song", url: "https://c.termai.cc/i196/kOu4t" },
+  { name: "Ithaca Saga", url: "https://c.termai.cc/i142/9XwE11r" },
+  { name: "Troy Saga", url: "https://c.termai.cc/i154/Y1hfRLP" },
+  { name: "Wisdom Saga", url: "https://c.termai.cc/i138/P0zVy9N" },
+  { name: "Thunder Saga", url: "https://c.termai.cc/i107/2SkDP" },
+  { name: "Vengeance Saga", url: "https://c.termai.cc/i153/Ouza2" },
+  { name: "Cyclops Saga", url: "https://c.termai.cc/i173/C5H9az" },
+  { name: "Ocean Saga", url: "https://c.termai.cc/i185/Y5amYDi" },
+  { name: "Circe Saga", url: "https://c.termai.cc/i111/0gBQ4H" }
+];
+
 const EPIC_SONGS = [
   { id: 'the-horse-and-the-infant', name: 'The Horse and the Infant', saga: 'The Troy Saga', detail: 'Awal perjalanan Odysseus setelah perang Troya, ketika kemenangan besar masih dibayangi oleh keputusan berat, rasa bersalah, dan kenyataan bahwa setiap tindakan di medan perang memiliki konsekuensi yang panjang.' },
   { id: 'just-a-man', name: 'Just a Man', saga: 'The Troy Saga', detail: 'Odysseus menghadapi konflik batin sebagai manusia biasa yang harus mengambil keputusan mustahil. Di antara kewajiban, belas kasih, dan keinginan untuk tetap menjadi dirinya sendiri, ia mulai memahami harga dari kepemimpinan.' },
@@ -811,6 +832,16 @@ const removeFavorite = (list, value) => {
 
 const framedList = (title, rows) => `╭❖─ *${title}* ─❖╮\n\n${rows.join('\n')}\n\n╰❖─ *EPIC MUSICAL* ─❖╯`
 const framedDetail = (title, body) => `╭❖─ *${title}* ─❖╮\n\n${body}\n\n╰❖─ *EPIC MUSICAL* ─❖╯`
+const epicImageFor = (sagaName, isSong = false) => {
+  const imageName = sagaName.replace(/^The\s+/i, '').trim() + (isSong ? ' Song' : '')
+  return EPIC_IMAGES.find(image => image.name.toLowerCase() === imageName.toLowerCase())?.url || null
+}
+const sendEpicImage = async (m, ctx, imageUrl, caption) => {
+  if (imageUrl && ctx.conn?.sendMessage) {
+    return ctx.conn.sendMessage(m.chat, { image: { url: imageUrl }, caption }, { quoted: m })
+  }
+  return m.reply(caption)
+}
 const sagaListText = () => framedList('EPIC SAGAS', EPIC_SAGAS.map((saga, i) => `${i + 1}. ${saga.name}`))
 const songListText = () => framedList('EPIC SONGS', EPIC_SONGS.map((song, i) => `${i + 1}. ${song.name}`))
 const characterListText = (type = 'all') => {
@@ -1469,14 +1500,20 @@ if (cmd === 'saga') {
   if (!args.length) return m.reply(sagaListText())
   const saga = findSaga(args.join(' '))
   if (!saga) return m.reply(`❌ Saga tidak ditemukan. Gunakan nomor 1-${EPIC_SAGAS.length} atau nama saga.`)
-  return m.reply(framedDetail('SAGA DETAIL', `🎭 *${saga.name}*\n\n${saga.detail}`))
+  const songs = EPIC_SONGS.filter(song => song.saga === saga.name)
+  const songList = songs.length
+    ? `\n\n🎵 *Lagu dalam saga ini:*\n${songs.map((song, index) => `${index + 1}. ${song.name}`).join('\n')}`
+    : ''
+  const caption = framedDetail('SAGA DETAIL', `🎭 *${saga.name}*\n\n${saga.detail}${songList}`)
+  return sendEpicImage(m, ctx, epicImageFor(saga.name), caption)
 }
 
 if (cmd === 'song') {
   if (!args.length) return m.reply(songListText())
   const song = findSong(args.join(' '))
   if (!song) return m.reply('❌ Lagu tidak ditemukan. Gunakan nomor atau nama lagu yang sesuai.')
-  return m.reply(framedDetail('SONG DETAIL', `🎵 *${song.name}*\n\n📚 Saga: ${song.saga}\n\n${song.detail}`))
+  const caption = framedDetail('SONG DETAIL', `🎵 *${song.name}*\n\n📚 Saga: ${song.saga}\n\n${song.detail}`)
+  return sendEpicImage(m, ctx, epicImageFor(song.saga, true), caption)
 }
 
 if (cmd === 'char' || cmd === 'character') {
