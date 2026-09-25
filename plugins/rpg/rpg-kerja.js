@@ -9,8 +9,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let userRPG = wdb.users[m.sender].rpg
     
     if (userRPG.lastkerja === undefined) userRPG.lastkerja = 0
-    if (userRPG.level === undefined) userRPG.level = 1
-    if (userRPG.exp === undefined) userRPG.exp = 0
+    if (typeof userRPG.level !== 'number' || isNaN(userRPG.level)) userRPG.level = 1
+    if (typeof userRPG.exp !== 'number' || isNaN(userRPG.exp)) userRPG.exp = 0
 
     let listJobs = [
       { lv: 1, job: "Pemulung", gaji: 5000 },
@@ -190,13 +190,11 @@ try {
   userRPG.exp += selected.exp
   userRPG.lastkerja = Date.now()
 
-  let naikLevel = false
-  let expButuh = userRPG.level * 500
-
-  if (userRPG.exp >= expButuh) {
+  let jumlahLevel = 0
+  while (userRPG.exp >= userRPG.level * 500) {
+    userRPG.exp -= userRPG.level * 500
     userRPG.level++
-    userRPG.exp = 0
-    naikLevel = true
+    jumlahLevel++
   }
 
   saveDB(wdb)
@@ -211,8 +209,8 @@ try {
   msg += `> ↳ Level: Lv.${userRPG.level}\n`
   msg += `> ↳ XP: ${userRPG.exp}/${userRPG.level * 500}\n`
 
-  if (naikLevel) {
-    msg += `> 🎉 *LEVEL UP!* Lv.${userRPG.level}\n`
+  if (jumlahLevel > 0) {
+    msg += `> 🎉 *LEVEL UP!* +${jumlahLevel} Lv.${userRPG.level}\n`
   }
 
   msg += `\n─━━━━━━━━━━━━━━─\n`
