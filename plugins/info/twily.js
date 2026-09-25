@@ -862,7 +862,7 @@ ${buildBirthdayMonthBlocks(birthdayEntries, now)}`)
 │• Total semua anggota: *${twilyTotal()}*
 ╰─━━━━━━━━━━━━━━─
 
-    ${introLines}
+${introLines}
 
 ╭─━━━━━━━━━━━━━━─
 ${genOverview().split('\n').map(line => `│• ${line}`).join('\n')}

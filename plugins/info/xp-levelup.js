@@ -1,4 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
+import { loadDB } from '../../lib/waifuHelper.js'
 import {
   xpRange,
   findLevel,
@@ -41,6 +42,13 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
   const multiplier = global.multiplier || 36
   const name = user.name || conn.getName(who) || 'User'
   const userRole = getLevelRole(user.level)
+  const wdb = loadDB()
+  const rpg = wdb.users[who]?.rpg || {}
+  const rpgLevel = Number.isFinite(Number(rpg.level)) ? Number(rpg.level) : 1
+  const rpgExp = Number.isFinite(Number(rpg.exp)) ? Number(rpg.exp) : 0
+  const rpgMaxExp = rpgLevel * 500
+  const rpgPercent = Math.min(100, Math.max(0, Math.floor((rpgExp / (rpgMaxExp || 1)) * 100)))
+  const rpgBar = createProgressBar(rpgPercent, 10)
 
   // ═══════════════════════════════════════════════
   // 1. Perintah: .level / .autolevelup [on/off|group on/off|group <angka>]
@@ -115,6 +123,12 @@ let handler = async (m, { conn, command, args, usedPrefix, isAdmin, isOwner }) =
 *┆* ⟡ ᴛᴏᴛᴀʟ ᴇxᴘ : *${toSmallNum(user.exp.toLocaleString('id-ID'))} XP*
 *┆* ✧ ᴋᴇ ʟᴠ.${toSmallNum(nextLvl)}  : *${toSmallNum(remainingExp.toLocaleString('id-ID'))} XP lagi*
 *┆* ◈ ʙᴀʀ       : *[${bar}] (${toSmallNum(percent)}%)*
+*╰───────────────*
+
+*╭  〔 ⚔️ ʟ ᴇ ᴠ ᴇ ʟ  ʀ ᴘ ɢ 〕*
+*┆* ⟡ ʟᴇᴠᴇʟ    : *Lv.${toSmallNum(rpgLevel)}*
+*┆* ✧ ᴇxᴘ       : *${toSmallNum(rpgExp.toLocaleString('id-ID'))}/${toSmallNum(rpgMaxExp.toLocaleString('id-ID'))} XP*
+*┆* ◈ ʙᴀʀ       : *[${rpgBar}] (${toSmallNum(rpgPercent)}%)*
 *╰───────────────*
 
 *╭  〔 🎁 ʜ ᴀ ᴅ ɪ ᴀ ʜ  ʟ ᴠ . ${toSmallNum(nextLvl)} 〕*
