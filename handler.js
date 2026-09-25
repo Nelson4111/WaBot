@@ -11,7 +11,7 @@ import { generateWelcomeCard, generateGoodbyeCard } from './lib/cardGenerator.js
 import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
-import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave } from './lib/securityProtocol.js'
+import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave, verifySecurityMember, getSecurityAdminJids } from './lib/securityProtocol.js'
 import { botArbitrator } from './lib/botArbitrator.js'
 
 /**
@@ -133,8 +133,7 @@ function isSecurityIntroMessage(text) {
             .split(/\s+/)
             .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
             .join('\\s+')
-        const pattern = new RegExp(`(?:^|[^a-z0-9])${keywordPattern}(?:$|[^a-z0-9])`, 'i')
-        return pattern.test(normalized)
+        return new RegExp(`(?:^|[^a-z0-9])${keywordPattern}(?:$|[^a-z0-9])`, 'i').test(normalized)
     })
 }
 
@@ -323,11 +322,32 @@ async function processMessage(m, chatUpdate) {
             return
         }
 
-        if (m.isGroup && m.sender && isSecurityUnverified(m.chat, m.sender, this) && !isSecurityIntroMessage(m.text)) {
-            await this.sendMessage(m.chat, {
-                text: `■━━━ 🔐 SECURITY NOTICE ━━━■\n\nHalo @${m.sender.split('@')[0]}, Avelia cek kamu masih berada dalam status Under Review.\nSilakan memperkenalkan diri terlebih dahulu untuk menyelesaikan proses verifikasi dengan admin.\n\n⚠️ Jika dalam beberapa hari kamu belum melakukan intro atau verifikasi, akunmu dapat dikeluarkan dari grup demi menjaga kenyamanan dan keamanan bersama.\n\n> Hello @${m.sender.split('@')[0]}, Avelia has detected that you are still under review.\n> Please introduce yourself first to complete the verification process with the group admin.\n\n> ⚠️ If you do not introduce yourself or complete the verification within the next few days, you may be removed from the group for the comfort and security of everyone.`,
-                mentions: [m.sender]
-            }, { quoted: m }).catch(err => console.error('[SECURITY REMINDER]', err?.message))
+        if (m.isGroup && m.sender && isSecurityUnverified(m.chat, m.sender, this)) {
+            const hasIntroLink = String(m.text || '').toLowerCase().includes('https://wa.me/6282228638623')
+            const adminJids = await getSecurityAdminJids(m.chat, this)
+            const adminMentions = adminJids.length
+                ? adminJids.map(jid => `@${jid.split('@')[0]}`).join(' ')
+                : 'Admin grup tidak ditemukan.'
+
+            if (hasIntroLink) {
+                const verified = await verifySecurityMember(m.chat, m.sender, this)
+                if (verified) {
+                    await this.sendMessage(m.chat, {
+                        text: `■━━━ 🔐 SECURITY VERIFIED ━━━■\n\nPesan intro telah diterima. User otomatis dihapus dari daftar Unverified.\n\nAdmin grup:\n${adminMentions}`,
+                        mentions: adminJids
+                    }, { quoted: m }).catch(err => console.error('[SECURITY VERIFIED NOTICE]', err?.message))
+                }
+                return
+            }
+
+            if (!isSecurityIntroMessage(m.text)) {
+                await this.sendMessage(m.chat, { delete: m.key }).catch(err => console.error('[SECURITY MESSAGE DELETE]', err?.message))
+                await this.sendMessage(m.chat, {
+                    text: `■━━━ 🔐 SECURITY NOTICE ━━━■\n\nHalo, Avelia cek kamu masih berada dalam status Under Review.\nSilakan memperkenalkan diri terlebih dahulu untuk menyelesaikan proses verifikasi dengan admin.\n\n⚠️ Jika dalam beberapa hari kamu belum melakukan intro atau verifikasi, akunmu dapat dikeluarkan dari grup demi menjaga kenyamanan dan keamanan bersama.\n\n> Hello, Avelia has detected that you are still under review.\n> Please introduce yourself first to complete the verification process with the group admin.\n\n> ⚠️ If you do not introduce yourself or complete the verification within the next few days, you may be removed from the group for the comfort and security of everyone.\n\nAdmin grup:\n${adminMentions}`,
+                    mentions: adminJids
+                }, { quoted: m }).catch(err => console.error('[SECURITY NOTICE]', err?.message))
+                return
+            }
         }
         
         
