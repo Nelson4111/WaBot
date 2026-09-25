@@ -974,6 +974,21 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   if(aksi === 'resetdiamond'){ user.diamond = 0; saveDB(wdb); return m.reply(`🔄 Reset diamond @${who.split('@')[0]}`, null, {mentions: [who]}) }
 
   if(aksi === 'resetcd' || aksi === 'resetcooldown' || aksi === 'clearcd'){
+    const resetCooldownFields = (store) => {
+      for (const key of Object.keys(store || {})) {
+        const normalizedKey = key.toLowerCase()
+        if (!normalizedKey.includes('cooldown') && !normalizedKey.startsWith('last')) continue
+        store[key] = store[key] && typeof store[key] === 'object' && !Array.isArray(store[key]) ? {} : 0
+      }
+    }
+    resetCooldownFields(user)
+    resetCooldownFields(account)
+
+    for (const [key, store] of Object.entries(wdb)) {
+      if (!key.toLowerCase().includes('cooldown') || !store || typeof store !== 'object') continue
+      delete store[who]
+    }
+
     user.cooldown = {}
     account.cooldown = {}
     user.casinoCooldowns = {}
@@ -1016,6 +1031,9 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     user.pinjaman.waktu = 0
     account.pinjaman.waktu = 0
     if (wdb.temp?.kawin) delete wdb.temp.kawin[who]
+    for (const key of ['fitnah', 'fitnahHukuman']) {
+      if (wdb[key]) delete wdb[key][who]
+    }
     saveDB(wdb)
     return m.reply(`🔄 Semua cooldown RPG telah direset untuk @${who.split('@')[0]}`, null, {mentions: [who]})
   }

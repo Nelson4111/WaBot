@@ -120,6 +120,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     if (!wdb.routineCooldown) wdb.routineCooldown = wdb.dailyCooldown || {}
     if (!wdb.talkCooldown) wdb.talkCooldown = {}
     if (!wdb.prisonStats) wdb.prisonStats = {}
+    if (!wdb.prisonVisits) wdb.prisonVisits = {}
 
     if (!global.db?.data?.users) return m.reply('❌ Database utama belum siap')
 
@@ -156,6 +157,15 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             delete wdb.prisonStats[jid].daily
         }
         return wdb.prisonStats[jid]
+    }
+    const getPrisonTitle = (stats) => {
+        const progress = (Number(stats?.routine) || 0) + (Number(stats?.talk) || 0)
+        if (progress >= 200) return '👑 RAJA PENJARA'
+        if (progress >= 100) return '🏆 LEGENDA JERUJI'
+        if (progress >= 50) return '⚔️ VETERAN PENJARA'
+        if (progress >= 25) return '🔥 NAPI TERLATIH'
+        if (progress >= 10) return '🛡️ NAPI PEMULA'
+        return '🔒 TAHANAN BARU'
     }
 
     /* =====================================================
@@ -212,9 +222,56 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
     if (isDiPenjara(m.sender) && command!== 'penjara') {
         let rpg = getRPG(m.sender)
+        let stats = getStats(m.sender)
         let sisa = formatSisa(sisaWaktu(rpg))
-        return m.reply(`[ 🚔 ]───[ *_DI PENJARA_* ]───✦\n\nKamu di SEL ${rpg.sel}\n⏳ Sisa: ${sisa}\n\nCommand:\n•${usedPrefix}penjara\n•${usedPrefix}penjara routine\n•${usedPrefix}penjara talk\n•${usedPrefix}penjara kabur`)
+        return m.reply(`[ 🚔 ]───[ *_DI PENJARA_* ]───✦\n\nKamu di SEL ${rpg.sel}\n🏷️ Title: ${getPrisonTitle(stats)}\n⏳ Sisa: ${sisa}\n\nCommand:\n•${usedPrefix}penjara\n•${usedPrefix}penjara info\n•${usedPrefix}penjara routine\n•${usedPrefix}penjara talk\n•${usedPrefix}penjara kabur`)
     }
+
+if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
+    const target = resolveJid(m.mentionedJid?.[0] || m.quoted?.sender || (args[1] ? getTarget(args[1]) : m.sender))
+    if (!target) return m.reply(
+        `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
+        `│ ❌ *Format perintah tidak valid.*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📌 *CONTOH*\n` +
+        `> ↳ ${usedPrefix}penjara info\n` +
+        `> ↳ ${usedPrefix}penjara info @tag/reply\n\n` +
+        `─━━━━━━━━━━━━━━─`
+    )
+
+    const stats = wdb.prisonStats[target] || { routine: 0, talk: 0 }
+    const rpg = getRPG(target)
+    const visits = Array.isArray(wdb.prisonVisits[target]) ? wdb.prisonVisits[target] : []
+    const recentVisits = visits.slice(-10).reverse()
+    const mentions = [target, ...recentVisits.map(entry => resolveJid(entry.visitor)).filter(Boolean)]
+    const visitText = recentVisits.length
+        ? recentVisits.map((entry, index) => `> ↳ ${index + 1}. @${resolveJid(entry.visitor).split('@')[0]} — ${new Date(entry.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`).join('\n')
+        : `> ↳ Belum ada yang mengunjungi.`
+
+    const prisonStatus = rpg?.penjara && sisaWaktu(rpg) > 0
+        ? `Di penjara • SEL ${rpg.sel} • Sisa ${formatSisa(sisaWaktu(rpg))}`
+        : 'Tidak sedang dipenjara'
+
+    return conn.reply(
+        m.chat,
+        `╭─❏「 🚔 INFO PENJARA 」❏\n` +
+        `│ 👤 *@${target.split('@')[0]}*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+
+        `📋 *INFORMASI PENJARA*\n` +
+        `> ↳ 🏷️ Title : ${getPrisonTitle(stats)}\n` +
+        `> ↳ 📖 Routine : ${Number(stats.routine) || 0}x\n` +
+        `> ↳ 💬 Talk : ${Number(stats.talk) || 0}x\n` +
+        `> ↳ 🚪 Status : ${prisonStatus}\n\n` +
+
+        `👥 *RIWAYAT KUNJUNGAN* (${visits.length})\n` +
+        `${visitText}\n\n` +
+
+        `─━━━━━━━━━━━━━━─`,
+        m,
+        { mentions: [...new Set(mentions)] }
+    )
+}
 
     /* =====================================================
     PENJARA ROUTINE - CD 2 MENIT
@@ -231,7 +288,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         stats.routine = Number(stats.routine) + (stats.escaped ? 2 : 1)
         saveDB(wdb)
         let story = randomItem(storyRoutine)
-        return m.reply(`[ 📖 ]───[ *_ROUTINE PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
+        return m.reply(`[ 📖 ]───[ *_ROUTINE PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 🏷️ Title: ${getPrisonTitle(stats)}\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
     }
 
     /* =====================================================
@@ -249,7 +306,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         stats.talk = Number(stats.talk) + (stats.escaped ? 2 : 1)
         saveDB(wdb)
         let story = randomItem(storyTalk)
-        return m.reply(`[ 💬 ]───[ *_NGOBROL DI PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
+        return m.reply(`[ 💬 ]───[ *_NGOBROL DI PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 🏷️ Title: ${getPrisonTitle(stats)}\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
     }
 
     /* =====================================================
@@ -266,7 +323,15 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
         let stats = getStats(m.sender)
         let peluang = 0.01
-        if (Number(stats.routine) >= 25 && Number(stats.talk) >= 25) {
+        const routine = Number(stats.routine) || 0
+        const talk = Number(stats.talk) || 0
+        const guaranteedEscape = routine >= 25 && talk >= 25 && !stats.guaranteedEscapeUsed
+        if (guaranteedEscape) {
+            peluang = 1
+            stats.guaranteedEscapeUsed = true
+        } else if (routine >= 100 && talk >= 100) {
+            peluang = 1
+        } else if (routine >= 50 && talk >= 50) {
             peluang = 0.5
         } else if (Number(stats.routine) >= 20 && Number(stats.talk) >= 20) {
             peluang = 0.1
@@ -313,7 +378,11 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         if (!rpg ||!rpg.penjara) { wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply('❌ Data tahanan tidak valid.') }
         if (sisaWaktu(rpg) <= 0) { const selLama = Number(rpg.sel) || index + 1; rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply(`🚔 @${who.split('@')[0]} sudah bebas.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Masa tahanan telah habis`, { mentions: [who] }) }
             if (sisaWaktu(rpg) <= 0) { const selLama = Number(rpg.sel) || index + 1; rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply(`🚔 @${who.split('@')[0]} sudah bebas.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Masa tahanan telah habis`, { mentions: [who] }) }
-        wdb.visitCooldown[m.sender] = now; saveDB(wdb)
+        wdb.visitCooldown[m.sender] = now
+        wdb.prisonVisits[who] = Array.isArray(wdb.prisonVisits[who]) ? wdb.prisonVisits[who] : []
+        wdb.prisonVisits[who].push({ visitor: resolveJid(m.sender), at: now })
+        if (wdb.prisonVisits[who].length > 50) wdb.prisonVisits[who].splice(0, wdb.prisonVisits[who].length - 50)
+        saveDB(wdb)
         const sisa = sisaWaktu(rpg); const tebusan = Number(rpg.tebusan) || 0
         let cap = `[ 🚔 ]───[ *_RUANG KUNJUNGAN_* ]───✦\n╭──[ SEL ${index + 1} ]──✦\n│ 𖥔 Nama : @${who.split('@')[0]}\n│ 𖥔 Sisa : ${formatSisa(sisa)}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰───────────\n\n*─── PERCAKAPAN ───*\n👤 Kamu : "${randomItem(dialogVisitPengunjung)}"\n🚓 Tahanan : "${randomItem(dialogVisitNapi)}"\n\n╭──「 *INFO* 」─✦\n│ 𖥔 CD Kunjung: 5 menit\n│ 𖥔 ${usedPrefix}penjara routine / talk / kabur`
         return conn.reply(m.chat, cap, m, { mentions: [m.sender, who] })
