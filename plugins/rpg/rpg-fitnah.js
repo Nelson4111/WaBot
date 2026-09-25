@@ -169,7 +169,9 @@ Fitnah orang biar masuk penjara.
        TARGET
     ===================================================== */
 
-    let who = m.mentionedJid?.[0] || m.quoted?.sender
+    const mentionedTarget = m.mentionedJid?.[0]
+    const quotedTarget = m.quoted?.sender
+    let who = mentionedTarget || quotedTarget
     if (!who && args[0]) {
         let num = args[0].replace(/[^0-9]/g, '')
         if (num.startsWith('08')) num = '628' + num.slice(2)
@@ -177,7 +179,11 @@ Fitnah orang biar masuk penjara.
     }
     who = resolveJid(who)
 
-    let uangTaruhan = parseInt(args[1]) || 0
+    const rawUang = mentionedTarget || (!quotedTarget && who) ? args[1] : args[0]
+    if (rawUang === undefined || !/^\d+$/.test(String(rawUang))) {
+        return m.reply(`❌ Masukkan uang yang valid.\nContoh: ${usedPrefix}fitnah @tag 100000000\nAtau reply pesan target: ${usedPrefix}fitnah 100000000`)
+    }
+    let uangTaruhan = Number(rawUang)
 
     if (!who) {
         return m.reply(`❌ Tag target dulu\nContoh: ${usedPrefix}fitnah @tag 100000000`)
@@ -274,8 +280,8 @@ Fitnah orang biar masuk penjara.
         saveDB(wdb)
 
         let dendaText = kenaHukuman
-           ? `│ 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - GAGAL BAYAR\n│ 𖥔 Hukuman : CD 30 menit`
-            : `│ 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - LUNAS`
+           ? `> 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - GAGAL BAYAR\n> 𖥔 Hukuman : CD 30 menit`
+            : `> 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - LUNAS`
 
         return conn.reply(
   m.chat,
