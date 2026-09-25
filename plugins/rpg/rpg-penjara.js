@@ -142,6 +142,12 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     const sisaWaktu = (rpg) => { if (!rpg) return 0; return Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara || 0)) }
     const formatSisa = (ms) => { ms = Math.max(0, ms); const jam = Math.floor(ms / 3600000); const menit = Math.floor((ms % 3600000) / 60000); return `${jam}j ${menit}m` }
     const isDiPenjara = (jid) => { jid = resolveJid(jid); return wdb.penjara.some(x => resolveJid(x) === jid) }
+    const removeFromPrison = (jid) => {
+        jid = resolveJid(jid)
+        for (let i = wdb.penjara.length - 1; i >= 0; i--) {
+            if (resolveJid(wdb.penjara[i]) === jid) wdb.penjara.splice(i, 1)
+        }
+    }
     const getStats = (jid) => {
         jid = resolveJid(jid)
         if (!wdb.prisonStats[jid]) wdb.prisonStats[jid] = {routine: 0, talk: 0}
@@ -222,7 +228,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat routine lagi`)
         wdb.routineCooldown[m.sender] = now
         let stats = getStats(m.sender)
-        stats.routine = Number(stats.routine) + 1
+        stats.routine = Number(stats.routine) + (stats.escaped ? 2 : 1)
         saveDB(wdb)
         let story = randomItem(storyRoutine)
         return m.reply(`[ 📖 ]───[ *_ROUTINE PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
@@ -240,7 +246,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat ngobrol lagi`)
         wdb.talkCooldown[m.sender] = now
         let stats = getStats(m.sender)
-        stats.talk = Number(stats.talk) + 1 // pastiin number
+        stats.talk = Number(stats.talk) + (stats.escaped ? 2 : 1)
         saveDB(wdb)
         let story = randomItem(storyTalk)
         return m.reply(`[ 💬 ]───[ *_NGOBROL DI PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
@@ -260,10 +266,10 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
         let stats = getStats(m.sender)
         let peluang = 0.01
-        let buff = false
-        if (Number(stats.routine) >= 20 && Number(stats.talk) >= 20) {
+        if (Number(stats.routine) >= 25 && Number(stats.talk) >= 25) {
+            peluang = 0.5
+        } else if (Number(stats.routine) >= 20 && Number(stats.talk) >= 20) {
             peluang = 0.1
-            buff = true
         }
 
         saveDB(wdb)
@@ -274,13 +280,14 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
         if (berhasil) {
             rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0
-            wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== resolveJid(m.sender))
+            stats.escaped = true
+            removeFromPrison(m.sender)
             saveDB(wdb)
-            return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR BERHASIL_* ]───✦\n\n${story.sukses}\n\n╭──「 🎉 BEBAS 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 Dari : SEL ${selLama}\n│ 𖥔 Buff : ${buff? 'AKTIF 10%' : 'TIDAK'}\n╰ 𖥔 Selamat! Kamu buronan sekarang.`, m, { mentions: [m.sender] })
+            return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR BERHASIL_* ]───✦\n\n${story.sukses}\n\n╭──「 🎉 BEBAS 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 Dari : SEL ${selLama}\n╰ 𖥔 Selamat! Kamu buronan sekarang.`, m, { mentions: [m.sender] })
         } else {
             rpg.lamaPenjara += 30 * 60 * 1000
             saveDB(wdb)
-            return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR GAGAL_* ]───✦\n\n${story.gagal}\n\n╭──「 💥 GAGAL 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 SEL : ${selLama}\n│ 𖥔 Buff : ${buff? 'AKTIF 10%' : 'TIDAK'}\n╰ 𖥔 Hukuman +30 menit!`, m, { mentions: [m.sender] })
+            return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR GAGAL_* ]───✦\n\n${story.gagal}\n\n╭──「 💥 GAGAL 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 SEL : ${selLama}\n╰ 𖥔 Hukuman +30 menit!`, m, { mentions: [m.sender] })
         }
     }
 

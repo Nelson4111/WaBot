@@ -169,6 +169,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setstreak @tag <angka>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addstreak @tag <angka>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n\n` +
@@ -434,6 +435,19 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   user.sword = user.sword || 0
   user.pickaxe = user.pickaxe || 0
   user.fishingrod = user.fishingrod || 0
+
+  if (['setpenjaraprogress', 'setprisonprogress', 'setpenjara'].includes(aksi)) {
+    const routine = Number(remaining[0])
+    const talk = Number(remaining[1])
+    if (!Number.isInteger(routine) || routine < 0 || !Number.isInteger(talk) || talk < 0) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\nContoh: *${usedPrefix}rpgpanel setpenjaraprogress @tag 25 25*`)
+    }
+    wdb.prisonStats[who] = wdb.prisonStats[who] || { routine: 0, talk: 0 }
+    wdb.prisonStats[who].routine = routine
+    wdb.prisonStats[who].talk = talk
+    saveDB(wdb)
+    return m.reply(`✅ *PROGRESS PENJARA DIATUR*\n@${who.split('@')[0]}\n𖥔 Routine: ${routine}x\n𖥔 Talk: ${talk}x`, null, { mentions: [who] })
+  }
 
   // ========== ADMIN EDIT DATA JADIAN ==========
   if (['setjadian', 'addjadian', 'deljadian'].includes(aksi)) {
