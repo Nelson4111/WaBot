@@ -27,7 +27,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       }
     })
 
-    const list = Array.isArray(res.data) ? res.data : []
+    const list = Array.isArray(res.data) ? res.data : (res.data?.results || res.data?.data || [])
     if (list.length === 0) {
       throw new Error(`Data mahasiswa untuk "${text}" tidak ditemukan di PDDikti.`)
     }
@@ -39,11 +39,39 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     for (let i = 0; i < maxResults; i++) {
       const it = list[i]
+      const singkatan = (it.sinkatan_pt || it.singkatan_pt || '').trim()
+      const idVal = (it.id || '').trim()
+
+      let link = ''
+      if (idVal) {
+        if (idVal.startsWith('http://') || idVal.startsWith('https://')) {
+          link = idVal
+        } else if (idVal.startsWith('/')) {
+          link = `https://pddikti.kemdiktisaintek.go.id${idVal}`
+        } else if (idVal.startsWith('data_mahasiswa/')) {
+          link = `https://pddikti.kemdiktisaintek.go.id/${idVal}`
+        } else {
+          link = `https://pddikti.kemdiktisaintek.go.id/data_mahasiswa/${idVal}`
+        }
+      }
+
+      const jk = (it.jenis_kelamin || it.jk || '').trim()
+      const statusAwal = (it.status_awal || it.status_awal_mahasiswa || '').trim()
+      const tglMasuk = (it.tanggal_masuk || it.tgl_masuk || '').trim()
+      const statusAkhir = (it.status_terakhir || it.status_saat_ini || it.status || '').trim()
+
       cards.push(`*╭  〔 🎓 ᴍ ᴀ ʜ ᴀ ꜱ ɪ ꜱ ᴡ ᴀ  [${toSmallNum(i + 1)}] 〕*
-*┆* ⟡ ɴᴀᴍᴀ   : *${it.nama || '-'}*
-*┆* ✧ ɴɪᴍ    : *${toSmallNum(it.nim || '-')}*
-*┆* ✦ ᴋᴀᴍᴘᴜꜱ : *${it.nama_pt || '-'}*
-*┆* ◈ ᴘʀᴏᴅɪ  : *${it.nama_prodi || '-'}*
+*┆* ⟡ ɴᴀᴍᴀ       : *${it.nama || '-'}*
+*┆* ✧ ɴɪᴍ        : *${toSmallNum(it.nim || '-')}*
+*┆* ✦ ᴋᴀᴍᴘᴜꜱ     : *${it.nama_pt || '-'}${singkatan ? ` (${singkatan})` : ''}*
+*┆* ✦ ꜱɪɴɢᴋᴀᴛᴀɴ  : *${singkatan || '-'}*
+*┆* ◈ ᴘʀᴏᴅɪ      : *${it.nama_prodi || '-'}*${jk ? `
+*┆* ◈ ɢᴇɴᴅᴇʀ     : *${jk}*` : ''}${statusAwal ? `
+*┆* ◈ ꜱᴛᴀᴛᴜꜱ ᴀᴡᴀʟ : *${statusAwal}*` : ''}${tglMasuk ? `
+*┆* ◈ ᴛɢʟ ᴍᴀꜱᴜᴋ  : *${toSmallNum(tglMasuk)}*` : ''}${statusAkhir ? `
+*┆* ◈ ꜱᴛᴀᴛᴜꜱ      : *${statusAkhir}*` : ''}
+>  ◈ ɪᴅ        : *${idVal || '-'}*${link ? `
+>  ◈ *${link}*` : ''}
 *╰───────────────*`)
     }
 
