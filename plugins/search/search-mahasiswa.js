@@ -60,19 +60,20 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       const tglMasuk = (it.tanggal_masuk || it.tgl_masuk || '').trim()
       const statusAkhir = (it.status_terakhir || it.status_saat_ini || it.status || '').trim()
 
-      cards.push(`*╭  〔 🎓 ᴍ ᴀ ʜ ᴀ ꜱ ɪ ꜱ ᴡ ᴀ  [${toSmallNum(i + 1)}] 〕*
-> ⟡ ɴᴀᴍᴀ       : *${it.nama || '-'}*
-> ✧ ɴɪᴍ        : *${toSmallNum(it.nim || '-')}*
-> ✦ ᴋᴀᴍᴘᴜꜱ     : *${it.nama_pt || '-'}${singkatan ? ` (${singkatan})` : ''}*
-> ✦ ꜱɪɴɢᴋᴀᴛᴀɴ  : *${singkatan || '-'}*
-> ◈ ᴘʀᴏᴅɪ      : *${it.nama_prodi || '-'}*${jk ? `
-> ◈ ɢᴇɴᴅᴇʀ     : *${jk}*` : ''}${statusAwal ? `
-> ◈ ꜱᴛᴀᴛᴜꜱ ᴀᴡᴀʟ : *${statusAwal}*` : ''}${tglMasuk ? `
-> ◈ ᴛɢʟ ᴍᴀꜱᴜᴋ  : *${toSmallNum(tglMasuk)}*` : ''}${statusAkhir ? `
-> ◈ ꜱᴛᴀᴛᴜꜱ      : *${statusAkhir}*` : ''}
-> ◈ ɪᴅ        : *${idVal || '-'}*${link ? `
-> ◈ *${link}*` : ''}
-*╰───────────────*`)
+cards.push(`*╭─〔 🎓 ᴍᴀʜᴀꜱɪꜱᴡᴀ ${toSmallNum(i + 1)} 〕*
+> ⟡ *ɴᴀᴍᴀ*       : ${it.nama || '-'}
+> ✧ *ɴɪᴍ*         : ${toSmallNum(it.nim || '-')}
+> ✦ *ᴋᴀᴍᴘᴜꜱ*     : ${it.nama_pt || '-'}${singkatan ? ` (${singkatan})` : ''}
+> ✦ *ꜱɪɴɢᴋᴀᴛᴀɴ*  : ${singkatan || '-'}
+> ◈ *ᴘʀᴏᴅɪ*       : ${it.nama_prodi || '-'}${jk ? `
+> ◈ *ɢᴇɴᴅᴇʀ*      : ${jk}` : ''}${statusAwal ? `
+> ◈ *ꜱᴛᴀᴛᴜꜱ ᴀᴡᴀʟ* : ${statusAwal}` : ''}${tglMasuk ? `
+> ◈ *ᴛɢʟ ᴍᴀꜱᴜᴋ*   : ${toSmallNum(tglMasuk)}` : ''}${statusAkhir ? `
+> ◈ *ꜱᴛᴀᴛᴜꜱ*      : ${statusAkhir}` : ''}
+> ◈ *ɪᴅ*          : ${idVal || '-'}
+*╰──────────────────*`);
+
+
     }
 
     const caption = `*──  ୨୧ ✧ ᴅᴀᴛᴀ ᴍᴀʜᴀꜱɪꜱᴡᴀ ᴘᴅᴅɪᴋᴛɪ ✧ ୨୧  ──*
