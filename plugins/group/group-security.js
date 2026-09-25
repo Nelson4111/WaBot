@@ -2,6 +2,7 @@ import {
   addSecurityBlacklist,
   addSecurityReview,
   getSecurityState,
+  pruneSecurityUnverified,
   securityJid,
   verifySecurityMember
 } from '../../lib/securityProtocol.js'
@@ -59,8 +60,15 @@ let handler = async (m, { conn, command, text, isAdmin, isOwner, usedPrefix }) =
       : ['bl', 'blacklist'].includes(args[1])
         ? 'blacklist'
         : null
+    const removedCount = detailType === 'unverified'
+      ? await pruneSecurityUnverified(m.chat, conn)
+      : 0
     const text = detailType ? detailText(state, detailType) : checkText(state, usedPrefix)
-    return conn.sendMessage(m.chat, { text, mentions: detailType ? state[detailType] : [] }, { quoted: m })
+    const cleanupNotice = removedCount > 0
+      ? `\n> ${removedCount} user yang sudah keluar dari grup dihapus dari daftar.`
+      : ''
+    const outputText = detailType === 'unverified' ? `${text}${cleanupNotice}` : text
+    return conn.sendMessage(m.chat, { text: outputText, mentions: detailType ? state[detailType] : [] }, { quoted: m })
   }
   if (action === 'guide') {
 return m.reply(
@@ -163,7 +171,7 @@ return m.reply(
       ? '🟡 Unverified'
       : state.blacklist.includes(target)
         ? '🔴 Blacklist'
-        : '🟢 Tidak terdaftar'
+        : '🟢 Terverifikasi'
     return conn.sendMessage(m.chat, {
       text: `╭─❏「 🔐 SECURITY INFO 」❏\n│\n│ User   : ${mention(target)}\n│ Status : *${status}*\n│\n╰─━━━━━━━━━━━━━━─`,
       mentions: [target]
