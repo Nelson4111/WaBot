@@ -29,6 +29,7 @@ let handler = m => m;
 handler.before = async function (m, { conn }) {
     // 1. Abaikan jika pesan dikirim oleh bot sendiri (Baileys) atau socket bot aktif
     if (m.fromMe || m.isBaileys || botArbitrator.isAnyBot(m.sender)) return false;
+    if (m.mtype === 'protocolMessage' || m.mtype === 'senderKeyDistributionMessage' || !m.mtype) return false;
 
     const DB = global.db?.data?.users || {};
     
@@ -38,9 +39,16 @@ handler.before = async function (m, { conn }) {
         : (m.sender || '');
     const user = DB[senderPhone] || DB[m.sender];
 
-    // 2. Otomatis selesai AFK saat user mengirim pesan
-    if (user && user.afk > -1 && m.text && !m.text.startsWith('.afk')) {
+    // 2. Otomatis selesai AFK saat user mengirim pesan/media apapun (bukan command AFK)
+    const prefix = conn.prefix || global.prefix || /^[.!#/\\]/;
+    const isAfkCommand = typeof m.text === 'string' && (
+        /^[.#!/\\]?afk(\s|$)/i.test(m.text.trim()) ||
+        (prefix instanceof RegExp ? prefix.test(m.text) && /^afk(\s|$)/i.test(m.text.replace(prefix, '').trim()) : false)
+    );
+
+    if (user && user.afk > -1 && !isAfkCommand) {
         const duration = formatDuration(Date.now() - user.afk);
+        const reason = user.afkReason || 'Tanpa Alasan';
         user.lastAfk = Date.now();
         user.afk = -1;
         user.afkReason = '';
@@ -51,6 +59,7 @@ handler.before = async function (m, { conn }) {
 
 *╭  〔 𝜚 ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ  ᴀ ꜰ ᴋ 〕*
 *┆* ⟡ ᴜꜱᴇʀ   : *${userName}*
+*┆* ✧ ᴀʟᴀꜱᴀɴ : _${reason}_
 *┆* ⧗ ᴅᴜʀᴀꜱɪ : *${duration}*
 *╰───────────────*
 
