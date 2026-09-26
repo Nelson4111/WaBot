@@ -194,8 +194,8 @@ let handler = async (message, { conn, text, usedPrefix, command }) => {
   let action = normalizeCsmAction((args[0] || '').toLowerCase())
 
   // Daily quests and activity recording
-  ensureDailyQuests(csm, today, wdb)
-  recordActivity(csm, action, m, wdb)
+  ensureDailyQuests(csm, wdb, today)
+  recordActivity(csm, wdb, m, action)
 
   const currentBonus = calcBonus(csm)
 

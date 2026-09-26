@@ -89,6 +89,7 @@ export function initCsmUser(user, wdb) {
   if (!Array.isArray(csm.achievements)) csm.achievements = []
   if (!csm.storyCooldown || typeof csm.storyCooldown !== 'object') csm.storyCooldown = {}
   if (!Array.isArray(csm.dailyQuests)) csm.dailyQuests = []
+  if (typeof csm.questDate !== 'string') csm.questDate = ''
   if (!Array.isArray(csm.partnerReactionHistory)) csm.partnerReactionHistory = []
   if (!Array.isArray(csm.workStories)) csm.workStories = []
   resetLegacyViewData(csm)

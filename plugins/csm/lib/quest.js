@@ -42,7 +42,8 @@ export const awardQuestReward = (csm, wdb, m, quest, source = 'manual') => {
 }
 
 export const recordActivity = (csm, wdb, m, activity) => {
-  if (!Array.isArray(csm.dailyQuests)) return
+  if (!csm || typeof csm !== 'object' || !Array.isArray(csm.dailyQuests)) return
+  if (typeof activity !== 'string') return
   csm.dailyQuests.forEach(quest => {
     if (quest.type !== activity || quest.claimed) return
     quest.progress = Math.min(quest.target, Number(quest.progress || 0) + 1)
@@ -53,7 +54,13 @@ export const recordActivity = (csm, wdb, m, activity) => {
 }
 
 export const ensureDailyQuests = (csm, wdb, today) => {
-  if (!today) today = new Date().toISOString().split('T')[0]
+  if (!csm || typeof csm !== 'object') return
+  if (typeof today !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(today)) {
+    today = new Date().toISOString().split('T')[0]
+  }
+  if (typeof csm.questDate !== 'string') {
+    csm.questDate = ''
+  }
   if (csm.questDate === today && Array.isArray(csm.dailyQuests) && csm.dailyQuests.length === 2) {
     csm.dailyQuests = csm.dailyQuests.map(quest => ({
       ...quest,
@@ -73,5 +80,5 @@ export const ensureDailyQuests = (csm, wdb, today) => {
   }
   csm.questDate = today
   csm.dailyQuests = dailyQuests
-  if (wdb) saveDB(wdb)
+  if (wdb && typeof wdb === 'object' && wdb.users) saveDB(wdb)
 }
