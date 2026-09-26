@@ -9,7 +9,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan .adventure')
 
   const upgradeable = ['sword', 'armor', 'pickaxe', 'fishingrod']
-  let item = text ? text.toLowerCase() : ''
+  let [item = '', confirmArg = ''] = text ? text.trim().toLowerCase().split(/\s+/) : []
+  const confirmYes = ['yes', 'ya', 'ok', 'confirm'].includes(confirmArg)
+  const confirmNo = ['no', 'tidak', 'batal', 'cancel', 'tolak'].includes(confirmArg)
 
   const basePrice = {
     sword: { money: 50000, iron: 10, stone: 5, wood: 0, gold: 5 },
@@ -20,12 +22,38 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   function advancedMaterialCost(itemName, level) {
     const base = basePrice[itemName]
-    if (itemName !== 'armor') return { kulit: 0 }
+    if (itemName !== 'armor') return { kulit: 0, sisik: 0 }
     const multiplier = Math.max(1, Math.ceil(level / 10))
     return {
       kulit: level >= 10 ? (base.kulit || 0) * multiplier : 0,
       sisik: level >= 20 ? (base.sisik || 0) * Math.max(1, Math.ceil(level / 20)) : 0
     }
+  }
+
+  function getUpgradeCost(itemName, level) {
+    const multiplier = Math.pow(2, Math.max(0, level - 1))
+    const advanced = advancedMaterialCost(itemName, level)
+    return {
+      money: basePrice[itemName].money * multiplier,
+      iron: basePrice[itemName].iron * multiplier,
+      stone: basePrice[itemName].stone * multiplier,
+      wood: basePrice[itemName].wood * multiplier,
+      gold: (basePrice[itemName].gold || 0) * multiplier,
+      kulit: advanced.kulit,
+      sisik: advanced.sisik,
+      diamond: level >= 7 ? level - 5 : 0
+    }
+  }
+
+  function formatUpgradeCost(cost) {
+    return `> ↳ 💰 Money : Rp ${cost.money.toLocaleString()}\n` +
+      `> ↳ ⛓️ Iron : ${cost.iron}\n` +
+      `> ↳ 🪨 Stone : ${cost.stone}${cost.stone ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 🪵 Wood : ${cost.wood}${cost.wood ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ ✨ Gold : ${cost.gold}${cost.gold ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 👜 Kulit : ${cost.kulit}${cost.kulit ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 🐉 Sisik : ${cost.sisik}${cost.sisik ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 💎 Diamond : ${cost.diamond}${cost.diamond ? '' : ' (tidak digunakan)'}\n`
   }
 
  if (item === 'guide' || item === 'panduan') {
@@ -64,8 +92,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   for (let i of upgradeable) {
     let lvl = user[i] || 0
-    let mul = Math.pow(2, Math.max(0, lvl - 1))
-    let advanced = advancedMaterialCost(i, lvl)
+    let cost = getUpgradeCost(i, lvl)
     let icon = i === 'sword' ? '⚔️' : i === 'armor' ? '🛡️' : i === 'pickaxe' ? '⛏️' : '🎣'
     let currentName = lvl > 0 ? getEquipmentName(i, lvl) : 'Belum Dimiliki'
     let nextName = getEquipmentName(i, lvl + 1)
@@ -83,12 +110,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     } else {
       listUpgrade += `> ↳ Next : ${nextName}\n`
       listUpgrade += `> ↳ Efek : ${detailBonus}\n`
-      listUpgrade += `> ↳ Biaya : Rp ${(basePrice[i].money * mul).toLocaleString()}\n`
-      listUpgrade += `> ↳ Bahan : ${basePrice[i].iron * mul} Iron, ${basePrice[i].gold * mul} Gold`
-      if (advanced.kulit) listUpgrade += `, ${advanced.kulit} Kulit`
-      if (advanced.sisik) listUpgrade += `, ${advanced.sisik} Sisik`
-      if (lvl >= 7) listUpgrade += `, ${lvl - 5} Diamond`
-      listUpgrade += `\n\n`
+      listUpgrade += formatUpgradeCost(cost) + `\n`
     }
   }
 
@@ -109,18 +131,29 @@ if (!user[item] || user[item] < 1) {
   )
 }
 
-let lvl = user[item]
+let lvl = Number(user[item])
 let oldName = getEquipmentName(item, lvl)
-let multiplier = Math.pow(2, lvl - 1)
-let totalMoney = basePrice[item].money * multiplier
-let totalIron = basePrice[item].iron * multiplier
-let totalStone = basePrice[item].stone * multiplier
-let totalWood = basePrice[item].wood * multiplier
-let totalGold = (basePrice[item].gold || 0) * multiplier
-let advanced = advancedMaterialCost(item, lvl)
-let totalKulit = advanced.kulit
-let totalSisik = advanced.sisik
-let totalDiamond = lvl >= 7 ? (lvl - 5) : 0
+let cost = getUpgradeCost(item, lvl)
+let { money: totalMoney, iron: totalIron, stone: totalStone, wood: totalWood, gold: totalGold, kulit: totalKulit, sisik: totalSisik, diamond: totalDiamond } = cost
+const pendingUpgrade = user.pendingUpgrade
+
+if (confirmNo) {
+  if (pendingUpgrade?.item === item) delete user.pendingUpgrade
+  await saveDB(wdb)
+  return m.reply(`╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n│ ❌ *UPGRADE DIBATALKAN*\n╰─━━━━━━━━━━━━━━─`)
+}
+
+if (confirmYes && (!pendingUpgrade || pendingUpgrade.item !== item || Date.now() - pendingUpgrade.time > 60000)) {
+  delete user.pendingUpgrade
+  await saveDB(wdb)
+  return m.reply(`❌ Konfirmasi upgrade tidak ada atau kedaluwarsa. Jalankan perintah upgrade lagi untuk melihat biaya terbaru.`)
+}
+
+if (confirmYes && pendingUpgrade.level !== lvl) {
+  delete user.pendingUpgrade
+  await saveDB(wdb)
+  return m.reply(`❌ Level equipment sudah berubah. Jalankan perintah upgrade lagi untuk melihat biaya terbaru.`)
+}
 
 if ((wdb.money[m.sender] || 0) < totalMoney) {
   return m.reply(
@@ -190,6 +223,21 @@ if (getMaterialCount(user, 'diamond') < totalDiamond) {
   )
 }
 
+if (!confirmYes) {
+  user.pendingUpgrade = { item, level: lvl, time: Date.now() }
+  await saveDB(wdb)
+  return m.reply(
+    `╭─❏「 ⚙️ KONFIRMASI UPGRADE 」❏\n` +
+    `│ ${oldName} ➜ ${getEquipmentName(item, lvl + 1)}\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📌 *RINCIAN BIAYA*\n` +
+    formatUpgradeCost(cost) + `\n` +
+    `Ketik *${usedPrefix}${command} ${item} yes* untuk lanjut.\n` +
+    `Ketik *${usedPrefix}${command} ${item} no* untuk batal.\n` +
+    `Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+  )
+}
+
 wdb.money[m.sender] = Math.max(0, (wdb.money[m.sender] || 0) - totalMoney)
 consumeMaterial(user, 'iron', totalIron)
 consumeMaterial(user, 'stone', totalStone)
@@ -199,7 +247,8 @@ consumeMaterial(user, 'kulit', totalKulit)
 consumeMaterial(user, 'sisik', totalSisik)
 consumeMaterial(user, 'diamond', totalDiamond)
 
-user[item] += 1
+user[item] = lvl + 1
+delete user.pendingUpgrade
 let newName = getEquipmentName(item, user[item])
 
 if (item === 'armor') {
@@ -208,7 +257,7 @@ if (item === 'armor') {
   user.darah = user.maxDarah
 }
 
-saveDB(wdb)
+await saveDB(wdb)
 
 let bonusMsg = ""
 if (item === 'sword') bonusMsg = `Damage kamu meningkat tajam!`
@@ -221,12 +270,7 @@ capSuccess += `│ 🔥 *${oldName}* ➜ *${newName}* 🌟\n`
 capSuccess += `│ 📝 ${bonusMsg}\n`
 capSuccess += `╰─━━━━━━━━━━━━━━─\n\n`
 capSuccess += `📌 *RINCIAN BIAYA TERPAKAI*\n`
-capSuccess += `> ↳ 💰 Money : Rp ${totalMoney.toLocaleString()}\n`
-capSuccess += `> ↳ ⛓️ Iron : ${totalIron}\n`
-capSuccess += `> ↳ ✨ Gold : ${totalGold}\n`
-if (totalKulit > 0) capSuccess += `> ↳ 👜 Kulit : ${totalKulit}\n`
-if (totalSisik > 0) capSuccess += `> ↳ 🐉 Sisik : ${totalSisik}\n`
-if (totalDiamond > 0) capSuccess += `> ↳ 💎 Diamond : ${totalDiamond}\n`
+capSuccess += formatUpgradeCost(cost)
 capSuccess += `\n─━━━━━━━━━━━━━━─`
 
 return sendRpgMsg(conn, m, capSuccess, UPGRADE_IMAGE)

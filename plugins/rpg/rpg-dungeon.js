@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -132,7 +132,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (user.darah <= finalDamage) {
     user.darah = 0
     user.lastDungeon = Date.now()
-    saveDB(wdb)
+    await saveDB(wdb)
     return m.reply(`💀 *KAMU TEWAS!*\nBoss ${selected.enemy} menghancurkan pertahananmu.\nGunakan *.heal* untuk bangkit.`)
   }
 
@@ -147,17 +147,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (pet.tipe === 'anjing') earnedMoney += Math.floor(earnedMoney * (pet.level * 0.10))
 
   user.darah -= Math.floor(finalDamage)
-  user.exp += earnedExp
-  if (global.db?.data?.users?.[m.sender]) {
-    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + earnedExp
-  }
+  addRpgExp(user, earnedExp)
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
   user.gold = (Number(user.gold) || 0) + earnedGold
   user.diamond = (Number(user.diamond) || 0) + earnedDiamond
   user.limit = (Number(user.limit) || 0) + earnedLimit
   user.lastDungeon = Date.now()
 
-  saveDB(wdb)
+  await saveDB(wdb)
 
   let winMsg = `╭─❏「 🏰 DUNGEON CLEAR 」❏\n`
 winMsg += `│ 🏰 Dungeon: *${selected.name}*\n`

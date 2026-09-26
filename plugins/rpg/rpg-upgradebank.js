@@ -128,7 +128,7 @@ if (!isNaN(action)) {
 
   user.bankTier = targetTier
   user.kartuBeku = false
-  saveDB(wdb)
+  await saveDB(wdb)
 
   return m.reply(
     `╭─❏「 🎉 UPGRADE BERHASIL 」❏\n` +
@@ -234,7 +234,7 @@ if (action === 'beli') {
 
   user.bankTier += 1
   user.kartuBeku = false
-  saveDB(wdb)
+  await saveDB(wdb)
 
   return m.reply(
     `╭─❏「 🎉 UPGRADE BERHASIL 」❏\n` +

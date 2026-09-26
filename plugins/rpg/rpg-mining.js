@@ -1,4 +1,4 @@
-import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -106,13 +106,9 @@ let handler = async (m, { conn }) => {
 
   let uangDidapat = (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uangDidapat
-  user.exp += totalExp
-  if (global.db?.data?.users?.[m.sender]) {
-    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + totalExp
-  }
+  addRpgExp(user, totalExp)
   user.lastMining = Date.now()
-  if (user.exp >= user.level * 500) { user.level++; user.exp = 0 }
-  saveDB(wdb)
+  await saveDB(wdb)
 
   let pp = 'https://c.termai.cc/i140/srjE7x6'
   let tierData = {

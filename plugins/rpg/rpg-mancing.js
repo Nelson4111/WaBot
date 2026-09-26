@@ -1,4 +1,4 @@
-import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 
 function formatNama(ikan) {
@@ -191,13 +191,9 @@ let handler = async (m, { conn }) => {
     const normalizedKey = normalizeFishKey(fish.ikan)
     user.ikan[normalizedKey] = (user.ikan[normalizedKey] || 0) + 1
   }
-  user.exp += totalExp
-  if (global.db?.data?.users?.[m.sender]) {
-    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + totalExp
-  }
+  addRpgExp(user, totalExp)
   user.lastMancing = Date.now()
-  if (user.exp >= user.level * 500) { user.level++; user.exp = 0 }
-  saveDB(wdb)
+  await saveDB(wdb)
 
   let pp = 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
   try { pp = await conn.profilePictureUrl(m.sender, 'image') } catch {}

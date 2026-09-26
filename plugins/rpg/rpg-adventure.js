@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -165,25 +165,21 @@ let handler = async (m, { conn, command }) => {
   user.iron = (user.iron || 0) + baseIron + Math.floor(pickLvl / 4)
 
   let money = baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)
-  user.exp += totalExp
-  if (global.db?.data?.users?.[m.sender]) {
-    global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + totalExp
-  }
+  addRpgExp(user, totalExp)
+  user.adventureExp = (Number(user.adventureExp) || 0) + totalExp
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money
   user.darah -= darahKurang
   user.lastAdventure = Date.now()
 
-  if (user.exp >= user.level * 500) { user.level++; user.exp = 0 }
-  let needXP = advLvl * 1000
   let levelUpMsg = ''
-  if (user.exp >= needXP) {
-    user.adventureLevel = advLvl + 1
-    user.exp = 0
+  while (user.adventureExp >= (Number(user.adventureLevel) || 1) * 1000) {
+    user.adventureExp -= (Number(user.adventureLevel) || 1) * 1000
+    user.adventureLevel = (Number(user.adventureLevel) || 1) + 1
     let newTitle = getAdvTitle(user.adventureLevel)
-    if(newTitle!== oldTitle) levelUpMsg = `\n\n🎉 *NAIK TITLE!*\n${oldTitle} ➜ ${newTitle}`
+    if(newTitle !== oldTitle) levelUpMsg = `\n\n🎉 *NAIK TITLE!*\n${oldTitle} ➜ ${newTitle}`
   }
 
-  saveDB(wdb)
+  await saveDB(wdb)
 
   let cap = `╭─❏「 🗺️ ADVENTURE 」❏\n`
 cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`

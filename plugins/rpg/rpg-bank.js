@@ -65,6 +65,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let amount = parseInt(args[1])
   let now = Date.now()
   let satuHari = 86400000
+  const automaticCharges = []
 
   // SISTEM DENDA HARIAN SAAT TELAT 30 HARI
   if(now - userRPG.lastMembership > 2592000000 && tier.biayaBulanan > 0){
@@ -75,12 +76,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       if(userRPG.bank >= totalPotong){
         userRPG.bank -= totalPotong
         userRPG.riwayat.unshift(`-Rp ${totalPotong.toLocaleString()} Denda Harian Membership`)
+        automaticCharges.push(`Denda harian membership (${hariTerakhirDenda} hari): -Rp ${totalPotong.toLocaleString()}`)
       } else {
+        automaticCharges.push(`Saldo tidak cukup untuk denda harian membership Rp ${totalPotong.toLocaleString()}; kartu dibekukan.`)
         userRPG.bank = 0
         userRPG.kartuBeku = true
       }
       userRPG.lastDendaHarian = now
-      saveDB(wdb)
+      await saveDB(wdb)
     }
   }
 
@@ -90,7 +93,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if(userRPG.bank >= denda){
       userRPG.bank -= denda
       userRPG.riwayat.unshift(`-Rp ${denda.toLocaleString()} Denda Pinjaman`)
-      saveDB(wdb)
+      automaticCharges.push(`Denda pinjaman: -Rp ${denda.toLocaleString()}`)
+      await saveDB(wdb)
     }
   }
 
@@ -100,7 +104,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     userRPG.lastMembership = now
     userRPG.kartuBeku = false
     userRPG.riwayat.unshift(`-Rp ${tier.biayaBulanan.toLocaleString()} Biaya Membership`)
-    saveDB(wdb)
+    automaticCharges.push(`Biaya membership bulanan: -Rp ${tier.biayaBulanan.toLocaleString()}`)
+    await saveDB(wdb)
+  }
+
+  if (automaticCharges.length) {
+    await m.reply(`⚠️ *POTONGAN OTOMATIS BANK*\n${automaticCharges.map(charge => `> ${charge}`).join('\n')}\n> Saldo bank sekarang: Rp ${userRPG.bank.toLocaleString()}`)
   }
 
   // BUNGA MINGGUAN
@@ -110,7 +119,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     userRPG.bank += bunga; userRPG.totalBunga += bunga; userRPG.lastBunga = now
     userRPG.riwayat.unshift(`+Rp ${bunga.toLocaleString()} Bunga Mingguan`)
     if(userRPG.riwayat.length > 20) userRPG.riwayat.pop()
-    saveDB(wdb)
+    await saveDB(wdb)
     conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
   }
 
@@ -235,7 +244,7 @@ if (action === 'card' || action === 'kartu') {
     if (userRPG.bank + amount > tier.limit) return m.reply(`❌ Melebihi limit. Sisa: Rp ${(tier.limit - userRPG.bank).toLocaleString()}`)
     wdb.money[m.sender] -= amount; userRPG.bank += amount
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Simpan`)
-    saveDB(wdb);
+    await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
@@ -247,7 +256,7 @@ if (action === 'card' || action === 'kartu') {
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
     userRPG.bank -= amount; wdb.money[m.sender] += amount
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
-    saveDB(wdb)
+    await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n`
     if(tier.fasilitas.includes('Kendaraan Pribadi')) msg += `◆ Kurir : Kendaraan Pribadi\n`
     msg += `\n─━━━━━━━━━─`
@@ -285,7 +294,7 @@ if (action === 'card' || action === 'kartu') {
     userRPG.bank -= totalPotong; targetRPG.bank += amount
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} TF ke @${who.split('@')[0]} + Admin Rp ${biayaAdmin.toLocaleString()}`)
     targetRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} TF dari @${m.sender.split('@')[0]}`)
-    saveDB(wdb);
+    await saveDB(wdb)
 
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSFER BERHASIL\n◈ TRANSFER BANK ◈\n◆ Jumlah TF : Rp ${amount.toLocaleString()}\n◆ Biaya Admin : Rp ${biayaAdmin.toLocaleString()}\n◆ Total Potong : Rp ${totalPotong.toLocaleString()}\n◆ Ke : @${who.split('@')[0]}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
     return m.reply(msg, null, { mentions: [who] })
@@ -299,7 +308,7 @@ if (action === 'card' || action === 'kartu') {
     if (amount > tier.limit * 0.5) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Maksimal pinjam 50% limit\nMaks: Rp ${(tier.limit * 0.5).toLocaleString()}\n\n─━━━━━━━━━─`)
     userRPG.pinjaman = { jumlah: amount, waktu: now }; userRPG.bank += amount
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Pinjaman`)
-    saveDB(wdb);
+    await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PINJAMAN CAIR\n◈ PENGAJUAN PINJAMAN ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Bunga : 10%\n◆ Total Bayar : Rp ${Math.floor(amount * 1.1).toLocaleString()}\n◆ Jangka Waktu : 7 Hari\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
@@ -310,7 +319,7 @@ if (action === 'card' || action === 'kartu') {
     let totalBayar = Math.floor(userRPG.pinjaman.jumlah * 1.1)
     if (userRPG.bank < totalBayar) return m.reply(`❌ Saldo bank tidak cukup`)
     userRPG.bank -= totalBayar; userRPG.riwayat.unshift(`-Rp ${totalBayar.toLocaleString()} Bayar Pinjaman`)
-    userRPG.pinjaman = { jumlah: 0, waktu: 0 }; saveDB(wdb)
+    userRPG.pinjaman = { jumlah: 0, waktu: 0 }; await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PEMBAYARAN BERHASIL\n◈ PELUNASAN PINJAMAN ◈\n◆ Jumlah Bayar : Rp ${totalBayar.toLocaleString()}\n◆ Status : LUNAS\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
@@ -324,7 +333,7 @@ if (action === 'card' || action === 'kartu') {
     return m.reply(msg)
   }
 
-  saveDB(wdb)
+  await saveDB(wdb)
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
