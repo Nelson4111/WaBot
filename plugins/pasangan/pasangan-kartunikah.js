@@ -1,4 +1,6 @@
 import { createCanvas, loadImage } from 'canvas'
+import { generateWAMessageContent } from '@whiskeysockets/baileys'
+import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { formatDuration, getPasanganHiddenNotice, getRingIcon, isPasanganHidden, normalizeRingName, migrateLegacyRingData, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
@@ -11,14 +13,16 @@ let handler = async (m, { conn }) => {
   const users = migrateLegacyRingData(global.db.data.users || {})
   const sender = conn.decodeJid(m.sender)
   const who = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || sender)
+  const hidden = isPasanganHidden(users[who] || {})
   const pList = users[who]?.pasangan || []
 
-  if (isPasanganHidden(users[who] || {})) {
+  if (hidden && who !== sender) {
     return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(who.split('@')[0].replace(/\D/g, ''), who === sender))
   }
 
   if (pList.length === 0) {
-    return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk mencetak Kartu Nikah Digital.\n*╰───────────────*')
+    const emptyMessage = '*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk mencetak Kartu Nikah Digital.\n*╰───────────────*'
+    return hidden ? replyPasanganPrivately(conn, m, emptyMessage) : m.reply(emptyMessage)
   }
 
   const partnerJid = pList[0].jid
@@ -177,10 +181,36 @@ let handler = async (m, { conn }) => {
 
 > ｡˚ ⊹ _Semoga ikatan cinta ini abadi dan senantiasa harmonis_ ⊹ ˚ ｡`.trim()
 
+    if (hidden && (m.isGroup || m.chat?.endsWith('@g.us'))) {
+      try {
+        const playerMessage = await generateWAMessageContent(
+          { image: buffer, caption },
+          { upload: conn.waUploadToServer }
+        )
+        if (playerMessage.imageMessage) {
+          playerMessage.imageMessage.contextInfo = {
+            ...(playerMessage.imageMessage.contextInfo || {}),
+            mentionedJid: [who, partnerJid]
+          }
+        }
+        return await sendDualGroupMessage(
+          conn,
+          m.chat,
+          sender,
+          playerMessage,
+          '🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.'
+        )
+      } catch (error) {
+        console.warn('[KARTU NIKAH PRIVAT ERROR]:', error?.message || error)
+        await conn.sendMessage(m.chat, { text: '🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.' }, { quoted: m }).catch(() => {})
+        return conn.sendFile(sender, buffer, 'kartu-nikah.png', caption, null, false, { mentions: [who, partnerJid] })
+      }
+    }
     return conn.sendFile(m.chat, buffer, 'kartu-nikah.png', caption, m, false, { mentions: [who, partnerJid] })
   } catch (e) {
     console.error('[KARTU NIKAH ERROR]:', e)
-    return m.reply('*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Terjadi kendala saat mencetak Kartu Nikah Digital.\n*╰───────────────*')
+    const errorMessage = '*╭  〔 ◈ ᴇ ʀ ʀ ᴏ ʀ 〕*\n> Terjadi kendala saat mencetak Kartu Nikah Digital.\n*╰───────────────*'
+    return hidden ? replyPasanganPrivately(conn, m, errorMessage) : m.reply(errorMessage)
   }
 }
 

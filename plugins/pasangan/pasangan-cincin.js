@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { CINCIN_SHOP, getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { CINCIN_SHOP, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Butik Cincin Pernikahan Plugin
@@ -11,13 +11,11 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   const users = global.db.data.users
   const sender = conn.decodeJid(m.sender)
   const pList = users[sender]?.pasangan || []
-
-  if (isPasanganHidden(users[sender] || {})) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
-  }
+  const hidden = isPasanganHidden(users[sender] || {})
+  const sendResult = (text) => hidden ? replyPasanganPrivately(conn, m, text) : m.reply(text)
 
   if (pList.length === 0) {
-    return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk dihadiahi cincin pernikahan.\n*╰───────────────*')
+    return sendResult('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk dihadiahi cincin pernikahan.\n*╰───────────────*')
   }
 
   const arg = (args[0] || '').toLowerCase()
@@ -36,14 +34,14 @@ ${rows.join('\n')}
 *📌 BELI CINCIN*
 > *${usedPrefix}belicincin <${choices}>*`.trim()
 
-    return m.reply(shopTxt)
+    return sendResult(shopTxt)
   }
 
   const item = CINCIN_SHOP[arg]
   const userLimit = users[sender].limit || 0
 
   if (userLimit < item.price) {
-    return m.reply(`*╭  〔 ◈ ʟ ɪ ᴍ ɪ ᴛ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Limitmu tidak mencukupi!\n> Harga ${item.name} adalah *${toSmallNum(item.price)} Limit*, Limitmu saat ini: *${toSmallNum(userLimit)}*.\n*╰───────────────*`)
+    return sendResult(`*╭  〔 ◈ ʟ ɪ ᴍ ɪ ᴛ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Limitmu tidak mencukupi!\n> Harga ${item.name} adalah *${toSmallNum(item.price)} Limit*, Limitmu saat ini: *${toSmallNum(userLimit)}*.\n*╰───────────────*`)
   }
 
   users[sender].limit -= item.price
@@ -69,7 +67,7 @@ ${rows.join('\n')}
 
 > Terpasang pada seluruh ikatan hubunganmu.`.trim()
 
-  return m.reply(successText)
+  return sendResult(successText)
 }
 
 handler.help = ['belicincin <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>', 'cincin']

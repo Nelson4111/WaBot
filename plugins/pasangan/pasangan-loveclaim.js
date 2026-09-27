@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration, getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { formatDuration, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Tunjangan Berkah Nikah Harian Plugin
@@ -11,13 +11,11 @@ let handler = async (m, { conn }) => {
   const users = global.db.data.users
   const sender = conn.decodeJid(m.sender)
   const pList = users[sender]?.pasangan || []
-
-  if (isPasanganHidden(users[sender] || {})) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
-  }
+  const hidden = isPasanganHidden(users[sender] || {})
+  const sendResult = (text) => hidden ? replyPasanganPrivately(conn, m, text) : m.reply(text)
 
   if (pList.length === 0) {
-    return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk mengklaim Berkah Nikah.\n*╰───────────────*')
+    return sendResult('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk mengklaim Berkah Nikah.\n*╰───────────────*')
   }
 
   const lastClaim = users[sender].lastLoveClaim || 0
@@ -26,7 +24,7 @@ let handler = async (m, { conn }) => {
 
   if (now - lastClaim < cooldown) {
     const remaining = formatDuration(cooldown - (now - lastClaim))
-    return m.reply(`*╭  〔 ⧗ ᴊ ᴇ ᴅ ᴀ  ᴋ ʟ ᴀ ɪ ᴍ 〕*\n> Kamu telah mengklaim Berkah Nikah hari ini.\n> Tunggu *${remaining}* lagi untuk klaim berikutnya ♡\n*╰───────────────*`)
+    return sendResult(`*╭  〔 ⧗ ᴊ ᴇ ᴅ ᴀ  ᴋ ʟ ᴀ ɪ ᴍ 〕*\n> Kamu telah mengklaim Berkah Nikah hari ini.\n> Tunggu *${remaining}* lagi untuk klaim berikutnya ♡\n*╰───────────────*`)
   }
 
   users[sender].lastLoveClaim = now
@@ -62,7 +60,7 @@ let handler = async (m, { conn }) => {
 
 > ｡˚ ⊹ _Semoga ikatan pernikahan kalian senantiasa diberkahi kebahagiaan_ ⊹ ˚ ｡`.trim()
 
-  return m.reply(txt)
+  return sendResult(txt)
 }
 
 handler.help = ['loveclaim', 'berkahnikah', 'hadiahpasangan']

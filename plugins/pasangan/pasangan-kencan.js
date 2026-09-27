@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration, getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { formatDuration, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Kencan Harian Pasangan Plugin
@@ -11,13 +11,11 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
   const users = global.db.data.users
   const sender = conn.decodeJid(m.sender)
   const pList = users[sender]?.pasangan || []
-
-  if (isPasanganHidden(users[sender] || {})) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
-  }
+  const hidden = isPasanganHidden(users[sender] || {})
+  const sendResult = (text) => hidden ? replyPasanganPrivately(conn, m, text) : m.reply(text)
 
   if (pList.length === 0) {
-    return m.reply(`*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk diajak kencan.\n> Lamar seseorang terlebih dahulu dengan *${usedPrefix}lamar @user*!\n*╰───────────────*`)
+    return sendResult(`*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu belum memiliki pasangan untuk diajak kencan.\n> Lamar seseorang terlebih dahulu dengan *${usedPrefix}lamar @user*!\n*╰───────────────*`)
   }
 
   const lastKencan = users[sender].lastKencan || 0
@@ -28,14 +26,14 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     ? pList.map((_, index) => index)
     : [Number(requested) - 1]
   if (selectedIndexes.some(index => !Number.isInteger(index) || !pList[index])) {
-    return m.reply(`❌ Nomor pasangan tidak valid. Gunakan *${usedPrefix}kencan*, *${usedPrefix}kencan all*, atau nomor dari daftar pasangan.`)
+    return sendResult(`❌ Nomor pasangan tidak valid. Gunakan *${usedPrefix}kencan*, *${usedPrefix}kencan all*, atau nomor dari daftar pasangan.`)
   }
   const selected = selectedIndexes
     .map(index => ({ partner: pList[index], index }))
     .filter(({ partner }) => now - (partner.lastKencan || 0) >= cooldown)
   if (!selected.length) {
     const remaining = Math.min(...selectedIndexes.map(index => cooldown - (now - (pList[index].lastKencan || 0))))
-    return m.reply(`*╭  〔 ⧗ ᴊ ᴇ ᴅ ᴀ  ᴋ ᴇ ɴ ᴄ ᴀ ɴ 〕*\n> Semua pasangan yang dipilih masih beristirahat.\n> Mohon menunggu *${formatDuration(remaining)}* lagi ♡\n*╰───────────────*`)
+    return sendResult(`*╭  〔 ⧗ ᴊ ᴇ ᴅ ᴀ  ᴋ ᴇ ɴ ᴄ ᴀ ɴ 〕*\n> Semua pasangan yang dipilih masih beristirahat.\n> Mohon menunggu *${formatDuration(remaining)}* lagi ♡\n*╰───────────────*`)
   }
 
   const expBonus = Math.floor(Math.random() * 500) + 300
@@ -77,7 +75,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
 
 > ｡˚ ⊹ _Setiap kebersamaan menumbuhkan kehangatan dan keabadian cinta_ ⊹ ˚ ｡`.trim()
 
-  return m.reply(resText)
+  return sendResult(resText)
 }
 
 handler.help = ['kencan']

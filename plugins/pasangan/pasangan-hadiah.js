@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Hadiah Pasangan Plugin
@@ -11,13 +11,13 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   const users = global.db.data.users
   const sender = conn.decodeJid(m.sender)
   const pList = users[sender]?.pasangan || []
-
-  if (isPasanganHidden(users[sender] || {})) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
-  }
+  const hidden = isPasanganHidden(users[sender] || {})
+  const sendResult = (text, mentions = []) => hidden
+    ? replyPasanganPrivately(conn, m, text, mentions)
+    : conn.sendMessage(m.chat, { text, mentions }, { quoted: m })
 
   if (pList.length === 0) {
-    return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu tidak memiliki pasangan untuk diberi hadiah.\n*╰───────────────*')
+    return sendResult('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu tidak memiliki pasangan untuk diberi hadiah.\n*╰───────────────*')
   }
 
   let target = m.mentionedJid?.[0] || pList[0]?.jid
@@ -43,20 +43,20 @@ let handler = async (m, { conn, usedPrefix, args }) => {
 
 > _Bisa dihadiahkan secara penuh ke pasangan tanpa potongan biaya transfer!_`.trim()
 
-    return m.reply(guideTxt)
+    return sendResult(guideTxt)
   }
 
   if (type === 'money') {
     const moneySrc = global.db?.data?.money?.[sender] || 0
     if (moneySrc < count) {
-      return m.reply(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Uangmu tidak mencukupi!\n> Kamu memiliki: *Rp ${toSmallNum(moneySrc.toLocaleString('id-ID'))}*.\n*╰───────────────*`)
+      return sendResult(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Uangmu tidak mencukupi!\n> Kamu memiliki: *Rp ${toSmallNum(moneySrc.toLocaleString('id-ID'))}*.\n*╰───────────────*`)
     }
     global.db.data.money[sender] -= count
     global.db.data.money[target] = (global.db.data.money[target] || 0) + count
   } else if (type === 'atm') {
     const bankSrc = global.db?.data?.bank?.[sender] || 0
     if (bankSrc < count) {
-      return m.reply(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Bank ATM kamu tidak mencukupi!\n> Kamu memiliki: *Rp ${toSmallNum(bankSrc.toLocaleString('id-ID'))}*.\n*╰───────────────*`)
+      return sendResult(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Bank ATM kamu tidak mencukupi!\n> Kamu memiliki: *Rp ${toSmallNum(bankSrc.toLocaleString('id-ID'))}*.\n*╰───────────────*`)
     }
     global.db.data.bank[sender] -= count
     global.db.data.bank[target] = (global.db.data.bank[target] || 0) + count
@@ -64,7 +64,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
     if (!users[sender].inventory) users[sender].inventory = {}
     const berSrc = users[sender].inventory.berlian || 0
     if (berSrc < count) {
-      return m.reply(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Berlian kamu tidak mencukupi!\n> Kamu memiliki: *${toSmallNum(berSrc)} Berlian*.\n*╰───────────────*`)
+      return sendResult(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Berlian kamu tidak mencukupi!\n> Kamu memiliki: *${toSmallNum(berSrc)} Berlian*.\n*╰───────────────*`)
     }
     users[sender].inventory.berlian -= count
     if (!users[target].inventory) users[target].inventory = {}
@@ -72,7 +72,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   } else {
     const userVal = users[sender][type] || 0
     if (userVal < count) {
-      return m.reply(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo ${type.toUpperCase()} kamu tidak mencukupi!\n> Kamu memiliki: *${toSmallNum(userVal)} ${type}*.\n*╰───────────────*`)
+      return sendResult(`*╭  〔 ◈ ꜱ ᴀ ʟ ᴅ ᴏ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo ${type.toUpperCase()} kamu tidak mencukupi!\n> Kamu memiliki: *${toSmallNum(userVal)} ${type}*.\n*╰───────────────*`)
     }
     users[sender][type] -= count
     if (!users[target]) users[target] = {}
@@ -93,10 +93,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
 
 > Berbagi rezeki bersama pasangan mempererat tali kasih dan keharmonisan ♡`.trim()
 
-  return conn.sendMessage(m.chat, {
-    text: successText,
-    mentions: [sender, target]
-  }, { quoted: m })
+  return sendResult(successText, [sender, target])
 }
 
 handler.help = ['hadiah <tipe> <jumlah>']

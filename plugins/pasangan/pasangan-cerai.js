@@ -12,13 +12,13 @@ let handler = async (m, { conn }) => {
   const sender = conn.decodeJid(m.sender)
   const senderNum = sender.split('@')[0].replace(/\D/g, '')
   const senderPasangan = users[sender]?.pasangan || []
-
-  if (isPasanganHidden(users[sender] || {})) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(senderNum, true))
-  }
+  const hidden = isPasanganHidden(users[sender] || {})
+  const sendResult = (text, mentions = []) => hidden
+    ? replyPasanganPrivately(conn, m, text, mentions)
+    : conn.sendMessage(m.chat, { text, mentions }, { quoted: m })
 
   if (senderPasangan.length === 0) {
-    return m.reply('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu saat ini berstatus single (tidak memiliki ikatan pernikahan).\n*╰───────────────*')
+    return sendResult('*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu saat ini berstatus single (tidak memiliki ikatan pernikahan).\n*╰───────────────*')
   }
 
   let target = m.mentionedJid?.[0]
@@ -27,10 +27,7 @@ let handler = async (m, { conn }) => {
       target = senderPasangan[0].jid
     } else {
       const listP = senderPasangan.map((p, i) => `*┆*   ${toSmallNum(i + 1)}. @${p.jid.split('@')[0].replace(/\D/g, '')}`).join('\n')
-      return conn.sendMessage(m.chat, {
-        text: `*╭  〔 ◈ ᴘ ɪ ʟ ɪ ʜ  ᴘ ᴀ ꜱ ᴀ ɴ ɢ ᴀ ɴ 〕*\n> Tandai pasangan yang ingin kamu ceraikan:\n${listP}\n*╰───────────────*`,
-        mentions: senderPasangan.map(p => p.jid)
-      }, { quoted: m })
+      return sendResult(`*╭  〔 ◈ ᴘ ɪ ʟ ɪ ʜ  ᴘ ᴀ ꜱ ᴀ ɴ ɢ ᴀ ɴ 〕*\n> Tandai pasangan yang ingin kamu ceraikan:\n${listP}\n*╰───────────────*`, senderPasangan.map(p => p.jid))
     }
   }
 
@@ -38,10 +35,7 @@ let handler = async (m, { conn }) => {
   const targetNum = target.split('@')[0].replace(/\D/g, '')
 
   if (pIndex === -1) {
-    return conn.sendMessage(m.chat, {
-      text: `*╭  〔 ◈ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> @${targetNum} bukan merupakan pasangan sahmu.\n*╰───────────────*`,
-      mentions: [target]
-    }, { quoted: m })
+    return sendResult(`*╭  〔 ◈ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> @${targetNum} bukan merupakan pasangan sahmu.\n*╰───────────────*`, [target])
   }
 
   // Hapus ikatan pernikahan dari kedua belah pihak
@@ -61,10 +55,7 @@ let handler = async (m, { conn }) => {
 
 > Setiap perpisahan membawa pelajaran hidup untuk masa depan yang lebih baik ♡`.trim()
 
-  return conn.sendMessage(m.chat, {
-    text: txt,
-    mentions: [sender, target]
-  }, { quoted: m })
+  return sendResult(txt, [sender, target])
 }
 
 handler.help = ['cerai [@user]']
