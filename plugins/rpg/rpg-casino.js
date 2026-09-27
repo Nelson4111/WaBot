@@ -1,4 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { isPremiumUser } from './rpg-bank.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'] },
@@ -30,6 +31,11 @@ const number = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 const money = value => `Rp ${Math.max(0, value).toLocaleString()}`
 const signedMoney = value => `${value >= 0 ? '+' : '-'}Rp ${Math.abs(Number(value) || 0).toLocaleString()}`
 const DAILY_LIMIT = 25
+const PREMIUM_DAILY_LIMIT = 50
+
+function getDailyLimit(jid, wdb) {
+  return isPremiumUser(jid, wdb) ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
+}
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
@@ -169,7 +175,7 @@ function menu(prefix) {
     `> ↳ ${prefix}casino profit\n\n` +
     `🏆 *TOP 20*\n` +
     `> ↳ ${prefix}casino top\n\n` +
-    `⚠️ Main secukupnya. Batas: ${DAILY_LIMIT} permainan per hari.`
+    `⚠️ Main secukupnya. Batas: ${DAILY_LIMIT}x biasa / ${PREMIUM_DAILY_LIMIT}x premium per hari.`
 }
 
 function top(wdb) {
@@ -210,7 +216,7 @@ function top(wdb) {
   return { text, mentions: players.map(player => player.jid) }
 }
 
-function profile(user, sender, showProfit = false) {
+function profile(user, sender, dailyLimit, showProfit = false) {
   const stats = getCasinoStats(user)
   let text = `╭─❏「 🎰 CASINO PROFILE 」❏\n`
   text += `│ 👤 @${sender.split('@')[0]}\n`
@@ -218,7 +224,7 @@ function profile(user, sender, showProfit = false) {
   text += `╰─━━━━━━━━━━━━━━─\n\n`
   text += `📊 *RINGKASAN*\n`
   text += `> ↳ Total main: ${stats.games}x\n`
-  text += `> ↳ Hari ini: ${stats.dailyGames}/${DAILY_LIMIT}x\n`
+  text += `> ↳ Hari ini: ${stats.dailyGames}/${dailyLimit}x\n`
   text += `> ↳ Menang: ${stats.wins}x\n`
   if (!showProfit) return text + `\n📌 Ketik *.casino profit* untuk melihat total dan detail profit setiap game.`
 
@@ -231,7 +237,7 @@ function profile(user, sender, showProfit = false) {
     text += `> ↳ Total: ${entry.games || 0}x | Menang: ${entry.wins || 0}x | Kalah: ${Math.max(0, (entry.games || 0) - (entry.wins || 0))}x\n`
     text += `> ↳ ${signedMoney(entry.profit || 0)}\n\n`
   }
-  return text + `⚠️ Main secukupnya. Batas casino: ${DAILY_LIMIT} permainan per hari.`
+  return text + `⚠️ Main secukupnya. Batas casino: ${dailyLimit} permainan per hari.`
 }
 
 let handler = async (m, { conn, args, usedPrefix }) => {
@@ -252,6 +258,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const stats = getCasinoStats(user)
+  const dailyLimit = getDailyLimit(m.sender, wdb)
 
   const input = (args[0] || '').toLowerCase()
 
@@ -265,7 +272,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
 
   if (input === 'profile' || input === 'profil' || input === 'profit') {
-    return conn.reply(m.chat, profile(user, m.sender, input === 'profit'), m, { mentions: [m.sender] })
+    return conn.reply(m.chat, profile(user, m.sender, dailyLimit, input === 'profit'), m, { mentions: [m.sender] })
   }
 
   if (input === 'cd' || input === 'cooldown') {
@@ -279,13 +286,13 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     return m.reply(menu(usedPrefix))
   }
 
-  if (stats.dailyGames >= DAILY_LIMIT) {
+  if (stats.dailyGames >= dailyLimit) {
   return m.reply(
     `╭─❏「 🛑 BATAS CASINO 」❏\n` +
     `│ 🛑 *Batas permainan tercapai.*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📊 *STATUS*\n` +
-    `> ↳ Kamu sudah bermain ${DAILY_LIMIT}x hari ini.\n` +
+    `> ↳ Kamu sudah bermain ${dailyLimit}x hari ini.\n` +
     `> ↳ Akses casino diblokir sampai hari berganti.\n\n` +
     `⚠️ Istirahat dulu dan main secukupnya.\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -368,7 +375,7 @@ if (elapsed < GAME_COOLDOWN) {
     `> ↳ Profit: ${signedMoney(net)}\n` +
     `> ↳ 💰 Saldo: ${money(wdb.money[m.sender])}\n` +
     `\n─━━━━━━━━━━━━━━─\n` +
-    `⚠️ Main secukupnya. Hari ini: ${stats.dailyGames}/${DAILY_LIMIT}x.`
+    `⚠️ Main secukupnya. Hari ini: ${stats.dailyGames}/${dailyLimit}x.`
   )
 }
 

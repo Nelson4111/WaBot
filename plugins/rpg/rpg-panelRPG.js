@@ -69,6 +69,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotxp @tag <xp>*\n` +
@@ -438,6 +439,18 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   user.sword = user.sword || 0
   user.pickaxe = user.pickaxe || 0
   user.fishingrod = user.fishingrod || 0
+
+  if (['setcasinoprogress', 'setcasino', 'casinoprogress'].includes(aksi)) {
+    const gamesPlayed = Number(remaining[0])
+    if (!Number.isInteger(gamesPlayed) || gamesPlayed < 0) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setcasinoprogress @tag <jumlah>*\nContoh: *${usedPrefix}rpgpanel setcasinoprogress @tag 10*`)
+    }
+    user.casinoStats = user.casinoStats || { wins: 0, games: 0, profit: 0, byGame: {} }
+    user.casinoStats.dailyDate = new Date().toISOString().slice(0, 10)
+    user.casinoStats.dailyGames = gamesPlayed
+    saveDB(wdb)
+    return m.reply(`✅ Progress casino @${who.split('@')[0]} berhasil diatur menjadi *${gamesPlayed}x* hari ini.`, null, { mentions: [who] })
+  }
 
   if (['setpenjaraprogress', 'setprisonprogress', 'setpenjara'].includes(aksi)) {
     const routine = Number(remaining[0])
