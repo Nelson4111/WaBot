@@ -1,7 +1,7 @@
 import { toSmallNum } from '../../lib/style.js'
 import { saveDB } from '../../lib/waifuHelper.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
-import { formatDuration, formatPasanganAlias, getIntimacyRank, getRingIcon, HUBUNGAN_ALIASES, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName } from '../../lib/pasanganHelper.js'
+import { formatDuration, formatPasanganAlias, getIntimacyRank, getRingIcon, HUBUNGAN_ALIASES, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Status Pernikahan Plugin
