@@ -322,6 +322,23 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     saveDB(global.db)
     return m.reply(`✅ Notifikasi level-up grup akan mulai dari level *${level}*.`)
   }
+
+  if (aksi === 'heal' && remaining.some(arg => arg.toLowerCase() === 'all')) {
+    const targets = Object.entries(global.db.data.users || {}).filter(([, account]) => account?.rpg)
+    let healed = 0
+    for (const [, account] of targets) {
+      const user = account.rpg
+      user.maxDarahBonus = Number(user.maxDarahBonus) || 0
+      if (user.darah == null || Number.isNaN(Number(user.darah))) user.darah = 100
+      else user.darah = Number(user.darah)
+      user.maxDarah = 100 + ((Number(user.armor) || 0) * 20) + user.maxDarahBonus
+      if (user.darah < user.maxDarah) healed++
+      user.darah = user.maxDarah
+    }
+    saveDB(wdb)
+    return m.reply(`✅ Heal instan selesai untuk ${targets.length} akun RPG. ${healed} akun dipulihkan.`)
+  }
+
   // 3. Resolusi Target User (Mendukung: Tag / Mention, Reply / Quoted, Nomor HP, JID, LID)
   let who = null;
   let targetArgIndex = -1;
