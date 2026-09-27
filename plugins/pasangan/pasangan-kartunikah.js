@@ -1,5 +1,5 @@
 import { createCanvas, loadImage } from 'canvas'
-import { formatDuration, getPasanganHiddenNotice, isPasanganHidden, normalizeRingName, migrateLegacyRingData } from '../../lib/pasanganHelper.js'
+import { formatDuration, getPasanganHiddenNotice, getRingIcon, isPasanganHidden, normalizeRingName, migrateLegacyRingData, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Kartu Nikah Digital Canvas Plugin
@@ -14,7 +14,7 @@ let handler = async (m, { conn }) => {
   const pList = users[who]?.pasangan || []
 
   if (isPasanganHidden(users[who] || {})) {
-    return m.reply(getPasanganHiddenNotice(who.split('@')[0].replace(/\D/g, ''), who === sender))
+    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(who.split('@')[0].replace(/\D/g, ''), who === sender))
   }
 
   if (pList.length === 0) {
@@ -161,7 +161,7 @@ let handler = async (m, { conn }) => {
 
     ctx.fillStyle = '#f59e0b'
     ctx.font = 'bold 15px sans-serif'
-    ctx.fillText(`STATUS: OFFICIAL & SAH (${normalizeRingName(pList[0].cincin).toUpperCase()})`, 425, 460)
+    ctx.fillText(`STATUS: OFFICIAL & SAH (${getRingIcon(pList[0].cincin)} ${normalizeRingName(pList[0].cincin).toUpperCase()})`, 425, 460)
 
     const buffer = canvas.toBuffer('image/png')
     const whoNum = who.split('@')[0].replace(/\D/g, '')
@@ -172,7 +172,7 @@ let handler = async (m, { conn }) => {
 *╭  〔 ᰔ ᴘ ɪ ᴀ ɢ ᴀ ᴍ  ʀ ᴇ ꜱ ᴍ ɪ 〕*
 *┆* ⟡ ᴘᴀꜱᴀɴɢᴀɴ : @${whoNum} ♡ @${partnerNum}
 *┆* ✧ ꜱᴛᴀᴛᴜꜱ   : Resmi Tercatat di Database Bot
-*┆* ✦ ᴄɪɴᴄɪɴ   : ${normalizeRingName(pList[0].cincin)}
+*┆* ✦ ᴄɪɴᴄɪɴ   : ${getRingIcon(pList[0].cincin)} ${normalizeRingName(pList[0].cincin)}
 *╰───────────────*
 
 > ｡˚ ⊹ _Semoga ikatan cinta ini abadi dan senantiasa harmonis_ ⊹ ˚ ｡`.trim()

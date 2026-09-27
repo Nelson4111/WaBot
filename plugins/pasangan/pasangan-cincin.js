@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { CINCIN_SHOP, getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
+import { CINCIN_SHOP, getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Butik Cincin Pernikahan Plugin
@@ -13,7 +13,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   const pList = users[sender]?.pasangan || []
 
   if (isPasanganHidden(users[sender] || {})) {
-    return m.reply(getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
+    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
   }
 
   if (pList.length === 0) {
@@ -22,22 +22,19 @@ let handler = async (m, { conn, usedPrefix, args }) => {
 
   const arg = (args[0] || '').toLowerCase()
   if (!arg || !CINCIN_SHOP[arg]) {
-    let rows = []
-    for (let key in CINCIN_SHOP) {
-      const item = CINCIN_SHOP[key]
-      rows.push(`*┆* ${item.icon} *${item.name}* : *${toSmallNum(item.price)} Limit* (› *${usedPrefix}belicincin ${key}*)`)
-    }
+    const rows = Object.entries(CINCIN_SHOP).map(([, item]) =>
+      `> ${item.icon} *${item.name}*  •  ${toSmallNum(item.price)} Limit`
+    )
+    const choices = Object.keys(CINCIN_SHOP).join('|')
 
     const shopTxt = `*──  ୨୧ ✧ BUTIK CINCIN PERNIKAHAN ✧ ୨୧  ──*
-
-> *おしらせ!* (ᴋᴀᴛᴀʟᴏɢ ᴄɪɴᴄɪɴ)
-> Perbarui cincin pernikahanmu untuk memperindah profil pasangan!
 
 *╭  〔 ❖ ᴅ ᴀ ꜰ ᴛ ᴀ ʀ  ᴄ ɪ ɴ ᴄ ɪ ɴ 〕*
 ${rows.join('\n')}
 *╰───────────────*
 
-> ｡˚ ⊹ _Sematkan cincin terindah sebagai lambang ketulusan janjimu_ ⊹ ˚ ｡`.trim()
+*📌 BELI CINCIN*
+> *${usedPrefix}belicincin <${choices}>*`.trim()
 
     return m.reply(shopTxt)
   }
@@ -62,20 +59,20 @@ ${rows.join('\n')}
 
   const successText = `*──  ୨୧ ✧ CINCIN RESMI DIPERBARUI ✧ ୨୧  ──*
 
-> Selamat! Pembelian *${item.name}* telah berhasil ♡
+> Pembelian *${item.icon} ${item.name}* berhasil.
 
 *╭  〔 ❖ ɪ ɴ ꜰ ᴏ  ᴄ ɪ ɴ ᴄ ɪ ɴ 〕*
-*┆* ⟡ ɴᴀᴍᴀ ᴄɪɴᴄɪɴ : *${item.name}*
+*┆* ⟡ ɴᴀᴍᴀ ᴄɪɴᴄɪɴ : *${item.icon} ${item.name}*
 *┆* ✧ ʙɪᴀʏᴀ       : *${toSmallNum(item.price)} Limit*
 *┆* ✦ ꜱᴛᴀᴛᴜꜱ      : *Tersemat Indah di Jari Pasangan*
 *╰───────────────*
 
-> ｡˚ ⊹ _Cincin baru kini telah terpasang di status pernikahan kalian!_ ⊹ ˚ ｡`.trim()
+> Terpasang pada seluruh ikatan hubunganmu.`.trim()
 
   return m.reply(successText)
 }
 
-handler.help = ['belicincin <perak|emas|diamond>', 'cincin']
+handler.help = ['belicincin <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>', 'cincin']
 handler.tags = ['pasangan']
 handler.command = /^(belicincin|cincin)$/i
 

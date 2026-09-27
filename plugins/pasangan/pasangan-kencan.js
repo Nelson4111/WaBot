@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration, getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
+import { formatDuration, getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Kencan Harian Pasangan Plugin
@@ -13,7 +13,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
   const pList = users[sender]?.pasangan || []
 
   if (isPasanganHidden(users[sender] || {})) {
-    return m.reply(getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
+    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(sender.split('@')[0].replace(/\D/g, ''), true))
   }
 
   if (pList.length === 0) {

@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { getPasanganHiddenNotice, isPasanganHidden } from '../../lib/pasanganHelper.js'
+import { getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
 
 /**
  * Perceraian Pasangan Plugin
@@ -14,7 +14,7 @@ let handler = async (m, { conn }) => {
   const senderPasangan = users[sender]?.pasangan || []
 
   if (isPasanganHidden(users[sender] || {})) {
-    return m.reply(getPasanganHiddenNotice(senderNum, true))
+    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(senderNum, true))
   }
 
   if (senderPasangan.length === 0) {

@@ -1,6 +1,7 @@
 import { toSmallNum } from '../../lib/style.js'
 import { saveDB } from '../../lib/waifuHelper.js'
-import { formatDuration, getIntimacyRank, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName } from '../../lib/pasanganHelper.js'
+import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
+import { formatDuration, formatPasanganAlias, getIntimacyRank, getRingIcon, HUBUNGAN_ALIASES, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 /**
  * Status Pernikahan Plugin
@@ -8,19 +9,65 @@ import { formatDuration, getIntimacyRank, isPasanganHidden, getPasanganHiddenNot
  * Style: Zen Shinto Aesthetic (STYLE_GUIDE.md)
  */
 
-let handler = async (m, { conn, args }) => {
+let handler = async (m, { conn, args, command }) => {
   const users = migrateLegacyRingData(global.db.data.users || {})
   const sender = conn.decodeJid(m.sender)
   const who = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || sender)
   const whoNum = who.split('@')[0].replace(/\D/g, '')
   const isSelf = who === sender
+  const currentCommand = (command || '').toLowerCase()
   const action = (args[0] || '').toLowerCase()
+
+  if (currentCommand === 'hubungan') {
+    if (action === 'alias') {
+      const alias = args.slice(1).join(' ').trim().toLowerCase()
+      if (!HUBUNGAN_ALIASES.includes(alias)) return m.reply(`Alias tidak valid. Pilih: *${HUBUNGAN_ALIASES.join(', ')}*`)
+      users[sender] = users[sender] || {}
+      users[sender].pasanganAlias = alias
+      saveDB(global.db)
+      const aliasMessage = `Tampilan hubungan diperbarui menjadi *${formatPasanganAlias(alias)}*.`
+      return isPasanganHidden(users[sender])
+        ? replyPasanganPrivately(conn, m, aliasMessage)
+        : m.reply(aliasMessage)
+    }
+
+    const user = users[sender] || {}
+    const partners = Array.isArray(user.pasangan) ? user.pasangan : []
+    const virtualPartner = global.db.data.couples?.[sender]
+    const virtualLabel = virtualPartner?.isHusbu ? 'Husbu' : 'Waifu'
+    const relationshipStatus = partners.length && virtualPartner
+      ? `Menikah dan memiliki ${virtualLabel} virtual`
+      : partners.length
+        ? 'Menikah'
+        : virtualPartner
+          ? `Memiliki ${virtualLabel} virtual`
+          : 'Single'
+    const summary = `*──  ୨୧ ✧ STATUS HUBUNGAN ✧ ୨୧  ──*\n\n` +
+      `> Status: *${relationshipStatus}*\n` +
+      `> Jumlah pasangan: *${partners.length}*\n` +
+      `> ${virtualLabel}: *${virtualPartner?.charName || 'Tidak ada'}*`
+
+    if (isPasanganHidden(user) && (m.isGroup || m.chat?.endsWith('@g.us'))) {
+      try {
+        return await sendDualGroupMessage(
+          conn,
+          m.chat,
+          sender,
+          { extendedTextMessage: { text: summary } },
+          '🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
+        )
+      } catch {
+        return conn.sendMessage(sender, { text: summary })
+      }
+    }
+    return conn.sendMessage(m.chat, { text: summary }, { quoted: m })
+  }
 
   if (action === 'hide') {
     users[sender] = users[sender] || {}
     users[sender].pasanganHidden = true
     saveDB(global.db)
-    return m.reply(getPasanganHiddenNotice(whoNum, true))
+    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(whoNum, true))
   }
 
   if (action === 'unhide') {
@@ -30,13 +77,29 @@ let handler = async (m, { conn, args }) => {
     return m.reply(`*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Status pasanganmu sudah dibuka kembali.\n> Ketik *.pasangan* untuk melihat profil pernikahanmu.\n*╰───────────────*`)
   }
 
-  const pList = users[who]?.pasangan || []
+  const hidden = isPasanganHidden(users[who] || {})
+  const pList = [...(users[who]?.pasangan || [])].sort((a, b) => (Number(a.nikahTime) || 0) - (Number(b.nikahTime) || 0))
+  const aliasDisplay = formatPasanganAlias(users[who]?.pasanganAlias || 'pasangan')
 
-  if (isPasanganHidden(users[who] || {})) {
-    return conn.sendMessage(m.chat, {
-      text: getPasanganHiddenNotice(whoNum, isSelf),
-      mentions: [who]
-    }, { quoted: m })
+  if (hidden && !isSelf) {
+    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(whoNum, isSelf))
+  }
+
+  const sendPasanganResult = async (text, mentions = []) => {
+    if (hidden && isSelf && (m.isGroup || m.chat?.endsWith('@g.us'))) {
+      try {
+        return await sendDualGroupMessage(
+          conn,
+          m.chat,
+          sender,
+          { extendedTextMessage: { text, contextInfo: { mentionedJid: mentions } } },
+          '🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
+        )
+      } catch {
+        return conn.sendMessage(sender, { text, mentions })
+      }
+    }
+    return conn.sendMessage(m.chat, { text, mentions }, { quoted: m })
   }
 
   if (pList.length === 0) {
@@ -52,10 +115,7 @@ let handler = async (m, { conn, args }) => {
         : `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> @${whoNum} saat ini belum memiliki pasangan (Jomblo).\n*╰───────────────*`
     }
 
-    return conn.sendMessage(m.chat, {
-      text: notMarriedText,
-      mentions: [who]
-    }, { quoted: m })
+    return sendPasanganResult(notMarriedText, [who])
   }
 
   let cards = []
@@ -70,35 +130,32 @@ let handler = async (m, { conn, args }) => {
     })
     const rank = getIntimacyRank(p.poinBucin || 0)
 
-    let card = `*╭  〔 ᰔ ᴘ ᴀ ꜱ ᴀ ɴ ɢ ᴀ ɴ  ${toSmallNum(i + 1)} 〕*
-*┆* ⟡ ᴘᴀꜱᴀɴɢᴀɴ   : @${partnerNum}
+    let card = `*╭  〔 ᰔ ${aliasDisplay} ${toSmallNum(i + 1)} 〕*
+*┆* ⟡ ${aliasDisplay} : @${partnerNum}
 *┆* ✧ ᴛᴀɴɢɢᴀʟ    : *${dateStr}*
 *┆* ✦ ᴅᴜʀᴀꜱɪ     : *${dur}*
 *┆* ᰔ ᴘᴏɪɴ ʙᴜᴄɪɴ : *${toSmallNum(p.poinBucin || 0)} Poin*
 *┆* ◈ ᴛɪɴɢᴋᴀᴛ    : *${rank.title}*
 *┆* ✧ ʙᴜꜰꜰ       : *${rank.buff}*
-*┆* ❖ ᴄɪɴᴄɪɴ     : *${normalizeRingName(p.cincin || 'Silver Ring')}*
+*┆* ❖ ᴄɪɴᴄɪɴ     : *${getRingIcon(p.cincin)} ${normalizeRingName(p.cincin || 'Silver Ring')}*
 *╰───────────────*`
     cards.push(card)
   })
 
-  const fullText = `*──  ୨୧ ✧ STATUS PERNIKAHAN RESMI ✧ ୨୧  ──*
+  const fullText = `*──  ୨୧ ✧ STATUS IKATAN RESMI ✧ ୨୧  ──*
 
-> *おしらせ!* (ᴘʀᴏꜰɪʟ ᴘᴇʀɴɪᴋᴀʜᴀɴ)
-> Informasi status ikatan pernikahan untuk @${whoNum} ♡
+> *おしらせ!* (ᴘʀᴏꜰɪʟ ʜᴜʙᴜɴɢᴀɴ)
+> Informasi ikatan ${aliasDisplay} untuk @${whoNum} ♡
 
 ${cards.join('\n\n')}
 
 > ｡˚ ⊹ _Ketik .kencan atau .loveclaim untuk meningkatkan keharmonisan!_ ⊹ ˚ ｡`.trim()
 
-  return conn.sendMessage(m.chat, {
-    text: fullText,
-    mentions: [who, ...pList.map(p => p.jid)]
-  }, { quoted: m })
+  return sendPasanganResult(fullText, [who, ...pList.map(p => p.jid)])
 }
 
-handler.help = ['pasangan [@user]', 'ceknikah [@user]', 'istri', 'suami', 'pasangan hide', 'pasangan unhide']
+handler.help = ['pasangan [@user]', 'ceknikah [@user]', 'istri', 'suami', 'pasangan hide', 'pasangan unhide', 'hubungan', 'hubungan alias <jenis>']
 handler.tags = ['pasangan']
-handler.command = /^(pasangan|ceknikah|istri|suami|pasangan\s+(hide|unhide))$/i
+handler.command = /^(pasangan|hubungan|ceknikah|istri|suami|pasangan\s+(hide|unhide))$/i
 
 export default handler
