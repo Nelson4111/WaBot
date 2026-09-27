@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { BANK_TIERS } from './rpg-bank.js'
+import { BANK_TIERS, calculateBankRobberyLoss, getBankGuardName, getBankRobberySuccessChance } from './rpg-bank.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 
@@ -46,8 +46,9 @@ let handler = async (m, { conn }) => {
     if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
 
     userRPG.lastrob = Date.now()
-    let tier = BANK_TIERS[target.bankTier || 0]
-    let peluang = Math.max(0.15, 0.8 - (tier.keamanan * 0.04)) // makin tinggi tier makin susah
+    let tier = BANK_TIERS[target.bankTier] || BANK_TIERS[0]
+    let penjaga = getBankGuardName(tier)
+    let peluang = getBankRobberySuccessChance(tier)
     let roll = Math.random()
 
     // INIT CRIME
@@ -55,52 +56,64 @@ let handler = async (m, { conn }) => {
     wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
 
     if (roll >= peluang) {
-        // GAGAL = LANGSUNG PENJARA 4 JAM
-        wdb.penjara = wdb.penjara || []
-        if(!wdb.penjara.includes(m.sender)){
-          let sel = wdb.penjara.length + 1
-          userRPG.penjara = Date.now()
-          userRPG.lamaPenjara = 14400000 // 4 jam
-          userRPG.tebusan = 4000000 // 4jt
-          userRPG.kasus = '🕵️ Rampok'
-          userRPG.sel = sel
-          wdb.penjara.push(m.sender)
-        }
-
-        wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
-        userRPG.riwayat.unshift(`🚔 Ditangkap saat rampok @${who.split('@')[0]}`)
-
-        saveDB(wdb)
-        let txt = `╭─❏「 🚓 RAMPOK GAGAL 」❏\n`
-        txt += `│ 👤 Perampok: @${m.sender.split('@')[0]}\n`
-        txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-        txt += `│ ⚰️ Ketahuan polisi\n`
-        txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *4 jam*\n`
-        txt += `│ 💰 Tebusan: *Rp 4.000.000*\n`
-        txt += `╰─━━━━━━━━━━━━━━─`
-        return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+    // GAGAL = LANGSUNG PENJARA 4 JAM
+    wdb.penjara = wdb.penjara || []
+    if(!wdb.penjara.includes(m.sender)){
+      let sel = wdb.penjara.length + 1
+      userRPG.penjara = Date.now()
+      userRPG.lamaPenjara = 14400000 // 4 jam
+      userRPG.tebusan = 4000000 // 4jt
+      userRPG.kasus = '🕵️ Rampok'
+      userRPG.sel = sel
+      wdb.penjara.push(m.sender)
     }
 
-    // SUKSES
-    let persen = 0.05 + (Math.random() * 0.25) // 5% - 30%
-    let hasil = Math.max(10000, Math.floor(bankTarget * persen * (1 - tier.asuransi)))
-
-    target.bank -= hasil
-    userRPG.bank = (userRPG.bank || 0) + hasil
-
-    wdb.crime[m.sender].rampok = (Number(wdb.crime[m.sender].rampok) || 0) + 1
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
+    userRPG.riwayat.unshift(`🚔 Ditangkap saat rampok @${who.split('@')[0]}`)
 
-    target.riwayat.unshift(`-Rp ${hasil.toLocaleString()} Dirampok @${m.sender.split('@')[0]}`)
-    userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Rampok @${who.split('@')[0]}`)
     saveDB(wdb)
+    let txt = `╭─❏「 🚓 RAMPOK GAGAL 」❏\n`
+    txt += `│ 🚓 *PERAMPOKAN GAGAL*\n`
+    txt += `│ 👤 Perampok : @${m.sender.split('@')[0]}\n`
+    txt += `│ 🎯 Target : @${who.split('@')[0]}\n`
+    txt += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let txt = `╭─❏「 🕵️ RAMPOK BERHASIL 」❏\n`
-    txt += `│ 👤 Perampok: @${m.sender.split('@')[0]}\n`
-    txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-    txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} *${(persen*100).toFixed(1)}%*\n`
-    txt += `│ 🛡️ Asuransi Target: ${(tier.asuransi*100).toFixed(0)}%\n`
-    txt += `╰─━━━━━━━━━━━━━━─`
+    txt += `🚨 *HASIL PENANGKAPAN*\n`
+    txt += `> ↳ 🛡️ ${penjaga} menahan perampok dan membunyikan alarm.\n`
+    txt += `> ↳ 🚨 Polisi datang; perampok tertangkap.\n`
+    txt += `> ↳ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *4 jam*\n`
+    txt += `> ↳ 💰 Tebusan : *Rp 4.000.000*\n\n`
+
+    txt += `─━━━━━━━━━━━━━━─`
+    return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+}
+
+// SUKSES
+let persen = 0.05 + (Math.random() * 0.25) // 5% - 30%
+let hasil = calculateBankRobberyLoss(bankTarget, persen, tier)
+
+target.bank -= hasil
+userRPG.bank = (userRPG.bank || 0) + hasil
+
+wdb.crime[m.sender].rampok = (Number(wdb.crime[m.sender].rampok) || 0) + 1
+wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
+
+target.riwayat.unshift(`-Rp ${hasil.toLocaleString()} Dirampok @${m.sender.split('@')[0]}`)
+userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Rampok @${who.split('@')[0]}`)
+saveDB(wdb)
+
+let txt = `╭─❏「 🕵️ RAMPOK BERHASIL 」❏\n`
+txt += `│ 🕵️ *PERAMPOKAN BERHASIL*\n`
+txt += `│ 👤 Perampok : @${m.sender.split('@')[0]}\n`
+txt += `│ 🎯 Target : @${who.split('@')[0]}\n`
+txt += `╰─━━━━━━━━━━━━━━─\n\n`
+
+txt += `💰 *HASIL PERAMPOKAN*\n`
+txt += `> ↳ 💰 Jarahan : Rp ${hasil.toLocaleString()} *${(persen*100).toFixed(1)}%*\n`
+txt += `> ↳ ⚠️ Perampok berhasil melumpuhkan ${penjaga} dan menerobos masuk.\n`
+txt += `> ↳ 🛡️ Asuransi Target : ${(tier.asuransi*100).toFixed(0)}%\n\n`
+
+txt += `─━━━━━━━━━━━━━━─`
 
     conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }

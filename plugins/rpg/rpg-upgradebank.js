@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { BANK_TIERS, getBankPrice, isPremiumUser } from './rpg-bank.js'
+import { BANK_TIERS, formatBankLimit, getBankPrice, isPremiumUser } from './rpg-bank.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
@@ -134,7 +134,7 @@ if (!isNaN(action)) {
     `╭─❏「 🎉 UPGRADE BERHASIL 」❏\n` +
     `│ ${tierBaru.color} *${tierBaru.name}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Limit : Rp ${tierBaru.limit.toLocaleString()}\n` +
+    `> ↳ Limit : ${formatBankLimit(tierBaru.limit)}\n` +
     `> ↳ Sisa Uang : Rp ${wdb.money[m.sender].toLocaleString()}\n` +
     `> ↳ Sisa Bank : Rp ${(user.bank || 0).toLocaleString()}\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -240,7 +240,7 @@ if (action === 'beli') {
     `╭─❏「 🎉 UPGRADE BERHASIL 」❏\n` +
     `│ ${nextTier.color} *${nextTier.name}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Limit : Rp ${nextTier.limit.toLocaleString()}\n` +
+    `> ↳ Limit : ${formatBankLimit(nextTier.limit)}\n` +
     `> ↳ Sisa Uang : Rp ${wdb.money[m.sender].toLocaleString()}\n` +
     `> ↳ Sisa Bank : Rp ${(user.bank || 0).toLocaleString()}\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -255,7 +255,7 @@ cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `📊 *INFORMASI BANK*\n`
 cap += `> ↳ Status : ${isPremium ? '👑 Premium (Diskon 25%)' : '👤 User Biasa'}\n`
-cap += `> ↳ Limit : Rp ${currentTier.limit.toLocaleString()}\n`
+cap += `> ↳ Limit : ${formatBankLimit(currentTier.limit)}\n`
 cap += `> ↳ Bunga : ${(currentTier.bunga * 100).toFixed(2)}%/minggu\n`
 cap += `> ↳ Asuransi : ${(currentTier.asuransi * 100).toFixed(0)}%\n`
 cap += `> ↳ Biaya Bulanan Normal : Rp ${currentTier.biayaBulanan.toLocaleString()}\n`
