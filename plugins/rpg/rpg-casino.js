@@ -29,7 +29,7 @@ const pick = values => values[Math.floor(Math.random() * values.length)]
 const number = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 const money = value => `Rp ${Math.max(0, value).toLocaleString()}`
 const signedMoney = value => `${value >= 0 ? '+' : '-'}Rp ${Math.abs(Number(value) || 0).toLocaleString()}`
-const DAILY_LIMIT = 50
+const DAILY_LIMIT = 25
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10)

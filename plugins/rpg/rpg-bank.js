@@ -96,8 +96,35 @@ export function getBankFnbReward(tierLevel) {
   return BANK_FNB_REWARDS[tierLevel] || null
 }
 
+export function resolveBankFnbTier(ownedTierLevel, selection = '') {
+  const ownedTier = Number(ownedTierLevel)
+  if (!Number.isInteger(ownedTier) || !BANK_TIERS[ownedTier]) return null
+
+  const requestedCard = String(selection).trim()
+  if (!requestedCard) return ownedTier
+
+  let selectedTier
+  if (/^\d+$/.test(requestedCard)) {
+    selectedTier = Number(requestedCard)
+  } else {
+    const normalizedName = requestedCard.toLowerCase().replace(/\s+/g, ' ')
+    selectedTier = Number(Object.entries(BANK_TIERS).find(([, card]) => {
+      const cardName = card.name.toLowerCase()
+      return cardName === normalizedName || cardName.replace(/\s+card$/, '') === normalizedName
+    })?.[0])
+  }
+
+  if (!Number.isInteger(selectedTier) || !BANK_TIERS[selectedTier] || selectedTier > ownedTier) return null
+  return selectedTier
+}
+
 export function getBankRobberySuccessChance(tier) {
-  return Math.max(0.05, 0.8 - (tier.keamanan * 0.035))
+  return Math.max(0.05, 0.8 - (getBankEffectiveSecurity(tier) * 0.035))
+}
+
+export function getBankEffectiveSecurity(tier) {
+  const crystalFortressBonus = tier.fasilitas.includes('Benteng Kristal') ? 5 : 0
+  return tier.keamanan + crystalFortressBonus
 }
 
 export function calculateBankRobberyLoss(bankBalance, percentage, tier) {
@@ -237,43 +264,116 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // MENU UTAMA BANK
   if (!action) {
-    let sisaHari = Math.max(0, Math.ceil((cdBunga - (now - userRPG.lastBunga)) / satuHari))
-    let sisaMembership = Math.max(0, Math.ceil((periodeMembership - (now - userRPG.lastMembership)) / satuHari))
-    let sisaTransaksi = getBankTransactionCooldownRemaining(userRPG, tier, now)
+  let sisaHari = Math.max(0, Math.ceil((cdBunga - (now - userRPG.lastBunga)) / satuHari))
+  let sisaMembership = Math.max(0, Math.ceil((periodeMembership - (now - userRPG.lastMembership)) / satuHari))
+  let sisaTransaksi = getBankTransactionCooldownRemaining(userRPG, tier, now)
 
-    let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
-    if(tier.fasilitas.includes('Lounge VIP')) cap += `✧ ${formatBankFacility('Lounge VIP')} ✧\n Fasilitas lounge segera hadir.\n`
-    cap += `◈ ${tier.color} ${tier.name.toUpperCase()} ${userRPG.kartuBeku? '❌ BEKU':''} ◈\n`
-    cap += `◆ Status : ${isPremium ? '👑 PREMIUM - Diskon 25% dari harga normal' : '👤 USER BIASA'}\n`
-    cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
-    cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-    cap += `◆ Limit Kartu : ${formatBankLimit(tier.limit)}\n\n`
-    cap += `◈ INFO KARTU ◈\n`
-    cap += ` ◦ Bunga : ${(tier.bunga*100).toFixed(2)}% / minggu\n`
-    cap += ` ◦ Asuransi : ${(tier.asuransi*100).toFixed(0)}%\n`
-    cap += ` ◦ Keamanan : Lv.${tier.keamanan} (${tier.fasilitas.find(f=>f.includes('Penjaga')) || 'Standar'})\n`
-    cap += ` ◦ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'Jatuh tempo'} ${sisaMembership <= 0? '❌' : '✅'}\n`
-    cap += ` ◦ Bunga : ${sisaHari} hari lagi\n`
-    cap += ` ◦ Cooldown setor/tarik : ${sisaTransaksi > 0 ? `${Math.ceil(sisaTransaksi / 60000)} menit` : 'Siap'}\n`
-    const csService = getBankCsService(tier)
-    if (csService) cap += ` ◦ ${csService}: ${BANK_CS_SERVICES[csService]}\n`
-    if(tier.fasilitas.length > 0) {
-      cap += `◈ FASILITAS EKSKLUSIF ◈\n`
-      if(tier.fasilitas.includes('Digital Access')) cap += ` ✦ Digital Access\n`
-      if(tier.fasilitas.includes('Lounge VIP')) cap += ` ✦ ${formatBankFacility('Lounge VIP')}\n`
-      if(tier.fasilitas.includes('Mahkota Kehormatan')) cap += ` ✦ ${formatBankFacility('Mahkota Kehormatan')}\n`
-      if(tier.fasilitas.includes('Gratis Makanan & Minuman')) cap += ` ✦ Gratis Makanan & Minuman\n`
-      cap += `\n`
+  let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
+
+  if (tier.fasilitas.includes('Lounge VIP')) {
+    cap += `✧ ${formatBankFacility('Lounge VIP')} ✧\n`
+    cap += `Fasilitas lounge segera hadir.\n\n`
+  }
+
+  cap += `◈ ${tier.color} ${tier.name.toUpperCase()} ${userRPG.kartuBeku ? '❌ BEKU' : ''} ◈\n`
+  cap += `◆ Status : ${isPremium ? '👑 PREMIUM - Diskon 25% dari harga normal' : '👤 USER BIASA'}\n`
+  cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
+  cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+  cap += `◆ Limit Kartu : ${formatBankLimit(tier.limit)}\n\n`
+
+  cap += `◈ INFO KARTU ◈\n`
+  cap += ` ◦ Bunga : ${(tier.bunga * 100).toFixed(2)}% / minggu\n`
+  cap += ` ◦ Asuransi : ${(tier.asuransi * 100).toFixed(0)}%\n`
+  cap += ` ◦ Keamanan : Lv.${tier.keamanan} (${tier.fasilitas.find(f => f.includes('Penjaga')) || 'Standar'})\n`
+  cap += ` ◦ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'Jatuh tempo'} ${sisaMembership <= 0 ? '❌' : '✅'}\n`
+  cap += ` ◦ Bunga : ${sisaHari} hari lagi\n`
+  cap += ` ◦ Cooldown setor/tarik : ${sisaTransaksi > 0 ? `${Math.ceil(sisaTransaksi / 60000)} menit` : 'Siap'}\n`
+
+  const csService = getBankCsService(tier)
+  if (csService) {
+    cap += ` ◦ ${csService} : ${BANK_CS_SERVICES[csService]}\n`
+  }
+
+  if (tier.fasilitas.length > 0) {
+    cap += `\n◈ FASILITAS EKSKLUSIF ◈\n`
+
+    if (tier.fasilitas.includes('Digital Access')) {
+      cap += ` ✦ Digital Access\n`
     }
-    cap += `◈ Total Bunga : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n\n`
-    if(userRPG.kartuBeku) cap += `🚨 AKSI DIBUTUHKAN\n Bayar Rp ${tier.biayaBulanan.toLocaleString()} dengan *.bank bulanan*, *.bank monthly*, atau *.bank tagihan*.\n\n❌ FITUR NONAKTIF\n Bunga • Transfer • Pinjaman • Heal Bank\n`
-    cap += `─━━━━━━━━━─\n📌 *CARA PAKAI*\n> *${usedPrefix}bank simpan <jumlah>*\n> *${usedPrefix}bank tarik <jumlah>*\n> *${usedPrefix}bank tf / pinjam / bayar / riwayat / kartu*`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i162/PqqrMC.jpg')
+
+    if (tier.fasilitas.includes('Lounge VIP')) {
+      cap += ` ✦ ${formatBankFacility('Lounge VIP')}\n`
+    }
+
+    if (tier.fasilitas.includes('Mahkota Kehormatan')) {
+      cap += ` ✦ ${formatBankFacility('Mahkota Kehormatan')}\n`
+    }
+
+    if (tier.fasilitas.includes('Gratis Makanan & Minuman')) {
+      cap += ` ✦ Gratis Makanan & Minuman\n`
+    }
+
+    cap += `\n`
   }
 
-  if (action === 'command' || action === 'commands' || action === 'cmd') {
-    return m.reply(`📋 *DAFTAR COMMAND BANK*\n\n> *.bank* - Lihat saldo dan informasi kartu\n> *.bank command* - Tampilkan daftar command ini\n> *.bank simpan <angka>* - Setor sejumlah uang\n> *.bank all* atau *.bank simpan all* - Setor semua uang saku (wajib Fast Track)\n> *.bank tarik <angka|all>* - Tarik uang ke uang saku\n> *.bank cs bantuan / saldo* - Minta informasi sesuai fasilitas CS kartu\n> *.bank cs simpan/tarik <jumlah>* - Bantuan transaksi mulai Chat CS 24jam\n> *.bank cs analisis / fasilitas* - Fitur Chat CS AI sesuai tingkat akses\n> *.bank cs kontrol auto on/off* - Kontrol terbatas khusus Premium CS AI\n> *.bank tf <angka|all>* - Transfer ke pemain (wajib fitur Transfer Bank)\n> *.bank pinjam <angka>* - Ajukan pinjaman\n> *.bank bayar* - Lunasi pinjaman\n> *.bank bulanan / monthly / tagihan* - Bayar tagihan bulanan saat jatuh tempo\n> *.bank fnb* - Klaim makanan dan minuman gratis (cooldown 12 jam)\n> *.bank asisten* - Ringkasan dan pengaturan Personal Banking Manager\n> *.bank asisten target <jumlah|off>* - Atur target tabungan\n> *.bank asisten auto on [ambang]* atau *.bank asisten auto off* - Atur auto-setor\n> *.bank asisten pengingat* - Kelola pengingat\n> *.bank riwayat* - Lihat riwayat transaksi\n> *.bank kartu / card* - Lihat daftar kartu\n> *.bank benefit / benefits [list]* - Lihat fasilitas kartu`)
+  cap += `─━━━━━━━━━─\n`
+  cap += `◈ TOTAL BUNGA : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n`
+
+  if (userRPG.kartuBeku) {
+    cap += `\n─━━━━━━━━━─\n`
+    cap += `🚨 AKSI DIBUTUHKAN\n`
+    cap += ` Bayar Rp ${tier.biayaBulanan.toLocaleString()} dengan *.bank bulanan*, *.bank monthly*, atau *.bank tagihan*.\n`
+    cap += `\n❌ FITUR NONAKTIF\n`
+    cap += ` Bunga • Transfer • Pinjaman • Heal Bank\n`
   }
+
+  cap += `\n─━━━━━━━━━─\n`
+  cap += `📌 *CARA PAKAI*\n`
+  cap += `> *${usedPrefix}bank simpan <jumlah>*\n`
+  cap += `> *${usedPrefix}bank tarik <jumlah>*\n`
+  cap += `> *${usedPrefix}bank command*`
+
+  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i162/PqqrMC.jpg')
+}
+
+if (action === 'command' || action === 'commands' || action === 'cmd') {
+  return m.reply(`─━━ 📋 DAFTAR COMMAND BANK ━━─
+
+◈ 💳 INFORMASI KARTU ◈
+> *.bank* - Lihat saldo dan informasi kartu
+> *.bank command* - Tampilkan daftar command ini
+> *.bank kartu / card* - Lihat daftar kartu
+> *.bank benefit / benefits [list]* - Lihat fasilitas kartu
+
+─━━━━━━━━━─
+◈ 💰 TRANSAKSI BANK ◈
+> *.bank simpan <angka>* - Setor sejumlah uang
+> *.bank all* atau *.bank simpan all* - Setor semua uang saku (wajib Fast Track)
+> *.bank tarik <angka|all>* - Tarik uang ke uang saku
+> *.bank tf <angka|all>* - Transfer ke pemain (wajib fitur Transfer Bank)
+> *.bank pinjam <angka>* - Ajukan pinjaman
+> *.bank bayar* - Lunasi pinjaman
+> *.bank bulanan / monthly / tagihan* - Bayar tagihan bulanan saat jatuh tempo
+
+─━━━━━━━━━─
+◈ 💬 CUSTOMER SERVICE ◈
+> *.bank cs bantuan / saldo* - Minta informasi sesuai fasilitas CS kartu
+> *.bank cs simpan/tarik <jumlah>* - Bantuan transaksi mulai Chat CS 24jam
+> *.bank cs analisis / fasilitas* - Fitur Chat CS AI sesuai tingkat akses
+> *.bank cs kontrol auto on/off* - Kontrol terbatas khusus Premium CS AI
+
+─━━━━━━━━━─
+◈ 🍽️ FASILITAS ◈
+> *.bank fnb [angka/nama kartu]* - Klaim F&B kartu sendiri atau tier di bawahnya (cooldown 12 jam bersama)
+> *.bank asisten* - Ringkasan dan pengaturan Personal Banking Manager
+> *.bank asisten target <jumlah|off>* - Atur target tabungan
+> *.bank asisten auto on [ambang]* atau *.bank asisten auto off* - Atur auto-setor
+> *.bank asisten pengingat* - Kelola pengingat
+
+─━━━━━━━━━─
+◈ 📊 LAINNYA ◈
+> *.bank riwayat* - Lihat riwayat transaksi`)
+}
 
   if (action === 'fnb' && args[1]?.toLowerCase() === 'list') {
     let cap = `🍽️ *DAFTAR F&B BANK*\n> Klaim tersedia setiap 12 jam untuk kartu yang memiliki fasilitas Gratis Makanan & Minuman.\n\n`
@@ -290,11 +390,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (action === 'fnb') {
-    if (!tier.fasilitas.includes('Gratis Makanan & Minuman')) return m.reply(`❌ ${tier.name} belum memiliki fasilitas Gratis Makanan & Minuman.`)
     if (userRPG.kartuBeku) return m.reply('❌ Kartu bank sedang beku. Aktifkan kartu sebelum mengambil fasilitas F&B.')
 
-    const reward = getBankFnbReward(userRPG.bankTier)
-    if (!reward) return m.reply('❌ Paket F&B belum tersedia untuk kartu ini.')
+    const selectedTierLevel = resolveBankFnbTier(userRPG.bankTier, args.slice(1).join(' '))
+    if (selectedTierLevel === null) return m.reply(`❌ Kartu tidak valid atau tier tersebut belum kamu miliki. Gunakan *.bank fnb <angka/nama kartu>* atau *.bank fnb list*.`)
+    const selectedTier = BANK_TIERS[selectedTierLevel]
+    if (!selectedTier.fasilitas.includes('Gratis Makanan & Minuman')) return m.reply(`❌ ${selectedTier.name} belum memiliki fasilitas Gratis Makanan & Minuman.`)
+
+    const reward = getBankFnbReward(selectedTierLevel)
+    if (!reward) return m.reply(`❌ Paket F&B ${selectedTier.name} belum tersedia.`)
     const cooldownFnb = 12 * 60 * 60 * 1000
     const sisaCooldown = cooldownFnb - (now - Number(userRPG.lastBankFnb || 0))
     if (sisaCooldown > 0) {
@@ -313,7 +417,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     await saveDB(wdb)
 
     const daftarKlaim = klaimItems.map(([item, quantity]) => `${MENU_RESTAURAN[item].emoji} ${formatMasakanNama(item)} ×${quantity}`).join('\n')
-    return m.reply(`✅ *FASILITAS F&B BERHASIL DIKLAIM*\n${tier.color} ${tier.name}\n\n${daftarKlaim}\n\nSemua item sudah masuk ke kulkas. Klaim lagi dalam 12 jam.`)
+    return m.reply(`✅ *FASILITAS F&B BERHASIL DIKLAIM*\n${selectedTier.color} ${selectedTier.name} (Lv.${selectedTierLevel})\n\n${daftarKlaim}\n\nSemua item sudah masuk ke kulkas. Klaim lagi dalam 12 jam untuk semua tier.`)
   }
 
   if (action === 'cs') {

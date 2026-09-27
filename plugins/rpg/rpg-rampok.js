@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { BANK_TIERS, calculateBankRobberyLoss, getBankGuardName, getBankRobberySuccessChance } from './rpg-bank.js'
+import { BANK_TIERS, calculateBankRobberyLoss, getBankEffectiveSecurity, getBankGuardName, getBankRobberySuccessChance } from './rpg-bank.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 
@@ -48,6 +48,8 @@ let handler = async (m, { conn }) => {
     userRPG.lastrob = Date.now()
     let tier = BANK_TIERS[target.bankTier] || BANK_TIERS[0]
     let penjaga = getBankGuardName(tier)
+    let keamananEfektif = getBankEffectiveSecurity(tier)
+    let bonusBenteng = tier.fasilitas.includes('Benteng Kristal') ? ' (termasuk bonus Benteng Kristal +5)' : ''
     let peluang = getBankRobberySuccessChance(tier)
     let roll = Math.random()
 
@@ -78,6 +80,9 @@ let handler = async (m, { conn }) => {
     txt += `│ 🎯 Target : @${who.split('@')[0]}\n`
     txt += `╰─━━━━━━━━━━━━━━─\n\n`
 
+    txt += `🛡️ *PERTAHANAN BANK TARGET*\n`
+    txt += `> ↳ Keamanan : *${keamananEfektif}*${bonusBenteng}\n\n`
+
     txt += `🚨 *HASIL PENANGKAPAN*\n`
     txt += `> ↳ 🛡️ ${penjaga} menahan perampok dan membunyikan alarm.\n`
     txt += `> ↳ 🚨 Polisi datang; perampok tertangkap.\n`
@@ -107,6 +112,9 @@ txt += `│ 🕵️ *PERAMPOKAN BERHASIL*\n`
 txt += `│ 👤 Perampok : @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Target : @${who.split('@')[0]}\n`
 txt += `╰─━━━━━━━━━━━━━━─\n\n`
+
+txt += `🛡️ *PERTAHANAN BANK TARGET*\n`
+txt += `> ↳ Keamanan : *${keamananEfektif}*${bonusBenteng}\n\n`
 
 txt += `💰 *HASIL PERAMPOKAN*\n`
 txt += `> ↳ 💰 Jarahan : Rp ${hasil.toLocaleString()} *${(persen*100).toFixed(1)}%*\n`
