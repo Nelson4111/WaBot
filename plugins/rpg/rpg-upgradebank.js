@@ -7,8 +7,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if (user.bankTier === undefined) user.bankTier = 0
 
-  let args = text?.toLowerCase().split(' ') || []
-  let action = args[0]
+  let args = text?.toLowerCase().trim().split(/\s+/).filter(Boolean) || []
+  let action = args[0] || 'beli'
   let confirmArg = (args[1] || '').toLowerCase()
   const isPremium = isPremiumUser(m.sender, wdb)
   let currentTier = BANK_TIERS[user.bankTier]
@@ -289,8 +289,8 @@ cap += `\n\n─━━━━━━━━━━━━━━─`
 
 return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i187/11piK9')
 }
-handler.help = ['upgradebank [angka/beli]']
+handler.help = ['upgradebank [angka/beli]', 'bankupgrade', 'bankup', 'upbank']
 handler.tags = ['rpg']
-handler.command = ['upgradebank']
+handler.command = ['upgradebank', 'bankupgrade', 'bankup', 'upbank']
 handler.group = false
 export default handler
