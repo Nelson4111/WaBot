@@ -8,6 +8,8 @@ import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 import fs from 'fs'
 
+const MAX_BANK_TIER = Math.max(...Object.keys(BANK_TIERS).map(Number))
+
 function getJakartaDate(timestamp) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jakarta',
@@ -129,7 +131,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   `🏦 *BANK*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbank @tag <jml>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setbanktier @tag <0-14>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addbank/delbank @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setbanktier @tag <0-${MAX_BANK_TIER}>*\n` +
   `> ↳ *${usedPrefix}rpgpanel freezebank @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel unfreezebank @tag*\n\n` +
 
@@ -1065,22 +1068,29 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   }
   
     // 8 BANK PANEL
-  if(['setbank','setbanktier','freezebank','unfreezebank'].includes(aksi)){
+  if(['setbank','addbank','delbank','setbanktier','freezebank','unfreezebank'].includes(aksi)){
     user.bank = user.bank || 0
     user.bankTier = user.bankTier || 0
     user.kartuBeku = user.kartuBeku || false
 
-    if(aksi === 'setbank'){
-      let val = parseInt(args[0])
-      if(isNaN(val)) return m.reply(`Contoh: *${usedPrefix}rpgpanel setbank @tag 100000000*`)
-      user.bank = Math.max(0, val)
+    if(['setbank', 'addbank', 'delbank'].includes(aksi)){
+      const amount = Number(args[0])
+      if (!Number.isInteger(amount) || (aksi !== 'setbank' && amount < 1)) {
+        return m.reply(`Contoh: *${usedPrefix}rpgpanel ${aksi} @tag ${aksi === 'setbank' ? '100000000' : '1000000'}*`)
+      }
+      const currentBank = Number(user.bank) || 0
+      user.bank = aksi === 'setbank'
+        ? Math.max(0, amount)
+        : aksi === 'addbank'
+          ? currentBank + amount
+          : Math.max(0, currentBank - amount)
       saveDB(wdb)
-      return m.reply(`✅ Saldo bank @${who.split('@')[0]} di set jadi Rp ${user.bank.toLocaleString()}`, null, {mentions: [who]})
+      return m.reply(`✅ Saldo bank @${who.split('@')[0]} ${aksi === 'setbank' ? 'di set' : aksi === 'addbank' ? 'ditambah' : 'dikurangi'} jadi Rp ${user.bank.toLocaleString()}`, null, {mentions: [who]})
     }
 
     if(aksi === 'setbanktier'){
-      let tier = parseInt(args[0])
-      if(isNaN(tier) || tier < 0 || tier > 14) return m.reply(`Contoh: *${usedPrefix}rpgpanel setbanktier @tag 14*\nList: 0-14`)
+      const tier = Number(args[0])
+      if (!Number.isInteger(tier) || !BANK_TIERS[tier]) return m.reply(`Contoh: *${usedPrefix}rpgpanel setbanktier @tag ${MAX_BANK_TIER}*\nList: 0-${MAX_BANK_TIER}`)
       user.bankTier = tier
       saveDB(wdb)
       return m.reply(`✅ Tier bank @${who.split('@')[0]} di set jadi ${BANK_TIERS[tier].color} ${BANK_TIERS[tier].name}`, null, {mentions: [who]})
