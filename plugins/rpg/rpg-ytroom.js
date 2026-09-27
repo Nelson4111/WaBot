@@ -79,13 +79,10 @@ function choicePic(choice) {
   return pickGenderImage('none')
 }
 
-function contentListText(usedPrefix) {
-  const lines = []
-  for (const key of Object.keys(contentMap)) {
-    const c = contentMap[key]
-    lines.push(`> ${key.padEnd(8)} - ${c.label} (${c.desc})`)
-  }
-  return lines.join('\n')
+function contentListText() {
+  return Object.entries(contentMap)
+    .map(([, content], index) => `> ${index + 1}. ${content.label}`)
+    .join('\n')
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -226,8 +223,28 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
   if (sub === 'content' || sub === 'kategori' || sub === 'type') {
     const what = args[1]
     if (!what || what === 'list') {
+      const selection = args.slice(2).join(' ').trim()
+      if (selection) {
+        const entries = Object.entries(contentMap)
+        const number = Number(selection)
+        const selected = Number.isInteger(number) && number > 0
+          ? entries[number - 1]
+          : entries.find(([key, content]) => key.toLowerCase() === selection.toLowerCase() || content.label.toLowerCase() === selection.toLowerCase())
+
+        if (!selected) return m.reply(`❌ Pilihan tidak ditemukan. Gunakan: *${usedPrefix}room content list*`)
+
+        const [key, content] = selected
+        let cap = `╭─❏「 🎬 ${content.label.toUpperCase()} 」❏\n`
+        cap += `│ Kategori: *${content.label}*\n`
+        cap += `│ Bonus reward: *x${content.reward}*\n`
+        cap += `╰─━━━━━━━━━━━━━━─\n\n`
+        cap += `${content.desc}\n\n`
+        cap += `Pilihan: *${key}*`
+        return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+      }
+
       let cap = `╭─❏「 🎬 CONTENT LIST 」❏\n`
-      cap += `${contentListText(usedPrefix)}\n`
+      cap += `${contentListText()}\n`
       cap += `╰─━━━━━━━━━━━━━━─`
       return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
     }
@@ -313,7 +330,7 @@ cap += `> ↳ Gaji : +Rp ${payout.toLocaleString()}\n\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i198/PELeGje.jpg')
+return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
  }
 
   if (sub === 'collab' || sub === 'collabyt' || sub === 'collaboration') {
@@ -350,7 +367,7 @@ cap += `> ↳ Pendapatan : +Rp ${collabGain.toLocaleString()}\n\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i106/p1Vn.jpg')
+return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
  }
 
   // owner display route

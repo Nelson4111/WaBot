@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { prosesKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan, getHewanKey } from '../../lib/rpg-libternakData.js'
+import { prosesKawin, pratinjauKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan, getHewanKey } from '../../lib/rpg-libternakData.js'
 
 global.icuTernak = global.icuTernak || {}
 
@@ -207,12 +207,17 @@ let handler = async (m, { conn, args }) => {
     wdb.temp.kawin[m.sender] = {h1, h2, asuransi, waktu: Date.now()}
     saveDB(wdb)
 
+    let calonHasil = pratinjauKawin(h1, h2)?.data
+    let teksHasil = calonHasil
+      ? `${calonHasil.emoji} ${calonHasil.nama} E${calonHasil.evolusi} x1`
+      : `E${Math.min(eTertinggi + 1, 7)}`
     let ket =
       `╭─❏「 ⚠️ PERINGATAN EVOLUSI 」❏\n` +
       `│ 🧬 ${d1.nama} ${d1.emoji} + ${d2.nama} ${d2.emoji}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ 📊 Resiko Gagal : ${peluangGagal(d1,d2) * 100}%\n` +
       `> ↳ 🎯 Hasil : E${Math.min(eTertinggi + 1, 7)}\n` +
+      `> ↳ 🎁 Nama : ${teksHasil}\n` +
       `> ↳ ✨ Exp : ${Math.floor(exp)} / ${Math.floor(exp / 2)}\n` +
       `> ↳ 💰 Biaya Kawin : Rp ${biaya.toLocaleString()}\n`
 

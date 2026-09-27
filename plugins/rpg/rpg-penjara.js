@@ -9,14 +9,22 @@ const dialogVisitNapi = [
     '“Akhirnya ada juga yang datang menjengukku...”','“Kau datang jauh-jauh cuma buat lihat aku di balik jeruji?”','“Aku baik-baik saja... cuma bosan dengan tembok ini.”','“Jangan khawatir. Aku masih kuat bertahan di sini.”','“Kunjunganmu benar-benar membuat waktuku terasa lebih cepat.”',
     '“Aku nggak menyangka masih ada yang mau datang menjenguk.”','“Di sini dingin dan sepi. Lumayan ada teman ngobrol.”','“Kalau kau punya kabar dari luar, ceritakan semuanya.”','“Aku sudah mulai hafal bentuk setiap sudut ruangan ini.”','“Terima kasih sudah datang. Setidaknya hari ini tidak terasa terlalu panjang.”',
     '“Bang tolong dong... kasih makan 😭”','“Aku dijebak bang, sumpah demi Tuhan”','“Udah 3 hari makan roti doang”','“Besok aku bebas kan bang? Tolong ya”','“Makasih udah mau nengok... sepi banget disini”',
-    '“Lu juga hati2 bang, polisi lagi nyari2”','“Titip salam buat keluarga ya bang”','“Aku kapok bang, ga bakal ngulang lagi”','“Ada rokok ga bang? Bosen banget”','“Doain aku cepet bebas ya bang 🙏”'
+    '“Lu juga hati2 bang, polisi lagi nyari2”','“Titip salam buat keluarga ya bang”','“Aku kapok bang, ga bakal ngulang lagi”','“Ada rokok ga bang? Bosen banget”','“Doain aku cepet bebas ya bang 🙏”',
+    '“Bang, ada kabar terbaru dari luar nggak?”','“Hari ini rasanya lama banget berlalu.”','“Aku kangen suasana di luar sana.”','“Kalau bisa, bawain sesuatu buat dimakan ya.”','“Di sini tiap hari rasanya sama aja.”',
+    '“Aku masih nggak percaya bisa berakhir di tempat kayak gini.”','“Ada yang nanyain aku di luar nggak?”','“Tolong jangan lupain aku selama aku di sini.”','“Aku cuma pengen cepat selesaiin masa tahanan ini.”','“Bang, kalau ketemu teman-teman, bilang aku baik-baik aja.”',
+    '“Tidur di sini nggak pernah benar-benar nyenyak.”','“Aku mulai bosan lihat wajah yang itu-itu aja.”','“Kalau punya cerita lucu dari luar, ceritain dong.”','“Aku bakal lebih hati-hati setelah keluar nanti.”','“Rasanya aneh lihat dunia luar cuma dari balik jeruji.”',
+    '“Bang, jangan sering-sering bikin aku iri sama kehidupan luar 😭”','“Aku masih punya harapan buat mulai hidup lagi setelah bebas.”','“Makasih udah nyempetin waktu buat datang.”','“Jangan lupa datang lagi kalau ada kesempatan.”','“Semoga kunjungan berikutnya aku sudah nggak ada di sini.”'
 ]
 
 const dialogVisitPengunjung = [
     '“Aku datang menjengukmu. Gimana keadaanmu di sini?”','“Ternyata benar-benar dikurung di sini, ya...”','“Aku cuma mau memastikan kamu masih baik-baik saja.”','“Sabar ya. Semoga masa tahanannya cepat selesai.”','“Aku bawa kabar dari luar. Kota masih ramai seperti biasa.”',
     '“Jangan terlalu dipikirkan. Anggap saja ini liburan yang salah tempat.”','“Aku penasaran, bagaimana rasanya menghabiskan waktu di sini?”','“Kalau butuh sesuatu, bilang saja selama masih bisa dibantu.”','“Aku sempat khawatir setelah dengar kamu masuk penjara.”','“Aku pamit dulu. Semoga kita ketemu lagi di luar jeruji.”',
     '“Sabar ya, ini ada uang buat jajan”','“Gimana ceritanya bisa masuk sini?”','“Tenang, lawyer udah gue urus”','“Jangan ngulangin lagi ya, malu”','“Mau nitip apa? Gue beliin”',
-    '“Keluarga nungguin lu di luar”','“Udah tobat belum di dalem?”','“Ini selnya dingin banget sih”','“Kuat2 ya, bentar lagi juga keluar”','“Hati2 sama napi lain, jangan berantem”'
+    '“Keluarga nungguin lu di luar”','“Udah tobat belum di dalem?”','“Ini selnya dingin banget sih”','“Kuat2 ya, bentar lagi juga keluar”','“Hati2 sama napi lain, jangan berantem”',
+    '“Gue bawain makanan, siapa tahu lu lapar.”','“Ada yang mau gue sampaikan dari keluarga.”','“Lu jangan kepikiran yang aneh-aneh dulu.”','“Di luar semuanya masih aman, jadi lu tenang aja.”','“Gue usahain sering-sering nengok lu.”',
+    '“Teman-teman lu pada nanyain kabar.”','“Kalau ada yang perlu dibantu, bilang aja.”','“Gue nggak nyangka akhirnya harus nengok lu di penjara.”','“Yang penting sekarang lu jaga diri baik-baik.”','“Nanti kalau udah keluar, jangan bikin masalah lagi.”',
+    '“Gue bawain baju sekalian, siapa tahu yang lama udah nggak nyaman.”','“Lu masih kuat kan? Jangan sampai drop.”','“Ada kabar baik, semuanya masih nunggu lu pulang.”','“Jangan malu buat minta bantuan kalau memang perlu.”','“Gue lihat lu masih sehat, syukurlah.”',
+    '“Kalau bosen, ngobrol aja sama orang yang ada di sini.”','“Gue cuma bisa bantu sebisanya dari luar.”','“Sabar sedikit lagi, semua ini pasti ada akhirnya.”','“Titip pesan apa buat keluarga?”','“Semoga kunjungan berikutnya kita ngobrolnya bukan di balik jeruji lagi.”'
 ]
 
 /* =========================================================
@@ -47,57 +55,117 @@ const storyKabur = [
 ]
 
 /* =========================================================
-    STORY ROUTINE 20 VARIASI
+   STORY ROUTINE 50 VARIASI
 ========================================================= */
 
 const storyRoutine = [
     `📖 *Hari ini:* Bangun jam 5, sholat di pojokan sel. Makan roti keras + air putih. Siangnya nyapu 1 jam. Malam baca koran bekas sampe ketiduran.`,
     `📖 *Hari ini:* Ikut kerja bakti bersihin halaman penjara. Keringetan banget. Dapet bonus es teh. Tidur di kasur tipis sambil mikir keluarga.`,
-    `📖 *Hari ini:* Bertengkar sama napi sebelah gara2 rebutan sabun. Didamaikan sipir. Sorenya olahraga lari 3x keliling lapangan.`,
+    `📖 *Hari ini:* Bertengkar sama napi sebelah gara-gara rebutan sabun. Didamaikan sipir. Sorenya olahraga lari 3x keliling lapangan.`,
     `📖 *Hari ini:* Diajarin tukang kayu bikin kursi. Jari ketusuk paku. Tapi lumayan dapet skill baru.`,
-    `📖 *Hari ini:* Kirim surat ke rumah. Nunggu 2 jam buat dpt giliran nelpon. Cuma 5 menit, kangen banget.`,
-    `📖 *Hari ini:* Ikut pengajian. Ustadnya ceramah tentang tobat. Nangis di dalem hati.`,
-    `📖 *Hari ini:* Masak nasi buat 50 orang. Ketumpahan. Disuruh cuci piring seharian.`,
-    `📖 *Hari ini:* Sakit perut. Ke klinik, dikasih obat generik. Tiduran seharian.`,
-    `📖 *Hari ini:* Main catur sama napi seumur. Kalah 5x berturut2. Harga diri anjlok.`,
-    `📖 *Hari ini:* Dapet kiriman dari rumah: baju, mie, rokok. Bagi2 ke temen sel.`,
-    `📖 *Hari ini:* Disuruh cat tembok. Catnya kena muka. Mirip badut.`,
-    `📖 *Hari ini:* Hujan bocor ke sel. Tidur basah2an. Mimpi indah tentang kebebasan.`,
-    `📖 *Hari ini:* Nonton TV bareng. Cuma ada sinetron. Berantem remote.`,
-    `📖 *Hari ini:* Dipanggil kepala penjara. Dikasih nasehat 1 jam. Kuping panas.`,
-    `📖 *Hari ini:* Ikut lomba kebersihan antar sel. Juara 3. Dapet sabun.`,
-    `📖 *Hari ini:* Mimpi kabur. Bangun2 masih di jeruji. Nafas panjang.`,
-    `📖 *Hari ini:* Belajar baca tulis sama relawan. Dari ga bisa jadi bisa nulis nama.`,
-    `📖 *Hari ini:* Berantem di dapur. Piring pecah. Dihukum ga makan malam.`,
-    `📖 *Hari ini:* Duduk di pojokan, ngitung hari. Udah hari ke sekian.`,
-    `📖 *Hari ini:* Sepi banget. Ngobrol sama tembok. Temboknya diem aja.`
+    `📖 *Hari ini:* Kirim surat ke rumah. Nunggu 2 jam buat dapet giliran nelpon. Cuma 5 menit, tapi rasanya berharga banget.`,
+    `📖 *Hari ini:* Ikut pengajian. Ustadnya ceramah tentang tobat. Banyak yang diam merenung, termasuk gue.`,
+    `📖 *Hari ini:* Masak nasi buat 50 orang. Ketumpahan. Akhirnya disuruh cuci piring seharian.`,
+    `📖 *Hari ini:* Sakit perut. Ke klinik, dikasih obat. Setelah itu cuma tiduran seharian di sel.`,
+    `📖 *Hari ini:* Main catur sama napi seumur. Kalah 5x berturut-turut. Harga diri anjlok.`,
+    `📖 *Hari ini:* Dapet kiriman dari rumah: baju, mie, dan beberapa makanan. Sebagian gue bagi ke teman satu sel.`,
+    `📖 *Hari ini:* Disuruh cat tembok. Catnya kena muka. Teman-teman malah ketawa karena katanya mirip badut.`,
+    `📖 *Hari ini:* Hujan deras, air masuk ke sel. Tidur sambil mindahin barang-barang biar nggak basah.`,
+    `📖 *Hari ini:* Nonton TV bareng. Cuma ada sinetron. Ujung-ujungnya malah ribut rebutan remote.`,
+    `📖 *Hari ini:* Dipanggil kepala penjara. Dikasih nasihat hampir satu jam. Panjang banget, tapi ada beberapa yang masuk akal.`,
+    `📖 *Hari ini:* Ikut lomba kebersihan antar sel. Cuma juara 3, tapi dapet sabun tambahan.`,
+    `📖 *Hari ini:* Mimpi kabur semalam. Begitu bangun, masih lihat jeruji. Cuma bisa narik napas panjang.`,
+    `📖 *Hari ini:* Belajar baca tulis sama relawan. Dulu susah nulis nama sendiri, sekarang sudah mulai lancar.`,
+    `📖 *Hari ini:* Berantem kecil di dapur. Piring pecah dan semua langsung kena omel sipir.`,
+    `📖 *Hari ini:* Duduk di pojokan sambil ngitung hari. Rasanya angka di kalender jalan lebih lambat dari biasanya.`,
+    `📖 *Hari ini:* Sepi banget. Akhirnya ngobrol sama tembok. Temboknya tentu aja diem.`,
+    `📖 *Hari ini:* Dapet giliran bersihin kamar mandi. Bau banget, tapi setidaknya waktu jadi terasa lebih cepat.`,
+    `📖 *Hari ini:* Pagi-pagi ikut senam. Niatnya cuma gerak sedikit, malah pegal seharian.`,
+    `📖 *Hari ini:* Ada napi baru masuk. Semua orang penasaran sama ceritanya, tapi gue memilih diam.`,
+    `📖 *Hari ini:* Dapet jatah buah. Pisangnya kecil banget, tapi tetap habis dalam hitungan detik.`,
+    `📖 *Hari ini:* Bantu napi sebelah benerin sandal. Ternyata cuma putus talinya. Lumayan bisa merasa berguna.`,
+    `📖 *Hari ini:* Seharian panas banget. Kipas cuma muter pelan, jadi lebih banyak duduk di dekat jendela.`,
+    `📖 *Hari ini:* Denger suara kendaraan dari luar. Sebentar aja, tapi langsung bikin kangen suasana jalanan.`,
+    `📖 *Hari ini:* Dapet kesempatan baca buku lama dari perpustakaan. Sampai lupa kalau sedang ada di penjara.`,
+    `📖 *Hari ini:* Bantu masak makan siang. Kali ini nggak tumpah dan nggak gosong. Kemajuan besar.`,
+    `📖 *Hari ini:* Ada yang ulang tahun di blok sebelah. Cuma dirayain sederhana, tapi semua ikut senang.`,
+    `📖 *Hari ini:* Bangun kesiangan dan hampir kelewatan jadwal makan. Untung teman satu sel bangunin.`,
+    `📖 *Hari ini:* Dikasih tugas lipat pakaian. Kelihatannya gampang, ternyata satu tumpuk penuh.`,
+    `📖 *Hari ini:* Main kartu sampai sore. Nggak ada taruhan, cuma buat bunuh waktu.`,
+    `📖 *Hari ini:* Denger kabar kalau salah satu teman sebentar lagi bebas. Ikut senang sekaligus iri sedikit.`,
+    `📖 *Hari ini:* Dapat surat balasan dari rumah. Cuma beberapa kalimat, tapi gue baca berkali-kali.`,
+    `📖 *Hari ini:* Ada pemeriksaan mendadak. Semua langsung buru-buru merapikan barang masing-masing.`,
+    `📖 *Hari ini:* Belajar bikin kerajinan tangan dari kertas bekas. Hasilnya jelek, tapi lumayan buat mengisi waktu.`,
+    `📖 *Hari ini:* Duduk di halaman saat matahari sore. Jarang banget bisa menikmati udara luar walau cuma sebentar.`,
+    `📖 *Hari ini:* Salah ambil sandal punya orang. Baru sadar setelah dipakai jalan beberapa meter.`,
+    `📖 *Hari ini:* Napi sebelah cerita tentang keluarganya sampai malam. Gue cuma dengerin dan sesekali ikut menanggapi.`,
+    `📖 *Hari ini:* Bangun karena suara hujan. Untuk beberapa menit suasana terasa tenang banget.`,
+    `📖 *Hari ini:* Dapet jatah tambahan nasi. Hari ini rasanya sedikit lebih beruntung.`,
+    `📖 *Hari ini:* Bantu bersihin halaman setelah hujan. Lumpur di mana-mana, sepatu jadi berat.`,
+    `📖 *Hari ini:* Ada pertandingan olahraga kecil. Gue ikut main dan pulang dengan badan pegal semua.`,
+    `📖 *Hari ini:* Seharian kepikiran rumah. Nggak banyak aktivitas, cuma duduk dan menunggu waktu berjalan.`,
+    `📖 *Hari ini:* Ketemu napi lama yang sudah hafal semua rutinitas di sini. Banyak cerita yang dia kasih.`,
+    `📖 *Hari ini:* Dapat kesempatan telepon keluarga. Waktunya singkat, tapi cukup buat bikin hati sedikit tenang.`,
+    `📖 *Hari ini:* Bantu merapikan rak buku. Nemunya beberapa buku lama yang ternyata masih menarik dibaca.`,
+    `📖 *Hari ini:* Malam ini lebih tenang dari biasanya. Setelah semua kegiatan selesai, gue cuma rebahan sambil menatap langit-langit.`
 ]
 
 /* =========================================================
-   STORY TALK 20 VARIASI
+   STORY TALK 50 VARIASI
 ========================================================= */
 
 const storyTalk = [
-    `💬 Kamu: 'Gimana cara cepet keluar?'\n👤 Napi A: 'Tunggu aja bang, 3 bulan lagi gue bebas. Sabar.'`,
-    `💬 Kamu: 'Lu kasus apa?'\n👤 Napi B: 'Copet bang. Gara2 lapar. Lu?'\nKamu: '...'`,
-    `💬 Kamu: 'Bosen ga?'\n👤 Napi C: 'Bosen lah. Makanya gue bikin radio dari kaleng.'`,
-    `💬 Kamu: 'Sipir galak ga?'\n👤 Napi D: 'Tergantung. Kasih rokok, baik.'`,
-    `💬 Kamu: 'Pernah kabur?'\n👤 Napi E: 'Pernah. 2 jam ketangkap. Capek.'`,
-    `💬 Kamu: 'Makanan enak ga?'\n👤 Napi F: 'Enak kalau gratis bang. Ini bayar pake keringet.'`,
-    `💬 Kamu: 'Kangen rumah?'\n👤 Napi G: 'Banget. Anak gue udah SD sekarang.'`,
-    `💬 Kamu: 'Ada wifi ga?'\n👤 Napi H: 'Ada. Namanya: Tembok. Password: Sabar.'`,
-    `💬 Kamu: 'Lu nyesel?'\n👤 Napi I: 'Nyesel. Tapi udah terlanjur.'`,
-    `💬 Kamu: 'Gimana biar ga gila?'\n👤 Napi J: 'Ngobrol. Kayak gini.'`,
-    `💬 Kamu: 'Ada preman sini?'\n👤 Napi K: 'Ada. Tapi gue udah bayar pake mie.'`,
-    `💬 Kamu: 'Tidur nyenyak ga?'\n👤 Napi L: 'Nyenyak. Mimpi bebas tiap malem.'`,
-    `💬 Kamu: 'Kapan terakhir nengok?'\n👤 Napi M: 'Setahun lalu. Keluarga sibuk.'`,
-    `💬 Kamu: 'Kerja apa di sini?'\n👤 Napi N: 'Tukang cuci. 1 baju 2rb.'`,
-    `💬 Kamu: 'Takut ga?'\n👤 Napi O: 'Awal2 iya. Lama2 biasa.'`,
-    `💬 Kamu: 'Ada yg baik ga di sini?'\n👤 Napi P: 'Ada. Sipir yg ngasih rokok.'`,
-    `💬 Kamu: 'Rencana abis keluar?'\n👤 Napi Q: 'Buka warung. Halal.'`,
-    `💬 Kamu: 'Pernah dipukulin?'\n👤 Napi R: 'Pernah. Gara2 ngelawan.'`,
-    `💬 Kamu: 'Doain gue ya'\n👤 Napi S: 'Aamiin. Semoga kita cepet keluar.'`,
-    `💬 Kamu: 'Ini penjara atau hotel?'\n👤 Napi T: 'Hotel bintang 0. Fasilitas: jeruji.'`
+    `💬 Kamu: 'Gimana cara cepet keluar?'\n👤 Napi A: 'Tunggu aja bang, waktunya pasti lewat. Sabar.'`,
+    `💬 Kamu: 'Lu kasus apa?'\n👤 Napi B: 'Copet bang. Gue nyesel sekarang.'\n> Kamu: 'Semoga setelah keluar nggak diulang lagi.'`,
+    `💬 Kamu: 'Bosen ga?'\n👤 Napi C: 'Bosen lah. Makanya gue bikin permainan sendiri dari barang bekas.'`,
+    `💬 Kamu: 'Sipir galak ga?'\n👤 Napi D: 'Ada yang tegas, ada yang santai. Tergantung situasi.'`,
+    `💬 Kamu: 'Pernah kepikiran kabur?'\n👤 Napi E: 'Pernah kepikiran. Tapi konsekuensinya lebih panjang.'`,
+    `💬 Kamu: 'Makanan enak ga?'\n👤 Napi F: 'Lumayan kalau lagi lapar. Kalau dibanding masakan rumah, ya beda.'`,
+    `💬 Kamu: 'Kangen rumah?'\n👤 Napi G: 'Banget. Apalagi kalau ingat keluarga.'`,
+    `💬 Kamu: 'Ada wifi ga?'\n👤 Napi H: 'Nggak ada. Yang ada cuma koneksi sama sesama napi.'`,
+    `💬 Kamu: 'Lu nyesel?'\n👤 Napi I: 'Nyesel. Kalau bisa muter waktu, gue pasti mikir dua kali.'`,
+    `💬 Kamu: 'Gimana biar ga gila?'\n👤 Napi J: 'Ngobrol, olahraga, baca. Jangan diem terus.'`,
+    `💬 Kamu: 'Ada yang serem di sini?'\n👤 Napi K: 'Yang paling serem itu kalau waktu terasa nggak jalan.'`,
+    `💬 Kamu: 'Tidur nyenyak ga?'\n👤 Napi L: 'Kadang nyenyak, kadang kebangun karena suara dari luar.'`,
+    `💬 Kamu: 'Kapan terakhir dijenguk?'\n👤 Napi M: 'Sudah lama. Keluarga jauh dan susah datang.'`,
+    `💬 Kamu: 'Kerja apa di sini?'\n👤 Napi N: 'Bantu bersihin dan kadang kerja di dapur.'`,
+    `💬 Kamu: 'Takut ga?'\n👤 Napi O: 'Awal-awal iya. Lama-lama belajar beradaptasi.'`,
+    `💬 Kamu: 'Ada yang baik ga di sini?'\n👤 Napi P: 'Banyak. Cuma nggak semuanya gampang percaya sama orang baru.'`,
+    `💬 Kamu: 'Rencana abis keluar?'\n👤 Napi Q: 'Cari kerja dan mulai hidup dari awal.'`,
+    `💬 Kamu: 'Pernah berantem?'\n👤 Napi R: 'Pernah ribut kecil. Sekarang lebih pilih menghindar.'`,
+    `💬 Kamu: 'Doain gue ya.'\n👤 Napi S: 'Aamiin. Semoga urusan lu juga cepat selesai.'`,
+    `💬 Kamu: 'Ini penjara atau hotel?'\n👤 Napi T: 'Hotel bintang nol. Bedanya di sini checkout-nya nggak bisa sesuka hati.'`,
+    `💬 Kamu: 'Lu udah berapa lama di sini?'\n👤 Napi U: 'Lumayan lama. Sampai hafal suara langkah sipir.'`,
+    `💬 Kamu: 'Kalau malam biasanya ngapain?'\n👤 Napi V: 'Baca, ngobrol pelan, atau langsung tidur.'`,
+    `💬 Kamu: 'Ada yang bisa bikin ketawa di sini?'\n👤 Napi W: 'Ada. Tinggal denger cerita orang-orang di blok ini.'`,
+    `💬 Kamu: 'Lu masih sering kepikiran kejadian dulu?'\n👤 Napi X: 'Sering. Tapi sekarang lebih banyak mikirin apa yang harus gue lakukan setelah keluar.'`,
+    `💬 Kamu: 'Kalau dapat kesempatan belajar, mau?'\n👤 Napi Y: 'Mau banget. Biar waktu di sini nggak sia-sia.'`,
+    `💬 Kamu: 'Paling susah di sini apa?'\n👤 Napi Z: 'Nahan rindu sama orang rumah.'`,
+    `💬 Kamu: 'Lu punya teman dekat di sini?'\n👤 Napi A: 'Ada beberapa. Kalau susah, biasanya saling bantu.'`,
+    `💬 Kamu: 'Kalau lagi sedih biasanya ngapain?'\n👤 Napi B: 'Diam sebentar, terus cari teman buat ngobrol.'`,
+    `💬 Kamu: 'Pernah dapat kiriman dari rumah?'\n👤 Napi C: 'Sering. Makanan sederhana pun rasanya beda kalau dari rumah.'`,
+    `💬 Kamu: 'Apa yang paling lu kangenin?'\n👤 Napi D: 'Suasana pagi di rumah. Kedengarannya sepele, tapi gue kangen.'`,
+    `💬 Kamu: 'Di sini ada olahraga?'\n👤 Napi E: 'Ada. Biasanya lari, senam, atau olahraga ringan.'`,
+    `💬 Kamu: 'Lu masih punya cita-cita?'\n👤 Napi F: 'Masih. Penjara bukan berarti hidup berhenti selamanya.'`,
+    `💬 Kamu: 'Kalau dikasih satu makanan dari luar, mau apa?'\n👤 Napi G: 'Masakan ibu. Apa aja, yang penting buatan rumah.'`,
+    `💬 Kamu: 'Pernah nangis di sini?'\n👤 Napi H: 'Pernah. Nggak ada yang perlu malu soal itu.'`,
+    `💬 Kamu: 'Lu punya buku favorit?'\n👤 Napi I: 'Ada satu novel lama. Udah gue baca sampai beberapa kali.'`,
+    `💬 Kamu: 'Hal paling lucu yang pernah terjadi di sini apa?'\n👤 Napi J: 'Teman gue salah pakai sandal orang sampai setengah hari.'`,
+    `💬 Kamu: 'Kalau waktu bisa dipercepat, mau?'\n👤 Napi K: 'Siapa yang nggak mau? Tapi tetap harus dijalani.'`,
+    `💬 Kamu: 'Lu pernah bantu napi lain?'\n👤 Napi L: 'Pernah. Kadang hal kecil aja sudah cukup membantu.'`,
+    `💬 Kamu: 'Kalau ada yang baru masuk, biasanya gimana?'\n👤 Napi M: 'Dikasih tahu aturan dan dibantu adaptasi.'`,
+    `💬 Kamu: 'Apa yang paling berubah dari diri lu?'\n👤 Napi N: 'Gue jadi lebih menghargai waktu dan keluarga.'`,
+    `💬 Kamu: 'Kalau keluar nanti mau langsung pulang?'\n👤 Napi O: 'Pasti. Rumah adalah tempat pertama yang mau gue datangi.'`,
+    `💬 Kamu: 'Pernah dapat kabar baik dari luar?'\n👤 Napi P: 'Pernah. Kabar kecil aja bisa bikin satu hari terasa lebih ringan.'`,
+    `💬 Kamu: 'Kalau lagi marah gimana?'\n👤 Napi Q: 'Biasanya gue diam dulu daripada bikin masalah baru.'`,
+    `💬 Kamu: 'Ada yang ngajarin keterampilan di sini?'\n👤 Napi R: 'Ada. Gue pernah diajarin bikin kerajinan dari kayu.'`,
+    `💬 Kamu: 'Lu masih sering ketawa?'\n👤 Napi S: 'Masih dong. Kalau berhenti ketawa, hari-hari di sini makin berat.'`,
+    `💬 Kamu: 'Kalau dikasih kesempatan ngomong sama keluarga sekarang, mau bilang apa?'\n👤 Napi T: 'Gue baik-baik aja dan minta mereka jangan terlalu khawatir.'`,
+    `💬 Kamu: 'Apa yang paling bikin lu kuat?'\n👤 Napi U: 'Pikiran kalau suatu hari nanti gue bakal keluar dan mulai lagi.'`,
+    `💬 Kamu: 'Pernah merasa waktu nggak bergerak?'\n👤 Napi V: 'Sering. Tapi begitu ada kegiatan, tiba-tiba hari sudah malam.'`,
+    `💬 Kamu: 'Kalau bisa kasih nasihat ke diri lu yang dulu, apa?'\n👤 Napi W: 'Jangan ambil keputusan saat emosi.'`,
+    `💬 Kamu: 'Besok mau ngapain?'\n👤 Napi X: 'Sama seperti biasa. Bangun, makan, kerja, ngobrol, lalu tidur.'`,
+    `💬 Kamu: 'Lu masih berharap semuanya bisa diperbaiki?'\n👤 Napi Y: 'Masih. Selama masih hidup, selalu ada kesempatan buat berubah.'`
 ]
 
 const randomItem = (list) => list[Math.floor(Math.random() * list.length)]
@@ -142,6 +210,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     const getTarget = (raw) => { let jid = m.mentionedJid?.[0] || m.quoted?.sender; if (!jid && raw) { let num = String(raw).replace(/[^0-9]/g, ''); if (num.startsWith('08')) num = '62' + num.slice(1); if (num.length >= 8) jid = num + '@s.whatsapp.net' } return resolveJid(jid) }
     const kasus = (rpg) => rpg?.kasus || ((Number(rpg?.tebusan) || 0) === 1000000 ? '🤏 Copet' : (Number(rpg?.tebusan) || 0) === 2000000 ? '🏴‍☠️ Begal / 🔪 Bunuh' : (Number(rpg?.tebusan) || 0) === 4000000 ? '🕵️ Rampok' : '👑 Owner Jail')
     const sisaWaktu = (rpg) => { if (!rpg) return 0; return Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara || 0)) }
+    const sisaTungguTebus = (rpg) => Math.max(0, 10 * 60 * 1000 - (Date.now() - Number(rpg?.penjara || 0)))
     const formatSisa = (ms) => { ms = Math.max(0, ms); const jam = Math.floor(ms / 3600000); const menit = Math.floor((ms % 3600000) / 60000); return `${jam}j ${menit}m` }
     const isDiPenjara = (jid) => { jid = resolveJid(jid); return wdb.penjara.some(x => resolveJid(x) === jid) }
     const findPrisonerByCell = (value) => {
@@ -282,41 +351,64 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
     )
 }
 
-    /* =====================================================
-    PENJARA ROUTINE - CD 2 MENIT
-    ===================================================== */
+   if (command === 'penjara' && args[0]?.toLowerCase() === 'routine') {
+    if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
+    let last = Number(wdb.routineCooldown[m.sender]) || 0
+    let now = Date.now()
+    let CD = 2 * 60 * 1000
+    if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat routine lagi`)
 
-    if (command === 'penjara' && args[0]?.toLowerCase() === 'routine') {
-        if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
-        let last = Number(wdb.routineCooldown[m.sender]) || 0
-        let now = Date.now()
-        let CD = 2 * 60 * 1000
-        if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat routine lagi`)
-        wdb.routineCooldown[m.sender] = now
-        let stats = getStats(m.sender)
-        stats.routine = Number(stats.routine) + (stats.escaped ? 2 : 1)
-        saveDB(wdb)
-        let story = randomItem(storyRoutine)
-        return m.reply(`[ 📖 ]───[ *_ROUTINE PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 🏷️ Title: ${getPrisonTitle(stats)}\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
-    }
+    wdb.routineCooldown[m.sender] = now
+    let stats = getStats(m.sender)
+    stats.routine = Number(stats.routine) + (stats.escaped ? 2 : 1)
+    saveDB(wdb)
 
-    /* =====================================================
-       PENJARA TALK - CD 2 MENIT
-    ===================================================== */
+    let story = randomItem(storyRoutine)
 
-    if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
-        if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
-        let last = Number(wdb.talkCooldown[m.sender]) || 0
-        let now = Date.now()
-        let CD = 2 * 60 * 1000
-        if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat ngobrol lagi`)
-        wdb.talkCooldown[m.sender] = now
-        let stats = getStats(m.sender)
-        stats.talk = Number(stats.talk) + (stats.escaped ? 2 : 1)
-        saveDB(wdb)
-        let story = randomItem(storyTalk)
-        return m.reply(`[ 💬 ]───[ *_NGOBROL DI PENJARA_* ]───✦\n\n${story}\n\n╭──「 STAT 」─✦\n│ 🏷️ Title: ${getPrisonTitle(stats)}\n│ 𖥔 Routine: ${stats.routine}x\n│ 𖥔 Talk: ${stats.talk}x`)
-    }
+    return m.reply(
+`[ 📖 ]───[ *_ROUTINE PENJARA_* ]───✦
+
+> ${story}
+
+╭──「 STAT 」─✦
+│ 🏷️ Title: ${getPrisonTitle(stats)}
+│ 𖥔 Routine: ${stats.routine}x
+│ 𖥔 Talk: ${stats.talk}x
+╰─━━━━━━━━━━━━━━─`
+    )
+}
+
+
+/* =====================================================
+   PENJARA TALK - CD 2 MENIT
+   ===================================================== */
+
+if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
+    if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
+    let last = Number(wdb.talkCooldown[m.sender]) || 0
+    let now = Date.now()
+    let CD = 2 * 60 * 1000
+    if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat ngobrol lagi`)
+
+    wdb.talkCooldown[m.sender] = now
+    let stats = getStats(m.sender)
+    stats.talk = Number(stats.talk) + (stats.escaped ? 2 : 1)
+    saveDB(wdb)
+
+    let story = randomItem(storyTalk)
+
+    return m.reply(
+`[ 💬 ]───[ *_NGOBROL DI PENJARA_* ]───✦
+
+> ${story}
+
+╭──「 STAT 」─✦
+│ 🏷️ Title: ${getPrisonTitle(stats)}
+│ 𖥔 Routine: ${stats.routine}x
+│ 𖥔 Talk: ${stats.talk}x
+╰─━━━━━━━━━━━━━━─`
+    )
+}
 
     /* =====================================================
        KABUR DARI PENJARA -.penjara kabur
@@ -456,17 +548,25 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
     if (command === 'tebus') {
         if (args[0] === 'all') {
             if (wdb.penjara.length === 0) return m.reply('🏛️ Penjara kosong')
-            let total = 0; let targets = []
+            let total = 0; let targets = []; let waiting = []
             for (const jidRaw of wdb.penjara) {
                 const jid = resolveJid(jidRaw)
                 if (jid === resolveJid(m.sender)) continue
                 const rpg = getRPG(jid)
                 if (rpg && rpg.penjara && Number(rpg.tebusan) > 0) {
+                    const remaining = sisaTungguTebus(rpg)
+                    if (remaining > 0) {
+                        waiting.push(remaining)
+                        continue
+                    }
                     total += Number(rpg.tebusan)
                     targets.push({ jid, rpg })
                 }
             }
-            if (targets.length === 0) return m.reply('❌ Tidak ada orang lain di penjara')
+            if (targets.length === 0) {
+                if (waiting.length) return m.reply(`❌ Tahanan baru bisa ditebus setelah 10 menit di penjara.\n⏳ Coba lagi dalam *${formatTime(Math.min(...waiting))}*.`)
+                return m.reply('❌ Tidak ada orang lain di penjara')
+            }
             const uang = Number(wdb.money[m.sender]) || 0
             if (uang < total) return m.reply(`❌ Uang tidak cukup.\n\n💰 Uang kamu : Rp ${uang.toLocaleString('id-ID')}\n💸 Dibutuhkan : Rp ${total.toLocaleString('id-ID')}`)
             wdb.money[m.sender] = uang - total
@@ -481,7 +581,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
             }
             wdb.penjara = wdb.penjara.filter(jid =>!targets.some(target => resolveJid(target.jid) === resolveJid(jid)))
             saveDB(wdb)
-            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : Rp ${total.toLocaleString('id-ID')}\n│ 𖥔 Bebas : ${bebas.map(jid => `@${jid.split('@')[0]}`).join(', ')}\n╰ 𖥔 Berhasil`, m, { mentions: bebas })
+            const waitingInfo = waiting.length ? `\n│ 𖥔 ${waiting.length} tahanan belum 10 menit di penjara` : ''
+            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : Rp ${total.toLocaleString('id-ID')}\n│ 𖥔 Bebas : ${bebas.map(jid => `@${jid.split('@')[0]}`).join(', ')}${waitingInfo}\n╰ 𖥔 Berhasil`, m, { mentions: bebas })
         }
 
         let who = null
@@ -519,6 +620,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
             saveDB(wdb)
             return m.reply(`🚔 Masa tahanan @${who.split('@')[0]} sudah habis.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Target sudah bebas otomatis`, { mentions: [who] })
         }
+
+        const sisaTunggu = sisaTungguTebus(rpg)
+        if (sisaTunggu > 0) return m.reply(`[ 🚔 ]───[ *_BELUM BISA DITEBUS_* ]───✦\n╭ 𖥔 Tahanan baru bisa ditebus setelah 10 menit di penjara\n╰ 𖥔 Tunggu *${formatTime(sisaTunggu)}* lagi`)
 
         const tebusan = Number(rpg.tebusan) || 1000000
         const uang = Number(wdb.money[m.sender]) || 0
