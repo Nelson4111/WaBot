@@ -18,6 +18,7 @@ import {
   BANK_COMING_SOON_FACILITIES,
   canUseBankMoneyCommand,
   formatBankFacility,
+  resolveBankFnbTier,
   getBankTransactionCooldown,
   getBankTransactionCooldownRemaining
 } from '../plugins/rpg/rpg-bank.js'
@@ -108,6 +109,15 @@ test('bank F&B rewards are unique per card and each item is given once', () => {
       assert.equal(BANK_FNB_REWARDS[tier], undefined, `${card.name} should not have F&B rewards without the facility`)
     }
   }
+})
+
+test('F&B tier selection accepts numbers and card names up to the owned tier', () => {
+  assert.equal(resolveBankFnbTier(19, '6'), 6)
+  assert.equal(resolveBankFnbTier(19, 'Yellow Card'), 6)
+  assert.equal(resolveBankFnbTier(19, 'Yellow'), 6)
+  assert.equal(resolveBankFnbTier(5, '6'), null)
+  assert.equal(resolveBankFnbTier(19, 'unknown card'), null)
+  assert.equal(resolveBankFnbTier(19), 19)
 })
 
 test('CS service levels match the capabilities assigned to each card tier', () => {
