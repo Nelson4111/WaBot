@@ -54,7 +54,7 @@ let handler = async (m, { conn, args, command }) => {
           m.chat,
           sender,
           { extendedTextMessage: { text: summary } },
-          '🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
+          '> 🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
         )
       } catch {
         return conn.sendMessage(sender, { text: summary })
@@ -93,7 +93,7 @@ let handler = async (m, { conn, args, command }) => {
           m.chat,
           sender,
           { extendedTextMessage: { text, contextInfo: { mentionedJid: mentions } } },
-          '🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
+          '> 🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
         )
       } catch {
         return conn.sendMessage(sender, { text, mentions })

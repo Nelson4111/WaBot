@@ -198,11 +198,11 @@ let handler = async (m, { conn }) => {
           m.chat,
           sender,
           playerMessage,
-          '🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.'
+          '> 🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.'
         )
       } catch (error) {
         console.warn('[KARTU NIKAH PRIVAT ERROR]:', error?.message || error)
-        await conn.sendMessage(m.chat, { text: '🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.' }, { quoted: m }).catch(() => {})
+        await conn.sendMessage(m.chat, { text: '> 🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.' }, { quoted: m }).catch(() => {})
         return conn.sendFile(sender, buffer, 'kartu-nikah.png', caption, null, false, { mentions: [who, partnerJid] })
       }
     }
