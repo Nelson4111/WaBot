@@ -1,4 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
 
 /* =========================================================
    KONFIGURASI
@@ -103,11 +104,7 @@ function normalizePrisonList(wdb) {
         result.push(jid)
     }
     wdb.penjara = result
-    for (let i = 0; i < wdb.penjara.length; i++) {
-        let jid = wdb.penjara[i]
-        let rpg = getUserRPG(jid)
-        if (rpg) rpg.sel = i + 1
-    }
+    for (const jid of wdb.penjara) ensurePrisonCell(wdb, jid)
 }
 
 /* =========================================================
@@ -312,18 +309,14 @@ ${dendaText}
     if (!targetRPG) return m.reply('❌ Data RPG target tidak tersedia.')
 
     wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
-    wdb.penjara.push(who)
-    normalizePrisonList(wdb)
-
-    let index = wdb.penjara.findIndex(jid => resolveJid(jid) === who)
-    let sel = index + 1
-
     targetRPG.penjara = Date.now()
     targetRPG.lamaPenjara = durasiPenjara
     targetRPG.tebusan = tebusan
     targetRPG.kasus = '🤥 Fitnah'
-    targetRPG.sel = sel
+    targetRPG.sel = getRandomPrisonCell(wdb, who)
     targetRPG.gagalCopet = 0
+    wdb.penjara.push(who)
+    normalizePrisonList(wdb)
 
     saveDB(wdb)
 

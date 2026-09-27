@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
 
 /* =========================================================
    DIALOG VISIT 20x20
@@ -143,6 +144,13 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     const sisaWaktu = (rpg) => { if (!rpg) return 0; return Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara || 0)) }
     const formatSisa = (ms) => { ms = Math.max(0, ms); const jam = Math.floor(ms / 3600000); const menit = Math.floor((ms % 3600000) / 60000); return `${jam}j ${menit}m` }
     const isDiPenjara = (jid) => { jid = resolveJid(jid); return wdb.penjara.some(x => resolveJid(x) === jid) }
+    const findPrisonerByCell = (value) => {
+        const requested = String(value || '').toUpperCase()
+        const prisoner = wdb.penjara.find(jid => String(getRPG(resolveJid(jid))?.sel || '').toUpperCase() === requested)
+        if (prisoner) return resolveJid(prisoner)
+        if (/^\d+$/.test(requested)) return resolveJid(wdb.penjara[Number(requested) - 1])
+        return null
+    }
     const removeFromPrison = (jid) => {
         jid = resolveJid(jid)
         for (let i = wdb.penjara.length - 1; i >= 0; i--) {
@@ -206,11 +214,12 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         } else { valid.unshift(jid) }
     }
     wdb.penjara = valid
-    wdb.penjara.forEach((jid, i) => {
+    wdb.penjara.forEach((jid) => {
         let rpg = getRPG(jid)
-        if (rpg && rpg.sel !== i + 1) {
-            rpg.sel = i + 1
-            changed = true
+        if (rpg) {
+            const previousCell = rpg.sel
+            ensurePrisonCell(wdb, jid)
+            if (rpg.sel !== previousCell) changed = true
         }
     })
     if (changed) saveDB(wdb)
@@ -367,24 +376,26 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
         if (now - last < CD) return m.reply(`⏳ *COOLDOWN KUNJUNGAN*\n\nTunggu *${formatTime(CD - (now - last))}* lagi`)
         let who = null
         if (args[1]?.toLowerCase() === 'sel' && args[2]) {
-            const sel = parseInt(args[2]); if (isNaN(sel) || sel < 1) return m.reply('❌ Nomor sel tidak valid'); if (!wdb.penjara[sel - 1]) return m.reply(`❌ SEL ${sel} kosong`); who = resolveJid(wdb.penjara[sel - 1])
+            who = findPrisonerByCell(args[2]); if (!who) return m.reply(`❌ Sel ${args[2].toUpperCase()} kosong`)
+        } else if (/^[A-Z]+[1-9]$/i.test(args[1] || '')) {
+            who = findPrisonerByCell(args[1]); if (!who) return m.reply(`❌ Sel ${args[1].toUpperCase()} kosong`)
         } else if (args[1] && /^\d+$/.test(args[1])) {
-            const sel = parseInt(args[1]); if (isNaN(sel) || sel < 1) return m.reply('❌ Nomor sel tidak valid'); if (!wdb.penjara[sel - 1]) return m.reply(`❌ SEL ${sel} kosong`); who = resolveJid(wdb.penjara[sel - 1])
+            who = findPrisonerByCell(args[1]); if (!who) return m.reply(`❌ Sel ${args[1]} kosong`)
         } else { who = getTarget(args[1]); if (!who) return m.reply(`[ 🚔 ]───[ *_KUNJUNGAN PENJARA_* ]───✦\n\nFormat:\n${usedPrefix}penjara visit @tag\n${usedPrefix}penjara visit 2`) }
         if (who === resolveJid(m.sender)) return m.reply('❌ Kamu tidak bisa mengunjungi dirimu sendiri.')
         let index = wdb.penjara.findIndex(jid => resolveJid(jid) === who)
         if (index === -1) return m.reply('❌ Orang tersebut tidak di penjara.')
         const rpg = getRPG(who)
         if (!rpg ||!rpg.penjara) { wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply('❌ Data tahanan tidak valid.') }
-        if (sisaWaktu(rpg) <= 0) { const selLama = Number(rpg.sel) || index + 1; rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply(`🚔 @${who.split('@')[0]} sudah bebas.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Masa tahanan telah habis`, { mentions: [who] }) }
-            if (sisaWaktu(rpg) <= 0) { const selLama = Number(rpg.sel) || index + 1; rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply(`🚔 @${who.split('@')[0]} sudah bebas.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Masa tahanan telah habis`, { mentions: [who] }) }
+        if (sisaWaktu(rpg) <= 0) { const selLama = rpg.sel || index + 1; rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply(`🚔 @${who.split('@')[0]} sudah bebas.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Masa tahanan telah habis`, { mentions: [who] }) }
+            if (sisaWaktu(rpg) <= 0) { const selLama = rpg.sel || index + 1; rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb); return m.reply(`🚔 @${who.split('@')[0]} sudah bebas.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Masa tahanan telah habis`, { mentions: [who] }) }
         wdb.visitCooldown[m.sender] = now
         wdb.prisonVisits[who] = Array.isArray(wdb.prisonVisits[who]) ? wdb.prisonVisits[who] : []
         wdb.prisonVisits[who].push({ visitor: resolveJid(m.sender), at: now })
         if (wdb.prisonVisits[who].length > 50) wdb.prisonVisits[who].splice(0, wdb.prisonVisits[who].length - 50)
         saveDB(wdb)
         const sisa = sisaWaktu(rpg); const tebusan = Number(rpg.tebusan) || 0
-        let cap = `[ 🚔 ]───[ *_RUANG KUNJUNGAN_* ]───✦\n╭──[ SEL ${index + 1} ]──✦\n│ 𖥔 Nama : @${who.split('@')[0]}\n│ 𖥔 Sisa : ${formatSisa(sisa)}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰───────────\n\n*─── PERCAKAPAN ───*\n👤 Kamu : "${randomItem(dialogVisitPengunjung)}"\n🚓 Tahanan : "${randomItem(dialogVisitNapi)}"\n\n╭──「 *INFO* 」─✦\n│ 𖥔 CD Kunjung: 5 menit\n│ 𖥔 ${usedPrefix}penjara routine / talk / kabur`
+        let cap = `[ 🚔 ]───[ *_RUANG KUNJUNGAN_* ]───✦\n╭──[ SEL ${rpg.sel || index + 1} ]──✦\n│ 𖥔 Nama : @${who.split('@')[0]}\n│ 𖥔 Sisa : ${formatSisa(sisa)}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰───────────\n\n*─── PERCAKAPAN ───*\n👤 Kamu : "${randomItem(dialogVisitPengunjung)}"\n🚓 Tahanan : "${randomItem(dialogVisitNapi)}"\n\n╭──「 *INFO* 」─✦\n│ 𖥔 CD Kunjung: 5 menit\n│ 𖥔 ${usedPrefix}penjara routine / talk / kabur`
         return conn.reply(m.chat, cap, m, { mentions: [m.sender, who] })
     }
 
@@ -402,10 +413,10 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
         if (isNaN(tebusan) || tebusan < 0) tebusan = 1000000
         let user = getUser(who); if (!user) return m.reply('❌ Data user target tidak ditemukan'); if (!user.rpg) user.rpg = {}
         let rpg = user.rpg
-        if (rpg.penjara && sisaWaktu(rpg) > 0) return m.reply(`❌ Orang ini sudah di penjara.\n\n🚔 SEL : ${Number(rpg.sel) || 0}\n⏳ SISA : ${formatSisa(sisaWaktu(rpg))}`)
+        if (rpg.penjara && sisaWaktu(rpg) > 0) return m.reply(`❌ Orang ini sudah di penjara.\n\n🚔 SEL : ${rpg.sel || 0}\n⏳ SISA : ${formatSisa(sisaWaktu(rpg))}`)
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
         wdb.penjara.push(who)
-        rpg.penjara = Date.now(); rpg.lamaPenjara = menit * 60000; rpg.tebusan = tebusan; rpg.kasus = '👑 Owner Jail'; rpg.sel = wdb.penjara.length; rpg.gagalCopet = 0
+        rpg.penjara = Date.now(); rpg.lamaPenjara = menit * 60000; rpg.tebusan = tebusan; rpg.kasus = '👑 Owner Jail'; rpg.sel = getRandomPrisonCell(wdb, who); rpg.gagalCopet = 0
         saveDB(wdb)
         return conn.reply(m.chat, `[ 🚔 ]───[ *_OWNER JAIL_* ]───✦\n╭ 𖥔 Target : @${who.split('@')[0]}\n│ 𖥔 SEL : ${rpg.sel}\n│ 𖥔 Durasi : ${menit} menit\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰ 𖥔 Dipenjara oleh Owner`, m, { mentions: [who] })
     }
@@ -425,14 +436,14 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
             return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Bebas : ${names}\n╰ 𖥔 Oleh Owner`, m, { mentions: bebas })
         }
         let who = null
-        if (args[0] === 'sel' && args[1]) { const sel = parseInt(args[1]); if (isNaN(sel) || sel < 1) return m.reply('❌ Nomor sel tidak valid'); if (!wdb.penjara[sel - 1]) return m.reply(`❌ Sel ${sel} kosong`); who = resolveJid(wdb.penjara[sel - 1]) }
+        if (args[0] === 'sel' && args[1]) { who = findPrisonerByCell(args[1]); if (!who) return m.reply(`❌ Sel ${args[1].toUpperCase()} kosong`) }
         else if (m.quoted || m.mentionedJid?.[0]) { who = getTarget() }
         else if (args[0]) { who = getTarget(args[0]) }
         else { who = resolveJid(m.sender) }
         if (!who) return m.reply('❌ Target tidak ditemukan')
         const rpg = getRPG(who); const index = wdb.penjara.findIndex(jid => resolveJid(jid) === who)
         if ((!rpg ||!rpg.penjara) && index === -1) return m.reply('❌ Orang ini tidak di penjara')
-        const selLama = Number(rpg?.sel) || (index >= 0? index + 1 : 0)
+        const selLama = rpg?.sel || (index >= 0? index + 1 : 0)
         if (rpg) { rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0 }
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); saveDB(wdb)
         return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Owner : @${m.sender.split('@')[0]}\n│ 𖥔 Target : @${who.split('@')[0]}\n╰ 𖥔 Bebas dari SEL ${selLama}!`, m, { mentions: [m.sender, who] })
@@ -475,10 +486,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
 
         let who = null
         if (args[0] === 'sel' && args[1]) {
-            const sel = parseInt(args[1])
-            if (isNaN(sel) || sel < 1) return m.reply('❌ Nomor sel tidak valid')
-            if (!wdb.penjara[sel - 1]) return m.reply(`❌ Sel ${sel} kosong`)
-            who = resolveJid(wdb.penjara[sel - 1])
+            who = findPrisonerByCell(args[1])
+            if (!who) return m.reply(`❌ Sel ${args[1].toUpperCase()} kosong`)
         } else if (m.quoted || m.mentionedJid?.[0]) {
             who = getTarget()
         } else if (args[0]) {
@@ -499,7 +508,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
         }
 
         if (sisaWaktu(rpg) <= 0) {
-            const selLama = Number(rpg.sel) || 0
+            const selLama = rpg.sel || 0
             rpg.penjara = null
             rpg.lamaPenjara = 0
             rpg.tebusan = 0
@@ -516,7 +525,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
         if (uang < tebusan) return m.reply(`❌ Uang tidak cukup.\n\n💰 Uang kamu : Rp ${uang.toLocaleString('id-ID')}\n💸 Dibutuhkan : Rp ${tebusan.toLocaleString('id-ID')}`)
 
         wdb.money[m.sender] = uang - tebusan
-        const selLama = Number(rpg.sel) || 0
+        const selLama = rpg.sel || 0
         rpg.penjara = null
         rpg.lamaPenjara = 0
         rpg.tebusan = 0
@@ -548,11 +557,11 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
 
     `📌 *MENU PENJARA*\n` +
     `> ↳ Lihat blok sel: *${usedPrefix}penjara sel A*\n` +
-    `> ↳ Kunjungi napi: *${usedPrefix}penjara visit sel 1*\n` +
+    `> ↳ Kunjungi napi: *${usedPrefix}penjara visit sel A4*\n` +
     `> ↳ Routine: *${usedPrefix}penjara routine*\n` +
     `> ↳ Talk: *${usedPrefix}penjara talk*\n` +
     `> ↳ Kabur: *${usedPrefix}penjara kabur*\n` +
-    `> ↳ Tebus: *${usedPrefix}tebus sel 1*\n\n` +
+    `> ↳ Tebus: *${usedPrefix}tebus sel A4*\n\n` +
 
     `─━━━━━━━━━━━━━━─`,
     'https://c.termai.cc/i106/p1Vn.jpg')
@@ -564,14 +573,14 @@ if (!args[1]) {
   summary += `╰─━━━━━━━━━━━━━━─\n\n`
 
   summary += `📋 *INFORMASI*\n`
-  summary += `> ↳ Setiap blok berisi maksimal 10 sel.\n`
+    summary += `> ↳ Blok dikelompokkan berdasarkan huruf sel.\n`
   summary += `> ↳ Pilih blok untuk melihat isinya.\n\n`
 
   summary += `─━━━━━━━━━━━━━━─\n\n`
 
   for (let index = 0; index < 26; index++) {
     const letter = String.fromCharCode(65 + index)
-    const count = wdb.penjara.slice(index * 10, index * 10 + 10).length
+    const count = wdb.penjara.filter(jid => String(getRPG(jid)?.sel || '').startsWith(letter)).length
     summary += `*${letter}. BLOK SEL*\n`
     summary += `> ↳ Tahanan: ${count} orang\n\n`
   }
@@ -597,10 +606,8 @@ if (!/^[A-Z]$/.test(prisonPage)) {
   )
 }
 
-const pageIndex = prisonPage.charCodeAt(0) - 65
-const start = pageIndex * 10
-const entries = wdb.penjara.slice(start, start + 10)
-const totalPages = Math.max(1, Math.ceil(wdb.penjara.length / 10))
+const entries = wdb.penjara.filter(jid => String(getRPG(jid)?.sel || '').startsWith(prisonPage))
+const totalPages = Math.max(1, new Set(wdb.penjara.map(jid => String(getRPG(jid)?.sel || '')[0]).filter(Boolean)).size)
 
 if (entries.length === 0) {
   return m.reply(
@@ -618,7 +625,7 @@ pageText += `│ 🚔 *DAFTAR TAHANAN*\n`
 pageText += `╰─━━━━━━━━━━━━━━─\n\n`
 
 pageText += `📋 *INFORMASI SEL*\n`
-pageText += `> ↳ Maksimal 10 sel per daftar.\n\n`
+pageText += `> ↳ Setiap sel memiliki kode unik.\n\n`
 
 pageText += `─━━━━━━━━━━━━━━─\n\n`
 
@@ -628,23 +635,18 @@ entries.forEach((jid, offset) => {
   const rpg = getRPG(jid)
   if (!rpg) return
 
-  const cell = start + offset + 1
+    const cell = rpg.sel || `${prisonPage}${offset + 1}`
   const tebusan = Number(rpg.tebusan) || 0
 
   pageMentions.push(jid)
 
-  pageText += `*${cell}. 🧍 SEL ${cell} — @${jid.split('@')[0]}*\n`
+    pageText += `*🧍 SEL ${cell} — @${jid.split('@')[0]}*\n`
   pageText += `> ↳ ⏳ Sisa: ${formatSisa(sisaWaktu(rpg))}\n`
   pageText += `> ↳ 💸 Tebus: Rp ${tebusan.toLocaleString('id-ID')}\n`
   pageText += `> ↳ ⚖️ Kasus: ${kasus(rpg)}\n\n`
 })
 
 pageText += `─━━━━━━━━━━━━━━─\n\n`
-
-if (pageIndex + 1 < totalPages) {
-  pageText += `📌 *BLOK BERIKUTNYA*\n`
-  pageText += `> ↳ *${usedPrefix}penjara sel ${String.fromCharCode(66 + pageIndex)}*\n\n`
-}
 
 pageText += `─━━━━━━━━━━━━━━─`
 

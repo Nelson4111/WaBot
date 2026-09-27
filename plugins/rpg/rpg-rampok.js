@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS, calculateBankRobberyLoss, getBankEffectiveSecurity, getBankGuardName, getBankRobberySuccessChance } from './rpg-bank.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
+import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
 
 let handler = async (m, { conn }) => {
     const wdb = loadDB()
@@ -11,6 +12,9 @@ let handler = async (m, { conn }) => {
 
     // CEK PENJARA
     if (userRPG.penjara && Date.now() - userRPG.penjara < userRPG.lamaPenjara) {
+        const previousCell = userRPG.sel
+        ensurePrisonCell(wdb, m.sender)
+        if (userRPG.sel !== previousCell) saveDB(wdb)
         let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
         let jam = Math.floor(sisa / 3600000)
         let menit = Math.floor((sisa % 3600000) / 60000)
@@ -61,12 +65,11 @@ let handler = async (m, { conn }) => {
     // GAGAL = LANGSUNG PENJARA 4 JAM
     wdb.penjara = wdb.penjara || []
     if(!wdb.penjara.includes(m.sender)){
-      let sel = wdb.penjara.length + 1
       userRPG.penjara = Date.now()
       userRPG.lamaPenjara = 14400000 // 4 jam
       userRPG.tebusan = 4000000 // 4jt
       userRPG.kasus = '🕵️ Rampok'
-      userRPG.sel = sel
+            userRPG.sel = getRandomPrisonCell(wdb, m.sender)
       wdb.penjara.push(m.sender)
     }
 
