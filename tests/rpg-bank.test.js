@@ -10,6 +10,7 @@ import {
   exceedsBankLimit,
   formatBankLimit,
   getBankCsService,
+  getBankEffectiveSecurity,
   getBankGuardName,
   getBankRobberySuccessChance,
   BANK_CS_SERVICES,
@@ -150,4 +151,12 @@ test('unfinished bank facilities display a Coming Soon marker', () => {
   assert.ok(BANK_COMING_SOON_FACILITIES.has('Vault Pribadi'))
   assert.equal(formatBankFacility('Vault Pribadi'), 'Vault Pribadi (Coming Soon)')
   assert.equal(formatBankFacility('Digital Access'), 'Digital Access')
+})
+
+test('Crystal Fortress adds five effective security and lowers robbery chance', () => {
+  const tierWithoutFortress = { ...BANK_TIERS[15], fasilitas: BANK_TIERS[15].fasilitas.filter(facility => facility !== 'Benteng Kristal') }
+
+  assert.equal(getBankEffectiveSecurity(tierWithoutFortress), BANK_TIERS[15].keamanan)
+  assert.equal(getBankEffectiveSecurity(BANK_TIERS[15]), BANK_TIERS[15].keamanan + 5)
+  assert.ok(getBankRobberySuccessChance(BANK_TIERS[15]) < getBankRobberySuccessChance(tierWithoutFortress))
 })
