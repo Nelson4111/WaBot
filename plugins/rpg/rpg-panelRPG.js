@@ -293,9 +293,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     }
     wdb.lottery = wdb.lottery || {}
     wdb.lottery.basePrize = prize
-    wdb.lottery.pendingPrize = prize
     wdb.lottery.jackpot = prize
-    saveDB(wdb)
+    await saveDB(wdb)
     return m.reply(`✅ Hadiah dasar lottery diatur menjadi *Rp ${prize.toLocaleString()}*.`)
   }
 

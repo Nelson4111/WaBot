@@ -3,8 +3,11 @@ import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 const LOTTERY_TICKET_PRICE = 10000
 const LOTTERY_PRIZE = 500000
 const LOTTERY_LOW_ODDS = 0.001
+const LOTTERY_LUCKY_DATE_ODDS = 0.9
+const LOTTERY_LUCKY_DAYS = new Set([1, 5, 7, 12, 14, 15, 17, 19, 21, 23, 24, 25, 27, 29])
 const PURCHASE_CONFIRMATION_TTL = 5 * 60 * 1000
 const LOTTERY_IMAGE = 'https://c.termai.cc/i180/qPrLP.jpg'
+const DRAW_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 function todayKey() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -19,6 +22,22 @@ function todayKey() {
 
 function money(value) {
   return `Rp ${(Number(value) || 0).toLocaleString()}`
+}
+
+function totalTicketsAcrossUsers(users) {
+  return Object.values(users || {}).reduce((total, entry) => {
+    const user = entry?.rpg || entry
+    return total + Number(user?.lottery?.totalTickets || 0)
+  }, 0)
+}
+
+function makeDrawCode() {
+  return Array.from({ length: 9 }, () => DRAW_CODE_CHARS[Math.floor(Math.random() * DRAW_CODE_CHARS.length)]).join('')
+}
+
+function hasLuckyDate(date) {
+  const day = Number(String(date).slice(-2))
+  return LOTTERY_LUCKY_DAYS.has(day)
 }
 
 function getGiveawayState(chat) {
@@ -157,27 +176,33 @@ function ensureLotteryState(wdb) {
     lastWinner: null,
     lastWinnerDate: '',
     lastPrize: 0,
+    lastDrawCode: '',
+    pendingDrawCode: '',
     history: [],
     pendingPurchases: {},
-    totalTickets: null
+    totalTickets: 0
   }
 
-  wdb.lottery.basePrize = Number(wdb.lottery.basePrize || LOTTERY_PRIZE)
-  wdb.lottery.jackpot = Number(wdb.lottery.jackpot || wdb.lottery.pendingPrize || wdb.lottery.basePrize)
+  wdb.lottery.basePrize = Number(wdb.lottery.basePrize) > 0 ? Number(wdb.lottery.basePrize) : LOTTERY_PRIZE
+  wdb.lottery.jackpot = Number(wdb.lottery.jackpot) > 0 ? Number(wdb.lottery.jackpot) : Number(wdb.lottery.pendingPrize || wdb.lottery.basePrize)
   wdb.lottery.pendingPrize = Number(wdb.lottery.pendingPrize || 0)
   wdb.lottery.pool = wdb.lottery.pool || {}
   wdb.lottery.lastWinner ??= wdb.lottery.pendingWinner || null
   wdb.lottery.lastWinnerDate ||= wdb.lottery.pendingWinnerDate || ''
   wdb.lottery.lastPrize = Number(wdb.lottery.lastPrize || wdb.lottery.pendingPrize || 0)
+  wdb.lottery.lastDrawCode ||= wdb.lottery.pendingDrawCode || ''
+  wdb.lottery.pendingDrawCode ||= ''
   wdb.lottery.history = Array.isArray(wdb.lottery.history) ? wdb.lottery.history : []
   wdb.lottery.pendingPurchases = wdb.lottery.pendingPurchases || {}
-  if (wdb.lottery.totalTickets == null || !Number.isFinite(Number(wdb.lottery.totalTickets))) {
-    wdb.lottery.totalTickets = Object.values(wdb.users || {}).reduce((total, entry) => {
-      const user = entry?.rpg || entry
-      return total + Number(user?.lottery?.totalTickets || 0)
-    }, 0)
+  wdb.lottery.totalTickets = totalTicketsAcrossUsers(wdb.users)
+
+  for (const [jid, entry] of Object.entries(wdb.users || {})) {
+    const user = entry?.rpg || entry
+    const lottery = user?.lottery
+    if (lottery?.lastDate === wdb.lottery.dailyDate && Number(lottery.todayTickets) > Number(wdb.lottery.pool[jid] || 0)) {
+      wdb.lottery.pool[jid] = Number(lottery.todayTickets)
+    }
   }
-  wdb.lottery.totalTickets = Number(wdb.lottery.totalTickets || 0)
 
   if (!wdb.lottery.dailyDate) {
     wdb.lottery.dailyDate = todayKey()
@@ -197,7 +222,8 @@ function ensureLotteryState(wdb) {
     const players = Object.entries(previousPool).filter(([, count]) => Number(count) > 0)
     const guaranteedPlayers = players.filter(([, count]) => Number(count) * LOTTERY_TICKET_PRICE > currentPrize)
     const drawPool = guaranteedPlayers.length ? guaranteedPlayers : players
-    const hasWinner = guaranteedPlayers.length > 0 || (players.length > 0 && Math.random() < LOTTERY_LOW_ODDS)
+    const drawChance = Math.min(LOTTERY_LOW_ODDS, LOTTERY_LOW_ODDS * LOTTERY_PRIZE / Math.max(currentPrize, 1))
+    const hasWinner = guaranteedPlayers.length > 0 || (players.length > 0 && Math.random() < (hasLuckyDate(previousDate) ? LOTTERY_LUCKY_DATE_ODDS : drawChance))
 
     if (drawPool.length && hasWinner) {
       const totalTickets = drawPool.reduce((total, [, count]) => total + Number(count), 0)
@@ -217,7 +243,9 @@ function ensureLotteryState(wdb) {
       wdb.lottery.lastWinner = wdb.lottery.pendingWinner
       wdb.lottery.lastWinnerDate = previousDate
       wdb.lottery.lastPrize = currentPrize
-      wdb.lottery.history.unshift({ jid: winner, date: previousDate, prize: currentPrize })
+      wdb.lottery.pendingDrawCode = makeDrawCode()
+      wdb.lottery.lastDrawCode = wdb.lottery.pendingDrawCode
+      wdb.lottery.history.unshift({ jid: winner, date: previousDate, prize: currentPrize, drawCode: wdb.lottery.lastDrawCode })
     } else {
       wdb.lottery.pendingWinner = null
       wdb.lottery.pendingWinnerDate = previousDate
@@ -226,9 +254,11 @@ function ensureLotteryState(wdb) {
       wdb.lottery.lastWinner = null
       wdb.lottery.lastWinnerDate = previousDate
       wdb.lottery.lastPrize = 0
+      wdb.lottery.pendingDrawCode = ''
+      wdb.lottery.lastDrawCode = ''
     }
 
-    wdb.lottery.jackpot = drawPool.length
+    wdb.lottery.jackpot = hasWinner
       ? wdb.lottery.basePrize
       : currentPrize + (wdb.lottery.basePrize * elapsedDays)
     wdb.lottery.dailyDate = todayKey()
@@ -241,22 +271,8 @@ function ensureLotteryState(wdb) {
 function buildMenu(wdb, sender, usedPrefix) {
   const state = ensureLotteryState(wdb)
   const user = wdb.users?.[sender]
-
-  if (!user) {
-  return {
-    text: `╭─❏「 ❌ LOTTERY 」❏\n` +
-      `│ ❌ *Kamu belum memiliki data RPG.*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `📌 *CARA MEMULAI*\n` +
-      `> ↳ Mulai dengan *${usedPrefix}adventure*.\n\n` +
-      `─━━━━━━━━━━━━━━─`,
-    mentions: []
-  }
-}
-
-  initUserLottery(user)
-
-  const currentTickets = Number(user.rpg.lottery.todayTickets || 0)
+  if (user) initUserLottery(user)
+  const currentTickets = Number(user?.rpg?.lottery?.todayTickets || 0)
   const currentPrize = Number(state.jackpot || state.basePrize || LOTTERY_PRIZE)
 
   let cap = `╭─❏「 🎟️ LOTTERY 」❏\n`
@@ -282,7 +298,7 @@ if (state.pendingWinner) {
 
   cap += `🧾 *CARA*\n`
   cap += `> ↳ ${usedPrefix}lottery buy <jumlah>, lalu konfirmasi yes/no\n`
-  cap += `> ↳ ${usedPrefix}lottery stats | ${usedPrefix}lottery history\n`
+  cap += `> ↳ ${usedPrefix}lottery stats | ${usedPrefix}lottery history | ${usedPrefix}lottery guide\n`
   if (state.pendingWinner === sender) cap += `> ↳ ${usedPrefix}lottery claim\n`
   cap += `─━━━━━━━━━━━━━━─`
 
@@ -294,17 +310,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   const wdb = loadDB()
   const sender = m.sender
   const giveawayCommand = command === 'giveaway'
-
-if (!wdb.users?.[sender] && !giveawayCommand) {
-  return m.reply(
-    `╭─❏「 ❌ LOTTERY 」❏\n` +
-    `│ ❌ *Kamu belum memiliki data RPG.*\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `📌 *CARA MEMULAI*\n` +
-    `> ↳ Mulai dengan *${usedPrefix}adventure*.\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
-}
 
   const previousLotteryDate = wdb.lottery?.dailyDate
   const state = ensureLotteryState(wdb)
@@ -319,13 +324,41 @@ if (!wdb.users?.[sender] && !giveawayCommand) {
     return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, { mentions: menu.mentions })
   }
 
+  if (input === 'guide' || input === 'panduan') {
+    return m.reply(
+      `🎟️ *LOTTERY AVELIA*\n` +
+      `> ${usedPrefix}lottery - Menu lottery\n` +
+      `> ${usedPrefix}lottery buy <jumlah> - Siapkan pembelian tiket\n` +
+      `> ${usedPrefix}lottery buy yes/no - Konfirmasi atau batalkan pembelian\n` +
+      `> ${usedPrefix}lottery info - Pemenang dan kode undian terakhir\n` +
+      `> ${usedPrefix}lottery stats - Hadiah dan tiket terjual\n` +
+      `> ${usedPrefix}lottery history - Riwayat pemenang\n` +
+      `> ${usedPrefix}lottery claim - Klaim hadiah setelah menang\n` +
+      `Harga tiket: ${money(LOTTERY_TICKET_PRICE)} per tiket.`
+    )
+  }
+
+  if (input === 'command' || input === 'commands' || input === 'cmd') {
+    return m.reply(
+      `🎟️ *COMMAND LOTTERY*\n` +
+      `> ${usedPrefix}lottery - Menu lottery\n` +
+      `> ${usedPrefix}lottery guide - Panduan lottery\n` +
+      `> ${usedPrefix}lottery buy <jumlah> - Beli tiket\n` +
+      `> ${usedPrefix}lottery buy yes/no - Konfirmasi atau batalkan\n` +
+      `> ${usedPrefix}lottery info - Cek pemenang dan nomor undian\n` +
+      `> ${usedPrefix}lottery stats - Cek hadiah dan jumlah tiket\n` +
+      `> ${usedPrefix}lottery history - Riwayat pemenang\n` +
+      `> ${usedPrefix}lottery claim - Klaim hadiah`
+    )
+  }
+
   if (input === 'info') {
     if (!state.lastWinner) {
       return m.reply(`Belum ada yang beruntung di grup ini. Pemenang lottery akan ditentukan setelah pergantian hari.`)
     }
     return conn.reply(
       m.chat,
-      `🎉 Pemenang lottery tanggal ${state.lastWinnerDate}: @${state.lastWinner.split('@')[0]}\n💰 Hadiah: ${money(state.lastPrize)}${state.claimed ? '\n✅ Hadiah sudah diklaim.' : `\nKetik *${usedPrefix}lottery claim* untuk klaim hadiah.`}`,
+      `🎉 Pemenang lottery tanggal ${state.lastWinnerDate}: @${state.lastWinner.split('@')[0]}\n🎟️ Nomor undian: *${state.lastDrawCode || '---------'}*\n💰 Hadiah: ${money(state.lastPrize)}${state.claimed ? '\n✅ Hadiah sudah diklaim.' : `\nKetik *${usedPrefix}lottery claim* untuk klaim hadiah.`}`,
       m,
       { mentions: [state.lastWinner] }
     )
@@ -343,12 +376,13 @@ if (!wdb.users?.[sender] && !giveawayCommand) {
     if (!state.history.length) return m.reply('Belum ada riwayat pemenang lottery.')
     const mentions = [...new Set(state.history.map(item => item.jid))]
     const rows = state.history.map((item, index) =>
-      `${index + 1}. @${item.jid.split('@')[0]} - ${item.date} (${money(item.prize)})`
+      `${index + 1}. @${item.jid.split('@')[0]} - ${item.date} (${money(item.prize)})\n   Nomor undian: *${item.drawCode || '---------'}*`
     )
     return conn.reply(m.chat, `🏆 *RIWAYAT PEMENANG LOTTERY*\n${rows.join('\n')}`, m, { mentions })
   }
 
   if (input === 'buy' || input === 'beli') {
+    if (!user?.rpg) return m.reply(`Kamu belum memiliki data RPG. Mulai dulu dengan *${usedPrefix}adventure*.`)
     const confirmation = (args[1] || '').toLowerCase()
     const pendingPurchase = state.pendingPurchases[sender]
 
@@ -579,7 +613,7 @@ if (saldo < totalHarga) {
   return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, { mentions: menu.mentions })
 }
 
-handler.help = ['lottery', 'lottery info', 'lottery stats', 'lottery history', 'lottery buy <jumlah>', 'lottery buy yes/no', 'lottery claim', 'lottery giveaway']
+handler.help = ['lottery', 'lottery guide', 'lottery info', 'lottery stats', 'lottery history', 'lottery buy <jumlah>', 'lottery buy yes/no', 'lottery claim', 'lottery giveaway']
 handler.tags = ['rpg']
 handler.command = ['lottery', 'giveaway']
 handler.group = true
