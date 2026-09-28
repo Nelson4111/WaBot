@@ -874,7 +874,8 @@ async function processMessage(m, chatUpdate) {
                             for (const jid of reportTargets) {
                                 try {
                                     const data = (await conn.onWhatsApp(jid.split('@')[0]))[0] || {}
-                                    if (data.exists) m.reply(errorReport, data.jid).catch(() => {})
+                                    const reportJid = typeof data.jid === 'string' ? data.jid : jid
+                                    if (data.exists) m.reply(errorReport, reportJid).catch(() => {})
                                 } catch {}
                             }
                         }
