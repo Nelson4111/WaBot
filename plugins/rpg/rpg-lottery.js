@@ -199,7 +199,7 @@ function ensureLotteryState(wdb) {
   for (const [jid, entry] of Object.entries(wdb.users || {})) {
     const user = entry?.rpg || entry
     const lottery = user?.lottery
-    if (lottery?.lastDate === wdb.lottery.dailyDate && Number(lottery.todayTickets) > Number(wdb.lottery.pool[jid] || 0)) {
+    if (lottery && lottery.lastDate === wdb.lottery.dailyDate && Number(lottery.todayTickets) > Number(wdb.lottery.pool[jid] || 0)) {
       wdb.lottery.pool[jid] = Number(lottery.todayTickets)
     }
   }
