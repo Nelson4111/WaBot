@@ -277,6 +277,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Melihat status pasangan.\n`
   cap += `> *${usedPrefix}rship detail <no>*\n`
   cap += `> ↳ Melihat detail pasangan.\n`
+  cap += `> *${usedPrefix}rship rename <no> <nama baru>*\n`
+  cap += `> ↳ Ganti nama pasangan dengan konfirmasi.\n`
   cap += `> *${usedPrefix}rship fitur*\n`
   cap += `> ↳ Melihat fitur yang terbuka berdasarkan level.\n`
   cap += `> *${usedPrefix}rship anak list*\n`
@@ -359,6 +361,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `─━━━━━━━━━━━━━━─\n`
 
   cap += `💔 *LAINNYA*\n`
+  cap += `> *${usedPrefix}rship rename yes/konfirmasi/no/batal*\n`
+  cap += `> ↳ Konfirmasi atau batalkan perubahan nama.\n`
   cap += `> *${usedPrefix}rship title <no> ya/tidak*\n`
   cap += `> ↳ Mengatur title pasangan.\n`
   cap += `> *${usedPrefix}rship putus <no>*\n`
@@ -410,6 +414,60 @@ if (!action) {
     user.harem.push({ name: nama, gender: gender, love: 50, exp: 0, level: 1, menikah: false, cincin: null })
     saveDB(wdb)
     return m.reply(`╭─❏「 💕 JADIAN! 」❏\n\n${getGenderEmoji(gender)} *${nama}* jadi pasanganmu!\n📊 Lv.1 ${getTitle(1)}\n╰─━━━━━━━━━━━━━━─`)
+  }
+
+  // === RENAME PASANGAN ===
+  if (action === 'rename') {
+    const confirmAction = args[1]?.toLowerCase()
+    const pendingRename = user.pendingRshipRename
+
+    if (['yes', 'konfirmasi'].includes(confirmAction)) {
+      if (!pendingRename) return m.reply(`╭─❏「 ❌ TIDAK ADA KONFIRMASI 」❏\n│ Tidak ada perubahan nama yang menunggu konfirmasi.\n╰─━━━━━━━━━━━━━━─`)
+
+      const partner = user.harem[pendingRename.index]
+      if (!partner || partner.name !== pendingRename.oldName) {
+        delete user.pendingRshipRename
+        saveDB(wdb)
+        return m.reply(`╭─❏「 ❌ PASANGAN TIDAK DITEMUKAN 」❏\n│ Data pasangan berubah. Ajukan rename kembali.\n╰─━━━━━━━━━━━━━━─`)
+      }
+
+      const oldName = partner.name
+      partner.name = pendingRename.newName
+      user.kids.forEach(child => {
+        if (child.ortu === oldName) child.ortu = pendingRename.newName
+      })
+      delete user.pendingRshipRename
+      saveDB(wdb)
+      return m.reply(`╭─❏「 🏷️ NAMA PASANGAN DIUBAH 」❏\n│ ${oldName} menjadi *${partner.name}*\n╰─━━━━━━━━━━━━━━─`)
+    }
+
+    if (['no', 'batal'].includes(confirmAction)) {
+      if (!pendingRename) return m.reply(`╭─❏「 ❌ TIDAK ADA KONFIRMASI 」❏\n│ Tidak ada perubahan nama yang menunggu konfirmasi.\n╰─━━━━━━━━━━━━━━─`)
+      delete user.pendingRshipRename
+      saveDB(wdb)
+      return m.reply(`╭─❏「 ❌ RENAME DIBATALKAN 」❏\n│ Perubahan nama pasangan dibatalkan.\n╰─━━━━━━━━━━━━━━─`)
+    }
+
+    if (pendingRename) return m.reply(`╭─❏「 ⚠️ RENAME MENUNGGU 」❏\n│ Selesaikan permintaan sebelumnya dengan:\n> ${usedPrefix}rship rename yes\n> ${usedPrefix}rship rename batal\n╰─━━━━━━━━━━━━━━─`)
+
+    const partnerNumber = Number(args[1])
+    const newName = args.slice(2).join(' ').trim()
+    if (!Number.isInteger(partnerNumber) || partnerNumber < 1 || !newName) {
+      return m.reply(`╭─❏「 ❌ FORMAT SALAH 」❏\n│ Contoh: ${usedPrefix}rship rename 1 Nama Baru\n╰─━━━━━━━━━━━━━━─`)
+    }
+
+    const partner = user.harem[partnerNumber - 1]
+    if (!partner) return m.reply(`╭─❏「 ❌ PASANGAN TIDAK DITEMUKAN 」❏\n│ Nomor pasangan tidak ada di daftar harem.\n╰─━━━━━━━━━━━━━━─`)
+    if (newName.length > 30) return m.reply(`╭─❏「 ❌ NAMA TERLALU PANJANG 」❏\n│ Nama pasangan maksimal 30 karakter.\n╰─━━━━━━━━━━━━━━─`)
+    if (partner.name === newName) return m.reply(`Nama pasangan itu sudah *${newName}*.`)
+
+    user.pendingRshipRename = {
+      index: partnerNumber - 1,
+      oldName: partner.name,
+      newName
+    }
+    saveDB(wdb)
+    return m.reply(`╭─❏「 ⚠️ KONFIRMASI RENAME 」❏\n│ Pasangan: *${partner.name}*\n│ Nama baru: *${newName}*\n╰─━━━━━━━━━━━━━━─\n\nBalas *${usedPrefix}rship rename yes* atau *${usedPrefix}rship rename konfirmasi* untuk melanjutkan.\nGunakan *${usedPrefix}rship rename no* atau *${usedPrefix}rship rename batal* untuk membatalkan.`)
   }
 
   // === HAREM ===
