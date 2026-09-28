@@ -1,7 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
-import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
+import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -58,14 +58,11 @@ let handler = async (m, { conn }) => {
     // GAGAL = MATI + PENJARA 2 JAM
     userRPG.darah = 0
     wdb.penjara = wdb.penjara || []
-    if(!wdb.penjara.includes(m.sender)){
-      userRPG.penjara = Date.now()
-      userRPG.lamaPenjara = 7200000 // 2 jam
-      userRPG.tebusan = 2000000 // 2jt
-      userRPG.kasus = '🏴‍☠️ Begal'
-      userRPG.sel = getRandomPrisonCell(wdb, m.sender)
-      wdb.penjara.push(m.sender)
-    }
+    userRPG.penjara = Date.now()
+    userRPG.lamaPenjara = 7200000 // 2 jam
+    userRPG.tebusan = 2000000 // 2jt
+    userRPG.kasus = '🏴‍☠️ Begal'
+    userRPG.sel = registerPrisoner(wdb, m.sender)
 
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
     userRPG.riwayat.unshift(`💀 Mati saat begal @${who.split('@')[0]}`)

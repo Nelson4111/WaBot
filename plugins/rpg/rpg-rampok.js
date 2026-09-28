@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS, calculateBankRobberyLoss, getBankEffectiveSecurity, getBankGuardName, getBankRobberySuccessChance } from './rpg-bank.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
-import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
+import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 
 let handler = async (m, { conn }) => {
     const wdb = loadDB()
@@ -64,14 +64,11 @@ let handler = async (m, { conn }) => {
     if (roll >= peluang) {
     // GAGAL = LANGSUNG PENJARA 4 JAM
     wdb.penjara = wdb.penjara || []
-    if(!wdb.penjara.includes(m.sender)){
-      userRPG.penjara = Date.now()
-      userRPG.lamaPenjara = 14400000 // 4 jam
-      userRPG.tebusan = 4000000 // 4jt
-      userRPG.kasus = '🕵️ Rampok'
-            userRPG.sel = getRandomPrisonCell(wdb, m.sender)
-      wdb.penjara.push(m.sender)
-    }
+        userRPG.penjara = Date.now()
+        userRPG.lamaPenjara = 14400000 // 4 jam
+        userRPG.tebusan = 4000000 // 4jt
+        userRPG.kasus = '🕵️ Rampok'
+        userRPG.sel = registerPrisoner(wdb, m.sender)
 
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
     userRPG.riwayat.unshift(`🚔 Ditangkap saat rampok @${who.split('@')[0]}`)

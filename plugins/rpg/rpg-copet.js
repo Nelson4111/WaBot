@@ -1,7 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
-import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
+import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -70,15 +70,12 @@ let handler = async (m, { conn }) => {
     // GAGAL 2X = PENJARA 1 JAM
     if (userRPG.gagalCopet >= 2) {
       wdb.penjara = wdb.penjara || []
-      if(!wdb.penjara.includes(m.sender)){
-        userRPG.penjara = Date.now()
-        userRPG.lamaPenjara = 3600000 // 1 jam
-        userRPG.tebusan = 1000000 // 1jt
-        userRPG.kasus = '🤏 Copet'
-        userRPG.sel = getRandomPrisonCell(wdb, m.sender)
-        userRPG.gagalCopet = 0
-        wdb.penjara.push(m.sender)
-      }
+      userRPG.penjara = Date.now()
+      userRPG.lamaPenjara = 3600000 // 1 jam
+      userRPG.tebusan = 1000000 // 1jt
+      userRPG.kasus = '🤏 Copet'
+      userRPG.sel = registerPrisoner(wdb, m.sender)
+      userRPG.gagalCopet = 0
       saveDB(wdb)
       return m.reply(`🚔 *KETANGKEP POLISI!*\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus*`)
     }
