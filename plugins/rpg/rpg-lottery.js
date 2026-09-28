@@ -1,8 +1,9 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
-const LOTTERY_TICKET_PRICE = 1000
-const MIN_TICKETS_TO_WIN = 1000
+const LOTTERY_TICKET_PRICE = 10000
 const LOTTERY_PRIZE = 500000
+const LOTTERY_LOW_ODDS = 0.001
+const PURCHASE_CONFIRMATION_TTL = 5 * 60 * 1000
 const LOTTERY_IMAGE = 'https://c.termai.cc/i180/qPrLP.jpg'
 
 function todayKey() {
@@ -155,7 +156,10 @@ function ensureLotteryState(wdb) {
     claimed: false,
     lastWinner: null,
     lastWinnerDate: '',
-    lastPrize: 0
+    lastPrize: 0,
+    history: [],
+    pendingPurchases: {},
+    totalTickets: null
   }
 
   wdb.lottery.basePrize = Number(wdb.lottery.basePrize || LOTTERY_PRIZE)
@@ -165,6 +169,15 @@ function ensureLotteryState(wdb) {
   wdb.lottery.lastWinner ??= wdb.lottery.pendingWinner || null
   wdb.lottery.lastWinnerDate ||= wdb.lottery.pendingWinnerDate || ''
   wdb.lottery.lastPrize = Number(wdb.lottery.lastPrize || wdb.lottery.pendingPrize || 0)
+  wdb.lottery.history = Array.isArray(wdb.lottery.history) ? wdb.lottery.history : []
+  wdb.lottery.pendingPurchases = wdb.lottery.pendingPurchases || {}
+  if (wdb.lottery.totalTickets == null || !Number.isFinite(Number(wdb.lottery.totalTickets))) {
+    wdb.lottery.totalTickets = Object.values(wdb.users || {}).reduce((total, entry) => {
+      const user = entry?.rpg || entry
+      return total + Number(user?.lottery?.totalTickets || 0)
+    }, 0)
+  }
+  wdb.lottery.totalTickets = Number(wdb.lottery.totalTickets || 0)
 
   if (!wdb.lottery.dailyDate) {
     wdb.lottery.dailyDate = todayKey()
@@ -180,19 +193,31 @@ function ensureLotteryState(wdb) {
     const elapsedDays = Number.isFinite(previousDay)
       ? Math.max(1, Math.floor((currentDay - previousDay) / 86400000))
       : 1
-    const eligiblePlayers = Object.entries(previousPool)
-      .filter(([, count]) => Number(count) >= MIN_TICKETS_TO_WIN)
-
     const currentPrize = Number(wdb.lottery.jackpot || wdb.lottery.basePrize)
+    const players = Object.entries(previousPool).filter(([, count]) => Number(count) > 0)
+    const guaranteedPlayers = players.filter(([, count]) => Number(count) * LOTTERY_TICKET_PRICE > currentPrize)
+    const drawPool = guaranteedPlayers.length ? guaranteedPlayers : players
+    const hasWinner = guaranteedPlayers.length > 0 || (players.length > 0 && Math.random() < LOTTERY_LOW_ODDS)
 
-    if (eligiblePlayers.length) {
-      wdb.lottery.pendingWinner = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)][0]
+    if (drawPool.length && hasWinner) {
+      const totalTickets = drawPool.reduce((total, [, count]) => total + Number(count), 0)
+      let winningTicket = Math.floor(Math.random() * totalTickets)
+      let winner = drawPool[0][0]
+      for (const [jid, count] of drawPool) {
+        winningTicket -= Number(count)
+        if (winningTicket < 0) {
+          winner = jid
+          break
+        }
+      }
+      wdb.lottery.pendingWinner = winner
       wdb.lottery.pendingWinnerDate = previousDate
       wdb.lottery.pendingPrize = currentPrize
       wdb.lottery.claimed = false
       wdb.lottery.lastWinner = wdb.lottery.pendingWinner
       wdb.lottery.lastWinnerDate = previousDate
       wdb.lottery.lastPrize = currentPrize
+      wdb.lottery.history.unshift({ jid: winner, date: previousDate, prize: currentPrize })
     } else {
       wdb.lottery.pendingWinner = null
       wdb.lottery.pendingWinnerDate = previousDate
@@ -203,7 +228,9 @@ function ensureLotteryState(wdb) {
       wdb.lottery.lastPrize = 0
     }
 
-    wdb.lottery.jackpot = currentPrize + (wdb.lottery.basePrize * elapsedDays)
+    wdb.lottery.jackpot = drawPool.length
+      ? wdb.lottery.basePrize
+      : currentPrize + (wdb.lottery.basePrize * elapsedDays)
     wdb.lottery.dailyDate = todayKey()
     wdb.lottery.pool = {}
   }
@@ -251,9 +278,11 @@ if (state.pendingWinner) {
 
   cap += `📊 *STATUS*\n`
   cap += `> ↳ Tiket hari ini: ${currentTickets.toLocaleString()}\n`
+  cap += `> ↳ Harga tiket: ${money(LOTTERY_TICKET_PRICE)}\n`
 
   cap += `🧾 *CARA*\n`
-  cap += `> ↳ ${usedPrefix}lottery buy <jumlah>\n`
+  cap += `> ↳ ${usedPrefix}lottery buy <jumlah>, lalu konfirmasi yes/no\n`
+  cap += `> ↳ ${usedPrefix}lottery stats | ${usedPrefix}lottery history\n`
   if (state.pendingWinner === sender) cap += `> ↳ ${usedPrefix}lottery claim\n`
   cap += `─━━━━━━━━━━━━━━─`
 
@@ -306,11 +335,56 @@ if (!wdb.users?.[sender] && !giveawayCommand) {
     const ticketsSold = Object.values(state.pool).reduce((total, count) => total + Number(count || 0), 0)
     const prize = Number(state.jackpot || state.basePrize || LOTTERY_PRIZE)
     return m.reply(
-      `📊 *LOTTERY HARI INI*\n> Hadiah: ${money(prize)}\n> Total tiket terjual: ${ticketsSold.toLocaleString()} tiket`
+      `📊 *LOTTERY STATS*\n> Hadiah: ${money(prize)}\n> Tiket terjual hari ini: ${ticketsSold.toLocaleString()} tiket\n> Total tiket terjual: ${state.totalTickets.toLocaleString()} tiket`
     )
   }
 
+  if (['history', 'riwayat'].includes(input)) {
+    if (!state.history.length) return m.reply('Belum ada riwayat pemenang lottery.')
+    const mentions = [...new Set(state.history.map(item => item.jid))]
+    const rows = state.history.map((item, index) =>
+      `${index + 1}. @${item.jid.split('@')[0]} - ${item.date} (${money(item.prize)})`
+    )
+    return conn.reply(m.chat, `🏆 *RIWAYAT PEMENANG LOTTERY*\n${rows.join('\n')}`, m, { mentions })
+  }
+
   if (input === 'buy' || input === 'beli') {
+    const confirmation = (args[1] || '').toLowerCase()
+    const pendingPurchase = state.pendingPurchases[sender]
+
+    if (['yes', 'ya', 'iya'].includes(confirmation)) {
+      if (!pendingPurchase || pendingPurchase.expiresAt < Date.now()) {
+        delete state.pendingPurchases[sender]
+        await saveDB(wdb)
+        return m.reply(`Tidak ada pembelian yang menunggu konfirmasi. Buat pembelian baru lewat *${usedPrefix}lottery buy <jumlah>*.`)
+      }
+
+      const saldoSaatIni = Number(wdb.money?.[sender] || 0)
+      if (saldoSaatIni < pendingPurchase.totalHarga) {
+        delete state.pendingPurchases[sender]
+        await saveDB(wdb)
+        return m.reply(`Saldo tidak cukup untuk konfirmasi. Pembelian dibatalkan.`)
+      }
+
+      wdb.money[sender] = saldoSaatIni - pendingPurchase.totalHarga
+      state.pool[sender] = (Number(state.pool[sender]) || 0) + pendingPurchase.jumlah
+      user.rpg.lottery.todayTickets = Number(user.rpg.lottery.todayTickets || 0) + pendingPurchase.jumlah
+      user.rpg.lottery.totalAttempts = Number(user.rpg.lottery.totalAttempts || 0) + 1
+      user.rpg.lottery.totalTickets = Number(user.rpg.lottery.totalTickets || 0) + pendingPurchase.jumlah
+      user.rpg.lottery.lastDate = todayKey()
+      state.totalTickets += pendingPurchase.jumlah
+      delete state.pendingPurchases[sender]
+      await saveDB(wdb)
+      return m.reply(`✅ Pembelian dikonfirmasi: *${pendingPurchase.jumlah.toLocaleString()} tiket*.\n💸 -${money(pendingPurchase.totalHarga)}\n📦 Tiket hari ini: ${user.rpg.lottery.todayTickets.toLocaleString()}`)
+    }
+
+    if (['no', 'tidak', 'batal'].includes(confirmation)) {
+      if (!pendingPurchase) return m.reply('Tidak ada pembelian lottery yang menunggu konfirmasi.')
+      delete state.pendingPurchases[sender]
+      await saveDB(wdb)
+      return m.reply('Pembelian lottery dibatalkan, saldo tidak berubah.')
+    }
+
     const jumlah = Number(args[1] || 0)
 
    if (!Number.isInteger(jumlah) || jumlah <= 0) {
@@ -319,7 +393,7 @@ if (!wdb.users?.[sender] && !giveawayCommand) {
     `│ ❌ *Format salah.*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📌 *CONTOH*\n` +
-    `> ↳ *${usedPrefix}lottery buy 1000*\n\n` +
+    `> ↳ *${usedPrefix}lottery buy 10*\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -339,22 +413,17 @@ if (saldo < totalHarga) {
   )
 }
 
-    wdb.money[sender] = saldo - totalHarga
-    state.pool[sender] = (state.pool[sender] || 0) + jumlah
-
-    user.rpg.lottery.todayTickets = Number(user.rpg.lottery.todayTickets || 0) + jumlah
-    user.rpg.lottery.totalAttempts = Number(user.rpg.lottery.totalAttempts || 0) + 1
-    user.rpg.lottery.totalTickets = Number(user.rpg.lottery.totalTickets || 0) + jumlah
-    user.rpg.lottery.lastDate = todayKey()
-
-    saveDB(wdb)
-
+    state.pendingPurchases[sender] = {
+      jumlah,
+      totalHarga,
+      expiresAt: Date.now() + PURCHASE_CONFIRMATION_TTL
+    }
+    await saveDB(wdb)
     return m.reply(
-      `╭─❏「 ✅ LOTTERY 」❏\n` +
-      `│ Berhasil beli *${jumlah.toLocaleString()} tiket* lottery.\n` +
-      `│ 💸 -${money(totalHarga)}\n` +
-      `│ 📦 Tiket hari ini: ${user.rpg.lottery.todayTickets.toLocaleString()}\n` +
-      `╰─━━━━━━━━━━━━━━─`
+      `🎟️ Pembelian *${jumlah.toLocaleString()} tiket*\n` +
+      `> Harga per tiket: ${money(LOTTERY_TICKET_PRICE)}\n` +
+      `> Total: ${money(totalHarga)}\n> Saldo: ${money(saldo)}\n\n` +
+      `Konfirmasi dengan *${usedPrefix}lottery buy yes* atau batalkan dengan *${usedPrefix}lottery buy no*. Konfirmasi berlaku 5 menit.`
     )
   }
 
@@ -510,7 +579,7 @@ if (saldo < totalHarga) {
   return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, { mentions: menu.mentions })
 }
 
-handler.help = ['lottery', 'lottery info', 'lottery stats', 'lottery buy <jumlah>', 'lottery claim', 'lottery giveaway']
+handler.help = ['lottery', 'lottery info', 'lottery stats', 'lottery history', 'lottery buy <jumlah>', 'lottery buy yes/no', 'lottery claim', 'lottery giveaway']
 handler.tags = ['rpg']
 handler.command = ['lottery', 'giveaway']
 handler.group = true
