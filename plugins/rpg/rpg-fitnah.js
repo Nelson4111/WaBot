@@ -331,7 +331,7 @@ ${story.sukses}
 🚔 *HASIL*
 > 👤 Pelaku: @${sender.split('@')[0]}
 > 🎯 Korban: @${who.split('@')[0]}
-> 🔒 Sel: ${sel}
+> 🔒 Sel: ${targetRPG.sel}
 > ⏰ Durasi: ${durasiPenjara / 3600000} jam
 > 💸 Pengeluaran: Rp ${formatMoney(uangTaruhan)}
 > 💰 Tebusan: Rp ${formatMoney(tebusan)}

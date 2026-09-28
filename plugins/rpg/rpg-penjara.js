@@ -395,7 +395,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     stats.talk = Number(stats.talk) + (stats.escaped ? 2 : 1)
     saveDB(wdb)
 
-    let story = randomItem(storyTalk)
+    let story = randomItem(storyTalk).replace(/\n/g, '\n> ')
 
     return m.reply(
 `[ 💬 ]───[ *_NGOBROL DI PENJARA_* ]───✦
@@ -487,7 +487,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (wdb.prisonVisits[who].length > 50) wdb.prisonVisits[who].splice(0, wdb.prisonVisits[who].length - 50)
         saveDB(wdb)
         const sisa = sisaWaktu(rpg); const tebusan = Number(rpg.tebusan) || 0
-        let cap = `[ 🚔 ]───[ *_RUANG KUNJUNGAN_* ]───✦\n╭──[ SEL ${rpg.sel || index + 1} ]──✦\n│ 𖥔 Nama : @${who.split('@')[0]}\n│ 𖥔 Sisa : ${formatSisa(sisa)}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰───────────\n\n*─── PERCAKAPAN ───*\n👤 Kamu : "${randomItem(dialogVisitPengunjung)}"\n🚓 Tahanan : "${randomItem(dialogVisitNapi)}"\n\n╭──「 *INFO* 」─✦\n│ 𖥔 CD Kunjung: 5 menit\n│ 𖥔 ${usedPrefix}penjara routine / talk / kabur`
+        let cap = `[ 🚔 ]───[ *_RUANG KUNJUNGAN_* ]───✦\n╭──[ SEL ${rpg.sel || index + 1} ]──✦\n│ 𖥔 Nama : @${who.split('@')[0]}\n│ 𖥔 Sisa : ${formatSisa(sisa)}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰───────────\n\n*─── PERCAKAPAN ───*\n> 👤 Kamu : "${randomItem(dialogVisitPengunjung)}"\n> 🚓 Tahanan : "${randomItem(dialogVisitNapi)}"\n\n╭──「 *INFO* 」─✦\n│ 𖥔 CD Kunjung: 5 menit\n│ 𖥔 ${usedPrefix}penjara routine / talk / kabur`
         return conn.reply(m.chat, cap, m, { mentions: [m.sender, who] })
     }
 
@@ -645,6 +645,31 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
        PENJARA - PENJELASAN DAN DAFTAR SEL
     ===================================================== */
 
+    if (command === 'penjara' && ['list', 'active'].includes(args[0]?.toLowerCase())) {
+        const activePrisoners = wdb.penjara
+            .map(jid => resolveJid(jid))
+            .filter((jid, index, list) => jid && list.indexOf(jid) === index)
+            .map(jid => ({ jid, rpg: getRPG(jid) }))
+            .filter(({ rpg }) => rpg?.penjara && sisaWaktu(rpg) > 0)
+
+        if (!activePrisoners.length) return m.reply('🏛️ Tidak ada sel yang sedang aktif.')
+
+        const mentions = activePrisoners.map(({ jid }) => jid)
+        const list = activePrisoners
+            .map(({ jid, rpg }, index) => `> ${index + 1}. SEL ${rpg.sel || '-'} — @${jid.split('@')[0]} • Sisa ${formatTime(sisaWaktu(rpg))}`)
+            .join('\n')
+
+        return conn.reply(
+            m.chat,
+            `╭─❏「 🚔 SEL AKTIF 」❏\n` +
+            `│ Total: ${activePrisoners.length} tahanan\n` +
+            `╰─━━━━━━━━━━━━━━─\n\n` +
+            list,
+            m,
+            { mentions }
+        )
+    }
+
     const prisonMode = (args[0] || '').toLowerCase()
     if (prisonMode !== 'sel') {
   return sendRpgMsg(conn, m,
@@ -661,6 +686,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
     `📌 *MENU PENJARA*\n` +
     `> ↳ Lihat blok sel: *${usedPrefix}penjara sel A*\n` +
+    `> ↳ Lihat sel aktif: *${usedPrefix}penjara list*\n` +
     `> ↳ Kunjungi napi: *${usedPrefix}penjara visit sel A4*\n` +
     `> ↳ Routine: *${usedPrefix}penjara routine*\n` +
     `> ↳ Talk: *${usedPrefix}penjara talk*\n` +
