@@ -326,29 +326,28 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
   if (input === 'guide' || input === 'panduan') {
     return m.reply(
-      `🎟️ *LOTTERY AVELIA*\n` +
-      `> ${usedPrefix}lottery - Menu lottery\n` +
-      `> ${usedPrefix}lottery buy <jumlah> - Siapkan pembelian tiket\n` +
-      `> ${usedPrefix}lottery buy yes/no - Konfirmasi atau batalkan pembelian\n` +
-      `> ${usedPrefix}lottery info - Pemenang dan kode undian terakhir\n` +
-      `> ${usedPrefix}lottery stats - Hadiah dan tiket terjual\n` +
-      `> ${usedPrefix}lottery history - Riwayat pemenang\n` +
-      `> ${usedPrefix}lottery claim - Klaim hadiah setelah menang\n` +
-      `Harga tiket: ${money(LOTTERY_TICKET_PRICE)} per tiket.`
+      `🎟️ *PANDUAN LOTTERY*\n\n` +
+      `1. Ketik *${usedPrefix}lottery* untuk melihat hadiah saat ini, harga tiket, dan status tiketmu.\n\n` +
+      `2. Untuk membeli, ketik *${usedPrefix}lottery buy <jumlah tiket>*. Contoh: *${usedPrefix}lottery buy 5*. Harga satu tiket ${money(LOTTERY_TICKET_PRICE)}. Bot akan menampilkan rincian harga terlebih dahulu.\n\n` +
+      `3. Periksa rincian pembelian, lalu ketik *${usedPrefix}lottery buy yes* untuk menyetujui. Saldo dipotong setelah persetujuan. Ketik *${usedPrefix}lottery buy no* untuk membatalkan. Konfirmasi berlaku 5 menit.\n\n` +
+      `4. Undian diproses saat periode harian berganti. Jika namamu terpilih, cek *${usedPrefix}lottery info* untuk melihat pemenang, hadiah, dan nomor undian.\n\n` +
+      `5. Jika kamu pemenang, ketik *${usedPrefix}lottery claim* untuk memasukkan hadiah ke saldo.\n\n` +
+      `6. Gunakan *${usedPrefix}lottery stats* untuk melihat hadiah dan jumlah tiket terjual hari ini/total, atau *${usedPrefix}lottery history* untuk melihat pemenang terdahulu.`
     )
   }
 
   if (input === 'command' || input === 'commands' || input === 'cmd') {
     return m.reply(
       `🎟️ *COMMAND LOTTERY*\n` +
-      `> ${usedPrefix}lottery - Menu lottery\n` +
-      `> ${usedPrefix}lottery guide - Panduan lottery\n` +
-      `> ${usedPrefix}lottery buy <jumlah> - Beli tiket\n` +
-      `> ${usedPrefix}lottery buy yes/no - Konfirmasi atau batalkan\n` +
-      `> ${usedPrefix}lottery info - Cek pemenang dan nomor undian\n` +
-      `> ${usedPrefix}lottery stats - Cek hadiah dan jumlah tiket\n` +
-      `> ${usedPrefix}lottery history - Riwayat pemenang\n` +
-      `> ${usedPrefix}lottery claim - Klaim hadiah`
+      `> ${usedPrefix}lottery\n` +
+      `> ${usedPrefix}lottery guide\n` +
+      `> ${usedPrefix}lottery buy <jumlah>\n` +
+      `> ${usedPrefix}lottery buy yes\n` +
+      `> ${usedPrefix}lottery buy no\n` +
+      `> ${usedPrefix}lottery info\n` +
+      `> ${usedPrefix}lottery stats\n` +
+      `> ${usedPrefix}lottery history\n` +
+      `> ${usedPrefix}lottery claim`
     )
   }
 

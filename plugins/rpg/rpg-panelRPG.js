@@ -291,10 +291,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     if (!Number.isSafeInteger(prize) || prize <= 0) {
       return m.reply(`❌ Format: *${usedPrefix}rpgpanel setlottery <jumlah hadiah>*\nContoh: *${usedPrefix}rpgpanel setlottery 500000*`)
     }
-    wdb.lottery = wdb.lottery || {}
-    wdb.lottery.basePrize = prize
-    wdb.lottery.jackpot = prize
-    await saveDB(wdb)
+    global.db.data.lottery = global.db.data.lottery || {}
+    global.db.data.lottery.basePrize = prize
+    global.db.data.lottery.jackpot = prize
+    await saveDB(global.db)
     return m.reply(`✅ Hadiah dasar lottery diatur menjadi *Rp ${prize.toLocaleString()}*.`)
   }
 
