@@ -59,7 +59,13 @@ let handler = async (m, { conn, usedPrefix }) => {
   let itemAdventure = []
 
   // 1. GABUNGIN ORE + MATERIAL DARI INVENTORY
-  let gabungMaterial = {...user.ores,...user.inventory}
+  let gabungMaterial = {}
+  for (const storage of [user.ores, user.inventory]) {
+    for (const [nama, jumlah] of Object.entries(storage || {})) {
+      gabungMaterial[nama] = (Number(gabungMaterial[nama]) || 0) + (Number(jumlah) || 0)
+    }
+  }
+  gabungMaterial.gold = (Number(gabungMaterial.gold) || 0) + (Number(user.gold) || 0)
   for(let nama in gabungMaterial){
     if(gabungMaterial[nama] > 0){
       totalItem += gabungMaterial[nama]

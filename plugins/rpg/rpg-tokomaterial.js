@@ -188,7 +188,13 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     if(args[1] === 'all'){
       let totalHasil = 0
       let listJual = []
-      let semuaInv = {...user.inventory,...user.ores,...user.items}
+      let semuaInv = {}
+      for (const storage of [user.inventory, user.ores, user.items]) {
+        for (const [item, jumlah] of Object.entries(storage || {})) {
+          semuaInv[item] = (Number(semuaInv[item]) || 0) + (Number(jumlah) || 0)
+        }
+      }
+      semuaInv.gold = (Number(semuaInv.gold) || 0) + (Number(user.gold) || 0)
 
       if (user.diamond > 0) semuaInv.diamond = (semuaInv.diamond || 0) + user.diamond
       if (user.inventory.gemstone > 0) semuaInv.gemstone = (semuaInv.gemstone || 0) + user.inventory.gemstone
@@ -203,6 +209,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
           delete user.ores[item]
           delete user.items[item]
 
+          if (item === 'gold') user.gold = 0
           if (item === 'diamond') user.diamond = 0
           if (item === 'gemstone' || item === 'coin') user.inventory[item] = 0
           if (user.guildLoot && item === 'diamond') user.guildLoot[item] = 0
@@ -253,7 +260,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       ? (user.diamond || 0)
       : item === 'gemstone' || item === 'coin'
         ? (user.inventory[item] || 0)
-        : (user.inventory[item] || user.ores[item] || user.items[item] || 0)
+        : item === 'gold'
+          ? (Number(user.gold) || 0) + (Number(user.inventory.gold) || 0) + (Number(user.ores.gold) || 0) + (Number(user.items.gold) || 0)
+          : (user.inventory[item] || user.ores[item] || user.items[item] || 0)
 
     if (stok <= 0) return m.reply(
       `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
@@ -279,17 +288,32 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       if (item === 'diamond' && user.diamond <= 0) user.diamond = 0
     }
 
-    if(!['diamond', 'gemstone', 'coin'].includes(item) && user.inventory[item]) {
+    if (item === 'gold') {
+      let sisaJual = jual
+      const dariGold = Math.min(Number(user.gold) || 0, sisaJual)
+      user.gold = (Number(user.gold) || 0) - dariGold
+      sisaJual -= dariGold
+
+      for (const storage of [user.inventory, user.ores, user.items]) {
+        const tersedia = Number(storage.gold) || 0
+        const dikurangi = Math.min(tersedia, sisaJual)
+        storage.gold = tersedia - dikurangi
+        sisaJual -= dikurangi
+        if (storage.gold <= 0) delete storage.gold
+      }
+    }
+
+    if(!['diamond', 'gemstone', 'coin', 'gold'].includes(item) && user.inventory[item]) {
       user.inventory[item] -= jual
       if(user.inventory[item] <= 0) delete user.inventory[item]
     }
 
-    if(user.ores[item]) {
+    if(item !== 'gold' && user.ores[item]) {
       user.ores[item] -= jual
       if(user.ores[item] <= 0) delete user.ores[item]
     }
 
-    if(user.items[item]) {
+    if(item !== 'gold' && user.items[item]) {
       user.items[item] -= jual
       if(user.items[item] <= 0) delete user.items[item]
     }
