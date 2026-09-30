@@ -313,7 +313,7 @@ function casinoCommands(prefix) {
     `> ↳ ℹ️ ${prefix}cs room info`,
     `> ↳ 🎮 ${prefix}cs room games`,
     `> ↳ 📖 ${prefix}cs room guide`,
-    `> ↳ 🎯 ${prefix}cs room <permainan>`,
+    `> ↳ 🎯 ${prefix}cs room game <pilihan>`,
     ``,
     `─━━━━━━━━━━━━━━─`
   ].join('\n')
@@ -352,7 +352,7 @@ function menu(prefix, wdb) {
 
   text += `🏆 *TOP CASINO #1*\n`
   text += leader
-    ? `> ↳ ${casinoPlayerName(leader)}\n> ↳(${signedMoney(leader.profit)})\n`
+    ? `> ↳ ${casinoPlayerName(leader)}\n> ↳ Profit: ${signedMoney(leader.profit)}\n`
     : `> ↳ Belum ada pemain\n`
 
   text += `> ↳ 🎟️ Batas harian : ${DAILY_LIMIT}x biasa / ${PREMIUM_DAILY_LIMIT}x premium\n\n`
@@ -457,7 +457,7 @@ function roomPlayerName(jid, wdb) {
 
 function roomGamesMenu(prefix) {
   return `🎮 *GAME ROOM CASINO*\n` +
-    Object.entries(ROOM_GAMES).map(([key, game]) => `> ${game.name}: ${prefix}cs room ${key}`).join('\n')
+    Object.entries(ROOM_GAMES).map(([key, game]) => `> ${game.name}: ${prefix}cs room game ${key}`).join('\n')
 }
 
 function roomGuide(prefix) {
@@ -468,7 +468,7 @@ function roomGuide(prefix) {
     `📌 *CARA BERMAIN*\n` +
     `> ↳ Buat room : ${prefix}cs room create <taruhan>.\n` +
     `> ↳ Pemain lain bergabung dengan : ${prefix}cs room join.\n` +
-    `> ↳ Master memilih game : ${prefix}cs room <game>.\n` +
+    `> ↳ Master memilih game : ${prefix}cs room game <pilihan>.\n` +
     `> ↳ Game yang tersedia : Black Sapphire, UNO, Mahjong, Poker, Monopoly.\n` +
     `> ↳ Jika game tidak dipilih, sistem memilih secara acak.\n\n` +
 
@@ -555,10 +555,12 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
   const room = wdb.casinoRooms?.[m.chat]
   if (!room) return m.reply(`Belum ada room casino. Buat dengan *${usedPrefix}cs room create <taruhan>*.\n\n${roomGamesMenu(usedPrefix)}`)
 
-  if (ROOM_GAME_ALIASES[action]) {
+  if (action === 'game') {
     if (room.master !== m.sender) return m.reply('Hanya room master yang dapat memilih permainan.')
     if (room.status !== 'waiting') return m.reply('Permainan room sudah dimulai.')
-    room.game = ROOM_GAME_ALIASES[action]
+    const selectedGame = ROOM_GAME_ALIASES[String(args[2] || '').toLowerCase()]
+    if (!selectedGame) return m.reply(`Pilih game dengan format *${usedPrefix}cs room game <pilihan>*.\n\n${roomGamesMenu(usedPrefix)}`)
+    room.game = selectedGame
     saveDB(wdb)
     return m.reply(`🎮 Game room dipilih: *${ROOM_GAMES[room.game].name}*`)
   }
