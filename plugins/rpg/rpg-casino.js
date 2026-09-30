@@ -351,13 +351,13 @@ function menu(prefix, wdb) {
   const totalProfit = getPositivePlayerProfitTotal(wdb)
 
   let text = `╭─❏「 🎰 AVELIA CASINO 」❏\n`
-  text += `│ 🎰 *AVELIA CASINO*\n`
+  text += `│ *Uji Keberuntunganmu disini!*\n`
   text += `╰─━━━━━━━━━━━━━━─\n\n`
 
   text += `📊 *INFORMASI CASINO*\n`
   text += `> ↳ 🎮 Total permainan : ${Object.keys(games).length}\n`
   text += `> ↳ 💰 Hadiah terkumpulkan :\n`
-  text += `> ↳ ${money(totalProfit)}\n\n`
+  text += `> ↳ 💰 ${money(totalProfit)}\n\n`
 
   text += `🏆 *TOP CASINO #1*\n`
   text += leader
@@ -367,9 +367,9 @@ function menu(prefix, wdb) {
 
   text += `🎟️ *BATAS HARIAN*\n`
   text += `> ↳ User biasa\n`
-  text += `> ${DAILY_LIMIT} permainan per hari\n`
-  text += `> ↳ Premium\n`
-  text += `> ${PREMIUM_DAILY_LIMIT} permainan per hari\n\n`
+  text += `> ↳ ${DAILY_LIMIT} permainan per hari\n`
+  text += `> ↳ User Premium\n`
+  text += `> ↳ ${PREMIUM_DAILY_LIMIT} permainan per hari\n\n`
 
   text += `📌 *PERINTAH*\n`
   text += `> ↳ ${prefix}casino command\n`
