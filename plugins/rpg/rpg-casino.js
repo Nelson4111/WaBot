@@ -44,7 +44,9 @@ const games = {
   cipher: { name: 'Cipher', emoji: '🔐', aliases: ['cipher'], minBet: 2500 },
   riddle: { name: 'Riddle', emoji: '❓', aliases: ['riddle'], minBet: 1000 },
   jenga: { name: 'Jenga', emoji: '🪵', aliases: ['jenga'], minBet: 1000 },
-  monopoly: { name: 'Monopoly', emoji: '🏠', aliases: ['monopoly'], minBet: 5000 }
+  monopoly: { name: 'Monopoly', emoji: '🏠', aliases: ['monopoly'], minBet: 5000 },
+  snakes: { name: 'Snakes and Ladders', emoji: '🐍', aliases: ['snakes', 'snl', 'snakesandladders', 'snakes-and-ladders'], minBet: 2500 },
+  parcheesi: { name: 'Parcheesi', emoji: '🎲', aliases: ['parcheesi'], minBet: 2500 }
 }
 
 const GAME_COOLDOWN = 60000
@@ -225,7 +227,9 @@ const outcomes = {
   cipher: () => { const shift = number(1, 25), solved = Math.random() < 0.3; return { multiplier: solved ? 5 : 0, text: `🔐 *Cipher shift* : ${shift}\n> ↳ ${solved ? 'Kode berhasil dipecahkan!' : 'Kode tidak terpecahkan.'}` } },
   riddle: () => { const riddles = [{ question: 'Apa yang punya jarum tapi tidak bisa menjahit?', answer: 'Jam' }, { question: 'Semakin diisi semakin ringan, apakah itu?', answer: 'Balon' }, { question: 'Apa yang selalu naik tapi tidak pernah turun?', answer: 'Umur' }], riddle = pick(riddles), solved = Math.random() < 0.35; return { multiplier: solved ? 4 : 0, text: `❓ *Teka-teki* : ${riddle.question}\n> ↳ Jawaban : ${riddle.answer} (${solved ? 'terjawab' : 'belum terjawab'})` } },
   jenga: () => { const height = number(1, 12), collapsed = Math.random() < 0.25; return { multiplier: collapsed ? 0 : height >= 10 ? 6 : height >= 7 ? 3 : 2, text: `🪵 *Tinggi menara* : ${height} balok\n> ↳ ${collapsed ? 'Menara roboh!' : 'Balok berhasil ditarik.'}` } },
-  monopoly: () => { const spaces = number(1, 12), property = pick(['Tanah', 'Stasiun', 'Rumah', 'Hotel']), multiplier = spaces >= 11 ? 10 : spaces >= 8 ? 4 : spaces >= 5 ? 2 : 0; return { multiplier, text: `🏠 *Langkah* : ${spaces}\n> ↳ Petak : ${property}\n> ↳ ${multiplier ? 'Berhasil mendapat keuntungan!' : 'Membayar sewa.'}` } }
+  monopoly: () => { const spaces = number(1, 12), property = pick(['Tanah', 'Stasiun', 'Rumah', 'Hotel']), multiplier = spaces >= 11 ? 10 : spaces >= 8 ? 4 : spaces >= 5 ? 2 : 0; return { multiplier, text: `🏠 *Langkah* : ${spaces}\n> ↳ Petak : ${property}\n> ↳ ${multiplier ? 'Berhasil mendapat keuntungan!' : 'Membayar sewa.'}` } },
+  snakes: () => { const start = number(1, 80), roll = number(1, 6), ladder = Math.random() < 0.2, snake = !ladder && Math.random() < 0.2, position = Math.max(1, Math.min(100, start + roll + (ladder ? number(10, 25) : snake ? -number(5, 20) : 0))), multiplier = position === 100 ? 8 : position >= 80 ? 3 : 0; return { multiplier, text: `🐍 *Posisi awal* : ${start} | Dadu: ${roll}\n> ↳ ${ladder ? 'Naik tangga!' : snake ? 'Turun karena ular!' : 'Tidak bertemu ular/tangga.'}\n> ↳ Posisi akhir : ${position}/100` } },
+  parcheesi: () => { const dice = [number(1, 6), number(1, 6)], start = number(1, 45), position = Math.min(56, start + dice[0] + dice[1]), home = position >= 56, multiplier = home ? 6 : dice[0] === dice[1] ? 3 : position >= 35 ? 2 : 0; return { multiplier, text: `🎲 *Dadu* : ${dice.join(' + ')}\n> ↳ Posisi bidak : ${position}/56\n> ↳ ${home ? 'Bidak sampai rumah!' : dice[0] === dice[1] ? 'Dadu kembar, langkah bonus!' : 'Bidak bergerak maju.'}` } }
 }
   return outcomes[game]()
 }
@@ -308,35 +312,62 @@ function casinoCommands(prefix) {
 
 function casinoGuide(prefix) {
   return `╭─❏「 📖 CASINO GUIDE 」❏\n` +
-    `│ Mainkan dengan ${prefix}casino <game> <taruhan>.\n` +
-    `│ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
-    `│ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
-    `│ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
-    `│ Setiap game cooldown 60 detik; batas harian 25x, premium 50x.\n\n` +
-    `│ Multiplayer dapat dimainkan melalui casino room: ${prefix}cs room.\n` +
-    `│ Atur julukan dengan ${prefix}casino nickname <julukan>.\n` +
-    `╰─━━━━━━━━━━━━━━─`
+    `│ 🎰 *PANDUAN CASINO*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `📌 *CARA BERMAIN*\n` +
+    `> ↳ Mainkan dengan ${prefix}casino <game> <taruhan>.\n` +
+    `> ↳ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
+    `> ↳ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
+    `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
+    `> ↳ Setiap game cooldown 60 detik; batas harian 25x, premium 50x.\n\n` +
+
+    `👥 *MULTIPLAYER*\n` +
+    `> ↳ Multiplayer dapat dimainkan melalui casino room: ${prefix}cs room.\n` +
+    `> ↳ Atur julukan dengan ${prefix}casino nickname <julukan>.\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
 }
 
 function menu(prefix, wdb) {
   const leader = getTopPlayers(wdb, 1)[0]
-  const mentions = leader ? [leader.jid] : []
+  const mentions = leader && !leader.nickname ? [leader.jid] : []
+
   let text = `╭─❏「 🎰 AVELIA CASINO 」❏\n`
-  text += `│ 🎮 Total permainan: ${Object.keys(games).length}\n`
-  text += `│ 💰 Hadiah terkumpulkan : ${money(wdb.casinoStats?.totalWinnings || 0)}\n`
+  text += `│ 🎰 *AVELIA CASINO*\n`
   text += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  text += `📊 *INFORMASI CASINO*\n`
+  text += `> ↳ 🎮 Total permainan : ${Object.keys(games).length}\n`
+  text += `> ↳ 💰 Hadiah terkumpulkan : ${money(wdb.casinoStats?.totalWinnings || 0)}\n\n`
+
+  text += `🏆 *TOP CASINO #1*\n`
   text += leader
-    ? `🏆 TOP CASINO #1: ${casinoPlayerName(leader)} (${signedMoney(leader.profit)})\n`
-    : `🏆 TOP CASINO #1: Belum ada pemain\n`
-  text += `🎟️ Batas harian: ${DAILY_LIMIT}x biasa / ${PREMIUM_DAILY_LIMIT}x premium\n\n`
-  text += `> ${prefix}casino command\n`
-  text += `> ${prefix}casino guide\n`
+    ? `> ↳ ${casinoPlayerName(leader)}\n> ↳(${signedMoney(leader.profit)})\n`
+    : `> ↳ Belum ada pemain\n`
+
+  text += `> ↳ 🎟️ Batas harian : ${DAILY_LIMIT}x biasa / ${PREMIUM_DAILY_LIMIT}x premium\n\n`
+
+  text += `📌 *PERINTAH*\n`
+  text += `> ↳ ${prefix}casino command\n`
+  text += `> ↳ ${prefix}casino guide\n\n`
+
+  text += `─━━━━━━━━━━━━━━─`
+
   return { text, mentions }
 }
 
 function casinoPlayerName(player) {
   const tag = `@${player.jid.split('@')[0]}`
-  return player.nickname ? `${player.nickname} (${tag})` : tag
+  return player.nickname || tag
+}
+
+function getCasinoNickname(wdb, jid) {
+  return String(wdb.users?.[jid]?.rpg?.casinoNickname || '').trim()
+}
+
+function visibleCasinoMentions(jids, wdb) {
+  return jids.filter(jid => !getCasinoNickname(wdb, jid))
 }
 
 function gamesMenu(prefix) {
@@ -371,38 +402,48 @@ function top(wdb) {
     }
   })
 
-  return { text, mentions: players.map(player => player.jid) }
+  return { text, mentions: players.filter(player => !player.nickname).map(player => player.jid) }
 }
 
 function profile(user, sender, dailyLimit, showProfit = false) {
   const stats = getCasinoStats(user)
+
   let text = `╭─❏「 🎰 CASINO PROFILE 」❏\n`
   text += user.casinoNickname
-    ? `│ 👤 Nickname: ${user.casinoNickname}\n`
-    : `│ 👤 @${sender.split('@')[0]}\n`
-  text += `│ 🏷️ Title: ${getCasinoTitle(stats.games)}\n`
+    ? `│ 👤 *${user.casinoNickname}*\n`
+    : `│ 👤 *@${sender.split('@')[0]}*\n`
+  text += `│ 🏷️ Title : ${getCasinoTitle(stats.games)}\n`
   text += `╰─━━━━━━━━━━━━━━─\n\n`
+
   text += `📊 *RINGKASAN*\n`
-  text += `> ↳ Total main: ${stats.games}x\n`
-  text += `> ↳ Hari ini: ${stats.dailyGames}/${dailyLimit}x\n`
-  text += `> ↳ Menang: ${stats.wins}x\n`
-  if (!showProfit) return text + `\n📌 Ketik *.casino profit* untuk melihat total dan detail profit setiap game.`
+  text += `> ↳ Total main : ${stats.games}x\n`
+  text += `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x\n`
+  text += `> ↳ Menang : ${stats.wins}x\n`
 
-  text += `> ↳ Profit total: ${signedMoney(stats.profit)}\n`
+  if (!showProfit) {
+    return text +
+      `\n📌 Ketik *.casino profit* untuk melihat total dan detail profit setiap game.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+  }
 
-  text += `\n🎮 *PROFIT PER GAME*\n`
+  text += `> ↳ Profit total : ${signedMoney(stats.profit)}\n\n`
+
+  text += `🎮 *PROFIT PER GAME*\n`
   for (const [key, game] of Object.entries(games)) {
     const entry = stats.byGame[key] || { games: 0, profit: 0 }
     text += `${game.emoji} *${game.name}*\n`
-    text += `> ↳ Total: ${entry.games || 0}x | Menang: ${entry.wins || 0}x | Kalah: ${Math.max(0, (entry.games || 0) - (entry.wins || 0))}x\n`
-    text += `> ↳ ${signedMoney(entry.profit || 0)}\n\n`
+    text += `> ↳ Total : ${entry.games || 0}x | Menang : ${entry.wins || 0}x | Kalah : ${Math.max(0, (entry.games || 0) - (entry.wins || 0))}x\n`
+    text += `> ↳ Profit : ${signedMoney(entry.profit || 0)}\n\n`
   }
-  return text + `⚠️ Main secukupnya. Batas casino: ${dailyLimit} permainan per hari.`
+
+  text += `⚠️ Main secukupnya. Batas casino : ${dailyLimit} permainan per hari.\n\n`
+  text += `─━━━━━━━━━━━━━━─`
+
+  return text
 }
 
 function roomPlayerName(jid, wdb) {
-  const nickname = String(wdb.users?.[jid]?.rpg?.casinoNickname || '').trim()
-  return nickname ? `${nickname} (@${jid.split('@')[0]})` : `@${jid.split('@')[0]}`
+  return getCasinoNickname(wdb, jid) || `@${jid.split('@')[0]}`
 }
 
 function roomGamesMenu(prefix) {
@@ -412,15 +453,25 @@ function roomGamesMenu(prefix) {
 
 function roomGuide(prefix) {
   return `╭─❏「 📖 CASINO ROOM GUIDE 」❏\n` +
-    `│ Buat room: ${prefix}cs room create <taruhan>.\n` +
-    `│ Pemain lain bergabung dengan: ${prefix}cs room join.\n` +
-    `│ Master memilih game: ${prefix}cs room <game>.\n` +
-    `│ Game yang tersedia: Black Sapphire, UNO, Mahjong, Poker, Monopoly.\n` +
-    `│ Jika game tidak dipilih, sistem memilih secara acak.\n` +
-    `│ Mulai: ${prefix}cs room start. Setiap ronde, tiap pemain mendapat 5 gacha.\n` +
-    `│ Skor terendah yang unik tereliminasi; jika seri, ronde diulang.\n` +
-    `│ Room dapat dihapus sebelum start tanpa memotong saldo.\n` +
-    `╰─━━━━━━━━━━━━━━─`
+    `│ 🎰 *PANDUAN CASINO ROOM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `📌 *CARA BERMAIN*\n` +
+    `> ↳ Buat room : ${prefix}cs room create <taruhan>.\n` +
+    `> ↳ Pemain lain bergabung dengan : ${prefix}cs room join.\n` +
+    `> ↳ Master memilih game : ${prefix}cs room <game>.\n` +
+    `> ↳ Game yang tersedia : Black Sapphire, UNO, Mahjong, Poker, Monopoly.\n` +
+    `> ↳ Jika game tidak dipilih, sistem memilih secara acak.\n\n` +
+
+    `🎮 *MULAI PERMAINAN*\n` +
+    `> ↳ Mulai : ${prefix}cs room start.\n` +
+    `> ↳ Setiap ronde, tiap pemain mendapat 5 gacha.\n` +
+    `> ↳ Skor terendah yang unik tereliminasi; jika seri, ronde diulang.\n\n` +
+
+    `📌 *CATATAN*\n` +
+    `> ↳ Room dapat dihapus sebelum start tanpa memotong saldo.\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
 }
 
 function playRoomRound(gameKey, players) {
@@ -453,13 +504,23 @@ function runRoomTournament(room) {
 
 async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
   const action = String(args[1] || '').toLowerCase()
-  const reply = (text, mentions = []) => conn.reply(m.chat, text, m, { mentions })
-  const replyWithImage = (text, mentions = []) => sendRpgMsg(conn, m, text, CASINO_ROOM_IMAGE, { mentions })
-  const mention = jid => `@${jid.split('@')[0]}`
+  const reply = (text, mentions = []) => conn.reply(m.chat, text, m, { mentions: visibleCasinoMentions(mentions, wdb) })
+  const replyWithImage = (text, mentions = []) => sendRpgMsg(conn, m, text, CASINO_ROOM_IMAGE, { mentions: visibleCasinoMentions(mentions, wdb) })
+  const mention = jid => roomPlayerName(jid, wdb)
 
-  if (!action) {
-    return replyWithImage(`╭─❏「 🎰 CASINO ROOM 」❏\n│ Mode multiplayer casino untuk bermain bersama dalam room, bertanding, dan memperebutkan total hadiah dari taruhan peserta.\n╰─━━━━━━━━━━━━━━─`)
-  }
+ if (!action) {
+  return replyWithImage(
+    `╭─❏「 🎰 CASINO ROOM 」❏\n` +
+    `│ 🎰 *CASINO ROOM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+
+    `📌 *MODE MULTIPLAYER*\n` +
+    `> ↳ Mode multiplayer casino untuk bermain bersama dalam room,\n` +
+    `> ↳ bertanding, dan memperebutkan total hadiah dari peserta.\n\n` +
+
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   if (action === 'guide') return m.reply(roomGuide(usedPrefix))
   if (action === 'games') return m.reply(roomGamesMenu(usedPrefix))
@@ -654,7 +715,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
 
   if (input === 'profile' || input === 'profil' || input === 'profit') {
-    return sendRpgMsg(conn, m, profile(user, m.sender, dailyLimit, input === 'profit'), CASINO_IMAGE, { mentions: [m.sender] })
+    return sendRpgMsg(conn, m, profile(user, m.sender, dailyLimit, input === 'profit'), CASINO_IMAGE, { mentions: visibleCasinoMentions([m.sender], wdb) })
   }
 
   if (input === 'cd' || input === 'cooldown') {
@@ -770,8 +831,8 @@ if (elapsed < GAME_COOLDOWN) {
     `> ↳ Hadiah: ${money(payout)}\n` +
     `> ↳ Profit: ${signedMoney(net)}\n` +
     `> ↳ 💰 Sebelum: ${money(balanceBefore)}\n` +
-    `> ↳ 💰 Sesudah: ${money(wdb.money[m.sender])}\n` +
-    `> ↳ 💬 Kamu: "${dialog}"\n` +
+    `> ↳ 💰 Sesudah: ${money(wdb.money[m.sender])}\n\n` +
+    `💬 Kamu: "${dialog}"\n` +
     `\n─━━━━━━━━━━━━━━─\n` +
     `⚠️ Main secukupnya. Hari ini: ${stats.dailyGames}/${dailyLimit}x.`
   )
