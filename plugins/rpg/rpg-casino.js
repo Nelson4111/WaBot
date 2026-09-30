@@ -338,9 +338,17 @@ function casinoGuide(prefix) {
     `─━━━━━━━━━━━━━━─`
 }
 
+function getPositivePlayerProfitTotal(wdb) {
+  return Object.values(wdb.users || {}).reduce((total, account) => {
+    const profit = Number(account.rpg?.casinoStats?.profit || 0)
+    return profit > 0 ? total + profit : total
+  }, 0)
+}
+
 function menu(prefix, wdb) {
   const leader = getTopPlayers(wdb, 1)[0]
   const mentions = leader && !leader.nickname ? [leader.jid] : []
+  const totalProfit = getPositivePlayerProfitTotal(wdb)
 
   let text = `╭─❏「 🎰 AVELIA CASINO 」❏\n`
   text += `│ 🎰 *AVELIA CASINO*\n`
@@ -348,14 +356,20 @@ function menu(prefix, wdb) {
 
   text += `📊 *INFORMASI CASINO*\n`
   text += `> ↳ 🎮 Total permainan : ${Object.keys(games).length}\n`
-  text += `> ↳ 💰 Hadiah terkumpulkan : ${money(wdb.casinoStats?.totalWinnings || 0)}\n\n`
+  text += `> ↳ 💰 Hadiah terkumpulkan :\n`
+  text += `> ↳ ${money(totalProfit)}\n\n`
 
   text += `🏆 *TOP CASINO #1*\n`
   text += leader
     ? `> ↳ ${casinoPlayerName(leader)}\n> ↳ Profit: ${signedMoney(leader.profit)}\n`
     : `> ↳ Belum ada pemain\n`
+  text += `\n`
 
-  text += `> ↳ 🎟️ Batas harian : ${DAILY_LIMIT}x biasa / ${PREMIUM_DAILY_LIMIT}x premium\n\n`
+  text += `🎟️ *BATAS HARIAN*\n`
+  text += `> ↳ User biasa\n`
+  text += `> ${DAILY_LIMIT} permainan per hari\n`
+  text += `> ↳ Premium\n`
+  text += `> ${PREMIUM_DAILY_LIMIT} permainan per hari\n\n`
 
   text += `📌 *PERINTAH*\n`
   text += `> ↳ ${prefix}casino command\n`
