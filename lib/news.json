@@ -1,7 +1,7 @@
 [
   {
     "section": "INFO",
-    "content": ">Fitur news ditambahkan sebagai log agar pemain dapat melihat update dan perbaikan terbaru.",
+    "content": "> Fitur news ditambahkan sebagai log agar pemain dapat melihat update dan perbaikan terbaru.",
     "createdAt": 1790787600000
   },
   {
@@ -31,7 +31,7 @@
   },
   {
     "section": "RPG",
-    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 2 jam. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja.",
+    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 30 menit. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja.",
     "createdAt": 1790931600003
   },
   {
@@ -48,5 +48,10 @@
     "section": "RPG",
     "content": "> Katalog cincin .rship kini mengikuti .pasangan: tersedia Silver, Gold, Topaz, Amethyst, Ruby, Sapphire, Emerald, Platinum, Diamond, dan Jade Ring beserta harga serta ikonnya. Pembelian .rship belicincin memakai saldo bank RPG, bukan limit.",
     "createdAt": 1790931600006
+  },
+  {
+    "section": "RPG",
+    "content": "> `.rship all <no pasangan>` kini memakai nomor pasangan dan menjalankan semua aktivitas yang siap untuk pasangan tersebut (khusus premium, cooldown 30 menit). `.daily restreak` memulihkan streak terakhir dengan biaya 2x hadiah daily. Hasil `.work` menampilkan job berikutnya dan reward misi guild memberi eksekutor 100%, anggota lain 50%. Bug assignment pada `.rship rampok` diperbaiki.",
+    "createdAt": 1790931600007
   }
 ]
