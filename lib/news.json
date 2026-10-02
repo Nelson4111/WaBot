@@ -1,0 +1,27 @@
+[
+  {
+    "section": "INFO",
+    "content": "Fitur news ditambahkan sebagai log agar pemain dapat melihat update dan perbaikan terbaru.",
+    "createdAt": 1790787600000
+  },
+  {
+    "section": "RPG",
+    "content": "Perbaikan leaderboard: owner/admin yang kini tidak dihitung dalam TOP MONEY maupun ranking RPG level, kekayaan, dan diamond.",
+    "createdAt": 1790917200000
+  },
+  {
+    "section": "RPG",
+    "content": "Fitur Difficulty RPG tersedia melalui .difficulty. Peaceful, Easy, Normal, Hardcore, dan Nightmare kini memiliki modifier pendapatan serta cooldown masing-masing; Peaceful kebal tindak kriminal dan tidak masuk leaderboard. Pergantian difficulty memiliki cooldown 7 hari.",
+    "createdAt": 1790928000000
+  },
+  {
+    "section": "RPG",
+    "content": "Casino room (.cs room) kini berlangsung dalam ronde eliminasi: setelah setiap ronde master memilih .cs room next untuk taruhan tetap atau .cs room up untuk taruhan 2x. Hasil eliminasi diacak secara adil, room tanpa interaksi selama 30 menit otomatis dihapus, dan permainan room tidak memakai atau menambah progres/batas casino reguler.",
+    "createdAt": 1790931600000
+  },
+  {
+    "section": "RPG",
+    "content": "Semua penjualan massal atau penjualan dengan jumlah all di pabrik, koperasi, pasar ikan, dan restoran kini meminta konfirmasi terlebih dahulu. Periksa daftar stok dan perkiraan hasil, lalu ketik ya untuk melanjutkan atau batal untuk membatalkan; konfirmasi berlaku 60 detik.",
+    "createdAt": 1790931600001
+  }
+]
