@@ -55,6 +55,23 @@ const storyKabur = [
     { sukses: `🤡 Tipu sipir baru yg masih magang. Bilang disuruh atasannya.`, gagal: `🤡 Ternyata dia intel. Langsung diborgol.` }
 ]
 
+const storyBreakout = {
+    sukses: [
+        `🧱 Kalian merobohkan dinding tua bersama-sama dan menyelinap keluar sebelum sipir datang.`,
+        `🚨 Alarm berbunyi saat pergantian jaga. Kalian memanfaatkan kekacauan untuk lolos bersama.`,
+        `🪢 Dengan tali dari kain seprai, kalian turun melewati tembok dan berhasil mencapai luar.`,
+        `🚚 Kalian bersembunyi di kendaraan pengangkut logistik dan lolos dari gerbang penjara.`,
+        `🌧️ Hujan deras menutupi suara langkah kalian. Satu per satu berhasil melewati pagar penjara.`
+    ],
+    gagal: [
+        `🔦 Sipir memergoki kalian di lorong. Rencana buyar dan semuanya tertangkap kembali.`,
+        `🚪 Pintu darurat terkunci rapat. Alarm menyala sebelum kalian sempat menemukan jalan lain.`,
+        `🪢 Tali kain yang kalian buat putus di tengah jalan. Sipir segera mengepung kalian.`,
+        `🚧 Gerbang luar mendadak ditutup saat kalian hampir mencapainya. Kalian tertangkap di halaman.`,
+        `📣 Salah satu penjaga mendengar keributan dan memanggil bantuan. Seluruh tim gagal kabur.`
+    ]
+}
+
 /* =========================================================
    STORY ROUTINE 50 VARIASI
 ========================================================= */
@@ -312,27 +329,16 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             if (room.players.length < 2) return m.reply('❌ Breakout membutuhkan minimal 2 tahanan.')
 
             const now = Date.now()
-            const cooldown = room.players.map(resolveJid).find(jid => now - (Number(wdb.breakoutCooldown[jid]) || 0) < 5 * 60 * 1000)
-            if (cooldown) return m.reply(`⏳ ${mentionName(cooldown)} masih cooldown breakout selama *${formatTime(5 * 60 * 1000 - (now - Number(wdb.breakoutCooldown[cooldown] || 0)))}*.`)
+            const cooldown = room.players.map(resolveJid).find(jid => now - (Number(wdb.breakoutCooldown[jid]) || 0) < 30 * 60 * 1000)
+            if (cooldown) return m.reply(`⏳ ${mentionName(cooldown)} masih cooldown breakout selama *${formatTime(30 * 60 * 1000 - (now - Number(wdb.breakoutCooldown[cooldown] || 0)))}*.`)
 
             const players = room.players.map(resolveJid).filter((jid, index, list) => jid && list.indexOf(jid) === index)
             const invalid = players.filter(jid => !isDiPenjara(jid) || !getRPG(jid))
             if (invalid.length) return conn.reply(m.chat, `❌ Peserta berikut sudah tidak berada di penjara: ${invalid.map(mentionName).join(', ')}. Mereka harus leave sebelum breakout dimulai.`, m, { mentions: invalid })
 
-            const chances = players.map(jid => {
-                const stats = getStats(jid)
-                const routine = Number(stats.routine) || 0
-                const talk = Number(stats.talk) || 0
-                const guaranteed = routine >= 25 && talk >= 25 && !stats.guaranteedEscapeUsed
-                if (guaranteed) stats.guaranteedEscapeUsed = true
-                if (guaranteed || (routine >= 100 && talk >= 100)) return 1
-                if (routine >= 50 && talk >= 50) return 0.5
-                if (routine >= 20 && talk >= 20) return 0.1
-                return 0.01
-            })
-            const chance = chances.reduce((total, value) => total + value, 0) / chances.length
-            const story = randomItem(storyKabur)
+            const chance = 0.5
             const success = Math.random() < chance
+            const story = randomItem(storyBreakout[success ? 'sukses' : 'gagal'])
             const mentions = players
             const names = players.map(mentionName).join(', ')
 
@@ -350,12 +356,12 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                     removeFromPrison(jid)
                 }
                 saveDB(wdb)
-                return conn.reply(m.chat, `🚨 *BREAKOUT BERHASIL!*\n\n${story.sukses}\n\nSemua peserta berhasil kabur: ${names}\nPeluang tim: *${Math.round(chance * 100)}%*.`, m, { mentions })
+                return conn.reply(m.chat, `🚨 *BREAKOUT BERHASIL!*\n\n${story}\n\nSemua peserta berhasil kabur: ${names}\nPeluang tim: *50%*.`, m, { mentions })
             }
 
             for (const jid of players) getRPG(jid).lamaPenjara += 2 * 60 * 60 * 1000
             saveDB(wdb)
-            return conn.reply(m.chat, `🚨 *BREAKOUT GAGAL*\n\n${story.gagal}\n\nSemua peserta mendapat tambahan hukuman 2 jam: ${names}\nPeluang tim: *${Math.round(chance * 100)}%*.`, m, { mentions })
+            return conn.reply(m.chat, `🚨 *BREAKOUT GAGAL*\n\n${story}\n\nSemua peserta mendapat tambahan hukuman 2 jam: ${names}\nPeluang tim: *50%*.`, m, { mentions })
         }
 
         return m.reply(`📌 Command breakout: *${usedPrefix}penjara breakout create/join/info/leave/start*\nPanduan: *${usedPrefix}penjara guide*`)
