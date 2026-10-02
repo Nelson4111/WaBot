@@ -187,6 +187,25 @@ const storyTalk = [
 ]
 
 const randomItem = (list) => list[Math.floor(Math.random() * list.length)]
+const BREAKOUT_ROOM_TTL = 30 * 60 * 1000
+
+function cleanupExpiredBreakouts(wdb, now = Date.now()) {
+    let removed = false
+    wdb.prisonBreakouts = wdb.prisonBreakouts || {}
+    for (const [chat, room] of Object.entries(wdb.prisonBreakouts)) {
+        if (now - Number(room.createdAt || 0) < BREAKOUT_ROOM_TTL) continue
+        delete wdb.prisonBreakouts[chat]
+        removed = true
+    }
+    return removed
+}
+
+const breakoutCleanupTimer = setInterval(() => {
+    const wdb = loadDB()
+    if (cleanupExpiredBreakouts(wdb)) void saveDB(wdb)
+}, 60 * 1000)
+breakoutCleanupTimer.unref?.()
+
 const formatTime = (ms) => {
     ms = Math.max(0, ms)
     const jam = Math.floor(ms / 3600000)
@@ -210,6 +229,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     if (!wdb.prisonVisits) wdb.prisonVisits = {}
     if (!wdb.prisonBreakouts) wdb.prisonBreakouts = {}
     if (!wdb.breakoutCooldown) wdb.breakoutCooldown = {}
+    if (cleanupExpiredBreakouts(wdb)) saveDB(wdb)
 
     if (!global.db?.data?.users) return m.reply('❌ Database utama belum siap')
 
@@ -294,7 +314,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             if (!isDiPenjara(m.sender)) return m.reply('❌ Hanya tahanan yang bisa membuat room breakout.')
             wdb.prisonBreakouts[m.chat] = { creator: resolveJid(m.sender), players: [resolveJid(m.sender)], createdAt: Date.now() }
             saveDB(wdb)
-            return conn.reply(m.chat, `🚨 *ROOM BREAKOUT DIBUAT*\n\n${mentionName(m.sender)} otomatis bergabung. Tahanan lain bisa ikut dengan *${usedPrefix}penjara breakout join*.\n\nLihat peserta: *${usedPrefix}penjara breakout info*\nMulai: *${usedPrefix}penjara breakout start*`, m, { mentions: [m.sender] })
+            return conn.reply(m.chat, `🚨 *ROOM BREAKOUT DIBUAT*\n\n${mentionName(m.sender)} otomatis bergabung. Tahanan lain bisa ikut dengan *${usedPrefix}penjara breakout join*.\n\nRoom akan otomatis dihapus jika tidak dimulai dalam 30 menit.\n\nLihat peserta: *${usedPrefix}penjara breakout info*\nMulai: *${usedPrefix}penjara breakout start*`, m, { mentions: [m.sender] })
         }
 
         if (action === 'guide') {
@@ -305,7 +325,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                 `3. Cek peserta: *${usedPrefix}penjara breakout info*\n` +
                 `4. Keluar dari room: *${usedPrefix}penjara breakout leave*\n` +
                 `5. Pembuat room memulai: *${usedPrefix}penjara breakout start*\n\n` +
-                `Minimal 2 tahanan untuk mulai. Routine dan talk meningkatkan peluang tim. Jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam.`
+                `Minimal 2 tahanan untuk mulai. Room dihapus otomatis jika tidak dimulai dalam 30 menit. Jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam.`
             )
         }
 
@@ -374,12 +394,12 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                     removeFromPrison(jid)
                 }
                 saveDB(wdb)
-                return conn.reply(m.chat, `🚨 *BREAKOUT BERHASIL!*\n\n${story}\n\nSemua peserta berhasil kabur: ${names}\nPeluang tim: *50%*.`, m, { mentions })
+                return conn.reply(m.chat, `🚨 *BREAKOUT BERHASIL!*\n\n${story}\n\nSemua peserta berhasil kabur: ${names}`, m, { mentions })
             }
 
             for (const jid of players) getRPG(jid).lamaPenjara += 2 * 60 * 60 * 1000
             saveDB(wdb)
-            return conn.reply(m.chat, `🚨 *BREAKOUT GAGAL*\n\n${story}\n\nSemua peserta mendapat tambahan hukuman 2 jam: ${names}\nPeluang tim: *50%*.`, m, { mentions })
+            return conn.reply(m.chat, `🚨 *BREAKOUT GAGAL*\n\n${story}\n\nSemua peserta mendapat tambahan hukuman 2 jam: ${names}`, m, { mentions })
         }
 
         return m.reply(`📌 Command breakout: *${usedPrefix}penjara breakout create/join/info/leave/start*\nPanduan: *${usedPrefix}penjara guide*`)
