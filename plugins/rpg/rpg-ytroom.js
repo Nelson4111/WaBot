@@ -296,6 +296,8 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
   if (sub === 'live') {
     if (!y.name) return m.reply(`❌ Kamu belum punya channel room. Buat dulu dengan *${usedPrefix}room create <nama>*`)
     if (!y.gender || y.gender === 'none') return m.reply(`❌ Silakan set gender terlebih dahulu via *${usedPrefix}room set gender male|female|none*`)
+    const title = raw.replace(/^live\s*/i, '').trim()
+    if (!title) return m.reply(`❌ Sertakan judul live. Contoh: *${usedPrefix}room live Main game bareng*`)
 
     const content = contentMap[y.content] || contentMap.streamer
     const roomBoost = upgradeSpecs[Math.max(0, Math.min(4, Number(y.roomLevel || 0)))]?.bonus || 1
@@ -321,6 +323,7 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
 
    let cap = `╭─❏「 📡 LIVE YTROOM 」❏\n`
 cap += `│ 📡 *${y.name}*\n`
+  cap += `│ 🎬 *${title}*\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `📌 *DETAIL LIVE*\n`
@@ -404,7 +407,7 @@ return sendRpgMsg(conn, m, cap, pickGenderImage(y.gender || 'none'))  }
   return m.reply(`❌ Subcommand tidak dikenal. Gunakan: *${usedPrefix}room create <nama>* / *${usedPrefix}room content list* / *${usedPrefix}room upgrade* / *${usedPrefix}room live* / *${usedPrefix}room collab*`)
 }
 
-handler.help = ['ytr', 'ytroom', 'youtuber', 'room', 'room create <nama>', 'room set gender <male|female|none>', 'room content list', 'room content <gaming|beauty|fashion|vlog|education>', 'room upgrade', 'room live', 'room collab', 'room info']
+handler.help = ['ytr', 'ytroom', 'youtuber', 'room', 'room create <nama>', 'room set gender <male|female|none>', 'room content list', 'room content <gaming|beauty|fashion|vlog|education>', 'room upgrade', 'room live <judul>', 'room collab', 'room info']
 handler.tags = ['rpg']
 handler.command = /^(ytr|ytroom|youtuber|room)$/i
 handler.alias = ['ytr', 'ytroom', 'youtuber', 'room']

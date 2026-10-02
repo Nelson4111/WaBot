@@ -6,7 +6,8 @@ let handler = async (m, { conn, text }) => {
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
-  if(!user.stats) user.stats = { gym: 0 }
+  if (!user.stats || typeof user.stats !== 'object') user.stats = {}
+  user.stats.gym = Number.isFinite(Number(user.stats.gym)) ? Number(user.stats.gym) : 0
   if(!user.cooldown) user.cooldown = {}
   if(!user.maxDarahBonus) user.maxDarahBonus = 0
   if(!user.gymMembership) user.gymMembership = { tier: null, expired: 0 }

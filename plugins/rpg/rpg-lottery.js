@@ -46,6 +46,7 @@ function getGiveawayState(chat) {
   database.giveaways[chat] = database.giveaways[chat] || { nextId: 1, draft: null, active: {} }
   const state = database.giveaways[chat]
   state.active = state.active || {}
+  state.history = Array.isArray(state.history) ? state.history : []
   state.nextId = Number(state.nextId) || 1
   return state
 }
@@ -83,6 +84,16 @@ async function finishGiveaway(conn, chat, state, giveaway) {
   delete state.active[giveaway.id]
   const participants = [...new Set(giveaway.participants || [])]
   const winner = participants.length ? participants[Math.floor(Math.random() * participants.length)] : null
+  state.history.unshift({
+    id: giveaway.id,
+    creator: giveaway.creator,
+    winner,
+    rewardType: giveaway.rewardType,
+    amount: giveaway.amount,
+    reward: giveaway.reward,
+    endedAt: Date.now()
+  })
+  state.history = state.history.slice(0, 50)
   const wdb = loadDB()
   const creator = wdb.users[giveaway.creator]
   const creatorRpg = creator?.rpg || creator
@@ -106,9 +117,9 @@ async function finishGiveaway(conn, chat, state, giveaway) {
       ? `${giveaway.amount.toLocaleString()} limit`
       : giveaway.reward
   const text = winner
-    ? `🎉 *GIVEAWAY #${giveaway.id} SELESAI!\n> Hadiah: ${reward}\n> Pemenang: @${winner.split('@')[0]}${giveaway.rewardType === 'custom' ? '\n> Hadiah custom diserahkan oleh penyelenggara.' : ''}`
-    : `Giveaway #${giveaway.id} berakhir tanpa peserta, jadi belum ada yang beruntung.`
-  await conn.reply(chat, text, null, { mentions: winner ? [winner] : [] })
+    ? `🎉 *GIVEAWAY #${giveaway.id} SELESAI!*\n> Hadiah: ${reward}\n> Pemenang: @${winner.split('@')[0]}\n> Dibuat oleh: @${giveaway.creator.split('@')[0]}${giveaway.rewardType === 'custom' ? '\n> Hadiah custom diserahkan oleh penyelenggara.' : ''}`
+    : `Giveaway #${giveaway.id} berakhir tanpa peserta.\n> Dibuat oleh: @${giveaway.creator.split('@')[0]}`
+  await conn.reply(chat, text, null, { mentions: [giveaway.creator, ...(winner ? [winner] : [])] })
 }
 
 async function settleExpiredGiveaways(conn, chat, state) {
@@ -375,7 +386,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (!state.history.length) return m.reply('Belum ada riwayat pemenang lottery.')
     const mentions = [...new Set(state.history.map(item => item.jid))]
     const rows = state.history.map((item, index) =>
-      `${index + 1}. @${item.jid.split('@')[0]} - ${item.date} (${money(item.prize)})\n   Nomor undian: *${item.drawCode || '---------'}*`
+      `> ${index + 1}. @${item.jid.split('@')[0]} - ${item.date} (${money(item.prize)})\n> ↳ Nomor undian: *${item.drawCode || '---------'}*`
     )
     return conn.reply(m.chat, `🏆 *RIWAYAT PEMENANG LOTTERY*\n${rows.join('\n')}`, m, { mentions })
   }
@@ -512,6 +523,7 @@ if (saldo < totalHarga) {
         `> ${usedPrefix}giveaway konfirmasi <durasi> / batal\n` +
         `> ${usedPrefix}giveaway join <nomor/all>\n` +
         `> ${usedPrefix}giveaway list\n` +
+        `> ${usedPrefix}giveaway history\n` +
         `> ${usedPrefix}giveaway end [nomor]\n` +
         `Durasi memakai menit atau jam, maksimal 24 jam. Contoh: *${usedPrefix}giveaway konfirmasi 2h*.`
       )
@@ -525,6 +537,22 @@ if (saldo < totalHarga) {
         return `#${item.id} ${reward}\n> Syarat: ${item.requirement}\n> Peserta: ${item.participants.length}\n> Sisa: ${formatDuration(item.endsAt - Date.now())}`
       })
       return m.reply(`🎁 *GIVEAWAY AKTIF*\n\n${rows.join('\n\n')}`)
+    }
+
+    if (action === 'history' || action === 'riwayat') {
+      if (!giveawayState.history.length) return m.reply('Belum ada giveaway yang selesai di grup ini.')
+      const records = giveawayState.history.slice(0, 20)
+      const mentions = [...new Set(records.flatMap(item => [item.creator, item.winner].filter(Boolean)))]
+      const rows = records.map(item => {
+        const reward = item.rewardType === 'money'
+          ? money(item.amount)
+          : item.rewardType === 'limit'
+            ? `${Number(item.amount || 0).toLocaleString()} limit`
+            : item.reward
+        const winner = item.winner ? `@${item.winner.split('@')[0]}` : 'Tidak ada peserta'
+        return `> #${item.id} ${reward}\n> ↳ Pemenang: ${winner}\n> ↳ Dibuat oleh: @${item.creator.split('@')[0]}`
+      })
+      return conn.reply(m.chat, `🏆 *RIWAYAT GIVEAWAY*\n${rows.join('\n')}`, m, { mentions })
     }
 
     if (action === 'konfirmasi') {
