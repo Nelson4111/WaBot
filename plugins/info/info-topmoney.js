@@ -1,3 +1,5 @@
+import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
+
 let handler = async (m, { conn, command }) => {
   if (command === 'debugduit') return debugduit(m, { conn })
   let userMap = {}
@@ -30,7 +32,7 @@ let handler = async (m, { conn, command }) => {
     }
   }
 
-  let sortedUsers = Object.values(userMap)
+  let sortedUsers = filterRpgPanelUsers(Object.values(userMap), user => user.jid)
     .map(u => ({ ...u, total: u.cash + u.bank }))
     .filter(u => u.total > 0)
     .sort((a, b) => b.total - a.total)
