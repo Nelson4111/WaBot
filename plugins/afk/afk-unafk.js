@@ -66,7 +66,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     await conn.sendMessage(m.chat, { text: successMsg, mentions: [target] }, { quoted: m });
 };
 
-handler.help = ['unafk @tag/reply', 'setafk @tag/reply <durasi> [alasan]'];
+handler.help = ['removeafk @tag/reply', 'unafk @tag/reply', 'setafk @tag/reply <durasi> [alasan]'];
 handler.tags = ['admin'];
 handler.command = /^(removeafk|unafk|setafk)$/i;
 handler.admin = true;
