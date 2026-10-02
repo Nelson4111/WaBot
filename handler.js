@@ -642,6 +642,26 @@ async function processMessage(m, chatUpdate) {
         const isRAdmin = user?.admin === 'superadmin' || user?.isSuperAdmin || false
         const isAdmin = isOwner || isRAdmin || user?.admin === 'admin' || user?.isAdmin || false
         const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin' || bot?.isAdmin || bot?.isSuperAdmin || false
+
+        if (m.isGroup && !m.fromMe) {
+            const mutedUsers = global.db.data.chats[m.chat]?.mutedUsers || []
+            const senderJids = [m.sender, user?.id, user?.jid, user?.lid, user?.phoneNumber]
+                .filter(Boolean)
+                .flatMap(jid => [jid, this.decodeJid?.(jid)].filter(Boolean))
+            if (mutedUsers.some(jid => senderJids.includes(jid))) {
+                if (isBotAdmin && m.key?.id) {
+                    await this.sendMessage(m.chat, {
+                        delete: {
+                            remoteJid: m.chat,
+                            fromMe: false,
+                            id: m.key.id,
+                            participant: m.key.participant || m.sender
+                        }
+                    }).catch(err => console.error('[MUTED MESSAGE DELETE FAILED]', err?.message))
+                }
+                return false
+            }
+        }
         
         // FAILOVER & ARBITRATION: Main Bot vs JadiBot in same group
         if (m.isGroup && !(await botArbitrator.coordinate(this, m, groupMetadata))) {
@@ -696,8 +716,7 @@ async function processMessage(m, chatUpdate) {
                     console.error(e)
                 }
             }
-            if (!opts['restrict'])
-                if (plugin.tags && plugin.tags.includes('admin')) continue
+            if (!opts['restrict'] && plugin.tags?.includes('admin') && !plugin.admin) continue
             let _prefix = plugin.customPrefix ? plugin.customPrefix : conn.prefix ? conn.prefix : global.prefix
             let match = (_prefix instanceof RegExp ? [[_prefix.exec(m.text), _prefix]] :
                 Array.isArray(_prefix) ? _prefix.map(p => {
