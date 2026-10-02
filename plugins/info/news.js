@@ -104,6 +104,16 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   const [action = '', ...params] = text.trim().split(/\s+/).filter(Boolean)
   const normalizedAction = action.toLowerCase()
 
+  if (normalizedAction === 'info') {
+    const allNews = await loadNews()
+    const monthlyCount = getMonthlyNews(allNews).length
+    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\nUpdate bulan ini: *${monthlyCount}*\n\nPerintah: ${usedPrefix}news | ${usedPrefix}news <halaman> | ${usedPrefix}news <bagian> [halaman]\nGuide: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
+  }
+
+  if (normalizedAction === 'guide') {
+    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news\n${usedPrefix}news <halaman>\n${usedPrefix}news <bagian> [halaman]\n${usedPrefix}news info\n\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <nomor>\n╰─━━━━━━━━━━━━━━─`)
+  }
+
   if (normalizedAction === 'add') {
     if (!isOwner) return m.reply('❌ Perintah tambah news khusus untuk owner.')
 
@@ -191,7 +201,7 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section }))
 }
 
-handler.help = ['news [halaman]', 'news <bagian> [halaman]', 'news add <bagian> <isi>', 'news del <nomor>']
+handler.help = ['news [halaman]', 'news <bagian> [halaman]', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <nomor>']
 handler.tags = ['info']
 handler.command = /^news$/i
 export default handler
