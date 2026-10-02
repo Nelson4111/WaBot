@@ -26,6 +26,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `> ↳ Ajak pet bermain untuk menaikkan mood.\n`
     cap += `> *${usedPrefix}pet train <nomor>*\n`
     cap += `> ↳ Latih pet untuk meningkatkan level dan EXP.\n`
+    cap += `> *${usedPrefix}pet care* (premium)\n`
+    cap += `> ↳ Otomatis feed, rest, lalu clean semua pet. Cooldown 30 menit.\n`
+    cap += `> *${usedPrefix}pet all* (premium)\n`
+    cap += `> ↳ Gunakan setelah pet care; menjalankan train, walk, play, hunt, dan dispatch untuk semua pet. Cooldown 30 menit.\n`
     cap += `> *${usedPrefix}pet rest <nomor>*\n`
     cap += `> ↳ Istirahatkan pet yang lelah.\n`
     cap += `> *${usedPrefix}pet clean <nomor>*\n`
@@ -35,8 +39,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `💰 *INCOME & AKTIVITAS*\n`
     cap += `> *${usedPrefix}pet claim*\n`
     cap += `> ↳ Klaim penghasilan pasif harian dari pet penghasil uang.\n`
-    cap += `> *${usedPrefix}pet dispatch <nomor>*\n`
-    cap += `> ↳ Kirim pet mencari item langka.\n`
+    cap += `> *${usedPrefix}pet dispatch*\n`
+    cap += `> ↳ Mulai dispatch selama 30 menit.\n`
+    cap += `> *${usedPrefix}pet dispatch info / collect*\n`
+    cap += `> ↳ Cek sisa waktu atau klaim hasil dispatch yang sudah selesai.\n`
     cap += `> *${usedPrefix}pet battle <nomor> @user*\n`
     cap += `> ↳ Tantang pet pemain lain bertarung.\n`
     cap += `> *${usedPrefix}pet release / sell*\n`

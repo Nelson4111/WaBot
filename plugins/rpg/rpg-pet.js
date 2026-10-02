@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { isPremiumUser } from './rpg-bank.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -34,6 +35,7 @@ const formatNamaAsli = (name) => name.replace(/_/g, ' ').replace(/\b\w/g, letter
 const formatNama = (p) => p.nickname? `${p.nickname} (${formatNamaAsli(p.tipe)})` : formatNamaAsli(p.tipe)
 const bar = (val, len = 10) => '`' + '█'.repeat(Math.floor(val / (100/len))) + '░'.repeat(len - Math.floor(val / (100/len))) + '`'
 const isMesin = (tipe) => ['robot', 'drone', 'cyborg', 'mecha'].includes(tipe)
+const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1
 
 user.pets = user.pets.filter(p => {
   if((p.energy || 100) <= 0 && (Date.now() - (p.lastActivity || 0) > 86400000)) {
@@ -638,6 +640,118 @@ const cekBuzz = () => {
   }
   return false
 }
+
+if (action === 'care') {
+  if (!isPremiumUser(m.sender, wdb)) return safeReply('❌ Perintah *.pet care* khusus pengguna premium.')
+  if (!user.pets.length) return safeReply('❌ Kamu belum memiliki pet.')
+  if (user.pets.some(pet => pet.tipe === 'vampir') && !isMalam) return safeReply('🧛 Pet vampir hanya bisa dirawat pada pukul 18:00-05:59 WIB.')
+
+  const cooldown = 30 * 60 * 1000
+  const remaining = cooldown - (Date.now() - (Number(user.cooldown.petcare) || 0))
+  if (remaining > 0) return safeReply(`⏳ Cooldown *.pet care* tersisa ${Math.ceil(remaining / 60000)} menit.`)
+
+  const feedCost = { COMMON: 5000, UNCOMMON: 15000, RARE: 50000, EPIC: 150000, LEGENDARY: 500000, MYTHIC: 1000000, SECRET: 2000000 }
+  const hasRemy = user.pets.some(pet => pet.tipe === 'remy_ratatouille')
+  let totalFeedCost = 0
+  for (const pet of user.pets) {
+    if (isMesin(pet.tipe)) continue
+    let cost = feedCost[pets[pet.tipe]?.rarity || 'COMMON'] || 2000
+    if (applySkill(pet, 'feed').moneyBonus > 0) cost = Math.max(0, cost - Math.floor(cost * 0.5))
+    if (hasRemy) cost = Math.floor(cost * 0.5)
+    totalFeedCost += cost
+  }
+  const cleanCost = user.pets.filter(pet => Number(pet.dirty) !== 0).length * 2000
+  const totalCost = totalFeedCost + cleanCost
+  if ((Number(wdb.money[m.sender]) || 0) < totalCost) return safeReply(`❌ Uang tidak cukup. Care membutuhkan Rp ${totalCost.toLocaleString('id-ID')} untuk feed dan clean.`)
+
+  const now = Date.now()
+  wdb.money[m.sender] -= totalCost
+  for (const pet of user.pets) {
+    if (!isMesin(pet.tipe)) {
+      const rarity = pets[pet.tipe]?.rarity || 'COMMON'
+      const skill = applySkill(pet, 'feed')
+      let expGain = ( { COMMON: 20, UNCOMMON: 25, RARE: 35, EPIC: 50, LEGENDARY: 70, MYTHIC: 90, SECRET: 120 }[rarity] || 20) + (pet.tipe === 'anjing_alpha' ? 10 : 0) + (skill.expBonus || 0)
+      pet.exp = (Number(pet.exp) || 0) + expGain
+      pet.energy = Math.min(100, (Number(pet.energy) || 100) + 20 + (pet.tipe === 'mermaid' ? 10 : 0) + (skill.energyBonus || 0))
+      pet.happy = Math.min(100, (Number(pet.happy) || 50) + 5 + (skill.happyBonus || 0))
+      if (pet.tipe === 'alien') wdb.money[m.sender] += scaleDifficultyIncome(user, 1000 * (Number(pet.level) || 1))
+      if (pet.tipe === 'poop') wdb.money[m.sender] += scaleDifficultyIncome(user, 2000)
+      if (skill.moneyBonus > 0) wdb.money[m.sender] += scaleDifficultyIncome(user, skill.moneyBonus)
+      if (pet.exp >= 100) { pet.level = (Number(pet.level) || 1) + 1; pet.exp = 0 }
+      pet.lastFeed = now
+    }
+
+    if (pet.energy <= 0 && pet.tipe === 'phoenix' && pet.revive) { pet.energy = 100; pet.revive = false }
+    const restSkill = applySkill(pet, 'rest')
+    pet.energy = Math.min(100, (Number(pet.energy) || 100) + 30 + (restSkill.energyBonus || 0))
+    pet.happy = Math.min(100, (Number(pet.happy) || 50) + (pet.tipe === 'fairy' ? 5 : 0) + (restSkill.happyBonus || 0))
+    if (restSkill.keepHappy) pet.happy = Math.max(pet.happy, 100)
+    pet.lastRest = now
+    pet.dirty = 0
+    pet.happy = Math.min(100, pet.happy + 10)
+  }
+
+  user.petCareAt = now
+  user.cooldown.petcare = now
+  saveDB(wdb)
+  return safeReply(`✅ *PET CARE SELESAI*\nSemua pet sudah di-feed, di-rest, dan dibersihkan.\n> ↳ Biaya: Rp ${totalCost.toLocaleString('id-ID')}\n> ↳ *.pet all* bisa digunakan sekarang. Cooldown care: 30 menit.`)
+}
+
+if (action === 'all') {
+  if (!isPremiumUser(m.sender, wdb)) return safeReply('❌ Perintah *.pet all* khusus pengguna premium.')
+  if (!user.pets.length) return safeReply('❌ Kamu belum memiliki pet.')
+  const batchCooldown = 30 * 60 * 1000
+  const batchRemaining = batchCooldown - (Date.now() - (Number(user.cooldown.petall) || 0))
+  if (batchRemaining > 0) return safeReply(`⏳ Cooldown *.pet all* tersisa ${Math.ceil(batchRemaining / 60000)} menit.`)
+  if (!user.petCareAt || Number(user.petCareAt) <= (Number(user.petLastAllAt) || 0)) return safeReply(`❌ Gunakan *.pet care* sebelum *.pet all*. Pet care khusus premium dan cooldown-nya 30 menit.`)
+  if (user.pendingPetDispatch) return safeReply(`📦 Hasil dispatch sebelumnya belum diklaim. Cek *${usedPrefix}pet dispatch info* atau klaim dengan *${usedPrefix}pet dispatch collect*.`)
+  if (user.pets.some(pet => pet.tipe === 'vampir') && !isMalam) return safeReply('🧛 Pet vampir hanya bisa beraktivitas pada pukul 18:00-05:59 WIB.')
+
+  const now = Date.now()
+  let huntExp = Math.floor(Math.random() * 30) + 10
+  const huntMoneyMulti = user.pets.reduce((total, pet) => total * (applySkill(pet, 'hunt').moneyMulti || 1), 1)
+  const huntMoney = scaleDifficultyIncome(user, Math.floor((Math.floor(Math.random() * 50000) + 10000) * huntMoneyMulti))
+  const dispatchMoney = scaleDifficultyIncome(user, Math.floor(Math.random() * 100000) + 50000)
+  const levelUps = []
+
+  user.pets.forEach(pet => {
+    const trainSkill = applySkill(pet, 'train')
+    const walkSkill = applySkill(pet, 'walk')
+    const playSkill = applySkill(pet, 'play')
+    const huntSkill = applySkill(pet, 'hunt')
+    let trainExp = 60 * getDebuff(pet) * (pet.tipe === 'skeleton' ? 1.5 : 1) + (pet.tipe === 'orc' ? 10 : 0)
+    let walkExp = 30 * getDebuff(pet) * (pet.tipe === 'skeleton' ? 1.5 : 1) + (pet.tipe === 'orc' ? 5 : 0)
+    let playExp = 30 * getDebuff(pet) * (pet.tipe === 'skeleton' ? 1.5 : 1)
+    if (pet.tipe === 'vampir' && isMalam) { trainExp += 20; walkExp += 15; playExp += 15 }
+    if (pet.tipe === 'serigala' && isMalam) { trainExp += 15; walkExp += 10 }
+    const trainLoss = trainSkill.noEnergyLoss || ['batu', 'zombie'].includes(pet.tipe) ? 0 : pet.tipe === 'zombie' ? 15 : pet.tipe === 'burung_hantu' && isMalam ? 15 : 30
+    const walkLoss = walkSkill.noEnergyLoss || ['batu', 'zombie'].includes(pet.tipe) ? 0 : pet.tipe === 'zombie' ? 10 : pet.tipe === 'burung_hantu' && isMalam ? 10 : 20
+    let playLoss = playSkill.noEnergyLoss || ['batu', 'zombie'].includes(pet.tipe) ? 0 : pet.tipe === 'zombie' ? 10 : pet.tipe === 'burung_hantu' && isMalam ? 10 : pet.tipe === 'snowman' && !isMalam ? 30 : 20
+    if (pet.tipe === 'zombie') playLoss = 10
+    const expGain = trainExp + walkExp + playExp + huntExp * huntSkill.multi * getDebuff(pet)
+    pet.exp = (Number(pet.exp) || 0) + expGain
+    if (!trainSkill.keepHappy) pet.happy = (Number(pet.happy) || 50) - 5
+    pet.happy = Math.min(100, pet.happy + 5 + 10 * (pet.tipe === 'ghost' ? 2 : 1))
+    pet.dirty = Math.min(100, (Number(pet.dirty) || 0) + 45)
+    pet.energy = Math.max(0, (Number(pet.energy) || 100) - trainLoss - walkLoss - playLoss - 40)
+    pet.lastTrain = now
+    pet.lastActivity = now
+    if (pet.exp >= 100) {
+      pet.level = (Number(pet.level) || 1) + Math.floor(pet.exp / 100)
+      pet.exp %= 100
+      levelUps.push(pet)
+    }
+  })
+
+  wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + huntMoney
+  user.cooldown.pethunt = now
+  user.cooldown.petdispatch = now
+  user.cooldown.petall = now
+  user.petLastAllAt = user.petCareAt
+  user.pendingPetDispatch = { startedAt: now, readyAt: now + 1800000, money: dispatchMoney }
+  saveDB(wdb)
+  return safeReply(`✅ *PET ALL SELESAI*\nTrain, walk, play, dan hunt sudah dilakukan untuk ${user.pets.length} pet.\n> ↳ Hasil hunt: +Rp ${huntMoney.toLocaleString('id-ID')}\n> ↳ Dispatch selesai dalam 30 menit; cek *${usedPrefix}pet dispatch info* lalu klaim dengan *${usedPrefix}pet dispatch collect*.${levelUps.length ? `\n> ↳ Level up: ${levelUps.length} pet.` : ''}`)
+}
   const getPet = (name) => user.pets.find(p => p.tipe === name)
   const getMood = (p) => {
     let avg = ((p.happy || 50) + (p.energy || 100) + (100 - (p.dirty || 0))) / 3
@@ -1040,8 +1154,6 @@ if(['walk','play','feed','rest','train'].includes(action)){
     )
   }
 }
-
-const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1
 
 const cekCD = (key, durasi) => {
   let last = user.cooldown[key] || 0
@@ -2342,13 +2454,38 @@ if (action === 'hunt') {
 
 // === DISPATCH ===
 if (action === 'dispatch') {
+  const dispatchAction = args[1]?.toLowerCase()
+  const pendingDispatch = user.pendingPetDispatch
+
+  if (dispatchAction === 'info') {
+    if (!pendingDispatch) return safeReply('📦 Tidak ada dispatch aktif. Kirim pet dengan *.pet dispatch*.')
+    const remaining = Math.max(0, Number(pendingDispatch.readyAt) - Date.now())
+    const minutes = Math.floor(remaining / 60000)
+    const seconds = Math.floor((remaining % 60000) / 1000)
+    return safeReply(remaining
+      ? `📦 *DISPATCH BERLANGSUNG*\nSisa waktu: ${minutes} menit ${seconds} detik.`
+      : `✅ *DISPATCH SELESAI*\nHasil: Rp ${Number(pendingDispatch.money || 0).toLocaleString('id-ID')}\nKetik *${usedPrefix}pet dispatch collect* untuk mengambil hasil.`)
+  }
+
+  if (dispatchAction === 'collect') {
+    if (!pendingDispatch) return safeReply('📦 Tidak ada hasil dispatch untuk diklaim.')
+    const remaining = Number(pendingDispatch.readyAt) - Date.now()
+    if (remaining > 0) return safeReply(`⏳ Dispatch belum selesai. Cek *${usedPrefix}pet dispatch info* untuk melihat durasinya.`)
+    const hasil = Math.max(0, Number(pendingDispatch.money) || 0)
+    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + hasil
+    delete user.pendingPetDispatch
+    saveDB(wdb)
+    return safeReply(`✅ *DISPATCH DIKLAIM*\nPet sudah kembali. Hasil: +Rp ${hasil.toLocaleString('id-ID')}.`)
+  }
+
+  if (pendingDispatch) return safeReply(`📦 Dispatch masih tersimpan. Cek *${usedPrefix}pet dispatch info* atau klaim dengan *${usedPrefix}pet dispatch collect*.`)
   let cd = cekCD('petdispatch', 1800000)
 
   if(cd > 0) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ⏰ *PET MASIH MISI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Tunggu ${Math.floor(cd/60000)} menit lagi\n\n` +
+    `> ↳ Tunggu ${Math.ceil(cd/60)} menit lagi\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 
@@ -2358,26 +2495,11 @@ if (action === 'dispatch') {
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  user.cooldown.petdispatch = Date.now()
+  const now = Date.now()
+  const hasil = scaleDifficultyIncome(user, Math.floor(Math.random() * 100000) + 50000)
+  user.cooldown.petdispatch = now
+  user.pendingPetDispatch = { startedAt: now, readyAt: now + 1800000, money: hasil }
   saveDB(wdb)
-
-  setTimeout(() => {
-    let hasil = Math.floor(Math.random() * 100000) + 50000
-    hasil = scaleDifficultyIncome(user, hasil)
-    wdb.money[m.sender] += hasil
-    saveDB(wdb)
-
-    conn.reply(
-      m.sender,
-      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
-      `│ 📦 *MISI SELESAI*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `📬 *PET KEMBALI*\n` +
-      `> ↳ 💰 Hasil: +Rp ${hasil.toLocaleString()}\n\n` +
-      `─━━━━━━━━━━━━━━─`,
-      m
-    )
-  }, 1800000)
 
   return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
@@ -2385,7 +2507,8 @@ if (action === 'dispatch') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `🚚 *PET BERANGKAT*\n` +
     `> ↳ ⏱️ Durasi: 30 menit\n` +
-    `> ↳ 📝 Nanti hasil dikirim ke chat pribadi\n\n` +
+    `> ↳ Hasil diambil dengan *${usedPrefix}pet dispatch collect*\n` +
+    `> ↳ Cek waktu dengan *${usedPrefix}pet dispatch info*\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -2776,7 +2899,7 @@ if (action === 'claim') {
   return safeReply(`❌ Command tidak dikenal. Ketik *.pet* buat lihat menu`)
 }
 
-handler.help = ['pet', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
+handler.help = ['pet', 'pet care', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
 handler.tags = ['rpg']
 handler.command = ['pet']
 handler.alias = ['pet']

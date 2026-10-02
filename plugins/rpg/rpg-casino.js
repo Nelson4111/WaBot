@@ -288,19 +288,27 @@ function getCooldowns(user) {
 
 function cooldownMenu(user, prefix) {
   const cooldowns = getCooldowns(user)
+  const cooldownDurations = user.casinoCooldownDurations || {}
   const now = Date.now()
-  const cooldownDuration = scaleDifficultyCooldown(user, GAME_COOLDOWN)
   let cap = `╭─❏「 ⏳ CASINO COOLDOWN 」❏\n`
-  cap += `│ Setiap game memiliki cooldown sendiri.\n│ Durasi: ${formatRemaining(cooldownDuration)}\n`
+  cap += `│ Cooldown mengikuti taruhan dan multiplier hasil.\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
   for (const [key, game] of Object.entries(games)) {
+    const cooldownDuration = cooldownDurations[key] || getGameCooldownDuration(key, 2, user)
     const remaining = (cooldowns[key] || 0) + cooldownDuration - now
     cap += `${game.emoji} *${game.name}*\n`
-    cap += `> ↳ ${remaining > 0 ? `⏳ ${formatRemaining(remaining)} lagi` : `✅ READY (${prefix}casino ${key})`}\n\n`
+    cap += `> ↳ Cooldown ${formatRemaining(cooldownDuration)} • ${remaining > 0 ? `⏳ ${formatRemaining(remaining)} lagi` : `✅ READY (${prefix}casino ${key})`}\n\n`
   }
 
   return cap + `─━━━━━━━━━━━━━━─`
+}
+
+function getGameCooldownDuration(game, multiplier, user) {
+  const minimumBet = games[game]?.minBet || 100
+  const wagerTier = Math.max(1, Math.ceil(Math.log10(minimumBet / 100 + 1)))
+  const rewardFactor = Math.max(1, Number(multiplier) / 2)
+  return scaleDifficultyCooldown(user, GAME_COOLDOWN * wagerTier * rewardFactor)
 }
 
 function getTopPlayers(wdb, limit = 20) {
@@ -1158,7 +1166,7 @@ if ((wdb.money[m.sender] || 0) < bet) {
 const cooldowns = getCooldowns(user)
 const lastPlayed = cooldowns[game] || 0
 const elapsed = Date.now() - lastPlayed
-const cooldownDuration = scaleDifficultyCooldown(user, GAME_COOLDOWN)
+const cooldownDuration = Number(user.casinoCooldownDurations?.[game]) || getGameCooldownDuration(game, 2, user)
 
 if (elapsed < cooldownDuration) {
   return m.reply(
@@ -1178,6 +1186,8 @@ if (elapsed < cooldownDuration) {
 
   wdb.money[m.sender] = balanceBefore + net
   cooldowns[game] = Date.now()
+  user.casinoCooldownDurations = user.casinoCooldownDurations || {}
+  user.casinoCooldownDurations[game] = getGameCooldownDuration(game, result.multiplier, user)
 
   stats.games++
   stats.dailyGames++

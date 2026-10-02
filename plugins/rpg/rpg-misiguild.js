@@ -210,22 +210,34 @@ if(Date.now() < myGuild.missionCooldown){
   myGuild.exp += reward.exp
   myGuild.lastMission = Date.now()
 
+  myGuild.pendingLoot = myGuild.pendingLoot || {}
   myGuild.members.forEach(jid => {
     let u = wdb.users[jid]?.rpg
     if (u) {
-      u.inventory = u.inventory || {}
-      if (!u.guildLoot) u.guildLoot = { diamond: 0, emerald: 0 }
-      wdb.money[jid] = (wdb.money[jid] || 0) + scaleDifficultyIncome(u, reward.money)
-      if (msn.reward.iron) u.iron = (u.iron || 0) + scaleDifficultyIncome(u, msn.reward.iron)
-      if (msn.reward.gold) u.gold = (u.gold || 0) + scaleDifficultyIncome(u, msn.reward.gold)
-      if (msn.reward.stone) u.stone = (u.stone || 0) + scaleDifficultyIncome(u, msn.reward.stone)
-      if (msn.reward.diamond) {
-        const diamondReward = scaleDifficultyIncome(u, msn.reward.diamond)
-        u.diamond = (u.diamond || 0) + diamondReward
-        u.guildLoot.diamond += diamondReward
+      const rewardItems = {
+        money: scaleDifficultyIncome(u, reward.money),
+        iron: scaleDifficultyIncome(u, msn.reward.iron || 0),
+        gold: scaleDifficultyIncome(u, msn.reward.gold || 0),
+        stone: scaleDifficultyIncome(u, msn.reward.stone || 0),
+        diamond: scaleDifficultyIncome(u, msn.reward.diamond || 0),
+        emerald: scaleDifficultyIncome(u, msn.reward.emerald || 0)
       }
-      if (msn.reward.emerald) {
-        u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + scaleDifficultyIncome(u, msn.reward.emerald)
+      if (jid === m.sender) {
+        u.inventory = u.inventory || {}
+        u.guildLoot = u.guildLoot || { diamond: 0, emerald: 0 }
+        wdb.money[jid] = (wdb.money[jid] || 0) + rewardItems.money
+        u.iron = (u.iron || 0) + rewardItems.iron
+        u.gold = (u.gold || 0) + rewardItems.gold
+        u.stone = (u.stone || 0) + rewardItems.stone
+        u.diamond = (u.diamond || 0) + rewardItems.diamond
+        u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + rewardItems.emerald
+        u.guildLoot.diamond += rewardItems.diamond
+        u.guildLoot.emerald += rewardItems.emerald
+      } else {
+        myGuild.pendingLoot[jid] = myGuild.pendingLoot[jid] || {}
+        for (const [item, amount] of Object.entries(rewardItems)) {
+          myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + amount
+        }
       }
     }
   })
@@ -259,6 +271,7 @@ cap += `🎁 *HADIAH MEMBER*\n`
 cap += `> ↳ 💰 Money: Rp ${reward.money.toLocaleString('id-ID')}\n`
 if (msn.reward.diamond) cap += `> ↳ 💎 Diamond: ${msn.reward.diamond}\n`
 if (msn.reward.emerald) cap += `> ↳ 💚 Emerald: ${msn.reward.emerald}\n`
+cap += `> ↳ Hadiah anggota lain tersimpan di .guild loot; eksekutor menerima langsung.\n`
 
 cap += `\n╰─━━━━━━━━━━━━━━─`
 

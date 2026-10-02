@@ -15,6 +15,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
+  const resourceNames = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', emerald: 'Emerald' }
+  const normalizeResource = value => ({ uang: 'money', gemstone: 'emerald' }[String(value || '').toLowerCase()] || String(value || '').toLowerCase())
+  const readResource = (jid, rpg, item) => item === 'money'
+    ? Number(wdb.money[jid]) || 0
+    : item === 'emerald'
+      ? Number(rpg.inventory?.gemstone) || 0
+      : Number(rpg[item]) || 0
+  const changeResource = (jid, rpg, item, amount) => {
+    if (item === 'money') wdb.money[jid] = (Number(wdb.money[jid]) || 0) + amount
+    else if (item === 'emerald') {
+      rpg.inventory = rpg.inventory || {}
+      rpg.inventory.gemstone = (Number(rpg.inventory.gemstone) || 0) + amount
+    } else rpg[item] = (Number(rpg[item]) || 0) + amount
+  }
+  const formatResources = loot => Object.entries(resourceNames)
+    .filter(([item]) => Number(loot?.[item]) > 0)
+    .map(([item, name]) => `${name}: ${Number(loot[item]).toLocaleString('id-ID')}`)
+    .join(', ')
 
   if (action === 'guide') {
     const guide = `╭─❏「 📖 GUILD GUIDE 」❏
@@ -27,7 +45,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > Biaya pembuatan: Rp 500.000
 
 📌 *2. Lihat Guild yang Tersedia*
-> ${usedPrefix}listguild
+> ${usedPrefix}guild list
+> ${usedPrefix}guild top
 
 📌 *3. Bergabung ke Guild*
 > ${usedPrefix}joinguild <nama guild>
@@ -53,14 +72,21 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 📌 *8. Ambil Loot Guild*
 > ${usedPrefix}guild loot
-> Cek hasil loot dari misi guild.
+> ${usedPrefix}guild loot take
+> ${usedPrefix}guild loot list (leader)
+> ${usedPrefix}guild loot collect (leader)
 
-📌 *9. Guild War*
+📌 *9. Guild Storage*
+> ${usedPrefix}guild storage
+> ${usedPrefix}guild storage add <item> <jumlah>
+> ${usedPrefix}guild storage take <item> <jumlah> (semua anggota)
+
+📌 *10. Guild War*
 > ${usedPrefix}guildwar @tag
 > ${usedPrefix}guildwar acak
 > Tantang guild lain dan ikuti instruksi penerimaan war.
 
-📌 *10. Keluar dari Guild*
+📌 *11. Keluar dari Guild*
 > ${usedPrefix}leaveguild
 > Setelah keluar, ada cooldown sebelum bisa join/create lagi.
 
@@ -71,13 +97,91 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (action === 'loot') {
     const myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
     if (!myGuild) return m.reply('❌ Kamu belum bergabung dengan Guild.')
-    const loot = user.guildLoot || {}
-    const diamondLoot = Number(loot.diamond || 0)
-    const emeraldLoot = Number(loot.emerald || 0)
-    const totalDiamond = Number(user.diamond || 0)
-    const totalEmerald = Number(user.emerald || 0)
-    const cap = `╭─❏「 🎁 GUILD LOOT 」❏\n├[ 🏰 Guild ] ${myGuild.name}\n├[ 💎 Total Diamond ] ${totalDiamond.toLocaleString()}\n├> Dari Misi Guild : ${diamondLoot.toLocaleString()}\n├[ 💚 Total Emerald ] ${totalEmerald.toLocaleString()}\n├> Dari Misi Guild : ${emeraldLoot.toLocaleString()}\n╰─━━━━━━━━━━━━━━─\n├ Loot misi dicatat terpisah dari sumber lainnya.`
+    myGuild.pendingLoot = myGuild.pendingLoot || {}
+    const lootAction = args[1]?.toLowerCase()
+    if (lootAction === 'list') {
+      if (myGuild.leader !== m.sender) return m.reply('❌ Daftar loot semua anggota hanya bisa dilihat leader guild.')
+      const entries = myGuild.members
+        .map(jid => ({ jid, loot: myGuild.pendingLoot[jid] || {} }))
+        .filter(({ loot }) => Object.values(loot).some(amount => Number(amount) > 0))
+      if (!entries.length) return m.reply('🎁 Belum ada loot misi yang menunggu diambil.')
+      const list = entries.map(({ jid, loot }) => `> @${jid.split('@')[0]}: ${formatResources(loot)}`).join('\n')
+      return m.reply(`╭─❏「 🎁 PENDING GUILD LOOT 」❏\n${list}\n╰─━━━━━━━━━━━━━━─`, null, { mentions: entries.map(entry => entry.jid) })
+    }
+
+    if (lootAction === 'take' || lootAction === 'collect') {
+      const isCollect = lootAction === 'collect'
+      if (isCollect && myGuild.leader !== m.sender) return m.reply('❌ Hanya leader yang bisa mengumpulkan loot semua anggota.')
+      const recipients = isCollect ? myGuild.members : [m.sender]
+      const total = Object.fromEntries(Object.keys(resourceNames).map(item => [item, 0]))
+      for (const jid of recipients) {
+        const pending = myGuild.pendingLoot[jid] || {}
+        for (const item of Object.keys(total)) {
+          total[item] += Math.max(0, Number(pending[item]) || 0)
+          pending[item] = 0
+        }
+        myGuild.pendingLoot[jid] = pending
+      }
+      if (!Object.values(total).some(amount => amount > 0)) return m.reply('🎁 Tidak ada loot misi yang bisa diambil.')
+      for (const [item, amount] of Object.entries(total)) {
+        if (!amount) continue
+        const target = getUserRPG(wdb, m.sender).rpg
+        changeResource(m.sender, target, item, amount)
+        if (item === 'diamond') {
+          target.guildLoot = target.guildLoot || { diamond: 0, emerald: 0 }
+          target.guildLoot.diamond += amount
+        }
+        if (item === 'emerald') {
+          target.guildLoot = target.guildLoot || { diamond: 0, emerald: 0 }
+          target.guildLoot.emerald += amount
+        }
+      }
+      saveDB(wdb)
+      return m.reply(`✅ ${isCollect ? 'Leader mengumpulkan semua loot pending' : 'Loot guild berhasil diambil'}:\n${formatResources(total)}`)
+    }
+
+    const pending = myGuild.pendingLoot[m.sender] || {}
+    const cap = `╭─❏「 🎁 GUILD LOOT 」❏\n├[ 🏰 Guild ] ${myGuild.name}\n├[ 💎 Diamond dimiliki ] ${(Number(user.rpg.diamond) || 0).toLocaleString()}\n├[ 💚 Emerald dimiliki ] ${(Number(user.rpg.inventory?.gemstone) || 0).toLocaleString()}\n├[ ⏳ Loot pending ] ${formatResources(pending) || 'Kosong'}\n╰─━━━━━━━━━━━━━━─\nKetik *${usedPrefix}guild loot take* untuk mengambil loot milikmu.`
     return m.reply(cap)
+  }
+
+  if (action === 'storage') {
+    const myGuild = Object.values(wdb.guilds).find(g => g.members?.includes(m.sender))
+    if (!myGuild) return m.reply('❌ Kamu belum bergabung dengan Guild.')
+    myGuild.storage = myGuild.storage || {}
+    const operation = args[1]?.toLowerCase()
+    if (!operation) {
+      const summary = formatResources(myGuild.storage) || 'Kosong'
+      return m.reply(`╭─❏「 🏦 GUILD STORAGE 」❏\n🏰 ${myGuild.name}\n${summary}\n╰─━━━━━━━━━━━━━━─`)
+    }
+    const item = normalizeResource(args[2])
+    const amount = Number(args[3])
+    if (!['add', 'take'].includes(operation) || !resourceNames[item] || !Number.isSafeInteger(amount) || amount <= 0) {
+      return m.reply(`Format: ${usedPrefix}guild storage <add/take> <money/iron/gold/stone/diamond/emerald> <jumlah>`)
+    }
+    const rpg = getUserRPG(wdb, m.sender).rpg
+    if (operation === 'add') {
+      if (readResource(m.sender, rpg, item) < amount) return m.reply(`❌ ${resourceNames[item]} kamu tidak cukup.`)
+      changeResource(m.sender, rpg, item, -amount)
+      myGuild.storage[item] = (Number(myGuild.storage[item]) || 0) + amount
+    } else {
+      if ((Number(myGuild.storage[item]) || 0) < amount) return m.reply(`❌ Stok ${resourceNames[item]} di storage tidak cukup.`)
+      myGuild.storage[item] -= amount
+      changeResource(m.sender, rpg, item, amount)
+    }
+    saveDB(wdb)
+    return m.reply(`✅ ${operation === 'add' ? 'Ditambahkan ke' : 'Diambil dari'} guild storage: ${amount.toLocaleString('id-ID')} ${resourceNames[item]}.`)
+  }
+
+  if (action === 'list' || action === 'top') {
+    const guilds = Object.values(wdb.guilds)
+    if (!guilds.length) return m.reply('❌ Belum ada Guild yang terdaftar.')
+    if (action === 'top') guilds.sort((a, b) => (b.level || 1) - (a.level || 1) || (b.exp || 0) - (a.exp || 0))
+    const title = action === 'top' ? '🏆 TOP GUILD' : '🏰 DAFTAR GUILD'
+    const lines = (action === 'top' ? guilds.slice(0, 10) : guilds).map((guild, index) =>
+      `${index + 1}. *${guild.name}* | Lv.${guild.level || 1} (${Number(guild.exp) || 0} EXP) | ${guild.members?.length || 0} member`
+    )
+    return m.reply(`╭─❏「 ${title} 」❏\n${lines.join('\n')}\n╰─━━━━━━━━━━━━━━─`)
   }
 
   if (!action) {
@@ -147,6 +251,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `│ ${usedPrefix}latihanguild\n`
     cap += `│ ${usedPrefix}guild donate [jumlah]\n`
     cap += `│ ${usedPrefix}guild loot\n`
+    cap += `│ ${usedPrefix}guild loot take | list | collect\n`
+    cap += `│ ${usedPrefix}guild storage [add/take item jumlah]\n`
+    cap += `│ ${usedPrefix}guild list | top\n`
     cap += `│ ${usedPrefix}guildwar @tag | acak\n`
     cap += `╰─━━━━━━━━━━━━━━─`
 
@@ -200,7 +307,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['guild']
+handler.help = ['guild', 'guild list', 'guild top', 'guild loot', 'guild storage']
 handler.tags = ['rpg']
 handler.command = ['guild']
 export default handler

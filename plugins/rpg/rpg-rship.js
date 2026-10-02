@@ -1,5 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { isPremiumUser } from './rpg-bank.js'
+import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -14,6 +16,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (!user.harem) user.harem = []
   if (!user.ex) user.ex = []
+  if (!user.graveyard) user.graveyard = []
   if (!user.kids) user.kids = []
   if (!user.cooldown) user.cooldown = {}
   if (!user.dateStats) user.dateStats = { totalDate: 0, totalNikah: 0, selingkuh: 0, kill: 0, duelWin: 0, urusAnak: 0, wohoo: 0 }
@@ -196,7 +199,8 @@ const GIFT_LIST = [
       duel: ['Duel', 6 * 60 * 60 * 1000], kill: ['Kill', 7 * 24 * 60 * 60 * 1000],
       debat: ['Debat', 30 * 60 * 1000], prank: ['Prank', 60 * 60 * 1000],
       rampok: ['Rampok', 6 * 60 * 60 * 1000], staycation: ['Staycation', 6 * 60 * 60 * 1000],
-      santet: ['Santet', 2 * 60 * 60 * 1000]
+      santet: ['Santet', 2 * 60 * 60 * 1000], putus: ['Putus', 7 * 24 * 60 * 60 * 1000],
+      all: ['All Premium', 2 * 60 * 60 * 1000]
     }
     let cap = `╭─❏「 ⏰ RSHIP COOLDOWN 」❏\n│ 📋 *STATUS SEMUA AKTIVITAS*\n╰─━━━━━━━━━━━━━━─\n\n`
     for (const [key, [label, duration]] of Object.entries(cooldownNames)) {
@@ -248,6 +252,92 @@ const GIFT_LIST = [
     return foundIndex >= 0 ? { partner: user.harem[foundIndex], index: foundIndex } : null
   }
 
+  const archiveExpiry = 7 * 24 * 60 * 60 * 1000
+  const expireArchives = (archive, timestampKey) => {
+    const remaining = archive.filter(entry => !entry[timestampKey] || Date.now() - entry[timestampKey] < archiveExpiry)
+    if (remaining.length !== archive.length) {
+      archive.splice(0, archive.length, ...remaining)
+      return true
+    }
+    return false
+  }
+  const archivesChanged = expireArchives(user.ex, 'archivedAt') | expireArchives(user.graveyard, 'killedAt')
+  if (archivesChanged) saveDB(wdb)
+
+  const confirmation = args[1]?.toLowerCase()
+  if (['putus', 'kill'].includes(action) && ['konfirmasi', 'confirm'].includes(confirmation)) {
+    const pendingKey = action === 'putus' ? 'pendingRshipPutus' : 'pendingRshipKill'
+    const pending = user[pendingKey]
+    if (!pending) return m.reply(`Tidak ada konfirmasi ${action} yang menunggu.`)
+    const partnerIndex = user.harem.findIndex(partner => partner.name === pending.name)
+    if (partnerIndex < 0) {
+      delete user[pendingKey]
+      saveDB(wdb)
+      return m.reply('Pasangan tidak ditemukan. Permintaan dibatalkan.')
+    }
+    const cooldownKey = action === 'putus' ? 'putus' : 'kill'
+    if (cekCD(cooldownKey, 7 * 24 * 60 * 60 * 1000) > 0) return m.reply(`⏰ Cooldown ${action} masih aktif. Cek dengan ${usedPrefix}rship cd.`)
+    const [partner] = user.harem.splice(partnerIndex, 1)
+    if (action === 'putus') user.ex.push({ ...partner, archivedAt: Date.now() })
+    else {
+      user.graveyard.push({ ...partner, killedAt: Date.now() })
+      user.dateStats.kill++
+    }
+    user.cooldown[cooldownKey] = Date.now()
+    delete user[pendingKey]
+    saveDB(wdb)
+    return m.reply(action === 'putus'
+      ? `💔 Kamu dan *${partner.name}* resmi putus. Data masuk daftar mantan selama 7 hari.\n> ${usedPrefix}rship mantan`
+      : `⚰️ *${partner.name}* dipindahkan ke daftar makam selama 7 hari.\n> ${usedPrefix}rship makam`)
+  }
+
+  if (['putus', 'kill'].includes(action) && ['batal', 'cancel'].includes(confirmation)) {
+    const pendingKey = action === 'putus' ? 'pendingRshipPutus' : 'pendingRshipKill'
+    if (!user[pendingKey]) return m.reply(`Tidak ada konfirmasi ${action} yang menunggu.`)
+    delete user[pendingKey]
+    saveDB(wdb)
+    return m.reply(`Konfirmasi ${action} dibatalkan.`)
+  }
+
+  if (action === 'mantan' || action === 'makam') {
+    const archive = action === 'mantan' ? user.ex : user.graveyard
+    const timestampKey = action === 'mantan' ? 'archivedAt' : 'killedAt'
+    if (!archive.length) return m.reply(action === 'mantan' ? 'Daftar mantan kosong.' : 'Daftar makam kosong.')
+    const title = action === 'mantan' ? 'DAFTAR MANTAN' : 'DAFTAR MAKAM'
+    const command = action === 'mantan' ? 'balikan' : 'revive'
+    const entries = archive.map((partner, index) => {
+      const remaining = partner[timestampKey] ? Math.max(0, archiveExpiry - (Date.now() - partner[timestampKey])) : archiveExpiry
+      return `> *${index + 1}. ${partner.name}*\n> ↳ ${command} ${index + 1} dalam ${formatRemaining(Math.ceil(remaining / 1000))}`
+    })
+    return m.reply(`╭─❏「 ${title} 」❏\n${entries.join('\n')}\n╰─━━━━━━━━━━━━━━─`)
+  }
+
+  if (action === 'balikan' || action === 'revive') {
+    const archive = action === 'balikan' ? user.ex : user.graveyard
+    const timestampKey = action === 'balikan' ? 'archivedAt' : 'killedAt'
+    const archiveIndex = Number(args[1]) - 1
+    const partner = archive[archiveIndex]
+    if (!partner) return m.reply(`Nomor tidak valid. Cek daftar dengan ${usedPrefix}rship ${action === 'balikan' ? 'mantan' : 'makam'}.`)
+    if (partner[timestampKey] && Date.now() - partner[timestampKey] >= archiveExpiry) {
+      archive.splice(archiveIndex, 1)
+      saveDB(wdb)
+      return m.reply('Waktu pemulihan 7 hari sudah habis; data telah dihapus.')
+    }
+    if (user.harem.length >= getMaxSlot()) return m.reply('Slot pasangan penuh. Kosongkan satu slot terlebih dahulu.')
+    const [restored] = archive.splice(archiveIndex, 1)
+    delete restored[timestampKey]
+    user.harem.push(restored)
+    saveDB(wdb)
+    return m.reply(`💞 *${restored.name}* kembali ke daftar pasangan.`)
+  }
+
+  if (action === 'cincin') {
+    const options = Object.entries(CINCIN_SHOP)
+      .map(([key, ring]) => `> ${ring.icon} *${ring.name}* • Rp ${ring.price.toLocaleString('id-ID')}\n> ↳ ${usedPrefix}rship belicincin <no> ${key}`)
+      .join('\n')
+    return m.reply(`💍 *Pilihan cincin relationship*\n${options}\n\n> Pembayaran memakai saldo bank RPG, bukan limit.\n> Cek cincin terpasang: ${usedPrefix}rship detail <no>`)
+  }
+
   // === PANDUAN RSHIP ===
 if (action === 'guide' || action === 'panduan') {
   return m.reply(
@@ -282,6 +372,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Ganti nama pasangan dengan konfirmasi.\n`
   cap += `> *${usedPrefix}rship fitur*\n`
   cap += `> ↳ Melihat fitur yang terbuka berdasarkan level.\n`
+  cap += `> *${usedPrefix}rship cincin*\n`
+  cap += `> ↳ Melihat pilihan dan harga cincin.\n`
   cap += `> *${usedPrefix}rship anak list*\n`
   cap += `> ↳ Melihat daftar anak.\n`
 
@@ -346,7 +438,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Memberikan uang kepada anak.\n`
   cap += `> *${usedPrefix}rship gift <no/nama> item/money ...*\n`
   cap += `> ↳ Memilih pasangan tertentu dengan nomor atau nama.\n`
-  cap += `> *${usedPrefix}rship belicincin <no> <tipe>*\n`
+  cap += `> *${usedPrefix}rship belicincin <no> <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>*\n`
   cap += `> ↳ Membeli cincin pernikahan.\n`
   cap += `> *${usedPrefix}rship nikah <no>*\n`
   cap += `> ↳ Menikahi pasangan yang memenuhi syarat.\n`
@@ -357,7 +449,11 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> *${usedPrefix}rship duel <no>*\n`
   cap += `> ↳ Mengajak pasangan untuk berduel.\n`
   cap += `> *${usedPrefix}rship kill <no>*\n`
-  cap += `> ↳ Mengakhiri hubungan secara paksa.\n`
+  cap += `> ↳ Meminta konfirmasi untuk memindahkan pasangan ke makam.\n`
+  cap += `> *${usedPrefix}rship all <aktivitas>*\n`
+  cap += `> ↳ Premium: pakai nomor urutan atau nama aktivitas; batch berlaku untuk semua pasangan dan cooldown 2 jam.\n`
+  cap += `> ↳ Batch: date, liburan, makan, peluk, mandi, tidur, belanja, kerja, usil, marah, maaf, talk, kiss, nonton, swim, wohoo, debat, prank, staycation, rampok.\n`
+  cap += `> ↳ Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all date.\n`
 
   cap += `─━━━━━━━━━━━━━━─\n`
 
@@ -367,7 +463,13 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> *${usedPrefix}rship title <no> ya/tidak*\n`
   cap += `> ↳ Mengatur title pasangan.\n`
   cap += `> *${usedPrefix}rship putus <no>*\n`
-  cap += `> ↳ Mengakhiri hubungan dengan pasangan.\n`
+  cap += `> ↳ Meminta konfirmasi putus; data masuk mantan selama 7 hari.\n`
+  cap += `> *${usedPrefix}rship putus konfirmasi/batal* dan *kill konfirmasi/batal*\n`
+  cap += `> ↳ Menyetujui atau membatalkan perpisahan/pemakaman.\n`
+  cap += `> *${usedPrefix}rship mantan* / *balikan <no>*\n`
+  cap += `> ↳ Lihat mantan dan balikan dalam 7 hari.\n`
+  cap += `> *${usedPrefix}rship makam* / *revive <no>*\n`
+  cap += `> ↳ Lihat makam dan pulihkan dalam 7 hari.\n`
 
   cap += `─━━━━━━━━━━━━━━─`
 
@@ -777,6 +879,79 @@ const activityCooldowns = {
   kill: 7 * 24 * 3600000, debat: 1800000, prank: 3600000, rampok: 6 * 3600000,
   staycation: 6 * 3600000, santet: 2 * 3600000
 }
+const batchActivityRules = {
+  date: { level: 1, love: 10, exp: 20, cooldown: 3600000 },
+  liburan: { level: 20, love: 20, exp: 40, costMin: 250000, costMax: 250000, cooldown: 12 * 3600000 },
+  makan: { level: 1, love: 8, exp: 12, costMin: 15000, costMax: 25000, cooldown: 2 * 3600000 },
+  peluk: { level: 10, love: 5, exp: 8, cooldown: 1800000 },
+  mandi: { level: 40, love: 8, exp: 12, cooldown: 3600000 },
+  tidur: { level: 40, love: 10, exp: 15, cooldown: 8 * 3600000 },
+  belanja: { level: 10, love: 10, exp: 15, costMin: 10000, costMax: 30000, cooldown: 2 * 3600000 },
+  kerja: { level: 40, love: 8, exp: 15, incomeMin: 15000, incomeMax: 45000, married: true, cooldown: 4 * 3600000 },
+  usil: { level: 1, conflictIntensity: 3, exp: 10, cooldown: 3600000 },
+  marah: { level: 1, conflictIntensity: 8, exp: 5, cooldown: 3600000 },
+  maaf: { level: 1, love: 12, exp: 8, cooldown: 1800000 },
+  talk: { level: 1, love: 4, exp: 3, cooldown: 900000 },
+  kiss: { level: 27, love: 15, exp: 30, married: true, cooldown: 4 * 3600000 },
+  nonton: { level: 20, love: 12, exp: 18, cooldown: 3 * 3600000 },
+  swim: { level: 20, love: 20, exp: 50, cooldown: 4 * 3600000 },
+  wohoo: { level: 40, love: 25, exp: 60, cooldown: 6 * 3600000 },
+  debat: { level: 1, conflictIntensity: 5, exp: 10, cooldown: 1800000 },
+  prank: { level: 1, conflictIntensity: 7, exp: 12, cooldown: 3600000 },
+  staycation: { level: 10, love: 18, exp: 30, costMin: 500000, costMax: 500000, cooldown: 6 * 3600000 },
+  rampok: { level: 20, love: -5, exp: 20, incomeMin: 25000, incomeMax: 100000, cooldown: 6 * 3600000 }
+}
+const batchActivityOrder = Object.keys(batchActivityRules)
+
+if (action === 'all') {
+  if (!isPremiumUser(m.sender, wdb)) return m.reply('Fitur `.rship all` khusus pengguna premium.')
+  const requestedActivity = args[1]?.toLowerCase()
+  const activity = /^\d+$/.test(requestedActivity || '')
+    ? batchActivityOrder[Number(requestedActivity) - 1]
+    : requestedActivity
+  const rule = batchActivityRules[activity]
+  if (!rule) {
+    const list = batchActivityOrder.map((name, index) => `> ${index + 1}. ${name}`).join('\n')
+    return m.reply(`Format: ${usedPrefix}rship all <urutan/aktivitas>\n${list}`)
+  }
+  const allCooldown = cekCD('all', 2 * 3600000)
+  if (allCooldown > 0) return m.reply(`⏰ Cooldown rship all masih aktif. Tunggu ${formatRemaining(allCooldown)}.`)
+  if (cekCD(activity, rule.cooldown) > 0) return m.reply(`⏰ Aktivitas ${activity} masih cooldown. Cek ${usedPrefix}rship cd.`)
+  const ineligible = user.harem.find(partner => (partner.level || 1) < rule.level || (rule.married && !partner.menikah))
+  if (ineligible) return m.reply(`Semua pasangan harus memenuhi syarat ${activity}; *${ineligible.name}* belum memenuhi level/statusnya.`)
+
+  const runValues = user.harem.map(() => rule.costMin === undefined
+    ? 0
+    : Math.floor(Math.random() * (rule.costMax - rule.costMin + 1)) + rule.costMin)
+  const totalCost = runValues.reduce((total, value) => total + value, 0)
+  if (user.bank < totalCost) return m.reply(`Saldo bank tidak cukup. Butuh Rp ${totalCost.toLocaleString()}.`)
+
+  const now = Date.now()
+  user.bank -= totalCost
+  let totalIncome = 0
+  const levelUps = []
+  user.harem.forEach(partner => {
+    const loveChange = rule.conflictIntensity === undefined ? rule.love : conflictEffect(partner, rule.conflictIntensity)
+    partner.love = Math.max(0, Math.min(100, (partner.love || 0) + loveChange))
+    if (addExp(partner, rule.exp)) levelUps.push(partner.name)
+    if (rule.incomeMin !== undefined) {
+      totalIncome += Math.floor(Math.random() * (rule.incomeMax - rule.incomeMin + 1)) + rule.incomeMin
+    }
+  })
+  totalIncome = scaleDifficultyIncome(user, totalIncome)
+  user.bank += totalIncome
+  user.cooldown.all = now
+  user.cooldown[activity] = now
+  if (activity === 'date') user.dateStats.totalDate += user.harem.length
+  saveDB(wdb)
+
+  const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString()}` : ''
+  const incomeLine = totalIncome ? `\n> ↳ Pendapatan: +Rp ${totalIncome.toLocaleString()}` : ''
+  const levelLine = levelUps.length ? `\n> ↳ Level up: ${levelUps.join(', ')}` : ''
+  const loveLine = rule.conflictIntensity === undefined ? `+${rule.love}` : 'berubah sesuai level pasangan'
+  return m.reply(`✅ Aktivitas *${activity}* dilakukan untuk ${user.harem.length} pasangan.\n> ↳ Love: ${loveLine} per pasangan\n> ↳ EXP: +${rule.exp} per pasangan${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown aktivitas: ${formatRemaining(Math.ceil(rule.cooldown / 1000))}\n> ↳ Cooldown all: 2 jam`)
+}
+
 let no = parseInt(args[1]) - 1
 if (Number.isNaN(no) || !user.harem[no]) {
   const available = user.harem
@@ -1137,6 +1312,7 @@ if (action === 'belanja') {
   user.bank -= biaya
   p.love = Math.min(100, p.love + 10)
   let up = addExp(p, 15)
+  user.cooldown.belanja = Date.now()
   saveDB(wdb)
 
   const judul = [
@@ -2029,34 +2205,25 @@ if (action === 'kiss') {
   if (action === 'belicincin') {
     let no = parseInt(args[1]) - 1
     let jenis = args[2]?.toLowerCase()
-    if(isNaN(no) ||!user.harem[no]) return m.reply(`╭─❏「 ❌ SALAH 」❏\n\nContoh:.rship belicincin 1 emas\n╰─━━━━━━━━━━━━━━─`)
+    if(isNaN(no) ||!user.harem[no]) return m.reply(`╭─❏「 ❌ SALAH 」❏\n\nContoh: ${usedPrefix}rship belicincin 1 gold\n╰─━━━━━━━━━━━━━━─`)
     let p = user.harem[no]
     if(p.menikah) return m.reply(`╭─❏「 ❌ UDAH 」❏\n\nUdah nikah\n╰─━━━━━━━━━━━━━━─`)
 
-    let harga = {emas: 500000, berlian: 2000000, platina: 5000000}
-    let namaCincin = {emas: 'Cincin Emas', berlian: 'Cincin Berlian', platina: 'Cincin Platina'}
-    if(!harga[jenis]) return m.reply(
-      `╭─❏「 💎 JENIS CINCIN 」❏\n` +
-      `│ 💍 *Pilihan Cincin*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Emas: Rp 500.000\n` +
-      `> ↳ Berlian: Rp 2.000.000\n` +
-      `> ↳ Platina: Rp 5.000.000\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
-    if (user.bank < harga[jenis]) return m.reply(`╭─❏「 ❌ BANK 」❏\n\nButuh Rp ${harga[jenis].toLocaleString()}\n╰─━━━━━━━━━━━━━━─`)
+    const ring = CINCIN_SHOP[jenis]
+    if (!ring) return m.reply(`Pilih jenis cincin dari ${usedPrefix}rship cincin.`)
+    if (user.bank < ring.price) return m.reply(`╭─❏「 ❌ BANK 」❏\n\nButuh Rp ${ring.price.toLocaleString('id-ID')} di bank RPG.\n╰─━━━━━━━━━━━━━━─`)
 
-    user.bank -= harga[jenis]
-    p.cincin = namaCincin[jenis]
+    user.bank -= ring.price
+    p.cincin = ring.name
     saveDB(wdb)
 
     return m.reply(
       `╭─❏「 💎 BELI CINCIN 」❏\n` +
       `│ 💍 *Pembelian Berhasil*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `Berhasil beli ${namaCincin[jenis]} untuk ${p.name}\n\n` +
-      `💰 *Uang* : -Rp ${harga[jenis].toLocaleString()}\n` +
-      `💍 *Cincin* : ${namaCincin[jenis]}\n\n` +
+      `Berhasil beli ${ring.icon} ${ring.name} untuk ${p.name}\n\n` +
+      `💰 *Bank RPG* : -Rp ${ring.price.toLocaleString('id-ID')}\n` +
+      `💍 *Cincin* : ${ring.icon} ${ring.name}\n\n` +
       `Sekarang bisa nikah\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -2067,7 +2234,7 @@ if (action === 'kiss') {
     let err = cekLevel(p, 40, 'Nikah')
     if(err) return m.reply(err)
     if (p.menikah) return m.reply(`╭─❏「 ❌ UDAH 」❏\n\nUdah nikah\n╰─━━━━━━━━━━━━━━─`)
-    if (!p.cincin) return m.reply(`╭─❏「 ❌ CINCIN 」❏\n\nBeli cincin dulu:.rship belicincin ${no+1} emas/berlian/platina\n╰─━━━━━━━━━━━━━━─`)
+    if (!p.cincin) return m.reply(`╭─❏「 ❌ CINCIN 」❏\n\nBeli cincin dulu:.rship cincin lalu .rship belicincin ${no + 1} <jenis>\n╰─━━━━━━━━━━━━━━─`)
     if (p.love < 90) return m.reply(`╭─❏「 ❌ LOVE 」❏\n\nLove ${p.love}%. Minimal 90%\n╰─━━━━━━━━━━━━━━─`)
     p.menikah = true
     user.dateStats.totalNikah++
@@ -2249,9 +2416,10 @@ if (action === 'kiss') {
     cap += `> ↳ 💌 Love : ${p.love}% ${bar(p.love)}\n`
     cap += `> ↳ 😊 Mood : ${getMood(p.love)}\n`
     cap += `> ↳ 💍 Status : ${p.menikah ? 'Menikah' : 'Pacaran'}\n`
-    cap += `> ↳ 💎 Cincin : ${p.cincin || 'Belum ada'}\n\n`
+    cap += `> ↳ 💎 Cincin : ${p.cincin ? `${getRingIcon(p.cincin)} ${normalizeRingName(p.cincin)}` : 'Belum ada'}\n\n`
     cap += `🛍️ *Beli cincin*\n`
-    cap += `> ↳ ${usedPrefix}rship belicincin ${no + 1} emas/berlian/platina`
+    cap += `> ↳ ${usedPrefix}rship cincin\n`
+    cap += `> ↳ ${usedPrefix}rship belicincin ${no + 1} <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>`
     cap += `\n\n─━━━━━━━━━━━━━━─`
 
     return m.reply(cap)
@@ -2262,60 +2430,21 @@ if (action === 'kiss') {
     let err = cekLevel(p, 1, 'Kill')
     if(err) return m.reply(err)
     if(cekCD('kill', 604800000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 7 hari\n╰─━━━━━━━━━━━━━━─`)
-    
-    let nama = p.name
-    user.ex.push(p)
-    user.harem.splice(no, 1)
-    user.dateStats.kill++
-    user.cooldown.kill = Date.now()
+    user.pendingRshipKill = { name: p.name, createdAt: Date.now() }
     saveDB(wdb)
-
-    const judul = ['💔 HUBUNGAN BERAKHIR', '😢 PERPISAHAN', '💀 FINISH']
-    const cerita = [
-      `Hubungan kamu dengan *${nama}* berakhir ${waktu.toLowerCase()}\nKeputusan berat tapi harus diambil`,
-      `Kamu dan *${nama}* berpisah untuk selamanya\nSemua kenangan jadi masa lalu`,
-      `Cerita kalian selesai di sini *${nama}*\nSemoga masing-masing bisa lebih baik`
-    ]
-    const judulRand = judul[Math.floor(Math.random() * judul.length)]
-    const ceritaRand = cerita[Math.floor(Math.random() * cerita.length)]
-
-    return m.reply(
-      `╭─❏「 ${judulRand} 」❏\n` +
-      `│ 💔 *HUBUNGAN BERAKHIR*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${ceritaRand}\n\n` +
-      `📊 *Total Putus Paksa* : ${user.dateStats.kill}\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+    return m.reply(`⚠️ Konfirmasi memindahkan *${p.name}* ke makam.\n> ${usedPrefix}rship kill konfirmasi\n> ${usedPrefix}rship kill batal`)
   }
 
   // === PUTUS ===
   if (action === 'putus') {
-    let nama = p.name
-    user.ex.push(p)
-    user.harem.splice(no, 1)
+    if (cekCD('putus', 7 * 24 * 60 * 60 * 1000) > 0) return m.reply('⏰ Putus masih cooldown 7 hari. Cek dengan .rship cd.')
+    user.pendingRshipPutus = { name: p.name, createdAt: Date.now() }
     saveDB(wdb)
-
-    const judul = ['💔 PUTUS', '😔 BERPISAH', '👋 SELAMAT TINGGAL']
-    const cerita = [
-      `Kamu memutuskan putus dengan *${nama}* ${waktu.toLowerCase()}\nSemoga jadi keputusan terbaik`,
-      `Perpisahan dengan *${nama}*\nJalani hidup masing-masing ya`,
-      `Hubungan kalian selesai *${nama}*\nTerima kasih untuk semua kenangan`
-    ]
-    const judulRand = judul[Math.floor(Math.random() * judul.length)]
-    const ceritaRand = cerita[Math.floor(Math.random() * cerita.length)]
-
-    return m.reply(
-      `╭─❏「 ${judulRand} 」❏\n` +
-      `│ 💔 *PERPISAHAN*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${ceritaRand}\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+    return m.reply(`⚠️ Konfirmasi putus dengan *${p.name}*. Data akan masuk daftar mantan selama 7 hari.\n> ${usedPrefix}rship putus konfirmasi\n> ${usedPrefix}rship putus batal`)
   }
 }
 
-handler.help = ['rship']
+handler.help = ['rship', 'rship command', 'rship cincin', 'rship all <urutan/aktivitas>', 'rship mantan', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
 handler.command = ['rship']
 handler.group = true
