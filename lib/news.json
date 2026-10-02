@@ -1,27 +1,52 @@
 [
   {
     "section": "INFO",
-    "content": "Fitur news ditambahkan sebagai log agar pemain dapat melihat update dan perbaikan terbaru.",
+    "content": ">Fitur news ditambahkan sebagai log agar pemain dapat melihat update dan perbaikan terbaru.",
     "createdAt": 1790787600000
   },
   {
     "section": "RPG",
-    "content": "Perbaikan leaderboard: owner/admin yang kini tidak dihitung dalam TOP MONEY maupun ranking RPG level, kekayaan, dan diamond.",
+    "content": "> Perbaikan leaderboard: owner/admin yang kini tidak dihitung dalam TOP MONEY maupun ranking RPG level, kekayaan, dan diamond.",
     "createdAt": 1790917200000
   },
   {
     "section": "RPG",
-    "content": "Fitur Difficulty RPG tersedia melalui .difficulty. Peaceful, Easy, Normal, Hardcore, dan Nightmare kini memiliki modifier pendapatan serta cooldown masing-masing; Peaceful kebal tindak kriminal dan tidak masuk leaderboard. Pergantian difficulty memiliki cooldown 7 hari.",
+    "content": "> Fitur Difficulty RPG tersedia melalui .difficulty. Peaceful, Easy, Normal, Hardcore, dan Nightmare kini memiliki modifier pendapatan serta cooldown masing-masing; Peaceful kebal tindak kriminal dan tidak masuk leaderboard. Pergantian difficulty memiliki cooldown 7 hari.",
     "createdAt": 1790928000000
   },
   {
     "section": "RPG",
-    "content": "Casino room (.cs room) kini berlangsung dalam ronde eliminasi: setelah setiap ronde master memilih .cs room next untuk taruhan tetap atau .cs room up untuk taruhan 2x. Hasil eliminasi diacak secara adil, room tanpa interaksi selama 30 menit otomatis dihapus, dan permainan room tidak memakai atau menambah progres/batas casino reguler.",
+    "content": "> Casino room (.cs room) kini berlangsung dalam ronde eliminasi: setelah setiap ronde master memilih .cs room next untuk taruhan tetap atau .cs room up untuk taruhan 2x. Hasil eliminasi diacak secara adil, room tanpa interaksi selama 30 menit otomatis dihapus, dan permainan room tidak memakai atau menambah progres/batas casino reguler.",
     "createdAt": 1790931600000
   },
   {
     "section": "RPG",
-    "content": "Semua penjualan massal atau penjualan dengan jumlah all di pabrik, koperasi, pasar ikan, dan restoran kini meminta konfirmasi terlebih dahulu. Periksa daftar stok dan perkiraan hasil, lalu ketik ya untuk melanjutkan atau batal untuk membatalkan; konfirmasi berlaku 60 detik.",
+    "content": "> Semua penjualan massal atau penjualan dengan jumlah all di pabrik, koperasi, pasar ikan, dan restoran kini meminta konfirmasi terlebih dahulu. Periksa daftar stok dan perkiraan hasil, lalu ketik ya untuk melanjutkan atau batal untuk membatalkan; konfirmasi berlaku 60 detik.",
     "createdAt": 1790931600001
+  },
+  {
+    "section": "RPG",
+    "content": "> Cooldown casino kini berbeda menurut tier taruhan setiap game dan multiplier hasil; multiplier normal tetap berdurasi menit, sedangkan hasil dengan multiplier lebih tinggi menambah waktu cooldown game tersebut.",
+    "createdAt": 1790931600002
+  },
+  {
+    "section": "RPG",
+    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 2 jam. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja.",
+    "createdAt": 1790931600003
+  },
+  {
+    "section": "RPG",
+    "content": "> Premium dapat memakai .pet care untuk otomatis feed, rest, lalu clean semua pet (cooldown 30 menit). Setelah care, .pet all menjalankan train, walk, play, hunt, dan dispatch untuk semua pet; cooldown .pet all juga 30 menit.",
+    "createdAt": 1790931600004
+  },
+  {
+    "section": "RPG",
+    "content": "> Reward misi guild untuk anggota selain eksekutor masuk ke pending loot. Anggota mengambilnya lewat .guild loot take; leader dapat melihat daftar dan mengumpulkan semua loot. Semua anggota guild bisa add dan take item di .guild storage.",
+    "createdAt": 1790931600005
+  },
+  {
+    "section": "RPG",
+    "content": "> Katalog cincin .rship kini mengikuti .pasangan: tersedia Silver, Gold, Topaz, Amethyst, Ruby, Sapphire, Emerald, Platinum, Diamond, dan Jade Ring beserta harga serta ikonnya. Pembelian .rship belicincin memakai saldo bank RPG, bukan limit.",
+    "createdAt": 1790931600006
   }
 ]
