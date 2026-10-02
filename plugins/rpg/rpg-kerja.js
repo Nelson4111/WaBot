@@ -211,6 +211,10 @@ try {
   msg += `📊 *STATUS*\n`
   msg += `> ↳ Level: Lv.${userRPG.level}\n`
   msg += `> ↳ XP: ${userRPG.exp}/${userRPG.level * 500}\n`
+  const nextJob = listJobs.find(job => job.lv > userRPG.level)
+  msg += nextJob
+    ? `> ↳ Job berikutnya: ${nextJob.job} (Lv.${nextJob.lv})\n`
+    : `> ↳ Kamu sudah mencapai job tertinggi.\n`
 
   if (jumlahLevel > 0) {
     msg += `> 🎉 *LEVEL UP!* +${jumlahLevel} Lv.${userRPG.level}\n`

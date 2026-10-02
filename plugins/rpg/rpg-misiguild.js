@@ -150,7 +150,7 @@ if(Date.now() < myGuild.missionCooldown){
   list += `╰─━━━━━━━━━━━━━━─\n\n`
 
   list += `📌 *PILIH MISI*\n`
-  list += `> ↳ Pilih misi sesuai level guild dan dapatkan reward untuk semua member.\n\n`
+  list += `> ↳ Eksekutor mendapat reward penuh; anggota lain mendapat 50% melalui pending loot.\n\n`
 
   list += `─━━━━━━━━━━━━━━─\n\n`
 
@@ -222,6 +222,11 @@ if(Date.now() < myGuild.missionCooldown){
         diamond: scaleDifficultyIncome(u, msn.reward.diamond || 0),
         emerald: scaleDifficultyIncome(u, msn.reward.emerald || 0)
       }
+      if (jid !== m.sender) {
+        for (const item of Object.keys(rewardItems)) {
+          rewardItems[item] = Math.floor(rewardItems[item] * 0.5)
+        }
+      }
       if (jid === m.sender) {
         u.inventory = u.inventory || {}
         u.guildLoot = u.guildLoot || { diamond: 0, emerald: 0 }
@@ -271,7 +276,7 @@ cap += `🎁 *HADIAH MEMBER*\n`
 cap += `> ↳ 💰 Money: Rp ${reward.money.toLocaleString('id-ID')}\n`
 if (msn.reward.diamond) cap += `> ↳ 💎 Diamond: ${msn.reward.diamond}\n`
 if (msn.reward.emerald) cap += `> ↳ 💚 Emerald: ${msn.reward.emerald}\n`
-cap += `> ↳ Hadiah anggota lain tersimpan di .guild loot; eksekutor menerima langsung.\n`
+cap += `> ↳ Eksekutor menerima hadiah penuh; anggota lain mendapat 50% di .guild loot.\n`
 
 cap += `\n╰─━━━━━━━━━━━━━━─`
 

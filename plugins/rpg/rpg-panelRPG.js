@@ -1112,6 +1112,10 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     account.dailyDate = previousDayDate
     user.dailySavedAt = previousDayMs
     account.dailySavedAt = previousDayMs
+    delete user.dailyBrokenStreak
+    delete account.dailyBrokenStreak
+    delete user.dailyRestreakDate
+    delete account.dailyRestreakDate
     saveDB(wdb)
     return m.reply(`🔄 Daily streak @${who.split('@')[0]} berhasil direset ke 0.`, null, {mentions: [who]})
   }
@@ -1123,6 +1127,10 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     let newStreak = aksi === 'setstreak' ? val : oldStreak + val
     user.dailyStreak = newStreak
     account.dailyStreak = newStreak
+    delete user.dailyBrokenStreak
+    delete account.dailyBrokenStreak
+    delete user.dailyRestreakDate
+    delete account.dailyRestreakDate
     saveDB(wdb)
     return m.reply(`✅ Daily streak @${who.split('@')[0]} berhasil diubah dari *${oldStreak}* menjadi *${newStreak}* hari.`, null, {mentions: [who]})
   }

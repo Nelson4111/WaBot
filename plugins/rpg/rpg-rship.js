@@ -200,7 +200,7 @@ const GIFT_LIST = [
       debat: ['Debat', 30 * 60 * 1000], prank: ['Prank', 60 * 60 * 1000],
       rampok: ['Rampok', 6 * 60 * 60 * 1000], staycation: ['Staycation', 6 * 60 * 60 * 1000],
       santet: ['Santet', 2 * 60 * 60 * 1000], putus: ['Putus', 7 * 24 * 60 * 60 * 1000],
-      all: ['All Premium', 2 * 60 * 60 * 1000]
+      all: ['All Premium', 30 * 60 * 1000]
     }
     let cap = `╭─❏「 ⏰ RSHIP COOLDOWN 」❏\n│ 📋 *STATUS SEMUA AKTIVITAS*\n╰─━━━━━━━━━━━━━━─\n\n`
     for (const [key, [label, duration]] of Object.entries(cooldownNames)) {
@@ -450,8 +450,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Mengajak pasangan untuk berduel.\n`
   cap += `> *${usedPrefix}rship kill <no>*\n`
   cap += `> ↳ Meminta konfirmasi untuk memindahkan pasangan ke makam.\n`
-  cap += `> *${usedPrefix}rship all <aktivitas>*\n`
-  cap += `> ↳ Premium: pakai nomor urutan atau nama aktivitas; batch berlaku untuk semua pasangan dan cooldown 2 jam.\n`
+  cap += `> *${usedPrefix}rship all <no pasangan>*\n`
+  cap += `> ↳ Premium: menjalankan semua aktivitas yang siap untuk pasangan tersebut; cooldown all 30 menit.\n`
   cap += `> ↳ Batch: date, liburan, makan, peluk, mandi, tidur, belanja, kerja, usil, marah, maaf, talk, kiss, nonton, swim, wohoo, debat, prank, staycation, rampok.\n`
   cap += `> ↳ Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all date.\n`
 
@@ -901,55 +901,56 @@ const batchActivityRules = {
   staycation: { level: 10, love: 18, exp: 30, costMin: 500000, costMax: 500000, cooldown: 6 * 3600000 },
   rampok: { level: 20, love: -5, exp: 20, incomeMin: 25000, incomeMax: 100000, cooldown: 6 * 3600000 }
 }
-const batchActivityOrder = Object.keys(batchActivityRules)
-
 if (action === 'all') {
   if (!isPremiumUser(m.sender, wdb)) return m.reply('Fitur `.rship all` khusus pengguna premium.')
-  const requestedActivity = args[1]?.toLowerCase()
-  const activity = /^\d+$/.test(requestedActivity || '')
-    ? batchActivityOrder[Number(requestedActivity) - 1]
-    : requestedActivity
-  const rule = batchActivityRules[activity]
-  if (!rule) {
-    const list = batchActivityOrder.map((name, index) => `> ${index + 1}. ${name}`).join('\n')
-    return m.reply(`Format: ${usedPrefix}rship all <urutan/aktivitas>\n${list}`)
-  }
-  const allCooldown = cekCD('all', 2 * 3600000)
+  const partnerIndex = Number(args[1]) - 1
+  const partner = user.harem[partnerIndex]
+  if (!Number.isInteger(partnerIndex) || !partner) return m.reply(`Pilih nomor pasangan dari daftar .rship. Contoh: ${usedPrefix}rship all 1`)
+  const allCooldown = cekCD('all', 30 * 60 * 1000)
   if (allCooldown > 0) return m.reply(`⏰ Cooldown rship all masih aktif. Tunggu ${formatRemaining(allCooldown)}.`)
-  if (cekCD(activity, rule.cooldown) > 0) return m.reply(`⏰ Aktivitas ${activity} masih cooldown. Cek ${usedPrefix}rship cd.`)
-  const ineligible = user.harem.find(partner => (partner.level || 1) < rule.level || (rule.married && !partner.menikah))
-  if (ineligible) return m.reply(`Semua pasangan harus memenuhi syarat ${activity}; *${ineligible.name}* belum memenuhi level/statusnya.`)
+  const readyActivities = Object.entries(batchActivityRules).filter(([activity, rule]) =>
+    cekCD(activity, rule.cooldown) === 0 &&
+    (partner.level || 1) >= rule.level &&
+    (!rule.married || partner.menikah)
+  )
+  if (!readyActivities.length) return m.reply(`Belum ada aktivitas yang siap untuk *${partner.name}*. Cek cooldown dan syarat level dengan ${usedPrefix}rship cd/fitur.`)
 
-  const runValues = user.harem.map(() => rule.costMin === undefined
-    ? 0
-    : Math.floor(Math.random() * (rule.costMax - rule.costMin + 1)) + rule.costMin)
-  const totalCost = runValues.reduce((total, value) => total + value, 0)
+  const activityCosts = readyActivities.map(([activity, rule]) => ({
+    activity,
+    rule,
+    cost: rule.costMin === undefined
+      ? 0
+      : Math.floor(Math.random() * (rule.costMax - rule.costMin + 1)) + rule.costMin
+  }))
+  const totalCost = activityCosts.reduce((total, item) => total + item.cost, 0)
   if (user.bank < totalCost) return m.reply(`Saldo bank tidak cukup. Butuh Rp ${totalCost.toLocaleString()}.`)
 
   const now = Date.now()
   user.bank -= totalCost
   let totalIncome = 0
+  const completedActivities = []
   const levelUps = []
-  user.harem.forEach(partner => {
+  for (const { activity, rule } of activityCosts) {
     const loveChange = rule.conflictIntensity === undefined ? rule.love : conflictEffect(partner, rule.conflictIntensity)
     partner.love = Math.max(0, Math.min(100, (partner.love || 0) + loveChange))
     if (addExp(partner, rule.exp)) levelUps.push(partner.name)
     if (rule.incomeMin !== undefined) {
       totalIncome += Math.floor(Math.random() * (rule.incomeMax - rule.incomeMin + 1)) + rule.incomeMin
     }
-  })
+    user.cooldown[activity] = now
+    completedActivities.push(activity)
+    if (activity === 'date') user.dateStats.totalDate++
+    if (activity === 'wohoo') user.dateStats.wohoo++
+  }
   totalIncome = scaleDifficultyIncome(user, totalIncome)
   user.bank += totalIncome
   user.cooldown.all = now
-  user.cooldown[activity] = now
-  if (activity === 'date') user.dateStats.totalDate += user.harem.length
   saveDB(wdb)
 
   const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString()}` : ''
   const incomeLine = totalIncome ? `\n> ↳ Pendapatan: +Rp ${totalIncome.toLocaleString()}` : ''
   const levelLine = levelUps.length ? `\n> ↳ Level up: ${levelUps.join(', ')}` : ''
-  const loveLine = rule.conflictIntensity === undefined ? `+${rule.love}` : 'berubah sesuai level pasangan'
-  return m.reply(`✅ Aktivitas *${activity}* dilakukan untuk ${user.harem.length} pasangan.\n> ↳ Love: ${loveLine} per pasangan\n> ↳ EXP: +${rule.exp} per pasangan${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown aktivitas: ${formatRemaining(Math.ceil(rule.cooldown / 1000))}\n> ↳ Cooldown all: 2 jam`)
+  return m.reply(`✅ Aktivitas untuk *${partner.name}* selesai.\n> ↳ Dijalankan: ${completedActivities.join(', ')}\n> ↳ EXP dan Love mengikuti hasil tiap aktivitas${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown all: 30 menit`)
 }
 
 let no = parseInt(args[1]) - 1
@@ -2116,7 +2117,7 @@ if (action === 'kiss') {
     if(err) return m.reply(err)
     if(cekCD('rampok', 21600000) > 0) return m.reply(`⏰ Rampok masih cooldown. Tunggu 6 jam.`)
 
-    const hasil = Math.floor(Math.random() * 75001) + 25000
+    let hasil = Math.floor(Math.random() * 75001) + 25000
     hasil = scaleDifficultyIncome(user, hasil)
     user.bank += hasil
     p.love = Math.max(0, (p.love || 0) - 5)
@@ -2444,7 +2445,7 @@ if (action === 'kiss') {
   }
 }
 
-handler.help = ['rship', 'rship command', 'rship cincin', 'rship all <urutan/aktivitas>', 'rship mantan', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
+handler.help = ['rship', 'rship command', 'rship cincin', 'rship all <no pasangan>', 'rship mantan', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
 handler.command = ['rship']
 handler.group = true
