@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text }) => {
   const wdb = loadDB()
@@ -14,7 +15,7 @@ let handler = async (m, { conn, text }) => {
   let armorLvl = user.armor || 0
   let maxHP = 100 + (armorLvl * 20) + user.maxDarahBonus
 
-  let cooldown = 5 * 60 * 60 * 1000 // 5 jam
+  let cooldown = scaleDifficultyCooldown(user, 5 * 60 * 60 * 1000) // 5 jam
   let lastGym = user.cooldown.gym || 0
   let sisa = cooldown - (Date.now() - lastGym)
 
@@ -193,6 +194,7 @@ let hasilOtot = ['💪', '🏋️', '🔥', '⚡'][
 if (user.gymMembership.tier === 'bulanan') {
   hasilExp = Math.floor(hasilExp * 1.1)
 }
+hasilExp = scaleDifficultyXP(user, hasilExp)
 
 user.maxDarahBonus += 1
 user.exp += hasilExp

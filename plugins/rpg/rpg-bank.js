@@ -1,5 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { hargaBeli as MENU_RESTAURAN, formatMasakanNama } from '../../lib/rpg-masakanData.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 export const BANK_TIERS = {
   0: { name: 'Basic Card', limit: 10_000_000, bunga: 0.002, price: 0, biayaBulanan: 0, color: '🔰', keamanan: 1, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa'] },
@@ -68,7 +69,7 @@ export function canUseBankMoneyCommand(tier) {
 }
 
 export function getBankTransactionCooldownRemaining(userRPG, tier, now = Date.now()) {
-  const cooldown = getBankTransactionCooldown(tier)
+  const cooldown = scaleDifficultyCooldown(userRPG, getBankTransactionCooldown(tier))
   return cooldown ? Math.max(0, cooldown - (now - Number(userRPG.lastBankTransaction || 0))) : 0
 }
 
@@ -238,9 +239,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   // BUNGA MINGGUAN
-  let cdBunga = 604800000
+  let cdBunga = scaleDifficultyCooldown(userRPG, 604800000)
   if(now - userRPG.lastBunga >= cdBunga && userRPG.bank > 0 &&!userRPG.kartuBeku){
-    let bunga = Math.floor(userRPG.bank * tier.bunga)
+    let bunga = scaleDifficultyIncome(userRPG, Math.floor(userRPG.bank * tier.bunga))
     userRPG.bank += bunga; userRPG.totalBunga += bunga; userRPG.lastBunga = now
     userRPG.riwayat.unshift(`+Rp ${bunga.toLocaleString()} Bunga Mingguan`)
     if(userRPG.riwayat.length > 20) userRPG.riwayat.pop()
@@ -399,7 +400,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
     const reward = getBankFnbReward(selectedTierLevel)
     if (!reward) return m.reply(`❌ Paket F&B ${selectedTier.name} belum tersedia.`)
-    const cooldownFnb = 12 * 60 * 60 * 1000
+    const cooldownFnb = scaleDifficultyCooldown(userRPG, 12 * 60 * 60 * 1000)
     const sisaCooldown = cooldownFnb - (now - Number(userRPG.lastBankFnb || 0))
     if (sisaCooldown > 0) {
       const jam = Math.floor(sisaCooldown / 3600000)
@@ -408,7 +409,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     }
 
     userRPG.masakan = userRPG.masakan || {}
-    const klaimItems = Object.entries(reward).filter(([item, quantity]) => MENU_RESTAURAN[item] && quantity > 0)
+    const klaimItems = Object.entries(reward)
+      .map(([item, quantity]) => [item, scaleDifficultyIncome(userRPG, quantity)])
+      .filter(([item, quantity]) => MENU_RESTAURAN[item] && quantity > 0)
     if (!klaimItems.length) return m.reply('❌ Isi paket F&B kartu ini belum tersedia di menu restoran.')
     for (const [item, quantity] of klaimItems) {
       userRPG.masakan[item] = (Number(userRPG.masakan[item]) || 0) + quantity

@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyDamage } from '../../lib/rpgDifficulty.js'
 
 global.warRequests = global.warRequests || {}
 
@@ -156,7 +157,7 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
   winner.members.forEach(jid => {
     let u = jid.startsWith('rand_')? {darah: 100} : wdb.users[jid]?.rpg
     if(u){
-      u.darah = (u.darah || 100) - 30
+      u.darah = (u.darah || 100) - scaleDifficultyDamage(u, 30)
       if(u.darah < 1) u.darah = 1
       if(!jid.startsWith('rand_')) wdb.users[jid].rpg = u
     }

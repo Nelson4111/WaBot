@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -214,16 +215,17 @@ if(Date.now() < myGuild.missionCooldown){
     if (u) {
       u.inventory = u.inventory || {}
       if (!u.guildLoot) u.guildLoot = { diamond: 0, emerald: 0 }
-      wdb.money[jid] = (wdb.money[jid] || 0) + reward.money
-      if (msn.reward.iron) u.iron = (u.iron || 0) + msn.reward.iron
-      if (msn.reward.gold) u.gold = (u.gold || 0) + msn.reward.gold
-      if (msn.reward.stone) u.stone = (u.stone || 0) + msn.reward.stone
+      wdb.money[jid] = (wdb.money[jid] || 0) + scaleDifficultyIncome(u, reward.money)
+      if (msn.reward.iron) u.iron = (u.iron || 0) + scaleDifficultyIncome(u, msn.reward.iron)
+      if (msn.reward.gold) u.gold = (u.gold || 0) + scaleDifficultyIncome(u, msn.reward.gold)
+      if (msn.reward.stone) u.stone = (u.stone || 0) + scaleDifficultyIncome(u, msn.reward.stone)
       if (msn.reward.diamond) {
-        u.diamond = (u.diamond || 0) + msn.reward.diamond
-        u.guildLoot.diamond += msn.reward.diamond
+        const diamondReward = scaleDifficultyIncome(u, msn.reward.diamond)
+        u.diamond = (u.diamond || 0) + diamondReward
+        u.guildLoot.diamond += diamondReward
       }
       if (msn.reward.emerald) {
-        u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + msn.reward.emerald
+        u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + scaleDifficultyIncome(u, msn.reward.emerald)
       }
     }
   })

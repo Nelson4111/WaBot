@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -184,8 +185,79 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   // ===== SISTEM JUAL =====
   if(tipe === 'jual'){
+    const collectEntries = itemFilter => {
+      const entries = []
+      for (const source of ['inventory', 'ores', 'items']) {
+        for (const [item, rawQuantity] of Object.entries(user[source] || {})) {
+          const quantity = Number(rawQuantity)
+          if (hargaJual[item] && (!itemFilter || item === itemFilter) && Number.isSafeInteger(quantity) && quantity > 0) {
+            entries.push({ source, item, quantity })
+          }
+        }
+      }
+      if ((!itemFilter || itemFilter === 'gold') && Number(user.gold) > 0) entries.push({ source: 'goldBalance', item: 'gold', quantity: Number(user.gold) })
+      if ((!itemFilter || itemFilter === 'diamond') && Number(user.diamond) > 0) entries.push({ source: 'diamondBalance', item: 'diamond', quantity: Number(user.diamond) })
+      return entries
+    }
+    const quote = entries => {
+      const grouped = {}
+      const baseTotal = entries.reduce((total, entry) => {
+        grouped[entry.item] = (grouped[entry.item] || 0) + entry.quantity
+        return total + Math.floor(hargaJual[entry.item] * sellBonus) * entry.quantity
+      }, 0)
+      return { grouped, total: scaleDifficultyIncome(user, baseTotal) }
+    }
+    const confirmAction = args[1] === 'all' ? args[2] : args[1]
+    if (['ya', 'yes', 'batal', 'no'].includes(confirmAction)) {
+      const pending = user.pendingPabrikSell
+      if (!pending || Date.now() > pending.expiresAt) {
+        delete user.pendingPabrikSell
+        saveDB(wdb)
+        return m.reply('❌ Konfirmasi jual pabrik tidak ada atau sudah kedaluwarsa. Ulangi perintah jual.')
+      }
+      if (['batal', 'no'].includes(confirmAction)) {
+        delete user.pendingPabrikSell
+        saveDB(wdb)
+        return m.reply('✅ Penjualan pabrik dibatalkan. Stok dan saldo tidak berubah.')
+      }
+      const hasEnough = pending.entries.every(entry => {
+        const current = entry.source === 'goldBalance' ? Number(user.gold) || 0
+          : entry.source === 'diamondBalance' ? Number(user.diamond) || 0
+            : Number(user[entry.source]?.[entry.item]) || 0
+        return current >= entry.quantity
+      })
+      if (!hasEnough) {
+        delete user.pendingPabrikSell
+        saveDB(wdb)
+        return m.reply('❌ Stok berubah sejak konfirmasi dibuat. Penjualan dibatalkan; buat konfirmasi baru.')
+      }
+      for (const entry of pending.entries) {
+        if (entry.source === 'goldBalance') user.gold -= entry.quantity
+        else if (entry.source === 'diamondBalance') user.diamond -= entry.quantity
+        else {
+          user[entry.source][entry.item] -= entry.quantity
+          if (user[entry.source][entry.item] <= 0) delete user[entry.source][entry.item]
+        }
+      }
+      if (pending.entries.some(entry => entry.item === 'diamond') && user.guildLoot) user.guildLoot.diamond = 0
+      wdb.money[m.sender] = (wdb.money[m.sender] || 0) + pending.total
+      delete user.pendingPabrikSell
+      saveDB(wdb)
+      return m.reply(`✅ Penjualan pabrik dikonfirmasi. Saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+    }
+
     // JUAL ALL
     if(args[1] === 'all'){
+      const entries = collectEntries()
+      if (!entries.length) return m.reply('❌ Kamu tidak punya item pabrik yang bisa dijual.')
+      const plan = quote(entries)
+      user.pendingPabrikSell = { entries, ...plan, expiresAt: Date.now() + 60000 }
+      saveDB(wdb)
+      const list = Object.entries(plan.grouped)
+        .map(([item, quantity]) => `> ↳ ${oreEmoji[item] || '📦'} ${formatNama(item)} x${quantity}`)
+        .join('\n')
+      return m.reply(`⚠️ *KONFIRMASI JUAL PABRIK*\n${list}\n\nPerkiraan diterima: Rp ${plan.total.toLocaleString()}\nKetik *${usedPrefix}pabrik jual ya* untuk lanjut atau *${usedPrefix}pabrik jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+
       let totalHasil = 0
       let listJual = []
       let semuaInv = {}
@@ -223,6 +295,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
         `> ↳ Kamu tidak punya item yang bisa dijual.`
       )
 
+      totalHasil = scaleDifficultyIncome(user, totalHasil)
       wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalHasil
       saveDB(wdb)
 
@@ -256,6 +329,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Item "${formatNama(itemInput)}" tidak bisa dijual di sini.`
     )
 
+    if (amount === 'all') {
+      const entries = collectEntries(item)
+      if (!entries.length) return m.reply(`❌ Kamu tidak punya ${formatNama(item)} yang bisa dijual.`)
+      const plan = quote(entries)
+      user.pendingPabrikSell = { entries, ...plan, expiresAt: Date.now() + 60000 }
+      saveDB(wdb)
+      return m.reply(`⚠️ Konfirmasi jual ${formatNama(item)} x${Object.values(plan.grouped)[0]} untuk Rp ${plan.total.toLocaleString()}?\nKetik *${usedPrefix}pabrik jual ya* untuk lanjut atau *${usedPrefix}pabrik jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+    }
+
     let stok = item === 'diamond'
       ? (user.diamond || 0)
       : item === 'gemstone' || item === 'coin'
@@ -271,7 +353,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Kamu tidak punya ${formatNama(item)}.`
     )
 
-    let jual = amount === 'all' ? stok : amount
+    let jual = amount
 
     if (jual > stok) return m.reply(
       `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n` +
@@ -318,6 +400,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       if(user.items[item] <= 0) delete user.items[item]
     }
 
+    hasil = scaleDifficultyIncome(user, hasil)
     wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
     saveDB(wdb)
 

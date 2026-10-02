@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -60,7 +61,7 @@ let handler = async (m, { conn }) => {
   if (user.pity_mining!== undefined) delete user.pity_mining
 
   // COOLDOWN
-  let cooldown = 120000 // 2 menit
+  let cooldown = scaleDifficultyCooldown(user, 120000) // 2 menit
   if (Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
     return m.reply(`╭─❏「 ⛏️ MINING 」❏\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n╰─━━━━━━━━━━━━━━─`)
@@ -104,7 +105,8 @@ let handler = async (m, { conn }) => {
     user.ores[ore] = (user.ores[ore] || 0) + hasilTambang[ore]
   }
 
-  let uangDidapat = (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat
+  totalExp = scaleDifficultyXP(user, totalExp)
+  let uangDidapat = scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat)
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uangDidapat
   addRpgExp(user, totalExp)
   user.lastMining = Date.now()

@@ -5,6 +5,8 @@ import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-lib
 import { BANK_TIERS } from './rpg-bank.js'
 import { bibit } from './rpg-panen.js'
 import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
+import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
+import { isDifficultyRanked, normalizeDifficulty, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
 
 import fs from 'fs'
 
@@ -69,6 +71,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
@@ -198,7 +201,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
-    let users = Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg)
+    let users = filterRpgPanelUsers(Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg))
+      .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
     const formatUser = (id) => {
       let name = conn.getName(id) || 'Petualang'
       let num = id.split('@')[0]
@@ -206,7 +210,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
       return `${name} (@${maskedNum})`
     }
     let topLevel = [...users].sort((a,b) => (wdb.users[b].rpg.level || 0) - (wdb.users[a].rpg.level || 0)).slice(0, 10)
-    let topMoney = Object.keys(wdb.money).sort((a,b) => (wdb.money[b] || 0) - (wdb.money[a] || 0)).slice(0, 10)
+    let topMoney = filterRpgPanelUsers(Object.keys(wdb.money))
+      .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
+      .sort((a,b) => (wdb.money[b] || 0) - (wdb.money[a] || 0))
+      .slice(0, 10)
     let topDiamond = [...users].sort((a,b) => (wdb.users[b].rpg.diamond || 0) - (wdb.users[a].rpg.diamond || 0)).slice(0, 10)
 
     let text = `*───「 AVELIA RPG LEADERBOARD 」───*\n\n`
@@ -427,6 +434,18 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   const account = wdb.users[who]
   let user = account.rpg
+
+  if (aksi === 'difficulty' || aksi === 'setdifficulty') {
+    const difficulty = normalizeDifficulty(remaining[0])
+    if (!difficulty) {
+      return m.reply(`❌ Pilih mode: ${Object.keys(RPG_DIFFICULTIES).join(', ')}.\nContoh: *${usedPrefix}rpgpanel difficulty @tag nightmare*`)
+    }
+    user.difficulty = difficulty
+    user.difficultyChangedAt = Date.now()
+    await saveDB(wdb)
+    return m.reply(`✅ Difficulty @${who.split('@')[0]} diatur ke *${RPG_DIFFICULTIES[difficulty].name}*.`, null, { mentions: [who] })
+  }
+
   account.inventory = account.inventory || {}
   user.inventory = user.inventory || {}
   user.ikan = user.ikan || {}

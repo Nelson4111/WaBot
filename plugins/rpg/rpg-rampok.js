@@ -3,11 +3,14 @@ import { BANK_TIERS, calculateBankRobberyLoss, getBankEffectiveSecurity, getBank
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn }) => {
     const wdb = loadDB()
     let userRPG = wdb.users[m.sender]?.rpg
     if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
+    const actorRestriction = getCrimeRestriction(userRPG)
+    if (actorRestriction) return m.reply(actorRestriction)
     if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
     // CEK PENJARA
@@ -23,7 +26,7 @@ let handler = async (m, { conn }) => {
     }
 
     // COOLDOWN 1 HARI
-    let cd = 86400000
+    let cd = scaleDifficultyCooldown(userRPG, 86400000)
     if (!userRPG.lastrob) userRPG.lastrob = 0
     let sisa = cd - (Date.now() - userRPG.lastrob)
     if (sisa > 0) {
@@ -42,6 +45,8 @@ let handler = async (m, { conn }) => {
 
     let target = getUserRPG(wdb, who).rpg
     if(!target) return m.reply('❌ Target belum punya data RPG')
+    const targetRestriction = getCrimeRestriction(target, { target: true })
+    if (targetRestriction) return m.reply(targetRestriction)
     if (Number(target.darah) <= 0) return m.reply(`💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`)
     if (!Array.isArray(target.riwayat)) target.riwayat = []
     if(target.kartuBeku) return m.reply('❌ Kartu bank target sedang beku')
@@ -61,7 +66,7 @@ let handler = async (m, { conn }) => {
     wdb.crime = wdb.crime || {}
     wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
 
-    if (roll >= peluang) {
+    if (roll >= adjustCrimeSuccessChance(userRPG, peluang)) {
     // GAGAL = LANGSUNG PENJARA 4 JAM
     wdb.penjara = wdb.penjara || []
         userRPG.penjara = Date.now()
@@ -95,7 +100,7 @@ let handler = async (m, { conn }) => {
 
 // SUKSES
 let persen = 0.05 + (Math.random() * 0.25) // 5% - 30%
-let hasil = calculateBankRobberyLoss(bankTarget, persen, tier)
+let hasil = scaleDifficultyIncome(userRPG, calculateBankRobberyLoss(bankTarget, persen, tier))
 
 target.bank -= hasil
 userRPG.bank = (userRPG.bank || 0) + hasil

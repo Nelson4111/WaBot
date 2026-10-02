@@ -1,5 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { ensurePrisonCell, getRandomPrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 
 /* =========================================================
    KONFIGURASI
@@ -187,10 +188,14 @@ Fitnah orang biar masuk penjara.
     }
 
     let sender = resolveJid(m.sender)
+    const senderRPG = getUserRPG(sender)
+    const actorRestriction = getCrimeRestriction(senderRPG)
+    if (actorRestriction) return m.reply(actorRestriction)
 
     if (who === sender) return m.reply('❌ Kamu tidak bisa memfitnah diri sendiri.')
     const targetRPG = getUserRPG(who)
-    if (targetRPG && Number(targetRPG.darah) <= 0) return m.reply(`💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`)
+    const targetRestriction = getCrimeRestriction(targetRPG, { target: true })
+    if (targetRestriction) return m.reply(targetRestriction)
     if (cekPenjara(wdb, who)) return m.reply(`❌ @${who.split('@')[0]} sudah di penjara.`, { mentions: [who] })
 
     /* =====================================================
@@ -242,8 +247,9 @@ Fitnah orang biar masuk penjara.
         let sisa = COOLDOWN_HUKUMAN - (now - lastHukuman)
         return m.reply(`⛓️ *KAMU SEDANG DIHUKUM*\n\nKarena gagal bayar denda.\nTunggu *${formatTime(sisa)}* lagi`)
     }
-    if (now - lastNormal < COOLDOWN_FITNAH) {
-        let sisa = COOLDOWN_FITNAH - (now - lastNormal)
+    const actionCooldown = scaleDifficultyCooldown(senderRPG, COOLDOWN_FITNAH)
+    if (now - lastNormal < actionCooldown) {
+        let sisa = actionCooldown - (now - lastNormal)
         return m.reply(`⏳ *COOLDOWN*\n\nTunggu *${formatTime(sisa)}* lagi`)
     }
 
@@ -256,7 +262,7 @@ Fitnah orang biar masuk penjara.
     ===================================================== */
 
     let story = randomStory()
-    let berhasil = Math.random() < peluang
+    let berhasil = Math.random() < adjustCrimeSuccessChance(senderRPG, peluang)
 
     /* =====================================================
        GAGAL + DENDA 1JT

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 const FEE_RATE = 0.005
 const TICK_MS = 10 * 60 * 1000
@@ -483,15 +484,17 @@ let handler = async (m, { text, usedPrefix }) => {
     if (holding.qty < qty) return m.reply(`Kepemilikan ${symbol} tidak cukup. Kamu punya ${number(holding.qty)}.`)
     const cost = holding.avgPrice * qty
     const realized = (gross - fee) - cost
-    user.bank += total
+    const adjustedRealized = realized > 0 ? scaleDifficultyIncome(user, realized) : realized
+    const saleProceeds = cost + adjustedRealized
+    user.bank += saleProceeds
     holding.qty -= qty
-    invest.realized += realized
+    invest.realized += adjustedRealized
     if (holding.qty <= 0) delete invest.portfolio[symbol]
     else invest.portfolio[symbol] = holding
-    invest.history.unshift({ side: 'SELL', symbol, qty, price, fee, realized, at: Date.now() })
+    invest.history.unshift({ side: 'SELL', symbol, qty, price, fee, realized: adjustedRealized, at: Date.now() })
     invest.history = invest.history.slice(0, 30)
     await saveDB(db)
-    return m.reply(`${title('JUAL BERHASIL')}\nAset       : *${symbol}*\nJumlah     : ${number(qty)}\nHarga      : ${money(price)}\nHasil bersih: ${money(total)}\nRealized P/L: ${signedMoney(realized)}\nSaldo bank : ${money(user.bank)}\n${footer()}`)
+    return m.reply(`${title('JUAL BERHASIL')}\nAset       : *${symbol}*\nJumlah     : ${number(qty)}\nHarga      : ${money(price)}\nHasil bersih: ${money(saleProceeds)}\nRealized P/L: ${signedMoney(adjustedRealized)}\nSaldo bank : ${money(user.bank)}\n${footer()}`)
   }
 
   if (action === 'portfolio' || action === 'portofolio' || action === 'pf') {

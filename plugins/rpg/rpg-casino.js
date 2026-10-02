@@ -1,5 +1,7 @@
+import { randomInt as cryptoRandomInt } from 'node:crypto'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isPremiumUser } from './rpg-bank.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -121,7 +123,38 @@ const ROOM_GAMES = {
   monopoly: { name: 'Monopoly', aliases: ['monopoly'] }
 }
 const ROOM_GAME_ALIASES = Object.fromEntries(Object.entries(ROOM_GAMES).flatMap(([key, game]) => game.aliases.map(alias => [alias, key])))
-const ROOM_MAX_ROUNDS = 12
+const ROOM_IDLE_TIMEOUT = 30 * 60 * 1000
+const randomRoomPlayer = players => players[cryptoRandomInt(players.length)]
+
+function refundCasinoRoom(room, wdb) {
+  for (const [jid, contribution] of Object.entries(room.contributions || {})) {
+  const amount = Number(contribution) || 0
+    if (Number.isSafeInteger(amount) && amount > 0) {
+      wdb.money[jid] = Number(wdb.money[jid] || 0) + amount
+    }
+  }
+}
+
+function cleanupExpiredCasinoRooms(wdb, now = Date.now()) {
+  let removed = false
+  wdb.casinoRooms = wdb.casinoRooms || {}
+
+  for (const [chat, room] of Object.entries(wdb.casinoRooms)) {
+    const lastActivityAt = Number(room.lastActivityAt || room.createdAt || 0)
+    if (now - lastActivityAt < ROOM_IDLE_TIMEOUT) continue
+    refundCasinoRoom(room, wdb)
+    delete wdb.casinoRooms[chat]
+    removed = true
+  }
+
+  return removed
+}
+
+const casinoRoomCleanupTimer = setInterval(() => {
+  const wdb = loadDB()
+  if (cleanupExpiredCasinoRooms(wdb)) void saveDB(wdb)
+}, 60_000)
+casinoRoomCleanupTimer.unref?.()
 
 function getDailyLimit(jid, wdb) {
   return isPremiumUser(jid, wdb) ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
@@ -256,12 +289,13 @@ function getCooldowns(user) {
 function cooldownMenu(user, prefix) {
   const cooldowns = getCooldowns(user)
   const now = Date.now()
+  const cooldownDuration = scaleDifficultyCooldown(user, GAME_COOLDOWN)
   let cap = `╭─❏「 ⏳ CASINO COOLDOWN 」❏\n`
-  cap += `│ Setiap game memiliki cooldown sendiri.\n│ Durasi: ${formatRemaining(GAME_COOLDOWN)}\n`
+  cap += `│ Setiap game memiliki cooldown sendiri.\n│ Durasi: ${formatRemaining(cooldownDuration)}\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
   for (const [key, game] of Object.entries(games)) {
-    const remaining = (cooldowns[key] || 0) + GAME_COOLDOWN - now
+    const remaining = (cooldowns[key] || 0) + cooldownDuration - now
     cap += `${game.emoji} *${game.name}*\n`
     cap += `> ↳ ${remaining > 0 ? `⏳ ${formatRemaining(remaining)} lagi` : `✅ READY (${prefix}casino ${key})`}\n\n`
   }
@@ -314,6 +348,8 @@ function casinoCommands(prefix) {
     `> ↳ 🎮 ${prefix}cs room games`,
     `> ↳ 📖 ${prefix}cs room guide`,
     `> ↳ 🎯 ${prefix}cs room game <pilihan>`,
+    `> ↳ ⏭️ ${prefix}cs room next (taruhan tetap)`,
+    `> ↳ ⬆️ ${prefix}cs room up (taruhan x2)`,
     ``,
     `─━━━━━━━━━━━━━━─`
   ].join('\n')
@@ -329,7 +365,8 @@ function casinoGuide(prefix) {
     `> ↳ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
     `> ↳ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
     `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
-    `> ↳ Setiap game cooldown 60 detik; batas harian 25x, premium 50x.\n\n` +
+    `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x.\n\n` +
+    `> ↳ Casino room tidak terpengaruh batas/progres permainan reguler.\n\n` +
 
     `👥 *MULTIPLAYER*\n` +
     `> ↳ Multiplayer dapat dimainkan melalui casino room: ${prefix}cs room.\n` +
@@ -489,10 +526,12 @@ function roomGuide(prefix) {
     `🎮 *MULAI PERMAINAN*\n` +
     `> ↳ Mulai : ${prefix}cs room start.\n` +
     `> ↳ Setiap ronde, tiap pemain mendapat 5 gacha.\n` +
-    `> ↳ Skor terendah yang unik tereliminasi; jika seri, ronde diulang.\n\n` +
+    `> ↳ Satu pemain dengan skor terendah tereliminasi tiap ronde; jika seri, sistem memilih secara acak.\n` +
+    `> ↳ Setelah ronde, master gunakan *.cs room next* untuk taruhan tetap atau *.cs room up* untuk menggandakan taruhan ronde berikutnya.\n\n` +
 
     `📌 *CATATAN*\n` +
-    `> ↳ Room dapat dihapus sebelum start tanpa memotong saldo.\n\n` +
+    `> ↳ Room tanpa interaksi selama 30 menit otomatis dihapus; kontribusi ronde berjalan dikembalikan.\n` +
+    `> ↳ Casino room tidak memakai atau menambah batas/progres casino reguler.\n\n` +
 
     `─━━━━━━━━━━━━━━─`
 }
@@ -510,19 +549,55 @@ function playRoomRound(gameKey, players) {
   }))
 }
 
-function runRoomTournament(room) {
-  let active = [...room.players]
-  const rounds = []
-
-  for (let round = 1; round <= ROOM_MAX_ROUNDS && active.length > 1; round++) {
-    const scores = playRoomRound(room.game, active)
-    const lowest = Math.min(...Object.values(scores))
-    const eliminated = active.filter(jid => scores[jid] === lowest)
-    rounds.push({ scores, eliminated: eliminated.length === 1 ? eliminated[0] : null })
-    if (eliminated.length === 1) active = active.filter(jid => jid !== eliminated[0])
+function playCasinoRoomRound(room, wdb, stake) {
+  room.contributions = room.contributions || {}
+  const players = [...room.players]
+  for (const jid of players) {
+    if (!wdb.users?.[jid]?.rpg || Number(wdb.money?.[jid] || 0) < stake) {
+      return { insufficientPlayer: jid }
+    }
   }
 
-  return { winner: pick(active), rounds, tiebreak: active.length > 1 }
+  const roundContribution = stake * players.length
+  if (!Number.isSafeInteger(roundContribution) || !Number.isSafeInteger((room.pot || 0) + roundContribution)) {
+    return { invalidPot: true }
+  }
+
+  const scores = playRoomRound(room.game, players)
+  const lowest = Math.min(...Object.values(scores))
+  const eliminated = randomRoomPlayer(players.filter(jid => scores[jid] === lowest))
+
+  for (const jid of players) {
+    wdb.money[jid] = Number(wdb.money[jid] || 0) - stake
+    room.contributions[jid] = Number(room.contributions[jid] || 0) + stake
+  }
+
+  room.pot = Number(room.pot || 0) + roundContribution
+  room.players = players.filter(jid => jid !== eliminated)
+  room.round = Number(room.round || 0) + 1
+  room.currentStake = stake
+  room.lastActivityAt = Date.now()
+  const result = { scores, eliminated, stake, number: room.round }
+  room.roundHistory = [...(room.roundHistory || []), result]
+
+  if (room.players.length === 1) {
+    const winner = room.players[0]
+    wdb.money[winner] = Number(wdb.money[winner] || 0) + room.pot
+    return { ...result, winner, prize: room.pot }
+  }
+
+  room.status = 'round_wait'
+  return result
+}
+
+function formatRoomRound(result, wdb) {
+  const scores = Object.entries(result.scores)
+    .map(([jid, score]) => `${roomPlayerName(jid, wdb)} ${score}/5`)
+    .join(' | ')
+  return `🎮 *RONDE ${result.number}*\n` +
+    `> ↳ Skor: ${scores}\n` +
+    `> ↳ Tereliminasi: ${roomPlayerName(result.eliminated, wdb)}\n` +
+    `> ↳ Taruhan ronde: ${money(result.stake)}`
 }
 
 async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
@@ -530,6 +605,12 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
   const reply = (text, mentions = []) => conn.reply(m.chat, text, m, { mentions: visibleCasinoMentions(mentions, wdb) })
   const replyWithImage = (text, mentions = []) => sendRpgMsg(conn, m, text, CASINO_ROOM_IMAGE, { mentions: visibleCasinoMentions(mentions, wdb) })
   const mention = jid => roomPlayerName(jid, wdb)
+  if (cleanupExpiredCasinoRooms(wdb)) void saveDB(wdb)
+  const activeRoom = wdb.casinoRooms?.[m.chat]
+  if (activeRoom) {
+    activeRoom.lastActivityAt = Date.now()
+    void saveDB(wdb)
+  }
 
  if (!action) {
   return replyWithImage(
@@ -562,7 +643,7 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
 
   const stake = Number(args[2])
 
-  if (!Number.isInteger(stake) || stake < 100) {
+  if (!Number.isSafeInteger(stake) || stake < 100) {
     return m.reply(
       `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
       `│ ❌ *Format taruhan tidak valid.*\n` +
@@ -587,10 +668,16 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
   wdb.casinoRooms[m.chat] = {
     master: m.sender,
     stake,
+    currentStake: stake,
+    pot: 0,
+    contributions: {},
     game: null,
     status: 'waiting',
     players: [m.sender],
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    lastActivityAt: Date.now(),
+    round: 0,
+    roundHistory: []
   }
 
   saveDB(wdb)
@@ -721,6 +808,10 @@ if (action === 'join') {
 }
 
 if (action === 'leave') {
+  if (room.status !== 'waiting') {
+    return m.reply(`Room yang sudah dimulai tidak menerima leave; gunakan room sampai selesai atau tunggu timeout 30 menit.`)
+  }
+
   if (room.master === m.sender) {
     return m.reply(
       `╭─❏「 ❌ CASINO ROOM 」❏\n` +
@@ -754,6 +845,10 @@ if (action === 'leave') {
 }
 
 if (action === 'kick') {
+  if (room.status !== 'waiting') {
+    return m.reply(`Pemain tidak dapat dikeluarkan setelah permainan dimulai.`)
+  }
+
   if (room.master !== m.sender) {
     return m.reply(
       `╭─❏「 ❌ AKSES DITOLAK 」❏\n` +
@@ -794,7 +889,10 @@ if (action === 'player' || action === 'players') {
     .map((jid, index) => `> ${index + 1}. ${roomPlayerName(jid, wdb)}${jid === room.master ? ' (Master)' : ''}`)
     .join('\n')
 
-  const prize = room.players.length * room.stake
+  const prize = room.status === 'waiting'
+    ? room.players.length * Number(room.stake)
+    : Number(room.pot || 0)
+  const prizeLabel = room.status === 'waiting' ? 'Estimasi hadiah' : 'Pot saat ini'
 
   return replyWithImage(
     `╭─❏「 👥 CASINO ROOM 」❏\n` +
@@ -802,8 +900,8 @@ if (action === 'player' || action === 'players') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${players}\n\n` +
     `📊 *INFORMASI ROOM*\n` +
-    `> ↳ Taruhan : ${money(room.stake)}\n` +
-    `> ↳ Total hadiah : ${money(prize)}\n` +
+    `> ↳ Taruhan ronde berikutnya : ${money(room.currentStake || room.stake)}\n` +
+    `> ↳ ${prizeLabel} : ${money(prize)}\n` +
     `> ↳ Game : ${room.game ? ROOM_GAMES[room.game].name : 'Acak'}\n` +
     `> ↳ Status : ${room.status}\n\n` +
     `─━━━━━━━━━━━━━━─`,
@@ -812,7 +910,10 @@ if (action === 'player' || action === 'players') {
 }
 
 if (action === 'info') {
-  const prize = room.players.length * room.stake
+  const prize = room.status === 'waiting'
+    ? room.players.length * Number(room.stake)
+    : Number(room.pot || 0)
+  const prizeLabel = room.status === 'waiting' ? 'Estimasi hadiah' : 'Pot saat ini'
 
   return replyWithImage(
     `╭─❏「 🎰 CASINO ROOM 」❏\n` +
@@ -821,11 +922,13 @@ if (action === 'info') {
     `📋 *DETAIL ROOM*\n` +
     `> ↳ Master : ${roomPlayerName(room.master, wdb)}\n` +
     `> ↳ Game : ${room.game ? ROOM_GAMES[room.game].name : 'Acak saat start'}\n` +
-    `> ↳ Taruhan : ${money(room.stake)} per pemain\n` +
-    `> ↳ Total hadiah : ${money(prize)}\n` +
+    `> ↳ Taruhan ronde berikutnya : ${money(room.currentStake || room.stake)} per pemain\n` +
+    `> ↳ ${prizeLabel} : ${money(prize)}\n` +
     `> ↳ Pemain : ${room.players.length}\n` +
+    `> ↳ Ronde : ${Number(room.round || 0)}\n` +
     `> ↳ Status : ${room.status}\n\n` +
-    `⚠️ Saldo belum dipotong sebelum turnamen selesai.\n\n` +
+    `⚠️ Taruhan dipotong per ronde dan dikumpulkan sebagai pot.\n` +
+    `> ↳ Ronde berikutnya: master pilih *.cs room next* (tetap) atau *.cs room up* (x2).\n\n` +
     `─━━━━━━━━━━━━━━─`,
     [room.master, ...room.players]
   )
@@ -838,6 +941,10 @@ if (action === 'delete') {
       `│ ❌ *Hanya room master yang dapat menghapus room.*\n` +
       `╰─━━━━━━━━━━━━━━─`
     )
+  }
+
+  if (room.status !== 'waiting') {
+    return m.reply(`Room yang sudah dimulai tidak dapat dihapus manual; timeout akan mengembalikan seluruh kontribusi jika room terbengkalai.`)
   }
 
   delete wdb.casinoRooms[m.chat]
@@ -854,137 +961,67 @@ if (action === 'delete') {
   )
 }
 
-  if (action === 'start') {
+if (['start', 'up', 'next'].includes(action)) {
+  const isFirstRound = action === 'start'
   if (room.master !== m.sender) {
-    return m.reply(
-      `╭─❏「 ❌ AKSES DITOLAK 」❏\n` +
-      `│ ❌ *Hanya room master yang dapat memulai permainan.*\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
+    return m.reply(`Hanya room master yang dapat memulai atau memilih taruhan ronde berikutnya.`)
   }
 
-  if (room.status !== 'waiting') {
-    return m.reply(
-      `╭─❏「 ❌ CASINO ROOM 」❏\n` +
-      `│ ❌ *PERMAINAN SUDAH DIMULAI*\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
+  if (isFirstRound ? room.status !== 'waiting' : room.status !== 'round_wait') {
+    return m.reply(isFirstRound
+      ? `Room sudah dimulai. Lanjutkan dengan *.cs room next* atau *.cs room up*.`
+      : `Belum ada ronde yang menunggu keputusan master.`)
   }
 
-  if (room.players.length < 2) {
-    return m.reply(
-      `╭─❏「 ❌ CASINO ROOM 」❏\n` +
-      `│ ❌ *PEMAIN TIDAK CUKUP*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Room membutuhkan minimal 2 pemain.\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+  if (isFirstRound && room.players.length < 2) {
+    return m.reply(`Room membutuhkan minimal 2 pemain untuk memulai.`)
   }
 
-  for (const jid of room.players) {
-    if (!wdb.users?.[jid]?.rpg || Number(wdb.money?.[jid] || 0) < room.stake) {
-      return reply(
-        `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
-        `│ ❌ *PEMAIN TIDAK MEMENUHI SYARAT*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ ${mention(jid)} tidak memiliki saldo yang cukup.\n` +
-        `> ↳ Tidak ada saldo yang dipotong.\n\n` +
-        `─━━━━━━━━━━━━━━─`,
-        [jid]
-      )
-    }
-
-    const stats = getCasinoStats(wdb.users[jid].rpg)
-
-    if (stats.dailyGames >= getDailyLimit(jid, wdb)) {
-      return reply(
-        `╭─❏「 🛑 BATAS CASINO 」❏\n` +
-        `│ 🛑 *BATAS HARIAN TERCAPAI*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ ${mention(jid)} sudah mencapai batas casino hari ini.\n` +
-        `> ↳ Tidak ada saldo yang dipotong.\n\n` +
-        `─━━━━━━━━━━━━━━─`,
-        [jid]
-      )
-    }
-  }
-
-  room.status = 'playing'
   room.game = room.game || pick(Object.keys(ROOM_GAMES))
+  const stake = isFirstRound || action === 'next'
+    ? Number(room.currentStake || room.stake)
+    : Number(room.currentStake || room.stake) * 2
 
-  const { winner, rounds, tiebreak } = runRoomTournament(room)
-  const prize = room.players.length * room.stake
-
-  const roundText = rounds.map((round, index) => {
-    const scores = Object.entries(round.scores)
-      .map(([jid, score]) => `${roomPlayerName(jid, wdb)} ${score}/5`)
-      .join(' | ')
-
-    const result = round.eliminated
-      ? `Tereliminasi: ${roomPlayerName(round.eliminated, wdb)}`
-      : 'Skor terendah seri, lanjut ronde berikutnya.'
-
-    return `Ronde ${index + 1}: ${scores}\n> ${result}`
-  }).join('\n\n')
-
-  for (const jid of room.players) {
-    wdb.money[jid] = Number(wdb.money[jid] || 0) - room.stake
+  if (!Number.isSafeInteger(stake)) {
+    return m.reply(`Taruhan berikutnya melebihi batas aman saldo. Gunakan *.cs room next* untuk melanjutkan tanpa kenaikan.`)
   }
 
-  wdb.money[winner] = Number(wdb.money[winner] || 0) + prize
-
-  for (const jid of room.players) {
-    const stats = getCasinoStats(wdb.users[jid].rpg)
-    const won = jid === winner
-    const net = won ? prize - room.stake : -room.stake
-
-    stats.games++
-    stats.dailyGames++
-    stats.profit += net
-
-    stats.byGame[room.game] = stats.byGame[room.game] || {
-      games: 0,
-      wins: 0,
-      profit: 0
-    }
-
-    stats.byGame[room.game].games++
-    stats.byGame[room.game].profit =
-      Number(stats.byGame[room.game].profit || 0) + net
-
-    if (won) {
-      stats.wins++
-      stats.byGame[room.game].wins++
-    }
+  const result = playCasinoRoomRound(room, wdb, stake)
+  if (result.insufficientPlayer) {
+    return reply(`Pemain ${mention(result.insufficientPlayer)} tidak memiliki saldo cukup untuk ronde ini. Saldo belum berubah.`, [result.insufficientPlayer])
+  }
+  if (result.invalidPot) {
+    return m.reply(`Total pot melebihi batas aman saldo. Room tidak dilanjutkan dan saldo belum berubah.`)
   }
 
-  wdb.casinoStats = wdb.casinoStats || { totalWinnings: 0 }
-  wdb.casinoStats.totalWinnings =
-    Number(wdb.casinoStats.totalWinnings || 0) + prize
+  if (result.winner) {
+    delete wdb.casinoRooms[m.chat]
+    saveDB(wdb)
+    return reply(
+      `╭─❏「 🏆 ${ROOM_GAMES[room.game].name.toUpperCase()} ROOM SELESAI 」❏\n` +
+      `│ 🏆 *TURNAMEN SELESAI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${formatRoomRound(result, wdb)}\n\n` +
+      `🏆 *PEMENANG*\n` +
+      `> ↳ ${roomPlayerName(result.winner, wdb)}\n` +
+      `> ↳ Hadiah total: ${money(result.prize)}\n` +
+      `> ↳ Casino room tidak mengubah progres casino reguler.\n\n` +
+      `─━━━━━━━━━━━━━━─`,
+      Object.keys(room.contributions)
+    )
+  }
 
-  delete wdb.casinoRooms[m.chat]
   saveDB(wdb)
-
+  const nextStake = room.currentStake
   return reply(
-    `╭─❏「 🏆 ${ROOM_GAMES[room.game].name.toUpperCase()} ROOM SELESAI 」❏\n` +
-    `│ 🏆 *HASIL PERMAINAN*\n` +
+    `╭─❏「 🎮 ${ROOM_GAMES[room.game].name.toUpperCase()} ROOM 」❏\n` +
+    `│ 🎮 *RONDE SELESAI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-
-    `🎮 *HASIL SETIAP RONDE*\n` +
-    `${roundText}\n\n` +
-
-    `${tiebreak
-      ? `🔄 *TIEBREAK*\n` +
-        `> ↳ Seri berlanjut hingga batas ronde; pemenang ditentukan secara acak.\n\n`
-      : ''}` +
-
-    `🏆 *PEMENANG*\n` +
-    `> ↳ ${roomPlayerName(winner, wdb)}\n` +
-    `> ↳ Hadiah total : ${money(prize)}\n` +
-    `> ↳ Saldo pemain lain berkurang : ${money(room.stake)}\n\n` +
-
-    `─━━━━━━━━━━━━━━─`,
-    room.players
+    `${formatRoomRound(result, wdb)}\n` +
+    `> ↳ Pemain tersisa: ${room.players.map(jid => roomPlayerName(jid, wdb)).join(', ')}\n` +
+    `> ↳ Pot sementara: ${money(room.pot)}\n\n` +
+    `Room Master pilih: *.cs room next* (${money(nextStake)}) atau *.cs room up* (${money(nextStake * 2)}).`,
+    [...room.players, result.eliminated]
   )
 }
 
@@ -1016,14 +1053,14 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   if (user.casinoBlocked) {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
-  const stats = getCasinoStats(user)
-  const dailyLimit = getDailyLimit(m.sender, wdb)
-
   const input = (args[0] || '').toLowerCase()
 
   if (input === 'room') {
     return handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user })
   }
+
+  const stats = getCasinoStats(user)
+  const dailyLimit = getDailyLimit(m.sender, wdb)
 
   if (!input) {
     const overview = menu(usedPrefix, wdb)
@@ -1121,19 +1158,21 @@ if ((wdb.money[m.sender] || 0) < bet) {
 const cooldowns = getCooldowns(user)
 const lastPlayed = cooldowns[game] || 0
 const elapsed = Date.now() - lastPlayed
+const cooldownDuration = scaleDifficultyCooldown(user, GAME_COOLDOWN)
 
-if (elapsed < GAME_COOLDOWN) {
+if (elapsed < cooldownDuration) {
   return m.reply(
     `╭─❏「 ⏳ CASINO 」❏\n` +
     `│ ⏳ *${games[game].name} masih cooldown.*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Tunggu ${formatRemaining(GAME_COOLDOWN - elapsed)} lagi.\n\n` +
+    `> ↳ Tunggu ${formatRemaining(cooldownDuration - elapsed)} lagi.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
 
   const result = normalizeResult(resultFor(game))
-  const payout = Math.floor(bet * result.multiplier)
+  let payout = Math.floor(bet * result.multiplier)
+  if (payout > bet) payout = bet + scaleDifficultyIncome(user, payout - bet)
   const net = payout - bet
   const balanceBefore = wdb.money[m.sender] || 0
 
@@ -1197,7 +1236,7 @@ handler.help = [
   'casino cd',
   'casino cooldown',
   'casino room create <taruhan>',
-  'casino room join/leave/kick/player/start/delete/info/games',
+  'casino room join/leave/kick/player/start/next/up/delete/info/games',
   'casino room <permainan>',
   'cs room create <taruhan>',
   ...Object.keys(games).map(key => `casino ${key} <taruhan>`)

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
+import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, args, command }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
@@ -225,7 +226,7 @@ let handler = async (m, { conn, args, command }) => {
     let hasil = dapatkanHasil(h).ambil
     const hasilDisplay = getHasilDisplay(hasil)
     user.inventory[hasil] = (user.inventory[hasil] || 0) + user.ternak[hewan1]
-    let exp = h.exp * user.ternak[hewan1]
+    let exp = scaleDifficultyXP(user, h.exp * user.ternak[hewan1])
     user.exp += exp
     saveDB(wdb)
 

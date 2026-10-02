@@ -1,4 +1,5 @@
 ﻿import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 function normalizeYoutube(data = {}) {
   return {
@@ -57,7 +58,8 @@ let handler = async (m, { conn }) => {
   wdb.users[m.sender].youtube = ytA
   wdb.users[who].youtube = ytB
 
-  const cooldown = 60000
+  const rpgUser = wdb.users[m.sender]?.rpg || {}
+  const cooldown = scaleDifficultyCooldown(rpgUser, 60000)
   const elapsed = Date.now() - (ytA.lastCollab || 0)
 
   if (elapsed < cooldown) {
@@ -93,7 +95,9 @@ let handler = async (m, { conn }) => {
     yt.lastLive = Date.now()
 
     wdb.users[jid].youtube = yt
-    wdb.money[jid] = (wdb.money[jid] || 0) + moneyGain
+    const rpgUser = wdb.users[jid]?.rpg || {}
+    const participantMoneyGain = scaleDifficultyIncome(rpgUser, moneyGain)
+    wdb.money[jid] = (wdb.money[jid] || 0) + participantMoneyGain
 
     const nLvl = Math.floor(yt.subs / 10000) + 1
 

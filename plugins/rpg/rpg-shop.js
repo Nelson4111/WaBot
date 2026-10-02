@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -276,6 +277,7 @@ if (mode === 'guide') {
       if (user.masakan) delete user.masakan[nama]
     }
 
+    totalDapat = scaleDifficultyIncome(user, totalDapat)
     wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalDapat
     user.jualAllConfirm = null
     saveDB(wdb)

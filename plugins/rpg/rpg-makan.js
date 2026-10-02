@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { masakanResep, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
+import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
@@ -92,7 +93,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   const recipe = masakanResep[item] || { emoji: '🍽️', exp: 0 }
   let expTotal = recipe.exp || 0
-  let expPerOrang = target ? Math.floor(expTotal / 2) : expTotal
+  let expPerOrang = scaleDifficultyXP(user, target ? Math.floor(expTotal / 2) : expTotal)
 
   user.exp += expPerOrang
   let levelup1 = cekLevelUp(user)
@@ -149,9 +150,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     let userTarget = dataTarget.rpg
 
     if(userTarget) {
-      userTarget.exp += expPerOrang
+      const targetExp = scaleDifficultyXP(userTarget, target ? Math.floor(expTotal / 2) : expTotal)
+      userTarget.exp += targetExp
       let levelup2 = cekLevelUp(userTarget)
-      cap += `> ↳ 💞 ${namaTarget}: +${expPerOrang} XP${levelup2}\n`
+      cap += `> ↳ 💞 ${namaTarget}: +${targetExp} XP${levelup2}\n`
     }
   }
 

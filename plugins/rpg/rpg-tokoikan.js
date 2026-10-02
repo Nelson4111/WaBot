@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 function formatNama(nama) {
   if (!nama) return ''
@@ -246,32 +247,45 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (tipe !== 'jual') return m.reply(`❌ Pakai: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*`)
   args = args.slice(1)
 
-  if (args[0] === 'all') {
-    let totalHasil = 0, listJual = []
-    for (let item in user.ikan) {
-      if (harga[item]) {
-        let jumlah = user.ikan[item]
-        let hasil = Math.floor(harga[item].harga * sellBonus) * jumlah
-        totalHasil += hasil
-        listJual.push(`${harga[item].emoji} ${formatNama(item)} x${jumlah}`)
-        delete user.ikan[item]
-      }
+  if (['ya', 'yes', 'batal', 'no'].includes(args[0])) {
+    const pending = user.pendingPasarSell
+    if (!pending || Date.now() > pending.expiresAt) {
+      delete user.pendingPasarSell
+      saveDB(wdb)
+      return m.reply('❌ Konfirmasi jual pasar tidak ada atau sudah kedaluwarsa. Ulangi perintah jual.')
     }
-
-    if (totalHasil === 0) return m.reply(`❌ Kamu tidak punya ikan yang bisa dijual.`)
-
-    wdb.money[m.sender] += totalHasil
+    if (['batal', 'no'].includes(args[0])) {
+      delete user.pendingPasarSell
+      saveDB(wdb)
+      return m.reply('✅ Penjualan ikan dibatalkan. Stok dan saldo tidak berubah.')
+    }
+    if (pending.entries.some(entry => (Number(user.ikan[entry.item]) || 0) < entry.quantity)) {
+      delete user.pendingPasarSell
+      saveDB(wdb)
+      return m.reply('❌ Stok berubah sejak konfirmasi dibuat. Penjualan dibatalkan; buat konfirmasi baru.')
+    }
+    for (const entry of pending.entries) {
+      user.ikan[entry.item] -= entry.quantity
+      if (user.ikan[entry.item] <= 0) delete user.ikan[entry.item]
+    }
+    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
+    delete user.pendingPasarSell
     saveDB(wdb)
+    return m.reply(`✅ Penjualan pasar dikonfirmasi. ${pending.entries.length} jenis ikan terjual, saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+  }
 
-    return m.reply(
-      `╭─❏「 🎣 PASAR AVELIA 」❏\n` +
-      `│ ✅ *BERHASIL JUAL SEMUA!*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `🐟 *DAFTAR IKAN TERJUAL*\n` +
-      `${listJual.map(v => `> ↳ ${v}`).join('\n')}\n\n` +
-      `💰 *Total:* +Rp ${totalHasil.toLocaleString()}\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+  if (args[0] === 'all') {
+    const entries = Object.entries(user.ikan)
+      .filter(([item, quantity]) => harga[item] && Number.isSafeInteger(Number(quantity)) && Number(quantity) > 0)
+      .map(([item, quantity]) => ({ item, quantity: Number(quantity) }))
+    if (!entries.length) return m.reply(`❌ Kamu tidak punya ikan yang bisa dijual.`)
+
+    const baseTotal = entries.reduce((total, entry) => total + Math.floor(harga[entry.item].harga * sellBonus) * entry.quantity, 0)
+    const total = scaleDifficultyIncome(user, baseTotal)
+    user.pendingPasarSell = { entries, total, expiresAt: Date.now() + 60000 }
+    saveDB(wdb)
+    const list = entries.map(({ item, quantity }) => `> ↳ ${harga[item].emoji} ${formatNama(item)} x${quantity}`).join('\n')
+    return m.reply(`⚠️ *KONFIRMASI JUAL SEMUA IKAN*\n${list}\n\nPerkiraan diterima: Rp ${total.toLocaleString()}\nKetik *${usedPrefix}pasar jual ya* untuk lanjut atau *${usedPrefix}pasar jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
   }
 
   let amount = 1, itemInput = ''
@@ -307,9 +321,17 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let jual = amount === 'all' ? stok : amount
   if (jual > stok) return m.reply(`❌ Stok tidak cukup! Kamu punya ${stok}`)
 
+  if (amount === 'all') {
+    const total = scaleDifficultyIncome(user, Math.floor(harga[itemInput].harga * sellBonus) * jual)
+    user.pendingPasarSell = { entries: [{ item: itemInput, quantity: jual }], total, expiresAt: Date.now() + 60000 }
+    saveDB(wdb)
+    return m.reply(`⚠️ Konfirmasi jual ${formatNama(itemInput)} x${jual} untuk Rp ${total.toLocaleString()}?\nKetik *${usedPrefix}pasar jual ya* untuk lanjut atau *${usedPrefix}pasar jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+  }
+
   let hasil = Math.floor(harga[itemInput].harga * sellBonus) * jual
   user.ikan[itemInput] -= jual
   if (user.ikan[itemInput] <= 0) delete user.ikan[itemInput]
+  hasil = scaleDifficultyIncome(user, hasil)
   wdb.money[m.sender] += hasil
   saveDB(wdb)
 

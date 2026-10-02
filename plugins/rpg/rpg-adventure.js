@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -109,7 +110,7 @@ let handler = async (m, { conn, command }) => {
   }
 
   // COMMAND ADVENTURE
-  let cooldown = 120000
+  let cooldown = scaleDifficultyCooldown(user, 120000)
   if (Date.now() - (user.lastAdventure || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastAdventure)) / 1000)
     return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
@@ -122,7 +123,7 @@ let handler = async (m, { conn, command }) => {
   let oldTitle = getAdvTitle(advLvl)
 
   let bonus = Math.min(advLvl * 2 + swordLvl + Math.floor(pickLvl / 2), 60)
-  let darahKurang = Math.floor(Math.random() * 15) + 5
+  let darahKurang = scaleDifficultyDamage(user, Math.floor(Math.random() * 15) + 5)
   let baseExp = Math.floor(Math.random() * 150) + 50
   let baseMoney = Math.floor(Math.random() * 5000) + 1000
   let baseWood = Math.floor(Math.random() * 10) + 5
@@ -164,7 +165,8 @@ let handler = async (m, { conn, command }) => {
   user.wood = (user.wood || 0) + baseWood + Math.floor(pickLvl / 3)
   user.iron = (user.iron || 0) + baseIron + Math.floor(pickLvl / 4)
 
-  let money = baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)
+  let money = scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60))
+  totalExp = scaleDifficultyXP(user, totalExp)
   addRpgExp(user, totalExp)
   user.adventureExp = (Number(user.adventureExp) || 0) + totalExp
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money

@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -100,7 +101,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let nextExp = myGuild.level * 1000
     let maxMembers = 10 + ((myGuild.level || 1) - 1) * 2
 
-    let cooldown = user.lastGuildCooldownType === 'kick'? 12 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+    let cooldown = scaleDifficultyCooldown(user.rpg || user, user.lastGuildCooldownType === 'kick'? 12 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000)
     let cdText = ''
     if (user.lastGuildCooldown && Date.now() - user.lastGuildCooldown < cooldown) {
         let sisa = cooldown - (Date.now() - user.lastGuildCooldown)
@@ -153,7 +154,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (action === 'create') {
-    let cooldown = user.lastGuildCooldownType === 'kick'? 12 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+    let cooldown = scaleDifficultyCooldown(user.rpg || user, user.lastGuildCooldownType === 'kick'? 12 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000)
     if (user.lastGuildCooldown && Date.now() - user.lastGuildCooldown < cooldown) {
         let sisa = cooldown - (Date.now() - user.lastGuildCooldown)
         let jam = Math.floor(sisa / 3600000)

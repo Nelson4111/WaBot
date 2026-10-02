@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -54,7 +55,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1
   const cekCD = (key, durasi) => {
     let last = user.cooldown[key] || 0
-    let sisa = durasi - (Date.now() - last)
+    let sisa = scaleDifficultyCooldown(user, durasi) - (Date.now() - last)
     return sisa > 0? Math.ceil(sisa / 1000) : 0
   }
 
@@ -82,7 +83,7 @@ if (action === 'feed') {
     `> ↳ Kamu tidak punya pet.`
   )
 
-  let cd = 120000
+  let cd = scaleDifficultyCooldown(user, 120000)
   if (user.pets.some(p => Date.now() - (p.lastFeed || 0) < cd)) return m.reply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ⏰ *BELUM BISA MEMBERI MAKAN*\n` +
@@ -155,7 +156,7 @@ if (action === 'train') {
     `> ↳ Kamu tidak punya pet.`
   )
 
-  let cd = 300000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1)
+  let cd = scaleDifficultyCooldown(user, 300000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1))
 
   if (user.pets.some(p => Date.now() - (p.lastTrain || 0) < cd)) {
     let sisa = Math.ceil((cd - (Date.now() - user.pets[0].lastTrain)) / 1000)
@@ -240,7 +241,7 @@ if (action === 'walk') {
     `> ↳ Kamu tidak punya pet.`
   )
 
-  let cd = 60000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1)
+  let cd = scaleDifficultyCooldown(user, 60000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1))
   cd = Math.max(10, cd - (user.pets.some(p => p.tipe === 'jack_o_lantern') ? 10000 : 0))
 
   if (user.pets.some(p => (p.energy || 100) < 20 && !['batu','zombie'].includes(p.tipe))) return m.reply(
@@ -323,7 +324,7 @@ if (action === 'play') {
     `> ↳ Kamu tidak punya pet.`
   )
 
-  let cd = 60000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1)
+  let cd = scaleDifficultyCooldown(user, 60000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1))
   cd = Math.max(10, cd - (user.pets.some(p => p.tipe === 'jack_o_lantern') ? 10000 : 0))
 
   if (user.pets.some(p => (p.energy || 100) < 20 && !['batu','zombie'].includes(p.tipe))) return m.reply(
@@ -415,7 +416,7 @@ if (action === 'rest') {
     `> ↳ Mereka begadang selamanya`
   )
 
-  let cd = 600000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1)
+  let cd = scaleDifficultyCooldown(user, 600000 / (user.pets.some(p => p.tipe === 'jin') ? 2 : 1))
   cd = Math.max(30000, cd - (user.pets.some(p => p.tipe === 'jack_o_lantern') ? 10000 : 0))
 
   if (Date.now() - (user.pets[0].lastRest || 0) < cd) return m.reply(

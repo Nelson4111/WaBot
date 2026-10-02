@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { isDifficultyRanked, scaleDifficultyDamage, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 const MODES = {
   jambak: { nama: 'Jambak', emoji: '💇', verb: 'dijambak' },
@@ -80,7 +81,7 @@ function formatRecord(stats, mode) {
 }
 
 function getPower(user, stats) {
-  return Math.max(
+  const basePower = Math.max(
     1,
     (Number(user.level) || 1) * 10 +
     Math.floor((Number(user.exp) || 0) / 500) +
@@ -88,6 +89,7 @@ function getPower(user, stats) {
     stats.kalah +
     Math.floor(Math.random() * 200)
   )
+  return Math.max(1, scaleDifficultyDamage(user, basePower, 'dealt'))
 }
 
 function removeChallenge(id) {
@@ -141,7 +143,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     const rows = Object.entries(wdb.users || {})
       .map(([jid, entry]) => {
         const player = entry?.rpg || entry
-        if (!player) return null
+        if (!player || !isDifficultyRanked(player)) return null
         return { jid, total: totalWins(initStats(player)) }
       })
       .filter(row => row && row.total > 0)
@@ -213,7 +215,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
       const loserJid = winnerIsA ? challenge.target : challenge.penantang
       winner.arenaStats[modeKey].menang++
       loser.arenaStats[modeKey].kalah++
-      winner.exp = (winner.exp || 0) + 50
+      winner.exp = (winner.exp || 0) + scaleDifficultyXP(winner, 50)
       wdb.money[winnerJid] = (wdb.money[winnerJid] || 0) + wager
       wdb.money[loserJid] = (wdb.money[loserJid] || 0) - wager
       const winnerTitle = getArenaTitle(winner.arenaStats[modeKey].menang, modeKey)

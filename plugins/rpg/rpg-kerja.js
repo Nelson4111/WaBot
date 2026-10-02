@@ -1,4 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     const wdb = loadDB()
@@ -99,7 +100,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     // STATUS DAN LIST KERJA
     if (args === '' && command === 'job') {
-  let cooldown = 120000
+  let cooldown = scaleDifficultyCooldown(userRPG, 120000)
   let sisa = Math.max(0, cooldown - (Date.now() - userRPG.lastkerja))
   let status = sisa > 0
     ? `⏳ ${Math.ceil(sisa / 1000)} detik lagi`
@@ -160,7 +161,7 @@ if (args === 'job' || args === 'work') {
   args = ''
 }
 
-let cooldown = 120000
+let cooldown = scaleDifficultyCooldown(userRPG, 120000)
 let timers = cooldown - (Date.now() - userRPG.lastkerja)
 
 if (Date.now() - userRPG.lastkerja < cooldown) {
@@ -186,8 +187,10 @@ if (availableJobs.length === 0) {
 let selected = availableJobs[availableJobs.length - 1]
 
 try {
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + selected.gaji
-  userRPG.exp += selected.exp
+  const earnedMoney = scaleDifficultyIncome(userRPG, selected.gaji)
+  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
+  const earnedExp = scaleDifficultyXP(userRPG, selected.exp)
+  userRPG.exp += earnedExp
   userRPG.lastkerja = Date.now()
 
   let jumlahLevel = 0
@@ -201,8 +204,8 @@ try {
 
   let msg = `╭─❏「 💼 KERJA BERHASIL 」❏\n`
   msg += `│ 👷 Pekerjaan: *${selected.job}*\n`
-  msg += `│ 💰 Pendapatan: +Rp ${selected.gaji.toLocaleString()}\n`
-  msg += `│ ✨ XP: +${selected.exp.toLocaleString()}\n`
+  msg += `│ 💰 Pendapatan: +Rp ${earnedMoney.toLocaleString()}\n`
+  msg += `│ ✨ XP: +${earnedExp.toLocaleString()}\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
 
   msg += `📊 *STATUS*\n`

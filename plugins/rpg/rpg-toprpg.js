@@ -1,10 +1,13 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
+import { isDifficultyRanked } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
   
   // Ambil semua ID user yang terdaftar
-  let users = Object.keys(wdb.users)
+  let users = filterRpgPanelUsers(Object.keys(wdb.users))
+    .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
   
   // Fungsi Helper untuk format Nama & Nomor
   const formatUser = (id) => {
@@ -22,7 +25,7 @@ let handler = async (m, { conn }) => {
     .slice(0, 10)
 
   // 2. Leaderboard Berdasarkan MONEY
-  let topMoney = users
+  let topMoney = [...users]
     .sort((a, b) => (wdb.money[b] || 0) - (wdb.money[a] || 0))
     .slice(0, 10)
 

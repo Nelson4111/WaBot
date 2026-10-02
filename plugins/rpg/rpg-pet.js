@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -603,7 +604,7 @@ const getCooldown = (base, user) => {
 
   let hasil = base * multi - reduce
   if(user.pets.some(p => p.tipe === 'jack_o_lantern')) hasil -= 10000
-  return Math.max(10000, hasil)
+  return scaleDifficultyCooldown(user, Math.max(10000, hasil))
 }
 
 const formatCooldown = (ms) => {
@@ -1044,7 +1045,7 @@ const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 :
 
 const cekCD = (key, durasi) => {
   let last = user.cooldown[key] || 0
-  let sisa = durasi - (Date.now() - last)
+  let sisa = scaleDifficultyCooldown(user, durasi) - (Date.now() - last)
   return sisa > 0? Math.ceil(sisa / 1000) : 0
 }
 
@@ -1145,9 +1146,9 @@ if (action === 'feed') {
       p.exp = (p.exp || 0) + expGain
       p.energy = Math.min(100, (p.energy || 100) + energyGain)
 
-      if(p.tipe === 'alien') wdb.money[m.sender] += 1000 * p.level
-      if(p.tipe === 'poop') wdb.money[m.sender] += 2000
-      if(feedSkill.moneyBonus > 0) wdb.money[m.sender] += feedSkill.moneyBonus
+      if(p.tipe === 'alien') wdb.money[m.sender] += scaleDifficultyIncome(user, 1000 * p.level)
+      if(p.tipe === 'poop') wdb.money[m.sender] += scaleDifficultyIncome(user, 2000)
+      if(feedSkill.moneyBonus > 0) wdb.money[m.sender] += scaleDifficultyIncome(user, feedSkill.moneyBonus)
 
       p.lastFeed = Date.now()
       if (p.exp >= 100) { p.level = (p.level || 1) + 1; p.exp = 0; naik.push(p) }
@@ -2312,7 +2313,8 @@ if (action === 'hunt') {
   let exp = Math.floor(Math.random() * 30) + 10
   let huntMoneyMulti = user.pets.reduce((acc, p) => acc * (applySkill(p, 'hunt').moneyMulti || 1), 1)
 
-  wdb.money[m.sender] += Math.floor(hasil * huntMoneyMulti)
+  hasil = scaleDifficultyIncome(user, Math.floor(hasil * huntMoneyMulti))
+  wdb.money[m.sender] += hasil
 
   user.pets.forEach(p => {
     let skill = applySkill(p, 'hunt')
@@ -2361,6 +2363,7 @@ if (action === 'dispatch') {
 
   setTimeout(() => {
     let hasil = Math.floor(Math.random() * 100000) + 50000
+    hasil = scaleDifficultyIncome(user, hasil)
     wdb.money[m.sender] += hasil
     saveDB(wdb)
 
@@ -2747,6 +2750,7 @@ if (action === 'claim') {
     `─━━━━━━━━━━━━━━─`
   )
 
+  uang = scaleDifficultyIncome(user, uang)
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uang
   saveDB(wdb)
 

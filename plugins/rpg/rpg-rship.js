@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -177,7 +178,7 @@ const GIFT_LIST = [
   const cekCD = (key, durasi) => {
     const legacyKeys = Object.keys(user.cooldown).filter(storedKey => storedKey.startsWith(key) && /^\d+$/.test(storedKey.slice(key.length)))
     const last = Math.max(0, ...[key, ...legacyKeys].map(storedKey => Number(user.cooldown[storedKey]) || 0))
-    let sisa = durasi - (Date.now() - last)
+    let sisa = scaleDifficultyCooldown(user, durasi) - (Date.now() - last)
     return sisa > 0? Math.ceil(sisa / 1000) : 0
   }
 
@@ -1190,6 +1191,7 @@ if (action === 'kerja') {
   )
 
   let gaji = Math.floor(Math.random() * 30000) + 15000
+  gaji = scaleDifficultyIncome(user, gaji)
   user.bank += gaji
   p.love += 8
   let up = addExp(p, 15)
@@ -1396,7 +1398,7 @@ if (action === 'gift') {
 
     let exp = Math.floor(jumlah / 1000)
     let love = Math.min(100, Math.floor(jumlah / 10000000))
-    let cooldown = Math.min(86400000, Math.floor(jumlah / 100000) * 60000)
+    let cooldown = scaleDifficultyCooldown(user, Math.min(86400000, Math.floor(jumlah / 100000) * 60000))
 
     user.bank -= jumlah
     p.love = Math.min(100, p.love + love)
@@ -1483,7 +1485,7 @@ if (action === 'gift') {
     let totalHarga = gift.harga * jumlah
     let totalExp = gift.exp * jumlah
     let totalLove = gift.love * jumlah
-    let cooldown = Math.min(86400000, Math.floor(totalHarga / 1000000) * 3600000)
+    let cooldown = scaleDifficultyCooldown(user, Math.min(86400000, Math.floor(totalHarga / 1000000) * 3600000))
 
     if(Date.now() - (user.cooldown['gift_'+p.name] || 0) < (user.cooldown['gift_cd_'+p.name] || 0)) {
       let sisa = Math.ceil(((user.cooldown['gift_'+p.name] || 0) + (user.cooldown['gift_cd_'+p.name] || 0) - Date.now()) / 60000)
@@ -1939,6 +1941,7 @@ if (action === 'kiss') {
     if(cekCD('rampok', 21600000) > 0) return m.reply(`⏰ Rampok masih cooldown. Tunggu 6 jam.`)
 
     const hasil = Math.floor(Math.random() * 75001) + 25000
+    hasil = scaleDifficultyIncome(user, hasil)
     user.bank += hasil
     p.love = Math.max(0, (p.love || 0) - 5)
     const up = addExp(p, 20)
@@ -2210,6 +2213,7 @@ if (action === 'kiss') {
       )
     } else {
       let hadiah = Math.floor(Math.random() * 50000) + 25000
+      hadiah = scaleDifficultyIncome(user, hadiah)
       user.bank += hadiah
       p.love = Math.min(100, p.love + 15)
       let up = addExp(p, 60)

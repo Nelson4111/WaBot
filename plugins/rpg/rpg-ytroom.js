@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 const DEFAULT_YOUTUBE_IMAGE = 'https://c.termai.cc/i189/AS4Mvv.webp'
 
@@ -298,7 +299,8 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
 
     const content = contentMap[y.content] || contentMap.streamer
     const roomBoost = upgradeSpecs[Math.max(0, Math.min(4, Number(y.roomLevel || 0)))]?.bonus || 1
-    const cd = 60000
+    const rpgUser = wdb.users[m.sender]?.rpg || {}
+    const cd = scaleDifficultyCooldown(rpgUser, 60000)
     const now = Date.now()
     if (now - (y.lastLive || 0) < cd) {
       const sisa = Math.ceil((cd - (now - (y.lastLive || 0))) / 1000)
@@ -308,7 +310,7 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
     const viewers = Math.floor(100 + Math.random() * 5000 * roomBoost * content.reward)
     const likes = Math.floor(viewers * (0.08 + Math.random() * 0.22))
     const subs = Math.floor(viewers / 10)
-    const payout = Math.floor(25000 + viewers * 120 * roomBoost * content.reward)
+    const payout = scaleDifficultyIncome(rpgUser, Math.floor(25000 + viewers * 120 * roomBoost * content.reward))
 
     y.views += viewers
     y.likes += likes
@@ -337,7 +339,8 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
     if (!y.name) return m.reply(`❌ Kamu belum punya channel room. Buat dulu dengan *${usedPrefix}room create <nama>*`)
     if (!y.gender || y.gender === 'none') return m.reply(`❌ Silakan set gender terlebih dahulu via *${usedPrefix}room set gender male|female|none*`)
 
-    const cd = 120000
+    const rpgUser = wdb.users[m.sender]?.rpg || {}
+    const cd = scaleDifficultyCooldown(rpgUser, 120000)
     const now = Date.now()
     if (now - (y.lastCollab || 0) < cd) {
       const sisa = Math.ceil((cd - (now - (y.lastCollab || 0))) / 1000)
@@ -345,7 +348,7 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
     }
 
     const roomBoost = upgradeSpecs[Math.max(0, Math.min(4, Number(y.roomLevel || 0)))]?.bonus || 1
-    const collabGain = Math.floor(35000 * roomBoost)
+    const collabGain = scaleDifficultyIncome(rpgUser, Math.floor(35000 * roomBoost))
     const viewBoost = Math.floor(1500 * roomBoost)
     const subBoost = Math.floor(20 * roomBoost)
 

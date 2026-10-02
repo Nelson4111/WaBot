@@ -1,5 +1,6 @@
 ﻿import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import {
   hargaBeli as sharedHargaBeli,
   masakanResep,
@@ -298,7 +299,50 @@ return m.reply(cap)
 
   // SISTEM JUAL
   if(tipe === 'jual'){
+    const confirmAction = args[1] === 'all' ? args[2] : args[1]
+    if (['ya', 'yes', 'batal', 'no'].includes(confirmAction)) {
+      const pending = user.pendingRestoranSell
+      if (!pending || Date.now() > pending.expiresAt) {
+        delete user.pendingRestoranSell
+        saveDB(wdb)
+        return m.reply('❌ Konfirmasi jual restoran tidak ada atau sudah kedaluwarsa. Ulangi perintah jual.')
+      }
+      if (['batal', 'no'].includes(confirmAction)) {
+        delete user.pendingRestoranSell
+        saveDB(wdb)
+        return m.reply('✅ Penjualan restoran dibatalkan. Stok dan saldo tidak berubah.')
+      }
+      if (pending.entries.some(entry => (Number(user[entry.source][entry.item]) || 0) < entry.quantity)) {
+        delete user.pendingRestoranSell
+        saveDB(wdb)
+        return m.reply('❌ Stok berubah sejak konfirmasi dibuat. Penjualan dibatalkan; buat konfirmasi baru.')
+      }
+      for (const entry of pending.entries) {
+        user[entry.source][entry.item] -= entry.quantity
+        if (user[entry.source][entry.item] <= 0) delete user[entry.source][entry.item]
+      }
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
+      delete user.pendingRestoranSell
+      saveDB(wdb)
+      return m.reply(`✅ Penjualan restoran dikonfirmasi. ${pending.entries.length} jenis stok terjual, saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+    }
+
     if(args[1] === 'all'){
+      const entries = [
+        ...Object.entries(user.masakan).filter(([item, quantity]) => hargaJual[item] && Number(quantity) > 0).map(([item, quantity]) => ({ source: 'masakan', item, quantity: Number(quantity) })),
+        ...Object.entries(user.inventory).filter(([item, quantity]) => hargaJualHasilTernak[item] && Number(quantity) > 0).map(([item, quantity]) => ({ source: 'inventory', item, quantity: Number(quantity) }))
+      ]
+      if (!entries.length) return m.reply('❌ Dapur kosong!')
+      const baseTotal = entries.reduce((total, entry) => {
+        const unitPrice = entry.source === 'masakan' ? hargaJual[entry.item] : hargaJualHasilTernak[entry.item]
+        return total + Math.floor(unitPrice * sellBonus) * entry.quantity
+      }, 0)
+      const total = scaleDifficultyIncome(user, baseTotal)
+      user.pendingRestoranSell = { entries, total, expiresAt: Date.now() + 60000 }
+      saveDB(wdb)
+      const list = entries.map(entry => `> ↳ ${formatNama(entry.item)} x${entry.quantity}`).join('\n')
+      return m.reply(`⚠️ *KONFIRMASI JUAL RESTORAN*\n${list}\n\nPerkiraan diterima: Rp ${total.toLocaleString()}\nKetik *${usedPrefix}restoran jual ya* untuk lanjut atau *${usedPrefix}restoran jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+
       let totalHasil = 0, listJual = []
       for(let item in user.masakan){
         if(hargaJual[item] && user.masakan[item] > 0){
@@ -319,6 +363,7 @@ return m.reply(cap)
         }
       }
       if(totalHasil === 0) return m.reply('❌ Dapur kosong!')
+      totalHasil = scaleDifficultyIncome(user, totalHasil)
       wdb.money[m.sender] += totalHasil; saveDB(wdb)
       let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n│ Koki : ${m.pushName}\n╰─━━━━━━━━━━━━━━─\n\n📤 *${listJual.length} Masakan Disetor*\n\n💰 +Rp ${totalHasil.toLocaleString()}\n💵 Total: Rp ${wdb.money[m.sender].toLocaleString()}\n\n_“Terima kasih sudah memasak untuk pelanggan!”_`
       return m.reply(cap)
@@ -333,12 +378,23 @@ return m.reply(cap)
     let jual = amount === 'all'? stok : amount
     if (jual > stok) return m.reply(`❌ Stok tidak cukup! Punya: ${stok}`)
     const harga = hargaJual[item] || hargaJualHasilTernak[item]
+    const display = hargaJual[item] ? `${resepEmoji[item] || '🍽️'} ${formatNama(item)}` : `${getHasilDisplay(item).emoji} ${getHasilDisplay(item).nama}`
+
+    if (amount === 'all') {
+      const source = hargaJual[item] ? 'masakan' : 'inventory'
+      const total = scaleDifficultyIncome(user, Math.floor(harga * sellBonus) * jual)
+      user.pendingRestoranSell = { entries: [{ source, item, quantity: jual }], total, expiresAt: Date.now() + 60000 }
+      saveDB(wdb)
+      return m.reply(`⚠️ Konfirmasi setor ${display} x${jual} untuk Rp ${total.toLocaleString()}?\nKetik *${usedPrefix}restoran jual ya* untuk lanjut atau *${usedPrefix}restoran jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+    }
+
     let hasil = Math.floor(harga * sellBonus) * jual
     if (hargaJual[item]) {
       user.masakan[item] -= jual; if(user.masakan[item] <= 0) delete user.masakan[item]
     } else {
       user.inventory[item] -= jual; if(user.inventory[item] <= 0) delete user.inventory[item]
     }
+    hasil = scaleDifficultyIncome(user, hasil)
     wdb.money[m.sender] += hasil; saveDB(wdb)
     const display = hargaJual[item] ? `${resepEmoji[item] || '🍽️'} ${formatNama(item)}` : `${getHasilDisplay(item).emoji} ${getHasilDisplay(item).nama}`
 let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n`

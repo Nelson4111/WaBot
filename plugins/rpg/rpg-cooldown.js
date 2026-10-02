@@ -1,4 +1,5 @@
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 
 const COOLDOWN_TIMES = {
   kawin: 7 * 60 * 60 * 1000,
@@ -37,6 +38,22 @@ const normalizeTimestamp = timestamp => {
   return value > 0 && value < 1e12 ? value * 1000 : value
 }
 
+const getJakartaDate = timestamp => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date(timestamp))
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+const getJakartaMidnight = timestamp => {
+  const date = new Date(timestamp + 7 * 3600000)
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1) - 7 * 3600000
+}
+
 const addCooldown = (list, label, timestamp, duration) => {
   const normalizedTimestamp = normalizeTimestamp(timestamp)
   const normalizedDuration = Number(duration) || 0
@@ -54,6 +71,7 @@ const handler = async (m, { usedPrefix }) => {
   const userData = getUserRPG(wdb, m.sender)
   const user = userData?.rpg || userData
   const account = wdb.users?.[m.sender] || {}
+  const now = Date.now()
   if (!user) return m.reply('❌ Data RPG kamu belum tersedia.')
 
   const cooldowns = user.cooldown || {}
@@ -69,17 +87,22 @@ const handler = async (m, { usedPrefix }) => {
         seen.add(id)
         const suffix = cooldownKey.slice(key.length)
         const label = suffix ? `${LABELS[key]} ${Number(suffix) + 1 || suffix}` : LABELS[key]
-        if (!addCooldown(activeCooldowns, label, timestamp, duration)) expiredKeys.add(cooldownKey)
+        if (!addCooldown(activeCooldowns, label, timestamp, scaleDifficultyCooldown(user, duration))) expiredKeys.add(cooldownKey)
       }
     }
   }
 
-  addCooldown(activeCooldowns, 'Daily', account.lastDaily, 24 * 60 * 60 * 1000)
-  addCooldown(activeCooldowns, 'Kerja RPG', user.lastkerja, COOLDOWN_TIMES.kerja_rpg)
-  addCooldown(activeCooldowns, 'Adventure', user.lastAdventure, COOLDOWN_TIMES.adventure)
-  addCooldown(activeCooldowns, 'Mining', user.lastMining, COOLDOWN_TIMES.mining)
-  addCooldown(activeCooldowns, 'Dungeon', user.lastDungeon, COOLDOWN_TIMES.dungeon)
-  addCooldown(activeCooldowns, 'Fishing', user.lastFishing || user.lastMancing, COOLDOWN_TIMES.fishing)
+  const dailyDuration = Number(user.dailyCooldownDuration || user.rpg?.dailyCooldownDuration) || 24 * 60 * 60 * 1000
+  if (account.lastDaily && account.dailyDate === getJakartaDate(now)) {
+    activeCooldowns.push({ label: 'Daily', remaining: Math.max(0, getJakartaMidnight(now) - now) })
+  } else {
+    addCooldown(activeCooldowns, 'Daily', account.lastDaily, dailyDuration)
+  }
+  addCooldown(activeCooldowns, 'Kerja RPG', user.lastkerja, scaleDifficultyCooldown(user, COOLDOWN_TIMES.kerja_rpg))
+  addCooldown(activeCooldowns, 'Adventure', user.lastAdventure, scaleDifficultyCooldown(user, COOLDOWN_TIMES.adventure))
+  addCooldown(activeCooldowns, 'Mining', user.lastMining, scaleDifficultyCooldown(user, COOLDOWN_TIMES.mining))
+  addCooldown(activeCooldowns, 'Dungeon', user.lastDungeon, scaleDifficultyCooldown(user, COOLDOWN_TIMES.dungeon))
+  addCooldown(activeCooldowns, 'Fishing', user.lastFishing || user.lastMancing, scaleDifficultyCooldown(user, COOLDOWN_TIMES.fishing))
 
   for (const key of expiredKeys) delete cooldowns[key]
   if (expiredKeys.size) saveDB(wdb)

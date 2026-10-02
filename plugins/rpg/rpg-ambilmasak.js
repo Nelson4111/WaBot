@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -30,9 +31,11 @@ let handler = async (m, { conn }) => {
     }
   })
 
+  apresiasiTotal = scaleDifficultyIncome(user, apresiasiTotal)
   if(apresiasiTotal > 0) wdb.money[m.sender] = (wdb.money[m.sender] || 0) + apresiasiTotal
   user.dapur.antrian = user.dapur.antrian.filter(item => item.selesai > sekarang)
 
+  expTotal = scaleDifficultyXP(user, expTotal)
   user.exp += expTotal
   let levelup = ''
   while(user.exp >= user.level * 500) { // FIX

@@ -2,11 +2,14 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
   if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
+  const actorRestriction = getCrimeRestriction(userRPG)
+  if (actorRestriction) return m.reply(actorRestriction)
   if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
   // CEK PENJARA
@@ -22,7 +25,7 @@ let handler = async (m, { conn }) => {
   }
 
   // COOLDOWN 10 MENIT
-  let cd = 600000
+  let cd = scaleDifficultyCooldown(userRPG, 600000)
   if (!userRPG.lastcopet) userRPG.lastcopet = 0
   let sisa = cd - (Date.now() - userRPG.lastcopet)
   if (sisa > 0) {
@@ -41,6 +44,8 @@ let handler = async (m, { conn }) => {
 
   let target = getUserRPG(wdb, who).rpg
   if(!target) return m.reply('❌ Target belum punya data RPG')
+  const targetRestriction = getCrimeRestriction(target, { target: true })
+  if (targetRestriction) return m.reply(targetRestriction)
   if (Number(target.darah) <= 0) return m.reply(`💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`)
   if(!target.riwayat) target.riwayat = []
 
@@ -48,7 +53,7 @@ let handler = async (m, { conn }) => {
   if (uangTarget < 1000) return m.reply('❌ Target terlalu miskin. Minimal Rp 1.000')
 
   userRPG.lastcopet = Date.now()
-  let gagal = Math.random() < 0.4 // 40% gagal
+  let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.6)
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}
@@ -92,7 +97,7 @@ let handler = async (m, { conn }) => {
 
   // SUKSES
   userRPG.gagalCopet = 0
-  let hasil = Math.floor(Math.random() * 5000) + 1000 // 1k - 6k
+  let hasil = scaleDifficultyIncome(userRPG, Math.floor(Math.random() * 5000) + 1000) // 1k - 6k
 
   wdb.money[who] -= hasil
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil

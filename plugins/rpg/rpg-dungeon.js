@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -97,15 +98,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (swordLvl < selected.minSword) return m.reply(`❌ Butuh Sword Level ${selected.minSword} untuk dungeon ini!`)
   if (user.darah < (maxHP * 0.2)) return m.reply(`❌ Darah kritis (${user.darah}/${maxHP}). Gunakan.heal dulu!`)
 
-  if (Date.now() - (user.lastDungeon || 0) < selected.cooldown) {
-    let sisa = ((selected.cooldown - (Date.now() - user.lastDungeon)) / 1000).toFixed(0)
+  const difficultyCooldown = scaleDifficultyCooldown(user, selected.cooldown)
+  if (Date.now() - (user.lastDungeon || 0) < difficultyCooldown) {
+    let sisa = ((difficultyCooldown - (Date.now() - user.lastDungeon)) / 1000).toFixed(0)
     return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
   }
 
   // DMG USER
   let userDmg = (user.level * 10) + (swordLvl * 100) + bonusDmgGuild
   if (pet.tipe === 'naga') userDmg += Math.floor(userDmg * (pet.level * 0.05))
-  userDmg = Math.max(10, userDmg)
+  userDmg = Math.max(10, scaleDifficultyDamage(user, userDmg, 'dealt'))
 
   // DMG ENEMY
   let rounds = Math.ceil(selected.hpEnemy / userDmg)
@@ -126,7 +128,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let dmgCapPercentage = Math.max(0.15, 0.45 - statAdvantage)
   let maxPossibleDmg = Math.floor(maxHP * dmgCapPercentage)
-  let finalDamage = Math.max(10, Math.min(rawDamage, maxPossibleDmg))
+  let finalDamage = scaleDifficultyDamage(user, Math.max(10, Math.min(rawDamage, maxPossibleDmg)))
 
   // KALO MATI
   if (user.darah <= finalDamage) {
@@ -145,6 +147,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (pet.tipe === 'kucing') earnedExp += Math.floor(earnedExp * (pet.level * 0.10))
   if (pet.tipe === 'anjing') earnedMoney += Math.floor(earnedMoney * (pet.level * 0.10))
+  earnedExp = scaleDifficultyXP(user, earnedExp)
+  earnedMoney = scaleDifficultyIncome(user, earnedMoney)
+  earnedGold = scaleDifficultyIncome(user, earnedGold)
+  earnedDiamond = scaleDifficultyIncome(user, earnedDiamond)
+  earnedLimit = scaleDifficultyIncome(user, earnedLimit)
 
   user.darah -= Math.floor(finalDamage)
   addRpgExp(user, earnedExp)

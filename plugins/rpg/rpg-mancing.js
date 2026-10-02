@@ -1,3 +1,4 @@
+import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 
@@ -119,7 +120,7 @@ let handler = async (m, { conn }) => {
     }
   }
 
-  let cooldown = 60000
+  let cooldown = scaleDifficultyCooldown(user, 60000)
   if (Date.now() - (user.lastMancing || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMancing)) / 1000)
     return m.reply(`Sabar, ikan belum makan umpan. Tunggu ${sisa} detik lagi`)
@@ -185,7 +186,7 @@ let handler = async (m, { conn }) => {
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
   const highest = draws.reduce((best, current) => tierOrder.indexOf(current.tier) > tierOrder.indexOf(best) ? current.tier : best, 'TRASH')
-  const totalExp = draws.reduce((sum, x) => sum + x.exp, 0)
+  const totalExp = scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0))
 
   for (const fish of draws) {
     const normalizedKey = normalizeFishKey(fish.ikan)

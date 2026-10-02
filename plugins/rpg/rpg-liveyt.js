@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 function normalizeYoutube(data = {}) {
   return {
@@ -35,7 +36,8 @@ let handler = async (m, { conn, text }) => {
 │ Kamu harus menyertakan judul untuk mulai live streaming.
 ╰─━━━━━━━━━━━━━━─`)
 
-  const cooldown = 60000
+  const rpgUser = wdb.users[m.sender]?.rpg || {}
+  const cooldown = scaleDifficultyCooldown(rpgUser, 60000)
   if (Date.now() - youtube.lastLive < cooldown) {
     const sisa = Math.ceil((cooldown - (Date.now() - youtube.lastLive)) / 1000)
     return m.reply(`╭─❏「 ⏳ LIVE COOLDOWN 」❏
@@ -67,7 +69,7 @@ let handler = async (m, { conn, text }) => {
     lifestyle: 1.2
   }[youtube.content] || 1
 
-  const moneyGain = Math.floor((Math.floor(Math.random() * (100000 - 10000 + 1)) + 10000) * roomBoost * contentBoost)
+  const moneyGain = scaleDifficultyIncome(rpgUser, Math.floor((Math.floor(Math.random() * (100000 - 10000 + 1)) + 10000) * roomBoost * contentBoost))
   const viewers = Math.floor((Math.floor(Math.random() * 10000) + 500) * roomBoost)
   const likesGain = Math.floor(viewers * (Math.random() * (0.4 - 0.1) + 0.1))
   const subsGain = Math.floor(viewers / 10)

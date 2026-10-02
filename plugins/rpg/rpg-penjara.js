@@ -1,5 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
+import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 
 /* =========================================================
    DIALOG VISIT 20x20
@@ -355,7 +356,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
     if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
     let last = Number(wdb.routineCooldown[m.sender]) || 0
     let now = Date.now()
-    let CD = 2 * 60 * 1000
+    let CD = scaleDifficultyCooldown(getRPG(m.sender), 2 * 60 * 1000)
     if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat routine lagi`)
 
     wdb.routineCooldown[m.sender] = now
@@ -387,7 +388,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
     let last = Number(wdb.talkCooldown[m.sender]) || 0
     let now = Date.now()
-    let CD = 2 * 60 * 1000
+    let CD = scaleDifficultyCooldown(getRPG(m.sender), 2 * 60 * 1000)
     if (now - last < CD) return m.reply(`⏳ Tunggu *${formatTime(CD - (now - last))}* buat ngobrol lagi`)
 
     wdb.talkCooldown[m.sender] = now
@@ -418,7 +419,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
         let last = Number(wdb.kaburCooldown[m.sender]) || 0
         let now = Date.now()
-        let CD = 5 * 60 * 1000
+        let CD = scaleDifficultyCooldown(getRPG(m.sender), 5 * 60 * 1000)
         if (now - last < CD) return m.reply(`⏳ *COOLDOWN KABUR*\n\nTunggu *${formatTime(CD - (now - last))}* lagi`)
         wdb.kaburCooldown[m.sender] = now
 
@@ -464,7 +465,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     if (command === 'penjara' && args[0]?.toLowerCase() === 'visit') {
         let last = Number(wdb.visitCooldown[m.sender]) || 0
         let now = Date.now()
-        let CD = 5 * 60 * 1000
+        let CD = scaleDifficultyCooldown(getRPG(m.sender), 5 * 60 * 1000)
         if (now - last < CD) return m.reply(`⏳ *COOLDOWN KUNJUNGAN*\n\nTunggu *${formatTime(CD - (now - last))}* lagi`)
         let who = null
         if (args[1]?.toLowerCase() === 'sel' && args[2]) {

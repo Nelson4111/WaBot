@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { prosesKawin, pratinjauKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan, getHewanKey } from '../../lib/rpg-libternakData.js'
+import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 global.icuTernak = global.icuTernak || {}
 
@@ -174,7 +175,7 @@ let handler = async (m, { conn, args }) => {
 
   let sekarang = Date.now()
   let jenis = h1 === h2? 'biasa' : 'silang'
-  let cd = jenis === 'biasa'? 2 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000
+  let cd = scaleDifficultyCooldown(user, jenis === 'biasa'? 2 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000)
 
   if(user.cooldown.kawin && sekarang - user.cooldown.kawin < cd) {
     let sisa = cd - (sekarang - user.cooldown.kawin)
@@ -246,7 +247,7 @@ let handler = async (m, { conn, args }) => {
   let gagal = Math.random() < peluangGagal(d1,d2)
 
   if(gagal) {
-    user.exp += Math.floor(exp/2)
+    user.exp += scaleDifficultyXP(user, Math.floor(exp / 2))
 
     if(asuransi) {
       global.icuTernak[m.sender] = {h1, h2, d1, d2, biayaObat}
@@ -311,7 +312,7 @@ let handler = async (m, { conn, args }) => {
 
     let keyHasil = getHewanKey(hasil.hasil) || hasil.hasil.toLowerCase()
     user.ternak[keyHasil] = (user.ternak[keyHasil] || 0) + 1
-    user.exp += Math.floor(exp)
+    user.exp += scaleDifficultyXP(user, Math.floor(exp))
     saveDB(wdb)
 
     let notif = hasil.baru? `\n✨ *HEWAN BARU TERDAFTAR!*` : ''

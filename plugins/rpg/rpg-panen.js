@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -120,9 +121,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   function addItem(user, item, jumlah) {
     const amount = Math.max(0, Number(jumlah) || 0)
     if(item === 'money') {
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + scaleDifficultyIncome(user, amount)
     } else if(item === 'exp') {
-      user.exp = (Number(user.exp) || 0) + amount
+      user.exp = (Number(user.exp) || 0) + scaleDifficultyXP(user, amount)
     } else {
       user.inventory[item] = (Number(user.inventory[item]) || 0) + amount
     }
@@ -226,6 +227,7 @@ if (text.toLowerCase() === 'all') {
     `─━━━━━━━━━━━━━━─`
   )
 
+  totalExp = scaleDifficultyXP(user, totalExp)
   user.exp += totalExp
   cekLevelUp(user)
   await saveDB(wdb)
@@ -297,12 +299,12 @@ if(!dataBibit) return safeReply(
   `╰─━━━━━━━━━━━━━━─`
 )
 
-let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
+let sisaWaktu = scaleDifficultyCooldown(user, dataBibit.waktu) - (Date.now() - l.waktuTanam)
 
 if (sisaWaktu <= 0) {
   let h = dataBibit.hasil
   addItem(user, h.item, h.jumlah)
-  user.exp += dataBibit.exp
+  user.exp += scaleDifficultyXP(user, dataBibit.exp)
   cekLevelUp(user)
   delete user.ladang[slotAsli]
   await saveDB(wdb)

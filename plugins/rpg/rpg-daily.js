@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 const getJakartaDate = (timestamp) => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -30,6 +31,7 @@ let handler = async (m, { usedPrefix }) => {
   let user = wdb.users[senderKey]
   const now = Date.now()
   const today = getJakartaDate(now)
+  const rpgUser = user.rpg || user
 
   // Hitung waktu tepat hingga pergantian hari (pukul 00:00:00 WIB)
   const getJakartaMidnightMs = (nowMs) => {
@@ -44,17 +46,26 @@ let handler = async (m, { usedPrefix }) => {
   }
 
   if (user.lastDaily && user.dailyDate === today) {
-    const resetMs = getJakartaMidnightMs(now)
-    const msUntilReset = Math.max(0, resetMs - now)
+    const msUntilReset = Math.max(0, getJakartaMidnightMs(now) - now)
     const sisaJam = Math.floor(msUntilReset / 3600000)
     const sisaMenit = Math.floor((msUntilReset % 3600000) / 60000)
     let cap = `╭─❏「 🎁 DAILY REWARD 」❏\n`
-    cap += `│ ✅ *Status*: Sudah diklaim hari ini\n`
-    cap += `│ ⏰ *Reset*: ${sisaJam} jam ${sisaMenit} menit lagi (Pukul 00:00 WIB)\n`
+    cap += `│ ✅ *Status*: Cooldown daily aktif\n`
+    cap += `│ ⏰ *Klaim lagi*: ${sisaJam} jam ${sisaMenit} menit\n`
     cap += `│ 🔥 *Streak*: ${Number(user.dailyStreak) || 0} hari\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
-    cap += `📌 *INFO*\n> ↳ Kamu bisa klaim lagi besok setelah pergantian hari pukul 00:00 WIB!`
+    cap += `📌 *INFO*\n> ↳ Jeda klaim mengikuti difficulty RPG kamu.`
     return m.reply(cap)
+  }
+
+  if (user.lastDaily) {
+    const savedCooldown = Number(user.dailyCooldownDuration || user.rpg?.dailyCooldownDuration) || 0
+    const remaining = savedCooldown - (now - user.lastDaily)
+    if (remaining > 0) {
+      const sisaJam = Math.floor(remaining / 3600000)
+      const sisaMenit = Math.floor((remaining % 3600000) / 60000)
+      return m.reply(`⏳ Cooldown daily difficulty kamu masih aktif. Klaim lagi dalam *${sisaJam} jam ${sisaMenit} menit*.`)
+    }
   }
 
   const previousClaimDate = user.dailyDate || (user.lastDaily ? getJakartaDate(user.lastDaily) : null)
@@ -95,24 +106,26 @@ let handler = async (m, { usedPrefix }) => {
 
   user.dailyDate = today
   user.lastDaily = now
+  user.dailyCooldownDuration = scaleDifficultyCooldown(rpgUser, getJakartaMidnightMs(now) - now)
   user.dailySavedAt = now
   if (user.rpg) {
     user.rpg.dailyStreak = user.dailyStreak
     user.rpg.dailyDate = today
     user.rpg.lastDaily = now
+    user.rpg.dailyCooldownDuration = user.dailyCooldownDuration
   }
 
-  let hadiah = 50000
+  let hadiah = scaleDifficultyIncome(rpgUser, 50000)
   let weekly = 0
   let monthly = 0
 
   wdb.money[senderKey] = (wdb.money[senderKey] || 0) + hadiah
   if (user.dailyStreak % 7 === 0) {
-    weekly = 250000
+    weekly = scaleDifficultyIncome(rpgUser, 250000)
     wdb.money[senderKey] += weekly
   }
   if (user.dailyStreak % 30 === 0) {
-    monthly = 1500000
+    monthly = scaleDifficultyIncome(rpgUser, 1500000)
     wdb.money[senderKey] += monthly
   }
 
