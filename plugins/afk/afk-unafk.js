@@ -1,11 +1,14 @@
+import { resolveLid } from '../../lib/simple.js'
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    let target = m.mentionedJid[0] || m.quoted?.sender;
-    if (!target) {
+    let rawTarget = m.mentionedJid[0] || m.quoted?.sender;
+    if (!rawTarget) {
         let warnMsg = `*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> Tag atau reply pesan member yang ingin dihapus status AFK-nya!\n> › *${usedPrefix + command}* @tag\n*╰───────────────*`;
         return m.reply(warnMsg);
     }
     
-    let user = global.db.data.users[target];
+    let target = rawTarget.endsWith('@lid') ? (resolveLid(rawTarget) || rawTarget) : rawTarget
+    let user = global.db.data.users[target] || global.db.data.users[rawTarget];
     if (!user) {
         let errMsg = `*╭  〔 ✕ ɢ ᴀ ɢ ᴀ ʟ 〕*\n> Pengguna tidak ditemukan di database bot.\n*╰───────────────*`;
         return m.reply(errMsg);
@@ -34,7 +37,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['unafk @tag/reply'];
 handler.tags = ['admin'];
-handler.command = /^unafk$/i;
+handler.command = /^(removeafk|unafk)$/i;
 handler.admin = true;
 handler.group = true;
 

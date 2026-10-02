@@ -26,7 +26,7 @@ function formatDuration(ms) {
 
 let handler = m => m;
 
-handler.before = async function (m, { conn }) {
+handler.before = async function (m, { conn, isOwner }) {
     // 1. Abaikan jika pesan dikirim oleh bot sendiri (Baileys) atau socket bot aktif
     if (m.fromMe || m.isBaileys || botArbitrator.isAnyBot(m.sender)) return false;
     if (m.mtype === 'protocolMessage' || m.mtype === 'senderKeyDistributionMessage' || !m.mtype) return false;
@@ -46,7 +46,8 @@ handler.before = async function (m, { conn }) {
         (prefix instanceof RegExp ? prefix.test(m.text) && /^afk(\s|$)/i.test(m.text.replace(prefix, '').trim()) : false)
     );
 
-    if (user && user.afk > -1 && !isAfkCommand) {
+    const preserveAfkInGroup = m.isGroup && isOwner
+    if (user && user.afk > -1 && !isAfkCommand && !preserveAfkInGroup) {
         const duration = formatDuration(Date.now() - user.afk);
         const reason = user.afkReason || 'Tanpa Alasan';
         user.lastAfk = Date.now();
