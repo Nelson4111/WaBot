@@ -53,5 +53,10 @@
     "section": "RPG",
     "content": "> `.rship all <no pasangan>` kini memakai nomor pasangan dan menjalankan semua aktivitas yang siap untuk pasangan tersebut (khusus premium, cooldown 30 menit). `.daily restreak` memulihkan streak terakhir dengan biaya 2x hadiah daily. Hasil `.work` menampilkan job berikutnya dan reward misi guild memberi eksekutor 100%, anggota lain 50%. Bug assignment pada `.rship rampok` diperbaiki.",
     "createdAt": 1790931600007
+  },
+  {
+    "section": "RPG",
+    "content": "> Breakout penjara bersama tersedia: tahanan buat room dengan `.penjara breakout create`, lalu pemain lain dapat `.jail breakout join`. Gunakan `.jail breakout info` untuk melihat peserta, `leave` untuk keluar, dan `start` untuk memulai (minimal 2 tahanan). Peluang kabur mengikuti progres routine/talk; jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam. Panduan: `.penjara guide`.",
+    "createdAt": 1790931600008
   }
 ]
