@@ -58,5 +58,15 @@
     "section": "RPG",
     "content": "> Breakout penjara bersama tersedia: tahanan buat room dengan `.penjara breakout create`, lalu pemain lain dapat `.penjara breakout join`. Gunakan `.penjara breakout info` untuk melihat peserta, `.penjara breakout leave` untuk keluar, dan `.penjara breakout start` untuk memulai (minimal 2 tahanan). Peluang berhasil tetap 50%, tidak dipengaruhi progres routine/talk. Jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam. Panduan: `.penjara guide`.",
     "createdAt": 1790931600008
+  },
+  {
+    "section": "RPG",
+    "content": "> `.room live <judul>` kini menerima judul live. History lottery dirapikan. `.giveaway history` menampilkan pemenang dan pembuat giveaway. Counter total gym memperbaiki data lama agar tidak menghasilkan NaN.",
+    "createdAt": 1790931600009
+  },
+  {
+    "section": "GROUP",
+    "content": "> Admin grup dapat memakai `.mute`/`.unmute` dengan tag atau reply; pesan pengguna yang di-mute otomatis dihapus bot.",
+    "createdAt": 1790931600010
   }
 ]
