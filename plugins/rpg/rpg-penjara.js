@@ -248,28 +248,28 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         return '🔒 TAHANAN BARU'
     }
 
-    const breakoutAction = ['penjara', 'jail'].includes(command) && args[0]?.toLowerCase() === 'breakout'
+    const breakoutAction = command === 'penjara' && args[0]?.toLowerCase() === 'breakout'
     if (breakoutAction) {
         const action = args[1]?.toLowerCase()
         const room = wdb.prisonBreakouts[m.chat]
         const mentionName = jid => `@${resolveJid(jid).split('@')[0]}`
 
         if (action === 'create') {
-            if (room) return m.reply(`❌ Room breakout sudah ada. Gunakan *${usedPrefix}jail breakout info*.`)
+            if (room) return m.reply(`❌ Room breakout sudah ada. Gunakan *${usedPrefix}penjara breakout info*.`)
             if (!isDiPenjara(m.sender)) return m.reply('❌ Hanya tahanan yang bisa membuat room breakout.')
             wdb.prisonBreakouts[m.chat] = { creator: resolveJid(m.sender), players: [resolveJid(m.sender)], createdAt: Date.now() }
             saveDB(wdb)
-            return conn.reply(m.chat, `🚨 *ROOM BREAKOUT DIBUAT*\n\n${mentionName(m.sender)} otomatis bergabung. Tahanan lain bisa ikut dengan *${usedPrefix}jail breakout join*.\n\nLihat peserta: *${usedPrefix}jail breakout info*\nMulai: *${usedPrefix}jail breakout start*`, m, { mentions: [m.sender] })
+            return conn.reply(m.chat, `🚨 *ROOM BREAKOUT DIBUAT*\n\n${mentionName(m.sender)} otomatis bergabung. Tahanan lain bisa ikut dengan *${usedPrefix}penjara breakout join*.\n\nLihat peserta: *${usedPrefix}penjara breakout info*\nMulai: *${usedPrefix}penjara breakout start*`, m, { mentions: [m.sender] })
         }
 
         if (action === 'guide') {
             return m.reply(
                 `📖 *PANDUAN PENJARA BREAKOUT*\n\n` +
                 `1. Tahanan membuat room: *${usedPrefix}penjara breakout create*\n` +
-                `2. Tahanan lain bergabung: *${usedPrefix}jail breakout join*\n` +
-                `3. Cek peserta: *${usedPrefix}jail breakout info*\n` +
-                `4. Keluar dari room: *${usedPrefix}jail breakout leave*\n` +
-                `5. Pembuat room memulai: *${usedPrefix}jail breakout start*\n\n` +
+                `2. Tahanan lain bergabung: *${usedPrefix}penjara breakout join*\n` +
+                `3. Cek peserta: *${usedPrefix}penjara breakout info*\n` +
+                `4. Keluar dari room: *${usedPrefix}penjara breakout leave*\n` +
+                `5. Pembuat room memulai: *${usedPrefix}penjara breakout start*\n\n` +
                 `Minimal 2 tahanan untuk mulai. Routine dan talk meningkatkan peluang tim. Jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam.`
             )
         }
@@ -288,7 +288,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             if (!room) return m.reply(`❌ Belum ada room. Buat dengan *${usedPrefix}penjara breakout create*.`)
             const mentions = room.players.map(resolveJid)
             const players = mentions.map((jid, index) => `> ${index + 1}. ${mentionName(jid)}${jid === resolveJid(room.creator) ? ' (pembuat)' : ''}`).join('\n')
-            return conn.reply(m.chat, `🚨 *INFO ROOM BREAKOUT*\nPembuat: ${mentionName(room.creator)}\nPeserta (${mentions.length}):\n${players}\n\nGunakan *${usedPrefix}jail breakout leave* untuk keluar.`, m, { mentions })
+            return conn.reply(m.chat, `🚨 *INFO ROOM BREAKOUT*\nPembuat: ${mentionName(room.creator)}\nPeserta (${mentions.length}):\n${players}\n\nGunakan *${usedPrefix}penjara breakout leave* untuk keluar.`, m, { mentions })
         }
 
         if (action === 'leave') {
@@ -358,11 +358,11 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             return conn.reply(m.chat, `🚨 *BREAKOUT GAGAL*\n\n${story.gagal}\n\nSemua peserta mendapat tambahan hukuman 2 jam: ${names}\nPeluang tim: *${Math.round(chance * 100)}%*.`, m, { mentions })
         }
 
-        return m.reply(`📌 Command breakout: *${usedPrefix}jail breakout create/join/info/leave/start*\nPanduan: *${usedPrefix}penjara guide*`)
+        return m.reply(`📌 Command breakout: *${usedPrefix}penjara breakout create/join/info/leave/start*\nPanduan: *${usedPrefix}penjara guide*`)
     }
 
     if (command === 'penjara' && args[0]?.toLowerCase() === 'guide') {
-        return m.reply(`📖 *PANDUAN COMMAND PENJARA*\n\n• ${usedPrefix}penjara info — cek status penjara\n• ${usedPrefix}penjara routine / talk — tambah progres kabur\n• ${usedPrefix}penjara kabur — coba kabur sendiri\n• ${usedPrefix}penjara breakout create — buat room kabur bersama\n• ${usedPrefix}jail breakout join / info / leave / start — kelola breakout\n• ${usedPrefix}tebus — tebus tahanan`)
+        return m.reply(`📖 *PANDUAN COMMAND PENJARA*\n\n• ${usedPrefix}penjara info — cek status penjara\n• ${usedPrefix}penjara routine / talk — tambah progres kabur\n• ${usedPrefix}penjara kabur — coba kabur sendiri\n• ${usedPrefix}penjara breakout create / join / info / leave / start — kelola breakout\n• ${usedPrefix}tebus — tebus tahanan`)
     }
 
     /* =====================================================
@@ -971,9 +971,9 @@ cap += `\n─━━━━━━━━━━━━━━─`
    COMMAND CONFIG
 ========================================================= */
 
-handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'jail breakout create/join/info/leave/start', 'tebus', 'penjarain', 'bebasin']
+handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'tebus', 'penjarain', 'bebasin']
 handler.tags = ['rpg']
-handler.command = /^(penjara|jail|tebus|penjarain|bebasin)$/i
+handler.command = /^(penjara|tebus|penjarain|bebasin)$/i
 handler.group = true
 
 export default handler
