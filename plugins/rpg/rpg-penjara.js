@@ -191,6 +191,8 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     if (!wdb.talkCooldown) wdb.talkCooldown = {}
     if (!wdb.prisonStats) wdb.prisonStats = {}
     if (!wdb.prisonVisits) wdb.prisonVisits = {}
+    if (!wdb.prisonBreakouts) wdb.prisonBreakouts = {}
+    if (!wdb.breakoutCooldown) wdb.breakoutCooldown = {}
 
     if (!global.db?.data?.users) return m.reply('❌ Database utama belum siap')
 
@@ -244,6 +246,123 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         if (progress >= 25) return '🔥 NAPI TERLATIH'
         if (progress >= 10) return '🛡️ NAPI PEMULA'
         return '🔒 TAHANAN BARU'
+    }
+
+    const breakoutAction = ['penjara', 'jail'].includes(command) && args[0]?.toLowerCase() === 'breakout'
+    if (breakoutAction) {
+        const action = args[1]?.toLowerCase()
+        const room = wdb.prisonBreakouts[m.chat]
+        const mentionName = jid => `@${resolveJid(jid).split('@')[0]}`
+
+        if (action === 'create') {
+            if (room) return m.reply(`❌ Room breakout sudah ada. Gunakan *${usedPrefix}jail breakout info*.`)
+            if (!isDiPenjara(m.sender)) return m.reply('❌ Hanya tahanan yang bisa membuat room breakout.')
+            wdb.prisonBreakouts[m.chat] = { creator: resolveJid(m.sender), players: [resolveJid(m.sender)], createdAt: Date.now() }
+            saveDB(wdb)
+            return conn.reply(m.chat, `🚨 *ROOM BREAKOUT DIBUAT*\n\n${mentionName(m.sender)} otomatis bergabung. Tahanan lain bisa ikut dengan *${usedPrefix}jail breakout join*.\n\nLihat peserta: *${usedPrefix}jail breakout info*\nMulai: *${usedPrefix}jail breakout start*`, m, { mentions: [m.sender] })
+        }
+
+        if (action === 'guide') {
+            return m.reply(
+                `📖 *PANDUAN PENJARA BREAKOUT*\n\n` +
+                `1. Tahanan membuat room: *${usedPrefix}penjara breakout create*\n` +
+                `2. Tahanan lain bergabung: *${usedPrefix}jail breakout join*\n` +
+                `3. Cek peserta: *${usedPrefix}jail breakout info*\n` +
+                `4. Keluar dari room: *${usedPrefix}jail breakout leave*\n` +
+                `5. Pembuat room memulai: *${usedPrefix}jail breakout start*\n\n` +
+                `Minimal 2 tahanan untuk mulai. Routine dan talk meningkatkan peluang tim. Jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam.`
+            )
+        }
+
+        if (action === 'join') {
+            if (!room) return m.reply(`❌ Belum ada room. Buat dengan *${usedPrefix}penjara breakout create*.`)
+            if (!isDiPenjara(m.sender)) return m.reply('❌ Hanya tahanan yang bisa bergabung ke breakout.')
+            const jid = resolveJid(m.sender)
+            if (room.players.some(player => resolveJid(player) === jid)) return m.reply('Kamu sudah bergabung di room breakout ini.')
+            room.players.push(jid)
+            saveDB(wdb)
+            return conn.reply(m.chat, `✅ ${mentionName(jid)} bergabung ke breakout. Total peserta: *${room.players.length}*.`, m, { mentions: [jid] })
+        }
+
+        if (action === 'info') {
+            if (!room) return m.reply(`❌ Belum ada room. Buat dengan *${usedPrefix}penjara breakout create*.`)
+            const mentions = room.players.map(resolveJid)
+            const players = mentions.map((jid, index) => `> ${index + 1}. ${mentionName(jid)}${jid === resolveJid(room.creator) ? ' (pembuat)' : ''}`).join('\n')
+            return conn.reply(m.chat, `🚨 *INFO ROOM BREAKOUT*\nPembuat: ${mentionName(room.creator)}\nPeserta (${mentions.length}):\n${players}\n\nGunakan *${usedPrefix}jail breakout leave* untuk keluar.`, m, { mentions })
+        }
+
+        if (action === 'leave') {
+            if (!room) return m.reply('❌ Belum ada room breakout.')
+            const jid = resolveJid(m.sender)
+            const index = room.players.findIndex(player => resolveJid(player) === jid)
+            if (index < 0) return m.reply('❌ Kamu tidak bergabung di room ini.')
+            room.players.splice(index, 1)
+            if (!room.players.length) {
+                delete wdb.prisonBreakouts[m.chat]
+            } else if (resolveJid(room.creator) === jid) {
+                room.creator = room.players[0]
+            }
+            saveDB(wdb)
+            return m.reply(room.players.length ? `✅ Kamu keluar dari room breakout. Pembuat room: ${mentionName(room.creator)}.` : '✅ Kamu keluar. Room breakout dibubarkan karena tidak ada peserta.')
+        }
+
+        if (action === 'start') {
+            if (!room) return m.reply(`❌ Belum ada room. Buat dengan *${usedPrefix}penjara breakout create*.`)
+            if (resolveJid(room.creator) !== resolveJid(m.sender)) return m.reply('❌ Hanya pembuat room yang bisa memulai breakout.')
+            if (room.players.length < 2) return m.reply('❌ Breakout membutuhkan minimal 2 tahanan.')
+
+            const now = Date.now()
+            const cooldown = room.players.map(resolveJid).find(jid => now - (Number(wdb.breakoutCooldown[jid]) || 0) < 5 * 60 * 1000)
+            if (cooldown) return m.reply(`⏳ ${mentionName(cooldown)} masih cooldown breakout selama *${formatTime(5 * 60 * 1000 - (now - Number(wdb.breakoutCooldown[cooldown] || 0)))}*.`)
+
+            const players = room.players.map(resolveJid).filter((jid, index, list) => jid && list.indexOf(jid) === index)
+            const invalid = players.filter(jid => !isDiPenjara(jid) || !getRPG(jid))
+            if (invalid.length) return conn.reply(m.chat, `❌ Peserta berikut sudah tidak berada di penjara: ${invalid.map(mentionName).join(', ')}. Mereka harus leave sebelum breakout dimulai.`, m, { mentions: invalid })
+
+            const chances = players.map(jid => {
+                const stats = getStats(jid)
+                const routine = Number(stats.routine) || 0
+                const talk = Number(stats.talk) || 0
+                const guaranteed = routine >= 25 && talk >= 25 && !stats.guaranteedEscapeUsed
+                if (guaranteed) stats.guaranteedEscapeUsed = true
+                if (guaranteed || (routine >= 100 && talk >= 100)) return 1
+                if (routine >= 50 && talk >= 50) return 0.5
+                if (routine >= 20 && talk >= 20) return 0.1
+                return 0.01
+            })
+            const chance = chances.reduce((total, value) => total + value, 0) / chances.length
+            const story = randomItem(storyKabur)
+            const success = Math.random() < chance
+            const mentions = players
+            const names = players.map(mentionName).join(', ')
+
+            for (const jid of players) wdb.breakoutCooldown[jid] = now
+            delete wdb.prisonBreakouts[m.chat]
+            if (success) {
+                for (const jid of players) {
+                    const rpg = getRPG(jid)
+                    rpg.penjara = null
+                    rpg.lamaPenjara = 0
+                    rpg.tebusan = 0
+                    rpg.sel = 0
+                    rpg.gagalCopet = 0
+                    getStats(jid).escaped = true
+                    removeFromPrison(jid)
+                }
+                saveDB(wdb)
+                return conn.reply(m.chat, `🚨 *BREAKOUT BERHASIL!*\n\n${story.sukses}\n\nSemua peserta berhasil kabur: ${names}\nPeluang tim: *${Math.round(chance * 100)}%*.`, m, { mentions })
+            }
+
+            for (const jid of players) getRPG(jid).lamaPenjara += 2 * 60 * 60 * 1000
+            saveDB(wdb)
+            return conn.reply(m.chat, `🚨 *BREAKOUT GAGAL*\n\n${story.gagal}\n\nSemua peserta mendapat tambahan hukuman 2 jam: ${names}\nPeluang tim: *${Math.round(chance * 100)}%*.`, m, { mentions })
+        }
+
+        return m.reply(`📌 Command breakout: *${usedPrefix}jail breakout create/join/info/leave/start*\nPanduan: *${usedPrefix}penjara guide*`)
+    }
+
+    if (command === 'penjara' && args[0]?.toLowerCase() === 'guide') {
+        return m.reply(`📖 *PANDUAN COMMAND PENJARA*\n\n• ${usedPrefix}penjara info — cek status penjara\n• ${usedPrefix}penjara routine / talk — tambah progres kabur\n• ${usedPrefix}penjara kabur — coba kabur sendiri\n• ${usedPrefix}penjara breakout create — buat room kabur bersama\n• ${usedPrefix}jail breakout join / info / leave / start — kelola breakout\n• ${usedPrefix}tebus — tebus tahanan`)
     }
 
     /* =====================================================
@@ -692,6 +811,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     `> ↳ Routine: *${usedPrefix}penjara routine*\n` +
     `> ↳ Talk: *${usedPrefix}penjara talk*\n` +
     `> ↳ Kabur: *${usedPrefix}penjara kabur*\n` +
+    `> ↳ Breakout bersama: *${usedPrefix}penjara breakout create*\n` +
+    `> ↳ Panduan: *${usedPrefix}penjara guide*\n` +
     `> ↳ Tebus: *${usedPrefix}tebus sel A4*\n\n` +
 
     `─━━━━━━━━━━━━━━─`,
@@ -850,9 +971,9 @@ cap += `\n─━━━━━━━━━━━━━━─`
    COMMAND CONFIG
 ========================================================= */
 
-handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'tebus', 'penjarain', 'bebasin']
+handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'jail breakout create/join/info/leave/start', 'tebus', 'penjarain', 'bebasin']
 handler.tags = ['rpg']
-handler.command = /^(penjara|tebus|penjarain|bebasin)$/i
+handler.command = /^(penjara|jail|tebus|penjarain|bebasin)$/i
 handler.group = true
 
 export default handler

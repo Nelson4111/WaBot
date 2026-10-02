@@ -170,7 +170,7 @@ Fitnah orang biar masuk penjara.
     const mentionedTarget = m.mentionedJid?.[0]
     const quotedTarget = m.quoted?.sender
     let who = mentionedTarget || quotedTarget
-    if (!who && args[0]) {
+    if (!who && args[0] && args[1] !== undefined) {
         let num = args[0].replace(/[^0-9]/g, '')
         if (num.startsWith('08')) num = '628' + num.slice(2)
         if (num.length >= 8) who = num + '@s.whatsapp.net'
@@ -196,7 +196,7 @@ Fitnah orang biar masuk penjara.
     const targetRPG = getUserRPG(who)
     const targetRestriction = getCrimeRestriction(targetRPG, { target: true })
     if (targetRestriction) return m.reply(targetRestriction)
-    if (cekPenjara(wdb, who)) return m.reply(`❌ @${who.split('@')[0]} sudah di penjara.`, { mentions: [who] })
+    if (cekPenjara(wdb, who)) return m.reply(`❌ @${who.split('@')[0]} sudah di penjara.`, undefined, { mentions: [who] })
 
     /* =====================================================
        HITUNG PELUANG & DURASI BERDASAR UANG
