@@ -1112,7 +1112,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
     `${formatRoomRound(result, wdb)}\n` +
     `\n👥 *PEMAIN TERSISA (${room.players.length})*\n` +
     `${room.players.map(jid => `> ↳ ${roomPlayerName(jid, wdb)}`).join('\n')}\n\n` +
-    `💰 *TOTAL HADIAH ROOM*` +
+    `💰 *TOTAL HADIAH ROOM*\n` +
     `> ↳ Pot sementara : ${money(room.pot)}\n` +
     `> ↳ Taruhan ronde ini: ${money(result.stake)}\n\n` +
     `👑 *Room Master bisa pilih:*\n` +
