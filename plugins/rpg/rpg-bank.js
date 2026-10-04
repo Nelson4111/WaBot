@@ -60,8 +60,8 @@ export const BANK_COMING_SOON_FACILITIES = new Set([
 
 export function getBankTransactionCooldown(tier) {
   if (tier.fasilitas.includes('Portal Bank')) return 0
-  if (tier.fasilitas.includes('Kendaraan Pribadi')) return 15 * 60 * 1000
-  return 30 * 60 * 1000
+  if (tier.fasilitas.includes('Kendaraan Pribadi')) return 5 * 60 * 1000
+  return 15 * 60 * 1000
 }
 
 export function canUseBankMoneyCommand(tier) {

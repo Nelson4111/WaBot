@@ -30,8 +30,9 @@ let handler = async (m, { conn }) => {
     if (!userRPG.lastrob) userRPG.lastrob = 0
     let sisa = cd - (Date.now() - userRPG.lastrob)
     if (sisa > 0) {
-        let jam = Math.floor(sisa / 3600000)
-        let menit = Math.floor((sisa % 3600000) / 60000)
+        const totalMenit = Math.ceil(sisa / 60000)
+        const jam = Math.floor(totalMenit / 60)
+        const menit = totalMenit % 60
         return m.reply(`⏳ *COOLDOWN RAMPOK*\nTunggu *${jam}j ${menit}m* lagi`)
     }
 

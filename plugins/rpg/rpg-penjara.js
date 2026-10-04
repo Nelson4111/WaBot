@@ -250,7 +250,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     const getTarget = (raw) => { let jid = m.mentionedJid?.[0] || m.quoted?.sender; if (!jid && raw) { let num = String(raw).replace(/[^0-9]/g, ''); if (num.startsWith('08')) num = '62' + num.slice(1); if (num.length >= 8) jid = num + '@s.whatsapp.net' } return resolveJid(jid) }
     const kasus = (rpg) => rpg?.kasus || ((Number(rpg?.tebusan) || 0) === 1000000 ? '🤏 Copet' : (Number(rpg?.tebusan) || 0) === 2000000 ? '🏴‍☠️ Begal / 🔪 Bunuh' : (Number(rpg?.tebusan) || 0) === 4000000 ? '🕵️ Rampok' : '👑 Owner Jail')
     const sisaWaktu = (rpg) => { if (!rpg) return 0; return Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara || 0)) }
-    const sisaTungguTebus = (rpg) => Math.max(0, 10 * 60 * 1000 - (Date.now() - Number(rpg?.penjara || 0)))
+    const sisaTungguTebus = (rpg) => Math.max(0, 5 * 60 * 1000 - (Date.now() - Number(rpg?.penjara || 0)))
     const formatSisa = (ms) => { ms = Math.max(0, ms); const jam = Math.floor(ms / 3600000); const menit = Math.floor((ms % 3600000) / 60000); return `${jam}j ${menit}m` }
     const isDiPenjara = (jid) => { jid = resolveJid(jid); return wdb.penjara.some(x => resolveJid(x) === jid) }
     const findPrisonerByCell = (value) => {
@@ -291,6 +291,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             wdb.prisonStats[jid].routine = Number(wdb.prisonStats[jid].daily) || 0
             delete wdb.prisonStats[jid].daily
         }
+        if (wdb.prisonStats[jid].escapeCount === undefined) wdb.prisonStats[jid].escapeCount = wdb.prisonStats[jid].escaped ? 1 : 0
         return wdb.prisonStats[jid]
     }
     const getPrisonTitle = (stats) => {
@@ -390,7 +391,9 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                     rpg.tebusan = 0
                     rpg.sel = 0
                     rpg.gagalCopet = 0
-                    getStats(jid).escaped = true
+                    const stats = getStats(jid)
+                    stats.escaped = true
+                    stats.escapeCount = Number(stats.escapeCount) + 1
                     removeFromPrison(jid)
                 }
                 saveDB(wdb)
@@ -405,8 +408,39 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         return m.reply(`📌 Command breakout: *${usedPrefix}penjara breakout create/join/info/leave/start*\nPanduan: *${usedPrefix}penjara guide*`)
     }
 
-    if (command === 'penjara' && args[0]?.toLowerCase() === 'guide') {
-        return m.reply(`📖 *PANDUAN COMMAND PENJARA*\n\n• ${usedPrefix}penjara info — cek status penjara\n• ${usedPrefix}penjara routine / talk — tambah progres kabur\n• ${usedPrefix}penjara kabur — coba kabur sendiri\n• ${usedPrefix}penjara breakout create / join / info / leave / start — kelola breakout\n• ${usedPrefix}tebus — tebus tahanan`)
+    if (command === 'penjara' && ['guide', 'note'].includes(args[0]?.toLowerCase())) {
+        return m.reply(
+            `📖 *PANDUAN PENJARA*\n\n` +
+            `• Cek status dan progres: *${usedPrefix}penjara info*\n` +
+            `• Lihat daftar tahanan: *${usedPrefix}penjara list* atau *${usedPrefix}penjara sel <blok>*\n` +
+            `• Lihat cooldown semua tahanan: *${usedPrefix}penjara cd*\n` +
+            `• Lihat catatan kabur berhasil: *${usedPrefix}penjara escord*\n` +
+            `• Tahanan mengisi progres lewat *${usedPrefix}penjara routine* dan *${usedPrefix}penjara talk*; masing-masing punya cooldown.\n` +
+            `• Coba kabur sendiri: *${usedPrefix}penjara kabur*. Kegagalan menambah hukuman 30 menit.\n` +
+            `• Breakout bersama: pembuat room gunakan *${usedPrefix}penjara breakout create*, tahanan lain *join*, lalu pembuat *start*. Gunakan *info* dan *leave* untuk mengelola room.\n` +
+            `• Kunjungi tahanan: *${usedPrefix}penjara visit sel <kode>*\n` +
+            `• Tebus tahanan: *${usedPrefix}tebus sel <kode>* atau *${usedPrefix}tebus all*.`
+        )
+    }
+
+    if (command === 'penjara' && args[0]?.toLowerCase() === 'command') {
+        return m.reply(
+            `📌 *COMMAND PENJARA*\n` +
+            `• ${usedPrefix}penjara\n` +
+            `• ${usedPrefix}penjara info\n` +
+            `• ${usedPrefix}penjara sel <blok>\n` +
+            `• ${usedPrefix}penjara list\n` +
+            `• ${usedPrefix}penjara cd\n` +
+            `• ${usedPrefix}penjara escord\n` +
+            `• ${usedPrefix}penjara routine\n` +
+            `• ${usedPrefix}penjara talk\n` +
+            `• ${usedPrefix}penjara kabur\n` +
+            `• ${usedPrefix}penjara visit <sel/tag>\n` +
+            `• ${usedPrefix}penjara breakout <create/join/info/leave/start>\n` +
+            `• ${usedPrefix}penjara note\n` +
+            `• ${usedPrefix}penjara guide\n` +
+            `• ${usedPrefix}tebus <sel/tag/all>`
+        )
     }
 
     /* =====================================================
@@ -460,6 +494,47 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         }
     })
     if (changed) saveDB(wdb)
+
+    if (command === 'penjara' && args[0]?.toLowerCase() === 'cd') {
+        const now = Date.now()
+        const activePrisoners = wdb.penjara
+            .map(jid => resolveJid(jid))
+            .filter((jid, index, list) => jid && list.indexOf(jid) === index)
+            .map(jid => ({ jid, rpg: getRPG(jid) }))
+            .filter(({ rpg }) => rpg?.penjara && sisaWaktu(rpg) > 0)
+
+        if (!activePrisoners.length) return m.reply('🏛️ Tidak ada tahanan yang sedang aktif.')
+
+        const cooldownRemaining = (map, jid, duration) => Math.max(0, duration - (now - (Number(map[jid]) || 0)))
+        const mentions = activePrisoners.map(({ jid }) => jid)
+        const list = activePrisoners.map(({ jid, rpg }, index) => {
+            const routine = cooldownRemaining(wdb.routineCooldown, jid, scaleDifficultyCooldown(rpg, 2 * 60 * 1000))
+            const talk = cooldownRemaining(wdb.talkCooldown, jid, scaleDifficultyCooldown(rpg, 2 * 60 * 1000))
+            const escape = cooldownRemaining(wdb.kaburCooldown, jid, scaleDifficultyCooldown(rpg, 5 * 60 * 1000))
+            const visit = cooldownRemaining(wdb.visitCooldown, jid, scaleDifficultyCooldown(rpg, 5 * 60 * 1000))
+            const breakout = cooldownRemaining(wdb.breakoutCooldown, jid, 30 * 60 * 1000)
+            return `> ${index + 1}. SEL ${rpg.sel || '-'}\n` +
+                `>    Routine: ${routine ? formatTime(routine) : 'Siap'} • Talk: ${talk ? formatTime(talk) : 'Siap'}\n` +
+                `>    Kabur: ${escape ? formatTime(escape) : 'Siap'} • Kunjungan: ${visit ? formatTime(visit) : 'Siap'}\n` +
+                `>    Breakout: ${breakout ? formatTime(breakout) : 'Siap'}\n` +
+                `>    @${jid.split('@')[0]}`
+        }).join('\n\n')
+
+        return conn.reply(m.chat, `╭─❏「 ⏳ COOLDOWN TAHANAN 」❏\n│ Total: ${activePrisoners.length} tahanan\n╰─━━━━━━━━━━━━━━─\n\n${list}`, m, { mentions })
+    }
+
+    if (command === 'penjara' && args[0]?.toLowerCase() === 'escord') {
+        const records = Object.entries(wdb.prisonStats)
+            .map(([jid, stats]) => ({ jid: resolveJid(jid), count: Number(stats?.escapeCount) || (stats?.escaped ? 1 : 0) }))
+            .filter(({ jid, count }) => jid && count > 0)
+            .sort((a, b) => b.count - a.count)
+
+        if (!records.length) return m.reply('📭 Belum ada catatan tahanan yang berhasil kabur.')
+
+        const mentions = records.map(({ jid }) => jid)
+        const list = records.map(({ jid, count }, index) => `> ${index + 1}. ${count}x berhasil kabur\n>    @${jid.split('@')[0]}`).join('\n')
+        return conn.reply(m.chat, `╭─❏「 🚨 ESCAPE RECORD 」❏\n│ Total: ${records.length} orang\n╰─━━━━━━━━━━━━━━─\n\n${list}`, m, { mentions })
+    }
 
     /* =====================================================
        BLOKIR COMMAND BUAT YG DIPENJARA
@@ -595,7 +670,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         const routine = Number(stats.routine) || 0
         const talk = Number(stats.talk) || 0
         const guaranteedEscape = routine >= 25 && talk >= 25 && !stats.guaranteedEscapeUsed
-        if (guaranteedEscape) {
+        if (isOwner) {
+            peluang = 0.9
+        } else if (guaranteedEscape) {
             peluang = 1
             stats.guaranteedEscapeUsed = true
         } else if (routine >= 100 && talk >= 100) {
@@ -615,6 +692,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (berhasil) {
             rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0
             stats.escaped = true
+            stats.escapeCount = Number(stats.escapeCount) + 1
             removeFromPrison(m.sender)
             saveDB(wdb)
             return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR BERHASIL_* ]───✦\n\n${story.sukses}\n\n╭──「 🎉 BEBAS 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 Dari : SEL ${selLama}\n╰ 𖥔 Selamat! Kamu buronan sekarang.`, m, { mentions: [m.sender] })
@@ -732,7 +810,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
                 }
             }
             if (targets.length === 0) {
-                if (waiting.length) return m.reply(`❌ Tahanan baru bisa ditebus setelah 10 menit di penjara.\n⏳ Coba lagi dalam *${formatTime(Math.min(...waiting))}*.`)
+                if (waiting.length) return m.reply(`❌ Tahanan baru bisa ditebus setelah 5 menit di penjara.\n⏳ Coba lagi dalam *${formatTime(Math.min(...waiting))}*.`)
                 return m.reply('❌ Tidak ada orang lain di penjara')
             }
             const uang = Number(wdb.money[m.sender]) || 0
@@ -750,7 +828,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             }
             wdb.penjara = wdb.penjara.filter(jid =>!targets.some(target => resolveJid(target.jid) === resolveJid(jid)))
             saveDB(wdb)
-            const waitingInfo = waiting.length ? `\n│ 𖥔 ${waiting.length} tahanan belum 10 menit di penjara` : ''
+            const waitingInfo = waiting.length ? `\n│ 𖥔 ${waiting.length} tahanan belum 5 menit di penjara` : ''
             return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : Rp ${total.toLocaleString('id-ID')}\n│ 𖥔 Bebas : ${bebas.map(jid => `@${jid.split('@')[0]}`).join(', ')}${waitingInfo}\n╰ 𖥔 Berhasil`, m, { mentions: bebas })
         }
 
@@ -793,7 +871,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         }
 
         const sisaTunggu = sisaTungguTebus(rpg)
-        if (sisaTunggu > 0) return m.reply(`[ 🚔 ]───[ *_BELUM BISA DITEBUS_* ]───✦\n╭ 𖥔 Tahanan baru bisa ditebus setelah 10 menit di penjara\n╰ 𖥔 Tunggu *${formatTime(sisaTunggu)}* lagi`)
+        if (sisaTunggu > 0) return m.reply(`[ 🚔 ]───[ *_BELUM BISA DITEBUS_* ]───✦\n╭ 𖥔 Tahanan baru bisa ditebus setelah 5 menit di penjara\n╰ 𖥔 Tunggu *${formatTime(sisaTunggu)}* lagi`)
 
         const tebusan = Number(rpg.tebusan) || 1000000
         const uang = Number(wdb.money[m.sender]) || 0
@@ -828,8 +906,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
         const mentions = activePrisoners.map(({ jid }) => jid)
         const list = activePrisoners
-            .map(({ jid, rpg }, index) => `> ${index + 1}. SEL ${rpg.sel || '-'} — @${jid.split('@')[0]} • Sisa ${formatTime(sisaWaktu(rpg))}`)
-            .join('\n')
+            .map(({ jid, rpg }, index) => `> ${index + 1}. SEL ${rpg.sel || '-'} • Sisa ${formatTime(sisaWaktu(rpg))}\n> ↳ @${jid.split('@')[0]}`)
+            .join('\n\n')
 
         return conn.reply(
             m.chat,
@@ -944,8 +1022,8 @@ entries.forEach((jid, offset) => {
 
   pageMentions.push(jid)
 
-    pageText += `*🧍 SEL ${cell} — @${jid.split('@')[0]}*\n`
-  pageText += `> ↳ ⏳ Sisa: ${formatSisa(sisaWaktu(rpg))}\n`
+        pageText += `*🧍 SEL ${cell} • Sisa: ${formatSisa(sisaWaktu(rpg))}*\n`
+    pageText += `> ↳ @${jid.split('@')[0]}\n`
   pageText += `> ↳ 💸 Tebus: Rp ${tebusan.toLocaleString('id-ID')}\n`
   pageText += `> ↳ ⚖️ Kasus: ${kasus(rpg)}\n\n`
 })

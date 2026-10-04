@@ -1,5 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { ensurePrisonCell, getRandomPrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
+import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah } from '../../lib/fitnahHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 
 /* =========================================================
@@ -11,8 +11,8 @@ const MED_DURATION = 2 * 60 * 60 * 1000 // 2 jam
 const HIGH_DURATION = 5 * 60 * 60 * 1000 // 5 jam
 
 const COOLDOWN_FITNAH = 5 * 60 * 1000 // cooldown normal 5 menit
-const COOLDOWN_HUKUMAN = 30 * 60 * 1000 // cooldown hukuman 30 menit kalau ga bisa bayar denda
-const DENDA_GAGAL = 1000000 // denda 1jt
+const COOLDOWN_HUKUMAN = 30 * 60 * 1000
+const DELAY_FITNAH = 5 * 60 * 1000
 
 /* =========================================================
    STORY FITNAH
@@ -84,31 +84,6 @@ function cekPenjara(wdb, jid) {
 }
 
 /* =========================================================
-   BERSIHKAN PENJARA
-========================================================= */
-
-function normalizePrisonList(wdb) {
-    wdb.penjara = Array.isArray(wdb.penjara)? wdb.penjara : []
-    let result = []
-    let seen = new Set()
-    for (let rawJid of wdb.penjara) {
-        let jid = resolveJid(rawJid)
-        if (!jid) continue
-        if (seen.has(jid)) continue
-        let rpg = global.db?.data?.users?.[jid]?.rpg
-        if (!rpg ||!rpg.penjara) continue
-        let mulai = Number(rpg.penjara) || 0
-        let lama = Number(rpg.lamaPenjara) || 0
-        if (!mulai ||!lama) continue
-        if (Date.now() - mulai >= lama) continue
-        seen.add(jid)
-        result.push(jid)
-    }
-    wdb.penjara = result
-    for (const jid of wdb.penjara) ensurePrisonCell(wdb, jid)
-}
-
-/* =========================================================
    RANDOM STORY
 ========================================================= */
 
@@ -138,8 +113,10 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     const wdb = loadDB()
     wdb.penjara = Array.isArray(wdb.penjara)? wdb.penjara : []
     wdb.money = wdb.money || {}
-    wdb.fitnah = wdb.fitnah || {}
-    wdb.fitnahHukuman = wdb.fitnahHukuman || {} // cooldown hukuman
+    global.db.data.fitnah = global.db.data.fitnah || {}
+    global.db.data.fitnahHukuman = global.db.data.fitnahHukuman || {}
+    wdb.fitnah = global.db.data.fitnah
+    wdb.fitnahHukuman = global.db.data.fitnahHukuman
 
     if (!global.db?.data) return m.reply('❌ Database utama belum siap.')
     if (!global.db.data.users) global.db.data.users = {}
@@ -154,11 +131,13 @@ let handler = async (m, { conn, args, usedPrefix }) => {
 Fitnah orang biar masuk penjara.
 
 *Cara:* ${usedPrefix}fitnah @tag <uang>
-*Contoh:* ${usedPrefix}fitnah @628 100000000
+*Contoh:* ${usedPrefix}fitnah @628 1000000
 *Contoh:* ${usedPrefix}fitnah @628 0
 
 💰 Tebusan = 50% dari uang yg kamu keluarin
-⚠️ Gagal = Denda Rp 1.000.000
+⏳ Fitnah diproses setelah 5 menit jika target tidak membantah.
+🛡️ Target dapat memakai *.bantah <biaya>* untuk mencoba menggagalkan fitnah.
+⚠️ Jika gagal, denda 50% biaya fitnah dan peluang 50% masuk penjara.
 ⏳ CD Normal : 5 menit
 ⏳ CD Hukuman : 30 menit jika ga bisa bayar denda`)
     }
@@ -179,12 +158,22 @@ Fitnah orang biar masuk penjara.
 
     const rawUang = mentionedTarget || (!quotedTarget && who) ? args[1] : args[0]
     if (rawUang === undefined || !/^\d+$/.test(String(rawUang))) {
-        return m.reply(`❌ Masukkan uang yang valid.\nContoh: ${usedPrefix}fitnah @tag 100000000\nAtau reply pesan target: ${usedPrefix}fitnah 100000000`)
+        return m.reply(`❌ Masukkan uang yang valid.\nContoh: ${usedPrefix}fitnah @tag 1000000\nAtau reply pesan target: ${usedPrefix}fitnah 1000000`)
     }
     let uangTaruhan = Number(rawUang)
 
     if (!who) {
-        return m.reply(`❌ Tag target dulu\nContoh: ${usedPrefix}fitnah @tag 100000000`)
+        return m.reply(`❌ Tag target dulu\nContoh: ${usedPrefix}fitnah @tag 1000000`)
+    }
+
+    global.db.data.fitnahPending = global.db.data.fitnahPending || {}
+    const existingPending = global.db.data.fitnahPending[who]
+    if (existingPending) {
+        if (Date.now() >= Number(existingPending.expiresAt)) {
+            await resolvePendingFitnah(conn, existingPending)
+        } else {
+            return m.reply(`⏳ @${who.split('@')[0]} masih memiliki fitnah yang menunggu proses.`, undefined, { mentions: [who] })
+        }
     }
 
     let sender = resolveJid(m.sender)
@@ -199,27 +188,26 @@ Fitnah orang biar masuk penjara.
     if (cekPenjara(wdb, who)) return m.reply(`❌ @${who.split('@')[0]} sudah di penjara.`, undefined, { mentions: [who] })
 
     /* =====================================================
-       HITUNG PELUANG & DURASI BERDASAR UANG
-       0 = 1%, 1 - 9.999.999 = 10%, 10jt - 99.999.999 = 50%, 100jt+ = 100%
+       PELUANG & DURASI
     ===================================================== */
 
     let peluang = 0.01 // default 1%
     let durasiPenjara = DEFAULT_DURATION
     let tebusan = 0
 
-    if (uangTaruhan >= 100000000) { // 100jt keatas = 100%
+    if (uangTaruhan >= 100000000) {
         peluang = 1.0
         durasiPenjara = HIGH_DURATION // 5 jam
         tebusan = Math.floor(uangTaruhan / 2)
-    } else if (uangTaruhan >= 10000000) { // 10jt - 99.999.999 = 50%
-        peluang = 0.5
+    } else if (uangTaruhan >= 10000000) {
+        peluang = 0.25
         durasiPenjara = MED_DURATION // 2 jam
         tebusan = Math.floor(uangTaruhan / 2)
-    } else if (uangTaruhan > 0) { // 1 - 9.999.999 = 10%
-        peluang = 0.1
+    } else if (uangTaruhan > 0) {
+        peluang = 0.05
         durasiPenjara = DEFAULT_DURATION // 1 jam
         tebusan = Math.floor(uangTaruhan / 2)
-    } else { // 0 = 1%
+    } else {
         peluang = 0.01
         durasiPenjara = DEFAULT_DURATION // 1 jam
         tebusan = 0
@@ -255,97 +243,32 @@ Fitnah orang biar masuk penjara.
 
     wdb.fitnah[sender] = now
     wdb.money[sender] = uangSender - uangTaruhan // potong modal dulu
-    saveDB(wdb)
-
-    /* =====================================================
-       STORY & HASIL
-    ===================================================== */
 
     let story = randomStory()
-    let berhasil = Math.random() < adjustCrimeSuccessChance(senderRPG, peluang)
+    const pending = {
+        id: `${now}-${Math.random().toString(36).slice(2)}`,
+        sender,
+        target: who,
+        chat: m.chat,
+        wager: uangTaruhan,
+        successChance: adjustCrimeSuccessChance(senderRPG, peluang),
+        duration: durasiPenjara,
+        bail: tebusan,
+        successStory: story.sukses,
+        failureStory: story.gagal,
+        createdAt: now,
+        expiresAt: now + DELAY_FITNAH
+    }
+    global.db.data.fitnahPending[who] = pending
+    await saveDB(wdb)
+    schedulePendingFitnah(conn, pending)
 
-    /* =====================================================
-       GAGAL + DENDA 1JT
-       KALO GA BISA BAYAR = COOLDOWN 30 MENIT
-    ===================================================== */
-
-    if (!berhasil) {
-        let uangSetelahModal = Number(wdb.money[sender]) || 0
-        let kenaHukuman = false
-
-        if (uangSetelahModal >= DENDA_GAGAL) {
-            wdb.money[sender] = uangSetelahModal - DENDA_GAGAL
-        } else {
-            wdb.money[sender] = 0 // ludesin
-            wdb.fitnahHukuman[sender] = now // set cooldown hukuman
-            kenaHukuman = true
-        }
-        saveDB(wdb)
-
-        let dendaText = kenaHukuman
-           ? `> 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - GAGAL BAYAR\n> 𖥔 Hukuman : CD 30 menit`
-            : `> 𖥔 Denda : Rp ${formatMoney(DENDA_GAGAL)} - LUNAS`
-
-        return conn.reply(
-  m.chat,
-  `╭─❏「 🤥 FITNAH GAGAL 」❏
-  
-${story.gagal}
-
-─━━━━━━━━━━━━━━─
-
-💥 *GAGAL*
-> 🎯 Target: @${who.split('@')[0]}
-> 💸 Pengeluaran: Rp ${formatMoney(uangTaruhan)}
-${dendaText}
-> 💰 Uang hangus.
-
-> 🚔 Polisi: Malah mencurigaimu.
-
-─━━━━━━━━━━━━━━─`,
-  m,
-  { mentions: [sender, who] }
-)
-}
-
-    /* =====================================================
-       BERHASIL
-    ===================================================== */
-
-    if (!targetRPG) return m.reply('❌ Data RPG target tidak tersedia.')
-
-    targetRPG.penjara = Date.now()
-    targetRPG.lamaPenjara = durasiPenjara
-    targetRPG.tebusan = tebusan
-    targetRPG.kasus = '🤥 Fitnah'
-    targetRPG.sel = registerPrisoner(wdb, who)
-    targetRPG.gagalCopet = 0
-    normalizePrisonList(wdb)
-
-    saveDB(wdb)
-
-   return conn.reply(
-  m.chat,
-  `╭─❏「 🤥 FITNAH BERHASIL 」❏
-  
-${story.sukses}
-
-─━━━━━━━━━━━━━━─
-
-🚔 *HASIL*
-> 👤 Pelaku: @${sender.split('@')[0]}
-> 🎯 Korban: @${who.split('@')[0]}
-> 🔒 Sel: ${targetRPG.sel}
-> ⏰ Durasi: ${durasiPenjara / 3600000} jam
-> 💸 Pengeluaran: Rp ${formatMoney(uangTaruhan)}
-> 💰 Tebusan: Rp ${formatMoney(tebusan)}
-
-> ⚠️ *Status:* Masuk penjara!
-
-╰─━━━━━━━━━━━━━━─`,
-  m,
-  { mentions: [sender, who] }
-)
+    return conn.reply(
+        m.chat,
+        `╭─❏「 🤥 FITNAH DIMULAI 」❏\n\n> 👤 Pelaku: @${sender.split('@')[0]}\n> 🎯 Target: @${who.split('@')[0]}\n> 💸 Biaya fitnah: Rp ${formatMoney(uangTaruhan)}\n> ⏳ Proses dalam 5 menit\n\nTarget dapat mencoba menggagalkan fitnah dengan *.bantah <biaya>*.\n\n╰─━━━━━━━━━━━━━━─`,
+        m,
+        { mentions: [sender, who] }
+    )
 }
 
 /* =========================================================
@@ -356,5 +279,8 @@ handler.help = ['fitnah @tag <uang>']
 handler.tags = ['rpg']
 handler.command = /^(fitnah|nipu|menipu)$/i
 handler.group = true
+handler.all = function () {
+    restorePendingFitnahTimers(this)
+}
 
 export default handler
