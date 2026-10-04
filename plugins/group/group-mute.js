@@ -16,6 +16,7 @@ let handler = async (m, { conn, isOwner, isAdmin, command, usedPrefix }) => {
   chat.mutedUsers = Array.isArray(chat.mutedUsers) ? chat.mutedUsers : []
   const isMute = command.toLowerCase() === 'mute'
   const changed = []
+  const protectedAdmins = []
 
   for (const target of targets) {
     const member = members.find(participant =>
@@ -24,6 +25,10 @@ let handler = async (m, { conn, isOwner, isAdmin, command, usedPrefix }) => {
         .some(jid => areJidsSameUser(jid, target))
     )
     if (!member) continue
+    if (isMute && isAdmin && ['admin', 'superadmin'].includes(member.admin)) {
+      protectedAdmins.push(member.id || member.jid || target)
+      continue
+    }
 
     const identifiers = [member.id, member.jid, member.lid, member.phoneNumber]
       .filter(Boolean)
@@ -38,10 +43,16 @@ let handler = async (m, { conn, isOwner, isAdmin, command, usedPrefix }) => {
     }
   }
 
-  if (!changed.length) return m.reply(isMute ? 'Tidak ada target baru yang berhasil di-mute.' : 'Tidak ada target yang sedang di-mute.')
+  if (!changed.length) {
+    if (protectedAdmins.length) return m.reply('❌ Admin tidak bisa saling mute.')
+    return m.reply(isMute ? 'Tidak ada target baru yang berhasil di-mute.' : 'Tidak ada target yang sedang di-mute.')
+  }
   const mentions = [...new Set(changed)]
   const label = isMute ? 'di-mute' : 'di-unmute'
-  return conn.reply(m.chat, `✅ ${mentions.map(jid => `@${jid.split('@')[0]}`).join(', ')} berhasil ${label}.`, m, { mentions })
+  const protectedInfo = protectedAdmins.length
+    ? `\n❌ Admin tidak bisa saling mute: ${[...new Set(protectedAdmins)].map(jid => `@${jid.split('@')[0]}`).join(', ')}.`
+    : ''
+  return conn.reply(m.chat, `✅ ${mentions.map(jid => `@${jid.split('@')[0]}`).join(', ')} berhasil ${label}.${protectedInfo}`, m, { mentions: [...mentions, ...protectedAdmins] })
 }
 
 handler.help = ['mute @user', 'unmute @user']
