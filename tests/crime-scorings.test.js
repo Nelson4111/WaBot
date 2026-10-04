@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { computeCrimeScore, ensurePatrolReleaseProtection, getCrimeScoreSummary, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, markPatrolRelease, PATROL_CAPTURE_PROTECTION_MS, PATROL_CRIME_PROTECTION_MS, PATROL_PRISON_PROTECTION_MS, recordEscapeCrime, syncAllEscapeCrimeCounts, syncEscapeCrimeCounts } from '../lib/crimeHelper.js'
 import { normalizeFishKey } from '../lib/rpg-fishCatalog.js'
+import { PATROL_RESTRICTED_RSHIP_ACTIONS } from '../lib/patrolHelper.js'
 
 assert.equal(computeCrimeScore({ rampok: 2, bunuh: 1, begal: 3, copet: 4 }), 2 * 4 + 1 * 3 + 3 * 2 + 4 * 1)
 assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 }), {
@@ -20,6 +21,10 @@ assert.ok(Math.abs(getPatrolCaptureChance(10) - 0.006) < 1e-10)
 assert.equal(getPatrolCaptureChance(100), 0.05)
 assert.deepEqual(getPatrolCapturePenalty(10), { durationMs: 80 * 60 * 1000, ransom: 1500000 })
 assert.deepEqual(getPatrolCapturePenalty(0), { durationMs: 30 * 60 * 1000, ransom: 500000 })
+assert.equal(PATROL_CRIME_PROTECTION_MS, 15 * 60 * 1000)
+assert.equal(PATROL_PRISON_PROTECTION_MS, 30 * 60 * 1000)
+assert.equal(PATROL_CAPTURE_PROTECTION_MS, 2 * 60 * 60 * 1000)
+assert.equal(PATROL_RESTRICTED_RSHIP_ACTIONS.has('rampok'), false)
 
 const releasedRPG = { patrolCaughtAt: 1000 }
 assert.equal(markPatrolRelease(releasedRPG, 5000), true)
