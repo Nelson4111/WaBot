@@ -1,6 +1,7 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { recordEscapeCrime } from '../../lib/crimeHelper.js'
 
 /* =========================================================
    DIALOG VISIT 20x20
@@ -394,6 +395,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                     const stats = getStats(jid)
                     stats.escaped = true
                     stats.escapeCount = Number(stats.escapeCount) + 1
+                    recordEscapeCrime(wdb, jid, 'breakout')
                     removeFromPrison(jid)
                 }
                 saveDB(wdb)
@@ -693,6 +695,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0
             stats.escaped = true
             stats.escapeCount = Number(stats.escapeCount) + 1
+            recordEscapeCrime(wdb, resolveJid(m.sender), 'kabur')
             removeFromPrison(m.sender)
             saveDB(wdb)
             return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR BERHASIL_* ]───✦\n\n${story.sukses}\n\n╭──「 🎉 BEBAS 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 Dari : SEL ${selLama}\n╰ 𖥔 Selamat! Kamu buronan sekarang.`, m, { mentions: [m.sender] })

@@ -29,7 +29,7 @@ const CORE_COMMANDS = [
   ['.liveyt', 'Mulai live streaming channel'],
   ['.topyt', 'Melihat ranking channel YouTube'],
   ['.kolab', 'Kolaborasi channel YouTube'],
-  ['.buronan', 'Melihat daftar buronan'],
+  ['.buronan', 'Jumlah, daftar, detail, info, dan patroli buronan'],
   ['.guide', 'Membuka panduan detail RPG']
 ]
 
