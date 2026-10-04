@@ -638,9 +638,8 @@ function formatRoomRound(result, wdb) {
     : `> ↳ ⚖️ Hasil seri: tidak ada yang tereliminasi.`
 
   return `🎮 *RONDE ${result.number}*\n` +
-    `${scoreList}\n` +
-    `${eliminationText}\n` +
-    `> ↳ 💵 Taruhan ronde ini: ${money(result.stake)}`
+    `${scoreList}\n\n` +
+    `${eliminationText}\n`
 }
 
 async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
@@ -1113,7 +1112,8 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
     `${formatRoomRound(result, wdb)}\n` +
     `\n👥 *PEMAIN TERSISA (${room.players.length})*\n` +
     `${room.players.map(jid => `> ↳ ${roomPlayerName(jid, wdb)}`).join('\n')}\n\n` +
-    `💰 *TOTAL POT SEMENTARA* : ${money(room.pot)}\n` +
+    `💰 *TOTAL HADIAH ROOM*` +
+    `> ↳ Pot sementara : ${money(room.pot)}\n` +
     `> ↳ Taruhan ronde ini: ${money(result.stake)}\n\n` +
     `👑 *Room Master bisa pilih:*\n` +
     `> ↳ ⏭️ *.cs room next* (${money(nextStake)}).\n` +
