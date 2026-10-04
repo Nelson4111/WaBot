@@ -145,9 +145,9 @@ let handler = async (m, { conn, args, isOwner }) => {
       `> ↳ Hukuman dasar: *30 menit + 5 menit per poin* dan tebusan *Rp 500.000 + Rp 100.000 per poin*.\n` +
       `> ↳ Contoh: *10 poin* = *1 jam 20 menit* tahanan dan *Rp 1.500.000* tebusan.\n\n` +
       `🕊️ *STATUS MANTAN NAPI*\n` +
-      `> ↳ Anti-kejahatan: *1 jam* setelah bebas dari cidukan patroli.\n` +
-      `> ↳ Anti-masuk penjara: *2 jam* setelah bebas dari cidukan patroli.\n` +
-      `> ↳ Anti-ciduk patroli: *4 jam* setelah bebas dari cidukan patroli.\n\n` +
+      `> ↳ Anti-kejahatan: *15 menit* setelah bebas dari cidukan patroli.\n` +
+      `> ↳ Anti-masuk penjara: *30 menit* setelah bebas dari cidukan patroli.\n` +
+      `> ↳ Anti-ciduk patroli: *2 jam* setelah bebas dari cidukan patroli.\n\n` +
       `💀 *BOBOT POIN KEJAHATAN*\n` +
       `> 🕵️ Rampok: *+4 poin* per aksi\n` +
       `> 🔪 Bunuh: *+3 poin* per aksi\n` +

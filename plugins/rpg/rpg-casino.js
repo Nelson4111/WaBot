@@ -216,6 +216,15 @@ function getCasinoTitle(gamesPlayed) {
   return '🌱 Casino Novice'
 }
 
+function reduceCasinoWinChance(result) {
+  if (result.multiplier > 0 && Math.random() >= 0.5) {
+    result.multiplier = 0
+    result.payoutDenied = true
+    result.text += '\n> ↳ 🎟️ Hadiah kasino tidak cair kali ini.'
+  }
+  return result
+}
+
 function resultFor(game) {
 if (game === 'slot') {
   const symbols = ['🍒', '🍋', '🍊', '🍉', '🍇', '🔔', '7️⃣', '💎', '⭐', '👑', '💰', '💵', '🍀', '🃏', '🎰']
@@ -224,13 +233,13 @@ if (game === 'slot') {
   const jackpot = middle[0] === middle[1] && middle[1] === middle[2]
   const pair = middle[0] === middle[1] || middle[1] === middle[2] || middle[0] === middle[2]
 
-  return {
+  return reduceCasinoWinChance({
     multiplier: jackpot ? 10 : pair ? 1.5 : 0,
     text:
       `> ${reels[0]} | ${reels[1]} | ${reels[2]}\n` +
       `> ${reels[3]} | ${reels[4]} | ${reels[5]} ❮\n` +
       `> ${reels[6]} | ${reels[7]} | ${reels[8]}`
-  }
+  })
 }
 
 const outcomes = {
@@ -279,11 +288,11 @@ const outcomes = {
   snakes: () => { const start = number(1, 80), roll = number(1, 6), ladder = Math.random() < 0.2, snake = !ladder && Math.random() < 0.2, position = Math.max(1, Math.min(100, start + roll + (ladder ? number(10, 25) : snake ? -number(5, 20) : 0))), multiplier = position === 100 ? 8 : position >= 80 ? 3 : 0; return { multiplier, text: `🐍 *Posisi awal* : ${start} | Dadu: ${roll}\n> ↳ ${ladder ? 'Naik tangga!' : snake ? 'Turun karena ular!' : 'Tidak bertemu ular/tangga.'}\n> ↳ Posisi akhir : ${position}/100` } },
   parcheesi: () => { const dice = [number(1, 6), number(1, 6)], start = number(1, 45), position = Math.min(56, start + dice[0] + dice[1]), home = position >= 56, multiplier = home ? 6 : dice[0] === dice[1] ? 3 : position >= 35 ? 2 : 0; return { multiplier, text: `🎲 *Dadu* : ${dice.join(' + ')}\n> ↳ Posisi bidak : ${position}/56\n> ↳ ${home ? 'Bidak sampai rumah!' : dice[0] === dice[1] ? 'Dadu kembar, langkah bonus!' : 'Bidak bergerak maju.'}` } }
 }
-  return outcomes[game]()
+  return reduceCasinoWinChance(outcomes[game]())
 }
 
 function normalizeResult(result) {
-  if (result.multiplier > 0) result.multiplier = Math.max(2, result.multiplier)
+  if (result.multiplier > 0) result.multiplier = Math.min(1.5, Math.max(1.25, result.multiplier))
   result.text = result.text.replaceAll('├[', '│ [')
   return result
 }
@@ -579,7 +588,7 @@ function playRoomRound(gameKey, players) {
     let score = 0
     for (let attempt = 0; attempt < 5; attempt++) {
       const result = gameKey === 'monopoly'
-        ? { multiplier: Math.random() < 0.35 ? 2 : 0 }
+        ? reduceCasinoWinChance({ multiplier: Math.random() < 0.35 ? 2 : 0, text: '' })
         : resultFor(gameKey)
       if (result.multiplier > 0) score++
     }
@@ -1283,7 +1292,7 @@ if (elapsed < cooldownDuration) {
 
   const result = normalizeResult(resultFor(game))
   let payout = Math.floor(bet * result.multiplier)
-  if (payout > bet) payout = bet + scaleDifficultyIncome(user, payout - bet)
+  if (payout > bet) payout = bet + Math.min(Math.floor(bet * 0.5), scaleDifficultyIncome(user, payout - bet))
   const net = payout - bet
   const balanceBefore = wdb.money[m.sender] || 0
 
@@ -1311,8 +1320,9 @@ if (elapsed < cooldownDuration) {
 
   saveDB(wdb)
 
-  const status =
-    result.multiplier >= 10
+  const status = result.payoutDenied
+    ? `🎟️ *HADIAH TIDAK CAIR*`
+    : result.multiplier >= 10
       ? `🏆 *JACKPOT*`
       : result.multiplier > 0
         ? `🎉 *MENANG*`

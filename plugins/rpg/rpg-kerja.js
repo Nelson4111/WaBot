@@ -97,7 +97,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let args = (text || '').trim().toLowerCase()
 
     let currentJob = listJobs.filter(j => userRPG.level >= j.lv).at(-1)
-    let jobName = userRPG.job || currentJob?.job
+    let jobName = userRPG.customJob || currentJob?.job
 
     // STATUS DAN LIST KERJA
     if (args === '' && command === 'job') {
@@ -192,7 +192,7 @@ if (changeActions.includes(jobAction)) {
       return m.reply('❌ Job yang dipilih tidak lagi tersedia. Ajukan perubahan lagi.')
     }
 
-    userRPG.job = confirmedJob.job
+    userRPG.customJob = confirmedJob.job
     delete userRPG.pendingJobChange
     saveDB(wdb)
     return m.reply(`✅ Job berhasil diubah menjadi *${confirmedJob.job}*.`)
@@ -286,8 +286,6 @@ try {
   const earnedExp = scaleDifficultyXP(userRPG, earningJob.exp)
   userRPG.exp += earnedExp
   userRPG.lastkerja = Date.now()
-  userRPG.job = selectedJob.job
-
   let jumlahLevel = 0
   while (userRPG.exp >= userRPG.level * 500) {
     userRPG.exp -= userRPG.level * 500
@@ -295,10 +293,15 @@ try {
     jumlahLevel++
   }
 
+  const defaultJob = listJobs.filter(job => userRPG.level >= job.lv).at(-1)
+  const displayedJob = requestedJob
+    ? selectedJob.job
+    : userRPG.customJob || defaultJob?.job
+
   saveDB(wdb)
 
   let msg = `╭─❏「 💼 KERJA BERHASIL 」❏\n`
-  msg += `│ 👷 Pekerjaan: *${selectedJob.job}*\n`
+  msg += `│ 👷 Pekerjaan: *${displayedJob || selectedJob.job}*\n`
   msg += `│ 💰 Pendapatan: +Rp ${earnedMoney.toLocaleString()}\n`
   msg += `│ ✨ XP: +${earnedExp.toLocaleString()}\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
