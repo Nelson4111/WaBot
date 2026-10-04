@@ -98,5 +98,10 @@
     "section": "RPG",
     "content": "> Perbaikan room casino: .pet all hanya bisa dipakai setelah .pet care tanpa harus mengumpulkan hasil dispatch terlebih dahulu; .heal kini menampilkan hasil tanpa mengirim foto. .cs room status menampilkan kondisi room secara jelas, hasil room per pemain ditampilkan berurutan dan seri tidak mengeliminasi siapapun, pemain yang masuk room tidak bisa setor ke bank tapi tetap bisa tarik, dan semua akses casino lain dibatasi selama berada di room agar fokus bermain di room dulu.",
     "createdAt": 1791085000000
+  },
+  {
+    "section": "RPG",
+    "content": "> Sistem buronan diperluas: .buronan menampilkan jumlah buronan, .buronan list menampilkan daftar dengan 10 orang per halaman, .buronan detail menerima nomor/tag/reply, serta tersedia .buronan command dan .buronan info. Patroli polisi dapat menangkap buronan saat menjalankan aktivitas RPG; peluang meningkat sesuai poin (5% + 2,5% per poin, maksimal 75%). Hukuman patroli juga mengikuti poin: 30 menit + 5 menit per poin dan tebusan Rp 500.000 + Rp 100.000 per poin. Kabur solo dan breakout memberi masing-masing 5 poin, dengan lima variasi cerita penangkapan.",
+    "createdAt": 1791106925868
   }
 ]
