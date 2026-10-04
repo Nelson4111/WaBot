@@ -68,5 +68,30 @@
     "section": "GROUP",
     "content": "> Admin grup dapat memakai `.mute`/`.unmute` dengan tag atau reply; pesan pengguna yang di-mute otomatis dihapus bot.",
     "createdAt": 1790931600010
+  },
+  {
+    "section": "RPG",
+    "content": "> Penjara memiliki `.penjara cd` untuk melihat cooldown seluruh tahanan, `.penjara escord` untuk catatan jumlah kabur berhasil, `.penjara note`/`.penjara guide` untuk panduan, dan `.penjara command` untuk daftar command. Daftar tahanan kini menampilkan sel serta sisa durasi sebelum tag pengguna.",
+    "createdAt": 1790931600011
+  },
+  {
+    "section": "RPG",
+    "content": "> Fitnah kini diproses setelah 5 menit jika belum berhasil digagalkan. Target dapat memakai `.bantah <biaya>` dengan nominal pilihannya untuk mencoba menggagalkan fitnah. Fitnah yang gagal mengenakan denda sebesar 50% biaya dan memiliki peluang 50% membuat pelaku masuk penjara.",
+    "createdAt": 1791082011357
+  },
+  {
+    "section": "RPG",
+    "content": "> Waktu tunggu tebus tahanan dipersingkat dari 10 menjadi 5 menit. Nama pekerjaan pada `.work` dapat dipilih memakai nama atau nomor dari `.job list` tanpa mengubah penghasilan sesuai level. Tampilan cooldown rampok kini tidak lagi menunjukkan `0j 0m` saat masih tersisa kurang dari satu menit. Cooldown setor/tarik bank dipersingkat: 15 menit (sebelumnya 30 menit), atau 5 menit untuk kartu dengan Kendaraan Pribadi (sebelumnya 15 menit).",
+    "createdAt": 1791083688599
+  },
+  {
+    "section": "GROUP",
+    "content": "> Admin grup tidak bisa saling mute. Target admin akan dilewati saat perintah mute dijalankan.",
+    "createdAt": 1791083688600
+  },
+  {
+    "section": "INFO",
+    "content": "> Info Premium tersedia lewat .premium atau .prem untuk melihat status, penjelasan, dan cara mendapatkannya; gunakan .premium benefits atau .prem benefits untuk melihat manfaat. Premium dari donasi saat ini diberikan permanen, tetapi kebijakan dapat berubah dan ke depannya bisa memiliki batas waktu. Bukti donasi dikirim melalui .konfirmasidonasi.",
+    "createdAt": 1791084430000
   }
 ]
