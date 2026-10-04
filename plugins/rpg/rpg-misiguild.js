@@ -160,7 +160,7 @@ if(Date.now() < myGuild.missionCooldown){
 
   list += `📌 *PILIH MISI*\n`
   list += `> ↳ Eksekutor mendapat reward penuh; anggota lain mendapat 50% melalui pending loot.\n\n`
-  list += `> ↳ Loot anggota hanya bertambah jika anggota menjalankan misi Guild dalam 4 hari terakhir.\n`
+  list += `> ↳ Loot anggota hanya bertambah jika anggota aktif dalam 4 hari terakhir.\n`
   list += `─━━━━━━━━━━━━━━─\n\n`
 
   missions.forEach((v, i) => {

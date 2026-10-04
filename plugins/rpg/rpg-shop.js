@@ -324,13 +324,22 @@ if (mode === 'guide') {
     )
   }
 
-  const cap = `╭─❏「 🏪 SHOP AVELIA 」❏\n` +
+  const cap = `╭─❏「 🏪 AVELIA MARKET 」❏\n` +
     `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n` +
     `│ 💰 Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `🛒 Shop adalah toko umum untuk membeli item dan menjual stok dari berbagai aktivitas RPG.\n\n` +
-    `> ↳ Lihat daftar command: *${usedPrefix || '.'}shop command*\n` +
-    `> ↳ Baca panduan/tutorial: *${usedPrefix || '.'}shop guide*\n\n` +
+    `📦 *TOKO TERSEDIA*\n` +
+    `> ↳ ${usedPrefix || '.'}pabrik - ⛏️ Material\n` +
+    `> ↳ ${usedPrefix || '.'}koperasi - 🌾 Panen\n` +
+    `> ↳ ${usedPrefix || '.'}pasar - 🎣 Ikan\n` +
+    `> ↳ ${usedPrefix || '.'}restoran - 🍽️ Masakan\n\n` +
+    `🛒 *TRANSAKSI*\n` +
+    `> ↳ ${usedPrefix || '.'}jual all - Jual Semua Item\n` +
+    `> ↳ ${usedPrefix || '.'}gudang - Lihat Gudang\n` +
+    `> ↳ ${usedPrefix || '.'}beli - Beli Item\n\n` +
+    `> Lihat daftar command: *${usedPrefix || '.'}shop command*\n` +
+    `> Baca panduan/tutorial: *${usedPrefix || '.'}shop guide*\n\n` +
     `─━━━━━━━━━━━━━━─`
 
   return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
