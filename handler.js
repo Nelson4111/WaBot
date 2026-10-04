@@ -13,6 +13,9 @@ import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
 import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave, verifySecurityMember, getSecurityAdminJids } from './lib/securityProtocol.js'
 import { botArbitrator } from './lib/botArbitrator.js'
+import { computeCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty } from './lib/crimeHelper.js'
+import { loadDB, saveDB } from './lib/waifuHelper.js'
+import { registerPrisoner } from './lib/prisonHelper.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -43,6 +46,30 @@ function getCommandCandidate(text, prefix) {
     if (!command) return null
     return { usedPrefix, command: command.toLowerCase() }
 }
+
+function pluginAcceptsCommand(plugin, command) {
+    const accepts = spec => {
+        if (spec instanceof RegExp) {
+            spec.lastIndex = 0
+            return spec.test(command)
+        }
+        return typeof spec === 'string' && spec.toLowerCase() === command
+    }
+    return Array.isArray(plugin.command) ? plugin.command.some(accepts) : accepts(plugin.command)
+}
+
+const patrolCaptureStories = [
+    '🚓 Sirene patroli terdengar dari kejauhan. Polisi mengepung lokasi dan memborgolmu.',
+    '👮 Seorang petugas mengenali wajahmu dari daftar buronan. Kamu tertangkap saat lengah.',
+    '🚨 Laporan warga masuk ke kantor polisi. Petugas datang dan mengamankanmu.',
+    '📹 Kamera keamanan merekam aktivitasmu. Polisi melacak lokasi dan menangkapmu.',
+    '🕵️ Polisi menyamar sebagai warga biasa, mengikutimu diam-diam, lalu melakukan penangkapan.'
+]
+
+const patrolExemptCommands = new Set([
+    'adventure', 'rpg', 'rpgstat', 'cooldown', 'inv', 'inventory', 'gudang',
+    'guide', 'buronan', 'mostwanted', 'topkriminal', 'dpo', 'penjara', 'tebus'
+])
 
 function aliasesFromRegExp(re) {
     let source = re.source.replace(/^\^/, '').replace(/\$$/, '')
@@ -699,6 +726,56 @@ async function processMessage(m, chatUpdate) {
                     }).catch(() => null)
                 }
                 return false
+            }
+        }
+
+        if (commandCandidate && !patrolExemptCommands.has(commandCandidate.command)) {
+            const isRpgActivity = Object.values(global.plugins || {}).some(plugin =>
+                plugin && !plugin.disabled &&
+                (plugin.tags?.includes('rpg') || plugin.tags?.includes('pasangan')) &&
+                pluginAcceptsCommand(plugin, commandCandidate.command)
+            )
+            const userRPG = global.db.data.users[m.sender]?.rpg
+            const escapedPrisoner = userRPG && !(
+                userRPG.penjara && Date.now() - userRPG.penjara < (Number(userRPG.lamaPenjara) || 0)
+            )
+
+            if (isRpgActivity && escapedPrisoner) {
+                const wdb = loadDB()
+                const wantedData = wdb.crime?.[m.sender]
+                const score = computeCrimeScore(wantedData)
+                const captureChance = getPatrolCaptureChance(score)
+
+                if (captureChance && Math.random() < captureChance) {
+                    const now = Date.now()
+                    const penalty = getPatrolCapturePenalty(score)
+                    const durationMinutes = penalty.durationMs / (60 * 1000)
+                    const durationHours = Math.floor(durationMinutes / 60)
+                    const remainingMinutes = durationMinutes % 60
+                    const durationText = durationHours
+                        ? `${durationHours} jam${remainingMinutes ? ` ${remainingMinutes} menit` : ''}`
+                        : `${remainingMinutes} menit`
+                    userRPG.penjara = now
+                    userRPG.lamaPenjara = penalty.durationMs
+                    userRPG.tebusan = penalty.ransom
+                    userRPG.kasus = '👮 Patroli buronan'
+                    userRPG.sel = registerPrisoner(wdb, m.sender)
+                    wantedData.ditangkap = (Number(wantedData.ditangkap) || 0) + 1
+                    await saveDB(wdb)
+
+                    const story = patrolCaptureStories[Math.floor(Math.random() * patrolCaptureStories.length)]
+                    const captureMessage =
+                        `╭─❏「 🚔 TERTANGKAP PATROLI 」❏\n` +
+                        `│ 👤 Buronan: @${m.sender.split('@')[0]}\n` +
+                        `│ 💀 Poin buronan: *${score} poin*\n` +
+                        `╰─━━━━━━━━━━━━━━─\n\n` +
+                        `${story}\n\n` +
+                        `Kamu ditahan di *SEL ${userRPG.sel}* selama *${durationText}*.\n` +
+                        `Tebusan: *Rp ${penalty.ransom.toLocaleString('id-ID')}*.`
+                    await conn.reply(m.chat, captureMessage, m, { mentions: [m.sender] })
+                    botArbitrator.resolve(m.key?.id, this)
+                    return
+                }
             }
         }
 
