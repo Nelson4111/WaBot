@@ -108,8 +108,7 @@ let handler = async (m, { conn, args, isOwner }) => {
       `${getPatrolCaptureStory()}\n\n` +
       `Kamu masuk di *SEL ${userRPG.sel}*\n` +
       `Ditahan selama *${durationText}*.\n` +
-      `Tebusan: *Rp ${penalty.ransom.toLocaleString('id-ID')}*.\n` +
-      `Setelah bebas: anti-kejahatan 1 jam, anti-penjara 2 jam, anti-ciduk 4 jam.`
+      `Tebusan: *Rp ${penalty.ransom.toLocaleString('id-ID')}*.`
     return conn.reply(m.chat, text, m, { mentions: [wantedJid] })
   }
 
@@ -183,7 +182,7 @@ let handler = async (m, { conn, args, isOwner }) => {
       const rank = start + index + 1
       const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
       text += `${medal} @${jid.split('@')[0]} • *${computeCrimeScore(data)} poin*\n`
-      text += `> 🕵️ ${Number(data.rampok) || 0}  🔪 ${Number(data.bunuh) || 0}  🏴‍☠️ ${Number(data.begal) || 0}  🤏 ${Number(data.copet) || 0}  🏃 ${Number(data.kabur) || 0}  🧱 ${Number(data.breakout) || 0}\n`
+      text += `> 🕵️ ${Number(data.rampok) || 0}  🔪 ${Number(data.bunuh) || 0}  🏴‍☠️ ${Number(data.begal) || 0}  🤏 ${Number(data.copet) || 0}\n`
     })
 
     text += `\n─━━━━━━━━━━━━━━─\n`
