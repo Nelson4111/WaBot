@@ -783,10 +783,9 @@ async function processMessage(m, chatUpdate) {
                         `│ 💀 Poin buronan: *${score} poin*\n` +
                         `╰─━━━━━━━━━━━━━━─\n\n` +
                         `${story}\n\n` +
-                        `Kamu masuk di *SEL ${userRPG.sel}*\n` +
-                        `Ditahan selama *${durationText}*.\n` +
-                        `Tebusan: *Rp ${penalty.ransom.toLocaleString('id-ID')}*.\n` +
-                        `Setelah bebas: anti-kejahatan 1 jam, anti-penjara 2 jam, anti-ciduk 4 jam.`
+                        `> Kamu masuk di *SEL ${userRPG.sel}*\n` +
+                        `> Ditahan selama *${durationText}*.\n` +
+                        `> Tebusan: *Rp ${penalty.ransom.toLocaleString('id-ID')}*.`
                     await conn.reply(m.chat, captureMessage, m, { mentions: [m.sender] })
                     botArbitrator.resolve(m.key?.id, this)
                     return
