@@ -93,5 +93,10 @@
     "section": "INFO",
     "content": "> Info Premium tersedia lewat .premium atau .prem untuk melihat status, penjelasan, dan cara mendapatkannya; gunakan .premium benefits atau .prem benefits untuk melihat manfaat. Premium dari donasi saat ini diberikan permanen, tetapi kebijakan dapat berubah dan ke depannya bisa memiliki batas waktu. Bukti donasi dikirim melalui .konfirmasidonasi.",
     "createdAt": 1791084430000
+  },
+  {
+    "section": "RPG",
+    "content": "> Perbaikan room casino: .pet all hanya bisa dipakai setelah .pet care tanpa harus mengumpulkan hasil dispatch terlebih dahulu; .heal kini menampilkan hasil tanpa mengirim foto. .cs room status menampilkan kondisi room secara jelas, hasil room per pemain ditampilkan berurutan dan seri tidak mengeliminasi siapapun, pemain yang masuk room tidak bisa setor ke bank tapi tetap bisa tarik, dan semua akses casino lain dibatasi selama berada di room agar fokus bermain di room dulu.",
+    "createdAt": 1791085000000
   }
 ]
