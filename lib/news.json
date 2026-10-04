@@ -103,5 +103,15 @@
     "section": "RPG",
     "content": "> Sistem buronan diperluas: .buronan menampilkan jumlah buronan, .buronan list menampilkan daftar dengan 10 orang per halaman, .buronan detail menerima nomor/tag/reply, serta tersedia .buronan command dan .buronan info. Patroli polisi dapat menangkap buronan saat menjalankan aktivitas RPG; peluang sangat kecil, mulai 0,1% + 0,05% per poin dengan batas 5% per aktivitas. Hukuman patroli mengikuti poin: 30 menit + 5 menit per poin dan tebusan Rp 500.000 + Rp 100.000 per poin. Jumlah kabur solo dan breakout pada detail buronan disinkronkan dengan catatan .penjara escord; .penjara list hanya menampilkan tahanan aktif tanpa catatan escape.",
     "createdAt": 1791106925868
+  },
+  {
+    "section": "RPG",
+    "content": "> Perintah toko dirapikan: .shop, .pabrik, .pasar, .koperasi, dan .restoran kini menjelaskan fungsi toko serta mengarahkan ke command dan guide. Gunakan .shop command atau command pada masing-masing toko untuk melihat daftar perintah; .shop guide dan guide tiap toko berisi panduan/tutorial, sedangkan list menampilkan katalog. Command restoran diperbaiki agar bisa dimuat dan ditemukan. Tampilan konfirmasi serta hasil jual all di semua toko kini memakai header, pemisah, rincian, dan ringkasan saldo.",
+    "createdAt": 1791123120000
+  },
+  {
+    "section": "RPG",
+    "content": "> Tampilan Guild dan loot kini memakai header serta garis yang seragam. `.guild command` menampilkan daftar command dan `.guild guide` berisi tutorial Guild; `.guild` hanya menampilkan status Guild dan akses ke dua bantuan tersebut. Loot Guild bertambah hanya untuk anggota yang menjalankan misi Guild dalam 4 hari terakhir. Batas awal per anggota di Guild Lv.1 adalah Money Rp1.000.000 dan 50 untuk tiap loot lain; semua batas meningkat sesuai level Guild dan stok lama yang melewati batas tidak dikurangi. Hadiah misi kini bertahap menurut level pemain, termasuk perbaikan nominal Money yang sebelumnya turun keliru. Hadiah misi Guild menggunakan Gemstone; data Emerald lama pada loot anggota dan pending loot otomatis dikonversi ke Gemstone. Notifikasi kenaikan level menyebut leader dengan tag dan membandingkan kapasitas serta batas loot sebelum/sesudah.",
+    "createdAt": 1791126000000
   }
 ]
