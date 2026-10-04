@@ -101,7 +101,7 @@
   },
   {
     "section": "RPG",
-    "content": "> Sistem buronan diperluas: .buronan menampilkan jumlah buronan, .buronan list menampilkan daftar dengan 10 orang per halaman, .buronan detail menerima nomor/tag/reply, serta tersedia .buronan command dan .buronan info. Patroli polisi dapat menangkap buronan saat menjalankan aktivitas RPG; peluang sangat kecil, mulai 0,1% + 0,05% per poin dengan batas 5% per aktivitas. Hukuman patroli mengikuti poin: 30 menit + 5 menit per poin dan tebusan Rp 500.000 + Rp 100.000 per poin. Setelah bebas dari cidukan patroli, mantan napi mendapat anti-kejahatan 1 jam, anti-masuk penjara 2 jam, dan anti-ciduk patroli 4 jam. Jumlah kabur solo dan breakout pada detail buronan disinkronkan dengan catatan .penjara escord; .penjara list hanya menampilkan tahanan aktif tanpa catatan escape.",
+    "content": "> Sistem buronan diperluas: .buronan menampilkan jumlah buronan, .buronan list menampilkan daftar dengan 10 orang per halaman, .buronan detail menerima nomor/tag/reply, serta tersedia .buronan command dan .buronan info. Patroli polisi dapat menangkap buronan saat menjalankan aktivitas RPG; peluang sangat kecil, mulai 0,1% + 0,05% per poin dengan batas 5% per aktivitas. Hukuman patroli mengikuti poin: 30 menit + 5 menit per poin dan tebusan Rp 500.000 + Rp 100.000 per poin. Jumlah kabur solo dan breakout pada detail buronan disinkronkan dengan catatan .penjara escord; .penjara list hanya menampilkan tahanan aktif tanpa catatan escape.",
     "createdAt": 1791106925868
   }
 ]
