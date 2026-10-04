@@ -88,6 +88,10 @@ user.pets = user.pets.filter(p => {
     return Object.keys(pets).find(type => normalizePetInput(type) === input || (aliases[type] || []).some(alias => normalizePetInput(alias) === input))
   }
   const getPending = () => user.pendingPetAction && user.pendingPetAction.expires > Date.now() ? user.pendingPetAction : null
+  const getPendingPetDispatches = () => {
+    if (!user.pendingPetDispatch) return []
+    return Array.isArray(user.pendingPetDispatch) ? user.pendingPetDispatch : [user.pendingPetDispatch]
+  }
 
   // migrasi data lama
   if (user.pet && user.pet.tipe && user.pet.tipe!== 'none') {
@@ -703,8 +707,7 @@ if (action === 'all') {
   const batchCooldown = 30 * 60 * 1000
   const batchRemaining = batchCooldown - (Date.now() - (Number(user.cooldown.petall) || 0))
   if (batchRemaining > 0) return safeReply(`⏳ Cooldown *.pet all* tersisa ${Math.ceil(batchRemaining / 60000)} menit.`)
-  if (!user.petCareAt || Number(user.petCareAt) <= (Number(user.petLastAllAt) || 0)) return safeReply(`❌ Gunakan *.pet care* sebelum *.pet all*. Pet care khusus premium dan cooldown-nya 30 menit.`)
-  if (user.pendingPetDispatch) return safeReply(`📦 Hasil dispatch sebelumnya belum diklaim. Cek *${usedPrefix}pet dispatch info* atau klaim dengan *${usedPrefix}pet dispatch collect*.`)
+  if (!user.petCareAt || Number(user.petCareAt) <= (Number(user.petLastAllAt) || 0)) return safeReply(`❌ Gunakan *.pet care* terlebih dahulu sebelum *.pet all*.`)
   if (user.pets.some(pet => pet.tipe === 'vampir') && !isMalam) return safeReply('🧛 Pet vampir hanya bisa beraktivitas pada pukul 18:00-05:59 WIB.')
 
   const now = Date.now()
@@ -748,9 +751,9 @@ if (action === 'all') {
   user.cooldown.petdispatch = now
   user.cooldown.petall = now
   user.petLastAllAt = user.petCareAt
-  user.pendingPetDispatch = { startedAt: now, readyAt: now + 1800000, money: dispatchMoney }
+  user.pendingPetDispatch = [...getPendingPetDispatches(), { startedAt: now, readyAt: now + 1800000, money: dispatchMoney }]
   saveDB(wdb)
-  return safeReply(`✅ *PET ALL SELESAI*\nTrain, walk, play, dan hunt sudah dilakukan untuk ${user.pets.length} pet.\n> ↳ Hasil hunt: +Rp ${huntMoney.toLocaleString('id-ID')}\n> ↳ Dispatch selesai dalam 30 menit; cek *${usedPrefix}pet dispatch info* lalu klaim dengan *${usedPrefix}pet dispatch collect*.${levelUps.length ? `\n> ↳ Level up: ${levelUps.length} pet.` : ''}`)
+  return safeReply(`✅ *PET ALL SELESAI*\nTrain, walk, play, dan hunt sudah dilakukan untuk ${user.pets.length} pet.\n> ↳ Hasil hunt: +Rp ${huntMoney.toLocaleString('id-ID')}\n> ↳ Dispatch selesai dalam 30 menit; hasilnya bisa ditumpuk tanpa klaim dulu. Cek *${usedPrefix}pet dispatch info* dan klaim dengan *${usedPrefix}pet dispatch collect*.${levelUps.length ? `\n> ↳ Level up: ${levelUps.length} pet.` : ''}`)
 }
   const getPet = (name) => user.pets.find(p => p.tipe === name)
   const getMood = (p) => {
@@ -2455,30 +2458,36 @@ if (action === 'hunt') {
 // === DISPATCH ===
 if (action === 'dispatch') {
   const dispatchAction = args[1]?.toLowerCase()
-  const pendingDispatch = user.pendingPetDispatch
+  const pendingDispatches = getPendingPetDispatches()
 
   if (dispatchAction === 'info') {
-    if (!pendingDispatch) return safeReply('📦 Tidak ada dispatch aktif. Kirim pet dengan *.pet dispatch*.')
-    const remaining = Math.max(0, Number(pendingDispatch.readyAt) - Date.now())
-    const minutes = Math.floor(remaining / 60000)
-    const seconds = Math.floor((remaining % 60000) / 1000)
-    return safeReply(remaining
-      ? `📦 *DISPATCH BERLANGSUNG*\nSisa waktu: ${minutes} menit ${seconds} detik.`
-      : `✅ *DISPATCH SELESAI*\nHasil: Rp ${Number(pendingDispatch.money || 0).toLocaleString('id-ID')}\nKetik *${usedPrefix}pet dispatch collect* untuk mengambil hasil.`)
+    if (!pendingDispatches.length) return safeReply('📦 Tidak ada dispatch aktif. Kirim pet dengan *.pet dispatch*.')
+    const now = Date.now()
+    const status = pendingDispatches.map((dispatch, index) => {
+      const remaining = Math.max(0, Number(dispatch.readyAt) - now)
+      if (!remaining) return `${index + 1}. ✅ Siap diklaim: Rp ${Number(dispatch.money || 0).toLocaleString('id-ID')}`
+      const minutes = Math.floor(remaining / 60000)
+      const seconds = Math.floor((remaining % 60000) / 1000)
+      return `${index + 1}. ⏳ ${minutes} menit ${seconds} detik lagi`
+    }).join('\n')
+    return safeReply(`📦 *DISPATCH TERSIMPAN (${pendingDispatches.length})*\n${status}\n\nKetik *${usedPrefix}pet dispatch collect* untuk mengambil hasil yang selesai.`)
   }
 
   if (dispatchAction === 'collect') {
-    if (!pendingDispatch) return safeReply('📦 Tidak ada hasil dispatch untuk diklaim.')
-    const remaining = Number(pendingDispatch.readyAt) - Date.now()
-    if (remaining > 0) return safeReply(`⏳ Dispatch belum selesai. Cek *${usedPrefix}pet dispatch info* untuk melihat durasinya.`)
-    const hasil = Math.max(0, Number(pendingDispatch.money) || 0)
+    if (!pendingDispatches.length) return safeReply('📦 Tidak ada hasil dispatch untuk diklaim.')
+    const now = Date.now()
+    const completedDispatches = pendingDispatches.filter(dispatch => Number(dispatch.readyAt) <= now)
+    if (!completedDispatches.length) return safeReply(`⏳ Dispatch belum selesai. Cek *${usedPrefix}pet dispatch info* untuk melihat durasinya.`)
+    const hasil = completedDispatches.reduce((total, dispatch) => total + Math.max(0, Number(dispatch.money) || 0), 0)
+    const remainingDispatches = pendingDispatches.filter(dispatch => Number(dispatch.readyAt) > now)
+    if (remainingDispatches.length) user.pendingPetDispatch = remainingDispatches
+    else delete user.pendingPetDispatch
     wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + hasil
-    delete user.pendingPetDispatch
     saveDB(wdb)
-    return safeReply(`✅ *DISPATCH DIKLAIM*\nPet sudah kembali. Hasil: +Rp ${hasil.toLocaleString('id-ID')}.`)
+    return safeReply(`✅ *DISPATCH DIKLAIM*\n${completedDispatches.length} hasil dispatch diambil. Total: +Rp ${hasil.toLocaleString('id-ID')}.${remainingDispatches.length ? `\n📦 ${remainingDispatches.length} dispatch masih berlangsung; cek dengan *${usedPrefix}pet dispatch info*.` : ''}`)
   }
 
-  if (pendingDispatch) return safeReply(`📦 Dispatch masih tersimpan. Cek *${usedPrefix}pet dispatch info* atau klaim dengan *${usedPrefix}pet dispatch collect*.`)
+  if (pendingDispatches.length) return safeReply(`📦 Dispatch masih tersimpan. Cek *${usedPrefix}pet dispatch info* atau klaim dengan *${usedPrefix}pet dispatch collect*.`)
   let cd = cekCD('petdispatch', 1800000)
 
   if(cd > 0) return safeReply(
@@ -2498,7 +2507,7 @@ if (action === 'dispatch') {
   const now = Date.now()
   const hasil = scaleDifficultyIncome(user, Math.floor(Math.random() * 100000) + 50000)
   user.cooldown.petdispatch = now
-  user.pendingPetDispatch = { startedAt: now, readyAt: now + 1800000, money: hasil }
+  user.pendingPetDispatch = [{ startedAt: now, readyAt: now + 1800000, money: hasil }]
   saveDB(wdb)
 
   return safeReply(

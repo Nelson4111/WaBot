@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 
 global.healRequests = global.healRequests || {}
@@ -109,10 +109,7 @@ cap += `╰─━━━━━━━━━━━━━━─\n\n`
 cap += `📌 *STATUS*\n`
 cap += `> ↳ Sekarang kamu siap masuk ke Dungeon lagi!`
 
-let pp = await conn.profilePictureUrl(m.sender, 'image')
-  .catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
-
-return sendRpgMsg(conn, m, cap, pp)
+return m.reply(cap)
 }
 
 handler.help = ['heal']

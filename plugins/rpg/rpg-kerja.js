@@ -115,6 +115,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   caption += `📌 *MENU PEKERJAAN*\n`
   caption += `> 📋 Daftar: *${usedPrefix}job list*\n`
+  caption += `> 🔄 Ganti job: *${usedPrefix}job change <nama/nomor>*\n`
   caption += `> 👷 Kerja: *${usedPrefix}work [nama/nomor job]*\n`
   caption += `> ↳ Alias: *${usedPrefix}kerja* / *${usedPrefix}work*`
 
@@ -154,9 +155,90 @@ if (args === 'list' || args === 'l') {
   caption += `\n─━━━━━━━━━━━━━━─\n`
   caption += `📌 *CARA KERJA*\n`
   caption += `> ↳ *${usedPrefix}work [nama/nomor job]*\n`
-  caption += `> ↳ Nama job bebas dipilih; upah tetap mengikuti level.`
+  caption += `> ↳ Nama job bebas dipilih; upah tetap mengikuti level.\n`
+  caption += `> ↳ Ganti job: *${usedPrefix}job change <nama/nomor>*`
 
   return m.reply(caption)
+}
+
+const changeActions = ['change', 'ubah', 'rename']
+const [jobAction, ...changeArgs] = args.split(/\s+/)
+
+if (changeActions.includes(jobAction)) {
+  const confirmAction = changeArgs[0]
+  const confirmYes = ['yes', 'ya', 'ok', 'confirm', 'konfirmasi'].includes(confirmAction)
+  const confirmNo = ['no', 'tidak', 'batal', 'cancel', 'tolak'].includes(confirmAction)
+  const pendingChange = userRPG.pendingJobChange
+
+  if (confirmYes || confirmNo) {
+    if (!pendingChange) {
+      return m.reply('❌ Tidak ada perubahan job yang menunggu konfirmasi.')
+    }
+    if (Date.now() > pendingChange.expiresAt) {
+      delete userRPG.pendingJobChange
+      saveDB(wdb)
+      return m.reply('❌ Konfirmasi ganti job sudah kedaluwarsa. Ajukan perubahan lagi.')
+    }
+    if (confirmNo) {
+      delete userRPG.pendingJobChange
+      saveDB(wdb)
+      return m.reply('❌ Perubahan job dibatalkan.')
+    }
+
+    const confirmedJob = listJobs.find(job => job.job === pendingChange.job)
+    if (!confirmedJob) {
+      delete userRPG.pendingJobChange
+      saveDB(wdb)
+      return m.reply('❌ Job yang dipilih tidak lagi tersedia. Ajukan perubahan lagi.')
+    }
+
+    userRPG.job = confirmedJob.job
+    delete userRPG.pendingJobChange
+    saveDB(wdb)
+    return m.reply(`✅ Job berhasil diubah menjadi *${confirmedJob.job}*.`)
+  }
+
+  if (pendingChange) {
+    if (Date.now() > pendingChange.expiresAt) {
+      delete userRPG.pendingJobChange
+      saveDB(wdb)
+    } else {
+      return m.reply(
+        `⚠️ Masih ada perubahan job yang menunggu konfirmasi.\n` +
+        `> ${usedPrefix}job change yes\n` +
+        `> ${usedPrefix}job change batal`
+      )
+    }
+  }
+
+  const requestedJob = changeArgs.join(' ').trim()
+  if (!requestedJob) {
+    return m.reply(`❌ Format salah. Gunakan *${usedPrefix}job change <nama/nomor job>* atau *${usedPrefix}job list*.`)
+  }
+
+  const jobIndex = /^\d+$/.test(requestedJob) ? Number(requestedJob) - 1 : -1
+  const selectedChangeJob = jobIndex >= 0 && jobIndex < listJobs.length
+    ? listJobs[jobIndex]
+    : listJobs.find(job => job.job.toLowerCase() === requestedJob)
+
+  if (!selectedChangeJob) {
+    return m.reply(`❌ Nama/nomor job tidak ditemukan. Lihat daftar dengan *${usedPrefix}job list*.`)
+  }
+  if (selectedChangeJob.job === jobName) {
+    return m.reply(`ℹ️ Job kamu sudah *${selectedChangeJob.job}*.`)
+  }
+
+  userRPG.pendingJobChange = {
+    job: selectedChangeJob.job,
+    expiresAt: Date.now() + 60000
+  }
+  saveDB(wdb)
+  return m.reply(
+    `⚠️ Kamu akan mengganti job menjadi *${selectedChangeJob.job}*.\n` +
+    `> Konfirmasi: *${usedPrefix}job change yes*\n` +
+    `> Batalkan: *${usedPrefix}job change batal*\n` +
+    `⏳ Konfirmasi berlaku selama 60 detik.`
+  )
 }
 
 if (args === 'job' || args === 'work') args = ''
@@ -233,7 +315,7 @@ try {
     msg += `> 🎉 *LEVEL UP!* +${jumlahLevel} Lv.${userRPG.level}\n`
   }
 
-  msg += `> ℹ️ Upah tetap mengikuti level kamu.\n`
+  msg += `> Upah tetap mengikuti level kamu.\n`
   msg += `\n─━━━━━━━━━━━━━━─\n`
   msg += `⏰ *Cooldown:* 2 menit`
 
@@ -251,7 +333,7 @@ try {
 
 }
 
-handler.help = ['job', 'job list', 'job work [nama/nomor]', 'kerja', 'work [nama/nomor]']
+handler.help = ['job', 'job list', 'job change/ubah/rename <nama/nomor>', 'job work [nama/nomor]', 'kerja', 'work [nama/nomor]']
 handler.tags = ['rpg']
 handler.command = /^(job|kerja|work)$/i
 handler.alias = ['job', 'kerja', 'work']

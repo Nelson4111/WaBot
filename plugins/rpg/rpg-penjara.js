@@ -532,7 +532,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         if (!records.length) return m.reply('📭 Belum ada catatan tahanan yang berhasil kabur.')
 
         const mentions = records.map(({ jid }) => jid)
-        const list = records.map(({ jid, count }, index) => `> ${index + 1}. ${count}x berhasil kabur\n>    @${jid.split('@')[0]}`).join('\n')
+        const list = records.map(({ jid, count }, index) => `> ${index + 1}. ${count}x berhasil kabur\n> @${jid.split('@')[0]}`).join('\n')
         return conn.reply(m.chat, `╭─❏「 🚨 ESCAPE RECORD 」❏\n│ Total: ${records.length} orang\n╰─━━━━━━━━━━━━━━─\n\n${list}`, m, { mentions })
     }
 

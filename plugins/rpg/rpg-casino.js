@@ -126,6 +126,14 @@ const ROOM_GAME_ALIASES = Object.fromEntries(Object.entries(ROOM_GAMES).flatMap(
 const ROOM_IDLE_TIMEOUT = 30 * 60 * 1000
 const randomRoomPlayer = players => players[cryptoRandomInt(players.length)]
 
+function getPlayerCasinoRoom(wdb, jid) {
+  if (!wdb?.casinoRooms || !jid) return null
+  for (const room of Object.values(wdb.casinoRooms)) {
+    if (Array.isArray(room?.players) && room.players.includes(jid)) return room
+  }
+  return null
+}
+
 function refundCasinoRoom(room, wdb) {
   for (const [jid, contribution] of Object.entries(room.contributions || {})) {
   const amount = Number(contribution) || 0
@@ -313,15 +321,22 @@ function getGameCooldownDuration(game, multiplier, user) {
 
 function getTopPlayers(wdb, limit = 20) {
   return Object.entries(wdb.users || {})
-    .filter(([, user]) => user.rpg?.casinoStats?.games > 0)
-    .map(([jid, user]) => ({
-      jid,
-      nickname: String(user.rpg.casinoNickname || '').trim(),
-      wins: Number(user.rpg.casinoStats.wins || 0),
-      games: Number(user.rpg.casinoStats.games || 0),
-      profit: Number(user.rpg.casinoStats.profit || 0),
-      title: getCasinoTitle(Number(user.rpg.casinoStats.games || 0))
-    }))
+    .flatMap(([jid, account]) => {
+      const rpg = account?.rpg
+      const stats = rpg?.casinoStats
+      const games = Number(stats?.games || 0)
+
+      if (!rpg || !stats || !(games > 0)) return []
+
+      return [{
+        jid,
+        nickname: String(rpg.casinoNickname || '').trim(),
+        wins: Number(stats.wins || 0),
+        games,
+        profit: Number(stats.profit || 0),
+        title: getCasinoTitle(games)
+      }]
+    })
     .sort((a, b) => b.profit - a.profit || b.wins - a.wins)
     .slice(0, limit)
 }
@@ -350,6 +365,7 @@ function casinoCommands(prefix) {
     `> ↳ 🚪 ${prefix}cs room leave`,
     `> ↳ 👢 ${prefix}cs room kick @tag`,
     `> ↳ 👥 ${prefix}cs room player`,
+    `> ↳ 📊 ${prefix}cs room status`,
     `> ↳ ▶️ ${prefix}cs room start`,
     `> ↳ 🗑️ ${prefix}cs room delete`,
     `> ↳ ℹ️ ${prefix}cs room info`,
@@ -380,12 +396,14 @@ function casinoGuide(prefix) {
     `> ↳ Multiplayer dapat dimainkan melalui casino room: ${prefix}cs room.\n` +
     `> ↳ Atur julukan dengan ${prefix}casino nickname <julukan>.\n\n` +
 
+    `> ↳ Gunakan ${prefix}cs room status untuk melihat kondisi room terbaru.\n\n` +
+
     `─━━━━━━━━━━━━━━─`
 }
 
 function getPositivePlayerProfitTotal(wdb) {
   return Object.values(wdb.users || {}).reduce((total, account) => {
-    const profit = Number(account.rpg?.casinoStats?.profit || 0)
+    const profit = Number(account?.rpg?.casinoStats?.profit || 0)
     return profit > 0 ? total + profit : total
   }, 0)
 }
@@ -534,7 +552,7 @@ function roomGuide(prefix) {
     `🎮 *MULAI PERMAINAN*\n` +
     `> ↳ Mulai : ${prefix}cs room start.\n` +
     `> ↳ Setiap ronde, tiap pemain mendapat 5 gacha.\n` +
-    `> ↳ Satu pemain dengan skor terendah tereliminasi tiap ronde; jika seri, sistem memilih secara acak.\n` +
+    `> ↳ Satu pemain dengan skor terendah tereliminasi tiap ronde; jika hasil seri, tidak ada yang tereliminasi.\n` +
     `> ↳ Setelah ronde, master gunakan *.cs room next* untuk taruhan tetap atau *.cs room up* untuk menggandakan taruhan ronde berikutnya.\n\n` +
 
     `📌 *CATATAN*\n` +
@@ -573,7 +591,8 @@ function playCasinoRoomRound(room, wdb, stake) {
 
   const scores = playRoomRound(room.game, players)
   const lowest = Math.min(...Object.values(scores))
-  const eliminated = randomRoomPlayer(players.filter(jid => scores[jid] === lowest))
+  const lowestPlayers = players.filter(jid => scores[jid] === lowest)
+  const eliminated = lowestPlayers.length === 1 ? lowestPlayers[0] : null
 
   for (const jid of players) {
     wdb.money[jid] = Number(wdb.money[jid] || 0) - stake
@@ -581,11 +600,11 @@ function playCasinoRoomRound(room, wdb, stake) {
   }
 
   room.pot = Number(room.pot || 0) + roundContribution
-  room.players = players.filter(jid => jid !== eliminated)
+  room.players = eliminated ? players.filter(jid => jid !== eliminated) : [...players]
   room.round = Number(room.round || 0) + 1
   room.currentStake = stake
   room.lastActivityAt = Date.now()
-  const result = { scores, eliminated, stake, number: room.round }
+  const result = { scores, eliminated, stake, number: room.round, tie: lowestPlayers.length > 1 }
   room.roundHistory = [...(room.roundHistory || []), result]
 
   if (room.players.length === 1) {
@@ -599,12 +618,16 @@ function playCasinoRoomRound(room, wdb, stake) {
 }
 
 function formatRoomRound(result, wdb) {
-  const scores = Object.entries(result.scores)
-    .map(([jid, score]) => `${roomPlayerName(jid, wdb)} ${score}/5`)
-    .join(' | ')
+  const scoreList = Object.entries(result.scores)
+    .map(([jid, score]) => `> ↳ ${roomPlayerName(jid, wdb)} : ${score}/5`)
+    .join('\n')
+  const eliminationText = result.eliminated
+    ? `> ↳ Tereliminasi: ${roomPlayerName(result.eliminated, wdb)}`
+    : `> ↳ Hasil seri: tidak ada yang tereliminasi.`
+
   return `🎮 *RONDE ${result.number}*\n` +
-    `> ↳ Skor: ${scores}\n` +
-    `> ↳ Tereliminasi: ${roomPlayerName(result.eliminated, wdb)}\n` +
+    `${scoreList}\n` +
+    `${eliminationText}\n` +
     `> ↳ Taruhan ronde: ${money(result.stake)}`
 }
 
@@ -917,6 +940,37 @@ if (action === 'player' || action === 'players') {
   )
 }
 
+if (action === 'status') {
+  const latestRound = room.roundHistory?.[room.roundHistory.length - 1]
+  const statusLabel = room.status === 'waiting'
+    ? 'Menunggu pemain dan siap dimulai'
+    : room.status === 'round_wait'
+      ? 'Menunggu keputusan master ronde berikutnya'
+      : 'Permainan sedang berlangsung'
+
+  const prize = room.status === 'waiting'
+    ? room.players.length * Number(room.stake)
+    : Number(room.pot || 0)
+
+  return replyWithImage(
+    `╭─❏「 🎰 CASINO ROOM 」❏\n` +
+    `│ 🎰 *STATUS ROOM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📊 *KONDISI SAAT INI*\n` +
+    `> ↳ Master : ${roomPlayerName(room.master, wdb)}\n` +
+    `> ↳ Status : ${statusLabel}\n` +
+    `> ↳ Game : ${room.game ? ROOM_GAMES[room.game].name : 'Acak saat start'}\n` +
+    `> ↳ Taruhan aktif : ${money(room.currentStake || room.stake)} per pemain\n` +
+    `> ↳ Pot saat ini : ${money(prize)}\n` +
+    `> ↳ Pemain aktif : ${room.players.length}\n` +
+    `> ↳ Ronde : ${Number(room.round || 0)}\n\n` +
+    `${latestRound ? `📌 *HASIL TERAKHIR*\n${formatRoomRound(latestRound, wdb)}\n\n` : ''}` +
+    `> ↳ ${room.players.map(jid => roomPlayerName(jid, wdb)).join(', ')}\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    [room.master, ...room.players]
+  )
+}
+
 if (action === 'info') {
   const prize = room.status === 'waiting'
     ? room.players.length * Number(room.stake)
@@ -1021,6 +1075,7 @@ if (['start', 'up', 'next'].includes(action)) {
 
   saveDB(wdb)
   const nextStake = room.currentStake
+  const roundMentions = result.eliminated ? [...room.players, result.eliminated] : [...room.players]
   return reply(
     `╭─❏「 🎮 ${ROOM_GAMES[room.game].name.toUpperCase()} ROOM 」❏\n` +
     `│ 🎮 *RONDE SELESAI*\n` +
@@ -1029,7 +1084,7 @@ if (['start', 'up', 'next'].includes(action)) {
     `> ↳ Pemain tersisa: ${room.players.map(jid => roomPlayerName(jid, wdb)).join(', ')}\n` +
     `> ↳ Pot sementara: ${money(room.pot)}\n\n` +
     `Room Master pilih: *.cs room next* (${money(nextStake)}) atau *.cs room up* (${money(nextStake * 2)}).`,
-    [...room.players, result.eliminated]
+    roundMentions
   )
 }
 
@@ -1062,6 +1117,18 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const input = (args[0] || '').toLowerCase()
+  const inCasinoRoom = getPlayerCasinoRoom(wdb, m.sender)
+
+  if (inCasinoRoom && input !== 'room') {
+    return m.reply(
+      `╭─❏「 🚫 CASINO ROOM 」❏\n` +
+      `│ 🔒 *Kamu sedang berada di room casino.*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Fokus dulu di room ini sebelum membuka akses casino lain.\n` +
+      `> ↳ Gunakan *${usedPrefix}cs room status* atau *${usedPrefix}cs room info* untuk melihat kondisi room.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
 
   if (input === 'room') {
     return handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user })

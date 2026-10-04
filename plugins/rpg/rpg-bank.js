@@ -184,6 +184,14 @@ export function getBankMonthlyFee(baseFee, jid, db = global.db) {
   return Math.floor(baseFee * (1 - getBankDiscountRate(jid, db)))
 }
 
+function getPlayerCasinoRoom(wdb, jid) {
+  if (!wdb?.casinoRooms || !jid) return null
+  for (const room of Object.values(wdb.casinoRooms)) {
+    if (Array.isArray(room?.players) && room.players.includes(jid)) return room
+  }
+  return null
+}
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let userRPG = getUserRPG(wdb, m.sender).rpg
@@ -659,6 +667,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
   // SIMPAN + ALIAS "all"
   if (action === 'simpan' || action === 'all') {
+    if (getPlayerCasinoRoom(wdb, m.sender)) {
+      return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ SETOR DIBLOKIR\n◈ KAMU SEDANG DI ROOM CASINO ◈\n◆ Saat ikut room, bank tidak bisa menerima deposit.\n◆ Tarik tunai tetap diperbolehkan.\n\n─━━━━━━━━━─`)
+    }
     if (args[1] === 'all' || action === 'all') {
       if (!canUseBankBulkDeposit(tier)) return m.reply('❌ Fitur setor semua hanya tersedia untuk kartu dengan akses Fast Track. Gunakan *.bank simpan <angka>* untuk setor manual.')
       if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
