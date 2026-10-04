@@ -38,9 +38,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   guild.members.push(m.sender)
   guild.contribution[m.sender] = 0
+  user.rpg.lastGuildMissionAt = Date.now()
   saveDB(wdb)
 
-  return sendRpgMsg(conn, m, `╭─❏「 🏰 JOIN GUILD 」❏\n├[ Guild ] ${guildName}\n├[ Status ] Berhasil bergabung\n├ Selamat datang di guild!\n╰─━━━━━━━━━━━━━━─`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
+  return sendRpgMsg(conn, m, `╭─❏「 🏰 JOIN GUILD 」❏\n│ 🏰 Guild: ${guildName}\n├─ STATUS ─\n│ Berhasil bergabung. Selamat datang!\n╰─━━━━━━━━━━━━━━─`, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
 }
 
 handler.help = ['joinguild']

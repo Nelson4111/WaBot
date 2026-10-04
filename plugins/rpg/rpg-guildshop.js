@@ -26,8 +26,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (!text) {
     let cap = `╭─❏「 🛍️ GUILD SHOP 」❏\n`
-    cap += `├[ 📊 Poin Pribadi ] ${userContrib.toLocaleString()} Pts\n`
-    cap += `╰─━━━━━━━━━━━━━━─\n\n├ 📦 *ITEM BUFF 2 JAM*\n├[ 1. ⚔️ Attack ] 500 Pts\n├[ 2. 🛡️ Defense ] 500 Pts\n├[ 3. 🔮 Magic ] 500 Pts\n├[ 4. 💊 Heal ] 700 Pts\n├[ 5. 📈 Multiplier ] 800 Pts\n├[ 6. 🍀 Luck ] 900 Pts\n├[ 7. ⚡ Speed ] 900 Pts\n╰─━━━━━━━━━━━━━━─\n├ Gunakan *${usedPrefix}${command} [angka]*`
+    cap += `│ 📊 Poin pribadi: ${userContrib.toLocaleString()} Pts\n`
+    cap += `├─ ITEM BUFF 2 JAM ─\n│ 1. ⚔️ Attack — 500 Pts\n│ 2. 🛡️ Defense — 500 Pts\n│ 3. 🔮 Magic — 500 Pts\n│ 4. 💊 Heal — 700 Pts\n│ 5. 📈 Multiplier — 800 Pts\n│ 6. 🍀 Luck — 900 Pts\n│ 7. ⚡ Speed — 900 Pts\n`
+    cap += `├─ CARA MEMBELI ─\n│ ${usedPrefix}${command} <angka>\n╰─━━━━━━━━━━━━━━─`
 
     return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')
   }

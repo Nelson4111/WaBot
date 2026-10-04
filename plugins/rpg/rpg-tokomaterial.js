@@ -94,24 +94,54 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return input.replace(/ /g, '_') // kalau nama spasi -> _
   }
 
-  let args = text.toLowerCase().split(' ').filter(v => v)
+  let args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
   let tipe = args[0]
 
   // MENU UTAMA
-  if (!text) {
+  if (!args.length) {
     let uang = wdb.money[m.sender] || 0
     let cap = `╭─❏「 ⛏️ PABRIK AVELIA 」❏\n`
     cap += `│ 💰 Uang: Rp ${uang.toLocaleString()}\n`
     cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
-    cap += `📌 *CARA PAKAI*\n`
-    cap += `> *${usedPrefix}pabrik beli <no/nama> <jumlah>*\n`
-    cap += `> *${usedPrefix}pabrik jual <no/nama> <jumlah/all>*\n`
-    cap += `> *${usedPrefix}pabrik jual all*\n`
+    cap += `Pabrik adalah tempat membeli material dan menjual hasil tambang atau barang petualangan.\n\n`
+    cap += `> ↳ Lihat daftar command: *${usedPrefix}pabrik command*\n`
+    cap += `> ↳ Baca panduan/tutorial: *${usedPrefix}pabrik guide*\n\n`
+    cap += `─━━━━━━━━━━━━━━─`
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  }
 
-    cap += `\n─━━━━━━━━━━━━━━─\n\n`
-    cap += `🛒 *MATERIAL TOKO*\n`
-    cap += `Pilih nomor item untuk membeli.\nHarga jual berlaku untuk item yang kamu punya.\n\n`
+  if (tipe === 'command') {
+    const cap = `╭─❏「 📋 COMMAND PABRIK 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ${usedPrefix}pabrik list\n` +
+      `> ${usedPrefix}pabrik beli <no/nama> <jumlah>\n` +
+      `> ${usedPrefix}pabrik jual <no/nama> <jumlah/all>\n` +
+      `> ${usedPrefix}pabrik jual all\n` +
+      `> ${usedPrefix}pabrik guide\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  if (tipe === 'guide') {
+    const cap = `╭─❏「 🧭 PANDUAN PABRIK 」❏\n` +
+      `│ ⛏️ Jual material tambang dan barang petualangan.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Lihat harga: *${usedPrefix}pabrik list*\n` +
+      `> ↳ Beli material toko: *${usedPrefix}pabrik beli <no/nama> <jumlah>*\n` +
+      `> ↳ Jual stok: *${usedPrefix}pabrik jual <no/nama> <jumlah/all>*\n` +
+      `> ↳ Jual semua stok: *${usedPrefix}pabrik jual all*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  if (tipe === 'list') {
+    let uang = wdb.money[m.sender] || 0
+    let cap = `╭─❏「 ⛏️ DAFTAR PABRIK 」❏\n`
+    cap += `│ 💰 Uang: Rp ${uang.toLocaleString()}\n`
+    cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `🛒 *MATERIAL TOKO*\nPilih nomor item untuk membeli.\nHarga jual berlaku untuk item yang kamu punya.\n\n`
     materialKeys.forEach((k, i) => {
       let hBeli = Math.floor(hargaBeli[k].harga * buyDiskon)
       let hJual = Math.floor(hargaJual[k] * sellBonus)
@@ -119,19 +149,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       cap += `> Buy : Rp ${hBeli.toLocaleString()}\n`
       cap += `> Sell : Rp ${hJual.toLocaleString()}\n`
     })
-
     cap += `\n─━━━━━━━━━━━━━━─\n\n`
-    cap += `💰 *HARGA JUAL ITEM & ORE*\n`
-    cap += `Daftar item tambang dan barang petualangan yang bisa dijual.\n\n`
+    cap += `💰 *HARGA JUAL ITEM & ORE*\nDaftar item tambang dan barang petualangan yang bisa dijual.\n\n`
     let nomorMulai = materialKeys.length + 1
     jualKeys.forEach((k, i) => {
-      let nomor = nomorMulai + i
       let h = Math.floor(hargaJual[k] * sellBonus)
-      cap += `*${nomor}. ${formatNama(k)} ${oreEmoji[k] || '📦'}*\n`
+      cap += `*${nomorMulai + i}. ${formatNama(k)} ${oreEmoji[k] || '📦'}*\n`
       cap += `> Sell : Rp ${h.toLocaleString()}\n`
     })
-    cap += `\n─━━━━━━━━━━━━━━─\n`
-    cap += `💡 *Tips:* Hasil tambang bisa dijual semua di sini.`
+    cap += `\n─━━━━━━━━━━━━━━─\n💡 *Tips:* Hasil tambang bisa dijual semua di sini.`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
@@ -239,11 +265,17 @@ let handler = async (m, { conn, text, usedPrefix }) => {
           if (user[entry.source][entry.item] <= 0) delete user[entry.source][entry.item]
         }
       }
-      if (pending.entries.some(entry => entry.item === 'diamond') && user.guildLoot) user.guildLoot.diamond = 0
       wdb.money[m.sender] = (wdb.money[m.sender] || 0) + pending.total
       delete user.pendingPabrikSell
       saveDB(wdb)
-      return m.reply(`✅ Penjualan pabrik dikonfirmasi. Saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+      return m.reply(
+        `╭─❏「 ⛏️ PENJUALAN PABRIK BERHASIL 」❏\n` +
+        `│ ✅ ${pending.entries.length} jenis item terjual\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ 💰 Diterima: +Rp ${pending.total.toLocaleString()}\n` +
+        `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
 
     // JUAL ALL
@@ -256,7 +288,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       const list = Object.entries(plan.grouped)
         .map(([item, quantity]) => `> ↳ ${oreEmoji[item] || '📦'} ${formatNama(item)} x${quantity}`)
         .join('\n')
-      return m.reply(`⚠️ *KONFIRMASI JUAL PABRIK*\n${list}\n\nPerkiraan diterima: Rp ${plan.total.toLocaleString()}\nKetik *${usedPrefix}pabrik jual ya* untuk lanjut atau *${usedPrefix}pabrik jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+      return m.reply(
+        `╭─❏「 ⚠️ KONFIRMASI JUAL PABRIK 」❏\n` +
+        `│ 📦 ${entries.length} jenis item akan dijual\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${list}\n\n` +
+        `> ↳ Perkiraan diterima: Rp ${plan.total.toLocaleString()}\n\n` +
+        `✅ Ketik *${usedPrefix}pabrik jual ya* untuk lanjut\n` +
+        `❌ Ketik *${usedPrefix}pabrik jual batal* untuk membatalkan\n` +
+        `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+      )
 
       let totalHasil = 0
       let listJual = []
@@ -284,7 +325,6 @@ let handler = async (m, { conn, text, usedPrefix }) => {
           if (item === 'gold') user.gold = 0
           if (item === 'diamond') user.diamond = 0
           if (item === 'gemstone' || item === 'coin') user.inventory[item] = 0
-          if (user.guildLoot && item === 'diamond') user.guildLoot[item] = 0
         }
       }
 
@@ -417,7 +457,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   return m.reply(`❌ Tipe salah. Pakai: *beli* atau *jual*`)
 }
 
-handler.help = ['pabrik', 'pabrik beli <no/nama> <jml>', 'pabrik jual <no/nama> <jml/all>', 'pabrik jual all', 'tokomaterial']
+handler.help = ['pabrik', 'pabrik command', 'pabrik list', 'pabrik guide', 'pabrik beli <no/nama> <jml>', 'pabrik jual <no/nama> <jml/all>', 'pabrik jual all', 'tokomaterial']
 handler.tags = ['rpg']
 handler.command = /^(pabrik|tokomaterial|jualmaterial)$/i
 handler.alias = ['pabrik', 'tokomaterial', 'jualmaterial']

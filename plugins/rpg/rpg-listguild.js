@@ -20,21 +20,22 @@ let handler = async (m, { conn }) => {
   }
 
   let list = `╭─❏「 🏰 AVELIA GUILD LIST 」❏\n`
-list += `│ [ Status ] ${cooldownStatus.trim()}\n`
+list += `│ 📊 ${cooldownStatus.trim()}\n`
 list += `╰─━━━━━━━━━━━━━━─\n\n`
 
 let index = 1
-for (let name in wdb.guilds) {
-  let g = wdb.guilds[name]
+const guildEntries = Object.entries(wdb.guilds)
+for (let position = 0; position < guildEntries.length; position++) {
+  const [name, g] = guildEntries[position]
   let maxMembers = 10 + ((g.level || 1) - 1) * 2
-  list += `🏰 *${index++}. ${g.name}*\n`
-  list += `> 👑 Leader: ${conn.getName(g.leader)}\n`
-  list += `> 🌟 Level: Lv.${g.level || 1} - 👥 Member: ${g.members.length}/${maxMembers}\n\n`
+  list += `│ 🏰 *${index++}. ${g.name || name}*\n`
+  list += `│ 👑 Leader: ${conn.getName(g.leader)}\n`
+  list += `│ 🌟 Level: Lv.${g.level || 1}  •  👥 Member: ${(g.members || []).length}/${maxMembers}\n`
+  if (position < guildEntries.length - 1) list += `├─━━━━━━━━━━━━━━─\n`
 }
 
-list += `─━━━━━━━━━━━━━━─\n`
-list += `📌 *Join Guild*\n`
-list += `> ↳ *.joinguild <nama>*\n`
+list += `├─━━━━━━━━━━━━━━─\n`
+list += `│ 📌 Join: ${usedPrefix}joinguild <nama>\n`
 list += `╰─━━━━━━━━━━━━━━─`
 
 return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')}

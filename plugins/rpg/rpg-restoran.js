@@ -116,22 +116,47 @@ const hargaBeli = { ...sharedHargaBeli }
   const nomorKeItemBeli = {}
   beliKeys.forEach((k, i) => nomorKeItemBeli[i+1] = k)
 
-  let args = text? text.toLowerCase().split(' ').filter(v => v) : []
+  let args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
   let tipe = args[0] // <-- TAMBAHIN INI
 
   // MENU UTAMA
-  if (!text) {
+  if (!args.length) {
     let cap = `╭─❏「 🍽️ RESTORAN AVELIA 」❏\n`
-    cap += `│ Makanan: ${makananKeys.length} | Minuman: ${minumanKeys.length}\n`
-    cap += `│ Total Paket: ${Object.keys(paket).length}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
-    cap += `📌 *CARA PAKAI*\n`
-    cap += `> *${usedPrefix}restoran menu*\n`
-    cap += `> *${usedPrefix}restoran info <no/nama>*\n`
-    cap += `> *${usedPrefix}restoran paket list*\n`
-    cap += `> *${usedPrefix}restoran beli <no> <jumlah>*\n`
+    cap += `Restoran adalah tempat membeli makanan/minuman dan menjual masakan atau hasil ternak.\n\n`
+    cap += `> ↳ Lihat daftar command: *${usedPrefix}restoran command*\n`
+    cap += `> ↳ Baca panduan/tutorial: *${usedPrefix}restoran guide*\n`
     cap += `─━━━━━━━━━━━━━━─`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  }
+
+  if (tipe === 'command') {
+    const cap = `╭─❏「 📋 COMMAND RESTORAN 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ${usedPrefix}restoran list\n` +
+      `> ${usedPrefix}restoran info <no/nama>\n` +
+      `> ${usedPrefix}restoran beli <no/nama> <jumlah>\n` +
+      `> ${usedPrefix}restoran paket list\n` +
+      `> ${usedPrefix}restoran paket <nama>\n` +
+      `> ${usedPrefix}restoran jual <no/nama> <jumlah/all>\n` +
+      `> ${usedPrefix}restoran jual all\n` +
+      `> ${usedPrefix}restoran guide\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  if (tipe === 'guide') {
+    const cap = `╭─❏「 🧭 PANDUAN RESTORAN 」❏\n` +
+      `│ 🍽️ Beli menu, lihat paket, atau jual masakan dan hasil ternak.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Lihat daftar menu dan harga: *${usedPrefix}restoran list*\n` +
+      `> ↳ Lihat detail menu: *${usedPrefix}restoran info <no/nama>*\n` +
+      `> ↳ Beli menu: *${usedPrefix}restoran beli <no/nama> <jumlah>*\n` +
+      `> ↳ Lihat paket: *${usedPrefix}restoran paket list*\n` +
+      `> ↳ Jual stok: *${usedPrefix}restoran jual <no/nama> <jumlah/all>*\n` +
+      `> ↳ Jual semua stok: *${usedPrefix}restoran jual all*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
   }
 
   // INFO DETAIL MAKAN
@@ -152,7 +177,7 @@ const hargaBeli = { ...sharedHargaBeli }
   }
 
 // MENU SEMUA
-  if (tipe === 'menu') {
+  if (tipe === 'menu' || tipe === 'list') {
     let cap = `╭─❏「 📋 DAFTAR MENU ${beliKeys.length} 」❏\n`
     cap += `│ Cara cek detail: *${usedPrefix}restoran info <no/nama>*\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n🍖 *MAKANAN ${makananKeys.length}*\n`
@@ -324,7 +349,14 @@ return m.reply(cap)
       wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
       delete user.pendingRestoranSell
       saveDB(wdb)
-      return m.reply(`✅ Penjualan restoran dikonfirmasi. ${pending.entries.length} jenis stok terjual, saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+      return m.reply(
+        `╭─❏「 🍽️ PENJUALAN RESTORAN BERHASIL 」❏\n` +
+        `│ ✅ ${pending.entries.length} jenis stok terjual\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ 💰 Diterima: +Rp ${pending.total.toLocaleString()}\n` +
+        `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
 
     if(args[1] === 'all'){
@@ -341,7 +373,16 @@ return m.reply(cap)
       user.pendingRestoranSell = { entries, total, expiresAt: Date.now() + 60000 }
       saveDB(wdb)
       const list = entries.map(entry => `> ↳ ${formatNama(entry.item)} x${entry.quantity}`).join('\n')
-      return m.reply(`⚠️ *KONFIRMASI JUAL RESTORAN*\n${list}\n\nPerkiraan diterima: Rp ${total.toLocaleString()}\nKetik *${usedPrefix}restoran jual ya* untuk lanjut atau *${usedPrefix}restoran jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+      return m.reply(
+        `╭─❏「 ⚠️ KONFIRMASI JUAL RESTORAN 」❏\n` +
+        `│ 🍽️ ${entries.length} jenis stok akan dijual\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${list}\n\n` +
+        `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
+        `✅ Ketik *${usedPrefix}restoran jual ya* untuk lanjut\n` +
+        `❌ Ketik *${usedPrefix}restoran jual batal* untuk membatalkan\n` +
+        `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+      )
 
       let totalHasil = 0, listJual = []
       for(let item in user.masakan){
@@ -396,7 +437,6 @@ return m.reply(cap)
     }
     hasil = scaleDifficultyIncome(user, hasil)
     wdb.money[m.sender] += hasil; saveDB(wdb)
-    const display = hargaJual[item] ? `${resepEmoji[item] || '🍽️'} ${formatNama(item)}` : `${getHasilDisplay(item).emoji} ${getHasilDisplay(item).nama}`
 let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n`
 cap += `│ 🍽️ *Menu : ${display}*\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
@@ -412,11 +452,9 @@ return m.reply(cap)
   }
 }
 
-handler.help = ['restoran', 'restoran menu', 'restoran info <no/nama>', 'restoran beli <no/nama> <jml>', 'restoran paket <nama>', 'restoran paket list', 'restoran jual <no/nama> <jml/all>', 'jualmasak']
+handler.help = ['restoran', 'restoran command', 'restoran list', 'restoran guide', 'restoran menu', 'restoran info <no/nama>', 'restoran beli <no/nama> <jml>', 'restoran paket <nama>', 'restoran paket list', 'restoran jual <no/nama> <jml/all>', 'restoran jual all', 'jualmasak']
 handler.tags = ['rpg']
 handler.command = /^(restoran|tokomasak|jualmasak)$/i
 handler.alias = ['restoran', 'tokomasak', 'jualmasak']
 handler.group = true
 export default handler
-
-

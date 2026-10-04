@@ -172,7 +172,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   cap += `> *${usedPrefix}job*\n`
   cap += `> ↳ Cek status dan daftar pekerjaan.\n`
   cap += `> *${usedPrefix}guild loot*\n`
-  cap += `> ↳ Cek diamond dan emerald dari misi guild.\n`
+  cap += `> ↳ Cek loot misi Guild dan batas sesuai level.\n`
   cap += `> *${usedPrefix}dungeon*\n`
   cap += `> ↳ Taklukkan bos dungeon.\n`
   cap += `> *${usedPrefix}mancing*\n`

@@ -119,16 +119,48 @@ if (mode === 'guide') {
 
   cap += `⚙️ *PERINTAH*\n`
   cap += `> ↳ ${usedPrefix || '.'}shop guide\n`
+  cap += `> ↳ ${usedPrefix || '.'}shop list\n`
   cap += `> ↳ ${usedPrefix || '.'}shop beli <item> <jumlah>\n`
   cap += `> ↳ ${usedPrefix || '.'}shop jual all\n`
-  cap += `> ↳ ${usedPrefix || '.'}shop jual <item> <jumlah>\n\n`
+  cap += `\n`
+  cap += `> ↳ Gunakan .pabrik/.pasar/.koperasi/.restoran guide untuk panduan toko terkait.\n\n`
 
   cap += `─━━━━━━━━━━━━━━─`
 
    return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
 }
 
-  if (isBeli) {
+   if (mode === 'command') {
+     const cap = `╭─❏「 📋 COMMAND SHOP 」❏\n` +
+       `╰─━━━━━━━━━━━━━━─\n\n` +
+       `> ${usedPrefix || '.'}shop list\n` +
+       `> ${usedPrefix || '.'}shop beli <item> <jumlah>\n` +
+       `> ${usedPrefix || '.'}shop jual all\n` +
+       `> ${usedPrefix || '.'}shop guide\n\n` +
+       `> ${usedPrefix || '.'}pabrik command\n` +
+       `> ${usedPrefix || '.'}pasar command\n` +
+       `> ${usedPrefix || '.'}koperasi command\n` +
+       `> ${usedPrefix || '.'}restoran command\n\n` +
+       `─━━━━━━━━━━━━━━─`
+     return m.reply(cap)
+   }
+
+   if (mode === 'list') {
+     let cap = `╭─❏「 🛒 DAFTAR ITEM SHOP 」❏\n`
+     cap += `│ 👑 Diskon: ${isPrem ? '20%' : '0%'}\n`
+     cap += `│ 💰 Uang: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+     cap += `╰─━━━━━━━━━━━━━━─\n\n`
+     cap += `📦 *ITEM TERSEDIA*\n`
+     Object.entries(hargaBeli).forEach(([key, value], index) => {
+       const harga = Math.floor(value.harga * buyDiskon)
+       cap += `*${index + 1}. ${value.emoji} ${formatNama(key)}*\n`
+       cap += `> ↳ Harga: Rp ${harga.toLocaleString()}\n`
+     })
+     cap += `\n> ↳ Beli: *${usedPrefix || '.'}shop beli <item> <jumlah>*\n\n─━━━━━━━━━━━━━━─`
+     return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
+   }
+
+   if (isBeli) {
     const item = args[1]
     const jumlah = parseInt(args[2]) || 1
 
@@ -176,15 +208,16 @@ if (mode === 'guide') {
     const semuaItem = getAllItems()
     if (Object.keys(semuaItem).length === 0) return m.reply('❌ Kamu tidak punya item yang bisa dijual.')
 
-    let cap = `╭─❏「 ⚠️ JUAL SEMUA 」❏\n`
-    cap += `│ Total item: ${Object.keys(semuaItem).length}\n`
-    cap += `╰─━━━━━━━━━━━━━━───╯\n\n`
+    let cap = `╭─❏「 ⚠️ KONFIRMASI JUAL SEMUA 」❏\n`
+    cap += `│ 📦 Total jenis item: ${Object.keys(semuaItem).length}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
     Object.keys(semuaItem).forEach(nama => {
-      cap += `• ${formatNama(nama)} x${semuaItem[nama].toLocaleString()}\n`
+      cap += `> ↳ ${formatNama(nama)} x${semuaItem[nama].toLocaleString()}\n`
     })
-    cap += `\nBonus premium: ${isPrem ? '+10%' : '0%'}\n`
+    cap += `\n👑 Bonus premium: ${isPrem ? '+10%' : '0%'}\n\n`
     cap += `✅ Ketik *${usedPrefix || '.'}jual ya* untuk konfirmasi\n`
-    cap += `❌ Ketik *${usedPrefix || '.'}jual tidak* untuk batal`
+    cap += `❌ Ketik *${usedPrefix || '.'}jual tidak* untuk batal\n`
+    cap += `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
 
     user.jualAllConfirm = { items: semuaItem, time: Date.now() }
     saveDB(wdb)
@@ -281,28 +314,29 @@ if (mode === 'guide') {
     wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalDapat
     user.jualAllConfirm = null
     saveDB(wdb)
-    return m.reply(`✅ *BERHASIL JUAL ${terjual} JENIS ITEM!*\n\n💰 Mendapatkan: Rp ${totalDapat.toLocaleString()}`)
+    return m.reply(
+      `╭─❏「 🛍️ PENJUALAN SEMUA ITEM BERHASIL 」❏\n` +
+      `│ ✅ ${terjual} jenis item terjual\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💰 Diterima: +Rp ${totalDapat.toLocaleString()}\n` +
+      `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  const cap = `╭─❏「 🏪 AVELIA MARKET 」❏\n` +
+  const cap = `╭─❏「 🏪 SHOP AVELIA 」❏\n` +
     `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n` +
     `│ 💰 Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `📌 *MENU SHOP*\n` +
-    `> ↳ 1. ${usedPrefix || '.'}pabrik - ⛏️ Material\n` +
-    `> ↳ 2. ${usedPrefix || '.'}koperasi - 🌾 Panen\n` +
-    `> ↳ 3. ${usedPrefix || '.'}pasar - 🎣 Ikan\n` +
-    `> ↳ 4. ${usedPrefix || '.'}restoran - 🍽️ Masakan\n\n` +
-    `🛒 *TRANSAKSI*\n` +
-    `> ↳ ${usedPrefix || '.'}jual all - Jual Semua Item\n` +
-    `> ↳ ${usedPrefix || '.'}beli - Beli Item\n` +
-    `> ↳ ${usedPrefix || '.'}gudang - Lihat Gudang\n\n` +
+    `🛒 Shop adalah toko umum untuk membeli item dan menjual stok dari berbagai aktivitas RPG.\n\n` +
+    `> ↳ Lihat daftar command: *${usedPrefix || '.'}shop command*\n` +
+    `> ↳ Baca panduan/tutorial: *${usedPrefix || '.'}shop guide*\n\n` +
     `─━━━━━━━━━━━━━━─`
 
   return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
 }
 
-handler.help = ['shop', 'market', 'toko', 'jual all', 'beli [item] [jumlah]']
+handler.help = ['shop', 'shop command', 'shop list', 'shop guide', 'market', 'toko', 'jual all', 'beli [item] [jumlah]']
 handler.tags = ['rpg']
 handler.command = /^(shop|market|toko|jual|sell|beli)$/i
 handler.alias = ['toko', 'shop', 'market', 'sell']

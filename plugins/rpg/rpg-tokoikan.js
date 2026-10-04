@@ -213,36 +213,57 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return harga[fallback] ? fallback : null
   }
 
-  if (!text) {
-    let cap = `╭─❏「 🎣 PASAR AVELIA 」❏\n`
-    cap += `│ 💰 Uang: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-    cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User biasa'}\n`
-    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+  let args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
+  let tipe = args[0]
 
-    cap += `📌 *MENU JUAL*\n`
-    cap += `> ↳ Jual: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n`
-    cap += `> ↳ Contoh: *${usedPrefix}pasar jual 15 5*\n`
-    cap += `> ↳ Jual Semua: *${usedPrefix}pasar jual all*\n\n`
-
-    cap += `📌 *MAU MANCING?*\n`
-    cap += `> ↳ Ketik: *${usedPrefix}mancing*\n\n`
-
-    cap += `🐟 *DAFTAR HARGA JUAL*\n`
-    cap += `> ↳ Pilih nomor ikan untuk menjualnya. Ikan langka memiliki harga lebih tinggi.\n\n`
-
-    keys.forEach((k, i) => {
-      let h = Math.floor(harga[k].harga * sellBonus)
-      cap += `${harga[k].emoji} *${i + 1}. ${formatNama(k)}*\n`
-      cap += `> ↳ Sell : Rp ${h.toLocaleString()}\n`
-    })
-
-    cap += `\n─━━━━━━━━━━━━━━─`
-
+  if (!args.length) {
+    const cap = `╭─❏「 🎣 PASAR AVELIA 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Pasar adalah tempat menjual ikan dan barang hasil memancing.\n\n` +
+      `> ↳ Lihat daftar command: *${usedPrefix}pasar command*\n` +
+      `> ↳ Baca panduan/tutorial: *${usedPrefix}pasar guide*\n\n` +
+      `─━━━━━━━━━━━━━━─`
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
-  let args = text.toLowerCase().split(' ').filter(v => v)
-  let tipe = args[0]
+  if (tipe === 'command') {
+    const cap = `╭─❏「 📋 COMMAND PASAR 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ${usedPrefix}pasar list\n` +
+      `> ${usedPrefix}pasar jual <no/nama> <jumlah/all>\n` +
+      `> ${usedPrefix}pasar jual all\n` +
+      `> ${usedPrefix}pasar guide\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  if (tipe === 'guide') {
+    const cap = `╭─❏「 🧭 PANDUAN PASAR 」❏\n` +
+      `│ 🎣 Jual ikan dan barang hasil memancing.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Lihat daftar ikan dan harga: *${usedPrefix}pasar list*\n` +
+      `> ↳ Jual ikan: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n` +
+      `> ↳ Jual semua ikan: *${usedPrefix}pasar jual all*\n` +
+      `> ↳ Mulai memancing: *${usedPrefix}mancing*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  if (tipe === 'list') {
+    let cap = `╭─❏「 🎣 DAFTAR IKAN PASAR 」❏\n`
+    cap += `│ 💰 Uang: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+    cap += `│ 👤 ${isPrem ? 'Premium +10% jual' : 'User biasa'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `🐟 *DAFTAR HARGA JUAL*\n`
+    cap += `> ↳ Pilih nomor ikan untuk menjualnya. Ikan langka memiliki harga lebih tinggi.\n\n`
+    keys.forEach((k, i) => {
+      const hargaJual = Math.floor(harga[k].harga * sellBonus)
+      cap += `${harga[k].emoji} *${i + 1}. ${formatNama(k)}*\n`
+      cap += `> ↳ Sell : Rp ${hargaJual.toLocaleString()}\n`
+    })
+    cap += `\n─━━━━━━━━━━━━━━─`
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  }
 
   if (tipe !== 'jual') return m.reply(`❌ Pakai: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*`)
   args = args.slice(1)
@@ -271,7 +292,14 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
     delete user.pendingPasarSell
     saveDB(wdb)
-    return m.reply(`✅ Penjualan pasar dikonfirmasi. ${pending.entries.length} jenis ikan terjual, saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+    return m.reply(
+      `╭─❏「 🎣 PENJUALAN PASAR BERHASIL 」❏\n` +
+      `│ ✅ ${pending.entries.length} jenis ikan terjual\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💰 Diterima: +Rp ${pending.total.toLocaleString()}\n` +
+      `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   if (args[0] === 'all') {
@@ -285,7 +313,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     user.pendingPasarSell = { entries, total, expiresAt: Date.now() + 60000 }
     saveDB(wdb)
     const list = entries.map(({ item, quantity }) => `> ↳ ${harga[item].emoji} ${formatNama(item)} x${quantity}`).join('\n')
-    return m.reply(`⚠️ *KONFIRMASI JUAL SEMUA IKAN*\n${list}\n\nPerkiraan diterima: Rp ${total.toLocaleString()}\nKetik *${usedPrefix}pasar jual ya* untuk lanjut atau *${usedPrefix}pasar jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI JUAL IKAN 」❏\n` +
+      `│ 🎣 ${entries.length} jenis ikan akan dijual\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${list}\n\n` +
+      `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
+      `✅ Ketik *${usedPrefix}pasar jual ya* untuk lanjut\n` +
+      `❌ Ketik *${usedPrefix}pasar jual batal* untuk membatalkan\n` +
+      `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+    )
   }
 
   let amount = 1, itemInput = ''
@@ -345,7 +382,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
 }
 
-handler.help = ['pasar', 'pasar jual <no/nama> <jumlah/all>', 'pasar jual all', 'tokoikan']
+handler.help = ['pasar', 'pasar command', 'pasar list', 'pasar guide', 'pasar jual <no/nama> <jumlah/all>', 'pasar jual all', 'tokoikan']
 handler.tags = ['rpg']
 handler.command = /^(pasar|tokoikan|jualikan)$/i
 handler.alias = ['pasar', 'tokoikan', 'jualikan']

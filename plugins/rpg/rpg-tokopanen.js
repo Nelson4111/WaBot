@@ -101,8 +101,44 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return input.replace(/ /g, '_') // spasi -> _
   }
 
-  // MENU
-  if (!text) {
+  let args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
+  let tipe = args[0]
+
+  if (!args.length) {
+    const cap = `╭─❏「 🌾 KOPERASI AVELIA 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Koperasi adalah tempat menjual hasil panen dari kebun dan pertanian.\n\n` +
+      `> ↳ Lihat daftar command: *${usedPrefix}koperasi command*\n` +
+      `> ↳ Baca panduan/tutorial: *${usedPrefix}koperasi guide*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+  }
+
+  if (tipe === 'command') {
+    const cap = `╭─❏「 📋 COMMAND KOPERASI 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ${usedPrefix}koperasi list\n` +
+      `> ${usedPrefix}koperasi jual <no/nama> <jumlah/all>\n` +
+      `> ${usedPrefix}koperasi jual all\n` +
+      `> ${usedPrefix}koperasi guide\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  if (tipe === 'guide') {
+    const cap = `╭─❏「 🧭 PANDUAN KOPERASI 」❏\n` +
+      `│ 🌾 Jual hasil panen dari kebun dan pertanian.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Lihat daftar hasil panen dan harga: *${usedPrefix}koperasi list*\n` +
+      `> ↳ Jual panen: *${usedPrefix}koperasi jual <no/nama> <jumlah/all>*\n` +
+      `> ↳ Jual semua panen: *${usedPrefix}koperasi jual all*\n` +
+      `> ↳ Beli dan tanam bibit: *${usedPrefix}tanam*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
+  // MENU DAFTAR HARGA
+  if (tipe === 'list') {
     let cap = `╭─❏「 🏪 KOPERASI AVELIA 」❏\n`
     cap += `│ 💰 Uang: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
     cap += `│ 👤 ${isPrem ? 'Premium +10% jual, -20% beli' : 'User Normal'}\n`
@@ -131,9 +167,6 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
-
-  let args = text.toLowerCase().split(' ').filter(v => v)
-  let tipe = args[0]
 
   if(tipe!== 'jual') return m.reply(
     `❌ Pakai: *${usedPrefix}koperasi jual <no/nama> <jumlah/all>*\n\n` +
@@ -166,7 +199,14 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
     delete user.pendingKoperasiSell
     saveDB(wdb)
-    return m.reply(`✅ Penjualan koperasi dikonfirmasi. ${pending.entries.length} jenis panen terjual, saldo bertambah Rp ${pending.total.toLocaleString()}.`)
+    return m.reply(
+      `╭─❏「 🌾 PENJUALAN KOPERASI BERHASIL 」❏\n` +
+      `│ ✅ ${pending.entries.length} jenis panen terjual\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💰 Diterima: +Rp ${pending.total.toLocaleString()}\n` +
+      `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   if (['uang', 'money', 'exp'].includes(args[0])) {
@@ -192,7 +232,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     user.pendingKoperasiSell = { entries, total, expiresAt: Date.now() + 60000 }
     saveDB(wdb)
     const list = entries.map(({ item, quantity }) => `> ↳ ${harga[item].emoji} ${formatNama(item)} x${quantity}`).join('\n')
-    return m.reply(`⚠️ *KONFIRMASI JUAL KOPERASI*\n${list}\n\nPerkiraan diterima: Rp ${total.toLocaleString()}\nKetik *${usedPrefix}koperasi jual ya* untuk lanjut atau *${usedPrefix}koperasi jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI JUAL KOPERASI 」❏\n` +
+      `│ 🌾 ${entries.length} jenis panen akan dijual\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${list}\n\n` +
+      `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
+      `✅ Ketik *${usedPrefix}koperasi jual ya* untuk lanjut\n` +
+      `❌ Ketik *${usedPrefix}koperasi jual batal* untuk membatalkan\n` +
+      `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+    )
   }
 
   // PARSER
@@ -264,7 +313,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
 }
 
-handler.help = ['koperasi', 'koperasi jual <no/nama> <jumlah/all>', 'koperasi jual all', 'tokopanen']
+handler.help = ['koperasi', 'koperasi command', 'koperasi list', 'koperasi guide', 'koperasi jual <no/nama> <jumlah/all>', 'koperasi jual all', 'tokopanen']
 handler.tags = ['rpg']
 handler.command = /^(koperasi|tokopanen|jualpanen)$/i
 handler.alias = ['koperasi', 'tokopanen', 'jualpanen']

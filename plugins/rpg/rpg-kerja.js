@@ -191,6 +191,11 @@ if (changeActions.includes(jobAction)) {
       saveDB(wdb)
       return m.reply('❌ Job yang dipilih tidak lagi tersedia. Ajukan perubahan lagi.')
     }
+    if (confirmedJob.lv > userRPG.level) {
+      delete userRPG.pendingJobChange
+      saveDB(wdb)
+      return m.reply(`❌ Job *${confirmedJob.job}* belum terbuka. Syaratnya Lv.${confirmedJob.lv}, level kamu saat ini Lv.${userRPG.level}.`)
+    }
 
     userRPG.customJob = confirmedJob.job
     delete userRPG.pendingJobChange
@@ -223,6 +228,9 @@ if (changeActions.includes(jobAction)) {
 
   if (!selectedChangeJob) {
     return m.reply(`❌ Nama/nomor job tidak ditemukan. Lihat daftar dengan *${usedPrefix}job list*.`)
+  }
+  if (selectedChangeJob.lv > userRPG.level) {
+    return m.reply(`❌ Job *${selectedChangeJob.job}* belum terbuka. Syaratnya Lv.${selectedChangeJob.lv}, level kamu saat ini Lv.${userRPG.level}.`)
   }
   if (selectedChangeJob.job === jobName) {
     return m.reply(`ℹ️ Job kamu sudah *${selectedChangeJob.job}*.`)

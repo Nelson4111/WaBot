@@ -1,6 +1,13 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import {
+  addGuildLootReward,
+  advanceGuildLevel,
+  GUILD_MEMBER_INACTIVE_MS,
+  normalizeGuildLoot,
+  normalizeGuildPendingLoot
+} from '../../lib/rpgGuild.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -36,6 +43,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let expGain = Date.now() < myGuild.buffMulti? 450 : 300
   myGuild.exp += expGain
   myGuild.lastParty = Date.now()
+  advanceGuildLevel(myGuild, conn, m)
   saveDB(wdb)
 
   return m.reply(
@@ -64,6 +72,7 @@ if(command === 'latihanguild'){
   let expGain = Date.now() < myGuild.buffMulti? 150 : 100
   myGuild.exp += expGain
   myGuild.lastTrain = Date.now()
+  advanceGuildLevel(myGuild, conn, m)
   saveDB(wdb)
 
   return m.reply(
@@ -110,38 +119,38 @@ if(Date.now() < myGuild.missionCooldown){
 { name: 'Slayer Sang Naga Purba', minLevel: 50, reward: { money: 750000, exp: 2500, gold: 30, diamond: 10, stone: 50 }, contrib: 500 },
 { name: 'Pemusnahan Kamp Ogre', minLevel: 60, reward: { money: 1200000, exp: 4000, gold: 45, diamond: 15, stone: 80 }, contrib: 750 },
 { name: 'Perburuan Kalajengking Raksasa', minLevel: 70, reward: { money: 1800000, exp: 6000, gold: 60, diamond: 20, stone: 100 }, contrib: 1000 },
-{ name: 'Penaklukan Raja Lich', minLevel: 80, reward: { money: 2600000, exp: 8500, gold: 80, diamond: 30, emerald: 5 }, contrib: 1400 },
-{ name: 'Invasi Kerajaan Mayat Hidup', minLevel: 90, reward: { money: 3600000, exp: 11500, gold: 105, diamond: 42, emerald: 8 }, contrib: 1900 },
-{ name: 'Eksekusi Phoenix Kegelapan', minLevel: 100, reward: { money: 4800000, exp: 15000, gold: 135, diamond: 56, emerald: 12 }, contrib: 2500 },
-{ name: 'Penjelajahan Gunung Neraka', minLevel: 120, reward: { money: 6200000, exp: 19000, gold: 170, diamond: 72, emerald: 17 }, contrib: 3200 },
-{ name: 'Pembantaian Iblis', minLevel: 140, reward: { money: 7800000, exp: 23500, gold: 210, diamond: 90, emerald: 23 }, contrib: 4000 },
-{ name: 'Perburuan Hydra Berkepala Sembilan', minLevel: 160, reward: { money: 9600000, exp: 28500, gold: 255, diamond: 110, emerald: 30 }, contrib: 4900 },
-{ name: 'Ekspedisi Abyss Tanpa Dasar', minLevel: 180, reward: { money: 11600000, exp: 34000, gold: 305, diamond: 135, emerald: 40 }, contrib: 6000 },
-{ name: 'Penaklukan Titan Petir', minLevel: 200, reward: { money: 13800000, exp: 40000, gold: 360, diamond: 165, emerald: 55 }, contrib: 7300 },
-{ name: 'Pemburuan Leviathan Astral', minLevel: 230, reward: { money: 16200000, exp: 46500, gold: 420, diamond: 200, emerald: 75 }, contrib: 8800 },
-{ name: 'Eksekusi Raja Iblis Azrael', minLevel: 260, reward: { money: 18800000, exp: 53500, gold: 485, diamond: 240, emerald: 100 }, contrib: 10500 },
-{ name: 'Penumpasan Dewa Kekacauan', minLevel: 300, reward: { money: 21600000, exp: 61000, gold: 555, diamond: 285, emerald: 130 }, contrib: 12500 },
-{ name: 'Serangan ke Istana Dewa Matahari', minLevel: 350, reward: { money: 24600000, exp: 69000, gold: 630, diamond: 335, emerald: 165 }, contrib: 14800 },
-{ name: 'Perburuan Naga Astral Abadi', minLevel: 400, reward: { money: 30000000, exp: 85000, gold: 750, diamond: 420, emerald: 210 }, contrib: 18000 },
-{ name: 'Penaklukan Penguasa Dimensi Void', minLevel: 450, reward: { money: 38000000, exp: 105000, gold: 900, diamond: 550, emerald: 280 }, contrib: 23000 },
-{ name: 'Eksekusi Sang Pengamat Semesta', minLevel: 500, reward: { money: 48000000, exp: 130000, gold: 1100, diamond: 720, emerald: 370 }, contrib: 30000 },
-{ name: 'Raid Istana Para Dewa', minLevel: 550, reward: { money: 60000000, exp: 160000, gold: 1350, diamond: 950, emerald: 480 }, contrib: 39000 },
-{ name: 'Invasi Langit Ketujuh', minLevel: 600, reward: { money: 75000000, exp: 200000, gold: 1650, diamond: 1250, emerald: 620 }, contrib: 50000 },
-{ name: 'Perburuan Dewa Petir', minLevel: 650, reward: { money: 95000000, exp: 250000, gold: 2000, diamond: 1650, emerald: 800 }, contrib: 65000 },
-{ name: 'Penaklukan Kastil Waktu', minLevel: 700, reward: { money: 120000, exp: 310000, gold: 2400, diamond: 2200, emerald: 1050 }, contrib: 85000 },
-{ name: 'Eksekusi Kaisar Void', minLevel: 800, reward: { money: 150000000, exp: 380000, gold: 2900, diamond: 2900, emerald: 1350 }, contrib: 110000 },
-{ name: 'Pembantaian 9 Raja Iblis', minLevel: 900, reward: { money: 190000, exp: 470000, gold: 3500, diamond: 3800, emerald: 1750 }, contrib: 145000 },
-{ name: 'Runtuhkan Menara Keabadian', minLevel: 1000, reward: { money: 240000, exp: 580000, gold: 4200, diamond: 5000, emerald: 2250 }, contrib: 190000 },
-{ name: 'Perburuan Naga Kosmik', minLevel: 1100, reward: { money: 300000000, exp: 710000, gold: 5000, diamond: 6500, emerald: 2900 }, contrib: 250000 },
-{ name: 'Penaklukan Armada Galaksi', minLevel: 1200, reward: { money: 380000, exp: 870000, gold: 6000, diamond: 8500, emerald: 3700 }, contrib: 330000 },
-{ name: 'Eksekusi Penguasa Galaksi', minLevel: 1300, reward: { money: 480000000, exp: 1060000, gold: 7200, diamond: 11000, emerald: 4700 }, contrib: 430000 },
-{ name: 'Raid Dimensi Paralel', minLevel: 1400, reward: { money: 600000000, exp: 1290000, gold: 8600, diamond: 14500, emerald: 6000 }, contrib: 560000 },
-{ name: 'Pembantaian Dewa Primordial', minLevel: 1500, reward: { money: 750000, exp: 1570000, gold: 10200, diamond: 19000, emerald: 7600 }, contrib: 730000 },
-{ name: 'Penaklukan Alam Semesta', minLevel: 1600, reward: { money: 950000000, exp: 1900000, gold: 12000, diamond: 25000, emerald: 9600 }, contrib: 950000 },
-{ name: 'Eksekusi Sang Pencipta', minLevel: 1700, reward: { money: 1200000000, exp: 2300000, gold: 14000, diamond: 33000, emerald: 12000 }, contrib: 1250000 },
-{ name: 'Runtuhkan Tahta Semesta', minLevel: 1800, reward: { money: 1500000, exp: 2800000, gold: 16500, diamond: 43000, emerald: 15000 }, contrib: 1650000 },
-{ name: 'Perang Melawan Kehampaan', minLevel: 1900, reward: { money: 1900000, exp: 3400000, gold: 19500, diamond: 56000, emerald: 19000 }, contrib: 2200000 },
-{ name: 'Ascensi Menjadi Dewa Tertinggi', minLevel: 2000, reward: { money: 2500000, exp: 4200000, gold: 23000, diamond: 75000, emerald: 25000 }, contrib: 3000000 }
+{ name: 'Penaklukan Raja Lich', minLevel: 80, reward: { money: 2600000, exp: 8500, gold: 80, diamond: 30, gemstone: 5 }, contrib: 1400 },
+{ name: 'Invasi Kerajaan Mayat Hidup', minLevel: 90, reward: { money: 3600000, exp: 11500, gold: 105, diamond: 42, gemstone: 8 }, contrib: 1900 },
+{ name: 'Eksekusi Phoenix Kegelapan', minLevel: 100, reward: { money: 4800000, exp: 15000, gold: 135, diamond: 56, gemstone: 12 }, contrib: 2500 },
+{ name: 'Penjelajahan Gunung Neraka', minLevel: 120, reward: { money: 6200000, exp: 19000, gold: 170, diamond: 72, gemstone: 17 }, contrib: 3200 },
+{ name: 'Pembantaian Iblis', minLevel: 140, reward: { money: 7800000, exp: 23500, gold: 210, diamond: 90, gemstone: 23 }, contrib: 4000 },
+{ name: 'Perburuan Hydra Berkepala Sembilan', minLevel: 160, reward: { money: 9600000, exp: 28500, gold: 255, diamond: 110, gemstone: 30 }, contrib: 4900 },
+{ name: 'Ekspedisi Abyss Tanpa Dasar', minLevel: 180, reward: { money: 11600000, exp: 34000, gold: 305, diamond: 135, gemstone: 40 }, contrib: 6000 },
+{ name: 'Penaklukan Titan Petir', minLevel: 200, reward: { money: 13800000, exp: 40000, gold: 360, diamond: 165, gemstone: 55 }, contrib: 7300 },
+{ name: 'Pemburuan Leviathan Astral', minLevel: 230, reward: { money: 16200000, exp: 46500, gold: 420, diamond: 200, gemstone: 75 }, contrib: 8800 },
+{ name: 'Eksekusi Raja Iblis Azrael', minLevel: 260, reward: { money: 18800000, exp: 53500, gold: 485, diamond: 240, gemstone: 100 }, contrib: 10500 },
+{ name: 'Penumpasan Dewa Kekacauan', minLevel: 300, reward: { money: 21600000, exp: 61000, gold: 555, diamond: 285, gemstone: 130 }, contrib: 12500 },
+{ name: 'Serangan ke Istana Dewa Matahari', minLevel: 350, reward: { money: 24600000, exp: 69000, gold: 630, diamond: 335, gemstone: 165 }, contrib: 14800 },
+{ name: 'Perburuan Naga Astral Abadi', minLevel: 400, reward: { money: 30000000, exp: 85000, gold: 750, diamond: 420, gemstone: 210 }, contrib: 18000 },
+{ name: 'Penaklukan Penguasa Dimensi Void', minLevel: 450, reward: { money: 38000000, exp: 105000, gold: 900, diamond: 550, gemstone: 280 }, contrib: 23000 },
+{ name: 'Eksekusi Sang Pengamat Semesta', minLevel: 500, reward: { money: 48000000, exp: 130000, gold: 1100, diamond: 720, gemstone: 370 }, contrib: 30000 },
+{ name: 'Raid Istana Para Dewa', minLevel: 550, reward: { money: 60000000, exp: 160000, gold: 1350, diamond: 950, gemstone: 480 }, contrib: 39000 },
+{ name: 'Invasi Langit Ketujuh', minLevel: 600, reward: { money: 75000000, exp: 200000, gold: 1650, diamond: 1250, gemstone: 620 }, contrib: 50000 },
+{ name: 'Perburuan Dewa Petir', minLevel: 650, reward: { money: 95000000, exp: 250000, gold: 2000, diamond: 1650, gemstone: 800 }, contrib: 65000 },
+{ name: 'Penaklukan Kastil Waktu', minLevel: 700, reward: { money: 120000000, exp: 310000, gold: 2400, diamond: 2200, gemstone: 1050 }, contrib: 85000 },
+{ name: 'Eksekusi Kaisar Void', minLevel: 800, reward: { money: 150000000, exp: 380000, gold: 2900, diamond: 2900, gemstone: 1350 }, contrib: 110000 },
+{ name: 'Pembantaian 9 Raja Iblis', minLevel: 900, reward: { money: 190000000, exp: 470000, gold: 3500, diamond: 3800, gemstone: 1750 }, contrib: 145000 },
+{ name: 'Runtuhkan Menara Keabadian', minLevel: 1000, reward: { money: 240000000, exp: 580000, gold: 4200, diamond: 5000, gemstone: 2250 }, contrib: 190000 },
+{ name: 'Perburuan Naga Kosmik', minLevel: 1100, reward: { money: 300000000, exp: 710000, gold: 5000, diamond: 6500, gemstone: 2900 }, contrib: 250000 },
+{ name: 'Penaklukan Armada Galaksi', minLevel: 1200, reward: { money: 380000000, exp: 870000, gold: 6000, diamond: 8500, gemstone: 3700 }, contrib: 330000 },
+{ name: 'Eksekusi Penguasa Galaksi', minLevel: 1300, reward: { money: 480000000, exp: 1060000, gold: 7200, diamond: 11000, gemstone: 4700 }, contrib: 430000 },
+{ name: 'Raid Dimensi Paralel', minLevel: 1400, reward: { money: 600000000, exp: 1290000, gold: 8600, diamond: 14500, gemstone: 6000 }, contrib: 560000 },
+{ name: 'Pembantaian Dewa Primordial', minLevel: 1500, reward: { money: 750000000, exp: 1570000, gold: 10200, diamond: 19000, gemstone: 7600 }, contrib: 730000 },
+{ name: 'Penaklukan Alam Semesta', minLevel: 1600, reward: { money: 950000000, exp: 1900000, gold: 12000, diamond: 25000, gemstone: 9600 }, contrib: 950000 },
+{ name: 'Eksekusi Sang Pencipta', minLevel: 1700, reward: { money: 1200000000, exp: 2300000, gold: 14000, diamond: 33000, gemstone: 12000 }, contrib: 1250000 },
+{ name: 'Runtuhkan Tahta Semesta', minLevel: 1800, reward: { money: 1500000000, exp: 2800000, gold: 16500, diamond: 43000, gemstone: 15000 }, contrib: 1650000 },
+{ name: 'Perang Melawan Kehampaan', minLevel: 1900, reward: { money: 1900000000, exp: 3400000, gold: 19500, diamond: 56000, gemstone: 19000 }, contrib: 2200000 },
+{ name: 'Ascensi Menjadi Dewa Tertinggi', minLevel: 2000, reward: { money: 2500000000, exp: 4200000, gold: 23000, diamond: 75000, gemstone: 25000 }, contrib: 3000000 }
   ]
 
   if (!text) {
@@ -151,7 +160,7 @@ if(Date.now() < myGuild.missionCooldown){
 
   list += `📌 *PILIH MISI*\n`
   list += `> ↳ Eksekutor mendapat reward penuh; anggota lain mendapat 50% melalui pending loot.\n\n`
-
+  list += `> ↳ Loot anggota hanya bertambah jika anggota menjalankan misi Guild dalam 4 hari terakhir.\n`
   list += `─━━━━━━━━━━━━━━─\n\n`
 
   missions.forEach((v, i) => {
@@ -159,7 +168,7 @@ if(Date.now() < myGuild.missionCooldown){
     list += `> ↳ 📊 Syarat: Lv.${v.minLevel}\n`
     list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
     list += `> ↳ ✨ Exp: +${v.reward.exp}\n`
-    list += `> ↳ 💰 Uang: Rp ${v.reward.money.toLocaleString()}${v.reward.emerald ? `\n> ↳ 💚 Emerald: ${v.reward.emerald}` : ''}\n\n`
+    list += `> ↳ 🎁 Hadiah: ${Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }).filter(([item]) => Number(v.reward[item]) > 0).map(([item, name]) => `${name}: ${item === 'money' ? `Rp ${Number(v.reward[item]).toLocaleString('id-ID')}` : Number(v.reward[item]).toLocaleString('id-ID')}`).join(', ')}\n\n`
   })
 
   list += `─━━━━━━━━━━━━━━─\n\n`
@@ -211,16 +220,27 @@ if(Date.now() < myGuild.missionCooldown){
   myGuild.lastMission = Date.now()
 
   myGuild.pendingLoot = myGuild.pendingLoot || {}
-  myGuild.members.forEach(jid => {
+  normalizeGuildPendingLoot(myGuild)
+  const now = Date.now()
+  const executorLoot = {}
+  let lootLimitReached = false
+  for (const jid of myGuild.members) {
     let u = wdb.users[jid]?.rpg
-    if (u) {
+    if (!u) continue
+
+    normalizeGuildLoot(u)
+    if (!Number(u.lastGuildMissionAt)) u.lastGuildMissionAt = now
+    if (jid === m.sender) u.lastGuildMissionAt = now
+    if (now - Number(u.lastGuildMissionAt) > GUILD_MEMBER_INACTIVE_MS) continue
+
+    {
       const rewardItems = {
         money: scaleDifficultyIncome(u, reward.money),
         iron: scaleDifficultyIncome(u, msn.reward.iron || 0),
         gold: scaleDifficultyIncome(u, msn.reward.gold || 0),
         stone: scaleDifficultyIncome(u, msn.reward.stone || 0),
         diamond: scaleDifficultyIncome(u, msn.reward.diamond || 0),
-        emerald: scaleDifficultyIncome(u, msn.reward.emerald || 0)
+        gemstone: scaleDifficultyIncome(u, msn.reward.gemstone || 0)
       }
       if (jid !== m.sender) {
         for (const item of Object.keys(rewardItems)) {
@@ -229,31 +249,27 @@ if(Date.now() < myGuild.missionCooldown){
       }
       if (jid === m.sender) {
         u.inventory = u.inventory || {}
-        u.guildLoot = u.guildLoot || { diamond: 0, emerald: 0 }
-        wdb.money[jid] = (wdb.money[jid] || 0) + rewardItems.money
-        u.iron = (u.iron || 0) + rewardItems.iron
-        u.gold = (u.gold || 0) + rewardItems.gold
-        u.stone = (u.stone || 0) + rewardItems.stone
-        u.diamond = (u.diamond || 0) + rewardItems.diamond
-        u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + rewardItems.emerald
-        u.guildLoot.diamond += rewardItems.diamond
-        u.guildLoot.emerald += rewardItems.emerald
+        const loot = normalizeGuildLoot(u)
+        for (const [item, amount] of Object.entries(rewardItems)) {
+          const accepted = addGuildLootReward(myGuild, u, jid, item, amount)
+          executorLoot[item] = accepted
+          if (accepted < amount) lootLimitReached = true
+          loot[item] += accepted
+          if (item === 'money') wdb.money[jid] = (wdb.money[jid] || 0) + accepted
+          else if (item === 'gemstone') u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + accepted
+          else u[item] = (Number(u[item]) || 0) + accepted
+        }
       } else {
         myGuild.pendingLoot[jid] = myGuild.pendingLoot[jid] || {}
         for (const [item, amount] of Object.entries(rewardItems)) {
-          myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + amount
+          const accepted = addGuildLootReward(myGuild, u, jid, item, amount, { pending: true })
+          myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + accepted
         }
       }
     }
-  })
-
-  let nextExp = myGuild.level * 1000
-  while (myGuild.exp >= nextExp) {
-    myGuild.level += 1
-    myGuild.exp -= nextExp
-    nextExp = myGuild.level * 1000
-    conn.reply(m.chat, `🎊 *GUILD LEVEL UP!* \nGuild *${myGuild.name}* sekarang mencapai Level *${myGuild.level}*!`, m)
   }
+
+  advanceGuildLevel(myGuild, conn, m)
 
   wdb.guilds[guildName] = myGuild
   saveDB(wdb)
@@ -273,10 +289,14 @@ cap += `> ↳ 🏆 Kontribusi: +${msn.contrib} Pts\n\n`
 cap += `─━━━━━━━━━━━━━━─\n\n`
 
 cap += `🎁 *HADIAH MEMBER*\n`
-cap += `> ↳ 💰 Money: Rp ${reward.money.toLocaleString('id-ID')}\n`
-if (msn.reward.diamond) cap += `> ↳ 💎 Diamond: ${msn.reward.diamond}\n`
-if (msn.reward.emerald) cap += `> ↳ 💚 Emerald: ${msn.reward.emerald}\n`
-cap += `> ↳ Eksekutor menerima hadiah penuh; anggota lain mendapat 50% di .guild loot.\n`
+const rewardLabels = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }
+for (const [item, label] of Object.entries(rewardLabels)) {
+  const lootItem = item === 'gemstone' ? 'gemstone' : item
+  const amount = executorLoot[lootItem] || 0
+  if (Number(amount) > 0) cap += `> ↳ ${label}: ${item === 'money' ? `Rp ${Number(amount).toLocaleString('id-ID')}` : Number(amount).toLocaleString('id-ID')}\n`
+}
+cap += `> ↳ Anggota aktif lain menerima 50% sebagai pending loot.\n`
+if (lootLimitReached) cap += `> ↳ Sebagian reward tidak ditambahkan karena batas loot kamu sudah tercapai.\n`
 
 cap += `\n╰─━━━━━━━━━━━━━━─`
 
