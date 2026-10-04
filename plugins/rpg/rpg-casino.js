@@ -116,11 +116,18 @@ const loseDialogs = [
   'Ronde ini belum berpihak kepadaku.'
 ]
 const ROOM_GAMES = {
-  blacksapphire: { name: 'Black Sapphire', aliases: ['blacksapphire', 'black-sapphire', 'bs'] },
-  uno: { name: 'UNO', aliases: ['uno'] },
-  mahjong: { name: 'Mahjong', aliases: ['mahjong'] },
-  poker: { name: 'Poker', aliases: ['poker'] },
-  monopoly: { name: 'Monopoly', aliases: ['monopoly'] }
+  blacksapphire: { name: 'Black Sapphire', emoji: '💠', aliases: ['blacksapphire', 'black-sapphire', 'bs'] },
+  uno: { name: 'UNO', emoji: '🃏', aliases: ['uno'] },
+  mahjong: { name: 'Mahjong', emoji: '🀄', aliases: ['mahjong'] },
+  poker: { name: 'Poker', emoji: '♠️', aliases: ['poker'] },
+  monopoly: { name: 'Monopoly', emoji: '🏠', aliases: ['monopoly'] },
+  jenga: { name: 'Jenga', emoji: '🪵', aliases: ['jenga'] },
+  horserace: { name: 'Balap Kuda', emoji: '🏇', aliases: ['horserace', 'balapkuda', 'hr'] },
+  ludo: { name: 'Ludo', emoji: '🎲', aliases: ['ludo'] },
+  snakes: { name: 'Snakes and Ladders', emoji: '🐍', aliases: ['snakes', 'snl', 'snakesandladders'] },
+  parcheesi: { name: 'Parcheesi', emoji: '🎲', aliases: ['parcheesi'] },
+  squidgames: { name: 'Squid Games', emoji: '🦑', aliases: ['squidgames', 'squid-games'] },
+  hungergames: { name: 'Hunger Games', emoji: '🏹', aliases: ['hungergames', 'hunger-games'] }
 }
 const ROOM_GAME_ALIASES = Object.fromEntries(Object.entries(ROOM_GAMES).flatMap(([key, game]) => game.aliases.map(alias => [alias, key])))
 const ROOM_IDLE_TIMEOUT = 30 * 60 * 1000
@@ -374,6 +381,7 @@ function casinoCommands(prefix) {
     `> ↳ 🎯 ${prefix}cs room game <pilihan>`,
     `> ↳ ⏭️ ${prefix}cs room next (taruhan tetap)`,
     `> ↳ ⬆️ ${prefix}cs room up (taruhan x2)`,
+    `> ↳ 💰 ${prefix}cs room set <nominal>`,
     ``,
     `─━━━━━━━━━━━━━━─`
   ].join('\n')
@@ -534,7 +542,10 @@ function roomPlayerName(jid, wdb) {
 
 function roomGamesMenu(prefix) {
   return `🎮 *GAME ROOM CASINO*\n` +
-    Object.entries(ROOM_GAMES).map(([key, game]) => `> ${game.name}: ${prefix}cs room game ${key}`).join('\n')
+    Object.values(ROOM_GAMES).map(game => `> ↳ ${game.emoji} ${game.name}`).join('\n') +
+    `\n\n📌 *CARA MEMILIH GAME*\n` +
+    `> ↳ ${prefix}cs room game <nama_game>\n` +
+    `> ↳ Contoh: ${prefix}cs room game jenga`
 }
 
 function roomGuide(prefix) {
@@ -546,14 +557,15 @@ function roomGuide(prefix) {
     `> ↳ Buat room : ${prefix}cs room create <taruhan>.\n` +
     `> ↳ Pemain lain bergabung dengan : ${prefix}cs room join.\n` +
     `> ↳ Master memilih game : ${prefix}cs room game <pilihan>.\n` +
-    `> ↳ Game yang tersedia : Black Sapphire, UNO, Mahjong, Poker, Monopoly.\n` +
+    `> ↳ Lihat daftar permainan dengan : ${prefix}cs room games.\n` +
     `> ↳ Jika game tidak dipilih, sistem memilih secara acak.\n\n` +
 
     `🎮 *MULAI PERMAINAN*\n` +
     `> ↳ Mulai : ${prefix}cs room start.\n` +
     `> ↳ Setiap ronde, tiap pemain mendapat 5 gacha.\n` +
     `> ↳ Satu pemain dengan skor terendah tereliminasi tiap ronde; jika hasil seri, tidak ada yang tereliminasi.\n` +
-    `> ↳ Setelah ronde, master gunakan *.cs room next* untuk taruhan tetap atau *.cs room up* untuk menggandakan taruhan ronde berikutnya.\n\n` +
+    `> ↳ Setelah ronde, master dapat memakai *.cs room next*, *.cs room up*, atau *.cs room set <nominal> untuk mengatur taruhan ronde berikutnya.\n` +
+    `> ↳ Master juga dapat mengganti game dengan *.cs room game <nama_game>*.\n\n` +
 
     `📌 *CATATAN*\n` +
     `> ↳ Room tanpa interaksi selama 30 menit otomatis dihapus; kontribusi ronde berjalan dikembalikan.\n` +
@@ -622,13 +634,13 @@ function formatRoomRound(result, wdb) {
     .map(([jid, score]) => `> ↳ ${roomPlayerName(jid, wdb)} : ${score}/5`)
     .join('\n')
   const eliminationText = result.eliminated
-    ? `> ↳ Tereliminasi: ${roomPlayerName(result.eliminated, wdb)}`
-    : `> ↳ Hasil seri: tidak ada yang tereliminasi.`
+    ? `> ↳ ❌ Tereliminasi: ${roomPlayerName(result.eliminated, wdb)}`
+    : `> ↳ ⚖️ Hasil seri: tidak ada yang tereliminasi.`
 
   return `🎮 *RONDE ${result.number}*\n` +
     `${scoreList}\n` +
     `${eliminationText}\n` +
-    `> ↳ Taruhan ronde: ${money(result.stake)}`
+    `> ↳ 💵 Taruhan ronde ini: ${money(result.stake)}`
 }
 
 async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
@@ -752,15 +764,18 @@ if (action === 'game') {
     )
   }
 
-  if (room.status !== 'waiting') {
+  if (!['waiting', 'round_wait'].includes(room.status)) {
     return m.reply(
       `╭─❏「 ❌ CASINO ROOM 」❏\n` +
-      `│ ❌ *PERMAINAN SUDAH DIMULAI*\n` +
+      `│ ❌ *RONDE SEDANG BERLANGSUNG*\n` +
       `╰─━━━━━━━━━━━━━━─`
     )
   }
 
-  const selectedGame = ROOM_GAME_ALIASES[String(args[2] || '').toLowerCase()]
+  const gameChoice = args.slice(2).join(' ').trim().toLowerCase()
+  const selectedGame = ROOM_GAME_ALIASES[gameChoice]
+    || ROOM_GAME_ALIASES[gameChoice.replace(/\s+/g, '')]
+    || ROOM_GAME_ALIASES[gameChoice.replace(/\s+/g, '-')]
 
   if (!selectedGame) {
     return m.reply(
@@ -780,7 +795,8 @@ if (action === 'game') {
     `╭─❏「 🎮 GAME ROOM 」❏\n` +
     `│ 🎮 *GAME DIPILIH*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ ${ROOM_GAMES[room.game].name}\n\n` +
+    `> ↳ ${ROOM_GAMES[room.game].emoji} ${ROOM_GAMES[room.game].name}\n` +
+    `${room.status === 'round_wait' ? '> ↳ Game baru dipakai pada ronde berikutnya.\n\n' : '\n'}` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -1023,7 +1039,7 @@ if (action === 'delete') {
   )
 }
 
-if (['start', 'up', 'next'].includes(action)) {
+if (['start', 'up', 'next', 'set'].includes(action)) {
   const isFirstRound = action === 'start'
   if (room.master !== m.sender) {
     return m.reply(`Hanya room master yang dapat memulai atau memilih taruhan ronde berikutnya.`)
@@ -1039,10 +1055,24 @@ if (['start', 'up', 'next'].includes(action)) {
     return m.reply(`Room membutuhkan minimal 2 pemain untuk memulai.`)
   }
 
+  const requestedStake = action === 'set' ? Number(args[2]) : null
+  if (action === 'set' && (!Number.isSafeInteger(requestedStake) || requestedStake < 100)) {
+    return m.reply(
+      `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
+      `│ ❌ *Nominal taruhan tidak valid.*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Nominal minimal: ${money(100)}.\n` +
+      `> ↳ Contoh: *${usedPrefix}cs room set 500000*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   room.game = room.game || pick(Object.keys(ROOM_GAMES))
-  const stake = isFirstRound || action === 'next'
-    ? Number(room.currentStake || room.stake)
-    : Number(room.currentStake || room.stake) * 2
+  const stake = action === 'set'
+    ? requestedStake
+    : isFirstRound || action === 'next'
+      ? Number(room.currentStake || room.stake)
+      : Number(room.currentStake || room.stake) * 2
 
   if (!Number.isSafeInteger(stake)) {
     return m.reply(`Taruhan berikutnya melebihi batas aman saldo. Gunakan *.cs room next* untuk melanjutkan tanpa kenaikan.`)
@@ -1081,9 +1111,15 @@ if (['start', 'up', 'next'].includes(action)) {
     `│ 🎮 *RONDE SELESAI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${formatRoomRound(result, wdb)}\n` +
-    `> ↳ Pemain tersisa: ${room.players.map(jid => roomPlayerName(jid, wdb)).join(', ')}\n` +
-    `> ↳ Pot sementara: ${money(room.pot)}\n\n` +
-    `Room Master pilih: *.cs room next* (${money(nextStake)}) atau *.cs room up* (${money(nextStake * 2)}).`,
+    `\n👥 *PEMAIN TERSISA (${room.players.length})*\n` +
+    `${room.players.map(jid => `> ↳ ${roomPlayerName(jid, wdb)}`).join('\n')}\n\n` +
+    `💰 *TOTAL POT SEMENTARA* : ${money(room.pot)}\n` +
+    `> ↳ Taruhan ronde ini: ${money(result.stake)}\n\n` +
+    `👑 *Room Master bisa pilih:*\n` +
+    `> ↳ ⏭️ *.cs room next* (${money(nextStake)}).\n` +
+    `> ↳ ⬆️ *.cs room up* (${money(nextStake * 2)}).\n` +
+    `> ↳ 💰 *.cs room set <nominal>*.\n` +
+    `> ↳ 🎮 *.cs room game <pilihan>*.`,
     roundMentions
   )
 }
@@ -1314,6 +1350,8 @@ handler.help = [
   'casino cooldown',
   'casino room create <taruhan>',
   'casino room join/leave/kick/player/start/next/up/delete/info/games',
+  'casino room set <nominal>',
+  'casino room game <pilihan>',
   'casino room <permainan>',
   'cs room create <taruhan>',
   ...Object.keys(games).map(key => `casino ${key} <taruhan>`)
