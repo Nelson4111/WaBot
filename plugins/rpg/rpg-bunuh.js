@@ -77,8 +77,9 @@ let handler = async (m, { conn }) => {
     txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += `│ ⚰️ Kamu dibunuh duluan\n`
-    txt += `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n`
-    txt += `│ 💰 Tebusan: *Rp 2.000.000*\n`
+    txt += userRPG.sel
+      ? `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
+      : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
     txt += `╰─━━━━━━━━━━━━━━─`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }

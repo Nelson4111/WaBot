@@ -89,11 +89,11 @@ let handler = async (m, { conn }) => {
     txt += `🛡️ *PERTAHANAN BANK TARGET*\n`
     txt += `> ↳ Keamanan : *${keamananEfektif}*${bonusBenteng}\n\n`
 
-    txt += `🚨 *HASIL PENANGKAPAN*\n`
+    txt += `🚨 *HASIL KEJADIAN*\n`
     txt += `> ↳ 🛡️ ${penjaga} menahan perampok dan membunyikan alarm.\n`
-    txt += `> ↳ 🚨 Polisi datang; perampok tertangkap.\n`
-    txt += `> ↳ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *4 jam*\n`
-    txt += `> ↳ 💰 Tebusan : *Rp 4.000.000*\n\n`
+    txt += userRPG.sel
+        ? `> ↳ 🚨 Polisi datang; perampok tertangkap dan masuk *PENJARA SEL ${userRPG.sel}* selama *4 jam*.\n> ↳ 💰 Tebusan: *Rp 4.000.000*.\n\n`
+        : `> ↳ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n\n`
 
     txt += `─━━━━━━━━━━━━━━─`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })

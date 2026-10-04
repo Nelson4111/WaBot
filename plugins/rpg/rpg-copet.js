@@ -82,6 +82,9 @@ let handler = async (m, { conn }) => {
       userRPG.sel = registerPrisoner(wdb, m.sender)
       userRPG.gagalCopet = 0
       saveDB(wdb)
+      if (!userRPG.sel) {
+        return m.reply(`⚠️ Kamu gagal copet dan membayar denda Rp ${denda.toLocaleString('id-ID')}, tetapi perlindungan mantan napi mencegahmu masuk penjara.`)
+      }
       return m.reply(`🚔 *KETANGKEP POLISI!*\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus*`)
     }
     saveDB(wdb)

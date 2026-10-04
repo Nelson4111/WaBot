@@ -1,5 +1,7 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { computeCrimeScore, getPatrolCaptureChance } from '../../lib/crimeHelper.js'
+import { computeCrimeScore, ensurePatrolReleaseProtection, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncAllEscapeCrimeCounts } from '../../lib/crimeHelper.js'
+import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper.js'
+import { registerPrisoner } from '../../lib/prisonHelper.js'
 
 const CRIME_TYPES = [
   ['rampok', '🕵️ Rampok', 4],
@@ -10,8 +12,8 @@ const CRIME_TYPES = [
   ['breakout', '🧱 Breakout', 5]
 ]
 
-function getWantedList(crime) {
-  return Object.entries(crime || {})
+function getWantedList(db) {
+  return Object.entries(db.crime || {})
     .filter(([, data]) => data && computeCrimeScore(data) > 0)
     .sort((a, b) => computeCrimeScore(b[1]) - computeCrimeScore(a[1]))
 }
@@ -38,8 +40,78 @@ let handler = async (m, { conn, args, isOwner }) => {
     return m.reply('✅ Data buronan berhasil di-reset')
   }
 
-  const crimeList = getWantedList(wdb.crime)
   const action = args[0]?.toLowerCase()
+  if (action === 'tangkap' && !hasRpgPanelAccess(m.sender, isOwner)) {
+    return m.reply('❌ Command ini khusus pengguna dengan akses panel RPG.')
+  }
+
+  syncAllEscapeCrimeCounts(wdb)
+  await saveDB(wdb)
+  const crimeList = getWantedList(wdb)
+
+  if (action === 'tangkap') {
+    const rawTarget = m.mentionedJid?.[0] || m.quoted?.sender
+    if (!rawTarget) return m.reply('❌ Tag atau reply pesan buronan yang ingin ditangkap.')
+
+    const targetJid = conn.decodeJid?.(rawTarget) ||
+      global.lids?.[rawTarget] ||
+      global.db?.data?.lids?.[rawTarget] ||
+      rawTarget
+    const wantedIndex = findWantedByJid(crimeList, targetJid)
+    if (wantedIndex < 0) return m.reply('❌ Target tidak ditemukan dalam daftar buronan aktif.')
+
+    const [wantedJid, wantedData] = crimeList[wantedIndex]
+    const userRPG = global.db?.data?.users?.[wantedJid]?.rpg || wdb.users?.[wantedJid]?.rpg
+    if (!userRPG) return m.reply('❌ Data RPG buronan tidak ditemukan.')
+
+    const now = Date.now()
+    ensurePatrolReleaseProtection(userRPG, now)
+    if (userRPG.penjara && now - userRPG.penjara < (Number(userRPG.lamaPenjara) || 0)) {
+      return m.reply('🚔 Buronan tersebut sudah berada di penjara.')
+    }
+    if (getPatrolProtectionRemaining(userRPG, 'capture', now) > 0) {
+      return m.reply('🛡️ Buronan tersebut masih memiliki perlindungan dari cidukan patroli.')
+    }
+    if (getPatrolProtectionRemaining(userRPG, 'prison', now) > 0) {
+      return m.reply('🛡️ Perlindungan mantan napi mencegah buronan tersebut masuk penjara.')
+    }
+
+    const score = computeCrimeScore(wantedData)
+    const penalty = getPatrolCapturePenalty(score)
+    userRPG.penjara = now
+    userRPG.lamaPenjara = penalty.durationMs
+    userRPG.tebusan = penalty.ransom
+    userRPG.kasus = '👮 Patroli buronan'
+    userRPG.sel = registerPrisoner(wdb, wantedJid)
+    if (!userRPG.sel) {
+      userRPG.penjara = null
+      userRPG.lamaPenjara = 0
+      userRPG.tebusan = 0
+      userRPG.kasus = null
+      return m.reply('🛡️ Perlindungan mantan napi mencegah buronan tersebut masuk penjara.')
+    }
+    userRPG.patrolCaughtAt = now
+    wantedData.ditangkap = (Number(wantedData.ditangkap) || 0) + 1
+    await saveDB(wdb)
+
+    const durationMinutes = Math.ceil(penalty.durationMs / (60 * 1000))
+    const durationHours = Math.floor(durationMinutes / 60)
+    const remainingMinutes = durationMinutes % 60
+    const durationText = durationHours
+      ? `${durationHours} jam${remainingMinutes ? ` ${remainingMinutes} menit` : ''}`
+      : `${remainingMinutes} menit`
+    const text =
+      `╭─❏「 🚔 TERTANGKAP PATROLI 」❏\n` +
+      `│ 👤 Buronan: @${wantedJid.split('@')[0]}\n` +
+      `│ 💀 Poin buronan: *${score} poin*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${getPatrolCaptureStory()}\n\n` +
+      `Kamu masuk di *SEL ${userRPG.sel}*\n` +
+      `Ditahan selama *${durationText}*.\n` +
+      `Tebusan: *Rp ${penalty.ransom.toLocaleString('id-ID')}*.\n` +
+      `Setelah bebas: anti-kejahatan 1 jam, anti-penjara 2 jam, anti-ciduk 4 jam.`
+    return conn.reply(m.chat, text, m, { mentions: [wantedJid] })
+  }
 
   if (!action) {
     return m.reply(
@@ -68,18 +140,23 @@ let handler = async (m, { conn, args, isOwner }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `Pelaku kejahatan dan tahanan yang berhasil kabur akan masuk daftar buronan. Saat buronan melakukan aktivitas RPG, patroli dapat mencurigai dan menangkapnya—termasuk casino, panen, kerja, dan aktivitas lainnya.\n\n` +
       `🚨 *PELUANG TERTANGKAP*\n` +
-      `> ↳ Peluang dasar: *5% + 2,5% untuk setiap poin buronan*.\n` +
-      `> ↳ Peluang maksimum: *75% setiap aktivitas RPG*.\n` +
-      `> ↳ Semakin tinggi poin, semakin besar kemungkinan tertangkap. Terlalu sering beraktivitas membuat buronan lebih mudah dicurigai.\n` +
+      `> ↳ Peluang dasar patroli sangat kecil: *0,1% + 0,05% per poin* dan maksimal *5% setiap aktivitas RPG*.\n` +
+      `> ↳ Contoh: *10 poin* = peluang tertangkap *0,6%* per aktivitas; poin yang lebih tinggi menaikkan peluang secara bertahap.\n` +
+      `> ↳ Setiap aktivitas adalah pemeriksaan terpisah, jadi buronan tidak selalu tertangkap.\n` +
       `> ↳ Hukuman dasar: *30 menit + 5 menit per poin* dan tebusan *Rp 500.000 + Rp 100.000 per poin*.\n` +
       `> ↳ Contoh: *10 poin* = *1 jam 20 menit* tahanan dan *Rp 1.500.000* tebusan.\n\n` +
+      `🕊️ *STATUS MANTAN NAPI*\n` +
+      `> ↳ Anti-kejahatan: *1 jam* setelah bebas dari cidukan patroli.\n` +
+      `> ↳ Anti-masuk penjara: *2 jam* setelah bebas dari cidukan patroli.\n` +
+      `> ↳ Anti-ciduk patroli: *4 jam* setelah bebas dari cidukan patroli.\n\n` +
       `💀 *BOBOT POIN KEJAHATAN*\n` +
       `> 🕵️ Rampok: *+4 poin* per aksi\n` +
       `> 🔪 Bunuh: *+3 poin* per aksi\n` +
       `> 🏴‍☠️ Begal: *+2 poin* per aksi\n` +
       `> 🤏 Copet: *+1 poin* per aksi\n` +
       `> 🏃 Kabur sendiri dari penjara: *+5 poin*\n` +
-      `> 🧱 Kabur lewat breakout bersama: *+5 poin* untuk setiap peserta\n\n` +
+      `> 🧱 Kabur lewat breakout bersama: *+5 poin* untuk setiap peserta\n` +
+      `> Jumlah kabur di detail buronan disinkronkan dengan catatan *.penjara escord*.\n\n` +
       `🏅 *ARTI IKON*\n` +
       `> 👑 / 🥈 / 🥉 - Peringkat 1, 2, dan 3\n` +
       `> 💀 - Total poin buronan\n` +
