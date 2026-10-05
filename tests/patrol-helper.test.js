@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict'
+import { isPatrolExemptCommand } from '../lib/patrolHelper.js'
+
+const isExempt = (command, args = []) => isPatrolExemptCommand(command, args)
+
+assert.equal(isExempt('adventure'), false)
+assert.equal(isExempt('mancing'), false)
+assert.equal(isExempt('mining'), false)
+assert.equal(isExempt('inventory'), true)
+assert.equal(isExempt('money'), true)
+assert.equal(isExempt('bank', ['tarik', '5000']), true)
+assert.equal(isExempt('bank', ['simpan', '5000']), true)
+
+assert.equal(isExempt('guild'), true)
+assert.equal(isExempt('guild', ['list']), true)
+assert.equal(isExempt('guild', ['misi', 'list']), true)
+assert.equal(isExempt('guild', ['misi', '1']), false)
+assert.equal(isExempt('guild', ['party']), false)
+assert.equal(isExempt('guild', ['loot']), true)
+assert.equal(isExempt('guild', ['loot', 'take']), false)
+assert.equal(isExempt('guild', ['war']), true)
+assert.equal(isExempt('guild', ['war', 'acak']), false)
+assert.equal(isPatrolExemptCommand('guild', ['war'], { hasQuotedMessage: true }), false)
+assert.equal(isExempt('guildshop'), true)
+assert.equal(isExempt('guildshop', ['1']), false)
+assert.equal(isExempt('guildwar'), true)
+assert.equal(isExempt('guildwar', ['acak']), false)
+assert.equal(isPatrolExemptCommand('guildwar', [], { hasMention: true }), false)
+assert.equal(isExempt('misiguild'), true)
+assert.equal(isExempt('misiguild', ['list']), true)
+assert.equal(isExempt('misiguild', ['1']), false)
+
+assert.equal(isExempt('job'), true)
+assert.equal(isExempt('job', ['list']), true)
+assert.equal(isExempt('kerja'), false)
+assert.equal(isExempt('pet', ['list']), true)
+assert.equal(isExempt('pet', ['walk']), false)
+assert.equal(isExempt('pet', ['dispatch', 'info']), true)
+assert.equal(isExempt('rship', ['status']), true)
+assert.equal(isExempt('rship', ['date']), false)
+assert.equal(isExempt('rship', ['gift', 'list']), true)
+
+console.log('patrol helper tests passed')
