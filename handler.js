@@ -26,14 +26,19 @@ const isNumber = x => typeof x === 'number' && !isNaN(x)
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
 const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
 
+function execRegex(regex, text) {
+    regex.lastIndex = 0
+    return regex.exec(text)
+}
+
 function getPrefixMatch(text, prefix) {
     if (typeof text !== 'string') return null
-    let matches = (prefix instanceof RegExp ? [[prefix.exec(text), prefix]] :
+    let matches = (prefix instanceof RegExp ? [[execRegex(prefix, text), prefix]] :
         Array.isArray(prefix) ? prefix.map(p => {
             let re = p instanceof RegExp ? p : new RegExp(str2Regex(p))
-            return [re.exec(text), re]
+            return [execRegex(re, text), re]
         }) :
-        typeof prefix === 'string' ? [[new RegExp(str2Regex(prefix)).exec(text), new RegExp(str2Regex(prefix))]] :
+        typeof prefix === 'string' ? [[execRegex(new RegExp(str2Regex(prefix)), text), new RegExp(str2Regex(prefix))]] :
         [[[], new RegExp]]
     ).find(p => p[0])
     return (matches?.[0] || '')[0] || null
@@ -809,14 +814,14 @@ async function processMessage(m, chatUpdate) {
             }
             if (!opts['restrict'] && plugin.tags?.includes('admin') && !plugin.admin) continue
             let _prefix = plugin.customPrefix ? plugin.customPrefix : conn.prefix ? conn.prefix : global.prefix
-            let match = (_prefix instanceof RegExp ? [[_prefix.exec(m.text), _prefix]] :
+            let match = (_prefix instanceof RegExp ? [[execRegex(_prefix, m.text), _prefix]] :
                 Array.isArray(_prefix) ? _prefix.map(p => {
                     let re = p instanceof RegExp ? p : new RegExp(str2Regex(p))
-                    return [re.exec(m.text), re]
+                    return [execRegex(re, m.text), re]
                 }) :
-                typeof _prefix === 'string' ? [[new RegExp(str2Regex(_prefix)).exec(m.text), new RegExp(str2Regex(_prefix))]] :
+                typeof _prefix === 'string' ? [[execRegex(new RegExp(str2Regex(_prefix)), m.text), new RegExp(str2Regex(_prefix))]] :
                 [[[], new RegExp]]
-            ).find(p => p[1])
+            ).find(p => p[0])
 
             // plugin.before
             if (typeof plugin.before === 'function') {
@@ -832,22 +837,18 @@ async function processMessage(m, chatUpdate) {
 
             if (typeof plugin !== 'function') continue
 
-                        if ((usedPrefix = (match[0] || '')[0])) {
-                let noPrefix = m.text.replace(usedPrefix, '')
-                let [command, ...args] = noPrefix.trim().split` `.filter(v => v)
+            if ((usedPrefix = match?.[0]?.[0])) {
+                let noPrefix = m.text.slice(usedPrefix.length).trim()
+                let [command, ...args] = noPrefix ? noPrefix.split(/\s+/) : []
                 if (global.opts['pconlyprem'] && !m.isGroup && !isPrems && !isOwner && !m.fromMe) {
                     this.reply(m.chat, `*╭  〔 Ⓟ ᴘ ʀ ᴇ ᴍ ɪ ᴜ ᴍ  ᴏ ɴ ʟ ʏ 〕*\n> Fitur chat pribadi bot saat ini hanya khusus user *PREMIUM*.\n> Silakan gunakan bot di dalam grup atau hubungi owner untuk upgrade premium.\n*╰───────────────*`, m)
                     return false 
                 }
-                args = args || []
-                let _args = noPrefix.trim().split` `.slice(1)
-                let text = _args.join` `
+                let text = args.join(' ')
                 command = (command || '').toLowerCase()
                 let fail = plugin.fail || global.dfail
 
-                let isAccept = plugin.command instanceof RegExp ? plugin.command.test(command) :
-                    Array.isArray(plugin.command) ? plugin.command.some(cmd => cmd instanceof RegExp ? cmd.test(command) : cmd === command) :
-                    typeof plugin.command === 'string' ? plugin.command === command : false
+                let isAccept = pluginAcceptsCommand(plugin, command)
 
                 if (!isAccept) continue
 
