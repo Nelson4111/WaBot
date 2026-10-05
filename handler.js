@@ -14,7 +14,7 @@ import { sendBotGroupIntro } from './lib/bot-intro.js'
 import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave, verifySecurityMember, getSecurityAdminJids } from './lib/securityProtocol.js'
 import { botArbitrator } from './lib/botArbitrator.js'
 import { computeCrimeScore, ensurePatrolReleaseProtection, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncEscapeCrimeCounts } from './lib/crimeHelper.js'
-import { getPatrolCaptureStory, PATROL_EXEMPT_COMMANDS, PATROL_RESTRICTED_CRIME_COMMANDS, PATROL_RESTRICTED_RSHIP_ACTIONS } from './lib/patrolHelper.js'
+import { getPatrolCaptureStory, isPatrolExemptCommand, PATROL_RESTRICTED_CRIME_COMMANDS, PATROL_RESTRICTED_RSHIP_ACTIONS } from './lib/patrolHelper.js'
 import { loadDB, saveDB } from './lib/waifuHelper.js'
 import { registerPrisoner } from './lib/prisonHelper.js'
 
@@ -717,7 +717,13 @@ async function processMessage(m, chatUpdate) {
             }
         }
 
-        if (commandCandidate && !PATROL_EXEMPT_COMMANDS.has(commandCandidate.command)) {
+        const patrolArgs = commandCandidate
+            ? m.text.slice(commandCandidate.usedPrefix.length).trim().split(/\s+/).slice(1)
+            : []
+        if (commandCandidate && !isPatrolExemptCommand(commandCandidate.command, patrolArgs, {
+            hasMention: Boolean(m.mentionedJid?.length),
+            hasQuotedMessage: Boolean(m.quoted)
+        })) {
             const isRpgActivity = Object.values(global.plugins || {}).some(plugin =>
                 plugin && !plugin.disabled &&
                 (plugin.tags?.includes('rpg') || plugin.tags?.includes('pasangan')) &&
