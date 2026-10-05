@@ -1,36 +1,32 @@
 let handler = async (m, { conn, groupMetadata, command, usedPrefix, text }) => {
-    if (!text) throw `Contoh:\n${usedPrefix + command} 2 karbit`
+    const usage = `Format yang benar: *${usedPrefix + command} <jumlah 1-20> <judul>*\nContoh: *${usedPrefix + command} 2 karbit*`
+    if (!text?.trim()) return m.reply(usage)
 
-    let args = text.split(' ')
-    let jumlah = parseInt(args[0])
+    let args = text.trim().split(/\s+/)
+    if (!/^\d+$/.test(args[0])) return m.reply(`❌ Jumlah harus berupa angka.\n${usage}`)
+    let jumlah = Number(args[0])
     let judul = args.slice(1).join(' ')
 
-    if (isNaN(jumlah) || jumlah < 1)
-        throw 'Jumlah top harus angka!'
+    if (jumlah > 20)
+        return m.reply(`❌ Maksimal top 20 agar tidak spam.\n${usage}`)
+
+    if (jumlah < 1)
+        return m.reply(`❌ Jumlah minimal 1.\n${usage}`)
 
     if (!judul)
-        throw 'Judul top tidak boleh kosong!'
+        return m.reply(`❌ Judul top tidak boleh kosong.\n${usage}`)
 
-    if (jumlah > 20)
-        throw 'Maksimal top 20 biar ga spam'
-
-    let users = db.data.users
     let members = groupMetadata.participants.map(v => v.id)
 
     if (jumlah > members.length)
         throw `Member grup cuma ${members.length}`
 
     let picked = []
-    let teks = `*Top ${jumlah} ${judul}*\n\n`
-
+    let teks = `*Top ${jumlah} ${judul}*\n\n> Ini fitur just for fun; tag dipilih secara acak dari member grup.\n\n`
     while (picked.length < jumlah) {
         let id = members.getRandom()
         if (picked.includes(id)) continue
         picked.push(id)
-
-        let name = users?.[id]?.registered
-            ? users[id].name
-            : conn.getName(id)
 
         teks += `${picked.length}. @${id.split('@')[0]}\n`
     }
