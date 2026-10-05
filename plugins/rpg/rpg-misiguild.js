@@ -188,8 +188,7 @@ if(command === 'latihanguild'){
   if (!missions[index]) return m.reply('❌ Nomor misi tidak valid.')
   let msn = missions[index]
 
-  let baseCooldown = 120000
-  let cooldown = Date.now() < myGuild.buffSpeed? baseCooldown / 2 : baseCooldown
+  let cooldown = missionCooldown
 
   if (Date.now() - (myGuild.lastMission || 0) < cooldown) {
     let sisa = ((cooldown - (Date.now() - myGuild.lastMission)) / 1000).toFixed(0)
