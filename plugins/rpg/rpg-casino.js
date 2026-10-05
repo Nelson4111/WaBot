@@ -218,9 +218,8 @@ function getCasinoTitle(gamesPlayed) {
 
 function reduceCasinoWinChance(result) {
   if (result.multiplier > 0 && Math.random() >= 0.5) {
-    result.multiplier = 0
     result.payoutDenied = true
-    result.text += '\n> ↳ 🎟️ Hadiah kasino tidak cair kali ini.'
+    result.text += '\n> ↳ 🎟️ Kamu menang, tetapi hadiah tidak cair. Taruhan dikembalikan.'
   }
   return result
 }
@@ -292,8 +291,28 @@ const outcomes = {
 }
 
 function normalizeResult(result) {
-  if (result.multiplier > 0) result.multiplier = Math.min(1.5, Math.max(1.25, result.multiplier))
+  if (result.multiplier > 0) result.multiplier = Math.max(2, result.multiplier)
   result.text = result.text.replaceAll('├[', '│ [')
+  return result
+}
+
+function applyCasinoSpecialOutcome(result) {
+  if (!result.payoutDenied && Math.random() < 0.02) {
+    result.blackout = true
+    result.text += '\n> ↳ 🌑 Blackout! Kamu pingsan dan uang taruhan dicuri.'
+    return result
+  }
+
+  if (result.multiplier === 0 && !result.payoutDenied) {
+    const outcome = Math.random()
+    if (outcome < 0.08) {
+      result.escaped = true
+      result.text += '\n> ↳ 🏃 Berhasil kabur! Taruhanmu tidak berkurang.'
+    } else if (outcome < 0.16) {
+      result.dealerMercy = true
+      result.text += '\n> ↳ 🤝 Bandar berbaik hati dan membiarkanmu menyimpan taruhan.'
+    }
+  }
   return result
 }
 
@@ -1290,11 +1309,26 @@ if (elapsed < cooldownDuration) {
   )
 }
 
-  const result = normalizeResult(resultFor(game))
-  let payout = Math.floor(bet * result.multiplier)
-  if (payout > bet) payout = bet + Math.min(Math.floor(bet * 0.5), scaleDifficultyIncome(user, payout - bet))
-  const net = payout - bet
+  const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
   const balanceBefore = wdb.money[m.sender] || 0
+  let payout = result.payoutDenied
+    ? 0
+    : result.multiplier > 0
+    ? bet + scaleDifficultyIncome(user, Math.floor(bet * (result.multiplier - 1)))
+    : 0
+  let net = result.payoutDenied ? 0 : payout - bet
+  if (result.payoutDenied) {
+    payout = 0
+  } else if (result.escaped) {
+    payout = bet
+    net = 0
+  } else if (result.dealerMercy) {
+    payout = bet
+    net = 0
+  } else if (result.blackout) {
+    payout = 0
+    net = -Math.min(balanceBefore, bet * 2)
+  }
 
   wdb.money[m.sender] = balanceBefore + net
   cooldowns[game] = Date.now()
@@ -1314,20 +1348,26 @@ if (elapsed < cooldownDuration) {
 
   stats.profit = Number(stats.profit || 0) + net
   wdb.casinoStats = wdb.casinoStats || { totalWinnings: 0 }
-  if (result.multiplier > 0) {
+  if (result.multiplier > 0 && !result.payoutDenied) {
     wdb.casinoStats.totalWinnings = Number(wdb.casinoStats.totalWinnings || 0) + payout
   }
 
   saveDB(wdb)
 
-  const status = result.payoutDenied
-    ? `🎟️ *HADIAH TIDAK CAIR*`
+  const status = result.blackout
+    ? `🌑 *BLACKOUT*`
+    : result.escaped
+      ? `🏃 *BERHASIL KABUR*`
+      : result.dealerMercy
+        ? `🤝 *BANDAR BERBAIK HATI*`
+        : result.payoutDenied
+          ? `🎟️ *HADIAH TIDAK CAIR*`
     : result.multiplier >= 10
       ? `🏆 *JACKPOT*`
       : result.multiplier > 0
         ? `🎉 *MENANG*`
         : `💀 *KALAH*`
-  const dialog = pick(result.multiplier > 0 ? winDialogs : loseDialogs)
+  const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
 
   return m.reply(
     `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
@@ -1337,6 +1377,7 @@ if (elapsed < cooldownDuration) {
     `> ↳ ${status}\n` +
     `> ↳ Taruhan: ${money(bet)}\n` +
     `> ↳ Hadiah: ${money(payout)}\n` +
+    `${result.blackout ? `> ↳ Uang hilang: ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
     `> ↳ Profit: ${signedMoney(net)}\n` +
     `> ↳ 💰 Sebelum: ${money(balanceBefore)}\n` +
     `> ↳ 💰 Sesudah: ${money(wdb.money[m.sender])}\n\n` +
