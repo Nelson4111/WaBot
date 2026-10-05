@@ -1,0 +1,301 @@
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import {
+  addGuildLootReward,
+  advanceGuildLevel,
+  GUILD_MEMBER_INACTIVE_MS,
+  normalizeGuildLoot,
+  normalizeGuildPendingLoot
+} from '../../lib/rpgGuild.js'
+
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  const wdb = loadDB()
+  wdb.money = wdb.money || {}
+
+  let guildName = Object.keys(wdb.guilds || {}).find(name => wdb.guilds[name].members.includes(m.sender))
+  if (!guildName) return m.reply('❌ Kamu bukan anggota Guild.')
+
+  let myGuild = wdb.guilds[guildName]
+
+  // init data biar ga error
+  myGuild.level = myGuild.level || 1
+  myGuild.exp = myGuild.exp || 0
+  if (!myGuild.contribution) myGuild.contribution = {}
+  if (!myGuild.lastParty) myGuild.lastParty = 0
+  if (!myGuild.lastTrain) myGuild.lastTrain = 0
+  if (!myGuild.buffSpeed) myGuild.buffSpeed = 0
+  if (!myGuild.buffLuck) myGuild.buffLuck = 0
+  if (!myGuild.buffMulti) myGuild.buffMulti = 0
+  if (!myGuild.warCooldown) myGuild.warCooldown = 0
+  const player = getUserRPG(wdb, m.sender).rpg
+
+  if(command === 'pestaguild'){
+  let cd = 10800000 // 3 jam
+  if(Date.now() - myGuild.lastParty < cd) return m.reply(
+    `╭─❏「 🎉 PESTA GUILD 」❏\n` +
+    `│ ⏳ *COOLDOWN PESTA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Pesta guild masih cooldown.\n` +
+    `> ↳ Sisa: ${((cd - (Date.now() - myGuild.lastParty))/60000).toFixed(0)} menit\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let expGain = Date.now() < myGuild.buffMulti? 450 : 300
+  myGuild.exp += expGain
+  myGuild.lastParty = Date.now()
+  advanceGuildLevel(myGuild, conn, m)
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🎉 PESTA GUILD 」❏\n` +
+    `│ 🎉 *PESTA GUILD DIMULAI!*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🎊 *AKTIVITAS GUILD*\n` +
+    `> ↳ Semua anggota bersenang-senang bersama\n\n` +
+    `✨ *GUILD EXP*\n` +
+    `> ↳ +${expGain} Guild Exp${Date.now() < myGuild.buffMulti? ' 📈':''}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if(command === 'latihanguild'){
+  let cd = 1800000 // 30 menit
+  if(Date.now() - myGuild.lastTrain < cd) return m.reply(
+    `╭─❏「 ⚔️ LATIHAN GUILD 」❏\n` +
+    `│ ⏳ *COOLDOWN LATIHAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Latihan guild masih cooldown.\n` +
+    `> ↳ Sisa: ${((cd - (Date.now() - myGuild.lastTrain))/60000).toFixed(0)} menit\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+
+  let expGain = Date.now() < myGuild.buffMulti? 150 : 100
+  myGuild.exp += expGain
+  myGuild.lastTrain = Date.now()
+  advanceGuildLevel(myGuild, conn, m)
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 ⚔️ LATIHAN GUILD 」❏\n` +
+    `│ ⚔️ *LATIHAN GUILD SELESAI!*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🏋️ *AKTIVITAS GUILD*\n` +
+    `> ↳ Semua anggota berlatih bersama\n\n` +
+    `✨ *GUILD EXP*\n` +
+    `> ↳ +${expGain} Guild Exp${Date.now() < myGuild.buffMulti? ' 📈':''}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+  const missions = [
+{ name: 'Pembersihan Selokan Kota', minLevel: 1, reward: { money: 20000, exp: 50, iron: 2 }, contrib: 10 },
+{ name: 'Patroli Perbatasan', minLevel: 10, reward: { money: 45000, exp: 120, iron: 5 }, contrib: 25 },
+{ name: 'Ekspedisi Tambang Tua', minLevel: 20, reward: { money: 80000, exp: 200, iron: 10, gold: 2 }, contrib: 50 },
+{ name: 'Perburuan Orc Liar', minLevel: 30, reward: { money: 150000, exp: 450, gold: 8, stone: 15 }, contrib: 100 },
+{ name: 'Penjajahan Benteng Goblin', minLevel: 40, reward: { money: 350000, exp: 1000, gold: 15, diamond: 3 }, contrib: 200 },
+{ name: 'Slayer Sang Naga Purba', minLevel: 50, reward: { money: 750000, exp: 2500, gold: 30, diamond: 10, stone: 50 }, contrib: 500 },
+{ name: 'Pemusnahan Kamp Ogre', minLevel: 60, reward: { money: 1200000, exp: 4000, gold: 45, diamond: 15, stone: 80 }, contrib: 750 },
+{ name: 'Perburuan Kalajengking Raksasa', minLevel: 70, reward: { money: 1800000, exp: 6000, gold: 60, diamond: 20, stone: 100 }, contrib: 1000 },
+{ name: 'Penaklukan Raja Lich', minLevel: 80, reward: { money: 2600000, exp: 8500, gold: 80, diamond: 30, gemstone: 5 }, contrib: 1400 },
+{ name: 'Invasi Kerajaan Mayat Hidup', minLevel: 90, reward: { money: 3600000, exp: 11500, gold: 105, diamond: 42, gemstone: 8 }, contrib: 1900 },
+{ name: 'Eksekusi Phoenix Kegelapan', minLevel: 100, reward: { money: 4800000, exp: 15000, gold: 135, diamond: 56, gemstone: 12 }, contrib: 2500 },
+{ name: 'Penjelajahan Gunung Neraka', minLevel: 120, reward: { money: 6200000, exp: 19000, gold: 170, diamond: 72, gemstone: 17 }, contrib: 3200 },
+{ name: 'Pembantaian Iblis', minLevel: 140, reward: { money: 7800000, exp: 23500, gold: 210, diamond: 90, gemstone: 23 }, contrib: 4000 },
+{ name: 'Perburuan Hydra Berkepala Sembilan', minLevel: 160, reward: { money: 9600000, exp: 28500, gold: 255, diamond: 110, gemstone: 30 }, contrib: 4900 },
+{ name: 'Ekspedisi Abyss Tanpa Dasar', minLevel: 180, reward: { money: 11600000, exp: 34000, gold: 305, diamond: 135, gemstone: 40 }, contrib: 6000 },
+{ name: 'Penaklukan Titan Petir', minLevel: 200, reward: { money: 13800000, exp: 40000, gold: 360, diamond: 165, gemstone: 55 }, contrib: 7300 },
+{ name: 'Pemburuan Leviathan Astral', minLevel: 230, reward: { money: 16200000, exp: 46500, gold: 420, diamond: 200, gemstone: 75 }, contrib: 8800 },
+{ name: 'Eksekusi Raja Iblis Azrael', minLevel: 260, reward: { money: 18800000, exp: 53500, gold: 485, diamond: 240, gemstone: 100 }, contrib: 10500 },
+{ name: 'Penumpasan Dewa Kekacauan', minLevel: 300, reward: { money: 21600000, exp: 61000, gold: 555, diamond: 285, gemstone: 130 }, contrib: 12500 },
+{ name: 'Serangan ke Istana Dewa Matahari', minLevel: 350, reward: { money: 24600000, exp: 69000, gold: 630, diamond: 335, gemstone: 165 }, contrib: 14800 },
+{ name: 'Perburuan Naga Astral Abadi', minLevel: 400, reward: { money: 30000000, exp: 85000, gold: 750, diamond: 420, gemstone: 210 }, contrib: 18000 },
+{ name: 'Penaklukan Penguasa Dimensi Void', minLevel: 450, reward: { money: 38000000, exp: 105000, gold: 900, diamond: 550, gemstone: 280 }, contrib: 23000 },
+{ name: 'Eksekusi Sang Pengamat Semesta', minLevel: 500, reward: { money: 48000000, exp: 130000, gold: 1100, diamond: 720, gemstone: 370 }, contrib: 30000 },
+{ name: 'Raid Istana Para Dewa', minLevel: 550, reward: { money: 60000000, exp: 160000, gold: 1350, diamond: 950, gemstone: 480 }, contrib: 39000 },
+{ name: 'Invasi Langit Ketujuh', minLevel: 600, reward: { money: 75000000, exp: 200000, gold: 1650, diamond: 1250, gemstone: 620 }, contrib: 50000 },
+{ name: 'Perburuan Dewa Petir', minLevel: 650, reward: { money: 95000000, exp: 250000, gold: 2000, diamond: 1650, gemstone: 800 }, contrib: 65000 },
+{ name: 'Penaklukan Kastil Waktu', minLevel: 700, reward: { money: 120000000, exp: 310000, gold: 2400, diamond: 2200, gemstone: 1050 }, contrib: 85000 },
+{ name: 'Eksekusi Kaisar Void', minLevel: 800, reward: { money: 150000000, exp: 380000, gold: 2900, diamond: 2900, gemstone: 1350 }, contrib: 110000 },
+{ name: 'Pembantaian 9 Raja Iblis', minLevel: 900, reward: { money: 190000000, exp: 470000, gold: 3500, diamond: 3800, gemstone: 1750 }, contrib: 145000 },
+{ name: 'Runtuhkan Menara Keabadian', minLevel: 1000, reward: { money: 240000000, exp: 580000, gold: 4200, diamond: 5000, gemstone: 2250 }, contrib: 190000 },
+{ name: 'Perburuan Naga Kosmik', minLevel: 1100, reward: { money: 300000000, exp: 710000, gold: 5000, diamond: 6500, gemstone: 2900 }, contrib: 250000 },
+{ name: 'Penaklukan Armada Galaksi', minLevel: 1200, reward: { money: 380000000, exp: 870000, gold: 6000, diamond: 8500, gemstone: 3700 }, contrib: 330000 },
+{ name: 'Eksekusi Penguasa Galaksi', minLevel: 1300, reward: { money: 480000000, exp: 1060000, gold: 7200, diamond: 11000, gemstone: 4700 }, contrib: 430000 },
+{ name: 'Raid Dimensi Paralel', minLevel: 1400, reward: { money: 600000000, exp: 1290000, gold: 8600, diamond: 14500, gemstone: 6000 }, contrib: 560000 },
+{ name: 'Pembantaian Dewa Primordial', minLevel: 1500, reward: { money: 750000000, exp: 1570000, gold: 10200, diamond: 19000, gemstone: 7600 }, contrib: 730000 },
+{ name: 'Penaklukan Alam Semesta', minLevel: 1600, reward: { money: 950000000, exp: 1900000, gold: 12000, diamond: 25000, gemstone: 9600 }, contrib: 950000 },
+{ name: 'Eksekusi Sang Pencipta', minLevel: 1700, reward: { money: 1200000000, exp: 2300000, gold: 14000, diamond: 33000, gemstone: 12000 }, contrib: 1250000 },
+{ name: 'Runtuhkan Tahta Semesta', minLevel: 1800, reward: { money: 1500000000, exp: 2800000, gold: 16500, diamond: 43000, gemstone: 15000 }, contrib: 1650000 },
+{ name: 'Perang Melawan Kehampaan', minLevel: 1900, reward: { money: 1900000000, exp: 3400000, gold: 19500, diamond: 56000, gemstone: 19000 }, contrib: 2200000 },
+{ name: 'Ascensi Menjadi Dewa Tertinggi', minLevel: 2000, reward: { money: 2500000000, exp: 4200000, gold: 23000, diamond: 75000, gemstone: 25000 }, contrib: 3000000 }
+  ]
+
+  if (!text || text.trim().toLowerCase() === 'list') {
+  let list = `╭─❏「 📜 GUILD EXPEDITION 」❏\n`
+  list += `│ ⚔️ *DAFTAR MISI GUILD*\n`
+  list += `╰─━━━━━━━━━━━━━━─\n\n`
+
+  const playerLevel = Math.max(1, Number(player.level) || 1)
+  const highestAvailable = missions.reduce((highest, mission, index) =>
+    mission.minLevel <= playerLevel ? index + 1 : highest, 0)
+  const baseCooldown = 120000
+  const missionCooldown = Date.now() < myGuild.buffSpeed ? baseCooldown / 2 : baseCooldown
+  const remainingCooldown = Math.max(0, missionCooldown - (Date.now() - (myGuild.lastMission || 0)))
+  list += `│ 📊 Status: ${remainingCooldown > 0 ? `⏳ Cooldown ${Math.ceil(remainingCooldown / 1000)} detik` : '✅ Siap menjalankan misi'}\n`
+  list += `│ 🎯 Level pemain: Lv.${playerLevel} • Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
+  list += `📌 *PILIH MISI*\n`
+  list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/ .bag; tidak masuk Guild Loot.\n`
+  list += `> ↳ Anggota aktif lain mendapat 50% sebagai pending loot. Klaim dengan .guild loot take.\n\n`
+  list += `> ↳ Loot anggota hanya bertambah jika anggota aktif dalam 4 hari terakhir.\n`
+  list += `─━━━━━━━━━━━━━━─\n\n`
+
+  missions.forEach((v, i) => {
+    list += `*${i + 1}. ${v.minLevel <= playerLevel ? '✅' : '🔒'} ⚔️ ${v.name}*\n`
+    list += `> ↳ 📊 Syarat: Lv.${v.minLevel}${v.minLevel > playerLevel ? ' (belum terbuka)' : ''}\n`
+    list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
+    list += `> ↳ ✨ Exp: +${v.reward.exp}\n`
+    list += `> ↳ 🎁 Hadiah: ${Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }).filter(([item]) => Number(v.reward[item]) > 0).map(([item, name]) => `${name}: ${item === 'money' ? `Rp ${Number(v.reward[item]).toLocaleString('id-ID')}` : Number(v.reward[item]).toLocaleString('id-ID')}`).join(', ')}\n\n`
+  })
+
+  list += `─━━━━━━━━━━━━━━─\n\n`
+  list += `📌 *CARA MEMILIH MISI*\n`
+  list += `> ↳ *${usedPrefix}misiguild [nomor]* atau *${usedPrefix}guild mission [nomor]*\n\n`
+  list += `─━━━━━━━━━━━━━━─`
+
+  return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
+}
+
+  let index = parseInt(text.trim(), 10) - 1
+  if (!missions[index]) return m.reply('❌ Nomor misi tidak valid.')
+  let msn = missions[index]
+
+  let baseCooldown = 120000
+  let cooldown = Date.now() < myGuild.buffSpeed? baseCooldown / 2 : baseCooldown
+
+  if (Date.now() - (myGuild.lastMission || 0) < cooldown) {
+    let sisa = ((cooldown - (Date.now() - myGuild.lastMission)) / 1000).toFixed(0)
+    return m.reply(`⏳ Guild sedang cooldown. Sisa: ${sisa} detik lagi.`)
+  }
+
+  let user = wdb.users[m.sender]?.rpg || (getUserRPG(wdb, m.sender).rpg)
+  migrateRpgCurrencies(user)
+  if (user.level < msn.minLevel) return m.reply(`❌ Butuh Player Lv.${msn.minLevel} untuk misi ini.`)
+
+  if (typeof myGuild.exp!== 'number') myGuild.exp = 0
+  if (typeof myGuild.level!== 'number') myGuild.level = 1
+  if (!myGuild.contribution) myGuild.contribution = {}
+
+  let isLuck = Date.now() < myGuild.buffLuck
+  let isMulti = Date.now() < myGuild.buffMulti
+  let reward = {...msn.reward}
+  let extraText = ''
+
+  if(isLuck){
+    let multiplier = 1 + (Math.random() * 0.5)
+    reward.money = Math.floor(reward.money * multiplier)
+    reward.exp = Math.floor(reward.exp * multiplier)
+    extraText += `\n🍀 *LUCK BUFF:* Hadiah x${multiplier.toFixed(2)}`
+  }
+  if(isMulti){
+    reward.exp = Math.floor(reward.exp * 1.5)
+    extraText += `\n📈 *MULTIPLIER:* +50% Exp Guild`
+  }
+
+  myGuild.contribution[m.sender] = (myGuild.contribution[m.sender] || 0) + msn.contrib
+  myGuild.exp += reward.exp
+  myGuild.lastMission = Date.now()
+
+  myGuild.pendingLoot = myGuild.pendingLoot || {}
+  normalizeGuildPendingLoot(myGuild)
+  const now = Date.now()
+  const executorLoot = {}
+  const pendingLootTotals = { money: 0, iron: 0, gold: 0, stone: 0, diamond: 0, gemstone: 0 }
+  let pendingRecipients = 0
+  let lootLimitReached = false
+  for (const jid of myGuild.members) {
+    let u = wdb.users[jid]?.rpg
+    if (!u) continue
+
+    normalizeGuildLoot(u)
+    if (!Number(u.lastGuildMissionAt)) u.lastGuildMissionAt = now
+    if (jid === m.sender) u.lastGuildMissionAt = now
+    if (now - Number(u.lastGuildMissionAt) > GUILD_MEMBER_INACTIVE_MS) continue
+
+    {
+      const rewardItems = {
+        money: scaleDifficultyIncome(u, reward.money),
+        iron: scaleDifficultyIncome(u, msn.reward.iron || 0),
+        gold: scaleDifficultyIncome(u, msn.reward.gold || 0),
+        stone: scaleDifficultyIncome(u, msn.reward.stone || 0),
+        diamond: scaleDifficultyIncome(u, msn.reward.diamond || 0),
+        gemstone: scaleDifficultyIncome(u, msn.reward.gemstone || 0)
+      }
+      if (jid !== m.sender) {
+        for (const item of Object.keys(rewardItems)) {
+          rewardItems[item] = Math.floor(rewardItems[item] * 0.5)
+        }
+      }
+      if (jid === m.sender) {
+        u.inventory = u.inventory || {}
+        for (const [item, amount] of Object.entries(rewardItems)) {
+          executorLoot[item] = amount
+          if (item === 'money') wdb.money[jid] = (wdb.money[jid] || 0) + amount
+          else if (item === 'gemstone') u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + amount
+          else u[item] = (Number(u[item]) || 0) + amount
+        }
+      } else {
+        myGuild.pendingLoot[jid] = myGuild.pendingLoot[jid] || {}
+        let receivedPendingLoot = false
+        for (const [item, amount] of Object.entries(rewardItems)) {
+          const accepted = addGuildLootReward(myGuild, u, jid, item, amount, { pending: true })
+          myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + accepted
+          pendingLootTotals[item] += accepted
+          if (accepted > 0) receivedPendingLoot = true
+          if (accepted < amount) lootLimitReached = true
+        }
+        if (receivedPendingLoot) pendingRecipients++
+      }
+    }
+  }
+
+  advanceGuildLevel(myGuild, conn, m)
+
+  wdb.guilds[guildName] = myGuild
+  saveDB(wdb)
+
+  let executorName = m.pushName || global.db.data.users[m.sender]?.name || conn.getName(m.sender) || 'Player'
+
+  let cap = `╭─❏「 ✅ MISSION CLEAR 」❏\n`
+cap += `│ 📜 *MISI SELESAI*\n`
+cap += `╰─━━━━━━━━━━━━━━─\n\n`
+
+cap += `📋 *INFORMASI MISI*\n`
+cap += `> ↳ 📜 Misi: ${msn.name}\n`
+cap += `> ↳ 👤 Eksekutor: ${executorName}\n`
+cap += `> ↳ ✨ Guild Exp: +${reward.exp}${extraText}\n`
+cap += `> ↳ 🏆 Kontribusi: +${msn.contrib} Pts\n\n`
+
+cap += `─━━━━━━━━━━━━━━─\n\n`
+
+cap += `🎁 *HADIAH EKSEKUTOR (LANGSUNG MASUK SALDO / .BAG)*\n`
+const rewardLabels = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }
+for (const [item, label] of Object.entries(rewardLabels)) {
+  const amount = executorLoot[item] || 0
+  if (Number(amount) > 0) cap += `> ↳ ${label}: ${item === 'money' ? `Rp ${Number(amount).toLocaleString('id-ID')}` : Number(amount).toLocaleString('id-ID')}\n`
+}
+cap += `\n🎁 *PENDING GUILD LOOT UNTUK ANGGOTA LAIN*\n`
+cap += `> ↳ Penerima: ${pendingRecipients} anggota aktif • Total: ${Object.entries(rewardLabels).filter(([item]) => pendingLootTotals[item] > 0).map(([item, label]) => `${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`).join(', ') || 'Tidak ada'}\n`
+cap += `> ↳ Anggota mengambil bagiannya sendiri dengan *.guild loot take*; hadiah eksekutor tidak masuk loot.\n`
+if (lootLimitReached) cap += `> ↳ Sebagian pending reward tidak masuk karena batas loot anggota terkait sudah tercapai.\n`
+
+cap += `\n╰─━━━━━━━━━━━━━━─`
+
+  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [m.sender] } })
+}
+
+handler.help = ['misiguild', 'pestaguild', 'latihanguild']
+handler.tags = ['rpg']
+handler.command = ['misiguild', 'pestaguild', 'latihanguild']
+
+export default handler
