@@ -93,9 +93,11 @@ function formatNewsDate(timestamp) {
 function formatNewsPage(entries, { page, pageCount, monthName, section }) {
   const title = section ? `NEWS • ${section.toUpperCase()}` : `NEWS UPDATE • ${monthName}`
   const pageEntries = entries.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-  const body = pageEntries.map(entry =>
-    `*${entry.id}* | ${formatNewsDate(entry.createdAt)}\n*${entry.section}*\n${entry.content}`
-  ).join('\n\n')
+  const body = pageEntries.map(entry => {
+    const entryTitle = entry.title || `${entry.section} Update`
+    const author = entry.author || 'Eza'
+    return `*${entry.id}* | ${formatNewsDate(entry.createdAt)}\n*${entryTitle}*\n${entry.section} • Oleh: ${author}\n${entry.content}`
+  }).join('\n\n')
 
   return `*${title}*\n\n${body}\n\nHalaman ${page}/${pageCount}`
 }
