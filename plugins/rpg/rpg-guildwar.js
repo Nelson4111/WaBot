@@ -51,7 +51,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   // INIT BIAR GA ERROR
   myGuild.members = myGuild.members || []
   myGuild.warCooldown = myGuild.warCooldown || 0
-  myGuild.missionCooldown = myGuild.missionCooldown || 0
   myGuild.level = myGuild.level || 1
   myGuild.buffAttack = myGuild.buffAttack || 0
   myGuild.buffDefense = myGuild.buffDefense || 0
@@ -108,7 +107,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     members: Array(memberCount).fill(0).map((_,i) => `rand_${Date.now()}_${i}@s.whatsapp.net`),
     level: levelRand, exp: 0,
     buffAttack: 0, buffDefense: 0, buffMagic: 0,
-    warCooldown: 0, missionCooldown: 0,
+    warCooldown: 0,
     money: Math.floor(Math.random() * 5000000) + 1000000
   }
 
@@ -174,13 +173,12 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
   })
 
   // UPDATE EXP & COOLDOWN
+  loser.warCooldown = Date.now() + 3600000
+  winner.warCooldown = 0
   if(!isRandom){
     winner.exp = (winner.exp || 0) + expGuild
     loser.exp = (loser.exp || 0) + Math.floor(expGuild / 2)
-    loser.warCooldown = Date.now() + 3600000 // 1 jam ga bisa war
-    loser.missionCooldown = Date.now() + 7200000 // 2 jam ga bisa misi
   }
-  myGuild.warCooldown = Date.now() + 3600000
   saveDB(wdb)
 
   // TAMPILAN RINGKAS
@@ -196,10 +194,12 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
     cap += `⚠️ *Kerugian ${loser.name}:*\n`
     cap += `├ Uang: -10%\n`
     cap += `├ HP: -50%\n`
-    cap += `├ War CD: 1 Jam\n`
-    cap += `└ Mission CD: 2 Jam`
+    cap += `└ War CD pihak kalah: 1 Jam\n`
+    cap += `✅ Pihak menang tidak mendapat cooldown.`
   } else {
     cap += `⚔️ *Lawan Guild Misterius Lv${enemyGuild.level}*`
+    if (loser === myGuild) cap += `\n⏰ Guild kamu kalah dan mendapat cooldown war 1 jam.`
+    else cap += `\n✅ Guild kamu menang tanpa cooldown.`
   }
 
   let allMembers = isRandom? myGuild.members : [...myGuild.members,...enemyGuild.members]

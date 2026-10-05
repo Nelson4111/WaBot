@@ -1,5 +1,6 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { getGuildMemberCap } from '../../lib/rpgGuild.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -27,7 +28,7 @@ let index = 1
 const guildEntries = Object.entries(wdb.guilds)
 for (let position = 0; position < guildEntries.length; position++) {
   const [name, g] = guildEntries[position]
-  let maxMembers = 10 + ((g.level || 1) - 1) * 2
+  let maxMembers = getGuildMemberCap(g.level)
   list += `│ 🏰 *${index++}. ${g.name || name}*\n`
   list += `│ 👑 Leader: ${conn.getName(g.leader)}\n`
   list += `│ 🌟 Level: Lv.${g.level || 1}  •  👥 Member: ${(g.members || []).length}/${maxMembers}\n`
@@ -35,7 +36,7 @@ for (let position = 0; position < guildEntries.length; position++) {
 }
 
 list += `├─━━━━━━━━━━━━━━─\n`
-list += `│ 📌 Join: ${usedPrefix}joinguild <nama>\n`
+list += `│ 📌 Join: ${usedPrefix}guild join <nama>\n`
 list += `╰─━━━━━━━━━━━━━━─`
 
 return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/bbc63933dd81.jpeg')}

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { getGuildMemberCap } from '../../lib/rpgGuild.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -30,7 +31,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply(`⏰ Kamu masih cooldown!\nTunggu *${jam} jam ${menit} menit* lagi untuk join/create guild.`)
   }
 
-  let maxMembers = 10 + ((guild.level || 1) - 1) * 2
+  let maxMembers = getGuildMemberCap(guild.level)
   if (guild.members.length >= maxMembers) return m.reply(`❌ Guild sudah penuh (Max ${maxMembers}).`)
 
   let hasGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender)) // FIX: cek members dulu

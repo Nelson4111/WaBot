@@ -1,7 +1,14 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import guildMissionHandler from './rpg-misiguild.js'
+import guildWarHandler from './rpg-guildwar.js'
+import guildJoinHandler from './rpg-joinguild.js'
+import guildLeaveHandler from './rpg-leaveguild.js'
+import guildKickHandler from './rpg-kickguild.js'
+import guildShopHandler from './rpg-guildshop.js'
 import {
   advanceGuildLevel,
+  getGuildMemberCap,
   getGuildLootCaps,
   normalizeGuildLoot,
   normalizeGuildPendingLoot
@@ -21,6 +28,31 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
+  const guildRoutes = {
+    misi: [guildMissionHandler, 'misiguild'],
+    mission: [guildMissionHandler, 'misiguild'],
+    party: [guildMissionHandler, 'pestaguild'],
+    pesta: [guildMissionHandler, 'pestaguild'],
+    latihan: [guildMissionHandler, 'latihanguild'],
+    training: [guildMissionHandler, 'latihanguild'],
+    war: [guildWarHandler, 'guildwar'],
+    join: [guildJoinHandler, 'joinguild'],
+    leave: [guildLeaveHandler, 'leaveguild'],
+    kick: [guildKickHandler, 'kickguild'],
+    shop: [guildShopHandler, 'guildshop']
+  }
+  const route = guildRoutes[action]
+  if (route) {
+    if ((action === 'join' || action === 'war') && !m.isGroup) {
+      return m.reply('❌ Perintah ini hanya bisa digunakan di grup.')
+    }
+    return route[0](m, {
+      conn,
+      text: args.slice(1).join(' '),
+      usedPrefix,
+      command: route[1]
+    })
+  }
   const resourceNames = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }
   const normalizeResource = value => ({ uang: 'money' }[String(value || '').toLowerCase()] || String(value || '').toLowerCase())
   const readResource = (jid, rpg, item) => item === 'money'
@@ -60,16 +92,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `${usedPrefix}guild storage add/take <item> <jumlah>`,
       `${usedPrefix}guild command`,
       `${usedPrefix}guild guide`,
-      `${usedPrefix}joinguild <nama>`,
-      `${usedPrefix}leaveguild`,
-      `${usedPrefix}kickguild @member`,
-      `${usedPrefix}misiguild [nomor]`,
-      `${usedPrefix}pestaguild`,
-      `${usedPrefix}latihanguild`,
-      `${usedPrefix}guildshop`,
-      `${usedPrefix}guildwar @tag`,
-      `${usedPrefix}guildwar acak`,
-      `${usedPrefix}guildwar terima/tolak`
+      `${usedPrefix}guild join <nama>`,
+      `${usedPrefix}guild leave`,
+      `${usedPrefix}guild kick @member`,
+      `${usedPrefix}guild misi [nomor] (atau mission/list)`,
+      `${usedPrefix}guild party (atau pesta)`,
+      `${usedPrefix}guild latihan (atau training)`,
+      `${usedPrefix}guild shop`,
+      `${usedPrefix}guild war @tag/acak/terima/tolak`,
+      `${usedPrefix}joinguild <nama> (alias lama)`,
+      `${usedPrefix}leaveguild (alias lama)`,
+      `${usedPrefix}kickguild @member (alias lama)`,
+      `${usedPrefix}misiguild [nomor] (alias lama)`,
+      `${usedPrefix}pestaguild (alias lama)`,
+      `${usedPrefix}latihanguild (alias lama)`,
+      `${usedPrefix}guildshop (alias lama)`,
+      `${usedPrefix}guildwar @tag/acak (alias lama)`
     ]
     return m.reply(`╭─❏「 📜 GUILD COMMAND 」❏\n${commands.map(value => `│ ${value}`).join('\n')}\n╰─━━━━━━━━━━━━━━─`)
   }
@@ -89,25 +127,25 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ${usedPrefix}guild top
 
 📌 *3. Bergabung ke Guild*
-> ${usedPrefix}joinguild <nama guild>
-> Contoh: ${usedPrefix}joinguild Avelia
+> ${usedPrefix}guild join <nama guild>
+> Contoh: ${usedPrefix}guild join Avelia
 
 📌 *4. Cek Status Guild Kamu*
 > ${usedPrefix}guild
 
 📌 *5. Naikkan Level Guild*
-> ${usedPrefix}misiguild
-> ${usedPrefix}misiguild <nomor misi>
+> ${usedPrefix}guild misi
+> ${usedPrefix}guild mission <nomor misi>
 > Selesaikan misi untuk mendapatkan kontribusi dan EXP Guild.
 
 📌 *6. Aktivitas Guild*
-> ${usedPrefix}latihanguild
-> ${usedPrefix}pestaguild
+> ${usedPrefix}guild latihan
+> ${usedPrefix}guild party
 > ${usedPrefix}guild donate <jumlah>
 > Donasi dibagikan ke seluruh anggota guild.
 
 📌 *7. Gunakan Poin Guild*
-> ${usedPrefix}guildshop
+> ${usedPrefix}guild shop
 > Beli buff menggunakan poin kontribusi pribadi.
 
 📌 *8. Ambil Loot Guild*
@@ -115,7 +153,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ${usedPrefix}guild loot take
 > ${usedPrefix}guild loot list (leader)
 > ${usedPrefix}guild loot collect (leader)
-> Loot hanya bertambah untuk anggota yang menjalankan misi Guild dalam 4 hari terakhir. Batas Lv.1: Money Rp1.000.000 dan tiap loot lain 50; semua batas naik mengikuti level Guild.
+> Loot hanya bertambah untuk anggota yang menjalankan misi Guild dalam 4 hari terakhir. Batas Lv.1: Money Rp1.000.000 dan tiap loot lain 50; kapasitas anggota serta batas loot bertambah tiap 10 level dan batas loot berhenti naik mulai Lv.101.
 
 📌 *9. Guild Storage*
 > ${usedPrefix}guild storage
@@ -123,12 +161,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ${usedPrefix}guild storage take <item> <jumlah> (semua anggota)
 
 📌 *10. Guild War*
-> ${usedPrefix}guildwar @tag
-> ${usedPrefix}guildwar acak
+> ${usedPrefix}guild war @tag
+> ${usedPrefix}guild war acak
 > Tantang guild lain dan ikuti instruksi penerimaan war.
 
 📌 *11. Keluar dari Guild*
-> ${usedPrefix}leaveguild
+> ${usedPrefix}guild leave
 > Setelah keluar, ada cooldown sebelum bisa join/create lagi.
 
 ⚠️ *Catatan:* Satu user hanya bisa berada di satu guild dan beberapa aktivitas memiliki cooldown.`
@@ -179,7 +217,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         loot[item] += total[item]
         if (total[item]) changeResource(m.sender, target, item, total[item])
       }
-      if (!Object.values(total).some(amount => amount > 0)) return m.reply('🎁 Tidak ada loot yang bisa diambil saat ini. Batas loot mungkin sudah tercapai; batas bertambah saat Guild naik level.')
+      if (!Object.values(total).some(amount => amount > 0)) return m.reply('🎁 Tidak ada pending loot yang bisa diambil saat ini. Batas loot naik setiap 10 level Guild dan berhenti bertambah mulai Lv.101.')
       saveDB(wdb)
       return m.reply(`╭─❏「 ✅ GUILD LOOT DIAMBIL 」❏\n│ ${isCollect ? 'Loot pending berhasil dikumpulkan' : 'Loot pending berhasil diambil'}\n├─ ${formatResources(total)}\n╰─━━━━━━━━━━━━━━─`)
     }
@@ -188,9 +226,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const loot = normalizeGuildLoot(user.rpg)
     const caps = getGuildLootCaps(myGuild.level)
     const lootLines = Object.entries(resourceNames).map(([item, name]) =>
-      `│ ${name}: ${(loot[item] + (Number(pending[item]) || 0)).toLocaleString('id-ID')} / ${caps[item].toLocaleString('id-ID')}`
+      `│ ${name}: ${loot[item].toLocaleString('id-ID')} sudah diambil + ${(Number(pending[item]) || 0).toLocaleString('id-ID')} pending / ${caps[item].toLocaleString('id-ID')}`
     ).join('\n')
-    const cap = `╭─❏「 🎁 GUILD LOOT 」❏\n│ 🏰 Guild: ${myGuild.name}\n│ 🌟 Batas berdasarkan Guild Lv.${myGuild.level || 1}\n├─ LOOT TERKUMPUL / BATAS ─\n${lootLines}\n├─ LOOT PENDING ─\n│ ${formatResources(pending) || 'Kosong'}\n╰─━━━━━━━━━━━━━━─\nKetik *${usedPrefix}guild loot take* untuk mengambil loot milikmu.`
+    const cap = `╭─❏「 🎁 GUILD LOOT 」❏\n│ 🏰 Guild: ${myGuild.name}\n│ 🌟 Guild Lv.${myGuild.level || 1} • batas naik tiap 10 level (maks. Lv.101)\n├─ LOOT / BATAS ─\n${lootLines}\n├─ LOOT PENDING ─\n│ ${formatResources(pending) || 'Kosong'}\n╰─━━━━━━━━━━━━━━─\nPending belum masuk ke saldo/.bag sebelum diklaim. Ketik *${usedPrefix}guild loot take* untuk mengambil pending milikmu.`
     return m.reply(cap)
   }
 
@@ -253,7 +291,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!myGuild.lastTrain) myGuild.lastTrain = 0
 
     let nextExp = myGuild.level * 1000
-    let maxMembers = 10 + ((myGuild.level || 1) - 1) * 2
+    let maxMembers = getGuildMemberCap(myGuild.level)
     let lootCaps = getGuildLootCaps(myGuild.level)
 
     let cooldown = scaleDifficultyCooldown(user.rpg || user, user.lastGuildCooldownType === 'kick'? 12 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000)

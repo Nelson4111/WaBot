@@ -973,7 +973,17 @@ if (action === 'date') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ ${p.name} lagi sibuk`
   )
+
+  const biaya = 25_000 * Math.max(1, Math.floor(Number(p.level) || 1))
+  if (user.bank < biaya) return m.reply(
+    `╭─❏「 ❌ UANG 」❏\n` +
+    `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kencan dengan *${p.name}* (Lv.${p.level || 1}) butuh Rp ${biaya.toLocaleString('id-ID')}.\n` +
+    `> ↳ Saldo bank kamu: Rp ${Number(user.bank).toLocaleString('id-ID')}`
+  )
   
+  user.bank -= biaya
   p.love = Math.min(100, p.love + 10)
   let up = addExp(p, 20)
   user.dateStats.totalDate++
@@ -1009,6 +1019,7 @@ if (action === 'date') {
   msg += `│ 💕 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${ceritaRand}\n\n`
+  msg += `💰 *Biaya date*: -Rp ${biaya.toLocaleString('id-ID')} (Pasangan Lv.${p.level || 1})\n`
   msg += `💌 *Love*: +10\n`
   msg += `📈 *EXP*: +20`
 
@@ -1301,7 +1312,7 @@ if (action === 'belanja') {
     `> ↳ Dompet kosong`
   )
 
-  let biaya = Math.floor(Math.random() * 20000) + 10000
+  let biaya = (Math.floor(Math.random() * 20000) + 10000) * Math.max(1, Math.floor(Number(p.level) || 1))
 
   if (user.bank < biaya) return m.reply(
     `╭─❏「 ❌ UANG 」❏\n` +
@@ -1336,6 +1347,7 @@ if (action === 'belanja') {
   msg += `│ 🛍️ *MOMEN BELANJA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
+  msg += `🏷️ *Level pasangan*: Lv.${p.level || 1}\n`
   msg += `💰 *Uang*: -Rp ${biaya.toLocaleString()}\n`
   msg += `💌 *Love*: +10\n`
   msg += `📈 *EXP*: +15`
