@@ -63,9 +63,9 @@ function totalWins(stats) {
 }
 
 function getMode(command, args) {
-  if (MODES[command]) return command
+  if (ALL_MODE_DETAILS[command]) return command
   const mode = args[0]?.toLowerCase()
-  return MODES[mode] ? mode : null
+  return ALL_MODE_DETAILS[mode] ? mode : null
 }
 
 function getTarget(m, conn) {
@@ -267,9 +267,9 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
   return conn.sendMessage(m.chat, { text: cap, mentions: [sender, target] }, { quoted: m })
 }
 
-handler.help = ['versus', 'versus run @tag [taruhan]', 'versus drift @tag [taruhan]', 'versus stats', 'versus top [halaman]', 'balap lari|mobil|motor|sepeda @tag [taruhan]', 'jambak @tag [taruhan]', 'panco @tag [taruhan]', 'dance @tag [taruhan]', 'tampar @tag [taruhan]', 'tinju @tag [taruhan]']
+handler.help = ['versus', 'versus run @tag [taruhan]', 'versus drift @tag [taruhan]', 'run @tag [taruhan]', 'drift @tag [taruhan]', 'versus stats', 'versus top [halaman]', 'balap lari|mobil|motor|sepeda @tag [taruhan]', 'jambak @tag [taruhan]', 'panco @tag [taruhan]', 'dance @tag [taruhan]', 'tampar @tag [taruhan]', 'tinju @tag [taruhan]']
 handler.tags = ['rpg']
-handler.command = /^(versus|balap|jambak|panco|dance|tampar|tinju)$/i
+handler.command = /^(versus|balap|run|drift|jambak|panco|dance|tampar|tinju)$/i
 handler.group = true
 
 export default handler
