@@ -163,7 +163,7 @@
   {
     "section": "RPG",
     "title": "Perbaikan Guild Mission, Loot, dan War",
-    "content": "> Guild diperbaiki: `.misiguild` dan `.guild misi/mission` kini menampilkan daftar, status cooldown, serta misi tertinggi yang terbuka; `.guild party/pesta`, `.guild latihan/training`, `.guild war`, `.guild join/leave/kick/shop` tersedia sebagai alias. Hadiah eksekutor misi langsung masuk ke saldo dan `.bag`, termasuk Gold dan Diamond; hanya hadiah anggota lain yang masuk pending Guild Loot dan diklaim lewat `.guild loot take`. Tampilan loot memisahkan jumlah yang sudah diambil dan pending. Kapasitas anggota dan batas loot hanya bertambah setiap 10 level, dengan batas loot berhenti naik mulai Guild Lv.101. Dalam Guild War, pemenang tidak mendapat cooldown dan pihak yang kalah mendapat cooldown war 1 jam.",
+    "content": "> Perbaikan Guild: `.misiguild` tanpa argumen hanya menampilkan status siap/cooldown dan nomor misi tertinggi yang terbuka; gunakan `.misiguild list` untuk melihat daftar. Seluruh hadiah eksekutor langsung masuk ke user (Money ke saldo, material termasuk Gold/Diamond/Gemstone ke `.bag`) dan tidak memakai atau terkena batas Guild Loot, sehingga tidak muncul pesan loot penuh untuk hadiahnya. Guild Loot/pending hanya untuk bagian hadiah yang diberikan kepada anggota lain oleh pelaku misi; anggota mengklaimnya lewat `.guild loot take`. Alias `.guild misi/mission`, `.guild party/pesta`, `.guild latihan/training`, `.guild war`, `.guild join/leave/kick/shop` tersedia. Kapasitas anggota dan batas loot hanya bertambah setiap 10 level; batas loot maksimal mulai Guild Lv.101. Dalam Guild War, pemenang tidak mendapat cooldown dan pihak kalah mendapat cooldown war 1 jam.",
     "author": "Eza",
     "createdAt": 1791209021777
   },
@@ -177,7 +177,7 @@
   {
     "section": "RPG",
     "title": "Peningkatan Hadiah Casino",
-    "content": "> Hadiah kemenangan casino kini minimal sebesar 2x taruhan untuk hasil menang biasa; multiplier jackpot yang lebih tinggi tetap berlaku. Hasil khusus baru: berhasil kabur tanpa kehilangan saldo, blackout yang menghilangkan hingga 2x taruhan (sebatas saldo yang tersedia), dan bandar berbaik hati yang mengembalikan taruhan. Hasil hadiah tidak cair tetap tersedia.",
+    "content": "> Hadiah kemenangan casino kini minimal sebesar 2x taruhan untuk hasil menang biasa; multiplier jackpot yang lebih tinggi tetap berlaku. Hasil khusus baru: berhasil kabur tanpa kehilangan saldo, blackout yang menghilangkan hingga 2x taruhan (sebatas saldo yang tersedia), dan bandar berbaik hati yang mengembalikan taruhan. Pada hasil hadiah tidak cair, pemain tetap menang tetapi hadiah bernilai 0 dan taruhan dikembalikan, sehingga saldo tidak berkurang.",
     "author": "Eza",
     "createdAt": 1791213865324
   },
