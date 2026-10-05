@@ -44,7 +44,7 @@
   {
     "section": "RPG",
     "title": "Pembaruan Relationship",
-    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 30 menit. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja. Arena versus kini memiliki .versus run untuk duel balap lari dan .versus drift untuk balap mobil.",
+    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 30 menit. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja. Arena versus memiliki .versus run atau alias langsung .run untuk duel balap lari, serta .versus drift atau alias langsung .drift untuk balap mobil.",
     "author": "Eza",
     "createdAt": 1790931600003
   },
