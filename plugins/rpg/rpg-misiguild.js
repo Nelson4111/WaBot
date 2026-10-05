@@ -11,6 +11,7 @@ import {
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
+  wdb.money = wdb.money || {}
 
   let guildName = Object.keys(wdb.guilds || {}).find(name => wdb.guilds[name].members.includes(m.sender))
   if (!guildName) return m.reply('❌ Kamu bukan anggota Guild.')
@@ -27,7 +28,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!myGuild.buffLuck) myGuild.buffLuck = 0
   if (!myGuild.buffMulti) myGuild.buffMulti = 0
   if (!myGuild.warCooldown) myGuild.warCooldown = 0
-  if (!myGuild.missionCooldown) myGuild.missionCooldown = 0 
+  const player = getUserRPG(wdb, m.sender).rpg
 
   if(command === 'pestaguild'){
   let cd = 10800000 // 3 jam
@@ -87,29 +88,6 @@ if(command === 'latihanguild'){
   )
 }
 
-if(Date.now() < myGuild.warCooldown) return m.reply(
-  `╭─❏「 ⚔️ GUILD WAR 」❏\n` +
-  `│ ❌ *WAR COOLDOWN*\n` +
-  `╰─━━━━━━━━━━━━━━─\n\n` +
-  `> ↳ Guild sedang cooldown war.\n` +
-  `> ↳ Gabisa misi dulu 1 jam\n\n` +
-  `─━━━━━━━━━━━━━━─`
-)
-
-// TAMBAHAN: COOLDOWN MISI 2 JAM SETELAH KALAH WAR
-if(Date.now() < myGuild.missionCooldown){
-  let sisa = ((myGuild.missionCooldown - Date.now())/60000).toFixed(0)
-
-  return m.reply(
-    `╭─❏「 ⚔️ GUILD MISSION 」❏\n` +
-    `│ ❌ *MASA PEMULIHAN GUILD*\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Guild sedang dalam pemulihan setelah kalah war.\n` +
-    `> ↳ Gabisa misi selama ${sisa} menit lagi\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
-}
-
   const missions = [
 { name: 'Pembersihan Selokan Kota', minLevel: 1, reward: { money: 20000, exp: 50, iron: 2 }, contrib: 10 },
 { name: 'Patroli Perbatasan', minLevel: 10, reward: { money: 45000, exp: 120, iron: 5 }, contrib: 25 },
@@ -153,19 +131,44 @@ if(Date.now() < myGuild.missionCooldown){
 { name: 'Ascensi Menjadi Dewa Tertinggi', minLevel: 2000, reward: { money: 2500000000, exp: 4200000, gold: 23000, diamond: 75000, gemstone: 25000 }, contrib: 3000000 }
   ]
 
-  if (!text) {
+  const missionInput = String(text || '').trim()
+  const playerLevel = Math.max(1, Number(player.level) || 1)
+  const highestAvailable = missions.reduce((highest, mission, index) =>
+    mission.minLevel <= playerLevel ? index + 1 : highest, 0)
+  const baseCooldown = 120000
+  const missionCooldown = Date.now() < myGuild.buffSpeed ? baseCooldown / 2 : baseCooldown
+  const remainingCooldown = Math.max(0, missionCooldown - (Date.now() - (myGuild.lastMission || 0)))
+
+  if (!missionInput) {
+    const status = remainingCooldown > 0
+      ? `⏳ Cooldown: ${Math.ceil(remainingCooldown / 1000)} detik lagi`
+      : '✅ Status: Siap menjalankan misi'
+    return m.reply(
+      `╭─❏「 📜 GUILD MISSION 」❏\n` +
+      `│ ${status}\n` +
+      `│ 🎯 Level pemain: Lv.${playerLevel}\n` +
+      `│ 🔓 Misi tertinggi yang terbuka: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n` +
+      `╰─━━━━━━━━━━━━━━─\n` +
+      `Ketik *${usedPrefix}misiguild list* untuk melihat daftar misi.`
+    )
+  }
+
+  if (missionInput.toLowerCase() === 'list') {
   let list = `╭─❏「 📜 GUILD EXPEDITION 」❏\n`
   list += `│ ⚔️ *DAFTAR MISI GUILD*\n`
   list += `╰─━━━━━━━━━━━━━━─\n\n`
 
+  list += `│ 📊 Status: ${remainingCooldown > 0 ? `⏳ Cooldown ${Math.ceil(remainingCooldown / 1000)} detik` : '✅ Siap menjalankan misi'}\n`
+  list += `│ 🎯 Level pemain: Lv.${playerLevel} • Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
   list += `📌 *PILIH MISI*\n`
-  list += `> ↳ Eksekutor mendapat reward penuh; anggota lain mendapat 50% melalui pending loot.\n\n`
+  list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/ .bag; tidak masuk Guild Loot.\n`
+  list += `> ↳ Anggota aktif lain mendapat 50% sebagai pending loot. Klaim dengan .guild loot take.\n\n`
   list += `> ↳ Loot anggota hanya bertambah jika anggota aktif dalam 4 hari terakhir.\n`
   list += `─━━━━━━━━━━━━━━─\n\n`
 
   missions.forEach((v, i) => {
-    list += `*${i + 1}. ⚔️ ${v.name}*\n`
-    list += `> ↳ 📊 Syarat: Lv.${v.minLevel}\n`
+    list += `*${i + 1}. ${v.minLevel <= playerLevel ? '✅' : '🔒'} ⚔️ ${v.name}*\n`
+    list += `> ↳ 📊 Syarat: Lv.${v.minLevel}${v.minLevel > playerLevel ? ' (belum terbuka)' : ''}\n`
     list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
     list += `> ↳ ✨ Exp: +${v.reward.exp}\n`
     list += `> ↳ 🎁 Hadiah: ${Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }).filter(([item]) => Number(v.reward[item]) > 0).map(([item, name]) => `${name}: ${item === 'money' ? `Rp ${Number(v.reward[item]).toLocaleString('id-ID')}` : Number(v.reward[item]).toLocaleString('id-ID')}`).join(', ')}\n\n`
@@ -173,13 +176,14 @@ if(Date.now() < myGuild.missionCooldown){
 
   list += `─━━━━━━━━━━━━━━─\n\n`
   list += `📌 *CARA MEMILIH MISI*\n`
-  list += `> ↳ *${usedPrefix}misiguild [nomor]*\n\n`
+  list += `> ↳ *${usedPrefix}misiguild [nomor]* atau *${usedPrefix}guild mission [nomor]*\n\n`
   list += `─━━━━━━━━━━━━━━─`
 
   return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
 }
 
-  let index = parseInt(text) - 1
+  if (!/^\d+$/.test(missionInput)) return m.reply(`❌ Nomor misi harus angka.\nKetik *${usedPrefix}misiguild list* untuk melihat daftar.`)
+  let index = Number(missionInput) - 1
   if (!missions[index]) return m.reply('❌ Nomor misi tidak valid.')
   let msn = missions[index]
 
@@ -223,14 +227,32 @@ if(Date.now() < myGuild.missionCooldown){
   normalizeGuildPendingLoot(myGuild)
   const now = Date.now()
   const executorLoot = {}
-  let lootLimitReached = false
+  const pendingLootTotals = { money: 0, iron: 0, gold: 0, stone: 0, diamond: 0, gemstone: 0 }
+  let pendingRecipients = 0
+  const executorRewardItems = {
+    money: scaleDifficultyIncome(player, reward.money),
+    iron: scaleDifficultyIncome(player, msn.reward.iron || 0),
+    gold: scaleDifficultyIncome(player, msn.reward.gold || 0),
+    stone: scaleDifficultyIncome(player, msn.reward.stone || 0),
+    diamond: scaleDifficultyIncome(player, msn.reward.diamond || 0),
+    gemstone: scaleDifficultyIncome(player, msn.reward.gemstone || 0)
+  }
+  player.lastGuildMissionAt = now
+  player.inventory = player.inventory || {}
+  for (const [item, amount] of Object.entries(executorRewardItems)) {
+    executorLoot[item] = amount
+    if (item === 'money') wdb.money[m.sender] = (wdb.money[m.sender] || 0) + amount
+    else if (item === 'gemstone') player.inventory.gemstone = (Number(player.inventory.gemstone) || 0) + amount
+    else player[item] = (Number(player[item]) || 0) + amount
+  }
+
   for (const jid of myGuild.members) {
+    if (jid === m.sender) continue
     let u = wdb.users[jid]?.rpg
     if (!u) continue
 
     normalizeGuildLoot(u)
     if (!Number(u.lastGuildMissionAt)) u.lastGuildMissionAt = now
-    if (jid === m.sender) u.lastGuildMissionAt = now
     if (now - Number(u.lastGuildMissionAt) > GUILD_MEMBER_INACTIVE_MS) continue
 
     {
@@ -242,30 +264,18 @@ if(Date.now() < myGuild.missionCooldown){
         diamond: scaleDifficultyIncome(u, msn.reward.diamond || 0),
         gemstone: scaleDifficultyIncome(u, msn.reward.gemstone || 0)
       }
-      if (jid !== m.sender) {
-        for (const item of Object.keys(rewardItems)) {
-          rewardItems[item] = Math.floor(rewardItems[item] * 0.5)
-        }
+      for (const item of Object.keys(rewardItems)) {
+        rewardItems[item] = Math.floor(rewardItems[item] * 0.5)
       }
-      if (jid === m.sender) {
-        u.inventory = u.inventory || {}
-        const loot = normalizeGuildLoot(u)
-        for (const [item, amount] of Object.entries(rewardItems)) {
-          const accepted = addGuildLootReward(myGuild, u, jid, item, amount)
-          executorLoot[item] = accepted
-          if (accepted < amount) lootLimitReached = true
-          loot[item] += accepted
-          if (item === 'money') wdb.money[jid] = (wdb.money[jid] || 0) + accepted
-          else if (item === 'gemstone') u.inventory.gemstone = (Number(u.inventory.gemstone) || 0) + accepted
-          else u[item] = (Number(u[item]) || 0) + accepted
-        }
-      } else {
-        myGuild.pendingLoot[jid] = myGuild.pendingLoot[jid] || {}
-        for (const [item, amount] of Object.entries(rewardItems)) {
-          const accepted = addGuildLootReward(myGuild, u, jid, item, amount, { pending: true })
-          myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + accepted
-        }
+      myGuild.pendingLoot[jid] = myGuild.pendingLoot[jid] || {}
+      let receivedPendingLoot = false
+      for (const [item, amount] of Object.entries(rewardItems)) {
+        const accepted = addGuildLootReward(myGuild, u, jid, item, amount, { pending: true })
+        myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + accepted
+        pendingLootTotals[item] += accepted
+        if (accepted > 0) receivedPendingLoot = true
       }
+      if (receivedPendingLoot) pendingRecipients++
     }
   }
 
@@ -288,15 +298,15 @@ cap += `> ↳ 🏆 Kontribusi: +${msn.contrib} Pts\n\n`
 
 cap += `─━━━━━━━━━━━━━━─\n\n`
 
-cap += `🎁 *HADIAH MEMBER*\n`
+cap += `🎁 *HADIAH EKSEKUTOR (LANGSUNG MASUK SALDO / .BAG)*\n`
 const rewardLabels = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }
 for (const [item, label] of Object.entries(rewardLabels)) {
-  const lootItem = item === 'gemstone' ? 'gemstone' : item
-  const amount = executorLoot[lootItem] || 0
+  const amount = executorLoot[item] || 0
   if (Number(amount) > 0) cap += `> ↳ ${label}: ${item === 'money' ? `Rp ${Number(amount).toLocaleString('id-ID')}` : Number(amount).toLocaleString('id-ID')}\n`
 }
-cap += `> ↳ Anggota aktif lain menerima 50% sebagai pending loot.\n`
-if (lootLimitReached) cap += `> ↳ Sebagian reward tidak ditambahkan karena batas loot kamu sudah tercapai.\n`
+cap += `\n🎁 *PENDING GUILD LOOT UNTUK ANGGOTA LAIN*\n`
+cap += `> ↳ Penerima: ${pendingRecipients} anggota aktif • Total: ${Object.entries(rewardLabels).filter(([item]) => pendingLootTotals[item] > 0).map(([item, label]) => `${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`).join(', ') || 'Tidak ada'}\n`
+cap += `> ↳ Anggota mengambil bagiannya sendiri dengan *.guild loot take*; hadiah eksekutor tidak masuk loot.\n`
 
 cap += `\n╰─━━━━━━━━━━━━━━─`
 
