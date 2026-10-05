@@ -3,7 +3,9 @@ import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import {
   addGuildLootReward,
+  areGuildJidsSame,
   advanceGuildLevel,
+  findGuildByMember,
   GUILD_MEMBER_INACTIVE_MS,
   normalizeGuildLoot,
   normalizeGuildPendingLoot
@@ -13,10 +15,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   wdb.money = wdb.money || {}
 
-  let guildName = Object.keys(wdb.guilds || {}).find(name => wdb.guilds[name].members.includes(m.sender))
-  if (!guildName) return m.reply('❌ Kamu bukan anggota Guild.')
-
-  let myGuild = wdb.guilds[guildName]
+  const myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
+  if (!myGuild) return m.reply('❌ Kamu bukan anggota Guild.')
+  const guildName = Object.keys(wdb.guilds).find(name => wdb.guilds[name] === myGuild)
 
   // init data biar ga error
   myGuild.level = myGuild.level || 1
@@ -247,7 +248,7 @@ if(command === 'latihanguild'){
   }
 
   for (const jid of myGuild.members) {
-    if (jid === m.sender) continue
+    if (areGuildJidsSame(jid, m.sender, conn)) continue
     let u = wdb.users[jid]?.rpg
     if (!u) continue
 

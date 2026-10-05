@@ -1,8 +1,9 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { areGuildJidsSame, findGuildMemberId } from '../../lib/rpgGuild.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let myGuild = Object.values(wdb.guilds || {}).find(g => g.leader === m.sender)
+  let myGuild = Object.values(wdb.guilds || {}).find(g => areGuildJidsSame(g.leader, m.sender, conn))
 
   if (!myGuild) return m.reply('❌ Hanya Leader Guild yang bisa menendang member.')
 
@@ -15,15 +16,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (!target) return m.reply(`╭─❏「 🦶 KICK GUILD 」❏\n├─ CARA MENGELUARKAN MEMBER ─\n│ Balas chat member lalu ketik *${usedPrefix}${command}*\n│ Atau gunakan: *${usedPrefix}${command} 628xxx*\n╰─━━━━━━━━━━━━━━─`)
 
-  let index = myGuild.members.indexOf(target)
+  let targetId = findGuildMemberId(myGuild, target, conn)
+  let index = myGuild.members.indexOf(targetId)
   if (index === -1) return m.reply('❌ Orang tersebut bukan member guild kamu.')
-  if (target === m.sender) return m.reply('❌ Kamu tidak bisa mengeluarkan diri sendiri!')
+  if (areGuildJidsSame(targetId, m.sender, conn)) return m.reply('❌ Kamu tidak bisa mengeluarkan diri sendiri!')
 
   myGuild.members.splice(index, 1)
-  if (myGuild.contribution) delete myGuild.contribution[target]
+  if (myGuild.contribution) delete myGuild.contribution[targetId]
 
   // COOLDOWN 12 JAM UNTUK YANG DI KICK
-  let targetUser = getUserRPG(wdb, target).rpg
+  let targetUser = getUserRPG(wdb, targetId).rpg
   if (!targetUser) return m.reply('❌ Data RPG member tidak ditemukan.')
   targetUser.lastGuildCooldown = Date.now()
   targetUser.lastGuildCooldownType = 'kick'

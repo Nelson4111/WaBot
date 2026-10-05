@@ -1,6 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
-import { getGuildMemberCap } from '../../lib/rpgGuild.js'
+import { findGuildByMember, getGuildMemberCap, isGuildMember } from '../../lib/rpgGuild.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -15,7 +15,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let guildName = text.trim()
   let guild = wdb.guilds[guildName]
   if (!guild) return m.reply('❌ Guild tidak ditemukan.')
-  if (guild.members && guild.members.includes(m.sender)) return m.reply('❌ Kamu sudah ada di guild ini.')
+  if (isGuildMember(guild, m.sender, conn)) return m.reply('❌ Kamu sudah ada di guild ini.')
 
   // INISIALISASI BIAR GA ERROR
   guild.members = guild.members || []
@@ -34,7 +34,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let maxMembers = getGuildMemberCap(guild.level)
   if (guild.members.length >= maxMembers) return m.reply(`❌ Guild sudah penuh (Max ${maxMembers}).`)
 
-  let hasGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender)) // FIX: cek members dulu
+  let hasGuild = findGuildByMember(wdb.guilds, m.sender, conn)
   if (hasGuild) return m.reply('❌ Keluar dari guild lamamu dulu!')
 
   guild.members.push(m.sender)

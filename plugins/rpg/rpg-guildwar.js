@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyDamage } from '../../lib/rpgDifficulty.js'
+import { areGuildJidsSame, findGuildByMember } from '../../lib/rpgGuild.js'
 
 global.warRequests = global.warRequests || {}
 
@@ -12,19 +13,21 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // HANDLE TERIMA / TOLAK
   if (action === 'terima' || action === 'tolak') {
-    let req = global.warRequests[m.sender]
+    const requestEntry = Object.entries(global.warRequests).find(([jid]) => areGuildJidsSame(jid, m.sender, conn))
+    const requestId = requestEntry?.[0]
+    let req = requestEntry?.[1]
     if(!req) return m.reply('❌ Tidak ada permintaan war masuk.')
     if(Date.now() > req.expire) {
-      delete global.warRequests[m.sender]
+      delete global.warRequests[requestId]
       return m.reply('❌ Permintaan war sudah kadaluarsa.')
     }
     if(action === 'tolak'){
-      delete global.warRequests[m.sender]
+      delete global.warRequests[requestId]
       return conn.reply(req.from, `❌ Tantangan war ditolak oleh @${m.sender.split('@')[0]}`, m.chat, {mentions:[m.sender]})
     }
 
     // JALANKAN WAR
-    delete global.warRequests[m.sender]
+    delete global.warRequests[requestId]
     let attackerGuild = wdb.guilds[req.myGuild]
     let defenderGuild = wdb.guilds[req.enemyGuild]
     if(!attackerGuild ||!defenderGuild) return m.reply('❌ Salah satu guild sudah tidak ada.')
@@ -45,7 +48,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   // LANJUTAN GUILDWAR BIASA
-  let myGuild = Object.values(wdb.guilds).find(g => g.members?.includes(m.sender))
+  let myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
   if(!myGuild) return m.reply('❌ Kamu tidak punya guild')
 
   // INIT BIAR GA ERROR
@@ -65,7 +68,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if(!isRandom){
     if(!target) return m.reply(`⚔️ *GUILD WAR*\nTag player guild musuh atau reply chat nya!\n\n*Contoh:*\n${usedPrefix}${command} @tag\n${usedPrefix}${command} [reply chat]\n${usedPrefix}${command} acak\n${usedPrefix}${command} terima`)
 
-    enemyGuild = Object.values(wdb.guilds).find(g => g.members?.includes(target))
+    enemyGuild = findGuildByMember(wdb.guilds, target, conn)
     if(!enemyGuild) return m.reply('❌ Player itu tidak punya guild')
     if(myGuild.name === enemyGuild.name) return m.reply('❌ Ga bisa war guild sendiri')
 

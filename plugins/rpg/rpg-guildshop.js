@@ -1,27 +1,22 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { areGuildJidsSame, findGuildByMember, findGuildMemberId } from '../../lib/rpgGuild.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   if (!wdb.guilds) wdb.guilds = {}
 
   const sender = conn.decodeJid(m.sender)
-  // Biar semua member bisa buka shop, bukan cuma leader
-  let myGuild = Object.values(wdb.guilds).find(g => g.members && (
-    g.members.includes(m.sender) || 
-    g.members.includes(sender) || 
-    g.leader === m.sender || 
-    g.leader === sender
-  ))
+  let myGuild = findGuildByMember(wdb.guilds, m.sender, conn) ||
+    Object.values(wdb.guilds).find(g => areGuildJidsSame(g.leader, m.sender, conn))
   if (!myGuild) return m.reply('❌ Kamu belum punya Guild.')
 
   // Init biar aman
   if (!myGuild.contribution) myGuild.contribution = {}
-  if (!myGuild.contribution[sender] && myGuild.contribution[m.sender]) {
-    myGuild.contribution[sender] = myGuild.contribution[m.sender]
-  }
-  if (!myGuild.contribution[sender]) myGuild.contribution[sender] = 0
+  const memberId = findGuildMemberId(myGuild, m.sender, conn) || sender
+  const contributionId = Object.hasOwn(myGuild.contribution, sender) ? sender : memberId
+  if (!myGuild.contribution[contributionId]) myGuild.contribution[contributionId] = 0
 
-  let userContrib = myGuild.contribution[sender] || 0
+  let userContrib = myGuild.contribution[contributionId] || 0
   let durasi = 2 * 60 * 60 * 1000 // 2 jam
 
   if (!text) {
@@ -36,7 +31,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const buy = (cost, buff, msg) => {
     if (userContrib < cost) return m.reply(`❌ Poin tidak cukup. Butuh ${cost} Pts, kamu punya ${userContrib} Pts`)
 
-    myGuild.contribution[sender] -= cost
+    myGuild.contribution[contributionId] -= cost
     myGuild[buff] = Date.now() + durasi
     saveDB(wdb)
     return m.reply(msg)

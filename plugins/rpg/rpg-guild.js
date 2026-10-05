@@ -8,6 +8,7 @@ import guildKickHandler from './rpg-kickguild.js'
 import guildShopHandler from './rpg-guildshop.js'
 import {
   advanceGuildLevel,
+  findGuildByMember,
   getGuildMemberCap,
   getGuildLootCaps,
   normalizeGuildLoot,
@@ -174,7 +175,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (action === 'loot') {
-    const myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+    const myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
     if (!myGuild) return m.reply('❌ Kamu belum bergabung dengan Guild.')
     let migratedLegacyLoot = normalizeGuildPendingLoot(myGuild)
     for (const jid of myGuild.members || []) {
@@ -233,7 +234,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (action === 'storage') {
-    const myGuild = Object.values(wdb.guilds).find(g => g.members?.includes(m.sender))
+    const myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
     if (!myGuild) return m.reply('❌ Kamu belum bergabung dengan Guild.')
     normalizeGuildPendingLoot(myGuild)
     myGuild.storage = normalizePendingLoot(myGuild.storage || {})
@@ -273,7 +274,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (!action) {
-    let myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+    let myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
     if (!myGuild) return m.reply(`╭─❏「 🏰 GUILD 」❏\n│ Kamu belum bergabung dengan Guild.\n├─ ${usedPrefix}guild command\n├─ ${usedPrefix}guild guide\n╰─━━━━━━━━━━━━━━─`)
 
     myGuild.level = myGuild.level || 1
@@ -353,7 +354,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let name = args.slice(1).join(' ')
     if (!name || name.length > 15) return m.reply('❌ Nama guild tidak valid (Max 15 huruf).')
     if (wdb.guilds[name]) return m.reply('❌ Nama Guild tersebut sudah ada.')
-    let hasGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+    let hasGuild = findGuildByMember(wdb.guilds, m.sender, conn)
     if (hasGuild) return m.reply('❌ Kamu sudah berada di dalam sebuah Guild.')
 
     let price = 500000
@@ -372,7 +373,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (action === 'donate') {
-    let myGuild = Object.values(wdb.guilds).find(g => g.members && g.members.includes(m.sender))
+    let myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
     if (!myGuild) return m.reply('❌ Kamu tidak punya guild')
     let jumlah = parseInt(args[1])
     if(!jumlah || jumlah < 1000) return m.reply('❌ Minimal donate Rp 1.000')
