@@ -44,7 +44,7 @@
   {
     "section": "RPG",
     "title": "Pembaruan Relationship",
-    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 30 menit. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja.",
+    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 30 menit. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja. Arena versus kini memiliki .versus run untuk duel balap lari dan .versus drift untuk balap mobil.",
     "author": "Eza",
     "createdAt": 1790931600003
   },
@@ -184,7 +184,7 @@
   {
     "section": "FUN",
     "title": "Validasi Perintah Top",
-    "content": "> `.top` memberi format dan contoh saat jumlah bukan angka atau judul kosong, serta menjelaskan batas maksimal 20 jika jumlah melebihi batas. Hasilnya menyebut bahwa fitur ini just for fun dan tag dipilih secara acak dari anggota grup; urutan output menampilkan judul, reminder, lalu tag pengguna.",
+    "content": "> `.top` memberi format dan contoh saat jumlah bukan angka atau judul kosong, serta menjelaskan batas maksimal 20 dan jumlah yang tidak boleh melebihi anggota grup. Hasilnya menyebut bahwa fitur ini just for fun dan tag dipilih secara acak dari anggota grup; urutan output menampilkan judul, reminder, lalu tag pengguna.",
     "author": "Eza",
     "createdAt": 1791213865325
   },
