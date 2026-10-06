@@ -1210,13 +1210,51 @@ let handler = async (m, { conn, args, usedPrefix }) => {
       ? pick(Object.keys(games))
       : aliases[gameInput]
     if (!game) return m.reply(`❌ Game tidak ditemukan. Gunakan *${usedPrefix}casino games* untuk melihat pilihan.`)
-    const result = normalizeResult(resultFor(game))
+    const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
+    const bet = games[game].minBet * number(1, 10)
+    const balanceBefore = bet * number(5, 20)
+    let payout = result.payoutDenied
+      ? 0
+      : result.multiplier > 0
+        ? bet + scaleDifficultyIncome(user, Math.floor(bet * (result.multiplier - 1)))
+        : 0
+    let net = result.payoutDenied ? 0 : payout - bet
+    if (result.payoutDenied || result.escaped || result.dealerMercy) {
+      payout = result.payoutDenied ? 0 : bet
+      net = 0
+    } else if (result.blackout) {
+      payout = 0
+      net = -Math.min(balanceBefore, bet * 2)
+    }
+    const balanceAfter = balanceBefore + net
+    const status = result.blackout
+      ? '🌑 *BLACKOUT*'
+      : result.escaped
+        ? '🏃 *BERHASIL KABUR*'
+        : result.dealerMercy
+          ? '🤝 *BANDAR BERBAIK HATI*'
+          : result.payoutDenied
+            ? '🎟️ *HADIAH TIDAK CAIR*'
+            : result.multiplier >= 10
+              ? '🏆 *JACKPOT*'
+              : result.multiplier > 0
+                ? '🎉 *MENANG*'
+                : '💀 *KALAH*'
+    const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
     return m.reply(
       `╭─❏「 🧪 SIMULASI ${games[game].name.toUpperCase()} 」❏\n` +
       `${result.text}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> Hasil multiplier: *${result.multiplier}x*\n` +
-      `> Simulasi tidak memakai taruhan, mengubah saldo, cooldown, batas harian, atau statistik casino.\n\n` +
+      `🎲 *HASIL*\n` +
+      `> ↳ ${status}\n` +
+      `> ↳ Taruhan simulasi: ${money(bet)}\n` +
+      `> ↳ Hadiah simulasi: ${money(payout)}\n` +
+      `${result.blackout ? `> ↳ Uang simulasi hilang: ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
+      `> ↳ Profit simulasi: ${signedMoney(net)}\n` +
+      `> ↳ 💰 Saldo virtual sebelum: ${money(balanceBefore)}\n` +
+      `> ↳ 💰 Saldo virtual sesudah: ${money(balanceAfter)}\n\n` +
+      `💬 Kamu: "${dialog}"\n\n` +
+      `🧪 Mode simulasi: saldo asli, cooldown, batas harian, dan statistik casino tidak berubah.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
