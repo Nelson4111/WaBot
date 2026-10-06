@@ -77,7 +77,7 @@ global.versi = '4.0.0'
 global.botdate = `⫹⫺ DATE: ${week} ${date}\n⫹⫺ 𝗧𝗶𝗺𝗲: ${wktuwib}`
 global.bottime = `T I M E : ${wktuwib}`
 global.stickpack = `${namebot}\n\nAvelia\n+${nomorbot}`
-global.stickauth = `Made By Nenel`
+global.stickauth = `Made By Avelia\n+${nomorbot}`
 global.week = `${week} ${date}`
 global.wibb = `${wktuwib}`
 
