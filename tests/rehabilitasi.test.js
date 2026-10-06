@@ -7,6 +7,7 @@ import {
   getRehabilitationCompletion,
   getRehabilitationPaymentStatus,
   getRehabilitationRequirements,
+  REHABILITATION_ACTIVITY_COOLDOWNS,
   REHABILITATION_FEE,
   REHABILITATION_DAY_MS,
   REHABILITATION_SOCIAL_COOLDOWN_MS,
@@ -27,8 +28,11 @@ assert.equal(lowRequirements.requiredFee, 2 * REHABILITATION_FEE)
 assert.equal(highRequirements.requiredFee, 10 * REHABILITATION_FEE)
 assert.equal(REHABILITATION_WORK_COOLDOWN_MS, 2 * 60 * 1000)
 assert.equal(REHABILITATION_SOCIAL_COOLDOWN_MS, 4 * 60 * 1000)
+assert.deepEqual(Object.keys(REHABILITATION_ACTIVITY_COOLDOWNS), ['kerja', 'sosial', 'ibadah', 'olahraga', 'belajar'])
+assert.equal(REHABILITATION_ACTIVITY_COOLDOWNS.kerja, REHABILITATION_WORK_COOLDOWN_MS)
+assert.equal(REHABILITATION_ACTIVITY_COOLDOWNS.sosial, REHABILITATION_SOCIAL_COOLDOWN_MS)
 for (const command of ['rh', 'rehabilitasi']) {
-  for (const action of ['', 'mulai', 'bayar', 'kerja', 'sosial', 'progres', 'batal', 'info', 'guide', 'command', 'list']) {
+  for (const action of ['', 'mulai', 'bayar', 'kerja', 'sosial', 'ibadah', 'olahraga', 'belajar', 'cd', 'lapor', 'progres', 'batal', 'info', 'guide', 'command', 'list']) {
     assert.equal(isPatrolExemptCommand(command, action ? [action] : []), true)
   }
 }
@@ -56,13 +60,27 @@ assert.equal(startRehabilitation(rpg, 2, now), true)
 assert.equal(startRehabilitation(rpg, 2, now), false)
 assert.equal(getCrimeRestriction(rpg), '🕊️ Kamu sedang menjalani rehabilitasi dan tidak bisa melakukan tindak kriminal.')
 assert.equal(getCrimeRestriction(rpg, { target: true }), '🕊️ Target sedang menjalani rehabilitasi dan tidak bisa menjadi sasaran tindak kriminal.')
+const completionTime = rpg.rehabilitation.completesAt
+const requiredProgress = rpg.rehabilitation.requiredProgress
+assert.equal(getRehabilitationCompletion(rpg, completionTime - 1).reason, 'time')
+rpg.rehabilitation.progress = requiredProgress
+assert.equal(getRehabilitationCompletion(rpg, completionTime).reason, 'payments')
+rpg.rehabilitation.paidAmount = rpg.rehabilitation.requiredFee
+assert.equal(getRehabilitationCompletion(rpg, completionTime).reason, 'social')
+rpg.rehabilitation.socialActivities = 1
+assert.equal(getRehabilitationCompletion(rpg, completionTime).ready, true)
+assert.equal(getRehabilitationCompletion(rpg, completionTime - 1).ready, false)
 
 const crimeData = { rampok: 1, copet: 2 }
 const totalCrimeScore = computeCrimeScore(crimeData)
 assert.equal(getActiveCrimeScore(crimeData), totalCrimeScore)
+assert.equal(getRehabilitationCompletion(rpg, now + rpg.rehabilitation.completesAt).reason, 'progress')
 assert.equal(completeRehabilitation(rpg, crimeData, now + rpg.rehabilitation.completesAt), false)
 
 const process = rpg.rehabilitation
+process.progress = 0
+process.socialActivities = 0
+process.paidAmount = 0
 process.progress = process.requiredProgress
 process.socialActivities = 1
 assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 175000)
