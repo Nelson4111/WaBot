@@ -23,6 +23,8 @@ assert.equal(lowRequirements.durationMs, 20 * 60 * 1000)
 assert.equal(highRequirements.durationMs, 100 * 60 * 1000)
 assert.equal(lowRequirements.requiredPayments, 1)
 assert.equal(highRequirements.requiredPayments, 1)
+assert.equal(lowRequirements.requiredFee, 2 * REHABILITATION_FEE)
+assert.equal(highRequirements.requiredFee, 10 * REHABILITATION_FEE)
 assert.equal(REHABILITATION_WORK_COOLDOWN_MS, 2 * 60 * 1000)
 assert.equal(REHABILITATION_SOCIAL_COOLDOWN_MS, 4 * 60 * 1000)
 for (const command of ['rh', 'rehabilitasi']) {
@@ -36,6 +38,15 @@ assert.deepEqual(getRehabilitationPaymentStatus({ paidDays: 1, requiredPayments:
   requiredAmount: REHABILITATION_FEE,
   paidAmount: REHABILITATION_FEE,
   remainingAmount: 0
+})
+assert.deepEqual(getRehabilitationPaymentStatus({
+  crimeScore: 4,
+  requiredFee: REHABILITATION_FEE,
+  paidAmount: 0
+}), {
+  requiredAmount: 4 * REHABILITATION_FEE,
+  paidAmount: 0,
+  remainingAmount: 4 * REHABILITATION_FEE
 })
 assert.throws(() => applyRehabilitationPayment({}, 0), RangeError)
 assert.throws(() => applyRehabilitationPayment({}, 1.5), RangeError)
@@ -54,15 +65,19 @@ assert.equal(completeRehabilitation(rpg, crimeData, now + rpg.rehabilitation.com
 const process = rpg.rehabilitation
 process.progress = process.requiredProgress
 process.socialActivities = 1
-assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 75000)
+assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 175000)
 assert.equal(process.progress, process.requiredProgress)
+assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 150000)
+assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 125000)
+assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 100000)
+assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 75000)
 assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 50000)
 assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 25000)
 assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 0)
 assert.equal(process.progress, process.requiredProgress + 1)
 assert.deepEqual(getRehabilitationPaymentStatus(process), {
-  requiredAmount: REHABILITATION_FEE,
-  paidAmount: REHABILITATION_FEE,
+  requiredAmount: 2 * REHABILITATION_FEE,
+  paidAmount: 2 * REHABILITATION_FEE,
   remainingAmount: 0
 })
 assert.equal(process.paidDays, process.requiredPayments)
