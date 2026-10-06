@@ -247,7 +247,7 @@
   {
     "section": "RPG",
     "title": "Casino Taruhan All dan Simulasi",
-    "content": "> Taruhan casino kini menerima `all` untuk memakai seluruh uang saku, misalnya `.casino slot all`. Mode latihan tersedia melalui `.casino simulation <game>` atau `.cs sl <game>`; gunakan `random` untuk memilih game acak. Simulasi memilih taruhan dan saldo virtual secara acak serta menampilkan hasil menang/kalah seperti permainan biasa, tetapi tidak mengubah uang asli, cooldown, batas harian, maupun statistik.",
+    "content": "> Taruhan casino kini menerima `all` untuk memakai seluruh uang saku, misalnya `.casino slot all`. Mode latihan tersedia melalui `.casino simulation <game/random> [nominal]` atau `.cs sl <game/random> [nominal]`; gunakan `random` untuk memilih game acak. Nominal otomatis selalu di atas Rp1 miliar dan maksimal Rp1 triliun; kamu juga bisa memasukkan nominal sendiri, misalnya `.cs sl random 999999999999`. Simulasi menampilkan hasil menang/kalah seperti permainan biasa tanpa mengubah uang asli, cooldown, batas harian, maupun statistik.",
     "author": "Eza",
     "createdAt": 1791298080000
   },
