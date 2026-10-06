@@ -208,5 +208,12 @@
     "content": "> Rehabilitasi tersedia melalui `.rh` atau `.rehabilitasi`. Buronan yang sudah bebas dari penjara dapat memulai proses perbaikan perilaku lewat `.rh mulai`; durasinya 10 menit dikali poin buronan aktif agar tidak terlalu lama. Perintah rehabilitasi tidak memicu cidukan patroli. Biaya rehabilitasi adalah Rp 100.000 dikali poin buronan aktif, dapat dicicil dengan `.rh bayar <nominal>` tanpa cooldown atau dilunasi dengan `.rh bayar all`. Progres pembayaran bertambah satu kali setelah seluruh biaya lunas. `.rh kerja` (cooldown 2 menit) dan `.rh sosial` (cooldown 4 menit) juga menambah progres. Setelah berhasil, poin buronan aktif menjadi 0 dan status buronan dicabut; riwayat serta total kejahatan seumur hidup tetap tersimpan. Tindak kriminal diblokir selama proses berlangsung; `.rh batal` membatalkan rehabilitasi dan mengembalikan status buronan. Jika kembali masuk penjara setelah rehabilitasi, catatan buronan dipulihkan. Saat bebas dari penjara, alasan pembebasan dicatat—termasuk dibebaskan Owner, masa tahanan habis, kabur, breakout, atau ditebus beserta tag penebus. Gunakan `.rh info`, `.rh guide`, `.rh command`, `.rh list`, dan `.rh progres` untuk informasi serta status.",
     "author": "Eza",
     "createdAt": 1791234143001
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Aktivitas Rehabilitasi",
+    "content": "> Rehabilitasi hanya bisa diselesaikan setelah waktu minimum dan target progres poin sama-sama terpenuhi; gunakan `.rh lapor` untuk menyelesaikan proses dan `.rh cd` untuk melihat cooldown semua aktivitas. Aktivitas `.rh kerja`, `.rh sosial`, `.rh ibadah`, `.rh olahraga`, dan `.rh belajar` masing-masing memiliki cooldown serta lima cerita aktivitas bervariasi. Status pembayaran kini cukup menampilkan `Lunas` atau jumlah yang masih kurang. Setelah bebas dari penjara, pemain mendapat arahan untuk menjalani rehabilitasi demi membersihkan poin buronan dan membangun kembali kepercayaan Avelia.",
+    "author": "Eza",
+    "createdAt": 1791234143002
   }
 ]
