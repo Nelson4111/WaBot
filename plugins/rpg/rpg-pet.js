@@ -774,6 +774,33 @@ if (action === 'all') {
     return 'COMMON'
   }
 
+if (action === 'guide') {
+  return safeReply(
+    `╭─❏「 📖 PANDUAN PET 」❏\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Pet dapat dirawat dan dilatih untuk menaikkan level serta membuka kemampuannya.\n\n` +
+    `> ↳ Lihat pet yang dimiliki: *${usedPrefix}pet list*\n` +
+    `> ↳ Cek detail dan kondisi: *${usedPrefix}pet status <no/nama>*\n` +
+    `> ↳ Lihat pet yang bisa dibeli: *${usedPrefix}pet shop*\n` +
+    `> ↳ Beli pet: *${usedPrefix}pet adopt <no/nama>*\n` +
+    `> ↳ Perintah lengkap: *${usedPrefix}pet command*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'command' || action === 'commands' || action === 'cmd') {
+  const commands = handler.help
+    .filter(item => item.startsWith('pet '))
+    .map(item => `> ↳ *${usedPrefix}${item}*`)
+    .join('\n')
+  return safeReply(
+    `╭─❏「 📋 COMMAND PET 」❏\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${commands}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
   // === DAFTAR COOLDOWN ===
 if (action === 'cd' || action === 'cooldown') {
   const rows = [
@@ -801,58 +828,33 @@ if (action === 'cd' || action === 'cooldown') {
   return safeReply(cap)
 }
 
-  // === MENU UTAMA ===
-  if (!action || action === 'list') {
-  let cap = `╭─❏「 🐾 AVELIA PET CENTER 」❏\n`
-  cap += `│ 🐾 *DAFTAR PET KAMU*\n`
-  cap += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  cap += `👤 *INFORMASI PET*\n`
-  cap += `> ↳ ⏰ Waktu: ${waktu} | ${jam}:${menit} WIB\n`
-  cap += `> ↳ 💰 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-  cap += `> ↳ 📦 Total Pet: ${user.pets.length}/10\n`
-
-  if(user.achievements.includes('master_breeder')) {
-    cap += `> ↳ 🏆 Achievement: Master Breeder\n`
+  // === MENU UTAMA DAN DAFTAR PET ===
+  if (!action) {
+    return safeReply(
+      `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Fitur pet memungkinkanmu membeli, merawat, melatih, dan mengembangkan pet.\n\n` +
+      `> ↳ Lihat pet yang dimiliki: *${usedPrefix}pet list*\n` +
+      `> ↳ Cek detail pet: *${usedPrefix}pet status <no/nama>*\n` +
+      `> ↳ Lihat pet shop: *${usedPrefix}pet shop*\n` +
+      `> ↳ Baca panduan: *${usedPrefix}pet guide*\n` +
+      `> ↳ Lihat command: *${usedPrefix}pet command*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  cap += `\n─━━━━━━━━━━━━━━─\n\n`
-
-  if (user.pets.length > 0) {
-    cap += `🐾 *DAFTAR PET*\n`
-    cap += `> ↳ Status dan kondisi pet kamu.\n\n`
-
-    user.pets.slice(0,10).forEach((p, i) => {
-      let mood = getMood(p)
-
-      cap += `*${i + 1}. ${pets[p.tipe]?.emoji || '❓'} ${formatNama(p)}*\n`
-      cap += `> ↳ 📈 Level: ${p.level}\n`
-      cap += `> ↳ ${isMesin(p.tipe) ? '⚙️ Mesin' : '🍖 Organik'}\n`
-      cap += `> ↳ Mood: ${mood}\n`
-      cap += `> ↳ 🔋 Energy: ${p.energy ?? 100}%\n`
-      cap += `> ↳ 🧼 Kebersihan: ${100 - (p.dirty || 0)}%\n\n`
-    })
-
-    if(user.pets.length > 10) {
-      cap += `> ↳ ...dan ${user.pets.length - 10} pet lainnya\n\n`
+  if (action === 'list') {
+    let cap = `╭─❏「 🐾 DAFTAR PET KAMU 」❏\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    if (!user.pets.length) {
+      cap += `Kamu belum memiliki pet.\n`
+    } else {
+      user.pets.forEach((pet, index) => {
+        cap += `*${index + 1}. ${formatNama(pet)} ${pets[pet.tipe]?.emoji || '❓'}*\n`
+      })
     }
-
-    cap += `📌 *DETAIL PET*\n`
-    cap += `> ↳ *${usedPrefix}pet status <no/nama>*\n`
-  } else {
-    cap += `📝 *BELUM PUNYA PET*\n`
-    cap += `> ↳ Ketik *${usedPrefix}pet shop* untuk membeli pet.\n`
-  }
-
-  cap += `\n─━━━━━━━━━━━━━━─\n\n`
-
-  cap += `💡 *MENU LAINNYA*\n`
-  cap += `> ↳ *${usedPrefix}pet cd* — Lihat semua cooldown\n`
-  cap += `> ↳ *${usedPrefix}pet shop* — Lihat pet tersedia\n`
-
-  cap += `\n╰─━━━━━━━━━━━━━━─`
-
-  return sendRpgMsg(conn, m, cap, petImageUrl)
+    cap += `\n─━━━━━━━━━━━━━━─`
+    return safeReply(cap)
 }
 
 // === STATUS DETAIL ===
@@ -923,7 +925,6 @@ if (action === 'status') {
 // === SHOP ===
 if (action === 'shop') {
   let sortedPets = Object.entries(pets).sort((a,b) => a[1].harga - b[1].harga)
-  let totalAll = Object.values(pets).reduce((a,b) => a + b.harga, 0)
 
   // MAP NOMOR -> NAMA PET URUT 1-....
   const nomorKePet = {}
@@ -949,7 +950,7 @@ if (action === 'shop') {
   cap += `🟢 *MURAH < 500RB*\n\n`
   sortedPets.filter(([k,v]) => v.harga < 500000).forEach(([k, v]) => {
     cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
-    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+    cap += `> Buy : Rp ${v.harga.toLocaleString()}\n\n`
   })
 
   cap += `─━━━━━━━━━━━━━━─\n\n`
@@ -957,7 +958,7 @@ if (action === 'shop') {
   cap += `🔵 *STANDAR 500RB - 2JT*\n\n`
   sortedPets.filter(([k,v]) => v.harga >= 500000 && v.harga < 2000000).forEach(([k, v]) => {
     cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
-    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+    cap += `> Buy : Rp ${v.harga.toLocaleString()}\n\n`
   })
 
   cap += `─━━━━━━━━━━━━━━─\n\n`
@@ -965,7 +966,7 @@ if (action === 'shop') {
   cap += `🟣 *RARE 2JT - 10JT*\n\n`
   sortedPets.filter(([k,v]) => v.harga >= 2000000 && v.harga < 10000000).forEach(([k, v]) => {
     cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
-    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+    cap += `> Buy : Rp ${v.harga.toLocaleString()}\n\n`
   })
 
   cap += `─━━━━━━━━━━━━━━─\n\n`
@@ -973,7 +974,7 @@ if (action === 'shop') {
   cap += `🔴 *LEGEND > 10JT*\n\n`
   sortedPets.filter(([k,v]) => v.harga >= 10000000).forEach(([k, v]) => {
     cap += `*${nomor++}. ${formatNamaAsli(k)} ${v.emoji}*\n`
-    cap += `> ↳ Harga: Rp ${v.harga.toLocaleString()}\n\n`
+    cap += `> Buy : Rp ${v.harga.toLocaleString()}\n\n`
   })
 
   cap += `─━━━━━━━━━━━━━━─\n\n`
@@ -2908,7 +2909,7 @@ if (action === 'claim') {
   return safeReply(`❌ Command tidak dikenal. Ketik *.pet* buat lihat menu`)
 }
 
-handler.help = ['pet', 'pet care', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
+handler.help = ['pet', 'pet guide', 'pet command', 'pet care', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
 handler.tags = ['rpg']
 handler.command = ['pet']
 handler.alias = ['pet']

@@ -188,8 +188,8 @@ const hargaBeli = { ...sharedHargaBeli }
     makananKeys.forEach((k, i) => {
       let hBeli = Math.floor(hargaBeli[k].harga * buyDiskon)
       cap += `*${i + 1}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
-      cap += `> Buy: Rp ${hBeli.toLocaleString()}\n`
-      cap += `> Sell: Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n`
+      cap += `> Buy : Rp ${hBeli.toLocaleString()}\n`
+      cap += `> Sell : Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n\n`
     })
 
     cap += `\n─━━━━━━━━━━━━━━─\n\n🥤 *MINUMAN ${minumanKeys.length}*\n`
@@ -198,8 +198,8 @@ const hargaBeli = { ...sharedHargaBeli }
       let hBeli = Math.floor(hargaBeli[k].harga * buyDiskon)
       let no = makananKeys.length + i + 1
       cap += `*${no}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
-      cap += `> Buy: Rp ${hBeli.toLocaleString()}\n`
-      cap += `> Sell: Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n`
+      cap += `> Buy : Rp ${hBeli.toLocaleString()}\n`
+      cap += `> Sell : Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n\n`
     })
     cap += `─━━━━━━━━━━━━━━─`
     return m.reply(cap)

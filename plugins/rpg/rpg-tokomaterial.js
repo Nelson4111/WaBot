@@ -148,14 +148,16 @@ let handler = async (m, { text, usedPrefix }) => {
       let hJual = Math.floor(hargaJual[k] * sellBonus)
       cap += `*${i + 1}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
       cap += `> Buy : Rp ${hBeli.toLocaleString()}\n`
-      cap += `> Sell : ${Number.isFinite(hJual) ? `Rp ${hJual.toLocaleString()}` : 'Bisa dijual'}\n`
+      cap += `> Sell : ${Number.isFinite(hJual) ? `Rp ${hJual.toLocaleString()}` : 'Bisa dijual'}\n\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─\n\n`
     cap += `💰 *HARGA JUAL ITEM & ORE*\nDaftar item tambang dan barang petualangan yang bisa dijual.\n\n`
     let nomorMulai = materialKeys.length + 1
     jualKeys.forEach((k, i) => {
       let h = Math.floor(hargaJual[k] * sellBonus)
-      cap += `*${nomorMulai + i}. ${formatNama(k)} ${oreEmoji[k] || '📦'}* — Sell: ${Number.isFinite(h) ? `Rp ${h.toLocaleString()}` : 'Bisa dijual'}\n`
+      cap += `*${nomorMulai + i}. ${formatNama(k)} ${oreEmoji[k] || '📦'}*\n`
+      cap += `> Buy : -\n`
+      cap += `> Sell : ${Number.isFinite(h) ? `Rp ${h.toLocaleString()}` : 'Bisa dijual'}\n\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─\n💡 *Tips:* Hasil tambang bisa dijual semua di sini.`
     return m.reply(cap)

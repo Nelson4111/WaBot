@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
+import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn }) => {
@@ -7,6 +7,7 @@ let handler = async (m, { conn }) => {
   
   // Ambil semua ID user yang terdaftar
   let users = filterRpgPanelUsers(Object.keys(wdb.users))
+    .filter(isValidRpgUserId)
     .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
   
   // Fungsi Helper untuk format Nama & Nomor

@@ -29,7 +29,7 @@ function getRandomMenu(excludedMenus = []) {
 }
 
 function formatMenuOptions(options) {
-  return options.map((menu, index) => `> ${index + 1}. ${menuDescription(menu)}`).join('\n')
+  return options.map((menu, index) => `> ${index + 1}. ${menuDescription(menu)}`).join('\n\n')
 }
 
 function getClaimsForDate(user, dateKey) {

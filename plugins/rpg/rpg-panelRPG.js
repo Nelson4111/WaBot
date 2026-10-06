@@ -5,7 +5,7 @@ import { hewanList, getHewan, getHewanKey, prosesKawin } from '../../lib/rpg-lib
 import { BANK_TIERS } from './rpg-bank.js'
 import { bibit } from './rpg-panen.js'
 import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
-import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
+import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked, normalizeDifficulty, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
 
 import fs from 'fs'
@@ -176,6 +176,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
+  `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\n` +
@@ -203,6 +204,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
     let users = filterRpgPanelUsers(Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg))
+      .filter(isValidRpgUserId)
       .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
     const formatUser = (id) => {
       let name = conn.getName(id) || 'Petualang'
@@ -211,8 +213,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
       return `${name} (@${maskedNum})`
     }
     let topLevel = [...users].sort((a,b) => (wdb.users[b].rpg.level || 0) - (wdb.users[a].rpg.level || 0)).slice(0, 10)
-    let topMoney = filterRpgPanelUsers(Object.keys(wdb.money))
-      .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
+    let topMoney = [...users]
       .sort((a,b) => (wdb.money[b] || 0) - (wdb.money[a] || 0))
       .slice(0, 10)
     let topDiamond = [...users].sort((a,b) => (wdb.users[b].rpg.diamond || 0) - (wdb.users[a].rpg.diamond || 0)).slice(0, 10)
@@ -279,18 +280,24 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   if (aksi === 'clearmoneykey') {
     const rawKey = remaining.join(' ').trim()
-    if (!rawKey) return m.reply(`❌ Masukkan key money. Contoh: ${usedPrefix}rpgpanel clearmoneykey +500000`)
+    if (!rawKey) return m.reply(`❌ Masukkan key akun yang salah. Contoh: ${usedPrefix}rpgpanel clearmoneykey @`)
     const candidates = new Set([rawKey])
-    if (!rawKey.includes('@')) candidates.add(`${rawKey}@s.whatsapp.net`)
+    if (rawKey.startsWith('@')) candidates.add(`${rawKey.slice(1)}@s.whatsapp.net`)
+    else if (!rawKey.includes('@')) candidates.add(`${rawKey}@s.whatsapp.net`)
     let removed = 0
+    let found = false
     for (const key of candidates) {
-      const record = global.db?.data?.users?.[key]
-      if (record) removed += Number(record.money) || 0
-      if (global.db?.data?.users) delete global.db.data.users[key]
+      const record = wdb.users[key] || global.db?.data?.users?.[key]
+      if (record) {
+        found = true
+        removed += Number(record.money) || 0
+        delete wdb.users[key]
+        if (global.db?.data?.users) delete global.db.data.users[key]
+      }
     }
     await saveDB(wdb)
-    return m.reply(removed > 0
-      ? `✅ Data money malformed *${rawKey}* dihapus.\n💰 Saldo yang dibersihkan: Rp ${removed.toLocaleString()}`
+    return m.reply(found
+      ? `✅ Data akun salah *${rawKey}* dihapus dari RPG dan leaderboard.\n💰 Saldo yang dibersihkan: Rp ${removed.toLocaleString()}`
       : `ℹ️ Key *${rawKey}* tidak ditemukan di database.`)
   }
 

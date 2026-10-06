@@ -74,54 +74,68 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const isPrem = global.db.data.users[m.sender]?.premium
   const buyDiscount = isPrem ? 0.8 : 1
 
+  const args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
+  const action = args[0]
+
+  if (!action) {
+    let cap = `╭─❏「 🌱 TANAM LADANG 」❏\n`
+    cap += `│ ${isPrem ? '👑 Premium - Diskon 20%, maksimal 20 ladang' : '👤 User Normal'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `Fitur tanam digunakan untuk membeli bibit dan menanamnya di ladang. Hasil panen bisa dikumpulkan setelah waktunya selesai.\n\n`
+    cap += `📌 *CARA TANAM*\n`
+    cap += `> ↳ Lihat bibit dan harga: *${usedPrefix}tanam list*\n`
+    cap += `> ↳ Tanam satu bibit: *${usedPrefix}tanam wortel*\n`
+    cap += `> ↳ Pilih slot tertentu: *${usedPrefix}tanam berlian 1*\n`
+    cap += `> ↳ Tanam di semua slot kosong: *${usedPrefix}tanam koin all*\n`
+    cap += `> ↳ Cek ladang: *${usedPrefix}ladang*\n`
+    cap += `\n─━━━━━━━━━━━━━━─`
+    return safeReply(cap)
+  }
+
+  if (action === 'list') {
+    let cap = `╭─❏「 🌱 DAFTAR BIBIT 」❏\n`
+    cap += `│ ${isPrem ? '👑 Premium - Diskon 20%' : '👤 User Normal'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `📌 *PILIH BIBIT UNTUK MENANAM*\n`
+    cap += `> ↳ Baris kedua menunjukkan harga dan waktu panen.\n\n`
+
+    const sections = [
+      ['🌱 *TERMURAH*', Object.entries(bibit).slice(0, 10)],
+      ['🌿 *MENENGAH*', Object.entries(bibit).slice(10, 25)],
+      ['💎 *TERMAHAL*', Object.entries(bibit).slice(25)]
+    ]
+    sections.forEach(([title, items], sectionIndex) => {
+      if (sectionIndex) cap += `\n─━━━━━━━━━━━━━━─\n\n`
+      cap += `${title}\n`
+      items.forEach(([name, info]) => {
+        const hargaFinal = Math.floor(info.harga * buyDiscount)
+        cap += `*${formatNama(name)} ${info.emoji}*\n`
+        cap += `> Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n\n`
+      })
+    })
+    cap += `─━━━━━━━━━━━━━━─`
+    return safeReply(cap)
+  }
+
+  if (action === 'guide' || action === 'command') {
+    const subcommand = action === 'guide' ? 'PANDUAN' : 'COMMAND'
+    return safeReply(
+      `╭─❏「 🌱 ${subcommand} TANAM 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Lihat daftar bibit: *${usedPrefix}tanam list*\n` +
+      `> ↳ Tanam bibit: *${usedPrefix}tanam <nama bibit> [nomor slot/all]*\n` +
+      `> ↳ Cek ladang: *${usedPrefix}ladang*\n` +
+      `> ↳ Jual hasil panen: *${usedPrefix}koperasi jual <no/nama> <jumlah/all>*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   let slotKosong = []
   for (let i = 1; i <= user.maxLadang; i++) {
     if (!user.ladang[i]) slotKosong.push(i)
   }
   if (slotKosong.length === 0) return safeReply(`❌ Semua ladang sudah penuh.`)
 
- if (!text) {
-    let cap = `╭─❏「 🌱 DAFTAR BIBIT 」❏\n`
-    cap += `│ ${isPrem ? '👑 Premium - Diskon 20%' : '👤 User Normal'}\n`
-    cap += `╰─━━━━━━━━━━━━━━─\n\n`
-
-    cap += `📌 *PILIH BIBIT UNTUK MENANAM*\n`
-    cap += `> ↳ Baris kedua menunjukkan harga dan waktu panen.\n\n`
-
-    cap += `🌱 *TERMURAH*\n`
-    Object.entries(bibit).slice(0, 10).forEach(([name, info]) => {
-      let hargaFinal = Math.floor(info.harga * buyDiscount)
-      cap += `${info.emoji} *${formatNama(name)}*\n`
-      cap += `> ↳ Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n`
-    })
-
-    cap += `\n─━━━━━━━━━━━━━━─\n\n`
-    cap += `🌿 *MENENGAH*\n`
-    Object.entries(bibit).slice(10, 25).forEach(([name, info]) => {
-      let hargaFinal = Math.floor(info.harga * buyDiscount)
-      cap += `${info.emoji} *${formatNama(name)}*\n`
-      cap += `> ↳ Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n`
-    })
-
-    cap += `\n─━━━━━━━━━━━━━━─\n\n`
-    cap += `💎 *TERMAHAL*\n`
-    Object.entries(bibit).slice(25).forEach(([name, info]) => {
-      let hargaFinal = Math.floor(info.harga * buyDiscount)
-      cap += `${info.emoji} *${formatNama(name)}*\n`
-      cap += `> ↳ Buy : Rp ${hargaFinal.toLocaleString()} - Panen : ${Math.floor(info.waktu / 60000)}m\n`
-    })
-
-    cap += `\n─━━━━━━━━━━━━━━─\n\n`
-    cap += `📌 *CARA TANAM*\n`
-    cap += `> ↳ Per slot: *${usedPrefix}tanam wortel*\n`
-    cap += `> ↳ Slot tertentu: *${usedPrefix}tanam berlian 1*\n`
-    cap += `> ↳ Semua slot: *${usedPrefix}tanam koin all*\n`
-    cap += `\n─━━━━━━━━━━━━━━─`
-
-    return safeReply(cap)
-  }
-
-  let args = text.toLowerCase().split(' ')
   let jenis = args[0].replace(/ /g, '_') // langsung ganti spasi jadi _
   let slotTarget = args[args.length - 1]
   let isAll = slotTarget === 'all'
@@ -130,7 +144,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     `╭─❏「 ❌ BIBIT TIDAK DITEMUKAN 」❏\n` +
     `│ Jenis bibit *${formatNama(jenis)}* tidak ada.\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `Ketik *${usedPrefix}tanam* untuk lihat daftar.`
+    `Ketik *${usedPrefix}tanam list* untuk lihat daftar bibit.`
   )
 
   let info = bibit[jenis]
@@ -198,7 +212,7 @@ return safeReply(
 )
 }
 
-handler.help = ['tanam']
+handler.help = ['tanam', 'tanam list', 'tanam guide', 'tanam command']
 handler.tags = ['rpg']
 handler.command = /^(tanam|berkebun)$/i
 handler.group = true

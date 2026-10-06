@@ -1,4 +1,12 @@
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
+import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
+import {
+  changeTransferBalance,
+  findTransferItems,
+  getTransferBalance,
+  makeTransferKey,
+  parseTransferReference
+} from '../../lib/rpgTransfer.js'
 
 let tradeDB = global.tradeDB || (global.tradeDB = {})
 
@@ -25,6 +33,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   // 1. MULAI VIA REPLY
 if (m.quoted && !trade) {
   let partner = m.quoted.sender
+  if (!isValidRpgUserId(partner)) return m.reply('❌ Target reply tidak valid. Tag atau reply pengguna WhatsApp yang terdaftar.')
   if (partner === sender) return m.reply('❌ Tidak bisa trade dengan diri sendiri!')
   let pData = getUserRPG(wdb, partner)
   let pUser = pData?.rpg
@@ -57,8 +66,9 @@ if (m.quoted && !trade) {
 }
 
 // 2. MULAI VIA TAG
-if (m.mentionedJid[0] && !trade) {
+if (m.mentionedJid?.[0] && !trade) {
   let partner = m.mentionedJid[0]
+  if (!isValidRpgUserId(partner)) return m.reply('❌ Target tag tidak valid. Tag pengguna WhatsApp yang terdaftar.')
   if (partner === sender) return m.reply('❌ Tidak bisa trade dengan diri sendiri!')
   let pData = getUserRPG(wdb, partner)
   let pUser = pData?.rpg
@@ -101,6 +111,7 @@ if (!action) {
     `> ↳ Mulai : *.trade @tag* atau reply\n` +
     `> ↳ Add : Masukkan item dan jumlah\n` +
     `> ↳ Bank : Masukkan uang bank\n` +
+    `> ↳ Item dapat berasal dari gudang, tas, aquarium, kulkas, dan saldo RPG. Gunakan format *penyimpanan:item* jika item ganda.\n` +
     `> ↳ Panel : Lihat isi trade\n` +
     `> ↳ Accept : Setujui penawaran\n` +
     `> ↳ Deal : Selesaikan trade\n` +
@@ -125,77 +136,52 @@ let partner = isP1 ? trade.p2 : trade.p1
 let pData = getUserRPG(wdb, partner)
 let pUser = pData.rpg
 
-// FUNGSI AMBIL STOK DARI SEMUA KATEGORI
-const getStok = (jid, user, item) => {
-  if (item === 'money') return wdb.money[jid] || 0
-  if (item === 'bank') return user?.bank || 0
-  if (user?.inventory && user.inventory[item]) return user.inventory[item]
-  if (user?.ikan && user.ikan[item]) return user.ikan[item]
-  if (user?.ores && user.ores[item]) return user.ores[item]
-  if (user?.items && user.items[item]) return user.items[item]
-  if (user?.masakan && user.masakan[item]) return user.masakan[item]
-  return 0
-}
-
-const kurangStok = (jid, user, item, qty) => {
-  if (item === 'money') wdb.money[jid] = Math.max(0, (wdb.money[jid] || 0) - qty)
-  else if (item === 'bank') {
-    if (user) user.bank = Math.max(0, (user.bank || 0) - qty)
-    if (wdb.users?.[jid]) wdb.users[jid].bank = user ? user.bank : 0
-  }
-  else if (user?.inventory && user.inventory[item] !== undefined) user.inventory[item] -= qty
-  else if (user?.ikan && user.ikan[item] !== undefined) user.ikan[item] -= qty
-  else if (user?.ores && user.ores[item] !== undefined) user.ores[item] -= qty
-  else if (user?.items && user.items[item] !== undefined) user.items[item] -= qty
-  else if (user?.masakan && user.masakan[item] !== undefined) user.masakan[item] -= qty
-}
-
-const tambahStok = (jid, user, item, qty) => {
-  if (item === 'money') wdb.money[jid] = (wdb.money[jid] || 0) + qty
-  else if (item === 'bank') {
-    if (user) user.bank = (user.bank || 0) + qty
-    if (wdb.users?.[jid]) wdb.users[jid].bank = user ? user.bank : (wdb.users[jid].bank || 0) + qty
-  }
-  else if (user?.inventory) user.inventory[item] = (user.inventory[item] || 0) + qty
-  else if (user?.ikan) user.ikan[item] = (user.ikan[item] || 0) + qty
-  else if (user?.ores) user.ores[item] = (user.ores[item] || 0) + qty
-  else if (user?.items) user.items[item] = (user.items[item] || 0) + qty
-  else if (user?.masakan) user.masakan[item] = (user.masakan[item] || 0) + qty
-}
-
 if (action === 'add') {
-  let type = (args[1] || '').toLowerCase()
-  let count = parseInt(args[2])
-  if (!type || isNaN(count) || count <= 0) {
+  const type = (args[1] || '').toLowerCase()
+  const count = Number(args[2])
+  if (!type || !Number.isSafeInteger(count) || count <= 0) {
     return m.reply(
       `╭─❏「 🔄 TRADE 」❏\n` +
       `│ ❌ *FORMAT SALAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ *.trade add [item/bank] [jumlah]*\n\n` +
+      `> ↳ *.trade add [item] [jumlah]*\n` +
+      `> ↳ Item dari gudang, tas, aquarium, kulkas, saldo RPG, atau bank.\n` +
+      `> ↳ Contoh sumber: *inventory:diamond*, *ikan:ikan_teri*, *masakan:sushi*, *balance:diamond*.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  let stok = getStok(sender, sUser, type)
+  const matches = findTransferItems(sUser, type)
+  if (matches.length > 1) {
+    const locations = matches.map(match => match.field === 'balance'
+      ? `balance:${match.item}`
+      : `${match.field === 'bank' ? 'bank' : match.field}:${match.item}`)
+    return m.reply(`❌ Item *${type}* ada di beberapa penyimpanan. Tentukan sumbernya: ${locations.map(location => `*${location}*`).join(', ')}.`)
+  }
+  const reference = matches[0]
+  if (!reference) return m.reply(`❌ Item *${type}* tidak ditemukan di stok yang bisa ditrade.`)
+
+  const stok = reference.money ? Number(wdb.money[sender]) || 0 : getTransferBalance(sUser, reference)
   if (stok < count) {
     return m.reply(
       `╭─❏「 🔄 TRADE 」❏\n` +
       `│ ❌ *STOK TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ ${type.toUpperCase()} tidak cukup!\n` +
+      `> ↳ ${reference.label.toUpperCase()} tidak cukup!\n` +
       `> ↳ Punya : ${stok}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  myOffer[type] = (myOffer[type] || 0) + count
+  const transferKey = makeTransferKey(reference)
+  myOffer[transferKey] = (myOffer[transferKey] || 0) + count
   trade.p1Accept = trade.p2Accept = false
 
   return m.reply(
     `╭─❏「 🔄 TRADE 」❏\n` +
     `│ ✅ *ITEM DITAMBAHKAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ ${type} x${count}\n\n` +
+    `> ↳ ${reference.label} x${count}\n\n` +
     `📌 *.trade panel* untuk lihat\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
@@ -203,11 +189,11 @@ if (action === 'add') {
 
 if (action === 'panel') {
   let p1List = Object.entries(trade.p1Offer)
-    .map(([k, v]) => `> ↳ ${k}: ${v.toLocaleString()}`)
+    .map(([k, v]) => `> ↳ ${parseTransferReference(k)?.label || k}: ${v.toLocaleString()}`)
     .join('\n') || '> ↳ Kosong'
 
   let p2List = Object.entries(trade.p2Offer)
-    .map(([k, v]) => `> ↳ ${k}: ${v.toLocaleString()}`)
+    .map(([k, v]) => `> ↳ ${parseTransferReference(k)?.label || k}: ${v.toLocaleString()}`)
     .join('\n') || '> ↳ Kosong'
 
   return m.reply(
@@ -268,14 +254,15 @@ if (action === 'deal') {
   }
 
   // cek stok lagi
-  for (let [item, qty] of Object.entries(trade.p1Offer)) {
-    let stok = getStok(trade.p1, p1User, item)
+  for (let [key, qty] of Object.entries(trade.p1Offer)) {
+    const item = parseTransferReference(key)
+    const stok = item?.money ? Number(wdb.money[trade.p1]) || 0 : getTransferBalance(p1User, item)
     if (stok < qty) {
       return m.reply(
         `╭─❏「 🔄 TRADE 」❏\n` +
         `│ ❌ *STOK TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ @${trade.p1.split('@')[0]} stok ${item} tidak cukup!\n\n` +
+        `> ↳ @${trade.p1.split('@')[0]} stok ${item?.label || key} tidak cukup!\n\n` +
         `─━━━━━━━━━━━━━━─`,
         null,
         { mentions: [trade.p1] }
@@ -283,14 +270,15 @@ if (action === 'deal') {
     }
   }
 
-  for (let [item, qty] of Object.entries(trade.p2Offer)) {
-    let stok = getStok(trade.p2, p2User, item)
+  for (let [key, qty] of Object.entries(trade.p2Offer)) {
+    const item = parseTransferReference(key)
+    const stok = item?.money ? Number(wdb.money[trade.p2]) || 0 : getTransferBalance(p2User, item)
     if (stok < qty) {
       return m.reply(
         `╭─❏「 🔄 TRADE 」❏\n` +
         `│ ❌ *STOK TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ @${trade.p2.split('@')[0]} stok ${item} tidak cukup!\n\n` +
+        `> ↳ @${trade.p2.split('@')[0]} stok ${item?.label || key} tidak cukup!\n\n` +
         `─━━━━━━━━━━━━━━─`,
         null,
         { mentions: [trade.p2] }
@@ -299,14 +287,30 @@ if (action === 'deal') {
   }
 
   // eksekusi
-  for (let [item, qty] of Object.entries(trade.p1Offer)) {
-    kurangStok(trade.p1, p1User, item, qty)
-    tambahStok(trade.p2, p2User, item, qty)
+  for (let [key, qty] of Object.entries(trade.p1Offer)) {
+    const item = parseTransferReference(key)
+    if (item.money) {
+      wdb.money[trade.p1] -= qty
+      wdb.money[trade.p2] = (Number(wdb.money[trade.p2]) || 0) + qty
+    } else {
+      changeTransferBalance(p1User, item, -qty)
+      changeTransferBalance(p2User, item, qty)
+      if (item.field === 'bank' && wdb.users[trade.p1]) wdb.users[trade.p1].bank = p1User.bank
+      if (item.field === 'bank' && wdb.users[trade.p2]) wdb.users[trade.p2].bank = p2User.bank
+    }
   }
 
-  for (let [item, qty] of Object.entries(trade.p2Offer)) {
-    kurangStok(trade.p2, p2User, item, qty)
-    tambahStok(trade.p1, p1User, item, qty)
+  for (let [key, qty] of Object.entries(trade.p2Offer)) {
+    const item = parseTransferReference(key)
+    if (item.money) {
+      wdb.money[trade.p2] -= qty
+      wdb.money[trade.p1] = (Number(wdb.money[trade.p1]) || 0) + qty
+    } else {
+      changeTransferBalance(p2User, item, -qty)
+      changeTransferBalance(p1User, item, qty)
+      if (item.field === 'bank' && wdb.users[trade.p2]) wdb.users[trade.p2].bank = p2User.bank
+      if (item.field === 'bank' && wdb.users[trade.p1]) wdb.users[trade.p1].bank = p1User.bank
+    }
   }
 
   saveDB(wdb)

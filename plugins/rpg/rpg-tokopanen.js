@@ -158,7 +158,9 @@ let handler = async (m, { text, usedPrefix }) => {
     keys.forEach((k,i) => {
       let h = Math.floor(harga[k].harga * sellBonus)
       const nama = formatNama(k)
-      cap += `${harga[k].emoji || '📦'} *${i + 1}. ${nama}* — Sell: Rp ${h.toLocaleString()}\n`
+      cap += `*${i + 1}. ${nama} ${harga[k].emoji || '📦'}*\n`
+      cap += `> Buy : -\n`
+      cap += `> Sell : Rp ${h.toLocaleString()}\n\n`
     })
 
     cap += `\n─━━━━━━━━━━━━━━─\n\n`

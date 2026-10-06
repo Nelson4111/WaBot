@@ -8,12 +8,14 @@ let handler = async (m, { conn }) => {
   initLadang(user)
 
   let currentLadang = user.maxLadang || 1
+  const isPremium = Boolean(global.db.data.users[m.sender]?.premium)
+  const maxLadang = isPremium ? 20 : 10
 
-  if (currentLadang >= 10) {
+  if (currentLadang >= maxLadang) {
     return m.reply(
       `╭─❏「 ❌ UPGRADE LADANG 」❏\n` +
       `│ 🌱 Slot ladang sudah maksimal.\n` +
-      `│ ↳ Maksimal: 10 ladang.\n` +
+      `│ ↳ Maksimal: ${maxLadang} ladang${isPremium ? ' untuk premium' : ''}.\n` +
       `╰─━━━━━━━━━━━━━━─`
     )
   }

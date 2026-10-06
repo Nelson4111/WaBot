@@ -261,7 +261,9 @@ let handler = async (m, { text, usedPrefix }) => {
     cap += `> ↳ Daftar mencakup ikan dan sampah pendakian dari tas.\n\n`
     keys.forEach((k, i) => {
       const hargaJual = Math.floor(harga[k].harga * sellBonus)
-      cap += `${harga[k].emoji} *${i + 1}. ${formatNama(k)}* — Sell: Rp ${hargaJual.toLocaleString()}\n`
+      cap += `*${i + 1}. ${formatNama(k)} ${harga[k].emoji}*\n`
+      cap += `> Buy : -\n`
+      cap += `> Sell : Rp ${hargaJual.toLocaleString()}\n\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─`
     return m.reply(cap)
