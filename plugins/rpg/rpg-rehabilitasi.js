@@ -295,38 +295,55 @@ if (action === 'bayar' || activityDefinitions[action] || action === 'all') {
   }
 
   if (action === 'all') {
-    if (!isPremiumUser(m.sender, wdb)) {
-      return m.reply('❌ Perintah *.rh all* khusus pengguna premium.')
-    }
-
-    const readyActivities = Object.entries(activityDefinitions).filter(([activity, definition]) => {
-      const cooldown = REHABILITATION_ACTIVITY_COOLDOWNS[activity]
-      return cooldown - (now - (Number(process[definition.cooldownField]) || 0)) <= 0
-    })
-    if (!readyActivities.length) {
-      return m.reply(`⏳ Semua aktivitas rehabilitasi masih cooldown.\n\n${cooldownText(process, now)}`)
-    }
-
-    const completedActivities = []
-    for (const [activity, definition] of readyActivities) {
-      process[definition.cooldownField] = now
-      process.progress = (Number(process.progress) || 0) + 2
-      if (activity === 'sosial') process.socialActivities = (Number(process.socialActivities) || 0) + 1
-      completedActivities.push(`> ↳ *${definition.label}:* ${randomItem(REHABILITATION_ACTIVITY_STORIES[activity])} (+2 poin)`)
-    }
-
-    await saveDB(wdb)
+  if (!isPremiumUser(m.sender, wdb)) {
     return m.reply(
       `╭─❏「 👑 AKTIVITAS REHABILITASI ALL 」❏\n` +
-      `│ 👑 *AKTIVITAS PREMIUM SELESAI*\n` +
+      `│ ❌ *AKSES PREMIUM*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${completedActivities.join('\n')}\n\n` +
-      `${statusText(process, now)}\n\n` +
-      `> ↳ Aktivitas yang masih cooldown dilewati. Cek dengan *.rh cd*.\n` +
-      `> ↳ Jika semua syarat terpenuhi, gunakan *.rh lapor*.\n\n` +
+      `> ↳ Perintah *.rh all* khusus pengguna premium.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
+
+  const readyActivities = Object.entries(activityDefinitions).filter(([activity, definition]) => {
+    const cooldown = REHABILITATION_ACTIVITY_COOLDOWNS[activity]
+    return cooldown - (now - (Number(process[definition.cooldownField]) || 0)) <= 0
+  })
+
+  if (!readyActivities.length) {
+    return m.reply(
+      `╭─❏「 ⏳ REHABILITASI ALL 」❏\n` +
+      `│ ⏳ *SEMUA AKTIVITAS COOLDOWN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Semua aktivitas rehabilitasi masih cooldown.\n\n` +
+      `${cooldownText(process, now)}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const completedActivities = []
+
+  for (const [activity, definition] of readyActivities) {
+    process[definition.cooldownField] = now
+    process.progress = (Number(process.progress) || 0) + 2
+    if (activity === 'sosial') process.socialActivities = (Number(process.socialActivities) || 0) + 1
+    completedActivities.push(`> ↳ *${definition.label}:* ${randomItem(REHABILITATION_ACTIVITY_STORIES[activity])} (+2 poin)`)
+  }
+
+  await saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 👑 AKTIVITAS REHABILITASI 」❏\n` +
+    `│ 👑 *AKTIVITAS PREMIUM SELESAI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${completedActivities.join('\n')}\n\n` +
+    `${statusText(process, now)}\n\n` +
+    `> ↳ Aktivitas yang masih cooldown dilewati.\n` +
+    `> ↳ Cek cooldown dengan *.rh cd*.\n` +
+    `> ↳ Jika semua syarat terpenuhi, gunakan *.rh lapor*.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   let paymentResult = null
   if (action === 'bayar') {

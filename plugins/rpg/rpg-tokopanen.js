@@ -288,12 +288,31 @@ let handler = async (m, { text, usedPrefix }) => {
 
   if (jual > stok) return m.reply(`❌ Stok tidak cukup! Kamu punya ${stok}`)
 
-  if (amount === 'all') {
-    const total = scaleDifficultyIncome(user, Math.floor(harga[itemInput].harga * sellBonus) * jual)
-    user.pendingKoperasiSell = { entries: [{ item: itemInput, quantity: jual }], total, expiresAt: Date.now() + 60000 }
-    saveDB(wdb)
-    return m.reply(`⚠️ Konfirmasi jual ${formatNama(itemInput)} x${jual} untuk Rp ${total.toLocaleString()}?\nKetik *${usedPrefix}koperasi jual ya* untuk lanjut atau *${usedPrefix}koperasi jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
+if (amount === 'all') {
+  const total = scaleDifficultyIncome(user, Math.floor(harga[itemInput].harga * sellBonus) * jual)
+
+  user.pendingKoperasiSell = {
+    entries: [{ item: itemInput, quantity: jual }],
+    total,
+    expiresAt: Date.now() + 60000
   }
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🏪 KONFIRMASI JUAL 」❏\n` +
+    `│ 🏪 *JUAL DI KOPERASI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Item : ${formatNama(itemInput)}\n` +
+    `> ↳ Jumlah : x${jual}\n` +
+    `> ↳ Total : Rp ${total.toLocaleString()}\n` +
+    `> ↳ Konfirmasi berlaku 60 detik.\n\n` +
+    `📌 *KONFIRMASI*\n` +
+    `> ↳ Ketik *${usedPrefix}koperasi jual ya* untuk lanjut.\n` +
+    `> ↳ Ketik *${usedPrefix}koperasi jual batal* untuk membatalkan.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   let hasil = Math.floor(harga[itemInput].harga * sellBonus) * jual
   user.inventory[itemInput] -= jual

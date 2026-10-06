@@ -369,14 +369,42 @@ let handler = async (m, { text, usedPrefix }) => {
       `> ↳ Item "${formatNama(itemInput)}" tidak bisa dijual di sini.`
     )
 
-    if (amount === 'all') {
-      const entries = collectEntries(item)
-      if (!entries.length) return m.reply(`❌ Kamu tidak punya ${formatNama(item)} yang bisa dijual.`)
-      const plan = quote(entries)
-      user.pendingPabrikSell = { entries, ...plan, expiresAt: Date.now() + 60000 }
-      saveDB(wdb)
-      return m.reply(`⚠️ Konfirmasi jual ${formatNama(item)} x${Object.values(plan.grouped)[0]} untuk Rp ${plan.total.toLocaleString()}?\nKetik *${usedPrefix}pabrik jual ya* untuk lanjut atau *${usedPrefix}pabrik jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
-    }
+if (amount === 'all') {
+  const entries = collectEntries(item)
+  if (!entries.length) {
+    return m.reply(
+      `╭─❏「 🏭 JUAL PABRIK 」❏\n` +
+      `│ ❌ *BARANG TIDAK TERSEDIA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kamu tidak punya ${formatNama(item)} yang bisa dijual.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const plan = quote(entries)
+
+  user.pendingPabrikSell = {
+    entries,
+    ...plan,
+    expiresAt: Date.now() + 60000
+  }
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🏭 KONFIRMASI JUAL 」❏\n` +
+    `│ 🏭 *JUAL HASIL PABRIK*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Item : ${formatNama(item)}\n` +
+    `> ↳ Jumlah : x${Object.values(plan.grouped)[0]}\n` +
+    `> ↳ Total : Rp ${plan.total.toLocaleString()}\n` +
+    `> ↳ Konfirmasi berlaku 60 detik.\n\n` +
+    `📌 *KONFIRMASI*\n` +
+    `> ↳ Ketik *${usedPrefix}pabrik jual ya* untuk lanjut.\n` +
+    `> ↳ Ketik *${usedPrefix}pabrik jual batal* untuk membatalkan.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
     let stok = item === 'diamond'
       ? (user.diamond || 0)

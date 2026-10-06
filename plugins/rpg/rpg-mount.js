@@ -287,7 +287,7 @@ if (action === 'request' || action === 'req') {
 
 if (action === 'list' || action === 'gunung') {
     const list = MOUNTAINS.map((mountain, index) =>
-        `${String(index + 1).padStart(2, '0')}. ${mountain.name}`
+        `${String(index + 1).padStart(2, '0')}. > ${mountain.name}`
     ).join('\n')
 
     return m.reply(
@@ -299,8 +299,8 @@ if (action === 'list' || action === 'gunung') {
         `> ↳ ${usedPrefix}mt detail <nomor/nama>\n` +
         `📌 *PILIH GUNUNG*\n` +
         `> ↳ ${usedPrefix}mt pilih <nomor/nama>\n` +
-        `─━━━━━━━━━━━━━━─` +
-        `> ${list}\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `${list}\n\n` +
         `─━━━━━━━━━━━━━━─`
     )
 }

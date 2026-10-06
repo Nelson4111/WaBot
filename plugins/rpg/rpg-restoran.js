@@ -423,13 +423,32 @@ return m.reply(cap)
     const harga = hargaJual[item] || hargaJualHasilTernak[item]
     const display = hargaJual[item] ? `${resepEmoji[item] || '🍽️'} ${formatNama(item)}` : `${getHasilDisplay(item).emoji} ${getHasilDisplay(item).nama}`
 
-    if (amount === 'all') {
-      const source = hargaJual[item] ? 'masakan' : 'inventory'
-      const total = scaleDifficultyIncome(user, Math.floor(harga * sellBonus) * jual)
-      user.pendingRestoranSell = { entries: [{ source, item, quantity: jual }], total, expiresAt: Date.now() + 60000 }
-      saveDB(wdb)
-      return m.reply(`⚠️ Konfirmasi setor ${display} x${jual} untuk Rp ${total.toLocaleString()}?\nKetik *${usedPrefix}restoran jual ya* untuk lanjut atau *${usedPrefix}restoran jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
-    }
+if (amount === 'all') {
+  const source = hargaJual[item] ? 'masakan' : 'inventory'
+  const total = scaleDifficultyIncome(user, Math.floor(harga * sellBonus) * jual)
+
+  user.pendingRestoranSell = {
+    entries: [{ source, item, quantity: jual }],
+    total,
+    expiresAt: Date.now() + 60000
+  }
+
+  saveDB(wdb)
+
+  return m.reply(
+    `╭─❏「 🍽️ KONFIRMASI SETOR 」❏\n` +
+    `│ 🍽️ *SETOR RESTORAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Item : ${display}\n` +
+    `> ↳ Jumlah : x${jual}\n` +
+    `> ↳ Total : Rp ${total.toLocaleString()}\n` +
+    `> ↳ Konfirmasi berlaku 60 detik.\n\n` +
+    `📌 *KONFIRMASI*\n` +
+    `> ↳ Ketik *${usedPrefix}restoran jual ya* untuk lanjut.\n` +
+    `> ↳ Ketik *${usedPrefix}restoran jual batal* untuk membatalkan.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
     let hasil = Math.floor(harga * sellBonus) * jual
     if (hargaJual[item]) {
