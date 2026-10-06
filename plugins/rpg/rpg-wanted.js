@@ -1,5 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { computeCrimeScore, ensurePatrolReleaseProtection, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncAllEscapeCrimeCounts } from '../../lib/crimeHelper.js'
+import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncAllEscapeCrimeCounts } from '../../lib/crimeHelper.js'
 import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
 
@@ -14,8 +14,8 @@ const CRIME_TYPES = [
 
 function getWantedList(db) {
   return Object.entries(db.crime || {})
-    .filter(([, data]) => data && computeCrimeScore(data) > 0)
-    .sort((a, b) => computeCrimeScore(b[1]) - computeCrimeScore(a[1]))
+    .filter(([, data]) => data && getActiveCrimeScore(data) > 0)
+    .sort((a, b) => getActiveCrimeScore(b[1]) - getActiveCrimeScore(a[1]))
 }
 
 function findWantedByJid(crimeList, jid) {
@@ -76,7 +76,7 @@ let handler = async (m, { conn, args, isOwner }) => {
       return m.reply('🛡️ Perlindungan mantan napi mencegah buronan tersebut masuk penjara.')
     }
 
-    const score = computeCrimeScore(wantedData)
+    const score = getActiveCrimeScore(wantedData)
     const penalty = getPatrolCapturePenalty(score)
     userRPG.penjara = now
     userRPG.lamaPenjara = penalty.durationMs
@@ -160,7 +160,7 @@ let handler = async (m, { conn, args, isOwner }) => {
       `> 👑 / 🥈 / 🥉 - Peringkat 1, 2, dan 3\n` +
       `> 💀 - Total poin buronan\n` +
       `> Ikon kejahatan di atas menunjukkan jumlah tiap aksi; poinnya mengikuti bobot masing-masing.\n\n` +
-      `Poin bersifat akumulatif. Gunakan *.buronan list* untuk daftar dan *.buronan detail <nomor/tag/reply>* untuk profil buronan.`
+      `Poin buronan aktif mengikuti kejahatan sejak rehabilitasi terakhir. Poin dan jumlah kejahatan lama tetap tersimpan sebagai riwayat seumur hidup. Gunakan *.buronan list* untuk daftar dan *.buronan detail <nomor/tag/reply>* untuk profil buronan aktif.`
     )
   }
 
@@ -181,7 +181,7 @@ let handler = async (m, { conn, args, isOwner }) => {
     entries.forEach(([jid, data], index) => {
       const rank = start + index + 1
       const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
-      text += `${medal} @${jid.split('@')[0]} • *${computeCrimeScore(data)} poin*\n`
+      text += `${medal} @${jid.split('@')[0]} • *${getActiveCrimeScore(data)} poin*\n`
       text += `> 🕵️ ${Number(data.rampok) || 0}  🔪 ${Number(data.bunuh) || 0}  🏴‍☠️ ${Number(data.begal) || 0}  🤏 ${Number(data.copet) || 0}\n`
     })
 
@@ -205,11 +205,15 @@ let handler = async (m, { conn, args, isOwner }) => {
     }
 
     const [jid, data] = crimeList[index]
-    const score = computeCrimeScore(data)
+    const score = getActiveCrimeScore(data)
     let text = `╭─❏「 🔎 DETAIL BURONAN 」❏\n`
     text += `│ 🏅 Peringkat: *#${index + 1}*\n`
     text += `│ 👤 Nama: @${jid.split('@')[0]}\n`
     text += `│ 💀 Total: *${score} poin*\n`
+    if ((Number(data.pardonedScore) || 0) > 0) {
+      text += `│ 📜 Poin riwayat yang telah direhabilitasi: *${Number(data.pardonedScore)} poin*\n`
+      text += `│ 🧾 Total poin kriminal seumur hidup: *${computeCrimeScore(data)} poin*\n`
+    }
     text += `│ 🚨 Peluang tertangkap: *${(getPatrolCaptureChance(score) * 100).toFixed(1)}% per aktivitas RPG*\n`
     text += `╰─━━━━━━━━━━━━━━─\n\n`
     for (const [key, label, weight] of CRIME_TYPES) {

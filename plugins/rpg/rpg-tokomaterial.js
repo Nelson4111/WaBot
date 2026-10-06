@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
@@ -29,7 +29,7 @@ const oreEmoji = {
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
 }
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+let handler = async (m, { text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -59,6 +59,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     'gemstone': 100000, 'coin': 50000,
     // MATERIAL DARI TOKO
     'iron': 5000, 'gold': 50000, 'stone': 2500, 'wood': 4000, 'diamond': 250000,
+    'kulit': 25000, 'sisik': 37500,
     // ORE DARI TAMBANG
     'grass': 400, 'sand_stone': 600, 'graphite': 700, 'pumice': 800, 'sulfur': 900,
     'poopite': 1000, 'copper': 1200, 'tin': 1500, 'cardboardite': 2000,
@@ -108,7 +109,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `> ↳ Lihat daftar command: *${usedPrefix}pabrik command*\n`
     cap += `> ↳ Baca panduan/tutorial: *${usedPrefix}pabrik guide*\n\n`
     cap += `─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+    return m.reply(cap)
   }
 
   if (tipe === 'command') {
@@ -147,18 +148,17 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       let hJual = Math.floor(hargaJual[k] * sellBonus)
       cap += `*${i + 1}. ${formatNama(k)} ${hargaBeli[k].emoji}*\n`
       cap += `> Buy : Rp ${hBeli.toLocaleString()}\n`
-      cap += `> Sell : Rp ${hJual.toLocaleString()}\n`
+      cap += `> Sell : ${Number.isFinite(hJual) ? `Rp ${hJual.toLocaleString()}` : 'Bisa dijual'}\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─\n\n`
     cap += `💰 *HARGA JUAL ITEM & ORE*\nDaftar item tambang dan barang petualangan yang bisa dijual.\n\n`
     let nomorMulai = materialKeys.length + 1
     jualKeys.forEach((k, i) => {
       let h = Math.floor(hargaJual[k] * sellBonus)
-      cap += `*${nomorMulai + i}. ${formatNama(k)} ${oreEmoji[k] || '📦'}*\n`
-      cap += `> Sell : Rp ${h.toLocaleString()}\n`
+      cap += `*${nomorMulai + i}. ${formatNama(k)} ${oreEmoji[k] || '📦'}* — Sell: ${Number.isFinite(h) ? `Rp ${h.toLocaleString()}` : 'Bisa dijual'}\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─\n💡 *Tips:* Hasil tambang bisa dijual semua di sini.`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+    return m.reply(cap)
   }
 
   // ===== SISTEM BELI =====

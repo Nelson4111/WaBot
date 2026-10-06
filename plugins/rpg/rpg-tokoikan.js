@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
@@ -13,7 +13,7 @@ function formatNama(nama) {
     .join(' ')
 }
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+let handler = async (m, { text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -223,7 +223,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Lihat daftar command: *${usedPrefix}pasar command*\n` +
       `> ↳ Baca panduan/tutorial: *${usedPrefix}pasar guide*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+    return m.reply(cap)
   }
 
   if (tipe === 'command') {
@@ -258,11 +258,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `> ↳ Pilih nomor ikan untuk menjualnya. Ikan langka memiliki harga lebih tinggi.\n\n`
     keys.forEach((k, i) => {
       const hargaJual = Math.floor(harga[k].harga * sellBonus)
-      cap += `${harga[k].emoji} *${i + 1}. ${formatNama(k)}*\n`
-      cap += `> ↳ Sell : Rp ${hargaJual.toLocaleString()}\n`
+      cap += `${harga[k].emoji} *${i + 1}. ${formatNama(k)}* — Sell: Rp ${hargaJual.toLocaleString()}\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+    return m.reply(cap)
   }
 
   if (tipe !== 'jual') return m.reply(`❌ Pakai: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*`)

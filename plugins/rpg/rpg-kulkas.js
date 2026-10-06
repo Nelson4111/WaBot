@@ -1,4 +1,5 @@
 import { loadDB, getUserRPG, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { jenisMasakan, resepEmoji as sharedResepEmoji } from '../../lib/rpg-masakanData.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -66,17 +67,25 @@ let handler = async (m, { conn, usedPrefix }) => {
   cap += `│ 🧬 Jenis : ${totalJenis} Macam\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  cap += `🍽️ *STOK MAKANAN*\n`
-  cap += `> ↳ Daftar masakan yang siap dimakan atau dibagikan.\n`
-
+  cap += `🍽️ *STOK MAKANAN & MINUMAN*\n`
+  cap += `> ↳ Makanan gunakan .makan, minuman gunakan .minum.\n`
+  let previousType = ''
   listMasakan.forEach((v, i) => {
-    cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
+    const type = jenisMasakan.minuman.includes(v.nama) ? '🥤 MINUMAN' : '🍽️ MAKANAN'
+    if (type !== previousType) {
+      cap += `\n*${type}*\n`
+      previousType = type
+    }
+    const emoji = sharedResepEmoji[v.nama] || v.emoji
+    const command = type.startsWith('🥤') ? 'minum' : 'makan'
+    cap += `> *${i + 1}. ${formatNama(v.nama)} ${emoji}* x${v.jml.toLocaleString()} — .${command}\n`
   })
 
   cap += `\n─━━━━━━━━━━━━━━─\n`
   cap += `📌 *AKTIVITAS*\n`
-  cap += `> 😋 Makan: *${usedPrefix}makan sushi*\n`
-  cap += `> 💞 Traktir: *${usedPrefix}makan sushi @tag*\n`
+  cap += `> 😋 Makan: *${usedPrefix}makan nasi_goreng*\n`
+  cap += `> 🥤 Minum: *${usedPrefix}minum air_mineral*\n`
+  cap += `> 💞 Traktir: *${usedPrefix}makan nasi_goreng @tag*\n`
   cap += `> 🍳 Masak Lagi: *${usedPrefix}masak [nama]*`
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')

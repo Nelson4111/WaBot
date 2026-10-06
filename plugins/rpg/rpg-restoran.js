@@ -1,9 +1,10 @@
-﻿import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import {
   hargaBeli as sharedHargaBeli,
   masakanResep,
+  jenisMasakan,
   normalizeMasakanKey,
   formatMasakanNama,
   resepEmoji as sharedResepEmoji,
@@ -18,7 +19,7 @@ function formatNama(nama) {
 const resepEmoji = { ...sharedResepEmoji }
 const deskripsiMakanan = { ...sharedDeskripsiMakanan }
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+let handler = async (m, { text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -110,8 +111,9 @@ const hargaBeli = { ...sharedHargaBeli }
 }
 
   // PISAH NOMOR MENU MAKAN + MINUMAN
-  const makananKeys = Object.keys(masakanResep).filter(k => k in sharedHargaBeli).sort((a, b) => sharedHargaBeli[a].harga - sharedHargaBeli[b].harga)
-  const minumanKeys = Object.keys(sharedHargaBeli).filter(k => !(k in masakanResep)).sort((a, b) => sharedHargaBeli[a].harga - sharedHargaBeli[b].harga)
+  const minumanSet = new Set(jenisMasakan.minuman)
+  const makananKeys = Object.keys(sharedHargaBeli).filter(k => !minumanSet.has(k)).sort((a, b) => sharedHargaBeli[a].harga - sharedHargaBeli[b].harga)
+  const minumanKeys = Object.keys(sharedHargaBeli).filter(k => minumanSet.has(k)).sort((a, b) => sharedHargaBeli[a].harga - sharedHargaBeli[b].harga)
   const beliKeys = [...makananKeys, ...minumanKeys]
   const nomorKeItemBeli = {}
   beliKeys.forEach((k, i) => nomorKeItemBeli[i+1] = k)
@@ -127,7 +129,7 @@ const hargaBeli = { ...sharedHargaBeli }
     cap += `> ↳ Lihat daftar command: *${usedPrefix}restoran command*\n`
     cap += `> ↳ Baca panduan/tutorial: *${usedPrefix}restoran guide*\n`
     cap += `─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+    return m.reply(cap)
   }
 
   if (tipe === 'command') {
@@ -167,7 +169,7 @@ const hargaBeli = { ...sharedHargaBeli }
     if(!hargaBeli[item]) return m.reply('❌ Menu tidak ada.')
     let hBeli = Math.floor(hargaBeli[item].harga * buyDiskon)
     let hJual = Math.floor(hargaJual[item] * sellBonus)
-    let desc = deskripsiMakanan[item] || `Makanan lezat dari Restoran Avelia. Bisa dijual ke restoran.`
+    let desc = deskripsiMakanan[item] || `Menu ${minumanSet.has(item) ? 'minuman' : 'makanan'} dari Restoran Avelia. Bisa dijual ke restoran.`
     let cap = `╭─❏「 📖 DETAIL MENU 」❏\n`
     cap += ` ${hargaBeli[item].emoji} *${formatNama(item)}*\n`
     cap += `> Buy: Rp ${hBeli.toLocaleString()}\n`

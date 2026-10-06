@@ -1,8 +1,9 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { masakanResep, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
+import { masakanResep, jenisMasakan, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  const isDrinkCommand = command.toLowerCase() === 'minum'
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -42,6 +43,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const kulkasKeys = Object.keys(user.masakan).filter(key => user.masakan[key] > 0)
   if (args.length === 1 && /^\d+$/.test(args[0])) item = kulkasKeys[Number(args[0]) - 1]
 
+  if (masakanResep[item]) {
+    const isDrink = jenisMasakan.minuman.includes(item)
+    if (isDrink !== isDrinkCommand) {
+      return m.reply(isDrink
+        ? `🥤 *${formatMasakanNama(item)}* adalah minuman. Gunakan *${usedPrefix}minum ${item}*.`
+        : `🍽️ *${formatMasakanNama(item)}* adalah makanan. Gunakan *${usedPrefix}makan ${item}*.`)
+    }
+  }
+
   if(!text) {
     let cap = `╭─❏「 🍽️ RPG KULINER CENTER 」❏\n`
     cap += `│ 🍽️ *KULINER PRIBADI*\n`
@@ -76,8 +86,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `> ↳ Masak makanan\n\n`
     cap += `> ↳ *${usedPrefix}kulkas*\n`
     cap += `> ↳ Lihat isi kulkas\n\n`
-    cap += `> ↳ *${usedPrefix}makan sushi*\n`
-    cap += `> ↳ Makan masakan\n\n`
+    cap += `> ↳ *${usedPrefix}makan nasi_goreng*\n`
+    cap += `> ↳ Makan makanan\n\n`
+    cap += `> ↳ *${usedPrefix}minum air_mineral*\n`
+    cap += `> ↳ Minum dari kulkas\n\n`
     cap += `> ↳ *${usedPrefix}makan sushi @tag*\n`
     cap += `> ↳ Traktir seseorang\n`
 
@@ -86,6 +98,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
   }
 
+  if(!masakanResep[item]) return m.reply(`❌ Menu *${formatMasakanNama(item)}* tidak ditemukan.`)
   if(!user.masakan[item] || user.masakan[item] <= 0) return m.reply(`❌ Stok *${formatMasakanNama(item)}* di kulkas habis`)
 
   user.masakan[item] -= 1
@@ -123,13 +136,19 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   `Fix, ${formatMasakanNama(item)} ini masuk daftar favorit!`
 ]
 
+  if (isDrinkCommand) quotes = [
+    `Segarnya ${formatMasakanNama(item)} ini 😋`,
+    `Teguk ${formatMasakanNama(item)}-nya, langsung lega!`,
+    `${formatMasakanNama(item)} ini pas banget diminum sekarang 🥤`,
+    `Nikmatnya ${formatMasakanNama(item)} sampai tegukan terakhir!`
+  ]
   let quote = quotes[Math.floor(Math.random() * quotes.length)]
 
   let cap = `╭─❏「 🍽️ RPG KULINER CENTER 」❏\n`
-  cap += `│ 🍽️ *WAKTU MAKAN*\n`
+  cap += `│ ${isDrinkCommand ? '🥤 *WAKTU MINUM*' : '🍽️ *WAKTU MAKAN*'}\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  cap += `🍽️ *MENU SPESIAL*\n`
+  cap += `${isDrinkCommand ? '🥤' : '🍽️'} *MENU SPESIAL*\n`
   cap += `> ↳ ${recipe.emoji} *${formatMasakanNama(item)}*\n\n`
 
   if(target) {
@@ -166,9 +185,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', [m.sender, target].filter(Boolean))
 }
 
-handler.help = ['makan <nama> [@tag]']
+handler.help = ['makan <nama> [@tag]', 'minum <nama> [@tag]']
 handler.tags = ['rpg']
-handler.command = /^(makan)$/i
+handler.command = /^(makan|minum)$/i
 handler.group = true
 
 export default handler
