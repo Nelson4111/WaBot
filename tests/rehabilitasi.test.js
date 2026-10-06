@@ -56,11 +56,11 @@ assert.deepEqual(getRehabilitationPaymentStatus({
 assert.throws(() => applyRehabilitationPayment({}, 0), RangeError)
 assert.throws(() => applyRehabilitationPayment({}, 1.5), RangeError)
 
-const rpg = {}
+const rpg = { darah: 100, difficulty: 'normal' }
 assert.equal(startRehabilitation(rpg, 2, now), true)
 assert.equal(startRehabilitation(rpg, 2, now), false)
 assert.equal(getCrimeRestriction(rpg), '🕊️ Kamu sedang menjalani rehabilitasi dan tidak bisa melakukan tindak kriminal.')
-assert.equal(getCrimeRestriction(rpg, { target: true }), '🕊️ Target sedang menjalani rehabilitasi dan tidak bisa menjadi sasaran tindak kriminal.')
+assert.equal(getCrimeRestriction(rpg, { target: true }), null)
 const completionTime = rpg.rehabilitation.completesAt
 const requiredProgress = rpg.rehabilitation.requiredProgress
 assert.equal(getRehabilitationCompletion(rpg, completionTime - 1).reason, 'time')
