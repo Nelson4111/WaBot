@@ -215,5 +215,26 @@
     "content": "> Rehabilitasi hanya bisa diselesaikan setelah waktu minimum dan target progres poin sama-sama terpenuhi; gunakan `.rh lapor` untuk menyelesaikan proses dan `.rh cd` untuk melihat cooldown semua aktivitas. Aktivitas `.rh kerja`, `.rh sosial`, `.rh ibadah`, `.rh olahraga`, dan `.rh belajar` masing-masing memiliki cooldown serta lima cerita aktivitas bervariasi. Status pembayaran kini cukup menampilkan `Lunas` atau jumlah yang masih kurang. Setelah bebas dari penjara, pemain mendapat arahan untuk menjalani rehabilitasi demi membersihkan poin buronan dan membangun kembali kepercayaan Avelia.",
     "author": "Eza",
     "createdAt": 1791234143002
+  },
+  {
+    "section": "RPG",
+    "title": "Fitur Pendakian Muncak",
+    "content": "> Pendakian instan tersedia melalui `.mount`, `.muncak`, atau `.mt`. Pilih gunung dengan `.mt list` dan `.mt pilih <nomor/nama>`, lalu tentukan mode solo atau bentuk tim maksimal 5 orang sebelum `.mt start`. Daftar gunung diurutkan berdasarkan ketinggian dan dilengkapi cerita pendakian bervariasi. Setiap pendaki memperoleh XP, cooldown 5 jam, profil, riwayat, dan papan peringkat; sampah yang ditemukan dikumpulkan ke tas masing-masing. Gunakan `.mt guide` atau `.mt command` untuk panduan.",
+    "author": "Eza",
+    "createdAt": 1791267290645
+  },
+  {
+    "section": "RPG",
+    "title": "Aktivitas Rehabilitasi Premium",
+    "content": "> Pengguna Premium kini dapat menjalankan `.rh all` untuk melakukan semua aktivitas rehabilitasi yang cooldown-nya sudah siap dalam satu perintah. Setiap aktivitas yang dilakukan menampilkan cerita tersendiri; aktivitas yang masih cooldown dilewati dan cooldown tetap berlaku masing-masing. Cek detail dengan `.rh cd`.",
+    "author": "Eza",
+    "createdAt": 1791267290646
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Pendakian Muncak",
+    "content": "> Cooldown Muncak menjadi 5 jam untuk pengguna biasa dan 2 jam untuk Premium. `.mt info` menampilkan jumlah gunung, total sampah terkumpul, serta akumulasi peserta pendakian (setiap anggota tim dihitung setiap kali tim memulai). Pemain dapat mengusulkan gunung dengan `.mt request <nama>` atau `.mt req`; daftar usulan dapat dilihat dengan `.mt request` dan hanya owner dapat menghapusnya melalui `.mt done <nama/nomor>`. Gunung yang belum pernah didaki dan berada di bawah progres tertinggi akan otomatis didahulukan. Tersedia title pendaki. Sampah Muncak kini memakai harga di katalog dan dapat dijual melalui `.jual all`, `.pasar jual all`, atau penjualan item satuan.",
+    "author": "Eza",
+    "createdAt": 1791269812479
   }
 ]
