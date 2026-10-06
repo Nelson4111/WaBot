@@ -124,7 +124,7 @@ if (action === 'guide') {
     `📌 *TAHAP REHABILITASI*\n` +
     `> ↳ 1. Pastikan kamu sudah bebas dari penjara dan masih memiliki poin buronan.\n` +
     `> ↳ 2. Mulai proses dengan *.rh mulai*. Durasi rehabilitasi adalah 10 menit dikali poin buronan aktif.\n` +
-    `> ↳ 3. Bayar total Rp ${REHABILITATION_FEE.toLocaleString('id-ID')} dengan mencicil lewat *.rh bayar <nominal>* atau lunas lewat *.rh bayar all*; pembayaran tidak memiliki cooldown.\n` +
+    `> ↳ 3. Biaya rehabilitasi adalah Rp ${REHABILITATION_FEE.toLocaleString('id-ID')} dikali poin buronan. Cicil lewat *.rh bayar <nominal>* atau lunasi sisa biaya lewat *.rh bayar all*; pembayaran tidak memiliki cooldown.\n` +
     `> ↳ 4. Gunakan *.rh kerja* (cooldown 2 menit) dan *.rh sosial* (cooldown 4 menit) untuk menambah progres.\n` +
     `> ↳ 5. Proses selesai jika waktunya cukup, progres dan pembayaran terpenuhi, serta ada kegiatan sosial.\n` +
     `> ↳ 6. Berhasil rehabilitasi menghapus poin buronan aktif, bukan riwayat total kejahatan.\n` +
@@ -210,7 +210,7 @@ if (action === 'mulai') {
     `> ↳ 💀 Poin buronan : *${wantedScore}*\n` +
     `> ↳ ⏳ Durasi minimum : *${formatDuration(requirements.durationMs)}*\n` +
     `> ↳ 📈 Target progres : *${requirements.requiredProgress} poin*\n` +
-    `> ↳ 💳 Kewajiban : *${requirements.requiredPayments}x Rp ${REHABILITATION_FEE.toLocaleString('id-ID')}*\n\n` +
+    `> ↳ 💳 Biaya rehabilitasi : *Rp ${requirements.requiredFee.toLocaleString('id-ID')}* (${REHABILITATION_FEE.toLocaleString('id-ID')} x ${wantedScore} poin)\n\n` +
 
     `📌 *LANGKAH BERIKUTNYA*\n` +
     `> ↳ Gunakan *.rh guide* untuk menyelesaikan proses.\n\n` +
