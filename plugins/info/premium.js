@@ -7,11 +7,33 @@ let handler = async (m, { text = '', usedPrefix }) => {
       `│ 👑 *MANFAAT PREMIUM*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
 
-      `📌 *KEUNTUNGAN*\n` +
-      `> ↳ Bisa menggunakan fitur yang ditandai khusus Premium (Ⓟ).\n` +
-      `> ↳ Batas casino harian lebih besar: 50 permainan (user biasa 25).\n` +
-      `> ↳ Diskon 25% dari harga normal di RPG Shop.\n` +
-      `> ↳ Praktis menjalankan aktivitas batch seperti perawatan/aktivitas semua pet, aktivitas semua rship, dan semua aktivitas rehabilitasi yang siap.\n\n` +
+      `📌 *KEUNTUNGAN UMUM*\n` +
+      `> ↳ Batas casino: *50 permainan per hari* (user biasa 25).\n` +
+      `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
+      `> ↳ Diskon *25%* untuk upgrade kartu bank; cek pilihan di *${usedPrefix}upgradebank*.\n` +
+      `> ↳ Cooldown Muncak lebih singkat: *2 jam* (user biasa 5 jam). Contoh: *${usedPrefix}mt start*.\n` +
+      `> ↳ Cooldown interaksi pasangan lebih singkat: *30 detik* (user biasa 60 detik). Contoh: *${usedPrefix}act*.\n\n` +
+
+      `🌱 *LADANG*\n` +
+      `> ↳ Bisa upgrade hingga *20 slot ladang* (user biasa maksimal 10).\n` +
+      `> ↳ Contoh: *${usedPrefix}buyladang* untuk upgrade, *${usedPrefix}tanam list* untuk melihat bibit.\n\n` +
+
+      `🐾 *PET*\n` +
+      `> ↳ *${usedPrefix}pet care* memberi feed, rest, dan clean ke semua pet; cooldown 30 menit.\n` +
+      `> ↳ Setelah care, *${usedPrefix}pet all* menjalankan train, walk, play, hunt, dan dispatch untuk semua pet; cooldown 30 menit.\n` +
+      `> ↳ Contoh: *${usedPrefix}pet care*, lalu *${usedPrefix}pet all*.\n\n` +
+
+      `💕 *RELATIONSHIP*\n` +
+      `> ↳ *${usedPrefix}rship all <no pasangan>* menjalankan semua aktivitas yang siap untuk pasangan tersebut; cooldown all 30 menit.\n` +
+      `> ↳ Contoh: *${usedPrefix}rship all 1*.\n\n` +
+
+      `🕊️ *REHABILITASI*\n` +
+      `> ↳ *${usedPrefix}rh all* menjalankan semua aktivitas rehabilitasi yang cooldown-nya siap.\n` +
+      `> ↳ Contoh: *${usedPrefix}rh all*; cek waktu aktivitas dengan *${usedPrefix}rh cd*.\n\n` +
+
+      `🍱 *MBG*\n` +
+      `> ↳ Dapat mengambil hingga *2 pasangan menu per hari* dan memilih dari *5 menu* saat menukar.\n` +
+      `> ↳ Contoh: *${usedPrefix}mbg tukar*, pilih dengan *${usedPrefix}mbg tukar 1–5*, lalu klaim dengan *${usedPrefix}mbg ambil 1 2*.\n\n` +
 
       `📌 *INFORMASI*\n` +
       `> ↳ Lihat status dan cara mendapatkan Premium: *${usedPrefix}premium*\n\n` +
