@@ -243,5 +243,26 @@
     "content": "> `.tanam` kini menampilkan penjelasan dan cara penggunaan, sedangkan daftar bibit ada di `.tanam list`; Premium dapat meningkatkan ladang hingga 20 slot. `.pet` menampilkan penjelasan, `.pet list` hanya menampilkan pet yang dimiliki, detail tetap tersedia melalui `.pet status`, serta tersedia `.pet guide` dan `.pet command`. Format daftar pabrik, pasar, koperasi, restoran, pet shop, dan bibit dirapikan dengan emoji setelah nama serta harga di bawahnya; item yang tidak dapat dibeli menampilkan `Buy : -`. Daftar pilihan makanan/minuman MBG kini diberi jarak agar lebih mudah dibaca. Data akun salah transfer yang tampil sebagai `@` di Top Kekayaan dihapus; ID akun tidak valid juga tidak ditampilkan pada Top RPG. Gift dan trade hanya menerima target mention/tag atau reply ke pengguna RPG valid, dan kini dapat memindahkan item dari gudang/tas (`inventory`, `ores`, `items`), aquarium (`ikan`), kulkas (`masakan`), hasil panen lama, saldo material RPG, uang, dan bank. Jika item yang sama ada di beberapa penyimpanan, tentukan sumbernya, misalnya `.trade add diamond 5` atau `.gift @tag ikan_teri 5`.",
     "author": "Eza",
     "createdAt": 1791285827501
+  },
+  {
+    "section": "RPG",
+    "title": "Casino Taruhan All dan Simulasi",
+    "content": "> Taruhan casino kini menerima `all` untuk memakai seluruh uang saku, misalnya `.casino slot all`. Mode latihan tersedia melalui `.casino simulation <game>` atau `.cs sl <game>`; gunakan `random` untuk memilih game acak. Simulasi tidak memakai atau menambah uang, cooldown, batas harian, maupun statistik.",
+    "author": "Eza",
+    "createdAt": 1791298080000
+  },
+  {
+    "section": "FUN",
+    "title": "Privasi Tag dan Cooldown Top",
+    "content": "> Anggota grup dapat mengetik `.top notag` agar tidak dipilih/di-tag oleh `.top`; gunakan `.top tagme` untuk mengizinkan tag kembali. `.top list` menampilkan daftar nomor tanpa tag. Perintah `.top` memiliki cooldown 1 menit per grup.",
+    "author": "Eza",
+    "createdAt": 1791298080001
+  },
+  {
+    "section": "INFO",
+    "title": "Manfaat Premium dan Profil Donasi",
+    "content": "> Premium mendapat biaya admin transfer bank 50% lebih murah, diskon 20% semua biaya uang `.upgrade`, 15 slot pet, serta cooldown aktivitas RPG 20% lebih singkat. `.prem daily` mengklaim 10 limit setiap 24 jam, `.prem cd` melihat status cooldown premium, `.premium protection` melihat perlindungan otomatis (trigger sekali tiap 2 jam) dari kriminalitas yang menargetkanmu dan risiko kematian, serta `.premium profile` menampilkan total donasi dan title berdasarkan nominal donasi.",
+    "author": "Eza",
+    "createdAt": 1791298080002
   }
 ]
