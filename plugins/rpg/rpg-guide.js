@@ -30,6 +30,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `> ↳ Otomatis feed, rest, lalu clean semua pet. Cooldown 30 menit.\n`
     cap += `> *${usedPrefix}pet all* (premium)\n`
     cap += `> ↳ Gunakan setelah pet care; menjalankan train, walk, play, hunt, dan dispatch untuk semua pet. Cooldown 30 menit.\n`
+    cap += `> *${usedPrefix}rh all* (premium)\n`
+    cap += `> ↳ Jalankan semua aktivitas rehabilitasi yang siap sekaligus; setiap aktivitas mengirim cerita masing-masing.\n`
     cap += `> *${usedPrefix}pet rest <nomor>*\n`
     cap += `> ↳ Istirahatkan pet yang lelah.\n`
     cap += `> *${usedPrefix}pet clean <nomor>*\n`

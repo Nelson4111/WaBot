@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { MOUNT_TRASH } from '../../lib/mountData.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -24,7 +25,8 @@ const itemEmoji = {
   'permata_biru': '💎', 'permata_merah': '❤️', 'permata_hijau': '💚', 'peta_harta': '🗺️',
   'pedang_legendaris': '⚔️👑', 'buku_sihir_kuno': '📚', 'armor_naga': '🐉🛡️', 'mahkota_raja': '👑',
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻',
-  'iron': '⛓️'
+  'iron': '⛓️',
+  ...Object.fromEntries(MOUNT_TRASH.map(({ id, emoji }) => [id, emoji]))
 }
 
 let secret = ['jiwa_abadi', 'segel_dewa'];

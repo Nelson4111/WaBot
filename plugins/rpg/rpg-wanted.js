@@ -63,6 +63,9 @@ let handler = async (m, { conn, args, isOwner }) => {
     const [wantedJid, wantedData] = crimeList[wantedIndex]
     const userRPG = global.db?.data?.users?.[wantedJid]?.rpg || wdb.users?.[wantedJid]?.rpg
     if (!userRPG) return m.reply('❌ Data RPG buronan tidak ditemukan.')
+    if (userRPG.rehabilitation?.status === 'active') {
+      return m.reply('🕊️ Buronan tersebut sedang menjalani rehabilitasi dan tidak bisa ditangkap patroli.')
+    }
 
     const now = Date.now()
     ensurePatrolReleaseProtection(userRPG, now)

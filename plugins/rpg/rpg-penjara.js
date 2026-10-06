@@ -1128,6 +1128,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (isNaN(tebusan) || tebusan < 0) tebusan = 1000000
         let user = getUser(who); if (!user) return m.reply('❌ Data user target tidak ditemukan'); if (!user.rpg) user.rpg = {}
         let rpg = user.rpg
+        if (rpg.rehabilitation?.status === 'active') return m.reply('🕊️ Target sedang menjalani rehabilitasi dan tidak bisa dipenjara.')
         if (rpg.penjara && sisaWaktu(rpg) > 0) return m.reply(`❌ Orang ini sudah di penjara.\n\n🚔 SEL : ${rpg.sel || 0}\n⏳ SISA : ${formatSisa(sisaWaktu(rpg))}`)
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
         wdb.penjara.push(who)

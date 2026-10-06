@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { MOUNT_TRASH } from '../../lib/mountData.js'
 
 function formatNama(nama) {
   if (!nama) return ''
@@ -19,6 +20,7 @@ let handler = async (m, { text, usedPrefix }) => {
   let user = data.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if (!user.ikan) user.ikan = {}
+  if (!user.inventory) user.inventory = {}
 
   user.ikan = migrateLegacyFishInventory(user.ikan)
   saveDB(wdb)
@@ -178,7 +180,8 @@ let handler = async (m, { text, usedPrefix }) => {
     peti_harta: { emoji: '💎', harga: 2500000 },
     artefak_laut: { emoji: '🏺', harga: 2500000 },
     emas_pirate: { emoji: '💰', harga: 2500000 },
-    air_mata_putri: { emoji: '💧', harga: 2500000 }
+    air_mata_putri: { emoji: '💧', harga: 2500000 },
+    ...Object.fromEntries(MOUNT_TRASH.map(({ id, emoji, price }) => [id, { emoji, harga: price }]))
   }).map(([key, value]) => [normalizeFishKey(key), value]))
 
   const keys = Object.keys(harga).sort((a, b) => harga[a].harga - harga[b].harga)
@@ -239,23 +242,23 @@ let handler = async (m, { text, usedPrefix }) => {
 
   if (tipe === 'guide') {
     const cap = `╭─❏「 🧭 PANDUAN PASAR 」❏\n` +
-      `│ 🎣 Jual ikan dan barang hasil memancing.\n` +
+      `│ 🎣 Jual ikan, barang hasil memancing, dan sampah pendakian.\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Lihat daftar ikan dan harga: *${usedPrefix}pasar list*\n` +
-      `> ↳ Jual ikan: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n` +
-      `> ↳ Jual semua ikan: *${usedPrefix}pasar jual all*\n` +
+      `> ↳ Lihat daftar item dan harga: *${usedPrefix}pasar list*\n` +
+      `> ↳ Jual item: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n` +
+      `> ↳ Jual semua ikan dan sampah pendakian: *${usedPrefix}pasar jual all*\n` +
       `> ↳ Mulai memancing: *${usedPrefix}mancing*\n\n` +
       `─━━━━━━━━━━━━━━─`
     return m.reply(cap)
   }
 
   if (tipe === 'list') {
-    let cap = `╭─❏「 🎣 DAFTAR IKAN PASAR 」❏\n`
+    let cap = `╭─❏「 🎣 DAFTAR PASAR 」❏\n`
     cap += `│ 💰 Uang: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
     cap += `│ 👤 ${isPrem ? 'Premium +10% jual' : 'User biasa'}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
     cap += `🐟 *DAFTAR HARGA JUAL*\n`
-    cap += `> ↳ Pilih nomor ikan untuk menjualnya. Ikan langka memiliki harga lebih tinggi.\n\n`
+    cap += `> ↳ Daftar mencakup ikan dan sampah pendakian dari tas.\n\n`
     keys.forEach((k, i) => {
       const hargaJual = Math.floor(harga[k].harga * sellBonus)
       cap += `${harga[k].emoji} *${i + 1}. ${formatNama(k)}* — Sell: Rp ${hargaJual.toLocaleString()}\n`
@@ -279,14 +282,18 @@ let handler = async (m, { text, usedPrefix }) => {
       saveDB(wdb)
       return m.reply('✅ Penjualan ikan dibatalkan. Stok dan saldo tidak berubah.')
     }
-    if (pending.entries.some(entry => (Number(user.ikan[entry.item]) || 0) < entry.quantity)) {
+    if (pending.entries.some(entry => {
+      const inventory = entry.bucket === 'inventory' ? user.inventory : user.ikan
+      return (Number(inventory[entry.item]) || 0) < entry.quantity
+    })) {
       delete user.pendingPasarSell
       saveDB(wdb)
       return m.reply('❌ Stok berubah sejak konfirmasi dibuat. Penjualan dibatalkan; buat konfirmasi baru.')
     }
     for (const entry of pending.entries) {
-      user.ikan[entry.item] -= entry.quantity
-      if (user.ikan[entry.item] <= 0) delete user.ikan[entry.item]
+      const inventory = entry.bucket === 'inventory' ? user.inventory : user.ikan
+      inventory[entry.item] -= entry.quantity
+      if (inventory[entry.item] <= 0) delete inventory[entry.item]
     }
     wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
     delete user.pendingPasarSell
@@ -304,7 +311,10 @@ let handler = async (m, { text, usedPrefix }) => {
   if (args[0] === 'all') {
     const entries = Object.entries(user.ikan)
       .filter(([item, quantity]) => harga[item] && Number.isSafeInteger(Number(quantity)) && Number(quantity) > 0)
-      .map(([item, quantity]) => ({ item, quantity: Number(quantity) }))
+      .map(([item, quantity]) => ({ item, quantity: Number(quantity), bucket: 'ikan' }))
+    entries.push(...MOUNT_TRASH
+      .filter(({ id }) => harga[id] && Number.isSafeInteger(Number(user.inventory[id])) && Number(user.inventory[id]) > 0)
+      .map(({ id }) => ({ item: id, quantity: Number(user.inventory[id]), bucket: 'inventory' })))
     if (!entries.length) return m.reply(`❌ Kamu tidak punya ikan yang bisa dijual.`)
 
     const baseTotal = entries.reduce((total, entry) => total + Math.floor(harga[entry.item].harga * sellBonus) * entry.quantity, 0)
@@ -314,7 +324,7 @@ let handler = async (m, { text, usedPrefix }) => {
     const list = entries.map(({ item, quantity }) => `> ↳ ${harga[item].emoji} ${formatNama(item)} x${quantity}`).join('\n')
     return m.reply(
       `╭─❏「 ⚠️ KONFIRMASI JUAL IKAN 」❏\n` +
-      `│ 🎣 ${entries.length} jenis ikan akan dijual\n` +
+      `│ 📦 ${entries.length} jenis ikan/sampah akan dijual\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${list}\n\n` +
       `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
@@ -349,9 +359,11 @@ let handler = async (m, { text, usedPrefix }) => {
   }
 
   const rawLookup = (args || []).join(' ') || 'yang kamu masukkan'
-  if (!itemInput || !harga[itemInput]) return m.reply(`❌ Ikan "${String(rawLookup).trim()}" tidak ada di list.\nLihat: *${usedPrefix}pasar*`)
+  if (!itemInput || !harga[itemInput]) return m.reply(`❌ Item "${String(rawLookup).trim()}" tidak ada di list.\nLihat: *${usedPrefix}pasar list*`)
 
-  let stok = user.ikan[itemInput] || 0
+  const bucket = MOUNT_TRASH.some(({ id }) => id === itemInput) ? 'inventory' : 'ikan'
+  const itemStock = bucket === 'inventory' ? user.inventory : user.ikan
+  let stok = itemStock[itemInput] || 0
   if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(itemInput)}`)
 
   let jual = amount === 'all' ? stok : amount
@@ -359,14 +371,14 @@ let handler = async (m, { text, usedPrefix }) => {
 
   if (amount === 'all') {
     const total = scaleDifficultyIncome(user, Math.floor(harga[itemInput].harga * sellBonus) * jual)
-    user.pendingPasarSell = { entries: [{ item: itemInput, quantity: jual }], total, expiresAt: Date.now() + 60000 }
+    user.pendingPasarSell = { entries: [{ item: itemInput, quantity: jual, bucket }], total, expiresAt: Date.now() + 60000 }
     saveDB(wdb)
     return m.reply(`⚠️ Konfirmasi jual ${formatNama(itemInput)} x${jual} untuk Rp ${total.toLocaleString()}?\nKetik *${usedPrefix}pasar jual ya* untuk lanjut atau *${usedPrefix}pasar jual batal* untuk membatalkan. Konfirmasi berlaku 60 detik.`)
   }
 
   let hasil = Math.floor(harga[itemInput].harga * sellBonus) * jual
-  user.ikan[itemInput] -= jual
-  if (user.ikan[itemInput] <= 0) delete user.ikan[itemInput]
+  itemStock[itemInput] -= jual
+  if (itemStock[itemInput] <= 0) delete itemStock[itemInput]
   hasil = scaleDifficultyIncome(user, hasil)
   wdb.money[m.sender] += hasil
   saveDB(wdb)

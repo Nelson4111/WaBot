@@ -73,6 +73,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setrhprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotlevel @tag <lvl>*\n` +
@@ -497,6 +498,23 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     user.casinoStats.profit = profit
     saveDB(wdb)
     return m.reply(`✅ Profit casino @${who.split('@')[0]} berhasil diatur menjadi *${profit}*.`, null, { mentions: [who] })
+  }
+
+  if (['setrhprogress', 'setrehabprogress', 'setrehabilitasiprogress'].includes(aksi)) {
+    const progress = Number(remaining[0])
+    if (!Number.isInteger(progress) || progress < 0) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setrhprogress @tag <progress>*\nContoh: *${usedPrefix}rpgpanel setrhprogress @tag 10*`)
+    }
+    if (user.rehabilitation?.status !== 'active') {
+      return m.reply(`❌ @${who.split('@')[0]} tidak sedang menjalani rehabilitasi aktif.`, null, { mentions: [who] })
+    }
+    user.rehabilitation.progress = progress
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Progress rehabilitasi @${who.split('@')[0]} diatur menjadi *${progress}/${Number(user.rehabilitation.requiredProgress) || 0} poin*.`,
+      null,
+      { mentions: [who] }
+    )
   }
 
   if (['setpenjaraprogress', 'setprisonprogress', 'setpenjara'].includes(aksi)) {

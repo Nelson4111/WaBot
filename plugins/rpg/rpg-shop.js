@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { MOUNT_TRASH } from '../../lib/mountData.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -102,6 +103,7 @@ if (mode === 'guide') {
   cap += `📦 *SUMBER ITEM YANG BISA DIJUAL*\n`
   cap += `> • Adventure / Mining → jual di .pabrik\n`
   cap += `> • Mancing / Aquarium → jual di .pasar\n`
+  cap += `> • Muncak → jual sampah di .pasar atau .jual all\n`
   cap += `> • Panen / Kebun → jual di .koperasi\n`
   cap += `> • Masak / Dapur → jual di .restoran\n`
   cap += `> ↳ Setelah dijual, uang masuk ke saldo akun.\n\n`
@@ -288,7 +290,8 @@ if (mode === 'guide') {
       steak_hiu: 900000, pari_bakar: 1000000, penyu_panggang: 1200000, steak_emas: 1500000,
       diamond_cake: 3000000, sop_kraken: 2000000, sate_megalodon: 2500000, sup_leviathan: 3000000,
       sea_dragon_grill: 3500000, hydra_stew: 4500000, kura_titan_soup: 5000000,
-      paus_putih_steak: 6000000, naga_laut_bakar: 8000000, raja_ubur_jelly: 9000000, steak_godzilla: 15000000
+      paus_putih_steak: 6000000, naga_laut_bakar: 8000000, raja_ubur_jelly: 9000000, steak_godzilla: 15000000,
+      ...Object.fromEntries(MOUNT_TRASH.map(({ id, price }) => [id, price]))
     }
 
     const hargaGabungNorm = Object.fromEntries(Object.entries(hargaGabung).map(([key, value]) => [normalizeFishKey(key), value]))

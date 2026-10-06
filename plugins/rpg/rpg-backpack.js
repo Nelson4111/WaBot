@@ -1,5 +1,6 @@
 import { loadDB, sendRpgMsg, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { MOUNT_TRASH } from '../../lib/mountData.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -39,7 +40,8 @@ const oreEmoji = {
   'koin_emas': '🪙', 'ramuan_besar': '🧪', 'pedang_baja': '⚔️', 'armor_kulit': '🥋',
   'permata_biru': '💎', 'permata_merah': '❤️', 'permata_hijau': '💚', 'peta_harta': '🗺️',
   'pedang_legendaris': '⚔️👑', 'buku_sihir_kuno': '📚', 'armor_naga': '🐉🛡️', 'mahkota_raja': '👑',
-  'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
+  'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻',
+  ...Object.fromEntries(MOUNT_TRASH.map(({ id, emoji }) => [id, emoji]))
 }
 
 let handler = async (m, { conn, usedPrefix }) => {
@@ -130,8 +132,8 @@ if (itemAdventure.length > 0) {
   cap += `\n`
 }
 
-  cap += `💡 Mau jual? Ketik *${usedPrefix}pabrik*\n`
-  cap += `Contoh: *${usedPrefix}pabrik jual stone 100*`
+  cap += `💡 Sampah pendakian bisa dijual di *${usedPrefix}pasar* atau *${usedPrefix}jual all*.\n`
+  cap += `Contoh: *${usedPrefix}pasar jual botol_air_mineral all*`
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
 }
