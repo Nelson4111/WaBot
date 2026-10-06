@@ -11,13 +11,13 @@ let handler = async (m, { conn, groupMetadata, command, usedPrefix, text = '' })
   if (action === 'notag') {
     if (!chat.topNoTag.includes(sender)) chat.topNoTag.push(sender)
     if (typeof global.db.write === 'function') await global.db.write()
-    return m.reply('✅ Kamu masuk daftar .top notag di grup ini. Perintah .top tidak akan men-tag kamu.')
+    return m.reply('✅ Kamu masuk daftar .top notag di grup ini. Perintah .top tidak akan tag kamu.')
   }
 
   if (action === 'tagme') {
     chat.topNoTag = chat.topNoTag.filter(jid => jid !== sender)
     if (typeof global.db.write === 'function') await global.db.write()
-    return m.reply('✅ Preferensi .top diperbarui. Kamu bisa kembali di-tag di grup ini.')
+    return m.reply('✅ Preferensi .top diperbarui. Kamu bisa kembali di tag melalui .top di grup ini.')
   }
 
   if (action === 'list') {
@@ -25,8 +25,8 @@ let handler = async (m, { conn, groupMetadata, command, usedPrefix, text = '' })
       .map(jid => jid.split('@')[0].split(':')[0])
       .filter(Boolean)
     return m.reply(
-      `╭─❏「 🚫 TOP NOTAG 」❏\n` +
-      `│ Daftar anggota yang menolak tag di grup ini:\n` +
+      `╭─❏「 🚫 LIST NOTAG 」❏\n` +
+      `│ Daftar yang menolak tag di grup ini:\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       (excluded.length ? excluded.map((number, index) => `${index + 1}. +${number}`).join('\n') : 'Belum ada anggota dalam daftar.') +
       `\n\n─━━━━━━━━━━━━━━─`
