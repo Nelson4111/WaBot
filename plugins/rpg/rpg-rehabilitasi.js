@@ -101,8 +101,6 @@ let handler = async (m, { conn, args, usedPrefix }) => {
       { mentions }
     )
   }
-  return m.reply('❌ Proses rehabilitasi gagal diselesaikan. Coba gunakan *.rh lapor* lagi.')
-
   const userRPG = getUserRPG(wdb, m.sender)
   if (!userRPG && !['command', 'commands', 'cmd', 'guide'].includes(action)) {
     return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
