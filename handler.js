@@ -757,7 +757,8 @@ async function processMessage(m, chatUpdate) {
                 return
             }
 
-            if (isRpgActivity && !isCurrentlyImprisoned && captureProtectionRemaining <= 0) {
+            if (isRpgActivity && !isCurrentlyImprisoned &&
+                userRPG?.rehabilitation?.status !== 'active' && captureProtectionRemaining <= 0) {
                 const wdb = loadDB()
                 syncEscapeCrimeCounts(wdb, m.sender)
                 const wantedData = wdb.crime?.[m.sender]
@@ -918,6 +919,7 @@ async function processMessage(m, chatUpdate) {
                             userRPG.tebusan = 0;
                             userRPG.sel = 0;
                             userRPG.gagalCopet = 0;
+                            this.reply(m.chat, '✅ Masa tahananmu telah selesai.\n\n📌 Jika masih memiliki poin buronan, jalani *.rh mulai* untuk membersihkan catatan buronan dan membangun kembali kepercayaan Avelia.', m);
                         }
                     }
                 }
@@ -951,7 +953,9 @@ async function processMessage(m, chatUpdate) {
                     isRAdmin, isAdmin, isBotAdmin, isPrems, chatUpdate, __dirname: ___dirname, __filename
                 }
                 try {
+                    if (isRpgPlugin && user?.rpg) user.rpg.lastRpgActivityAt = Date.now()
                     await plugin.call(this, m, extra)
+                    if (isRpgPlugin && user?.rpg && !user.rpg.lastRpgActivityAt) user.rpg.lastRpgActivityAt = Date.now()
                     if (!isPrems)
                         m.limit = m.limit || plugin.limit || false
                     botArbitrator.resolve(m.key?.id, this)
