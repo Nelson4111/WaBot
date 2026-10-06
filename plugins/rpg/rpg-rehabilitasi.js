@@ -340,7 +340,7 @@ return m.reply(
   `╭─❏「 👑 AKTIVITAS REHABILITASI 」❏\n` +
   `│ 👑 *AKTIVITAS PREMIUM SELESAI*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
-  `${completedActivities.join('\n')}\n` +
+  `${completedActivities.join('\n\n')}\n` +
   `─━━━━━━━━━━━━━━─\n\n` +
   `${statusText(process, now)}\n` +
   `─━━━━━━━━━━━━━━─\n\n` +
