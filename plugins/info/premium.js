@@ -11,7 +11,7 @@ let handler = async (m, { text = '', usedPrefix }) => {
       `> ↳ Bisa menggunakan fitur yang ditandai khusus Premium (Ⓟ).\n` +
       `> ↳ Batas casino harian lebih besar: 50 permainan (user biasa 25).\n` +
       `> ↳ Diskon 25% dari harga normal di RPG Shop.\n` +
-      `> ↳ Praktis menjalankan aktivitas batch seperti perawatan/aktivitas semua pet dan aktivitas semua rship.\n\n` +
+      `> ↳ Praktis menjalankan aktivitas batch seperti perawatan/aktivitas semua pet, aktivitas semua rship, dan semua aktivitas rehabilitasi yang siap.\n\n` +
 
       `📌 *INFORMASI*\n` +
       `> ↳ Lihat status dan cara mendapatkan Premium: *${usedPrefix}premium*\n\n` +
