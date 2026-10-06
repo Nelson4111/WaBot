@@ -172,6 +172,11 @@ export function isPremiumUser(jid, db = global.db) {
   return user.premium === true || Number(user.premiumTime || 0) > Date.now()
 }
 
+function getTransferAdminFee(amount, jid) {
+  const standardFee = Math.max(1000, Math.min(500000, Math.floor(amount * 0.005)))
+  return isPremiumUser(jid) ? Math.max(500, Math.floor(standardFee * 0.5)) : standardFee
+}
+
 export function getBankDiscountRate(jid, db = global.db) {
   return isPremiumUser(jid, db) ? 0.25 : 0
 }
@@ -714,15 +719,17 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     who = conn.decodeJid(who)
     if (who === m.sender) return m.reply('❌ Gak bisa tf ke diri sendiri')
 
-    if (args[1] === 'all') {
-      let biayaAdmin = Math.max(1000, Math.min(500000, Math.floor(userRPG.bank * 0.005)))
+    let biayaAdmin
+    const transferAll = String(args[1] || '').toLowerCase() === 'all'
+    if (transferAll) {
+      biayaAdmin = getTransferAdminFee(userRPG.bank, m.sender)
       amount = userRPG.bank - biayaAdmin
       if(amount <= 0) return m.reply('❌ Saldo tidak cukup untuk biaya admin')
     }
 
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
 
-    let biayaAdmin = Math.max(1000, Math.min(500000, Math.floor(amount * 0.005)))
+    if (!transferAll) biayaAdmin = getTransferAdminFee(amount, m.sender)
     let totalPotong = amount + biayaAdmin
 
     if (userRPG.bank < totalPotong) return m.reply(`❌ Saldo bank tidak cukup\nButuh: Rp ${totalPotong.toLocaleString()} = Transfer + Admin Rp ${biayaAdmin.toLocaleString()}`)

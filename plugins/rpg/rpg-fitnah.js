@@ -1,6 +1,7 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah } from '../../lib/fitnahHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 
 /* =========================================================
    KONFIGURASI
@@ -239,6 +240,11 @@ Fitnah orang biar masuk penjara.
     if (now - lastNormal < actionCooldown) {
         let sisa = actionCooldown - (now - lastNormal)
         return m.reply(`⏳ *COOLDOWN*\n\nTunggu *${formatTime(sisa)}* lagi`)
+    }
+
+    if (tryPremiumProtection(who)) {
+        await saveDB(wdb)
+        return m.reply('🛡️ Premium protection melindungi target dari aksi fitnah. Tidak ada uang yang dipotong.')
     }
 
     wdb.fitnah[sender] = now

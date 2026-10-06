@@ -3,6 +3,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -51,9 +52,19 @@ let handler = async (m, { conn }) => {
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 500) return m.reply('❌ Target terlalu miskin. Minimal Rp 500')
+  if (tryPremiumProtection(who)) {
+    await saveDB(wdb)
+    return m.reply('🛡️ Premium protection melindungi target dari aksi begal. Tidak ada uang yang berpindah.')
+  }
 
   userRPG.lastbegal = Date.now()
   let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.7)
+
+  if (gagal && tryPremiumProtection(m.sender)) {
+    userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat begal @${who.split('@')[0]}`)
+    await saveDB(wdb)
+    return m.reply('🛡️ Premium protection aktif: kamu selamat dari kegagalan begal dan tidak masuk penjara.')
+  }
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}

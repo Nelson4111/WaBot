@@ -385,7 +385,9 @@ function casinoCommands(prefix) {
     `📌 *CASINO*`,
     `> ↳ 🎰 ${prefix}casino`,
     `> ↳ 🎮 ${prefix}casino <game> <taruhan>`,
+    `> ↳ 💸 ${prefix}casino <game> all (seluruh uang saku)`,
     `> ↳ 🎲 ${prefix}casino random <taruhan>`,
+    `> ↳ 🧪 ${prefix}casino simulation <game/random> atau ${prefix}cs sl <game/random>`,
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 👤 ${prefix}casino profile`,
@@ -424,6 +426,8 @@ function casinoGuide(prefix) {
     `> ↳ Mainkan dengan ${prefix}casino <game> <taruhan>.\n` +
     `> ↳ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
     `> ↳ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
+    `> ↳ Taruhan dapat berupa nominal atau *all* untuk memakai seluruh uang saku.\n` +
+    `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game> (alias: ${prefix}cs sl <game>).\n` +
     `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
     `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x.\n\n` +
     `> ↳ Casino room tidak terpengaruh batas/progres permainan reguler.\n\n` +
@@ -1198,6 +1202,25 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     return handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user })
   }
 
+  if (['simulation', 'sim', 'sl'].includes(input)) {
+    let gameArgs = args.slice(1)
+    if (input === 'simulation' && gameArgs[0]?.toLowerCase() === 'sl') gameArgs = gameArgs.slice(1)
+    const gameInput = (gameArgs[0] || 'random').toLowerCase()
+    const game = gameInput === 'random'
+      ? pick(Object.keys(games))
+      : aliases[gameInput]
+    if (!game) return m.reply(`❌ Game tidak ditemukan. Gunakan *${usedPrefix}casino games* untuk melihat pilihan.`)
+    const result = normalizeResult(resultFor(game))
+    return m.reply(
+      `╭─❏「 🧪 SIMULASI ${games[game].name.toUpperCase()} 」❏\n` +
+      `${result.text}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> Hasil multiplier: *${result.multiplier}x*\n` +
+      `> Simulasi tidak memakai taruhan, mengubah saldo, cooldown, batas harian, atau statistik casino.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   const stats = getCasinoStats(user)
   const dailyLimit = getDailyLimit(m.sender, wdb)
 
@@ -1245,11 +1268,14 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
 
   const legacySlot = /^\d+$/.test(input)
+  const legacyAll = input === 'all'
   const randomGame = input === 'random'
-  const randomBet = Number(args[1])
+  const randomBet = args[1]?.toLowerCase() === 'all' ? Number(wdb.money[m.sender] || 0) : Number(args[1])
   const eligibleGames = Object.keys(games).filter(key => games[key].minBet <= randomBet)
   const game = legacySlot
     ? 'slot'
+    : legacyAll
+      ? 'slot'
     : randomGame
       ? pick(eligibleGames.length ? eligibleGames : Object.keys(games))
       : aliases[input]
@@ -1272,7 +1298,8 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   )
 }
 
-const bet = Number(legacySlot ? input : args[1])
+const betInput = legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
+const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : Number(betInput)
 
 if (!Number.isInteger(bet) || bet < games[game].minBet) {
   return m.reply(
@@ -1393,6 +1420,9 @@ handler.help = [
   'casino guide',
   'casino games',
   'casino random <taruhan>',
+  'casino <game> all',
+  'casino simulation <game/random>',
+  'cs sl <game/random>',
   'casino top',
   'casino profile',
   'casino nickname <julukan>',

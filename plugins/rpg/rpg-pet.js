@@ -26,6 +26,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let user = wdb.users[m.sender]?.rpg
   if (!user) return safeReply('Ketik.adventure dulu buat daftar RPG.')
   if (!user.pets) user.pets = []
+  const maxPetSlots = user.premium ? 15 : 10
 // init data baru
 if (!user.sanctuary) user.sanctuary = []
 if (!user.stats) user.stats = { totalFeed: 0, totalBattle: 0, totalHunt: 0 }
@@ -990,11 +991,11 @@ if (action === 'shop') {
 // === ADOPT ===
 if (action === 'adopt') {
     
-  if(user.pets.length >= 10) return safeReply(
+  if(user.pets.length >= maxPetSlots) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ❌ *PET PENUH*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Maksimal 10 pet.\n` +
+    `> ↳ Maksimal ${maxPetSlots} pet.\n` +
     `> ↳ Release/Sell/Kill/Transfer pet terlebih dahulu.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
@@ -1045,11 +1046,11 @@ for(let key in aliases){
 
 // === GACHA ===
   if (action === 'gacha') {
-  if(user.pets.length >= 10) return safeReply(
+  if(user.pets.length >= maxPetSlots) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ❌ *PET PENUH*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Maksimal 10 pet.\n` +
+    `> ↳ Maksimal ${maxPetSlots} pet.\n` +
     `> ↳ Release/Sell/Kill/Transfer dulu.\n\n` +
     `╰─━━━━━━━━━━━━━━─`
   )
@@ -2129,11 +2130,11 @@ if (action === 'sell') {
 
   // === BREED ===
 if (action === 'breed') {
-  if(user.pets.length >= 10) return safeReply(
+  if(user.pets.length >= maxPetSlots) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ❌ *PET PENUH*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Max 10 pet.\n` +
+    `> ↳ Max ${maxPetSlots} pet.\n` +
     `> ↳ Release/Sell/Kill/Transfer dulu\n\n` +
     `─━━━━━━━━━━━━━━─`
   )

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
+import { isPremiumUser } from './rpg-bank.js'
 
 const UPGRADE_IMAGE = 'https://c.termai.cc/i108/l3q'
 
@@ -34,7 +35,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const multiplier = Math.pow(2, Math.max(0, level - 1))
     const advanced = advancedMaterialCost(itemName, level)
     return {
-      money: basePrice[itemName].money * multiplier,
+      money: Math.floor(basePrice[itemName].money * multiplier * (isPremiumUser(m.sender) ? 0.8 : 1)),
       iron: basePrice[itemName].iron * multiplier,
       stone: basePrice[itemName].stone * multiplier,
       wood: basePrice[itemName].wood * multiplier,
@@ -281,4 +282,3 @@ handler.tags = ['rpg']
 handler.command = ['upgrade']
 
 export default handler
-

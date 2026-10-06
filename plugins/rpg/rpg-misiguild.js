@@ -160,11 +160,12 @@ if(command === 'latihanguild'){
   list += `╰─━━━━━━━━━━━━━━─\n\n`
 
   list += `│ 📊 Status: ${remainingCooldown > 0 ? `⏳ Cooldown ${Math.ceil(remainingCooldown / 1000)} detik` : '✅ Siap menjalankan misi'}\n`
-  list += `│ 🎯 Level pemain: Lv.${playerLevel} • Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
+  list += `│ 🎯 Level pemain: Lv.${playerLevel}\n`
+  list += `│ 🔓 Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
   list += `📌 *PILIH MISI*\n`
   list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/ .bag; tidak masuk Guild Loot.\n`
   list += `> ↳ Anggota aktif lain mendapat 50% sebagai pending loot. Klaim dengan .guild loot take.\n\n`
-  list += `> ↳ Loot anggota hanya bertambah jika anggota aktif dalam 4 hari terakhir.\n`
+  list += `> ↳ Anggota aktif berarti memakai fitur RPG apa pun dalam 4 hari terakhir.\n`
   list += `─━━━━━━━━━━━━━━─\n\n`
 
   missions.forEach((v, i) => {
@@ -172,7 +173,10 @@ if(command === 'latihanguild'){
     list += `> ↳ 📊 Syarat: Lv.${v.minLevel}${v.minLevel > playerLevel ? ' (belum terbuka)' : ''}\n`
     list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
     list += `> ↳ ✨ Exp: +${v.reward.exp}\n`
-    list += `> ↳ 🎁 Hadiah: ${Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }).filter(([item]) => Number(v.reward[item]) > 0).map(([item, name]) => `${name}: ${item === 'money' ? `Rp ${Number(v.reward[item]).toLocaleString('id-ID')}` : Number(v.reward[item]).toLocaleString('id-ID')}`).join(', ')}\n\n`
+    const rewards = Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' })
+      .filter(([item]) => Number(v.reward[item]) > 0)
+      .map(([item, name]) => `>   ${name}: ${item === 'money' ? `Rp ${Number(v.reward[item]).toLocaleString('id-ID')}` : Number(v.reward[item]).toLocaleString('id-ID')}`)
+    list += `> ↳ 🎁 Hadiah:\n${rewards.join('\n')}\n\n`
   })
 
   list += `─━━━━━━━━━━━━━━─\n\n`
@@ -224,7 +228,7 @@ if(command === 'latihanguild'){
   myGuild.lastMission = Date.now()
 
   myGuild.pendingLoot = myGuild.pendingLoot || {}
-  normalizeGuildPendingLoot(myGuild)
+  normalizeGuildPendingLoot(myGuild, conn)
   const now = Date.now()
   const executorLoot = {}
   const pendingLootTotals = { money: 0, iron: 0, gold: 0, stone: 0, diamond: 0, gemstone: 0 }
@@ -237,7 +241,6 @@ if(command === 'latihanguild'){
     diamond: scaleDifficultyIncome(player, msn.reward.diamond || 0),
     gemstone: scaleDifficultyIncome(player, msn.reward.gemstone || 0)
   }
-  player.lastGuildMissionAt = now
   player.inventory = player.inventory || {}
   for (const [item, amount] of Object.entries(executorRewardItems)) {
     executorLoot[item] = amount
@@ -252,8 +255,7 @@ if(command === 'latihanguild'){
     if (!u) continue
 
     normalizeGuildLoot(u)
-    if (!Number(u.lastGuildMissionAt)) u.lastGuildMissionAt = now
-    if (now - Number(u.lastGuildMissionAt) > GUILD_MEMBER_INACTIVE_MS) continue
+    if (now - (Number(u.lastRpgActivityAt) || 0) > GUILD_MEMBER_INACTIVE_MS) continue
 
     {
       const rewardItems = {
@@ -305,7 +307,12 @@ for (const [item, label] of Object.entries(rewardLabels)) {
   if (Number(amount) > 0) cap += `> ↳ ${label}: ${item === 'money' ? `Rp ${Number(amount).toLocaleString('id-ID')}` : Number(amount).toLocaleString('id-ID')}\n`
 }
 cap += `\n🎁 *PENDING GUILD LOOT UNTUK ANGGOTA LAIN*\n`
-cap += `> ↳ Penerima: ${pendingRecipients} anggota aktif • Total: ${Object.entries(rewardLabels).filter(([item]) => pendingLootTotals[item] > 0).map(([item, label]) => `${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`).join(', ') || 'Tidak ada'}\n`
+cap += `> ↳ Penerima aktif: ${pendingRecipients} anggota\n`
+cap += `> ↳ Kriteria: memakai fitur RPG apa pun dalam 4 hari terakhir\n`
+const pendingTotalLines = Object.entries(rewardLabels)
+  .filter(([item]) => pendingLootTotals[item] > 0)
+  .map(([item, label]) => `> ↳ ${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`)
+cap += `${pendingTotalLines.length ? pendingTotalLines.join('\n') : '> ↳ Total: Tidak ada'}\n`
 cap += `> ↳ Anggota mengambil bagiannya sendiri dengan *.guild loot take*; hadiah eksekutor tidak masuk loot.\n`
 
 cap += `\n╰─━━━━━━━━━━━━━━─`

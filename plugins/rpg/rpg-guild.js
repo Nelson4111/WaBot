@@ -77,8 +77,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
   const formatResources = loot => Object.entries(resourceNames)
     .filter(([item]) => Number(loot?.[item]) > 0)
-    .map(([item, name]) => `${name}: ${Number(loot[item]).toLocaleString('id-ID')}`)
-    .join(', ')
+    .map(([item, name]) => `> ↳ ${name}: ${Number(loot[item]).toLocaleString('id-ID')}`)
+    .join('\n')
 
   if (action === 'command') {
     const commands = [
@@ -187,7 +187,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     )
   }
 
-  let migratedLegacyLoot = normalizeGuildPendingLoot(myGuild)
+  let migratedLegacyLoot = normalizeGuildPendingLoot(myGuild, conn)
 
   for (const jid of myGuild.members || []) {
     const memberRpg = wdb.users[jid]?.rpg
@@ -196,7 +196,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     normalizeGuildLoot(memberRpg)
   }
 
-  if (migratedLegacyLoot) saveDB(wdb)
+  if (migratedLegacyLoot) await saveDB(wdb)
 
   const memberId = findGuildMemberId(myGuild, m.sender, conn) || m.sender
   const lootAction = args[1]?.toLowerCase()
@@ -214,7 +214,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     const entries = myGuild.members
       .map(jid => ({ jid, loot: myGuild.pendingLoot[jid] || {} }))
-      .filter(({ loot }) => Object.values(loot).some(amount => Number(amount) > 0))
+      .filter(({ loot }) => Object.keys(resourceNames).some(item => Number(loot[item]) > 0))
 
     if (!entries.length) {
       return m.reply(
@@ -229,7 +229,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const list = entries
       .map(({ jid, loot }) =>
         `👤 *@${jid.split('@')[0]}*\n` +
-        `> ↳ ${formatResources(normalizePendingLoot(loot))}`
+        `${formatResources(normalizePendingLoot(loot))}`
       )
       .join('\n\n')
 
@@ -267,7 +267,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       let remaining = Math.max(0, caps[item] - loot[item])
 
       for (const jid of recipients) {
-        const pending = normalizePendingLoot(myGuild.pendingLoot[jid] || {})
+        const pending = myGuild.pendingLoot[jid] || {}
         const accepted = Math.min(
           Math.max(0, Number(pending[item]) || 0),
           remaining
@@ -289,24 +289,44 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     if (!Object.values(total).some(amount => amount > 0)) {
+      const pending = isCollect
+        ? Object.values(myGuild.pendingLoot).reduce((sum, entry) => {
+          for (const item of Object.keys(sum)) sum[item] += Math.max(0, Number(entry?.[item]) || 0)
+          return sum
+        }, Object.fromEntries(Object.keys(resourceNames).map(item => [item, 0])))
+        : myGuild.pendingLoot[memberId] || {}
+      const blockedByCap = Object.entries(resourceNames)
+        .filter(([item]) => Number(pending[item]) > 0 && loot[item] >= caps[item])
+        .map(([item, name]) => `> ↳ ${name}: batas ${caps[item].toLocaleString('id-ID')} sudah tercapai`)
       return m.reply(
         `╭─❏「 🎁 GUILD LOOT 」❏\n` +
         `│ 🎁 *TIDAK ADA LOOT YANG BISA DIAMBIL*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Tidak ada pending loot yang bisa diambil saat ini.\n` +
-        `> ↳ Batas loot naik setiap 10 level Guild dan berhenti bertambah mulai Lv.101.\n\n` +
+        `> ↳ ${blockedByCap.length ? 'Pending masih tertahan karena batas loot:' : 'Tidak ada pending loot yang bisa diambil saat ini.'}\n` +
+        `${blockedByCap.length ? `${blockedByCap.join('\n')}\n` : ''}` +
+        `> ↳ Batas naik setiap 10 level Guild hingga Lv.101; pending tetap tersimpan.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
-    saveDB(wdb)
+    await saveDB(wdb)
+
+    const remainingPending = recipients.reduce((sum, jid) => {
+      const pending = myGuild.pendingLoot[jid] || {}
+      for (const item of Object.keys(sum)) sum[item] += Math.max(0, Number(pending[item]) || 0)
+      return sum
+    }, Object.fromEntries(Object.keys(resourceNames).map(item => [item, 0])))
+    const remainingLines = Object.entries(resourceNames)
+      .filter(([item]) => remainingPending[item] > 0)
+      .map(([item, name]) => `> ↳ ${name}: ${remainingPending[item].toLocaleString('id-ID')} masih pending`)
 
     return m.reply(
       `╭─❏「 ✅ GUILD LOOT DIAMBIL 」❏\n` +
       `│ ✅ *${isCollect ? 'Loot pending berhasil dikumpulkan' : 'Loot pending berhasil diambil'}*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `📦 *HASIL LOOT*\n` +
-      `> ↳ ${formatResources(total)}\n\n` +
+      `${formatResources(total)}\n` +
+      `${remainingLines.length ? `\n📌 *SISA PENDING*\n${remainingLines.join('\n')}\n` : ''}\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -317,21 +337,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   const lootLines = Object.entries(resourceNames)
     .map(([item, name]) =>
-      `> ↳ ${name}: ${loot[item].toLocaleString('id-ID')} sudah diambil + ${(Number(pending[item]) || 0).toLocaleString('id-ID')} pending / ${caps[item].toLocaleString('id-ID')}`
+      `> ↳ ${name}\n>   Diambil: ${loot[item].toLocaleString('id-ID')}\n>   Pending: ${(Number(pending[item]) || 0).toLocaleString('id-ID')}\n>   Batas: ${caps[item].toLocaleString('id-ID')}`
     )
     .join('\n')
 
   const cap =
     `╭─❏「 🎁 GUILD LOOT 」❏\n` +
     `│ 🎁 *${myGuild.name}*\n` +
-    `│ 🌟 Guild Lv.${myGuild.level || 1} • batas naik tiap 10 level (maks. Lv.101)\n` +
+    `│ 🌟 Guild Lv.${myGuild.level || 1}\n` +
+    `│ 📈 Batas naik tiap 10 level (maks. Lv.101)\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
 
     `📦 *LOOT / BATAS*\n` +
     `${lootLines}\n\n` +
 
     `🎁 *LOOT PENDING*\n` +
-    `> ↳ ${formatResources(pending) || 'Kosong'}\n\n` +
+    `${formatResources(pending) || '> ↳ Kosong'}\n\n` +
 
     `📌 Pending belum masuk ke saldo/.bag sebelum diklaim.\n` +
     `> ↳ Ketik *${usedPrefix}guild loot take* untuk mengambil pending milikmu.\n\n` +
@@ -352,7 +373,8 @@ if (action === 'storage') {
     )
   }
 
-  normalizeGuildPendingLoot(myGuild)
+  const normalizedPendingLoot = normalizeGuildPendingLoot(myGuild, conn)
+  if (normalizedPendingLoot) await saveDB(wdb)
   myGuild.storage = normalizePendingLoot(myGuild.storage || {})
 
   const operation = args[1]?.toLowerCase()
@@ -450,7 +472,8 @@ if (action === 'storage') {
 
     const lines = (action === 'top' ? guilds.slice(0, 10) : guilds).map((guild, index) =>
         `🏰 *${index + 1}. ${guild.name}*\n` +
-        `> ↳ Lv.${guild.level || 1} (${Number(guild.exp) || 0} EXP)\n` +
+        `> ↳ Level: ${guild.level || 1}\n` +
+        `> ↳ EXP: ${(Number(guild.exp) || 0).toLocaleString('id-ID')}\n` +
         `> ↳ ${guild.members?.length || 0} member`
     )
 
@@ -510,7 +533,8 @@ cap += cdText ? `> ↳ ${cdText.replace('│ ', '')}` : ''
 cap += `> ↳ 🌟 Level : ${myGuild.level}\n`
 cap += `> ↳ ✨ Exp : ${(myGuild.exp).toLocaleString()} / ${nextExp.toLocaleString()}\n`
 cap += `> ↳ 👥 Member : ${(myGuild.members || []).length} / ${maxMembers}\n`
-cap += `> ↳ 🎁 Batas loot : Rp ${lootCaps.money.toLocaleString('id-ID')} / ${lootCaps.gemstone} tiap loot lain\n`
+cap += `> ↳ 🎁 Batas loot Money : Rp ${lootCaps.money.toLocaleString('id-ID')}\n`
+cap += `> ↳ 🎁 Batas loot lainnya : ${lootCaps.gemstone} per jenis\n`
 if (Date.now() < myGuild.warCooldown) cap += `> ↳ ⚠️ War CD : Aktif\n`
 cap += `\n─━━━━━━━━━━━━━━─\n\n`
 

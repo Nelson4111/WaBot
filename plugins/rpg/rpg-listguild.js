@@ -31,7 +31,8 @@ for (let position = 0; position < guildEntries.length; position++) {
   let maxMembers = getGuildMemberCap(g.level)
   list += `│ 🏰 *${index++}. ${g.name || name}*\n`
   list += `│ 👑 Leader: ${conn.getName(g.leader)}\n`
-  list += `│ 🌟 Level: Lv.${g.level || 1}  •  👥 Member: ${(g.members || []).length}/${maxMembers}\n`
+  list += `│ 🌟 Level: Lv.${g.level || 1}\n`
+  list += `│ 👥 Member: ${(g.members || []).length}/${maxMembers}\n`
   if (position < guildEntries.length - 1) list += `├─━━━━━━━━━━━━━━─\n`
 }
 

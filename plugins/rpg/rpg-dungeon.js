@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -132,6 +133,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // KALO MATI
   if (user.darah <= finalDamage) {
+    if (tryPremiumProtection(m.sender)) {
+      user.darah = Math.max(1, user.darah - finalDamage)
+      user.lastDungeon = Date.now()
+      await saveDB(wdb)
+      return m.reply(`🛡️ *PREMIUM PROTECTION AKTIF*\nKamu selamat dari serangan ${selected.enemy}, tetapi dungeon gagal dan HP tersisa ${user.darah}.`)
+    }
     user.darah = 0
     user.lastDungeon = Date.now()
     await saveDB(wdb)

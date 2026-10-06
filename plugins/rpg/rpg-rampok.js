@@ -4,6 +4,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 
 let handler = async (m, { conn }) => {
     const wdb = loadDB()
@@ -54,6 +55,10 @@ let handler = async (m, { conn }) => {
 
     let bankTarget = target.bank || 0
     if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
+    if (tryPremiumProtection(who)) {
+        await saveDB(wdb)
+        return m.reply('🛡️ Premium protection melindungi target dari aksi rampok. Saldo bank target tetap aman.')
+    }
 
     userRPG.lastrob = Date.now()
     let tier = BANK_TIERS[target.bankTier] || BANK_TIERS[0]
