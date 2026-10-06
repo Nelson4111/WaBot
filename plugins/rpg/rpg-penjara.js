@@ -78,7 +78,6 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     const sisaWaktu = (rpg) => { if (!rpg) return 0; return Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara || 0)) }
     const sisaTungguTebus = (rpg) => Math.max(0, 5 * 60 * 1000 - (Date.now() - Number(rpg?.penjara || 0)))
     const formatSisa = (ms) => { ms = Math.max(0, ms); const jam = Math.floor(ms / 3600000); const menit = Math.floor((ms % 3600000) / 60000); return `${jam}j ${menit}m` }
-    const isDiPenjara = (jid) => { jid = resolveJid(jid); return wdb.penjara.some(x => resolveJid(x) === jid) }
     const findPrisonerByCell = (value) => {
         const requested = String(value || '').toUpperCase()
         const prisoner = wdb.penjara.find(jid => String(getRPG(resolveJid(jid))?.sel || '').toUpperCase() === requested)
@@ -110,6 +109,67 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         }
         removeFromBreakouts(jid)
     }
+    const recordPrisonRelease = (jid, reason, releasedBy = null, releasedAt = Date.now()) => {
+        const rpg = getRPG(jid)
+        if (!rpg) return
+        rpg.lastPrisonRelease = {
+            reason,
+            releasedAt,
+            ...(releasedBy ? { releasedBy: resolveJid(releasedBy) } : {})
+        }
+    }
+    const getPrisonReleaseReason = (jid) => {
+        const release = getRPG(jid)?.lastPrisonRelease
+        const reason = release?.reason === 'owner'
+            ? 'dibebaskan oleh Owner'
+            : release?.reason === 'expired'
+                ? 'masa tahanan habis'
+                : release?.reason === 'escape'
+                    ? 'berhasil kabur sendiri dari penjara'
+                    : release?.reason === 'breakout'
+                        ? 'berhasil kabur melalui breakout bersama'
+                        : release?.reason === 'ransom' && release.releasedBy
+                            ? `ditebus oleh @${resolveJid(release.releasedBy).split('@')[0]}`
+                            : null
+        return reason
+            ? {
+                text: reason,
+                mention: release?.reason === 'ransom' && release.releasedBy
+                    ? resolveJid(release.releasedBy)
+                    : null
+            }
+            : null
+    }
+    const replyNotImprisoned = (jid) => {
+        const releaseReason = getPrisonReleaseReason(jid)
+        const mentions = releaseReason?.mention ? [releaseReason.mention] : []
+        return conn.reply(
+            m.chat,
+            `❌ Kamu tidak sedang dipenjara.${releaseReason ? `\n> ↳ Karena: ${releaseReason.text}` : ''}`,
+            m,
+            { mentions }
+        )
+    }
+    const isDiPenjara = (jid) => {
+        jid = resolveJid(jid)
+        const rpg = getRPG(jid)
+        if (rpg?.penjara && sisaWaktu(rpg) <= 0) {
+            const now = Date.now()
+            const releasedAt = Math.min(now, (Number(rpg.penjara) || now) + (Number(rpg.lamaPenjara) || 0))
+            markPatrolRelease(rpg, releasedAt)
+            recordPrisonRelease(jid, 'expired', null, releasedAt)
+            rpg.penjara = null
+            rpg.lamaPenjara = 0
+            rpg.tebusan = 0
+            rpg.sel = 0
+            rpg.gagalCopet = 0
+            removeFromPrison(jid)
+            saveDB(wdb)
+            return false
+        }
+        return Boolean(rpg?.penjara && sisaWaktu(rpg) > 0 &&
+            wdb.penjara.some(entry => resolveJid(entry) === jid))
+    }
     const getStats = (jid) => {
         jid = resolveJid(jid)
         if (!wdb.prisonStats[jid]) wdb.prisonStats[jid] = {routine: 0, talk: 0}
@@ -139,11 +199,7 @@ if (breakoutAction) {
         }
 
         if (!isDiPenjara(m.sender)) {
-            return m.reply(
-                `╭─❏「 ❌ PENJARA BREAKOUT 」❏\n` +
-                `│ ❌ *Hanya tahanan yang bisa membuat room breakout.*\n` +
-                `╰─━━━━━━━━━━━━━━─`
-            )
+            return replyNotImprisoned(m.sender)
         }
 
         wdb.prisonBreakouts[m.chat] = {
@@ -209,11 +265,7 @@ if (breakoutAction) {
         }
 
         if (!isDiPenjara(m.sender)) {
-            return m.reply(
-                `╭─❏「 ❌ PENJARA BREAKOUT 」❏\n` +
-                `│ ❌ *Hanya tahanan yang bisa bergabung ke breakout.*\n` +
-                `╰─━━━━━━━━━━━━━━─`
-            )
+            return replyNotImprisoned(m.sender)
         }
 
         const jid = resolveJid(m.sender)
@@ -380,6 +432,15 @@ if (breakoutAction) {
         const invalid = players.filter(jid => !isDiPenjara(jid) || !getRPG(jid))
 
         if (invalid.length) {
+            const invalidReasons = invalid
+                .map(jid => {
+                    const releaseReason = getPrisonReleaseReason(jid)
+                    return releaseReason ? `> ↳ ${mentionName(jid)}: ${releaseReason.text}` : null
+                })
+                .filter(Boolean)
+            const releaseMentions = invalid
+                .map(jid => getPrisonReleaseReason(jid)?.mention)
+                .filter(Boolean)
             return conn.reply(
                 m.chat,
                 `╭─❏「 ❌ BREAKOUT GAGAL 」❏\n` +
@@ -387,10 +448,11 @@ if (breakoutAction) {
                 `╰─━━━━━━━━━━━━━━─\n\n` +
                 `> ↳ Peserta berikut sudah tidak berada di penjara:\n` +
                 `> ↳ ${invalid.map(mentionName).join(', ')}\n` +
+                `${invalidReasons.length ? `${invalidReasons.join('\n')}\n` : ''}` +
                 `> ↳ Mereka harus leave sebelum breakout dimulai.\n\n` +
                 `─━━━━━━━━━━━━━━─`,
                 m,
-                { mentions: invalid }
+                { mentions: [...new Set([...invalid, ...releaseMentions])] }
             )
         }
 
@@ -411,6 +473,7 @@ if (breakoutAction) {
                 const rpg = getRPG(jid)
 
                 markPatrolRelease(rpg)
+                recordPrisonRelease(jid, 'breakout', null, now)
                 rpg.penjara = null
                 rpg.lamaPenjara = 0
                 rpg.tebusan = 0
@@ -584,7 +647,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'command') {
             wdb.penjara.splice(i, 1); changed = true; continue
         }
         if (sisaWaktu(rpg) <= 0) {
-            markPatrolRelease(rpg, Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0))
+            const releasedAt = Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0)
+            markPatrolRelease(rpg, releasedAt)
+            recordPrisonRelease(jid, 'expired', null, releasedAt)
             rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0
             if (removeFromBreakouts(jid)) changed = true
             wdb.penjara.splice(i, 1); changed = true
@@ -789,7 +854,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
 }
 
    if (command === 'penjara' && args[0]?.toLowerCase() === 'routine') {
-    if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
+       if (!isDiPenjara(m.sender)) return replyNotImprisoned(m.sender)
     let last = Number(wdb.routineCooldown[m.sender]) || 0
     let now = Date.now()
     let CD = scaleDifficultyCooldown(getRPG(m.sender), 2 * 60 * 1000)
@@ -821,7 +886,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'info') {
    ===================================================== */
 
 if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
-    if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
+    if (!isDiPenjara(m.sender)) return replyNotImprisoned(m.sender)
     let last = Number(wdb.talkCooldown[m.sender]) || 0
     let now = Date.now()
     let CD = scaleDifficultyCooldown(getRPG(m.sender), 2 * 60 * 1000)
@@ -852,7 +917,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     ===================================================== */
 
     if (command === 'penjara' && args[0]?.toLowerCase() === 'kabur') {
-        if (!isDiPenjara(m.sender)) return m.reply('❌ Kamu tidak di penjara.')
+        if (!isDiPenjara(m.sender)) return replyNotImprisoned(m.sender)
         let last = Number(wdb.kaburCooldown[m.sender]) || 0
         let now = Date.now()
         let CD = scaleDifficultyCooldown(getRPG(m.sender), 5 * 60 * 1000)
@@ -885,6 +950,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
         if (berhasil) {
             markPatrolRelease(rpg)
+            recordPrisonRelease(m.sender, 'escape', null, now)
             rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0
             stats.escaped = true
             recordEscapeCrime(wdb, resolveJid(m.sender), 'kabur')
@@ -987,31 +1053,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
     if (sisaWaktu(rpg) <= 0) {
         const selLama = rpg.sel || index + 1
-        markPatrolRelease(rpg, Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0))
-        rpg.penjara = null
-        rpg.lamaPenjara = 0
-        rpg.tebusan = 0
-        rpg.sel = 0
-        rpg.gagalCopet = 0
-        wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid) !== who)
-        removeFromBreakouts(who)
-        saveDB(wdb)
-
-        return m.reply(
-            `╭─❏「 🚔 TAHANAN BEBAS 」❏\n` +
-            `│ 🚔 *@${who.split('@')[0]} sudah bebas.*\n` +
-            `╰─━━━━━━━━━━━━━━─\n\n` +
-            `📋 *STATUS*\n` +
-            `> ↳ SEL : ${selLama}\n` +
-            `> ↳ Masa tahanan telah habis\n\n` +
-            `─━━━━━━━━━━━━━━─`,
-            { mentions: [who] }
-        )
-    }
-
-    if (sisaWaktu(rpg) <= 0) {
-        const selLama = rpg.sel || index + 1
-        markPatrolRelease(rpg, Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0))
+        const releasedAt = Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0)
+        markPatrolRelease(rpg, releasedAt)
+        recordPrisonRelease(who, 'expired', null, releasedAt)
         rpg.penjara = null
         rpg.lamaPenjara = 0
         rpg.tebusan = 0
@@ -1098,7 +1142,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (args[0] === 'all') {
             if (wdb.penjara.length === 0) return m.reply('🏛️ Penjara kosong')
             let bebas = []
-            for (const jidRaw of wdb.penjara) { const jid = resolveJid(jidRaw); const rpg = getRPG(jid); if (!rpg) continue; markPatrolRelease(rpg); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; removeFromBreakouts(jid); bebas.push(jid) }
+            for (const jidRaw of [...wdb.penjara]) { const jid = resolveJid(jidRaw); if (!isDiPenjara(jid)) continue; const rpg = getRPG(jid); if (!rpg) continue; markPatrolRelease(rpg); recordPrisonRelease(jid, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; removeFromBreakouts(jid); bebas.push(jid) }
             wdb.penjara = []; saveDB(wdb)
             const names = bebas.length? bebas.map(jid => `@${jid.split('@')[0]}`).join(', ') : '-'
             return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Bebas : ${names}\n╰ 𖥔 Oleh Owner`, m, { mentions: bebas })
@@ -1110,9 +1154,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         else { who = resolveJid(m.sender) }
         if (!who) return m.reply('❌ Target tidak ditemukan')
         const rpg = getRPG(who); const index = wdb.penjara.findIndex(jid => resolveJid(jid) === who)
-        if ((!rpg ||!rpg.penjara) && index === -1) return m.reply('❌ Orang ini tidak di penjara')
+        if (!isDiPenjara(who)) return m.reply('❌ Orang ini tidak di penjara')
         const selLama = rpg?.sel || (index >= 0? index + 1 : 0)
-        if (rpg) { markPatrolRelease(rpg); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0 }
+        if (rpg) { markPatrolRelease(rpg); recordPrisonRelease(who, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0 }
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); removeFromBreakouts(who); saveDB(wdb)
         return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Owner : @${m.sender.split('@')[0]}\n│ 𖥔 Target : @${who.split('@')[0]}\n╰ 𖥔 Bebas dari SEL ${selLama}!`, m, { mentions: [m.sender, who] })
     }
@@ -1125,9 +1169,10 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (args[0] === 'all') {
             if (wdb.penjara.length === 0) return m.reply('🏛️ Penjara kosong')
             let total = 0; let targets = []; let waiting = []
-            for (const jidRaw of wdb.penjara) {
+            for (const jidRaw of [...wdb.penjara]) {
                 const jid = resolveJid(jidRaw)
                 if (jid === resolveJid(m.sender)) continue
+                if (!isDiPenjara(jid)) continue
                 const rpg = getRPG(jid)
                 if (rpg && rpg.penjara && Number(rpg.tebusan) > 0) {
                     const remaining = sisaTungguTebus(rpg)
@@ -1149,6 +1194,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             const bebas = []
             for (const data of targets) {
                 markPatrolRelease(data.rpg)
+                recordPrisonRelease(data.jid, 'ransom', m.sender)
                 data.rpg.penjara = null
                 data.rpg.lamaPenjara = 0
                 data.rpg.tebusan = 0
@@ -1189,15 +1235,16 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
         if (sisaWaktu(rpg) <= 0) {
             const selLama = rpg.sel || 0
-            markPatrolRelease(rpg, Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0))
+            const releasedAt = Number(rpg.penjara) + (Number(rpg.lamaPenjara) || 0)
+            markPatrolRelease(rpg, releasedAt)
+            recordPrisonRelease(who, 'expired', null, releasedAt)
             rpg.penjara = null
             rpg.lamaPenjara = 0
             rpg.tebusan = 0
             rpg.sel = 0
             rpg.gagalCopet = 0
-                rpg.penjara = null
             wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
-                removeFromBreakouts(who)
+            removeFromBreakouts(who)
             saveDB(wdb)
             return m.reply(`🚔 Masa tahanan @${who.split('@')[0]} sudah habis.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Target sudah bebas otomatis`, { mentions: [who] })
         }
@@ -1212,6 +1259,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         wdb.money[m.sender] = uang - tebusan
         const selLama = rpg.sel || 0
         markPatrolRelease(rpg)
+        recordPrisonRelease(who, 'ransom', m.sender)
         rpg.penjara = null
         rpg.lamaPenjara = 0
         rpg.tebusan = 0
