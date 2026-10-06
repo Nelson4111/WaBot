@@ -15,6 +15,7 @@ import {
   startRehabilitation
 } from '../lib/rehabilitationHelper.js'
 import { isPatrolExemptCommand } from '../lib/patrolHelper.js'
+import { registerPrisoner } from '../lib/prisonHelper.js'
 
 const lowRequirements = getRehabilitationRequirements(2)
 const highRequirements = getRehabilitationRequirements(10)
@@ -32,7 +33,7 @@ assert.deepEqual(Object.keys(REHABILITATION_ACTIVITY_COOLDOWNS), ['kerja', 'sosi
 assert.equal(REHABILITATION_ACTIVITY_COOLDOWNS.kerja, REHABILITATION_WORK_COOLDOWN_MS)
 assert.equal(REHABILITATION_ACTIVITY_COOLDOWNS.sosial, REHABILITATION_SOCIAL_COOLDOWN_MS)
 for (const command of ['rh', 'rehabilitasi']) {
-  for (const action of ['', 'mulai', 'bayar', 'kerja', 'sosial', 'ibadah', 'olahraga', 'belajar', 'cd', 'lapor', 'progres', 'batal', 'info', 'guide', 'command', 'list']) {
+  for (const action of ['', 'mulai', 'start', 'bayar', 'kerja', 'sosial', 'ibadah', 'olahraga', 'belajar', 'cd', 'lapor', 'progres', 'batal', 'info', 'guide', 'command', 'list']) {
     assert.equal(isPatrolExemptCommand(command, action ? [action] : []), true)
   }
 }
@@ -109,5 +110,22 @@ assert.equal(rpg.rehabilitation.status, 'completed')
 crimeData.copet += 1
 assert.equal(getActiveCrimeScore(crimeData), 1)
 assert.equal(REHABILITATION_DAY_MS, 24 * 60 * 60 * 1000)
+
+const protectedJid = 'rehab@s.whatsapp.net'
+const protectedRpg = {
+  rehabilitation: { status: 'active' },
+  penjara: now,
+  lamaPenjara: 60000,
+  tebusan: 1000,
+  sel: 'A1',
+  kasus: 'test'
+}
+global.db = { data: { users: { [protectedJid]: { rpg: protectedRpg } } } }
+const prisonDB = { users: { [protectedJid]: { rpg: protectedRpg } }, penjara: [] }
+assert.equal(registerPrisoner(prisonDB, protectedJid), null)
+assert.deepEqual(prisonDB.penjara, [])
+assert.equal(protectedRpg.rehabilitation.status, 'active')
+assert.equal(protectedRpg.penjara, null)
+assert.equal(protectedRpg.lamaPenjara, 0)
 
 console.log('rehabilitation tests passed')
