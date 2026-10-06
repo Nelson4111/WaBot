@@ -14,6 +14,7 @@ import {
 
 const randomItem = (list) => list[Math.floor(Math.random() * list.length)]
 const BREAKOUT_ROOM_TTL = 30 * 60 * 1000
+const rehabilitationAdvice = '\n\n📌 Jika masih memiliki poin buronan, jalani *.rh mulai* untuk membersihkan catatan buronan dan membangun kembali kepercayaan Avelia.'
 
 function cleanupExpiredBreakouts(wdb, now = Date.now()) {
     let removed = false
@@ -145,7 +146,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         const mentions = releaseReason?.mention ? [releaseReason.mention] : []
         return conn.reply(
             m.chat,
-            `❌ Kamu tidak sedang dipenjara.${releaseReason ? `\n> ↳ Karena: ${releaseReason.text}` : ''}`,
+            `❌ Kamu tidak sedang dipenjara.${releaseReason ? `\n> ↳ Karena: ${releaseReason.text}${rehabilitationAdvice}` : ''}`,
             m,
             { mentions }
         )
@@ -499,6 +500,7 @@ if (breakoutAction) {
 
                 `👥 *PESERTA BERHASIL KABUR*\n` +
                 `> ↳ ${names}\n\n` +
+                `${rehabilitationAdvice}\n` +
 
                 `─━━━━━━━━━━━━━━─`,
                 m,
@@ -956,7 +958,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             recordEscapeCrime(wdb, resolveJid(m.sender), 'kabur')
             removeFromPrison(m.sender)
             saveDB(wdb)
-            return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR BERHASIL_* ]───✦\n\n${story.sukses}\n\n╭──「 🎉 BEBAS 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 Dari : SEL ${selLama}\n╰ 𖥔 Selamat! Kamu buronan sekarang.`, m, { mentions: [m.sender] })
+            return conn.reply(m.chat, `[ 🚨 ]───[ *_KABUR BERHASIL_* ]───✦\n\n${story.sukses}\n\n╭──「 🎉 BEBAS 」─✦\n│ 𖥔 Nama : @${m.sender.split('@')[0]}\n│ 𖥔 Dari : SEL ${selLama}\n╰ 𖥔 Selamat! Kamu buronan sekarang.${rehabilitationAdvice}`, m, { mentions: [m.sender] })
         } else {
             rpg.lamaPenjara += 30 * 60 * 1000
             saveDB(wdb)
@@ -1072,6 +1074,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             `📋 *STATUS*\n` +
             `> ↳ SEL : ${selLama}\n` +
             `> ↳ Masa tahanan telah habis\n\n` +
+            `${rehabilitationAdvice}\n\n` +
             `─━━━━━━━━━━━━━━─`,
             { mentions: [who] }
         )
@@ -1145,7 +1148,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             for (const jidRaw of [...wdb.penjara]) { const jid = resolveJid(jidRaw); if (!isDiPenjara(jid)) continue; const rpg = getRPG(jid); if (!rpg) continue; markPatrolRelease(rpg); recordPrisonRelease(jid, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; removeFromBreakouts(jid); bebas.push(jid) }
             wdb.penjara = []; saveDB(wdb)
             const names = bebas.length? bebas.map(jid => `@${jid.split('@')[0]}`).join(', ') : '-'
-            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Bebas : ${names}\n╰ 𖥔 Oleh Owner`, m, { mentions: bebas })
+            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Bebas : ${names}\n╰ 𖥔 Oleh Owner${rehabilitationAdvice}`, m, { mentions: bebas })
         }
         let who = null
         if (args[0] === 'sel' && args[1]) { who = findPrisonerByCell(args[1]); if (!who) return m.reply(`❌ Sel ${args[1].toUpperCase()} kosong`) }
@@ -1158,7 +1161,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         const selLama = rpg?.sel || (index >= 0? index + 1 : 0)
         if (rpg) { markPatrolRelease(rpg); recordPrisonRelease(who, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0 }
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); removeFromBreakouts(who); saveDB(wdb)
-        return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Owner : @${m.sender.split('@')[0]}\n│ 𖥔 Target : @${who.split('@')[0]}\n╰ 𖥔 Bebas dari SEL ${selLama}!`, m, { mentions: [m.sender, who] })
+        return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Owner : @${m.sender.split('@')[0]}\n│ 𖥔 Target : @${who.split('@')[0]}\n╰ 𖥔 Bebas dari SEL ${selLama}!${rehabilitationAdvice}`, m, { mentions: [m.sender, who] })
     }
 
     /* =====================================================
@@ -1206,7 +1209,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             wdb.penjara = wdb.penjara.filter(jid =>!targets.some(target => resolveJid(target.jid) === resolveJid(jid)))
             saveDB(wdb)
             const waitingInfo = waiting.length ? `\n│ 𖥔 ${waiting.length} tahanan belum 5 menit di penjara` : ''
-            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : Rp ${total.toLocaleString('id-ID')}\n│ 𖥔 Bebas : ${bebas.map(jid => `@${jid.split('@')[0]}`).join(', ')}${waitingInfo}\n╰ 𖥔 Berhasil`, m, { mentions: bebas })
+            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : Rp ${total.toLocaleString('id-ID')}\n│ 𖥔 Bebas : ${bebas.map(jid => `@${jid.split('@')[0]}`).join(', ')}${waitingInfo}\n╰ 𖥔 Berhasil${rehabilitationAdvice}`, m, { mentions: bebas })
         }
 
         let who = null
@@ -1246,7 +1249,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
             removeFromBreakouts(who)
             saveDB(wdb)
-            return m.reply(`🚔 Masa tahanan @${who.split('@')[0]} sudah habis.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Target sudah bebas otomatis`, { mentions: [who] })
+            return m.reply(`🚔 Masa tahanan @${who.split('@')[0]} sudah habis.\n\n╭ 𖥔 SEL : ${selLama}\n╰ 𖥔 Target sudah bebas otomatis${rehabilitationAdvice}`, { mentions: [who] })
         }
 
         const sisaTunggu = sisaTungguTebus(rpg)
@@ -1269,7 +1272,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         removeFromBreakouts(who)
         saveDB(wdb)
 
-        return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN_* ]───✦\n╭ 𖥔 Dari : @${m.sender.split('@')[0]}\n│ 𖥔 Untuk : @${who.split('@')[0]}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰ 𖥔 Bebas dari SEL ${selLama}!`, m, { mentions: [m.sender, who] })
+        return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN_* ]───✦\n╭ 𖥔 Dari : @${m.sender.split('@')[0]}\n│ 𖥔 Untuk : @${who.split('@')[0]}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰ 𖥔 Bebas dari SEL ${selLama}!${rehabilitationAdvice}`, m, { mentions: [m.sender, who] })
     }
 
     /* =====================================================

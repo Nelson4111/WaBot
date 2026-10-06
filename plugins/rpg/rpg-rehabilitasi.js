@@ -1,16 +1,18 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, getActiveCrimeScore } from '../../lib/crimeHelper.js'
+import { REHABILITATION_ACTIVITY_STORIES } from '../../lib/rehabilitationStories.js'
 import {
   applyRehabilitationPayment,
   completeRehabilitation,
   getRehabilitationCompletion,
   getRehabilitationPaymentStatus,
   getRehabilitationRequirements,
+  REHABILITATION_ACTIVITY_COOLDOWNS,
   REHABILITATION_FEE,
-  REHABILITATION_SOCIAL_COOLDOWN_MS,
-  REHABILITATION_WORK_COOLDOWN_MS,
   startRehabilitation
 } from '../../lib/rehabilitationHelper.js'
+
+const randomItem = list => list[Math.floor(Math.random() * list.length)]
 
 const formatDuration = (ms) => {
   const minutes = Math.max(0, Math.ceil(ms / (60 * 1000)))
@@ -21,6 +23,14 @@ const formatDuration = (ms) => {
   const remainingMinutes = minutes % 60
   if (days) return `${days} hari ${remainingHours} jam${remainingMinutes ? ` ${remainingMinutes} menit` : ''}`
   return `${hours} jam${remainingMinutes ? ` ${remainingMinutes} menit` : ''}`
+}
+
+const activityDefinitions = {
+  kerja: { label: 'Kerja', cooldownField: 'lastWorkAt' },
+  sosial: { label: 'Sosial', cooldownField: 'lastSocialAt' },
+  ibadah: { label: 'Ibadah', cooldownField: 'lastWorshipAt' },
+  olahraga: { label: 'Olahraga', cooldownField: 'lastExerciseAt' },
+  belajar: { label: 'Belajar', cooldownField: 'lastStudyAt' }
 }
 
 function isImprisoned(userRPG, now) {
@@ -47,8 +57,17 @@ function statusText(process, now) {
   const payment = getRehabilitationPaymentStatus(process)
   return `⏳ Sisa waktu: *${formatDuration(remaining)}*\n` +
     `📈 Progres: *${Number(process.progress) || 0}/${Number(process.requiredProgress) || 0} poin*\n` +
-    `💳 Biaya dibayar: *Rp ${payment.paidAmount.toLocaleString('id-ID')}/${payment.requiredAmount.toLocaleString('id-ID')}*\n` +
+    `💳 Pembayaran: *${payment.remainingAmount > 0 ? `Kurang Rp ${payment.remainingAmount.toLocaleString('id-ID')}` : 'Lunas'}*\n` +
     `🤝 Kegiatan sosial: *${Number(process.socialActivities) || 0}x*`
+}
+
+function cooldownText(process, now) {
+  return Object.entries(activityDefinitions).map(([action, activity]) => {
+    const cooldown = REHABILITATION_ACTIVITY_COOLDOWNS[action]
+    const remaining = cooldown - (now - (Number(process?.[activity.cooldownField]) || 0))
+    const status = remaining > 0 ? formatDuration(remaining) : 'Siap digunakan'
+    return `> ↳ ${activity.label}: *${status}*`
+  }).join('\n')
 }
 
 let handler = async (m, { conn, args, usedPrefix }) => {
@@ -82,6 +101,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
       { mentions }
     )
   }
+  return m.reply('❌ Proses rehabilitasi gagal diselesaikan. Coba gunakan *.rh lapor* lagi.')
 
   const userRPG = getUserRPG(wdb, m.sender)
   if (!userRPG && !['command', 'commands', 'cmd', 'guide'].includes(action)) {
@@ -108,7 +128,12 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     `> ↳ *.rh bayar <nominal/all>* — Cicil nominal atau lunasi sisa biaya\n` +
     `> ↳ *.rh kerja* — Bekerja untuk progres\n` +
     `> ↳ *.rh sosial* — Kegiatan sosial\n` +
+    `> ↳ *.rh ibadah* — Ibadah untuk progres\n` +
+    `> ↳ *.rh olahraga* — Olahraga untuk progres\n` +
+    `> ↳ *.rh belajar* — Belajar untuk progres\n` +
+    `> ↳ *.rh cd* — Cek cooldown semua aktivitas\n` +
     `> ↳ *.rh progres* — Melihat perkembangan\n` +
+    `> ↳ *.rh lapor* — Melaporkan proses jika semua syarat terpenuhi\n` +
     `> ↳ *.rh batal* — Membatalkan rehabilitasi\n\n` +
 
     `─━━━━━━━━━━━━━━─`
@@ -125,8 +150,8 @@ if (action === 'guide') {
     `> ↳ 1. Pastikan kamu sudah bebas dari penjara dan masih memiliki poin buronan.\n` +
     `> ↳ 2. Mulai proses dengan *.rh mulai*. Durasi rehabilitasi adalah 10 menit dikali poin buronan aktif.\n` +
     `> ↳ 3. Biaya rehabilitasi adalah Rp ${REHABILITATION_FEE.toLocaleString('id-ID')} dikali poin buronan. Cicil lewat *.rh bayar <nominal>* atau lunasi sisa biaya lewat *.rh bayar all*; pembayaran tidak memiliki cooldown.\n` +
-    `> ↳ 4. Gunakan *.rh kerja* (cooldown 2 menit) dan *.rh sosial* (cooldown 4 menit) untuk menambah progres.\n` +
-    `> ↳ 5. Proses selesai jika waktunya cukup, progres dan pembayaran terpenuhi, serta ada kegiatan sosial.\n` +
+    `> ↳ 4. Gunakan *.rh kerja*, *.rh sosial*, *.rh ibadah*, *.rh olahraga*, atau *.rh belajar* untuk menambah progres; cooldown tiap aktivitas bisa dicek dengan *.rh cd*.\n` +
+    `> ↳ 5. Setelah waktu minimum, target poin, pembayaran, dan kegiatan sosial terpenuhi, gunakan *.rh lapor* untuk menyelesaikan proses.\n` +
     `> ↳ 6. Berhasil rehabilitasi menghapus poin buronan aktif, bukan riwayat total kejahatan.\n` +
     `> ↳ 7. Tindak kriminal diblokir selama rehabilitasi. Membatalkan proses mengembalikan status buronan.\n\n` +
 
@@ -243,7 +268,20 @@ if (action === 'mulai') {
   )
 }
 
-if (action === 'bayar' || action === 'kerja' || action === 'sosial') {
+if (action === 'cd') {
+  if (process?.status !== 'active') {
+    return m.reply('ℹ️ Cooldown aktivitas rehabilitasi tersedia setelah kamu memulai proses dengan *.rh mulai*.')
+  }
+  return m.reply(
+    `╭─❏「 ⏳ COOLDOWN REHABILITASI 」❏\n` +
+    `│ ⏳ *COOLDOWN AKTIVITAS*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${cooldownText(process, now)}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'bayar' || activityDefinitions[action]) {
   if (process?.status !== 'active') {
     return m.reply(
       `╭─❏「 ❌ REHABILITASI 」❏\n` +
@@ -284,60 +322,34 @@ if (action === 'bayar' || action === 'kerja' || action === 'sosial') {
         `╭─❏「 ❌ PEMBAYARAN GAGAL 」❏\n` +
         `│ ❌ *SALDO TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Nominal pembayaran: *Rp ${amount.toLocaleString('id-ID')}*.\n` +
-        `> ↳ Saldo kamu: *Rp ${balance.toLocaleString('id-ID')}*.\n\n` +
+        `> ↳ Uangmu masih kurang *Rp ${(amount - balance).toLocaleString('id-ID')}* untuk pembayaran ini.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
     wdb.money[m.sender] = balance - amount
     const updatedPayment = applyRehabilitationPayment(process, amount)
-    paymentResult = `✅ Rp ${amount.toLocaleString('id-ID')} dibayar. Sisa biaya: Rp ${updatedPayment.remainingAmount.toLocaleString('id-ID')}.`
-  } else if (action === 'kerja') {
-    const remaining = REHABILITATION_WORK_COOLDOWN_MS - (now - (Number(process.lastWorkAt) || 0))
-
-    if (remaining > 0) {
-      return m.reply(
-        `╭─❏「 ⏳ KERJA REHABILITASI 」❏\n` +
-        `│ ⏳ *MASIH COOLDOWN*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Kamu bisa bekerja lagi dalam *${formatDuration(remaining)}*.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-
-    process.lastWorkAt = now
-    process.progress = (Number(process.progress) || 0) + 2
+    paymentResult = updatedPayment.remainingAmount > 0
+      ? `✅ Pembayaran diterima. Masih kurang Rp ${updatedPayment.remainingAmount.toLocaleString('id-ID')}.`
+      : '✅ Pembayaran rehabilitasi lunas.'
   } else {
-    const remaining = REHABILITATION_SOCIAL_COOLDOWN_MS - (now - (Number(process.lastSocialAt) || 0))
+    const activity = activityDefinitions[action]
+    const cooldown = REHABILITATION_ACTIVITY_COOLDOWNS[action]
+    const remaining = cooldown - (now - (Number(process[activity.cooldownField]) || 0))
 
     if (remaining > 0) {
       return m.reply(
-        `╭─❏「 ⏳ KEGIATAN SOSIAL 」❏\n` +
+        `╭─❏「 ⏳ ${activity.label.toUpperCase()} REHABILITASI 」❏\n` +
         `│ ⏳ *MASIH COOLDOWN*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Kegiatan sosial berikutnya tersedia dalam *${formatDuration(remaining)}*.\n\n` +
+        `> ↳ Aktivitas ${activity.label.toLowerCase()} bisa dilakukan lagi dalam *${formatDuration(remaining)}*.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
-    process.lastSocialAt = now
-    process.socialActivities = (Number(process.socialActivities) || 0) + 1
+    process[activity.cooldownField] = now
+    if (action === 'sosial') process.socialActivities = (Number(process.socialActivities) || 0) + 1
     process.progress = (Number(process.progress) || 0) + 2
-  }
-
-  if (completeRehabilitation(userRPG, crimeData, now)) {
-    await saveDB(wdb)
-
-    return m.reply(
-      `╭─❏「 🎉 REHABILITASI BERHASIL 」❏\n` +
-      `│ 🎉 *REHABILITASI BERHASIL!*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Poin buronan aktifmu sekarang *0*.\n` +
-      `> ↳ Catatan kriminal seumur hidup tetap tersimpan.\n` +
-      `> ↳ Masyarakat kembali memberimu kesempatan.\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
   }
 
   await saveDB(wdb)
@@ -348,12 +360,40 @@ if (action === 'bayar' || action === 'kerja' || action === 'sosial') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ ${action === 'bayar'
       ? paymentResult
-      : action === 'kerja'
-        ? '💼 Pekerjaan rehabilitasi selesai.'
-        : '🤝 Kegiatan sosial selesai.'}\n\n` +
+      : `${randomItem(REHABILITATION_ACTIVITY_STORIES[action])} (+2 poin progres).`}\n\n` +
     `${statusText(process, now)}\n\n` +
+    `> ↳ Jika semua syarat sudah terpenuhi, gunakan *.rh lapor*.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
+}
+
+if (action === 'lapor') {
+  if (process?.status !== 'active') {
+    return m.reply('❌ Tidak ada rehabilitasi aktif untuk dilaporkan.')
+  }
+  const completion = getRehabilitationCompletion(userRPG, now)
+  if (!completion.ready) {
+    const waitingFor = completion.reason === 'time'
+      ? `⏳ Waktu minimum masih tersisa *${formatDuration(Math.max(0, Number(process.completesAt) - now))}*.`
+      : completion.reason === 'progress'
+        ? `📈 Progres masih kurang *${Math.max(0, Number(process.requiredProgress) - (Number(process.progress) || 0))} poin*.`
+        : completion.reason === 'payments'
+          ? `💳 Pembayaran masih kurang *Rp ${getRehabilitationPaymentStatus(process).remainingAmount.toLocaleString('id-ID')}*.`
+          : `🤝 Selesaikan setidaknya satu kegiatan melalui *.rh sosial*.`
+    return m.reply(`⏳ Rehabilitasi belum dapat diselesaikan.\n${waitingFor}`)
+  }
+  if (completeRehabilitation(userRPG, crimeData, now)) {
+    await saveDB(wdb)
+    return m.reply(
+      `╭─❏「 🎉 REHABILITASI BERHASIL 」❏\n` +
+      `│ 🎉 *REHABILITASI BERHASIL!*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Poin buronan aktifmu sekarang *0*.\n` +
+      `> ↳ Catatan kriminal seumur hidup tetap tersimpan.\n` +
+      `> ↳ Masyarakat kembali memberimu kesempatan.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
 }
 
 if (action === 'progres' || !action) {
@@ -389,19 +429,6 @@ if (action === 'progres' || !action) {
 
   const completion = getRehabilitationCompletion(userRPG, now)
 
-  if (completeRehabilitation(userRPG, crimeData, now)) {
-    await saveDB(wdb)
-
-    return m.reply(
-      `╭─❏「 🎉 REHABILITASI BERHASIL 」❏\n` +
-      `│ 🎉 *REHABILITASI BERHASIL!*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Poin buronan aktifmu menjadi *0*.\n` +
-      `> ↳ Catatan kriminal seumur hidup tetap tersimpan.\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
-  }
-
   await saveDB(wdb)
 
   if (!action) {
@@ -427,10 +454,12 @@ if (action === 'progres' || !action) {
   const waitingFor = completion.reason === 'time'
     ? `\n⏳ Waktu minimum belum terpenuhi.`
     : completion.reason === 'progress'
-      ? `\n📈 Tambah progres melalui *.rh kerja* atau *.rh sosial*.`
+      ? `\n📈 Tambah progres melalui *.rh kerja*, *.rh sosial*, *.rh ibadah*, *.rh olahraga*, atau *.rh belajar*.`
       : completion.reason === 'payments'
         ? `\n💳 Selesaikan kewajiban melalui *.rh bayar*.`
-        : `\n🤝 Lakukan kegiatan melalui *.rh sosial*.`
+        : completion.ready
+          ? `\n✅ Semua syarat terpenuhi. Gunakan *.rh lapor* untuk menyelesaikan proses.`
+          : `\n🤝 Lakukan kegiatan melalui *.rh sosial*.`
 
   return m.reply(
     `╭─❏「 📊 PROGRES REHABILITASI 」❏\n` +
@@ -444,7 +473,7 @@ if (action === 'progres' || !action) {
   return m.reply('❌ Subcommand tidak dikenal. Gunakan *.rh command* untuk daftar command.')
 }
 
-handler.help = ['rh', 'rh info', 'rh guide', 'rh command', 'rh list', 'rh mulai', 'rh bayar <nominal/all>', 'rh kerja', 'rh sosial', 'rh progres', 'rh batal']
+handler.help = ['rh', 'rh info', 'rh guide', 'rh command', 'rh list', 'rh mulai', 'rh bayar <nominal/all>', 'rh kerja', 'rh sosial', 'rh ibadah', 'rh olahraga', 'rh belajar', 'rh cd', 'rh lapor', 'rh progres', 'rh batal']
 handler.tags = ['rpg']
 handler.command = /^(rehabilitasi|rh)$/i
 handler.group = true
