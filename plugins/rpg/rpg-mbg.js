@@ -15,7 +15,9 @@ const isValidMenu = menu =>
   Boolean(menu && makananIndonesia.includes(menu.food) && minumanIndonesia.includes(menu.drink) &&
     masakanResep[menu.food] && masakanResep[menu.drink] && hargaBeli[menu.food] && hargaBeli[menu.drink])
 const menuKey = menu => `${menu.food}:${menu.drink}`
-const menuDescription = menu => `${formatItem(menu.food)} + ${formatItem(menu.drink)}`
+const menuDescription = menu =>
+  `🍱 *Makanan :* ${formatItem(menu.food)}\n` +
+  `> ↳ 🥤 *Minuman :* ${formatItem(menu.drink)}`
 
 function getRandomMenu(excludedMenus = []) {
   const excluded = new Set(excludedMenus.map(menuKey))
@@ -56,13 +58,19 @@ function formatDuration(milliseconds) {
 
 function getClaimSummary(claims, premium, dateKey) {
   const limit = premium ? 2 : 1
+
   if (claims.length >= limit) {
-    return `✅ Jatah hari ini sudah diambil *${claims.length}/${limit} kali*.\nJatah berikutnya tersedia dalam *${formatDuration(getResetDelay(dateKey))}*.`
+    return `> Status : ✅ *Jatah hari ini sudah diambil ${claims.length}/${limit} kali.*\n` +
+      `> ↳ Jatah berikutnya tersedia dalam *${formatDuration(getResetDelay(dateKey))}*.`
   }
+
   if (claims.length) {
-    return `✅ Sudah diambil *${claims.length}/${limit} kali*; jatah berikutnya *siap diambil sekarang*.`
+    return `> Status : ✅ *Sudah diambil ${claims.length}/${limit} kali.*\n` +
+      `> ↳ Jatah lainnya *siap diambil sekarang*.`
   }
-  return `🟢 Jatah MBG hari ini *siap diambil* (${limit} kesempatan).`
+
+  return `> Status : 🟢 *Jatah MBG hari ini siap diambil.*\n` +
+    `> ↳ Kesempatan : *${limit}x*`
 }
 
 let handler = async (m, { text, usedPrefix }) => {
@@ -189,7 +197,7 @@ if (action === 'premium') {
 
   const swappedToday = user.mbgSwapDate === dateKey ? Number(user.mbgSwapCount) || 0 : 0
   const pending = user.mbgSwapPending === true && options
-  const availableMenus = options || [dailyMenu]
+  const availableMenus = options || []
 
   return m.reply(
     `╭─❏「 👑 MBG PREMIUM 」❏\n` +
@@ -204,15 +212,22 @@ if (action === 'premium') {
       ? `\n🔄 *Menu Aktif Hasil Tukar*\n` +
         `> ↳ ${menuDescription(dailyMenu)}\n`
       : '') +
-    (pending
+    (claims.length >= 2
+      ? `\n✅ *JATAH HARI INI SUDAH HABIS*\n` +
+        `> ↳ Tersedia lagi dalam *${formatDuration(getResetDelay(dateKey))}*.`
+      : pending
       ? `\n⏳ *PILIH MENU TUKAR SEBELUM KLAIM*\n` +
         `${formatMenuOptions(availableMenus)}\n\n` +
         `> ↳ Pilih dengan *${usedPrefix}mbg tukar 1–5*.`
-      : claims.length < 2
+      : options
         ? `\n🍱 *MENU TERSEDIA UNTUK KLAIM*\n` +
-          `${formatMenuOptions(availableMenus)}`
-        : `\n✅ *JATAH HARI INI SUDAH HABIS*\n` +
-          `> ↳ Tersedia lagi dalam *${formatDuration(getResetDelay(dateKey))}*.`) +
+          `${formatMenuOptions(availableMenus)}\n\n` +
+          `> ↳ Ambil dengan *${usedPrefix}mbg ambil 1* atau pilih dua nomor untuk dua jatah.`
+        : `\n🍱 *BARU ADA 1 MENU AKTIF*\n` +
+          `> ↳ ${menuDescription(dailyMenu)}\n` +
+          (swappedToday < 1
+            ? `> ↳ Gunakan *${usedPrefix}mbg tukar* untuk melihat pilihan menu lainnya.`
+            : `> ↳ Menu hari ini sudah ditukar; gunakan menu aktif untuk klaim berikutnya.`)) +
     `\n\n` +
     `> ↳ Pilihan tukar tidak dapat dibatalkan.\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -274,7 +289,7 @@ if (action === 'tukar' || action === 'swap') {
       `╭─❏「 🔄 MENU MBG DITETAPKAN 」❏\n` +
       `│ 🍱 *MENU PILIHAN ${selected}*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${menuDescription(dailyMenu)}\n\n` +
+      `> ↳ ${menuDescription(dailyMenu)}\n\n` +
       `> ↳ Pilihan tidak dapat dibatalkan.\n` +
       `> ↳ Klaim dengan *${usedPrefix}mbg ambil*.\n` +
       `> ↳ Atau pilih nomor menu untuk jatah dengan *${usedPrefix}mbg ambil 1 2*.\n\n` +
@@ -282,12 +297,13 @@ if (action === 'tukar' || action === 'swap') {
     )
   }
 
-  if (claims.length) {
+  if (claims.length && (!premium || claims.length >= 2)) {
     return m.reply(
       `╭─❏「 🔄 TUKAR MENU MBG 」❏\n` +
-      `│ ❌ *JATAH SUDAH DIAMBIL*\n` +
+      `│ ❌ *JATAH TIDAK TERSEDIA UNTUK DITUKAR*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Menu hanya bisa ditukar sebelum jatah MBG hari ini diambil.\n\n` +
+      `> ↳ Pengguna biasa hanya bisa menukar sebelum klaim pertama.\n` +
+      `> ↳ Premium hanya bisa menukar sebelum jatah kedua diambil.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -310,15 +326,16 @@ if (action === 'tukar' || action === 'swap') {
       `│ ❌ *SUDAH DITUKAR HARI INI*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Menu MBG hanya bisa ditukar satu kali sehari.\n` +
-      `> ↳ Menu Aktif : ${menuDescription(dailyMenu)}\n\n` +
+      `> ↳ Menu Aktif :\n> ↳ ${menuDescription(dailyMenu)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
   if (premium) {
-    const swapOptions = [dailyMenu]
+    const swapOptions = claims.length ? [] : [dailyMenu]
 
-    for (let index = 0; index < 4; index++) {
+    const alternativeCount = claims.length ? 5 : 4
+    for (let index = 0; index < alternativeCount; index++) {
       swapOptions.push(getRandomMenu(swapOptions))
     }
 
@@ -332,7 +349,9 @@ if (action === 'tukar' || action === 'swap') {
       `╭─❏「 🔄 PILIH MENU MBG 」❏\n` +
       `│ 👑 *MENU PREMIUM*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Menu awal dan 4 alternatif:\n\n` +
+      (claims.length
+        ? `> ↳ Jatah pertama sudah diambil; berikut 5 pilihan baru untuk jatah kedua:\n\n`
+        : `> ↳ Menu awal dan 4 alternatif:\n\n`) +
       `${formatMenuOptions(swapOptions)}\n\n` +
       `> ↳ Pilih satu dengan *${usedPrefix}mbg tukar 1–5*.\n` +
       `> ↳ Pilihan tidak dapat dibatalkan.\n\n` +
@@ -350,7 +369,7 @@ if (action === 'tukar' || action === 'swap') {
     `╭─❏「 🔄 MENU MBG DITUKAR 」❏\n` +
     `│ 🍱 *MENU BERHASIL DITUKAR*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${menuDescription(dailyMenu)}\n\n` +
+    `> ↳ ${menuDescription(dailyMenu)}\n\n` +
     `> ↳ Tukar tidak dapat dibatalkan.\n` +
     `> ↳ Tukar hanya tersedia satu kali sehari.\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -370,7 +389,7 @@ if (action === 'tukar' || action === 'swap') {
 
     const limit = premium ? 2 : 1
     if (claims.length >= limit) {
-      return m.reply(`${getClaimSummary(claims, premium, dateKey)}\n\nMenu aktif: ${menuDescription(dailyMenu)}`)
+      return m.reply(`${getClaimSummary(claims, premium, dateKey)}\n\nMenu aktif:\n> ↳ ${menuDescription(dailyMenu)}`)
     }
 
     let selectedMenus
@@ -419,7 +438,7 @@ if (action === 'tukar' || action === 'swap') {
     user.mbgClaimDate = dateKey
     saveDB(wdb)
     const claimDetails = selectedMenus.map((selected, index) =>
-      `> ${index + 1}. ${menuDescription(selected)}`
+      `> ↳ ${index + 1}. ${menuDescription(selected)}`
     ).join('\n')
     return m.reply(
       `╭─❏「 ✅ JATAH MBG DIAMBIL 」❏\n` +
@@ -431,17 +450,18 @@ if (action === 'tukar' || action === 'swap') {
     )
   }
 
-  return m.reply(
-    `╭─❏「 🍱 MAKAN BERGIZI GRATIS 」❏\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `📅 Tanggal: ${dateKey}\n` +
-    `${getClaimSummary(claims, premium, dateKey)}\n\n` +
-    `🍱 Menu aktif: ${menuDescription(dailyMenu)}\n` +
-    `> ↳ Ambil jatah: *${usedPrefix}mbg ambil*\n` +
-    `> ↳ Tukar menu: *${usedPrefix}mbg tukar*\n` +
-    `> ↳ Info fitur: *${usedPrefix}mbg info*\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
+return m.reply(
+  `╭─❏「 🍱 MAKAN BERGIZI GRATIS 」❏\n` +
+  `│ 🍱 *STATUS MBG KAMU*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `📅 *Tanggal :* ${dateKey}\n` +
+  `${getClaimSummary(claims, premium, dateKey)}\n\n` +
+  `> *Menu Aktif :*\n> ↳ ${menuDescription(dailyMenu)}\n\n` +
+  `📌 *PANDUAN MBG*\n` +
+  `> ↳ Tutorial : *${usedPrefix}mbg guide*\n` +
+  `> ↳ Command : *${usedPrefix}mbg command*\n` +
+  `─━━━━━━━━━━━━━━─`
+)
 }
 
 handler.help = ['mbg', 'mbg info', 'mbg list', 'mbg guide', 'mbg command', 'mbg premium', 'mbg tukar', 'mbg ambil']
