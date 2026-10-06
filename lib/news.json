@@ -198,7 +198,7 @@
   {
     "section": "RPG",
     "title": "MBG dan Perbaikan Katalog Masakan",
-    "content": "> `.mbg` menampilkan menu harian acak untuk tiap pengguna; `.mbg ambil` memberi satu makanan dan satu minuman Indonesia ke kulkas, satu kali sehari. Air mineral memiliki peluang lebih besar sebagai pilihan minuman. Makanan dikonsumsi dengan `.makan`, sedangkan minuman dikonsumsi dengan `.minum`; menu MBG tersimpan di kulkas dan dapat dilihat dengan `.kulkas`. Katalog masakan memisahkan jenis makanan/minuman dan restoran kini menampilkan kelompok minuman dengan benar. Pabrik, pasar, koperasi, dan restoran tidak lagi mengirim foto; tampilan daftar harga jual pabrik, pasar, dan koperasi dirapikan.",
+    "content": "> `.mbg` menampilkan menu harian sekaligus status jatah (siap diambil atau waktu sampai jatah berikutnya tersedia). `.mbg info` menjelaskan fitur; `.mbg list`, `.mbg guide`, dan `.mbg command` menampilkan pilihan makanan/minuman, panduan, dan daftar perintah. `.mbg tukar` mengganti menu satu kali sehari dan tidak dapat dibatalkan. Premium dapat melihat menu awal + 4 alternatif, memilih dengan `.mbg tukar 1–5`, serta mengambil hingga 2 pasangan per hari dengan `.mbg ambil 1 2` (nomor yang sama boleh dipilih dua kali); status dan pilihan premium ada di `.mbg premium`. Jatah masuk ke kulkas; makanan dikonsumsi dengan `.makan`, minuman dengan `.minum`, dan isi kulkas dilihat dengan `.kulkas`. Air mineral memiliki peluang lebih besar sebagai pilihan minuman. Katalog masakan memisahkan jenis makanan/minuman dan restoran kini menampilkan kelompok minuman dengan benar. Pabrik, pasar, koperasi, dan restoran tidak lagi mengirim foto; tampilan daftar harga jual pabrik, pasar, dan koperasi dirapikan.",
     "author": "Eza",
     "createdAt": 1791234143000
   },
@@ -236,5 +236,12 @@
     "content": "> Cooldown Muncak menjadi 5 jam untuk pengguna biasa dan 2 jam untuk Premium. `.mt info` menampilkan jumlah gunung, total sampah terkumpul, serta akumulasi peserta pendakian (setiap anggota tim dihitung setiap kali tim memulai). Pemain dapat mengusulkan gunung dengan `.mt request <nama>` atau `.mt req`; daftar usulan dapat dilihat dengan `.mt request` dan hanya owner dapat menghapusnya melalui `.mt done <nama/nomor>`. Gunung yang belum pernah didaki dan berada di bawah progres tertinggi akan otomatis didahulukan. Tersedia title pendaki. Sampah Muncak kini memakai harga di katalog dan dapat dijual melalui `.jual all`, `.pasar jual all`, atau penjualan item satuan.",
     "author": "Eza",
     "createdAt": 1791269812479
+  },
+  {
+    "section": "RPG",
+    "title": "Perbaikan RPG, Gift, dan Trade",
+    "content": "> `.tanam` kini menampilkan penjelasan dan cara penggunaan, sedangkan daftar bibit ada di `.tanam list`; Premium dapat meningkatkan ladang hingga 20 slot. `.pet` menampilkan penjelasan, `.pet list` hanya menampilkan pet yang dimiliki, detail tetap tersedia melalui `.pet status`, serta tersedia `.pet guide` dan `.pet command`. Format daftar pabrik, pasar, koperasi, restoran, pet shop, dan bibit dirapikan dengan emoji setelah nama serta harga di bawahnya; item yang tidak dapat dibeli menampilkan `Buy : -`. Daftar pilihan makanan/minuman MBG kini diberi jarak agar lebih mudah dibaca. Data akun salah transfer yang tampil sebagai `@` di Top Kekayaan dihapus; ID akun tidak valid juga tidak ditampilkan pada Top RPG. Gift dan trade hanya menerima target mention/tag atau reply ke pengguna RPG valid, dan kini dapat memindahkan item dari gudang/tas (`inventory`, `ores`, `items`), aquarium (`ikan`), kulkas (`masakan`), hasil panen lama, saldo material RPG, uang, dan bank. Jika item yang sama ada di beberapa penyimpanan, tentukan sumbernya, misalnya `.trade add diamond 5` atau `.gift @tag ikan_teri 5`.",
+    "author": "Eza",
+    "createdAt": 1791285827501
   }
 ]
