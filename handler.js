@@ -13,7 +13,7 @@ import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
 import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave, verifySecurityMember, getSecurityAdminJids } from './lib/securityProtocol.js'
 import { botArbitrator } from './lib/botArbitrator.js'
-import { computeCrimeScore, ensurePatrolReleaseProtection, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncEscapeCrimeCounts } from './lib/crimeHelper.js'
+import { ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncEscapeCrimeCounts } from './lib/crimeHelper.js'
 import { getPatrolCaptureStory, isPatrolExemptCommand, PATROL_RESTRICTED_CRIME_COMMANDS, PATROL_RESTRICTED_RSHIP_ACTIONS } from './lib/patrolHelper.js'
 import { loadDB, saveDB } from './lib/waifuHelper.js'
 import { registerPrisoner } from './lib/prisonHelper.js'
@@ -761,7 +761,7 @@ async function processMessage(m, chatUpdate) {
                 const wdb = loadDB()
                 syncEscapeCrimeCounts(wdb, m.sender)
                 const wantedData = wdb.crime?.[m.sender]
-                const score = computeCrimeScore(wantedData)
+                const score = getActiveCrimeScore(wantedData)
                 const captureChance = getPatrolCaptureChance(score)
 
                 if (captureChance && Math.random() < captureChance) {
