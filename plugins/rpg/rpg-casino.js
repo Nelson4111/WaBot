@@ -59,6 +59,8 @@ const money = value => `Rp ${Math.max(0, value).toLocaleString()}`
 const signedMoney = value => `${value >= 0 ? '+' : '-'}Rp ${Math.abs(Number(value) || 0).toLocaleString()}`
 const DAILY_LIMIT = 25
 const PREMIUM_DAILY_LIMIT = 50
+const MAX_CASINO_SIMULATION_BET = 1_000_000_000_000
+const MIN_RANDOM_CASINO_SIMULATION_BET = 1_000_000_001
 const CASINO_IMAGE = 'https://c.termai.cc/i173/pemtc.jpg'
 const CASINO_ROOM_IMAGE = 'https://c.termai.cc/i125/FOKafe.jpg'
 const winDialogs = [
@@ -387,7 +389,7 @@ function casinoCommands(prefix) {
     `> ↳ 🎮 ${prefix}casino <game> <taruhan>`,
     `> ↳ 💸 ${prefix}casino <game> all (seluruh uang saku)`,
     `> ↳ 🎲 ${prefix}casino random <taruhan>`,
-    `> ↳ 🧪 ${prefix}casino simulation <game/random> atau ${prefix}cs sl <game/random>`,
+    `> ↳ 🧪 ${prefix}casino simulation <game/random> [nominal] atau ${prefix}cs sl <game/random> [nominal]`,
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 👤 ${prefix}casino profile`,
@@ -427,7 +429,7 @@ function casinoGuide(prefix) {
     `> ↳ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
     `> ↳ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
     `> ↳ Taruhan dapat berupa nominal atau *all* untuk memakai seluruh uang saku.\n` +
-    `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game> (alias: ${prefix}cs sl <game>).\n` +
+    `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game/random> [nominal] (alias: ${prefix}cs sl <game/random> [nominal]). Nominal acak selalu di atas Rp1 miliar; nominal pilihan maksimal Rp1 triliun.\n` +
     `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
     `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x.\n\n` +
     `> ↳ Casino room tidak terpengaruh batas/progres permainan reguler.\n\n` +
@@ -1210,8 +1212,17 @@ let handler = async (m, { conn, args, usedPrefix }) => {
       ? pick(Object.keys(games))
       : aliases[gameInput]
     if (!game) return m.reply(`❌ Game tidak ditemukan. Gunakan *${usedPrefix}casino games* untuk melihat pilihan.`)
+    const betInput = gameArgs[1]
+    const bet = betInput === undefined
+      ? cryptoRandomInt(MIN_RANDOM_CASINO_SIMULATION_BET, MAX_CASINO_SIMULATION_BET + 1)
+      : /^\d+$/.test(betInput) ? Number(betInput) : NaN
+    if (!Number.isSafeInteger(bet) || bet < 1 || bet > MAX_CASINO_SIMULATION_BET) {
+      return m.reply(
+        `❌ Nominal simulasi harus berupa angka bulat dari Rp1 sampai Rp${MAX_CASINO_SIMULATION_BET.toLocaleString('id-ID')}.\n` +
+        `Contoh: *${usedPrefix}cs sl random 999999999999*`
+      )
+    }
     const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
-    const bet = games[game].minBet * number(1, 10)
     const balanceBefore = bet * number(5, 20)
     let payout = result.payoutDenied
       ? 0
@@ -1241,22 +1252,25 @@ let handler = async (m, { conn, args, usedPrefix }) => {
                 ? '🎉 *MENANG*'
                 : '💀 *KALAH*'
     const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
-    return m.reply(
-      `╭─❏「 🧪 SIMULASI ${games[game].name.toUpperCase()} 」❏\n` +
-      `${result.text}\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `🎲 *HASIL*\n` +
-      `> ↳ ${status}\n` +
-      `> ↳ Taruhan simulasi: ${money(bet)}\n` +
-      `> ↳ Hadiah simulasi: ${money(payout)}\n` +
-      `${result.blackout ? `> ↳ Uang simulasi hilang: ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
-      `> ↳ Profit simulasi: ${signedMoney(net)}\n` +
-      `> ↳ 💰 Saldo virtual sebelum: ${money(balanceBefore)}\n` +
-      `> ↳ 💰 Saldo virtual sesudah: ${money(balanceAfter)}\n\n` +
-      `💬 Kamu: "${dialog}"\n\n` +
-      `🧪 Mode simulasi: saldo asli, cooldown, batas harian, dan statistik casino tidak berubah.\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+return m.reply(
+  `╭─❏「 🧪 SIMULASI ${games[game].name.toUpperCase()} 」❏\n` +
+  `│ 🧪 *HASIL CASINO*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `${result.text}\n\n` +
+  `🎲 *HASIL*\n` +
+  `> ↳ Status : ${status}\n` +
+  `> ↳ Taruhan Simulasi : ${money(bet)}\n` +
+  `> ↳ Hadiah Simulasi : ${money(payout)}\n` +
+  `${result.blackout ? `> ↳ Uang Simulasi Hilang : ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
+  `> ↳ Profit Simulasi : ${signedMoney(net)}\n` +
+  `> ↳ 💰 Saldo Virtual Sebelum : ${money(balanceBefore)}\n` +
+  `> ↳ 💰 Saldo Virtual Sesudah : ${money(balanceAfter)}\n\n` +
+  `💬 *Dialog*\n` +
+  `> ↳ "${dialog}"\n\n` +
+  `🧪 *MODE SIMULASI*\n` +
+  `> ↳ Saldo asli, cooldown, batas harian, dan statistik casino tidak berubah.\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
   }
 
   const stats = getCasinoStats(user)
@@ -1434,22 +1448,26 @@ if (elapsed < cooldownDuration) {
         : `💀 *KALAH*`
   const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
 
-  return m.reply(
-    `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
-    `${result.text}\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `🎲 *HASIL*\n` +
-    `> ↳ ${status}\n` +
-    `> ↳ Taruhan: ${money(bet)}\n` +
-    `> ↳ Hadiah: ${money(payout)}\n` +
-    `${result.blackout ? `> ↳ Uang hilang: ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
-    `> ↳ Profit: ${signedMoney(net)}\n` +
-    `> ↳ 💰 Sebelum: ${money(balanceBefore)}\n` +
-    `> ↳ 💰 Sesudah: ${money(wdb.money[m.sender])}\n\n` +
-    `💬 Kamu: "${dialog}"\n` +
-    `\n─━━━━━━━━━━━━━━─\n` +
-    `⚠️ Main secukupnya. Hari ini: ${stats.dailyGames}/${dailyLimit}x.`
-  )
+return m.reply(
+  `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
+  `│ 🎲 *HASIL PERMAINAN*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `${result.text}\n\n` +
+  `🎲 *HASIL*\n` +
+  `> ↳ Status : ${status}\n` +
+  `> ↳ Taruhan : ${money(bet)}\n` +
+  `> ↳ Hadiah : ${money(payout)}\n` +
+  `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
+  `> ↳ Profit : ${signedMoney(net)}\n` +
+  `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
+  `> ↳ 💰 Saldo Sesudah : ${money(wdb.money[m.sender])}\n\n` +
+  `💬 *Dialog*\n` +
+  `> ↳ "${dialog}"\n\n` +
+  `─━━━━━━━━━━━━━━─\n\n` +
+  `⚠️ *PENGINGAT*\n` +
+  `> ↳ Main secukupnya.\n` +
+  `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`
+)
 }
 
 handler.help = [
@@ -1459,8 +1477,8 @@ handler.help = [
   'casino games',
   'casino random <taruhan>',
   'casino <game> all',
-  'casino simulation <game/random>',
-  'cs sl <game/random>',
+  'casino simulation <game/random> [nominal]',
+  'cs sl <game/random> [nominal]',
   'casino top',
   'casino profile',
   'casino nickname <julukan>',
