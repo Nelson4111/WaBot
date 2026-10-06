@@ -1,0 +1,212 @@
+[
+  {
+    "section": "INFO",
+    "title": "Pencatatan News Update",
+    "content": "> Fitur news ditambahkan sebagai log agar pemain dapat melihat update dan perbaikan terbaru.",
+    "author": "Eza",
+    "createdAt": 1790787600000
+  },
+  {
+    "section": "RPG",
+    "title": "Perbaikan Leaderboard RPG",
+    "content": "> Perbaikan leaderboard: owner/admin yang kini tidak dihitung dalam TOP MONEY maupun ranking RPG level, kekayaan, dan diamond.",
+    "author": "Eza",
+    "createdAt": 1790917200000
+  },
+  {
+    "section": "RPG",
+    "title": "Sistem Difficulty RPG",
+    "content": "> Fitur Difficulty RPG tersedia melalui .difficulty. Peaceful, Easy, Normal, Hardcore, dan Nightmare kini memiliki modifier pendapatan serta cooldown masing-masing; Peaceful kebal tindak kriminal dan tidak masuk leaderboard. Pergantian difficulty memiliki cooldown 7 hari.",
+    "author": "Eza",
+    "createdAt": 1790928000000
+  },
+  {
+    "section": "RPG",
+    "title": "Casino Room Eliminasi",
+    "content": "> Casino room (.cs room) kini berlangsung dalam ronde eliminasi: setelah setiap ronde master memilih .cs room next untuk taruhan tetap atau .cs room up untuk taruhan 2x. Hasil eliminasi diacak secara adil, room tanpa interaksi selama 30 menit otomatis dihapus, dan permainan room tidak memakai atau menambah progres/batas casino reguler.",
+    "author": "Eza",
+    "createdAt": 1790931600000
+  },
+  {
+    "section": "RPG",
+    "title": "Konfirmasi Penjualan Massal",
+    "content": "> Semua penjualan massal atau penjualan dengan jumlah all di pabrik, koperasi, pasar ikan, dan restoran kini meminta konfirmasi terlebih dahulu. Periksa daftar stok dan perkiraan hasil, lalu ketik ya untuk melanjutkan atau batal untuk membatalkan; konfirmasi berlaku 60 detik.",
+    "author": "Eza",
+    "createdAt": 1790931600001
+  },
+  {
+    "section": "RPG",
+    "title": "Penyesuaian Cooldown Casino",
+    "content": "> Cooldown casino kini berbeda menurut tier taruhan setiap game dan multiplier hasil; multiplier normal tetap berdurasi menit, sedangkan hasil dengan multiplier lebih tinggi menambah waktu cooldown game tersebut.",
+    "author": "Eza",
+    "createdAt": 1790931600002
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Relationship",
+    "content": "> Relationship: pilihan cincin dapat dicek dengan .rship cincin; premium dapat menjalankan aktivitas batch untuk semua pasangan dengan cooldown 30 menit. Putus dan bunuh meminta konfirmasi; mantan dan makam dapat dipulihkan selama 7 hari. Cooldown aktivitas diperbaiki, termasuk belanja. Arena versus memiliki .versus run atau alias langsung .run untuk duel balap lari, serta .versus drift atau alias langsung .drift untuk balap mobil.",
+    "author": "Eza",
+    "createdAt": 1790931600003
+  },
+  {
+    "section": "RPG",
+    "title": "Aktivitas Pet Premium",
+    "content": "> Premium dapat memakai .pet care untuk otomatis feed, rest, lalu clean semua pet (cooldown 30 menit). Setelah care, .pet all menjalankan train, walk, play, hunt, dan dispatch untuk semua pet; cooldown .pet all juga 30 menit.",
+    "author": "Eza",
+    "createdAt": 1790931600004
+  },
+  {
+    "section": "RPG",
+    "title": "Guild Loot dan Storage",
+    "content": "> Reward misi guild untuk anggota selain eksekutor masuk ke pending loot. Anggota mengambilnya lewat .guild loot take; leader dapat melihat daftar dan mengumpulkan semua loot. Semua anggota guild bisa add dan take item di .guild storage.",
+    "author": "Eza",
+    "createdAt": 1790931600005
+  },
+  {
+    "section": "RPG",
+    "title": "Katalog Cincin Relationship",
+    "content": "> Katalog cincin .rship kini mengikuti .pasangan: tersedia Silver, Gold, Topaz, Amethyst, Ruby, Sapphire, Emerald, Platinum, Diamond, dan Jade Ring beserta harga serta ikonnya. Pembelian .rship belicincin memakai saldo bank RPG, bukan limit.",
+    "author": "Eza",
+    "createdAt": 1790931600006
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Aktivitas RPG",
+    "content": "> `.rship all <no pasangan>` kini memakai nomor pasangan dan menjalankan semua aktivitas yang siap untuk pasangan tersebut (khusus premium, cooldown 30 menit). `.daily restreak` memulihkan streak terakhir dengan biaya 2x hadiah daily. Hasil `.work` menampilkan job berikutnya dan reward misi guild memberi eksekutor 100%, anggota lain 50%. Bug assignment pada `.rship rampok` diperbaiki.",
+    "author": "Eza",
+    "createdAt": 1790931600007
+  },
+  {
+    "section": "RPG",
+    "title": "Guild Breakout Penjara",
+    "content": "> Breakout penjara bersama tersedia: tahanan buat room dengan `.penjara breakout create`, lalu pemain lain dapat `.penjara breakout join`. Gunakan `.penjara breakout info` untuk melihat peserta, `.penjara breakout leave` untuk keluar, dan `.penjara breakout start` untuk memulai (minimal 2 tahanan). Peluang berhasil tetap 50%, tidak dipengaruhi progres routine/talk. Jika gagal, semua peserta mendapat tambahan masa tahanan 2 jam. Panduan: `.penjara guide`.",
+    "author": "Eza",
+    "createdAt": 1790931600008
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Room, Lottery, dan Gym",
+    "content": "> `.room live <judul>` kini menerima judul live. History lottery dirapikan. `.giveaway history` menampilkan pemenang dan pembuat giveaway. Counter total gym memperbaiki data lama agar tidak menghasilkan NaN.",
+    "author": "Eza",
+    "createdAt": 1790931600009
+  },
+  {
+    "section": "GROUP",
+    "title": "Perintah Mute dan Unmute Admin",
+    "content": "> Admin grup dapat memakai `.mute`/`.unmute` dengan tag atau reply; pesan pengguna yang di-mute otomatis dihapus bot.",
+    "author": "Eza",
+    "createdAt": 1790931600010
+  },
+  {
+    "section": "RPG",
+    "title": "Informasi dan Panduan Penjara",
+    "content": "> Penjara memiliki `.penjara cd` untuk melihat cooldown seluruh tahanan, `.penjara escord` untuk catatan jumlah kabur berhasil, `.penjara note`/`.penjara guide` untuk panduan, dan `.penjara command` untuk daftar command. Daftar tahanan kini menampilkan sel serta sisa durasi sebelum tag pengguna.",
+    "author": "Eza",
+    "createdAt": 1790931600011
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Sistem Fitnah",
+    "content": "> Fitnah kini diproses setelah 5 menit jika belum berhasil digagalkan. Target dapat memakai `.bantah <biaya>` dengan nominal pilihannya untuk mencoba menggagalkan fitnah. Fitnah yang gagal mengenakan denda sebesar 50% biaya dan memiliki peluang 50% membuat pelaku masuk penjara.",
+    "author": "Eza",
+    "createdAt": 1791082011357
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Penjara, Pekerjaan, dan Bank",
+    "content": "> Waktu tunggu tebus tahanan dipersingkat dari 10 menjadi 5 menit. Nama pekerjaan pada `.work` dapat dipilih memakai nama atau nomor dari `.job list` tanpa mengubah penghasilan sesuai level. Tampilan cooldown rampok kini tidak lagi menunjukkan `0j 0m` saat masih tersisa kurang dari satu menit. Cooldown setor/tarik bank dipersingkat: 15 menit (sebelumnya 30 menit), atau 5 menit untuk kartu dengan Kendaraan Pribadi (sebelumnya 15 menit).",
+    "author": "Eza",
+    "createdAt": 1791083688599
+  },
+  {
+    "section": "GROUP",
+    "title": "Pencegahan Mute Antaradmin",
+    "content": "> Admin grup tidak bisa saling mute. Target admin akan dilewati saat perintah mute dijalankan.",
+    "author": "Eza",
+    "createdAt": 1791083688600
+  },
+  {
+    "section": "INFO",
+    "title": "Informasi dan Manfaat Premium",
+    "content": "> Info Premium tersedia lewat .premium atau .prem untuk melihat status, penjelasan, dan cara mendapatkannya; gunakan .premium benefits atau .prem benefits untuk melihat manfaat. Premium dari donasi saat ini diberikan permanen, tetapi kebijakan dapat berubah dan ke depannya bisa memiliki batas waktu. Bukti donasi dikirim melalui .konfirmasidonasi.",
+    "author": "Eza",
+    "createdAt": 1791084430000
+  },
+  {
+    "section": "RPG",
+    "title": "Perbaikan Casino Room dan Pet",
+    "content": "> Perbaikan room casino: .pet all hanya bisa dipakai setelah .pet care tanpa harus mengumpulkan hasil dispatch terlebih dahulu; .heal kini menampilkan hasil tanpa mengirim foto. .cs room status menampilkan kondisi room secara jelas, hasil room per pemain ditampilkan berurutan dan seri tidak mengeliminasi siapapun, pemain yang masuk room tidak bisa setor ke bank tapi tetap bisa tarik, dan semua akses casino lain dibatasi selama berada di room agar fokus bermain di room dulu.",
+    "author": "Eza",
+    "createdAt": 1791085000000
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Sistem Buronan",
+    "content": "> Sistem buronan diperluas: .buronan menampilkan jumlah buronan, .buronan list menampilkan daftar dengan 10 orang per halaman, .buronan detail menerima nomor/tag/reply, serta tersedia .buronan command dan .buronan info. Patroli polisi dapat menangkap buronan saat menjalankan aktivitas RPG; peluang sangat kecil, mulai 0,1% + 0,05% per poin dengan batas 5% per aktivitas. Hukuman patroli mengikuti poin: 30 menit + 5 menit per poin dan tebusan Rp 500.000 + Rp 100.000 per poin. Jumlah kabur solo dan breakout pada detail buronan disinkronkan dengan catatan .penjara escord; .penjara list hanya menampilkan tahanan aktif tanpa catatan escape.",
+    "author": "Eza",
+    "createdAt": 1791106925868
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Command Toko",
+    "content": "> Perintah toko dirapikan: .shop, .pabrik, .pasar, .koperasi, dan .restoran kini menjelaskan fungsi toko serta mengarahkan ke command dan guide. Gunakan .shop command atau command pada masing-masing toko untuk melihat daftar perintah; .shop guide dan guide tiap toko berisi panduan/tutorial, sedangkan list menampilkan katalog. Command restoran diperbaiki agar bisa dimuat dan ditemukan. Tampilan konfirmasi serta hasil jual all di semua toko kini memakai header, pemisah, rincian, dan ringkasan saldo.",
+    "author": "Eza",
+    "createdAt": 1791123120000
+  },
+  {
+    "section": "RPG",
+    "title": "Penyesuaian Loot dan Tampilan Guild",
+    "content": "> Tampilan Guild dan loot kini memakai header serta garis yang seragam. `.guild command` menampilkan daftar command dan `.guild guide` berisi tutorial Guild; `.guild` hanya menampilkan status Guild dan akses ke dua bantuan tersebut. Loot Guild bertambah hanya untuk anggota yang menjalankan misi Guild dalam 4 hari terakhir. Batas awal per anggota di Guild Lv.1 adalah Money Rp1.000.000 dan 50 untuk tiap loot lain; semua batas meningkat sesuai level Guild dan stok lama yang melewati batas tidak dikurangi. Hadiah misi kini bertahap menurut level pemain, termasuk perbaikan nominal Money yang sebelumnya turun keliru. Hadiah misi Guild menggunakan Gemstone; data Emerald lama pada loot anggota dan pending loot otomatis dikonversi ke Gemstone. Notifikasi kenaikan level menyebut leader dengan tag dan membandingkan kapasitas serta batas loot sebelum/sesudah.",
+    "author": "Eza",
+    "createdAt": 1791126000000
+  },
+  {
+    "section": "RPG",
+    "title": "Perbaikan Guild Mission, Loot, dan War",
+    "content": "> Perbaikan Guild: `.misiguild` tanpa argumen hanya menampilkan status siap/cooldown dan nomor misi tertinggi yang terbuka; gunakan `.misiguild list` untuk melihat daftar. Seluruh hadiah eksekutor langsung masuk ke user (Money ke saldo, material termasuk Gold/Diamond/Gemstone ke `.bag`) dan tidak memakai atau terkena batas Guild Loot, sehingga tidak muncul pesan loot penuh untuk hadiahnya. Guild Loot/pending hanya untuk bagian hadiah yang diberikan kepada anggota lain oleh pelaku misi; anggota mengklaimnya lewat `.guild loot take`. Alias `.guild misi/mission`, `.guild party/pesta`, `.guild latihan/training`, `.guild war`, `.guild join/leave/kick/shop` tersedia. Kapasitas anggota dan batas loot hanya bertambah setiap 10 level; batas loot maksimal mulai Guild Lv.101. Dalam Guild War, pemenang tidak mendapat cooldown dan pihak kalah mendapat cooldown war 1 jam.",
+    "author": "Eza",
+    "createdAt": 1791209021777
+  },
+  {
+    "section": "RPG",
+    "title": "Biaya Date dan Belanja Relationship",
+    "content": "> Biaya `.rship date` sekarang Rp25.000 dikali level pasangan dan dibayar dari saldo bank. Biaya `.rship belanja` tetap acak Rp10.000–Rp29.999 sebelum dikalikan level pasangan; semakin tinggi level pasangan, semakin besar biaya aktivitas.",
+    "author": "Eza",
+    "createdAt": 1791213865323
+  },
+  {
+    "section": "RPG",
+    "title": "Peningkatan Hadiah Casino",
+    "content": "> Hadiah kemenangan casino kini minimal sebesar 2x taruhan untuk hasil menang biasa; multiplier jackpot yang lebih tinggi tetap berlaku. Hasil khusus baru: berhasil kabur tanpa kehilangan saldo, blackout yang menghilangkan hingga 2x taruhan (sebatas saldo yang tersedia), dan bandar berbaik hati yang mengembalikan taruhan. Pada hasil hadiah tidak cair, pemain tetap menang tetapi hadiah bernilai 0 dan taruhan dikembalikan, sehingga saldo tidak berkurang.",
+    "author": "Eza",
+    "createdAt": 1791213865324
+  },
+  {
+    "section": "FUN",
+    "title": "Validasi Perintah Top",
+    "content": "> `.top` memberi format dan contoh saat jumlah bukan angka atau judul kosong, serta menjelaskan batas maksimal 20 dan jumlah yang tidak boleh melebihi anggota grup. Hasilnya menyebut bahwa fitur ini just for fun dan tag dipilih secara acak dari anggota grup; urutan output menampilkan judul, reminder, lalu tag pengguna.",
+    "author": "Eza",
+    "createdAt": 1791213865325
+  },
+  {
+    "section": "STICKER",
+    "title": "Sticker Watermark Privat",
+    "content": "> `.wm` dan `.swm` kini mengikuti alur privasi `.s`: perintah dan media sumber di grup dihapus, pemberitahuan privasi dikirim lebih dahulu, lalu stiker hanya dapat dilihat oleh pembuatnya sementara anggota lain melihat tanda terkunci. `.wm <packname>|<author>` memberi watermark pada stiker yang dibalas; `.swm <packname>|<author>` membuat stiker ber-watermark dari gambar/video yang dibalas.",
+    "author": "Eza",
+    "createdAt": 1791213865326
+  },
+  {
+    "section": "RPG",
+    "title": "MBG dan Perbaikan Katalog Masakan",
+    "content": "> `.mbg` menampilkan menu harian acak untuk tiap pengguna; `.mbg ambil` memberi satu makanan dan satu minuman Indonesia ke kulkas, satu kali sehari. Air mineral memiliki peluang lebih besar sebagai pilihan minuman. Makanan dikonsumsi dengan `.makan`, sedangkan minuman dikonsumsi dengan `.minum`; menu MBG tersimpan di kulkas dan dapat dilihat dengan `.kulkas`. Katalog masakan memisahkan jenis makanan/minuman dan restoran kini menampilkan kelompok minuman dengan benar. Pabrik, pasar, koperasi, dan restoran tidak lagi mengirim foto; tampilan daftar harga jual pabrik, pasar, dan koperasi dirapikan.",
+    "author": "Eza",
+    "createdAt": 1791234143000
+  },
+  {
+    "section": "RPG",
+    "title": "Sistem Rehabilitasi Buronan",
+    "content": "> Rehabilitasi tersedia melalui `.rh` atau `.rehabilitasi`. Buronan yang sudah bebas dari penjara dapat memulai proses perbaikan perilaku lewat `.rh mulai`; durasinya 10 menit dikali poin buronan aktif agar tidak terlalu lama. Perintah rehabilitasi tidak memicu cidukan patroli. Biaya rehabilitasi adalah Rp 100.000 dikali poin buronan aktif, dapat dicicil dengan `.rh bayar <nominal>` tanpa cooldown atau dilunasi dengan `.rh bayar all`. Progres pembayaran bertambah satu kali setelah seluruh biaya lunas. `.rh kerja` (cooldown 2 menit) dan `.rh sosial` (cooldown 4 menit) juga menambah progres. Setelah berhasil, poin buronan aktif menjadi 0 dan status buronan dicabut; riwayat serta total kejahatan seumur hidup tetap tersimpan. Tindak kriminal diblokir selama proses berlangsung; `.rh batal` membatalkan rehabilitasi dan mengembalikan status buronan. Jika kembali masuk penjara setelah rehabilitasi, catatan buronan dipulihkan. Saat bebas dari penjara, alasan pembebasan dicatat—termasuk dibebaskan Owner, masa tahanan habis, kabur, breakout, atau ditebus beserta tag penebus. Gunakan `.rh info`, `.rh guide`, `.rh command`, `.rh list`, dan `.rh progres` untuk informasi serta status.",
+    "author": "Eza",
+    "createdAt": 1791234143001
+  }
+]
