@@ -56,10 +56,10 @@ function getStatusLabel(status) {
 function statusText(process, now) {
   const remaining = Math.max(0, Number(process.completesAt) - now)
   const payment = getRehabilitationPaymentStatus(process)
-  return `⏳ Sisa waktu: *${formatDuration(remaining)}*\n` +
-    `📈 Progres: *${Number(process.progress) || 0}/${Number(process.requiredProgress) || 0} poin*\n` +
-    `💳 Pembayaran: *${payment.remainingAmount > 0 ? `Kurang Rp ${payment.remainingAmount.toLocaleString('id-ID')}` : 'Lunas'}*\n` +
-    `🤝 Kegiatan sosial: *${Number(process.socialActivities) || 0}x*`
+  return `> ⏳ Sisa waktu: *${formatDuration(remaining)}*\n` +
+    `> 📈 Progres: *${Number(process.progress) || 0}/${Number(process.requiredProgress) || 0} poin*\n` +
+    `> 💳 Pembayaran: *${payment.remainingAmount > 0 ? `Kurang Rp ${payment.remainingAmount.toLocaleString('id-ID')}` : 'Lunas'}*\n` +
+    `> 🤝 Kegiatan sosial: *${Number(process.socialActivities) || 0}x*`
 }
 
 function cooldownText(process, now) {
@@ -323,81 +323,113 @@ if (action === 'bayar' || activityDefinitions[action] || action === 'all') {
 
   const completedActivities = []
 
-  for (const [activity, definition] of readyActivities) {
-    process[definition.cooldownField] = now
-    process.progress = (Number(process.progress) || 0) + 2
-    if (activity === 'sosial') process.socialActivities = (Number(process.socialActivities) || 0) + 1
-    completedActivities.push(`> ↳ *${definition.label}:* ${randomItem(REHABILITATION_ACTIVITY_STORIES[activity])} (+2 poin)`)
-  }
+for (const [activity, definition] of readyActivities) {
+  process[definition.cooldownField] = now
+  process.progress = (Number(process.progress) || 0) + 2
+  if (activity === 'sosial') process.socialActivities = (Number(process.socialActivities) || 0) + 1
 
-  await saveDB(wdb)
-
-  return m.reply(
-    `╭─❏「 👑 AKTIVITAS REHABILITASI 」❏\n` +
-    `│ 👑 *AKTIVITAS PREMIUM SELESAI*\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${completedActivities.join('\n')}\n\n` +
-    `${statusText(process, now)}\n\n` +
-    `> ↳ Aktivitas yang masih cooldown dilewati.\n` +
-    `> ↳ Cek cooldown dengan *.rh cd*.\n` +
-    `> ↳ Jika semua syarat terpenuhi, gunakan *.rh lapor*.\n\n` +
-    `─━━━━━━━━━━━━━━─`
+  completedActivities.push(
+    `> *${definition.label}:*\n` +
+    `> ↳ ${randomItem(REHABILITATION_ACTIVITY_STORIES[activity])} (+2 poin)`
   )
 }
 
+await saveDB(wdb)
+
+return m.reply(
+  `╭─❏「 👑 AKTIVITAS REHABILITASI 」❏\n` +
+  `│ 👑 *AKTIVITAS PREMIUM SELESAI*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `${completedActivities.join('\n')}\n` +
+  `─━━━━━━━━━━━━━━─\n\n` +
+  `${statusText(process, now)}\n` +
+  `─━━━━━━━━━━━━━━─\n\n` +
+  `📌 *INFORMASI*\n` +
+  `> ↳ Aktivitas yang masih cooldown dilewati.\n` +
+  `> ↳ Cek cooldown dengan *.rh cd*.\n` +
+  `> ↳ Jika semua syarat terpenuhi, gunakan *.rh lapor*.\n` +
+  `─━━━━━━━━━━━━━━─`
+)
+}
+
   let paymentResult = null
-  if (action === 'bayar') {
-    const payment = getRehabilitationPaymentStatus(process)
-    if (!payment.remainingAmount) {
-      return m.reply('✅ Biaya rehabilitasi sudah lunas.')
-    }
-    const rawAmount = String(args[1] || '').toLowerCase()
-    const amount = !rawAmount || rawAmount === 'all'
-      ? payment.remainingAmount
-      : Number(rawAmount)
-    if (!Number.isSafeInteger(amount) || amount <= 0) {
-      return m.reply(
-        `❌ Nominal pembayaran harus berupa angka bulat positif.\n` +
-        `Gunakan *.rh bayar <nominal>* atau *.rh bayar all* untuk melunasi sisa biaya.`
-      )
-    }
-    if (amount > payment.remainingAmount) {
-      return m.reply(
-        `❌ Nominal melebihi sisa biaya rehabilitasi.\n` +
-        `Sisa yang perlu dibayar: *Rp ${payment.remainingAmount.toLocaleString('id-ID')}*.`
-      )
-    }
-    const balance = Number(wdb.money[m.sender]) || 0
 
-    if (balance < amount) {
-      return m.reply(
-        `╭─❏「 ❌ PEMBAYARAN GAGAL 」❏\n` +
-        `│ ❌ *SALDO TIDAK CUKUP*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Uangmu masih kurang *Rp ${(amount - balance).toLocaleString('id-ID')}* untuk pembayaran ini.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
+if (action === 'bayar') {
+  const payment = getRehabilitationPaymentStatus(process)
 
-    wdb.money[m.sender] = balance - amount
-    const updatedPayment = applyRehabilitationPayment(process, amount)
-    paymentResult = updatedPayment.remainingAmount > 0
-      ? `✅ Pembayaran diterima. Masih kurang Rp ${updatedPayment.remainingAmount.toLocaleString('id-ID')}.`
-      : '✅ Pembayaran rehabilitasi lunas.'
-  } else {
-    const activity = activityDefinitions[action]
-    const cooldown = REHABILITATION_ACTIVITY_COOLDOWNS[action]
-    const remaining = cooldown - (now - (Number(process[activity.cooldownField]) || 0))
+  if (!payment.remainingAmount) {
+    return m.reply(
+      `╭─❏「 💳 PEMBAYARAN REHABILITASI 」❏\n` +
+      `│ ✅ *PEMBAYARAN LUNAS*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Biaya rehabilitasi sudah lunas.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
 
-    if (remaining > 0) {
-      return m.reply(
-        `╭─❏「 ⏳ ${activity.label.toUpperCase()} REHABILITASI 」❏\n` +
-        `│ ⏳ *MASIH COOLDOWN*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Aktivitas ${activity.label.toLowerCase()} bisa dilakukan lagi dalam *${formatDuration(remaining)}*.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
+  const rawAmount = String(args[1] || '').toLowerCase()
+  const amount = !rawAmount || rawAmount === 'all'
+    ? payment.remainingAmount
+    : Number(rawAmount)
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    return m.reply(
+      `╭─❏「 💳 PEMBAYARAN REHABILITASI 」❏\n` +
+      `│ ❌ *NOMINAL TIDAK VALID*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Nominal pembayaran harus berupa angka bulat positif.\n\n` +
+      `📌 *CARA PEMBAYARAN*\n` +
+      `> ↳ Gunakan *.rh bayar <nominal>*.\n` +
+      `> ↳ Gunakan *.rh bayar all* untuk melunasi sisa biaya.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (amount > payment.remainingAmount) {
+    return m.reply(
+      `╭─❏「 💳 PEMBAYARAN REHABILITASI 」❏\n` +
+      `│ ❌ *NOMINAL MELEBIHI SISA BIAYA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Nominal melebihi sisa biaya rehabilitasi.\n` +
+      `> ↳ Sisa yang perlu dibayar : *Rp ${payment.remainingAmount.toLocaleString('id-ID')}*.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const balance = Number(wdb.money[m.sender]) || 0
+
+  if (balance < amount) {
+    return m.reply(
+      `╭─❏「 ❌ PEMBAYARAN GAGAL 」❏\n` +
+      `│ ❌ *SALDO TIDAK CUKUP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Uangmu masih kurang *Rp ${(amount - balance).toLocaleString('id-ID')}* untuk pembayaran ini.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  wdb.money[m.sender] = balance - amount
+
+  const updatedPayment = applyRehabilitationPayment(process, amount)
+
+  paymentResult = updatedPayment.remainingAmount > 0
+    ? `✅ Pembayaran diterima. Masih kurang Rp ${updatedPayment.remainingAmount.toLocaleString('id-ID')}.`
+    : '✅ Pembayaran rehabilitasi lunas.'
+} else {
+  const activity = activityDefinitions[action]
+  const cooldown = REHABILITATION_ACTIVITY_COOLDOWNS[action]
+  const remaining = cooldown - (now - (Number(process[activity.cooldownField]) || 0))
+
+  if (remaining > 0) {
+    return m.reply(
+      `╭─❏「 ⏳ ${activity.label.toUpperCase()} REHABILITASI 」❏\n` +
+      `│ ⏳ *MASIH COOLDOWN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Aktivitas ${activity.label.toLowerCase()} bisa dilakukan lagi dalam *${formatDuration(remaining)}*.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
 
     process[activity.cooldownField] = now
     if (action === 'sosial') process.socialActivities = (Number(process.socialActivities) || 0) + 1

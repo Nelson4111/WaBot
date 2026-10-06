@@ -287,17 +287,15 @@ if (action === 'request' || action === 'req') {
 
 if (action === 'list' || action === 'gunung') {
     const list = MOUNTAINS.map((mountain, index) =>
-        `${String(index + 1).padStart(2, '0')}. > ${mountain.name}`
+        `> ${String(index + 1).padStart(2, '0')}. ${mountain.name}`
     ).join('\n')
 
     return m.reply(
-        `╭─❏「 ⛰️ DAFTAR GUNUNG 」❏\n` +
+        `╭─❏「 ⛰️ AVELIA MOUNTAINS 」❏\n` +
         `│ 📋 *DAFTAR GUNUNG*\n` +
-        `│ Urut dari elevasi terendah ke tertinggi\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `📌 *DETAIL GUNUNG*\n` +
+        `📌 *COMMAND LIST*\n` +
         `> ↳ ${usedPrefix}mt detail <nomor/nama>\n` +
-        `📌 *PILIH GUNUNG*\n` +
         `> ↳ ${usedPrefix}mt pilih <nomor/nama>\n` +
         `─━━━━━━━━━━━━━━─\n` +
         `${list}\n\n` +
