@@ -1,17 +1,35 @@
-import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName, getEquipmentNameList } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-let handler = async (m, { conn, command }) => {
+let handler = async (m, { conn, command, text = '', usedPrefix = '.' }) => {
   command = String(command || '').toLowerCase()
+  const args = String(text).trim().toLowerCase().split(/\s+/).filter(Boolean)
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
 
   if (['rpglevel', 'blood', 'darah', 'equipment', 'equip'].includes(command)) {
+    if (['equipment', 'equip'].includes(command) && args[0] === 'list') {
+      const labels = {
+        sword: '🗡️ Sword',
+        armor: '🛡️ Armor',
+        pickaxe: '⛏️ Pickaxe',
+        fishingrod: '🎣 Fishing Rod'
+      }
+      const requestedType = args[1]
+      const types = requestedType ? [requestedType] : Object.keys(labels)
+      if (types.some(type => !labels[type])) {
+        return m.reply(`Jenis equipment tidak dikenal. Pilih: ${Object.keys(labels).join(', ')}`)
+      }
+      const sections = types.map(type =>
+        `${labels[type]}\n${getEquipmentNameList(type).map((name, index) => `${index + 1}. ${name}`).join('\n')}`
+      )
+      return m.reply(`📖 *DAFTAR EQUIPMENT*\n\n${sections.join('\n\n')}\n\nContoh: ${usedPrefix}equipment list armor`)
+    }
     const armorLvl = Number(user.armor) || 0
     const maxHP = 100 + (armorLvl * 20) + (Number(user.maxDarahBonus) || 0)
     if (typeof user.darah === 'undefined') user.darah = maxHP
@@ -24,7 +42,8 @@ let handler = async (m, { conn, command }) => {
       `> 🛡️ Armor: ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n` +
       `> ⛏️ Pickaxe: ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n` +
       `> 🎣 Fishing Rod: ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n` +
-      `> 🐾 Pet: ${user.pet?.tipe && user.pet.tipe !== 'none' ? `${user.pet.tipe.toUpperCase()} (Lv.${user.pet.level || 0})` : 'Tidak Ada'}`
+      `> 🐾 Pet: ${user.pet?.tipe && user.pet.tipe !== 'none' ? `${user.pet.tipe.toUpperCase()} (Lv.${user.pet.level || 0})` : 'Tidak Ada'}\n\n` +
+      `Lihat daftar nama equipment: ${usedPrefix}equipment list`
     )
   }
 
@@ -189,7 +208,7 @@ cap += `─━━━━━━━━━━━━━━─`
 return sendRpgMsg(conn, m, cap, pp)
 }
 
-handler.help = ['inventory', 'inv']
+handler.help = ['inventory', 'inv', 'equipment list']
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']
