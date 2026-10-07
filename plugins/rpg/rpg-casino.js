@@ -390,6 +390,7 @@ function casinoCommands(prefix) {
     `> ↳ 💸 ${prefix}casino <game> all (seluruh uang saku)`,
     `> ↳ 🎲 ${prefix}casino random <taruhan>`,
     `> ↳ 🧪 ${prefix}casino simulation <game/random> [nominal] atau ${prefix}cs sl <game/random> [nominal]`,
+    `> ↳ 📖 ${prefix}cs hasil`,
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 👤 ${prefix}casino profile`,
@@ -417,6 +418,27 @@ function casinoCommands(prefix) {
     ``,
     `─━━━━━━━━━━━━━━─`
   ].join('\n')
+}
+
+function casinoResults(prefix) {
+  return `╭─❏「 📖 HASIL CASINO 」❏\n` +
+    `│ Arti hasil yang mungkin muncul saat bermain.\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🏆 *JACKPOT*\n` +
+    `> ↳ Menang besar dengan multiplier 10x atau lebih.\n\n` +
+    `🎉 *MENANG*\n` +
+    `> ↳ Game menghasilkan multiplier; hadiah dihitung dari taruhan dan multiplier.\n\n` +
+    `💀 *KALAH*\n` +
+    `> ↳ Tidak mendapat hadiah dan taruhan menjadi kerugian.\n\n` +
+    `🎟️ *HADIAH TIDAK CAIR*\n` +
+    `> ↳ Hasil game menang, tetapi hadiah dibatalkan; saldo taruhan tidak berubah.\n\n` +
+    `🏃 *BERHASIL KABUR* / 🤝 *BANDAR BERBAIK HATI*\n` +
+    `> ↳ Hasil game kalah, tetapi taruhan tidak berkurang.\n\n` +
+    `🌑 *BLACKOUT*\n` +
+    `> ↳ Uang hilang hingga maksimal 2x taruhan, dibatasi saldo yang tersedia.\n\n` +
+    `🧪 *SIMULASI*\n` +
+    `> ↳ ${prefix}cs sl <game/random> [nominal] menampilkan hasil virtual tanpa mengubah uang, cooldown, batas harian, atau statistik.\n\n` +
+    `─━━━━━━━━━━━━━━─`
 }
 
 function casinoGuide(prefix) {
@@ -1189,7 +1211,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   const input = (args[0] || '').toLowerCase()
   const inCasinoRoom = getPlayerCasinoRoom(wdb, m.sender)
 
-  if (inCasinoRoom && input !== 'room') {
+  if (inCasinoRoom && input !== 'room' && input !== 'hasil') {
     return m.reply(
       `╭─❏「 🚫 CASINO ROOM 」❏\n` +
       `│ 🔒 *Kamu sedang berada di room casino.*\n` +
@@ -1202,6 +1224,10 @@ let handler = async (m, { conn, args, usedPrefix }) => {
 
   if (input === 'room') {
     return handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user })
+  }
+
+  if (input === 'hasil' || input === 'results') {
+    return m.reply(casinoResults(usedPrefix))
   }
 
   if (['simulation', 'sim', 'sl'].includes(input)) {
@@ -1479,6 +1505,7 @@ handler.help = [
   'casino <game> all',
   'casino simulation <game/random> [nominal]',
   'cs sl <game/random> [nominal]',
+  'cs hasil',
   'casino top',
   'casino profile',
   'casino nickname <julukan>',

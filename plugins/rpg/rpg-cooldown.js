@@ -1,5 +1,6 @@
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
 
 const COOLDOWN_TIMES = {
   kawin: 7 * 60 * 60 * 1000,
@@ -103,11 +104,19 @@ const handler = async (m, { usedPrefix }) => {
   addCooldown(activeCooldowns, 'Mining', user.lastMining, scaleDifficultyCooldown(user, COOLDOWN_TIMES.mining))
   addCooldown(activeCooldowns, 'Dungeon', user.lastDungeon, scaleDifficultyCooldown(user, COOLDOWN_TIMES.dungeon))
   addCooldown(activeCooldowns, 'Fishing', user.lastFishing || user.lastMancing, scaleDifficultyCooldown(user, COOLDOWN_TIMES.fishing))
+  for (const [action, config] of Object.entries(RPG_CRIME_ACTIONS)) {
+    addCooldown(
+      activeCooldowns,
+      config.label,
+      user[`last${action}`],
+      scaleDifficultyCooldown(user, config.cooldown)
+    )
+  }
 
   for (const key of expiredKeys) delete cooldowns[key]
   if (expiredKeys.size) saveDB(wdb)
 
-  const ready = [...Object.values(LABELS), 'Daily']
+  const ready = [...Object.values(LABELS), ...Object.values(RPG_CRIME_ACTIONS).map(({ label }) => label), 'Daily']
     .filter(label => !activeCooldowns.some(item => item.label === label))
 
   activeCooldowns.sort((first, second) => first.remaining - second.remaining)

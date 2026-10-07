@@ -156,7 +156,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ${usedPrefix}guild loot take
 > ${usedPrefix}guild loot list (leader)
 > ${usedPrefix}guild loot collect (leader)
-> Loot hanya bertambah untuk anggota yang menjalankan misi Guild dalam 4 hari terakhir. Batas Lv.1: Money Rp1.000.000 dan tiap loot lain 50; kapasitas anggota serta batas loot bertambah tiap 10 level dan batas loot berhenti naik mulai Lv.101.
+> Loot hanya bertambah untuk anggota yang menjalankan misi Guild dalam 4 hari terakhir. Batas Lv.1: Money Rp1.000.000 dan tiap loot lain 50; kapasitas anggota serta batas loot bertambah tiap 10 level dan batas loot berhenti naik mulai Lv.101. Batas membatasi loot baru, bukan pengambilan pending.
 
 📌 *9. Guild Storage*
 > ${usedPrefix}guild storage
@@ -260,25 +260,18 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const recipients = isCollect ? myGuild.members : [memberId]
     const target = getUserRPG(wdb, m.sender).rpg
     const loot = normalizeGuildLoot(target)
-    const caps = getGuildLootCaps(myGuild.level)
     const total = Object.fromEntries(Object.keys(resourceNames).map(item => [item, 0]))
 
     for (const item of Object.keys(total)) {
-      let remaining = Math.max(0, caps[item] - loot[item])
-
       for (const jid of recipients) {
         const pending = myGuild.pendingLoot[jid] || {}
-        const accepted = Math.min(
-          Math.max(0, Number(pending[item]) || 0),
-          remaining
-        )
+        const accepted = Math.max(0, Number(pending[item]) || 0)
 
         if (!accepted) continue
 
-        pending[item] -= accepted
+        pending[item] = 0
         myGuild.pendingLoot[jid] = pending
         total[item] += accepted
-        remaining -= accepted
       }
 
       loot[item] += total[item]
@@ -295,16 +288,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
           return sum
         }, Object.fromEntries(Object.keys(resourceNames).map(item => [item, 0])))
         : myGuild.pendingLoot[memberId] || {}
-      const blockedByCap = Object.entries(resourceNames)
-        .filter(([item]) => Number(pending[item]) > 0 && loot[item] >= caps[item])
-        .map(([item, name]) => `> ↳ ${name}: batas ${caps[item].toLocaleString('id-ID')} sudah tercapai`)
+      const remainingLines = Object.entries(resourceNames)
+        .filter(([item]) => Number(pending[item]) > 0)
+        .map(([item, name]) => `> ↳ ${name}: ${Number(pending[item]).toLocaleString('id-ID')} masih pending`)
       return m.reply(
         `╭─❏「 🎁 GUILD LOOT 」❏\n` +
         `│ 🎁 *TIDAK ADA LOOT YANG BISA DIAMBIL*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ ${blockedByCap.length ? 'Pending masih tertahan karena batas loot:' : 'Tidak ada pending loot yang bisa diambil saat ini.'}\n` +
-        `${blockedByCap.length ? `${blockedByCap.join('\n')}\n` : ''}` +
-        `> ↳ Batas naik setiap 10 level Guild hingga Lv.101; pending tetap tersimpan.\n\n` +
+        `> ↳ ${remainingLines.length ? 'Pending masih tersimpan:' : 'Tidak ada pending loot yang bisa diambil saat ini.'}\n` +
+        `${remainingLines.length ? `${remainingLines.join('\n')}\n` : ''}` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -337,7 +329,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   const lootLines = Object.entries(resourceNames)
     .map(([item, name]) =>
-      `> ↳ ${name}\n>   Diambil: ${loot[item].toLocaleString('id-ID')}\n>   Pending: ${(Number(pending[item]) || 0).toLocaleString('id-ID')}\n>   Batas: ${caps[item].toLocaleString('id-ID')}`
+      `> ↳ ${name}\n> ↳ Diambil: ${loot[item].toLocaleString('id-ID')}\n> ↳ Pending: ${(Number(pending[item]) || 0).toLocaleString('id-ID')}\n> ↳ Batas akumulasi: ${caps[item].toLocaleString('id-ID')}`
     )
     .join('\n')
 
@@ -354,7 +346,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     `🎁 *LOOT PENDING*\n` +
     `${formatResources(pending) || '> ↳ Kosong'}\n\n` +
 
-    `📌 Pending belum masuk ke saldo/.bag sebelum diklaim.\n` +
+    `📌 Pending belum masuk ke saldo/.bag sebelum diklaim. Klaim mengambil semua pending; batas hanya berlaku untuk penambahan loot baru.\n` +
     `> ↳ Ketik *${usedPrefix}guild loot take* untuk mengambil pending milikmu.\n\n` +
 
     `─━━━━━━━━━━━━━━─`

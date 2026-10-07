@@ -52,9 +52,10 @@ let handler = async (m, { conn }) => {
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 1000) return m.reply('❌ Target terlalu miskin. Minimal Rp 1.000')
-  if (tryPremiumProtection(who)) {
+  if (tryPremiumProtection(who, 'copet')) {
+    userRPG.lastcopet = Date.now()
     await saveDB(wdb)
-    return m.reply('🛡️ Premium protection melindungi target dari aksi copet. Tidak ada saldo atau cooldown yang terpengaruh.')
+    return m.reply('🛡️ Aksi copet gagal: Premium Protection target aktif. Cooldown copet kamu tetap berlaku.')
   }
 
   userRPG.lastcopet = Date.now()
@@ -62,7 +63,7 @@ let handler = async (m, { conn }) => {
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}
-  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
+  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, jarah: 0, culik: 0, begal: 0, bunuh: 0, total: 0 }
 
   if (gagal) {
     userRPG.gagalCopet = (userRPG.gagalCopet || 0) + 1

@@ -53,9 +53,7 @@ export const BANK_COMING_SOON_FACILITIES = new Set([
   'Lounge VIP',
   'Vault Pribadi',
   'Akses Eksklusif',
-  'Mahkota Kehormatan',
-  'Benteng Kristal',
-  'Brankas Kosmik'
+  'Mahkota Kehormatan'
 ])
 
 export function getBankTransactionCooldown(tier) {
@@ -125,7 +123,8 @@ export function getBankRobberySuccessChance(tier) {
 
 export function getBankEffectiveSecurity(tier) {
   const crystalFortressBonus = tier.fasilitas.includes('Benteng Kristal') ? 5 : 0
-  return tier.keamanan + crystalFortressBonus
+  const cosmicVaultBonus = tier.fasilitas.includes('Brankas Kosmik') ? 5 : 0
+  return tier.keamanan + crystalFortressBonus + cosmicVaultBonus
 }
 
 export function calculateBankRobberyLoss(bankBalance, percentage, tier) {
@@ -284,11 +283,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
 
-  if (tier.fasilitas.includes('Lounge VIP')) {
-    cap += `✧ ${formatBankFacility('Lounge VIP')} ✧\n`
-    cap += `Fasilitas lounge segera hadir.\n\n`
-  }
-
   cap += `◈ ${tier.color} ${tier.name.toUpperCase()} ${userRPG.kartuBeku ? '❌ BEKU' : ''} ◈\n`
   cap += `◆ Status : ${isPremium ? '👑 PREMIUM - Diskon 25% dari harga normal' : '👤 USER BIASA'}\n`
   cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
@@ -298,7 +292,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   cap += `◈ INFO KARTU ◈\n`
   cap += ` ◦ Bunga : ${(tier.bunga * 100).toFixed(2)}% / minggu\n`
   cap += ` ◦ Asuransi : ${(tier.asuransi * 100).toFixed(0)}%\n`
-  cap += ` ◦ Keamanan : Lv.${tier.keamanan} (${tier.fasilitas.find(f => f.includes('Penjaga')) || 'Standar'})\n`
+  cap += ` ◦ Keamanan : Lv.${getBankEffectiveSecurity(tier)} (${tier.fasilitas.find(f => f.includes('Penjaga')) || 'Standar'})\n`
   cap += ` ◦ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'Jatuh tempo'} ${sisaMembership <= 0 ? '❌' : '✅'}\n`
   cap += ` ◦ Bunga : ${sisaHari} hari lagi\n`
   cap += ` ◦ Cooldown setor/tarik : ${sisaTransaksi > 0 ? `${Math.ceil(sisaTransaksi / 60000)} menit` : 'Siap'}\n`
@@ -622,17 +616,21 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     if (!cardEntry) return m.reply('❌ Kartu tidak ditemukan. Gunakan *.bank card* untuk melihat daftar level dan nama kartu.')
 
     const [level, selectedCard] = cardEntry
-    const selectedPrice = getBankPrice(selectedCard.price, m.sender, wdb)
-    const selectedMonthlyFee = getBankMonthlyFee(selectedCard.biayaBulanan, m.sender, wdb)
+    const selectedPremiumPrice = getBankPrice(selectedCard.price, m.sender, wdb)
+    const selectedPremiumMonthlyFee = getBankMonthlyFee(selectedCard.biayaBulanan, m.sender, wdb)
     let cap = `╭─❏「 ${selectedCard.color} ${selectedCard.name.toUpperCase()} 」❏\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
     cap += `◆ Level : ${level}\n`
     cap += `◆ Limit : ${formatBankLimit(selectedCard.limit)}\n`
     cap += `◆ Bunga : ${(selectedCard.bunga * 100).toFixed(2)}%/minggu\n`
     cap += `◆ Cooldown setor/tarik : ${getBankTransactionCooldown(selectedCard) ? `${getBankTransactionCooldown(selectedCard) / 60000} menit` : 'Tanpa cooldown (Portal Bank)'}\n`
-    cap += `◆ Harga Upgrade : Rp ${selectedPrice.toLocaleString()}\n`
-    cap += `◆ Biaya Bulanan : Rp ${selectedMonthlyFee.toLocaleString()}\n`
-    cap += `◆ Keamanan : Lv.${selectedCard.keamanan}\n`
+    cap += isPremium
+      ? `◆ Harga Upgrade Normal : Rp ${selectedCard.price.toLocaleString()}\n◆ Harga Upgrade Premium : Rp ${selectedPremiumPrice.toLocaleString()}\n`
+      : `◆ Harga Upgrade : Rp ${selectedCard.price.toLocaleString()}\n`
+    cap += isPremium
+      ? `◆ Biaya Bulanan Normal : Rp ${selectedCard.biayaBulanan.toLocaleString()}\n◆ Biaya Bulanan Premium : Rp ${selectedPremiumMonthlyFee.toLocaleString()}\n`
+      : `◆ Biaya Bulanan : Rp ${selectedCard.biayaBulanan.toLocaleString()}\n`
+    cap += `◆ Keamanan : Lv.${getBankEffectiveSecurity(selectedCard)}\n`
     cap += `◆ Asuransi : ${(selectedCard.asuransi * 100).toFixed(0)}%\n`
     cap += `◆ Fasilitas :\n> ${selectedCard.fasilitas.map(formatBankFacility).join('\n> ')}`
     const csService = getBankCsService(selectedCard)

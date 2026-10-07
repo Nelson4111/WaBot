@@ -75,7 +75,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     const getUser = (jid) => { jid = resolveJid(jid); if (!jid) return null; return global.db.data.users?.[jid] || null }
     const getRPG = (jid) => { const user = getUser(jid); if (!user) return null; return user.rpg || null }
     const getTarget = (raw) => { let jid = m.mentionedJid?.[0] || m.quoted?.sender; if (!jid && raw) { let num = String(raw).replace(/[^0-9]/g, ''); if (num.startsWith('08')) num = '62' + num.slice(1); if (num.length >= 8) jid = num + '@s.whatsapp.net' } return resolveJid(jid) }
-    const kasus = (rpg) => rpg?.kasus || ((Number(rpg?.tebusan) || 0) === 1000000 ? '🤏 Copet' : (Number(rpg?.tebusan) || 0) === 2000000 ? '🏴‍☠️ Begal / 🔪 Bunuh' : (Number(rpg?.tebusan) || 0) === 4000000 ? '🕵️ Rampok' : '👑 Owner Jail')
+    const kasus = (rpg) => rpg?.kasus || ((Number(rpg?.tebusan) || 0) === 1000000 ? '🤏 Copet' : (Number(rpg?.tebusan) || 0) === 2000000 ? '🏴‍☠️ Begal / 🔪 Bunuh / 🏚️ Jarah' : (Number(rpg?.tebusan) || 0) === 4000000 ? '🕵️ Rampok / 🕶️ Culik' : '👑 Owner Jail')
     const sisaWaktu = (rpg) => { if (!rpg) return 0; return Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara || 0)) }
     const sisaTungguTebus = (rpg) => Math.max(0, 5 * 60 * 1000 - (Date.now() - Number(rpg?.penjara || 0)))
     const formatSisa = (ms) => { ms = Math.max(0, ms); const jam = Math.floor(ms / 3600000); const menit = Math.floor((ms % 3600000) / 60000); return `${jam}j ${menit}m` }
@@ -1314,7 +1314,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
     `📋 *INFORMASI*\n` +
     `> ↳ Penjara berisi pemain yang gagal melakukan kejahatan atau terkena hukuman Owner.\n` +
-    `> ↳ Kasus mengikuti penyebab masuk penjara: copet, begal, bunuh, rampok, fitnah, atau Owner Jail.\n` +
+    `> ↳ Tahanan akibat penculikan hanya dapat bebas setelah ditebus pemain lain atau masa tahanannya habis. Gunakan *.tebus @tag* atau *.tebus sel <kode>* untuk menebus pemain lain.\n` +
+    `> ↳ Kasus penjara dapat berasal dari copet, begal, bunuh, rampok, jarah, culik, fitnah, atau Owner Jail.\n` +
     `> ↳ Routine dan talk menambah progres kabur.\n\n` +
 
     `─━━━━━━━━━━━━━━─\n\n` +

@@ -10,6 +10,10 @@ const CORE_COMMANDS = [
   ['.kerja', 'Bekerja dan mendapatkan penghasilan'],
   ['.daily', 'Mengambil hadiah harian'],
   ['.shop', 'Membeli item dan equipment'],
+  ['.mall', 'Membeli dan menjual barang di Mall'],
+  ['.home', 'Mengatur dan mengunjungi rumah pemain'],
+  ['.cl', 'Mengelola koleksi dan showcase'],
+  ['.jarah / .culik', 'Melakukan aksi kriminal dengan risiko buronan dan penjara'],
   ['.lottery', 'Menu lottery harian'],
   ['.lottery command', 'Melihat command lottery'],
   ['.lottery guide', 'Panduan lottery'],
@@ -50,7 +54,7 @@ let handler = async (m, { text }) => {
       `> ↳ Cari material dan ore lewat *.mining*.\n` +
       `> ↳ Lawan monster dan dapatkan reward lewat *.dungeon*.\n` +
       `> ↳ Ikuti lima arena: jambak, panco, dance, tampar, dan tinju.\n` +
-      `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, bunuh, dan fitnah dengan risiko buronan serta penjara.\n\n` +
+      `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, jarah, culik, bunuh, dan fitnah dengan risiko buronan serta penjara.\n\n` +
       `💰 *EKONOMI & ITEM*\n` +
       `> ↳ Dapatkan uang dari daily, kerja, adventure, dungeon, toko, dan aktivitas lainnya.\n` +
       `> ↳ Beli atau jual material, equipment, hasil panen, ikan, masakan, dan item adventure.\n` +

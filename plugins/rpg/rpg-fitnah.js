@@ -242,9 +242,10 @@ Fitnah orang biar masuk penjara.
         return m.reply(`⏳ *COOLDOWN*\n\nTunggu *${formatTime(sisa)}* lagi`)
     }
 
-    if (tryPremiumProtection(who)) {
+    if (tryPremiumProtection(who, 'fitnah')) {
+        wdb.fitnah[sender] = Date.now()
         await saveDB(wdb)
-        return m.reply('🛡️ Premium protection melindungi target dari aksi fitnah. Tidak ada uang yang dipotong.')
+        return m.reply('🛡️ Aksi fitnah gagal: Premium Protection target aktif. Cooldown fitnah kamu tetap berlaku; tidak ada uang yang dipotong.')
     }
 
     wdb.fitnah[sender] = now

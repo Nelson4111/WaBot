@@ -4,12 +4,14 @@ import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper
 import { registerPrisoner } from '../../lib/prisonHelper.js'
 
 const CRIME_TYPES = [
-  ['rampok', '🕵️ Rampok', 4],
-  ['bunuh', '🔪 Bunuh', 3],
-  ['begal', '🏴‍☠️ Begal', 2],
-  ['copet', '🤏 Copet', 1],
-  ['kabur', '🏃 Kabur sendiri', 5],
-  ['breakout', '🧱 Breakout', 5]
+  ['rampok', '🕵️ Rampok', 4, '🕵️'],
+  ['jarah', '🏚️ Jarah', 4, '🏚️'],
+  ['culik', '🕶️ Culik', 3, '🕶️'],
+  ['bunuh', '🔪 Bunuh', 3, '🔪'],
+  ['begal', '🏴‍☠️ Begal', 2, '🏴‍☠️'],
+  ['copet', '🤏 Copet', 1, '🤏'],
+  ['kabur', '🏃 Kabur sendiri', 5, '🏃'],
+  ['breakout', '🧱 Breakout', 5, '🧱']
 ]
 
 function getWantedList(db) {
@@ -153,6 +155,8 @@ let handler = async (m, { conn, args, isOwner }) => {
       `> ↳ Anti-ciduk patroli: *2 jam* setelah bebas dari cidukan patroli.\n\n` +
       `💀 *BOBOT POIN KEJAHATAN*\n` +
       `> 🕵️ Rampok: *+4 poin* per aksi\n` +
+      `> 🏚️ Jarah: *+4 poin* per aksi\n` +
+      `> 🕶️ Culik: *+3 poin* per aksi\n` +
       `> 🔪 Bunuh: *+3 poin* per aksi\n` +
       `> 🏴‍☠️ Begal: *+2 poin* per aksi\n` +
       `> 🤏 Copet: *+1 poin* per aksi\n` +
@@ -185,7 +189,11 @@ let handler = async (m, { conn, args, isOwner }) => {
       const rank = start + index + 1
       const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
       text += `${medal} @${jid.split('@')[0]} • *${getActiveCrimeScore(data)} poin*\n`
-      text += `> 🕵️ ${Number(data.rampok) || 0}  🔪 ${Number(data.bunuh) || 0}  🏴‍☠️ ${Number(data.begal) || 0}  🤏 ${Number(data.copet) || 0}\n`
+      const crimeCounts = CRIME_TYPES
+        .filter(([key]) => Number(data[key]) > 0)
+        .map(([key, , , emoji]) => `${emoji}${Number(data[key])}`)
+        .join('  ')
+      text += `> ${crimeCounts || 'Belum ada aksi tercatat'}\n`
     })
 
     text += `\n─━━━━━━━━━━━━━━─\n`

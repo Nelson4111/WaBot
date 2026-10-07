@@ -133,7 +133,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // KALO MATI
   if (user.darah <= finalDamage) {
-    if (tryPremiumProtection(m.sender)) {
+    if (tryPremiumProtection(m.sender, 'dungeon')) {
       user.darah = Math.max(1, user.darah - finalDamage)
       user.lastDungeon = Date.now()
       await saveDB(wdb)

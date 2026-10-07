@@ -52,15 +52,16 @@ let handler = async (m, { conn }) => {
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 1000) return m.reply('❌ Target ga punya uang cukup. Minimal Rp 1000')
-  if (tryPremiumProtection(who)) {
+  if (tryPremiumProtection(who, 'bunuh')) {
+    userRPG.lastbunuh = Date.now()
     await saveDB(wdb)
-    return m.reply('🛡️ Premium protection melindungi target dari aksi bunuh. Target tetap aman.')
+    return m.reply('🛡️ Aksi bunuh gagal: Premium Protection target aktif. Cooldown bunuh kamu tetap berlaku; target tetap aman.')
   }
 
   userRPG.lastbunuh = Date.now()
   let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.8)
 
-  if (gagal && tryPremiumProtection(m.sender)) {
+  if (gagal && tryPremiumProtection(m.sender, 'bunuh')) {
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat bunuh @${who.split('@')[0]}`)
     await saveDB(wdb)
     return m.reply('🛡️ Premium protection aktif: kamu selamat dari kegagalan aksi bunuh dan tidak masuk penjara.')
@@ -68,7 +69,7 @@ let handler = async (m, { conn }) => {
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}
-  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
+  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, jarah: 0, culik: 0, begal: 0, bunuh: 0, total: 0 }
 
   if (gagal) {
     // GAGAL = KAMU MATI + PENJARA 2 JAM

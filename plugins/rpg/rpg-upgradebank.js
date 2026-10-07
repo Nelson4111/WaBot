@@ -1,5 +1,11 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { BANK_TIERS, formatBankLimit, getBankPrice, isPremiumUser } from './rpg-bank.js'
+import { BANK_TIERS, formatBankLimit, getBankEffectiveSecurity, getBankPrice, isPremiumUser } from './rpg-bank.js'
+
+function formatPriceOptions(label, normalPrice, premiumPrice, isPremium) {
+  const normal = `Rp ${normalPrice.toLocaleString()}`
+  if (!isPremium) return `> ↳ ${label} : ${normal}\n`
+  return `> ↳ ${label} Normal : ${normal}\n> ↳ ${label} Premium : Rp ${premiumPrice.toLocaleString()}\n`
+}
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
@@ -12,8 +18,6 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let confirmArg = (args[1] || '').toLowerCase()
   const isPremium = isPremiumUser(m.sender, wdb)
   let currentTier = BANK_TIERS[user.bankTier]
-  let currentTierPrice = getBankPrice(currentTier.price, m.sender, wdb)
-  let currentTierNormalPrice = currentTier.price
 
   // UPGRADE LANGSUNG PAKE ANGKA.upgradebank 5
 if (!isNaN(action)) {
@@ -64,8 +68,7 @@ if (!isNaN(action)) {
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${tierBaru.color} *${tierBaru.name}*\n` +
-        `> ↳ Harga Normal : Rp ${tierBaruNormalPrice.toLocaleString()}\n` +
-        `> ↳ Harga Premium : Rp ${tierBaruPrice.toLocaleString()}\n` +
+        formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n\n` +
         `Ketik *.upgradebank ${targetTier} yes* untuk lanjut\n` +
@@ -80,8 +83,7 @@ if (!isNaN(action)) {
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${tierBaru.color} *${tierBaru.name}*\n` +
-        `> ↳ Harga Normal : Rp ${tierBaruNormalPrice.toLocaleString()}\n` +
-        `> ↳ Harga Premium : Rp ${tierBaruPrice.toLocaleString()}\n` +
+        formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n` +
         `> ↳ Otomatis pakai bank : Rp ${payFromBank.toLocaleString()}\n\n` +
@@ -95,8 +97,7 @@ if (!isNaN(action)) {
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Harga Normal : Rp ${tierBaruNormalPrice.toLocaleString()}\n` +
-      `> ↳ Harga Premium : Rp ${tierBaruPrice.toLocaleString()}\n` +
+      formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
       `> ↳ Punya : Rp ${walletNow.toLocaleString()}\n` +
       `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -116,6 +117,7 @@ if (!isNaN(action)) {
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
+        formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
         `> ↳ Butuh : Rp ${tierBaruPrice.toLocaleString()}\n` +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Bank Tersedia : Rp ${bankNow.toLocaleString()}\n\n` +
@@ -170,8 +172,7 @@ if (action === 'beli') {
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${nextTier.color} *${nextTier.name}*\n` +
-        `> ↳ Harga Normal : Rp ${nextTierNormalPrice.toLocaleString()}\n` +
-        `> ↳ Harga Premium : Rp ${nextTierPrice.toLocaleString()}\n` +
+        formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n\n` +
         `Ketik *.upgradebank beli yes* untuk lanjut\n` +
@@ -186,8 +187,7 @@ if (action === 'beli') {
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${nextTier.color} *${nextTier.name}*\n` +
-        `> ↳ Harga Normal : Rp ${nextTierNormalPrice.toLocaleString()}\n` +
-        `> ↳ Harga Premium : Rp ${nextTierPrice.toLocaleString()}\n` +
+        formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n` +
         `> ↳ Otomatis pakai bank : Rp ${payFromBank.toLocaleString()}\n\n` +
@@ -201,8 +201,7 @@ if (action === 'beli') {
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Harga Normal : Rp ${nextTierNormalPrice.toLocaleString()}\n` +
-      `> ↳ Harga Premium : Rp ${nextTierPrice.toLocaleString()}\n` +
+      formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
       `> ↳ Punya : Rp ${walletNow.toLocaleString()}\n` +
       `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -222,6 +221,7 @@ if (action === 'beli') {
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
+        formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
         `> ↳ Butuh : Rp ${nextTierPrice.toLocaleString()}\n` +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Bank Tersedia : Rp ${bankNow.toLocaleString()}\n\n` +
@@ -258,9 +258,8 @@ cap += `> ↳ Status : ${isPremium ? '👑 Premium (Diskon 25%)' : '👤 User Bi
 cap += `> ↳ Limit : ${formatBankLimit(currentTier.limit)}\n`
 cap += `> ↳ Bunga : ${(currentTier.bunga * 100).toFixed(2)}%/minggu\n`
 cap += `> ↳ Asuransi : ${(currentTier.asuransi * 100).toFixed(0)}%\n`
-cap += `> ↳ Biaya Bulanan Normal : Rp ${currentTier.biayaBulanan.toLocaleString()}\n`
-cap += `> ↳ Biaya Bulanan Premium : Rp ${getBankPrice(currentTier.biayaBulanan, m.sender, wdb).toLocaleString()}\n`
-cap += `> ↳ Keamanan : ${currentTier.fasilitas.find(f => f.includes('Penjaga'))}\n`
+cap += formatPriceOptions('Biaya Bulanan', currentTier.biayaBulanan, getBankPrice(currentTier.biayaBulanan, m.sender, wdb), isPremium)
+cap += `> ↳ Keamanan : Lv.${getBankEffectiveSecurity(currentTier)} (${currentTier.fasilitas.find(f => f.includes('Penjaga')) || 'Standar'})\n`
 cap += `> ↳ Fasilitas :\n`
 
 currentTier.fasilitas.forEach(f => {
@@ -274,10 +273,9 @@ if (nextTier) {
   const nextTierDiscountedFee = getBankPrice(nextTier.biayaBulanan, m.sender, wdb)
   cap += `⬆️ *NEXT TIER*\n`
   cap += `> ↳ ${nextTier.color} *${nextTier.name}* [Lv.${user.bankTier + 1}]\n`
-  cap += `> ↳ Harga Normal : Rp ${nextTier.price.toLocaleString()}\n`
-  cap += `> ↳ Harga Premium : Rp ${nextTierDiscountedPrice.toLocaleString()}\n`
-  cap += `> ↳ Biaya/Bulan Normal : Rp ${nextTier.biayaBulanan.toLocaleString()}\n`
-  cap += `> ↳ Biaya/Bulan Premium : Rp ${nextTierDiscountedFee.toLocaleString()}\n\n`
+  cap += formatPriceOptions('Harga', nextTier.price, nextTierDiscountedPrice, isPremium)
+  cap += formatPriceOptions('Biaya/Bulan', nextTier.biayaBulanan, nextTierDiscountedFee, isPremium)
+  cap += `\n`
   cap += `📌 *CARA UPGRADE*\n`
   cap += `> ↳ ${usedPrefix}upgradebank beli\n`
   cap += `> ↳ ${usedPrefix}upgradebank ${user.bankTier + 1}`

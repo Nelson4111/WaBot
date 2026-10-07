@@ -55,9 +55,10 @@ let handler = async (m, { conn }) => {
 
     let bankTarget = target.bank || 0
     if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
-    if (tryPremiumProtection(who)) {
+    if (tryPremiumProtection(who, 'rampok')) {
+        userRPG.lastrob = Date.now()
         await saveDB(wdb)
-        return m.reply('🛡️ Premium protection melindungi target dari aksi rampok. Saldo bank target tetap aman.')
+        return m.reply('🛡️ Aksi rampok gagal: Premium Protection target aktif. Cooldown rampok kamu tetap berlaku; saldo bank target aman.')
     }
 
     userRPG.lastrob = Date.now()
@@ -70,7 +71,7 @@ let handler = async (m, { conn }) => {
 
     // INIT CRIME
     wdb.crime = wdb.crime || {}
-    wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, begal: 0, bunuh: 0, total: 0 }
+    wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, jarah: 0, culik: 0, begal: 0, bunuh: 0, total: 0 }
 
     if (roll >= adjustCrimeSuccessChance(userRPG, peluang)) {
     // GAGAL = LANGSUNG PENJARA 4 JAM
