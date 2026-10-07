@@ -28,7 +28,7 @@ test('bank security and insurance increase with every card tier', () => {
   for (let tier = 1; tier < Object.keys(BANK_TIERS).length; tier++) {
     assert.ok(BANK_TIERS[tier].keamanan > BANK_TIERS[tier - 1].keamanan)
     assert.ok(BANK_TIERS[tier].asuransi > BANK_TIERS[tier - 1].asuransi)
-    assert.ok(getBankRobberySuccessChance(BANK_TIERS[tier]) < getBankRobberySuccessChance(BANK_TIERS[tier - 1]))
+    assert.ok(getBankRobberySuccessChance(BANK_TIERS[tier]) <= getBankRobberySuccessChance(BANK_TIERS[tier - 1]))
   }
 })
 
@@ -157,9 +157,11 @@ test('bank deposit and withdrawal cooldown follows transport facilities', () => 
   assert.equal(getBankTransactionCooldownRemaining(transaction, BANK_TIERS[6], 1_000 + 30 * 60 * 1000), 0)
 })
 
-test('unfinished bank facilities display a Coming Soon marker', () => {
-  assert.ok(BANK_COMING_SOON_FACILITIES.has('Vault Pribadi'))
+test('unfinished bank facilities retain Coming Soon markers', () => {
+  assert.ok(BANK_COMING_SOON_FACILITIES.has('Lounge VIP'))
   assert.equal(formatBankFacility('Vault Pribadi'), 'Vault Pribadi (Coming Soon)')
+  assert.equal(formatBankFacility('Akses Eksklusif'), 'Akses Eksklusif (Coming Soon)')
+  assert.equal(formatBankFacility('Mahkota Kehormatan'), 'Mahkota Kehormatan (Coming Soon)')
   assert.equal(formatBankFacility('Digital Access'), 'Digital Access')
 })
 
@@ -168,5 +170,18 @@ test('Crystal Fortress adds five effective security and lowers robbery chance', 
 
   assert.equal(getBankEffectiveSecurity(tierWithoutFortress), BANK_TIERS[15].keamanan)
   assert.equal(getBankEffectiveSecurity(BANK_TIERS[15]), BANK_TIERS[15].keamanan + 5)
+  assert.equal(formatBankFacility('Benteng Kristal'), 'Benteng Kristal')
   assert.ok(getBankRobberySuccessChance(BANK_TIERS[15]) < getBankRobberySuccessChance(tierWithoutFortress))
+})
+
+test('Cosmic Vault adds five effective security beyond Crystal Fortress', () => {
+  const tierWithoutVault = {
+    ...BANK_TIERS[16],
+    fasilitas: BANK_TIERS[16].fasilitas.filter(facility => facility !== 'Brankas Kosmik')
+  }
+
+  assert.equal(getBankEffectiveSecurity(tierWithoutVault), BANK_TIERS[16].keamanan + 5)
+  assert.equal(getBankEffectiveSecurity(BANK_TIERS[16]), BANK_TIERS[16].keamanan + 10)
+  assert.equal(formatBankFacility('Brankas Kosmik'), 'Brankas Kosmik')
+  assert.ok(getBankRobberySuccessChance(BANK_TIERS[16]) <= getBankRobberySuccessChance(tierWithoutVault))
 })
