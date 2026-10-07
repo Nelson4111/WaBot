@@ -736,9 +736,11 @@ async function processMessage(m, chatUpdate) {
             const subcommand = (commandParts[1] || '').toLowerCase()
             const isCrimeCommand = PATROL_RESTRICTED_CRIME_COMMANDS.has(command) ||
                 (command === 'rship' && PATROL_RESTRICTED_RSHIP_ACTIONS.has(subcommand))
-            const isCurrentlyImprisoned = userRPG?.penjara &&
-                now - userRPG.penjara < (Number(userRPG.lamaPenjara) || 0)
-            if (userRPG && !isCurrentlyImprisoned && ensurePatrolReleaseProtection(userRPG, now)) {
+            const isCurrentlyRestrictedRpg = Boolean(
+                (userRPG?.penjara && now - userRPG.penjara < (Number(userRPG.lamaPenjara) || 0)) ||
+                (userRPG?.kidnappedBy && now < (Number(userRPG.kidnappedUntil) || 0))
+            )
+            if (userRPG && !isCurrentlyRestrictedRpg && ensurePatrolReleaseProtection(userRPG, now)) {
                 await saveDB(loadDB())
             }
             const crimeProtectionRemaining = getPatrolProtectionRemaining(userRPG, 'crime', now)
@@ -757,7 +759,7 @@ async function processMessage(m, chatUpdate) {
                 return
             }
 
-            if (isRpgActivity && !isCurrentlyImprisoned &&
+            if (isRpgActivity && !isCurrentlyRestrictedRpg &&
                 userRPG?.rehabilitation?.status !== 'active' && captureProtectionRemaining <= 0) {
                 const wdb = loadDB()
                 syncEscapeCrimeCounts(wdb, m.sender)
@@ -797,6 +799,41 @@ async function processMessage(m, chatUpdate) {
                     botArbitrator.resolve(m.key?.id, this)
                     return
                 }
+            }
+        }
+
+        const senderRPG = global.db?.data?.users?.[m.sender]?.rpg
+        if (senderRPG?.kidnappedBy) {
+            const now = Date.now()
+            if (!Number(senderRPG.kidnappedUntil) && senderRPG.kasus === '🕶️ Culik' && senderRPG.penjara) {
+                const kidnappedAt = Number(senderRPG.kidnappedAt) || Number(senderRPG.penjara)
+                senderRPG.kidnappedAt = kidnappedAt
+                senderRPG.kidnappedUntil = kidnappedAt + (Number(senderRPG.lamaPenjara) || 4 * 60 * 60 * 1000)
+                senderRPG.penjara = null
+                senderRPG.lamaPenjara = 0
+                senderRPG.tebusan = 0
+                senderRPG.sel = 0
+                senderRPG.kasus = null
+                const prisonList = global.db.data.penjara
+                if (Array.isArray(prisonList)) {
+                    global.db.data.penjara = prisonList.filter(jid => jid !== m.sender)
+                }
+            }
+            if (now >= (Number(senderRPG.kidnappedUntil) || 0)) {
+                delete senderRPG.kidnappedBy
+                delete senderRPG.kidnappedAt
+                delete senderRPG.kidnappedUntil
+                delete senderRPG.kidnapEscapeAttempt
+                delete senderRPG.kidnapEscapeCooldownAt
+                await saveDB(loadDB())
+            } else if (commandCandidate?.command !== 'kabur') {
+                await this.reply(
+                    m.chat,
+                    '🚨 Kamu sedang diculik dan tidak dapat menggunakan command lain. Gunakan *.kabur* untuk mencoba melarikan diri.',
+                    m
+                )
+                botArbitrator.resolve(m.key?.id, this)
+                return
             }
         }
 
