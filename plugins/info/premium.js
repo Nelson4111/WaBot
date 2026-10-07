@@ -192,54 +192,54 @@ let handler = async (m, { conn, text = '', usedPrefix }) => {
     )
   }
 
-  if (/^(benefits?|manfaat)$/.test(action)) {
-    return m.reply(
-      `╭─❏「 👑 MANFAAT PREMIUM 」❏\n` +
-      `│ 👑 *MANFAAT PREMIUM*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
+if (/^(benefits?|manfaat)$/.test(action)) {
+  return m.reply(
+    `╭─❏「 👑 MANFAAT PREMIUM 」❏\n` +
+    `│ 👑 *MANFAAT PREMIUM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
 
-      `📌 *KEUNTUNGAN UMUM*\n` +
-      `> ↳ Batas casino: *50 permainan per hari* (user biasa 25).\n` +
-      `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
-      `> ↳ Kapasitas rumah bertambah *5 furniture* dan biaya upgrade rumah diskon *20%*.\n` +
-      `> ↳ Diskon *20%* untuk semua biaya uang pada *.upgrade* dan diskon *25%* upgrade kartu bank.\n` +
-      `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
-      `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*.\n` +
-      `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap 24 jam untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
-      `> ↳ Premium Protection memiliki cooldown terpisah 5 jam untuk tiap aksi (copet, rampok, begal, jarah, culik, bunuh, fitnah, dan dungeon); cek statusnya dengan *${usedPrefix}prem cd*.\n` +
-      `> ↳ Cooldown Muncak lebih singkat: *2 jam* (user biasa 5 jam). Contoh: *${usedPrefix}mt start*.\n` +
-      `> ↳ Cooldown interaksi pasangan lebih singkat: *30 detik* (user biasa 60 detik). Contoh: *${usedPrefix}act*.\n\n` +
+    `📌 *KEUNTUNGAN UMUM*\n` +
+    `> ↳ Batas casino : *50 permainan per hari* (user biasa 25).\n` +
+    `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
+    `> ↳ Kapasitas rumah bertambah *5 furniture* dan biaya upgrade rumah diskon *20%*.\n` +
+    `> ↳ Diskon *20%* untuk semua biaya uang pada *.upgrade* dan diskon *25%* upgrade kartu bank.\n` +
+    `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
+    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*.\n` +
+    `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap 24 jam untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
+    `> ↳ Premium Protection memiliki cooldown terpisah 5 jam untuk tiap aksi (copet, rampok, begal, jarah, culik, bunuh, fitnah, dan dungeon); cek statusnya dengan *${usedPrefix}prem cd*.\n` +
+    `> ↳ Cooldown Muncak lebih singkat : *2 jam* (user biasa 5 jam). Contoh : *${usedPrefix}mt start*.\n` +
+    `> ↳ Cooldown interaksi pasangan lebih singkat : *30 detik* (user biasa 60 detik). Contoh : *${usedPrefix}act*.\n\n` +
 
-      `🌱 *LADANG*\n` +
-      `> ↳ Bisa upgrade hingga *20 slot ladang* (user biasa maksimal 10).\n` +
-      `> ↳ Contoh: *${usedPrefix}buyladang* untuk upgrade, *${usedPrefix}tanam list* untuk melihat bibit.\n\n` +
+    `🌱 *LADANG*\n` +
+    `> ↳ Bisa upgrade hingga *20 slot ladang* (user biasa maksimal 10).\n` +
+    `> ↳ Contoh : *${usedPrefix}buyladang* untuk upgrade, *${usedPrefix}tanam list* untuk melihat bibit.\n\n` +
 
-      `🐾 *PET*\n` +
-      `> ↳ Kapasitas pet bertambah menjadi *15 slot* (user biasa 10).\n` +
-      `> ↳ *${usedPrefix}pet care* memberi feed, rest, dan clean ke semua pet; cooldown 30 menit.\n` +
-      `> ↳ Setelah care, *${usedPrefix}pet all* menjalankan train, walk, play, hunt, dan dispatch untuk semua pet; cooldown 30 menit.\n` +
-      `> ↳ Contoh: *${usedPrefix}pet care*, lalu *${usedPrefix}pet all*.\n\n` +
+    `🐾 *PET*\n` +
+    `> ↳ Kapasitas pet bertambah menjadi *15 slot* (user biasa 10).\n` +
+    `> ↳ *${usedPrefix}pet care* memberi feed, rest, dan clean ke semua pet; cooldown 30 menit.\n` +
+    `> ↳ Setelah care, *${usedPrefix}pet all* menjalankan train, walk, play, hunt, dan dispatch untuk semua pet; cooldown 30 menit.\n` +
+    `> ↳ Contoh : *${usedPrefix}pet care*, lalu *${usedPrefix}pet all*.\n\n` +
 
-      `💕 *RELATIONSHIP*\n` +
-      `> ↳ *${usedPrefix}rship all <no pasangan>* menjalankan semua aktivitas yang siap untuk pasangan tersebut; cooldown all 30 menit.\n` +
-      `> ↳ Contoh: *${usedPrefix}rship all 1*.\n\n` +
+    `💕 *RELATIONSHIP*\n` +
+    `> ↳ *${usedPrefix}rship all <no pasangan>* menjalankan semua aktivitas yang siap untuk pasangan tersebut; cooldown all 30 menit.\n` +
+    `> ↳ Contoh : *${usedPrefix}rship all 1*.\n\n` +
 
-      `🕊️ *REHABILITASI*\n` +
-      `> ↳ *${usedPrefix}rh all* menjalankan semua aktivitas rehabilitasi yang cooldown-nya siap.\n` +
-      `> ↳ Contoh: *${usedPrefix}rh all*; cek waktu aktivitas dengan *${usedPrefix}rh cd*.\n\n` +
+    `🕊️ *REHABILITASI*\n` +
+    `> ↳ *${usedPrefix}rh all* menjalankan semua aktivitas rehabilitasi yang cooldown-nya siap.\n` +
+    `> ↳ Contoh : *${usedPrefix}rh all*; cek waktu aktivitas dengan *${usedPrefix}rh cd*.\n\n` +
 
-      `🍱 *MBG*\n` +
-      `> ↳ Dapat mengambil hingga *2 pasangan menu per hari* dan memilih dari *5 menu* saat menukar.\n` +
-      `> ↳ Contoh: *${usedPrefix}mbg tukar*, pilih dengan *${usedPrefix}mbg tukar 1–5*, lalu klaim dengan *${usedPrefix}mbg ambil 1 2*.\n\n` +
+    `🍱 *MBG*\n` +
+    `> ↳ Dapat mengambil hingga *2 pasangan menu per hari* dan memilih dari *5 menu* saat menukar.\n` +
+    `> ↳ Contoh : *${usedPrefix}mbg tukar*, pilih dengan *${usedPrefix}mbg tukar 1–5*, lalu klaim dengan *${usedPrefix}mbg ambil 1 2*.\n\n` +
 
-      `📌 *INFORMASI*\n` +
-      `> ↳ Profil donasi/title: *${usedPrefix}premium profile*; cek cooldown dengan *${usedPrefix}prem cd*.\n` +
-      `> ↳ Daftar title, reward, harga, dan top donatur: *${usedPrefix}prem title*, *${usedPrefix}prem reward*, *${usedPrefix}prem price*, *${usedPrefix}prem top*.\n` +
-      `> ↳ Lihat status dan cara mendapatkan Premium: *${usedPrefix}premium*\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Profil donasi/title : *${usedPrefix}premium profile*; cek cooldown dengan *${usedPrefix}prem cd*.\n` +
+    `> ↳ Daftar title, reward, harga, dan top donatur : *${usedPrefix}prem title*, *${usedPrefix}prem reward*, *${usedPrefix}prem price*, *${usedPrefix}prem top*.\n` +
+    `> ↳ Lihat status dan cara mendapatkan Premium : *${usedPrefix}premium*\n\n` +
 
-      `─━━━━━━━━━━━━━━─`
-    )
-  }
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   const premiumTime = Number(user.premiumTime) || 0
 
