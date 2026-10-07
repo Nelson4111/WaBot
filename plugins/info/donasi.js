@@ -14,7 +14,7 @@ let handler = async (m, { conn, usedPrefix: _p, text = '', isOwner, isROwner }) 
     }
 
     const users = (global.db && global.db.data && global.db.data.users) || {}
-    const donors = Object.entries(users).filter(([_, user]) => user.totalDonasi > 0)
+    const donors = Object.entries(users).filter(([_, user]) => Number(user.totalDonasi) > 0)
     const now = Date.now()
     let activePremium = 0
     let repairedPremium = 0
@@ -33,6 +33,8 @@ let handler = async (m, { conn, usedPrefix: _p, text = '', isOwner, isROwner }) 
       repairedPremium++
       repairedUsers.push(jid)
     }
+
+    if (repairedPremium > 0) await global.db.write()
 
     const repairedList = repairedUsers.length > 0
       ? `\n\n✅ Premium diaktifkan untuk: ${repairedUsers.map(jid => `@${jid.split('@')[0]}`).join(', ')}`
