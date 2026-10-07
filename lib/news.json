@@ -295,8 +295,8 @@
   },
   {
     "section": "RPG",
-    "title": "Mall dan Diskon Premium",
-    "content": "> Kunjungi `.mall` untuk membeli atau menjual furniture, koleksi, kendaraan, fashion, elektronik, peralatan, dan hadiah. Cek `.mall diskon`, `.mall populer`, atau `.mall harian`; Premium mendapat diskon belanja 20% dan bonus harga jual 10%.",
+    "title": "Mall, Dekorasi, dan Diskon Premium",
+    "content": "> Kunjungi `.mall` untuk membeli atau menjual furniture, koleksi, kendaraan, fashion, elektronik, peralatan, dan dekorasi. Daftar kategori diurutkan dari harga beli termurah dan menampilkan rarity bintang. Cek `.mall diskon`, `.mall populer`, atau `.mall harian`; Premium mendapat diskon belanja 20% dan bonus harga jual 10%.",
     "author": "Eza",
     "createdAt": 1791380000001
   },
@@ -316,16 +316,23 @@
   },
   {
     "section": "RPG",
-    "title": "Tindak Kriminal Baru: Jarah",
-    "content": "> Gunakan `.jarah @user [furniture]` untuk menjarah rumah pemain lain. Jika berhasil, satu furniture yang terpasang akan dibawa ke inventarismu; kamu bisa memilih furniture atau membiarkannya dipilih acak. Kegagalan berisiko denda dan penjara.",
+    "title": "Tindak Kriminal Baru: Jarah dan Culik",
+    "content": "> `.jarah @user` digunakan untuk menjarah rumah pemain lain. Jika berhasil, satu furniture yang terpasang dibawa ke inventarismu; kamu bisa memilih furniture atau membiarkannya dipilih acak. Kegagalan berisiko denda dan penjara. `.culik @user` menculik pemain lain. Status penculikan terpisah dari penjara: korban tidak masuk sel, tidak dapat memakai command lain, dan tidak bisa ditebus atau memakai `.penjara kabur`. Korban dapat mencoba kabur dengan `.kabur` (cooldown 1 menit); penculik harus aktif dan merespons dengan `.tangkap @user` atau reply korban dalam 5 menit. Jika penculik tidak merespons, korban bebas. Kabur dari penculikan tidak menambah poin buronan atau statistik kabur penjara. Penculikan berlangsung maksimal 4 jam.",
     "author": "Eza",
     "createdAt": 1791380000004
   },
   {
     "section": "RPG",
-    "title": "Tindak Kriminal Baru: Culik",
-    "content": "> Gunakan `.culik @user` untuk menculik pemain lain. Jika berhasil, target masuk penjara dan hanya dapat dibebaskan dengan tebusan yang dibayar pemain lain atau setelah masa tahanan habis.",
+    "title": "Karakter, Bloodline, dan Wardrobe",
+    "content": "> Lihat profil RPG melalui `.mychar`, `.mycharacter`, `.ava`, `.persona`, atau `.character` (`.char` tetap untuk karakter MyAnimeList), lalu atur nama, gender, dan umur dengan `.mychar nama <nama>`, `.mychar gender <pria/wanita/lainnya>`, dan `.mychar umur <angka>`. Bloodline awal adalah Human; lihat daftar alfabetis dengan `.bloodline list`, detail efek melalui `.bloodlines info <nomor/nama>`, atau gacha bloodline baru memakai 50 limit melalui `.bloodline ubah`. Hasil gacha menampilkan bloodline sekarang dan calon bloodline; `.bloodline ubah yes` mengganti bloodline, sedangkan `no` atau konfirmasi kedaluwarsa mempertahankan bloodline saat ini. Biaya 50 limit dipotong saat gacha dan tidak dikembalikan. Semua buff memiliki efek nyata pada EXP, damage/pertahanan dungeon, hasil mining, atau peluang fishing. Fashion dari `.mall fashion` dapat dipakai/dilepas lewat `.wardrobe` atau `.lemari`; outfit bawaan mengikuti upgrade armor, slot aksesori maksimal 4, slot lainnya masing-masing 1.",
     "author": "Eza",
-    "createdAt": 1791380000005
+    "createdAt": 1791380000006
+  },
+  {
+    "section": "RPG",
+    "title": "Pembelian Limit dan Harga Cincin",
+    "content": "> Saldo limit tetap bisa dicek lewat `.limit`, dan pembelian kini juga tersedia lewat `.limit buy <jumlah|all> [money]` tanpa menghapus `.buylimit`/`.buylimitmoney`. Gunakan `.limit price` atau `.limit pricelist` untuk melihat paket jumlah beserta total harga EXP dan uang, `.limit guide` untuk panduan, dan `.limit command` untuk daftar command limit. Premium tetap mendapat diskon 20%. Harga pembelian cincin relationship melalui `.rship belicincin` diturunkan 50%; bonus tiap cincin tidak berubah.",
+    "author": "Eza",
+    "createdAt": 1791392226640
   }
 ]
