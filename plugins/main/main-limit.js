@@ -1,4 +1,10 @@
-let handler = async (m, { conn, text }) => {
+import { handleLimitSubcommand } from '../../lib/limitShop.js'
+
+let handler = async (m, { conn, text, usedPrefix }) => {
+  const prefix = usedPrefix || '.'
+  const subcommandResult = await handleLimitSubcommand(m, text, prefix)
+  if (subcommandResult !== false) return subcommandResult
+
   let rawNumber = text ? text.replace(/[^0-9]/g, '') : ''
   const botJid = conn.decodeJid(conn.user?.id || conn.user?.jid || '')
   let who
@@ -23,12 +29,12 @@ let handler = async (m, { conn, text }) => {
   let caption = `💳 *L I M I T - U S E R* 💳\n\n` +
     `👤 *User:* @${who.split('@')[0]}\n` +
     `🎟️ *Sisa Limit:* *${limit}* Limit\n\n` +
-    `📌 _${isSelf ? 'Ketik .buyllimit untuk membeli limit tambahan' : 'Pengguna ini memiliki ' + limit + ' limit'}_`
+    `📌 _${isSelf ? `Gunakan ${prefix}limit buy untuk membeli limit; ${prefix}limit guide untuk panduan` : 'Pengguna ini memiliki ' + limit + ' limit'}_`
 
   await conn.sendFile(m.chat, pp, 'limit.jpg', caption, m, false, { mentions: [who] })
 }
 
-handler.help = ['limit', 'ceklimit']
+handler.help = ['limit', 'limit buy', 'limit price', 'limit pricelist', 'limit guide', 'limit command', 'ceklimit']
 handler.tags = ['info', 'main']
 handler.command = /^(limit|ceklimit)$/i
 handler.limit = false
