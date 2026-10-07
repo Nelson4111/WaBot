@@ -1,5 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -100,12 +101,21 @@ let handler = async (m, { conn }) => {
     if (urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
   }
 
+  const miningYieldBonus = getBloodlineBuff(user, 'miningYield')
+  if (miningYieldBonus > 0) {
+    for (const ore of Object.keys(hasilTambang)) {
+      const exactBonus = hasilTambang[ore] * miningYieldBonus
+      hasilTambang[ore] += Math.floor(exactBonus) + (Math.random() < exactBonus % 1 ? 1 : 0)
+    }
+    totalOreDidapat = Object.values(hasilTambang).reduce((sum, amount) => sum + amount, 0)
+  }
+
   // Simpan hasil
   for(let ore in hasilTambang){
     user.ores[ore] = (user.ores[ore] || 0) + hasilTambang[ore]
   }
 
-  totalExp = scaleDifficultyXP(user, totalExp)
+  totalExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp))
   let uangDidapat = scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat)
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uangDidapat
   addRpgExp(user, totalExp)
@@ -149,6 +159,7 @@ caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
 caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
 caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
+if(miningYieldBonus > 0) caption += `> ↳ 🧬 Bloodline Dwarf: hasil ore +${miningYieldBonus * 100}%\n`
 if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk mendapatkan secret\n`
 caption += `\n─━━━━━━━━━━━━━━─`
 

@@ -1,6 +1,7 @@
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
+import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -144,6 +145,7 @@ let handler = async (m, { conn }) => {
 
   const pickFish = () => {
     let roll = Math.random() * 100
+    roll = Math.max(0, roll - getBloodlineBuff(user, 'fishingRarity') * 100)
     let cum = 0
 
     cum += pSecret
@@ -186,7 +188,7 @@ let handler = async (m, { conn }) => {
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
   const highest = draws.reduce((best, current) => tierOrder.indexOf(current.tier) > tierOrder.indexOf(best) ? current.tier : best, 'TRASH')
-  const totalExp = scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0))
+  const totalExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0)))
 
   for (const fish of draws) {
     const normalizedKey = normalizeFishKey(fish.ikan)
@@ -230,6 +232,7 @@ caption += `✨ *HASIL PENGALAMAN*\n`
 caption += `> ↳ ✨ XP Didapat: +${totalExp}\n`
 caption += `> ↳ 🎣 Level Pancingan: Lv.${rodLvl}\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Rod: +${bonus.toFixed(1)}%\n`
+if(getBloodlineBuff(user, 'fishingRarity') > 0) caption += `> ↳ 🧬 Bloodline Elf: peluang tier tinggi +${getBloodlineBuff(user, 'fishingRarity') * 100}%\n`
 
 caption += `\n─━━━━━━━━━━━━━━─`
 

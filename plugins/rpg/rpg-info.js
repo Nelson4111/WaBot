@@ -1,6 +1,7 @@
 const CORE_COMMANDS = [
   ['.adventure', 'Profil dan aktivitas petualangan'],
   ['.rpgstat', 'Melihat statistik RPG'],
+  ['.mychar / .bloodline / .wardrobe', 'Melihat karakter, mengatur bloodline, dan outfit'],
   ['.cooldown', 'Melihat cooldown RPG'],
   ['.inv', 'Melihat inventory dan equipment'],
   ['.gudang', 'Melihat stok item'],

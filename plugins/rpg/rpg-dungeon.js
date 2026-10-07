@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/wai
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -109,6 +110,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let userDmg = (user.level * 10) + (swordLvl * 100) + bonusDmgGuild
   if (pet.tipe === 'naga') userDmg += Math.floor(userDmg * (pet.level * 0.05))
   userDmg = Math.max(10, scaleDifficultyDamage(user, userDmg, 'dealt'))
+  userDmg = applyBloodlineBuff(user, 'dungeonDamage', userDmg)
 
   // DMG ENEMY
   let rounds = Math.ceil(selected.hpEnemy / userDmg)
@@ -120,6 +122,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let dmgReduction = (armorLvl * 15) + Math.floor(bonusDefGuild * 0.1)
   let dmgPerRound = Math.max(Math.ceil(selected.dmgEnemy * 0.15), selected.dmgEnemy - dmgReduction)
   if (selected.reward.limit) dmgPerRound = Math.ceil(dmgPerRound * 1.35)
+  dmgPerRound = Math.max(1, Math.floor(dmgPerRound * (1 - Math.min(0.3, getBloodlineBuff(user, 'dungeonDefense')))))
   let rawDamage = rounds * dmgPerRound
 
   // Batasi damage proporsional berdasarkan kelebihan level & equipment
@@ -159,6 +162,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   earnedGold = scaleDifficultyIncome(user, earnedGold)
   earnedDiamond = scaleDifficultyIncome(user, earnedDiamond)
   earnedLimit = scaleDifficultyIncome(user, earnedLimit)
+  earnedExp = applyBloodlineBuff(user, 'xp', earnedExp)
 
   user.darah -= Math.floor(finalDamage)
   addRpgExp(user, earnedExp)

@@ -4,6 +4,8 @@ import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
+import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -60,16 +62,17 @@ let handler = async (m, { conn }) => {
 
   userRPG.lastbegal = Date.now()
   let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.7)
+  let story = getRpgCrimeStory('begal', gagal ? 'failure' : 'success')
 
   if (gagal && tryPremiumProtection(m.sender, 'begal')) {
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat begal @${who.split('@')[0]}`)
     await saveDB(wdb)
-    return m.reply('🛡️ Premium protection aktif: kamu selamat dari kegagalan begal dan tidak masuk penjara.')
+    return m.reply(`🛡️ Premium protection aktif: kamu selamat dari kegagalan begal dan tidak masuk penjara.\n\n${story}`)
   }
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}
-  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, jarah: 0, culik: 0, begal: 0, bunuh: 0, total: 0 }
+  wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
 
   if (gagal) {
     // GAGAL = MATI + PENJARA 2 JAM
@@ -93,6 +96,7 @@ txt += userRPG.sel
   ? `│ 🚔 Penjara: *SEL ${userRPG.sel}* • *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
   : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
 txt += `╰─━━━━━━━━━━━━━━─`
+txt += `\n\n${story}`
 
 return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
@@ -121,6 +125,7 @@ txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
 txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
 txt += `╰─━━━━━━━━━━━━━━─\n\n`
+txt += `${story}\n\n`
 txt += `💡 *INFO*\n`
 txt += `> ↳ Cek *.buronan* untuk melihat DPO.`
 

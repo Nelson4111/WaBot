@@ -1,7 +1,9 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
+import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { markPatrolRelease, recordEscapeCrime } from '../../lib/crimeHelper.js'
+import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
 import {
     dialogVisitNapi,
     dialogVisitPengunjung,
@@ -103,8 +105,17 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         }
         return changed
     }
+    const clearKidnapState = (rpg) => {
+        if (!rpg) return
+        delete rpg.kidnappedBy
+        delete rpg.kidnappedAt
+        delete rpg.kidnappedUntil
+        delete rpg.kidnapEscapeAttempt
+        delete rpg.kidnapEscapeCooldownAt
+    }
     const removeFromPrison = (jid) => {
         jid = resolveJid(jid)
+        clearKidnapState(getRPG(jid))
         for (let i = wdb.penjara.length - 1; i >= 0; i--) {
             if (resolveJid(wdb.penjara[i]) === jid) wdb.penjara.splice(i, 1)
         }
@@ -182,8 +193,124 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         return wdb.prisonStats[jid]
     }
     const breakoutAction = command === 'penjara' && args[0]?.toLowerCase() === 'breakout'
+    const kidnappedRPG = getRPG(m.sender)
+    if (kidnappedRPG?.kidnappedBy && command === 'penjara' &&
+        ['routine', 'talk', 'visit', 'breakout', 'kabur'].includes(args[0]?.toLowerCase())) {
+        return m.reply('❌ Tahanan penculikan tidak dapat melakukan aktivitas penjara. Gunakan *.kabur* untuk mencoba melarikan diri.')
+    }
+
+    if (command === 'kabur') {
+        const rpg = getRPG(m.sender)
+        const kidnapperJid = resolveJid(rpg?.kidnappedBy)
+        if (!kidnapperJid) {
+            return m.reply('❌ Kamu tidak sedang ditahan oleh penculik.')
+        }
+
+        const now = Date.now()
+        if (now >= Number(rpg.kidnappedUntil)) {
+            clearKidnapState(rpg)
+            await saveDB(wdb)
+            return m.reply('✅ Masa penculikan sudah habis. Kamu bebas.')
+        }
+
+        const attempt = rpg.kidnapEscapeAttempt
+        if (attempt && now >= Number(attempt.expiresAt)) {
+            clearKidnapState(rpg)
+            await saveDB(wdb)
+            return conn.reply(
+                m.chat,
+                `╭─❏「 🏃 BERHASIL KABUR 」❏\n` +
+                `│ 👤 Korban: @${m.sender.split('@')[0]}\n` +
+                `╰─━━━━━━━━━━━━━━─\n\n` +
+                `Penculik tidak merespons dalam 5 menit. Kamu berhasil melarikan diri. Kabur dari penculikan tidak menambah poin buronan.`,
+                m,
+                { mentions: [m.sender] }
+            )
+        }
+
+        if (attempt) {
+            const remaining = Math.max(0, Number(attempt.expiresAt) - now)
+            return conn.reply(
+                m.chat,
+                `⏳ Usaha kabur masih berlangsung. Penculik harus merespons dengan *.tangkap @${m.sender.split('@')[0]}* dalam *${formatTime(remaining)}*; jika tidak, kamu bebas.`,
+                m,
+                { mentions: [kidnapperJid] }
+            )
+        }
+
+        const cooldownRemaining = RPG_CRIME_ACTIONS.culik.escapeCooldown - (now - (Number(rpg.kidnapEscapeCooldownAt) || 0))
+        if (cooldownRemaining > 0) {
+            return m.reply(`⏳ Cooldown kabur masih *${formatTime(cooldownRemaining)}*.`)
+        }
+
+        rpg.kidnapEscapeCooldownAt = now
+        rpg.kidnapEscapeAttempt = {
+            startedAt: now,
+            expiresAt: now + RPG_CRIME_ACTIONS.culik.escapeWindow
+        }
+        await saveDB(wdb)
+        const attemptChat = m.chat
+        const escapeTimer = setTimeout(async () => {
+            const activeRPG = getRPG(m.sender)
+            if (Number(activeRPG?.kidnapEscapeAttempt?.startedAt) !== now) return
+            clearKidnapState(activeRPG)
+            await saveDB(wdb)
+            try {
+                await conn.reply(
+                    attemptChat,
+                    `╭─❏「 🏃 BERHASIL KABUR 」❏\n` +
+                    `│ 👤 Korban: @${m.sender.split('@')[0]}\n` +
+                    `╰─━━━━━━━━━━━━━━─\n\n` +
+                    `Penculik tidak merespons dalam 5 menit. Kamu berhasil melarikan diri. Kabur dari penculikan tidak menambah poin buronan.`,
+                    null,
+                    { mentions: [m.sender] }
+                )
+            } catch (error) {
+                console.error('[RPG kidnap escape notification] Failed to notify escaped prisoner:', error)
+            }
+        }, RPG_CRIME_ACTIONS.culik.escapeWindow)
+        escapeTimer.unref?.()
+        return conn.reply(
+            m.chat,
+            `🏃 @${m.sender.split('@')[0]} sedang berusaha kabur!\n` +
+            `Penculik harus aktif dan merespons dengan *.tangkap @${m.sender.split('@')[0]}* dalam 5 menit. Jika tidak, tahanan berhasil bebas.`,
+            m,
+            { mentions: [m.sender, kidnapperJid] }
+        )
+    }
+
+    if (command === 'tangkap') {
+        const targetJid = resolveJid(m.mentionedJid?.[0] || m.quoted?.sender)
+        if (!targetJid) return m.reply('❌ Tag atau reply tahanan yang sedang berusaha kabur.')
+        const targetRPG = getRPG(targetJid)
+        if (resolveJid(targetRPG?.kidnappedBy) !== resolveJid(m.sender) ||
+            targetRPG?.kasus !== '🕶️ Culik' ||
+            !targetRPG.kidnapEscapeAttempt) {
+            return m.reply('❌ Target tersebut tidak sedang mencoba kabur dari penculikanmu.')
+        }
+        if (isAfk(global.db?.data?.users?.[m.sender] || wdb.users?.[m.sender] || {})) {
+            return m.reply('❌ Kamu sedang AFK dan tidak bisa merespons usaha kabur.')
+        }
+
+        const remaining = Number(targetRPG.kidnapEscapeAttempt.expiresAt) - Date.now()
+        if (remaining <= 0) {
+            return m.reply('⏳ Waktu merespons sudah habis. Tahanan dapat menyelesaikan kaburnya dengan *.kabur*.')
+        }
+
+        delete targetRPG.kidnapEscapeAttempt
+        await saveDB(wdb)
+        return conn.reply(
+            m.chat,
+            `🚨 @${m.sender.split('@')[0]} berhasil menangkap kembali @${targetJid.split('@')[0]} sebelum kabur.\nTahanan masih berada di SEL ${targetRPG.sel}.`,
+            m,
+            { mentions: [m.sender, targetJid] }
+        )
+    }
 
 if (breakoutAction) {
+    if (getRPG(m.sender)?.kidnappedBy) {
+        return m.reply('❌ Tahanan penculikan tidak dapat mengikuti breakout. Gunakan *.kabur* dan tunggu respons penculik.')
+    }
     const action = args[1]?.toLowerCase()
     const room = wdb.prisonBreakouts[m.chat]
     const mentionName = jid => `@${resolveJid(jid).split('@')[0]}`
@@ -919,6 +1046,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     ===================================================== */
 
     if (command === 'penjara' && args[0]?.toLowerCase() === 'kabur') {
+        if (getRPG(m.sender)?.kidnappedBy) {
+            return m.reply('❌ Kamu tidak bisa bebas sendiri dari penculikan. Gunakan *.kabur* lalu tunggu respons penculik.')
+        }
         if (!isDiPenjara(m.sender)) return replyNotImprisoned(m.sender)
         let last = Number(wdb.kaburCooldown[m.sender]) || 0
         let now = Date.now()
@@ -1146,7 +1276,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         if (args[0] === 'all') {
             if (wdb.penjara.length === 0) return m.reply('🏛️ Penjara kosong')
             let bebas = []
-            for (const jidRaw of [...wdb.penjara]) { const jid = resolveJid(jidRaw); if (!isDiPenjara(jid)) continue; const rpg = getRPG(jid); if (!rpg) continue; markPatrolRelease(rpg); recordPrisonRelease(jid, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; removeFromBreakouts(jid); bebas.push(jid) }
+            for (const jidRaw of [...wdb.penjara]) { const jid = resolveJid(jidRaw); if (!isDiPenjara(jid)) continue; const rpg = getRPG(jid); if (!rpg) continue; markPatrolRelease(rpg); recordPrisonRelease(jid, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; clearKidnapState(rpg); removeFromBreakouts(jid); bebas.push(jid) }
             wdb.penjara = []; saveDB(wdb)
             const names = bebas.length? bebas.map(jid => `@${jid.split('@')[0]}`).join(', ') : '-'
             return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Bebas : ${names}\n╰ 𖥔 Oleh Owner${rehabilitationAdvice}`, m, { mentions: bebas })
@@ -1160,7 +1290,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         const rpg = getRPG(who); const index = wdb.penjara.findIndex(jid => resolveJid(jid) === who)
         if (!isDiPenjara(who)) return m.reply('❌ Orang ini tidak di penjara')
         const selLama = rpg?.sel || (index >= 0? index + 1 : 0)
-        if (rpg) { markPatrolRelease(rpg); recordPrisonRelease(who, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0 }
+        if (rpg) { markPatrolRelease(rpg); recordPrisonRelease(who, 'owner', m.sender); rpg.penjara = null; rpg.lamaPenjara = 0; rpg.tebusan = 0; rpg.sel = 0; rpg.gagalCopet = 0; clearKidnapState(rpg) }
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who); removeFromBreakouts(who); saveDB(wdb)
         return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN OWNER_* ]───✦\n╭ 𖥔 Owner : @${m.sender.split('@')[0]}\n│ 𖥔 Target : @${who.split('@')[0]}\n╰ 𖥔 Bebas dari SEL ${selLama}!${rehabilitationAdvice}`, m, { mentions: [m.sender, who] })
     }
@@ -1204,6 +1334,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
                 data.rpg.tebusan = 0
                 data.rpg.sel = 0
                 data.rpg.gagalCopet = 0
+                clearKidnapState(data.rpg)
                 removeFromBreakouts(data.jid)
                 bebas.push(data.jid)
             }
@@ -1247,6 +1378,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             rpg.tebusan = 0
             rpg.sel = 0
             rpg.gagalCopet = 0
+            clearKidnapState(rpg)
             wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
             removeFromBreakouts(who)
             saveDB(wdb)
@@ -1269,6 +1401,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         rpg.tebusan = 0
         rpg.sel = 0
         rpg.gagalCopet = 0
+        clearKidnapState(rpg)
         wdb.penjara = wdb.penjara.filter(jid => resolveJid(jid)!== who)
         removeFromBreakouts(who)
         saveDB(wdb)
@@ -1314,7 +1447,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
 
     `📋 *INFORMASI*\n` +
     `> ↳ Penjara berisi pemain yang gagal melakukan kejahatan atau terkena hukuman Owner.\n` +
-    `> ↳ Tahanan akibat penculikan hanya dapat bebas setelah ditebus pemain lain atau masa tahanannya habis. Gunakan *.tebus @tag* atau *.tebus sel <kode>* untuk menebus pemain lain.\n` +
+    `> ↳ Penculikan adalah status terpisah dari penjara; korban tidak masuk sel atau tercatat sebagai tahanan. Korban hanya dapat memakai *.kabur* untuk memulai percobaan kabur; penculik harus merespons dengan *.tangkap @tag* dalam 5 menit. Kabur dari penculikan tidak menambah poin buronan atau statistik kabur penjara.\n` +
+    `> ↳ Gunakan *.tebus @tag* atau *.tebus sel <kode>* untuk menebus pemain lain.\n` +
     `> ↳ Kasus penjara dapat berasal dari copet, begal, bunuh, rampok, jarah, culik, fitnah, atau Owner Jail.\n` +
     `> ↳ Routine dan talk menambah progres kabur.\n\n` +
 
@@ -1486,9 +1620,9 @@ cap += `\n─━━━━━━━━━━━━━━─`
    COMMAND CONFIG
 ========================================================= */
 
-handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'tebus', 'penjarain', 'bebasin']
+handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'tebus', 'penjarain', 'bebasin', 'kabur', 'tangkap']
 handler.tags = ['rpg']
-handler.command = /^(penjara|tebus|penjarain|bebasin)$/i
+handler.command = /^(penjara|tebus|penjarain|bebasin|kabur|tangkap)$/i
 handler.group = true
 
 export default handler

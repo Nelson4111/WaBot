@@ -4,6 +4,7 @@ import {
   MALL_CATEGORIES,
   MALL_CATEGORY_ALIASES,
   MALL_DAILY_DISCOUNT,
+  getMallRarity,
   MALL_PREMIUM_DISCOUNT,
   MALL_PREMIUM_SELL_BONUS
 } from '../../lib/rpgMallData.js'
@@ -14,11 +15,16 @@ const displayName = item => `${item.emoji} ${item.name}`
 const allItems = Object.entries(MALL_CATEGORIES).flatMap(([category, data]) =>
   data.items.map(item => ({ ...item, category }))
 )
+const sortByPrice = (items, priceOf = item => item.price) =>
+  [...items].sort((a, b) => priceOf(a) - priceOf(b) || a.name.localeCompare(b.name, 'id'))
 
-function findItem(input, category) {
+function findItem(input, category, priceOf) {
   const key = normalize(input)
   if (!key) return null
-  const candidates = category ? (MALL_CATEGORIES[category]?.items.map(item => ({ ...item, category })) || []) : allItems
+  const candidates = sortByPrice(category
+    ? (MALL_CATEGORIES[category]?.items.map(item => ({ ...item, category })) || [])
+    : allItems, priceOf)
+  if (/^\d+$/.test(key)) return candidates[Number(key) - 1] || null
   return candidates.find(item => normalize(item.id) === key || normalize(item.name) === key)
     || candidates.find(item => normalize(item.name).includes(key))
 }
@@ -32,8 +38,14 @@ function normalizeJid(jid) {
   return `${resolved.split('@')[0].split(':')[0]}${resolved.includes('@lid') ? '@lid' : '@s.whatsapp.net'}`
 }
 
-function formatItemList(items, priceFor) {
-  return items.map((item, index) => `*${index + 1}. ${displayName(item)}*\n> ↳ ${money(priceFor(item))}`).join('\n')
+function formatItemList(items, priceFor, sellPriceFor) {
+  return sortByPrice(items, priceFor).map((item, index) => {
+    const rarity = getMallRarity(item.price)
+    return `*${index + 1}. ${displayName(item)}*\n` +
+      `> ${rarity.stars} ${rarity.name}\n` +
+      `> Buy : ${money(priceFor(item))}\n` +
+      `> Sell : ${money(sellPriceFor(item))}`
+  }).join('\n\n')
 }
 
 let handler = async (m, { text = '', usedPrefix, command }) => {
@@ -61,108 +73,308 @@ let handler = async (m, { text = '', usedPrefix, command }) => {
   const category = MALL_CATEGORY_ALIASES[mode]
 
   if (!mode) {
-    return m.reply(
-      `🛍️ *MALL / SUPERMARKET*\n` +
-      `Belanja furniture, koleksi, kendaraan, fashion, elektronik, peralatan, dan hadiah.\n\n` +
-      `📂 ${Object.entries(MALL_CATEGORIES).map(([key, value]) => `${value.emoji} ${key}`).join(' · ')}\n` +
-      `> ${prefix}mall kategori\n> ${prefix}mall <kategori> list\n> ${prefix}mall info <item>\n` +
-      `> ${prefix}mall diskon | populer | harian\n\n` +
-      `👑 Premium: diskon ${(MALL_PREMIUM_DISCOUNT * 100).toFixed(0)}% Mall, bonus jual ${(MALL_PREMIUM_SELL_BONUS * 100).toFixed(0)}%.`
-    )
-  }
-
-  if (mode === 'kategori') {
-    return m.reply(`🗂️ *KATEGORI MALL*\n\n${Object.entries(MALL_CATEGORIES).map(([key, value]) =>
-      `${value.emoji} *${value.label}* — ${prefix}mall ${key} list`
-    ).join('\n')}`)
-  }
-
-  if (mode === 'diskon') {
-    const discounted = allItems.filter(item => item.price >= 150000).slice(0, 8)
-    return m.reply(`🏷️ *DISKON MALL*\nDiskon Premium: ${premium ? '20%' : 'khusus Premium'}\n\n${formatItemList(discounted, priceFor)}\n\nGunakan ${prefix}mall info <item> untuk detail.`)
-  }
-
-  if (mode === 'harian') {
-    return m.reply(`🎁 *PENAWARAN HARIAN*\n${displayName(dailyItem)}\nHarga normal: ${money(dailyItem.price)}\nHarga hari ini: ${money(dailyPrice(dailyItem))}\n\nBeli: ${prefix}mall ${dailyItem.category} beli ${dailyItem.id}`)
-  }
-
-  if (mode === 'populer') {
-    const popular = [...allItems].sort((a, b) => (sales[b.id] || 0) - (sales[a.id] || 0) || a.price - b.price).slice(0, 8)
-    return m.reply(`🔥 *BARANG POPULER*\n\n${popular.map((item, index) =>
-      `${index + 1}. ${displayName(item)} — ${sales[item.id] || 0} terjual`
-    ).join('\n')}`)
-  }
-
-  if (mode === 'info') {
-    const item = findItem(tokens.slice(1).join(' '))
-    if (!item) return m.reply('Barang tidak ditemukan. Periksa nama pada daftar Mall.')
-    return m.reply(
-      `🔎 *INFO BARANG*\n${displayName(item)}\nKategori: ${MALL_CATEGORIES[item.category].label}\n` +
-      `Harga: ${money(priceFor(item))}${premium ? ` (normal ${money(item.price)})` : ''}\nHarga jual kembali: ${money(Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n\n` +
-      `Beli: ${prefix}mall ${item.category} beli ${item.id}\nJual: ${prefix}mall ${item.category} jual ${item.id}`
-    )
-  }
-
-  if (mode === 'hadiah' && tokens.length === 1) {
-    return m.reply(`🎁 *MENU HADIAH*\n\n${formatItemList(MALL_CATEGORIES.hadiah.items, priceFor)}\n\nDetail: ${prefix}mall hadiah info <item>`)
-  }
-
-  if (mode === 'hadiah' && tokens[1] === 'info') {
-    const item = findItem(tokens.slice(2).join(' '), 'hadiah')
-    if (!item) return m.reply('Barang hadiah tidak ditemukan.')
-    return m.reply(`🔎 *${displayName(item)}*\nKategori: Hadiah\nHarga: ${money(priceFor(item))}\nHarga jual kembali: ${money(item.sellPrice)}\nBeli: ${prefix}mall hadiah beli ${item.id}`)
-  }
-
-  if (!category) return m.reply(`Kategori tidak dikenal. Gunakan ${prefix}mall kategori.`)
-
-  const action = String(tokens[1] || '').toLowerCase()
-  if (!action || action === 'list') {
-    return m.reply(
-      `${MALL_CATEGORIES[category].emoji} *MALL ${MALL_CATEGORIES[category].label.toUpperCase()}*\n` +
-      `Diskon Premium: ${premium ? '20%' : '0%'}\n\n${formatItemList(MALL_CATEGORIES[category].items, priceFor)}\n\n` +
-      `${prefix}mall ${category} info <item>\n${prefix}mall ${category} beli <item>\n${prefix}mall ${category} jual <item>`
-    )
-  }
-
-  if (!['info', 'beli', 'jual'].includes(action)) {
-    return m.reply(`Gunakan ${prefix}mall ${category} list|info|beli|jual <item>.`)
-  }
-
-  const itemTokens = tokens.slice(2)
-  const amountToken = ['beli', 'jual'].includes(action) && /^\d+$/.test(itemTokens.at(-1))
-    ? itemTokens.pop()
-    : null
-  const item = findItem(itemTokens.join(' '), category)
-  if (!item) return m.reply('Barang tidak ditemukan pada kategori ini.')
-
-  const inventory = rpg.mallInventory || (rpg.mallInventory = {})
-  const amount = amountToken ? Number(amountToken) : 1
-  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000) return m.reply('Jumlah harus berupa angka dari 1 sampai 1000.')
-
-  if (action === 'info') {
-    return m.reply(`🔎 *${displayName(item)}*\nKategori: ${MALL_CATEGORIES[category].label}\nHarga: ${money(priceFor(item))}\nHarga jual kembali: ${money(item.sellPrice)}\n${category === 'furniture' ? 'Furniture dapat dipasang di rumah dengan .home pasang <item>.' : ''}`)
-  }
-
-  if (action === 'beli') {
-    const total = priceFor(item) * amount
-    if (wallet() < total) return m.reply(`Uang tidak cukup. Butuh ${money(total)}, saldo kamu ${money(wallet())}.`)
-    setWallet(wallet() - total)
-    inventory[item.id] = (Number(inventory[item.id]) || 0) + amount
-    sales[item.id] = (Number(sales[item.id]) || 0) + amount
-    await saveDB(db)
-    return m.reply(`✅ Membeli ${displayName(item)} x${amount} seharga ${money(total)}.`)
-  }
-
-  if ((Number(inventory[item.id]) || 0) < amount) return m.reply(`Stok ${item.name} kamu tidak cukup.`)
-  inventory[item.id] -= amount
-  if (!inventory[item.id]) delete inventory[item.id]
-  const total = Math.floor(item.sellPrice * amount * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1))
-  setWallet(wallet() + total)
-  await saveDB(db)
-  return m.reply(`✅ Menjual ${displayName(item)} x${amount}. Saldo bertambah ${money(total)}.`)
+  const itemCount = allItems.length
+  return m.reply(
+    `╭─❏「 🛍️ MALL / SUPERMARKET 」❏\n` +
+    `│ 🛍️ *MALL / SUPERMARKET*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Tempat membeli dan menjual furniture, koleksi, kendaraan, fashion, elektronik, peralatan, dan dekorasi.\n` +
+    `> ↳ Tersedia *${itemCount} barang* dalam ${Object.keys(MALL_CATEGORIES).length} kategori.\n` +
+    `> ↳ Daftar barang diurutkan dari harga termurah ke termahal dan dilengkapi rarity bintang.\n\n` +
+    `📌 *PANDUAN*\n` +
+    `> ↳ *${prefix}mall guide*\n` +
+    `> ↳ *${prefix}mall command*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 }
 
-handler.help = ['mall', 'supermarket', 'mall kategori', 'mall furniture|koleksi|kendaraan|fashion|elektronik|peralatan|hadiah']
+if (mode === 'guide') {
+  return m.reply(
+    `╭─❏「 📖 MALL GUIDE 」❏\n` +
+    `│ 📖 *PANDUAN MALL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Mall adalah tempat untuk melihat, membeli, dan menjual barang RPG.\n` +
+    `> ↳ Daftar di setiap kategori diurutkan dari harga beli termurah ke termahal.\n` +
+    `> ↳ Rarity bintang mengikuti harga beli.\n` +
+    `> ↳ Furniture dapat menambah kenyamanan rumah atau dipasang, sedangkan koleksi dikelola melalui .cl.\n\n` +
+    `👑 *PREMIUM*\n` +
+    `> ↳ Diskon beli : ${(MALL_PREMIUM_DISCOUNT * 100).toFixed(0)}%\n` +
+    `> ↳ Bonus harga jual : ${(MALL_PREMIUM_SELL_BONUS * 100).toFixed(0)}%\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Lihat daftar perintah : *${prefix}mall command*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'command') {
+  return m.reply(
+    `╭─❏「 📋 MALL COMMAND 」❏\n` +
+    `│ 📋 *DAFTAR COMMAND*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🗂️ *KATEGORI*\n` +
+    `> ↳ ${prefix}mall kategori — daftar kategori\n` +
+    `> ↳ ${prefix}mall <kategori> list — barang termurah sampai termahal\n` +
+    `> ↳ ${prefix}mall <kategori> info <nomor/nama> — detail barang\n` +
+    `> ↳ ${prefix}mall <kategori> beli <nomor/nama> [jumlah] — membeli barang\n` +
+    `> ↳ ${prefix}mall <kategori> jual <nomor/nama> [jumlah] — menjual barang\n\n` +
+    `🏷️ *LAINNYA*\n` +
+    `> ↳ ${prefix}mall diskon — barang pilihan dan diskon Premium\n` +
+    `> ↳ ${prefix}mall harian — penawaran harian\n` +
+    `> ↳ ${prefix}mall populer — barang populer\n\n` +
+    `📌 *KATEGORI TERSEDIA*\n` +
+    `> ↳ ${Object.keys(MALL_CATEGORIES).join(', ')}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'kategori') {
+  return m.reply(
+    `╭─❏「 🗂️ KATEGORI MALL 」❏\n` +
+    `│ 🗂️ *DAFTAR KATEGORI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${Object.entries(MALL_CATEGORIES).map(([key, value]) =>
+      `${value.emoji} *${value.label}*\n` +
+      `> ↳ ${prefix}mall ${key} list`
+    ).join('\n\n')}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'diskon') {
+  const discounted = sortByPrice(allItems.filter(item => item.price >= 150000), priceFor).slice(0, 8)
+  return m.reply(
+    `╭─❏「 🏷️ DISKON MALL 」❏\n` +
+    `│ 🏷️ *BARANG DISKON*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Diskon Premium : ${premium ? '20%' : 'khusus Premium'}\n\n` +
+    `${formatItemList(discounted, priceFor, item => Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Gunakan *${prefix}mall info <item>* untuk detail.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'harian') {
+  return m.reply(
+    `╭─❏「 🎁 PENAWARAN HARIAN 」❏\n` +
+    `│ 🎁 *PENAWARAN HARIAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🛍️ *${displayName(dailyItem)}*\n` +
+    `> ↳ Harga normal : ${money(dailyItem.price)}\n` +
+    `> ↳ Harga hari ini : ${money(dailyPrice(dailyItem))}\n\n` +
+    `📌 *CARA MEMBELI*\n` +
+    `> ↳ ${prefix}mall ${dailyItem.category} beli ${dailyItem.id}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'populer') {
+  const popular = [...allItems].sort((a, b) => (sales[b.id] || 0) - (sales[a.id] || 0) || a.price - b.price).slice(0, 8)
+  return m.reply(
+    `╭─❏「 🔥 BARANG POPULER 」❏\n` +
+    `│ 🔥 *BARANG POPULER*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${popular.map((item, index) =>
+      `🔥 *${index + 1}. ${displayName(item)}*\n` +
+      `> ↳ Terjual : ${sales[item.id] || 0}x`
+    ).join('\n\n')}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'info') {
+  const item = findItem(tokens.slice(1).join(' '), undefined, priceFor)
+  if (!item) {
+    return m.reply(
+      `╭─❏「 🔎 INFO BARANG 」❏\n` +
+      `│ ❌ *BARANG TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Periksa nama barang pada daftar Mall.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  return m.reply(
+    `╭─❏「 🔎 INFO BARANG 」❏\n` +
+    `│ 🔎 *${displayName(item)}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kategori : ${MALL_CATEGORIES[item.category].label}\n` +
+    `> ↳ Harga : ${money(priceFor(item))}${premium ? ` (normal ${money(item.price)})` : ''}\n` +
+    `> ↳ Harga jual kembali : ${money(Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n\n` +
+    `📌 *TRANSAKSI*\n` +
+    `> ↳ Beli : ${prefix}mall ${item.category} beli ${item.id}\n` +
+    `> ↳ Jual : ${prefix}mall ${item.category} jual ${item.id}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (!category) {
+  return m.reply(
+    `╭─❏「 🛍️ MALL 」❏\n` +
+    `│ ❌ *KATEGORI TIDAK DIKENAL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Gunakan *${prefix}mall kategori* untuk melihat daftar kategori.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+const action = String(tokens[1] || '').toLowerCase()
+
+if (!action || action === 'list') {
+  const items = sortByPrice(MALL_CATEGORIES[category].items.map(item => ({ ...item, category })), priceFor)
+
+  return m.reply(
+    `╭─❏「 ${MALL_CATEGORIES[category].emoji} DAFTAR ${MALL_CATEGORIES[category].label.toUpperCase()} ${items.length} 」❏\n` +
+    `│ 📋 *DAFTAR BARANG*\n` +
+    `│ Diurutkan dari harga termurah ke termahal.\n` +
+    `│ Rarity bintang berdasarkan harga beli.\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${formatItemList(items, priceFor, item => Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n\n` +
+    `📌 *TRANSAKSI*\n` +
+    `> ↳ Detail : ${prefix}mall ${category} info <nomor/nama>\n` +
+    `> ↳ Beli : ${prefix}mall ${category} beli <nomor/nama> [jumlah]\n` +
+    `> ↳ Jual : ${prefix}mall ${category} jual <nomor/nama> [jumlah]\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (!['info', 'beli', 'jual'].includes(action)) {
+  return m.reply(
+    `╭─❏「 🛍️ MALL 」❏\n` +
+    `│ ❌ *COMMAND TIDAK VALID*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Gunakan *${prefix}mall ${category} list*.\n` +
+    `> ↳ Gunakan *${prefix}mall ${category} info <item>*.\n` +
+    `> ↳ Gunakan *${prefix}mall ${category} beli <item>*.\n` +
+    `> ↳ Gunakan *${prefix}mall ${category} jual <item>*.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+const itemTokens = tokens.slice(2)
+const amountToken = ['beli', 'jual'].includes(action) && itemTokens.length > 1 && /^\d+$/.test(itemTokens.at(-1))
+  ? itemTokens.pop()
+  : null
+
+const item = findItem(itemTokens.join(' '), category, priceFor)
+
+if (!item) {
+  return m.reply(
+    `╭─❏「 🛍️ MALL 」❏\n` +
+    `│ ❌ *BARANG TIDAK DITEMUKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Barang tidak ditemukan pada kategori ini.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+const inventory = rpg.mallInventory || (rpg.mallInventory = {})
+const amount = amountToken ? Number(amountToken) : 1
+
+if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000) {
+  return m.reply(
+    `╭─❏「 🛍️ MALL 」❏\n` +
+    `│ ❌ *JUMLAH TIDAK VALID*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Jumlah harus berupa angka dari 1 sampai 1000.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'info') {
+  const rarity = getMallRarity(item.price)
+
+  return m.reply(
+    `╭─❏「 🔎 INFO BARANG 」❏\n` +
+    `│ 🔎 *${displayName(item)}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kategori : ${MALL_CATEGORIES[category].label}\n` +
+    `> ↳ Rarity : ${rarity.stars} ${rarity.name}\n` +
+    `> ↳ Harga : ${money(priceFor(item))}\n` +
+    `> ↳ Harga jual kembali : ${money(Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n` +
+    `${category === 'furniture' ? `> ↳ Furniture dapat dipasang di rumah dengan .home pasang <item> dan meningkatkan kenyamanan rumah.\n` : ''}\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'beli') {
+  const total = priceFor(item) * amount
+
+  if (wallet() < total) {
+    return m.reply(
+      `╭─❏「 ❌ PEMBELIAN GAGAL 」❏\n` +
+      `│ ❌ *UANG TIDAK CUKUP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Harga : ${money(total)}\n` +
+      `> ↳ Saldo kamu : ${money(wallet())}\n` +
+      `> ↳ Kekurangan : ${money(total - wallet())}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  setWallet(wallet() - total)
+  inventory[item.id] = (Number(inventory[item.id]) || 0) + amount
+  sales[item.id] = (Number(sales[item.id]) || 0) + amount
+
+  await saveDB(db)
+
+  return m.reply(
+    `╭─❏「 🛍️ PEMBELIAN BERHASIL 」❏\n` +
+    `│ ✅ *PEMBELIAN BERHASIL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Barang : ${displayName(item)}\n` +
+    `> ↳ Jumlah : x${amount}\n` +
+    `> ↳ Total : ${money(total)}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if ((Number(inventory[item.id]) || 0) < amount) {
+  return m.reply(
+    `╭─❏「 ❌ PENJUALAN GAGAL 」❏\n` +
+    `│ ❌ *STOK TIDAK CUKUP*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Stok ${item.name} kamu tidak cukup.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+const outfit = rpg.character?.outfit || {}
+const isWornFashion = outfit.head === item.id || outfit.top === item.id || outfit.bottom === item.id ||
+  outfit.feet === item.id || outfit.accessories?.includes(item.id)
+
+if (isWornFashion && (Number(inventory[item.id]) || 0) - amount < 1) {
+  return m.reply(
+    `╭─❏「 👕 ITEM SEDANG DIPAKAI 」❏\n` +
+    `│ ⚠️ *ITEM SEDANG DIPAKAI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${item.name} sedang dipakai.\n` +
+    `> ↳ Lepas dari .wardrobe terlebih dahulu atau sisakan minimal 1 untuk outfit.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+inventory[item.id] -= amount
+if (!inventory[item.id]) delete inventory[item.id]
+
+const total = Math.floor(item.sellPrice * amount * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1))
+
+setWallet(wallet() + total)
+
+await saveDB(db)
+
+return m.reply(
+  `╭─❏「 🛍️ PENJUALAN BERHASIL 」❏\n` +
+  `│ ✅ *PENJUALAN BERHASIL*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `> ↳ Barang : ${displayName(item)}\n` +
+  `> ↳ Jumlah : x${amount}\n` +
+  `> ↳ Saldo bertambah : ${money(total)}\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
+}
+
+handler.help = ['mall', 'mall guide', 'mall command', 'mall kategori', 'mall furniture|koleksi|kendaraan|fashion|elektronik|peralatan|dekorasi']
 handler.alias = ['supermarket']
 handler.tags = ['rpg']
 handler.command = /^(mall|supermarket)$/i

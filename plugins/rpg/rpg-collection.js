@@ -62,138 +62,498 @@ let handler = async (m, { text = '', usedPrefix, command }) => {
   const prefix = usedPrefix || '.'
 
   if (!['cl', 'collection', 'koleksi'].includes(root)) return null
-  const mode = String(tokens[0] || '').toLowerCase()
+const mode = String(tokens[0] || '').toLowerCase()
 
-  if (!mode) return m.reply(`📚 *COLLECTION*\n${prefix}cl list · info <item> · kategori · top\n${prefix}cl favorite <item> · showcase [item]\n${prefix}cl unshowcase <item> · ${prefix}cl @user (lihat koleksi)\n${prefix}cl hadiah @user <item> · tukar @user <item-kamu> <item-dia>\n${prefix}cl terima · ${prefix}cl tolak (jawab pertukaran)\nPremium: diskon 20% saat membeli koleksi di ${prefix}mall koleksi.`)
-  if (mode === 'kategori') return m.reply(`🗂️ *KATEGORI KOLEKSI*\n${MALL_CATEGORIES.koleksi.items.map(item => `• ${displayName(item)} — ${money(item.price)}`).join('\n')}`)
+if (!mode) {
+  const totalOwned = MALL_CATEGORIES.koleksi.items.reduce((sum, item) =>
+    sum + (Number(inventory[item.id]) || 0), 0
+  )
 
-  if (mode === 'info') {
-    const item = findItem(tokens.slice(1).join(' '), 'koleksi')
-    if (!item) return m.reply('Item koleksi tidak ditemukan.')
-    return m.reply(`🔎 *${displayName(item)}*\nHarga Mall: ${money(Math.floor(item.price * (premium ? 1 - MALL_PREMIUM_DISCOUNT : 1)))}\nHarga jual: ${money(item.sellPrice)}\nDimiliki: ${inventory[item.id] || 0}\nFavorit: ${(rpg.collectionFavorites || []).includes(item.id) ? 'Ya' : 'Tidak'}\nDipamerkan: ${(rpg.collectionShowcase || []).includes(item.id) ? 'Ya' : 'Tidak'}`)
+  return m.reply(
+    `╭─❏「 📚 COLLECTION / KOLEKSI 」❏\n` +
+    `│ 📚 *COLLECTION / KOLEKSI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Lihat, pamerkan, hadiahkan, atau tukarkan item koleksi.\n` +
+    `> ↳ Kamu memiliki *${totalOwned} koleksi*.\n\n` +
+    `📌 *PANDUAN*\n` +
+    `> ↳ *${prefix}cl guide*\n` +
+    `> ↳ *${prefix}cl command*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'guide') {
+  return m.reply(
+    `╭─❏「 📖 COLLECTION GUIDE 」❏\n` +
+    `│ 📖 *PANDUAN KOLEKSI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Koleksi dapat dibeli melalui Mall, ditandai sebagai favorit, dipamerkan di profil, dilihat milik pemain lain, atau dipertukarkan/dihadiahkan.\n` +
+    `> ↳ Premium mendapat diskon 20% saat membeli koleksi di Mall.\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Lihat daftar perintah : *${prefix}cl command*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'command') {
+  return m.reply(
+    `╭─❏「 📋 COLLECTION COMMAND 」❏\n` +
+    `│ 📋 *DAFTAR COMMAND*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📚 *KOLEKSI*\n` +
+    `> ↳ ${prefix}cl list — daftar koleksimu\n` +
+    `> ↳ ${prefix}cl info <item> — detail koleksi\n` +
+    `> ↳ ${prefix}cl kategori — daftar item koleksi\n` +
+    `> ↳ ${prefix}cl top — top kolektor\n` +
+    `> ↳ ${prefix}cl favorite <item> — tandai favorit\n` +
+    `> ↳ ${prefix}cl showcase [item] — lihat/tambah pameran\n` +
+    `> ↳ ${prefix}cl unshowcase <item> — hapus dari pameran\n\n` +
+    `👥 *INTERAKSI*\n` +
+    `> ↳ ${prefix}cl @user — lihat koleksi pemain\n` +
+    `> ↳ ${prefix}cl hadiah @user <item> — hadiahkan koleksi\n` +
+    `> ↳ ${prefix}cl tukar @user <koleksimu> <koleksinya> — ajukan tukar\n` +
+    `> ↳ ${prefix}cl terima — jawab permintaan tukar\n` +
+    `> ↳ ${prefix}cl tolak — tolak permintaan tukar\n\n` +
+    `🛒 *PEMBELIAN*\n` +
+    `> ↳ Beli koleksi : ${prefix}mall koleksi list\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'kategori') {
+  return m.reply(
+    `╭─❏「 🗂️ KATEGORI KOLEKSI 」❏\n` +
+    `│ 🗂️ *DAFTAR ITEM KOLEKSI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${MALL_CATEGORIES.koleksi.items.map(item =>
+      `📚 *${displayName(item)}*\n` +
+      `> ↳ Harga : ${money(item.price)}`
+    ).join('\n\n')}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'info') {
+  const item = findItem(tokens.slice(1).join(' '), 'koleksi')
+
+  if (!item) {
+    return m.reply(
+      `╭─❏「 🔎 INFO KOLEKSI 」❏\n` +
+      `│ ❌ *ITEM TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Item koleksi tidak ditemukan.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  if (mode === 'list') {
-    const ownedCollections = MALL_CATEGORIES.koleksi.items.filter(item => Number(inventory[item.id]) > 0)
-    return m.reply(`📚 *KOLEKSI DIMILIKI*\n${ownedCollections.length ? ownedCollections.map(item =>
-      `• ${displayName(item)} x${inventory[item.id]}${(rpg.collectionFavorites || []).includes(item.id) ? ' ⭐' : ''}${(rpg.collectionShowcase || []).includes(item.id) ? ' 🖼️' : ''}`
-    ).join('\n') : 'Belum ada item koleksi. Beli di .mall koleksi list.'}`)
-  }
+  return m.reply(
+    `╭─❏「 🔎 INFO KOLEKSI 」❏\n` +
+    `│ 🔎 *${displayName(item)}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Harga Mall : ${money(Math.floor(item.price * (premium ? 1 - MALL_PREMIUM_DISCOUNT : 1)))}\n` +
+    `> ↳ Harga jual : ${money(item.sellPrice)}\n` +
+    `> ↳ Dimiliki : ${inventory[item.id] || 0}\n` +
+    `> ↳ Favorit : ${(rpg.collectionFavorites || []).includes(item.id) ? 'Ya' : 'Tidak'}\n` +
+    `> ↳ Dipamerkan : ${(rpg.collectionShowcase || []).includes(item.id) ? 'Ya' : 'Tidak'}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
-  if (mode === 'top') {
-    const ranked = Object.entries(db.users || {}).filter(([, user]) => user?.rpg).map(([jid, user]) => {
+if (mode === 'list') {
+  const ownedCollections = MALL_CATEGORIES.koleksi.items.filter(item => Number(inventory[item.id]) > 0)
+
+  return m.reply(
+    `╭─❏「 📚 KOLEKSI DIMILIKI 」❏\n` +
+    `│ 📚 *KOLEKSI MILIKMU*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${ownedCollections.length ? ownedCollections.map(item =>
+      `📚 *${displayName(item)}* x${inventory[item.id]}` +
+      `${(rpg.collectionFavorites || []).includes(item.id) ? ' ⭐' : ''}` +
+      `${(rpg.collectionShowcase || []).includes(item.id) ? ' 🖼️' : ''}`
+    ).join('\n') : '> ↳ Belum ada item koleksi.'}\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Beli koleksi di *${prefix}mall koleksi list*.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'top') {
+  const ranked = Object.entries(db.users || {})
+    .filter(([, user]) => user?.rpg)
+    .map(([jid, user]) => {
       const bag = user.rpg.mallInventory || {}
-      return { jid, name: user.name || 'Pemain', count: MALL_CATEGORIES.koleksi.items.reduce((sum, item) => sum + (Number(bag[item.id]) || 0), 0) }
-    }).sort((a, b) => b.count - a.count).slice(0, 10)
-    return m.reply(`🏆 *TOP KOLEKTOR*\n${ranked.map((entry, index) => `${index + 1}. ${entry.name} — ${entry.count} koleksi`).join('\n') || 'Belum ada kolektor.'}`)
-  }
-
-  if (mode === 'favorite') {
-    const item = findItem(tokens.slice(1).join(' '), 'koleksi')
-    if (!item) return m.reply('Item koleksi tidak ditemukan.')
-    if ((Number(inventory[item.id]) || 0) < 1) return m.reply('Kamu hanya bisa memfavoritkan koleksi yang dimiliki.')
-    if (!rpg.collectionFavorites.includes(item.id)) rpg.collectionFavorites.push(item.id)
-    await saveDB(db)
-    return m.reply(`⭐ ${item.name} ditandai sebagai favorit.`)
-  }
-
-  if (mode === 'showcase' || mode === 'unshowcase') {
-    const itemInput = tokens.slice(1).join(' ')
-    if (!itemInput) return m.reply(`🖼️ *KOLEKSI PAMERAN*\n${rpg.collectionShowcase.length ? rpg.collectionShowcase.map(id => `• ${findItem(id)?.name || id}`).join('\n') : 'Belum ada item dipamerkan.'}\nTambah: ${prefix}cl showcase <item>`)
-    const item = findItem(itemInput, 'koleksi')
-    if (!item) return m.reply('Item koleksi tidak ditemukan.')
-    if (mode === 'showcase') {
-      if ((Number(inventory[item.id]) || 0) < 1) return m.reply('Kamu hanya bisa memamerkan koleksi yang dimiliki.')
-      if (!rpg.collectionShowcase.includes(item.id) && rpg.collectionShowcase.length >= COLLECTION_SHOWCASE_LIMIT) return m.reply(`Pameran penuh. Batasnya ${COLLECTION_SHOWCASE_LIMIT} item.`)
-      if (!rpg.collectionShowcase.includes(item.id)) rpg.collectionShowcase.push(item.id)
-    } else {
-      rpg.collectionShowcase = rpg.collectionShowcase.filter(id => id !== item.id)
-    }
-    await saveDB(db)
-    return m.reply(`✅ ${item.name} ${mode === 'showcase' ? 'ditambahkan ke' : 'dihapus dari'} pameran.`)
-  }
-
-  if (mode === 'hadiah' || mode === 'tukar') {
-    const { target, args } = mentionsOrReply(m, tokens.slice(1))
-    if (!target || target === sender) return m.reply(`Tag pemain lain. Contoh: ${prefix}cl ${mode} @user <item>`)
-    const targetUser = getUserRPG(db, target)
-    if (!targetUser?.rpg) return m.reply('Target belum memiliki data RPG.')
-    const receiverBag = getCollection(targetUser.rpg)
-
-    if (mode === 'hadiah') {
-      const item = findItem(args.join(' '), 'koleksi')
-      if (!item) return m.reply('Sebutkan item koleksi yang valid.')
-      if ((Number(inventory[item.id]) || 0) < 1) return m.reply(`Kamu tidak memiliki ${item.name}.`)
-      inventory[item.id]--
-      if (!inventory[item.id]) delete inventory[item.id]
-      clearCollectionFlagsWhenUnowned(rpg, item.id)
-      receiverBag[item.id] = (Number(receiverBag[item.id]) || 0) + 1
-      await saveDB(db)
-      return m.reply(`🎁 ${item.name} diberikan kepada @${target.split('@')[0]}.`, null, { mentions: [target] })
-    }
-
-    let offered = null
-    let requested = null
-    for (let split = 1; split < args.length && !requested; split++) {
-      const candidateOffered = findItem(args.slice(0, split).join(' '), 'koleksi')
-      const candidateRequested = findItem(args.slice(split).join(' '), 'koleksi')
-      if (candidateOffered && candidateRequested) {
-        offered = candidateOffered
-        requested = candidateRequested
+      return {
+        jid,
+        name: user.name || 'Pemain',
+        count: MALL_CATEGORIES.koleksi.items.reduce((sum, item) =>
+          sum + (Number(bag[item.id]) || 0), 0
+        )
       }
-    }
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
 
-    if (!requested) return m.reply(`Format tukar: ${prefix}cl tukar @user <koleksi-kamu> <koleksi-yang-diminta>.`)
-    if ((Number(inventory[offered.id]) || 0) < 1) return m.reply(`Kamu tidak memiliki ${offered.name}.`)
-    if ((Number(receiverBag[requested.id]) || 0) < 1) return m.reply(`Target tidak memiliki ${requested.name}.`)
-    if (targetUser.rpg.collectionTrade) return m.reply('Target masih memiliki permintaan tukar yang belum dijawab.')
-    targetUser.rpg.collectionTrade = { from: sender, offered: offered.id, requested: requested.id, createdAt: Date.now() }
-    await saveDB(db)
-    return m.reply(`🔄 Permintaan tukar dikirim: ${offered.name} ↔ ${requested.name}.\n@${target.split('@')[0]} dapat memakai .cl terima atau .cl tolak.`, null, { mentions: [target] })
+  return m.reply(
+    `╭─❏「 🏆 TOP KOLEKTOR 」❏\n` +
+    `│ 🏆 *TOP KOLEKTOR*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${ranked.map((entry, index) =>
+      `🏆 *${index + 1}. ${entry.name}*\n` +
+      `> ↳ Koleksi : ${entry.count}`
+    ).join('\n\n') || '> ↳ Belum ada kolektor.'}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'favorite') {
+  const item = findItem(tokens.slice(1).join(' '), 'koleksi')
+
+  if (!item) {
+    return m.reply(
+      `╭─❏「 ⭐ FAVORIT KOLEKSI 」❏\n` +
+      `│ ❌ *ITEM TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Item koleksi tidak ditemukan.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  if (mode === 'terima' || mode === 'tolak') {
-    const trade = rpg.collectionTrade
-    if (!trade || Date.now() - trade.createdAt > 600000) {
-      delete rpg.collectionTrade
-      await saveDB(db)
-      return m.reply('Tidak ada permintaan tukar aktif (berlaku 10 menit).')
+  if ((Number(inventory[item.id]) || 0) < 1) {
+    return m.reply(
+      `╭─❏「 ⭐ FAVORIT KOLEKSI 」❏\n` +
+      `│ ❌ *KOLEKSI TIDAK DIMILIKI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kamu hanya bisa memfavoritkan koleksi yang dimiliki.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (!rpg.collectionFavorites.includes(item.id)) rpg.collectionFavorites.push(item.id)
+
+  await saveDB(db)
+
+  return m.reply(
+    `╭─❏「 ⭐ FAVORIT KOLEKSI 」❏\n` +
+    `│ ⭐ *DITANDAI SEBAGAI FAVORIT*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${item.name} ditandai sebagai favorit.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'showcase' || mode === 'unshowcase') {
+  const itemInput = tokens.slice(1).join(' ')
+
+  if (!itemInput) {
+    return m.reply(
+      `╭─❏「 🖼️ KOLEKSI PAMERAN 」❏\n` +
+      `│ 🖼️ *KOLEKSI YANG DIPAMERKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${rpg.collectionShowcase.length ? rpg.collectionShowcase.map(id =>
+        `🖼️ *${findItem(id)?.name || id}*`
+      ).join('\n') : '> ↳ Belum ada item dipamerkan.'}\n\n` +
+      `📌 *CARA MENAMBAHKAN*\n` +
+      `> ↳ ${prefix}cl showcase <item>\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const item = findItem(itemInput, 'koleksi')
+
+  if (!item) {
+    return m.reply(
+      `╭─❏「 🖼️ KOLEKSI PAMERAN 」❏\n` +
+      `│ ❌ *ITEM TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Item koleksi tidak ditemukan.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (mode === 'showcase') {
+    if ((Number(inventory[item.id]) || 0) < 1) {
+      return m.reply(
+        `╭─❏「 🖼️ KOLEKSI PAMERAN 」❏\n` +
+        `│ ❌ *KOLEKSI TIDAK DIMILIKI*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Kamu hanya bisa memamerkan koleksi yang dimiliki.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
-    const senderUser = getUserRPG(db, trade.from)
-    if (mode === 'tolak') {
-      delete rpg.collectionTrade
-      await saveDB(db)
-      return m.reply('Permintaan tukar ditolak.')
+
+    if (!rpg.collectionShowcase.includes(item.id) && rpg.collectionShowcase.length >= COLLECTION_SHOWCASE_LIMIT) {
+      return m.reply(
+        `╭─❏「 🖼️ KOLEKSI PAMERAN 」❏\n` +
+        `│ ❌ *PAMERAN PENUH*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Batas pameran : ${COLLECTION_SHOWCASE_LIMIT} item.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
-    const senderBag = getCollection(senderUser?.rpg || {})
-    if (!senderUser?.rpg || (Number(senderBag[trade.offered]) || 0) < 1 || (Number(inventory[trade.requested]) || 0) < 1) {
-      delete rpg.collectionTrade
-      await saveDB(db)
-      return m.reply('Pertukaran dibatalkan karena stok salah satu item sudah berubah.')
+
+    if (!rpg.collectionShowcase.includes(item.id)) rpg.collectionShowcase.push(item.id)
+  } else {
+    rpg.collectionShowcase = rpg.collectionShowcase.filter(id => id !== item.id)
+  }
+
+  await saveDB(db)
+
+  return m.reply(
+    `╭─❏「 🖼️ KOLEKSI PAMERAN 」❏\n` +
+    `│ ✅ *${mode === 'showcase' ? 'DITAMBAHKAN KE PAMERAN' : 'DIHAPUS DARI PAMERAN'}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${item.name} ${mode === 'showcase' ? 'ditambahkan ke' : 'dihapus dari'} pameran.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'hadiah' || mode === 'tukar') {
+  const { target, args } = mentionsOrReply(m, tokens.slice(1))
+
+  if (!target || target === sender) {
+    return m.reply(
+      `╭─❏「 🎁 INTERAKSI KOLEKSI 」❏\n` +
+      `│ ❌ *TARGET TIDAK VALID*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Tag pemain lain.\n` +
+      `> ↳ Contoh : *${prefix}cl ${mode} @user <item>*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const targetUser = getUserRPG(db, target)
+
+  if (!targetUser?.rpg) {
+    return m.reply(
+      `╭─❏「 🎁 INTERAKSI KOLEKSI 」❏\n` +
+      `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Target belum memiliki data RPG.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const receiverBag = getCollection(targetUser.rpg)
+
+  if (mode === 'hadiah') {
+    const item = findItem(args.join(' '), 'koleksi')
+
+    if (!item) {
+      return m.reply(
+        `╭─❏「 🎁 HADIAH KOLEKSI 」❏\n` +
+        `│ ❌ *ITEM TIDAK VALID*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Sebutkan item koleksi yang valid.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
-    senderBag[trade.offered]--
-    clearCollectionFlagsWhenUnowned(senderUser.rpg, trade.offered)
-    inventory[trade.offered] = (Number(inventory[trade.offered]) || 0) + 1
-    inventory[trade.requested]--
-    clearCollectionFlagsWhenUnowned(rpg, trade.requested)
-    senderBag[trade.requested] = (Number(senderBag[trade.requested]) || 0) + 1
+
+    if ((Number(inventory[item.id]) || 0) < 1) {
+      return m.reply(
+        `╭─❏「 🎁 HADIAH KOLEKSI 」❏\n` +
+        `│ ❌ *KOLEKSI TIDAK DIMILIKI*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Kamu tidak memiliki ${item.name}.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    inventory[item.id]--
+    if (!inventory[item.id]) delete inventory[item.id]
+
+    clearCollectionFlagsWhenUnowned(rpg, item.id)
+
+    receiverBag[item.id] = (Number(receiverBag[item.id]) || 0) + 1
+
+    await saveDB(db)
+
+    return m.reply(
+      `╭─❏「 🎁 HADIAH KOLEKSI 」❏\n` +
+      `│ 🎁 *HADIAH BERHASIL DIKIRIM*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Item : ${item.name}\n` +
+      `> ↳ Penerima : @${target.split('@')[0]}\n\n` +
+      `─━━━━━━━━━━━━━━─`,
+      null,
+      { mentions: [target] }
+    )
+  }
+
+  let offered = null
+  let requested = null
+
+  for (let split = 1; split < args.length && !requested; split++) {
+    const candidateOffered = findItem(args.slice(0, split).join(' '), 'koleksi')
+    const candidateRequested = findItem(args.slice(split).join(' '), 'koleksi')
+
+    if (candidateOffered && candidateRequested) {
+      offered = candidateOffered
+      requested = candidateRequested
+    }
+  }
+
+  if (!requested) {
+    return m.reply(
+      `╭─❏「 🔄 TUKAR KOLEKSI 」❏\n` +
+      `│ ❌ *FORMAT TUKAR TIDAK VALID*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Format : ${prefix}cl tukar @user <koleksi-kamu> <koleksi-yang-diminta>.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if ((Number(inventory[offered.id]) || 0) < 1) {
+    return m.reply(
+      `╭─❏「 🔄 TUKAR KOLEKSI 」❏\n` +
+      `│ ❌ *KOLEKSI TIDAK DIMILIKI*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kamu tidak memiliki ${offered.name}.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if ((Number(receiverBag[requested.id]) || 0) < 1) {
+    return m.reply(
+      `╭─❏「 🔄 TUKAR KOLEKSI 」❏\n` +
+      `│ ❌ *KOLEKSI TARGET TIDAK TERSEDIA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Target tidak memiliki ${requested.name}.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (targetUser.rpg.collectionTrade) {
+    return m.reply(
+      `╭─❏「 🔄 TUKAR KOLEKSI 」❏\n` +
+      `│ ⚠️ *MASIH ADA PERMINTAAN AKTIF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Target masih memiliki permintaan tukar yang belum dijawab.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  targetUser.rpg.collectionTrade = {
+    from: sender,
+    offered: offered.id,
+    requested: requested.id,
+    createdAt: Date.now()
+  }
+
+  await saveDB(db)
+
+  return m.reply(
+    `╭─❏「 🔄 TUKAR KOLEKSI 」❏\n` +
+    `│ 🔄 *PERMINTAAN TUKAR DIKIRIM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${offered.name} ↔ ${requested.name}\n` +
+    `> ↳ @${target.split('@')[0]} dapat memakai *${prefix}cl terima* atau *${prefix}cl tolak*.\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    null,
+    { mentions: [target] }
+  )
+}
+
+if (mode === 'terima' || mode === 'tolak') {
+  const trade = rpg.collectionTrade
+
+  if (!trade || Date.now() - trade.createdAt > 600000) {
     delete rpg.collectionTrade
     await saveDB(db)
-    return m.reply(`✅ Pertukaran berhasil: ${findItem(trade.offered)?.name} ↔ ${findItem(trade.requested)?.name}.`)
+
+    return m.reply(
+      `╭─❏「 🔄 PERMINTAAN TUKAR 」❏\n` +
+      `│ ❌ *PERMINTAAN TIDAK AKTIF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Tidak ada permintaan tukar aktif.\n` +
+      `> ↳ Permintaan berlaku selama 10 menit.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  const target = normalizeJid(m.mentionedJid?.[0] || m.quoted?.sender)
-  if (target) {
-    const other = getUserRPG(db, target)
-    const bag = other?.rpg?.mallInventory || {}
-    const display = MALL_CATEGORIES.koleksi.items.filter(item => Number(bag[item.id]) > 0)
-    const showcase = other?.rpg?.collectionShowcase || []
-    return m.reply(`📚 *KOLEKSI @${target.split('@')[0]}*\n${display.length ? display.map(item =>
-      `• ${displayName(item)} x${bag[item.id]}${showcase.includes(item.id) ? ' 🖼️' : ''}`
-    ).join('\n') : 'Belum ada koleksi.'}`, null, { mentions: [target] })
+  const senderUser = getUserRPG(db, trade.from)
+
+  if (mode === 'tolak') {
+    delete rpg.collectionTrade
+    await saveDB(db)
+
+    return m.reply(
+      `╭─❏「 🔄 PERMINTAAN TUKAR 」❏\n` +
+      `│ ❌ *PERTUKARAN DITOLAK*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Permintaan tukar ditolak.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
-  return m.reply(`Subcommand tidak dikenal. Gunakan ${prefix}cl untuk melihat menu Collection.`)
+  const senderBag = getCollection(senderUser?.rpg || {})
+
+  if (!senderUser?.rpg ||
+      (Number(senderBag[trade.offered]) || 0) < 1 ||
+      (Number(inventory[trade.requested]) || 0) < 1) {
+    delete rpg.collectionTrade
+    await saveDB(db)
+
+    return m.reply(
+      `╭─❏「 🔄 PERTUKARAN GAGAL 」❏\n` +
+      `│ ❌ *STOK ITEM BERUBAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Pertukaran dibatalkan karena stok salah satu item sudah berubah.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  senderBag[trade.offered]--
+  clearCollectionFlagsWhenUnowned(senderUser.rpg, trade.offered)
+
+  inventory[trade.offered] = (Number(inventory[trade.offered]) || 0) + 1
+
+  inventory[trade.requested]--
+  clearCollectionFlagsWhenUnowned(rpg, trade.requested)
+
+  senderBag[trade.requested] = (Number(senderBag[trade.requested]) || 0) + 1
+
+  delete rpg.collectionTrade
+
+  await saveDB(db)
+
+  return m.reply(
+    `╭─❏「 🔄 PERTUKARAN BERHASIL 」❏\n` +
+    `│ ✅ *PERTUKARAN BERHASIL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${findItem(trade.offered)?.name} ↔ ${findItem(trade.requested)?.name}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+const target = normalizeJid(m.mentionedJid?.[0] || m.quoted?.sender)
+
+if (target) {
+  const other = getUserRPG(db, target)
+  const bag = other?.rpg?.mallInventory || {}
+  const display = MALL_CATEGORIES.koleksi.items.filter(item => Number(bag[item.id]) > 0)
+  const showcase = other?.rpg?.collectionShowcase || []
+
+  return m.reply(
+    `╭─❏「 📚 KOLEKSI PEMAIN 」❏\n` +
+    `│ 📚 *KOLEKSI @${target.split('@')[0]}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${display.length ? display.map(item =>
+      `📚 *${displayName(item)}* x${bag[item.id]}${showcase.includes(item.id) ? ' 🖼️' : ''}`
+    ).join('\n') : '> ↳ Belum ada koleksi.'}\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    null,
+    { mentions: [target] }
+  )
+}
+
+return m.reply(
+  `╭─❏「 📚 COLLECTION 」❏\n` +
+  `│ ❌ *COMMAND TIDAK DIKENAL*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `> ↳ Gunakan *${prefix}cl guide* untuk panduan.\n` +
+  `> ↳ Gunakan *${prefix}cl command* untuk daftar command.\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
 }
 
 handler.help = ['cl', 'collection', 'koleksi']

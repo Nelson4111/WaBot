@@ -4,6 +4,8 @@ import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
+import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -60,10 +62,11 @@ let handler = async (m, { conn }) => {
 
   userRPG.lastcopet = Date.now()
   let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.6)
+  let story = getRpgCrimeStory('copet', gagal ? 'failure' : 'success')
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}
-  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, jarah: 0, culik: 0, begal: 0, bunuh: 0, total: 0 }
+  wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
 
   if (gagal) {
     userRPG.gagalCopet = (userRPG.gagalCopet || 0) + 1
@@ -91,7 +94,7 @@ let handler = async (m, { conn }) => {
       if (!userRPG.sel) {
         return m.reply(`⚠️ Kamu gagal copet dan membayar denda Rp ${denda.toLocaleString('id-ID')}, tetapi perlindungan mantan napi mencegahmu masuk penjara.`)
       }
-      return m.reply(`🚔 *KETANGKEP POLISI!*\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus*`)
+      return m.reply(`🚔 *KETANGKEP POLISI!*\n${story}\n\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus*`)
     }
     saveDB(wdb)
 
@@ -101,6 +104,7 @@ let handler = async (m, { conn }) => {
     txt += `│ 💸 Denda: Rp ${denda.toLocaleString()}\n`
     txt += `│ ⚠️ Strike: ${userRPG.gagalCopet}/2\n`
     txt += `╰─━━━━━━━━━━━━━━─`
+    txt += `\n\n${story}`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
@@ -123,6 +127,7 @@ txt += `│ 🤏 Copet: @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
 txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
 txt += `╰─━━━━━━━━━━━━━━─\n\n`
+txt += `${story}\n\n`
 txt += `💡 *INFO*\n`
 txt += `> ↳ Cek *.buronan* untuk melihat DPO.`
 

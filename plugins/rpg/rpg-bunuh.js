@@ -4,6 +4,8 @@ import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
+import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -60,16 +62,17 @@ let handler = async (m, { conn }) => {
 
   userRPG.lastbunuh = Date.now()
   let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.8)
+  let story = getRpgCrimeStory('bunuh', gagal ? 'failure' : 'success')
 
   if (gagal && tryPremiumProtection(m.sender, 'bunuh')) {
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat bunuh @${who.split('@')[0]}`)
     await saveDB(wdb)
-    return m.reply('🛡️ Premium protection aktif: kamu selamat dari kegagalan aksi bunuh dan tidak masuk penjara.')
+    return m.reply(`🛡️ Premium protection aktif: kamu selamat dari kegagalan aksi bunuh dan tidak masuk penjara.\n\n${story}`)
   }
 
   // INIT CRIME
   wdb.crime = wdb.crime || {}
-  wdb.crime[m.sender] = wdb.crime[m.sender] || { copet: 0, rampok: 0, jarah: 0, culik: 0, begal: 0, bunuh: 0, total: 0 }
+  wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
 
   if (gagal) {
     // GAGAL = KAMU MATI + PENJARA 2 JAM
@@ -93,6 +96,7 @@ let handler = async (m, { conn }) => {
       ? `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
       : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
     txt += `╰─━━━━━━━━━━━━━━─`
+    txt += `\n\n${story}`
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
@@ -116,6 +120,7 @@ txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
 txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} • ${persen}%\n`
 txt += `╰─━━━━━━━━━━━━━━─\n\n`
+txt += `${story}\n\n`
 txt += `⚰️ *TARGET MATI!*\n`
 txt += `> ↳ Harus *heal* terlebih dahulu.`
 

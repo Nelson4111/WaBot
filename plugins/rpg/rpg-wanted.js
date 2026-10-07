@@ -2,17 +2,7 @@ import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncAllEscapeCrimeCounts } from '../../lib/crimeHelper.js'
 import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
-
-const CRIME_TYPES = [
-  ['rampok', '🕵️ Rampok', 4, '🕵️'],
-  ['jarah', '🏚️ Jarah', 4, '🏚️'],
-  ['culik', '🕶️ Culik', 3, '🕶️'],
-  ['bunuh', '🔪 Bunuh', 3, '🔪'],
-  ['begal', '🏴‍☠️ Begal', 2, '🏴‍☠️'],
-  ['copet', '🤏 Copet', 1, '🤏'],
-  ['kabur', '🏃 Kabur sendiri', 5, '🏃'],
-  ['breakout', '🧱 Breakout', 5, '🧱']
-]
+import { RPG_CRIME_TYPES } from '../../lib/rpgCrimeData.js'
 
 function getWantedList(db) {
   return Object.entries(db.crime || {})
@@ -189,11 +179,11 @@ let handler = async (m, { conn, args, isOwner }) => {
       const rank = start + index + 1
       const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
       text += `${medal} @${jid.split('@')[0]} • *${getActiveCrimeScore(data)} poin*\n`
-      const crimeCounts = CRIME_TYPES
-        .filter(([key]) => Number(data[key]) > 0)
-        .map(([key, , , emoji]) => `${emoji}${Number(data[key])}`)
-        .join('  ')
-      text += `> ${crimeCounts || 'Belum ada aksi tercatat'}\n`
+      const crimeCounts = RPG_CRIME_TYPES.map(({ key, emoji }) =>
+        `${emoji}${String(Number(data[key]) || 0).padStart(2, '0')}`
+      )
+      text += `> ${crimeCounts.slice(0, 4).join('  ')}\n`
+      text += `> ${crimeCounts.slice(4).join('  ')}\n`
     })
 
     text += `\n─━━━━━━━━━━━━━━─\n`
@@ -227,8 +217,8 @@ let handler = async (m, { conn, args, isOwner }) => {
     }
     text += `│ 🚨 Peluang tertangkap: *${(getPatrolCaptureChance(score) * 100).toFixed(1)}% per aktivitas RPG*\n`
     text += `╰─━━━━━━━━━━━━━━─\n\n`
-    for (const [key, label, weight] of CRIME_TYPES) {
-      text += `${label}: *${Number(data[key]) || 0}x* (${(Number(data[key]) || 0) * weight} poin)\n`
+    for (const { key, label, emoji, score } of RPG_CRIME_TYPES) {
+      text += `${emoji} ${label}: *${Number(data[key]) || 0}x* (${(Number(data[key]) || 0) * score} poin)\n`
     }
     text += `\nGunakan *.buronan info* untuk memahami perhitungan poin dan patroli.`
     return conn.reply(m.chat, text, m, { mentions: [jid] })

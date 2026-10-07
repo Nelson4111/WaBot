@@ -1279,18 +1279,18 @@ let handler = async (m, { conn, args, usedPrefix }) => {
                 : '💀 *KALAH*'
     const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
 return m.reply(
-  `╭─❏「 🧪 SIMULASI ${games[game].name.toUpperCase()} 」❏\n` +
-  `│ 🧪 *HASIL CASINO*\n` +
+  `╭─❏「 🧪 ${games[game].name.toUpperCase()} 」❏\n` +
+  `│ 🧪 *SIMULASI CASINO*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
   `${result.text}\n\n` +
   `🎲 *HASIL*\n` +
   `> ↳ Status : ${status}\n` +
-  `> ↳ Taruhan Simulasi : ${money(bet)}\n` +
-  `> ↳ Hadiah Simulasi : ${money(payout)}\n` +
-  `${result.blackout ? `> ↳ Uang Simulasi Hilang : ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
-  `> ↳ Profit Simulasi : ${signedMoney(net)}\n` +
-  `> ↳ 💰 Saldo Virtual Sebelum : ${money(balanceBefore)}\n` +
-  `> ↳ 💰 Saldo Virtual Sesudah : ${money(balanceAfter)}\n\n` +
+  `> ↳ Taruhan : ${money(bet)}\n` +
+  `> ↳ Hadiah: ${money(payout)}\n` +
+  `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)}\n` : ''}` +
+  `> ↳ Profit : ${signedMoney(net)}\n` +
+  `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
+  `> ↳ 💰 Saldo Sesudah : ${money(balanceAfter)}\n\n` +
   `💬 *Dialog*\n` +
   `> ↳ "${dialog}"\n\n` +
   `🧪 *MODE SIMULASI*\n` +
@@ -1483,7 +1483,7 @@ return m.reply(
   `> ↳ Status : ${status}\n` +
   `> ↳ Taruhan : ${money(bet)}\n` +
   `> ↳ Hadiah : ${money(payout)}\n` +
-  `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)} (maksimal 2x taruhan)\n` : ''}` +
+  `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)}\n` : ''}` +
   `> ↳ Profit : ${signedMoney(net)}\n` +
   `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
   `> ↳ 💰 Saldo Sesudah : ${money(wdb.money[m.sender])}\n\n` +

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { applyBloodlineBuff } from '../../lib/rpgCharacterData.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 
 function formatNama(item) {
@@ -169,6 +170,7 @@ let handler = async (m, { conn, command }) => {
 
   let money = scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60))
   totalExp = scaleDifficultyXP(user, totalExp)
+  totalExp = applyBloodlineBuff(user, 'xp', totalExp)
   addRpgExp(user, totalExp)
   user.adventureExp = (Number(user.adventureExp) || 0) + totalExp
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money
