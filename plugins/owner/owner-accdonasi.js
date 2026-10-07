@@ -33,8 +33,12 @@ export async function before(m, { conn, isROwner }) {
     let settings = global.db.data.settings[conn.user.jid]
 
     if (text === '1') {
+        if (typeof global.db.write !== 'function') {
+            await m.reply('❌ Database belum siap menyimpan donasi. Donasi belum diverifikasi.')
+            return true
+        }
         // Terima & Verifikasi
-        users[targetJid].totalDonasi = (users[targetJid].totalDonasi || 0) + nominal
+        users[targetJid].totalDonasi = (Number(users[targetJid].totalDonasi) || 0) + nominal
         users[targetJid].premium = true
         users[targetJid].premiumTime = 9999999999999
         users[targetJid].role = 'Premium user'
@@ -43,13 +47,15 @@ export async function before(m, { conn, isROwner }) {
         }
 
         // Recalculate global
-        let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (curr.totalDonasi || 0), 0)
+        let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (Number(curr.totalDonasi) || 0), 0)
         settings.totalDonasi = totalGlobal
+
+        await global.db.write()
 
         m.reply(`✅ *BERHASIL!* Donasi sebesar Rp ${nominal.toLocaleString('id-ID')} dari @${targetNumber} telah diverifikasi dan masuk database.`, null, { mentions: [targetJid] })
 
         // Kirim japri ke user
-        let userTeks = `🎊 *YEAY! DONASI DITERIMA!* 🎊\n\nTerima kasih banyak atas donasi sebesar *Rp ${nominal.toLocaleString('id-ID')}*!\n\nDonasimu sangat berarti bagi kami dan kamu telah mendapatkan *Premium Permanen* untuk saat ini serta otomatis masuk ke papan peringkat Top Donatur apabila nominal donasi mencapai batas minimum. 💖`
+        let userTeks = `🎊 *YEAY! DONASI DITERIMA!* 🎊\n\nTerima kasih banyak atas donasi sebesar *Rp ${nominal.toLocaleString('id-ID')}*!\n\nDonasimu sangat berarti bagi kami dan kamu telah mendapatkan *Premium Permanen* untuk saat ini. Akumulasi donasi mulai Rp 10.000 membuka klaim *50 limit setiap 24 jam* dengan *.prem daily*. Cek title dan hadiah melalui *.prem title* dan *.prem reward*. 💖`
         await conn.sendMessage(targetJid, { text: userTeks })
     } else if (text === '2') {
         // Tolak

@@ -12,7 +12,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let isReset = /^(resetdonasi|cleardonasi)$/i.test(command)
     let isSet = /^setdonasi$/i.test(command)
 
-    let users = global.db.data.users || {}
+    global.db.data.users = global.db.data.users || {}
+    let users = global.db.data.users
 
     if (!global.db.data.settings) global.db.data.settings = {}
     if (!global.db.data.settings[conn.user.jid]) global.db.data.settings[conn.user.jid] = {}
@@ -25,9 +26,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         }
         settings.totalDonasi = 0
 
-        if (global.db && typeof global.db.write === 'function') {
-            await global.db.write().catch(() => {})
-        }
+        await global.db.write()
 
         return m.reply('🧹 *BERHASIL!* Seluruh data donasi dan papan peringkat donatur telah dibersihkan.')
     }
@@ -107,9 +106,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (curr.totalDonasi || 0), 0)
         settings.totalDonasi = totalGlobal
 
-        if (global.db && typeof global.db.write === 'function') {
-            await global.db.write().catch(() => {})
-        }
+        await global.db.write()
 
         let mainJid = jidList[0]
         let teks = `🗑️ *DONASI BERHASIL DIHAPUS!*\n\n`
@@ -128,6 +125,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let amount = parseInt(amountStr)
     if (isNaN(amount) || amount <= 0) return m.reply('Nominal donasi harus berupa angka positif!')
+    if (typeof global.db.write !== 'function') {
+        return m.reply('❌ Database belum siap menyimpan donasi dan Premium. Coba lagi nanti.')
+    }
 
     let primaryJid = jidList[0]
     if (!users[primaryJid]) users[primaryJid] = {}
@@ -138,21 +138,23 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         }
         users[primaryJid].totalDonasi = amount
     } else {
-        users[primaryJid].totalDonasi = (users[primaryJid].totalDonasi || 0) + amount
+        users[primaryJid].totalDonasi = (Number(users[primaryJid].totalDonasi) || 0) + amount
     }
+    users[primaryJid].premium = true
+    users[primaryJid].premiumTime = 9999999999999
+    users[primaryJid].role = 'Premium user'
 
     // Recalculate total global
-    let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (curr.totalDonasi || 0), 0)
+    let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (Number(curr.totalDonasi) || 0), 0)
     settings.totalDonasi = totalGlobal
 
-    if (global.db && typeof global.db.write === 'function') {
-        await global.db.write().catch(() => {})
-    }
+    await global.db.write()
 
     let teks = `🎉 *DONASI BERHASIL DICATAT!* 🎉\n\n`
     teks += `👤 Donatur: @${primaryJid.split('@')[0]}\n`
     teks += `💰 Nominal ${isSet ? 'Set' : 'Tambahan'}: *Rp ${amount.toLocaleString('id-ID')}*\n`
     teks += `📊 Total Donasi User: *Rp ${users[primaryJid].totalDonasi.toLocaleString('id-ID')}*\n`
+    teks += `👑 Premium: *Permanen aktif* (donasi seikhlasnya, tanpa minimum)\n`
     teks += `🌐 Total Donasi Global Bot: *Rp ${(settings.totalDonasi || 0).toLocaleString('id-ID')}*`
 
     conn.sendMessage(m.chat, { text: teks, mentions: [primaryJid] }, { quoted: m })
