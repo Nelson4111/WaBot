@@ -261,8 +261,71 @@
   {
     "section": "INFO",
     "title": "Manfaat Premium dan Profil Donasi",
-    "content": "> Premium mendapat biaya admin transfer bank 50% lebih murah, diskon 20% semua biaya uang `.upgrade`, 15 slot pet, serta cooldown aktivitas RPG 20% lebih singkat. `.prem daily` mengklaim 10 limit setiap 24 jam, `.prem cd` melihat status cooldown premium, `.premium protection` melihat perlindungan otomatis (trigger sekali tiap 2 jam) dari kriminalitas yang menargetkanmu dan risiko kematian, serta `.premium profile` menampilkan total donasi dan title berdasarkan nominal donasi.",
+    "content": "> Premium mendapat biaya admin transfer bank 50% lebih murah, diskon 20% semua biaya uang `.upgrade`, 15 slot pet, serta cooldown aktivitas RPG 20% lebih singkat. `.prem daily` mengklaim 50 limit setiap 24 jam mulai total donasi Rp10.000. `.prem cd` menampilkan cooldown protection terpisah untuk tiap aksi; Premium Protection berlaku otomatis sekali per aksi dan cooldown-nya 5 jam untuk copet, rampok, begal, jarah, culik, bunuh, fitnah, dan dungeon. Aksi kriminal terhadap target yang protection-nya siap akan gagal tanpa mengambil uang atau memulai efeknya. `.premium profile` menampilkan total donasi dan title.",
     "author": "Eza",
     "createdAt": 1791298080002
+  },
+  {
+    "section": "INFO",
+    "title": "Pembaruan Premium, Title, dan Reward Donatur",
+    "content": "> Premium hasil donasi berlaku permanen untuk saat ini dengan harga seikhlasnya; lihat panduan di `.prem price` atau `.prem pricelist`. `.prem title` menampilkan title sesuai akumulasi donasi, `.prem reward` menampilkan hadiah setiap tier, dan `.prem top` menampilkan 10 donatur Premium teratas beserta nama, jumlah donasi, dan title. Premium daily kini memberi 50 limit setiap 24 jam mulai title Donatur Setia (akumulasi donasi terverifikasi minimal Rp10.000). Limit diklaim dengan `.prem daily`, profil donasi dengan `.prem profile`, dan manfaat dengan `.prem benefits`.",
+    "author": "Eza",
+    "createdAt": 1791364898268
+  },
+  {
+    "section": "RPG",
+    "title": "Hasil Casino dan Pembaruan Harga serta Keamanan Bank",
+    "content": "> Gunakan `.cs hasil` untuk melihat penjelasan hasil casino: jackpot, menang, kalah, hadiah tidak cair, berhasil kabur, bandar berbaik hati, dan blackout. Harga kartu dan biaya bulanan bank kini menyesuaikan status: pengguna biasa hanya melihat harga normal, sedangkan Premium dapat membandingkan harga normal dan harga diskon. Benteng Kristal dan Brankas Kosmik masing-masing menambah 5 level keamanan bank dan ditampilkan tanpa label Coming Soon. Lounge VIP, Vault Pribadi, Akses Eksklusif, serta Mahkota Kehormatan tetap diberi label Coming Soon karena fiturnya belum tersedia.",
+    "author": "Eza",
+    "createdAt": 1791365400000
+  },
+  {
+    "section": "INFO",
+    "title": "Premium Protection Per Aksi",
+    "content": "> Premium Protection memiliki cooldown terpisah selama 5 jam untuk setiap aksi: copet, rampok, begal, jarah, culik, bunuh, fitnah, dan dungeon. Saat perlindungan siap, aksi tersebut gagal tanpa merugikan target. Cek cooldown melalui `.prem cd` atau `.prem protection`.",
+    "author": "Eza",
+    "createdAt": 1791366553000
+  },
+  {
+    "section": "INFO",
+    "title": "Daftar dan Detail News",
+    "content": "> `.news all` menampilkan total update bulan ini beserta daftar nomor dan judul news saja, diurutkan dari nomor terkecil. Untuk membaca detail salah satu update, gunakan `.news list info <nomor>`, misalnya `.news list info 1.0`. Tampilan news kini dilengkapi emoji pada section agar lebih mudah dibaca.",
+    "author": "Eza",
+    "createdAt": 1791367941981
+  },
+  {
+    "section": "RPG",
+    "title": "Mall dan Diskon Premium",
+    "content": "> Kunjungi `.mall` untuk membeli atau menjual furniture, koleksi, kendaraan, fashion, elektronik, peralatan, dan hadiah. Cek `.mall diskon`, `.mall populer`, atau `.mall harian`; Premium mendapat diskon belanja 20% dan bonus harga jual 10%.",
+    "author": "Eza",
+    "createdAt": 1791380000001
+  },
+  {
+    "section": "RPG",
+    "title": "Rumah Pribadi Pemain",
+    "content": "> Bangun dan kelola rumah melalui `.home`: pasang furniture, upgrade kapasitas, atur akses tamu, kunjungi rumah pemain lain, dan berikan like. Premium mendapat 5 slot furniture tambahan serta diskon upgrade 20%.",
+    "author": "Eza",
+    "createdAt": 1791380000002
+  },
+  {
+    "section": "RPG",
+    "title": "Koleksi dan Showcase",
+    "content": "> Kelola koleksi melalui `.cl`: lihat detail dan peringkat kolektor, tandai item favorit, pamerkan koleksi, serta hadiahkan atau tukarkan item dengan pemain lain.",
+    "author": "Eza",
+    "createdAt": 1791380000003
+  },
+  {
+    "section": "RPG",
+    "title": "Tindak Kriminal Baru: Jarah",
+    "content": "> Gunakan `.jarah @user [furniture]` untuk menjarah rumah pemain lain. Jika berhasil, satu furniture yang terpasang akan dibawa ke inventarismu; kamu bisa memilih furniture atau membiarkannya dipilih acak. Kegagalan berisiko denda dan penjara.",
+    "author": "Eza",
+    "createdAt": 1791380000004
+  },
+  {
+    "section": "RPG",
+    "title": "Tindak Kriminal Baru: Culik",
+    "content": "> Gunakan `.culik @user` untuk menculik pemain lain. Jika berhasil, target masuk penjara dan hanya dapat dibebaskan dengan tebusan yang dibayar pemain lain atau setelah masa tahanan habis.",
+    "author": "Eza",
+    "createdAt": 1791380000005
   }
 ]
