@@ -94,9 +94,9 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `╭─❏「 🧬 INFO BLOODLINE 」❏\n` +
       `│ ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ✅ *AKTIF*' : ''}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `📝 *DESKRIPSI*\n> ${bloodline.description}\n\n` +
+      `📝 *DESKRIPSI*\n> ↳ ${bloodline.description}\n\n` +
       `✨ *EFEK*\n` +
-      `${describeBloodlineEffects({ bloodline: id })}\n\n` +
+      `> ↳ ${describeBloodlineEffects({ bloodline: id })}\n\n` +
       `📌 *MENU*\n` +
       `> ↳ Daftar bloodline: ${prefix}bl list\n\n` +
       `─━━━━━━━━━━━━━━─`
