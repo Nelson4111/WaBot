@@ -1,4 +1,5 @@
 import { handleLimitSubcommand } from '../../lib/limitShop.js'
+import { syncUserLimit } from '../../lib/userLimit.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const prefix = usedPrefix || '.'
@@ -19,19 +20,22 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
   who = conn.decodeJid(who)
 
-  let pp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
-  try { pp = await conn.profilePictureUrl(who, 'image') } catch {}
-
   let user = global.db.data.users[who] || {}
-  let limit = user.limit !== undefined ? user.limit : 10
+  let limit = syncUserLimit(user)
   let isSelf = who === m.sender
 
-  let caption = `💳 *L I M I T - U S E R* 💳\n\n` +
-    `👤 *User:* @${who.split('@')[0]}\n` +
-    `🎟️ *Sisa Limit:* *${limit}* Limit\n\n` +
-    `📌 _${isSelf ? `Gunakan ${prefix}limit buy untuk membeli limit; ${prefix}limit guide untuk panduan` : 'Pengguna ini memiliki ' + limit + ' limit'}_`
-
-  await conn.sendFile(m.chat, pp, 'limit.jpg', caption, m, false, { mentions: [who] })
+ let caption =
+  `╭─❏「 🎟️ AVELIA LIMIT 」❏\n` +
+  `│ 🎟️ *LIMIT KAMU*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `👤 *USER*\n` +
+  `> ↳ User: @${who.split('@')[0]}\n` +
+  `> ↳ Sisa Limit: *${limit}* Limit\n\n` +
+  `📌 *INFORMASI*\n` +
+  `> ↳ ${isSelf ? `Gunakan ${prefix}limit buy untuk membeli limit.` : 'Pengguna ini memiliki ' + limit + ' limit.'}\n` +
+  `${isSelf ? `> ↳ Gunakan ${prefix}limit guide untuk panduan.\n` : ''}\n` +
+  `─━━━━━━━━━━━━━━─`
+  await conn.reply(m.chat, caption, m, { mentions: [who] })
 }
 
 handler.help = ['limit', 'limit buy', 'limit price', 'limit pricelist', 'limit guide', 'limit command', 'ceklimit']
