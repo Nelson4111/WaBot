@@ -1,5 +1,6 @@
 import { toSmallNum } from '../../lib/style.js'
 import { CINCIN_SHOP, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 /**
  * Butik Cincin Pernikahan Plugin
@@ -38,13 +39,13 @@ ${rows.join('\n')}
   }
 
   const item = CINCIN_SHOP[arg]
-  const userLimit = users[sender].limit || 0
+  const userLimit = syncUserLimit(users[sender])
 
   if (userLimit < item.price) {
     return sendResult(`*╭  〔 ◈ ʟ ɪ ᴍ ɪ ᴛ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Limitmu tidak mencukupi!\n> Harga ${item.name} adalah *${toSmallNum(item.price)} Limit*, Limitmu saat ini: *${toSmallNum(userLimit)}*.\n*╰───────────────*`)
   }
 
-  users[sender].limit -= item.price
+  setUserLimit(users[sender], userLimit - item.price)
 
   // Pasang cincin ke semua pasangan
   pList.forEach(p => {
