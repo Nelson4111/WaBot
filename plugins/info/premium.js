@@ -35,129 +35,260 @@ let handler = async (m, { conn, text = '', usedPrefix }) => {
   rpg.premium = isPremium
 
   if (action === 'daily') {
-    if (!isPremium) return m.reply('❌ Fitur ini khusus pengguna Premium.')
-    const donationAmount = Number(user.totalDonasi) || 0
-    if (donationAmount < PREMIUM_DAILY_MIN_DONATION) {
-      return m.reply(
-        `❌ Premium daily tersedia mulai title *Donatur Setia* ` +
-        `(total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}).\n` +
-        `> Title kamu: *${getDonationTitle(donationAmount)}*`
-      )
-    }
-    if (!global.db?.data?.users || typeof global.db.write !== 'function') {
-      return m.reply('❌ Database belum siap menyimpan limit. Coba lagi nanti.')
-    }
-    const remaining = (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now
-    if (remaining > 0) return m.reply(`⏳ Premium daily bisa diklaim lagi dalam ${formatRemaining(remaining)}.`)
-    const limit = addUserLimit(user, PREMIUM_DAILY_REWARD)
-    user.premiumDailyAt = now
-    users[m.sender] = user
-    await global.db.write()
-    return m.reply(`✅ Premium daily berhasil diklaim: *+${PREMIUM_DAILY_REWARD} limit*.\n> ↳ Limit sekarang: *${limit}*`)
-  }
-
-  if (action === 'title' || action === 'titles') {
-    const titleList = DONATION_TITLE_TIERS.map(({ minimum, title }) =>
-      `> Rp ${minimum.toLocaleString('id-ID')} total donasi — *${title}*`
-    ).join('\n')
+  if (!isPremium) {
     return m.reply(
-      `🏷️ *DAFTAR TITLE DONATUR*\n\n` +
-      `${titleList}\n\n` +
-      `Nominal adalah akumulasi donasi yang sudah diverifikasi. Cek hadiah dengan *${usedPrefix}prem reward*.`
+      `╭─❏「 👑 PREMIUM DAILY 」❏\n` +
+      `│ ❌ *AKSES DITOLAK*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Fitur ini khusus pengguna Premium.\n\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
 
-  if (action === 'reward' || action === 'rewards') {
-    const rewardList = DONATION_TITLE_TIERS.map(({ minimum, title }) => {
-      const rewards = minimum === 0
-        ? `title awal *${title}*`
-        : `title *${title}*`
-      const dailyReward = minimum >= PREMIUM_DAILY_MIN_DONATION
-        ? ` + *${PREMIUM_DAILY_REWARD} limit* setiap 24 jam`
-        : ''
-      return `> Total donasi Rp ${minimum.toLocaleString('id-ID')}: ${rewards}${dailyReward}`
-    }).join('\n')
+  const donationAmount = Number(user.totalDonasi) || 0
+
+  if (donationAmount < PREMIUM_DAILY_MIN_DONATION) {
     return m.reply(
-      `🎁 *HADIAH DONATUR PREMIUM*\n\n` +
-      `> Setiap donasi berapa pun yang sudah diverifikasi memberi *Premium permanen* dan title sesuai akumulasi donasi.\n` +
-      `${rewardList}\n\n` +
-      `Premium dari donasi berlaku permanen untuk saat ini. Premium daily mulai terbuka di title *Donatur Setia* ` +
-      `(total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}); limit daily bisa diklaim setiap 24 jam.`
+      `╭─❏「 👑 PREMIUM DAILY 」❏\n` +
+      `│ 🎁 *PREMIUM DAILY*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Premium daily tersedia mulai title *Donatur Setia*.\n` +
+      `> ↳ Total donasi: Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}\n` +
+      `> ↳ Title kamu: *${getDonationTitle(donationAmount)}*\n\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
 
-  if (action === 'price' || action === 'pricelist' || action === 'harga') {
+  if (!global.db?.data?.users || typeof global.db.write !== 'function') {
     return m.reply(
-      `👑 *HARGA PREMIUM*\n\n` +
-      `> Harga: *seikhlasnya* — donasi nominal berapa pun diterima (di atas Rp 0), tanpa minimum.\n` +
-      `> Masa aktif: *permanen* untuk saat ini.\n` +
-      `> Setiap donasi yang diverifikasi Owner otomatis mendapat Premium permanen, termasuk user baru yang dicatat lewat adddonasi.\n\n` +
-      `📌 *Cara berdonasi*\n` +
-      `> 1. Ketik *${usedPrefix}donasi* untuk melihat QRIS dan petunjuk.\n` +
-      `> 2. Kirim bukti transfer dengan *${usedPrefix}konfirmasidonasi nominal | nama*.\n` +
-      `> 3. Tunggu verifikasi Owner.\n\n` +
-      `Lihat manfaat: *${usedPrefix}prem benefits* · Hadiah: *${usedPrefix}prem reward*`
+      `╭─❏「 ❌ DATABASE 」❏\n` +
+      `│ ❌ *DATABASE BELUM SIAP*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Database belum siap menyimpan limit.\n` +
+      `> ↳ Coba lagi nanti.\n\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
 
-  if (action === 'top' || action === 'toppremium') {
-    const topDonors = Object.entries(users)
-      .filter(([, donor]) => Number(donor.totalDonasi) > 0 && isPremiumAccount(donor, now))
-      .sort(([, first], [, second]) => Number(second.totalDonasi) - Number(first.totalDonasi))
-      .slice(0, 10)
-    if (!topDonors.length) return m.reply('Belum ada pengguna Premium yang tercatat sebagai donatur.')
+  const remaining = (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now
 
-    const mentions = []
-    const donorList = topDonors.map(([jid, donor], index) => {
-      const name = donor.namaDonasi
-        ? `*${donor.namaDonasi}*`
-        : `@${jid.split('@')[0]}`
-      if (!donor.namaDonasi) mentions.push(jid)
-      const total = Number(donor.totalDonasi) || 0
-      return `${index + 1}. ${name} — Rp ${total.toLocaleString('id-ID')} · *${getDonationTitle(total)}*`
-    }).join('\n')
-    return m.reply(`👑 *TOP 10 PREMIUM DONATUR*\n\n${donorList}`, null, { mentions })
-  }
-
-  if (action === 'protection') {
-    if (!isPremium) return m.reply('❌ Premium protection khusus pengguna Premium.')
-    const protectionStatus = PREMIUM_PROTECTION_ACTIONS.map(({ id, label }) => {
-      const remaining = getPremiumProtectionRemaining(user, id, now)
-      return `> ${label}: ${remaining ? `⏳ Cooldown ${formatRemaining(remaining)}` : '✅ Siap'}`
-    }).join('\n')
+  if (remaining > 0) {
     return m.reply(
-      `🛡️ *PREMIUM PROTECTION*\n\n` +
-      `> Setiap perlindungan memiliki cooldown terpisah selama *5 jam*.\n` +
-      `${protectionStatus}\n\n` +
-      `Protection aktif otomatis saat aksi kriminal (termasuk jarah dan culik) menargetkanmu atau saat dungeon akan membuatmu mati.`
+      `╭─❏「 ⏳ PREMIUM DAILY 」❏\n` +
+      `│ ⏳ *BELUM BISA DIKLAIM*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Premium daily bisa diklaim lagi dalam *${formatRemaining(remaining)}*.\n\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
 
-  if (action === 'cd' || action === 'cooldown') {
-    if (!isPremium) return m.reply('❌ Premium cooldown hanya tersedia untuk pengguna Premium.')
-    const protectionStatuses = PREMIUM_PROTECTION_ACTIONS.map(({ id, label }) => {
-      const remaining = getPremiumProtectionRemaining(user, id, now)
-      return `> Protection ${label}: ${remaining ? `⏳ ${formatRemaining(remaining)}` : '✅ Siap'}`
-    }).join('\n')
-    const dailyRemaining = Math.max(0, (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now)
-    const cooldownItems = [
-      ['Mining', rpg.lastMining, 2 * 60 * 1000],
-      ['Dungeon', rpg.lastDungeon, 2 * 60 * 1000],
-      ['Mancing', rpg.lastFishing || rpg.lastMancing, 60 * 1000],
-      ['Adventure', rpg.lastAdventure, 2 * 60 * 1000],
-      ['Kerja RPG', rpg.lastkerja, 2 * 60 * 1000]
-    ]
-    const cooldownList = cooldownItems.map(([label, timestamp, duration]) =>
-      `> ${label}: ${getCooldownStatus(timestamp, scaleDifficultyCooldown(rpg, duration), now)}`
-    ).join('\n')
+  const limit = addUserLimit(user, PREMIUM_DAILY_REWARD)
+  user.premiumDailyAt = now
+  users[m.sender] = user
+  await global.db.write()
+
+  return m.reply(
+    `╭─❏「 🎁 PREMIUM DAILY 」❏\n` +
+    `│ ✅ *PREMIUM DAILY BERHASIL*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Limit diterima: *+${PREMIUM_DAILY_REWARD} limit*\n` +
+    `> ↳ Limit sekarang: *${limit}*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'title' || action === 'titles') {
+  const titleList = DONATION_TITLE_TIERS.map(({ minimum, title }) =>
+    `> Rp ${minimum.toLocaleString('id-ID')} total donasi — *${title}*`
+  ).join('\n')
+
+  return m.reply(
+    `╭─❏「 🏷️ TITLE DONATUR 」❏\n` +
+    `│ 🏷️ *DAFTAR TITLE DONATUR*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${titleList}\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Nominal adalah akumulasi donasi yang sudah diverifikasi.\n` +
+    `> ↳ Cek hadiah dengan ${usedPrefix}prem reward.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'reward' || action === 'rewards') {
+  const rewardList = DONATION_TITLE_TIERS.map(({ minimum, title }) => {
+    const rewards = minimum === 0
+      ? `title awal *${title}*`
+      : `title *${title}*`
+
+    const dailyReward = minimum >= PREMIUM_DAILY_MIN_DONATION
+      ? ` + *${PREMIUM_DAILY_REWARD} limit* setiap 24 jam`
+      : ''
+
+    return `> Total donasi Rp ${minimum.toLocaleString('id-ID')}: ${rewards}${dailyReward}`
+  }).join('\n')
+
+  return m.reply(
+    `╭─❏「 🎁 HADIAH DONATUR 」❏\n` +
+    `│ 🎁 *HADIAH DONATUR PREMIUM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Setiap donasi berapa pun yang sudah diverifikasi memberi *Premium permanen* dan title sesuai akumulasi donasi.\n\n` +
+    `${rewardList}\n\n` +
+    `📌 *PREMIUM DAILY*\n` +
+    `> ↳ Premium dari donasi berlaku permanen untuk saat ini.\n` +
+    `> ↳ Premium daily mulai terbuka di title *Donatur Setia*.\n` +
+    `> ↳ Kebutuhan total donasi: Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}\n` +
+    `> ↳ Limit daily bisa diklaim setiap 24 jam.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'price' || action === 'pricelist' || action === 'harga') {
+  return m.reply(
+    `╭─❏「 👑 HARGA PREMIUM 」❏\n` +
+    `│ 👑 *HARGA PREMIUM*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `💰 *HARGA*\n` +
+    `> ↳ Harga: *seikhlasnya*\n` +
+    `> ↳ Donasi nominal berapa pun diterima (di atas Rp 0).\n` +
+    `> ↳ Tanpa minimum.\n\n` +
+    `⏳ *MASA AKTIF*\n` +
+    `> ↳ Masa aktif: *permanen* untuk saat ini.\n` +
+    `> ↳ Setiap donasi yang diverifikasi Owner otomatis mendapat Premium permanen.\n` +
+    `> ↳ Berlaku juga untuk user baru yang dicatat lewat adddonasi.\n\n` +
+    `📌 *CARA BERDONASI*\n` +
+    `> 1. Ketik *${usedPrefix}donasi* untuk melihat QRIS dan petunjuk.\n` +
+    `> 2. Kirim bukti transfer dengan *${usedPrefix}konfirmasidonasi nominal | nama*.\n` +
+    `> 3. Tunggu verifikasi Owner.\n\n` +
+    `📖 *MENU*\n` +
+    `> ↳ Manfaat: ${usedPrefix}prem benefits\n` +
+    `> ↳ Hadiah: ${usedPrefix}prem reward\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'top' || action === 'toppremium') {
+  const topDonors = Object.entries(users)
+    .filter(([, donor]) => Number(donor.totalDonasi) > 0 && isPremiumAccount(donor, now))
+    .sort(([, first], [, second]) => Number(second.totalDonasi) - Number(first.totalDonasi))
+    .slice(0, 10)
+
+  if (!topDonors.length) {
     return m.reply(
-      `⏰ *PREMIUM COOLDOWN*\n\n` +
-      `${cooldownList}\n` +
-      `> Premium daily: ${dailyRemaining ? `⏳ ${formatRemaining(dailyRemaining)}` : '✅ Siap'}\n` +
-      `${protectionStatuses}\n\n` +
-      `Untuk cooldown fitur khusus, cek juga *.cd*, *.pet cd*, *.kawin*, *.panen*, *.casino cd*, *.rship cd*, *.rh cd*, dan *.penjara cd*.`
+      `╭─❏「 👑 TOP PREMIUM 」❏\n` +
+      `│ 👑 *TOP 10 PREMIUM DONATUR*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Belum ada pengguna Premium yang tercatat sebagai donatur.\n\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
+
+  const mentions = []
+
+  const donorList = topDonors.map(([jid, donor], index) => {
+    const name = donor.namaDonasi
+      ? `*${donor.namaDonasi}*`
+      : `@${jid.split('@')[0]}`
+
+    if (!donor.namaDonasi) mentions.push(jid)
+
+    const total = Number(donor.totalDonasi) || 0
+
+    return `> ${index + 1}. ${name}\n` +
+      `> ↳ Rp ${total.toLocaleString('id-ID')} · *${getDonationTitle(total)}*`
+  }).join('\n')
+
+  return m.reply(
+    `╭─❏「 👑 TOP PREMIUM 」❏\n` +
+    `│ 👑 *TOP 10 PREMIUM DONATUR*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${donorList}\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    null,
+    { mentions }
+  )
+}
+
+if (action === 'protection') {
+  if (!isPremium) {
+    return m.reply(
+      `╭─❏「 🛡️ PREMIUM PROTECTION 」❏\n` +
+      `│ ❌ *AKSES DITOLAK*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Premium protection khusus pengguna Premium.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const protectionStatus = PREMIUM_PROTECTION_ACTIONS.map(({ id, label }) => {
+    const remaining = getPremiumProtectionRemaining(user, id, now)
+    return `> ${label}: ${remaining ? `⏳ Cooldown ${formatRemaining(remaining)}` : '✅ Siap'}`
+  }).join('\n')
+
+  return m.reply(
+    `╭─❏「 🛡️ PREMIUM PROTECTION 」❏\n` +
+    `│ 🛡️ *PREMIUM PROTECTION*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Setiap perlindungan memiliki cooldown terpisah selama *5 jam*.\n\n` +
+    `🛡️ *STATUS PROTECTION*\n` +
+    `${protectionStatus}\n\n` +
+    `📌 *INFORMASI*\n` +
+    `> ↳ Protection aktif otomatis saat aksi kriminal (termasuk jarah dan culik) menargetkanmu atau saat dungeon akan membuatmu mati.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'cd' || action === 'cooldown') {
+  if (!isPremium) {
+    return m.reply(
+      `╭─❏「 ⏰ PREMIUM COOLDOWN 」❏\n` +
+      `│ ❌ *AKSES DITOLAK*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Premium cooldown hanya tersedia untuk pengguna Premium.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const protectionStatuses = PREMIUM_PROTECTION_ACTIONS.map(({ id, label }) => {
+    const remaining = getPremiumProtectionRemaining(user, id, now)
+    return `> Protection ${label}: ${remaining ? `⏳ ${formatRemaining(remaining)}` : '✅ Siap'}`
+  }).join('\n')
+
+  const dailyRemaining = Math.max(0, (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now)
+
+  const cooldownItems = [
+    ['Mining', rpg.lastMining, 2 * 60 * 1000],
+    ['Dungeon', rpg.lastDungeon, 2 * 60 * 1000],
+    ['Mancing', rpg.lastFishing || rpg.lastMancing, 60 * 1000],
+    ['Adventure', rpg.lastAdventure, 2 * 60 * 1000],
+    ['Kerja RPG', rpg.lastkerja, 2 * 60 * 1000]
+  ]
+
+  const cooldownList = cooldownItems.map(([label, timestamp, duration]) =>
+    `> ${label}: ${getCooldownStatus(timestamp, scaleDifficultyCooldown(rpg, duration), now)}`
+  ).join('\n')
+
+  return m.reply(
+    `╭─❏「 ⏰ PREMIUM COOLDOWN 」❏\n` +
+    `│ ⏰ *PREMIUM COOLDOWN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🎮 *COOLDOWN RPG*\n` +
+    `${cooldownList}\n\n` +
+    `🎁 *PREMIUM DAILY*\n` +
+    `> ↳ ${dailyRemaining ? `⏳ ${formatRemaining(dailyRemaining)}` : '✅ Siap'}\n\n` +
+    `🛡️ *PREMIUM PROTECTION*\n` +
+    `${protectionStatuses}\n\n` +
+    `📌 *COOLDOWN LAINNYA*\n` +
+    `> ↳ *.cd*\n` +
+    `> ↳ *.pet cd*\n` +
+    `> ↳ *.kawin*\n` +
+    `> ↳ *.panen*\n` +
+    `> ↳ *.casino cd*\n` +
+    `> ↳ *.rship cd*\n` +
+    `> ↳ *.rh cd*\n` +
+    `> ↳ *.penjara cd*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
 
   if (action === 'profile' || action === 'profil') {
     const target = conn.decodeJid(m.mentionedJid?.[0] || m.quoted?.sender || m.sender)
