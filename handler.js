@@ -17,6 +17,7 @@ import { ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureCha
 import { getPatrolCaptureStory, isPatrolExemptCommand, PATROL_RESTRICTED_CRIME_COMMANDS, PATROL_RESTRICTED_RSHIP_ACTIONS } from './lib/patrolHelper.js'
 import { loadDB, saveDB } from './lib/waifuHelper.js'
 import { registerPrisoner } from './lib/prisonHelper.js'
+import { setUserLimit, syncUserLimit } from './lib/userLimit.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -415,7 +416,7 @@ async function processMessage(m, chatUpdate) {
             if (user) {
                 if (!isNumber(user.exp)) user.exp = 0
                 if (!isNumber(user.level)) user.level = 0
-                if (!isNumber(user.limit)) user.limit = 100
+                syncUserLimit(user)
                 if (user.registered !== true) user.registered = true
                 if (!('name' in user) || !user.name) user.name = m.name
                 if (!isNumber(user.age)) user.age = -1
@@ -992,6 +993,7 @@ async function processMessage(m, chatUpdate) {
                 try {
                     if (isRpgPlugin && user?.rpg) user.rpg.lastRpgActivityAt = Date.now()
                     await plugin.call(this, m, extra)
+                    syncUserLimit(user)
                     if (isRpgPlugin && user?.rpg && !user.rpg.lastRpgActivityAt) user.rpg.lastRpgActivityAt = Date.now()
                     if (!isPrems)
                         m.limit = m.limit || plugin.limit || false
@@ -1079,7 +1081,7 @@ async function processMessage(m, chatUpdate) {
             }
             if (m.sender && (user = global.db.data.users[m.sender])) {
                 user.exp += m.exp
-                user.limit -= m.limit * 1
+                setUserLimit(user, user.limit - m.limit * 1)
                 const chat = global.db.data.chats?.[m.chat]
                 if (user.autolevelup && !(chat && chat.autolevelup === false)) {
                     import('./lib/levelling.js').then(({ checkLevelUp }) => {
