@@ -1,5 +1,6 @@
 import { loadDB, saveDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status as statusHelper } from '../../lib/style.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 const NORMAL_COOLDOWN = 60 * 1000   // 60 detik
 const PREMIUM_COOLDOWN = 30 * 1000  // 30 detik
@@ -87,7 +88,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
   if (!db.users) db.users = {}
   if (!db.users[user]) db.users[user] = {}
 
-  const isPremium = db.users[user].premiumTime > 0
+  const isPremium = isPremiumAccount(db.users[user])
 
   /* ===== CEK PASANGAN ===== */
   const c = db.couples?.[user]
