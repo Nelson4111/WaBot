@@ -334,5 +334,19 @@
     "content": "> Saldo limit tetap bisa dicek lewat `.limit`, dan pembelian kini juga tersedia lewat `.limit buy <jumlah|all> [money]` tanpa menghapus `.buylimit`/`.buylimitmoney`. Gunakan `.limit price` atau `.limit pricelist` untuk melihat paket jumlah beserta total harga EXP dan uang, `.limit guide` untuk panduan, dan `.limit command` untuk daftar command limit. Premium tetap mendapat diskon 20%. Harga pembelian cincin relationship melalui `.rship belicincin` diturunkan 50%; bonus tiap cincin tidak berubah.",
     "author": "Eza",
     "createdAt": 1791392226640
+  },
+  {
+    "section": "RPG",
+    "title": "Penyelarasan Limit dan Harga Pembelian",
+    "content": "> Saldo limit kini disatukan untuk `.limit`, pemakaian command, premium daily, bloodline, dungeon, giveaway, trade, dan gift sehingga perubahan saldo langsung sama di semua fitur. Pembelian dengan uang untuk user biasa kini Rp100.000 per limit; Premium tetap mendapat diskon 20% (Rp80.000 per limit). Harga EXP tetap 100 EXP per limit. Data limit RPG lama diselaraskan ke saldo bersama secara otomatis.",
+    "author": "Eza",
+    "createdAt": 1791427716580
+  },
+  {
+    "section": "RPG",
+    "title": "Bloodline Ifrit dan Nixie",
+    "content": "> Bloodline Ifrit memberi bonus damage dungeon, sedangkan Nixie meningkatkan peluang tier ikan dan pertahanan dungeon. Gacha dan perubahan bloodline kini disertai salah satu dari lima cerita Avelia yang bervariasi.",
+    "author": "Eza",
+    "createdAt": 1791427716581
   }
 ]
