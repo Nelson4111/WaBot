@@ -20,7 +20,7 @@ let handler = async (m, { conn, args }) => {
         }
     }
 
-    if (!who || isNaN(amount)) {
+    if (!who || !Number.isSafeInteger(amount) || amount < 1) {
         let caption = `*Format Penggunaan Salah!*\n\n` +
                       `• *Reply Pesan:* .addlimit 10\n` +
                       `• *Gunakan Nomor:* .addlimit 628123456 10`
@@ -41,7 +41,7 @@ let handler = async (m, { conn, args }) => {
         }
     }
 
-    users[who].limit += amount
+    addUserLimit(users[who], amount)
 
     let nomorAsli = who.split('@')[0]
     let pesan = `✅ *Limit Berhasil Ditambahkan*\n\n` +
@@ -61,3 +61,4 @@ handler.command = /^addlimit$/i
 handler.owner = true
 
 export default handler
+import { addUserLimit } from '../../lib/userLimit.js'

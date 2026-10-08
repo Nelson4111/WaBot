@@ -31,7 +31,7 @@ let handler = async (m, { conn, args }) => {
         }
     }
 
-    if (!amount || isNaN(amount)) throw 'Masukkan jumlah limit yang valid!'
+    if (!Number.isSafeInteger(amount) || amount < 1) throw 'Masukkan jumlah limit yang valid!'
 
     // --- 4. EKSEKUSI DATABASE ---
     let users = global.db.data.users
@@ -44,8 +44,7 @@ let handler = async (m, { conn, args }) => {
     }
 
     // Mengurangi limit (memastikan hasil tidak negatif)
-    users[who].limit -= amount
-    if (users[who].limit < 0) users[who].limit = 0
+    setUserLimit(users[who], Math.max(0, syncUserLimit(users[who]) - amount))
 
     // --- 5. RESPONSE ---
     let nomorAsli = who.split('@')[0]
@@ -66,3 +65,4 @@ handler.command = /^(dellimit)$/i
 handler.owner = true
 
 export default handler
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'

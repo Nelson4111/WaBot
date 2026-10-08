@@ -24,10 +24,9 @@ function resetLimit() {
     let lim = 100
     let users = Object.entries(global.db.data.users)
     users.forEach(([user, data]) => {
-        if (data.limit < lim) {
-            data.limit = lim
-        }
+        setUserLimit(data, Math.max(lim, syncUserLimit(data)))
     })
 }
 
 export default handler
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
