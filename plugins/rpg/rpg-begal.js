@@ -6,6 +6,7 @@ import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown,
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
+import { reviveBloodline } from '../../lib/rpgCharacterData.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -76,7 +77,8 @@ let handler = async (m, { conn }) => {
 
   if (gagal) {
     // GAGAL = MATI + PENJARA 2 JAM
-    userRPG.darah = 0
+    const revivedHP = reviveBloodline(userRPG, Number(userRPG.maxDarah) || 100)
+    if (!revivedHP) userRPG.darah = 0
     wdb.penjara = wdb.penjara || []
     userRPG.penjara = Date.now()
     userRPG.lamaPenjara = 7200000 // 2 jam
@@ -85,13 +87,19 @@ let handler = async (m, { conn }) => {
     userRPG.sel = registerPrisoner(wdb, m.sender)
 
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
-    userRPG.riwayat.unshift(`💀 Mati saat begal @${who.split('@')[0]}`)
+    userRPG.riwayat.unshift(
+      revivedHP
+        ? `♻️ Phoenix bangkit setelah gagal begal @${who.split('@')[0]}`
+        : `💀 Mati saat begal @${who.split('@')[0]}`
+    )
 
     saveDB(wdb)
  let txt = `╭─❏「 💀 BEGAL GAGAL 」❏\n`
 txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-txt += `│ ⚰️ Kamu tertembak dan mati.\n`
+txt += revivedHP
+  ? `│ ♻️ Bloodline Phoenix membangkitkanmu dengan ${revivedHP} HP.\n`
+  : `│ ⚰️ Kamu tertembak dan mati.\n`
 txt += userRPG.sel
   ? `│ 🚔 Penjara: *SEL ${userRPG.sel}* • *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
   : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`

@@ -1,6 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { applyBloodlineBuff } from '../../lib/rpgCharacterData.js'
+import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 
 function formatNama(item) {
@@ -175,6 +175,7 @@ let handler = async (m, { conn, command }) => {
   user.adventureExp = (Number(user.adventureExp) || 0) + totalExp
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money
   user.darah -= darahKurang
+  const revivedHP = user.darah <= 0 ? reviveBloodline(user, Number(user.maxDarah) || 100) : 0
   user.lastAdventure = Date.now()
 
   let levelUpMsg = ''
@@ -219,6 +220,7 @@ cap += `🌟 *XP* +${totalExp}\n`
 
 cap += `\n─━━━━━━━━━━━━━━─\n`
 cap += `❤️ *Sisa Darah:* ${user.darah}\n`
+if (revivedHP) cap += `♻️ *Phoenix bangkit kembali* dengan ${revivedHP} HP.\n`
 cap += `🗺️ *Adventure Level:* Lv.${user.adventureLevel}\n`
 cap += `⚔️ *Sword Level:* Lv.${swordLvl}\n`
 cap += `⛏️ *Pickaxe Level:* Lv.${pickLvl}\n`

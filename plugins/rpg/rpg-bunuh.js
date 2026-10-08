@@ -6,6 +6,7 @@ import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown,
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
+import { reviveBloodline } from '../../lib/rpgCharacterData.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -76,7 +77,10 @@ let handler = async (m, { conn }) => {
 
   if (gagal) {
     // GAGAL = KAMU MATI + PENJARA 2 JAM
-    if(userRPG.darah!== undefined) userRPG.darah = 0
+    const revivedHP = userRPG.darah !== undefined
+      ? reviveBloodline(userRPG, Number(userRPG.maxDarah) || 100)
+      : 0
+    if (userRPG.darah !== undefined && !revivedHP) userRPG.darah = 0
     wdb.penjara = wdb.penjara || []
     userRPG.penjara = Date.now()
     userRPG.lamaPenjara = 7200000 // 2 jam
@@ -85,13 +89,19 @@ let handler = async (m, { conn }) => {
     userRPG.sel = registerPrisoner(wdb, m.sender)
 
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
-    userRPG.riwayat.unshift(`💀 Mati saat bunuh @${who.split('@')[0]}`)
+    userRPG.riwayat.unshift(
+      revivedHP
+        ? `♻️ Phoenix bangkit setelah gagal bunuh @${who.split('@')[0]}`
+        : `💀 Mati saat bunuh @${who.split('@')[0]}`
+    )
 
     saveDB(wdb)
     let txt = `╭─❏「 💀 BUNUH GAGAL 」❏\n`
     txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-    txt += `│ ⚰️ Kamu dibunuh duluan\n`
+    txt += revivedHP
+      ? `│ ♻️ Bloodline Phoenix membangkitkanmu dengan ${revivedHP} HP.\n`
+      : `│ ⚰️ Kamu dibunuh duluan\n`
     txt += userRPG.sel
       ? `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
       : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
@@ -104,14 +114,21 @@ let handler = async (m, { conn }) => {
   let persen = Math.floor(Math.random() * 16) + 5 // 5% - 20%
   let hasil = scaleDifficultyIncome(userRPG, Math.max(1000, Math.floor(uangTarget * (persen / 100))))
 
-  if(target.darah!== undefined) target.darah = 0 // matiin target
+  const targetRevived = target.darah !== undefined
+    ? reviveBloodline(target, Number(target.maxDarah) || 100)
+    : 0
+  if (target.darah !== undefined && !targetRevived) target.darah = 0
   wdb.money[who] -= hasil
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
 
   wdb.crime[m.sender].bunuh = (Number(wdb.crime[m.sender].bunuh) || 0) + 1
   wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
 
-  target.riwayat.unshift(`-Rp ${hasil.toLocaleString()} Dibunuh @${m.sender.split('@')[0]}`)
+  target.riwayat.unshift(
+    targetRevived
+      ? `♻️ Phoenix bangkit setelah dibunuh @${m.sender.split('@')[0]}`
+      : `-Rp ${hasil.toLocaleString()} Dibunuh @${m.sender.split('@')[0]}`
+  )
   userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Bunuh @${who.split('@')[0]}`)
   saveDB(wdb)
 
@@ -121,8 +138,9 @@ txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
 txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()} • ${persen}%\n`
 txt += `╰─━━━━━━━━━━━━━━─\n\n`
 txt += `${story}\n\n`
-txt += `⚰️ *TARGET MATI!*\n`
-txt += `> ↳ Harus *heal* terlebih dahulu.`
+txt += targetRevived
+  ? `♻️ *TARGET BANGKIT KEMBALI!*\n> ↳ Bloodline Phoenix memulihkan target dengan ${targetRevived} HP.`
+  : `⚰️ *TARGET MATI!*\n> ↳ Harus *heal* terlebih dahulu.`
 
 conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }

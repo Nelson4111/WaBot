@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/wai
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
-import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
+import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { addUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -125,7 +125,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let dmgReduction = (armorLvl * 15) + Math.floor(bonusDefGuild * 0.1)
   let dmgPerRound = Math.max(Math.ceil(selected.dmgEnemy * 0.15), selected.dmgEnemy - dmgReduction)
   if (selected.reward.limit) dmgPerRound = Math.ceil(dmgPerRound * 1.35)
-  dmgPerRound = Math.max(1, Math.floor(dmgPerRound * (1 - Math.min(0.3, getBloodlineBuff(user, 'dungeonDefense')))))
+  dmgPerRound = Math.max(1, Math.floor(dmgPerRound * (
+    1 - Math.min(0.3, getBloodlineBuff(user, 'dungeonDefense')) +
+    getBloodlineDrawback(user).dungeonDamageTaken
+  )))
   let rawDamage = rounds * dmgPerRound
 
   // Batasi damage proporsional berdasarkan kelebihan level & equipment
@@ -139,6 +142,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   // KALO MATI
   if (user.darah <= finalDamage) {
+    const revivedHP = reviveBloodline(user, maxHP)
+    if (revivedHP) {
+      user.lastDungeon = Date.now()
+      await saveDB(wdb)
+      return m.reply(
+        `♻️ *PHOENIX BANGKIT KEMBALI*\nKamu kembali hidup dengan ${revivedHP}/${maxHP} HP. Dungeon gagal dan cooldown tetap berlaku.`
+      )
+    }
     if (tryPremiumProtection(m.sender, 'dungeon')) {
       user.darah = Math.max(1, user.darah - finalDamage)
       user.lastDungeon = Date.now()

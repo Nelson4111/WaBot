@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -129,6 +130,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     }
   }
 
+  function applyFarmingYieldBonus(amount) {
+    const bonus = amount * getBloodlineBuff(user, 'farmingYield')
+    if (bonus <= 0) return amount
+    return amount + Math.floor(bonus) + (Math.random() < bonus % 1 ? 1 : 0)
+  }
+
   function cekLevelUpAfterMigration(user) {
     user.exp = Number(user.exp) || 0
     user.level = Number(user.level) || 1
@@ -209,10 +216,11 @@ if (text.toLowerCase() === 'all') {
       let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
       if (sisaWaktu <= 0) {
         let h = dataBibit.hasil
-        addItem(user, h.item, h.jumlah)
+        const harvested = applyFarmingYieldBonus(h.jumlah)
+        addItem(user, h.item, harvested)
         totalExp += dataBibit.exp
-        hasil[l.jenis] = (hasil[l.jenis] || 0) + h.jumlah
-        listHasil.push(`${dataBibit.emoji} ${formatNama(h.item)} x${h.jumlah}`)
+        hasil[l.jenis] = (hasil[l.jenis] || 0) + harvested
+        listHasil.push(`${dataBibit.emoji} ${formatNama(h.item)} x${harvested}`)
         delete user.ladang[i]
         count++
       }
@@ -227,7 +235,7 @@ if (text.toLowerCase() === 'all') {
     `─━━━━━━━━━━━━━━─`
   )
 
-  totalExp = scaleDifficultyXP(user, totalExp)
+  totalExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp))
   user.exp += totalExp
   cekLevelUp(user)
   await saveDB(wdb)
@@ -303,8 +311,10 @@ let sisaWaktu = scaleDifficultyCooldown(user, dataBibit.waktu) - (Date.now() - l
 
 if (sisaWaktu <= 0) {
   let h = dataBibit.hasil
-  addItem(user, h.item, h.jumlah)
-  user.exp += scaleDifficultyXP(user, dataBibit.exp)
+  const harvested = applyFarmingYieldBonus(h.jumlah)
+  addItem(user, h.item, harvested)
+  const earnedExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, dataBibit.exp))
+  user.exp += earnedExp
   cekLevelUp(user)
   delete user.ladang[slotAsli]
   await saveDB(wdb)
@@ -315,18 +325,18 @@ if (sisaWaktu <= 0) {
 
   teks += `📋 *INFORMASI PANEN*\n`
   teks += `> ↳ 📍 Slot: ${index}\n`
-  teks += `> ↳ ☘️ Hasil: ${h.jumlah}x ${dataBibit.emoji} ${formatNama(h.item)}\n\n`
+  teks += `> ↳ ☘️ Hasil: ${harvested}x ${dataBibit.emoji} ${formatNama(h.item)}\n\n`
 
   teks += `─━━━━━━━━━━━━━━─\n\n`
 
   teks += `✨ *HASIL PENGALAMAN*\n`
-  teks += `> ↳ ✨ XP: +${dataBibit.exp}\n`
+  teks += `> ↳ ✨ XP: +${earnedExp}\n`
   teks += `> ↳ 📊 Level: Lv.${user.level}\n\n`
 
   teks += `─━━━━━━━━━━━━━━─\n\n`
 
   teks += `💰 *MAU JUAL?*\n`
-  teks += `> ↳ Ketik *${usedPrefix}koperasi jual ${h.item} ${h.jumlah}*\n\n`
+  teks += `> ↳ Ketik *${usedPrefix}koperasi jual ${h.item} ${harvested}*\n\n`
 
   teks += `─━━━━━━━━━━━━━━─`
 
