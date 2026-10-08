@@ -8,6 +8,7 @@ import {
   PREMIUM_DAILY_REWARD
 } from '../../lib/rpgPremium.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { addUserLimit } from '../../lib/userLimit.js'
 
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000
 
@@ -48,11 +49,11 @@ let handler = async (m, { conn, text = '', usedPrefix }) => {
     }
     const remaining = (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now
     if (remaining > 0) return m.reply(`⏳ Premium daily bisa diklaim lagi dalam ${formatRemaining(remaining)}.`)
-    user.limit = (Number(user.limit) || 0) + PREMIUM_DAILY_REWARD
+    const limit = addUserLimit(user, PREMIUM_DAILY_REWARD)
     user.premiumDailyAt = now
     users[m.sender] = user
     await global.db.write()
-    return m.reply(`✅ Premium daily berhasil diklaim: *+${PREMIUM_DAILY_REWARD} limit*.\n> ↳ Limit sekarang: *${user.limit}*`)
+    return m.reply(`✅ Premium daily berhasil diklaim: *+${PREMIUM_DAILY_REWARD} limit*.\n> ↳ Limit sekarang: *${limit}*`)
   }
 
   if (action === 'title' || action === 'titles') {

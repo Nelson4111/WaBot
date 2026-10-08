@@ -223,7 +223,7 @@ ${canUp ? `> ✨ *EXP KAMU SUDAH CUKUP!*\n> Ketik *${usedPrefix}levelup* sekaran
 
     user.level = newLevel
     const reward = getLevelReward(before, user.level)
-    user.limit = (user.limit || 0) + reward.limit
+    addUserLimit(user, reward.limit)
     user.money = (user.money || 0) + reward.money
     user.role = getLevelRole(user.level)
 
@@ -317,3 +317,4 @@ handler.command = /^(level|levelup|lvlup|autolevelup)$/i
 handler.register = true
 
 export default handler
+import { addUserLimit } from '../../lib/userLimit.js'

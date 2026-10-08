@@ -30,10 +30,12 @@ let handler = async (m, { conn, args }) => {
   let target = global.db.data.users[who]
 
   if (!target || Object.keys(target).length === 0) throw '❌ User tidak ditemukan di database!'
-  if (sender.limit < amount) throw '❌ Limit tidak cukup!'
+  const senderLimit = syncUserLimit(sender)
+  if (senderLimit < amount) throw '❌ Limit tidak cukup!'
 
-  sender.limit -= amount
-  target.limit += amount
+  setUserLimit(sender, senderLimit - amount)
+  const targetLimit = syncUserLimit(target)
+  setUserLimit(target, targetLimit + amount)
 
   let txt = `
 ✅ *TRANSFER LIMIT BERHASIL*
@@ -66,3 +68,4 @@ async function resolveJid(conn, jid) {
   } catch {}
   return jid
 }
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
