@@ -18,6 +18,7 @@ import { getPatrolCaptureStory, isPatrolExemptCommand, PATROL_RESTRICTED_CRIME_C
 import { loadDB, saveDB } from './lib/waifuHelper.js'
 import { registerPrisoner } from './lib/prisonHelper.js'
 import { setUserLimit, syncUserLimit } from './lib/userLimit.js'
+import { isPremiumAccount } from './lib/rpgPremium.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -575,7 +576,9 @@ async function processMessage(m, chatUpdate) {
         const isCoOwner = global.db.data.users[senderClean]?.isCoOwner || global.db.data.users[m.sender]?.isCoOwner || false
         const isOwner = isROwner || m.fromMe || isCoOwner
         const isMods = isOwner || global.mods.map(v => String(v).replace(/[^0-9]/g, '')).some(num => num && (senderDigits === num || rawSenderDigits === num))
-        const isPrems = isROwner || (global.db.data.users[senderClean] && global.db.data.users[senderClean].premiumTime > 0) || (global.db.data.users[m.sender] && global.db.data.users[m.sender].premiumTime > 0)
+        const isPrems = isROwner ||
+            isPremiumAccount(global.db.data.users[senderClean]) ||
+            isPremiumAccount(global.db.data.users[m.sender])
 
         // Options Check (Owner exempt)
         if (!isOwner) {
@@ -977,7 +980,7 @@ async function processMessage(m, chatUpdate) {
                 if (xp > 200) { /* console.log("ngecit -_-"); */ }
                 else m.exp += xp
 
-                if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
+                if (plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
                     // console.log('[LIMIT HABIS]', new Date().toISOString(), 
                     //     'jid:', m.chat, 
                     //     'limit saat ini:', global.db.data.users[m.sender].limit)
@@ -995,8 +998,7 @@ async function processMessage(m, chatUpdate) {
                     await plugin.call(this, m, extra)
                     syncUserLimit(user)
                     if (isRpgPlugin && user?.rpg && !user.rpg.lastRpgActivityAt) user.rpg.lastRpgActivityAt = Date.now()
-                    if (!isPrems)
-                        m.limit = m.limit || plugin.limit || false
+                    m.limit = m.limit || plugin.limit || false
                     botArbitrator.resolve(m.key?.id, this)
                 } catch (e) {
                     // Error occured

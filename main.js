@@ -1037,13 +1037,16 @@ const pluginDirs = (dir = pluginFolder) => readdirSync(dir, { withFileTypes: tru
 let pluginWatchers = []
 let pluginWatchRefreshTimeout
 
-function formatPluginModule(module) {
+function formatPluginModule(module, filename = '') {
   let loaded = module.default || module
   if (loaded && (typeof loaded === 'function' || typeof loaded === 'object')) {
     for (let key in module) {
       if (key !== 'default' && !(key in loaded)) {
         try { loaded[key] = module[key] } catch {}
       }
+    }
+    if (/^(downloader|sticker|maker)\//.test(filename)) {
+      loaded.limit = 1
     }
   }
   return loaded
@@ -1056,7 +1059,7 @@ async function filesInit() {
     try {
       let file = global.__filename(filePath)
       const module = await import(file)
-      global.plugins[filename] = formatPluginModule(module)
+      global.plugins[filename] = formatPluginModule(module, filename)
     } catch (e) {
       conn.logger.error(e)
       delete global.plugins[filename]
@@ -1085,7 +1088,7 @@ global.reload = async (_ev, filename) => {
     if (err) conn.logger.error(`syntax error while loading '${filename}'\n${format(err)}`)
     else try {
       const module = (await import(`${global.__filename(dir)}?update=${Date.now()}`))
-      global.plugins[filename] = formatPluginModule(module)
+      global.plugins[filename] = formatPluginModule(module, filename)
     } catch (e) {
       conn.logger.error(`error require plugin '${filename}\n${format(e)}'`)
     } finally {
