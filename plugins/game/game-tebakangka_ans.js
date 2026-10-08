@@ -40,7 +40,7 @@ handler.before = async function (m) {
     if (isCorrect) {
         let user = global.db.data.users[m.sender] = global.db.data.users[m.sender] || {}
         user.exp = (user.exp || 0) + (session[2] || 1000)
-        user.limit = (user.limit || 0) + 5 
+        addUserLimit(user, 5)
         await m.reply(`✅ *BENAR!*\n\nJawaban: *${jawab}*\n+${session[2] || 1000} XP\n+5 Limit`)
         clearTimeout(session[3])
         delete this.tebakangka[id]
@@ -57,3 +57,4 @@ handler.before = async function (m) {
 }
 
 export default handler
+import { addUserLimit } from '../../lib/userLimit.js'
