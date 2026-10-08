@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { addUserLimit, setUserLimit, syncUserLimit } from '../lib/userLimit.js'
 import { buyLimit, formatLimitPriceList } from '../lib/limitShop.js'
+import SupabaseRelationalAdapter from '../lib/supabaseRelationalAdapter.js'
 
 test('keeps legacy and shared limit values synchronized', () => {
   const user = { limit: 100, rpg: { limit: 0 } }
@@ -22,11 +23,19 @@ test('shows the regular and premium limit prices', () => {
 test('buys one limit for Rp100,000 and synchronizes both balances', async () => {
   const replies = []
   const user = { limit: 100, rpg: { limit: 100 }, money: 100000 }
-  await buyLimit({ reply: async text => replies.push(text) }, user, ['1', 'money'])
+  let writes = 0
+  const previousDb = global.db
+  global.db = { write: async () => { writes += 1 } }
+  try {
+    await buyLimit({ reply: async text => replies.push(text) }, user, ['1', 'money'])
+  } finally {
+    global.db = previousDb
+  }
 
   assert.equal(user.money, 0)
   assert.equal(user.limit, 101)
   assert.equal(user.rpg.limit, 101)
+  assert.equal(writes, 1)
   assert.match(replies[0], /Rp 100\.000 terpakai/)
 })
 
@@ -45,4 +54,21 @@ test('retains the premium discount and rejects insufficient funds', async () => 
   assert.equal(insufficientUser.limit, 10)
   assert.equal(insufficientUser.rpg.limit, 10)
   assert.match(replies[1], /Saldo uang tidak cukup/)
+})
+
+test('preserves a zero limit when loading Supabase users', async () => {
+  const adapter = new SupabaseRelationalAdapter({ url: 'https://example.supabase.co', key: 'test-key' })
+  adapter._fetchAll = async table => {
+    if (table !== 'users') return []
+    return [{
+      jid: 'zero-limit@s.whatsapp.net',
+      limit_val: 0,
+      raw_data: {},
+      rpg: {}
+    }]
+  }
+  adapter._saveLocalBackup = () => {}
+
+  const data = await adapter.read()
+  assert.equal(data.users['zero-limit@s.whatsapp.net'].limit, 0)
 })
