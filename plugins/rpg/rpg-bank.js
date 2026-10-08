@@ -1,6 +1,7 @@
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { hargaBeli as MENU_RESTAURAN, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 export const BANK_TIERS = {
   0: { name: 'Basic Card', limit: 10_000_000, bunga: 0.002, price: 0, biayaBulanan: 0, color: '🔰', keamanan: 1, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa'] },
@@ -168,7 +169,7 @@ export function isPremiumUser(jid, db = global.db) {
   if (!jid) return false
   const user = db?.users?.[jid] || db?.data?.users?.[jid] || global.db?.data?.users?.[jid]
   if (!user) return false
-  return user.premium === true || Number(user.premiumTime || 0) > Date.now()
+  return isPremiumAccount(user)
 }
 
 function getTransferAdminFee(amount, jid) {
