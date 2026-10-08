@@ -4,6 +4,7 @@ import { loadDB } from '../../lib/waifuHelper.js'
 import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getIntimacyRank, isPasanganHidden, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -82,7 +83,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
     role = getLevelRole(level)
   }
 
-  let isPremium = (premiumTime || 0) > Date.now() || user.premium
+  let isPremium = isPremiumAccount(user)
   let prems = isPremium ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
   let premExpired = ''
   if (isPremium && premiumTime) {
