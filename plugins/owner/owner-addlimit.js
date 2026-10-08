@@ -1,3 +1,5 @@
+import { addUserLimit } from '../../lib/userLimit.js'
+
 let handler = async (m, { conn, args }) => {
     let who
     let amount
@@ -42,6 +44,7 @@ let handler = async (m, { conn, args }) => {
     }
 
     addUserLimit(users[who], amount)
+    await global.db.write()
 
     let nomorAsli = who.split('@')[0]
     let pesan = `✅ *Limit Berhasil Ditambahkan*\n\n` +
@@ -61,4 +64,3 @@ handler.command = /^addlimit$/i
 handler.owner = true
 
 export default handler
-import { addUserLimit } from '../../lib/userLimit.js'

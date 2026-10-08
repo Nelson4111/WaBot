@@ -1,3 +1,5 @@
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
+
 let handler = async (m, { conn, args }) => {
     let who
     let amount
@@ -45,6 +47,7 @@ let handler = async (m, { conn, args }) => {
 
     // Mengurangi limit (memastikan hasil tidak negatif)
     setUserLimit(users[who], Math.max(0, syncUserLimit(users[who]) - amount))
+    await global.db.write()
 
     // --- 5. RESPONSE ---
     let nomorAsli = who.split('@')[0]
@@ -65,4 +68,3 @@ handler.command = /^(dellimit)$/i
 handler.owner = true
 
 export default handler
-import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
