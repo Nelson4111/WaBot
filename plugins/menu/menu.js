@@ -6,6 +6,7 @@ import { getPasanganHiddenNotice, isPasanganHidden, getUserRelationship } from '
 
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getLevelRole } from '../../lib/levelling.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 const toSmallNum = (str) => {
     const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -52,7 +53,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
   const persistedUser = wdb.users?.[m.sender] || users[m.sender] || {}
   const uang = wdb.money?.[m.sender] || 0
   let { limit = 0, role = 'User', premiumTime = 0, pasangan = [] } = user
-  let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
+  let prems = isPremiumAccount(user) ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
   const pasanganHidden = isPasanganHidden(persistedUser) || isPasanganHidden(user)
 
   const owners = (global.owner || []).map(v => (Array.isArray(v) ? v[0] : v).replace(/\D/g, '') + '@s.whatsapp.net')

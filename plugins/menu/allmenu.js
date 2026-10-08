@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -91,7 +92,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     let name = registered ? dbName || m.pushName || await conn.getName(m.sender) : m.pushName || await conn.getName(m.sender)
     user.name = name
 
-    let prems = premiumTime > 0 ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
+    let prems = isPremiumAccount(user) ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
     const owners = (global.owner || []).map(v => (Array.isArray(v) ? v[0] : v).replace(/\D/g, '') + '@s.whatsapp.net')
     const senderNumber = m.sender.split('@')[0]
     let role = owners.some(o => o.includes(senderNumber)) ? 'Owner ❖' : (user.isCoOwner ? 'Co-Owner ✦' : getLevelRole(user.level || 0))
