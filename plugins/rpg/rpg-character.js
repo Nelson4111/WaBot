@@ -32,7 +32,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
   const prefix = usedPrefix || '.'
   const root = String(command).toLowerCase()
 
-  if (root === 'bloodline' || root === 'bloodlines') {
+  if (root === 'bl' || root === 'bloodline' || root === 'bloodlines') {
   const current = getBloodline(rpg)
 
   if (mode === 'list' || mode === 'daftar') {
@@ -94,9 +94,11 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `╭─❏「 🧬 INFO BLOODLINE 」❏\n` +
       `│ ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ✅ *AKTIF*' : ''}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📝 *DESKRIPSI*\n> ${bloodline.description}\n\n` +
+      `✨ *EFEK*\n` +
       `${describeBloodlineEffects({ bloodline: id })}\n\n` +
       `📌 *MENU*\n` +
-      `> ↳ Daftar bloodline: ${prefix}bloodline list\n\n` +
+      `> ↳ Daftar bloodline: ${prefix}bl list\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -428,9 +430,9 @@ return m.reply(
 )
 }
 
-handler.help = ['mychar', 'mycharacter', 'ava', 'persona', 'character', 'bloodline list|ubah', 'bloodlines info <nomor/nama>']
+handler.help = ['mychar', 'mycharacter', 'ava', 'persona', 'character', 'bl list|ubah', 'bloodline list|ubah', 'bloodlines info <nomor/nama>']
 handler.tags = ['rpg']
-handler.command = /^(mychar|mycharacter|ava|persona|character|bloodline|bloodlines)$/i
+handler.command = /^(mychar|mycharacter|ava|persona|character|bl|bloodline|bloodlines)$/i
 handler.group = true
 
 export default handler

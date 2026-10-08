@@ -159,8 +159,8 @@ caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
 caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
 caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
-if(miningYieldBonus > 0) caption += `> ↳ 🧬 Bloodline Dwarf: hasil ore +${miningYieldBonus * 100}%\n`
-if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk mendapatkan secret\n`
+if(miningYieldBonus > 0) caption += `> ↳ 🧬 Efek Bloodline: hasil ore +${miningYieldBonus * 100}%\n`
+if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk hasil secret\n`
 caption += `\n─━━━━━━━━━━━━━━─`
 
 return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i140/srjE7x6')
