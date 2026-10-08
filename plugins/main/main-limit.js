@@ -33,7 +33,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   `> ↳ Sisa Limit: *${limit}* Limit\n\n` +
   `📌 *INFORMASI*\n` +
   `> ↳ ${isSelf ? `Gunakan ${prefix}limit buy untuk membeli limit.` : 'Pengguna ini memiliki ' + limit + ' limit.'}\n` +
-  `${isSelf ? `> ↳ Gunakan ${prefix}limit guide untuk panduan.\n` : ''}\n` +
+  `${isSelf ? `> ↳ Fitur sticker, maker, dan downloader memakai 1 limit per penggunaan, termasuk untuk Premium.\n> ↳ Gunakan ${prefix}limit guide untuk panduan.\n` : ''}\n` +
   `─━━━━━━━━━━━━━━─`
   await conn.reply(m.chat, caption, m, { mentions: [who] })
 }
