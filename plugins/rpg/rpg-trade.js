@@ -161,7 +161,7 @@ if (action === 'add') {
   const reference = matches[0]
   if (!reference) return m.reply(`❌ Item *${type}* tidak ditemukan di stok yang bisa ditrade.`)
 
-  const stok = reference.money ? Number(wdb.money[sender]) || 0 : getTransferBalance(sUser, reference)
+  const stok = reference.money ? Number(wdb.money[sender]) || 0 : getTransferBalance(sUser, reference, wdb.users[sender])
   if (stok < count) {
     return m.reply(
       `╭─❏「 🔄 TRADE 」❏\n` +
@@ -256,7 +256,7 @@ if (action === 'deal') {
   // cek stok lagi
   for (let [key, qty] of Object.entries(trade.p1Offer)) {
     const item = parseTransferReference(key)
-    const stok = item?.money ? Number(wdb.money[trade.p1]) || 0 : getTransferBalance(p1User, item)
+    const stok = item?.money ? Number(wdb.money[trade.p1]) || 0 : getTransferBalance(p1User, item, wdb.users[trade.p1])
     if (stok < qty) {
       return m.reply(
         `╭─❏「 🔄 TRADE 」❏\n` +
@@ -272,7 +272,7 @@ if (action === 'deal') {
 
   for (let [key, qty] of Object.entries(trade.p2Offer)) {
     const item = parseTransferReference(key)
-    const stok = item?.money ? Number(wdb.money[trade.p2]) || 0 : getTransferBalance(p2User, item)
+    const stok = item?.money ? Number(wdb.money[trade.p2]) || 0 : getTransferBalance(p2User, item, wdb.users[trade.p2])
     if (stok < qty) {
       return m.reply(
         `╭─❏「 🔄 TRADE 」❏\n` +
@@ -293,8 +293,8 @@ if (action === 'deal') {
       wdb.money[trade.p1] -= qty
       wdb.money[trade.p2] = (Number(wdb.money[trade.p2]) || 0) + qty
     } else {
-      changeTransferBalance(p1User, item, -qty)
-      changeTransferBalance(p2User, item, qty)
+      changeTransferBalance(p1User, item, -qty, wdb.users[trade.p1])
+      changeTransferBalance(p2User, item, qty, wdb.users[trade.p2])
       if (item.field === 'bank' && wdb.users[trade.p1]) wdb.users[trade.p1].bank = p1User.bank
       if (item.field === 'bank' && wdb.users[trade.p2]) wdb.users[trade.p2].bank = p2User.bank
     }
@@ -306,8 +306,8 @@ if (action === 'deal') {
       wdb.money[trade.p2] -= qty
       wdb.money[trade.p1] = (Number(wdb.money[trade.p1]) || 0) + qty
     } else {
-      changeTransferBalance(p2User, item, -qty)
-      changeTransferBalance(p1User, item, qty)
+      changeTransferBalance(p2User, item, -qty, wdb.users[trade.p2])
+      changeTransferBalance(p1User, item, qty, wdb.users[trade.p1])
       if (item.field === 'bank' && wdb.users[trade.p2]) wdb.users[trade.p2].bank = p2User.bank
       if (item.field === 'bank' && wdb.users[trade.p1]) wdb.users[trade.p1].bank = p1User.bank
     }

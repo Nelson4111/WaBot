@@ -13,38 +13,98 @@ let handler = async (m, { conn, command, text = '', usedPrefix = '.' }) => {
   let user = data.rpg
 
   if (['rpglevel', 'blood', 'darah', 'equipment', 'equip'].includes(command)) {
-    if (['equipment', 'equip'].includes(command) && args[0] === 'list') {
-      const labels = {
-        sword: '🗡️ Sword',
-        armor: '🛡️ Armor',
-        pickaxe: '⛏️ Pickaxe',
-        fishingrod: '🎣 Fishing Rod'
-      }
-      const requestedType = args[1]
-      const types = requestedType ? [requestedType] : Object.keys(labels)
-      if (types.some(type => !labels[type])) {
-        return m.reply(`Jenis equipment tidak dikenal. Pilih: ${Object.keys(labels).join(', ')}`)
-      }
-      const sections = types.map(type =>
-        `${labels[type]}\n${getEquipmentNameList(type).map((name, index) => `${index + 1}. ${name}`).join('\n')}`
-      )
-      return m.reply(`📖 *DAFTAR EQUIPMENT*\n\n${sections.join('\n\n')}\n\nContoh: ${usedPrefix}equipment list armor`)
+  if (['equipment', 'equip'].includes(command) && args[0] === 'list') {
+    const labels = {
+      sword: '🗡️ Sword',
+      armor: '🛡️ Armor',
+      pickaxe: '⛏️ Pickaxe',
+      fishingrod: '🎣 Fishing Rod'
     }
-    const armorLvl = Number(user.armor) || 0
-    const maxHP = 100 + (armorLvl * 20) + (Number(user.maxDarahBonus) || 0)
-    if (typeof user.darah === 'undefined') user.darah = maxHP
 
-    if (command === 'rpglevel') return m.reply(`🆙 *LEVEL RPG*\nLevel: ${user.level}\nEXP: ${user.exp}/${(Number(user.level) || 1) * 500}`)
-    if (['blood', 'darah'].includes(command)) return m.reply(`❤️ *DARAH*\n${user.darah}/${maxHP}`)
-    return m.reply(
-      `🛡️ *EQUIPMENT*\n` +
-      `> 🗡️ Weapon: ${user.sword ? getEquipmentName('sword', user.sword) : 'None'}\n` +
-      `> 🛡️ Armor: ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n` +
-      `> ⛏️ Pickaxe: ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n` +
-      `> 🎣 Fishing Rod: ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n` +
-      `> 🐾 Pet: ${user.pet?.tipe && user.pet.tipe !== 'none' ? `${user.pet.tipe.toUpperCase()} (Lv.${user.pet.level || 0})` : 'Tidak Ada'}\n\n` +
-      `Lihat daftar nama equipment: ${usedPrefix}equipment list`
+    const requestedType = args[1]
+
+    if (!requestedType) {
+      return m.reply(
+        `╭─❏「 📖 DAFTAR EQUIPMENT 」❏\n` +
+        `│ 📖 *DAFTAR EQUIPMENT*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📌 *PILIH JENIS EQUIPMENT*\n` +
+        `> 🗡️ Sword\n` +
+        `> 🛡️ Armor\n` +
+        `> ⛏️ Pickaxe\n` +
+        `> 🎣 Fishing Rod\n\n` +
+        `💡 *CONTOH*\n` +
+        `> ↳ ${usedPrefix}equipment list armor\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const types = [requestedType]
+
+    if (types.some(type => !labels[type])) {
+      return m.reply(
+        `╭─❏「 ❌ EQUIPMENT 」❏\n` +
+        `│ ❌ *JENIS EQUIPMENT TIDAK DIKENAL*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pilih: ${Object.keys(labels).join(', ')}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const sections = types.map(type =>
+      `${labels[type]}\n${getEquipmentNameList(type).map((name, index) => `> ${index + 1}. ${name}`).join('\n')}`
     )
+
+    return m.reply(
+      `╭─❏「 📖 DAFTAR EQUIPMENT 」❏\n` +
+      `│ 📖 *DAFTAR EQUIPMENT*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${sections.join('\n\n')}\n\n` +
+      `💡 *CONTOH*\n` +
+      `> ↳ ${usedPrefix}equipment list armor\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+    const armorLvl = Number(user.armor) || 0
+const maxHP = 100 + (armorLvl * 20) + (Number(user.maxDarahBonus) || 0)
+if (typeof user.darah === 'undefined') user.darah = maxHP
+
+if (command === 'rpglevel') {
+  return m.reply(
+    `╭─❏「 🆙 LEVEL RPG 」❏\n` +
+    `│ 🆙 *LEVEL RPG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Level: *${user.level}*\n` +
+    `> ↳ EXP: ${user.exp}/${(Number(user.level) || 1) * 500}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (['blood', 'darah'].includes(command)) {
+  return m.reply(
+    `╭─❏「 ❤️ DARAH 」❏\n` +
+    `│ ❤️ *DARAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ HP: *${user.darah}/${maxHP}*\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+return m.reply(
+  `╭─❏「 🛡️ EQUIPMENT 」❏\n` +
+  `│ 🛡️ *EQUIPMENT*\n` +
+  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `🗡️ *PERALATAN*\n` +
+  `> ↳ Weapon: ${user.sword ? getEquipmentName('sword', user.sword) : 'None'}\n` +
+  `> ↳ Armor: ${user.armor ? getEquipmentName('armor', user.armor) : 'None'}\n` +
+  `> ↳ Pickaxe: ${user.pickaxe ? getEquipmentName('pickaxe', user.pickaxe) : 'None'}\n` +
+  `> ↳ Fishing Rod: ${user.fishingrod ? getEquipmentName('fishingrod', user.fishingrod) : 'None'}\n\n` +
+  `🐾 *PET*\n` +
+  `> ↳ Pet: ${user.pet?.tipe && user.pet.tipe !== 'none' ? `${user.pet.tipe.toUpperCase()} (Lv.${user.pet.level || 0})` : 'Tidak Ada'}\n\n` +
+  `📌 *MENU*\n` +
+  `> ↳ Lihat daftar nama equipment: ${usedPrefix}equipment list\n\n` +
+  `─━━━━━━━━━━━━━━─`
+)
   }
 
   if (migrateRpgCurrencies(user)) saveDB(wdb)

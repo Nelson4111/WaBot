@@ -3,6 +3,7 @@ import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
 import {
   BLOODLINE_CHANGE_COST,
   BLOODLINE_CONFIRMATION_TIMEOUT,
+  BLOODLINE_STORIES,
   BLOODLINES,
   CHARACTER_GENDERS,
   CHARACTER_DEFAULT_OUTFIT,
@@ -11,6 +12,7 @@ import {
   describeBloodlineEffects,
   normalizeBloodlineKey
 } from '../../lib/rpgCharacterData.js'
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 const FASHION_ITEMS = MALL_CATEGORIES.fashion.items
 const formatFashionItem = item => item ? `${item.emoji} ${item.name}` : '-'
@@ -21,6 +23,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
   if (!account?.rpg) return m.reply('Kamu belum memiliki data RPG. Mulailah dengan .adventure.')
   const rpg = account.rpg
   const registeredUser = db.users[m.sender] || {}
+  syncUserLimit(registeredUser)
   if (!rpg.character || typeof rpg.character !== 'object') rpg.character = {}
   if (!rpg.bloodline) rpg.bloodline = 'human'
 
@@ -42,8 +45,8 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `│ 🧬 *DAFTAR BLOODLINE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${sortedBloodlines.map(([id, bloodline], index) =>
-        `${index + 1}. ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ✅ *AKTIF*' : ''}`
-      ).join('\n\n')}\n\n` +
+        `> ↳ ${index + 1}. ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ✅ *AKTIF*' : ''}`
+      ).join('\n')}\n\n` +
       `📌 *PANDUAN*\n` +
       `> ↳ Detail: ${prefix}bloodlines info <nomor/nama>\n` +
       `> ↳ Gacha bloodline baru: ${prefix}bloodline ubah\n\n` +
@@ -103,8 +106,9 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `╭─❏「 🧬 BLOODLINE 」❏\n` +
       `│ 🧬 *BLOODLINE AKTIF*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🩸 *BLOODLINE KAMU*\n` +
       `> ↳ ${current.emoji} *${current.name}*\n` +
-      `${describeBloodlineEffects(rpg)}\n\n` +
+      `> ↳ ${describeBloodlineEffects(rpg)}\n\n` +
       `📌 *MENU*\n` +
       `> ↳ Lihat pilihan: ${prefix}bloodline list\n` +
       `> ↳ Gacha bloodline baru: ${prefix}bloodline ubah\n` +
@@ -146,7 +150,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     }
 
     if (Number(pending.cost) > 0) {
-      const limit = Math.max(0, Math.floor(Number(rpg.limit) || 0))
+      const limit = syncUserLimit(registeredUser)
       if (limit < Number(pending.cost)) {
         delete rpg.pendingBloodlineChange
         await saveDB(db)
@@ -159,7 +163,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
           `─━━━━━━━━━━━━━━─`
         )
       }
-      rpg.limit = limit - Number(pending.cost)
+      setUserLimit(registeredUser, limit - Number(pending.cost))
     }
 
     const previous = getBloodline(rpg)
@@ -168,16 +172,18 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     await saveDB(db)
 
     const next = getBloodline(rpg)
+    const story = BLOODLINE_STORIES[Math.floor(Math.random() * BLOODLINE_STORIES.length)]
 
     return m.reply(
       `╭─❏「 🧬 BLOODLINE BERUBAH 」❏\n` +
       `│ 🧬 *BLOODLINE BERUBAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📖 *CERITA AVELIA*\n> ${story}\n\n` +
       `> ↳ ${previous.emoji} ${previous.name} ➜ ${next.emoji} *${next.name}*\n\n` +
       `${describeBloodlineEffects(rpg)}\n\n` +
       `💰 *BIAYA*\n` +
       `> ↳ Limit gacha sudah terpakai: ${BLOODLINE_CHANGE_COST}\n` +
-      `> ↳ Sisa limit: ${rpg.limit}\n\n` +
+      `> ↳ Sisa limit: ${registeredUser.limit}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -234,7 +240,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     const next = BLOODLINES[pending.to]
 
     return m.reply(
-      `╭─❏「 🧬 KONFIRMASI BLOODLINE 」❏\n` +
+      `╭─❏「 🧬 BLOODLINES 」❏\n` +
       `│ 🧬 *KONFIRMASI BLOODLINE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ ${current.emoji} ${current.name} ➜ ${next.emoji} ${next.name}\n\n` +
@@ -248,7 +254,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     )
   }
 
-  const limit = Math.max(0, Math.floor(Number(rpg.limit) || 0))
+  const limit = syncUserLimit(registeredUser)
   if (limit < BLOODLINE_CHANGE_COST) {
     return m.reply(
       `╭─❏「 ❌ LIMIT TIDAK CUKUP 」❏\n` +
@@ -263,21 +269,23 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
   const choices = Object.keys(BLOODLINES).filter(id => id !== current.id)
   const target = choices[Math.floor(Math.random() * choices.length)]
 
-  rpg.limit = limit - BLOODLINE_CHANGE_COST
+  setUserLimit(registeredUser, limit - BLOODLINE_CHANGE_COST)
   rpg.pendingBloodlineChange = { from: current.id, to: target, time: now }
   await saveDB(db)
 
   const next = BLOODLINES[target]
+  const story = BLOODLINE_STORIES[Math.floor(Math.random() * BLOODLINE_STORIES.length)]
 
   return m.reply(
     `╭─❏「 🎲 GACHA BLOODLINE 」❏\n` +
     `│ 🧬 *KONFIRMASI BLOODLINE*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📖 *CERITA AVELIA*\n> ${story}\n\n` +
     `> ↳ ${current.emoji} ${current.name} ➜ ${next.emoji} *${next.name}*\n\n` +
     `${describeBloodlineEffects({ bloodline: target })}\n\n` +
     `💰 *BIAYA*\n` +
     `> ↳ ${BLOODLINE_CHANGE_COST} limit sudah terpakai.\n` +
-    `> ↳ Sisa limit: ${rpg.limit}\n\n` +
+    `> ↳ Sisa limit: ${registeredUser.limit}\n\n` +
     `📌 *KONFIRMASI*\n` +
     `> ↳ Setuju: ${prefix}bloodline ubah yes\n` +
     `> ↳ Batal: ${prefix}bloodline ubah no\n` +

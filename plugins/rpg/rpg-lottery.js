@@ -1,4 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { addUserLimit, setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 const LOTTERY_TICKET_PRICE = 10000
 const LOTTERY_PRIZE = 500000
@@ -96,18 +97,16 @@ async function finishGiveaway(conn, chat, state, giveaway) {
   state.history = state.history.slice(0, 50)
   const wdb = loadDB()
   const creator = wdb.users[giveaway.creator]
-  const creatorRpg = creator?.rpg || creator
 
   if (winner && giveaway.rewardType === 'money') {
     wdb.money[winner] = Number(wdb.money[winner] || 0) + giveaway.amount
   } else if (winner && giveaway.rewardType === 'limit') {
     const winnerUser = wdb.users[winner] = wdb.users[winner] || {}
-    const winnerRpg = winnerUser.rpg || winnerUser
-    winnerRpg.limit = Number(winnerRpg.limit || 0) + giveaway.amount
+    addUserLimit(winnerUser, giveaway.amount)
   } else if (!winner && giveaway.rewardType === 'money') {
     wdb.money[giveaway.creator] = Number(wdb.money[giveaway.creator] || 0) + giveaway.amount
-  } else if (!winner && giveaway.rewardType === 'limit' && creatorRpg) {
-    creatorRpg.limit = Number(creatorRpg.limit || 0) + giveaway.amount
+  } else if (!winner && giveaway.rewardType === 'limit' && creator) {
+    addUserLimit(creator, giveaway.amount)
   }
 
   await saveDB(wdb)
@@ -566,10 +565,10 @@ if (saldo < totalHarga) {
         wdb.money[sender] = balance - giveawayState.draft.amount
       } else if (giveawayState.draft.rewardType === 'limit') {
         const creator = wdb.users[sender]
-        const creatorRpg = creator?.rpg || creator
-        const balance = Number(creatorRpg?.limit || 0)
+        if (creator) syncUserLimit(creator)
+        const balance = Number(creator?.limit || 0)
         if (balance < giveawayState.draft.amount) return m.reply(`Limit tidak cukup. Hadiah membutuhkan ${giveawayState.draft.amount.toLocaleString()}, limitmu ${balance.toLocaleString()}.`)
-        creatorRpg.limit = balance - giveawayState.draft.amount
+        if (creator) setUserLimit(creator, balance - giveawayState.draft.amount)
       }
       const giveaway = {
         ...giveawayState.draft,

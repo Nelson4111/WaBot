@@ -7,6 +7,7 @@ import { bibit } from './rpg-panen.js'
 import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked, normalizeDifficulty, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
+import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 import fs from 'fs'
 
@@ -442,6 +443,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   const account = wdb.users[who]
   let user = account.rpg
+  syncUserLimit(account)
 
   if (aksi === 'difficulty' || aksi === 'setdifficulty') {
     const difficulty = normalizeDifficulty(remaining[0])
@@ -736,11 +738,13 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     if (!Number.isFinite(targetValue) || targetValue < 0) return m.reply('❌ Nilai tidak valid.')
 
     if (aksi === 'setbot') {
-      account[key] = targetValue
+      if (key === 'limit') setUserLimit(account, targetValue)
+      else account[key] = targetValue
     } else {
       const currentValue = Number(account[key] ?? user[key] ?? 0)
       const nextValue = aksi === 'addbot' ? currentValue + targetValue : Math.max(0, currentValue - targetValue)
-      account[key] = nextValue
+      if (key === 'limit') setUserLimit(account, nextValue)
+      else account[key] = nextValue
     }
 
     saveDB(wdb)
@@ -762,8 +766,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
     } else if (aksi === 'setbotxp') {
       account.exp = jumlah
     } else if (aksi === 'setbotlimit') {
-      account.limit = jumlah
-      user.limit = jumlah
+      setUserLimit(account, jumlah)
     } else {
       user[aksi.replace('set','')] = jumlah
     }
@@ -802,8 +805,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
       }
     }
     else if(aksi === 'addbotlimit'){
-      account.limit = (Number(account.limit) || 0) + jumlah
-      user.limit = (Number(user.limit) || 0) + jumlah
+      setUserLimit(account, (Number(account.limit) || 0) + jumlah)
     }
     else user[aksi.replace('add','')] += jumlah
 
@@ -831,8 +833,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
       user.exp = Math.max(0, user.exp - jumlah)
     }
     else if(aksi === 'delbotlimit'){
-      account.limit = Math.max(0, (Number(account.limit) || 0) - jumlah)
-      user.limit = Math.max(0, (Number(user.limit) || 0) - jumlah)
+      setUserLimit(account, Math.max(0, (Number(account.limit) || 0) - jumlah))
     }
     else {
       let stat = aksi.replace('del','')

@@ -71,7 +71,7 @@ if (item.money) {
   wdb.money[m.sender] -= count
   wdb.money[who] = (wdb.money[who] || 0) + count
 } else {
-  if (getTransferBalance(wdb.users[m.sender].rpg, item) < count) {
+  if (getTransferBalance(wdb.users[m.sender].rpg, item, wdb.users[m.sender]) < count) {
     return m.reply(
       `╭─❏「 ❌ GIFT SYSTEM 」❏\n` +
       `│ 📦 ${item.label} tidak cukup!\n` +
@@ -79,8 +79,8 @@ if (item.money) {
     )
   }
 
-  changeTransferBalance(wdb.users[m.sender].rpg, item, -count)
-  changeTransferBalance(wdb.users[who].rpg, item, count)
+  changeTransferBalance(wdb.users[m.sender].rpg, item, -count, wdb.users[m.sender])
+  changeTransferBalance(wdb.users[who].rpg, item, count, wdb.users[who])
 }
 
 saveDB(wdb)

@@ -3,11 +3,14 @@ import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
+import { addUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let user = wdb.users[m.sender]?.rpg
+  const account = wdb.users[m.sender]
+  let user = account?.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
+  syncUserLimit(account)
 
   // INIT
   let armorLvl = user.armor || 0
@@ -169,7 +172,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
   user.gold = (Number(user.gold) || 0) + earnedGold
   user.diamond = (Number(user.diamond) || 0) + earnedDiamond
-  user.limit = (Number(user.limit) || 0) + earnedLimit
+  addUserLimit(account, earnedLimit)
   user.lastDungeon = Date.now()
 
   await saveDB(wdb)
