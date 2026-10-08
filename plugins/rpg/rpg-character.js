@@ -95,8 +95,8 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     return m.reply(
       `╭─❏「 🧬 INFO BLOODLINE 」❏\n` +
       `│ ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ✅ *AKTIF*' : ''}\n` +
+      `${describeBloodlineRarity({ bloodline: id })}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${describeBloodlineRarity({ bloodline: id })}\n\n` +
       `📝 *DESKRIPSI BLOODLINE*\n` +
       `> ${bloodline.description}\n\n` +
       `⚔️ *EFEK*\n` +
@@ -115,12 +115,12 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `🩸 *BLOODLINE KAMU*\n` +
       `> ↳ ${current.emoji} *${current.name}*\n` +
+      `${describeBloodlineRarity(rpg)}\n` +
       `${describeBloodlineEffects(rpg)}\n\n` +
       `📌 *MENU*\n` +
       `> ↳ Lihat pilihan: ${prefix}bloodline list\n` +
       `> ↳ Gacha bloodline baru: ${prefix}bloodline ubah\n` +
       `> ↳ Biaya: ${BLOODLINE_CHANGE_COST} limit\n\n` +
-      `${describeBloodlineRarity(rpg)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -187,12 +187,12 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `│ 🧬 *BLOODLINE BERUBAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `📖 *CERITA AVELIA*\n> ${story}\n\n` +
-      `> ↳ ${previous.emoji} ${previous.name} ➜ ${next.emoji} *${next.name}*\n\n` +
+      `> ↳ ${previous.emoji} ${previous.name} ➜ ${next.emoji} *${next.name}*\n` +
+      `${describeBloodlineRarity(rpg)}\n\n` +
       `${describeBloodlineEffects(rpg)}\n\n` +
       `💰 *BIAYA*\n` +
       `> ↳ Limit gacha sudah terpakai: ${BLOODLINE_CHANGE_COST}\n` +
       `> ↳ Sisa limit: ${registeredUser.limit}\n\n` +
-      `${describeBloodlineRarity(rpg)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -252,14 +252,14 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `╭─❏「 🧬 BLOODLINES 」❏\n` +
       `│ 🧬 *KONFIRMASI BLOODLINE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ ${current.emoji} ${current.name} ➜ ${next.emoji} ${next.name}\n\n` +
+      `> ↳ ${current.emoji} ${current.name} ➜ ${next.emoji} ${next.name}\n` +
+      `${describeBloodlineRarity({ bloodline: pending.to })}\n\n` +
       `${describeBloodlineEffects({ bloodline: pending.to })}\n\n` +
       `💰 *BIAYA*\n` +
       `> ↳ Gacha ${BLOODLINE_CHANGE_COST} limit sudah terpakai.\n\n` +
       `📌 *KONFIRMASI*\n` +
       `> ↳ Setuju: ${prefix}bloodline ubah yes\n` +
       `> ↳ Batal: ${prefix}bloodline ubah no\n\n` +
-      `${describeBloodlineRarity({ bloodline: pending.to })}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -291,7 +291,8 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     `│ 🧬 *KONFIRMASI BLOODLINE*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📖 *CERITA AVELIA*\n> ${story}\n\n` +
-    `> ↳ ${current.emoji} ${current.name} ➜ ${next.emoji} *${next.name}*\n\n` +
+    `> ↳ ${current.emoji} ${current.name} ➜ ${next.emoji} *${next.name}*\n` +
+    `${describeBloodlineRarity({ bloodline: target })}\n\n` +
     `${describeBloodlineEffects({ bloodline: target })}\n\n` +
     `💰 *BIAYA*\n` +
     `> ↳ ${BLOODLINE_CHANGE_COST} limit sudah terpakai.\n` +
@@ -300,7 +301,6 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
     `> ↳ Setuju: ${prefix}bloodline ubah yes\n` +
     `> ↳ Batal: ${prefix}bloodline ubah no\n` +
     `> ↳ Berlaku: ${Math.floor(BLOODLINE_CONFIRMATION_TIMEOUT / 1000)} detik\n\n` +
-    `${describeBloodlineRarity({ bloodline: target })}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -431,11 +431,12 @@ return m.reply(
   `> ↳ ${prefix}${root} gender <gender>\n` +
   `> ↳ ${prefix}${root} umur <umur>\n\n` +
   `🧬 *BLOODLINE*\n` +
+  `> ↳ ${getBloodline(rpg).emoji} *${getBloodline(rpg).name}*\n` +
+  `${describeBloodlineRarity(rpg)}\n` +
   `> ↳ ${prefix}bloodline list\n` +
   `> ↳ ${prefix}bloodline ubah\n\n` +
   `👗 *WARDROBE*\n` +
   `> ↳ ${prefix}wardrobe\n\n` +
-  `${describeBloodlineRarity(rpg)}\n\n` +
   `─━━━━━━━━━━━━━━─`
 )
 }

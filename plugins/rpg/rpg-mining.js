@@ -1,6 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
+import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -155,7 +155,8 @@ caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
 caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
 caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
-if(miningYieldBonus > 0) caption += `> ↳ 🧬 Efek Bloodline: hasil ore +${miningYieldBonus * 100}%\n`
+const miningYieldEffect = getBloodlineBuff(user, 'miningYield') - getBloodlineDrawback(user).miningYieldPenalty
+if(miningYieldEffect !== 0) caption += `> ↳ 🧬 Efek Bloodline: hasil ore ${miningYieldEffect > 0 ? '+' : ''}${(miningYieldEffect * 100).toFixed(0)}%\n`
 if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk hasil secret\n`
 caption += `\n─━━━━━━━━━━━━━━─`
 

@@ -40,6 +40,50 @@ function getAdvTitle(lvl){
   return '🗑️ PENGEMBARA'
 }
 
+function normalizeRpgPanelCategory(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+const RPG_PANEL_CATEGORIES = Object.freeze([
+  { title: 'GLOBAL', marker: '📊 *GLOBAL*', aliases: ['global'] },
+  { title: 'USER STAT', marker: '👤 *USER STAT*', aliases: ['user', 'userstat', 'user-stat', 'stat'] },
+  { title: 'GUDANG', marker: '📦 *GUDANG*', aliases: ['gudang', 'inventory'] },
+  { title: 'TERNAK', marker: '🏡 *TERNAK*', aliases: ['ternak', 'peternakan'] },
+  { title: 'ADVENTURE', marker: '🗺️ *ADVENTURE*', aliases: ['adventure', 'adv'] },
+  { title: 'BANK', marker: '🏦 *BANK*', aliases: ['bank'] },
+  { title: 'RSHIP', marker: '💕 *RSHIP*', aliases: ['rship', 'relationship'] },
+  { title: 'CSM PANEL', marker: '⛓️ *CSM PANEL*', aliases: ['csm'] },
+  { title: 'UPDATE RPG', marker: '🧬 *UPDATE RPG*', aliases: ['update', 'updates', 'fitur', 'rpg'] },
+  { title: 'ADMIN', marker: '🛠️ *ADMIN*', aliases: ['admin', 'owner', 'limit', 'news'] },
+  { title: 'COMMAND RPG', marker: '📜 *COMMAND RPG*', aliases: ['commands', 'command', 'perintah'] },
+  { title: 'ADMIN COMMANDS', marker: '👑 *ADMIN COMMANDS*', aliases: ['admincommands', 'ownercommands'] },
+  { title: 'LAINNYA', marker: '💊 *LAINNYA*', aliases: ['lainnya', 'other'] }
+])
+
+function getRpgPanelSection(panelText, category) {
+  const start = panelText.indexOf(category.marker)
+  if (start < 0) return ''
+  const nextStart = RPG_PANEL_CATEGORIES
+    .map(({ marker }) => panelText.indexOf(marker))
+    .filter(index => index > start)
+    .sort((a, b) => a - b)[0] ?? panelText.length
+  return panelText.slice(start, nextStart).replace(/\n+─━━━━━━━━━━━━━━─\s*$/, '').trim()
+}
+
+function getPluginCommandLines(tag, usedPrefix) {
+  const helpEntries = Object.values(global.plugins || {})
+    .filter(plugin => !plugin?.disabled && Array.isArray(plugin?.tags) && plugin.tags.includes(tag))
+    .flatMap(plugin => Array.isArray(plugin.help)
+      ? plugin.help
+      : typeof plugin.help === 'string' ? [plugin.help] : [])
+    .filter(entry => typeof entry === 'string' && entry.trim())
+    .map(entry => entry.trim().replace(/^\./, ''))
+  const uniqueEntries = [...new Set(helpEntries)]
+  return uniqueEntries.length
+    ? uniqueEntries.map(entry => `> ↳ ${usedPrefix}${entry}`).join('\n')
+    : '> ↳ Belum ada command yang terdaftar.'
+}
+
 let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   if (!isOwner) return m.reply('❌ Fitur khusus Owner')
 
@@ -53,7 +97,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   let aksi = rawArgs[0]?.toLowerCase()
   let remaining = rawArgs.slice(1)
 
- if (!aksi) return m.reply(
+ let panelText = (
   `╭─❏「 👑 RPG PANEL OWNER 」❏\n` +
   `│ 👑 *FITUR ADMIN RPG AVELIA*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -187,8 +231,64 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n\n` +
 
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🧬 *UPDATE RPG*\n` +
+  `> ↳ Karakter/Bloodline: *${usedPrefix}mychar*, *${usedPrefix}bl list/info/ubah*\n` +
+  `> ↳ Wardrobe: *${usedPrefix}wardrobe* / *${usedPrefix}lemari*\n` +
+  `> ↳ Mall & diskon: *${usedPrefix}mall*, *${usedPrefix}mall diskon*\n` +
+  `> ↳ Rumah: *${usedPrefix}home* / *${usedPrefix}rumah*\n` +
+  `> ↳ Koleksi: *${usedPrefix}cl* / *${usedPrefix}collection*\n` +
+  `> ↳ Limit: *${usedPrefix}limit*, *${usedPrefix}limit buy/price/guide/command*\n` +
+  `> ↳ Rincian update: *${usedPrefix}news RPG*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🛠️ *ADMIN*\n` +
+  `> ↳ Tambah limit: *${usedPrefix}addlimit @tag <jumlah>*\n` +
+  `> ↳ Kurangi limit: *${usedPrefix}dellimit @tag <jumlah>*\n` +
+  `> ↳ Reset limit harian: *${usedPrefix}resetlimit*\n` +
+  `> ↳ News: *${usedPrefix}news info/all/guide*\n` +
+  `> ↳ Kelola news (owner): *${usedPrefix}news add/del <bagian/nomor>*\n\n` +
+
   `─━━━━━━━━━━━━━━─`
 )
+
+  panelText +=
+    `\n\n📜 *COMMAND RPG*\n` +
+    `${getPluginCommandLines('rpg', usedPrefix)}\n\n` +
+    `─━━━━━━━━━━━━━━─\n\n` +
+    `👑 *ADMIN COMMANDS*\n` +
+    `${getPluginCommandLines('owner', usedPrefix)}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+
+  if (!aksi || ['kategori', 'categories'].includes(aksi)) {
+    return m.reply(
+      `╭─❏「 👑 KATEGORI RPG PANEL 」❏\n` +
+      `│ Gunakan *${usedPrefix}rp <kategori>* atau *${usedPrefix}rp all*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      RPG_PANEL_CATEGORIES.map(({ title, aliases }) =>
+        `> ↳ *${title}* — ${usedPrefix}rp ${aliases[0]}`
+      ).join('\n') +
+      `\n\n> ↳ Semua kategori: ${usedPrefix}rp all`
+    )
+  }
+
+  if (aksi === 'all' && rawArgs.length === 1) return m.reply(panelText)
+
+  const requestedCategory = normalizeRpgPanelCategory(rawArgs.join(' '))
+  const selectedCategory = RPG_PANEL_CATEGORIES.find(({ title, aliases }) =>
+    aliases.some(alias => normalizeRpgPanelCategory(alias) === requestedCategory) ||
+    normalizeRpgPanelCategory(title) === requestedCategory
+  )
+  if (selectedCategory) {
+    return m.reply(
+      `╭─❏「 👑 RPG PANEL • ${selectedCategory.title} 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${getRpgPanelSection(panelText, selectedCategory)}\n\n` +
+      `> ↳ Kategori lain: ${usedPrefix}rp`
+    )
+  }
 
   if (['afk', 'forceafk', 'setafk'].includes(aksi)) {
     if (!isOwner) return m.reply('❌ Fitur AFK paksa hanya untuk owner.')
