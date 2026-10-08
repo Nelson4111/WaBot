@@ -1,6 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
+import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -101,14 +101,10 @@ let handler = async (m, { conn }) => {
     if (urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
   }
 
-  const miningYieldBonus = getBloodlineBuff(user, 'miningYield')
-  if (miningYieldBonus > 0) {
-    for (const ore of Object.keys(hasilTambang)) {
-      const exactBonus = hasilTambang[ore] * miningYieldBonus
-      hasilTambang[ore] += Math.floor(exactBonus) + (Math.random() < exactBonus % 1 ? 1 : 0)
-    }
-    totalOreDidapat = Object.values(hasilTambang).reduce((sum, amount) => sum + amount, 0)
+  for (const ore of Object.keys(hasilTambang)) {
+    hasilTambang[ore] = applyBloodlineYield(user, 'miningYield', hasilTambang[ore])
   }
+  totalOreDidapat = Object.values(hasilTambang).reduce((sum, amount) => sum + amount, 0)
 
   // Simpan hasil
   for(let ore in hasilTambang){

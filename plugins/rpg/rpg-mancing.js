@@ -1,7 +1,7 @@
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
-import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
+import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -145,7 +145,7 @@ let handler = async (m, { conn }) => {
 
   const pickFish = () => {
     let roll = Math.random() * 100
-    roll = Math.max(0, roll - getBloodlineBuff(user, 'fishingRarity') * 100)
+    roll = Math.max(0, Math.min(99.999, roll - getBloodlineBuff(user, 'fishingRarity') * 100 + getBloodlineDrawback(user).fishingRarityPenalty * 100))
     let cum = 0
 
     cum += pSecret

@@ -47,7 +47,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `│ 🧬 *DAFTAR BLOODLINE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${sortedBloodlines.map(([id, bloodline], index) =>
-        `> ↳ ${index + 1}. ${bloodline.emoji} *${bloodline.name}*${id === current.id ? '❮' : ''}`
+        `> ↳ ${index + 1}. ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ❮❮❮❮❮' : ''}`
       ).join('\n')}\n\n` +
       `📌 *PANDUAN*\n` +
       `> ↳ Detail: ${prefix}bloodlines info <nomor/nama>\n` +
@@ -96,11 +96,14 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `╭─❏「 🧬 INFO BLOODLINE 」❏\n` +
       `│ ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ✅ *AKTIF*' : ''}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `📝 *DESKRIPSI EFEK*\n` +
+      `${describeBloodlineRarity({ bloodline: id })}\n` +
+      `📝 *DESKRIPSI BLOODLINE*\n` +
+      `> ${bloodline.description}\n\n` +
+      `⚔️ *EFEK*\n` +
       `${getBloodlineDescription({ bloodline: id })}\n\n` +
       `📌 *MENU*\n` +
-      `> ↳ Daftar bloodline: ${prefix}bl list\n\n` +
-      `${describeBloodlineRarity({ bloodline: id })}\n\n` +
+      `> ↳ Daftar bloodline: ${prefix}bl list\n` +
+      `> ↳ Gacha bloodline: ${prefix}bl ubah\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }

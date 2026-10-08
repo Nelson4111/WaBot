@@ -1,6 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { applyBloodlineBuff, getBloodlineBuff } from '../../lib/rpgCharacterData.js'
+import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -131,9 +131,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   function applyFarmingYieldBonus(amount) {
-    const bonus = amount * getBloodlineBuff(user, 'farmingYield')
-    if (bonus <= 0) return amount
-    return amount + Math.floor(bonus) + (Math.random() < bonus % 1 ? 1 : 0)
+    return applyBloodlineYield(user, 'farmingYield', amount)
   }
 
   function cekLevelUpAfterMigration(user) {
