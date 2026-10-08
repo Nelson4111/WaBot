@@ -25,11 +25,11 @@ let handler = async (m, { conn }) => {
         let jam = Math.floor(sisa / 3600000)
         let menit = Math.floor((sisa % 3600000) / 60000)
         let tebusan = userRPG.tebusan || 4000000
-        return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.tebus*`)
+        return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.penjara tebus*`)
     }
 
     // COOLDOWN 1 HARI
-    let cd = scaleDifficultyCooldown(userRPG, 86400000)
+    let cd = scaleDifficultyCooldown(userRPG, 43200000)
     if (!userRPG.lastrob) userRPG.lastrob = 0
     let sisa = cd - (Date.now() - userRPG.lastrob)
     if (sisa > 0) {
@@ -57,7 +57,7 @@ let handler = async (m, { conn }) => {
 
     let bankTarget = target.bank || 0
     if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
-    if (tryPremiumProtection(who, 'rampok')) {
+    if (tryPremiumProtection(who, 'rampok', Date.now(), m.sender)) {
         userRPG.lastrob = Date.now()
         await saveDB(wdb)
         return m.reply('🛡️ Aksi rampok gagal: Premium Protection target aktif. Cooldown rampok kamu tetap berlaku; saldo bank target aman.')

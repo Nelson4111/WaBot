@@ -110,6 +110,9 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         delete rpg.kidnappedBy
         delete rpg.kidnappedAt
         delete rpg.kidnappedUntil
+        delete rpg.kidnapRansom
+        delete rpg.kidnapLastActivityAt
+        delete rpg.kidnapChat
         delete rpg.kidnapEscapeAttempt
         delete rpg.kidnapEscapeCooldownAt
     }
@@ -212,6 +215,8 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             await saveDB(wdb)
             return m.reply('✅ Masa penculikan sudah habis. Kamu bebas.')
         }
+        rpg.kidnapLastActivityAt = now
+        rpg.kidnappedUntil = now + RPG_CRIME_ACTIONS.culik.kidnapDuration
 
         const attempt = rpg.kidnapEscapeAttempt
         if (attempt && now >= Number(attempt.expiresAt)) {
@@ -292,6 +297,8 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
             return m.reply('❌ Kamu sedang AFK dan tidak bisa merespons usaha kabur.')
         }
 
+        targetRPG.kidnapLastActivityAt = Date.now()
+        targetRPG.kidnappedUntil = targetRPG.kidnapLastActivityAt + RPG_CRIME_ACTIONS.culik.kidnapDuration
         const remaining = Number(targetRPG.kidnapEscapeAttempt.expiresAt) - Date.now()
         if (remaining <= 0) {
             return m.reply('⏳ Waktu merespons sudah habis. Tahanan dapat menyelesaikan kaburnya dengan *.kabur*.')
@@ -702,7 +709,7 @@ if (breakoutAction) {
 
         `👥 *KUNJUNGAN & TEBUSAN*\n` +
         `> ↳ Kunjungi tahanan: *${usedPrefix}penjara visit sel <kode>*\n` +
-        `> ↳ Tebus tahanan: *${usedPrefix}tebus sel <kode>* atau *${usedPrefix}tebus all*.\n\n` +
+        `> ↳ Tebus tahanan: *${usedPrefix}penjara tebus sel <kode>* atau *${usedPrefix}penjara tebus all*.\n\n` +
 
         `─━━━━━━━━━━━━━━─`
     )
@@ -734,7 +741,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'command') {
         `> ↳ ${usedPrefix}penjara guide\n\n` +
 
         `💰 *TEBUSAN*\n` +
-        `> ↳ ${usedPrefix}tebus <sel/tag/all>\n\n` +
+        `> ↳ ${usedPrefix}penjara tebus <sel/tag/all>\n\n` +
 
         `─━━━━━━━━━━━━━━─`
     )
@@ -1299,7 +1306,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
        TEBUS
     ===================================================== */
 
-    if (command === 'tebus') {
+    if (command === 'penjara' && args[0]?.toLowerCase() === 'tebus') {
+        args = args.slice(1)
         if (args[0] === 'all') {
             if (wdb.penjara.length === 0) return m.reply('🏛️ Penjara kosong')
             let total = 0; let targets = []; let waiting = []
@@ -1353,7 +1361,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         } else if (args[0]) {
             who = getTarget(args[0])
         } else {
-            return m.reply(`*Format:*\n\n${usedPrefix}tebus @tag\n${usedPrefix}tebus sel 2\n${usedPrefix}tebus all`)
+            return m.reply(`*Format:*\n\n${usedPrefix}penjara tebus @tag\n${usedPrefix}penjara tebus sel 2\n${usedPrefix}penjara tebus all`)
         }
 
         if (!who) return m.reply('❌ Target tidak ditemukan')
@@ -1448,7 +1456,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     `📋 *INFORMASI*\n` +
     `> ↳ Penjara berisi pemain yang gagal melakukan kejahatan atau terkena hukuman Owner.\n` +
     `> ↳ Penculikan adalah status terpisah dari penjara; korban tidak masuk sel atau tercatat sebagai tahanan. Korban hanya dapat memakai *.kabur* untuk memulai percobaan kabur; penculik harus merespons dengan *.tangkap @tag* dalam 5 menit. Kabur dari penculikan tidak menambah poin buronan atau statistik kabur penjara.\n` +
-    `> ↳ Gunakan *.tebus @tag* atau *.tebus sel <kode>* untuk menebus pemain lain.\n` +
+    `> ↳ Gunakan *.penjara tebus @tag* atau *.penjara tebus sel <kode>* untuk menebus pemain lain.\n` +
     `> ↳ Kasus penjara dapat berasal dari copet, begal, bunuh, rampok, jarah, culik, fitnah, atau Owner Jail.\n` +
     `> ↳ Routine dan talk menambah progres kabur.\n\n` +
 
@@ -1463,7 +1471,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     `> ↳ Kabur: *${usedPrefix}penjara kabur*\n` +
     `> ↳ Breakout bersama: *${usedPrefix}penjara breakout create*\n` +
     `> ↳ Panduan: *${usedPrefix}penjara guide*\n` +
-    `> ↳ Tebus: *${usedPrefix}tebus sel A4*\n\n` +
+    `> ↳ Tebus: *${usedPrefix}penjara tebus sel A4*\n\n` +
 
     `─━━━━━━━━━━━━━━─`)
 }
@@ -1595,8 +1603,8 @@ cap += `> ↳ ${usedPrefix}penjara visit 2\n`
 cap += `> ↳ ${usedPrefix}penjara routine — CD 2m\n`
 cap += `> ↳ ${usedPrefix}penjara talk — CD 2m\n`
 cap += `> ↳ ${usedPrefix}penjara kabur — 1% / 10%\n`
-cap += `> ↳ ${usedPrefix}tebus @tag\n`
-cap += `> ↳ ${usedPrefix}tebus sel 2\n`
+cap += `> ↳ ${usedPrefix}penjara tebus @tag\n`
+cap += `> ↳ ${usedPrefix}penjara tebus sel 2\n`
 cap += `> ↳ Lakukan routine + talk untuk meningkatkan peluang kabur\n`
 
 if (isOwner) {
@@ -1620,9 +1628,9 @@ cap += `\n─━━━━━━━━━━━━━━─`
    COMMAND CONFIG
 ========================================================= */
 
-handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'tebus', 'penjarain', 'bebasin', 'kabur', 'tangkap']
+handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara tebus <tag/sel/all>', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'penjarain', 'bebasin', 'kabur', 'tangkap']
 handler.tags = ['rpg']
-handler.command = /^(penjara|tebus|penjarain|bebasin|kabur|tangkap)$/i
+handler.command = /^(penjara|penjarain|bebasin|kabur|tangkap)$/i
 handler.group = true
 
 export default handler

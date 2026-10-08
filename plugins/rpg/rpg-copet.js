@@ -24,11 +24,11 @@ let handler = async (m, { conn }) => {
     let jam = Math.floor(sisa / 3600000)
     let menit = Math.floor((sisa % 3600000) / 60000)
     let tebusan = userRPG.tebusan || 1000000
-    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.tebus*`)
+    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.penjara tebus*`)
   }
 
   // COOLDOWN 10 MENIT
-  let cd = scaleDifficultyCooldown(userRPG, 600000)
+  let cd = scaleDifficultyCooldown(userRPG, 300000)
   if (!userRPG.lastcopet) userRPG.lastcopet = 0
   let sisa = cd - (Date.now() - userRPG.lastcopet)
   if (sisa > 0) {
@@ -54,7 +54,7 @@ let handler = async (m, { conn }) => {
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 1000) return m.reply('❌ Target terlalu miskin. Minimal Rp 1.000')
-  if (tryPremiumProtection(who, 'copet')) {
+  if (tryPremiumProtection(who, 'copet', Date.now(), m.sender)) {
     userRPG.lastcopet = Date.now()
     await saveDB(wdb)
     return m.reply('🛡️ Aksi copet gagal: Premium Protection target aktif. Cooldown copet kamu tetap berlaku.')
@@ -94,7 +94,7 @@ let handler = async (m, { conn }) => {
       if (!userRPG.sel) {
         return m.reply(`⚠️ Kamu gagal copet dan membayar denda Rp ${denda.toLocaleString('id-ID')}, tetapi perlindungan mantan napi mencegahmu masuk penjara.`)
       }
-      return m.reply(`🚔 *KETANGKEP POLISI!*\n${story}\n\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.tebus*`)
+      return m.reply(`🚔 *KETANGKEP POLISI!*\n${story}\n\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.penjara tebus*`)
     }
     saveDB(wdb)
 

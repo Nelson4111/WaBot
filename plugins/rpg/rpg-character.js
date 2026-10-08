@@ -8,6 +8,7 @@ import {
   CHARACTER_GENDERS,
   CHARACTER_DEFAULT_OUTFIT,
   getBloodline,
+  getBloodlineRarity,
   describeBloodlineRarity,
   getBloodlineDescription,
   getDefaultArmorOutfit,
@@ -38,18 +39,45 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
   const current = getBloodline(rpg)
 
   if (mode === 'list' || mode === 'daftar') {
-    const sortedBloodlines = Object.entries(BLOODLINES).sort((a, b) =>
+    const allBloodlines = Object.entries(BLOODLINES).sort((a, b) =>
       a[1].name.localeCompare(b[1].name, 'id')
     )
+    const tierNames = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
+    const requestedTier = String(tokens[1] || '').toUpperCase()
+    const tier = tierNames.includes(requestedTier) ? requestedTier : null
+    if (tokens[1] && requestedTier !== 'ALL' && !tier) {
+      return m.reply(
+        `Tier tidak dikenal. Pilihan: *all, ${tierNames.join(', ')}*.\n` +
+        `Contoh: *${prefix}bl list RARE*`
+      )
+    }
+    const sortedBloodlines = requestedTier === 'ALL' || tier
+      ? allBloodlines.filter(([id]) => {
+          const rarity = getBloodlineRarity({ bloodline: id })
+          return requestedTier === 'ALL' || rarity === tier
+        })
+      : null
+    if (!sortedBloodlines) {
+      return m.reply(
+        `🧬 *DAFTAR TIER BLOODLINE*\n` +
+        `> ↳ all (${allBloodlines.length} bloodline)\n` +
+        `${tierNames.map(name =>
+          `> ↳ ${name} (${allBloodlines.filter(([id]) => getBloodlineRarity({ bloodline: id }) === name).length})`
+        ).join('\n')}\n\n` +
+        `Lihat semua: *${prefix}bl list all*\n` +
+        `Lihat tier: *${prefix}bl list <tier>*`
+      )
+    }
 
     return m.reply(
       `╭─❏「 🧬 BLOODLINES 」❏\n` +
-      `│ 🧬 *DAFTAR BLOODLINE*\n` +
+      `│ 🧬 *DAFTAR BLOODLINE ${requestedTier === 'ALL' ? 'ALL' : tier} (${sortedBloodlines.length})*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${sortedBloodlines.map(([id, bloodline], index) =>
-        `> ↳ ${index + 1}. ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ❮❮❮❮❮' : ''}`
+      `${sortedBloodlines.map(([id, bloodline]) =>
+        `> ↳ ${allBloodlines.findIndex(([bloodlineId]) => bloodlineId === id) + 1}. ${bloodline.emoji} *${bloodline.name}*${id === current.id ? ' ❮❮❮❮❮' : ''}`
       ).join('\n')}\n\n` +
       `📌 *PANDUAN*\n` +
+      `> ↳ Filter tier: ${prefix}bl list <tier>\n` +
       `> ↳ Detail: ${prefix}bloodlines info <nomor/nama>\n` +
       `> ↳ Gacha bloodline baru: ${prefix}bloodline ubah\n\n` +
       `─━━━━━━━━━━━━━━─`

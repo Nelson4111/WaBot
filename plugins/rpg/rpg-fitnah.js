@@ -11,8 +11,8 @@ const DEFAULT_DURATION = 1 * 60 * 60 * 1000 // 1 jam
 const MED_DURATION = 2 * 60 * 60 * 1000 // 2 jam
 const HIGH_DURATION = 5 * 60 * 60 * 1000 // 5 jam
 
-const COOLDOWN_FITNAH = 5 * 60 * 1000 // cooldown normal 5 menit
-const COOLDOWN_HUKUMAN = 30 * 60 * 1000
+const COOLDOWN_FITNAH = 2.5 * 60 * 1000
+const COOLDOWN_HUKUMAN = 15 * 60 * 1000
 const DELAY_FITNAH = 5 * 60 * 1000
 
 /* =========================================================
@@ -242,7 +242,7 @@ Fitnah orang biar masuk penjara.
         return m.reply(`⏳ *COOLDOWN*\n\nTunggu *${formatTime(sisa)}* lagi`)
     }
 
-    if (tryPremiumProtection(who, 'fitnah')) {
+    if (tryPremiumProtection(who, 'fitnah', Date.now(), sender)) {
         wdb.fitnah[sender] = Date.now()
         await saveDB(wdb)
         return m.reply('🛡️ Aksi fitnah gagal: Premium Protection target aktif. Cooldown fitnah kamu tetap berlaku; tidak ada uang yang dipotong.')

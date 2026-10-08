@@ -39,9 +39,9 @@ function normalizeJid(jid) {
 }
 
 function formatItemList(items, priceFor, sellPriceFor) {
-  return sortByPrice(items, priceFor).map((item, index) => {
+  return items.map((item, index) => {
     const rarity = getMallRarity(item.price)
-    return `*${index + 1}. ${displayName(item)}*\n` +
+    return `*${item.listNumber || index + 1}. ${displayName(item)}*\n` +
       `> ${rarity.stars} ${rarity.name}\n` +
       `> Buy : ${money(priceFor(item))}\n` +
       `> Sell : ${money(sellPriceFor(item))}`
@@ -113,7 +113,7 @@ if (mode === 'command') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `🗂️ *KATEGORI*\n` +
     `> ↳ ${prefix}mall kategori — daftar kategori\n` +
-    `> ↳ ${prefix}mall <kategori> list — barang termurah sampai termahal\n` +
+    `> ↳ ${prefix}mall <kategori> list [tier] [halaman] — maksimal 50 barang per halaman\n` +
     `> ↳ ${prefix}mall <kategori> info <nomor/nama> — detail barang\n` +
     `> ↳ ${prefix}mall <kategori> beli <nomor/nama> [jumlah] — membeli barang\n` +
     `> ↳ ${prefix}mall <kategori> jual <nomor/nama> [jumlah] — menjual barang\n\n` +
@@ -219,17 +219,55 @@ if (!category) {
 }
 
 const action = String(tokens[1] || '').toLowerCase()
+const rarityNames = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
 
-if (!action || action === 'list') {
+if (tokens.length === 1) {
   const items = sortByPrice(MALL_CATEGORIES[category].items.map(item => ({ ...item, category })), priceFor)
+  const tierCounts = rarityNames
+    .filter(tier => tier !== 'TRASH')
+    .map(tier => `${tier}: ${items.filter(item => getMallRarity(item.price).name === tier).length}`)
+    .join(' · ')
+  return m.reply(
+    `🛍️ *${MALL_CATEGORIES[category].label}*\n` +
+    `> ↳ Total barang: *${items.length}*\n` +
+    `> ↳ Tier: ${tierCounts}\n\n` +
+    `Lihat daftar: *${prefix}mall ${category} list [tier] [halaman]*\n` +
+    `Contoh: *${prefix}mall ${category} list 1* (maksimal 50 barang per halaman)\n` +
+    `Halaman tersedia: *${Math.max(1, Math.ceil(items.length / 50))}*`
+  )
+}
+
+if (!action || action === 'list' || rarityNames.includes(action.toUpperCase())) {
+  const allCategoryItems = sortByPrice(
+    MALL_CATEGORIES[category].items.map(item => ({ ...item, category })),
+    priceFor
+  ).map((item, index) => ({ ...item, listNumber: index + 1 }))
+  const tierToken = action === 'list' ? String(tokens[2] || '').toUpperCase() : action.toUpperCase()
+  const requestedTier = tierToken === 'ALL' || /^\d+$/.test(tierToken) ? '' : tierToken
+  if (requestedTier && !rarityNames.includes(requestedTier)) {
+    return m.reply(`Tier tidak dikenal. Pilihan: all, ${rarityNames.filter(tier => tier !== 'TRASH').join(', ')}.`)
+  }
+  const pageToken = action === 'list'
+    ? (tokens[3] || (requestedTier ? '1' : (/^\d+$/.test(tokens[2] || '') ? tokens[2] : '1')))
+    : (tokens[2] || '1')
+  const items = requestedTier
+    ? allCategoryItems.filter(item => getMallRarity(item.price).name === requestedTier)
+    : allCategoryItems
+  const page = Number(pageToken)
+  if (!Number.isInteger(page) || page < 1) return m.reply('Nomor halaman harus berupa angka mulai dari 1.')
+  const pageCount = Math.max(1, Math.ceil(items.length / 50))
+  if (page > pageCount) return m.reply(`Halaman tidak tersedia. Maksimal ${pageCount} halaman untuk ${requestedTier || 'semua tier'}.`)
+  const pageItems = items.slice((page - 1) * 50, page * 50)
 
   return m.reply(
-    `╭─❏「 ${MALL_CATEGORIES[category].emoji} DAFTAR ${MALL_CATEGORIES[category].label.toUpperCase()} ${items.length} 」❏\n` +
+    `╭─❏「 ${MALL_CATEGORIES[category].emoji} DAFTAR ${MALL_CATEGORIES[category].label.toUpperCase()} ${requestedTier || 'ALL'} 」❏\n` +
     `│ 📋 *DAFTAR BARANG*\n` +
     `│ Diurutkan dari harga termurah ke termahal.\n` +
     `│ Rarity bintang berdasarkan harga beli.\n` +
+    `│ Total: ${items.length} barang • Halaman ${page}/${pageCount} • Maks. 50/halaman\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${formatItemList(items, priceFor, item => Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n\n` +
+    `${formatItemList(pageItems, priceFor, item => Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n\n` +
+    `${page < pageCount ? `Halaman selanjutnya: *${prefix}mall ${category} list ${requestedTier ? `${requestedTier} ` : ''}${page + 1}*\n\n` : ''}` +
     `📌 *TRANSAKSI*\n` +
     `> ↳ Detail : ${prefix}mall ${category} info <nomor/nama>\n` +
     `> ↳ Beli : ${prefix}mall ${category} beli <nomor/nama> [jumlah]\n` +
@@ -374,7 +412,7 @@ return m.reply(
 )
 }
 
-handler.help = ['mall', 'mall guide', 'mall command', 'mall kategori', 'mall furniture|koleksi|kendaraan|fashion|elektronik|peralatan|dekorasi']
+handler.help = ['mall', 'mall guide', 'mall command', 'mall kategori', 'mall <kategori>', 'mall <kategori> list [tier] [halaman]']
 handler.alias = ['supermarket']
 handler.tags = ['rpg']
 handler.command = /^(mall|supermarket)$/i

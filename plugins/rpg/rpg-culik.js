@@ -1,11 +1,115 @@
-import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
 import { runRpgCrimeAction } from '../../lib/rpgCrimeAction.js'
 
-let handler = async (m, { conn }) => {
+const formatMoney = value => `Rp ${Number(value).toLocaleString('id-ID')}`
+const KIDNAP_INACTIVITY_TIMEOUT = RPG_CRIME_ACTIONS.culik.kidnapDuration
+
+async function releaseInactiveKidnappedUsers() {
   const db = loadDB()
+  const now = Date.now()
+  const released = []
+  for (const [jid, account] of Object.entries(db.users || {})) {
+    const rpg = account?.rpg
+    if (!rpg?.kidnappedBy) continue
+    const lastActivity = Number(rpg.kidnapLastActivityAt || rpg.kidnappedAt) || 0
+    if (now - lastActivity < KIDNAP_INACTIVITY_TIMEOUT) continue
+    released.push({ jid, chat: rpg.kidnapChat })
+    delete rpg.kidnappedBy
+    delete rpg.kidnappedAt
+    delete rpg.kidnappedUntil
+    delete rpg.kidnapRansom
+    delete rpg.kidnapLastActivityAt
+    delete rpg.kidnapChat
+    delete rpg.kidnapEscapeAttempt
+    delete rpg.kidnapEscapeCooldownAt
+    rpg.riwayat = Array.isArray(rpg.riwayat) ? rpg.riwayat : []
+    rpg.riwayat.unshift('🏃 Kabur otomatis setelah 5 jam tanpa respons penculik maupun korban.')
+  }
+  if (!released.length) return
+  await saveDB(db)
+  const conn = global.conn
+  if (!conn?.reply) return
+  for (const { jid, chat } of released) {
+    if (!chat) continue
+    await conn.reply(
+      chat,
+      `🏃 @${jid.split('@')[0]} berhasil kabur otomatis setelah penculikan berlangsung 5 jam tanpa respons.`,
+      null,
+      { mentions: [jid] }
+    )
+  }
+}
+
+const kidnapCleanupTimer = setInterval(() => {
+  releaseInactiveKidnappedUsers().catch(error =>
+    console.error('[RPG kidnap cleanup] Failed to release inactive kidnapped users:', error)
+  )
+}, 60 * 1000)
+kidnapCleanupTimer.unref?.()
+
+let handler = async (m, { conn, args = [], command }) => {
+  const db = loadDB()
+  if (command === 'tebus') {
+    const targetJid = m.mentionedJid?.[0] || m.quoted?.sender
+    if (!targetJid) {
+      return m.reply(
+        '❌ Tag atau reply korban penculikan yang ingin ditebus.\n' +
+        'Untuk tahanan penjara, gunakan *.penjara tebus <tag/sel>*.'
+      )
+    }
+    const victim = getUserRPG(db, targetJid)?.rpg
+    const kidnapperJid = victim?.kidnappedBy
+    if (!kidnapperJid || Date.now() >= Number(victim.kidnappedUntil || 0)) {
+      return m.reply('❌ Target tidak sedang ditahan penculik. Untuk tebus tahanan penjara, gunakan *.penjara tebus <tag/sel>*.')
+    }
+    const ransom = Number(victim.kidnapRansom)
+    if (!Number.isSafeInteger(ransom) || ransom <= 0) return m.reply('❌ Data tebusan penculikan tidak valid; hubungi Owner.')
+    const payer = String(m.sender)
+    const money = db.money || (db.money = {})
+    const payerBalance = Number(money[payer]) || 0
+    if (payerBalance < ransom) {
+      return m.reply(`❌ Uang tidak cukup. Dibutuhkan *${formatMoney(ransom)}*, saldo kamu *${formatMoney(payerBalance)}*.`)
+    }
+    const normalizedKidnapper = kidnapperJid.endsWith('@lid')
+      ? global.lids?.[kidnapperJid] || global.db?.data?.lids?.[kidnapperJid] || kidnapperJid
+      : kidnapperJid
+    money[payer] = payerBalance - ransom
+    money[normalizedKidnapper] = (Number(money[normalizedKidnapper]) || 0) + ransom
+    const victimRPG = victim
+    const kidnapper = getUserRPG(db, normalizedKidnapper)?.rpg
+    delete victimRPG.kidnappedBy
+    delete victimRPG.kidnappedAt
+    delete victimRPG.kidnappedUntil
+    delete victimRPG.kidnapRansom
+    delete victimRPG.kidnapLastActivityAt
+    delete victimRPG.kidnapChat
+    delete victimRPG.kidnapEscapeAttempt
+    delete victimRPG.kidnapEscapeCooldownAt
+    victimRPG.riwayat = Array.isArray(victimRPG.riwayat) ? victimRPG.riwayat : []
+    victimRPG.riwayat.unshift(`✅ Ditebus oleh @${payer.split('@')[0]} sebesar ${formatMoney(ransom)}`)
+    if (kidnapper) {
+      kidnapper.riwayat = Array.isArray(kidnapper.riwayat) ? kidnapper.riwayat : []
+      kidnapper.riwayat.unshift(`💰 Menerima tebusan ${formatMoney(ransom)} dari penculikan @${targetJid.split('@')[0]}`)
+    }
+    await saveDB(db)
+    return conn.reply(
+      m.chat,
+      `✅ @${targetJid.split('@')[0]} berhasil dibebaskan dari penculikan!\n` +
+      `> ↳ Penebus: @${payer.split('@')[0]}\n` +
+      `> ↳ Tebusan *${formatMoney(ransom)}* telah diterima penculik @${normalizedKidnapper.split('@')[0]}.`,
+      m,
+      { mentions: [targetJid, payer, normalizedKidnapper] }
+    )
+  }
+
   const user = getUserRPG(db, m.sender)
   if (!user?.rpg) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
+  const ransomText = args.filter(argument => !String(argument).startsWith('@')).at(-1)
+  const ransom = Number(String(ransomText || '').replace(/[,.]/g, ''))
+  if (!Number.isSafeInteger(ransom) || ransom <= 0) {
+    return m.reply('Format: *.culik <tag/reply> <nominal>*\nContoh: *.culik @user 1000000*')
+  }
 
   return runRpgCrimeAction({
     m,
@@ -14,13 +118,14 @@ let handler = async (m, { conn }) => {
     userRPG: user.rpg,
     targetJid: m.mentionedJid?.[0] || m.quoted?.sender,
     action: 'culik',
-    config: RPG_CRIME_ACTIONS.culik
+    config: RPG_CRIME_ACTIONS.culik,
+    ransomAmount: ransom
   })
 }
 
-handler.help = ['culik (reply)']
+handler.help = ['culik <tag/reply> <nominal>', 'tebus <tag/reply korban penculikan>']
 handler.tags = ['rpg']
-handler.command = /^(culik)$/i
+handler.command = /^(culik|tebus)$/i
 handler.alias = ['culik']
 handler.group = true
 

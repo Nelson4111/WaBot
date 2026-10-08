@@ -25,11 +25,11 @@ let handler = async (m, { conn }) => {
     let jam = Math.floor(sisa / 3600000)
     let menit = Math.floor((sisa % 3600000) / 60000)
     let tebusan = userRPG.tebusan || 2000000
-    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.tebus*`)
+    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.penjara tebus*`)
   }
 
   // COOLDOWN 2 JAM
-  let cd = scaleDifficultyCooldown(userRPG, 7200000)
+  let cd = scaleDifficultyCooldown(userRPG, 3600000)
   if (!userRPG.lastbegal) userRPG.lastbegal = 0
   let sisa = cd - (Date.now() - userRPG.lastbegal)
   if (sisa > 0) {
@@ -55,7 +55,7 @@ let handler = async (m, { conn }) => {
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 500) return m.reply('❌ Target terlalu miskin. Minimal Rp 500')
-  if (tryPremiumProtection(who, 'begal')) {
+  if (tryPremiumProtection(who, 'begal', Date.now(), m.sender)) {
     userRPG.lastbegal = Date.now()
     await saveDB(wdb)
     return m.reply('🛡️ Aksi begal gagal: Premium Protection target aktif. Cooldown begal kamu tetap berlaku; tidak ada uang yang berpindah.')
@@ -65,7 +65,7 @@ let handler = async (m, { conn }) => {
   let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.7)
   let story = getRpgCrimeStory('begal', gagal ? 'failure' : 'success')
 
-  if (gagal && tryPremiumProtection(m.sender, 'begal')) {
+  if (gagal && tryPremiumProtection(m.sender, 'begal', Date.now(), who)) {
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat begal @${who.split('@')[0]}`)
     await saveDB(wdb)
     return m.reply(`🛡️ Premium protection aktif: kamu selamat dari kegagalan begal dan tidak masuk penjara.\n\n${story}`)
