@@ -1,8 +1,67 @@
 import { handleLimitSubcommand } from '../../lib/limitShop.js'
-import { syncUserLimit } from '../../lib/userLimit.js'
+import { getLimitHistoryPage, syncUserLimit } from '../../lib/userLimit.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const prefix = usedPrefix || '.'
+  const [mode = '', ...params] = String(text || '').trim().split(/\s+/).filter(Boolean)
+  if (mode.toLowerCase() === 'top') {
+    const users = Object.entries(global.db.data.users)
+      .map(([jid, data]) => ({
+        jid,
+        limit: Math.max(Number(data?.limit) || 0, Number(data?.rpg?.limit) || 0)
+      }))
+      .filter(user => user.limit > 0)
+      .sort((first, second) => second.limit - first.limit)
+      .slice(0, 10)
+    if (!users.length) {
+      return m.reply(
+        `╭─❏「 🏆 TOP LIMIT 」❏\n` +
+        `│ Belum ada limit tersimpan.\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
+    }
+    const body = users.map((user, index) => {
+      const name = (conn.getName ? conn.getName(user.jid) : user.jid) || user.jid
+      return `> ${index + 1}. *${name}* — ${user.limit.toLocaleString('id-ID')} limit`
+    }).join('\n')
+    return m.reply(
+      `╭─❏「 🏆 TOP LIMIT 」❏\n` +
+      `│ Top ${users.length} pengguna dengan limit terbanyak\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${body}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (['history', 'riwayat'].includes(mode.toLowerCase())) {
+    if (params.length > 1) return m.reply(`Format: ${prefix}limit history [halaman]`)
+    const page = params.length ? Number(params[0]) : 1
+    if (!Number.isSafeInteger(page) || page < 1) {
+      return m.reply(`Format: ${prefix}limit history [halaman]`)
+    }
+    const user = global.db.data.users[m.sender]
+    const { entries, pageCount, total } = getLimitHistoryPage(user, page)
+    if (page > pageCount) return m.reply(`Halaman tidak tersedia. Maksimal ${pageCount}.`)
+    const body = entries.length
+      ? entries.map((entry, index) => {
+        const timestamp = new Intl.DateTimeFormat('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          dateStyle: 'short',
+          timeStyle: 'short'
+        }).format(new Date(Number(entry.timestamp)))
+        return `> ${(page - 1) * 10 + index + 1}. *-${Number(entry.amount).toLocaleString('id-ID')} limit* — ${entry.reason}\n> ↳ ${timestamp} WIB`
+      }).join('\n')
+      : '> Belum ada limit yang digunakan.'
+    return m.reply(
+      `╭─❏「 📜 RIWAYAT LIMIT 」❏\n` +
+      `│ Pengeluaran tersimpan: ${total}/50\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${body}\n\n` +
+      `Halaman ${page}/${pageCount}\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   const subcommandResult = await handleLimitSubcommand(m, text, prefix)
   if (subcommandResult !== false) return subcommandResult
 
@@ -38,7 +97,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   await conn.reply(m.chat, caption, m, { mentions: [who] })
 }
 
-handler.help = ['limit', 'limit buy', 'limit price', 'limit pricelist', 'limit guide', 'limit command', 'ceklimit']
+handler.help = ['limit', 'limit buy', 'limit price', 'limit pricelist', 'limit guide', 'limit command', 'limit history [halaman]', 'limit riwayat [halaman]', 'limit top', 'ceklimit']
 handler.tags = ['info', 'main']
 handler.command = /^(limit|ceklimit)$/i
 handler.limit = false
