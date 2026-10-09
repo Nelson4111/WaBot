@@ -397,5 +397,54 @@
     "content": "\u003e Limit gratis +20/hari (maks. saldo 50); Premium Daily reset harian, sinkron .daily/.prem daily. .limit history simpan 50 pemakaian; .limit top tampilkan 10 saldo tertinggi. Security Notice tag user Under Review.",
     "author": "Eza",
     "createdAt": 1791514648000
+  },
+  {
+    "section": "RPG",
+    "title": "Julukan Profil dan Akses Penjara",
+    "content": "\u003e Atur julukan lewat .penjara nick; nickname tampil di profil dan daftar tahanan. Tahanan bebas otomatis saat sisa waktu kurang dari satu menit; pemilik Akses Eksklusif dapat memakai fitur RPG non-aktivitas.",
+    "author": "Eza",
+    "createdAt": 1791533000000
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Benefit Bank dan Vault Pribadi",
+    "content": "\u003e Benefit kartu menampilkan penanda NEW/UP dan deskripsi lengkap melalui .bank info. Digital Access mulai Brown Card, Transfer Bank mulai Orange Card; Vault menyimpan barang Mall agar aman, dan lokasi transaksi menampilkan Lounge VIP atau loket umum.",
+    "author": "Eza",
+    "createdAt": 1791533000001
+  },
+  {
+    "section": "RPG",
+    "title": "Lelang Eksklusif dan Koleksi Kerajaan",
+    "content": "\u003e Cosmic Card membuka .lelang dengan 50 item koleksi terbatas; item lelang dan Mahkota Kerajaan dapat dipajang di rumah serta tidak dapat dijarah.",
+    "author": "Eza",
+    "createdAt": 1791533000002
+  },
+  {
+    "section": "RPG",
+    "title": "Interstellar Gateway dan Evonexus",
+    "content": "\u003e Stellar Card membuka .explore untuk menemukan material antarbintang dan Stellar Credit. Eternal Card membuka .evx untuk melihat statistik Evonexus.",
+    "author": "Eza",
+    "createdAt": 1791533000003
+  },
+  {
+    "section": "STICKER",
+    "title": "Privasi Stiker di Grup",
+    "content": "\u003e .wm, .swm, dan .brat kini menampilkan pengumuman privasi yang seragam; perintah dan media sumber dihapus dari grup, sementara hasil stiker hanya dapat dilihat peminta.",
+    "author": "Eza",
+    "createdAt": 1791534623381
+  },
+  {
+    "section": "RPG",
+    "title": "Privasi Leaderboard dan Cooldown",
+    "content": "\u003e Leaderboard memakai nomor tersamarkan untuk pengguna di luar grup tanpa men-tag atau menampilkan nomor lengkap. Level up pasangan pada .rship all diringkas menjadi jumlah; cooldown .rh kerja disamakan menjadi 4 menit.",
+    "author": "Eza",
+    "createdAt": 1791534815257
+  },
+  {
+    "section": "RPG",
+    "title": "Pembaruan Rumah dan Staff",
+    "content": "\u003e Rumah kini memiliki statistik Comfort/Harmony/Security/Hygiene/Aesthetics/Popularity, penghuni pasangan/anak/pet, aktivitas rumah dengan cooldown 5 menit, serta staff berkontrak.",
+    "author": "Eza",
+    "createdAt": 1791545002000
   }
 ]
