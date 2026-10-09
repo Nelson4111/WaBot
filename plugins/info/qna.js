@@ -14,12 +14,30 @@ async function loadQna() {
 }
 
 export function formatQnaList(entries, usedPrefix = '.') {
-  const body = entries.map((entry, index) => `*${index + 1}.* ${entry.question}`).join('\n')
-  return `╭─「 ❓ Q&A 」\n│ Pertanyaan yang sering ditanyakan\n╰──────────────\n\n${body}\n\nBuka jawaban: ${usedPrefix}qna <nomor>`
+  const body = entries.map((entry, index) => `> ${index + 1}. ${entry.question}`).join('\n')
+  return (
+    `╭─❏「 ❓ Q&A 」❏\n` +
+    `│ ❓ *PERTANYAAN & JAWABAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📝 *DAFTAR PERTANYAAN*\n` +
+    `${body}\n\n` +
+    `📌 *PANDUAN*\n` +
+    `> ↳ Buka jawaban: ${usedPrefix}qna <nomor>\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 }
 
 export function formatQnaDetail(entry, index) {
-  return `╭─「 ❓ Q&A ${index + 1} 」\n╰──────────────\n\n*Pertanyaan:*\n${entry.question}\n\n*Jawaban:*\n${entry.answer}`
+  return (
+    `╭─❏「 ❓ Q&A ${index + 1} 」❏\n` +
+    `│ ❓ *DETAIL PERTANYAAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📝 *PERTANYAAN*\n` +
+    `> ${entry.question}\n\n` +
+    `💬 *JAWABAN*\n` +
+    `> ${entry.answer}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
 }
 
 const handler = async (m, { text = '', usedPrefix = '.' }) => {
@@ -27,17 +45,40 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
   const entries = await loadQna()
 
   if (!argument || argument.toLowerCase() === 'all') {
-    if (!entries.length) return m.reply('Belum ada pertanyaan dan jawaban yang tersedia.')
+    if (!entries.length) {
+      return m.reply(
+        `╭─❏「 ❓ Q&A 」❏\n` +
+        `│ ❓ *PERTANYAAN & JAWABAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> Belum ada pertanyaan dan jawaban yang tersedia.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
     return m.reply(formatQnaList(entries, usedPrefix))
   }
 
   if (!/^\d+$/.test(argument)) {
-    return m.reply(`Format: ${usedPrefix}qna [nomor]\nContoh: ${usedPrefix}qna 1`)
+    return m.reply(
+      `╭─❏「 ❓ Q&A 」❏\n` +
+      `│ ❓ *FORMAT PERINTAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📌 *PENGGUNAAN*\n` +
+      `> ↳ Format: ${usedPrefix}qna <nomor>\n` +
+      `> ↳ Contoh: ${usedPrefix}qna 1\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   const index = Number(argument) - 1
   if (!Number.isSafeInteger(index) || index < 0 || index >= entries.length) {
-    return m.reply(`Pertanyaan nomor *${argument}* tidak ditemukan. Gunakan ${usedPrefix}qna untuk melihat daftar.`)
+    return m.reply(
+      `╭─❏「 ❓ Q&A 」❏\n` +
+      `│ ⚠️ *PERTANYAAN TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Pertanyaan nomor *${argument}* tidak ditemukan.\n` +
+      `> ↳ Gunakan ${usedPrefix}qna untuk melihat daftar.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   return m.reply(formatQnaDetail(entries[index], index))
