@@ -1,11 +1,12 @@
 import { handleLimitSubcommand } from '../../lib/limitShop.js'
 import { getLimitHistoryPage, syncUserLimit } from '../../lib/userLimit.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix, groupMetadata }) => {
   const prefix = usedPrefix || '.'
   const [mode = '', ...params] = String(text || '').trim().split(/\s+/).filter(Boolean)
   if (mode.toLowerCase() === 'top') {
-    const users = Object.entries(global.db.data.users)
+    const users = filterLeaderboardUsers(Object.entries(global.db.data.users), conn, ([jid]) => jid)
       .map(([jid, data]) => ({
         jid,
         limit: Math.max(Number(data?.limit) || 0, Number(data?.rpg?.limit) || 0)
@@ -21,8 +22,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       )
     }
     const body = users.map((user, index) => {
-      const name = (conn.getName ? conn.getName(user.jid) : user.jid) || user.jid
-      return `> ${index + 1}. *${name}* — ${user.limit.toLocaleString('id-ID')} limit`
+      const identity = getLeaderboardUserIdentity(user.jid, { conn, groupMetadata, name: conn.getName(user.jid) })
+      return `> ${index + 1}. *${identity.display}* — ${user.limit.toLocaleString('id-ID')} limit`
     }).join('\n')
     return m.reply(
       `╭─❏「 🏆 TOP LIMIT 」❏\n` +
