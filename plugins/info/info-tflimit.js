@@ -33,9 +33,10 @@ let handler = async (m, { conn, args }) => {
   const senderLimit = syncUserLimit(sender)
   if (senderLimit < amount) throw '❌ Limit tidak cukup!'
 
-  setUserLimit(sender, senderLimit - amount)
+  setUserLimit(sender, senderLimit - amount, `Transfer limit ke @${who.split('@')[0]}`)
   const targetLimit = syncUserLimit(target)
   setUserLimit(target, targetLimit + amount)
+  if (typeof global.db?.write === 'function') await global.db.write()
 
   let txt = `
 ✅ *TRANSFER LIMIT BERHASIL*

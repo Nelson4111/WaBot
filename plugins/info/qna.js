@@ -13,16 +13,20 @@ async function loadQna() {
   return entries
 }
 
-export function formatQnaList(entries, usedPrefix = '.') {
-  const body = entries.map((entry, index) => `> ${index + 1}. ${entry.question}`).join('\n')
+const ITEMS_PER_PAGE = 10
+
+export function formatQnaList(entries, page = 1) {
+  const pageCount = Math.max(1, Math.ceil(entries.length / ITEMS_PER_PAGE))
+  const body = entries
+    .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+    .map(entry => `*?:* ${entry.question}\n> ↳  ${entry.answer}`)
+    .join('\n\n')
   return (
     `╭─❏「 ❓ Q&A 」❏\n` +
     `│ ❓ *PERTANYAAN & JAWABAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `📝 *DAFTAR PERTANYAAN*\n` +
     `${body}\n\n` +
-    `📌 *PANDUAN*\n` +
-    `> ↳ Buka jawaban: ${usedPrefix}qna <nomor>\n\n` +
+    `Halaman ${page}/${pageCount}\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -30,12 +34,9 @@ export function formatQnaList(entries, usedPrefix = '.') {
 export function formatQnaDetail(entry, index) {
   return (
     `╭─❏「 ❓ Q&A ${index + 1} 」❏\n` +
-    `│ ❓ *DETAIL PERTANYAAN*\n` +
+    `│ ❓ *PERTANYAAN & JAWABAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `📝 *PERTANYAAN*\n` +
-    `> ${entry.question}\n\n` +
-    `💬 *JAWABAN*\n` +
-    `> ${entry.answer}\n\n` +
+    `*?:* ${entry.question}\n> ↳  ${entry.answer}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -44,39 +45,48 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
   const argument = text.trim()
   const entries = await loadQna()
 
-  if (!argument || argument.toLowerCase() === 'all') {
-    if (!entries.length) {
-      return m.reply(
-        `╭─❏「 ❓ Q&A 」❏\n` +
-        `│ ❓ *PERTANYAAN & JAWABAN*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> Belum ada pertanyaan dan jawaban yang tersedia.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-    return m.reply(formatQnaList(entries, usedPrefix))
+  if (!argument) {
+    return m.reply(
+      `╭─❏「 ❓ FITUR Q&A 」❏\n` +
+      `│ Kumpulan pertanyaan dan jawaban umum.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> Lihat daftar: ${usedPrefix}qna list [halaman]\n` +
+      `> Buka satu jawaban: ${usedPrefix}qna <nomor>`
+    )
   }
 
-  if (!/^\d+$/.test(argument)) {
+  const [action, ...params] = argument.split(/\s+/)
+  if (action.toLowerCase() === 'list' || action.toLowerCase() === 'all') {
+    const page = params.length ? Number(params[0]) : 1
+    if (params.length > 1 || !Number.isSafeInteger(page) || page < 1) {
+      return m.reply(`Format: ${usedPrefix}qna list [halaman]`)
+    }
+    if (!entries.length) return m.reply('Belum ada pertanyaan dan jawaban yang tersedia.')
+    const pageCount = Math.ceil(entries.length / ITEMS_PER_PAGE)
+    if (page > pageCount) return m.reply(`Halaman tidak tersedia. Maksimal ${pageCount}.`)
+    return m.reply(formatQnaList(entries, page))
+  }
+
+  if (params.length || !/^\d+$/.test(action)) {
     return m.reply(
       `╭─❏「 ❓ Q&A 」❏\n` +
       `│ ❓ *FORMAT PERINTAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `📌 *PENGGUNAAN*\n` +
-      `> ↳ Format: ${usedPrefix}qna <nomor>\n` +
-      `> ↳ Contoh: ${usedPrefix}qna 1\n\n` +
+      `> ↳ Daftar: ${usedPrefix}qna list [halaman]\n` +
+      `> ↳ Jawaban: ${usedPrefix}qna <nomor>\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  const index = Number(argument) - 1
+  const index = Number(action) - 1
   if (!Number.isSafeInteger(index) || index < 0 || index >= entries.length) {
     return m.reply(
       `╭─❏「 ❓ Q&A 」❏\n` +
       `│ ⚠️ *PERTANYAAN TIDAK DITEMUKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Pertanyaan nomor *${argument}* tidak ditemukan.\n` +
-      `> ↳ Gunakan ${usedPrefix}qna untuk melihat daftar.\n\n` +
+      `> ↳ Pertanyaan nomor *${action}* tidak ditemukan.\n` +
+      `> ↳ Gunakan ${usedPrefix}qna list untuk melihat daftar.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -84,7 +94,7 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
   return m.reply(formatQnaDetail(entries[index], index))
 }
 
-handler.help = ['qna', 'qna <nomor>']
+handler.help = ['qna', 'qna list [halaman]', 'qna <nomor>']
 handler.tags = ['info']
 handler.command = /^qna$/i
 

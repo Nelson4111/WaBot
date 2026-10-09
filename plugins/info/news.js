@@ -140,21 +140,49 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   const [action = '', ...params] = text.trim().split(/\s+/).filter(Boolean)
   const normalizedAction = action.toLowerCase()
 
+  if (!normalizedAction) {
+    return m.reply(
+      `╭─❏「 📰 FITUR NEWS 」❏\n` +
+      `│ Daftar update dan detail perubahan Avelia.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> Lihat daftar: ${usedPrefix}news list [halaman]\n` +
+      `> Buka detail: ${usedPrefix}news list info <nomor>`
+    )
+  }
+
   if (normalizedAction === 'info') {
     const allNews = await loadNews()
     const monthlyCount = getMonthlyNews(allNews).length
-    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\nUpdate bulan ini: *${monthlyCount}*\n\nPerintah: ${usedPrefix}news | ${usedPrefix}news <halaman> | ${usedPrefix}news <bagian> [halaman]\nSemua judul: ${usedPrefix}news all\nDetail: ${usedPrefix}news list info <nomor>\nGuide: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\nUpdate bulan ini: *${monthlyCount}*\n\nPerintah: ${usedPrefix}news list [halaman] | ${usedPrefix}news <bagian> [halaman]\nSemua judul: ${usedPrefix}news all\nDetail: ${usedPrefix}news list info <nomor>\nGuide: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
   }
 
   if (normalizedAction === 'guide') {
-    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news\n${usedPrefix}news <halaman>\n${usedPrefix}news <bagian> [halaman]\n${usedPrefix}news all\n${usedPrefix}news list info <nomor>\n${usedPrefix}news info\n\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <nomor>\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news list [halaman]\n${usedPrefix}news <halaman>\n${usedPrefix}news <bagian> [halaman]\n${usedPrefix}news all\n${usedPrefix}news list info <nomor>\n${usedPrefix}news info\n\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <nomor>\n╰─━━━━━━━━━━━━━━─`)
   }
 
   if (normalizedAction === 'list') {
-    if (params[0]?.toLowerCase() !== 'info' || params.length !== 2) {
-      return m.reply(`Format: ${usedPrefix}news list info <nomor>\nContoh: ${usedPrefix}news list info 1.0`)
+    if (params[0]?.toLowerCase() === 'info') {
+      if (params.length !== 2) {
+        return m.reply(`Format: ${usedPrefix}news list info <nomor>\nContoh: ${usedPrefix}news list info 1.0`)
+      }
+      return m.reply(await getNewsInfoText(params[1]))
     }
-    return m.reply(await getNewsInfoText(params[1]))
+
+    const page = params.length ? Number(params[0]) : 1
+    if (params.length > 1 || !Number.isSafeInteger(page) || page < 1) {
+      return m.reply(`Format: ${usedPrefix}news list [halaman]`)
+    }
+    const now = new Date()
+    const monthName = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      month: 'long',
+      year: 'numeric'
+    }).format(now)
+    const entries = getMonthlyNews(await loadNews()).reverse()
+    if (!entries.length) return m.reply(`Belum ada news untuk bulan ${monthName}.`)
+    const pageCount = Math.ceil(entries.length / ITEMS_PER_PAGE)
+    if (page > pageCount) return m.reply(`Halaman tidak tersedia. News maksimal ${pageCount} halaman.`)
+    return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section: '' }))
   }
 
   if (normalizedAction === 'all') {
@@ -257,7 +285,7 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section }))
 }
 
-handler.help = ['news [halaman]', 'news <bagian> [halaman]', 'news all', 'news list info <nomor>', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <nomor>']
+handler.help = ['news', 'news list [halaman]', 'news <halaman>', 'news <bagian> [halaman]', 'news all', 'news list info <nomor>', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <nomor>']
 handler.tags = ['info']
 handler.command = /^news$/i
 export default handler

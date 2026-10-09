@@ -8,9 +8,7 @@ import {
   PREMIUM_DAILY_REWARD
 } from '../../lib/rpgPremium.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
-import { addUserLimit } from '../../lib/userLimit.js'
-
-const DAILY_COOLDOWN = 24 * 60 * 60 * 1000
+import { claimPremiumDailyLimit, getJakartaDate } from '../../lib/userLimit.js'
 
 function formatRemaining(milliseconds) {
   const seconds = Math.max(0, Math.ceil(milliseconds / 1000))
@@ -23,6 +21,16 @@ function formatRemaining(milliseconds) {
 function getCooldownStatus(timestamp, duration, now) {
   const remaining = Math.max(0, (Number(timestamp) || 0) + duration - now)
   return remaining ? `⏳ ${formatRemaining(remaining)}` : '✅ Siap'
+}
+
+function getJakartaMidnightMs(now) {
+  const jakartaDate = new Date(now + 7 * 60 * 60 * 1000)
+  const nextMidnight = Date.UTC(
+    jakartaDate.getUTCFullYear(),
+    jakartaDate.getUTCMonth(),
+    jakartaDate.getUTCDate() + 1
+  )
+  return nextMidnight - 7 * 60 * 60 * 1000
 }
 
 let handler = async (m, { conn, text = '', usedPrefix }) => {
@@ -70,20 +78,22 @@ let handler = async (m, { conn, text = '', usedPrefix }) => {
     )
   }
 
-  const remaining = (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now
-
-  if (remaining > 0) {
+  const legacyClaimDate = Number(user.premiumDailyAt) > 0
+    ? getJakartaDate(Number(user.premiumDailyAt))
+    : null
+  if ((user.premiumDailyDate || legacyClaimDate) === getJakartaDate(now)) {
+    const remaining = getJakartaMidnightMs(now) - now
     return m.reply(
       `╭─❏「 ⏳ PREMIUM DAILY 」❏\n` +
       `│ ⏳ *BELUM BISA DIKLAIM*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Premium daily bisa diklaim lagi dalam *${formatRemaining(remaining)}*.\n\n` +
+      `> ↳ Premium daily bisa diklaim lagi setelah pergantian hari (*${formatRemaining(remaining)}*).\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  const limit = addUserLimit(user, PREMIUM_DAILY_REWARD)
-  user.premiumDailyAt = now
+  const reward = claimPremiumDailyLimit(user, now, PREMIUM_DAILY_REWARD)
+  const limit = reward.limit
   users[m.sender] = user
   await global.db.write()
 
@@ -121,7 +131,7 @@ if (action === 'reward' || action === 'rewards') {
       : `title *${title}*`
 
     const dailyReward = minimum >= PREMIUM_DAILY_MIN_DONATION
-      ? ` + *${PREMIUM_DAILY_REWARD} limit* setiap 24 jam`
+      ? ` + *${PREMIUM_DAILY_REWARD} limit* setiap hari`
       : ''
 
     return `> Total donasi Rp ${minimum.toLocaleString('id-ID')}: ${rewards}${dailyReward}`
@@ -137,7 +147,7 @@ if (action === 'reward' || action === 'rewards') {
     `> ↳ Premium dari donasi berlaku permanen untuk saat ini.\n` +
     `> ↳ Premium daily mulai terbuka di title *Donatur Setia*.\n` +
     `> ↳ Kebutuhan total donasi: Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}\n` +
-    `> ↳ Limit daily bisa diklaim setiap 24 jam.\n\n` +
+    `> ↳ Limit daily reset setiap pergantian hari.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -253,7 +263,12 @@ if (action === 'cd' || action === 'cooldown') {
     return `> Protection ${label}: ${remaining ? `⏳ ${formatRemaining(remaining)}` : '✅ Siap'}`
   }).join('\n')
 
-  const dailyRemaining = Math.max(0, (Number(user.premiumDailyAt) || 0) + DAILY_COOLDOWN - now)
+  const lastDailyDate = user.premiumDailyDate || (
+    Number(user.premiumDailyAt) > 0 ? getJakartaDate(Number(user.premiumDailyAt)) : null
+  )
+  const dailyRemaining = lastDailyDate === getJakartaDate(now)
+    ? getJakartaMidnightMs(now) - now
+    : 0
 
   const cooldownItems = [
     ['Mining', rpg.lastMining, 2 * 60 * 1000],
@@ -338,7 +353,7 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
     `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*.\n` +
     `> ↳ Command berlimit, termasuk sticker, maker, dan downloader, tetap memakai limit untuk pengguna Premium.\n` +
-    `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap 24 jam untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
+    `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap hari untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
     `> ↳ Premium Protection memiliki cooldown terpisah 5 jam untuk tiap aksi (copet, rampok, begal, jarah, culik, bunuh, fitnah, dan dungeon); cek statusnya dengan *${usedPrefix}prem cd*.\n` +
     `> ↳ Cooldown Muncak lebih singkat : *2 jam* (user biasa 5 jam). Contoh : *${usedPrefix}mt start*.\n` +
     `> ↳ Cooldown interaksi pasangan lebih singkat : *30 detik* (user biasa 60 detik). Contoh : *${usedPrefix}act*.\n\n` +

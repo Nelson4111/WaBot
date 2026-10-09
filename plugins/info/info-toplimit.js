@@ -15,9 +15,9 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   m.reply(teks)
 }
 
-handler.help = ['toplimit']
+handler.help = ['toplimit', 'limit top']
 handler.tags = ['info']
-handler.command = /^toplimit$/i
+handler.command = /^(toplimit)$/i
 handler.limit = false
 
 export default handler
