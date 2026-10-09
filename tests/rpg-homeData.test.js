@@ -4,9 +4,14 @@ import {
   HOME_LEVELS,
   HOME_MAX_UPGRADES,
   HOME_EAT_HARMONY,
+  HOME_STAFF,
+  HOME_STAFF_COOLDOWN,
+  HOME_STAFF_MAX_CONTRACT_DAYS,
   HOME_STORIES,
   getHomeComfort,
-  getHomeLevel
+  getHomeLevel,
+  getHomeStaffContractEnd,
+  getHomeStaffCooldownUntil
 } from '../lib/rpgHomeData.js'
 import { MALL_CATEGORIES } from '../lib/rpgMallData.js'
 
@@ -31,6 +36,28 @@ test('every home activity category has five story choices', () => {
 
 test('eating at home grants harmony', () => {
   assert.equal(HOME_EAT_HARMONY, 8)
+})
+
+test('staff contracts end at Jakarta midnight after the selected calendar days', () => {
+  const hiredAt = Date.parse('2026-10-09T16:30:00.000Z')
+  assert.equal(getHomeStaffContractEnd(hiredAt, 1), Date.parse('2026-10-09T17:00:00.000Z'))
+  assert.equal(getHomeStaffContractEnd(hiredAt, 3), Date.parse('2026-10-11T17:00:00.000Z'))
+  assert.throws(() => getHomeStaffContractEnd(hiredAt, HOME_STAFF_MAX_CONTRACT_DAYS + 1), RangeError)
+})
+
+test('staff cooldown starts when a contract ends or the staff is fired', () => {
+  const expiresAt = Date.parse('2026-10-09T17:00:00.000Z')
+  assert.equal(getHomeStaffCooldownUntil({ expiresAt }, expiresAt - 1), 0)
+  assert.equal(getHomeStaffCooldownUntil({ expiresAt }, expiresAt), expiresAt + HOME_STAFF_COOLDOWN)
+  assert.equal(
+    getHomeStaffCooldownUntil({ expiresAt, cooldownUntil: expiresAt + HOME_STAFF_COOLDOWN * 2 }, expiresAt),
+    expiresAt + HOME_STAFF_COOLDOWN * 2
+  )
+})
+
+test('home staff roster includes the two additional staff and their effects', () => {
+  assert.ok(HOME_STAFF.gardener.effect.includes('Hygiene'))
+  assert.ok(HOME_STAFF.tutor.effect.includes('Harmony'))
 })
 
 test('comfort continues counting all owned and installed mall furniture', () => {

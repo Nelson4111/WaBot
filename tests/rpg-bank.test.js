@@ -19,10 +19,12 @@ import {
   BANK_COMING_SOON_FACILITIES,
   canUseBankMoneyCommand,
   formatBankFacility,
+  formatBankTierFacility,
   resolveBankFnbTier,
   getBankTransactionCooldown,
   getBankTransactionCooldownRemaining
 } from '../plugins/rpg/rpg-bank.js'
+import { applyBankTierRewards, BANK_CROWN_ITEM_ID, claimBankCrown } from '../lib/rpg-bankData.js'
 import { hargaBeli as RESTAURANT_MENU } from '../lib/rpg-masakanData.js'
 
 test('bank security and insurance increase with every card tier', () => {
@@ -167,6 +169,41 @@ test('Lounge VIP is active and bank transactions show the correct location', () 
   assert.equal(formatBankFacility('Akses Eksklusif'), 'Akses Eksklusif')
   assert.equal(formatBankFacility('Mahkota Kehormatan'), 'Mahkota Kehormatan')
   assert.equal(formatBankFacility('Digital Access'), 'Digital Access')
+})
+
+test('the Royal Card crown can be claimed once directly into the collection', () => {
+  const userRPG = { bankTier: 13 }
+
+  assert.equal(applyBankTierRewards(userRPG), false)
+  assert.equal(userRPG.mallInventory, undefined)
+  assert.equal(claimBankCrown(userRPG), 'claimed')
+  assert.equal(userRPG.mallInventory[BANK_CROWN_ITEM_ID], 1)
+  assert.equal(userRPG.bankCrownClaimed, true)
+  assert.equal(claimBankCrown(userRPG), 'already-claimed')
+  assert.equal(userRPG.mallInventory[BANK_CROWN_ITEM_ID], 1)
+})
+
+test('the crown is unavailable before Royal Card and migrates legacy ownership', () => {
+  const ineligibleRPG = { bankTier: 12 }
+  assert.equal(claimBankCrown(ineligibleRPG), 'unavailable')
+  assert.equal(ineligibleRPG.mallInventory[BANK_CROWN_ITEM_ID], undefined)
+
+  const legacyRPG = {
+    bankTier: 13,
+    bankCrownClaimed: true,
+    mallInventory: { mahkota_kerajaan: 1 }
+  }
+  assert.equal(claimBankCrown(legacyRPG), 'already-claimed')
+  assert.equal(legacyRPG.mallInventory[BANK_CROWN_ITEM_ID], 1)
+  assert.equal(legacyRPG.mallInventory.mahkota_kerajaan, undefined)
+})
+
+test('bank benefits use symbol badges for new facilities and upgrades', () => {
+  assert.equal(formatBankTierFacility('Asuransi 1%', 1), 'Asuransi 1% ◆ NEW')
+  assert.equal(formatBankTierFacility('Asuransi 3%', 2), 'Asuransi 3% ▲ UP')
+  assert.equal(formatBankTierFacility('Chat CS', 2), 'Chat CS ◆ NEW')
+  assert.equal(formatBankTierFacility('Chat CS 24jam', 9), 'Chat CS 24jam ▲ UP')
+  assert.equal(formatBankTierFacility('Digital Access', 3), 'Digital Access ◆ NEW')
 })
 
 test('Crystal Fortress adds five effective security and lowers robbery chance', () => {

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { formatNewsAll, formatNewsDetail, getMonthlyNews } from '../plugins/info/news.js'
 
 const news = [
-  { section: 'RPG', content: 'Perbaikan pertama', createdAt: Date.parse('2026-10-01T00:10:00+07:00') },
-  { section: 'Group', content: 'Pembaruan grup', createdAt: Date.parse('2026-10-01T00:20:00+07:00') },
-  { section: 'RPG', content: 'Perbaikan kedua', createdAt: Date.parse('2026-10-02T00:10:00+07:00') },
+  { id: '1.0', section: 'RPG', content: 'Perbaikan pertama', createdAt: Date.parse('2026-10-01T00:10:00+07:00') },
+  { id: '1.1', section: 'Group', content: 'Pembaruan grup', createdAt: Date.parse('2026-10-01T00:20:00+07:00') },
+  { id: '2.0', section: 'RPG', content: 'Perbaikan kedua', createdAt: Date.parse('2026-10-02T00:10:00+07:00') },
   { section: 'RPG', content: 'News bulan lalu', createdAt: Date.parse('2026-09-30T23:50:00+07:00') }
 ]
 const now = new Date('2026-10-15T12:00:00+07:00')
@@ -12,7 +12,10 @@ const now = new Date('2026-10-15T12:00:00+07:00')
 assert.deepEqual(getMonthlyNews(news, now).map(entry => entry.id), ['1.0', '1.1', '2.0'])
 
 const withoutFirstEntry = news.filter((_, index) => index !== 0)
-assert.deepEqual(getMonthlyNews(withoutFirstEntry, now).map(entry => entry.id), ['1.0', '2.0'])
+assert.deepEqual(getMonthlyNews(withoutFirstEntry, now).map(entry => entry.id), ['1.1', '2.0'])
+
+const legacyEntry = { section: 'RPG', content: 'News lama', createdAt: Date.parse('2026-10-05T00:10:00+07:00') }
+assert.equal(getMonthlyNews([legacyEntry], now)[0].id, '5.0')
 
 const allNewsMessage = formatNewsAll([
   { id: '2.0', title: 'Berita pertama', section: 'INFO', content: 'Isi tersembunyi', author: 'Avelia' },
