@@ -12,6 +12,7 @@ import {
   getBankCsService,
   getBankEffectiveSecurity,
   getBankGuardName,
+  getBankTransactionLocation,
   getBankRobberySuccessChance,
   BANK_CS_SERVICES,
   parseBankAssistantReminder,
@@ -43,7 +44,7 @@ test('insurance reduces robbery loss and full insurance protects the balance', (
 
 test('bulk deposits require Fast Track and guard names match each card tier', () => {
   assert.equal(canUseBankBulkDeposit(BANK_TIERS[4]), false)
-  assert.equal(canUseBankBulkDeposit(BANK_TIERS[5]), true)
+  assert.equal(canUseBankBulkDeposit(BANK_TIERS[7]), true)
   assert.equal(getBankGuardName(BANK_TIERS[0]), 'Penjaga Biasa')
   assert.equal(getBankGuardName(BANK_TIERS[8]), 'Penjaga Robot Lv1')
   assert.equal(getBankGuardName(BANK_TIERS[15]), 'Pasukan Khusus')
@@ -143,8 +144,8 @@ test('assistant reminders require a valid future local date and time', () => {
 })
 
 test('money command access requires Digital Access', () => {
-  assert.equal(canUseBankMoneyCommand(BANK_TIERS[6]), false)
-  assert.equal(canUseBankMoneyCommand(BANK_TIERS[7]), true)
+  assert.equal(canUseBankMoneyCommand(BANK_TIERS[2]), false)
+  assert.equal(canUseBankMoneyCommand(BANK_TIERS[3]), true)
 })
 
 test('bank deposit and withdrawal cooldown follows transport facilities', () => {
@@ -157,11 +158,14 @@ test('bank deposit and withdrawal cooldown follows transport facilities', () => 
   assert.equal(getBankTransactionCooldownRemaining(transaction, BANK_TIERS[6], 1_000 + 30 * 60 * 1000), 0)
 })
 
-test('unfinished bank facilities retain Coming Soon markers', () => {
-  assert.ok(BANK_COMING_SOON_FACILITIES.has('Lounge VIP'))
-  assert.equal(formatBankFacility('Vault Pribadi'), 'Vault Pribadi (Coming Soon)')
-  assert.equal(formatBankFacility('Akses Eksklusif'), 'Akses Eksklusif (Coming Soon)')
-  assert.equal(formatBankFacility('Mahkota Kehormatan'), 'Mahkota Kehormatan (Coming Soon)')
+test('Lounge VIP is active and bank transactions show the correct location', () => {
+  assert.equal(BANK_COMING_SOON_FACILITIES.has('Lounge VIP'), false)
+  assert.equal(formatBankFacility('Lounge VIP'), 'Lounge VIP')
+  assert.equal(getBankTransactionLocation(BANK_TIERS[9]), 'Lounge VIP')
+  assert.equal(getBankTransactionLocation(BANK_TIERS[8]), 'Loket Bank Umum')
+  assert.equal(formatBankFacility('Vault Pribadi'), 'Vault Pribadi')
+  assert.equal(formatBankFacility('Akses Eksklusif'), 'Akses Eksklusif')
+  assert.equal(formatBankFacility('Mahkota Kehormatan'), 'Mahkota Kehormatan')
   assert.equal(formatBankFacility('Digital Access'), 'Digital Access')
 })
 
