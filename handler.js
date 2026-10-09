@@ -11,13 +11,13 @@ import { generateWelcomeCard, generateGoodbyeCard } from './lib/cardGenerator.js
 import { sendDualGroupMessage } from './lib/dual-group-message.js'
 import { toSmallNum } from './lib/style.js'
 import { sendBotGroupIntro } from './lib/bot-intro.js'
-import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave, verifySecurityMember, getSecurityAdminJids } from './lib/securityProtocol.js'
+import { isSecurityBlacklisted, isSecurityUnverified, trackSecurityJoin, trackSecurityLeave, verifySecurityMember, getSecurityAdminJids, securityJid } from './lib/securityProtocol.js'
 import { botArbitrator } from './lib/botArbitrator.js'
 import { ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncEscapeCrimeCounts } from './lib/crimeHelper.js'
 import { getPatrolCaptureStory, isPatrolExemptCommand, PATROL_RESTRICTED_CRIME_COMMANDS, PATROL_RESTRICTED_RSHIP_ACTIONS } from './lib/patrolHelper.js'
 import { loadDB, saveDB } from './lib/waifuHelper.js'
 import { registerPrisoner } from './lib/prisonHelper.js'
-import { setUserLimit, syncUserLimit } from './lib/userLimit.js'
+import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimit.js'
 import { isPremiumAccount } from './lib/rpgPremium.js'
 
 /**
@@ -341,9 +341,10 @@ async function processMessage(m, chatUpdate) {
 
         if (m.isGroup && m.sender && isSecurityUnverified(m.chat, m.sender, this)) {
             const hasIntroLink = String(m.text || '').toLowerCase().includes('https://wa.me/6282228638623')
+            const memberJid = securityJid(m.sender, this)
             const adminJids = await getSecurityAdminJids(m.chat, this)
             const adminMentions = adminJids.length
-                ? adminJids.map(jid => `@${jid.split('@')[0]}`).join(' ')
+                ? adminJids.map(jid => `> ✦ @${jid.split('@')[0]}`).join('\n')
                 : 'Admin grup tidak ditemukan.'
 
             if (hasIntroLink) {
@@ -360,8 +361,8 @@ async function processMessage(m, chatUpdate) {
             if (!isSecurityIntroMessage(m.text)) {
                 await this.sendMessage(m.chat, { delete: m.key }).catch(err => console.error('[SECURITY MESSAGE DELETE]', err?.message))
                 await this.sendMessage(m.chat, {
-                    text: `■━━━ 🔐 SECURITY NOTICE ━━━■\n\nHalo, Avelia cek kamu masih berada dalam status Under Review.\nSilakan memperkenalkan diri terlebih dahulu untuk menyelesaikan proses verifikasi dengan admin.\n\n⚠️ Jika dalam beberapa hari kamu belum melakukan intro atau verifikasi, akunmu dapat dikeluarkan dari grup demi menjaga kenyamanan dan keamanan bersama.\n\n> Hello, Avelia has detected that you are still under review.\n> Please introduce yourself first to complete the verification process with the group admin.\n\n> ⚠️ If you do not introduce yourself or complete the verification within the next few days, you may be removed from the group for the comfort and security of everyone.\n\nAdmin grup:\n${adminMentions}`,
-                    mentions: adminJids
+                    text: `■━━━ 🔐 SECURITY NOTICE ━━━■\n\nHalo @${memberJid.split('@')[0]}, Avelia mendeteksi kamu masih dalam status Under Review.\nSilakan memperkenalkan diri terlebih dahulu untuk menyelesaikan proses verifikasi dengan admin.\n\n⚠️ Jika dalam beberapa hari kamu belum melakukan intro atau verifikasi, akunmu dapat dikeluarkan dari grup demi menjaga kenyamanan dan keamanan bersama.\n\n> Hello @${memberJid.split('@')[0]}, Avelia has detected that you are still under review.\n> Please introduce yourself first to complete the verification process with the group admin.\n\n> ⚠️ If you do not introduce yourself or complete the verification within the next few days, you may be removed from the group for the comfort and security of everyone.\n\nAdmin grup:\n${adminMentions}`,
+                    mentions: [...new Set([memberJid, ...adminJids])]
                 }, { quoted: m }).catch(err => console.error('[SECURITY NOTICE]', err?.message))
                 return
             }
@@ -418,6 +419,10 @@ async function processMessage(m, chatUpdate) {
                 if (!isNumber(user.exp)) user.exp = 0
                 if (!isNumber(user.level)) user.level = 0
                 syncUserLimit(user)
+                const freeDailyLimit = grantFreeDailyLimit(user)
+                if (freeDailyLimit.granted && typeof global.db.write === 'function') {
+                    await global.db.write()
+                }
                 if (user.registered !== true) user.registered = true
                 if (!('name' in user) || !user.name) user.name = m.name
                 if (!isNumber(user.age)) user.age = -1
