@@ -1,6 +1,7 @@
 import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
-let handler = async (m, { conn, command }) => {
+let handler = async (m, { conn, command, groupMetadata }) => {
   if (command === 'debugduit') return debugduit(m, { conn })
   let userMap = {}
 
@@ -32,7 +33,11 @@ let handler = async (m, { conn, command }) => {
     }
   }
 
-  let sortedUsers = filterRpgPanelUsers(Object.values(userMap), user => user.jid)
+  let sortedUsers = filterLeaderboardUsers(
+    filterRpgPanelUsers(Object.values(userMap), user => user.jid),
+    conn,
+    user => user.jid
+  )
     .map(u => ({ ...u, total: u.cash + u.bank }))
     .filter(u => u.total > 0)
     .sort((a, b) => b.total - a.total)
@@ -46,9 +51,9 @@ let handler = async (m, { conn, command }) => {
 
   sortedUsers.forEach((user, i) => {
     let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`
-    let num = user.jid.split('@')[0]
-    mentions.push(user.jid)
-    teks += `${medal} @${num}\n`
+    const identity = getLeaderboardUserIdentity(user.jid, { conn, groupMetadata })
+    if (identity.mention) mentions.push(identity.mention)
+    teks += `${medal} ${identity.display}\n`
     teks += `   💰 *Total:* Rp ${user.total.toLocaleString('id-ID')}\n`
     teks += `   💵 Cash: Rp ${user.cash.toLocaleString('id-ID')} | 🏦 Bank: Rp ${user.bank.toLocaleString('id-ID')}\n\n`
   })

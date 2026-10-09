@@ -1,8 +1,10 @@
-let handler = async (m, { conn }) => {
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+
+let handler = async (m, { conn, groupMetadata }) => {
     let users = global.db.data.users
     let settings = global.db.data.settings[conn.user.jid]
     
-    let sortedDonors = Object.entries(users)
+    let sortedDonors = filterLeaderboardUsers(Object.entries(users), conn, ([jid]) => jid)
         .filter(([_, data]) => data.totalDonasi > 0)
         .sort((a, b) => b[1].totalDonasi - a[1].totalDonasi)
         .slice(0, 10) 
@@ -30,8 +32,9 @@ let handler = async (m, { conn }) => {
             if (data.namaDonasi) {
                 nameDisplay = `*${data.namaDonasi}*` // Tidak di-tag, aman secara privasi
             } else {
-                nameDisplay = `@${jid.split('@')[0]}` // Di-tag jika tak ada nama samaran
-                mentionsData.push(jid)
+                const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata })
+                nameDisplay = identity.display
+                if (identity.mention) mentionsData.push(identity.mention)
             }
             
             return `${medal} ${nameDisplay} - *Rp ${data.totalDonasi.toLocaleString()}*`

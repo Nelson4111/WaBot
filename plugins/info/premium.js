@@ -9,6 +9,7 @@ import {
 } from '../../lib/rpgPremium.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { claimPremiumDailyLimit, getJakartaDate } from '../../lib/userLimit.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 function formatRemaining(milliseconds) {
   const seconds = Math.max(0, Math.ceil(milliseconds / 1000))
@@ -33,7 +34,7 @@ function getJakartaMidnightMs(now) {
   return nextMidnight - 7 * 60 * 60 * 1000
 }
 
-let handler = async (m, { conn, text = '', usedPrefix }) => {
+let handler = async (m, { conn, text = '', usedPrefix, groupMetadata }) => {
   const [action = ''] = text.trim().toLowerCase().split(/\s+/)
   const users = global.db?.data?.users || {}
   const user = users[m.sender] || {}
@@ -177,7 +178,7 @@ if (action === 'price' || action === 'pricelist' || action === 'harga') {
 }
 
 if (action === 'top' || action === 'toppremium') {
-  const topDonors = Object.entries(users)
+  const topDonors = filterLeaderboardUsers(Object.entries(users), conn, ([jid]) => jid)
     .filter(([, donor]) => Number(donor.totalDonasi) > 0 && isPremiumAccount(donor, now))
     .sort(([, first], [, second]) => Number(second.totalDonasi) - Number(first.totalDonasi))
     .slice(0, 10)
@@ -195,11 +196,12 @@ if (action === 'top' || action === 'toppremium') {
   const mentions = []
 
   const donorList = topDonors.map(([jid, donor], index) => {
+    const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata })
     const name = donor.namaDonasi
       ? `*${donor.namaDonasi}*`
-      : `@${jid.split('@')[0]}`
+      : identity.display
 
-    if (!donor.namaDonasi) mentions.push(jid)
+    if (!donor.namaDonasi && identity.mention) mentions.push(identity.mention)
 
     const total = Number(donor.totalDonasi) || 0
 
@@ -348,7 +350,8 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `📌 *KEUNTUNGAN UMUM*\n` +
     `> ↳ Batas casino : *50 permainan per hari* (user biasa 25).\n` +
     `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
-    `> ↳ Kapasitas rumah bertambah *5 furniture* dan biaya upgrade rumah diskon *20%*.\n` +
+    `> ↳ Kapasitas rumah bertambah *5 furniture* dan *2 penghuni tambahan*, diskon upgrade rumah *20%*, serta diskon kontrak staff *10%*.\n` +
+    `> ↳ Fitur khusus: *${usedPrefix}home staff hire all* merekrut semua staff rumah sekaligus.\n` +
     `> ↳ Diskon *20%* untuk semua biaya uang pada *.upgrade* dan diskon *25%* upgrade kartu bank.\n` +
     `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
     `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*.\n` +
