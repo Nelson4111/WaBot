@@ -1,5 +1,6 @@
 [
   {
+    "id": "1.0",
     "section": "INFO",
     "title": "Pencatatan News Update",
     "content": "\u003e News kini menjadi catatan update dan perbaikan bot.",
@@ -7,6 +8,7 @@
     "createdAt": 1790787600000
   },
   {
+    "id": "2.0",
     "section": "RPG",
     "title": "Perbaikan Leaderboard RPG",
     "content": "\u003e Owner/admin tidak lagi dihitung dalam leaderboard RPG dan kekayaan.",
@@ -14,6 +16,7 @@
     "createdAt": 1790917200000
   },
   {
+    "id": "2.1",
     "section": "RPG",
     "title": "Sistem Difficulty RPG",
     "content": "\u003e Difficulty mengatur pendapatan dan cooldown; Peaceful aman dari kriminal, pergantian difficulty cooldown 7 hari.",
@@ -21,6 +24,7 @@
     "createdAt": 1790928000000
   },
   {
+    "id": "2.2",
     "section": "RPG",
     "title": "Casino Room Eliminasi",
     "content": "\u003e Casino room memakai ronde eliminasi dan taruhan pilihan master; room idle 30 menit dihapus.",
@@ -28,6 +32,7 @@
     "createdAt": 1790931600000
   },
   {
+    "id": "2.3",
     "section": "RPG",
     "title": "Konfirmasi Penjualan Massal",
     "content": "\u003e Penjualan massal di toko kini meminta konfirmasi sebelum diproses.",
@@ -35,6 +40,7 @@
     "createdAt": 1790931600001
   },
   {
+    "id": "2.4",
     "section": "RPG",
     "title": "Penyesuaian Cooldown Casino",
     "content": "\u003e Cooldown casino kini menyesuaikan tier taruhan dan multiplier hasil.",
@@ -42,6 +48,7 @@
     "createdAt": 1790931600002
   },
   {
+    "id": "2.5",
     "section": "RPG",
     "title": "Pembaruan Relationship",
     "content": "\u003e Relationship diperbarui dengan aktivitas pasangan, konfirmasi tindakan, pemulihan data, dan arena versus.",
@@ -49,6 +56,7 @@
     "createdAt": 1790931600003
   },
   {
+    "id": "2.6",
     "section": "RPG",
     "title": "Aktivitas Pet Premium",
     "content": "\u003e Premium dapat merawat dan menjalankan aktivitas semua pet dengan .pet care dan .pet all.",
@@ -56,6 +64,7 @@
     "createdAt": 1790931600004
   },
   {
+    "id": "2.7",
     "section": "RPG",
     "title": "Guild Loot dan Storage",
     "content": "\u003e Reward guild tersimpan sebagai loot, sementara storage dapat digunakan semua anggota.",
@@ -63,6 +72,7 @@
     "createdAt": 1790931600005
   },
   {
+    "id": "2.8",
     "section": "RPG",
     "title": "Katalog Cincin Relationship",
     "content": "\u003e Katalog cincin diperbarui; pembelian memakai saldo bank RPG.",
@@ -70,6 +80,7 @@
     "createdAt": 1790931600006
   },
   {
+    "id": "2.9",
     "section": "RPG",
     "title": "Pembaruan Aktivitas RPG",
     "content": "\u003e Aktivitas relationship, daily restreak, work, reward misi, dan rampok diperbarui.",
@@ -77,6 +88,7 @@
     "createdAt": 1790931600007
   },
   {
+    "id": "2.10",
     "section": "RPG",
     "title": "Guild Breakout Penjara",
     "content": "\u003e Breakout penjara bersama tersedia dengan peluang berhasil 50%.",
@@ -84,6 +96,7 @@
     "createdAt": 1790931600008
   },
   {
+    "id": "2.11",
     "section": "RPG",
     "title": "Pembaruan Room, Lottery, dan Gym",
     "content": "\u003e Room live, history lottery/giveaway, dan counter gym diperbarui.",
@@ -91,6 +104,7 @@
     "createdAt": 1790931600009
   },
   {
+    "id": "2.12",
     "section": "GROUP",
     "title": "Perintah Mute dan Unmute Admin",
     "content": "\u003e Admin dapat mute atau unmute anggota grup dengan tag atau reply.",
@@ -98,6 +112,7 @@
     "createdAt": 1790931600010
   },
   {
+    "id": "2.13",
     "section": "RPG",
     "title": "Informasi dan Panduan Penjara",
     "content": "\u003e Penjara kini memiliki panduan, info cooldown, catatan escape, dan daftar tahanan.",
@@ -105,6 +120,7 @@
     "createdAt": 1790931600011
   },
   {
+    "id": "4.0",
     "section": "RPG",
     "title": "Pembaruan Sistem Fitnah",
     "content": "\u003e Fitnah diproses setelah 5 menit; target dapat membantah dengan biaya pilihan.",
@@ -112,6 +128,7 @@
     "createdAt": 1791082011357
   },
   {
+    "id": "4.1",
     "section": "RPG",
     "title": "Pembaruan Penjara, Pekerjaan, dan Bank",
     "content": "\u003e Tebusan, pemilihan job, tampilan cooldown, dan cooldown bank disesuaikan.",
@@ -119,6 +136,7 @@
     "createdAt": 1791083688599
   },
   {
+    "id": "4.2",
     "section": "GROUP",
     "title": "Pencegahan Mute Antaradmin",
     "content": "\u003e Admin grup tidak dapat mute admin lainnya.",
@@ -126,6 +144,7 @@
     "createdAt": 1791083688600
   },
   {
+    "id": "4.3",
     "section": "INFO",
     "title": "Informasi dan Manfaat Premium",
     "content": "\u003e Cek status dan manfaat Premium lewat .premium; bukti donasi dikirim melalui .konfirmasidonasi.",
@@ -133,6 +152,7 @@
     "createdAt": 1791084430000
   },
   {
+    "id": "4.4",
     "section": "RPG",
     "title": "Perbaikan Casino Room dan Pet",
     "content": "\u003e Perbaikan casino room, pet, heal, dan pembatasan aktivitas selama bermain di room.",
@@ -140,6 +160,7 @@
     "createdAt": 1791085000000
   },
   {
+    "id": "4.5",
     "section": "RPG",
     "title": "Pembaruan Sistem Buronan",
     "content": "\u003e Info, daftar, dan detail buronan diperbarui; patroli berpeluang menangkap buronan.",
@@ -147,6 +168,7 @@
     "createdAt": 1791106925868
   },
   {
+    "id": "4.6",
     "section": "RPG",
     "title": "Pembaruan Command Toko",
     "content": "\u003e Command dan panduan toko dirapikan, termasuk daftar katalog dan konfirmasi penjualan.",
@@ -154,6 +176,7 @@
     "createdAt": 1791123120000
   },
   {
+    "id": "4.7",
     "section": "RPG",
     "title": "Penyesuaian Loot dan Tampilan Guild",
     "content": "\u003e Tampilan, command, loot, batas, dan hadiah misi Guild diperbarui.",
@@ -161,6 +184,7 @@
     "createdAt": 1791126000000
   },
   {
+    "id": "5.0",
     "section": "RPG",
     "title": "Perbaikan Guild Mission, Loot, dan War",
     "content": "\u003e Perbaikan Guild mencakup misi, loot, war, kapasitas, dan alias command.",
@@ -168,6 +192,7 @@
     "createdAt": 1791209021777
   },
   {
+    "id": "5.1",
     "section": "RPG",
     "title": "Biaya Date dan Belanja Relationship",
     "content": "\u003e Biaya date dan belanja Relationship kini mengikuti level pasangan.",
@@ -175,6 +200,7 @@
     "createdAt": 1791213865323
   },
   {
+    "id": "5.2",
     "section": "RPG",
     "title": "Peningkatan Hadiah Casino",
     "content": "\u003e Hadiah casino menang biasa minimal 2x taruhan; beberapa hasil khusus juga ditambahkan.",
@@ -182,6 +208,7 @@
     "createdAt": 1791213865324
   },
   {
+    "id": "5.3",
     "section": "FUN",
     "title": "Validasi Perintah Top",
     "content": "\u003e .top memvalidasi input dan menampilkan tag anggota secara acak.",
@@ -189,6 +216,7 @@
     "createdAt": 1791213865325
   },
   {
+    "id": "5.4",
     "section": "STICKER",
     "title": "Sticker Watermark Privat",
     "content": "\u003e .wm dan .swm membuat sticker watermark privat.",
@@ -196,6 +224,7 @@
     "createdAt": 1791213865326
   },
   {
+    "id": "6.0",
     "section": "RPG",
     "title": "MBG dan Perbaikan Katalog Masakan",
     "content": "\u003e Menu, jatah, dan katalog MBG serta masakan diperbarui.",
@@ -203,6 +232,7 @@
     "createdAt": 1791234143000
   },
   {
+    "id": "6.1",
     "section": "RPG",
     "title": "Sistem Rehabilitasi Buronan",
     "content": "\u003e Rehabilitasi membantu buronan menghapus poin setelah biaya dan progres terpenuhi.",
@@ -210,6 +240,7 @@
     "createdAt": 1791234143001
   },
   {
+    "id": "6.2",
     "section": "RPG",
     "title": "Pembaruan Aktivitas Rehabilitasi",
     "content": "\u003e Rehabilitasi kini mensyaratkan waktu minimum dan target progres sebelum dilaporkan selesai.",
@@ -217,6 +248,7 @@
     "createdAt": 1791234143002
   },
   {
+    "id": "6.3",
     "section": "RPG",
     "title": "Fitur Pendakian Muncak",
     "content": "\u003e Pendakian tersedia lewat .mt dengan pilihan gunung, mode solo/tim, XP, dan leaderboard.",
@@ -224,6 +256,7 @@
     "createdAt": 1791267290645
   },
   {
+    "id": "6.4",
     "section": "RPG",
     "title": "Aktivitas Rehabilitasi Premium",
     "content": "\u003e Premium dapat menjalankan semua aktivitas rehabilitasi yang siap lewat .rh all.",
@@ -231,6 +264,7 @@
     "createdAt": 1791267290646
   },
   {
+    "id": "6.5",
     "section": "RPG",
     "title": "Pembaruan Pendakian Muncak",
     "content": "\u003e Cooldown Muncak: 5 jam untuk pengguna biasa dan 2 jam untuk Premium; tersedia request gunung dan title.",
@@ -238,6 +272,7 @@
     "createdAt": 1791269812479
   },
   {
+    "id": "6.6",
     "section": "RPG",
     "title": "Perbaikan RPG, Gift, dan Trade",
     "content": "\u003e Perbaikan RPG mencakup pet, toko, MBG, gift, dan trade.",
@@ -245,6 +280,7 @@
     "createdAt": 1791285827501
   },
   {
+    "id": "6.7",
     "section": "RPG",
     "title": "Casino Taruhan All dan Simulasi",
     "content": "\u003e Casino mendukung taruhan all dan mode simulasi untuk latihan.",
@@ -252,6 +288,7 @@
     "createdAt": 1791298080000
   },
   {
+    "id": "6.8",
     "section": "FUN",
     "title": "Privasi Tag dan Cooldown Top",
     "content": "\u003e .top notag/tagme mengatur mention; .top list menampilkan daftar tanpa tag.",
@@ -259,6 +296,7 @@
     "createdAt": 1791298080001
   },
   {
+    "id": "6.9",
     "section": "INFO",
     "title": "Manfaat Premium dan Profil Donasi",
     "content": "\u003e Manfaat Premium mencakup diskon, cooldown lebih singkat, dan tambahan slot pet.",
@@ -266,6 +304,7 @@
     "createdAt": 1791298080002
   },
   {
+    "id": "7.0",
     "section": "INFO",
     "title": "Pembaruan Premium, Title, dan Reward Donatur",
     "content": "\u003e Premium donasi, title donatur, dan profil diperbarui.",
@@ -273,6 +312,7 @@
     "createdAt": 1791364898268
   },
   {
+    "id": "7.1",
     "section": "RPG",
     "title": "Hasil Casino dan Pembaruan Harga serta Keamanan Bank",
     "content": "\u003e .cs hasil menjelaskan hasil casino; harga kartu dan keamanan bank diperbarui.",
@@ -280,13 +320,15 @@
     "createdAt": 1791365400000
   },
   {
+    "id": "7.2",
     "section": "INFO",
     "title": "Premium Protection Per Aksi",
-    "content": "\u003e Premium Protection memiliki cooldown terpisah 5 jam untuk tiap aksi.",
+    "content": "\u003e Premium Protection punya cooldown 5 jam per aksi kriminal dan perlindungan kematian universal yang aktif saat HP mencapai 0.",
     "author": "Eza",
     "createdAt": 1791366553000
   },
   {
+    "id": "7.3",
     "section": "INFO",
     "title": "Daftar dan Detail News",
     "content": "\u003e .news list menampilkan update per halaman; .news menjelaskan fitur, dan .news list info <nomor> membuka detail.",
@@ -294,6 +336,7 @@
     "createdAt": 1791367941981
   },
   {
+    "id": "7.4",
     "section": "RPG",
     "title": "Mall, Dekorasi, dan Diskon Premium",
     "content": "\u003e Mall menyediakan beragam kategori barang untuk dibeli atau dijual.",
@@ -301,6 +344,7 @@
     "createdAt": 1791380000001
   },
   {
+    "id": "7.5",
     "section": "RPG",
     "title": "Rumah Pribadi Pemain",
     "content": "\u003e Kelola rumah lewat .home, termasuk furniture, kapasitas, akses, dan kunjungan.",
@@ -308,6 +352,7 @@
     "createdAt": 1791380000002
   },
   {
+    "id": "7.6",
     "section": "RPG",
     "title": "Koleksi dan Showcase",
     "content": "\u003e .cl digunakan untuk mengelola, memamerkan, menghadiahkan, dan menukar koleksi.",
@@ -315,6 +360,7 @@
     "createdAt": 1791380000003
   },
   {
+    "id": "7.7",
     "section": "RPG",
     "title": "Tindak Kriminal Baru: Jarah dan Culik",
     "content": "\u003e .jarah dapat mengambil satu furniture dari rumah pemain jika berhasil.",
@@ -322,6 +368,7 @@
     "createdAt": 1791380000004
   },
   {
+    "id": "7.8",
     "section": "RPG",
     "title": "Karakter, Bloodline, dan Wardrobe",
     "content": "\u003e Kelola profil karakter, bloodline, dan wardrobe melalui command karakter.",
@@ -329,6 +376,7 @@
     "createdAt": 1791380000006
   },
   {
+    "id": "8.0",
     "section": "RPG",
     "title": "Panel RPG Berdasarkan Kategori",
     "content": "\u003e .rp menampilkan panel RPG per kategori atau sekaligus.",
@@ -336,6 +384,7 @@
     "createdAt": 1791455057001
   },
   {
+    "id": "8.1",
     "section": "RPG",
     "title": "Pembaruan Limit dan Cincin",
     "content": "\u003e Saldo limit tersinkron; limit dapat dibeli dengan uang atau EXP.",
@@ -343,6 +392,7 @@
     "createdAt": 1791455057002
   },
   {
+    "id": "8.2",
     "section": "RPG",
     "title": "Pembaruan Mining dan Memancing",
     "content": "\u003e Mining, hasil memancing, dan efek bloodline diperbarui.",
@@ -350,6 +400,7 @@
     "createdAt": 1791455057004
   },
   {
+    "id": "8.3",
     "section": "RPG",
     "title": "Pembaruan Bloodline",
     "content": "\u003e Bloodline dan efek baru ditambahkan; tier, detail, dan command .bl diperbarui.",
@@ -357,6 +408,7 @@
     "createdAt": 1791455057008
   },
   {
+    "id": "8.4",
     "section": "RPG",
     "title": "Pembaruan Mall dan Tindak Kriminal",
     "content": "\u003e Daftar mall mendukung filter dan halaman; cooldown tindak kriminal diperbarui.",
@@ -364,6 +416,7 @@
     "createdAt": 1791457321000
   },
   {
+    "id": "8.5",
     "section": "RPG",
     "title": "Penyesuaian Tier dan Ascend Bloodline",
     "content": "\u003e Total 150 bloodline tersebar merata; 10 bloodline baru ditambahkan dan deskripsinya tampil saat roll.",
@@ -371,6 +424,7 @@
     "createdAt": 1791462823319
   },
   {
+    "id": "8.6",
     "section": "INFO",
     "title": "Penyesuaian Limit Fitur Instan",
     "content": "\u003e Semua pengguna, termasuk Premium, membayar 1 limit untuk sticker, maker, dan downloader.",
@@ -378,6 +432,7 @@
     "createdAt": 1791467444000
   },
   {
+    "id": "9.0",
     "section": "INFO",
     "title": "Fitur Q&A",
     "content": "\u003e .qna list menampilkan 10 tanya-jawab ringkas per halaman; .qna menjelaskan fitur dan .qna <nomor> membuka jawaban.",
@@ -385,6 +440,7 @@
     "createdAt": 1791499620000
   },
   {
+    "id": "9.1",
     "section": "INFO",
     "title": "Perbaikan Menu Grup Dinonaktifkan",
     "content": "\u003e Command .menu, .allmenu, menu kategori, dan menu lainnya kini memberi notifikasi jika menu grup dinonaktifkan, bukan menampilkan error.",
@@ -392,6 +448,7 @@
     "createdAt": 1791512649000
   },
   {
+    "id": "9.2",
     "section": "INFO",
     "title": "Limit Harian dan Security Notice",
     "content": "\u003e Limit gratis +20/hari (maks. saldo 50); Premium Daily reset harian, sinkron .daily/.prem daily. .limit history simpan 50 pemakaian; .limit top tampilkan 10 saldo tertinggi. Security Notice tag user Under Review.",
@@ -399,6 +456,7 @@
     "createdAt": 1791514648000
   },
   {
+    "id": "9.3",
     "section": "RPG",
     "title": "Julukan Profil dan Akses Penjara",
     "content": "\u003e Atur julukan lewat .penjara nick; nickname tampil di profil dan daftar tahanan. Tahanan bebas otomatis saat sisa waktu kurang dari satu menit; pemilik Akses Eksklusif dapat memakai fitur RPG non-aktivitas.",
@@ -406,20 +464,23 @@
     "createdAt": 1791533000000
   },
   {
+    "id": "9.4",
     "section": "RPG",
-    "title": "Pembaruan Benefit Bank dan Vault Pribadi",
-    "content": "\u003e Benefit kartu menampilkan penanda NEW/UP dan deskripsi lengkap melalui .bank info. Digital Access mulai Brown Card, Transfer Bank mulai Orange Card; Vault menyimpan barang Mall agar aman, dan lokasi transaksi menampilkan Lounge VIP atau loket umum.",
+    "title": "Pembaruan Benefit Bank, Vault, dan Mahkota Kehormatan",
+    "content": "\u003e Benefit kartu menampilkan ◆ NEW untuk fasilitas baru dan ▲ UP untuk peningkatan asuransi, Chat CS, serta keamanan. Vault Pribadi mulai Black Card dapat diakses lewat .vault atau .bank vault untuk menyimpan barang Mall agar aman dari penjarahan; gunakan .vault simpan/ambil <item> [jumlah]. Mahkota Kehormatan dapat diklaim satu kali lewat .bank takecrown setelah mencapai Royal Card, lalu disimpan sebagai koleksi, di Vault, atau dipajang di rumah. Digital Access mulai Brown Card, Transfer Bank mulai Orange Card; lokasi transaksi menampilkan Lounge VIP atau loket umum.",
     "author": "Eza",
     "createdAt": 1791533000001
   },
   {
+    "id": "9.5",
     "section": "RPG",
-    "title": "Lelang Eksklusif dan Koleksi Kerajaan",
-    "content": "\u003e Cosmic Card membuka .lelang dengan 50 item koleksi terbatas; item lelang dan Mahkota Kerajaan dapat dipajang di rumah serta tidak dapat dijarah.",
+    "title": "Lelang Eksklusif dan Koleksi Terbatas",
+    "content": "\u003e Cosmic Card membuka .lelang dengan 50 item koleksi terbatas; item lelang dapat dipajang di rumah serta tidak dapat dijarah.",
     "author": "Eza",
     "createdAt": 1791533000002
   },
   {
+    "id": "9.6",
     "section": "RPG",
     "title": "Interstellar Gateway dan Evonexus",
     "content": "\u003e Stellar Card membuka .explore untuk menemukan material antarbintang dan Stellar Credit. Eternal Card membuka .evx untuk melihat statistik Evonexus.",
@@ -427,13 +488,15 @@
     "createdAt": 1791533000003
   },
   {
+    "id": "9.7",
     "section": "STICKER",
     "title": "Privasi Stiker di Grup",
-    "content": "\u003e .wm, .swm, dan .brat kini menampilkan pengumuman privasi yang seragam; perintah dan media sumber dihapus dari grup, sementara hasil stiker hanya dapat dilihat peminta.",
+    "content": "\u003e .wm, .swm,.brat, brathd dan .bratvid kini menampilkan pengumuman privasi yang seragam; perintah dan media sumber dihapus dari grup, sementara hasil stiker hanya dapat dilihat peminta.",
     "author": "Eza",
     "createdAt": 1791534623381
   },
   {
+    "id": "9.8",
     "section": "RPG",
     "title": "Privasi Leaderboard dan Cooldown",
     "content": "\u003e Leaderboard memakai nomor tersamarkan untuk pengguna di luar grup tanpa men-tag atau menampilkan nomor lengkap. Level up pasangan pada .rship all diringkas menjadi jumlah; cooldown .rh kerja disamakan menjadi 4 menit.",
@@ -441,10 +504,75 @@
     "createdAt": 1791534815257
   },
   {
+    "id": "9.9",
     "section": "RPG",
     "title": "Pembaruan Rumah dan Staff",
-    "content": "\u003e Rumah kini memiliki statistik Comfort/Harmony/Security/Hygiene/Aesthetics/Popularity, penghuni pasangan/anak/pet, aktivitas rumah dengan cooldown 5 menit, serta staff berkontrak.",
+    "content": "\u003e Kontrak staff rumah dapat dipilih 1–7 hari berdasarkan pergantian tanggal WIB, cooldown staff 2 jam dapat dilihat dengan .home staff cd, dan roster bertambah Gardener serta Tutor.",
     "author": "Eza",
     "createdAt": 1791545002000
+  },
+  {
+    "id": "10.0",
+    "section": "RPG",
+    "title": "Julukan Profil dan Akses Penjara",
+    "content": "\u003e Atur julukan lewat .penjara nick; nickname tampil di profil dan daftar tahanan. Tahanan bebas otomatis saat sisa waktu kurang dari satu menit. Pemilik Akses Eksklusif dapat memakai fitur RPG non-aktivitas saat dipenjara; akses dan daftar command yang diblokir dapat dicek lewat .penjara exs (alias: exclusive/eks/eksklusif).",
+    "author": "Eza",
+    "createdAt": 1791567232160
+  },
+  {
+    "id": "10.1",
+    "section": "RPG",
+    "title": "Benefit Kartu dan Akses Transaksi",
+    "content": "\u003e Benefit kartu menampilkan ◆ NEW untuk fasilitas baru dan ▲ UP untuk peningkatan asuransi, Chat CS, serta keamanan. Digital Access tersedia mulai Brown Card dan Transfer Bank mulai Orange Card; lokasi transaksi menampilkan Lounge VIP atau loket umum.",
+    "author": "Eza",
+    "createdAt": 1791567232161
+  },
+  {
+    "id": "10.2",
+    "section": "RPG",
+    "title": "Vault Pribadi dan Mahkota Kehormatan",
+    "content": "\u003e Vault Pribadi tersedia mulai Black Card lewat .vault atau .bank vault untuk menyimpan barang Mall agar aman dari penjarahan. Gunakan .vault simpan/ambil <item> [jumlah]. Pemilik Royal Card dapat mengklaim Mahkota Kehormatan satu kali lewat .bank takecrown; mahkota langsung masuk koleksi dan tidak dapat dijarah, lalu dapat disimpan di Vault atau dipajang di rumah.",
+    "author": "Eza",
+    "createdAt": 1791567232162
+  },
+  {
+    "id": "10.3",
+    "section": "RPG",
+    "title": "Interstellar Explore dan Stellar Credit",
+    "content": "\u003e Stellar Card membuka .explore untuk menjelajahi 10 planet dengan dimensi acak dan menemukan item serta Stellar Credit. Cek item lewat .invst; jual semua atau item tertentu dengan .int sell <all/nomor/nama>. .int planet menampilkan daftar planet, .int top menampilkan pemilik Stellar Credit terbanyak, dan .int guide/.int command berisi panduan.",
+    "author": "Eza",
+    "createdAt": 1791567232163
+  },
+  {
+    "id": "10.4",
+    "section": "RPG",
+    "title": "Evonexus dan Ability",
+    "content": "\u003e Eternal Card membuka .evx. Ability Evonexus memuat 357 augmentasi dalam 35 tipe dengan harga yang dibagi merata ke tujuh tier Mall (51 ability per tier), daftar alfabetis 20 item per halaman berdasarkan tipe atau tier, pencarian nama mirip, detail, serta efek pasif universal dan bonus tipe pada sistem RPG. .evx install memasang ability dengan Stellar Credit setelah konfirmasi (maksimal satu per tipe); .evx uninstall melepas sekaligus menghancurkan permanen tanpa refund. Gunakan .evx body untuk melihat ability terpasang, .evx guide/command untuk panduan, dan .evx info untuk statistik. Owner dapat mengatur Stellar Credit, body Evonexus, inventaris Mall, serta rumah lewat .rpgpanel.",
+    "author": "Eza",
+    "createdAt": 1791567232164
+  },
+  {
+    "id": "10.5",
+    "section": "RPG",
+    "title": "Auction House dan Koleksi Terbatas",
+    "content": "\u003e Cosmic Card membuka .lelang dengan 50 item koleksi terbatas yang dapat dipajang di rumah dan tidak dapat dijarah. Auction House menampilkan 5 item acak per sesi yang diperbarui setiap 5 jam, lengkap dengan hitung mundur. Akses lewat .lelang/.auctionhouse/.ah; .ah guide/.ah command berisi panduan dan perintah, sedangkan .ah top menampilkan kolektor terbanyak.",
+    "author": "Eza",
+    "createdAt": 1791567232165
+  },
+  {
+    "id": "10.6",
+    "section": "RPG",
+    "title": "Privasi Leaderboard dan Cooldown Relationship",
+    "content": "\u003e Leaderboard menyamarkan nomor pengguna di luar grup tanpa men-tag atau menampilkan nomor lengkap. Level up pasangan pada .rship all diringkas menjadi jumlah; cooldown kerja .rh menjadi 4 menit.",
+    "author": "Eza",
+    "createdAt": 1791567232166
+  },
+  {
+    "id": "10.7",
+    "section": "RPG",
+    "title": "Kontrak dan Staff Rumah",
+    "content": "\u003e Kontrak staff rumah dapat dipilih 1–7 hari berdasarkan pergantian tanggal WIB. Cek cooldown staff 2 jam lewat .home staff cd; roster staff kini mencakup Gardener dan Tutor.",
+    "author": "Eza",
+    "createdAt": 1791567232167
   }
 ]
