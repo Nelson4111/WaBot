@@ -1,0 +1,10 @@
+[
+  {
+    "question": "Bagaimana cara mengetahui update terbaru dari Avelia?",
+    "answer": "Cek perintah .news untuk melihat update terbaru Avelia."
+  },
+  {
+    "question": "Apakah auto-reply voice note bisa dimatikan?",
+    "answer": "Bisa. Admin grup dapat mematikannya dengan perintah .voice disable."
+  }
+]
