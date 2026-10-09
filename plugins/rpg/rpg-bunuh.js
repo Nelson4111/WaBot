@@ -80,7 +80,9 @@ let handler = async (m, { conn }) => {
     const revivedHP = userRPG.darah !== undefined
       ? reviveBloodline(userRPG, Number(userRPG.maxDarah) || 100)
       : 0
-    if (userRPG.darah !== undefined && !revivedHP) userRPG.darah = 0
+    const deathProtected = userRPG.darah !== undefined && !revivedHP &&
+      tryPremiumProtection(m.sender, 'death')
+    if (userRPG.darah !== undefined && !revivedHP) userRPG.darah = deathProtected ? 1 : 0
     wdb.penjara = wdb.penjara || []
     userRPG.penjara = Date.now()
     userRPG.lamaPenjara = 7200000 // 2 jam
@@ -92,7 +94,9 @@ let handler = async (m, { conn }) => {
     userRPG.riwayat.unshift(
       revivedHP
         ? `♻️ Phoenix bangkit setelah gagal bunuh @${who.split('@')[0]}`
-        : `💀 Mati saat bunuh @${who.split('@')[0]}`
+        : deathProtected
+          ? `🛡️ Premium Protection mencegah kematian saat bunuh @${who.split('@')[0]}`
+          : `💀 Mati saat bunuh @${who.split('@')[0]}`
     )
 
     saveDB(wdb)
@@ -101,7 +105,9 @@ let handler = async (m, { conn }) => {
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += revivedHP
       ? `│ ♻️ Bloodline Phoenix membangkitkanmu dengan ${revivedHP} HP.\n`
-      : `│ ⚰️ Kamu dibunuh duluan\n`
+      : deathProtected
+        ? `│ 🛡️ Premium Protection mencegah kematian; tersisa 1 HP.\n`
+        : `│ ⚰️ Kamu dibunuh duluan\n`
     txt += userRPG.sel
       ? `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
       : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
@@ -117,7 +123,21 @@ let handler = async (m, { conn }) => {
   const targetRevived = target.darah !== undefined
     ? reviveBloodline(target, Number(target.maxDarah) || 100)
     : 0
-  if (target.darah !== undefined && !targetRevived) target.darah = 0
+  const targetDeathProtected = target.darah !== undefined && !targetRevived &&
+    tryPremiumProtection(who, 'death')
+  if (target.darah !== undefined && !targetRevived) target.darah = targetDeathProtected ? 1 : 0
+  if (targetDeathProtected) {
+    target.riwayat.unshift(`🛡️ Premium Protection mencegah kematian saat dibunuh @${m.sender.split('@')[0]}`)
+    userRPG.riwayat.unshift(`🛡️ Target selamat dari aksi bunuh @${who.split('@')[0]}`)
+    saveDB(wdb)
+    return conn.reply(
+      m.chat,
+      `🛡️ *PREMIUM PROTECTION KEMATIAN AKTIF*\n` +
+      `@${who.split('@')[0]} selamat dari aksi bunuh dengan 1 HP. Tidak ada uang yang berpindah; proteksi kematian cooldown selama 5 jam.`,
+      m,
+      { mentions: [m.sender, who] }
+    )
+  }
   wdb.money[who] -= hasil
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
 

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
+import { scaleDifficultyHealingCost } from '../../lib/rpgDifficulty.js'
 
 global.healRequests = global.healRequests || {}
 
@@ -70,7 +71,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
       )
     }
 
-    const biaya = butuhHP * 1000
+    const biaya = scaleDifficultyHealingCost(user, butuhHP * 1000)
     const tier = BANK_TIERS[user.bankTier || 0] || BANK_TIERS[0]
     const asuransi = tier.asuransi || 0
     const biayaBayar = Math.floor(biaya * (1 - asuransi))
@@ -186,7 +187,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
   }
 
   let butuhHP = maxHP - user.darah
-  let biaya = butuhHP * 1000
+  let biaya = scaleDifficultyHealingCost(user, butuhHP * 1000)
   let tier = BANK_TIERS[user.bankTier || 0]
   let asuransi = tier.asuransi || 0
   let biayaBayar = Math.floor(biaya * (1 - asuransi))

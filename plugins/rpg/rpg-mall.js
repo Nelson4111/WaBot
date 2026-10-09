@@ -96,7 +96,8 @@ if (mode === 'guide') {
     `> ↳ Mall adalah tempat untuk melihat, membeli, dan menjual barang RPG.\n` +
     `> ↳ Daftar di setiap kategori diurutkan dari harga beli termurah ke termahal.\n` +
     `> ↳ Rarity bintang mengikuti harga beli.\n` +
-    `> ↳ Furniture dapat menambah kenyamanan rumah atau dipasang, sedangkan koleksi dikelola melalui .cl.\n\n` +
+    `> ↳ Semua barang selain fashion dapat dipasang/dilepas di rumah dengan *${prefix}home pasang/lepas <item>*.\n` +
+    `> ↳ Koleksi dapat dipajang/disimpan di rumah; fashion digunakan melalui wardrobe.\n\n` +
     `👑 *PREMIUM*\n` +
     `> ↳ Diskon beli : ${(MALL_PREMIUM_DISCOUNT * 100).toFixed(0)}%\n` +
     `> ↳ Bonus harga jual : ${(MALL_PREMIUM_SELL_BONUS * 100).toFixed(0)}%\n\n` +
@@ -330,7 +331,8 @@ if (action === 'info') {
     `> ↳ Rarity : ${rarity.stars} ${rarity.name}\n` +
     `> ↳ Harga : ${money(priceFor(item))}\n` +
     `> ↳ Harga jual kembali : ${money(Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n` +
-    `${category === 'furniture' ? `> ↳ Furniture dapat dipasang di rumah dengan .home pasang <item> dan meningkatkan kenyamanan rumah.\n` : ''}\n` +
+    `${category !== 'fashion' ? `> ↳ Barang ini dapat dipasang/dilepas di rumah dengan *${prefix}home pasang/lepas <item>*.\n` : `> ↳ Fashion dipakai/dilepas melalui *${prefix}wardrobe*.\n`}` +
+    `${category === 'furniture' ? `> ↳ Furniture yang dimiliki atau dipasang membantu meningkatkan kenyamanan rumah.\n` : ''}\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }

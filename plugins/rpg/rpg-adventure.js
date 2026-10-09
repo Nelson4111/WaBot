@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
-import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
@@ -127,7 +127,7 @@ let handler = async (m, { conn, command }) => {
   let pickLvl = user.pickaxe || 0
   let oldTitle = getAdvTitle(advLvl)
 
-  let bonus = Math.min(advLvl * 2 + swordLvl + Math.floor(pickLvl / 2), 60)
+  let bonus = Math.min(70, Math.min(advLvl * 2 + swordLvl + Math.floor(pickLvl / 2), 60) + adjustAbilityDropChance(user, 0) * 100)
   let darahKurang = scaleDifficultyDamage(user, Math.floor(Math.random() * 15) + 5)
   let baseExp = Math.floor(Math.random() * 150) + 50
   let baseMoney = Math.floor(Math.random() * 5000) + 1000
@@ -178,6 +178,8 @@ let handler = async (m, { conn, command }) => {
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money
   user.darah -= darahKurang
   const revivedHP = user.darah <= 0 ? reviveBloodline(user, Number(user.maxDarah) || 100) : 0
+  const deathProtected = user.darah <= 0 && !revivedHP && tryPremiumProtection(m.sender, 'death')
+  if (deathProtected) user.darah = 1
   user.lastAdventure = Date.now()
 
   let levelUpMsg = ''
@@ -223,6 +225,7 @@ cap += `🌟 *XP* +${totalExp}\n`
 cap += `\n─━━━━━━━━━━━━━━─\n`
 cap += `❤️ *Sisa Darah:* ${user.darah}\n`
 if (revivedHP) cap += `♻️ *Phoenix bangkit kembali* dengan ${revivedHP} HP.\n`
+if (deathProtected) cap += `🛡️ *Premium Protection* mencegah kematian dan menyisakan 1 HP. Proteksi kematian cooldown 5 jam.\n`
 cap += `🗺️ *Adventure Level:* Lv.${user.adventureLevel}\n`
 cap += `⚔️ *Sword Level:* Lv.${swordLvl}\n`
 cap += `⛏️ *Pickaxe Level:* Lv.${pickLvl}\n`

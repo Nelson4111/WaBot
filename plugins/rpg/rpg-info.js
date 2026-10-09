@@ -1,8 +1,10 @@
 const CORE_COMMANDS = [
   ['.adventure', 'Profil dan aktivitas petualangan'],
   ['.explore', 'Menjelajahi antarbintang dengan Interstellar Gateway'],
-  ['.evx', 'Melihat statistik Evonexus untuk pemilik Eternal Card'],
-  ['.lelang', 'Melihat penawaran lelang eksklusif dengan Auction Pass'],
+  ['.evx', 'Menu Evonexus; lihat data dengan .evx info'],
+  ['.evx ability', 'Cari, lihat detail, dan pasang ability dengan Stellar Credit'],
+  ['.evx body', 'Melihat ability Evonexus yang terpasang'],
+  ['.lelang / .auctionhouse / .ah', 'Lelang 5 item acak setiap 5 jam dan lihat top kolektor dengan .ah top'],
   ['.rpgstat', 'Melihat statistik RPG'],
   ['.mychar / .bloodline / .wardrobe', 'Melihat karakter, mengatur bloodline, dan outfit'],
   ['.cooldown', 'Melihat cooldown RPG'],

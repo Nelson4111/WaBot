@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { scaleDifficultyCooldown, scaleDifficultyHarvest, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
@@ -131,7 +131,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   function applyFarmingYieldBonus(amount) {
-    return applyBloodlineYield(user, 'farmingYield', amount)
+    return scaleDifficultyHarvest(user, applyBloodlineYield(user, 'farmingYield', amount))
   }
 
   function cekLevelUpAfterMigration(user) {

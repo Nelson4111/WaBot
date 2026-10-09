@@ -242,6 +242,7 @@ let handler = async (m, { conn, args }) => {
   user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
   user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
   user.cooldown.kawin = sekarang
+  user.kawinCooldownDuration = jenis === 'biasa' ? 2 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000
   delete wdb.temp.kawin[m.sender]
 
   let gagal = Math.random() < peluangGagal(d1,d2)

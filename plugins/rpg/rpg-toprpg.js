@@ -5,7 +5,7 @@ import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/le
 
 let handler = async (m, { conn, groupMetadata }) => {
   const wdb = loadDB()
-  
+
   // Ambil semua ID user yang terdaftar
   let users = filterLeaderboardUsers(
     filterRpgPanelUsers(Object.keys(wdb.users)),
@@ -13,7 +13,7 @@ let handler = async (m, { conn, groupMetadata }) => {
   )
     .filter(isValidRpgUserId)
     .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
-  
+
   // Fungsi Helper untuk format Nama & Nomor
   const formatUser = (id) => {
     const identity = getLeaderboardUserIdentity(id, {
@@ -41,33 +41,44 @@ let handler = async (m, { conn, groupMetadata }) => {
     .sort((a, b) => (wdb.users[b].rpg.diamond || 0) - (wdb.users[a].rpg.diamond || 0))
     .slice(0, 10)
 
-  let text = `╭─❏「 🏆 AVELIA RPG LEADERBOARD 」❏\n`
-  text += `│ 🏆 *PERINGKAT PEMAIN*\n`
-  text += `╰─━━━━━━━━━━━━━━─\n\n`
+  let text =
+    `╭─❏「 🏆 RPG LEADERBOARD 」❏\n` +
+    `│ 🏆 *PERINGKAT AVELIA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n`
 
   text += `🆙 *TOP 10 LEVEL*\n`
+  text += `─━━━━━━━━━━━━━━─\n\n`
+
   topLevel.forEach((id, i) => {
-    text += `🏆 *${i + 1}. ${formatUser(id)}*\n`
-    text += `> ↳ 🆙 Level ${wdb.users[id].rpg.level}\n`
+    text += `> 🏆 *${i + 1}. ${formatUser(id)}*\n`
+    text += `> ↳ Level: ${wdb.users[id].rpg.level}\n\n`
   })
 
-  text += `\n💰 *TOP 10 KEKAYAAN*\n`
+  text += `─━━━━━━━━━━━━━━─\n\n`
+  text += `💰 *TOP 10 KEKAYAAN*\n`
+  text += `─━━━━━━━━━━━━━━─\n\n`
+
   topMoney.forEach((id, i) => {
-    text += `💰 *${i + 1}. ${formatUser(id)}*\n`
-    text += `> ↳ Rp ${(wdb.money[id] || 0).toLocaleString()}\n`
+    text += `> 💰 *${i + 1}. ${formatUser(id)}*\n`
+    text += `> ↳ Saldo: Rp ${(wdb.money[id] || 0).toLocaleString('id-ID')}\n\n`
   })
 
-  text += `\n💎 *TOP 10 COLLECTOR*\n`
+  text += `─━━━━━━━━━━━━━━─\n\n`
+  text += `💎 *TOP 10 COLLECTOR*\n`
+  text += `─━━━━━━━━━━━━━━─\n\n`
+
   topDiamond.forEach((id, i) => {
-    text += `💎 *${i + 1}. ${formatUser(id)}*\n`
-    text += `> ↳ ${wdb.users[id].rpg.diamond || 0} Diamond\n`
+    text += `> 💎 *${i + 1}. ${formatUser(id)}*\n`
+    text += `> ↳ Diamond: ${wdb.users[id].rpg.diamond || 0}\n\n`
   })
 
-  text += `\n─━━━━━━━━━━━━━━─\n\n`
-  text += `💡 Tingkatkan terus statusmu untuk menjadi nomor satu!`
+  text += `─━━━━━━━━━━━━━━─\n\n`
+  text += `💡 *TIPS*\n`
+  text += `> ↳ Tingkatkan level, kumpulkan kekayaan, dan perbanyak Diamond untuk menjadi nomor satu.\n\n`
+  text += `─━━━━━━━━━━━━━━─`
 
   let pp = 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg'
-  
+
   return sendRpgMsg(conn, m, text, 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg')
 }
 

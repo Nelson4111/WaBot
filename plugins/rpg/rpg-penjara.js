@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { ensurePrisonCell, getRandomPrisonCell } from '../../lib/prisonHelper.js'
+import { ensurePrisonCell, EXCLUSIVE_JAIL_BLOCKED_COMMANDS, getRandomPrisonCell, hasExclusiveJailAccess } from '../../lib/prisonHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { markPatrolRelease, recordEscapeCrime } from '../../lib/crimeHelper.js'
@@ -940,6 +940,50 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'escord') {
     )
 }
 
+if (command === 'penjara' && ['exs', 'exclusive', 'eks', 'eksklusif'].includes(args[0]?.toLowerCase())) {
+  const rpg = getRPG(m.sender)
+  if (!rpg) {
+    return m.reply(
+      `╭─❏「 🔐 AKSES PENJARA EKSKLUSIF 」❏\n` +
+      `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kamu belum memiliki data RPG.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const hasExclusiveAccess = hasExclusiveJailAccess(rpg)
+  const jailed = isDiPenjara(m.sender)
+
+  if (hasExclusiveAccess && jailed) {
+    const previousCell = rpg.sel
+    ensurePrisonCell(wdb, m.sender)
+    if (rpg.sel !== previousCell) await saveDB(wdb)
+  }
+
+  const accessDescription = hasExclusiveAccess
+    ? `✅ *AKSES EKSKLUSIF AKTIF*${jailed ? `\n> ↳ Sel premium kamu: *${rpg.sel}*` : ''}\n> ↳ Saat dipenjara, command RPG di luar daftar blokir tetap bisa digunakan.`
+    : `🔒 *AKSES EKSKLUSIF BELUM AKTIF*\n> ↳ Akses sel premium tersedia mulai Cyan Card (Lv.12) melalui *.upgradebank*.\n> ↳ Saat dipenjara, akses RPG selain command penjara diblokir.`
+
+  const blockedCommands = EXCLUSIVE_JAIL_BLOCKED_COMMANDS.map(name => `.${name}`).join(', ')
+
+  const allowedCommands = hasExclusiveAccess
+    ? `Semua command RPG selain daftar blokir di bawah, termasuk *.bank*, *.cl*, *.inv*, serta routine, talk, dan kabur.`
+    : `*.penjara*, termasuk info, routine, talk, kabur, dan tebus. Command non-RPG tidak terpengaruh.`
+
+  return m.reply(
+    `╭─❏「 🔐 AKSES PENJARA EKSKLUSIF 」❏\n` +
+    `│ 📋 *STATUS AKSES PENJARA*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${accessDescription}\n\n` +
+    `✅ *COMMAND YANG BISA DIAKSES*\n` +
+    `> ↳ ${allowedCommands}\n\n` +
+    `${hasExclusiveAccess ? '⛔ *TETAP DIBLOKIR DI SEL PREMIUM*' : '⛔ *BLOKIR SAAT DI SEL STANDAR*'}\n` +
+    `> ↳ ${blockedCommands}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
 /* =====================================================
    BLOKIR COMMAND BUAT YG DIPENJARA
    CUMA BOLEH: penjara, penjara kabur
@@ -1510,17 +1554,22 @@ if (!args[1]) {
   summary += `╰─━━━━━━━━━━━━━━─\n\n`
 
   summary += `📋 *INFORMASI*\n`
-  summary += `> ↳ Blok dikelompokkan berdasarkan huruf sel.\n`
+  summary += `> ↳ Sel premium memiliki blok khusus VIP.\n`
   summary += `> ↳ Pilih blok untuk melihat isinya.\n\n`
 
   summary += `─━━━━━━━━━━━━━━─\n\n`
 
   for (let index = 0; index < 26; index++) {
     const letter = String.fromCharCode(65 + index)
-    const count = wdb.penjara.filter(jid => String(getRPG(jid)?.sel || '').startsWith(letter)).length
+    const count = wdb.penjara.filter(jid => {
+      const cell = String(getRPG(jid)?.sel || '')
+      return cell.startsWith(letter) && !(letter === 'V' && cell.startsWith('VIP'))
+    }).length
     summary += `*${letter}. BLOK SEL*\n`
     summary += `> ↳ Tahanan: ${count} orang\n\n`
   }
+  const vipCount = wdb.penjara.filter(jid => String(getRPG(jid)?.sel || '').startsWith('VIP')).length
+  summary += `*VIP. SEL EKSKLUSIF*\n> ↳ Tahanan: ${vipCount} orang\n\n`
 
   summary += `─━━━━━━━━━━━━━━─\n\n`
   summary += `📌 *CONTOH*\n`
@@ -1532,13 +1581,13 @@ if (!args[1]) {
 
 const prisonPage = args[1].toUpperCase()
 
-if (!/^[A-Z]$/.test(prisonPage)) {
+if (!/^(?:[A-Z]|VIP)$/.test(prisonPage)) {
   return m.reply(
     `╭─❏「 🚔 PENJARA 」❏\n` +
     `│ ❌ *BLOK SEL TIDAK VALID*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Gunakan huruf sel A sampai Z.\n` +
-    `> ↳ Contoh: *${usedPrefix}penjara sel A*\n\n` +
+    `> ↳ Gunakan huruf sel A sampai Z atau VIP untuk sel eksklusif.\n` +
+    `> ↳ Contoh: *${usedPrefix}penjara sel A* atau *${usedPrefix}penjara sel VIP*\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -1656,7 +1705,7 @@ cap += `\n─━━━━━━━━━━━━━━─`
    COMMAND CONFIG
 ========================================================= */
 
-handler.help = ['penjara', 'penjara sel <A-Z>', 'penjara visit <sel/@tag>', 'penjara nickname <julukan>', 'penjara nick hapus', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara tebus <tag/sel/all>', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'penjarain', 'bebasin', 'kabur', 'tangkap']
+handler.help = ['penjara', 'penjara exs/exclusive/eks/eksklusif', 'penjara sel <A-Z|VIP>', 'penjara visit <sel/@tag>', 'penjara nickname <julukan>', 'penjara nick hapus', 'penjara routine', 'penjara talk', 'penjara kabur', 'penjara tebus <tag/sel/all>', 'penjara breakout create/join/info/leave/start', 'penjara guide', 'penjarain', 'bebasin', 'kabur', 'tangkap']
 handler.tags = ['rpg']
 handler.command = /^(penjara|penjarain|bebasin|kabur|tangkap)$/i
 handler.group = true

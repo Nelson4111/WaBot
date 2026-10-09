@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyDamage } from '../../lib/rpgDifficulty.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
+import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { areGuildJidsSame, findGuildByMember } from '../../lib/rpgGuild.js'
 
 global.warRequests = global.warRequests || {}
@@ -150,7 +151,10 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
       u.darah = (u.darah || 100) - 50
       if(u.darah <= 0){
         if(Math.random() < 0.3){ u.darah = 1 } // 30% selamat
-        else if (!reviveBloodline(u, Number(u.maxDarah) || 100)) { u.darah = 0; gugur++ }
+        else if (!reviveBloodline(u, Number(u.maxDarah) || 100)) {
+          if (tryPremiumProtection(jid, 'death')) u.darah = 1
+          else { u.darah = 0; gugur++ }
+        }
       }
       if(!jid.startsWith('rand_')) wdb.users[jid].rpg = u
     }

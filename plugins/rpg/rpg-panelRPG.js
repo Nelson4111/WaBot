@@ -9,10 +9,53 @@ import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.
 import { isDifficultyRanked, normalizeDifficulty, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
 import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { EVONEXUS_ABILITIES, getEvonexusAbilityTier, normalizeEvonexusValue } from '../../lib/rpg-evonexusData.js'
+import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
+import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
+import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
+import {
+  getHomeLevel,
+  HOME_MAX_UPGRADES,
+  HOME_BASE_FURNITURE_CAPACITY,
+  HOME_UPGRADE_FURNITURE_CAPACITY,
+  HOME_PREMIUM_FURNITURE_BONUS,
+  clampHomeStat
+} from '../../lib/rpgHomeData.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 import fs from 'fs'
 
 const MAX_BANK_TIER = Math.max(...Object.keys(BANK_TIERS).map(Number))
+const PANEL_MALL_ITEMS = Object.entries(MALL_CATEGORIES)
+  .flatMap(([category, data]) => data.items.map(item => ({ ...item, category })))
+  .concat(
+    AUCTION_ITEMS.map(item => ({ ...item, category: 'koleksi' })),
+    BANK_SPECIAL_ITEMS.map(item => ({ ...item, category: 'koleksi' }))
+  )
+
+function findPanelMallItem(input) {
+  const key = normalizeEvonexusValue(input)
+  if (!key) return null
+  return PANEL_MALL_ITEMS.find(item =>
+    normalizeEvonexusValue(item.id) === key ||
+    normalizeEvonexusValue(item.name) === key
+  ) || null
+}
+
+function formatPanelEvonexus(rpg) {
+  const evonexus = rpg.evonexus || {}
+  const installed = Object.entries(rpg.evonexus?.installed || {})
+    .map(([type, id]) => EVONEXUS_ABILITIES.find(ability => ability.id === id && ability.type === type))
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+  const body = installed.length
+    ? installed.map(ability => `> ${ability.name} (${ability.type.toUpperCase()} / ${getEvonexusAbilityTier(ability).name})`).join('\n')
+    : '> Tidak ada ability terpasang.'
+  return `Rank: ${evonexus.rank || 'Awak Baru'} · Level: ${Number(evonexus.level) || 1}\n` +
+    `Eksplorasi: ${Number(rpg.interstellarExplores) || 0} · Resonansi: ${Number(evonexus.resonance) || 0}\n` +
+    `Stat points: ${Number(evonexus.statPoints) || 0}\n` +
+    `Stellar Credit: ${Number(rpg.stellarCredit) || 0} 💠\nAbility terpasang: ${installed.length}\n${body}`
+}
 
 function getJakartaDate(timestamp) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -52,6 +95,7 @@ const RPG_PANEL_CATEGORIES = Object.freeze([
   { title: 'TERNAK', marker: '🏡 *TERNAK*', aliases: ['ternak', 'peternakan'] },
   { title: 'ADVENTURE', marker: '🗺️ *ADVENTURE*', aliases: ['adventure', 'adv'] },
   { title: 'BANK', marker: '🏦 *BANK*', aliases: ['bank'] },
+  { title: 'EVONEXUS, MALL & HOME', marker: '🧬 *EVONEXUS, MALL & HOME*', aliases: ['evx', 'mall', 'home', 'assets'] },
   { title: 'RSHIP', marker: '💕 *RSHIP*', aliases: ['rship', 'relationship'] },
   { title: 'CSM PANEL', marker: '⛓️ *CSM PANEL*', aliases: ['csm'] },
   { title: 'UPDATE RPG', marker: '🧬 *UPDATE RPG*', aliases: ['update', 'updates', 'fitur', 'rpg'] },
@@ -116,6 +160,15 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
 
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del stellarcredit @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel evx @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama ability>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <rank|level|resonance|statpoints|explores> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama ability> ya/tidak*\n` +
+  `> ↳ *${usedPrefix}rpgpanel mall @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel home @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
@@ -137,6 +190,17 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel set sword/armor/pickaxe/fishingrod @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel inv @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel gudang @tag*\n\n` +
+
+  `🧬 *EVONEXUS, MALL & HOME*\n` +
+  `> ↳ *${usedPrefix}rpgpanel evx @tag* - Lihat Stellar Credit dan ability terpasang\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama ability>* - Pasang ability via panel\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <field> <nilai>* - Atur data Evonexus\n` +
+  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama ability> ya/tidak* - Konfirmasi pelepasan ability\n` +
+  `> ↳ *${usedPrefix}rpgpanel mall @tag* - Lihat inventaris Mall\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel home @tag* - Lihat data rumah\n` +
+  `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|public> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel homeadd/homedel @tag <item Mall>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -383,6 +447,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   const statAliases = [
     'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood', 'cont',
     'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
+    'stellarcredit', 'mallitem',
     'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item', 'jadian'
   ];
 
@@ -560,6 +625,191 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   const account = wdb.users[who]
   let user = account.rpg
   syncUserLimit(account)
+
+  if (aksi === 'evx') {
+    return m.reply(`╭─❏「 🌌 EVONEXUS PANEL 」❏\n@${who.split('@')[0]}\n\n${formatPanelEvonexus(user)}`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'mall') {
+    const inventory = Object.entries(user.mallInventory || {})
+      .filter(([, count]) => Number(count) > 0)
+      .sort(([idA], [idB]) => idA.localeCompare(idB))
+    const items = inventory.length
+      ? inventory.map(([id, count]) => {
+        const known = PANEL_MALL_ITEMS.find(item => item.id === id)
+        return `> ${known?.name || formatNama(id)} ×${Number(count).toLocaleString()}`
+      }).join('\n')
+      : '> Inventaris Mall kosong.'
+    return m.reply(`╭─❏「 🛍️ MALL PANEL 」❏\n@${who.split('@')[0]}\n\n${items}`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'home') {
+    const home = user.home || {}
+    const level = Math.max(0, Math.min(HOME_MAX_UPGRADES, Math.floor(Number(home.level) || 0)))
+    return m.reply(
+      `╭─❏「 🏠 HOME PANEL 」❏\n@${who.split('@')[0]}\n\n` +
+      `> Rumah : ${getHomeLevel(level).name}\n` +
+      `> Level : ${level}/${HOME_MAX_UPGRADES}\n` +
+      `> Harmony : ${Number(home.harmony) || 0}/100\n` +
+      `> Hygiene : ${Number(home.hygiene) || 0}/100\n` +
+      `> Aesthetics : ${Number(home.aesthetics) || 0}/100\n` +
+      `> Public : ${home.public ? 'Ya' : 'Tidak'}\n` +
+      `> Furniture : ${(home.furniture || []).length}\n` +
+      `> Trophies : ${(home.trophies || []).length}\n` +
+      `> Staff : ${(home.staff || []).length}`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
+  if (aksi === 'setevx') {
+    const type = normalizeEvonexusValue(remaining[0])
+    const ability = EVONEXUS_ABILITIES.find(item =>
+      item.type === type &&
+      (normalizeEvonexusValue(item.id) === normalizeEvonexusValue(remaining.slice(1).join(' ')) ||
+        normalizeEvonexusValue(item.name) === normalizeEvonexusValue(remaining.slice(1).join(' ')))
+    )
+    if (!ability) return m.reply(`❌ Ability tidak ditemukan. Format: *${usedPrefix}rpgpanel setevx @tag <tipe> <nama ability>*`)
+    user.evonexus ||= {}
+    user.evonexus.installed ||= {}
+    user.evonexus.destroyedAbilities ||= []
+    if (user.evonexus.destroyedAbilities.includes(ability.id)) return m.reply('❌ Ability ini sudah dihancurkan dan tidak dapat dipasang kembali.')
+    if (user.evonexus.installed[type]) return m.reply(`❌ Slot ${type.toUpperCase()} sudah terisi.`)
+    user.evonexus.installed[type] = ability.id
+    await saveDB(wdb)
+    return m.reply(`✅ *${ability.name}* dipasang ke tubuh @${who.split('@')[0]} melalui panel Owner.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'delevx') {
+    const installed = Object.entries(user.evonexus?.installed || {})
+      .map(([type, id]) => EVONEXUS_ABILITIES.find(ability => ability.id === id && ability.type === type))
+      .filter(Boolean)
+    const response = String(remaining[remaining.length - 1] || '').toLowerCase()
+    const pending = user.evonexus?.pendingPanelUninstall
+    if (['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(response)) {
+      const pendingValid = pending &&
+        pending.owner === m.sender &&
+        Date.now() - Number(pending.createdAt) <= 60_000
+      if (!pendingValid) {
+        if (user.evonexus) delete user.evonexus.pendingPanelUninstall
+        return m.reply('❌ Tidak ada konfirmasi uninstall Evonexus yang masih berlaku.')
+      }
+      if (['tidak', 'no', 'batal', 'cancel'].includes(response)) {
+        delete user.evonexus.pendingPanelUninstall
+        await saveDB(wdb)
+        return m.reply('❎ Uninstall ability melalui panel dibatalkan.')
+      }
+      const ability = installed.find(item => item.id === pending.abilityId)
+      if (!ability) {
+        delete user.evonexus.pendingPanelUninstall
+        await saveDB(wdb)
+        return m.reply('❌ Ability tersebut sudah tidak terpasang.')
+      }
+      delete user.evonexus.installed[ability.type]
+      user.evonexus.destroyedAbilities ||= []
+      if (!user.evonexus.destroyedAbilities.includes(ability.id)) user.evonexus.destroyedAbilities.push(ability.id)
+      delete user.evonexus.pendingPanelUninstall
+      await saveDB(wdb)
+      return m.reply(`🛠️ *${ability.name}* dilepas dan dihancurkan permanen dari tubuh @${who.split('@')[0]}.`, null, { mentions: [who] })
+    }
+    const key = normalizeEvonexusValue(remaining.join(' '))
+    const ability = installed.find(item =>
+      normalizeEvonexusValue(item.id) === key ||
+      normalizeEvonexusValue(item.name) === key
+    )
+    if (!ability) return m.reply(`❌ Ability tidak terpasang. Lihat dengan *${usedPrefix}rpgpanel evx @tag*.`)
+    user.evonexus ||= {}
+    user.evonexus.pendingPanelUninstall = { abilityId: ability.id, owner: m.sender, createdAt: Date.now() }
+    await saveDB(wdb)
+    return m.reply(
+      `⚠️ Ability *${ability.name}* akan dihancurkan permanen tanpa refund.\n` +
+      `Ketik *${usedPrefix}rpgpanel delevx @tag ${ability.name} ya* untuk konfirmasi atau akhiri dengan *tidak* untuk batal. Berlaku 1 menit.`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
+  if (aksi === 'setevxstat') {
+    const field = normalizeEvonexusValue(remaining[0])
+    const value = remaining.slice(1).join(' ').trim()
+    const fieldMap = {
+      level: 'level',
+      resonance: 'resonance',
+      statpoints: 'statPoints'
+    }
+    if (field === 'rank') {
+      if (!value) return m.reply('❌ Masukkan nama rank Evonexus.')
+      user.evonexus ||= {}
+      user.evonexus.rank = value
+    } else if (field === 'explores') {
+      const amount = Number(value)
+      if (!Number.isInteger(amount) || amount < 0) return m.reply('❌ Eksplorasi harus berupa bilangan bulat nonnegatif.')
+      user.interstellarExplores = amount
+    } else if (fieldMap[field]) {
+      const amount = Number(value)
+      if (!Number.isInteger(amount) || amount < 0) return m.reply('❌ Nilai harus berupa bilangan bulat nonnegatif.')
+      user.evonexus ||= {}
+      user.evonexus[fieldMap[field]] = amount
+    } else {
+      return m.reply(`❌ Field harus rank, level, resonance, statpoints, atau explores.`)
+    }
+    await saveDB(wdb)
+    return m.reply(`✅ Data Evonexus *${field}* @${who.split('@')[0]} berhasil diatur.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'sethome') {
+    const [fieldInput, value] = remaining
+    const field = normalizeEvonexusValue(fieldInput)
+    if (!['level', 'harmony', 'hygiene', 'aesthetics', 'public'].includes(field) || value === undefined) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|public> <nilai>*`)
+    }
+    user.home ||= { level: 0, public: false, access: [], blocked: [], visitors: [], visitCount: 0, likes: [], furniture: [], trophies: [], staff: [] }
+    if (field === 'public') {
+      if (!['on', 'off', 'true', 'false', 'ya', 'tidak'].includes(String(value).toLowerCase())) return m.reply('❌ Nilai public harus on/off.')
+      user.home.public = ['on', 'true', 'ya'].includes(String(value).toLowerCase())
+    } else {
+      const amount = Number(value)
+      if (!Number.isFinite(amount) || amount < 0) return m.reply('❌ Nilai harus berupa angka positif.')
+      if (field === 'level') {
+        if (!Number.isInteger(amount) || amount > HOME_MAX_UPGRADES) return m.reply(`❌ Level rumah harus 0-${HOME_MAX_UPGRADES}.`)
+        user.home.level = amount
+        user.home.security = getHomeLevel(amount).security
+      } else {
+        user.home[field] = clampHomeStat(amount)
+      }
+    }
+    await saveDB(wdb)
+    return m.reply(`✅ Data rumah ${field} @${who.split('@')[0]} berhasil diatur.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'homeadd' || aksi === 'homedel') {
+    const selectedItem = findPanelMallItem(remaining.join(' '))
+    if (!selectedItem || !['furniture', 'koleksi'].includes(selectedItem.category)) return m.reply('❌ Pilih furniture atau koleksi dari katalog Mall.')
+    user.home ||= { level: 0, public: false, access: [], blocked: [], visitors: [], visitCount: 0, likes: [], furniture: [], trophies: [], staff: [] }
+    user.home.furniture ||= []
+    user.home.trophies ||= []
+    user.mallInventory ||= {}
+    const installedItems = selectedItem.category === 'koleksi' ? user.home.trophies : user.home.furniture
+    if (aksi === 'homeadd') {
+      const capacity = selectedItem.category === 'koleksi'
+        ? Infinity
+        : HOME_BASE_FURNITURE_CAPACITY +
+          (Number(user.home.level) || 0) * HOME_UPGRADE_FURNITURE_CAPACITY +
+          (isPremiumAccount(account) ? HOME_PREMIUM_FURNITURE_BONUS : 0)
+      if (installedItems.length >= capacity) return m.reply(`❌ Kapasitas furniture rumah penuh (${capacity}).`)
+      if ((Number(user.mallInventory[selectedItem.id]) || 0) < 1) return m.reply(`❌ @${who.split('@')[0]} tidak memiliki *${selectedItem.name}* di Mall.`, null, { mentions: [who] })
+      user.mallInventory[selectedItem.id]--
+      if (!user.mallInventory[selectedItem.id]) delete user.mallInventory[selectedItem.id]
+      installedItems.push(selectedItem.id)
+    } else {
+      const index = installedItems.indexOf(selectedItem.id)
+      if (index < 0) return m.reply(`❌ *${selectedItem.name}* tidak sedang terpasang di rumah.`)
+      installedItems.splice(index, 1)
+      user.mallInventory[selectedItem.id] = (Number(user.mallInventory[selectedItem.id]) || 0) + 1
+    }
+    await saveDB(wdb)
+    return m.reply(`✅ *${selectedItem.name}* ${aksi === 'homeadd' ? 'dipasang di' : 'dilepas dari'} rumah @${who.split('@')[0]}.`, null, { mentions: [who] })
+  }
 
   if (aksi === 'difficulty' || aksi === 'setdifficulty') {
     const difficulty = normalizeDifficulty(remaining[0])
@@ -831,6 +1081,25 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
   let item = normalizeFishKey(itemInput?.toLowerCase().replace(/ /g, '_'))
 
+  if (['setmallitem', 'addmallitem', 'delmallitem'].includes(aksi)) {
+    const amountIndex = remaining.findIndex(value => /^\d+$/.test(value))
+    if (amountIndex < 0) return m.reply(`❌ Format: *${usedPrefix}rpgpanel ${aksi.replace('mallitem', ' mallitem')} @tag <item> <jumlah>*`)
+    const amount = Number(remaining[amountIndex])
+    const selectedItem = findPanelMallItem(remaining.filter((_, index) => index !== amountIndex).join(' '))
+    if (!selectedItem) return m.reply('❌ Item tidak ditemukan di katalog Mall.')
+    user.mallInventory ||= {}
+    const current = Number(user.mallInventory[selectedItem.id]) || 0
+    const next = aksi === 'setmallitem'
+      ? amount
+      : aksi === 'addmallitem'
+        ? current + amount
+        : Math.max(0, current - amount)
+    if (next > 0) user.mallInventory[selectedItem.id] = next
+    else delete user.mallInventory[selectedItem.id]
+    await saveDB(wdb)
+    return m.reply(`✅ Inventaris Mall @${who.split('@')[0]} — *${selectedItem.name}*: ${next.toLocaleString()}.`, null, { mentions: [who] })
+  }
+
   if (['setcont', 'addcont', 'delcont'].includes(aksi)) {
     if (jumlah < 0 || (aksi !== 'setcont' && jumlah < 1)) return m.reply('❌ Jumlah kontribusi tidak valid')
     const guild = Object.values(wdb.guilds).find(g => g.members?.includes(who))
@@ -868,10 +1137,11 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   }
 
   // 1. SET STAT
-  if(['setmoney','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod','setbotlevel','setbotxp','setbotlimit'].includes(aksi)){
+  if(['setmoney','setstellarcredit','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod','setbotlevel','setbotxp','setbotlimit'].includes(aksi)){
     if(jumlah < 0) return m.reply('❌ Jumlah tidak boleh minus')
 
     if(aksi === 'setmoney') wdb.money[who] = jumlah
+    else if(aksi === 'setstellarcredit') user.stellarCredit = jumlah
     else if(aksi === 'setmaxhp') user.maxDarahBonus = jumlah
     else if (aksi === 'setuserlevel') {
       user.level = jumlah
@@ -897,10 +1167,11 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   }
 
   // 2. ADD STAT
-  if(['addmoney','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod','addbotlevel','addbotxp','addbotlimit'].includes(aksi)){
+  if(['addmoney','addstellarcredit','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod','addbotlevel','addbotxp','addbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
     if(aksi === 'addmoney') wdb.money[who] += jumlah
+    else if(aksi === 'addstellarcredit') user.stellarCredit = (Number(user.stellarCredit) || 0) + jumlah
     else if(aksi === 'adddarah') user.darah = Math.min(user.maxDarah, user.darah + jumlah)
     else if(['addlevel','adduserlevel','addbotlevel'].includes(aksi)){
       account.level = (Number(account.level) || 0) + jumlah
@@ -926,15 +1197,19 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     else user[aksi.replace('add','')] += jumlah
 
     saveDB(wdb)
-    const total = aksi === 'addmoney' ? wdb.money[who] : (aksi === 'addbotlimit' ? account.limit : user[aksi.replace('add','')])
+    const total = aksi === 'addmoney' ? wdb.money[who]
+      : aksi === 'addstellarcredit' ? user.stellarCredit
+        : aksi === 'addbotlimit' ? account.limit
+          : user[aksi.replace('add','')]
     return m.reply(`✅ *TAMBAH ${aksi.toUpperCase().replace('ADD','')}*\n@${who.split('@')[0]} +${jumlah.toLocaleString()}\nTotal: ${total.toLocaleString()}`, null, {mentions: [who]})
   }
 
   // 3. DEL STAT
-  if(['delmoney','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod','delbotlevel','delbotxp','delbotlimit'].includes(aksi)){
+  if(['delmoney','delstellarcredit','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod','delbotlevel','delbotxp','delbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
     if(aksi === 'delmoney') wdb.money[who] = Math.max(0, wdb.money[who] - jumlah)
+    else if(aksi === 'delstellarcredit') user.stellarCredit = Math.max(0, (Number(user.stellarCredit) || 0) - jumlah)
     else if(aksi === 'deldarah') user.darah = Math.max(0, user.darah - jumlah)
     else if(['dellevel','deluserlevel','delbotlevel'].includes(aksi)){
       account.level = Math.max(0, (Number(account.level) || 0) - jumlah)
@@ -957,7 +1232,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     }
 
     saveDB(wdb)
-    const total = aksi === 'delmoney' ? wdb.money[who] : (aksi === 'delbotlimit' ? account.limit : user[aksi.replace('del','')])
+    const total = aksi === 'delmoney' ? wdb.money[who]
+      : aksi === 'delstellarcredit' ? user.stellarCredit
+        : aksi === 'delbotlimit' ? account.limit
+          : user[aksi.replace('del','')]
     return m.reply(`✅ *KURANGI ${aksi.toUpperCase().replace('DEL','')}*\n@${who.split('@')[0]} -${jumlah.toLocaleString()}\nTotal: ${total.toLocaleString()}`, null, {mentions: [who]})
   }
 

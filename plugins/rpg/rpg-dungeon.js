@@ -150,11 +150,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         `♻️ *PHOENIX BANGKIT KEMBALI*\nKamu kembali hidup dengan ${revivedHP}/${maxHP} HP. Dungeon gagal dan cooldown tetap berlaku.`
       )
     }
-    if (tryPremiumProtection(m.sender, 'dungeon')) {
-      user.darah = Math.max(1, user.darah - finalDamage)
+    if (tryPremiumProtection(m.sender, 'death')) {
+      user.darah = 1
       user.lastDungeon = Date.now()
       await saveDB(wdb)
-      return m.reply(`🛡️ *PREMIUM PROTECTION AKTIF*\nKamu selamat dari serangan ${selected.enemy}, tetapi dungeon gagal dan HP tersisa ${user.darah}.`)
+      return m.reply(`🛡️ *PREMIUM PROTECTION KEMATIAN AKTIF*\nKamu selamat dari serangan ${selected.enemy} dengan 1 HP. Dungeon gagal dan proteksi kematian cooldown selama 5 jam.`)
     }
     user.darah = 0
     user.lastDungeon = Date.now()

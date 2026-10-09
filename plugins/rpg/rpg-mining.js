@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
-import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 
 function formatNama(ore) {
@@ -69,7 +69,7 @@ let handler = async (m, { conn }) => {
   }
 
   let pickLvl = user.pickaxe || 0
-  let bonus = Math.min(pickLvl * 1.5, 30)
+  let bonus = Math.min(45, Math.min(pickLvl * 1.5, 30) + adjustAbilityDropChance(user, 0) * 100)
   const jumlahJenisDrop = Math.min(2 + Math.floor(Math.random() * 4), 5)
 
   let hasilTambang = { stone: 0 }

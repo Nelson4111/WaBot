@@ -78,7 +78,8 @@ let handler = async (m, { conn }) => {
   if (gagal) {
     // GAGAL = MATI + PENJARA 2 JAM
     const revivedHP = reviveBloodline(userRPG, Number(userRPG.maxDarah) || 100)
-    if (!revivedHP) userRPG.darah = 0
+    const deathProtected = !revivedHP && tryPremiumProtection(m.sender, 'death')
+    if (!revivedHP) userRPG.darah = deathProtected ? 1 : 0
     wdb.penjara = wdb.penjara || []
     userRPG.penjara = Date.now()
     userRPG.lamaPenjara = 7200000 // 2 jam
@@ -90,7 +91,9 @@ let handler = async (m, { conn }) => {
     userRPG.riwayat.unshift(
       revivedHP
         ? `♻️ Phoenix bangkit setelah gagal begal @${who.split('@')[0]}`
-        : `💀 Mati saat begal @${who.split('@')[0]}`
+        : deathProtected
+          ? `🛡️ Premium Protection mencegah kematian saat begal @${who.split('@')[0]}`
+          : `💀 Mati saat begal @${who.split('@')[0]}`
     )
 
     saveDB(wdb)
@@ -99,7 +102,9 @@ txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
 txt += revivedHP
   ? `│ ♻️ Bloodline Phoenix membangkitkanmu dengan ${revivedHP} HP.\n`
-  : `│ ⚰️ Kamu tertembak dan mati.\n`
+  : deathProtected
+    ? `│ 🛡️ Premium Protection mencegah kematian; tersisa 1 HP.\n`
+    : `│ ⚰️ Kamu tertembak dan mati.\n`
 txt += userRPG.sel
   ? `│ 🚔 Penjara: *SEL ${userRPG.sel}* • *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
   : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`

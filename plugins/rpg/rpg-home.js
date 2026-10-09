@@ -18,14 +18,20 @@ import {
   HOME_PREMIUM_UPGRADE_DISCOUNT,
   HOME_UPGRADE_CAPACITY,
   HOME_PREMIUM_STAFF_DISCOUNT,
+  HOME_STAFF_COOLDOWN,
+  HOME_STAFF_DEFAULT_CONTRACT_DAYS,
+  HOME_STAFF_MAX_CONTRACT_DAYS,
+  HOME_STAFF_SALARY_PERIOD_DAYS,
   HOME_STAFF,
-  HOME_STAFF_CONTRACT_DAYS,
   HOME_STORIES,
   HOME_UPGRADE_FURNITURE_CAPACITY,
   clampHomeStat,
   getHomeComfort,
-  getHomeLevel
+  getHomeLevel,
+  getHomeStaffContractEnd,
+  getHomeStaffCooldownUntil
 } from '../../lib/rpgHomeData.js'
+import { getJakartaDate } from '../../lib/userLimit.js'
 import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
 import { hargaBeli, masakanResep, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
@@ -114,17 +120,28 @@ function getStaffRecord(home, name) {
   return home.staff.find(staff => normalize(staff.name) === normalize(name))
 }
 
-function getStaffCost(staff, premium) {
-  const price = staff.hireCost + staff.salary
+function getStaffCost(staff, premium, durationDays = HOME_STAFF_DEFAULT_CONTRACT_DAYS) {
+  const salary = Math.ceil(staff.salary * durationDays / HOME_STAFF_SALARY_PERIOD_DAYS)
+  const price = staff.hireCost + salary
   return Math.floor(price * (premium ? 1 - HOME_PREMIUM_STAFF_DISCOUNT : 1))
 }
 
 function formatHomeDuration(timestamp) {
   if (!timestamp) return 'Belum ada kontrak'
-  const remaining = timestamp - Date.now()
+  const now = Date.now()
+  const remaining = timestamp - now
   if (remaining <= 0) return 'Kontrak habis'
-  const days = Math.ceil(remaining / 86400000)
+  const today = Date.parse(`${getJakartaDate(now)}T00:00:00+07:00`)
+  const endDay = Date.parse(`${getJakartaDate(timestamp)}T00:00:00+07:00`)
+  const days = Math.max(1, Math.round((endDay - today) / 86400000))
   return `${days} hari lagi`
+}
+
+function formatHomeStaffCooldown(remaining) {
+  const totalMinutes = Math.ceil(Math.max(0, remaining) / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${hours} jam ${minutes} menit`
 }
 
 function getHomePopularity(home, comfort, members, collectionCount) {
@@ -328,17 +345,21 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
 
   if (pending.type === 'hire' || pending.type === 'renew') {
     const staff = HOME_STAFF[pending.staff]
-    if (!staff) {
+    const durationDays = Number(pending.durationDays)
+    if (!staff ||
+        !Number.isSafeInteger(durationDays) ||
+        durationDays < 1 ||
+        durationDays > HOME_STAFF_MAX_CONTRACT_DAYS) {
       await saveDB(db)
       return m.reply(
         `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
-        `│ ❌ *DATA STAFF TIDAK DITEMUKAN*\n` +
+        `│ ❌ *DATA KONTRAK TIDAK VALID*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Tidak ada biaya yang dipotong.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
-    const price = getStaffCost(staff, premium)
+    const price = getStaffCost(staff, premium, durationDays)
     if (price !== Number(pending.cost) || wallet() < price) {
       await saveDB(db)
       return m.reply(
@@ -358,7 +379,19 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
         `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
         `│ ⚠️ *STAFF MASIH AKTIF*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Gunakan .home staff renew untuk memperpanjang kontrak.\n\n` +
+        `> ↳ Gunakan ${prefix}home staff renew ${pending.staff} [durasi] untuk memperpanjang kontrak.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    const cooldownUntil = getHomeStaffCooldownUntil(record)
+    if (record && record.expiresAt <= Date.now() && cooldownUntil > Date.now()) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 ⏳ COOLDOWN STAFF 」❏\n` +
+        `│ ⏳ *STAFF MASIH COOLDOWN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ ${staff.name} bisa disewa lagi dalam *${formatHomeStaffCooldown(cooldownUntil - Date.now())}*.\n` +
+        `> ↳ Gunakan *${prefix}home staff cd* untuk melihat cooldown.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -368,7 +401,13 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       home.staff.push(record)
     }
     record.key = pending.staff
-    record.expiresAt = Math.max(Date.now(), Number(record.expiresAt) || 0) + HOME_STAFF_CONTRACT_DAYS * 86400000
+    record.hiredAt = Date.now()
+    record.expiresAt = getHomeStaffContractEnd(
+      Math.max(Date.now(), Number(record.expiresAt) || 0),
+      durationDays
+    )
+    record.contractDays = durationDays
+    delete record.cooldownUntil
     record.paid = (Number(record.paid) || 0) + price
     await saveDB(db)
     return m.reply(
@@ -378,7 +417,7 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       `👤 *INFORMASI STAFF*\n` +
       `> ↳ Staff: ${staff.emoji} ${staff.name}\n` +
       `> ↳ Biaya: ${money(price)}\n` +
-      `> ↳ Durasi: ${HOME_STAFF_CONTRACT_DAYS} hari\n` +
+      `> ↳ Durasi: ${durationDays} hari\n` +
       `> ↳ Efek: ${staff.effect}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -432,14 +471,25 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       `╰─━━━━━━━━━━━━━━─`
     )
   }
-  home.staff = home.staff.filter(staff => staff !== record)
+  if (record.expiresAt <= Date.now()) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ⚠️ *KONTRAK SUDAH TIDAK AKTIF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Staff ini sudah selesai kontrak dan sedang menjalani cooldown.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  record.expiresAt = Date.now()
+  record.cooldownUntil = record.expiresAt + HOME_STAFF_COOLDOWN
   await saveDB(db)
   return m.reply(
     `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
     `│ ✅ *KONTRAK STAFF DIHENTIKAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Staff: ${record.name}\n` +
-    `> ↳ Kontrak berhasil dihentikan.\n\n` +
+    `> ↳ Kontrak dihentikan. Staff bisa disewa lagi setelah cooldown 2 jam.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -455,19 +505,42 @@ if (pending.type === 'hireAll') {
       `─━━━━━━━━━━━━━━─`
     )
   }
-  const missing = Object.entries(HOME_STAFF).filter(([, staff]) =>
-    !getStaffRecord(home, staff.name) || getStaffRecord(home, staff.name).expiresAt <= Date.now()
-  )
-  const total = missing.reduce((sum, [, staff]) => sum + getStaffCost(staff, premium), 0)
-  if (total !== Number(pending.cost) || wallet() < total) {
+  const durationDays = Number(pending.durationDays)
+  const requestedKeys = Array.isArray(pending.staffKeys) ? pending.staffKeys : []
+  if (!Number.isSafeInteger(durationDays) ||
+      durationDays < 1 ||
+      durationDays > HOME_STAFF_MAX_CONTRACT_DAYS ||
+      !requestedKeys.length) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ❌ *DATA KONTRAK TIDAK VALID*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Jalankan ulang perintah hire all.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  const missing = requestedKeys
+    .filter(key => HOME_STAFF[key])
+    .map(key => [key, HOME_STAFF[key]])
+    .filter(([, staff]) => {
+      const record = getStaffRecord(home, staff.name)
+      return (!record || record.expiresAt <= Date.now()) &&
+        getHomeStaffCooldownUntil(record) <= Date.now()
+    })
+  const total = missing.reduce((sum, [, staff]) =>
+    sum + getStaffCost(staff, premium, durationDays), 0)
+  if (missing.length !== requestedKeys.length ||
+      total !== Number(pending.cost) ||
+      wallet() < total) {
     await saveDB(db)
     return m.reply(
       `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
       `│ ⚠️ *PEMBAYARAN DIBATALKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Biaya atau saldo berubah.\n` +
+      `> ↳ Status staff, biaya, atau saldo berubah.\n` +
       `> ↳ Tidak ada pembayaran.\n` +
-      `> ↳ Jalankan kembali untuk melihat total terbaru: ${money(total)}.\n\n` +
+      `> ↳ Jalankan kembali perintah untuk melihat total terbaru: ${money(total)}.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -476,16 +549,23 @@ if (pending.type === 'hireAll') {
     const record = getStaffRecord(home, staff.name) || { name: staff.name, key, hiredAt: Date.now(), expiresAt: 0, paid: 0 }
     if (!home.staff.includes(record)) home.staff.push(record)
     record.key = key
-    record.expiresAt = Math.max(Date.now(), Number(record.expiresAt) || 0) + HOME_STAFF_CONTRACT_DAYS * 86400000
-    record.paid = (Number(record.paid) || 0) + getStaffCost(staff, premium)
+    record.hiredAt = Date.now()
+    record.expiresAt = getHomeStaffContractEnd(
+      Math.max(Date.now(), Number(record.expiresAt) || 0),
+      durationDays
+    )
+    record.contractDays = durationDays
+    delete record.cooldownUntil
+    record.paid = (Number(record.paid) || 0) + getStaffCost(staff, premium, durationDays)
   }
   await saveDB(db)
   return m.reply(
     `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
-    `│ ✅ *SEMUA STAFF BERHASIL DIAKTIFKAN*\n` +
+    `│ ✅ *STAFF TERSEDIA BERHASIL DIAKTIFKAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `👤 *INFORMASI KONTRAK*\n` +
-    `> ↳ Durasi: ${HOME_STAFF_CONTRACT_DAYS} hari\n` +
+    `> ↳ Staff direkrut: ${missing.length}\n` +
+    `> ↳ Durasi: ${durationDays} hari\n` +
     `> ↳ Total biaya: ${money(total)}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
@@ -575,7 +655,7 @@ if (mode === 'info') {
     `> ↳ Status: ${home.public ? 'Publik' : 'Pribadi'}\n` +
     `> ↳ Tipe: *${getHomeLevel(home.level).name}*\n` +
     `> ↳ Level: ${home.level}/${HOME_MAX_UPGRADES}\n` +
-    `> ↳ Furniture dimiliki: ${homeComfort.furnitureCount}\n` +
+    `> ↳ Barang untuk Comfort: ${homeComfort.furnitureCount}\n` +
     `> ↳ Kenyamanan: *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
     `> ↳ Kapasitas pasang: ${home.furniture.length}/${capacity}\n` +
     `> ↳ Pajangan koleksi: ${home.trophies.length}\n\n` +
@@ -606,9 +686,11 @@ if (mode === 'guide') {
     `╭─❏「 📖 HOME GUIDE 」❏\n` +
     `│ 📖 *PANDUAN HOME*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Atur privasi rumah, pasang furniture dari inventori, undang teman, dan kunjungi rumah pemain lain.\n` +
+    `> ↳ Atur privasi rumah, pasang barang dari inventori, undang teman, dan kunjungi rumah pemain lain.\n` +
+    `> ↳ Semua barang Mall selain fashion dapat dipasang/dilepas dengan *${prefix}home pasang/lepas <item>*.\n` +
+    `> ↳ Koleksi juga dapat dipajang/disimpan dengan *${prefix}home pajang/simpan <item>*.\n` +
     `> ↳ Furniture bisa dibeli melalui *${prefix}mall kategori furniture*.\n` +
-    `> ↳ Setiap 5 furniture yang dimiliki atau setiap upgrade rumah menaikkan 1 level kenyamanan.\n` +
+    `> ↳ Setiap 5 furniture di inventori/barang yang terpasang atau setiap upgrade menaikkan 1 level kenyamanan.\n` +
     `> ↳ Upgrade rumah sampai level ${HOME_MAX_UPGRADES}; setiap level memiliki tipe dan kapasitas penghuni lebih besar.\n` +
     `> ↳ Penghuni inti (pasangan menikah dan pet) tidak mengurangi kapasitas tamu.\n` +
     `> ↳ Premium mendapat ${HOME_PREMIUM_CAPACITY_BONUS} kapasitas ekstra, diskon upgrade 20%, dan akses staff hire all.\n` +
@@ -624,45 +706,51 @@ if (mode === 'command') {
     `╭─❏「 📋 HOME COMMAND 」❏\n` +
     `│ 📋 *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `🏠 *RUMAH*\n` +
-    `> ↳ ${prefix}home info — info rumah dan level kenyamanan\n` +
-    `> ↳ ${prefix}home furniture — furniture terpasang\n` +
-    `> ↳ ${prefix}home pasang <item> — pasang furniture\n` +
-    `> ↳ ${prefix}home lepas <item> — lepas furniture\n` +
-    `> ↳ ${prefix}home pajangan — lihat pajangan koleksi/lelang\n` +
-    `> ↳ ${prefix}home pajang/simpan <item> — pajang atau simpan koleksi\n` +
-    `> ↳ ${prefix}home upgrade — tambah kapasitas\n` +
-    `> ↳ ${prefix}home stats — statistik rumah\n` +
-    `> ↳ ${prefix}home act — aktivitas acak (cooldown 5 menit, harus berada di rumah)\n` +
-    `> ↳ ${prefix}home staff — panduan staff rumah\n` +
-    `> ↳ ${prefix}home public — atur rumah menjadi publik\n` +
-    `> ↳ ${prefix}home private — atur rumah menjadi pribadi\n\n` +
-    `🚪 *AKSES RUMAH*\n` +
+    `🏠 *RUMAH & BARANG*\n` +
+    `> ↳ ${prefix}home guide — panduan rumah\n` +
+    `> ↳ ${prefix}home command — daftar semua command\n` +
+    `> ↳ ${prefix}home info — info rumah dan status\n` +
+    `> ↳ ${prefix}home furniture — lihat barang yang terpasang\n` +
+    `> ↳ ${prefix}home pasang/lepas <item> — pasang/lepas barang Mall selain fashion\n` +
+    `> ↳ ${prefix}home pajangan — lihat koleksi yang dipajang\n` +
+    `> ↳ ${prefix}home pajang/simpan <item> — pajang/simpan koleksi (alternatif pasang/lepas)\n` +
+    `> ↳ ${prefix}home <kategori> list — lihat barang kategori yang dimiliki\n` +
+    `> ↳ ${prefix}home upgrade [list/guide] — upgrade atau lihat tipe/biaya\n` +
+    `> ↳ ${prefix}home stats [guide] — statistik dan panduan status rumah\n` +
     `> ↳ ${prefix}home masuk/pulang — masuk atau pulang ke rumah sendiri\n` +
     `> ↳ ${prefix}home keluar — keluar rumah\n` +
+    `> ↳ ${prefix}home public/private — atur privasi rumah\n\n` +
+    `🍽️ *AKTIVITAS & PERAWATAN*\n` +
+    `> ↳ ${prefix}home act — aktivitas rumah (alias: activity/aktivitas; cooldown 5 menit)\n` +
+    `> ↳ ${prefix}home eat <menu> [jumlah] — makan dari kulkas (alias: makan); Chef meminta konfirmasi\n` +
+    `> ↳ ${prefix}home clean — bersihkan rumah\n` +
+    `> ↳ ${prefix}home childcare — rawat anak\n` +
+    `> ↳ ${prefix}home petcare — rawat pet\n` +
+    `> ↳ ${prefix}home cd — lihat cooldown aktivitas\n\n` +
+    `🏡 *STAFF RUMAH*\n` +
+    `> ↳ ${prefix}home staff [guide] — panduan staff\n` +
+    `> ↳ ${prefix}home staff list — daftar staff dan status (alias: data)\n` +
+    `> ↳ ${prefix}home staff info <nama> — detail staff\n` +
+    `> ↳ ${prefix}home staff hire <nama|all> [durasi 1-7] — sewa staff (all khusus Premium)\n` +
+    `> ↳ ${prefix}home staff renew <nama> [durasi 1-7] — perpanjang kontrak\n` +
+    `> ↳ ${prefix}home staff fire <nama> — berhentikan staff\n` +
+    `> ↳ ${prefix}home staff cd — lihat cooldown staff\n` +
+    `> ↳ ${prefix}home staff salary/contract — lihat gaji atau kontrak\n\n` +
+    `🚪 *AKSES & INTERAKSI*\n` +
     `> ↳ ${prefix}home invite @user — undang pemain\n` +
     `> ↳ ${prefix}home kick @user — cabut akses pemain\n` +
     `> ↳ ${prefix}home visit @user — kunjungi rumah\n` +
     `> ↳ ${prefix}home favorite @user — simpan rumah favorit\n\n` +
-    `🧹 *PERAWATAN & STAFF*\n` +
-    `> ↳ ${prefix}home clean\n` +
-    `> ↳ ${prefix}home childcare\n` +
-    `> ↳ ${prefix}home petcare\n` +
-    `> ↳ ${prefix}home staff list\n` +
-    `> ↳ ${prefix}home staff info\n` +
-    `> ↳ ${prefix}home staff hire\n` +
-    `> ↳ ${prefix}home staff fire\n` +
-    `> ↳ ${prefix}home staff renew\n` +
-    `> ↳ ${prefix}home staff salary\n` +
-    `> ↳ ${prefix}home staff contract\n` +
-    `> ↳ ${prefix}home cd — lihat cooldown aktivitas rumah\n\n` +
-    `👥 *INTERAKSI*\n` +
     `> ↳ ${prefix}home tamu — lihat tamu terbaru\n` +
     `> ↳ ${prefix}home like — beri like pada rumah yang dikunjungi\n\n` +
     `🏘️ *JELAJAH RUMAH*\n` +
     `> ↳ ${prefix}home list — lihat rumah yang dapat dikunjungi\n` +
     `> ↳ ${prefix}home explore — lihat rumah publik\n` +
     `> ↳ ${prefix}home top — lihat rumah terpopuler\n\n` +
+    `✅ *KONFIRMASI*\n` +
+    `> ↳ ${prefix}home yes/no — lanjutkan atau batalkan aksi yang meminta konfirmasi\n\n` +
+    `📦 Kategori barang: ${Object.keys(MALL_CATEGORIES).join(', ')} (fashion tidak dapat dipasang).\n` +
+    `> ↳ Alias rumah: ${prefix}rumah\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -707,7 +795,7 @@ if (mode === 'stats') {
       `│ 📈 *CARA MENINGKATKAN STATUS RUMAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `🛋️ *COMFORT*\n` +
-      `> ↳ Miliki atau pasang furniture, lalu upgrade rumah.\n\n` +
+      `> ↳ Miliki furniture atau pasang barang non-fashion, lalu upgrade rumah.\n\n` +
       `💖 *HARMONY*\n` +
       `> ↳ Lakukan *${prefix}home eat*.\n` +
       `> ↳ Lakukan *${prefix}home act*.\n` +
@@ -751,15 +839,16 @@ if (mode === 'furniture') {
   const homeComfort = comfort()
 
   return m.reply(
-    `╭─❏「 🛋️ FURNITURE RUMAH 」❏\n` +
-    `│ 🛋️ *FURNITURE TERPASANG*\n` +
+    `╭─❏「 🏠 BARANG RUMAH 」❏\n` +
+    `│ 🏠 *BARANG TERPASANG*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Kapasitas : ${placed.length}/${capacity}\n` +
     `> ↳ Kenyamanan : *Level ${homeComfort.level}* (${homeComfort.points} poin)\n\n` +
-    `${placed.length ? placed.map(item => `🛋️ *${displayName(item)}*`).join('\n') : '> ↳ Belum ada furniture terpasang.'}\n\n` +
-    `📌 *FURNITURE*\n` +
+    `${placed.length ? placed.map(item => `• *${displayName(item)}*`).join('\n') : '> ↳ Belum ada barang terpasang.'}\n\n` +
+    `📌 *BARANG MALL*\n` +
     `> ↳ Pasang : ${prefix}home pasang <item>\n` +
-    `> ↳ Lepas : ${prefix}home lepas <item>\n\n` +
+    `> ↳ Lepas : ${prefix}home lepas <item>\n` +
+    `> ↳ Semua kategori dapat dipasang kecuali fashion.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -772,8 +861,9 @@ if (mode === 'pajangan') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${trophies.length ? trophies.map(item => `> ${displayName(item)}`).join('\n') : '> Belum ada koleksi yang dipajang.'}\n\n` +
     `> Pajangan rumah tidak dapat dijarah.\n` +
-    `> ${prefix}home pajang <item> — pajang dari koleksi\n` +
-    `> ${prefix}home simpan <item> — kembalikan ke koleksi\n\n` +
+    `> ${prefix}home pasang <item> — pasang koleksi/barang Mall non-fashion\n` +
+    `> ${prefix}home lepas <item> — lepas dan kembalikan ke inventori\n` +
+    `> ${prefix}home pajang/simpan <item> — alias khusus koleksi\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -798,37 +888,45 @@ if (mode === 'pajang' || mode === 'simpan') {
 }
 
 if (mode === 'pasang' || mode === 'lepas') {
-  const item = findItem(tokens.slice(1).join(' '), 'furniture')
+  const item = findItem(tokens.slice(1).join(' '))
+  const isCollectible = item && collectionItems.some(candidate => candidate.id === item.id)
 
-  if (!item) {
+  if (!item || item.category === 'fashion') {
     return m.reply(
-      `╭─❏「 🛋️ FURNITURE 」❏\n` +
-      `│ ❌ *FURNITURE TIDAK DITEMUKAN*\n` +
+      `╭─❏「 🏠 BARANG RUMAH 」❏\n` +
+      `│ ❌ *BARANG TIDAK DAPAT DIPASANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Lihat daftar furniture melalui *${prefix}mall furniture list*.\n\n` +
+      `> ↳ Barang tidak ditemukan atau termasuk kategori fashion.\n` +
+      `> ↳ Fashion dapat dipakai/dilepas melalui *${prefix}wardrobe*.\n` +
+      `> ↳ Lihat daftar barang melalui *${prefix}mall kategori*.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  const index = home.furniture.indexOf(item.id)
+  const installedItems = isCollectible ? home.trophies : home.furniture
+  const index = installedItems.indexOf(item.id)
 
   if (mode === 'pasang') {
-    if (index !== -1) {
+    if (!isCollectible && index !== -1) {
       return m.reply(
-        `╭─❏「 🛋️ PASANG FURNITURE 」❏\n` +
+        `╭─❏「 🏠 PASANG BARANG 」❏\n` +
         `│ ⚠️ *SUDAH TERPASANG*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Furniture itu sudah terpasang di rumah.\n\n` +
+        `> ↳ Barang itu sudah terpasang di rumah.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
-    if (home.furniture.length >= capacity) {
+    if (isCollectible && home.trophies.length >= 20) {
+      return m.reply('❌ Pajangan rumah sudah mencapai batas 20 item.')
+    }
+
+    if (!isCollectible && home.furniture.length >= capacity) {
       return m.reply(
-        `╭─❏「 🛋️ PASANG FURNITURE 」❏\n` +
+        `╭─❏「 🏠 PASANG BARANG 」❏\n` +
         `│ ❌ *KAPASITAS PENUH*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Kapasitas rumah : ${capacity} furniture.\n` +
+        `> ↳ Kapasitas rumah : ${capacity} barang.\n` +
         `> ↳ Upgrade rumah atau gunakan Premium untuk kapasitas ekstra.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
@@ -836,8 +934,8 @@ if (mode === 'pasang' || mode === 'lepas') {
 
     if ((Number(furnitureInventory[item.id]) || 0) < 1) {
       return m.reply(
-        `╭─❏「 🛋️ PASANG FURNITURE 」❏\n` +
-        `│ ❌ *FURNITURE TIDAK DIMILIKI*\n` +
+        `╭─❏「 🏠 PASANG BARANG 」❏\n` +
+        `│ ❌ *BARANG TIDAK DIMILIKI*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Kamu belum memiliki ${item.name}.\n\n` +
         `─━━━━━━━━━━━━━━─`
@@ -846,30 +944,30 @@ if (mode === 'pasang' || mode === 'lepas') {
 
     furnitureInventory[item.id]--
     if (!furnitureInventory[item.id]) delete furnitureInventory[item.id]
-    home.furniture.push(item.id)
+    installedItems.push(item.id)
   } else {
     if (index === -1) {
       return m.reply(
-        `╭─❏「 🛋️ LEPAS FURNITURE 」❏\n` +
-        `│ ❌ *FURNITURE TIDAK TERPASANG*\n` +
+        `╭─❏「 🏠 LEPAS BARANG 」❏\n` +
+        `│ ❌ *BARANG TIDAK TERPASANG*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Furniture itu tidak sedang terpasang di rumah.\n\n` +
+        `> ↳ Barang itu tidak sedang terpasang di rumah.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
-    home.furniture.splice(index, 1)
+    installedItems.splice(index, 1)
     furnitureInventory[item.id] = (Number(furnitureInventory[item.id]) || 0) + 1
   }
 
   await saveDB(db)
 
   return m.reply(
-    `╭─❏「 🛋️ FURNITURE RUMAH 」❏\n` +
-    `│ ✅ *${mode === 'pasang' ? 'FURNITURE DIPASANG' : 'FURNITURE DILEPAS'}*\n` +
+    `╭─❏「 🏠 BARANG RUMAH 」❏\n` +
+    `│ ✅ *${mode === 'pasang' ? 'BARANG DIPASANG' : 'BARANG DILEPAS'}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Barang : ${displayName(item)}\n` +
-    `> ↳ ${mode === 'pasang' ? 'Furniture berhasil dipasang di rumah.' : 'Furniture dikembalikan ke inventori.'}\n\n` +
+    `> ↳ ${mode === 'pasang' ? 'Barang berhasil dipasang di rumah.' : 'Barang dikembalikan ke inventori.'}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -938,22 +1036,45 @@ if (mode === 'staff') {
       `│ 🏡 *PANDUAN STAFF RUMAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Sewa staff untuk membantu merawat rumah, anak, pet, kesehatan, dan keamanan.\n` +
-      `> ↳ Kontrak berlaku ${HOME_STAFF_CONTRACT_DAYS} hari dan biaya dibayar di muka. Hire dan renew selalu meminta konfirmasi.\n` +
+      `> ↳ Pilih durasi kontrak 1–${HOME_STAFF_MAX_CONTRACT_DAYS} hari (default 1 hari); hari dihitung mengikuti pergantian tanggal WIB, bukan 24 jam.\n` +
+      `> ↳ Biaya dibayar di muka. Staff yang kontraknya selesai atau dipecat cooldown 2 jam.\n` +
       `> ↳ Tanpa Housekeeper gunakan *${prefix}home clean*.\n` +
       `> ↳ Tanpa Babysitter gunakan *${prefix}home childcare*.\n` +
       `> ↳ Tanpa Pet Sitter gunakan *${prefix}home petcare*.\n` +
       `> ↳ Private Chef menyajikan menu restoran mahal saat *${prefix}home eat*.\n` +
-      `> ↳ Premium dapat memakai *${prefix}home staff hire all*.\n\n` +
+      `> ↳ Premium dapat memakai *${prefix}home staff hire all <durasi>*.\n\n` +
       `📌 *PERINTAH*\n` +
       `> ↳ ${prefix}home staff list\n` +
       `> ↳ ${prefix}home staff info <nama>\n` +
-      `> ↳ ${prefix}home staff hire <nama>\n` +
+      `> ↳ ${prefix}home staff hire <nama> [durasi]\n` +
+      `> ↳ ${prefix}home staff hire all <durasi> (Premium)\n` +
       `> ↳ ${prefix}home staff fire <nama>\n` +
-      `> ↳ ${prefix}home staff renew <nama>\n` +
+      `> ↳ ${prefix}home staff renew <nama> [durasi]\n` +
+      `> ↳ ${prefix}home staff cd\n` +
       `> ↳ ${prefix}home staff salary\n` +
       `> ↳ ${prefix}home staff contract\n\n` +
       `👥 *DAFTAR NAMA STAFF*\n` +
       `> ↳ ${prettyNames.join(', ')}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'cd') {
+    const now = Date.now()
+    const cooling = home.staff
+      .map(record => ({
+        record,
+        cooldownUntil: getHomeStaffCooldownUntil(record, now)
+      }))
+      .filter(({ cooldownUntil }) => cooldownUntil > now)
+
+    return m.reply(
+      `╭─❏「 ⏳ COOLDOWN STAFF 」❏\n` +
+      `│ ⏳ *COOLDOWN STAFF RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${cooling.map(({ record, cooldownUntil }) =>
+        `> ↳ ${record.name}: bisa disewa lagi dalam *${formatHomeStaffCooldown(cooldownUntil - now)}*`
+      ).join('\n') || '> ↳ Tidak ada staff yang sedang cooldown.'}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -965,12 +1086,14 @@ if (mode === 'staff') {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${Object.entries(HOME_STAFF).map(([key, staff]) => {
         const record = getStaffRecord(home, staff.name)
-        const active = record && record.expiresAt > Date.now()
+        const now = Date.now()
+        const active = record && record.expiresAt > now
+        const cooldownUntil = getHomeStaffCooldownUntil(record, now)
         return `${staff.emoji} *${staff.name}*\n` +
-          `> ↳ Status: ${active ? '✅ Aktif, ' + formatHomeDuration(record.expiresAt) : '❌ Belum disewa'}\n` +
+          `> ↳ Status: ${active ? '✅ Aktif, ' + formatHomeDuration(record.expiresAt) : cooldownUntil > now ? `⏳ Cooldown ${formatHomeStaffCooldown(cooldownUntil - now)}` : '❌ Belum disewa'}\n` +
           `> ↳ Tugas: ${staff.effect}\n` +
-          `> ↳ Hire: ${money(getStaffCost(staff, premium))} (termasuk kontrak ${HOME_STAFF_CONTRACT_DAYS} hari)\n` +
-          `> ↳ Perintah: ${prefix}home staff hire ${key}`
+          `> ↳ Hire 1 hari: ${money(getStaffCost(staff, premium))}\n` +
+          `> ↳ Perintah: ${prefix}home staff hire ${key} [durasi]`
       }).join('\n\n')}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -999,14 +1122,34 @@ if (mode === 'staff') {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `📋 *INFORMASI STAFF*\n` +
       `> ↳ Tugas: ${staff.effect}\n` +
-      `> ↳ Biaya kontrak ${HOME_STAFF_CONTRACT_DAYS} hari: ${money(getStaffCost(staff, premium))}\n` +
-      `> ↳ Status: ${record && record.expiresAt > Date.now() ? `Aktif (${formatHomeDuration(record.expiresAt)})` : 'Belum disewa / kontrak habis'}\n\n` +
+      `> ↳ Biaya kontrak 1 hari: ${money(getStaffCost(staff, premium))}\n` +
+      `> ↳ Status: ${record && record.expiresAt > Date.now() ? `Aktif (${formatHomeDuration(record.expiresAt)})` : getHomeStaffCooldownUntil(record) > Date.now() ? `Cooldown (${formatHomeStaffCooldown(getHomeStaffCooldownUntil(record) - Date.now())})` : 'Belum disewa / kontrak habis'}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
   if (action === 'hire' || action === 'renew') {
-    const key = normalize(tokens.slice(2).join(' '))
+    const hireArgs = tokens.slice(2)
+    const durationToken = hireArgs[hireArgs.length - 1] || ''
+    const hasDuration = /^-?\d+(?:\.\d+)?$/.test(durationToken)
+    const durationDays = hasDuration
+      ? Number(durationToken)
+      : HOME_STAFF_DEFAULT_CONTRACT_DAYS
+    const nameArgs = hasDuration ? hireArgs.slice(0, -1) : hireArgs
+    const key = normalize(nameArgs.join(' '))
+
+    if (!Number.isSafeInteger(durationDays) ||
+        durationDays < 1 ||
+        durationDays > HOME_STAFF_MAX_CONTRACT_DAYS) {
+      return m.reply(
+        `╭─❏「 🏡 HOME STAFF 」❏\n` +
+        `│ ❌ *DURASI KONTRAK TIDAK VALID*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Durasi kontrak harus 1–${HOME_STAFF_MAX_CONTRACT_DAYS} hari.\n` +
+        `> ↳ Contoh: ${prefix}home staff hire all 3\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
 
     if (key === 'all' && action === 'hire') {
       if (!premium) {
@@ -1020,25 +1163,37 @@ if (mode === 'staff') {
         )
       }
 
-      const missing = Object.entries(HOME_STAFF).filter(([, staff]) =>
-        !getStaffRecord(home, staff.name) || getStaffRecord(home, staff.name).expiresAt <= Date.now()
-      )
+      const now = Date.now()
+      const missing = Object.entries(HOME_STAFF).filter(([, staff]) => {
+        const record = getStaffRecord(home, staff.name)
+        return (!record || record.expiresAt <= now) &&
+          getHomeStaffCooldownUntil(record, now) <= now
+      })
+      const cooling = Object.values(HOME_STAFF).filter(staff => {
+        const record = getStaffRecord(home, staff.name)
+        return record && record.expiresAt <= now &&
+          getHomeStaffCooldownUntil(record, now) > now
+      })
 
       if (!missing.length) {
         return m.reply(
           `╭─❏「 🏡 HOME STAFF 」❏\n` +
-          `│ ✅ *SEMUA STAFF AKTIF*\n` +
+          `│ ${cooling.length ? '⏳ *STAFF SEDANG COOLDOWN*' : '✅ *SEMUA STAFF AKTIF*'}\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ↳ Semua staff sudah memiliki kontrak aktif.\n\n` +
+          `> ↳ Tidak ada staff yang bisa direkrut saat ini.\n` +
+          `${cooling.length ? `> ↳ Lihat waktu cooldown: ${prefix}home staff cd\n\n` : '\n'}` +
           `─━━━━━━━━━━━━━━─`
         )
       }
 
-      const total = missing.reduce((sum, [, staff]) => sum + getStaffCost(staff, premium), 0)
+      const total = missing.reduce((sum, [, staff]) =>
+        sum + getStaffCost(staff, premium, durationDays), 0)
+      const staffKeys = missing.map(([staffKey]) => staffKey)
 
       return requestConfirmation(
-        { type: 'hireAll', cost: total },
-        `> ↳ Rekrut ${missing.length} staff untuk ${HOME_STAFF_CONTRACT_DAYS} hari.\n` +
+        { type: 'hireAll', staffKeys, durationDays, cost: total },
+        `> ↳ Rekrut ${missing.length} staff untuk ${durationDays} hari.\n` +
+        `${cooling.length ? `> ↳ ${cooling.length} staff yang cooldown akan dilewati.\n` : ''}` +
         `> ↳ Total biaya: *${money(total)}* (diskon Premium termasuk).`
       )
     }
@@ -1051,7 +1206,7 @@ if (mode === 'staff') {
         `│ ❌ *NAMA STAFF TIDAK VALID*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Pilihan: ${prettyNames.join(', ')}.\n` +
-        `> ↳ Format: ${prefix}home staff ${action} <nama>\n\n` +
+        `> ↳ Format: ${prefix}home staff ${action} <nama> [durasi 1-${HOME_STAFF_MAX_CONTRACT_DAYS}]\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -1065,7 +1220,7 @@ if (mode === 'staff') {
         `│ ⚠️ *STAFF MASIH AKTIF*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ ${staff.name} masih aktif.\n` +
-        `> ↳ Gunakan *${prefix}home staff renew ${staffKey}* untuk memperpanjang kontrak.\n\n` +
+        `> ↳ Gunakan *${prefix}home staff renew ${staffKey} [durasi]* untuk memperpanjang kontrak.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -1075,12 +1230,24 @@ if (mode === 'staff') {
         `╭─❏「 🏡 HOME STAFF 」❏\n` +
         `│ ❌ *STAFF BELUM PERNAH DISEWA*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Gunakan *${prefix}home staff hire ${staffKey}* untuk menyewa staff.\n\n` +
+        `> ↳ Gunakan *${prefix}home staff hire ${staffKey} [durasi]* untuk menyewa staff.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
-    const price = getStaffCost(staff, premium)
+    const cooldownUntil = getHomeStaffCooldownUntil(record)
+    if (record && record.expiresAt <= Date.now() && cooldownUntil > Date.now()) {
+      return m.reply(
+        `╭─❏「 ⏳ COOLDOWN STAFF 」❏\n` +
+        `│ ⏳ *STAFF MASIH COOLDOWN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ ${staff.name} bisa disewa lagi dalam *${formatHomeStaffCooldown(cooldownUntil - Date.now())}*.\n` +
+        `> ↳ Gunakan *${prefix}home staff cd* untuk melihat cooldown.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const price = getStaffCost(staff, premium, durationDays)
 
     if (wallet() < price) {
       return m.reply(
@@ -1094,8 +1261,8 @@ if (mode === 'staff') {
     }
 
     return requestConfirmation(
-      { type: action, staff: staffKey, cost: price },
-      `> ↳ ${action === 'hire' ? 'Sewa' : 'Perpanjang'} ${staff.emoji} *${staff.name}* selama ${HOME_STAFF_CONTRACT_DAYS} hari.\n` +
+      { type: action, staff: staffKey, durationDays, cost: price },
+      `> ↳ ${action === 'hire' ? 'Sewa' : 'Perpanjang'} ${staff.emoji} *${staff.name}* selama ${durationDays} hari.\n` +
       `> ↳ Total biaya: *${money(price)}*${premium ? ' (diskon Premium 10%)' : ''}.\n` +
       `> ↳ Tugas: ${staff.effect}`
     )
@@ -1115,6 +1282,17 @@ if (mode === 'staff') {
       )
     }
 
+    if (record.expiresAt <= Date.now()) {
+      return m.reply(
+        `╭─❏「 🏡 HOME STAFF 」❏\n` +
+        `│ ⚠️ *KONTRAK STAFF SUDAH TIDAK AKTIF*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Staff yang kontraknya selesai otomatis masuk cooldown.\n` +
+        `> ↳ Gunakan *${prefix}home staff cd* untuk melihat sisanya.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
     return requestConfirmation(
       { type: 'fire', name: record.name },
       `> ↳ Hentikan kontrak *${record.name}*?`
@@ -1123,7 +1301,6 @@ if (mode === 'staff') {
 
   if (action === 'salary') {
     const activeStaff = home.staff.filter(staff => staff.expiresAt > Date.now())
-    const total = activeStaff.reduce((sum, staff) => sum + (HOME_STAFF[staff.key]?.salary || 0), 0)
     const paidTotal = activeStaff.reduce((sum, staff) => sum + (Number(staff.paid) || 0), 0)
 
     return m.reply(
@@ -1132,12 +1309,11 @@ if (mode === 'staff') {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `👥 *DAFTAR STAFF*\n` +
       `${home.staff.map(staff =>
-        `> ↳ ${staff.name}: ${staff.expiresAt > Date.now() ? `Gaji ${money(HOME_STAFF[staff.key]?.salary)} / ${HOME_STAFF_CONTRACT_DAYS} hari; dibayar ${money(staff.paid)}` : 'Kontrak habis'}`
+        `> ↳ ${staff.name}: ${staff.expiresAt > Date.now() ? `kontrak ${staff.contractDays || 1} hari; total biaya ${money(staff.paid)}` : 'Kontrak habis'}`
       ).join('\n') || '> ↳ Belum ada staff.'}\n\n` +
       `💰 *RINGKASAN PEMBAYARAN*\n` +
-      `> ↳ Total gaji aktif: ${money(total)} / ${HOME_STAFF_CONTRACT_DAYS} hari\n` +
-      `> ↳ Total pembayaran kontrak aktif: ${money(paidTotal)}\n` +
-      `> ↳ Pembayaran kontrak berikutnya: perpanjang dengan ${prefix}home staff renew <nama>.\n\n` +
+      `> ↳ Total biaya kontrak staff aktif: ${money(paidTotal)}\n` +
+      `> ↳ Perpanjang kontrak dengan ${prefix}home staff renew <nama> [durasi].\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -1150,7 +1326,8 @@ if (mode === 'staff') {
       `${home.staff.map(staff =>
         `👥 *${staff.name}*\n` +
         `> ↳ Sisa kontrak: ${formatHomeDuration(staff.expiresAt)}\n` +
-        `> ↳ Berakhir: ${staff.expiresAt ? new Date(staff.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-'}`
+        `> ↳ Berakhir: ${staff.expiresAt ? new Date(staff.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-'}\n` +
+        `${getHomeStaffCooldownUntil(staff) > Date.now() ? `> ↳ Bisa disewa lagi dalam ${formatHomeStaffCooldown(getHomeStaffCooldownUntil(staff) - Date.now())}` : ''}`
       ).join('\n\n') || '> ↳ Belum ada kontrak staff.'}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -1482,7 +1659,8 @@ if (mode === 'clean' || mode === 'childcare' || mode === 'petcare') {
   if (mode === 'clean') home.hygiene = clampHomeStat(home.hygiene + 20)
 
   if (mode === 'childcare') {
-    home.harmony = clampHomeStat(home.harmony + 10)
+    const tutor = home.staff.some(staff => staff.key === 'tutor' && staff.expiresAt > Date.now())
+    home.harmony = clampHomeStat(home.harmony + 10 + (tutor ? 5 : 0))
     members.children.forEach(child => {
       child.careCount = (Number(child.careCount) || 0) + 1
       const parent = (rpg.harem || []).find(partner => partner.name === child.ortu)
@@ -1506,6 +1684,7 @@ if (mode === 'clean' || mode === 'childcare' || mode === 'petcare') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ${story}\n\n` +
     `${mode === 'childcare' && home.staff.some(staff => staff.key === 'babysitter' && staff.expiresAt > Date.now()) ? `👶 *BANTUAN STAFF*\n> ↳ Babysitter membantu mengurus seluruh anak.\n\n` : ''}` +
+    `${mode === 'childcare' && home.staff.some(staff => staff.key === 'tutor' && staff.expiresAt > Date.now()) ? `🎓 *BANTUAN STAFF*\n> ↳ Tutor mendampingi anak; Harmony rumah mendapat bonus +5.\n\n` : ''}` +
     `${mode === 'petcare' && home.staff.some(staff => staff.key === 'pet sitter' && staff.expiresAt > Date.now()) ? `🐾 *BANTUAN STAFF*\n> ↳ Pet Sitter membantu merawat seluruh pet.\n\n` : ''}` +
     `📊 *HASIL PERAWATAN*\n` +
     `${mode === 'clean' ? `> ↳ Hygiene: ${home.hygiene}/100\n` : ''}` +
@@ -1543,6 +1722,7 @@ if (mode === 'masuk' || mode === 'pulang') {
   }
 
   if (mode === 'pulang' && staffActive('housekeeper')) home.hygiene = clampHomeStat(home.hygiene + 2)
+  if (mode === 'pulang' && staffActive('gardener')) home.hygiene = clampHomeStat(home.hygiene + 4)
 
   await saveDB(db)
 
@@ -1553,11 +1733,12 @@ if (mode === 'masuk' || mode === 'pulang') {
     `│ 🏠 *KAMU BERADA DI RUMAH SENDIRI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Kenyamanan : *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
-    `> ↳ Furniture : ${home.furniture.length}/${capacity}\n\n` +
+    `> ↳ Barang terpasang : ${home.furniture.length}/${capacity}\n\n` +
     `${mode === 'pulang' && staffActive('housekeeper') ? `> ↳ Housekeeper merapikan rumah; Hygiene ${home.hygiene}/100.\n` : ''}` +
+    `${mode === 'pulang' && staffActive('gardener') ? `> ↳ Gardener merawat taman dan kebersihan; Hygiene ${home.hygiene}/100.\n` : ''}` +
     `${nurseStory}\n` +
 
-    `${home.furniture.length ? home.furniture.map(id => `🛋️ *${findItem(id)?.name || id}*`).join('\n') : '> ↳ Rumahmu masih kosong.'}\n` +
+    `${home.furniture.length ? home.furniture.map(id => `📦 *${findItem(id)?.name || id}*`).join('\n') : '> ↳ Belum ada barang terpasang.'}\n` +
     `${home.trophies.length ? `\n🏆 *PAJANGAN*\n${home.trophies.map(id => `> ${displayName(findItem(id) || { emoji: '📦', name: id })}`).join('\n')}\n` : ''}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
@@ -1730,7 +1911,7 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
     `│ 🏠 *MENGUNJUNGI RUMAH @${target.split('@')[0]}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Kenyamanan : *Level ${targetComfort.level}* (${targetComfort.points} poin)\n` +
-    `> ↳ Furniture terpasang : ${placed.length ? placed.map(item => displayName(item)).join(', ') : 'belum ada'}\n\n` +
+    `> ↳ Barang terpasang : ${placed.length ? placed.map(item => displayName(item)).join(', ') : 'belum ada'}\n\n` +
     `${trophies.length ? `🏆 *Koleksi dipajang* : ${trophies.map(item => displayName(item)).join(', ')}\n\n` : ''}` +
     `📌 *INTERAKSI*\n` +
     `> ↳ Gunakan *${prefix}home like* untuk memberi like.\n\n` +
