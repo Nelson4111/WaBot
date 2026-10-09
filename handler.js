@@ -1088,7 +1088,14 @@ async function processMessage(m, chatUpdate) {
             }
             if (m.sender && (user = global.db.data.users[m.sender])) {
                 user.exp += m.exp
-                setUserLimit(user, user.limit - m.limit * 1)
+                if (m.limit) {
+                    const commandName = String(m.plugin || 'command')
+                        .split('/')
+                        .pop()
+                        .replace(/\.js$/i, '')
+                    setUserLimit(user, user.limit - m.limit * 1, `.${commandName}`)
+                    if (typeof global.db.write === 'function') await global.db.write()
+                }
                 const chat = global.db.data.chats?.[m.chat]
                 if (user.autolevelup && !(chat && chat.autolevelup === false)) {
                     import('./lib/levelling.js').then(({ checkLevelUp }) => {
