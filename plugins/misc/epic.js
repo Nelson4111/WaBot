@@ -60,9 +60,11 @@ const getQuizData = (db, id) => {
   return data
 }
 
-const getQuizLeaderboard = db => {
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+
+const getQuizLeaderboard = (db, conn) => {
   getEpic(db)
-  return Object.entries(db.epic.quiz || {})
+  return filterLeaderboardUsers(Object.entries(db.epic.quiz || {}), conn, ([jid]) => jid)
     .filter(([user]) => user !== '__migrated')
     .map(([user, stats]) => ({ user, points: Number(stats.quizPoints || 0), correct: Number(stats.correctAnswers || 0), total: Number(stats.totalAnswered || 0) }))
     .sort((a, b) => b.points - a.points || b.correct - a.correct || b.total - a.total)
@@ -711,11 +713,20 @@ Tag atau reply target. Tanpa target berarti diri sendiri.
 if (cmd === 'quiz') {
   const sub = String(args[0] || '').toLowerCase()
   if (sub === 'lb' || sub === 'leaderboard') {
-    const board = getQuizLeaderboard(db)
+    const board = getQuizLeaderboard(db, ctx.conn)
     if (!board.length) return m.reply(`╭❖─ *QUIZ LEADERBOARD* ─❖╮\n\nBelum ada pemain yang mengumpulkan Quiz Point.\n\n╰❖─ *OLYMPUS* ─❖╯`)
 
-    const lines = board.map((entry, index) => `${index + 1}. @${firstName(entry.user)} — ${entry.points} pts (${entry.correct} benar)`).join('\n')
-    return m.reply(`╭❖─ *QUIZ LEADERBOARD* ─❖╮\n\n${lines}\n\n╰❖─ *OLYMPUS* ─❖╯`, { mentions: board.map(x => x.user) })
+    const mentions = []
+    const lines = board.map((entry, index) => {
+      const identity = getLeaderboardUserIdentity(entry.user, {
+        conn: ctx.conn,
+        groupMetadata: ctx.groupMetadata,
+        name: firstName(entry.user)
+      })
+      if (identity.mention) mentions.push(identity.mention)
+      return `${index + 1}. ${identity.display} — ${entry.points} pts (${entry.correct} benar)`
+    }).join('\n')
+    return m.reply(`╭❖─ *QUIZ LEADERBOARD* ─❖╮\n\n${lines}\n\n╰❖─ *OLYMPUS* ─❖╯`, { mentions })
   }
 
   const p = getProfile(db, user)
@@ -1199,14 +1210,24 @@ ${storyNarration()}
   }
 
   if (sub === 'leaderboard' || sub === 'lb') {
-    const board = (db.epic.leaderboard || []).slice(0, 5)
+    const board = filterLeaderboardUsers(db.epic.leaderboard || [], ctx.conn, entry => entry.user).slice(0, 5)
     if (!board.length) return m.reply(`╭❖─ *LEADERBOARD KOSONG* ─❖╮\n\n📊 Belum ada pemain yang menamatkan run.\n╰❖─ *JADI YANG PERTAMA* ─❖╯`)
+    const mentions = []
+    const lines = board.map((entry, index) => {
+      const identity = getLeaderboardUserIdentity(entry.user, {
+        conn: ctx.conn,
+        groupMetadata: ctx.groupMetadata,
+        name: firstName(entry.user)
+      })
+      if (identity.mention) mentions.push(identity.mention)
+      return `${index + 1}. ${identity.display} — Win ${entry.wins} | Lose ${entry.losses}`
+    }).join('\n')
     return reply(`╭❖─ *EPIC LEADERBOARD* ─❖╮
 
-${board.map((x, i) => `${i + 1}. @${firstName(x.user)} — Win ${x.wins} | Lose ${x.losses}`).join('\n')}
+${lines}
 
 ❝ *Legends are made here.* ❞
-╰❖─ *TOP 5* ─❖╯`, { mentions: board.map(x => x.user) })
+╰❖─ *TOP 5* ─❖╯`, { mentions })
   }
 
   if (!p.story && !sub) {
