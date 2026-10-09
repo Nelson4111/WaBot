@@ -5,6 +5,7 @@ import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { sendMenuText } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -284,23 +285,16 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
     }
 
     if (!sent) {
-      try {
-        if (menuThumb) {
-          await conn.sendMessage(m.chat, {
-            image: menuThumb,
-            caption: text.trim(),
-            footer,
-            contextInfo
-          }, { quoted: m })
-        } else {
-          await conn.sendMessage(m.chat, {
-            text: text.trim(),
-            footer,
-            contextInfo
-          }, { quoted: m })
-        }
-      } catch (e) {
-        await conn.sendMessage(m.chat, { text: text.trim(), contextInfo }, { quoted: m })
+      const menuText = text.trim()
+      if (menuThumb && Buffer.byteLength(menuText, 'utf8') <= 1024) {
+        await conn.sendMessage(m.chat, {
+          image: menuThumb,
+          caption: menuText,
+          footer,
+          contextInfo
+        }, { quoted: m })
+      } else {
+        await sendMenuText(conn, m.chat, menuText, { quoted: m, contextInfo })
       }
     }
 

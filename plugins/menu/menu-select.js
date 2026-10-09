@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { getMenuThumbnail } from '../../lib/style.js'
+import { sendMenuText } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -132,7 +133,7 @@ let handler = async (m, { conn, usedPrefix: _p, command }) => {
       let cardText = `*╭  〔 ✦ ᴅ ᴀ ꜰ ᴛ ᴀ ʀ  ᴋ ᴀ ᴛ ᴇ ɢ ᴏ ʀ ɪ 〕*\n${listText}\n*╰───────────────*`
       let fallbackCaption = `${bodyText}\n\n${cardText}`
 
-      if (menuThumb) {
+      if (menuThumb && Buffer.byteLength(fallbackCaption, 'utf8') <= 1024) {
         await conn.sendMessage(m.chat, {
           image: menuThumb,
           caption: fallbackCaption,
@@ -140,11 +141,7 @@ let handler = async (m, { conn, usedPrefix: _p, command }) => {
           contextInfo
         }, { quoted: m })
       } else {
-        await conn.sendMessage(m.chat, {
-          text: fallbackCaption,
-          footer,
-          contextInfo
-        }, { quoted: m })
+        await sendMenuText(conn, m.chat, fallbackCaption, { quoted: m, contextInfo })
       }
     }
   } catch (err) {
