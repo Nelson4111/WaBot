@@ -45,7 +45,8 @@ ${rows.join('\n')}
     return sendResult(`*╭  〔 ◈ ʟ ɪ ᴍ ɪ ᴛ  ᴋ ᴜ ʀ ᴀ ɴ ɢ 〕*\n> Saldo Limitmu tidak mencukupi!\n> Harga ${item.name} adalah *${toSmallNum(item.price)} Limit*, Limitmu saat ini: *${toSmallNum(userLimit)}*.\n*╰───────────────*`)
   }
 
-  setUserLimit(users[sender], userLimit - item.price)
+  setUserLimit(users[sender], userLimit - item.price, `Pembelian cincin ${item.name}`)
+  if (typeof global.db?.write === 'function') await global.db.write()
 
   // Pasang cincin ke semua pasangan
   pList.forEach(p => {
