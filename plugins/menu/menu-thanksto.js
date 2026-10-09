@@ -1,4 +1,5 @@
 import { getGreeting } from '../../lib/style.js'
+import { replyIfMenuDisabled } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -6,6 +7,8 @@ const toSmallNum = (str) => {
 }
 
 let handler = async (m, { conn, usedPrefix }) => {
+  if (await replyIfMenuDisabled(conn, m)) return
+
   const users = global.db.data.users || {}
   const settings = (global.db.data.settings && global.db.data.settings[conn.user.jid]) || {}
   const customThanks = global.db.data.thanks || []

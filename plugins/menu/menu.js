@@ -7,7 +7,7 @@ import { getPasanganHiddenNotice, isPasanganHidden, getUserRelationship } from '
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getLevelRole } from '../../lib/levelling.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
-import { sendMenuText } from '../../lib/menu-message.js'
+import { replyIfMenuDisabled, sendMenuText } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
     const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -33,6 +33,8 @@ const formatDuration = (ms) => {
 }
 
 let handler = async (m, { conn, usedPrefix: _p }) => {
+  if (await replyIfMenuDisabled(conn, m)) return
+
   let name = m.pushName || await conn.getName(m.sender)
   
   let wib = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })

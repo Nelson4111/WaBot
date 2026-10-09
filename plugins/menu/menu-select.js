@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { getMenuThumbnail } from '../../lib/style.js'
-import { sendMenuText } from '../../lib/menu-message.js'
+import { replyIfMenuDisabled, sendMenuText } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -8,6 +8,8 @@ const toSmallNum = (str) => {
 }
 
 let handler = async (m, { conn, usedPrefix: _p, command }) => {
+  if (await replyIfMenuDisabled(conn, m)) return
+
   try {
     const userName = m.pushName || await conn.getName(m.sender) || 'User'
     let d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }))

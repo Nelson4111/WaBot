@@ -5,7 +5,7 @@ import { loadDB } from '../../lib/waifuHelper.js'
 import { toPTT } from '../../lib/converter.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
-import { sendMenuText } from '../../lib/menu-message.js'
+import { replyIfMenuDisabled, sendMenuText } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -51,8 +51,7 @@ const defaultMenu = {
 }
 
 let handler = async (m, { conn, usedPrefix: _p }) => {
-  if (m.isGroup && !global.db.data.chats[m.chat].menu)
-    throw '⚠️ Admin telah mematikan menu'
+  if (await replyIfMenuDisabled(conn, m)) return
 
   // Waktu & Tanggal (WIB)
   let wib = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })

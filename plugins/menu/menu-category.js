@@ -3,7 +3,7 @@ import { loadDB } from '../../lib/waifuHelper.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getLevelRole } from '../../lib/levelling.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
-import { sendMenuText } from '../../lib/menu-message.js'
+import { replyIfMenuDisabled, sendMenuText } from '../../lib/menu-message.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -174,6 +174,8 @@ function resolveCategory(command, text) {
 }
 
 let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
+  if (await replyIfMenuDisabled(conn, m)) return
+
   let targetCategory = resolveCategory(command, text)
   if (!targetCategory) {
     // Jika kategori tidak dikenali, arahkan ke menu utama
