@@ -60,11 +60,17 @@ function getJakartaDateParts(date) {
     .map(part => [part.type, part.value]))
 }
 
+function isSameJakartaDate(first, second) {
+  const firstDate = getJakartaDateParts(new Date(Number(first)))
+  const secondDate = getJakartaDateParts(new Date(Number(second)))
+  return firstDate.year === secondDate.year &&
+    firstDate.month === secondDate.month &&
+    firstDate.day === secondDate.day
+}
+
 export function getMonthlyNews(news, now = new Date()) {
   const current = getJakartaDateParts(now)
-  const dailyCounts = new Map()
-
-  return news
+  const datedEntries = news
     .map((entry, index) => ({ entry, index }))
     .filter(({ entry }) => {
       if (!entry || !Number.isFinite(Number(entry.createdAt))) return false
@@ -72,13 +78,44 @@ export function getMonthlyNews(news, now = new Date()) {
       return date.year === current.year && date.month === current.month
     })
     .sort((a, b) => Number(a.entry.createdAt) - Number(b.entry.createdAt) || a.index - b.index)
-    .map(({ entry, index }) => {
-      const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
-      const day = Number(date.day)
-      const sequence = dailyCounts.get(day) || 0
-      dailyCounts.set(day, sequence + 1)
-      return { ...entry, id: `${day}.${sequence}`, sourceIndex: index }
-    })
+  const reservedIds = new Map()
+
+  for (const { entry } of datedEntries) {
+    const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+    const day = Number(date.day)
+    const match = typeof entry.id === 'string' && entry.id.match(/^(\d+)\.(\d+)$/)
+    if (!match || Number(match[1]) !== day) continue
+    if (!reservedIds.has(day)) reservedIds.set(day, new Set())
+    reservedIds.get(day).add(entry.id)
+  }
+  const assignedIds = new Map()
+
+  return datedEntries.map(({ entry, index }) => {
+    const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+    const day = Number(date.day)
+    const match = typeof entry.id === 'string' && entry.id.match(/^(\d+)\.(\d+)$/)
+    let id = match && Number(match[1]) === day ? entry.id : ''
+    if (!id) {
+      const reserved = reservedIds.get(day) || new Set()
+      const assigned = assignedIds.get(day) || new Set()
+      let sequence = 0
+      while (reserved.has(`${day}.${sequence}`) || assigned.has(`${day}.${sequence}`)) sequence++
+      id = `${day}.${sequence}`
+    }
+    if (!assignedIds.has(day)) assignedIds.set(day, new Set())
+    assignedIds.get(day).add(id)
+    return { ...entry, id, sourceIndex: index }
+  })
+}
+
+function getNextNewsId(news, now) {
+  const date = getJakartaDateParts(now)
+  const day = Number(date.day)
+  const existingIds = getMonthlyNews(news, now)
+    .map(entry => entry.id.match(/^(\d+)\.(\d+)$/))
+    .filter(match => match && Number(match[1]) === day)
+    .map(match => Number(match[2]))
+  return `${day}.${Math.max(-1, ...existingIds) + 1}`
 }
 
 function formatNewsDate(timestamp) {
@@ -212,13 +249,34 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
       return m.reply(`Bagian harus sesuai nama folder plugins. Pilihan: ${pluginSections.join(', ')}`)
     }
 
-    const id = await updateNews(news => {
-      const entry = { section: pluginSection, content, createdAt: Date.now() }
+    const result = await updateNews(news => {
+      const now = Date.now()
+      const existing = news
+        .map((entry, index) => ({ entry, index }))
+        .filter(({ entry }) =>
+          entry?.section?.toLowerCase() === pluginSection.toLowerCase() &&
+          Number.isFinite(Number(entry.createdAt)) &&
+          isSameJakartaDate(entry.createdAt, now)
+        )
+        .sort((a, b) => Number(b.entry.createdAt) - Number(a.entry.createdAt))[0]
+
+      if (existing) {
+        const existingNews = getMonthlyNews(news, new Date(now))
+          .find(item => item.sourceIndex === existing.index)
+        if (!existing.entry.id) existing.entry.id = existingNews?.id
+        existing.entry.content = `${existing.entry.content || ''}\n${content}`
+        return { id: existing.entry.id, merged: true }
+      }
+
+      const entry = { id: getNextNewsId(news, new Date(now)), section: pluginSection, content, createdAt: now }
       news.push(entry)
-      return getMonthlyNews(news, new Date(entry.createdAt))
-        .find(item => item.sourceIndex === news.length - 1)?.id
+      return { id: entry.id, merged: false }
     })
-    return m.reply(`✅ News *${id}* untuk bagian *${pluginSection}* berhasil ditambahkan.`)
+    return m.reply(
+      result.merged
+        ? `✅ Update berhasil digabung ke news *${result.id}* untuk bagian *${pluginSection}* hari ini.`
+        : `✅ News *${result.id}* untuk bagian *${pluginSection}* berhasil ditambahkan.`
+    )
   }
 
   if (normalizedAction === 'del' || normalizedAction === 'delete') {
@@ -237,7 +295,7 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
     })
     if (!deleted) return m.reply(`Nomor *${targetId}* tidak ditemukan di news bulan ini.`)
 
-    return m.reply(`✅ News *${targetId}* berhasil dihapus. Nomor entri setelahnya otomatis dirapatkan.`)
+    return m.reply(`✅ News *${targetId}* berhasil dihapus. ID news lainnya tetap.`)
   }
 
   const now = new Date()

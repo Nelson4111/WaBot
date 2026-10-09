@@ -244,7 +244,7 @@ if (action === 'protection') {
     `🛡️ *STATUS PROTECTION*\n` +
     `${protectionStatus}\n\n` +
     `📌 *INFORMASI*\n` +
-    `> ↳ Protection aktif otomatis saat aksi kriminal (termasuk jarah dan culik) menargetkanmu atau saat dungeon akan membuatmu mati.\n\n` +
+    `> ↳ Protection kematian aktif otomatis saat HP mencapai 0 dari dungeon, adventure, guild war, atau aksi bunuh/begal; HP tersisa 1 dan cooldown 5 jam.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -273,11 +273,15 @@ if (action === 'cd' || action === 'cooldown') {
     : 0
 
   const cooldownItems = [
-    ['Mining', rpg.lastMining, 2 * 60 * 1000],
-    ['Dungeon', rpg.lastDungeon, 2 * 60 * 1000],
-    ['Mancing', rpg.lastFishing || rpg.lastMancing, 60 * 1000],
-    ['Adventure', rpg.lastAdventure, 2 * 60 * 1000],
-    ['Kerja RPG', rpg.lastkerja, 2 * 60 * 1000]
+    ['Explore', rpg.lastExplore, 15 * 60 * 1000],
+    ['Kawin ternak', rpg.cooldown?.kawin, rpg.kawinCooldownDuration || 7 * 60 * 60 * 1000],
+    ['Copet', rpg.lastcopet, 5 * 60 * 1000],
+    ['Rampok', rpg.lastrob, 12 * 60 * 60 * 1000],
+    ['Begal', rpg.lastbegal, 60 * 60 * 1000],
+    ['Jarah', rpg.lastjarah, 6 * 60 * 60 * 1000],
+    ['Culik', rpg.lastculik, 12 * 60 * 60 * 1000],
+    ['Bunuh', rpg.lastbunuh, 12 * 60 * 60 * 1000],
+    ['Fitnah', global.db?.data?.fitnah?.[m.sender], 2.5 * 60 * 1000]
   ]
 
   const cooldownList = cooldownItems.map(([label, timestamp, duration]) =>
@@ -288,7 +292,8 @@ if (action === 'cd' || action === 'cooldown') {
     `╭─❏「 ⏰ PREMIUM COOLDOWN 」❏\n` +
     `│ ⏰ *PREMIUM COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `🎮 *COOLDOWN RPG*\n` +
+    `🎮 *STATUS COOLDOWN RPG*\n` +
+    `> ↳ Lewati cooldown tertentu dengan *.skipcd <aktivitas>*; biaya *Rp 100.000 per menit tersisa* dan perlu konfirmasi.\n\n` +
     `${cooldownList}\n\n` +
     `🎁 *PREMIUM DAILY*\n` +
     `> ↳ ${dailyRemaining ? `⏳ ${formatRemaining(dailyRemaining)}` : '✅ Siap'}\n\n` +
@@ -351,13 +356,13 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `> ↳ Batas casino : *50 permainan per hari* (user biasa 25).\n` +
     `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
     `> ↳ Kapasitas rumah bertambah *5 furniture* dan *2 penghuni tambahan*, diskon upgrade rumah *20%*, serta diskon kontrak staff *10%*.\n` +
-    `> ↳ Fitur khusus: *${usedPrefix}home staff hire all* merekrut semua staff rumah sekaligus.\n` +
+    `> ↳ Fitur khusus: *${usedPrefix}home staff hire all <durasi 1-7>* merekrut semua staff rumah sekaligus.\n` +
     `> ↳ Diskon *20%* untuk semua biaya uang pada *.upgrade* dan diskon *25%* upgrade kartu bank.\n` +
     `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
-    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*.\n` +
+    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Pengguna Premium juga dapat melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per menit tersisa.\n` +
     `> ↳ Command berlimit, termasuk sticker, maker, dan downloader, tetap memakai limit untuk pengguna Premium.\n` +
     `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap hari untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
-    `> ↳ Premium Protection memiliki cooldown terpisah 5 jam untuk tiap aksi (copet, rampok, begal, jarah, culik, bunuh, fitnah, dan dungeon); cek statusnya dengan *${usedPrefix}prem cd*.\n` +
+    `> ↳ Premium Protection otomatis melindungi sekali saat terpicu, lalu masuk cooldown terpisah 5 jam untuk aksi kriminal serta cooldown kematian universal; proteksi kematian berlaku saat HP mencapai 0 dari dungeon, adventure, guild war, atau aksi bunuh/begal. Cek statusnya dengan *${usedPrefix}prem cd*.\n` +
     `> ↳ Cooldown Muncak lebih singkat : *2 jam* (user biasa 5 jam). Contoh : *${usedPrefix}mt start*.\n` +
     `> ↳ Cooldown interaksi pasangan lebih singkat : *30 detik* (user biasa 60 detik). Contoh : *${usedPrefix}act*.\n\n` +
 
