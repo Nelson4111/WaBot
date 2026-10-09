@@ -1,3 +1,5 @@
+import { filterLeaderboardUsers } from '../../lib/leaderboardPrivacy.js'
+
 const TOP_COOLDOWN = 60 * 1000
 
 let handler = async (m, { conn, groupMetadata, command, usedPrefix, text = '' }) => {
@@ -104,7 +106,12 @@ let handler = async (m, { conn, groupMetadata, command, usedPrefix, text = '' })
   }
 
   const excluded = new Set(chat.topNoTag)
-  const members = groupMetadata.participants.map(v => normalizeJid(v.id)).filter(jid => !excluded.has(jid))
+  const members = filterLeaderboardUsers(
+    groupMetadata.participants,
+    conn,
+    participant => participant.phoneNumber || participant.id
+  ).map(participant => normalizeJid(participant.id))
+    .filter(jid => !excluded.has(jid))
   if (jumlah > members.length) {
     return m.reply(`❌ Hanya ada ${members.length} anggota yang bersedia di-tag di grup ini.`)
   }
