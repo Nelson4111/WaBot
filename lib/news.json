@@ -289,7 +289,7 @@
   {
     "section": "INFO",
     "title": "Daftar dan Detail News",
-    "content": "\u003e .news all menampilkan daftar update; gunakan nomor news untuk membaca detail.",
+    "content": "\u003e .news list menampilkan update per halaman; .news menjelaskan fitur, dan .news list info <nomor> membuka detail.",
     "author": "Eza",
     "createdAt": 1791367941981
   },
@@ -380,7 +380,7 @@
   {
     "section": "INFO",
     "title": "Fitur Q&A",
-    "content": "\u003e Pertanyaan umum dan jawabannya kini dapat dilihat melalui .qna.",
+    "content": "\u003e .qna list menampilkan 10 tanya-jawab ringkas per halaman; .qna menjelaskan fitur dan .qna <nomor> membuka jawaban.",
     "author": "Eza",
     "createdAt": 1791499620000
   },
@@ -390,5 +390,12 @@
     "content": "\u003e Command .menu, .allmenu, menu kategori, dan menu lainnya kini memberi notifikasi jika menu grup dinonaktifkan, bukan menampilkan error.",
     "author": "Eza",
     "createdAt": 1791512649000
+  },
+  {
+    "section": "INFO",
+    "title": "Limit Harian dan Security Notice",
+    "content": "\u003e Limit gratis +20 per hari hingga saldo 50; Premium Daily reset harian dan diklaim bersama .daily. Security Notice men-tag member Under Review dengan daftar admin rapi.",
+    "author": "Eza",
+    "createdAt": 1791514648000
   }
 ]
