@@ -19,12 +19,21 @@ import { loadDB, saveDB } from './lib/waifuHelper.js'
 import { registerPrisoner } from './lib/prisonHelper.js'
 import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimit.js'
 import { isPremiumAccount } from './lib/rpgPremium.js'
+import { BANK_TIERS } from './lib/rpg-bankData.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
  */
 const { proto } = (await import('@whiskeysockets/baileys')).default
 const isNumber = x => typeof x === 'number' && !isNaN(x)
+const EXCLUSIVE_JAIL_BLOCKED_COMMANDS = new Set([
+    'adventure', 'adv', 'petualang', 'explore',
+    'mining', 'tambang', 'mancing', 'fishing',
+    'kerja', 'work', 'daily', 'panen', 'harvest', 'tanam', 'plant',
+    'kebun', 'ternak', 'peternakan', 'craft', 'forge',
+    'dungeon', 'arena', 'gym', 'mt', 'raid', 'guildwar',
+    'copet', 'begal', 'rampok', 'jarah', 'culik', 'bunuh', 'fitnah'
+])
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
 const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
 
@@ -950,22 +959,33 @@ async function processMessage(m, chatUpdate) {
                 const isRpgPlugin = (plugin.tags && (plugin.tags.includes('rpg') || plugin.tags.includes('pasangan'))) || name.includes('/rpg/') || name.includes('\\rpg\\');
                 if (isRpgPlugin && !['penjara', 'tebus', 'bebasin', 'penjarain', 'statuspenjara'].includes(command)) {
                     let userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
-                    if (userRPG && userRPG.penjara) {
+                    if (userRPG?.penjara) {
                         let now = Date.now();
-                        if (now - userRPG.penjara < (userRPG.lamaPenjara || 0)) {
-                            let sisa = userRPG.lamaPenjara - (now - userRPG.penjara);
-                            let jam = Math.floor(sisa / 3600000);
-                            let menit = Math.floor((sisa % 3600000) / 60000);
-                            this.reply(m.chat, `[ 🚔 ]───[ *_AKSES DITOLAK_* ]───✦\n╭ 𖥔 SEL : ${userRPG.sel || 1}\n│ 𖥔 SISA : ${jam}j ${menit}m\n│ 𖥔 TEBUS : Rp ${(userRPG.tebusan || 1000000).toLocaleString('id-ID')}\n│\n│ 𖥔 ❌ Semua akses RPG diblokir selama di penjara!\n╰ 𖥔 Minta orang lain ketik *.tebus @kamu* atau tunggu bebas otomatis.`, m);
-                            continue;
-                        } else {
-                            // Masa tahanan habis, auto-bebas
+                        let sisa = Number(userRPG.lamaPenjara || 0) - (now - Number(userRPG.penjara || 0));
+                        if (sisa < 60 * 1000) {
                             userRPG.penjara = null;
                             userRPG.lamaPenjara = 0;
                             userRPG.tebusan = 0;
                             userRPG.sel = 0;
                             userRPG.gagalCopet = 0;
-                            this.reply(m.chat, '✅ Masa tahananmu telah selesai.\n\n📌 Jika masih memiliki poin buronan, jalani *.rh mulai* untuk membersihkan catatan buronan dan membangun kembali kepercayaan Avelia.', m);
+                            if (Array.isArray(global.db.data.penjara)) {
+                                global.db.data.penjara = global.db.data.penjara.filter(jid => jid !== m.sender);
+                            }
+                            await saveDB(loadDB());
+                            this.reply(m.chat, '✅ Sisa masa tahanan kurang dari satu menit. Kamu langsung bebas dan dapat melanjutkan bermain.', m);
+                        } else {
+                            const jailTier = BANK_TIERS[Number(userRPG.bankTier)] || BANK_TIERS[0];
+                            const hasExclusiveAccess = jailTier.fasilitas.includes('Akses Eksklusif');
+                            const blockedByExclusiveAccess = EXCLUSIVE_JAIL_BLOCKED_COMMANDS.has(command);
+                            if (!hasExclusiveAccess || blockedByExclusiveAccess) {
+                            let jam = Math.floor(sisa / 3600000);
+                            let menit = Math.floor((sisa % 3600000) / 60000);
+                            const accessText = hasExclusiveAccess
+                                ? 'Aktivitas RPG seperti mining, memancing, bekerja, dan bertarung diblokir selama di penjara.'
+                                : 'Semua akses RPG diblokir selama di penjara.';
+                            this.reply(m.chat, `[ 🚔 ]───[ *_AKSES DITOLAK_* ]───✦\n╭ 𖥔 SEL : ${userRPG.sel || 1}\n│ 𖥔 SISA : ${jam}j ${menit}m\n│ 𖥔 TEBUS : Rp ${(userRPG.tebusan || 1000000).toLocaleString('id-ID')}\n│\n│ 𖥔 ❌ ${accessText}\n╰ 𖥔 Minta orang lain ketik *.tebus @kamu* atau tunggu bebas otomatis.`, m);
+                            continue;
+                            }
                         }
                     }
                 }
