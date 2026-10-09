@@ -226,7 +226,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
           `─━━━━━━━━━━━━━━─`
         )
       }
-      setUserLimit(registeredUser, limit - Number(pending.cost))
+      setUserLimit(registeredUser, limit - Number(pending.cost), pending.action === 'ascend' ? 'Ascend bloodline' : 'Ganti bloodline')
     }
 
     const previous = getBloodline(rpg)
@@ -383,7 +383,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
   const choices = Object.keys(BLOODLINES).filter(id => id !== current.id)
   const target = choices[Math.floor(Math.random() * choices.length)]
 
-  setUserLimit(registeredUser, limit - BLOODLINE_CHANGE_COST)
+  setUserLimit(registeredUser, limit - BLOODLINE_CHANGE_COST, 'Ganti bloodline')
   rpg.pendingBloodlineChange = { from: current.id, to: target, time: now, action: 'roll', cost: 0 }
   await saveDB(db)
 

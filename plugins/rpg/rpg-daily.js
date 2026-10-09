@@ -1,16 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
-
-const getJakartaDate = (timestamp) => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).formatToParts(new Date(timestamp))
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
-  return `${values.year}-${values.month}-${values.day}`
-}
+import { claimPremiumDailyLimit, getJakartaDate } from '../../lib/userLimit.js'
+import { isPremiumAccount, PREMIUM_DAILY_MIN_DONATION, PREMIUM_DAILY_REWARD } from '../../lib/rpgPremium.js'
 
 let handler = async (m, { usedPrefix, text = '' }) => {
   const wdb = loadDB()
@@ -172,6 +163,7 @@ let handler = async (m, { usedPrefix, text = '' }) => {
   let hadiah = scaleDifficultyIncome(rpgUser, 50000)
   let weekly = 0
   let monthly = 0
+  let premiumDailyReward = 0
 
   wdb.money[senderKey] = (wdb.money[senderKey] || 0) + hadiah
   if (user.dailyStreak % 7 === 0) {
@@ -183,10 +175,28 @@ let handler = async (m, { usedPrefix, text = '' }) => {
     wdb.money[senderKey] += monthly
   }
 
+  const account = global.db?.data?.users?.[senderKey] || global.db?.data?.users?.[m.sender]
+  const freeDailyLimit = account?.freeDailyLimitDate === today
+    ? Number(account.freeDailyLimitAmount) || 0
+    : 0
+  if (
+    account &&
+    isPremiumAccount(account, now) &&
+    Number(account.totalDonasi) >= PREMIUM_DAILY_MIN_DONATION
+  ) {
+    const reward = claimPremiumDailyLimit(account, now, PREMIUM_DAILY_REWARD)
+    if (reward.claimed) {
+      premiumDailyReward = reward.amount
+      if (typeof global.db.write === 'function') await global.db.write()
+    }
+  }
+
   await saveDB(wdb)
 
   let cap = `╭─❏「 🎁 DAILY REWARD 」❏\n`
   cap += `│ 💰 *Daily* +Rp ${hadiah.toLocaleString()}\n`
+  if (freeDailyLimit) cap += `│ 🎁 *Limit Gratis* +${freeDailyLimit} limit\n`
+  if (premiumDailyReward) cap += `│ 👑 *Premium Daily* +${premiumDailyReward} limit\n`
   cap += `│ 🔥 *Streak* ${user.dailyStreak} hari\n`
 
   if (weekly) {
