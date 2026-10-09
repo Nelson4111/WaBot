@@ -3,9 +3,10 @@ import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, 
 import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
 import { RPG_CRIME_TYPES } from '../../lib/rpgCrimeData.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
-function getWantedList(db) {
-  return Object.entries(db.crime || {})
+function getWantedList(db, conn) {
+  return filterLeaderboardUsers(Object.entries(db.crime || {}), conn, ([jid]) => jid)
     .filter(([, data]) => data && getActiveCrimeScore(data) > 0)
     .sort((a, b) => getActiveCrimeScore(b[1]) - getActiveCrimeScore(a[1]))
 }
@@ -21,7 +22,7 @@ function findWantedByJid(crimeList, jid) {
   })
 }
 
-let handler = async (m, { conn, args, isOwner }) => {
+let handler = async (m, { conn, args, isOwner, groupMetadata }) => {
   const wdb = loadDB()
   if (!wdb.crime) wdb.crime = {}
 
@@ -39,7 +40,7 @@ let handler = async (m, { conn, args, isOwner }) => {
 
   syncAllEscapeCrimeCounts(wdb)
   await saveDB(wdb)
-  const crimeList = getWantedList(wdb)
+  const crimeList = getWantedList(wdb, conn)
 
   if (action === 'tangkap') {
     const rawTarget = m.mentionedJid?.[0] || m.quoted?.sender
@@ -170,7 +171,7 @@ let handler = async (m, { conn, args, isOwner }) => {
 
     const start = (page - 1) * 10
     const entries = crimeList.slice(start, start + 10)
-    const mentions = entries.map(([jid]) => jid)
+    const mentions = []
     let text = `╭─❏「 🚨 MOST WANTED 」❏\n`
     text += `│ *DAFTAR BURONAN • HALAMAN ${page}/${totalPages}*\n`
     text += `╰─━━━━━━━━━━━━━━─\n\n`
@@ -178,7 +179,9 @@ let handler = async (m, { conn, args, isOwner }) => {
     entries.forEach(([jid, data], index) => {
       const rank = start + index + 1
       const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
-      text += `${medal} @${jid.split('@')[0]} • *${getActiveCrimeScore(data)} poin*\n`
+      const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata })
+      if (identity.mention) mentions.push(identity.mention)
+      text += `${medal} ${identity.display} • *${getActiveCrimeScore(data)} poin*\n`
       const crimeCounts = RPG_CRIME_TYPES.map(({ key, emoji }) =>
         `${emoji}${String(Number(data[key]) || 0).padStart(2, '0')}`
       )
@@ -207,9 +210,10 @@ let handler = async (m, { conn, args, isOwner }) => {
 
     const [jid, data] = crimeList[index]
     const score = getActiveCrimeScore(data)
+    const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata })
     let text = `╭─❏「 🔎 DETAIL BURONAN 」❏\n`
     text += `│ 🏅 Peringkat: *#${index + 1}*\n`
-    text += `│ 👤 Nama: @${jid.split('@')[0]}\n`
+    text += `│ 👤 Nama: ${identity.display}\n`
     text += `│ 💀 Total: *${score} poin*\n`
     if ((Number(data.pardonedScore) || 0) > 0) {
       text += `│ 📜 Poin riwayat yang telah direhabilitasi: *${Number(data.pardonedScore)} poin*\n`
@@ -221,7 +225,7 @@ let handler = async (m, { conn, args, isOwner }) => {
       text += `${emoji} ${label}: *${Number(data[key]) || 0}x* (${(Number(data[key]) || 0) * score} poin)\n`
     }
     text += `\nGunakan *.buronan info* untuk memahami perhitungan poin dan patroli.`
-    return conn.reply(m.chat, text, m, { mentions: [jid] })
+    return conn.reply(m.chat, text, m, { mentions: identity.mention ? [identity.mention] : [] })
   }
 
   return m.reply('❌ Subcommand tidak dikenal. Ketik *.buronan command* untuk melihat semua command.')

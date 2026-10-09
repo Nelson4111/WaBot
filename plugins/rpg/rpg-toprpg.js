@@ -1,22 +1,27 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked } from '../../lib/rpgDifficulty.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, groupMetadata }) => {
   const wdb = loadDB()
   
   // Ambil semua ID user yang terdaftar
-  let users = filterRpgPanelUsers(Object.keys(wdb.users))
+  let users = filterLeaderboardUsers(
+    filterRpgPanelUsers(Object.keys(wdb.users)),
+    conn
+  )
     .filter(isValidRpgUserId)
     .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
   
   // Fungsi Helper untuk format Nama & Nomor
   const formatUser = (id) => {
-    let name = conn.getName(id) || 'Petualang'
-    let num = id.split('@')[0]
-    // Sensor nomor tengah: 62812xxxx90
-    let maskedNum = num.length > 7 ? `${num.substring(0, 5)}xxxx${num.slice(-2)}` : num
-    return `${name} (@${maskedNum})`
+    const identity = getLeaderboardUserIdentity(id, {
+      conn,
+      groupMetadata,
+      name: conn.getName(id)
+    })
+    return identity.display
   }
 
   // 1. Leaderboard Berdasarkan LEVEL

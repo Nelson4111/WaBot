@@ -8,6 +8,7 @@ import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked, normalizeDifficulty, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
 import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 import fs from 'fs'
 
@@ -84,7 +85,7 @@ function getPluginCommandLines(tag, usedPrefix) {
     : '> ↳ Belum ada command yang terdaftar.'
 }
 
-let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
+let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   if (!isOwner) return m.reply('❌ Fitur khusus Owner')
 
   const wdb = loadDB()
@@ -304,14 +305,18 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
   // ========== GLOBAL MENU DARI RPGB ==========
   if(aksi === 'toprpg'){
-    let users = filterRpgPanelUsers(Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg))
+    let users = filterLeaderboardUsers(
+      filterRpgPanelUsers(Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg)),
+      conn
+    )
       .filter(isValidRpgUserId)
       .filter(id => isDifficultyRanked(wdb.users[id]?.rpg))
     const formatUser = (id) => {
-      let name = conn.getName(id) || 'Petualang'
-      let num = id.split('@')[0]
-      let maskedNum = num.length > 7? `${num.substring(0, 5)}xxxx${num.slice(-2)}` : num
-      return `${name} (@${maskedNum})`
+      return getLeaderboardUserIdentity(id, {
+        conn,
+        groupMetadata,
+        name: conn.getName(id)
+      })
     }
     let topLevel = [...users].sort((a,b) => (wdb.users[b].rpg.level || 0) - (wdb.users[a].rpg.level || 0)).slice(0, 10)
     let topMoney = [...users]
@@ -321,14 +326,21 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
 
     let text = `*───「 AVELIA RPG LEADERBOARD 」───*\n\n`
     text += `🆙 *TOP 10 LEVEL*\n`
-    topLevel.forEach((id, i) => { text += `${i + 1}. ${formatUser(id)}\n └─ *Level ${wdb.users[id].rpg.level}*\n` })
+    const mentions = []
+    const addUserLine = (id, rank, score) => {
+      const identity = formatUser(id)
+      if (identity.mention) mentions.push(identity.mention)
+      text += `${rank}. ${identity.display}\n └─ *${score}*\n`
+    }
+    topLevel.forEach((id, i) => addUserLine(id, i + 1, `Level ${wdb.users[id].rpg.level}`))
     text += `\n💰 *TOP 10 KEKAYAAN*\n`
-    topMoney.forEach((id, i) => { text += `${i + 1}. ${formatUser(id)}\n └─ *Rp ${(wdb.money[id] || 0).toLocaleString()}*\n` })
+    topMoney.forEach((id, i) => addUserLine(id, i + 1, `Rp ${(wdb.money[id] || 0).toLocaleString()}`))
     text += `\n💎 *TOP 10 COLLECTOR*\n`
-    topDiamond.forEach((id, i) => { text += `${i + 1}. ${formatUser(id)}\n └─ *${wdb.users[id].rpg.diamond || 0} Diamond*\n` })
+    topDiamond.forEach((id, i) => addUserLine(id, i + 1, `${wdb.users[id].rpg.diamond || 0} Diamond`))
     return conn.sendMessage(m.chat, { 
       image: { url: 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg' }, 
-      caption: text 
+      caption: text,
+      mentions: [...new Set(mentions)]
     }, { quoted: m })
   }
 
@@ -353,7 +365,11 @@ let handler = async (m, { conn, text, usedPrefix, isOwner }) => {
   } 
   
   if(aksi === 'topyt'){
-    let topYoutuber = Object.entries(wdb.users).filter(([_, u]) => u.youtube).map(([jid, u]) => ({ name: u.youtube.name, subs: u.youtube.subs })).sort((a, b) => b.subs - a.subs)
+    let topYoutuber = filterLeaderboardUsers(
+      Object.entries(wdb.users).filter(([_, u]) => u.youtube),
+      conn,
+      ([jid]) => jid
+    ).map(([_, u]) => ({ name: u.youtube.name, subs: u.youtube.subs })).sort((a, b) => b.subs - a.subs)
     if (topYoutuber.length === 0) return m.reply('Belum ada YouTuber')
     let caption = `*───「 TOP YOUTUBER 」───*\n\n`
     topYoutuber.slice(0, 10).forEach((u, i) => { caption += `${i + 1}. ${u.name}\n *Subs*: ${u.subs.toLocaleString()}\n\n` })

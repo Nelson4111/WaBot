@@ -807,9 +807,83 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'list') {
   cap += `─━━━━━━━━━━━━━━─\n\n`
   cap += `📌 *CARA MENGELOLA*\n`
   cap += `> ↳ ${usedPrefix}rship urusanak <no>\n\n`
+  cap += `> ↳ ${usedPrefix}rship anak nama <no> <nama baru>\n\n`
+  cap += `> ↳ ${usedPrefix}rship anak adopsi <no> — alihkan pengasuhan dengan konfirmasi\n\n`
   cap += `─━━━━━━━━━━━━━━─`
 
   return m.reply(cap)
+}
+
+if (action === 'anak' && ['nama', 'rename'].includes(args[1]?.toLowerCase())) {
+  const index = Number(args[2]) - 1
+  const child = user.kids[index]
+  const newName = args.slice(3).join(' ').trim()
+  if (!child) return m.reply(`❌ Anak tidak ditemukan. Lihat daftar dengan *${usedPrefix}rship anak list*.`)
+  if (!newName || newName.length > 30) return m.reply(`❌ Nama harus 1-30 karakter.\n> ↳ Format: *${usedPrefix}rship anak nama <no> <nama baru>*`)
+  const oldName = child.nama
+  child.nama = newName
+  await saveDB(wdb)
+  return m.reply(
+    `╭─❏「 👶 NAMA ANAK 」❏\n│ ✅ *NAMA DIPERBARUI*\n╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Sebelumnya: ${oldName}\n> ↳ Sekarang: *${newName}*\n\n─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (
+  ['jualanak', 'buanganak', 'bunuhanak'].includes(action) ||
+  (action === 'anak' && ['jual', 'jualanak', 'buang', 'buanganak', 'bunuh', 'bunuhanak'].includes(args[1]?.toLowerCase()))
+) {
+  return m.reply(
+    `❌ Jual atau menyakiti anak tidak tersedia. Jika ingin mengalihkan pengasuhan, gunakan *${usedPrefix}rship anak adopsi <no>*; aksi itu meminta konfirmasi dan mengurangi love pasangan.`
+  )
+}
+
+if (action === 'anak' && args[1]?.toLowerCase() === 'adopsi') {
+  const answer = args[2]?.toLowerCase()
+  const pending = user.pendingChildAdoption
+  if (['yes', 'ya', 'iya'].includes(answer)) {
+    if (!pending || Date.now() - Number(pending.createdAt || 0) > 5 * 60 * 1000) {
+      delete user.pendingChildAdoption
+      await saveDB(wdb)
+      return m.reply('❌ Konfirmasi adopsi tidak ada atau sudah kedaluwarsa.')
+    }
+    const child = user.kids[pending.index]
+    if (!child || child.nama !== pending.name) {
+      delete user.pendingChildAdoption
+      await saveDB(wdb)
+      return m.reply('❌ Data anak berubah. Aksi dibatalkan.')
+    }
+    user.kids.splice(pending.index, 1)
+    const parent = user.harem.find(partner => partner.name === child.ortu)
+    if (parent) parent.love = Math.max(0, (Number(parent.love) || 0) - 50)
+    delete user.pendingChildAdoption
+    await saveDB(wdb)
+    return m.reply(
+      `╭─❏「 👶 PENGASUHAN ANAK 」❏\n│ ✅ *PENGASUHAN DIALIHKAN*\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ ${child.nama} telah dialihkan ke keluarga yang siap mengasuh.\n` +
+      `${parent ? `> ↳ Love ${parent.name} berkurang 50 (${parent.love}/100).\n` : ''}\n─━━━━━━━━━━━━━━─`
+    )
+  }
+  if (['no', 'tidak', 'batal', 'cancel'].includes(answer)) {
+    if (pending) delete user.pendingChildAdoption
+    await saveDB(wdb)
+    return m.reply('✅ Pengalihan pengasuhan dibatalkan.')
+  }
+  const index = Number(args[2]) - 1
+  const child = user.kids[index]
+  if (!child) return m.reply(`❌ Anak tidak ditemukan. Lihat daftar dengan *${usedPrefix}rship anak list*.`)
+  if (pending && Date.now() - Number(pending.createdAt || 0) <= 5 * 60 * 1000) {
+    return m.reply(`⚠️ Masih ada konfirmasi pengasuhan. Balas *${usedPrefix}rship anak adopsi yes* atau *${usedPrefix}rship anak adopsi no*.`)
+  }
+  user.pendingChildAdoption = { index, name: child.nama, createdAt: Date.now() }
+  await saveDB(wdb)
+  return m.reply(
+    `╭─❏「 ⚠️ KONFIRMASI PENGASUHAN 」❏\n│ 👶 *${child.nama}*\n╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Alihkan pengasuhan anak ke keluarga lain?\n` +
+    `> ↳ Love pasangan ${child.ortu} akan berkurang 50.\n\n` +
+    `> ↳ Balas *${usedPrefix}rship anak adopsi yes* untuk setuju.\n` +
+    `> ↳ Balas *${usedPrefix}rship anak adopsi no* untuk batal (5 menit).\n\n─━━━━━━━━━━━━━━─`
+  )
 }
 
 
@@ -929,11 +1003,11 @@ if (action === 'all') {
   user.bank -= totalCost
   let totalIncome = 0
   const completedActivities = []
-  const levelUps = []
+  let levelUps = 0
   for (const { activity, rule } of activityCosts) {
     const loveChange = rule.conflictIntensity === undefined ? rule.love : conflictEffect(partner, rule.conflictIntensity)
     partner.love = Math.max(0, Math.min(100, (partner.love || 0) + loveChange))
-    if (addExp(partner, rule.exp)) levelUps.push(partner.name)
+    if (addExp(partner, rule.exp)) levelUps++
     if (rule.incomeMin !== undefined) {
       totalIncome += Math.floor(Math.random() * (rule.incomeMax - rule.incomeMin + 1)) + rule.incomeMin
     }
@@ -949,7 +1023,7 @@ if (action === 'all') {
 
   const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString()}` : ''
   const incomeLine = totalIncome ? `\n> ↳ Pendapatan: +Rp ${totalIncome.toLocaleString()}` : ''
-  const levelLine = levelUps.length ? `\n> ↳ Level up: ${levelUps.join(', ')}` : ''
+  const levelLine = levelUps ? `\n> ↳ Level up: ${levelUps} kali` : ''
   return m.reply(`✅ Aktivitas untuk *${partner.name}* selesai.\n> ↳ Dijalankan: ${completedActivities.join(', ')}\n> ↳ EXP dan Love mengikuti hasil tiap aktivitas${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown all: 30 menit`)
 }
 

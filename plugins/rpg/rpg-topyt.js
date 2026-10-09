@@ -1,4 +1,5 @@
 import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { filterLeaderboardUsers } from '../../lib/leaderboardPrivacy.js'
 
 function normalizeYoutube(data = {}) {
   return {
@@ -22,7 +23,7 @@ let handler = async (m, { conn }) => {
   const wdb = loadDB()
   if (!wdb.users) return m.reply('KESALAHAN: Data tidak ditemukan.')
 
-  const topYoutuber = Object.entries(wdb.users)
+  const topYoutuber = filterLeaderboardUsers(Object.entries(wdb.users), conn, ([jid]) => jid)
     .filter(([_, u]) => u.youtube && u.youtube.name)
     .map(([_, u]) => normalizeYoutube(u.youtube))
     .sort((a, b) => b.subs - a.subs)

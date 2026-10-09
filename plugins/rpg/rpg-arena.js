@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isDifficultyRanked, scaleDifficultyDamage, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 const MODES = {
   jambak: { nama: 'Jambak', emoji: '💇', verb: 'dijambak' },
@@ -101,7 +102,7 @@ function removeChallenge(id) {
   if (global.arena?.[id]) delete global.arena[id]
 }
 
-let handler = async (m, { conn, text, usedPrefix, command, args }) => {
+let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }) => {
   const wdb = loadDB()
   global.arena = global.arena || {}
   wdb.money = wdb.money || {}
@@ -146,7 +147,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
 
   if ((command === 'arena' || command === 'versus') && action === 'top') {
     const page = Math.max(1, parseInt(args[1]) || 1)
-    const rows = Object.entries(wdb.users || {})
+    const rows = filterLeaderboardUsers(Object.entries(wdb.users || {}), conn, ([jid]) => jid)
       .map(([jid, entry]) => {
         const player = entry?.rpg || entry
         if (!player || !isDifficultyRanked(player)) return null
@@ -165,12 +166,16 @@ let handler = async (m, { conn, text, usedPrefix, command, args }) => {
     for (const [index, row] of visible.entries()) {
       const rank = start + index + 1
       const medal = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`
-      cap += `${medal} @${row.jid.split('@')[0]}\n> ↳ Total menang: *${row.total}x*\n\n`
+      const identity = getLeaderboardUserIdentity(row.jid, { conn, groupMetadata })
+      cap += `${medal} ${identity.display}\n> ↳ Total menang: *${row.total}x*\n\n`
     }
 
     cap += `─━━━━━━━━━━━━━━─\n> Halaman: ${page}`
     if (start + 10 < rows.length) cap += ` | Berikutnya: ${usedPrefix}versus top ${page + 1}`
-    return conn.reply(m.chat, cap, m, { mentions: visible.map(row => row.jid).concat(sender) })
+    const mentions = visible
+      .map(row => getLeaderboardUserIdentity(row.jid, { conn, groupMetadata }).mention)
+      .filter(Boolean)
+    return conn.reply(m.chat, cap, m, { mentions })
   }
 
   if (!mode) return m.reply(`❌ Mode versus tidak dikenal. Gunakan *${usedPrefix}versus* untuk melihat pilihan.`)

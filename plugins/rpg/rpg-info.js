@@ -1,5 +1,8 @@
 const CORE_COMMANDS = [
   ['.adventure', 'Profil dan aktivitas petualangan'],
+  ['.explore', 'Menjelajahi antarbintang dengan Interstellar Gateway'],
+  ['.evx', 'Melihat statistik Evonexus untuk pemilik Eternal Card'],
+  ['.lelang', 'Melihat penawaran lelang eksklusif dengan Auction Pass'],
   ['.rpgstat', 'Melihat statistik RPG'],
   ['.mychar / .bloodline / .wardrobe', 'Melihat karakter, mengatur bloodline, dan outfit'],
   ['.cooldown', 'Melihat cooldown RPG'],

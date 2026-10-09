@@ -1,5 +1,6 @@
 import { addRpgExp, getUserRPG, loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import {
   getMountTitle,
   MOUNTAINS,
@@ -76,7 +77,7 @@ const getName = (conn, jid) => {
   return conn.getName?.(jid) || jid.split('@')[0]
 }
 
-const handler = async (m, { conn, text, usedPrefix, isOwner }) => {
+const handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   const wdb = loadDB()
   const data = global.db.data
   const stats = ensureMountStats(data)
@@ -577,7 +578,7 @@ if (action === 'profile' || action === 'profil') {
 }
 
 if (action === 'top' || action === 'leaderboard') {
-    const entries = Object.entries(wdb.users)
+    const entries = filterLeaderboardUsers(Object.entries(wdb.users), conn, ([jid]) => jid)
         .map(([jid, player]) => ({ jid, name: getName(conn, jid), ...getUserMount(player) }))
         .filter(player => player.summits > 0)
         .sort((a, b) => b.summits - a.summits || b.exp - a.exp)
@@ -589,12 +590,17 @@ if (action === 'top' || action === 'leaderboard') {
         `╰─━━━━━━━━━━━━━━─`
     )
 
-    const rows = entries.map((player, index) =>
-        `🏆 *${index + 1}. ${player.name}*\n` +
+    const rows = entries.map((player, index) => {
+        const identity = getLeaderboardUserIdentity(player.jid, {
+            conn,
+            groupMetadata,
+            name: player.name
+        })
+        return `🏆 *${index + 1}. ${identity.display}*\n` +
         `> ↳ Title : ${getMountTitle(player.summits)}\n` +
         `> ↳ Puncak : ${player.summits}\n` +
         `> ↳ XP : ${player.exp.toLocaleString('id-ID')}`
-    ).join('\n\n')
+    }).join('\n\n')
 
     return m.reply(
         `╭─❏「 🏆 TOP PENDAKI 」❏\n` +

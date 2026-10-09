@@ -2,6 +2,7 @@ import { randomInt as cryptoRandomInt } from 'node:crypto'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -356,8 +357,8 @@ function getGameCooldownDuration(game, multiplier, user) {
   return scaleDifficultyCooldown(user, GAME_COOLDOWN * wagerTier * rewardFactor)
 }
 
-function getTopPlayers(wdb, limit = 20) {
-  return Object.entries(wdb.users || {})
+function getTopPlayers(wdb, limit = 20, conn) {
+  const players = Object.entries(wdb.users || {})
     .flatMap(([jid, account]) => {
       const rpg = account?.rpg
       const stats = rpg?.casinoStats
@@ -374,6 +375,7 @@ function getTopPlayers(wdb, limit = 20) {
         title: getCasinoTitle(games)
       }]
     })
+  return filterLeaderboardUsers(players, conn, player => player.jid)
     .sort((a, b) => b.profit - a.profit || b.wins - a.wins)
     .slice(0, limit)
 }
@@ -472,9 +474,10 @@ function getPositivePlayerProfitTotal(wdb) {
   }, 0)
 }
 
-function menu(prefix, wdb) {
-  const leader = getTopPlayers(wdb, 1)[0]
-  const mentions = leader && !leader.nickname ? [leader.jid] : []
+function menu(prefix, wdb, conn, groupMetadata) {
+  const leader = getTopPlayers(wdb, 1, conn)[0]
+  const leaderIdentity = leader ? getLeaderboardUserIdentity(leader.jid, { conn, groupMetadata }) : null
+  const mentions = leader && !leader.nickname && leaderIdentity?.mention ? [leaderIdentity.mention] : []
   const totalProfit = getPositivePlayerProfitTotal(wdb)
 
   let text = `╭─❏「 🎰 AVELIA CASINO 」❏\n`
@@ -488,7 +491,7 @@ function menu(prefix, wdb) {
 
   text += `🏆 *TOP CASINO #1*\n`
   text += leader
-    ? `> ↳ ${casinoPlayerName(leader)}\n> ↳ Profit: ${signedMoney(leader.profit)}\n`
+    ? `> ↳ ${casinoPlayerName(leader, leaderIdentity)}\n> ↳ Profit: ${signedMoney(leader.profit)}\n`
     : `> ↳ Belum ada pemain\n`
   text += `\n`
 
@@ -507,9 +510,8 @@ function menu(prefix, wdb) {
   return { text, mentions }
 }
 
-function casinoPlayerName(player) {
-  const tag = `@${player.jid.split('@')[0]}`
-  return player.nickname || tag
+function casinoPlayerName(player, identity) {
+  return player.nickname || identity?.display || '@pengguna'
 }
 
 function getCasinoNickname(wdb, jid) {
@@ -527,8 +529,8 @@ function gamesMenu(prefix) {
   return `╭─❏「 🎮 DAFTAR CASINO 」❏\n│ Total permainan: ${Object.keys(games).length}\n╰─━━━━━━━━━━━━━━─\n\n${list}`
 }
 
-function top(wdb) {
-  const players = getTopPlayers(wdb)
+function top(wdb, conn, groupMetadata) {
+  const players = getTopPlayers(wdb, 20, conn)
 
   if (!players.length) {
     return { text: `╭─❏「 🏆 CASINO TOP 」❏\n` +
@@ -540,8 +542,11 @@ function top(wdb) {
   text += `│ Pemain dengan kemenangan terbanyak.\n`
   text += `╰─━━━━━━━━━━━━━━─\n\n`
 
+  const mentions = []
   players.forEach((player, index) => {
-    text += `> *${index + 1}. 🏆 ${casinoPlayerName(player)}*\n`
+    const identity = getLeaderboardUserIdentity(player.jid, { conn, groupMetadata })
+    if (!player.nickname && identity.mention) mentions.push(identity.mention)
+    text += `> *${index + 1}. 🏆 ${casinoPlayerName(player, identity)}*\n`
     text += `> ↳ Title: ${player.title}\n`
     text += `> ↳ Menang: ${player.wins}x\n`
     text += `> ↳ Main: ${player.games}x\n`
@@ -552,7 +557,7 @@ function top(wdb) {
     }
   })
 
-  return { text, mentions: players.filter(player => !player.nickname).map(player => player.jid) }
+  return { text, mentions }
 }
 
 function profile(user, sender, dailyLimit, showProfit = false) {
@@ -1191,7 +1196,7 @@ return m.reply(
 )
 }
 
-let handler = async (m, { conn, args, usedPrefix }) => {
+let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
   const wdb = loadDB()
   const user = wdb.users?.[m.sender]?.rpg
 
@@ -1303,7 +1308,7 @@ return m.reply(
   const dailyLimit = getDailyLimit(m.sender, wdb)
 
   if (!input) {
-    const overview = menu(usedPrefix, wdb)
+    const overview = menu(usedPrefix, wdb, conn, groupMetadata)
     return sendRpgMsg(conn, m, overview.text, CASINO_IMAGE, { mentions: overview.mentions })
   }
 
@@ -1333,7 +1338,7 @@ return m.reply(
   }
 
   if (input === 'top') {
-    const leaderboard = top(wdb)
+    const leaderboard = top(wdb, conn, groupMetadata)
     return conn.reply(m.chat, leaderboard.text, m, { mentions: leaderboard.mentions })
   }
 
@@ -1359,7 +1364,7 @@ return m.reply(
       : aliases[input]
 
   if (!game) {
-    const overview = menu(usedPrefix, wdb)
+    const overview = menu(usedPrefix, wdb, conn, groupMetadata)
     return sendRpgMsg(conn, m, overview.text, CASINO_IMAGE, { mentions: overview.mentions })
   }
 

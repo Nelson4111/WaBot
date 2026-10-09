@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '.
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
+import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -27,17 +28,18 @@ const itemEmoji = {
   'pedang_legendaris': '⚔️👑', 'buku_sihir_kuno': '📚', 'armor_naga': '🐉🛡️', 'mahkota_raja': '👑',
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻',
   'iron': '⛓️',
+  ...Object.fromEntries([...INTERSTELLAR_ITEM_BY_ID].map(([id, item]) => [id, item.emoji])),
   ...Object.fromEntries(MOUNT_TRASH.map(({ id, emoji }) => [id, emoji]))
 }
 
 let secret = ['jiwa_abadi', 'segel_dewa'];
-let mythic = ['air_mata_dewi', 'pecahan_bintang'];
-let legendary = ['armor_naga', 'buku_sihir_kuno', 'pedang_legendaris', 'mahkota_raja'];
-let epic = ['permata_biru', 'permata_merah', 'permata_hijau', 'peta_harta'];
+let mythic = ['air_mata_dewi', 'pecahan_bintang', 'pulsar_heart'];
+let legendary = ['armor_naga', 'buku_sihir_kuno', 'pedang_legendaris', 'mahkota_raja', 'ancient_satellite'];
+let epic = ['permata_biru', 'permata_merah', 'permata_hijau', 'peta_harta', 'void_silk', 'stellar_compass', 'aurora_fragment'];
 let rare = ['diamond', 'koin_emas', 'ramuan_besar', 'pedang_baja', 'armor_kulit'];
-let uncommon = ['koin_perak', 'ramuan_sedang', 'belati_karat', 'perisai_kayu'];
+let uncommon = ['koin_perak', 'ramuan_sedang', 'belati_karat', 'perisai_kayu', 'ion_crystal', 'meteor_pearl', 'orbiting_seed'];
 let common = ['kayu', 'koin_tembaga', 'ramuan_kecil', 'tali'];
-let trash = ['tulang', 'batu', 'jamur', 'daun_kering', 'kain_lusuh'];
+let trash = ['tulang', 'batu', 'jamur', 'daun_kering', 'kain_lusuh', 'nebula_dust', 'lunar_alloy', 'comet_ice', 'starwood', 'stellar_credit'];
 
 const tierInfo = {
   SECRET: {icon:'🔮', stars:'★★★★★★★'}, MYTHIC: {icon:'🌌', stars:'★★★★★★☆'},

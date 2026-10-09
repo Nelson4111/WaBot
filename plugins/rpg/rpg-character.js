@@ -500,6 +500,13 @@ const accessories = Array.isArray(outfit.accessories) ? outfit.accessories : []
 const name = rpg.character.name || registeredUser.name || m.pushName || 'Petualang'
 const gender = rpg.character.gender || registeredUser.gender || 'Belum diatur'
 const age = rpg.character.age ?? registeredUser.age
+const nickname = String(rpg.nickname || '').trim()
+const prisonRemaining = rpg.penjara
+  ? Math.max(0, Number(rpg.lamaPenjara || 0) - (Date.now() - Number(rpg.penjara)))
+  : 0
+const prisonStatus = prisonRemaining >= 60_000
+  ? `Sedang di penjara • SEL ${rpg.sel || '-'} • Sisa ${Math.floor(prisonRemaining / 3_600_000)}j ${Math.floor((prisonRemaining % 3_600_000) / 60_000)}m`
+  : 'Bebas'
 
 const equipment = [
   `> 🗡️ Weapon: ${rpg.sword ? getEquipmentName('sword', rpg.sword) : 'None'}`,
@@ -522,6 +529,8 @@ return m.reply(
   `╰─━━━━━━━━━━━━━━─\n\n` +
   `👤 *IDENTITAS*\n` +
   `> ↳ Nama: *${name}*\n` +
+  `> ↳ Julukan: *${nickname || 'Belum diatur'}*\n` +
+  `> ↳ Status: ${prisonStatus}\n` +
   `> ↳ Bloodline: ${bloodline.emoji} *${bloodline.name}*\n` +
   `> ↳ Gender: ${gender}\n` +
   `> ↳ Umur: ${age ? `${age} tahun` : 'Belum diatur'}\n` +

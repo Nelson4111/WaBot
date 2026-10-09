@@ -1,39 +1,67 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
+  MALL_CATEGORY_ALIASES,
+  MALL_CATEGORIES
+} from '../../lib/rpgMallData.js'
+import {
+  HOME_ACTIVITY_COOLDOWN,
   HOME_BASE_CAPACITY,
+  HOME_BASE_FURNITURE_CAPACITY,
+  HOME_CARE_STORIES,
+  HOME_CONFIRMATION_TTL,
+  HOME_EAT_HARMONY,
+  HOME_LEVELS,
   HOME_MAX_UPGRADES,
   HOME_PREMIUM_CAPACITY_BONUS,
+  HOME_PREMIUM_FURNITURE_BONUS,
   HOME_PREMIUM_UPGRADE_DISCOUNT,
-  HOME_UPGRADE_BASE_COST,
   HOME_UPGRADE_CAPACITY,
-  MALL_CATEGORIES,
-  getHomeComfort
-} from '../../lib/rpgMallData.js'
+  HOME_PREMIUM_STAFF_DISCOUNT,
+  HOME_STAFF,
+  HOME_STAFF_CONTRACT_DAYS,
+  HOME_STORIES,
+  HOME_UPGRADE_FURNITURE_CAPACITY,
+  clampHomeStat,
+  getHomeComfort,
+  getHomeLevel
+} from '../../lib/rpgHomeData.js'
+import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
+import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
+import { hargaBeli, masakanResep, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 const money = value => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 const displayName = item => `${item.emoji} ${item.name}`
+const collectionItems = [...MALL_CATEGORIES.koleksi.items, ...AUCTION_ITEMS, ...BANK_SPECIAL_ITEMS]
 const allItems = Object.entries(MALL_CATEGORIES).flatMap(([category, data]) =>
   data.items.map(item => ({ ...item, category }))
-)
+).concat(AUCTION_ITEMS, BANK_SPECIAL_ITEMS)
 
 function findItem(input, category) {
   const key = normalize(input)
   if (!key) return null
-  const candidates = category ? (MALL_CATEGORIES[category]?.items.map(item => ({ ...item, category })) || []) : allItems
+  const candidates = category
+    ? (category === 'koleksi' ? collectionItems : MALL_CATEGORIES[category]?.items || []).map(item => ({ ...item, category }))
+    : allItems
   return candidates.find(item => normalize(item.id) === key || normalize(item.name) === key)
     || candidates.find(item => normalize(item.name).includes(key))
 }
 
 function getHome(rpg) {
   if (!rpg.home || typeof rpg.home !== 'object') {
-    rpg.home = { level: 0, public: false, access: [], blocked: [], visitors: [], visitCount: 0, likes: [], furniture: [] }
+    rpg.home = { level: 0, public: false, access: [], blocked: [], visitors: [], visitCount: 0, likes: [], furniture: [], trophies: [] }
   }
   const home = rpg.home
-  for (const key of ['access', 'blocked', 'visitors', 'likes', 'furniture']) {
+  for (const key of ['access', 'blocked', 'visitors', 'likes', 'furniture', 'trophies', 'staff']) {
     if (!Array.isArray(home[key])) home[key] = []
   }
+  home.level = Math.min(HOME_MAX_UPGRADES, Math.max(0, Math.floor(Number(home.level) || 0)))
+  home.harmony = clampHomeStat(home.harmony ?? 0)
+  home.security = getHomeLevel(home.level).security
+  home.hygiene = clampHomeStat(home.hygiene ?? 70)
+  home.aesthetics = clampHomeStat(home.aesthetics ?? 0)
   home.visitCount = Number(home.visitCount) || 0
   return home
 }
@@ -69,7 +97,66 @@ function mentionsOrReply(m, args) {
   return { target, args: args.filter(arg => !/^@/.test(arg)) }
 }
 
-let handler = async (m, { text = '', usedPrefix, command }) => {
+function getPartnerJid(partner) {
+  const digits = String(partner?.name || '').replace(/\D/g, '')
+  return digits.length >= 8 ? `${digits}@s.whatsapp.net` : null
+}
+
+function getHomeMembers(rpg) {
+  const spouses = (Array.isArray(rpg.harem) ? rpg.harem : [])
+    .filter(partner => partner && Number(partner.level) >= 40)
+  const children = Array.isArray(rpg.kids) ? rpg.kids : []
+  const pets = Array.isArray(rpg.pets) ? rpg.pets : []
+  return { spouses, children, pets }
+}
+
+function getStaffRecord(home, name) {
+  return home.staff.find(staff => normalize(staff.name) === normalize(name))
+}
+
+function getStaffCost(staff, premium) {
+  const price = staff.hireCost + staff.salary
+  return Math.floor(price * (premium ? 1 - HOME_PREMIUM_STAFF_DISCOUNT : 1))
+}
+
+function formatHomeDuration(timestamp) {
+  if (!timestamp) return 'Belum ada kontrak'
+  const remaining = timestamp - Date.now()
+  if (remaining <= 0) return 'Kontrak habis'
+  const days = Math.ceil(remaining / 86400000)
+  return `${days} hari lagi`
+}
+
+function getHomePopularity(home, comfort, members, collectionCount) {
+  return Math.min(100, Math.floor(
+    (Number(home.level) || 0) * 2 +
+    (Number(home.harmony) || 0) * 0.25 +
+    (Number(home.security) || 0) * 0.15 +
+    (Number(home.hygiene) || 0) * 0.15 +
+    (Number(home.aesthetics) || 0) * 0.15 +
+    comfort.level +
+    Math.min(10, members.spouses.length + members.children.length + members.pets.length) +
+    Math.min(10, collectionCount)
+  ))
+}
+
+function getHomeAesthetics(home, inventory) {
+  const decor = [...new Map(
+    [...MALL_CATEGORIES.furniture.items, ...collectionItems].map(item => [item.id, item])
+  ).values()]
+  const owned = decor.reduce((total, item) => total + Math.max(0, Number(inventory[item.id]) || 0), 0)
+  const designerBonus = home.staff.some(staff => staff.key === 'stripper' && staff.expiresAt > Date.now()) ? 15 : 0
+  return clampHomeStat(home.aesthetics + designerBonus + Math.floor((owned + home.furniture.length + home.trophies.length) / 2))
+}
+
+function getHomeSecurity(home) {
+  const baseSecurity = getHomeLevel(home.level).security
+  const bodyguard = home.staff.some(staff => staff.key === 'bodyguard' && staff.expiresAt > Date.now()) ? 15 : 0
+  const guard = home.staff.some(staff => staff.key === 'security guard' && staff.expiresAt > Date.now()) ? 10 : 0
+  return clampHomeStat(baseSecurity + bodyguard + guard)
+}
+
+let handler = async (m, { conn, text = '', usedPrefix, command, groupMetadata }) => {
   const db = loadDB()
   const sender = normalizeJid(m.sender)
   const account = getUserRPG(db, sender)
@@ -92,13 +179,346 @@ let handler = async (m, { text = '', usedPrefix, command }) => {
   }
 
   if (!['home', 'rumah'].includes(root)) return null
-  const mode = String(tokens[0] || '').toLowerCase()
-  const home = getHome(rpg)
-  const capacity = HOME_BASE_CAPACITY + (Number(home.level) || 0) * HOME_UPGRADE_CAPACITY + (premium ? HOME_PREMIUM_CAPACITY_BONUS : 0)
-  const furnitureInventory = getCollection(rpg)
-  const comfort = () => getHomeComfort(home, furnitureInventory)
+const mode = String(tokens[0] || '').toLowerCase()
+const home = getHome(rpg)
+const capacity = HOME_BASE_FURNITURE_CAPACITY + (Number(home.level) || 0) * HOME_UPGRADE_FURNITURE_CAPACITY + (premium ? HOME_PREMIUM_FURNITURE_BONUS : 0)
+const residentCapacity = HOME_BASE_CAPACITY + (Number(home.level) || 0) * HOME_UPGRADE_CAPACITY + (premium ? HOME_PREMIUM_CAPACITY_BONUS : 0)
+const furnitureInventory = getCollection(rpg)
+const comfort = () => getHomeComfort(home, furnitureInventory)
 
-  if (!mode) {
+const yes = ['yes', 'ya', 'iya', 'y', 'konfirmasi', 'setuju'].includes(normalize(tokens[1] || mode))
+const no = ['no', 'tidak', 'batal', 'cancel', 'tolak', 'n'].includes(normalize(tokens[1] || mode))
+if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no', 'tidak', 'batal', 'cancel'].includes(normalize(tokens[1])))) {
+  const pending = home.pendingConfirmation
+  if (!pending || Date.now() - Number(pending.createdAt || 0) > HOME_CONFIRMATION_TTL) {
+    delete home.pendingConfirmation
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏠 KONFIRMASI RUMAH 」❏\n` +
+      `│ ⚠️ *KONFIRMASI KEDALUWARSA*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Tidak ada konfirmasi rumah yang masih berlaku.\n` +
+      `> ↳ Jalankan perintahnya kembali.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  delete home.pendingConfirmation
+  if (no) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏠 KONFIRMASI RUMAH 」❏\n` +
+      `│ ❌ *AKSI DIBATALKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (pending.type === 'upgrade') {
+    const currentLevel = Number(home.level) || 0
+    const next = getHomeLevel(currentLevel + 1)
+    const cost = Math.floor(next.cost * (premium ? 1 - HOME_PREMIUM_UPGRADE_DISCOUNT : 1))
+    if (currentLevel !== Number(pending.fromLevel) || cost !== Number(pending.cost) ||
+        currentLevel >= HOME_MAX_UPGRADES || wallet() < cost) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 ⬆️ UPGRADE RUMAH 」❏\n` +
+        `│ ⚠️ *UPGRADE TIDAK DIPROSES*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Level, harga, atau saldo berubah.\n` +
+        `> ↳ Periksa kembali dengan *${prefix}home upgrade*.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    setWallet(wallet() - cost)
+    home.level = currentLevel + 1
+    home.security = getHomeLevel(home.level).security
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 ⬆️ UPGRADE RUMAH 」❏\n` +
+      `│ ✅ *UPGRADE BERHASIL*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🏠 *INFORMASI RUMAH*\n` +
+      `> ↳ Rumah: *${getHomeLevel(home.level).name}*\n` +
+      `> ↳ Level: ${home.level}/${HOME_MAX_UPGRADES}\n` +
+      `> ↳ Biaya: ${money(cost)}\n\n` +
+      `📊 *KAPASITAS & KEAMANAN*\n` +
+      `> ↳ Kapasitas penghuni: ${residentCapacity + HOME_UPGRADE_CAPACITY}\n` +
+      `> ↳ Kapasitas furniture: ${capacity + HOME_UPGRADE_FURNITURE_CAPACITY}\n` +
+      `> ↳ Security: ${getHomeSecurity(home)}/100\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (pending.type === 'invite' || pending.type === 'kick') {
+    const target = normalizeJid(pending.target)
+    const targetAccount = getUser(db, target)
+    if (!targetAccount?.rpg) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 🏠 AKSES RUMAH 」❏\n` +
+        `│ ❌ *AKUN TIDAK TERSEDIA*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Akun target tidak lagi tersedia.\n` +
+        `> ↳ Aksi dibatalkan.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    const targetHome = getHome(targetAccount.rpg)
+    if (pending.type === 'invite') {
+      const members = getHomeMembers(rpg)
+      const spouseIds = new Set(members.spouses.map(getPartnerJid).filter(Boolean).map(normalizeJid))
+      const guests = [...new Set([...home.access, ...home.visitors])]
+        .filter(jid => !spouseIds.has(normalizeJid(jid)))
+      if (!spouseIds.has(target) && !guests.includes(target) && guests.length + 1 >= residentCapacity) {
+        await saveDB(db)
+        return m.reply(
+          `╭─❏「 🏠 AKSES RUMAH 」❏\n` +
+          `│ ⚠️ *KAPASITAS PENGHUNI PENUH*\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Kapasitas penghuni non-keluarga: ${residentCapacity}\n` +
+          `> ↳ Upgrade rumah terlebih dahulu.\n\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
+      }
+      home.blocked = home.blocked.filter(jid => normalizeJid(jid) !== target)
+      if (!home.access.some(jid => normalizeJid(jid) === target)) home.access.push(target)
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 🏠 AKSES RUMAH 」❏\n` +
+        `│ ✅ *UNDANGAN BERHASIL*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ @${target.split('@')[0]} berhasil diundang ke rumah.\n\n` +
+        `─━━━━━━━━━━━━━━─`,
+        null,
+        { mentions: [target] }
+      )
+    }
+
+    const members = getHomeMembers(rpg)
+    const spouse = members.spouses.find(partner => normalizeJid(getPartnerJid(partner) || '') === target)
+    home.access = home.access.filter(jid => normalizeJid(jid) !== target)
+    home.visitors = home.visitors.filter(jid => normalizeJid(jid) !== target)
+    if (targetAccount.rpg.lastVisitedHome === sender) delete targetAccount.rpg.lastVisitedHome
+    if (!home.blocked.includes(target)) home.blocked.push(target)
+    if (spouse) {
+      rpg.harem = rpg.harem.filter(partner => partner !== spouse)
+      const otherSpouse = (targetAccount.rpg.harem || []).find(partner =>
+        normalizeJid(getPartnerJid(partner) || '') === sender
+      )
+      if (otherSpouse) targetAccount.rpg.harem = targetAccount.rpg.harem.filter(partner => partner !== otherSpouse)
+      rpg.ex = Array.isArray(rpg.ex) ? rpg.ex : []
+      targetAccount.rpg.ex = Array.isArray(targetAccount.rpg.ex) ? targetAccount.rpg.ex : []
+      rpg.ex.push(spouse)
+      if (otherSpouse) targetAccount.rpg.ex.push(otherSpouse)
+    }
+    await saveDB(db)
+    const message = spouse
+      ? `💔 @${target.split('@')[0]} dikeluarkan dari rumah. Konfirmasi ini juga mengakhiri hubungan pernikahan kalian.`
+      : `🚫 Akses @${target.split('@')[0]} ke rumah berhasil dicabut.`
+    return m.reply(
+      `╭─❏「 🏠 AKSES RUMAH 」❏\n` +
+      `│ ${spouse ? '💔 *PENGHUNI DIKELUARKAN*' : '🚫 *AKSES DICABUT*'}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ${message}\n\n` +
+      `─━━━━━━━━━━━━━━─`,
+      null,
+      { mentions: [target] }
+    )
+  }
+
+  if (pending.type === 'hire' || pending.type === 'renew') {
+    const staff = HOME_STAFF[pending.staff]
+    if (!staff) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+        `│ ❌ *DATA STAFF TIDAK DITEMUKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Tidak ada biaya yang dipotong.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    const price = getStaffCost(staff, premium)
+    if (price !== Number(pending.cost) || wallet() < price) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+        `│ ⚠️ *PEMBAYARAN DIBATALKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Biaya atau saldo berubah.\n` +
+        `> ↳ Tidak ada pembayaran.\n` +
+        `> ↳ Ulangi perintah staff untuk melihat biaya terbaru: ${money(price)}.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    let record = getStaffRecord(home, staff.name)
+    if (pending.type === 'hire' && record && record.expiresAt > Date.now()) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+        `│ ⚠️ *STAFF MASIH AKTIF*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Gunakan .home staff renew untuk memperpanjang kontrak.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    setWallet(wallet() - price)
+    if (!record) {
+      record = { name: staff.name, key: pending.staff, hiredAt: Date.now(), expiresAt: 0, paid: 0 }
+      home.staff.push(record)
+    }
+    record.key = pending.staff
+    record.expiresAt = Math.max(Date.now(), Number(record.expiresAt) || 0) + HOME_STAFF_CONTRACT_DAYS * 86400000
+    record.paid = (Number(record.paid) || 0) + price
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ✅ *KONTRAK ${pending.type === 'hire' ? 'DIBUAT' : 'DIPERPANJANG'}*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `👤 *INFORMASI STAFF*\n` +
+      `> ↳ Staff: ${staff.emoji} ${staff.name}\n` +
+      `> ↳ Biaya: ${money(price)}\n` +
+      `> ↳ Durasi: ${HOME_STAFF_CONTRACT_DAYS} hari\n` +
+      `> ↳ Efek: ${staff.effect}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (pending.type === 'eat') {
+    const total = Math.max(0, Number(pending.total) || 0)
+    if (wallet() < total) {
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 🍽️ MAKAN BERSAMA 」❏\n` +
+        `│ ⚠️ *SALDO TIDAK MENCUKUPI*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Saldo kurang dan tidak cukup untuk makanan chef (${money(total)}).\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    setWallet(wallet() - total)
+    const members = getHomeMembers(rpg)
+    const mealText = (pending.meals || []).map(meal => `${meal.emoji || '🍽️'} ${formatMasakanNama(meal.name)} x${meal.amount}`).join(', ')
+    const story = HOME_CARE_STORIES.eat[Math.floor(Math.random() * HOME_CARE_STORIES.eat.length)]
+    const previousHarmony = home.harmony
+    home.harmony = clampHomeStat(home.harmony + HOME_EAT_HARMONY)
+    const harmonyGained = home.harmony - previousHarmony
+    for (const partner of members.spouses.slice(0, 2)) partner.love = Math.min(100, (Number(partner.love) || 0) + 1)
+    for (const pet of members.pets.slice(0, 2)) pet.happy = clampHomeStat((Number(pet.happy) || 0) + 5)
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🍽️ MAKAN BERSAMA 」❏\n` +
+      `│ ✅ *PRIVATE CHEF MENYAJIKAN MENU*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📖 *CERITA*\n` +
+      `> ${story}\n\n` +
+      `🍽️ *MENU MAKANAN*\n` +
+      `> ↳ Menu: ${mealText}\n` +
+      `> ↳ Biaya restoran: ${money(total)}\n\n` +
+      `🏡 *KONDISI RUMAH*\n` +
+      `> ↳ Harmony rumah: +${harmonyGained} (sekarang ${home.harmony}/100)\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+
+    if (pending.type === 'fire') {
+  const record = getStaffRecord(home, pending.name)
+  if (!record) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ❌ *STAFF TIDAK DITEMUKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+  }
+  home.staff = home.staff.filter(staff => staff !== record)
+  await saveDB(db)
+  return m.reply(
+    `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+    `│ ✅ *KONTRAK STAFF DIHENTIKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Staff: ${record.name}\n` +
+    `> ↳ Kontrak berhasil dihentikan.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (pending.type === 'hireAll') {
+  if (!premium) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ❌ *FITUR PREMIUM*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Fitur staff hire all hanya tersedia untuk akun Premium.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  const missing = Object.entries(HOME_STAFF).filter(([, staff]) =>
+    !getStaffRecord(home, staff.name) || getStaffRecord(home, staff.name).expiresAt <= Date.now()
+  )
+  const total = missing.reduce((sum, [, staff]) => sum + getStaffCost(staff, premium), 0)
+  if (total !== Number(pending.cost) || wallet() < total) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ⚠️ *PEMBAYARAN DIBATALKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Biaya atau saldo berubah.\n` +
+      `> ↳ Tidak ada pembayaran.\n` +
+      `> ↳ Jalankan kembali untuk melihat total terbaru: ${money(total)}.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  setWallet(wallet() - total)
+  for (const [key, staff] of missing) {
+    const record = getStaffRecord(home, staff.name) || { name: staff.name, key, hiredAt: Date.now(), expiresAt: 0, paid: 0 }
+    if (!home.staff.includes(record)) home.staff.push(record)
+    record.key = key
+    record.expiresAt = Math.max(Date.now(), Number(record.expiresAt) || 0) + HOME_STAFF_CONTRACT_DAYS * 86400000
+    record.paid = (Number(record.paid) || 0) + getStaffCost(staff, premium)
+  }
+  await saveDB(db)
+  return m.reply(
+    `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+    `│ ✅ *SEMUA STAFF BERHASIL DIAKTIFKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `👤 *INFORMASI KONTRAK*\n` +
+    `> ↳ Durasi: ${HOME_STAFF_CONTRACT_DAYS} hari\n` +
+    `> ↳ Total biaya: ${money(total)}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+}
+
+const requestConfirmation = async (pending, summary) => {
+  if (home.pendingConfirmation && Date.now() - Number(home.pendingConfirmation.createdAt || 0) <= HOME_CONFIRMATION_TTL) {
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI RUMAH 」❏\n` +
+      `│ ⚠️ *KONFIRMASI MASIH MENUNGGU*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Balas *${prefix}home yes* untuk melanjutkan.\n` +
+      `> ↳ Balas *${prefix}home no* untuk membatalkan.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  home.pendingConfirmation = { ...pending, createdAt: Date.now() }
+  await saveDB(db)
+  return m.reply(
+    `╭─❏「 ⚠️ KONFIRMASI RUMAH 」❏\n` +
+    `│ ⚠️ *PERIKSA SEBELUM MELANJUTKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${summary}\n\n` +
+    `📌 *PILIHAN KONFIRMASI*\n` +
+    `> ↳ Balas *${prefix}home yes* untuk melanjutkan.\n` +
+    `> ↳ Balas *${prefix}home no* untuk membatalkan.\n` +
+    `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (!mode) {
   return m.reply(
     `╭─❏「 🏠 HOME / RUMAH 」❏\n` +
     `│ 🏠 *HOME / RUMAH*\n` +
@@ -113,21 +533,71 @@ let handler = async (m, { text = '', usedPrefix, command }) => {
 
 if (mode === 'info') {
   const homeComfort = comfort()
+  const members = getHomeMembers(rpg)
+  const aesthetics = getHomeAesthetics(home, furnitureInventory)
+  const collectionCount = Object.values(furnitureInventory).reduce((total, count) => total + Math.max(0, Number(count) || 0), 0)
+  const popularity = getHomePopularity(
+    { ...home, aesthetics, security: getHomeSecurity(home) },
+    homeComfort,
+    members,
+    collectionCount
+  )
+
+  const spouses = members.spouses.map(partner => {
+    const jid = getPartnerJid(partner)
+    const partnerAccount = jid ? getUser(db, jid) : null
+    return { jid, name: partnerAccount?.name || partner?.name || 'Pasangan' }
+  })
+
+  const spouseList = spouses.length
+    ? spouses.map((partner, index) =>
+        `> ↳ ${index + 1}. ${partner.jid ? `@${partner.jid.split('@')[0]}` : partner.name}`
+      ).join('\n')
+    : '> ↳ Belum ada'
+
+  const childList = members.children.length
+    ? members.children.map((child, index) =>
+        `> ↳ ${index + 1}. ${child.nama || child.name || 'Anak'}`
+      ).join('\n')
+    : '> ↳ Belum ada'
+
+  const petList = members.pets.length
+    ? members.pets.map((pet, index) =>
+        `> ↳ ${index + 1}. ${pet.nickname || pet.tipe || pet.name || 'Pet'}`
+      ).join('\n')
+    : '> ↳ Belum ada'
 
   return m.reply(
-    `╭─❏「 🏠 RUMAH ${m.pushName || 'PEMAIN'} 」❏\n` +
+    `╭─❏「 🏠 ${getHomeLevel(home.level).name.toUpperCase()} 」❏\n` +
     `│ 🏠 *INFORMASI RUMAH*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Status : ${home.public ? 'Publik' : 'Pribadi'}\n` +
-    `> ↳ Upgrade : ${home.level}/${HOME_MAX_UPGRADES}\n` +
-    `> ↳ Furniture dimiliki : ${homeComfort.furnitureCount}\n` +
-    `> ↳ Kenyamanan : *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
-    `> ↳ Kapasitas pasang : ${home.furniture.length}/${capacity}\n` +
-    `> ↳ Like : ${home.likes.length}\n` +
-    `> ↳ Kunjungan : ${home.visitCount}\n\n` +
-    `📌 *INFORMASI KENYAMANAN*\n` +
-    `> ↳ Setiap 5 furniture yang dimiliki atau setiap upgrade rumah menambah 1 level kenyamanan.\n\n` +
-    `─━━━━━━━━━━━━━━─`
+    `🏡 *PROFIL RUMAH*\n` +
+    `> ↳ Status: ${home.public ? 'Publik' : 'Pribadi'}\n` +
+    `> ↳ Tipe: *${getHomeLevel(home.level).name}*\n` +
+    `> ↳ Level: ${home.level}/${HOME_MAX_UPGRADES}\n` +
+    `> ↳ Furniture dimiliki: ${homeComfort.furnitureCount}\n` +
+    `> ↳ Kenyamanan: *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
+    `> ↳ Kapasitas pasang: ${home.furniture.length}/${capacity}\n` +
+    `> ↳ Pajangan koleksi: ${home.trophies.length}\n\n` +
+    `📊 *STATISTIK RUMAH*\n` +
+    `> ↳ Harmony: ${home.harmony}/100\n` +
+    `> ↳ Security: ${getHomeSecurity(home)}/100\n` +
+    `> ↳ Hygiene: ${home.hygiene}/100\n` +
+    `> ↳ Aesthetics: ${aesthetics}/100\n` +
+    `> ↳ Popularity: ${popularity}/100\n` +
+    `> ↳ Like: ${home.likes.length}\n` +
+    `> ↳ Kunjungan: ${home.visitCount}\n\n` +
+    `👥 *PENGHUNI*\n` +
+    `> 💍 *Pasangan*\n` +
+    `${spouseList}\n\n` +
+    `> 👶 *Anak*\n` +
+    `${childList}\n\n` +
+    `> 🐾 *Pet*\n` +
+    `${petList}\n\n` +
+    `> 👔 Staff aktif: ${home.staff.filter(staff => staff.expiresAt > Date.now()).length}\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    null,
+    { mentions: spouses.map(partner => partner.jid).filter(Boolean) }
   )
 }
 
@@ -139,9 +609,12 @@ if (mode === 'guide') {
     `> ↳ Atur privasi rumah, pasang furniture dari inventori, undang teman, dan kunjungi rumah pemain lain.\n` +
     `> ↳ Furniture bisa dibeli melalui *${prefix}mall kategori furniture*.\n` +
     `> ↳ Setiap 5 furniture yang dimiliki atau setiap upgrade rumah menaikkan 1 level kenyamanan.\n` +
-    `> ↳ Premium mendapat ${HOME_PREMIUM_CAPACITY_BONUS} kapasitas furniture ekstra dan diskon upgrade 20%.\n\n` +
+    `> ↳ Upgrade rumah sampai level ${HOME_MAX_UPGRADES}; setiap level memiliki tipe dan kapasitas penghuni lebih besar.\n` +
+    `> ↳ Penghuni inti (pasangan menikah dan pet) tidak mengurangi kapasitas tamu.\n` +
+    `> ↳ Premium mendapat ${HOME_PREMIUM_CAPACITY_BONUS} kapasitas ekstra, diskon upgrade 20%, dan akses staff hire all.\n` +
+    `> ↳ Gunakan .home stats guide untuk cara meningkatkan Harmony, Security, Hygiene, dan Aesthetics.\n\n` +
     `📌 *INFORMASI*\n` +
-    `> ↳ Lihat daftar perintah : *${prefix}home command*\n\n` +
+    `> ↳ Lihat daftar perintah: *${prefix}home command*\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -156,16 +629,33 @@ if (mode === 'command') {
     `> ↳ ${prefix}home furniture — furniture terpasang\n` +
     `> ↳ ${prefix}home pasang <item> — pasang furniture\n` +
     `> ↳ ${prefix}home lepas <item> — lepas furniture\n` +
+    `> ↳ ${prefix}home pajangan — lihat pajangan koleksi/lelang\n` +
+    `> ↳ ${prefix}home pajang/simpan <item> — pajang atau simpan koleksi\n` +
     `> ↳ ${prefix}home upgrade — tambah kapasitas\n` +
+    `> ↳ ${prefix}home stats — statistik rumah\n` +
+    `> ↳ ${prefix}home act — aktivitas acak (cooldown 5 menit, harus berada di rumah)\n` +
+    `> ↳ ${prefix}home staff — panduan staff rumah\n` +
     `> ↳ ${prefix}home public — atur rumah menjadi publik\n` +
     `> ↳ ${prefix}home private — atur rumah menjadi pribadi\n\n` +
     `🚪 *AKSES RUMAH*\n` +
-    `> ↳ ${prefix}home masuk — masuk rumah sendiri\n` +
+    `> ↳ ${prefix}home masuk/pulang — masuk atau pulang ke rumah sendiri\n` +
     `> ↳ ${prefix}home keluar — keluar rumah\n` +
     `> ↳ ${prefix}home invite @user — undang pemain\n` +
     `> ↳ ${prefix}home kick @user — cabut akses pemain\n` +
     `> ↳ ${prefix}home visit @user — kunjungi rumah\n` +
     `> ↳ ${prefix}home favorite @user — simpan rumah favorit\n\n` +
+    `🧹 *PERAWATAN & STAFF*\n` +
+    `> ↳ ${prefix}home clean\n` +
+    `> ↳ ${prefix}home childcare\n` +
+    `> ↳ ${prefix}home petcare\n` +
+    `> ↳ ${prefix}home staff list\n` +
+    `> ↳ ${prefix}home staff info\n` +
+    `> ↳ ${prefix}home staff hire\n` +
+    `> ↳ ${prefix}home staff fire\n` +
+    `> ↳ ${prefix}home staff renew\n` +
+    `> ↳ ${prefix}home staff salary\n` +
+    `> ↳ ${prefix}home staff contract\n` +
+    `> ↳ ${prefix}home cd — lihat cooldown aktivitas rumah\n\n` +
     `👥 *INTERAKSI*\n` +
     `> ↳ ${prefix}home tamu — lihat tamu terbaru\n` +
     `> ↳ ${prefix}home like — beri like pada rumah yang dikunjungi\n\n` +
@@ -173,6 +663,85 @@ if (mode === 'command') {
     `> ↳ ${prefix}home list — lihat rumah yang dapat dikunjungi\n` +
     `> ↳ ${prefix}home explore — lihat rumah publik\n` +
     `> ↳ ${prefix}home top — lihat rumah terpopuler\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+const ownedCategory = MALL_CATEGORY_ALIASES[normalize(mode)]
+if (ownedCategory && normalize(tokens[1]) === 'list') {
+  const candidates = ownedCategory === 'koleksi'
+    ? collectionItems
+    : MALL_CATEGORIES[ownedCategory].items
+  const items = candidates
+    .map(item => ({
+      ...item,
+      count: Math.max(0, Number(furnitureInventory[item.id]) || 0) +
+        home.furniture.filter(id => id === item.id).length +
+        home.trophies.filter(id => id === item.id).length
+    }))
+    .filter(item => item.count > 0)
+  return m.reply(
+    `╭─❏「 ${MALL_CATEGORIES[ownedCategory].emoji} ${MALL_CATEGORIES[ownedCategory].label.toUpperCase()} 」❏\n` +
+    `│ 📦 *BARANG YANG DIMILIKI*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${items.map((item, index) => `> ${index + 1}. ${displayName(item)}\n> ↳ Jumlah: ${item.count}x`).join('\n\n') || '> ↳ Belum memiliki barang dari kategori ini.'}\n\n` +
+    `📌 *BELANJA*\n` +
+    `> ↳ ${prefix}mall ${ownedCategory} list\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'stats') {
+  const members = getHomeMembers(rpg)
+  const owned = Object.values(furnitureInventory).reduce((total, count) => total + Math.max(0, Number(count) || 0), 0)
+  const aesthetics = getHomeAesthetics(home, furnitureInventory)
+  const popularity = getHomePopularity(
+    { ...home, aesthetics, security: getHomeSecurity(home) },
+    comfort(),
+    members,
+    owned
+  )
+  if (normalize(tokens[1]) === 'guide' || normalize(tokens[1]) === 'panduan') {
+    return m.reply(
+      `╭─❏「 📖 PANDUAN HOME STATS 」❏\n` +
+      `│ 📈 *CARA MENINGKATKAN STATUS RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🛋️ *COMFORT*\n` +
+      `> ↳ Miliki atau pasang furniture, lalu upgrade rumah.\n\n` +
+      `💖 *HARMONY*\n` +
+      `> ↳ Lakukan *${prefix}home eat*.\n` +
+      `> ↳ Lakukan *${prefix}home act*.\n` +
+      `> ↳ Gunakan *${prefix}home clean*.\n` +
+      `> ↳ Gunakan *${prefix}home childcare*.\n` +
+      `> ↳ Gunakan *${prefix}home petcare*.\n\n` +
+      `🛡️ *SECURITY*\n` +
+      `> ↳ Upgrade rumah atau sewa Bodyguard/Security Guard.\n\n` +
+      `🧹 *HYGIENE*\n` +
+      `> ↳ Gunakan ${prefix}home clean atau pulang dengan Housekeeper aktif.\n\n` +
+      `🎨 *AESTHETICS*\n` +
+      `> ↳ Pasang furniture/pajangan dan kumpulkan koleksi.\n` +
+      `> ↳ Aesthetic Designer juga membantu.\n\n` +
+      `⭐ *POPULARITY*\n` +
+      `> ↳ Gabungan level rumah, status, kenyamanan, penghuni, dan koleksi.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  return m.reply(
+    `╭─❏「 📊 HOME STATS 」❏\n` +
+    `│ 📊 *STATISTIK RUMAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `🏠 *INFORMASI RUMAH*\n` +
+    `> ↳ Tipe: ${getHomeLevel(home.level).name}\n` +
+    `> ↳ Level: ${home.level}/${HOME_MAX_UPGRADES}\n\n` +
+    `📊 *STATUS RUMAH*\n` +
+    `> ↳ Comfort: ${comfort().level} (${comfort().points} poin)\n` +
+    `> ↳ Harmony: ${home.harmony}/100\n` +
+    `> ↳ Security: ${getHomeSecurity(home)}/100\n` +
+    `> ↳ Hygiene: ${home.hygiene}/100\n` +
+    `> ↳ Aesthetics: ${aesthetics}/100\n` +
+    `> ↳ Popularity: ${popularity}/100\n\n` +
+    `📌 *PANDUAN*\n` +
+    `> ↳ ${prefix}home stats guide\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -193,6 +762,39 @@ if (mode === 'furniture') {
     `> ↳ Lepas : ${prefix}home lepas <item>\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
+}
+
+if (mode === 'pajangan') {
+  const trophies = home.trophies.map(id => findItem(id)).filter(Boolean)
+  return m.reply(
+    `╭─❏「 🏆 PAJANGAN RUMAH 」❏\n` +
+    `│ 🏆 *KOLEKSI YANG DIPAJANG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${trophies.length ? trophies.map(item => `> ${displayName(item)}`).join('\n') : '> Belum ada koleksi yang dipajang.'}\n\n` +
+    `> Pajangan rumah tidak dapat dijarah.\n` +
+    `> ${prefix}home pajang <item> — pajang dari koleksi\n` +
+    `> ${prefix}home simpan <item> — kembalikan ke koleksi\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'pajang' || mode === 'simpan') {
+  const item = findItem(tokens.slice(1).join(' '), 'koleksi')
+  if (!item) return m.reply('❌ Item koleksi tidak ditemukan. Gunakan *.cl list*, *.lelang list*, atau *.home pajangan*.')
+  if (mode === 'pajang') {
+    if ((Number(furnitureInventory[item.id]) || 0) < 1) return m.reply(`❌ Kamu belum memiliki ${item.name}.`)
+    if (home.trophies.length >= 20) return m.reply('❌ Pajangan rumah sudah mencapai batas 20 item.')
+    furnitureInventory[item.id]--
+    if (!furnitureInventory[item.id]) delete furnitureInventory[item.id]
+    home.trophies.push(item.id)
+  } else {
+    const index = home.trophies.indexOf(item.id)
+    if (index < 0) return m.reply(`❌ ${item.name} tidak sedang dipajang di rumah.`)
+    home.trophies.splice(index, 1)
+    furnitureInventory[item.id] = (Number(furnitureInventory[item.id]) || 0) + 1
+  }
+  await saveDB(db)
+  return m.reply(`✅ ${item.emoji} ${item.name} berhasil ${mode === 'pajang' ? 'dipajang di rumah' : 'disimpan kembali ke koleksi'}.`)
 }
 
 if (mode === 'pasang' || mode === 'lepas') {
@@ -275,6 +877,25 @@ if (mode === 'pasang' || mode === 'lepas') {
 if (mode === 'upgrade') {
   const level = Number(home.level) || 0
 
+  if (normalize(tokens[1]) === 'list' || normalize(tokens[1]) === 'guide') {
+    return m.reply(
+      `╭─❏「 ⬆️ TIPE RUMAH 」❏\n` +
+      `│ 🏠 *DAFTAR UPGRADE RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${HOME_LEVELS.slice(1).map(tier => {
+        const price = Math.floor(tier.cost * (premium ? 1 - HOME_PREMIUM_UPGRADE_DISCOUNT : 1))
+        return `🏠 *Level ${tier.level} — ${tier.name}*\n` +
+          `> ↳ Biaya: ${money(price)}\n` +
+          `> ↳ Kapasitas penghuni: ${HOME_BASE_CAPACITY + tier.level * HOME_UPGRADE_CAPACITY + (premium ? HOME_PREMIUM_CAPACITY_BONUS : 0)}\n` +
+          `> ↳ Slot furniture: ${HOME_BASE_FURNITURE_CAPACITY + tier.level * HOME_UPGRADE_FURNITURE_CAPACITY + (premium ? HOME_PREMIUM_FURNITURE_BONUS : 0)}\n` +
+          `> ↳ Security dasar: ${tier.security}/100`
+      }).join('\n\n')}\n\n` +
+      `📌 *INFORMASI*\n` +
+      `> ↳ Premium mendapat diskon 20%.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   if (level >= HOME_MAX_UPGRADES) {
     return m.reply(
       `╭─❏「 ⬆️ UPGRADE RUMAH 」❏\n` +
@@ -285,33 +906,610 @@ if (mode === 'upgrade') {
     )
   }
 
-  const cost = Math.floor(HOME_UPGRADE_BASE_COST * (level + 1) * (premium ? 1 - HOME_PREMIUM_UPGRADE_DISCOUNT : 1))
+  const nextTier = getHomeLevel(level + 1)
+  const cost = Math.floor(nextTier.cost * (premium ? 1 - HOME_PREMIUM_UPGRADE_DISCOUNT : 1))
 
   if (wallet() < cost) {
     return m.reply(
       `╭─❏「 ⬆️ UPGRADE RUMAH 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Biaya upgrade : ${money(cost)}\n` +
-      `> ↳ Saldo kamu : ${money(wallet())}\n\n` +
+      `> ↳ Biaya upgrade: ${money(cost)}\n` +
+      `> ↳ Saldo kamu: ${money(wallet())}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  setWallet(wallet() - cost)
-  home.level = level + 1
+  return requestConfirmation(
+    { type: 'upgrade', fromLevel: level, cost },
+    `> ↳ Upgrade ke *${nextTier.name}* (Level ${level + 1}).\n` +
+    `> ↳ Biaya: *${money(cost)}*${premium ? ' (diskon Premium 20%)' : ''}.`
+  )
+}
+
+if (mode === 'staff') {
+  const action = normalize(tokens[1])
+  const names = Object.keys(HOME_STAFF)
+  const prettyNames = names.map(name => HOME_STAFF[name].name)
+
+  if (!action || ['guide', 'command', 'panduan'].includes(action)) {
+    return m.reply(
+      `╭─❏「 🏡 HOME STAFF 」❏\n` +
+      `│ 🏡 *PANDUAN STAFF RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Sewa staff untuk membantu merawat rumah, anak, pet, kesehatan, dan keamanan.\n` +
+      `> ↳ Kontrak berlaku ${HOME_STAFF_CONTRACT_DAYS} hari dan biaya dibayar di muka. Hire dan renew selalu meminta konfirmasi.\n` +
+      `> ↳ Tanpa Housekeeper gunakan *${prefix}home clean*.\n` +
+      `> ↳ Tanpa Babysitter gunakan *${prefix}home childcare*.\n` +
+      `> ↳ Tanpa Pet Sitter gunakan *${prefix}home petcare*.\n` +
+      `> ↳ Private Chef menyajikan menu restoran mahal saat *${prefix}home eat*.\n` +
+      `> ↳ Premium dapat memakai *${prefix}home staff hire all*.\n\n` +
+      `📌 *PERINTAH*\n` +
+      `> ↳ ${prefix}home staff list\n` +
+      `> ↳ ${prefix}home staff info <nama>\n` +
+      `> ↳ ${prefix}home staff hire <nama>\n` +
+      `> ↳ ${prefix}home staff fire <nama>\n` +
+      `> ↳ ${prefix}home staff renew <nama>\n` +
+      `> ↳ ${prefix}home staff salary\n` +
+      `> ↳ ${prefix}home staff contract\n\n` +
+      `👥 *DAFTAR NAMA STAFF*\n` +
+      `> ↳ ${prettyNames.join(', ')}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'data' || action === 'list') {
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ 📋 *DAFTAR STAFF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${Object.entries(HOME_STAFF).map(([key, staff]) => {
+        const record = getStaffRecord(home, staff.name)
+        const active = record && record.expiresAt > Date.now()
+        return `${staff.emoji} *${staff.name}*\n` +
+          `> ↳ Status: ${active ? '✅ Aktif, ' + formatHomeDuration(record.expiresAt) : '❌ Belum disewa'}\n` +
+          `> ↳ Tugas: ${staff.effect}\n` +
+          `> ↳ Hire: ${money(getStaffCost(staff, premium))} (termasuk kontrak ${HOME_STAFF_CONTRACT_DAYS} hari)\n` +
+          `> ↳ Perintah: ${prefix}home staff hire ${key}`
+      }).join('\n\n')}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'info') {
+    const input = normalize(tokens.slice(2).join(' '))
+    const found = names.find(key => normalize(key) === input || normalize(HOME_STAFF[key].name) === input)
+
+    if (!found) {
+      return m.reply(
+        `╭─❏「 🏡 STAFF INFO 」❏\n` +
+        `│ ❌ *STAFF TIDAK DIKENAL*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Gunakan *${prefix}home staff list* untuk melihat daftar staff.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const staff = HOME_STAFF[found]
+    const record = getStaffRecord(home, staff.name)
+
+    return m.reply(
+      `╭─❏「 ${staff.emoji} STAFF INFO 」❏\n` +
+      `│ *${staff.name.toUpperCase()}*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📋 *INFORMASI STAFF*\n` +
+      `> ↳ Tugas: ${staff.effect}\n` +
+      `> ↳ Biaya kontrak ${HOME_STAFF_CONTRACT_DAYS} hari: ${money(getStaffCost(staff, premium))}\n` +
+      `> ↳ Status: ${record && record.expiresAt > Date.now() ? `Aktif (${formatHomeDuration(record.expiresAt)})` : 'Belum disewa / kontrak habis'}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'hire' || action === 'renew') {
+    const key = normalize(tokens.slice(2).join(' '))
+
+    if (key === 'all' && action === 'hire') {
+      if (!premium) {
+        return m.reply(
+          `╭─❏「 🏡 HOME STAFF 」❏\n` +
+          `│ ❌ *FITUR KHUSUS PREMIUM*\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Hire all hanya tersedia untuk Premium.\n` +
+          `> ↳ Lihat informasi: *${prefix}premium*.\n\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      const missing = Object.entries(HOME_STAFF).filter(([, staff]) =>
+        !getStaffRecord(home, staff.name) || getStaffRecord(home, staff.name).expiresAt <= Date.now()
+      )
+
+      if (!missing.length) {
+        return m.reply(
+          `╭─❏「 🏡 HOME STAFF 」❏\n` +
+          `│ ✅ *SEMUA STAFF AKTIF*\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Semua staff sudah memiliki kontrak aktif.\n\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      const total = missing.reduce((sum, [, staff]) => sum + getStaffCost(staff, premium), 0)
+
+      return requestConfirmation(
+        { type: 'hireAll', cost: total },
+        `> ↳ Rekrut ${missing.length} staff untuk ${HOME_STAFF_CONTRACT_DAYS} hari.\n` +
+        `> ↳ Total biaya: *${money(total)}* (diskon Premium termasuk).`
+      )
+    }
+
+    const staffKey = names.find(name => normalize(name) === key || normalize(HOME_STAFF[name].name) === key)
+
+    if (!staffKey) {
+      return m.reply(
+        `╭─❏「 🏡 HOME STAFF 」❏\n` +
+        `│ ❌ *NAMA STAFF TIDAK VALID*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pilihan: ${prettyNames.join(', ')}.\n` +
+        `> ↳ Format: ${prefix}home staff ${action} <nama>\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const staff = HOME_STAFF[staffKey]
+    const record = getStaffRecord(home, staff.name)
+
+    if (action === 'hire' && record && record.expiresAt > Date.now()) {
+      return m.reply(
+        `╭─❏「 🏡 HOME STAFF 」❏\n` +
+        `│ ⚠️ *STAFF MASIH AKTIF*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ ${staff.name} masih aktif.\n` +
+        `> ↳ Gunakan *${prefix}home staff renew ${staffKey}* untuk memperpanjang kontrak.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    if (action === 'renew' && !record) {
+      return m.reply(
+        `╭─❏「 🏡 HOME STAFF 」❏\n` +
+        `│ ❌ *STAFF BELUM PERNAH DISEWA*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Gunakan *${prefix}home staff hire ${staffKey}* untuk menyewa staff.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const price = getStaffCost(staff, premium)
+
+    if (wallet() < price) {
+      return m.reply(
+        `╭─❏「 💰 HOME STAFF 」❏\n` +
+        `│ ❌ *UANG TIDAK CUKUP*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Biaya: ${money(price)}\n` +
+        `> ↳ Saldo: ${money(wallet())}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    return requestConfirmation(
+      { type: action, staff: staffKey, cost: price },
+      `> ↳ ${action === 'hire' ? 'Sewa' : 'Perpanjang'} ${staff.emoji} *${staff.name}* selama ${HOME_STAFF_CONTRACT_DAYS} hari.\n` +
+      `> ↳ Total biaya: *${money(price)}*${premium ? ' (diskon Premium 10%)' : ''}.\n` +
+      `> ↳ Tugas: ${staff.effect}`
+    )
+  }
+
+  if (action === 'fire') {
+    const input = normalize(tokens.slice(2).join(' '))
+    const record = home.staff.find(staff => normalize(staff.name) === input || normalize(staff.key) === input)
+
+    if (!record) {
+      return m.reply(
+        `╭─❏「 🏡 HOME STAFF 」❏\n` +
+        `│ ❌ *STAFF TIDAK DITEMUKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Gunakan *${prefix}home staff list* untuk melihat daftar staff.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    return requestConfirmation(
+      { type: 'fire', name: record.name },
+      `> ↳ Hentikan kontrak *${record.name}*?`
+    )
+  }
+
+  if (action === 'salary') {
+    const activeStaff = home.staff.filter(staff => staff.expiresAt > Date.now())
+    const total = activeStaff.reduce((sum, staff) => sum + (HOME_STAFF[staff.key]?.salary || 0), 0)
+    const paidTotal = activeStaff.reduce((sum, staff) => sum + (Number(staff.paid) || 0), 0)
+
+    return m.reply(
+      `╭─❏「 💰 GAJI STAFF 」❏\n` +
+      `│ 💰 *STATUS BIAYA STAFF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `👥 *DAFTAR STAFF*\n` +
+      `${home.staff.map(staff =>
+        `> ↳ ${staff.name}: ${staff.expiresAt > Date.now() ? `Gaji ${money(HOME_STAFF[staff.key]?.salary)} / ${HOME_STAFF_CONTRACT_DAYS} hari; dibayar ${money(staff.paid)}` : 'Kontrak habis'}`
+      ).join('\n') || '> ↳ Belum ada staff.'}\n\n` +
+      `💰 *RINGKASAN PEMBAYARAN*\n` +
+      `> ↳ Total gaji aktif: ${money(total)} / ${HOME_STAFF_CONTRACT_DAYS} hari\n` +
+      `> ↳ Total pembayaran kontrak aktif: ${money(paidTotal)}\n` +
+      `> ↳ Pembayaran kontrak berikutnya: perpanjang dengan ${prefix}home staff renew <nama>.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'contract') {
+    return m.reply(
+      `╭─❏「 📄 KONTRAK STAFF 」❏\n` +
+      `│ 📄 *KONTRAK RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${home.staff.map(staff =>
+        `👥 *${staff.name}*\n` +
+        `> ↳ Sisa kontrak: ${formatHomeDuration(staff.expiresAt)}\n` +
+        `> ↳ Berakhir: ${staff.expiresAt ? new Date(staff.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-'}`
+      ).join('\n\n') || '> ↳ Belum ada kontrak staff.'}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  return m.reply(
+    `╭─❏「 🏡 HOME STAFF 」❏\n` +
+    `│ 📌 *MENU HOME STAFF*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${prefix}home staff guide\n` +
+    `> ↳ ${prefix}home staff list\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'act' || mode === 'activity' || mode === 'aktivitas') {
+  if (!home.inside) {
+    return m.reply(
+      `╭─❏「 🏡 AKTIVITAS RUMAH 」❏\n` +
+      `│ 🚪 *BELUM BERADA DI RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Gunakan *${prefix}home masuk* terlebih dahulu.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const remaining = HOME_ACTIVITY_COOLDOWN - (Date.now() - Number(home.lastActivityAt || 0))
+
+  if (remaining > 0) {
+    return m.reply(
+      `╭─❏「 ⏳ AKTIVITAS RUMAH 」❏\n` +
+      `│ ⏳ *COOLDOWN AKTIF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Aktivitas rumah bisa digunakan lagi dalam ${Math.ceil(remaining / 1000)} detik.\n` +
+      `> ↳ Gunakan *${prefix}home cd* untuk melihat waktu tersisa.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const members = getHomeMembers(rpg)
+  const canCollect = home.furniture.length + home.trophies.length + Object.values(furnitureInventory).reduce((sum, count) => sum + (Number(count) || 0), 0) > 0
+  const eligible = ['solo']
+  if (members.spouses.length) eligible.push('relationship')
+  if (members.pets.length) eligible.push('pet')
+  if (members.spouses.length && members.pets.length) eligible.push('family')
+  if (canCollect) eligible.push('collection')
+  if (members.spouses.length && members.pets.length && canCollect) eligible.push('everything')
+  const type = eligible[Math.floor(Math.random() * eligible.length)]
+  const stories = HOME_STORIES[type]
+  const story = stories[Math.floor(Math.random() * stories.length)]
+  const chosen = (items, limit = 2) => [...items].sort(() => Math.random() - 0.5).slice(0, Math.min(limit, items.length))
+  const involvedPartners = ['relationship', 'family', 'everything'].includes(type) ? chosen(members.spouses) : []
+  const involvedPets = ['pet', 'family', 'everything'].includes(type) ? chosen(members.pets) : []
+  const involvedChildren = ['family', 'everything'].includes(type) ? chosen(members.children) : []
+  const heldItems = Object.entries(furnitureInventory)
+    .filter(([, count]) => Number(count) > 0)
+    .map(([id, count]) => ({ id, count: Number(count), source: 'inventori' }))
+  const placedItems = home.furniture.map(id => ({ id, count: 1, source: 'terpasang' }))
+  const displayedItems = home.trophies.map(id => ({ id, count: 1, source: 'pajangan' }))
+  const involvedItems = ['collection', 'everything'].includes(type)
+    ? chosen([...heldItems, ...placedItems, ...displayedItems], 3)
+    : []
+  home.harmony = clampHomeStat(home.harmony + story.harmony)
+  if (story.aesthetics) home.aesthetics = clampHomeStat(home.aesthetics + story.aesthetics)
+
+  const relationshipRewards = involvedPartners.map(partner => {
+    partner.love = Math.min(100, (Number(partner.love) || 0) + (story.love || 0))
+    const jid = getPartnerJid(partner)
+    const profile = jid ? global.db?.data?.users?.[jid] : null
+    return {
+      jid,
+      name: profile?.name || partner.name || 'Pasangan',
+      love: partner.love
+    }
+  })
+
+  const petRewards = []
+
+  for (const pet of involvedPets) {
+    pet.happy = clampHomeStat((Number(pet.happy) || 0) + (story.petHappy || 0))
+    pet.exp = (Number(pet.exp) || 0) + 5
+    petRewards.push({ name: pet.nickname || pet.tipe || pet.name || 'Pet', happy: pet.happy })
+  }
+
+  home.lastActivityAt = Date.now()
+  await saveDB(db)
+
+  const partnerMentions = relationshipRewards.map(partner => partner.jid).filter(Boolean)
+  const itemDetails = involvedItems.map(({ id, count, source }) => {
+    const item = findItem(id)
+    return `> ↳ ${displayName(item || { emoji: '📦', name: id })} (${source}${count > 1 ? `, ${count}x` : ''})`
+  })
+
+  const categoryLabel = {
+    solo: 'AKTIVITAS SENDIRI',
+    relationship: 'BERSAMA PASANGAN',
+    pet: 'BERSAMA PET',
+    family: 'BERSAMA KELUARGA & PET',
+    collection: 'BERSAMA FURNITURE & KOLEKSI',
+    everything: 'BERSAMA SEMUA PENGHUNI & BARANG'
+  }[type]
+
+  return m.reply(
+    `╭─❏「 🎲 AKTIVITAS RUMAH 」❏\n` +
+    `│ 🎲 *${categoryLabel}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ${story.text}\n\n` +
+    `👤 *PENGHUNI YANG IKUT*\n` +
+    `> ↳ Kamu: ${m.pushName || 'Pemilik rumah'}\n` +
+    `${relationshipRewards.length ? `> ↳ Pasangan: ${relationshipRewards.map(partner => partner.name).join(', ')}\n` : ''}` +
+    `${involvedChildren.length ? `> ↳ Anak: ${involvedChildren.map(child => child.nama || child.name || 'Anak').join(', ')}\n` : ''}` +
+    `${petRewards.length ? `> ↳ Pet: ${petRewards.map(pet => pet.name).join(', ')}\n` : ''}` +
+    `${itemDetails.length ? `\n🪑 *BARANG YANG DILIBATKAN*\n${itemDetails.join('\n')}\n` : ''}\n` +
+    `📊 *HASIL AKTIVITAS*\n` +
+    `> ↳ Harmony rumah: +${story.harmony} (sekarang ${home.harmony}/100)\n` +
+    `${relationshipRewards.length ? `> ↳ Love pasangan: ${relationshipRewards.map(partner => `${partner.name} +${story.love || 0} (sekarang ${partner.love}/100)`).join('; ')}\n` : ''}` +
+    `${petRewards.length ? `> ↳ Kebahagiaan pet: ${petRewards.map(pet => `${pet.name} +${story.petHappy || 0} (sekarang ${pet.happy}/100)`).join('; ')}\n` : ''}` +
+    `${story.aesthetics ? `> ↳ Aesthetics: +${story.aesthetics}\n` : ''}\n` +
+    `⏳ *COOLDOWN*\n` +
+    `> ↳ 5 menit.\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    null,
+    { mentions: partnerMentions }
+  )
+}
+
+if (mode === 'cd') {
+  const remaining = Math.max(0, HOME_ACTIVITY_COOLDOWN - (Date.now() - Number(home.lastActivityAt || 0)))
+
+  return m.reply(
+    `╭─❏「 ⏱️ HOME COOLDOWN 」❏\n` +
+    `│ ⏱️ *COOLDOWN AKTIVITAS RUMAH*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Status: ${remaining ? '⏳ Cooldown aktif' : '✅ Siap digunakan'}\n` +
+    `> ↳ Waktu tersisa: ${remaining ? `${Math.ceil(remaining / 1000)} detik` : 'Tidak ada'}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'eat' || mode === 'makan') {
+  if (!home.inside) {
+    return m.reply(
+      `╭─❏「 🍽️ MAKAN DI RUMAH 」❏\n` +
+      `│ 🚪 *BELUM BERADA DI RUMAH*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Gunakan *${prefix}home masuk* terlebih dahulu.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const chef = home.staff.some(staff => staff.key === 'private chef' && staff.expiresAt > Date.now())
+  let meals
+  let total = 0
+
+  if (chef) {
+    const premiumMenus = Object.entries(hargaBeli)
+      .filter(([key, menu]) => masakanResep[key] && Number(menu.harga) >= 500000)
+      .sort((a, b) => Number(b[1].harga) - Number(a[1].harga))
+      .slice(0, 12)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2 + Math.floor(Math.random() * 3))
+
+    meals = premiumMenus.map(([name, menu]) => ({
+      name,
+      emoji: menu.emoji || '🍽️',
+      amount: 1 + Math.floor(Math.random() * 3),
+      price: Math.floor(Number(menu.harga) * 1.5)
+    }))
+
+    total = meals.reduce((sum, meal) => sum + meal.price * meal.amount, 0)
+
+    if (!meals.length) {
+      return m.reply(
+        `╭─❏「 👨‍🍳 PRIVATE CHEF 」❏\n` +
+        `│ ❌ *MENU BELUM TERSEDIA*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Menu restoran premium belum tersedia.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    if (wallet() < total) {
+      return m.reply(
+        `╭─❏「 👨‍🍳 PRIVATE CHEF 」❏\n` +
+        `│ ❌ *SALDO TIDAK CUKUP*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Total biaya menu: ${money(total)}\n` +
+        `> ↳ Saldo kamu: ${money(wallet())}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    home.pendingConfirmation = { type: 'eat', meals, total, createdAt: Date.now() }
+    await saveDB(db)
+
+    return m.reply(
+      `╭─❏「 👨‍🍳 PRIVATE CHEF 」❏\n` +
+      `│ ⚠️ *KONFIRMASI MENU RESTORAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🍽️ *DAFTAR HIDANGAN*\n` +
+      `${meals.map(meal => `> ↳ ${meal.emoji} ${formatMasakanNama(meal.name)} x${meal.amount}`).join('\n')}\n\n` +
+      `💰 *TOTAL PEMBAYARAN*\n` +
+      `> ↳ Total: *${money(total)}*\n\n` +
+      `📌 *KONFIRMASI PESANAN*\n` +
+      `> ↳ Balas *${prefix}home yes* untuk memesan.\n` +
+      `> ↳ Balas *${prefix}home no* untuk membatalkan.\n` +
+      `> ↳ Konfirmasi berlaku selama 5 menit.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (!tokens[1]) {
+    return m.reply(
+      `╭─❏「 🍽️ MAKAN DI RUMAH 」❏\n` +
+      `│ 📌 *FORMAT PESANAN MAKANAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Format: *${prefix}home eat nama_masakan jumlah, nama_lain jumlah*\n` +
+      `> ↳ Tanpa Private Chef, makanan harus tersedia di kulkas RPG-mu.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const entries = tokens.slice(1).join(' ').split(',').map(entry => entry.trim()).filter(Boolean)
+  meals = []
+
+  for (const entry of entries) {
+    const match = entry.match(/^(.*?)\s+(\d+)$/)
+    const input = match ? match[1] : entry
+    const amount = match ? Number(match[2]) : 1
+    const name = normalizeMasakanKey(input)
+
+    if (!masakanResep[name]) {
+      return m.reply(
+        `╭─❏「 🍽️ MAKAN DI RUMAH 」❏\n` +
+        `│ ❌ *MENU TIDAK DITEMUKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Menu *${input}* tidak ditemukan.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 50) {
+      return m.reply(
+        `╭─❏「 🍽️ MAKAN DI RUMAH 」❏\n` +
+        `│ ❌ *JUMLAH MAKANAN TIDAK VALID*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Jumlah makanan harus 1–50 per jenis.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    if ((Number(rpg.masakan?.[name]) || 0) < amount) {
+      return m.reply(
+        `╭─❏「 🍽️ MAKAN DI RUMAH 」❏\n` +
+        `│ ❌ *STOK MAKANAN TIDAK CUKUP*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Stok ${formatMasakanNama(name)} di kulkas tidak cukup.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    meals.push({ name, amount, emoji: masakanResep[name].emoji || '🍽️' })
+  }
+
+  for (const meal of meals) {
+    rpg.masakan[meal.name] -= meal.amount
+    if (rpg.masakan[meal.name] <= 0) delete rpg.masakan[meal.name]
+  }
+
+  const members = getHomeMembers(rpg)
+  const story = HOME_CARE_STORIES.eat[Math.floor(Math.random() * HOME_CARE_STORIES.eat.length)]
+  const previousHarmony = home.harmony
+  home.harmony = clampHomeStat(home.harmony + HOME_EAT_HARMONY)
+  const harmonyGained = home.harmony - previousHarmony
+
+  for (const partner of members.spouses.slice(0, 2)) partner.love = Math.min(100, (Number(partner.love) || 0) + 1)
+  for (const pet of members.pets.slice(0, 2)) pet.happy = clampHomeStat((Number(pet.happy) || 0) + 5)
 
   await saveDB(db)
 
-  const homeComfort = comfort()
+  return m.reply(
+    `╭─❏「 🍽️ MAKAN BERSAMA 」❏\n` +
+    `│ ✅ *HIDANGAN DARI KULKAS*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ${story}\n\n` +
+    `🍱 *MENU MAKANAN*\n` +
+    `> ↳ ${meals.map(meal => `${meal.emoji} ${formatMasakanNama(meal.name)} x${meal.amount}`).join('\n> ↳ ')}\n\n` +
+    `📊 *HASIL AKTIVITAS*\n` +
+    `> ↳ Harmony rumah: +${harmonyGained} (sekarang ${home.harmony}/100)\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (mode === 'clean' || mode === 'childcare' || mode === 'petcare') {
+  if (mode === 'clean' && home.staff.some(staff => staff.key === 'housekeeper' && staff.expiresAt > Date.now())) {
+    return m.reply(
+      `╭─❏「 🧹 PERAWATAN RUMAH 」❏\n` +
+      `│ ✅ *HOUSEKEEPER AKTIF*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Hygiene rumah akan dirawat saat kamu pulang.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const members = getHomeMembers(rpg)
+
+  if (mode === 'childcare' && !members.children.length) {
+    return m.reply(
+      `╭─❏「 👶 PERAWATAN ANAK 」❏\n` +
+      `│ ❌ *BELUM ADA ANAK*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Belum ada anak yang dapat diurus.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (mode === 'petcare' && !members.pets.length) {
+    return m.reply(
+      `╭─❏「 🐾 PERAWATAN PET 」❏\n` +
+      `│ ❌ *BELUM MEMILIKI PET*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kamu belum memiliki pet.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  const story = HOME_CARE_STORIES[mode][Math.floor(Math.random() * HOME_CARE_STORIES[mode].length)]
+
+  if (mode === 'clean') home.hygiene = clampHomeStat(home.hygiene + 20)
+
+  if (mode === 'childcare') {
+    home.harmony = clampHomeStat(home.harmony + 10)
+    members.children.forEach(child => {
+      child.careCount = (Number(child.careCount) || 0) + 1
+      const parent = (rpg.harem || []).find(partner => partner.name === child.ortu)
+      if (parent) parent.exp = (Number(parent.exp) || 0) + 20 + child.careCount
+    })
+  }
+
+  if (mode === 'petcare') {
+    home.harmony = clampHomeStat(home.harmony + 8)
+    members.pets.forEach(pet => {
+      pet.happy = clampHomeStat((Number(pet.happy) || 0) + 15)
+      pet.exp = (Number(pet.exp) || 0) + 10
+    })
+  }
+
+  await saveDB(db)
 
   return m.reply(
-    `╭─❏「 ⬆️ UPGRADE RUMAH 」❏\n` +
-    `│ ✅ *UPGRADE BERHASIL*\n` +
+    `╭─❏「 🏡 PERAWATAN RUMAH 」❏\n` +
+    `│ ✅ *${mode.toUpperCase()}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Level rumah : ${home.level}\n` +
-    `> ↳ Kenyamanan : *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
-    `> ↳ Kapasitas : ${HOME_BASE_CAPACITY + home.level * HOME_UPGRADE_CAPACITY + (premium ? HOME_PREMIUM_CAPACITY_BONUS : 0)} furniture\n\n` +
+    `> ${story}\n\n` +
+    `${mode === 'childcare' && home.staff.some(staff => staff.key === 'babysitter' && staff.expiresAt > Date.now()) ? `👶 *BANTUAN STAFF*\n> ↳ Babysitter membantu mengurus seluruh anak.\n\n` : ''}` +
+    `${mode === 'petcare' && home.staff.some(staff => staff.key === 'pet sitter' && staff.expiresAt > Date.now()) ? `🐾 *BANTUAN STAFF*\n> ↳ Pet Sitter membantu merawat seluruh pet.\n\n` : ''}` +
+    `📊 *HASIL PERAWATAN*\n` +
+    `${mode === 'clean' ? `> ↳ Hygiene: ${home.hygiene}/100\n` : ''}` +
+    `${mode !== 'clean' ? `> ↳ Harmony rumah: ${home.harmony}/100\n> ↳ Total penghuni yang dirawat: ${mode === 'childcare' ? members.children.length : members.pets.length}\n` : ''}\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -330,9 +1528,21 @@ if (mode === 'public' || mode === 'private') {
   )
 }
 
-if (mode === 'masuk') {
+if (mode === 'masuk' || mode === 'pulang') {
   leaveVisitedHome()
+  home.inside = true
   home.visitors = [sender, ...home.visitors.filter(jid => jid !== sender)].slice(0, 20)
+  const staffActive = key => home.staff.some(staff => staff.key === key && staff.expiresAt > Date.now())
+  let nurseStory = ''
+
+  if (mode === 'pulang' && staffActive('private nurse')) {
+    const maxHealth = Math.max(1, Number(rpg.maxDarah) || 100)
+    const healed = Math.max(0, maxHealth - (Number(rpg.darah) || 0))
+    rpg.darah = maxHealth
+    nurseStory = `\n> ↳ Private Nurse menyambutmu dan merawat luka; darah pulih ${healed} HP (${rpg.darah}/${maxHealth}).`
+  }
+
+  if (mode === 'pulang' && staffActive('housekeeper')) home.hygiene = clampHomeStat(home.hygiene + 2)
 
   await saveDB(db)
 
@@ -344,13 +1554,18 @@ if (mode === 'masuk') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Kenyamanan : *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
     `> ↳ Furniture : ${home.furniture.length}/${capacity}\n\n` +
-    `${home.furniture.length ? home.furniture.map(id => `🛋️ *${findItem(id)?.name || id}*`).join('\n') : '> ↳ Rumahmu masih kosong.'}\n\n` +
+    `${mode === 'pulang' && staffActive('housekeeper') ? `> ↳ Housekeeper merapikan rumah; Hygiene ${home.hygiene}/100.\n` : ''}` +
+    `${nurseStory}\n` +
+
+    `${home.furniture.length ? home.furniture.map(id => `🛋️ *${findItem(id)?.name || id}*`).join('\n') : '> ↳ Rumahmu masih kosong.'}\n` +
+    `${home.trophies.length ? `\n🏆 *PAJANGAN*\n${home.trophies.map(id => `> ${displayName(findItem(id) || { emoji: '📦', name: id })}`).join('\n')}\n` : ''}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
 
 if (mode === 'keluar') {
   leaveVisitedHome()
+  home.inside = false
   home.visitors = home.visitors.filter(jid => jid !== sender)
 
   await saveDB(db)
@@ -413,24 +1628,24 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
       )
     }
 
-    home.blocked = (home.blocked || []).filter(jid => jid !== target)
-    home.access.push(target)
-
-    await saveDB(db)
-
-    return m.reply(
-      `╭─❏「 📩 UNDANG PEMAIN 」❏\n` +
-      `│ ✅ *UNDANGAN BERHASIL*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ @${target.split('@')[0]} diundang ke rumahmu.\n\n` +
-      `─━━━━━━━━━━━━━━─`,
-      null,
-      { mentions: [target] }
+    const members = getHomeMembers(rpg)
+    const spouseIds = new Set(members.spouses.map(getPartnerJid).filter(Boolean).map(normalizeJid))
+    const guests = [...new Set([...home.access, ...home.visitors])]
+      .filter(jid => !spouseIds.has(normalizeJid(jid)))
+    if (!spouseIds.has(target) && !guests.includes(target) && guests.length + 1 >= residentCapacity) {
+      return m.reply(`❌ Kapasitas penghuni non-keluarga penuh (${residentCapacity}). Upgrade rumah terlebih dahulu.`)
+    }
+    return requestConfirmation(
+      { type: 'invite', target },
+      `> ↳ Undang @${target.split('@')[0]} ke rumah.\n> ↳ Kapasitas orang: ${guests.length + 1}/${residentCapacity} (pasangan dan pet tidak dihitung).`
     )
   }
 
   if (mode === 'kick') {
-    if (!home.access.includes(target) && !home.visitors.includes(target)) {
+    const spouse = getHomeMembers(rpg).spouses.find(partner =>
+      normalizeJid(getPartnerJid(partner) || '') === target
+    )
+    if (!home.access.includes(target) && !home.visitors.includes(target) && !spouse) {
       return m.reply(
         `╭─❏「 🚫 CABUT AKSES 」❏\n` +
         `│ ❌ *PEMAIN TIDAK DITEMUKAN*\n` +
@@ -440,25 +1655,11 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
       )
     }
 
-    home.access = home.access.filter(jid => jid !== target)
-    home.visitors = home.visitors.filter(jid => jid !== target)
-
-    const kickedUser = getUser(db, target)
-    if (kickedUser?.rpg?.lastVisitedHome === sender) delete kickedUser.rpg.lastVisitedHome
-
-    if (!Array.isArray(home.blocked)) home.blocked = []
-    if (!home.blocked.includes(target)) home.blocked.push(target)
-
-    await saveDB(db)
-
-    return m.reply(
-      `╭─❏「 🚫 CABUT AKSES 」❏\n` +
-      `│ 🚫 *AKSES DICABUT*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Akses @${target.split('@')[0]} ke rumahmu dicabut.\n\n` +
-      `─━━━━━━━━━━━━━━─`,
-      null,
-      { mentions: [target] }
+    return requestConfirmation(
+      { type: 'kick', target },
+      spouse
+        ? `> ↳ Keluarkan @${target.split('@')[0]} dari rumah.\n> ↳ Perhatian: karena statusnya pasangan suami/istri, konfirmasi ini juga memutuskan hubungan dan menghapus status pasangan.`
+        : `> ↳ Cabut akses rumah @${target.split('@')[0]}?`
     )
   }
 
@@ -489,7 +1690,9 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
     )
   }
 
-  if (!targetHome.public && !targetHome.access.includes(sender)) {
+  const targetMembers = getHomeMembers(targetAccount.rpg)
+  const targetSpouseIds = new Set(targetMembers.spouses.map(getPartnerJid).filter(Boolean).map(normalizeJid))
+  if (!targetHome.public && !targetHome.access.includes(sender) && !targetSpouseIds.has(sender)) {
     return m.reply(
       `╭─❏「 🔒 RUMAH PRIBADI 」❏\n` +
       `│ 🔒 *AKSES TIDAK TERSEDIA*\n` +
@@ -497,6 +1700,17 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
       `> ↳ Rumah ini pribadi. Minta pemilik mengundangmu terlebih dahulu.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
+  }
+
+  const currentGuests = [...new Set([...targetHome.access, ...targetHome.visitors])]
+    .filter(jid => !targetSpouseIds.has(normalizeJid(jid)))
+  if (!targetSpouseIds.has(sender) && !currentGuests.some(jid => normalizeJid(jid) === sender)) {
+    const targetPremium = isPremiumAccount(global.db?.data?.users?.[target])
+    const targetCapacity = HOME_BASE_CAPACITY + targetHome.level * HOME_UPGRADE_CAPACITY +
+      (targetPremium ? HOME_PREMIUM_CAPACITY_BONUS : 0)
+    if (currentGuests.length + 1 >= targetCapacity) {
+      return m.reply(`❌ Kapasitas penghuni non-keluarga rumah ini penuh (${targetCapacity}).`)
+    }
   }
 
   if (rpg.lastVisitedHome && rpg.lastVisitedHome !== target) leaveVisitedHome()
@@ -508,6 +1722,7 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
   await saveDB(db)
 
   const placed = targetHome.furniture.map(id => findItem(id)).filter(Boolean)
+  const trophies = targetHome.trophies.map(id => findItem(id)).filter(Boolean)
   const targetComfort = getHomeComfort(targetHome, targetAccount.rpg.mallInventory || {})
 
   return m.reply(
@@ -516,6 +1731,7 @@ if (mode === 'invite' || mode === 'kick' || mode === 'visit' || mode === 'favori
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Kenyamanan : *Level ${targetComfort.level}* (${targetComfort.points} poin)\n` +
     `> ↳ Furniture terpasang : ${placed.length ? placed.map(item => displayName(item)).join(', ') : 'belum ada'}\n\n` +
+    `${trophies.length ? `🏆 *Koleksi dipajang* : ${trophies.map(item => displayName(item)).join(', ')}\n\n` : ''}` +
     `📌 *INTERAKSI*\n` +
     `> ↳ Gunakan *${prefix}home like* untuk memberi like.\n\n` +
     `─━━━━━━━━━━━━━━─`,
@@ -615,21 +1831,41 @@ if (mode === 'list' || mode === 'explore' || mode === 'top') {
       if (mode === 'top' || candidateHome.public) return true
       return mode === 'list' && (candidateHome.access.includes(sender) || (rpg.favoriteHomes || []).includes(jid))
     })
-    .map(([jid, user]) => ({ jid, home: getHome(user.rpg), name: user.name || 'Pemain' }))
+    .map(([jid, user]) => ({ jid, rpg: user.rpg, home: getHome(user.rpg), name: user.name || 'Pemain' }))
 
   if (mode === 'top') {
-    homes.sort((a, b) => b.home.likes.length - a.home.likes.length || b.home.visitCount - a.home.visitCount)
+      const eligibleHomes = filterLeaderboardUsers(homes, conn, entry => entry.jid)
+      const popularity = entry => getHomePopularity(
+        {
+          ...entry.home,
+          aesthetics: getHomeAesthetics(entry.home, entry.rpg.mallInventory || {}),
+          security: getHomeSecurity(entry.home)
+        },
+        getHomeComfort(entry.home, entry.rpg.mallInventory || {}),
+        getHomeMembers(entry.rpg),
+        Object.values(entry.rpg.mallInventory || {}).reduce((total, amount) => total + (Number(amount) || 0), 0)
+      )
+      eligibleHomes.sort((a, b) => popularity(b) - popularity(a) || b.home.likes.length - a.home.likes.length)
+      const mentions = []
 
-    return m.reply(
+      return m.reply(
       `╭─❏「 🏆 RUMAH TERPOPULER 」❏\n` +
       `│ 🏆 *RUMAH TERPOPULER*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${homes.slice(0, 10).map((entry, index) =>
-        `🏆 *${index + 1}. ${entry.name}*\n` +
+      `${eligibleHomes.slice(0, 10).map((entry, index) => {
+        const identity = getLeaderboardUserIdentity(entry.jid, {
+          conn,
+          groupMetadata,
+          name: entry.name === 'Pemain' ? conn.getName(entry.jid) : entry.name
+        })
+        if (identity.mention) mentions.push(identity.mention)
+        return `🏆 *${index + 1}. ${identity.display}*\n` +
+        `> ↳ ⭐ Popularity : ${popularity(entry)}/100\n` +
         `> ↳ ❤️ Like : ${entry.home.likes.length}\n` +
         `> ↳ 👣 Kunjungan : ${entry.home.visitCount}`
-      ).join('\n\n') || '> ↳ Belum ada rumah.'}\n\n` +
-      `─━━━━━━━━━━━━━━─`
+      }).join('\n\n') || '> ↳ Belum ada rumah.'}\n\n` +
+      `─━━━━━━━━━━━━━━─`,
+      { mentions }
     )
   }
 

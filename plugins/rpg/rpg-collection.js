@@ -5,18 +5,24 @@ import {
   MALL_CATEGORIES,
   MALL_PREMIUM_DISCOUNT
 } from '../../lib/rpgMallData.js'
+import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
+import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 const money = value => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 const displayName = item => `${item.emoji} ${item.name}`
+const collectionItems = [...MALL_CATEGORIES.koleksi.items, ...AUCTION_ITEMS, ...BANK_SPECIAL_ITEMS]
 const allItems = Object.entries(MALL_CATEGORIES).flatMap(([category, data]) =>
   data.items.map(item => ({ ...item, category }))
-)
+).concat(AUCTION_ITEMS, BANK_SPECIAL_ITEMS)
 
 function findItem(input, category) {
   const key = normalize(input)
   if (!key) return null
-  const candidates = category ? (MALL_CATEGORIES[category]?.items.map(item => ({ ...item, category })) || []) : allItems
+  const candidates = category
+    ? (category === 'koleksi' ? collectionItems : MALL_CATEGORIES[category]?.items || []).map(item => ({ ...item, category }))
+    : allItems
   return candidates.find(item => normalize(item.id) === key || normalize(item.name) === key)
     || candidates.find(item => normalize(item.name).includes(key))
 }
@@ -48,7 +54,7 @@ function mentionsOrReply(m, args) {
   return { target, args: args.filter(arg => !/^@/.test(arg)) }
 }
 
-let handler = async (m, { text = '', usedPrefix, command }) => {
+let handler = async (m, { conn, text = '', usedPrefix, command, groupMetadata }) => {
   const db = loadDB()
   const sender = normalizeJid(m.sender)
   const account = getUserRPG(db, sender)
@@ -65,7 +71,7 @@ let handler = async (m, { text = '', usedPrefix, command }) => {
 const mode = String(tokens[0] || '').toLowerCase()
 
 if (!mode) {
-  const totalOwned = MALL_CATEGORIES.koleksi.items.reduce((sum, item) =>
+  const totalOwned = collectionItems.reduce((sum, item) =>
     sum + (Number(inventory[item.id]) || 0), 0
   )
 
@@ -125,7 +131,7 @@ if (mode === 'kategori') {
     `╭─❏「 🗂️ KATEGORI KOLEKSI 」❏\n` +
     `│ 🗂️ *DAFTAR ITEM KOLEKSI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${MALL_CATEGORIES.koleksi.items.map(item =>
+    `${collectionItems.map(item =>
       `📚 *${displayName(item)}*\n` +
       `> ↳ Harga : ${money(item.price)}`
     ).join('\n\n')}\n\n` +
@@ -160,7 +166,7 @@ if (mode === 'info') {
 }
 
 if (mode === 'list') {
-  const ownedCollections = MALL_CATEGORIES.koleksi.items.filter(item => Number(inventory[item.id]) > 0)
+  const ownedCollections = collectionItems.filter(item => Number(inventory[item.id]) > 0)
 
   return m.reply(
     `╭─❏「 📚 KOLEKSI DIMILIKI 」❏\n` +
@@ -178,14 +184,14 @@ if (mode === 'list') {
 }
 
 if (mode === 'top') {
-  const ranked = Object.entries(db.users || {})
+  const ranked = filterLeaderboardUsers(Object.entries(db.users || {}), conn, ([jid]) => jid)
     .filter(([, user]) => user?.rpg)
     .map(([jid, user]) => {
       const bag = user.rpg.mallInventory || {}
       return {
         jid,
-        name: user.name || 'Pemain',
-        count: MALL_CATEGORIES.koleksi.items.reduce((sum, item) =>
+        name: user.name || '',
+        count: collectionItems.reduce((sum, item) =>
           sum + (Number(bag[item.id]) || 0), 0
         )
       }
@@ -193,15 +199,24 @@ if (mode === 'top') {
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
 
+  const mentions = []
+  const rows = ranked.map((entry, index) => {
+    const identity = getLeaderboardUserIdentity(entry.jid, {
+      conn,
+      groupMetadata,
+      name: entry.name
+    })
+    if (identity.mention) mentions.push(identity.mention)
+    return `🏆 *${index + 1}. ${identity.display}*\n> ↳ Koleksi : ${entry.count}`
+  }).join('\n\n')
+
   return m.reply(
     `╭─❏「 🏆 TOP KOLEKTOR 」❏\n` +
     `│ 🏆 *TOP KOLEKTOR*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${ranked.map((entry, index) =>
-      `🏆 *${index + 1}. ${entry.name}*\n` +
-      `> ↳ Koleksi : ${entry.count}`
-    ).join('\n\n') || '> ↳ Belum ada kolektor.'}\n\n` +
-    `─━━━━━━━━━━━━━━─`
+    `${rows || '> ↳ Belum ada kolektor.'}\n\n` +
+    `─━━━━━━━━━━━━━━─`,
+    { mentions }
   )
 }
 
@@ -530,7 +545,7 @@ const target = normalizeJid(m.mentionedJid?.[0] || m.quoted?.sender)
 if (target) {
   const other = getUserRPG(db, target)
   const bag = other?.rpg?.mallInventory || {}
-  const display = MALL_CATEGORIES.koleksi.items.filter(item => Number(bag[item.id]) > 0)
+  const display = collectionItems.filter(item => Number(bag[item.id]) > 0)
   const showcase = other?.rpg?.collectionShowcase || []
 
   return m.reply(

@@ -2,7 +2,9 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+
+let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
 
   const safeReply = async (text, options = {}) => {
@@ -2797,7 +2799,8 @@ if (action === 'revive'){
 
 // === LEADERBOARD ===
 if (action === 'lb'){
-  let all = Object.entries(wdb.users).filter(([_,u]) => u.rpg?.pets?.length)
+  let all = filterLeaderboardUsers(Object.entries(wdb.users), conn, ([jid]) => jid)
+    .filter(([_,u]) => u.rpg?.pets?.length)
 
   if(all.length === 0) return safeReply(
     `╭─❏「 🏆 TOP 10 PET TRAINER 」❏\n` +
@@ -2819,15 +2822,16 @@ if (action === 'lb'){
   let mention = []
 
   all.slice(0,10).forEach(([jid,u],i) => {
+    const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata })
     let totalLv = u.rpg.pets.reduce((x,y) => x + y.level, 0)
     let totalPet = u.rpg.pets.length
 
-    cap += `*${i+1}. @${jid.split('@')[0]}*\n`
+    cap += `*${i+1}. ${identity.display}*\n`
     cap += `> ↳ Lv Total: ${totalLv}\n`
     cap += `> ↳ Total Pet: ${totalPet}\n`
 
     if(i < 9) cap += `\n`
-    mention.push(jid)
+    if (identity.mention) mention.push(identity.mention)
   })
 
   cap += `\n─━━━━━━━━━━━━━━─`

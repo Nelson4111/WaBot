@@ -2,60 +2,11 @@ import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js
 import { hargaBeli as MENU_RESTAURAN, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
+import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 
-export const BANK_TIERS = {
-  0: { name: 'Basic Card', limit: 10_000_000, bunga: 0.002, price: 0, biayaBulanan: 0, color: '🔰', keamanan: 1, asuransi: 0, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa'] },
-  1: { name: 'Classic Card', limit: 15_000_000, bunga: 0.0025, price: 2_500_000, biayaBulanan: 125_000, color: '🏷️', keamanan: 2, asuransi: 0.01, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Asuransi 1%'] },
-  2: { name: 'White Card', limit: 20_000_000, bunga: 0.0028, price: 3_500_000, biayaBulanan: 175_000, color: '⬜', keamanan: 3, asuransi: 0.03, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS', 'Asuransi 3%'] },
-  3: { name: 'Brown Card', limit: 25_000_000, bunga: 0.003, price: 5_000_000, biayaBulanan: 250_000, color: '🟫', keamanan: 4, asuransi: 0.05, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS', 'Asuransi 5%'] },
-  4: { name: 'Red Card', limit: 50_000_000, bunga: 0.004, price: 12_500_000, biayaBulanan: 625_000, color: '🟥', keamanan: 5, asuransi: 0.1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Biasa', 'Chat CS', 'Riwayat Transaksi', 'Asuransi 10%'] },
-  5: { name: 'Orange Card', limit: 100_000_000, bunga: 0.005, price: 25_000_000, biayaBulanan: 1_250_000, color: '🟧', keamanan: 6, asuransi: 0.15, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Riwayat Transaksi', 'Asuransi 15%'] },
-  6: { name: 'Yellow Card', limit: 250_000_000, bunga: 0.006, price: 50_000_000, biayaBulanan: 2_500_000, color: '🟨', keamanan: 7, asuransi: 0.2, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 20%'] },
-  7: { name: 'Green Card', limit: 500_000_000, bunga: 0.007, price: 125_000_000, biayaBulanan: 6_250_000, color: '🟩', keamanan: 8, asuransi: 0.3, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Keamanan', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 30%', 'Transfer Bank', 'Fast Track', 'Digital Access'] },
-  8: { name: 'Blue Card', limit: 1_000_000_000, bunga: 0.008, price: 250_000_000, biayaBulanan: 12_500_000, color: '🟦', keamanan: 9, asuransi: 0.4, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv1', 'Chat CS', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 40%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi'] },
-  9: { name: 'Purple Card', limit: 5_000_000_000, bunga: 0.009, price: 500_000_000, biayaBulanan: 25_000_000, color: '🟪', keamanan: 10, asuransi: 0.5, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv2', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 50%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP'] },
-  10: { name: 'Black Card', limit: 10_000_000_000, bunga: 0.01, price: 2_500_000_000, biayaBulanan: 125_000_000, color: '⬛', keamanan: 11, asuransi: 0.6, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv3', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 60%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi'] },
-  11: { name: 'Pink Card', limit: 25_000_000_000, bunga: 0.012, price: 5_000_000_000, biayaBulanan: 250_000_000, color: '🩷', keamanan: 12, asuransi: 0.7, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv4', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 70%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi'] },
-  12: { name: 'Cyan Card', limit: 50_000_000_000, bunga: 0.014, price: 12_500_000_000, biayaBulanan: 625_000_000, color: '🩵', keamanan: 13, asuransi: 0.8, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Robot Lv5', 'Chat CS 24jam', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 80%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif'] },
-  13: { name: 'Royal Card', limit: 100_000_000_000, bunga: 0.016, price: 25_000_000_000, biayaBulanan: 1_250_000_000, color: '👑', keamanan: 14, asuransi: 0.85, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Polisi', 'Chat CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 85%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan'] },
-  14: { name: 'Star Card', limit: 250_000_000_000, bunga: 0.018, price: 50_000_000_000, biayaBulanan: 2_500_000_000, color: '⭐', keamanan: 15, asuransi: 0.9, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Tentara', 'Chat CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 90%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank'] },
-  15: { name: 'Crystal Card', limit: 500_000_000_000, bunga: 0.02, price: 125_000_000_000, biayaBulanan: 6_250_000_000, color: '💠', keamanan: 16, asuransi: 0.95, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Pasukan Khusus', 'Chat CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 95%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal'] },
-  16: { name: 'Spiral Card', limit: 1_000_000_000_000, bunga: 0.02, price: 250_000_000_000, biayaBulanan: 12_500_000_000, color: '🌀', keamanan: 17, asuransi: 0.96, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Premium CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 96%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Kendaraan Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] },
-  17: { name: 'Cosmic Card', limit: 2_500_000_000_000, bunga: 0.022, price: 500_000_000_000, biayaBulanan: 25_000_000_000, color: '🌐', keamanan: 18, asuransi: 0.97, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Premium CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 97%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] },
-  18: { name: 'Stellar Card', limit: 5_000_000_000_000, bunga: 0.024, price: 1_000_000_000_000, biayaBulanan: 50_000_000_000, color: '💫', keamanan: 19, asuransi: 0.98, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Premium CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 98%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] },
-  19: { name: 'Eternal Card', limit: null, bunga: 0.026, price: 2_500_000_000_000, biayaBulanan: 125_000_000_000, color: '♾️', keamanan: 20, asuransi: 1, fasilitas: ['Penyimpanan Uang', 'Tarik Tunai', 'Penjaga Dewa', 'Premium CS AI', 'Gratis Makanan & Minuman', 'Riwayat Transaksi', 'Asuransi 100%', 'Transfer Bank', 'Pinjaman Bank', 'Fast Track', 'Digital Access', 'Kendaraan Pribadi', 'Lounge VIP', 'Vault Pribadi', 'Asisten Pribadi', 'Akses Eksklusif', 'Mahkota Kehormatan', 'Portal Bank', 'Benteng Kristal', 'Brankas Kosmik'] }
-}
-
-export const BANK_FNB_REWARDS = {
-  6: { nasi_uduk: 1, es_teh_jumbo: 1 },
-  7: { ayam_goreng: 1, boba_milktea: 1, es_jeruk: 1 },
-  8: { rendang: 1, matcha_latte: 1, onigiri: 1 },
-  9: { sate_kambing: 1, takoyaki: 1, melon_soda_float: 1, dorayaki: 1 },
-  10: { lobster_bakar: 1, sushi: 1, steak_emas: 1, stellar_jade_smoothie: 1 },
-  11: { diamond_cake: 1, steak_makima: 1, trailblaze_burger: 1, pom_pom_parfait: 1 },
-  12: { sup_leviathan: 1, naga_laut_bakar: 1, ramen_ichiraku: 1, stellar_champagne: 1 },
-  13: { steak_godzilla: 1, raja_ubur_jelly: 1, sea_dragon_grill: 1, drink_another_world: 1 },
-  14: { paus_putih_steak: 1, kura_titan_soup: 1, hydra_stew: 1, soma: 1 },
-  15: { healing_tears: 1, stewed_matsutake: 1, mondstadt_hash_brown: 1, sashimi: 1 },
-  16: { taco_ikan: 1, udang_goreng: 1, cumi_goreng: 1, heavenly_brew: 1 },
-  17: { sup_ikan: 1, salad_buah: 1, penyu_panggang: 1, frozen_memories: 1 },
-  18: { sup_susu_sapi: 1, sate_ikan: 1, pari_bakar: 1, silent_escapism: 1 },
-  19: { sop_kraken: 1, sate_megalodon: 1, sweet_madame: 1, tacetite_cake: 1 }
-}
-
-export const BANK_CS_SERVICES = {
-  'Chat CS': 'Informasi dasar mengenai rekening dan fasilitas bank.',
-  'Chat CS 24jam': 'Informasi dan bantuan layanan dasar kapan saja.',
-  'Chat CS AI': 'Analisis serta informasi terbatas mengenai fasilitas bank lainnya.',
-  'Premium CS AI': 'Analisis lebih luas, akses informasi fasilitas lain, layanan prioritas, dan kontrol terbatas atas layanan tertentu.'
-}
-
-export const BANK_COMING_SOON_FACILITIES = new Set([
-  'Lounge VIP',
-  'Vault Pribadi',
-  'Akses Eksklusif',
-  'Mahkota Kehormatan'
-])
+import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
+export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
 export function getBankTransactionCooldown(tier) {
   if (tier.fasilitas.includes('Portal Bank')) return 0
@@ -74,6 +25,19 @@ export function getBankTransactionCooldownRemaining(userRPG, tier, now = Date.no
 
 export function formatBankFacility(facility) {
   return `${facility}${BANK_COMING_SOON_FACILITIES.has(facility) ? ' (Coming Soon)' : ''}`
+}
+
+function formatBankTierFacility(facility, tierLevel) {
+  const isNew = BANK_NEW_FACILITIES[tierLevel]?.includes(facility)
+  const isUpgrade = facility.startsWith('Asuransi ') || facility.startsWith('Penjaga ') ||
+    ['Chat CS 24jam', 'Chat CS AI', 'Premium CS AI'].includes(facility)
+  return `${formatBankFacility(facility)}${isNew ? ' ✨ NEW' : isUpgrade ? ' ⬆️ UP' : ''}`
+}
+
+export function getBankTransactionLocation(tier) {
+  return tier.fasilitas.includes('Lounge VIP')
+    ? BANK_TRANSACTION_LOCATIONS.vip
+    : BANK_TRANSACTION_LOCATIONS.standard
 }
 
 export function getBankCsService(tier) {
@@ -276,6 +240,38 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return m.reply(cap)
   }
 
+  if (action === 'info') {
+    const sisaHari = Math.max(0, Math.ceil((cdBunga - (now - userRPG.lastBunga)) / satuHari))
+    const sisaMembership = Math.max(0, Math.ceil((periodeMembership - (now - userRPG.lastMembership)) / satuHari))
+    const sisaTransaksi = getBankTransactionCooldownRemaining(userRPG, tier, now)
+    const csService = getBankCsService(tier)
+    let cap = `╭─❏「 🏦 INFO REKENING BANK 」❏\n`
+    cap += `│ ${tier.color} *${tier.name.toUpperCase()}* ${userRPG.kartuBeku ? '❌ BEKU' : '✅ AKTIF'}\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    cap += `💰 *SALDO & LIMIT*\n`
+    cap += `> ↳ Saldo bank : Rp ${userRPG.bank.toLocaleString('id-ID')}\n`
+    cap += `> ↳ Uang saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString('id-ID')}\n`
+    cap += `> ↳ Total aset : Rp ${(userRPG.bank + (wdb.money[m.sender] || 0)).toLocaleString('id-ID')}\n`
+    cap += `> ↳ Limit kartu : ${formatBankLimit(tier.limit)}\n`
+    cap += `> ↳ Bunga : ${(tier.bunga * 100).toFixed(2)}%/minggu • ${sisaHari ? `${sisaHari} hari lagi` : 'siap diproses'}\n`
+    cap += `> ↳ Total bunga diterima : Rp ${userRPG.totalBunga.toLocaleString('id-ID')}\n`
+    cap += `> ↳ Asuransi : ${(tier.asuransi * 100).toFixed(0)}% • Keamanan : Lv.${getBankEffectiveSecurity(tier)}\n`
+    cap += `> ↳ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'jatuh tempo'} • Biaya Rp ${tier.biayaBulanan.toLocaleString('id-ID')}\n`
+    cap += `> ↳ Cooldown setor/tarik : ${sisaTransaksi > 0 ? `${Math.ceil(sisaTransaksi / 60000)} menit` : 'siap'}\n`
+    cap += `> ↳ Tempat transaksi : ${getBankTransactionLocation(tier)}\n`
+    if (userRPG.pinjaman?.jumlah > 0) {
+      cap += `> ↳ Pinjaman berjalan : Rp ${Number(userRPG.pinjaman.jumlah).toLocaleString('id-ID')}\n`
+    }
+    if (csService) cap += `> ↳ ${csService} : ${BANK_CS_SERVICES[csService]}\n`
+    cap += `\n🪪 *FASILITAS & MANFAAT*\n`
+    cap += tier.fasilitas.map(facility =>
+      `> ✦ ${formatBankTierFacility(facility, Number(userRPG.bankTier))}\n>   ${BANK_FACILITY_DESCRIPTIONS[facility] || 'Fasilitas kartu bank.'}`
+    ).join('\n')
+    cap += `\n\n📌 Detail tier lain: *${usedPrefix}bank benefits list*\n`
+    cap += `─━━━━━━━━━━━━━━─`
+    return m.reply(cap)
+  }
+
   // MENU UTAMA BANK
   if (!action) {
   let sisaHari = Math.max(0, Math.ceil((cdBunga - (now - userRPG.lastBunga)) / satuHari))
@@ -350,9 +346,12 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
 ◈ 💳 INFORMASI KARTU ◈
 > *.bank* - Lihat saldo dan informasi kartu
+> *.bank info* - Lihat rincian lengkap saldo, layanan, dan deskripsi fasilitas
 > *.bank command* - Tampilkan daftar command ini
 > *.bank kartu / card* - Lihat daftar kartu
 > *.bank benefit / benefits [list]* - Lihat fasilitas kartu
+> *.bank vault list* - Lihat barang Vault Pribadi
+> *.bank vault simpan/ambil <item> [jumlah]* - Kelola barang Vault Pribadi
 
 ─━━━━━━━━━─
 ◈ 💰 TRANSAKSI BANK ◈
@@ -592,6 +591,66 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     return m.reply(`👤 *PERSONAL BANKING MANAGER*\nSaldo bank: Rp ${userRPG.bank.toLocaleString()}\nUang saku: Rp ${wallet.toLocaleString()}\nTotal aset: Rp ${(userRPG.bank + wallet).toLocaleString()}\nTarget tabungan: ${target ? `Rp ${userRPG.bank.toLocaleString()} / Rp ${target.toLocaleString()} (${Math.min(100, Math.floor(userRPG.bank / target * 100))}%)` : 'Belum diatur'}\nAuto-setor: ${assistant.autoSetor.aktif ? `Aktif mulai Rp ${Number(assistant.autoSetor.ambang).toLocaleString()}` : 'Nonaktif'}\nPengingat:\n${reminderList}\n\nAtur: *.bank asisten target <jumlah>*, *.bank asisten auto on [ambang]*, *.bank asisten auto off*, *.bank asisten pengingat tambah YYYY-MM-DD HH:mm <pesan>*\nAutomasi diperiksa saat akun mengirim pesan ke bot.`)
   }
 
+  if (action === 'vault') {
+    if (!tier.fasilitas.includes('Vault Pribadi')) {
+      return m.reply(`❌ Vault Pribadi tersedia mulai Black Card. Upgrade kartu untuk menyimpan barang dengan aman.`)
+    }
+    if (!userRPG.bankVault || typeof userRPG.bankVault !== 'object') userRPG.bankVault = {}
+    const vaultAction = args[1]?.toLowerCase()
+    const mallItems = Object.entries(MALL_CATEGORIES).flatMap(([category, data]) =>
+      data.items.map(item => ({ ...item, category }))
+    )
+    mallItems.push(...AUCTION_ITEMS, ...BANK_SPECIAL_ITEMS)
+    const findVaultItem = input => {
+      const query = String(input || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
+      return mallItems.find(item => item.id === query || item.name.toLowerCase().replace(/[\s-]+/g, '_') === query)
+        || mallItems.find(item => item.name.toLowerCase().includes(query))
+    }
+    if (!vaultAction || vaultAction === 'list' || vaultAction === 'info') {
+      const contents = Object.entries(userRPG.bankVault).filter(([, quantity]) => Number(quantity) > 0)
+        .map(([itemId, quantity]) => {
+          const item = mallItems.find(entry => entry.id === itemId)
+          return `> ${item ? `${item.emoji} ${item.name}` : itemId} ×${quantity}`
+        })
+      return m.reply(
+        `╭─❏「 🔐 VAULT PRIBADI 」❏\n` +
+        `│ ${tier.color} ${tier.name}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${contents.length ? contents.join('\n') : '> Vault masih kosong.'}\n\n` +
+        `Barang Vault aman dari penjarahan. Barang dapat digunakan di rumah atau koleksi setelah diambil.\n` +
+        `> ${usedPrefix}bank vault simpan <item> [jumlah]\n` +
+        `> ${usedPrefix}bank vault ambil <item> [jumlah]\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    if (!['simpan', 'deposit', 'ambil', 'tarik'].includes(vaultAction)) {
+      return m.reply(`Gunakan *.bank vault list*, *.bank vault simpan <item> [jumlah]*, atau *.bank vault ambil <item> [jumlah]*.`)
+    }
+    const itemTokens = args.slice(2)
+    const quantityToken = /^\d+$/.test(itemTokens[itemTokens.length - 1] || '') ? itemTokens.pop() : null
+    const item = findVaultItem(itemTokens.join(' '))
+    if (!item) return m.reply('❌ Barang Mall tidak ditemukan.')
+    const quantity = quantityToken ? Number(quantityToken) : 1
+    if (!Number.isSafeInteger(quantity) || quantity < 1) return m.reply('❌ Jumlah barang tidak valid.')
+    if (item.category === 'furniture' && (userRPG.home?.furniture || []).includes(item.id)) {
+      return m.reply('❌ Furniture ini sedang terpasang di rumah. Lepas dulu dengan *.home lepas <item>* sebelum menyimpannya.')
+    }
+    if (!userRPG.mallInventory || typeof userRPG.mallInventory !== 'object') userRPG.mallInventory = {}
+    if (['simpan', 'deposit'].includes(vaultAction)) {
+      const owned = Number(userRPG.mallInventory[item.id]) || 0
+      if (owned < quantity) return m.reply(`❌ Barang tidak cukup. Kamu memiliki ${owned} ${item.name}.`)
+      userRPG.mallInventory[item.id] = owned - quantity
+      userRPG.bankVault[item.id] = (Number(userRPG.bankVault[item.id]) || 0) + quantity
+    } else {
+      const stored = Number(userRPG.bankVault[item.id]) || 0
+      if (stored < quantity) return m.reply(`❌ Jumlah ${item.name} di Vault tidak cukup.`)
+      userRPG.bankVault[item.id] = stored - quantity
+      userRPG.mallInventory[item.id] = (Number(userRPG.mallInventory[item.id]) || 0) + quantity
+    }
+    await saveDB(wdb)
+    return m.reply(`✅ ${quantity}× ${item.emoji} ${item.name} berhasil ${['simpan', 'deposit'].includes(vaultAction) ? 'disimpan ke Vault Pribadi' : 'diambil dari Vault Pribadi'}.`)
+  }
+
   if (userRPG.kartuBeku && !['tarik', 'simpan', 'all', ...membershipActions].includes(action)) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Kartu kamu sedang BEKU\nSetor saldo atau bayar biaya bulanan dengan *.bank bulanan*, *.bank monthly*, atau *.bank tagihan*\n─━━━━━━━━━─`)
 
   let userMoney = wdb.money[m.sender] || 0
@@ -647,7 +706,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       for (let i in BANK_TIERS) {
         const t = BANK_TIERS[i]
         cap += `${t.color} *Lv.${i} ${t.name}*\n`
-        cap += `> ${t.fasilitas.map(f => `• ${formatBankFacility(f)}`).join('\n> ')}\n\n`
+        cap += `> 🛡️ Keamanan Lv.${getBankEffectiveSecurity(t)}${Number(i) > 0 ? ' ⬆️ UP' : ''}\n`
+        cap += `> ${t.fasilitas.map(f => `• ${formatBankTierFacility(f, Number(i))}`).join('\n> ')}\n\n`
         const csService = getBankCsService(t)
         if (csService) cap += `> ${csService}: ${BANK_CS_SERVICES[csService]}\n\n`
       }
@@ -657,7 +717,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         : `> Belum premium, diskon bank belum aktif.\n`
     } else {
       cap += `◈ BENEFIT ${tier.color} ${tier.name.toUpperCase()} ◈\n\n`
-      cap += `${tier.fasilitas.map(f => `• ${formatBankFacility(f)}`).join('\n')}\n\n`
+      cap += `🛡️ Keamanan Lv.${getBankEffectiveSecurity(tier)}${Number(userRPG.bankTier) > 0 ? ' ⬆️ UP' : ''}\n`
+      cap += `${tier.fasilitas.map(f => `• ${formatBankTierFacility(f, Number(userRPG.bankTier))}`).join('\n')}\n\n`
       const csService = getBankCsService(tier)
       if (csService) cap += `◈ ${csService} ◈\n${BANK_CS_SERVICES[csService]}\n\n`
       cap += `👑 PREMIUM STATUS\n`
@@ -689,7 +750,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     userRPG.lastBankTransaction = now
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Simpan`)
     await saveDB(wdb)
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n◆ Tempat : ${getBankTransactionLocation(tier)}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
 
@@ -705,6 +766,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
     await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n`
+    msg += `◆ Tempat : ${getBankTransactionLocation(tier)}\n`
     if(tier.fasilitas.includes('Kendaraan Pribadi')) msg += `◆ Kurir : Kendaraan Pribadi\n`
     msg += `\n─━━━━━━━━━─`
     return m.reply(msg)
@@ -802,7 +864,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank command', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'uang']
+handler.help = ['bank', 'bank info', 'bank command', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'uang']
 handler.group = false
 
 handler.all = async function (m, { conn }) {

@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/wa
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
+import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -231,6 +232,10 @@ if (mode === 'guide') {
       return m.reply('❌ Konfirmasi kadaluarsa. Ketik *' + (usedPrefix || '.') + 'jual all* lagi')
     }
 
+    const interstellarSellMap = Object.fromEntries(
+      INTERSTELLAR_ITEMS.map(item => [item.id, Number(item.sellPrice) || 0])
+    )
+
     const hargaGabung = {
       iron: 5000, gold: 50000, stone: 2500, wood: 4000, diamond: 250000,
       kulit: 50000, sisik: 75000,
@@ -297,14 +302,22 @@ if (mode === 'guide') {
     const hargaGabungNorm = Object.fromEntries(Object.entries(hargaGabung).map(([key, value]) => [normalizeFishKey(key), value]))
 
     let totalDapat = 0
+    let totalStellarCredit = 0
     let terjual = 0
     for (const nama in user.jualAllConfirm.items) {
       if (['uang', 'money'].includes(nama)) continue
       const cleanNama = normalizeFishKey(nama)
       const jumlah = user.jualAllConfirm.items[nama]
-      const hrgSatuan = hargaGabungNorm[cleanNama] || hargaGabung[nama] || 1000
+      const interstellarPrice = interstellarSellMap[nama] || interstellarSellMap[cleanNama]
+      const hrgSatuan = interstellarPrice ?? (hargaGabungNorm[cleanNama] || hargaGabung[nama] || 1000)
       if (hrgSatuan > 0) {
-        totalDapat += Math.floor(hrgSatuan * sellBonus) * jumlah
+        const earned = Math.floor(hrgSatuan * sellBonus) * jumlah
+        if (interstellarPrice) {
+          totalStellarCredit += earned
+          user.inventory[STELLAR_CREDIT.id] = (Number(user.inventory[STELLAR_CREDIT.id]) || 0) + earned
+        } else {
+          totalDapat += earned
+        }
         terjual++
       }
       if (user.inventory) delete user.inventory[nama]
@@ -317,11 +330,15 @@ if (mode === 'guide') {
     wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalDapat
     user.jualAllConfirm = null
     saveDB(wdb)
+    const earnedLines = []
+    if (totalDapat > 0) earnedLines.push(`> ↳ 💰 Diterima: +Rp ${totalDapat.toLocaleString()}`)
+    if (totalStellarCredit > 0) earnedLines.push(`> ↳ 💠 Diterima: +${totalStellarCredit} ${STELLAR_CREDIT.name}`)
+    if (!earnedLines.length) earnedLines.push('> ↳ Tidak ada item yang bisa dijual.')
     return m.reply(
       `╭─❏「 🛍️ PENJUALAN SEMUA ITEM BERHASIL 」❏\n` +
       `│ ✅ ${terjual} jenis item terjual\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ 💰 Diterima: +Rp ${totalDapat.toLocaleString()}\n` +
+      `${earnedLines.join('\n')}\n` +
       `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )

@@ -1,5 +1,6 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { BANK_TIERS, formatBankLimit, getBankEffectiveSecurity, getBankPrice, isPremiumUser } from './rpg-bank.js'
+import { applyBankTierRewards } from '../../lib/rpg-bankData.js'
 
 function formatPriceOptions(label, normalPrice, premiumPrice, isPremium) {
   const normal = `Rp ${normalPrice.toLocaleString()}`
@@ -130,6 +131,7 @@ if (!isNaN(action)) {
 
   user.bankTier = targetTier
   user.kartuBeku = false
+  applyBankTierRewards(user)
   await saveDB(wdb)
 
   return m.reply(
@@ -234,6 +236,7 @@ if (action === 'beli') {
 
   user.bankTier += 1
   user.kartuBeku = false
+  applyBankTierRewards(user)
   await saveDB(wdb)
 
   return m.reply(

@@ -2,6 +2,7 @@ import { loadDB, sendRpgMsg, saveDB } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
+import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -108,6 +109,11 @@ let handler = async (m, { conn, usedPrefix, args }) => {
       totalItem += user.inventory[item]
       totalJenis++
       const hasil = getHasilDisplay(item)
+      const interstellarItem = INTERSTELLAR_ITEM_BY_ID.get(item)
+      if (interstellarItem) {
+        grouped.MATERIAL.list.push({ nama: interstellarItem.name, emoji: interstellarItem.emoji, jml: user.inventory[item] })
+        continue
+      }
       let emoji = isHasilTernakKey(item) ? hasil.emoji : (bibit[item] || '📦')
       const kategori = isHasilTernakKey(item) ? 'HASIL TERNAK' : 'HASIL PANEN'
       grouped[kategori].list.push({ nama: isHasilTernakKey(item) ? hasil.nama : item, emoji, jml: user.inventory[item] })
