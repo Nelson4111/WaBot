@@ -1,10 +1,11 @@
 import PhoneNumber from 'awesome-phonenumber'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { getLevelRole } from '../../lib/levelling.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 const rupiah = n => 'Rp ' + n.toLocaleString('id-ID')
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   if (!text)
     return m.reply(
 `Pilih leaderboard:
@@ -18,7 +19,8 @@ ${usedPrefix + command} limit`
   const usersDB = global.db.data.users || {}
   const wdb = loadDB()
 
-  let users = Object.keys(usersDB).map(jid => {
+  let users = filterLeaderboardUsers(Object.keys(usersDB), conn)
+    .map(jid => {
     const u = usersDB[jid]
     const name = u.registered
       ? u.name || conn.getName(jid)
@@ -82,14 +84,21 @@ Kategori     : ${key === 'money' ? 'Uang' : key === 'level' ? 'Level' : key.toUp
 `
 
 top.forEach((u, i) => {
-  const nomor = PhoneNumber('+' + u.jid.split('@')[0]).getNumber('international')
+  const identity = getLeaderboardUserIdentity(u.jid, {
+    conn,
+    groupMetadata,
+    name: u.name
+  })
+  const nomor = identity.isGroupMember
+    ? PhoneNumber('+' + u.jid.split('@')[0]).getNumber('international')
+    : null
+  const nomorLine = nomor ? `   Nomor : ${nomor}\n` : ''
   const isPrem = usersDB[u.jid]?.premiumTime > 0 ? ' [PREMIUM]' : ''
   const roleTitle = key === 'level' || key === 'xp' ? ` (${u.role})` : ''
 
   textRes +=
-`${i + 1}. ${u.name}${isPrem}${roleTitle}
-   Nomor : ${nomor}
-   ${key === 'money' ? 'Uang' : key === 'level' ? 'Level' : key.toUpperCase()} : ${format(u[key])}
+`${i + 1}. ${identity.isGroupMember ? u.name : identity.display}${isPrem}${roleTitle}
+${nomorLine}   ${key === 'money' ? 'Uang' : key === 'level' ? 'Level' : key.toUpperCase()} : ${format(u[key])}
 
 `
 })
@@ -126,7 +135,10 @@ textRes = '```' + textRes + '```'
         footer,
         buffer: bannerUrl,
         buttons,
-        contextInfo: { mentions: top.map(u => u.jid) }
+        contextInfo: { mentions: top
+          .map(user => getLeaderboardUserIdentity(user.jid, { conn, groupMetadata }))
+          .filter(identity => identity.mention)
+          .map(identity => identity.mention) }
       }, m)
     } catch (e) {
       console.warn('[Leaderboard sendButtonV2 failed]:', e?.message)
@@ -137,7 +149,10 @@ textRes = '```' + textRes + '```'
     m.chat,
     {
       text: textRes,
-      mentions: top.map(u => u.jid)
+      mentions: top
+        .map(user => getLeaderboardUserIdentity(user.jid, { conn, groupMetadata }))
+        .filter(identity => identity.mention)
+        .map(identity => identity.mention)
     },
     { quoted: m }
   )
