@@ -482,6 +482,81 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
   )
 }
 
+if (pending.type === 'renewAll') {
+  if (!premium) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ❌ *FITUR PREMIUM*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Fitur staff renew all hanya tersedia untuk akun Premium.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  const durationDays = Number(pending.durationDays)
+  const requestedKeys = Array.isArray(pending.staffKeys) ? pending.staffKeys : []
+  if (!Number.isSafeInteger(durationDays) ||
+      durationDays < 1 ||
+      durationDays > HOME_STAFF_MAX_CONTRACT_DAYS ||
+      !requestedKeys.length) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ❌ *DATA KONTRAK TIDAK VALID*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Jalankan ulang perintah renew all.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  const active = requestedKeys
+    .filter(key => HOME_STAFF[key])
+    .map(key => [key, HOME_STAFF[key]])
+    .filter(([, staff]) => {
+      const record = getStaffRecord(home, staff.name)
+      return record && record.expiresAt > Date.now()
+    })
+  const total = active.reduce((sum, [, staff]) =>
+    sum + getStaffCost(staff, premium, durationDays), 0)
+  if (active.length !== requestedKeys.length ||
+      total !== Number(pending.cost) ||
+      wallet() < total) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+      `│ ⚠️ *PEMBAYARAN DIBATALKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Status staff, biaya, atau saldo berubah.\n` +
+      `> ↳ Tidak ada pembayaran.\n` +
+      `> ↳ Jalankan kembali perintah untuk melihat total terbaru: ${money(total)}.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  setWallet(wallet() - total)
+  for (const [key, staff] of active) {
+    const record = getStaffRecord(home, staff.name)
+    if (!record) continue
+    record.hiredAt = Date.now()
+    record.expiresAt = getHomeStaffContractEnd(
+      Math.max(Date.now(), Number(record.expiresAt) || 0),
+      durationDays
+    )
+    record.contractDays = durationDays
+    delete record.cooldownUntil
+    record.paid = (Number(record.paid) || 0) + getStaffCost(staff, premium, durationDays)
+  }
+  await saveDB(db)
+  return m.reply(
+    `╭─❏「 🏡 STAFF RUMAH 」❏\n` +
+    `│ ✅ *KONTRAK STAFF DIPERPANJANG*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `👥 *INFORMASI KONTRAK*\n` +
+    `> ↳ Staff diperpanjang: ${active.length}\n` +
+    `> ↳ Durasi: ${durationDays} hari\n` +
+    `> ↳ Total biaya: ${money(total)}\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
 if (pending.type === 'hireAll') {
   if (!premium) {
     await saveDB(db)
@@ -720,7 +795,7 @@ if (mode === 'command') {
     `> ↳ ${prefix}home staff list — daftar staff dan status (alias: data)\n` +
     `> ↳ ${prefix}home staff info <nama> — detail staff\n` +
     `> ↳ ${prefix}home staff hire <nama|all> [durasi 1-7] — sewa staff (all khusus Premium)\n` +
-    `> ↳ ${prefix}home staff renew <nama> [durasi 1-7] — perpanjang kontrak\n` +
+    `> ↳ ${prefix}home staff renew <nama|all> [durasi 1-7] — perpanjang kontrak (all khusus Premium)\n` +
     `> ↳ ${prefix}home staff fire <nama> — berhentikan staff\n` +
     `> ↳ ${prefix}home staff cd — lihat cooldown staff\n` +
     `> ↳ ${prefix}home staff salary/contract — lihat gaji atau kontrak\n\n` +
@@ -1030,14 +1105,14 @@ if (mode === 'staff') {
       `> ↳ Tanpa Babysitter gunakan *${prefix}home childcare*.\n` +
       `> ↳ Tanpa Pet Sitter gunakan *${prefix}home petcare*.\n` +
       `> ↳ Private Chef menyajikan menu restoran mahal secara gratis saat *${prefix}home eat*.\n` +
-      `> ↳ Premium dapat memakai *${prefix}home staff hire all <durasi>*.\n\n` +
+      `> ↳ Premium dapat memakai *${prefix}home staff hire all <durasi>* dan *${prefix}home staff renew all <durasi>*.\n\n` +
       `📌 *PERINTAH*\n` +
       `> ↳ ${prefix}home staff list\n` +
       `> ↳ ${prefix}home staff info <nama>\n` +
       `> ↳ ${prefix}home staff hire <nama> [durasi]\n` +
       `> ↳ ${prefix}home staff hire all <durasi> (Premium)\n` +
       `> ↳ ${prefix}home staff fire <nama>\n` +
-      `> ↳ ${prefix}home staff renew <nama> [durasi]\n` +
+      `> ↳ ${prefix}home staff renew <nama|all> [durasi]\n` +
       `> ↳ ${prefix}home staff cd\n` +
       `> ↳ ${prefix}home staff salary\n` +
       `> ↳ ${prefix}home staff contract\n\n` +
@@ -1139,49 +1214,78 @@ if (mode === 'staff') {
       )
     }
 
-    if (key === 'all' && action === 'hire') {
+    if (key === 'all') {
       if (!premium) {
         return m.reply(
           `╭─❏「 🏡 HOME STAFF 」❏\n` +
           `│ ❌ *FITUR KHUSUS PREMIUM*\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ↳ Hire all hanya tersedia untuk Premium.\n` +
+          `> ↳ ${action === 'hire' ? 'Hire all' : 'Renew all'} hanya tersedia untuk Premium.\n` +
           `> ↳ Lihat informasi: *${prefix}premium*.\n\n` +
           `─━━━━━━━━━━━━━━─`
         )
       }
 
       const now = Date.now()
-      const missing = Object.entries(HOME_STAFF).filter(([, staff]) => {
+
+      if (action === 'hire') {
+        const missing = Object.entries(HOME_STAFF).filter(([, staff]) => {
+          const record = getStaffRecord(home, staff.name)
+          return (!record || record.expiresAt <= now) &&
+            getHomeStaffCooldownUntil(record, now) <= now
+        })
+        const cooling = Object.values(HOME_STAFF).filter(staff => {
+          const record = getStaffRecord(home, staff.name)
+          return record && record.expiresAt <= now &&
+            getHomeStaffCooldownUntil(record, now) > now
+        })
+
+        if (!missing.length) {
+          return m.reply(
+            `╭─❏「 🏡 HOME STAFF 」❏\n` +
+            `│ ${cooling.length ? '⏳ *STAFF SEDANG COOLDOWN*' : '✅ *SEMUA STAFF AKTIF*'}\n` +
+            `╰─━━━━━━━━━━━━━━─\n\n` +
+            `> ↳ Tidak ada staff yang bisa direkrut saat ini.\n` +
+            `${cooling.length ? `> ↳ Lihat waktu cooldown: ${prefix}home staff cd\n\n` : '\n'}` +
+            `─━━━━━━━━━━━━━━─`
+          )
+        }
+
+        const total = missing.reduce((sum, [, staff]) =>
+          sum + getStaffCost(staff, premium, durationDays), 0)
+        const staffKeys = missing.map(([staffKey]) => staffKey)
+
+        return requestConfirmation(
+          { type: 'hireAll', staffKeys, durationDays, cost: total },
+          `> ↳ Rekrut ${missing.length} staff untuk ${durationDays} hari.\n` +
+          `${cooling.length ? `> ↳ ${cooling.length} staff yang cooldown akan dilewati.\n` : ''}` +
+          `> ↳ Total biaya: *${money(total)}* (diskon Premium termasuk).`
+        )
+      }
+
+      const active = Object.entries(HOME_STAFF).filter(([, staff]) => {
         const record = getStaffRecord(home, staff.name)
-        return (!record || record.expiresAt <= now) &&
-          getHomeStaffCooldownUntil(record, now) <= now
-      })
-      const cooling = Object.values(HOME_STAFF).filter(staff => {
-        const record = getStaffRecord(home, staff.name)
-        return record && record.expiresAt <= now &&
-          getHomeStaffCooldownUntil(record, now) > now
+        return record && record.expiresAt > now
       })
 
-      if (!missing.length) {
+      if (!active.length) {
         return m.reply(
           `╭─❏「 🏡 HOME STAFF 」❏\n` +
-          `│ ${cooling.length ? '⏳ *STAFF SEDANG COOLDOWN*' : '✅ *SEMUA STAFF AKTIF*'}\n` +
+          `│ ✅ *TIDAK ADA STAFF AKTIF*\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ↳ Tidak ada staff yang bisa direkrut saat ini.\n` +
-          `${cooling.length ? `> ↳ Lihat waktu cooldown: ${prefix}home staff cd\n\n` : '\n'}` +
+          `> ↳ Tidak ada staff yang bisa diperpanjang kontraknya saat ini.\n` +
+          `> ↳ Hire staff terlebih dahulu dengan *${prefix}home staff hire <nama> [durasi]*.\n\n` +
           `─━━━━━━━━━━━━━━─`
         )
       }
 
-      const total = missing.reduce((sum, [, staff]) =>
+      const total = active.reduce((sum, [, staff]) =>
         sum + getStaffCost(staff, premium, durationDays), 0)
-      const staffKeys = missing.map(([staffKey]) => staffKey)
+      const staffKeys = active.map(([staffKey]) => staffKey)
 
       return requestConfirmation(
-        { type: 'hireAll', staffKeys, durationDays, cost: total },
-        `> ↳ Rekrut ${missing.length} staff untuk ${durationDays} hari.\n` +
-        `${cooling.length ? `> ↳ ${cooling.length} staff yang cooldown akan dilewati.\n` : ''}` +
+        { type: 'renewAll', staffKeys, durationDays, cost: total },
+        `> ↳ Perpanjang ${active.length} staff aktif untuk ${durationDays} hari.\n` +
         `> ↳ Total biaya: *${money(total)}* (diskon Premium termasuk).`
       )
     }
@@ -1301,7 +1405,7 @@ if (mode === 'staff') {
       ).join('\n') || '> ↳ Belum ada staff.'}\n\n` +
       `💰 *RINGKASAN PEMBAYARAN*\n` +
       `> ↳ Total biaya kontrak staff aktif: ${money(paidTotal)}\n` +
-      `> ↳ Perpanjang kontrak dengan ${prefix}home staff renew <nama> [durasi].\n\n` +
+      `> ↳ Perpanjang kontrak dengan ${prefix}home staff renew <nama|all> [durasi].\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
