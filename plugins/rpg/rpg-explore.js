@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import {
@@ -28,11 +29,34 @@ let handler = async (m) => {
   }
 
   if (!rpg.inventory || typeof rpg.inventory !== 'object') rpg.inventory = {}
-  const item = rollInterstellarItem()
-  const destination = rollInterstellarPlanet()
-  rpg.inventory[item.id] = (Number(rpg.inventory[item.id]) || 0) + 1
+  const legendaryDiscovery = isRpgEventActive('legendary_discovery')
+  const stellarBlessing = isRpgEventActive('stellar_blessing')
+  const dimensionalRift = isRpgEventActive('dimensional_rift')
+  const voidCorruption = isRpgEventActive('void_corruption')
+  const cosmicTurbulence = isRpgEventActive('cosmic_turbulence')
+  const failureChance = (voidCorruption ? 0.45 : 0) + (cosmicTurbulence ? 0.15 : 0)
   rpg.lastExplore = now
   rpg.interstellarExplores = (Number(rpg.interstellarExplores) || 0) + 1
+  if (Math.random() < failureChance) {
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 🌌 EXPLORATION FAILED 」❏\n` +
+      `│ ☄️ *PENJELAJAHAN GAGAL*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> Navigasi antarbintang terganggu; tidak ada item yang hilang dari inventory.\n` +
+      `> ⏳ Cooldown: ${Math.ceil(cooldown / 60000)} menit\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  const tierMultipliers = {
+    RARE: (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
+    EPIC: (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
+    LEGENDARY: (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
+    MYTHIC: (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1)
+  }
+  const item = rollInterstellarItem(Math.random, tierMultipliers)
+  const destination = rollInterstellarPlanet()
+  rpg.inventory[item.id] = (Number(rpg.inventory[item.id]) || 0) + 1
   const foundItem = INTERSTELLAR_ITEM_BY_ID.get(item.id)
   await saveDB(db)
 

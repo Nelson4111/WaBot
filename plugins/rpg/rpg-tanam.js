@@ -1,4 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -148,6 +150,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
 
   let info = bibit[jenis]
+  const plantingDuration = scaleDifficultyCooldown(user, info.waktu) * (isRpgEventActive('crop_blight') ? 1.25 : 1)
   let hargaFinal = Math.floor(info.harga * buyDiscount)
   let userMoney = wdb.money[m.sender] || 0
 
@@ -156,7 +159,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     let totalBiaya = 0
     for (let slot of slotKosong) {
       if (userMoney >= hargaFinal) {
-        user.ladang[slot] = { jenis: jenis, waktuTanam: Date.now() }
+        user.ladang[slot] = { jenis: jenis, waktuTanam: Date.now(), waktuPanen: plantingDuration }
         userMoney -= hargaFinal
         totalBiaya += hargaFinal
         count++
@@ -198,7 +201,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
   
   wdb.money[m.sender] -= hargaFinal
-user.ladang[slotPilih] = { jenis: jenis, waktuTanam: Date.now() }
+user.ladang[slotPilih] = { jenis: jenis, waktuTanam: Date.now(), waktuPanen: plantingDuration }
 saveDB(wdb)
 
 return safeReply(

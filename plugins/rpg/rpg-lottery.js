@@ -1,12 +1,12 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { addUserLimit, setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 const LOTTERY_TICKET_PRICE = 10000
 const LOTTERY_PRIZE = 500000
 const LOTTERY_LOW_ODDS = 0.001
 const LOTTERY_LUCKY_DATE_ODDS = 0.9
 const LOTTERY_LUCKY_DAYS = new Set([1, 5, 7, 12, 14, 15, 17, 19, 21, 23, 24, 25, 27, 29])
-const PURCHASE_CONFIRMATION_TTL = 5 * 60 * 1000
 const LOTTERY_IMAGE = 'https://c.termai.cc/i180/qPrLP.jpg'
 const DRAW_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
@@ -459,7 +459,7 @@ if (saldo < totalHarga) {
     state.pendingPurchases[sender] = {
       jumlah,
       totalHarga,
-      expiresAt: Date.now() + PURCHASE_CONFIRMATION_TTL
+      expiresAt: Date.now() + RPG_CONFIRMATION_TTL
     }
     await saveDB(wdb)
     return m.reply(

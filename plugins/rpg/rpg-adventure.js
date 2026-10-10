@@ -3,6 +3,7 @@ import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyDamage
 import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -127,13 +128,16 @@ let handler = async (m, { conn, command }) => {
   let pickLvl = user.pickaxe || 0
   let oldTitle = getAdvTitle(advLvl)
 
-  let bonus = Math.min(70, Math.min(advLvl * 2 + swordLvl + Math.floor(pickLvl / 2), 60) + adjustAbilityDropChance(user, 0) * 100)
-  let darahKurang = scaleDifficultyDamage(user, Math.floor(Math.random() * 15) + 5)
-  let baseExp = Math.floor(Math.random() * 150) + 50
-  let baseMoney = Math.floor(Math.random() * 5000) + 1000
-  let baseWood = Math.floor(Math.random() * 10) + 5
-  let baseIron = Math.floor(Math.random() * 5) + 1
-  let jumlahLoot = 2 + Math.floor(Math.random() * 3)
+  const dangerousExpedition = isRpgEventActive('dangerous_expedition')
+  const expeditionFailed = dangerousExpedition && Math.random() < 0.15
+  let bonus = Math.min(70, Math.min(advLvl * 2 + swordLvl + Math.floor(pickLvl / 2), 60) + adjustAbilityDropChance(user, 0) * 100) *
+    (dangerousExpedition ? 0.75 : 1)
+  let darahKurang = Math.floor(scaleDifficultyDamage(user, Math.floor(Math.random() * 15) + 5) * (dangerousExpedition ? 1.3 : 1))
+  let baseExp = expeditionFailed ? 0 : Math.floor(Math.random() * 150) + 50
+  let baseMoney = expeditionFailed ? 0 : Math.floor(Math.random() * 5000) + 1000
+  let baseWood = expeditionFailed ? 0 : Math.floor(Math.random() * 10) + 5
+  let baseIron = expeditionFailed ? 0 : Math.floor(Math.random() * 5) + 1
+  let jumlahLoot = expeditionFailed ? 0 : 2 + Math.floor(Math.random() * 3)
 
   const urutanTier = ['TRASH','COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC','SECRET']
   let hasilLoot = {}; let groupedLoot = {}; let totalExp = baseExp; let tierTertinggi = 'TRASH'
@@ -197,6 +201,7 @@ cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `⭐ *TIER TANGKAPAN*\n`
+if (expeditionFailed) cap += `> ↳ 🌪️ Ekspedisi gagal; tidak ada loot yang didapat.\n`
 cap += `> ↳ ${tierInfo[tierTertinggi].stars}\n`
 cap += `> ↳ ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
 

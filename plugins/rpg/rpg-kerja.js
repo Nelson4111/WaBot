@@ -1,5 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     const wdb = loadDB()
@@ -238,14 +239,14 @@ if (changeActions.includes(jobAction)) {
 
   userRPG.pendingJobChange = {
     job: selectedChangeJob.job,
-    expiresAt: Date.now() + 60000
+    expiresAt: Date.now() + RPG_CONFIRMATION_TTL
   }
   saveDB(wdb)
   return m.reply(
     `⚠️ Kamu akan mengganti job menjadi *${selectedChangeJob.job}*.\n` +
     `> Konfirmasi: *${usedPrefix}job change yes*\n` +
     `> Batalkan: *${usedPrefix}job change batal*\n` +
-    `⏳ Konfirmasi berlaku selama 60 detik.`
+    `⏳ Konfirmasi berlaku selama 5 menit.`
   )
 }
 

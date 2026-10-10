@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import {
   MALL_CATEGORIES,
   MALL_CATEGORY_ALIASES,
@@ -64,8 +65,14 @@ let handler = async (m, { text = '', usedPrefix, command }) => {
   const prefix = usedPrefix || '.'
   const discountFactor = 1 - (premium ? MALL_PREMIUM_DISCOUNT : 0)
   const dailyItem = allItems[Math.floor(Date.now() / 86400000) % allItems.length]
-  const dailyPrice = item => Math.floor(item.price * (1 - MALL_DAILY_DISCOUNT) * discountFactor)
-  const priceFor = item => Math.floor(item.price * discountFactor * (item.id === dailyItem.id ? 1 - MALL_DAILY_DISCOUNT : 1))
+  const grandSale = isRpgEventActive('grand_sale')
+  const priceSurge = isRpgEventActive('price_surge')
+  const isPromoItem = item => item.id === dailyItem.id
+  const eventPriceFactor = item =>
+    (grandSale && isPromoItem(item) ? 0.7 : 1) *
+    (priceSurge && item.category === dailyItem.category ? 1.3 : 1)
+  const dailyPrice = item => Math.floor(item.price * (1 - MALL_DAILY_DISCOUNT) * discountFactor * eventPriceFactor(item))
+  const priceFor = item => Math.floor(item.price * discountFactor * (item.id === dailyItem.id ? 1 - MALL_DAILY_DISCOUNT : 1) * eventPriceFactor(item))
   const sales = global.db.data.mallSales || (global.db.data.mallSales = {})
 
   if (!['mall', 'supermarket'].includes(root)) return null
@@ -162,7 +169,9 @@ if (mode === 'harian') {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `🛍️ *${displayName(dailyItem)}*\n` +
     `> ↳ Harga normal : ${money(dailyItem.price)}\n` +
-    `> ↳ Harga hari ini : ${money(dailyPrice(dailyItem))}\n\n` +
+    `> ↳ Harga hari ini : ${money(dailyPrice(dailyItem))}\n` +
+    `${grandSale ? '> ↳ 🛍️ Promo Grand Sale: diskon event 30%.\n' : ''}` +
+    `${priceSurge ? '> ↳ 📈 Kategori item ini terdampak Price Surge (+30%).\n' : ''}\n` +
     `📌 *CARA MEMBELI*\n` +
     `> ↳ ${prefix}mall ${dailyItem.category} beli ${dailyItem.id}\n\n` +
     `─━━━━━━━━━━━━━━─`

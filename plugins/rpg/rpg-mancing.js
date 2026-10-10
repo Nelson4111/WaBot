@@ -2,6 +2,7 @@ import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficu
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -121,7 +122,11 @@ let handler = async (m, { conn }) => {
     }
   }
 
-  let cooldown = scaleDifficultyCooldown(user, 60000)
+  const murkyWaters = isRpgEventActive('murky_waters')
+  const luckyCatch = isRpgEventActive('lucky_catch')
+  const secretAwakening = isRpgEventActive('secret_awakening')
+  const doubleCatch = isRpgEventActive('double_catch')
+  let cooldown = Math.floor(scaleDifficultyCooldown(user, 60000) * (murkyWaters ? 1.25 : 1))
   if (Date.now() - (user.lastMancing || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMancing)) / 1000)
     return m.reply(`Sabar, ikan belum makan umpan. Tunggu ${sisa} detik lagi`)
@@ -137,6 +142,12 @@ let handler = async (m, { conn }) => {
   let pRare = Math.min(15.0 + (rodLvl * 1.2), 30.0)
   let pUncommon = Math.max(15.0, 30.0 - (rodLvl * 0.5))
   let pCommon = Math.max(15.0, 30.0 - (rodLvl * 0.8))
+  const rareChanceFactor = (luckyCatch ? 1.5 : 1) * (murkyWaters ? 0.6 : 1)
+  pSecret *= (secretAwakening ? 2 : 1) * (luckyCatch ? 1.5 : 1)
+  pMythic *= rareChanceFactor
+  pLegend *= rareChanceFactor
+  pEpic *= rareChanceFactor
+  pRare *= rareChanceFactor
 
   const fishCount = 2 + Math.floor(Math.random() * 3)
   const draws = []
@@ -149,7 +160,12 @@ let handler = async (m, { conn }) => {
     let cum = 0
 
     cum += pSecret
-    if (roll <= cum && pSecret > 0) return { ikan: secret[Math.floor(Math.random() * secret.length)], exp: 5000, tier: 'SECRET' }
+    if (roll <= cum && pSecret > 0) {
+      if (secretAwakening && Math.random() >= 0.6) {
+        return { ikan: trash[Math.floor(Math.random() * trash.length)], exp: 5, tier: 'TRASH' }
+      }
+      return { ikan: secret[Math.floor(Math.random() * secret.length)], exp: 5000, tier: 'SECRET' }
+    }
 
     cum += pMythic
     if (roll <= cum && pMythic > 0) return { ikan: mythic[Math.floor(Math.random() * mythic.length)], exp: 1000, tier: 'MYTHIC' }
@@ -184,6 +200,21 @@ let handler = async (m, { conn }) => {
 
     seen.add(fish.ikan)
     draws.push(fish)
+  }
+
+  if (doubleCatch && Math.random() < 0.25) {
+    let extraFish
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const candidate = pickFish()
+      if (!seen.has(candidate.ikan)) {
+        extraFish = candidate
+        break
+      }
+    }
+    if (extraFish) {
+      seen.add(extraFish.ikan)
+      draws.push({ ...extraFish, exp: 0 })
+    }
   }
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']

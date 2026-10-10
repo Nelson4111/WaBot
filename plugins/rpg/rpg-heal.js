@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { scaleDifficultyHealingCost } from '../../lib/rpgDifficulty.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 global.healRequests = global.healRequests || {}
 
@@ -136,7 +137,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
 
     global.healRequests[target] = {
       from: m.sender,
-      expire: Date.now() + 60000
+      expire: Date.now() + RPG_CONFIRMATION_TTL
     }
 
     return m.reply(
@@ -151,7 +152,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
       `> ↳ Terima : *${usedPrefix}${command} terima*\n` +
       `> ↳ Tolak : *${usedPrefix}${command} tolak*\n` +
       `> ↳ Biaya akan dibayar target jika diterima.\n` +
-      `> ↳ Permintaan berlaku 60 detik.\n\n` +
+      `> ↳ Permintaan berlaku 5 menit.\n\n` +
 
       `─━━━━━━━━━━━━━━─`,
       null,

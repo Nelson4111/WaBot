@@ -13,6 +13,7 @@ import { EVONEXUS_ABILITIES, getEvonexusAbilityTier, normalizeEvonexusValue } fr
 import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
 import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import {
   getHomeLevel,
   HOME_MAX_UPGRADES,
@@ -22,6 +23,9 @@ import {
   clampHomeStat
 } from '../../lib/rpgHomeData.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { computeCrimeScore, setActiveCrimeScore } from '../../lib/crimeHelper.js'
+import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
+import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
 
 import fs from 'fs'
 
@@ -50,11 +54,11 @@ function formatPanelEvonexus(rpg) {
     .sort((a, b) => a.name.localeCompare(b.name, 'id'))
   const body = installed.length
     ? installed.map(ability => `> ${ability.name} (${ability.type.toUpperCase()} / ${getEvonexusAbilityTier(ability).name})`).join('\n')
-    : '> Tidak ada ability terpasang.'
+    : '> Tidak ada SC Core terpasang.'
   return `Rank: ${evonexus.rank || 'Awak Baru'} · Level: ${Number(evonexus.level) || 1}\n` +
     `Eksplorasi: ${Number(rpg.interstellarExplores) || 0} · Resonansi: ${Number(evonexus.resonance) || 0}\n` +
     `Stat points: ${Number(evonexus.statPoints) || 0}\n` +
-    `Stellar Credit: ${Number(rpg.stellarCredit) || 0} 💠\nAbility terpasang: ${installed.length}\n${body}`
+    `Stellar Credit: ${Number(rpg.stellarCredit) || 0} 💠\nSC Core terpasang: ${installed.length}\n${body}`
 }
 
 function getJakartaDate(timestamp) {
@@ -162,9 +166,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del stellarcredit @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel evx @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama ability>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama SC Core>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <rank|level|resonance|statpoints|explores> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama ability> ya/tidak*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama SC Core> ya/tidak*\n` +
   `> ↳ *${usedPrefix}rpgpanel mall @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel home @tag*\n` +
@@ -173,6 +177,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setrhprogress @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setburonan @tag <poin>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel selesairh @tag* - Paksa selesaikan rehabilitasi\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotlevel @tag <lvl>*\n` +
@@ -192,10 +198,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel gudang @tag*\n\n` +
 
   `🧬 *EVONEXUS, MALL & HOME*\n` +
-  `> ↳ *${usedPrefix}rpgpanel evx @tag* - Lihat Stellar Credit dan ability terpasang\n` +
-  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama ability>* - Pasang ability via panel\n` +
+  `> ↳ *${usedPrefix}rpgpanel evx @tag* - Lihat Stellar Credit dan SC Core terpasang\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama SC Core>* - Pasang SC Core via panel\n` +
   `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <field> <nilai>* - Atur data Evonexus\n` +
-  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama ability> ya/tidak* - Konfirmasi pelepasan ability\n` +
+  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama SC Core> ya/tidak* - Konfirmasi pelepasan SC Core\n` +
   `> ↳ *${usedPrefix}rpgpanel mall @tag* - Lihat inventaris Mall\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel home @tag* - Lihat data rumah\n` +
@@ -669,11 +675,11 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
       (normalizeEvonexusValue(item.id) === normalizeEvonexusValue(remaining.slice(1).join(' ')) ||
         normalizeEvonexusValue(item.name) === normalizeEvonexusValue(remaining.slice(1).join(' ')))
     )
-    if (!ability) return m.reply(`❌ Ability tidak ditemukan. Format: *${usedPrefix}rpgpanel setevx @tag <tipe> <nama ability>*`)
+    if (!ability) return m.reply(`❌ SC Core tidak ditemukan. Format: *${usedPrefix}rpgpanel setevx @tag <tipe> <nama SC Core>*`)
     user.evonexus ||= {}
     user.evonexus.installed ||= {}
     user.evonexus.destroyedAbilities ||= []
-    if (user.evonexus.destroyedAbilities.includes(ability.id)) return m.reply('❌ Ability ini sudah dihancurkan dan tidak dapat dipasang kembali.')
+    if (user.evonexus.destroyedAbilities.includes(ability.id)) return m.reply('❌ SC Core ini sudah dihancurkan dan tidak dapat dipasang kembali.')
     if (user.evonexus.installed[type]) return m.reply(`❌ Slot ${type.toUpperCase()} sudah terisi.`)
     user.evonexus.installed[type] = ability.id
     await saveDB(wdb)
@@ -689,7 +695,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     if (['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(response)) {
       const pendingValid = pending &&
         pending.owner === m.sender &&
-        Date.now() - Number(pending.createdAt) <= 60_000
+        Date.now() - Number(pending.createdAt) <= RPG_CONFIRMATION_TTL
       if (!pendingValid) {
         if (user.evonexus) delete user.evonexus.pendingPanelUninstall
         return m.reply('❌ Tidak ada konfirmasi uninstall Evonexus yang masih berlaku.')
@@ -697,13 +703,13 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
       if (['tidak', 'no', 'batal', 'cancel'].includes(response)) {
         delete user.evonexus.pendingPanelUninstall
         await saveDB(wdb)
-        return m.reply('❎ Uninstall ability melalui panel dibatalkan.')
+        return m.reply('❎ Uninstall SC Core melalui panel dibatalkan.')
       }
       const ability = installed.find(item => item.id === pending.abilityId)
       if (!ability) {
         delete user.evonexus.pendingPanelUninstall
         await saveDB(wdb)
-        return m.reply('❌ Ability tersebut sudah tidak terpasang.')
+        return m.reply('❌ SC Core tersebut sudah tidak terpasang.')
       }
       delete user.evonexus.installed[ability.type]
       user.evonexus.destroyedAbilities ||= []
@@ -717,13 +723,13 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
       normalizeEvonexusValue(item.id) === key ||
       normalizeEvonexusValue(item.name) === key
     )
-    if (!ability) return m.reply(`❌ Ability tidak terpasang. Lihat dengan *${usedPrefix}rpgpanel evx @tag*.`)
+    if (!ability) return m.reply(`❌ SC Core tidak terpasang. Lihat dengan *${usedPrefix}rpgpanel evx @tag*.`)
     user.evonexus ||= {}
     user.evonexus.pendingPanelUninstall = { abilityId: ability.id, owner: m.sender, createdAt: Date.now() }
     await saveDB(wdb)
     return m.reply(
-      `⚠️ Ability *${ability.name}* akan dihancurkan permanen tanpa refund.\n` +
-      `Ketik *${usedPrefix}rpgpanel delevx @tag ${ability.name} ya* untuk konfirmasi atau akhiri dengan *tidak* untuk batal. Berlaku 1 menit.`,
+      `⚠️ SC Core *${ability.name}* akan dihancurkan permanen tanpa refund.\n` +
+      `Ketik *${usedPrefix}rpgpanel delevx @tag ${ability.name} ya* untuk konfirmasi atau akhiri dengan *tidak* untuk batal. Berlaku 5 menit.`,
       null,
       { mentions: [who] }
     )
@@ -887,6 +893,38 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     await saveDB(wdb)
     return m.reply(
       `✅ Progress rehabilitasi @${who.split('@')[0]} diatur menjadi *${progress}/${Number(user.rehabilitation.requiredProgress) || 0} poin*.`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
+  if (['setburonan', 'setwanted', 'setwantedscore'].includes(aksi)) {
+    const score = Number(remaining[0])
+    if (!Number.isSafeInteger(score) || score < 0) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setburonan @tag <poin>*\nContoh: *${usedPrefix}rpgpanel setburonan @tag 10*`)
+    }
+    wdb.crime[who] = createRpgCrimeRecord(wdb.crime[who] || {})
+    setActiveCrimeScore(wdb.crime[who], score)
+    wdb.crime[who].total = computeCrimeScore(wdb.crime[who])
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Poin buronan aktif @${who.split('@')[0]} diatur menjadi *${score} poin*. Total riwayat kriminal: *${computeCrimeScore(wdb.crime[who])} poin*.`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
+  if (['selesairh', 'finishrh', 'finishrehab', 'forcerh'].includes(aksi)) {
+    if (user.rehabilitation?.status !== 'active') {
+      return m.reply(`❌ @${who.split('@')[0]} tidak sedang menjalani rehabilitasi aktif.`, null, { mentions: [who] })
+    }
+    wdb.crime[who] = createRpgCrimeRecord(wdb.crime[who] || {})
+    if (!forceCompleteRehabilitation(user, wdb.crime[who])) {
+      return m.reply(`❌ Rehabilitasi @${who.split('@')[0]} gagal diselesaikan.`, null, { mentions: [who] })
+    }
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Rehabilitasi @${who.split('@')[0]} dipaksa selesai melalui panel. Poin buronan aktif sekarang *0 poin*; riwayat kriminal tetap tersimpan (*${computeCrimeScore(wdb.crime[who])} poin*).`,
       null,
       { mentions: [who] }
     )

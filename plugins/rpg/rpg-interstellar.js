@@ -8,6 +8,7 @@ import {
   filterLeaderboardUsers,
   getLeaderboardUserIdentity
 } from '../../lib/leaderboardPrivacy.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 const normalize = value => String(value || '')
   .normalize('NFKD')
@@ -182,7 +183,12 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   }
 
   const soldQuantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0)
-  const earned = selectedItems.reduce((sum, item) => sum + item.quantity * item.sellPrice, 0)
+  const legendaryDiscovery = isRpgEventActive('legendary_discovery')
+  const earned = selectedItems.reduce((sum, item) => {
+    const isRareDiscovery = ['RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET'].includes(item.tier)
+    const rewardMultiplier = legendaryDiscovery && isRareDiscovery ? 1.45 : 1
+    return sum + Math.floor(item.quantity * item.sellPrice * rewardMultiplier)
+  }, 0)
   for (const item of selectedItems) {
     rpg.inventory[item.id] = 0
   }

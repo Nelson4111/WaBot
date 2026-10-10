@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 let handler = async (m, { conn, args, command }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
@@ -225,8 +226,10 @@ let handler = async (m, { conn, args, command }) => {
     if(!h) return safeReply('❌ Data hewan tidak ditemukan')
     let hasil = dapatkanHasil(h).ambil
     const hasilDisplay = getHasilDisplay(hasil)
-    user.inventory[hasil] = (user.inventory[hasil] || 0) + user.ternak[hewan1]
-    let exp = scaleDifficultyXP(user, h.exp * user.ternak[hewan1])
+    const productivity = isRpgEventActive('livestock_disease') ? 0.7 : 1
+    const production = Math.max(1, Math.floor(user.ternak[hewan1] * productivity))
+    user.inventory[hasil] = (user.inventory[hasil] || 0) + production
+    let exp = scaleDifficultyXP(user, h.exp * production)
     user.exp += exp
     saveDB(wdb)
 
@@ -234,7 +237,7 @@ let handler = async (m, { conn, args, command }) => {
       `╭─❏「 🌾 HASIL TERNAK 」❏\n` +
       `│ 🐄 *${h.nama} ${h.emoji}* x${user.ternak[hewan1]}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ 🎁 Produk : ${hasilDisplay.emoji} ${hasilDisplay.nama} x${user.ternak[hewan1]}\n` +
+      `> ↳ 🎁 Produk : ${hasilDisplay.emoji} ${hasilDisplay.nama} x${production}\n` +
       `> ↳ ✨ Exp : +${exp}\n` +
       `> ↳ 💚 Status : Hewan tetap hidup\n\n` +
       `─━━━━━━━━━━━━━━─`

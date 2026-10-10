@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { isPremiumUser } from './rpg-bank.js'
 
 const UPGRADE_IMAGE = 'https://c.termai.cc/i108/l3q'
@@ -144,7 +145,7 @@ if (confirmNo) {
   return m.reply(`╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n│ ❌ *UPGRADE DIBATALKAN*\n╰─━━━━━━━━━━━━━━─`)
 }
 
-if (confirmYes && (!pendingUpgrade || pendingUpgrade.item !== item || Date.now() - pendingUpgrade.time > 60000)) {
+if (confirmYes && (!pendingUpgrade || pendingUpgrade.item !== item || Date.now() - pendingUpgrade.time > RPG_CONFIRMATION_TTL)) {
   delete user.pendingUpgrade
   await saveDB(wdb)
   return m.reply(`❌ Konfirmasi upgrade tidak ada atau kedaluwarsa. Jalankan perintah upgrade lagi untuk melihat biaya terbaru.`)
@@ -235,7 +236,7 @@ if (!confirmYes) {
     formatUpgradeCost(cost) + `\n` +
     `Ketik *${usedPrefix}${command} ${item} yes* untuk lanjut.\n` +
     `Ketik *${usedPrefix}${command} ${item} no* untuk batal.\n` +
-    `Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+    `Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
   )
 }
 

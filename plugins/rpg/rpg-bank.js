@@ -4,6 +4,7 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, claimBankCrown } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
+import upgradeBankHandler from './rpg-upgradebank.js'
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
 export function getBankTransactionCooldown(tier) {
@@ -159,6 +160,24 @@ function getPlayerCasinoRoom(wdb, jid) {
   return null
 }
 
+function isActiveAuctionBidder(wdb, jid) {
+  const auction = wdb?.data?.auctionHouse
+  if (!auction || Number(auction.endsAt) <= Date.now()) return false
+
+  const normalizeJid = value => {
+    if (!value) return ''
+    const resolved = value.endsWith('@lid')
+      ? global.lids?.[value] || wdb.data.lids?.[value] || value
+      : value
+    return `${resolved.split('@')[0].split(':')[0]}${resolved.includes('@lid') ? '@lid' : '@s.whatsapp.net'}`
+  }
+  const sender = normalizeJid(jid)
+
+  return Object.values(auction.bids || {}).some(bids =>
+    Array.isArray(bids) && bids.some(bid => normalizeJid(bid?.jid) === sender)
+  )
+}
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let userRPG = getUserRPG(wdb, m.sender).rpg
@@ -183,6 +202,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
   let args = text.split(' ')
   let action = args[0]?.toLowerCase()
+  if (action === 'upgrade') {
+    return upgradeBankHandler(m, {
+      conn,
+      text: args.slice(1).join(' '),
+      usedPrefix,
+      command: 'bank'
+    })
+  }
   const membershipActions = ['bulanan', 'monthly', 'tagihan']
   let amount = parseInt(args[1])
   let now = Date.now()
@@ -509,6 +536,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
     if (topic === 'simpan' || topic === 'tarik') {
       if (service === 'Chat CS') return m.reply('❌ Chat CS menyediakan informasi dasar saja. Bantuan setor/tarik tersedia mulai Chat CS 24jam.')
+      if (topic === 'simpan' && isActiveAuctionBidder(wdb, m.sender)) {
+        return m.reply('❌ Setor bank diblokir selama kamu masih mengikuti lelang aktif. Setoran akan tersedia kembali setelah lelang selesai.')
+      }
       const amount = Number(args[2])
       if (!Number.isSafeInteger(amount) || amount <= 0) return m.reply(`Gunakan *.bank cs ${topic} <jumlah>* dengan jumlah rupiah positif.`)
       const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
@@ -735,6 +765,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
   // SIMPAN + ALIAS "all"
   if (action === 'simpan' || action === 'all') {
+    if (isActiveAuctionBidder(wdb, m.sender)) {
+      return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ SETOR DIBLOKIR\n◈ KAMU SEDANG MENGIKUTI LELANG ◈\n◆ Setor bank tidak tersedia selama bid kamu masih aktif.\n◆ Setoran akan tersedia kembali setelah lelang selesai.\n\n─━━━━━━━━━─`)
+    }
     if (getPlayerCasinoRoom(wdb, m.sender)) {
       return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ SETOR DIBLOKIR\n◈ KAMU SEDANG DI ROOM CASINO ◈\n◆ Saat ikut room, bank tidak bisa menerima deposit.\n◆ Tarik tunai tetap diperbolehkan.\n\n─━━━━━━━━━─`)
     }
@@ -867,7 +900,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank takecrown', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'uang']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'uang']
 handler.group = false
 
 handler.all = async function (m, { conn }) {
@@ -893,7 +926,7 @@ handler.all = async function (m, { conn }) {
     || (messageWords[1]?.toLowerCase() === 'cs' && ['simpan', 'tarik'].includes(messageWords[2]?.toLowerCase()))
   )
 
-  if (assistant.autoSetor?.aktif && !changingAutoDeposit && !manualBankTransfer) {
+  if (assistant.autoSetor?.aktif && !changingAutoDeposit && !manualBankTransfer && !isActiveAuctionBidder(wdb, m.sender)) {
     const wallet = Number(wdb.money[m.sender]) || 0
     const threshold = Math.max(1, Number(assistant.autoSetor.ambang) || 1_000_000)
     const room = tier.limit === null ? wallet : Math.max(0, tier.limit - userRPG.bank)

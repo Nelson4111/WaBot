@@ -3,6 +3,7 @@ import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -1214,6 +1215,13 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const input = (args[0] || '').toLowerCase()
+  const casinoShutdown = isRpgEventActive('casino_shutdown')
+  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil']
+  const roomReadOnlyActions = ['info', 'games', 'guide']
+  if (casinoShutdown && !readOnlyCasinoInputs.includes(input) &&
+      !(input === 'room' && roomReadOnlyActions.includes(String(args[1] || '').toLowerCase()))) {
+    return m.reply('🚫 *CASINO SHUTDOWN*\nSeluruh permainan Casino sedang ditutup. Saldo dan inventori tetap aman.')
+  }
   const inCasinoRoom = getPlayerCasinoRoom(wdb, m.sender)
 
   if (inCasinoRoom && input !== 'room' && input !== 'hasil') {
@@ -1420,11 +1428,18 @@ if (elapsed < cooldownDuration) {
 }
 
   const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
+  const safetyNet = isRpgEventActive('safety_net')
+  if (safetyNet && result.multiplier > 0 && Math.random() < 0.5) {
+    result.multiplier = 0
+    result.text += '\n🛡️ Safety Net mengurangi peluang kemenangan selama event.'
+  }
   const balanceBefore = wdb.money[m.sender] || 0
+  const winFactor = (isRpgEventActive('golden_hour') ? 1.2 : 1) *
+    (isRpgEventActive('low_stakes') ? 0.5 : 1)
   let payout = result.payoutDenied
     ? 0
     : result.multiplier > 0
-    ? bet + scaleDifficultyIncome(user, Math.floor(bet * (result.multiplier - 1)))
+    ? bet + Math.floor(scaleDifficultyIncome(user, Math.floor(bet * (result.multiplier - 1))) * winFactor)
     : 0
   let net = result.payoutDenied ? 0 : payout - bet
   if (result.payoutDenied) {
@@ -1439,6 +1454,23 @@ if (elapsed < cooldownDuration) {
     payout = 0
     net = -Math.min(balanceBefore, bet * 2)
   }
+  if (safetyNet && net < 0 && !result.blackout) {
+    payout = bet
+    net = 0
+  }
+  const cashbackEvent = global.db?.data?.rpgEvents?.cashback_hour
+  let cashback = 0
+  if (isRpgEventActive('cashback_hour') && net < 0 && cashbackEvent) {
+    if (user.cashbackHour?.startedAt !== cashbackEvent.startedAt) {
+      user.cashbackHour = { startedAt: cashbackEvent.startedAt, total: 0 }
+    }
+    cashback = Math.min(
+      Math.max(0, 1_000_000 - Number(user.cashbackHour.total || 0)),
+      Math.floor(-net * 0.25)
+    )
+    user.cashbackHour.total = Number(user.cashbackHour.total || 0) + cashback
+  }
+  net += cashback
 
   wdb.money[m.sender] = balanceBefore + net
   cooldowns[game] = Date.now()
@@ -1490,6 +1522,7 @@ return m.reply(
   `> ↳ Hadiah : ${money(payout)}\n` +
   `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)}\n` : ''}` +
   `> ↳ Profit : ${signedMoney(net)}\n` +
+  `${cashback ? `> ↳ Cashback Hour : +${money(cashback)}\n` : ''}` +
   `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
   `> ↳ 💰 Saldo Sesudah : ${money(wdb.money[m.sender])}\n\n` +
   `💬 *Dialog*\n` +

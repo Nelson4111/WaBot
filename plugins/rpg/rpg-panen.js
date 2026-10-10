@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyHarvest, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -131,7 +132,13 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   function applyFarmingYieldBonus(amount) {
-    return scaleDifficultyHarvest(user, applyBloodlineYield(user, 'farmingYield', amount))
+    let harvested = scaleDifficultyHarvest(user, applyBloodlineYield(user, 'farmingYield', amount))
+    if (isRpgEventActive('bountiful_harvest')) {
+      harvested = Math.floor(harvested * 1.5)
+      if (Math.random() < 0.25) harvested++
+    }
+    if (isRpgEventActive('crop_blight')) harvested = Math.max(1, Math.floor(harvested * 0.7))
+    return harvested
   }
 
   function cekLevelUpAfterMigration(user) {
@@ -176,7 +183,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       let l = user.ladang[i]
       let info = bibit[l.jenis]
       if(!info) continue
-      let sisa = info.waktu - (Date.now() - l.waktuTanam)
+      let sisa = (Number(l.waktuPanen) || scaleDifficultyCooldown(user, info.waktu)) - (Date.now() - l.waktuTanam)
       let ready = sisa <= 0
       let status = ready? `✅ Siap Panen` : `🌱 ${Math.ceil(sisa / 60000)}m lagi`
 
@@ -211,7 +218,7 @@ if (text.toLowerCase() === 'all') {
       let l = user.ladang[i]
       let dataBibit = bibit[l.jenis]
       if(!dataBibit) continue
-      let sisaWaktu = dataBibit.waktu - (Date.now() - l.waktuTanam)
+      let sisaWaktu = (Number(l.waktuPanen) || scaleDifficultyCooldown(user, dataBibit.waktu)) - (Date.now() - l.waktuTanam)
       if (sisaWaktu <= 0) {
         let h = dataBibit.hasil
         const harvested = applyFarmingYieldBonus(h.jumlah)
@@ -305,7 +312,7 @@ if(!dataBibit) return safeReply(
   `╰─━━━━━━━━━━━━━━─`
 )
 
-let sisaWaktu = scaleDifficultyCooldown(user, dataBibit.waktu) - (Date.now() - l.waktuTanam)
+let sisaWaktu = (Number(l.waktuPanen) || scaleDifficultyCooldown(user, dataBibit.waktu)) - (Date.now() - l.waktuTanam)
 
 if (sisaWaktu <= 0) {
   let h = dataBibit.hasil

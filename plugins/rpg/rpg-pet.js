@@ -1,8 +1,10 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -38,7 +40,9 @@ const formatNamaAsli = (name) => name.replace(/_/g, ' ').replace(/\b\w/g, letter
 const formatNama = (p) => p.nickname? `${p.nickname} (${formatNamaAsli(p.tipe)})` : formatNamaAsli(p.tipe)
 const bar = (val, len = 10) => '`' + '█'.repeat(Math.floor(val / (100/len))) + '░'.repeat(len - Math.floor(val / (100/len))) + '`'
 const isMesin = (tipe) => ['robot', 'drone', 'cyborg', 'mecha'].includes(tipe)
-const getDebuff = (p) => (p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1
+const getDebuff = (p) => ((p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 : 1) *
+  (isRpgEventActive('pet_festival') ? 1.25 : 1)
+const applyPetFestivalExp = amount => Math.floor(amount * (isRpgEventActive('pet_festival') ? 1.5 : 1))
 
 user.pets = user.pets.filter(p => {
   if((p.energy || 100) <= 0 && (Date.now() - (p.lastActivity || 0) > 86400000)) {
@@ -678,7 +682,7 @@ if (action === 'care') {
       const rarity = pets[pet.tipe]?.rarity || 'COMMON'
       const skill = applySkill(pet, 'feed')
       let expGain = ( { COMMON: 20, UNCOMMON: 25, RARE: 35, EPIC: 50, LEGENDARY: 70, MYTHIC: 90, SECRET: 120 }[rarity] || 20) + (pet.tipe === 'anjing_alpha' ? 10 : 0) + (skill.expBonus || 0)
-      pet.exp = (Number(pet.exp) || 0) + expGain
+      pet.exp = (Number(pet.exp) || 0) + applyPetFestivalExp(expGain)
       pet.energy = Math.min(100, (Number(pet.energy) || 100) + 20 + (pet.tipe === 'mermaid' ? 10 : 0) + (skill.energyBonus || 0))
       pet.happy = Math.min(100, (Number(pet.happy) || 50) + 5 + (skill.happyBonus || 0))
       if (pet.tipe === 'alien') wdb.money[m.sender] += scaleDifficultyIncome(user, 1000 * (Number(pet.level) || 1))
@@ -734,7 +738,7 @@ if (action === 'all') {
     const walkLoss = walkSkill.noEnergyLoss || ['batu', 'zombie'].includes(pet.tipe) ? 0 : pet.tipe === 'zombie' ? 10 : pet.tipe === 'burung_hantu' && isMalam ? 10 : 20
     let playLoss = playSkill.noEnergyLoss || ['batu', 'zombie'].includes(pet.tipe) ? 0 : pet.tipe === 'zombie' ? 10 : pet.tipe === 'burung_hantu' && isMalam ? 10 : pet.tipe === 'snowman' && !isMalam ? 30 : 20
     if (pet.tipe === 'zombie') playLoss = 10
-    const expGain = trainExp + walkExp + playExp + huntExp * huntSkill.multi * getDebuff(pet)
+    const expGain = applyPetFestivalExp(trainExp + walkExp + playExp + huntExp * huntSkill.multi * getDebuff(pet))
     pet.exp = (Number(pet.exp) || 0) + expGain
     if (!trainSkill.keepHappy) pet.happy = (Number(pet.happy) || 50) - 5
     pet.happy = Math.min(100, pet.happy + 5 + 10 * (pet.tipe === 'ghost' ? 2 : 1))
@@ -1259,6 +1263,7 @@ if (action === 'feed') {
       const feedSkill = applySkill(p, 'feed')
 
       expGain += feedSkill.expBonus || 0
+      expGain = applyPetFestivalExp(expGain)
       energyGain += feedSkill.energyBonus || 0
       p.happy = Math.min(100, (p.happy || 50) + 5 + (feedSkill.happyBonus || 0))
 
@@ -1407,7 +1412,7 @@ if (action === 'train') {
     if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 15
     if(skill.noEnergyLoss) energyLoss = 0
     if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
-    p.exp += expGain
+    p.exp += applyPetFestivalExp(expGain)
     if (!skill.keepHappy) p.happy -= 5
     p.dirty = Math.min(100, (p.dirty || 0) + 20)
     p.lastTrain = Date.now()
@@ -1493,7 +1498,7 @@ if (action === 'walk') {
     if(p.tipe === 'burung_hantu' && isMalam) energyLoss = 10
     if(skill.noEnergyLoss) energyLoss = 0
     if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
-    p.exp += expGain
+    p.exp += applyPetFestivalExp(expGain)
     p.happy = Math.min(100, (p.happy || 50) + 5)
     p.dirty = Math.min(100, (p.dirty || 0) + 15)
     p.lastActivity = Date.now()
@@ -1584,7 +1589,7 @@ if (action === 'play') {
     if(p.tipe === 'snowman' && !isMalam) energyLoss = 30
     if(skill.noEnergyLoss) energyLoss = 0
     if(!['batu','zombie'].includes(p.tipe)) p.energy -= energyLoss
-    p.exp += expGain
+    p.exp += applyPetFestivalExp(expGain)
     p.happy = Math.min(100, (p.happy || 50) + happyGain)
     p.dirty = Math.min(100, (p.dirty || 0) + 10)
     p.lastActivity = Date.now()
@@ -1882,7 +1887,7 @@ if (action === 'gift') {
 
     wdb.money[m.sender] -= 10000
     p.happy = Math.min(100, (p.happy || 50) + 30)
-    p.exp += 10
+    p.exp += applyPetFestivalExp(10)
     saveDB(wdb)
 
     return safeReply(
@@ -2077,7 +2082,7 @@ if (action === 'sell') {
     user.pendingPetAction = {
       action: 'sell',
       indexes: selected.map(({ index }) => index),
-      expires: Date.now() + 60000
+      expires: Date.now() + RPG_CONFIRMATION_TTL
     }
 
     return safeReply(
@@ -2086,7 +2091,8 @@ if (action === 'sell') {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Jual ${selected.length} pet?\n` +
       `> ↳ Ketik *${usedPrefix}pet sell yes* untuk lanjut.\n` +
-      `> ↳ Ketik *${usedPrefix}pet sell no* untuk batal.\n\n` +
+      `> ↳ Ketik *${usedPrefix}pet sell no* untuk batal.\n` +
+      `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -2438,7 +2444,7 @@ if (action === 'hunt') {
   user.pets.forEach(p => {
     let skill = applySkill(p, 'hunt')
     let expGain = exp * skill.multi * getDebuff(p)
-    p.exp += expGain
+    p.exp += applyPetFestivalExp(expGain)
     p.energy -= 40
     if(p.exp >= 100){p.level++; p.exp=0}
   })
@@ -2559,7 +2565,7 @@ if (action === 'kill') {
     user.pendingPetAction = {
       action: 'kill',
       indexes: selected.map(({ index }) => index),
-      expires: Date.now() + 60000
+      expires: Date.now() + RPG_CONFIRMATION_TTL
     }
 
     return safeReply(
@@ -2569,7 +2575,8 @@ if (action === 'kill') {
       `> ↳ Bunuh ${selected.length} pet?\n\n` +
       `📌 *KONFIRMASI*\n` +
       `> ↳ Ketik *.pet kill yes* untuk lanjut\n` +
-      `> ↳ Ketik *.pet kill no* untuk batal\n\n` +
+      `> ↳ Ketik *.pet kill no* untuk batal\n` +
+      `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -2666,19 +2673,20 @@ if (action === 'transfer') {
 
   const targetData = getUserRPG(wdb, target)
   if (targetData?.isDummy || !targetData?.rpg) return safeReply('❌ Penerima belum terdaftar di RPG.')
-  if (transferStore[target]) return safeReply('❌ Penerima masih memiliki transfer pet yang belum diputuskan. Tunggu 1 menit sampai request lama batal, atau minta penerima mengetik terima/tolak.')
+  if (transferStore[target]) return safeReply('❌ Penerima masih memiliki transfer pet yang belum diputuskan. Tunggu 5 menit sampai request lama batal, atau minta penerima mengetik terima/tolak.')
 
   const pet = user.pets[petIndex]
   transferStore[target] = {
     from: currentSender,
     pet: JSON.parse(JSON.stringify(pet)),
-    expires: Date.now() + 60000
+    expires: Date.now() + RPG_CONFIRMATION_TTL
   }
   saveDB(wdb)
 
   return safeReply(
     `✅ Permintaan transfer ${formatNama(pet)} telah dikirim ke @${target.split('@')[0]}.\n` +
-    `Pet baru berpindah setelah penerima mengetik *.pet transfer terima*.`,
+    `Pet baru berpindah setelah penerima mengetik *.pet transfer terima*.\n` +
+    `Permintaan berlaku selama 5 menit.`,
     { mentions: [target] }
   )
 }

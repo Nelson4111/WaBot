@@ -424,18 +424,6 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
   }
 
   if (pending.type === 'eat') {
-    const total = Math.max(0, Number(pending.total) || 0)
-    if (wallet() < total) {
-      await saveDB(db)
-      return m.reply(
-        `╭─❏「 🍽️ MAKAN BERSAMA 」❏\n` +
-        `│ ⚠️ *SALDO TIDAK MENCUKUPI*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Saldo kurang dan tidak cukup untuk makanan chef (${money(total)}).\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-    setWallet(wallet() - total)
     const members = getHomeMembers(rpg)
     const mealText = (pending.meals || []).map(meal => `${meal.emoji || '🍽️'} ${formatMasakanNama(meal.name)} x${meal.amount}`).join(', ')
     const story = HOME_CARE_STORIES.eat[Math.floor(Math.random() * HOME_CARE_STORIES.eat.length)]
@@ -453,7 +441,7 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       `> ${story}\n\n` +
       `🍽️ *MENU MAKANAN*\n` +
       `> ↳ Menu: ${mealText}\n` +
-      `> ↳ Biaya restoran: ${money(total)}\n\n` +
+      `> ↳ Biaya hidangan: Gratis (termasuk layanan Private Chef)\n\n` +
       `🏡 *KONDISI RUMAH*\n` +
       `> ↳ Harmony rumah: +${harmonyGained} (sekarang ${home.harmony}/100)\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -722,7 +710,7 @@ if (mode === 'command') {
     `> ↳ ${prefix}home public/private — atur privasi rumah\n\n` +
     `🍽️ *AKTIVITAS & PERAWATAN*\n` +
     `> ↳ ${prefix}home act — aktivitas rumah (alias: activity/aktivitas; cooldown 5 menit)\n` +
-    `> ↳ ${prefix}home eat <menu> [jumlah] — makan dari kulkas (alias: makan); Chef meminta konfirmasi\n` +
+    `> ↳ ${prefix}home eat <menu> [jumlah] — makan dari kulkas; menu Private Chef gratis (alias: makan)\n` +
     `> ↳ ${prefix}home clean — bersihkan rumah\n` +
     `> ↳ ${prefix}home childcare — rawat anak\n` +
     `> ↳ ${prefix}home petcare — rawat pet\n` +
@@ -1041,7 +1029,7 @@ if (mode === 'staff') {
       `> ↳ Tanpa Housekeeper gunakan *${prefix}home clean*.\n` +
       `> ↳ Tanpa Babysitter gunakan *${prefix}home childcare*.\n` +
       `> ↳ Tanpa Pet Sitter gunakan *${prefix}home petcare*.\n` +
-      `> ↳ Private Chef menyajikan menu restoran mahal saat *${prefix}home eat*.\n` +
+      `> ↳ Private Chef menyajikan menu restoran mahal secara gratis saat *${prefix}home eat*.\n` +
       `> ↳ Premium dapat memakai *${prefix}home staff hire all <durasi>*.\n\n` +
       `📌 *PERINTAH*\n` +
       `> ↳ ${prefix}home staff list\n` +
@@ -1480,7 +1468,6 @@ if (mode === 'eat' || mode === 'makan') {
 
   const chef = home.staff.some(staff => staff.key === 'private chef' && staff.expiresAt > Date.now())
   let meals
-  let total = 0
 
   if (chef) {
     const premiumMenus = Object.entries(hargaBeli)
@@ -1493,11 +1480,8 @@ if (mode === 'eat' || mode === 'makan') {
     meals = premiumMenus.map(([name, menu]) => ({
       name,
       emoji: menu.emoji || '🍽️',
-      amount: 1 + Math.floor(Math.random() * 3),
-      price: Math.floor(Number(menu.harga) * 1.5)
+      amount: 1 + Math.floor(Math.random() * 3)
     }))
-
-    total = meals.reduce((sum, meal) => sum + meal.price * meal.amount, 0)
 
     if (!meals.length) {
       return m.reply(
@@ -1509,18 +1493,7 @@ if (mode === 'eat' || mode === 'makan') {
       )
     }
 
-    if (wallet() < total) {
-      return m.reply(
-        `╭─❏「 👨‍🍳 PRIVATE CHEF 」❏\n` +
-        `│ ❌ *SALDO TIDAK CUKUP*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Total biaya menu: ${money(total)}\n` +
-        `> ↳ Saldo kamu: ${money(wallet())}\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-
-    home.pendingConfirmation = { type: 'eat', meals, total, createdAt: Date.now() }
+    home.pendingConfirmation = { type: 'eat', meals, createdAt: Date.now() }
     await saveDB(db)
 
     return m.reply(
@@ -1529,8 +1502,8 @@ if (mode === 'eat' || mode === 'makan') {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `🍽️ *DAFTAR HIDANGAN*\n` +
       `${meals.map(meal => `> ↳ ${meal.emoji} ${formatMasakanNama(meal.name)} x${meal.amount}`).join('\n')}\n\n` +
-      `💰 *TOTAL PEMBAYARAN*\n` +
-      `> ↳ Total: *${money(total)}*\n\n` +
+      `🎁 *HIDANGAN GRATIS*\n` +
+      `> ↳ Makanan sudah termasuk dalam layanan Private Chef.\n\n` +
       `📌 *KONFIRMASI PESANAN*\n` +
       `> ↳ Balas *${prefix}home yes* untuk memesan.\n` +
       `> ↳ Balas *${prefix}home no* untuk membatalkan.\n` +
@@ -2046,6 +2019,7 @@ if (mode === 'list' || mode === 'explore' || mode === 'top') {
         `> ↳ 👣 Kunjungan : ${entry.home.visitCount}`
       }).join('\n\n') || '> ↳ Belum ada rumah.'}\n\n` +
       `─━━━━━━━━━━━━━━─`,
+      null,
       { mentions }
     )
   }

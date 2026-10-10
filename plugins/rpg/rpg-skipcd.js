@@ -112,7 +112,7 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
 
   return m.reply(
     `╭─❏「 ⏩ KONFIRMASI SKIP COOLDOWN 」❏\n` +
-    `│ Premium • Berlaku 60 detik\n` +
+    `│ Premium • Berlaku 5 menit\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Cooldown: ${entries.map(({ label, remaining }) => `${label} (${Math.ceil(remaining / 60000)} menit)`).join(', ')}\n` +
     `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_MINUTE)} per menit tersisa (dibulatkan per aktivitas/aksi)\n` +

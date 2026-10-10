@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -217,6 +218,9 @@ const GIFT_LIST = [
   }
 
   const addExp = (p, exp) => {
+    const eventMultiplier = (isRpgEventActive('love_season') ? 1.5 : 1) *
+      (isRpgEventActive('cold_war') ? 0.7 : 1)
+    exp = Math.floor(exp * eventMultiplier)
     p.exp = (p.exp || 0) + exp
     let need = (p.level || 1) * 200
     if(p.exp >= need){
@@ -227,6 +231,18 @@ const GIFT_LIST = [
       return true
     }
     return false
+  }
+
+  const getActivityLoveAmount = amount => {
+    const eventMultiplier = (isRpgEventActive('love_season') ? 1.25 : 1) *
+      (isRpgEventActive('cold_war') ? 0.75 : 1)
+    return amount > 0 ? Math.floor(amount * eventMultiplier) : amount
+  }
+
+  const applyActivityLove = (partner, amount) => {
+    const adjustedAmount = getActivityLoveAmount(amount)
+    partner.love = Math.max(0, Math.min(100, (Number(partner.love) || 0) + adjustedAmount))
+    return adjustedAmount
   }
 
   const cekLevel = (p, lvl, fitur) => {
@@ -241,7 +257,10 @@ const GIFT_LIST = [
     return Math.floor(Math.random() * 4) + 1
   }
 
-  const formatLoveChange = change => `${change >= 0 ? '+' : ''}${change}`
+  const formatLoveChange = change => {
+    const adjustedChange = getActivityLoveAmount(change)
+    return `${adjustedChange >= 0 ? '+' : ''}${adjustedChange}`
+  }
 
   const findPartner = value => {
     if (!value) return null
@@ -1006,7 +1025,7 @@ if (action === 'all') {
   let levelUps = 0
   for (const { activity, rule } of activityCosts) {
     const loveChange = rule.conflictIntensity === undefined ? rule.love : conflictEffect(partner, rule.conflictIntensity)
-    partner.love = Math.max(0, Math.min(100, (partner.love || 0) + loveChange))
+    applyActivityLove(partner, loveChange)
     if (addExp(partner, rule.exp)) levelUps++
     if (rule.incomeMin !== undefined) {
       totalIncome += Math.floor(Math.random() * (rule.incomeMax - rule.incomeMin + 1)) + rule.incomeMin
@@ -1058,7 +1077,7 @@ if (action === 'date') {
   )
   
   user.bank -= biaya
-  p.love = Math.min(100, p.love + 10)
+  applyActivityLove(p, 10)
   let up = addExp(p, 20)
   user.dateStats.totalDate++
   user.cooldown.date = Date.now()
@@ -1094,7 +1113,7 @@ if (action === 'date') {
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${ceritaRand}\n\n`
   msg += `💰 *Biaya date*: -Rp ${biaya.toLocaleString('id-ID')} (Pasangan Lv.${p.level || 1})\n`
-  msg += `💌 *Love*: +10\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(10)}\n`
   msg += `📈 *EXP*: +20`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}\n> ↳ Ketik .rship title ${no+1} buat pilih`
@@ -1135,7 +1154,7 @@ if (action === 'liburan') {
   ]
 
   user.bank -= biaya
-  p.love = Math.min(100, p.love + 20)
+  applyActivityLove(p, 20)
   const up = addExp(p, 40)
   user.cooldown.liburan = Date.now()
   saveDB(wdb)
@@ -1147,7 +1166,7 @@ if (action === 'liburan') {
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${ceritaRand}\n\n`
   msg += `💰 *Uang*: -Rp ${biaya.toLocaleString()}\n`
-  msg += `💌 *Love*: +20\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(20)}\n`
   msg += `📈 *EXP*: +40\n`
 
   if(up) msg += `🎉 *LEVEL UP!* Lv.${p.level}\n`
@@ -1176,7 +1195,7 @@ if (action === 'makan') {
   )
   
   user.bank -= biaya
-  p.love = Math.min(100, p.love + 8)
+  applyActivityLove(p, 8)
   let up = addExp(p, 12)
   user.cooldown.makan = Date.now()
   saveDB(wdb)
@@ -1203,7 +1222,7 @@ if (action === 'makan') {
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
   msg += `💰 *Uang*: -Rp ${biaya.toLocaleString()}\n`
-  msg += `💌 *Love*: +8\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(8)}\n`
   msg += `📈 *EXP*: +12`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1232,7 +1251,7 @@ if (action === 'peluk') {
     `╰─━━━━━━━━━━━━━━─`
   )
   
-  p.love = Math.min(100, p.love + 5)
+  applyActivityLove(p, 5)
   let up = addExp(p, 8)
   user.cooldown.peluk = Date.now()
   saveDB(wdb)
@@ -1258,7 +1277,7 @@ if (action === 'peluk') {
   msg += `│ 🫂 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💌 *Love*: +5\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(5)}\n`
   msg += `📈 *EXP*: +8`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1281,7 +1300,7 @@ if (action === 'mandi') {
     `> ↳ Baru mandi`
   )
 
-  p.love = Math.min(100, p.love + 8)
+  applyActivityLove(p, 8)
   let up = addExp(p, 12)
   user.cooldown.mandi = Date.now()
   saveDB(wdb)
@@ -1311,7 +1330,7 @@ if (action === 'mandi') {
   msg += `│ 🛁 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💌 *Love*: +8\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(8)}\n`
   msg += `📈 *EXP*: +12`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1333,7 +1352,7 @@ if (action === 'tidur') {
     `> ↳ Baru tidur`
   )
 
-  p.love = Math.min(100, p.love + 10)
+  applyActivityLove(p, 10)
   let up = addExp(p, 15)
   user.cooldown.tidur = Date.now()
   saveDB(wdb)
@@ -1363,7 +1382,7 @@ if (action === 'tidur') {
   msg += `│ 😴 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💌 *Love*: +10\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(10)}\n`
   msg += `📈 *EXP*: +15`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1396,7 +1415,7 @@ if (action === 'belanja') {
   )
 
   user.bank -= biaya
-  p.love = Math.min(100, p.love + 10)
+  applyActivityLove(p, 10)
   let up = addExp(p, 15)
   user.cooldown.belanja = Date.now()
   saveDB(wdb)
@@ -1423,7 +1442,7 @@ if (action === 'belanja') {
   msg += `${isiRand}\n\n`
   msg += `🏷️ *Level pasangan*: Lv.${p.level || 1}\n`
   msg += `💰 *Uang*: -Rp ${biaya.toLocaleString()}\n`
-  msg += `💌 *Love*: +10\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(10)}\n`
   msg += `📈 *EXP*: +15`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1456,7 +1475,7 @@ if (action === 'kerja') {
   let gaji = Math.floor(Math.random() * 30000) + 15000
   gaji = scaleDifficultyIncome(user, gaji)
   user.bank += gaji
-  p.love += 8
+  applyActivityLove(p, 8)
   let up = addExp(p, 15)
   user.cooldown.kerja = Date.now()
   saveDB(wdb)
@@ -1479,7 +1498,7 @@ if (action === 'kerja') {
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
   msg += `💰 *Uang*: +Rp ${gaji.toLocaleString()}\n`
-  msg += `💌 *Love*: +8\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(8)}\n`
   msg += `📈 *EXP*: +15`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -1831,7 +1850,7 @@ if (action === 'debat') {
   if(cekCD('debat', 1800000) > 0) return m.reply(`⏰ Debat masih cooldown. Tunggu 30 menit.`)
 
   const loveChange = conflictEffect(p, 5)
-  p.love = Math.max(0, Math.min(100, p.love + loveChange))
+  applyActivityLove(p, loveChange)
   const up = addExp(p, 10)
   user.cooldown.debat = Date.now()
   saveDB(wdb)
@@ -1858,7 +1877,7 @@ if (action === 'prank') {
   if(cekCD('prank', 3600000) > 0) return m.reply(`⏰ Prank masih cooldown. Tunggu 1 jam.`)
 
   const loveChange = conflictEffect(p, 7)
-  p.love = Math.max(0, Math.min(100, p.love + loveChange))
+  applyActivityLove(p, loveChange)
   const up = addExp(p, 12)
   user.cooldown.prank = Date.now()
   saveDB(wdb)
@@ -1891,7 +1910,7 @@ if (action === 'usil') {
   )
 
   const loveChange = conflictEffect(p, 3)
-  p.love = Math.max(0, Math.min(100, p.love + loveChange))
+  applyActivityLove(p, loveChange)
   let up = addExp(p, 10)
   user.cooldown.usil = Date.now()
   saveDB(wdb)
@@ -1951,7 +1970,7 @@ if (action === 'marah') {
   )
 
   const loveChange = conflictEffect(p, 8)
-  p.love = Math.max(0, Math.min(100, p.love + loveChange))
+  applyActivityLove(p, loveChange)
   let up = addExp(p, 5)
   user.cooldown.marah = Date.now()
   saveDB(wdb)
@@ -2010,7 +2029,7 @@ if (action === 'maaf') {
     `> ↳ Tunggu 30 menit`
   )
 
-  p.love = Math.min(100, p.love + 12)
+  applyActivityLove(p, 12)
   let up = addExp(p, 8)
   user.cooldown.maaf = Date.now()
   saveDB(wdb)
@@ -2046,7 +2065,7 @@ if (action === 'maaf') {
   msg += `│ 💕 *MOMEN BAIKAN*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💖 *Love*: +12\n`
+  msg += `💖 *Love*: +${getActivityLoveAmount(12)}\n`
   msg += `📈 *EXP*: +8`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -2069,7 +2088,7 @@ if (action === 'talk') {
     `> ↳ Tunggu 15 menit`
   )
 
-  p.love = Math.min(100, p.love + 4)
+  applyActivityLove(p, 4)
   let up = addExp(p, 3)
   user.cooldown.talk = Date.now()
   saveDB(wdb)
@@ -2105,7 +2124,7 @@ if (action === 'talk') {
   msg += `│ 💬 *MOMEN BERSAMA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💖 *Love*: +4\n`
+  msg += `💖 *Love*: +${getActivityLoveAmount(4)}\n`
   msg += `📈 *EXP*: +3`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -2128,7 +2147,7 @@ if (action === 'kiss') {
     `> ↳ Tunggu 4 jam`
   )
 
-  p.love = Math.min(100, p.love + 15)
+  applyActivityLove(p, 15)
   let up = addExp(p, 30)
   user.cooldown.kiss = Date.now()
   saveDB(wdb)
@@ -2158,7 +2177,7 @@ if (action === 'kiss') {
   msg += `│ 💋 *MOMEN MESRA*\n`
   msg += `╰─━━━━━━━━━━━━━━─\n\n`
   msg += `${isiRand}\n\n`
-  msg += `💌 *Love*: +15\n`
+  msg += `💌 *Love*: +${getActivityLoveAmount(15)}\n`
   msg += `📈 *EXP*: +30`
 
   if(up) msg += `\n🎉 *LEVEL UP!* Lv.${p.level}`
@@ -2177,7 +2196,7 @@ if (action === 'kiss') {
     const biaya = 500000
     if (user.bank < biaya) return m.reply(`❌ Saldo bank tidak cukup. Butuh Rp ${biaya.toLocaleString()}.`)
     user.bank -= biaya
-    p.love = Math.min(100, (p.love || 0) + 18)
+    applyActivityLove(p, 18)
     const up = addExp(p, 30)
     user.cooldown.staycation = Date.now()
     saveDB(wdb)
@@ -2192,7 +2211,7 @@ if (action === 'kiss') {
       `╭─❏「 🏨 STAYCATION 」❏\n│ 🏨 *QUALITY TIME*\n╰─━━━━━━━━━━━━━━─\n\n` +
       `${story}\n\n` +
       `💰 *Uang*: -Rp ${biaya.toLocaleString()}\n` +
-      `💌 *Love*: +18\n📈 *EXP*: +30\n` +
+      `💌 *Love*: +${getActivityLoveAmount(18)}\n📈 *EXP*: +30\n` +
       `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}\n─━━━━━━━━━━━━━━─`
     )
   }
@@ -2206,7 +2225,7 @@ if (action === 'kiss') {
     let hasil = Math.floor(Math.random() * 75001) + 25000
     hasil = scaleDifficultyIncome(user, hasil)
     user.bank += hasil
-    p.love = Math.max(0, (p.love || 0) - 5)
+    applyActivityLove(p, -5)
     const up = addExp(p, 20)
     user.cooldown.rampok = Date.now()
     saveDB(wdb)
@@ -2230,7 +2249,7 @@ if (action === 'kiss') {
     let err = cekLevel(p, 20, 'Nonton')
     if(err) return m.reply(err)
     if(cekCD('nonton', 10800000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 3 jam\n╰─━━━━━━━━━━━━━━─`)
-    p.love = Math.min(100, p.love + 12)
+    applyActivityLove(p, 12)
     let up = addExp(p, 18)
     user.cooldown.nonton = Date.now()
     saveDB(wdb)
@@ -2250,7 +2269,7 @@ if (action === 'kiss') {
       `│ 🍿 *MOMEN NONTON*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${isiRand}\n\n` +
-      `💌 *Love* : +12\n` +
+      `💌 *Love* : +${getActivityLoveAmount(12)}\n` +
       `📈 *EXP* : +18\n` +
       `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}` +
       `\n─━━━━━━━━━━━━━━─`
@@ -2262,7 +2281,7 @@ if (action === 'kiss') {
     let err = cekLevel(p, 20, 'Swim')
     if(err) return m.reply(err)
     if(cekCD('swim', 14400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 4 jam\n╰─━━━━━━━━━━━━━━─`)
-    p.love = Math.min(100, p.love + 20)
+    applyActivityLove(p, 20)
     let up = addExp(p, 50)
     user.cooldown.swim = Date.now()
     saveDB(wdb)
@@ -2281,7 +2300,7 @@ if (action === 'kiss') {
       `│ 🌊 *MOMEN BARENG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${isiRand}\n\n` +
-      `💌 *Love* : +20\n` +
+      `💌 *Love* : +${getActivityLoveAmount(20)}\n` +
       `📈 *EXP* : +50\n` +
       `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}` +
       `\n─━━━━━━━━━━━━━━─`
@@ -2343,7 +2362,7 @@ if (action === 'kiss') {
     let err = cekLevel(p, 40, 'Wohoo')
     if(err) return m.reply(err)
     if(cekCD('wohoo', 21600000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 6 jam\n╰─━━━━━━━━━━━━━━─`)
-    p.love = Math.min(100, p.love + 25)
+    applyActivityLove(p, 25)
     let up = addExp(p, 60)
     user.dateStats.wohoo++
     user.cooldown.wohoo = Date.now()
@@ -2364,7 +2383,7 @@ if (action === 'kiss') {
       `│ 💞 *MOMEN BERDUA*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${isiRand}\n\n` +
-      `💌 *Love* : +25\n` +
+      `💌 *Love* : +${getActivityLoveAmount(25)}\n` +
       `📈 *EXP* : +60\n` +
       `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}` +
       `\n─━━━━━━━━━━━━━━─`
@@ -2469,7 +2488,7 @@ if (action === 'kiss') {
       let hadiah = Math.floor(Math.random() * 50000) + 25000
       hadiah = scaleDifficultyIncome(user, hadiah)
       user.bank += hadiah
-      p.love = Math.min(100, p.love + 15)
+      applyActivityLove(p, 15)
       let up = addExp(p, 60)
       saveDB(wdb)
 
@@ -2479,7 +2498,7 @@ if (action === 'kiss') {
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `*${p.name}* berhasil mengalahkanmu dalam duel.\n\n` +
         `😆 *${p.name}* : "Horeee! Aku lebih kuat dari kamu!" (Bangga & Senang)\n\n` +
-        `💖 *Love* : +15\n` +
+        `💖 *Love* : +${getActivityLoveAmount(15)}\n` +
         `📈 *EXP* : +60\n` +
         `💰 *Hadiah* : +Rp ${hadiah.toLocaleString()}\n` +
         `${up ? `🎉 *LEVEL UP!* Lv.${p.level}\n` : ''}` +

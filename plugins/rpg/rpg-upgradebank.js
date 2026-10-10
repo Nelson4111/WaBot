@@ -1,6 +1,22 @@
-import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { BANK_TIERS, formatBankLimit, getBankEffectiveSecurity, getBankPrice, isPremiumUser } from './rpg-bank.js'
+import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
+import { BANK_TIERS, formatBankLimit, formatBankTierFacility, getBankEffectiveSecurity, getBankPrice, isPremiumUser } from './rpg-bank.js'
 import { applyBankTierRewards } from '../../lib/rpg-bankData.js'
+
+export function formatUpgradeChanges(tier, tierLevel, previousTier) {
+  const changedFacilities = tier.fasilitas
+    .filter(facility => !previousTier.fasilitas.includes(facility))
+    .map(facility => formatBankTierFacility(facility, tierLevel))
+    .filter(facility => / (◆ NEW|▲ UP)$/.test(facility))
+  return `📌 *FASILITAS BARU & PENINGKATAN*\n` +
+    `> 🛡️ Keamanan Lv.${getBankEffectiveSecurity(tier)} ▲ UP\n` +
+    `${changedFacilities.length ? changedFacilities.map(facility => `> • ${facility}`).join('\n') : '> • Tidak ada fasilitas baru pada tier ini.'}\n\n`
+}
+
+export function formatFullTierFacilities(tier, tierLevel) {
+  return `🧩 *FASILITAS KARTU*\n` +
+    `> 🛡️ Keamanan Lv.${getBankEffectiveSecurity(tier)}${tierLevel > 0 ? ' ▲ UP' : ''}\n` +
+    `${tier.fasilitas.map(facility => `> • ${formatBankTierFacility(facility, tierLevel)}`).join('\n')}\n\n`
+}
 
 function formatPriceOptions(label, normalPrice, premiumPrice, isPremium) {
   const normal = `Rp ${normalPrice.toLocaleString()}`
@@ -8,9 +24,9 @@ function formatPriceOptions(label, normalPrice, premiumPrice, isPremium) {
   return `> ↳ ${label} Normal : ${normal}\n> ↳ ${label} Premium : Rp ${premiumPrice.toLocaleString()}\n`
 }
 
-let handler = async (m, { conn, text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let user = wdb.users[m.sender]?.rpg
+  let user = getUserRPG(wdb, m.sender)?.rpg
   if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
   if (user.bankTier === undefined) user.bankTier = 0
 
@@ -19,6 +35,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let confirmArg = (args[1] || '').toLowerCase()
   const isPremium = isPremiumUser(m.sender, wdb)
   let currentTier = BANK_TIERS[user.bankTier]
+  const upgradeCommand = `${usedPrefix || '.'}${command === 'bank' ? 'bank upgrade' : 'upgradebank'}`
 
   // UPGRADE LANGSUNG PAKE ANGKA.upgradebank 5
 if (!isNaN(action)) {
@@ -69,11 +86,12 @@ if (!isNaN(action)) {
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${tierBaru.color} *${tierBaru.name}*\n` +
+        formatUpgradeChanges(tierBaru, targetTier, currentTier) +
         formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n\n` +
-        `Ketik *.upgradebank ${targetTier} yes* untuk lanjut\n` +
-        `atau *.upgradebank ${targetTier} no* untuk batal.\n\n` +
+        `Ketik *${upgradeCommand} ${targetTier} yes* untuk lanjut\n` +
+        `atau *${upgradeCommand} ${targetTier} no* untuk batal.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -84,12 +102,13 @@ if (!isNaN(action)) {
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${tierBaru.color} *${tierBaru.name}*\n` +
+        formatUpgradeChanges(tierBaru, targetTier, currentTier) +
         formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n` +
         `> ↳ Otomatis pakai bank : Rp ${payFromBank.toLocaleString()}\n\n` +
-        `Ketik *.upgradebank ${targetTier} yes* untuk lanjut\n` +
-        `atau *.upgradebank ${targetTier} no* untuk batal.\n\n` +
+        `Ketik *${upgradeCommand} ${targetTier} yes* untuk lanjut\n` +
+        `atau *${upgradeCommand} ${targetTier} no* untuk batal.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -138,6 +157,7 @@ if (!isNaN(action)) {
     `╭─❏「 🎉 UPGRADE BERHASIL 」❏\n` +
     `│ ${tierBaru.color} *${tierBaru.name}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
+    formatFullTierFacilities(tierBaru, targetTier) +
     `> ↳ Limit : ${formatBankLimit(tierBaru.limit)}\n` +
     `> ↳ Sisa Uang : Rp ${wdb.money[m.sender].toLocaleString()}\n` +
     `> ↳ Sisa Bank : Rp ${(user.bank || 0).toLocaleString()}\n\n` +
@@ -174,11 +194,12 @@ if (action === 'beli') {
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${nextTier.color} *${nextTier.name}*\n` +
+        formatUpgradeChanges(nextTier, user.bankTier + 1, currentTier) +
         formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n\n` +
-        `Ketik *.upgradebank beli yes* untuk lanjut\n` +
-        `atau *.upgradebank beli no* untuk batal.\n\n` +
+        `Ketik *${upgradeCommand} beli yes* untuk lanjut\n` +
+        `atau *${upgradeCommand} beli no* untuk batal.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -189,12 +210,13 @@ if (action === 'beli') {
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Target : ${nextTier.color} *${nextTier.name}*\n` +
+        formatUpgradeChanges(nextTier, user.bankTier + 1, currentTier) +
         formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
         `> ↳ Uang Saku : Rp ${walletNow.toLocaleString()}\n` +
         `> ↳ Saldo Bank : Rp ${bankNow.toLocaleString()}\n` +
         `> ↳ Otomatis pakai bank : Rp ${payFromBank.toLocaleString()}\n\n` +
-        `Ketik *.upgradebank beli yes* untuk lanjut\n` +
-        `atau *.upgradebank beli no* untuk batal.\n\n` +
+        `Ketik *${upgradeCommand} beli yes* untuk lanjut\n` +
+        `atau *${upgradeCommand} beli no* untuk batal.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -243,6 +265,7 @@ if (action === 'beli') {
     `╭─❏「 🎉 UPGRADE BERHASIL 」❏\n` +
     `│ ${nextTier.color} *${nextTier.name}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
+    formatFullTierFacilities(nextTier, user.bankTier + 1) +
     `> ↳ Limit : ${formatBankLimit(nextTier.limit)}\n` +
     `> ↳ Sisa Uang : Rp ${wdb.money[m.sender].toLocaleString()}\n` +
     `> ↳ Sisa Bank : Rp ${(user.bank || 0).toLocaleString()}\n\n` +

@@ -1,6 +1,7 @@
 import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -38,18 +39,19 @@ function getTier(nama){
   return {name:'COMMON', icon:'🤍'}
 }
 
-function rollOre(hance, bonus, pickLvl){
+function rollOre(hance, bonus, pickLvl, rareChanceFactor = 1){
+  const cutoff = value => 100 - Math.min(100, Math.max(0, 100 - value) * rareChanceFactor)
   let bisaSecret = pickLvl >= 25
   let bisaMythic = pickLvl >= 20
   let bisaLegend = pickLvl >= 15
   let bisaEpic = pickLvl >= 10
   let bisaRare = pickLvl >= 5
 
-  if (bisaSecret && hance > (99.99 - bonus)) return {ore: secret[Math.floor(Math.random() * secret.length)], tier: 'SECRET', exp: 5000}
-  if (bisaMythic && hance > (99.9 - bonus)) return {ore: mythic[Math.floor(Math.random() * mythic.length)], tier: 'MYTHIC', exp: 1000}
-  if (bisaLegend && hance > (99 - bonus)) return {ore: legendary[Math.floor(Math.random() * legendary.length)], tier: 'LEGENDARY', exp: 500}
-  if (bisaEpic && hance > (96 - bonus)) return {ore: epic[Math.floor(Math.random() * epic.length)], tier: 'EPIC', exp: 250}
-  if (bisaRare && hance > (88 - bonus)) return {ore: rare[Math.floor(Math.random() * rare.length)], tier: 'RARE', exp: 120}
+  if (bisaSecret && hance > cutoff(99.99 - bonus)) return {ore: secret[Math.floor(Math.random() * secret.length)], tier: 'SECRET', exp: 5000}
+  if (bisaMythic && hance > cutoff(99.9 - bonus)) return {ore: mythic[Math.floor(Math.random() * mythic.length)], tier: 'MYTHIC', exp: 1000}
+  if (bisaLegend && hance > cutoff(99 - bonus)) return {ore: legendary[Math.floor(Math.random() * legendary.length)], tier: 'LEGENDARY', exp: 500}
+  if (bisaEpic && hance > cutoff(96 - bonus)) return {ore: epic[Math.floor(Math.random() * epic.length)], tier: 'EPIC', exp: 250}
+  if (bisaRare && hance > cutoff(88 - bonus)) return {ore: rare[Math.floor(Math.random() * rare.length)], tier: 'RARE', exp: 120}
   if (hance > (65 - bonus)) return {ore: uncommon[Math.floor(Math.random() * uncommon.length)], tier: 'UNCOMMON', exp: 50}
   return {ore: common[Math.floor(Math.random() * common.length)], tier: 'COMMON', exp: 15}
 }
@@ -62,7 +64,10 @@ let handler = async (m, { conn }) => {
   if (user.pity_mining!== undefined) delete user.pity_mining
 
   // COOLDOWN
-  let cooldown = scaleDifficultyCooldown(user, 120000) // 2 menit
+  const mineralRush = isRpgEventActive('mineral_rush')
+  const caveCollapse = isRpgEventActive('cave_collapse')
+  const rareChanceFactor = (mineralRush ? 1.5 : 1) * (caveCollapse ? 0.75 : 1)
+  let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * (caveCollapse ? 1.3 : 1))
   if (Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
     return m.reply(`╭─❏「 ⛏️ MINING 」❏\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n╰─━━━━━━━━━━━━━━─`)
@@ -87,7 +92,7 @@ let handler = async (m, { conn }) => {
 
   for (let i = 1; i < jumlahJenisDrop; i++) {
     let hance = Math.random() * 100
-    let {ore, tier, exp} = rollOre(hance, bonus, pickLvl)
+    let {ore, tier, exp} = rollOre(hance, bonus, pickLvl, rareChanceFactor)
     if (ore === 'stone') continue
     if (hasilTambang[ore]) continue
 
@@ -101,8 +106,18 @@ let handler = async (m, { conn }) => {
     if (urutanTier.indexOf(tier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = tier
   }
 
+  if (mineralRush && Math.random() < 0.25) {
+    const { ore, tier, exp } = rollOre(Math.random() * 100, bonus, pickLvl, rareChanceFactor)
+    const oreKey = ore === 'stone' ? rare[Math.floor(Math.random() * rare.length)] : ore
+    hasilTambang[oreKey] = (hasilTambang[oreKey] || 0) + 1
+    totalExp += ore === 'stone' ? 120 : exp
+    const extraTier = ore === 'stone' ? 'RARE' : tier
+    if (urutanTier.indexOf(extraTier) > urutanTier.indexOf(tierTertinggi)) tierTertinggi = extraTier
+  }
+
   for (const ore of Object.keys(hasilTambang)) {
     hasilTambang[ore] = applyBloodlineYield(user, 'miningYield', hasilTambang[ore])
+    if (caveCollapse) hasilTambang[ore] = Math.max(1, Math.floor(hasilTambang[ore] * 0.7))
   }
   totalOreDidapat = Object.values(hasilTambang).reduce((sum, amount) => sum + amount, 0)
 

@@ -3,6 +3,7 @@ import { scaleDifficultyDamage } from '../../lib/rpgDifficulty.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { areGuildJidsSame, findGuildByMember } from '../../lib/rpgGuild.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 global.warRequests = global.warRequests || {}
 
@@ -84,7 +85,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       from: m.sender,
       myGuild: myGuild.name,
       enemyGuild: enemyGuild.name,
-      expire: Date.now() + 60000
+      expire: Date.now() + RPG_CONFIRMATION_TTL
     }
 
     let cap = `╭─❏「 ⚔️ TANTANGAN WAR 」❏\n`
@@ -94,7 +95,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `│ @${target.split('@')[0]}\n`
     cap += `│ Ketik *${usedPrefix}guildwar terima* untuk menerima\n`
     cap += `│ Ketik *${usedPrefix}guildwar tolak* untuk menolak\n`
-    cap += `│ ⏰ Waktu: 60 detik\n`
+    cap += `│ ⏰ Waktu: 5 menit\n`
     cap += `╰─━━━━━━━━━━━━━━─`
 
     return conn.reply(m.chat, cap, m, {mentions:[target]}) // quote chat penyerang

@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js'
 
@@ -220,7 +221,7 @@ if (mode === 'guide') {
     cap += `\n👑 Bonus premium: ${isPrem ? '+10%' : '0%'}\n\n`
     cap += `✅ Ketik *${usedPrefix || '.'}jual ya* untuk konfirmasi\n`
     cap += `❌ Ketik *${usedPrefix || '.'}jual tidak* untuk batal\n`
-    cap += `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+    cap += `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
 
     user.jualAllConfirm = { items: semuaItem, time: Date.now() }
     saveDB(wdb)
@@ -228,7 +229,7 @@ if (mode === 'guide') {
   }
 
   if (isJualYa) {
-    if (!user.jualAllConfirm || Date.now() - user.jualAllConfirm.time > 60000) {
+    if (!user.jualAllConfirm || Date.now() - user.jualAllConfirm.time > RPG_CONFIRMATION_TTL) {
       return m.reply('❌ Konfirmasi kadaluarsa. Ketik *' + (usedPrefix || '.') + 'jual all* lagi')
     }
 

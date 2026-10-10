@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import {
   EVONEXUS_ABILITIES,
   EVONEXUS_ABILITY_TYPES,
@@ -12,7 +13,6 @@ import {
 } from '../../lib/rpg-evonexusData.js'
 
 const PAGE_SIZE = 20
-const CONFIRMATION_TTL = 60_000
 const CONFIRM_YES = new Set(['ya', 'yes', 'ok', 'confirm', 'konfirmasi'])
 const CONFIRM_NO = new Set(['tidak', 'no', 'batal', 'cancel', 'tolak'])
 
@@ -38,14 +38,14 @@ function formatDetail(ability, prefix) {
   const tier = getEvonexusAbilityTier(ability)
   return (
     `╭─❏「 ✨ ${ability.name.toUpperCase()} 」❏\n` +
-    `│ *DETAIL ABILITY*\n` +
+    `│ *DETAIL SC CORE*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> Tipe : *${ability.type.toUpperCase()}*\n` +
     `> Tier : *${tier.name} ${tier.stars}*\n` +
     `> Harga : *${ability.price.toLocaleString('id-ID')} Stellar Credit* 💠\n` +
     `> Deskripsi : ${ability.description}\n\n` +
     `📌 ${getEvonexusAbilityEffectText(ability)}\n` +
-    `Pasang dengan *${prefix}evx install ${ability.type} ${ability.name}*.\n\n` +
+    `Pasang dengan *${prefix}evx core install ${ability.type} ${ability.name}*.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -76,17 +76,17 @@ function formatMenu(prefix) {
     `╭─❏「 🌌 EVONEXUS 」❏\n` +
     `│ *PUSAT PENGEMBANGAN ANTARBINTANG*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `Evonexus mengelola progres interstellar dan augmentasi ability yang memberi bonus pasif pada sistem RPG.\n\n` +
+    `Evonexus mengelola progres interstellar dan SC Core yang memberi bonus pasif pada sistem RPG.\n\n` +
     `📌 *MENU*\n` +
     `> *${prefix}evx info* - Data Evonexus dan Stellar Credit\n` +
-    `> *${prefix}evx ability* - Penjelasan ability\n` +
-    `> *${prefix}evx ability list* - Kategori tipe dan tier\n` +
-    `> *${prefix}evx ability list <tipe/tier> [halaman]* - Daftar ability\n` +
-    `> *${prefix}evx ability info <tipe/tier> <nomor/nama>* - Detail ability\n` +
-    `> *${prefix}evx ability search <nama>* - Cari nama ability\n` +
-    `> *${prefix}evx install <tipe/tier> <nomor/nama>* - Pasang dengan Stellar Credit\n` +
-    `> *${prefix}evx uninstall <nama>* - Lepas dan hancurkan ability\n` +
-    `> *${prefix}evx body* - Lihat ability yang terpasang\n` +
+    `> *${prefix}evx core* - Penjelasan SC Core\n` +
+    `> *${prefix}evx core list* - Kategori tipe dan tier\n` +
+    `> *${prefix}evx core list <tipe/tier> [halaman]* - Daftar SC Core\n` +
+    `> *${prefix}evx core info <tipe/tier> <nomor/nama>* - Detail SC Core\n` +
+    `> *${prefix}evx core search <nama>* - Cari SC Core\n` +
+    `> *${prefix}evx core install <tipe/tier> <nomor/nama>* - Pasang dengan Stellar Credit\n` +
+    `> *${prefix}evx core uninstall <nama>* - Lepas dan hancurkan SC Core\n` +
+    `> *${prefix}evx body* - Lihat SC Core yang terpasang\n` +
     `> *${prefix}evx guide/command* - Panduan command\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
@@ -95,7 +95,10 @@ function formatMenu(prefix) {
 let handler = async (m, { text = '', usedPrefix }) => {
   const prefix = usedPrefix || '.'
   const args = String(text).trim().split(/\s+/).filter(Boolean)
-  const mode = String(args.shift() || '').toLowerCase()
+  let mode = String(args.shift() || '').toLowerCase()
+  if (mode === 'core' && ['install', 'uninstall'].includes(args[0]?.toLowerCase())) {
+    mode = args.shift().toLowerCase()
+  }
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
   const rpg = account?.rpg
@@ -120,8 +123,8 @@ let handler = async (m, { text = '', usedPrefix }) => {
       `> ↳ Relik antarbintang : ${interstellarItems}\n` +
       `> ↳ Resonansi : ${Number(stats.resonance) || 0}\n` +
       `> ↳ Peringkat statistik : ${Number(stats.statPoints) || 0} poin\n` +
-      `> ↳ Ability terpasang : ${installedCount}\n\n` +
-      `Ketik *${prefix}evx body* untuk melihat augmentasi.\n` +
+      `> ↳ SC Core terpasang : ${installedCount}\n\n` +
+      `Ketik *${prefix}evx body* untuk melihat SC Core terpasang.\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -131,35 +134,35 @@ let handler = async (m, { text = '', usedPrefix }) => {
       `╭─❏「 📖 EVONEXUS GUIDE 」❏\n` +
       `│ *PANDUAN EVONEXUS*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> Ability memberi bonus pasif kecil lintas RPG serta bonus tambahan sesuai tipe.\n` +
-      `> Maksimal satu ability dapat dipasang untuk setiap tipe.\n` +
+      `> SC Core memberi bonus pasif kecil lintas RPG serta bonus tambahan sesuai tipe.\n` +
+      `> Maksimal satu SC Core dapat dipasang untuk setiap tipe.\n` +
       `> Install akan membayar harga dengan Stellar Credit setelah konfirmasi.\n` +
-      `> Uninstall menghancurkan ability secara permanen; Stellar Credit tidak dikembalikan.\n` +
-      `> Tier ability mengikuti harga dan batas rarity Mall.\n\n` +
+      `> Uninstall menghancurkan SC Core secara permanen; Stellar Credit tidak dikembalikan.\n` +
+      `> Tier SC Core mengikuti harga dan batas rarity Mall.\n\n` +
       `📌 *COMMAND*\n` +
-      `> *${prefix}evx ability list* - Lihat tipe ability dan tier rarity\n` +
-      `> *${prefix}evx ability list <tipe/tier> [halaman]* - List 20 nama dan harga per halaman\n` +
-      `> *${prefix}evx ability info <tipe/tier> <nomor/nama>* - Lihat detail\n` +
-      `> *${prefix}evx ability search <nama>* - Cari ability, termasuk nama yang hampir cocok\n` +
-      `> *${prefix}evx install <tipe/tier> <nomor/nama>* - Pasang ability\n` +
-      `> *${prefix}evx install ya/tidak* - Konfirmasi atau batalkan pemasangan\n` +
-      `> *${prefix}evx uninstall <nama>* - Minta konfirmasi untuk menghancurkan ability\n` +
-      `> *${prefix}evx uninstall ya/tidak* - Konfirmasi atau batalkan penghancuran\n` +
-      `> *${prefix}evx body* - Lihat ability yang terpasang\n` +
+      `> *${prefix}evx core list* - Lihat tipe SC Core dan tier rarity\n` +
+      `> *${prefix}evx core list <tipe/tier> [halaman]* - List 20 nama dan harga per halaman\n` +
+      `> *${prefix}evx core info <tipe/tier> <nomor/nama>* - Lihat detail\n` +
+      `> *${prefix}evx core search <nama>* - Cari SC Core, termasuk nama yang hampir cocok\n` +
+      `> *${prefix}evx core install <tipe/tier> <nomor/nama>* - Pasang SC Core\n` +
+      `> *${prefix}evx core install ya/tidak* - Konfirmasi atau batalkan pemasangan\n` +
+      `> *${prefix}evx core uninstall <nama>* - Minta konfirmasi untuk menghancurkan SC Core\n` +
+      `> *${prefix}evx core uninstall ya/tidak* - Konfirmasi atau batalkan penghancuran\n` +
+      `> *${prefix}evx body* - Lihat SC Core yang terpasang\n` +
       `> *${prefix}evx info* - Lihat statistik Evonexus\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  if (mode === 'ability' || mode === 'abilities') {
+  if (mode === 'core' || mode === 'ability' || mode === 'abilities') {
     const action = String(args.shift() || '').toLowerCase()
     if (!action) {
       return m.reply(
-        `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
-        `│ *PENGEMBANGAN ABILITY*\n` +
+        `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
+        `│ *PENGEMBANGAN SC CORE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Ability memberi bonus pasif pada aktivitas RPG sesuai tipe ability yang dipasang.\n` +
-        `Gunakan *${prefix}evx ability list* untuk melihat tipe dan tier, atau *${prefix}evx guide* untuk panduan.\n\n` +
+        `SC Core memberi bonus pasif pada aktivitas RPG sesuai tipe yang dipasang.\n` +
+        `Gunakan *${prefix}evx core list* untuk melihat tipe dan tier, atau *${prefix}evx guide* untuk panduan.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -172,16 +175,16 @@ let handler = async (m, { text = '', usedPrefix }) => {
     const tiers = EVONEXUS_RARITIES.map(tier => `${tier.name} ${tier.stars}`).join('\n')
 
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
-      `│ 📋 *DAFTAR KATEGORI ABILITY*\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
+      `│ 📋 *DAFTAR KATEGORI SC CORE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `🧬 *TIPE ABILITY*\n` +
+      `🧬 *TIPE SC CORE*\n` +
       `> ↳ ${types}\n\n` +
       `🏷️ *TIER HARGA*\n` +
       `${tiers.split('\n').map(tier => `> ↳ ${tier}`).join('\n')}\n\n` +
       `📌 *PANDUAN*\n` +
-      `> ↳ ${prefix}evx ability list <tipe/tier> [halaman]\n` +
-      `> ↳ Contoh: ${prefix}evx ability list attack 2\n\n` +
+      `> ↳ ${prefix}evx core list <tipe/tier> [halaman]\n` +
+      `> ↳ Contoh: ${prefix}evx core list attack 2\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -190,21 +193,21 @@ let handler = async (m, { text = '', usedPrefix }) => {
 
   if (!filter) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
       `│ ❌ *KATEGORI TIDAK DIKENAL*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Tipe atau tier tidak dikenal.\n` +
-      `> ↳ Gunakan ${prefix}evx ability list untuk melihat kategori.\n\n` +
+      `> ↳ Gunakan ${prefix}evx core list untuk melihat kategori.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
   if (!filter.abilities.length) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
-      `│ ℹ️ *ABILITY BELUM TERSEDIA*\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
+      `│ ℹ️ *SC CORE BELUM TERSEDIA*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Belum ada ability pada tier atau tipe *${filter.label}*.\n\n` +
+      `> ↳ Belum ada SC Core pada tier atau tipe *${filter.label}*.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -213,7 +216,7 @@ let handler = async (m, { text = '', usedPrefix }) => {
 
   if (!/^\d+$/.test(pageText) || Number(pageText) < 1) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
       `│ ❌ *HALAMAN TIDAK VALID*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Nomor halaman harus berupa bilangan bulat positif.\n\n` +
@@ -226,7 +229,7 @@ let handler = async (m, { text = '', usedPrefix }) => {
 
   if (page > pageCount) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
       `│ ❌ *HALAMAN MELEBIHI BATAS*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Halaman maksimal untuk ${filter.label} adalah ${pageCount}.\n\n` +
@@ -241,13 +244,13 @@ let handler = async (m, { text = '', usedPrefix }) => {
   ).join('\n\n')
 
   return m.reply(
-    `╭─❏「 ✨ ABILITY ${filter.label} 」❏\n` +
-    `│ 📋 *DAFTAR ABILITY*\n` +
-    `│ Halaman ${page}/${pageCount} · ${filter.abilities.length} ability\n` +
+    `╭─❏「 ✨ SC CORE ${filter.label} 」❏\n` +
+    `│ 📋 *DAFTAR SC CORE*\n` +
+    `│ Halaman ${page}/${pageCount} · ${filter.abilities.length} SC Core\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${list}\n\n` +
     `📌 *PANDUAN*\n` +
-    `> ↳ Detail: ${prefix}evx ability info ${filterInput} <nomor/nama>\n\n` +
+    `> ↳ Detail: ${prefix}evx core info ${filterInput} <nomor/nama>\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -257,10 +260,10 @@ if (action === 'info' || action === 'detail') {
 
   if (!filter || args.length < 2) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
       `│ 📌 *FORMAT PERINTAH*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ ${prefix}evx ability info <tipe/tier> <nomor/nama>\n\n` +
+      `> ↳ ${prefix}evx core info <tipe/tier> <nomor/nama>\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -269,11 +272,11 @@ if (action === 'info' || action === 'detail') {
 
   if (!ability) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
-      `│ ❌ *ABILITY TIDAK DITEMUKAN*\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
+      `│ ❌ *SC CORE TIDAK DITEMUKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Ability tidak ditemukan dalam kategori ${filter.label}.\n` +
-      `> ↳ Periksa daftar: ${prefix}evx ability list ${args[0]}\n\n` +
+      `> ↳ SC Core tidak ditemukan dalam kategori ${filter.label}.\n` +
+      `> ↳ Periksa daftar: ${prefix}evx core list ${args[0]}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -286,10 +289,10 @@ if (action === 'search' || action === 'cari') {
 
   if (!query) {
     return m.reply(
-      `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
-      `│ 🔎 *PENCARIAN ABILITY*\n` +
+      `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
+      `│ 🔎 *PENCARIAN SC CORE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Format: ${prefix}evx ability search <nama>\n\n` +
+      `> ↳ Format: ${prefix}evx core search <nama>\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -301,10 +304,10 @@ if (action === 'search' || action === 'cari') {
 
   if (!matches.length) {
     return m.reply(
-      `╭─❏「 🔎 PENCARIAN ABILITY 」❏\n` +
+      `╭─❏「 🔎 PENCARIAN SC CORE 」❏\n` +
       `│ ❌ *HASIL TIDAK DITEMUKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Tidak ditemukan ability yang cocok dengan *${query}*.\n\n` +
+      `> ↳ Tidak ditemukan SC Core yang cocok dengan *${query}*.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -318,24 +321,24 @@ if (action === 'search' || action === 'cari') {
   }).join('\n\n')
 
   return m.reply(
-    `╭─❏「 🔎 PENCARIAN ABILITY 」❏\n` +
-    `│ 🔎 *HASIL PENCARIAN*\n` +
+    `╭─❏「 🔎 PENCARIAN SC CORE 」❏\n` +
+    `│ 🔎 *HASIL PENCARIAN SC CORE*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Tidak ditemukan kecocokan persis untuk *${query}*.\n` +
-    `> ↳ Berikut beberapa ability yang mungkin kamu cari:\n\n` +
+    `> ↳ Berikut beberapa SC Core yang mungkin kamu cari:\n\n` +
     `${suggestions}\n\n` +
     `📌 *PANDUAN*\n` +
-    `> ↳ Detail: ${prefix}evx ability info <tipe/tier> <nama>\n\n` +
+    `> ↳ Detail: ${prefix}evx core info <tipe/tier> <nama>\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
 
 return m.reply(
-  `╭─❏「 ✨ EVONEXUS ABILITY 」❏\n` +
+  `╭─❏「 ✨ EVONEXUS SC CORE 」❏\n` +
   `│ ❌ *SUBCOMMAND TIDAK DIKENAL*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
   `📌 *PANDUAN*\n` +
-  `> ↳ ${prefix}evx ability list\n` +
+  `> ↳ ${prefix}evx core list\n` +
   `> ↳ ${prefix}evx guide\n\n` +
   `─━━━━━━━━━━━━━━─`
 )
@@ -371,11 +374,11 @@ if (mode === 'body') {
   if (!installed.length) {
     return m.reply(
       `╭─❏「 🧬 EVONEXUS BODY 」❏\n` +
-      `│ 🧬 *BELUM ADA ABILITY TERPASANG*\n` +
+      `│ 🧬 *BELUM ADA SC CORE TERPASANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Tubuhmu belum memiliki ability terpasang.\n\n` +
+      `> ↳ Tubuhmu belum memiliki SC Core terpasang.\n\n` +
       `📌 *PANDUAN*\n` +
-      `> ↳ Lihat daftar ability: ${prefix}evx ability list\n\n` +
+      `> ↳ Lihat daftar SC Core: ${prefix}evx core list\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -391,11 +394,11 @@ if (mode === 'body') {
 
   return m.reply(
     `╭─❏「 🧬 EVONEXUS BODY 」❏\n` +
-    `│ 🧬 *ABILITY TERPASANG: ${installed.length}*\n` +
+    `│ 🧬 *SC CORE TERPASANG: ${installed.length}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${body}\n\n` +
     `⚠️ *PERHATIAN*\n` +
-    `> ↳ Uninstall akan menghancurkan ability secara permanen tanpa refund.\n\n` +
+    `> ↳ Uninstall akan menghancurkan SC Core secara permanen tanpa refund.\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -417,7 +420,7 @@ if (mode === 'install' || mode === 'uninstall') {
       `╭─❏「 🧬 EVONEXUS 」❏\n` +
       `│ 🔒 *AKSES BELUM TERBUKA*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Pemasangan ability membutuhkan fasilitas Evonexus dari Eternal Card.\n\n` +
+      `> ↳ Pemasangan SC Core membutuhkan fasilitas Evonexus dari Eternal Card.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -426,7 +429,7 @@ if (mode === 'install' || mode === 'uninstall') {
   const selection = args.join(' ').trim()
   const confirmation = selection.toLowerCase()
   const pending = evonexus.pendingConfirmation
-  const pendingIsValid = pending && Date.now() - Number(pending.createdAt) <= CONFIRMATION_TTL
+  const pendingIsValid = pending && Date.now() - Number(pending.createdAt) <= RPG_CONFIRMATION_TTL
 
   if (CONFIRM_NO.has(confirmation) && pendingIsValid && pending.action === mode) {
     delete evonexus.pendingConfirmation
@@ -436,7 +439,7 @@ if (mode === 'install' || mode === 'uninstall') {
       `╭─❏「 🧬 EVONEXUS 」❏\n` +
       `│ ❎ *TRANSAKSI DIBATALKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ ${mode === 'install' ? 'Pemasangan' : 'Uninstall'} ability dibatalkan.\n\n` +
+      `> ↳ ${mode === 'install' ? 'Pemasangan' : 'Uninstall'} SC Core dibatalkan.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -451,7 +454,7 @@ if (mode === 'install' || mode === 'uninstall') {
         `│ ❌ *KONFIRMASI KEDALUWARSA*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Tidak ada konfirmasi ${mode} yang masih berlaku.\n` +
-        `> ↳ Ulangi command ${mode} untuk membuat konfirmasi baru.\n\n` +
+        `> ↳ Ulangi command core ${mode} untuk membuat konfirmasi baru.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -461,9 +464,9 @@ if (mode === 'install' || mode === 'uninstall') {
     if (!ability) {
       return m.reply(
         `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ ❌ *DATA ABILITY TIDAK DITEMUKAN*\n` +
+        `│ ❌ *DATA SC CORE TIDAK DITEMUKAN*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Data ability untuk konfirmasi tidak ditemukan.\n\n` +
+        `> ↳ Data SC Core untuk konfirmasi tidak ditemukan.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -478,7 +481,7 @@ if (mode === 'install' || mode === 'uninstall') {
           `│ ❌ *SLOT SUDAH TERISI*\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
           `> ↳ Slot tipe ${ability.type.toUpperCase()} sudah terpasang.\n` +
-          `> ↳ Maksimal satu ability untuk setiap tipe.\n\n` +
+          `> ↳ Maksimal satu SC Core untuk setiap tipe.\n\n` +
           `─━━━━━━━━━━━━━━─`
         )
       }
@@ -489,9 +492,9 @@ if (mode === 'install' || mode === 'uninstall') {
 
         return m.reply(
           `╭─❏「 🧬 EVONEXUS 」❏\n` +
-          `│ ❌ *ABILITY TIDAK DAPAT DIGUNAKAN*\n` +
+          `│ ❌ *SC CORE TIDAK DAPAT DIGUNAKAN*\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ↳ Ability ini sudah dihancurkan dan tidak dapat dipasang kembali.\n\n` +
+          `> ↳ SC Core ini sudah dihancurkan dan tidak dapat dipasang kembali.\n\n` +
           `─━━━━━━━━━━━━━━─`
         )
       }
@@ -522,9 +525,9 @@ if (mode === 'install' || mode === 'uninstall') {
 
         return m.reply(
           `╭─❏「 🧬 EVONEXUS 」❏\n` +
-          `│ ❌ *ABILITY TIDAK TERPASANG*\n` +
+          `│ ❌ *SC CORE TIDAK TERPASANG*\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ↳ Ability tersebut sudah tidak terpasang.\n\n` +
+          `> ↳ SC Core tersebut sudah tidak terpasang.\n\n` +
           `─━━━━━━━━━━━━━━─`
         )
       }
@@ -541,22 +544,22 @@ if (mode === 'install' || mode === 'uninstall') {
 
     return m.reply(mode === 'install'
       ? `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ ✅ *ABILITY BERHASIL DIPASANG*\n` +
+        `│ ✅ *SC CORE BERHASIL DIPASANG*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `🧬 *INFORMASI ABILITY*\n` +
+        `🧬 *INFORMASI SC CORE*\n` +
         `> ↳ Nama: ${ability.name}\n` +
         `> ↳ Slot: ${ability.type.toUpperCase()}\n` +
         `> ↳ Biaya: ${ability.price.toLocaleString('id-ID')} Stellar Credit 💠\n` +
         `> ↳ Sisa saldo: ${Number(rpg.stellarCredit).toLocaleString('id-ID')} 💠\n\n` +
         `─━━━━━━━━━━━━━━─`
       : `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ 🛠️ *ABILITY BERHASIL DILEPAS*\n` +
+        `│ 🛠️ *SC CORE BERHASIL DILEPAS*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Ability: ${ability.name}\n` +
-        `> ↳ Ability telah dilepas dan dihancurkan secara permanen.\n\n` +
+        `> ↳ SC Core: ${ability.name}\n` +
+        `> ↳ SC Core telah dilepas dan dihancurkan secara permanen.\n\n` +
         `⚠️ *PERHATIAN*\n` +
         `> ↳ Stellar Credit tidak dikembalikan.\n` +
-        `> ↳ Ability ini tidak dapat dipasang kembali.\n\n` +
+        `> ↳ SC Core ini tidak dapat dipasang kembali.\n\n` +
         `─━━━━━━━━━━━━━━─`
     )
   }
@@ -567,8 +570,8 @@ if (mode === 'install' || mode === 'uninstall') {
       `│ ⏳ *KONFIRMASI MASIH MENUNGGU*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Selesaikan konfirmasi sebelumnya terlebih dahulu.\n` +
-      `> ↳ ${prefix}evx ${mode} ya\n` +
-      `> ↳ ${prefix}evx ${mode} tidak\n\n` +
+      `> ↳ ${prefix}evx core ${mode} ya\n` +
+      `> ↳ ${prefix}evx core ${mode} tidak\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -583,10 +586,10 @@ if (mode === 'install' || mode === 'uninstall') {
     if (!filter || args.length < 2) {
       return m.reply(
         `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ 📌 *FORMAT PEMASANGAN ABILITY*\n` +
+        `│ 📌 *FORMAT PEMASANGAN SC CORE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ ${prefix}evx install <tipe/tier> <nomor/nama>\n` +
-        `> ↳ Contoh: ${prefix}evx install attack 2\n\n` +
+        `> ↳ ${prefix}evx core install <tipe/tier> <nomor/nama>\n` +
+        `> ↳ Contoh: ${prefix}evx core install attack 2\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -596,9 +599,9 @@ if (mode === 'install' || mode === 'uninstall') {
     if (!ability) {
       return m.reply(
         `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ ❌ *ABILITY TIDAK DITEMUKAN*\n` +
+        `│ ❌ *SC CORE TIDAK DITEMUKAN*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Ability tidak ditemukan dalam kategori ${filter.label}.\n\n` +
+        `> ↳ SC Core tidak ditemukan dalam kategori ${filter.label}.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -606,9 +609,9 @@ if (mode === 'install' || mode === 'uninstall') {
     if (evonexus.destroyedAbilities.includes(ability.id)) {
       return m.reply(
         `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ ❌ *ABILITY SUDAH DIHANCURKAN*\n` +
+        `│ ❌ *SC CORE SUDAH DIHANCURKAN*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Ability ini sudah dihancurkan dan tidak dapat dipasang kembali.\n\n` +
+        `> ↳ SC Core ini sudah dihancurkan dan tidak dapat dipasang kembali.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -618,12 +621,12 @@ if (mode === 'install' || mode === 'uninstall') {
 
       return m.reply(
         `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ ❌ *SLOT ABILITY SUDAH TERISI*\n` +
+        `│ ❌ *SLOT SC CORE SUDAH TERISI*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Slot ${ability.type.toUpperCase()} sudah digunakan${current ? ` oleh *${current.name}*` : ''}.\n\n` +
         `⚠️ *PERHATIAN*\n` +
-        `> ↳ Uninstall ability lama terlebih dahulu jika ingin menggantinya.\n` +
-        `> ↳ Ability lama akan dihancurkan tanpa refund.\n\n` +
+        `> ↳ Uninstall SC Core lama terlebih dahulu jika ingin menggantinya.\n` +
+        `> ↳ SC Core lama akan dihancurkan tanpa refund.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -647,9 +650,9 @@ if (mode === 'install' || mode === 'uninstall') {
     if (!ability) {
       return m.reply(
         `╭─❏「 🧬 EVONEXUS 」❏\n` +
-        `│ ❌ *ABILITY TIDAK TERPASANG*\n` +
+        `│ ❌ *SC CORE TIDAK TERPASANG*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Ability tersebut tidak terpasang di tubuhmu.\n` +
+        `> ↳ SC Core tersebut tidak terpasang di tubuhmu.\n` +
         `> ↳ Periksa kondisi tubuh dengan ${prefix}evx body.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
@@ -666,9 +669,9 @@ if (mode === 'install' || mode === 'uninstall') {
 
   return m.reply(mode === 'install'
     ? `╭─❏「 🧬 KONFIRMASI PEMASANGAN 」❏\n` +
-      `│ ⚠️ *PERIKSA DETAIL ABILITY*\n` +
+      `│ ⚠️ *PERIKSA DETAIL SC CORE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `🧬 *INFORMASI ABILITY*\n` +
+      `🧬 *INFORMASI SC CORE*\n` +
       `> ↳ Nama: ${ability.name}\n` +
       `> ↳ Tipe: ${ability.type.toUpperCase()}\n` +
       `> ↳ Tier: ${getEvonexusAbilityTier(ability).name}\n\n` +
@@ -678,23 +681,23 @@ if (mode === 'install' || mode === 'uninstall') {
       `⚠️ *PERHATIAN*\n` +
       `> ↳ Slot tipe ${ability.type.toUpperCase()} akan terisi.\n\n` +
       `📌 *KONFIRMASI*\n` +
-      `> ↳ ${prefix}evx install ya\n` +
-      `> ↳ ${prefix}evx install tidak\n\n` +
-      `> Konfirmasi berlaku selama 1 menit.\n\n` +
+      `> ↳ ${prefix}evx core install ya\n` +
+      `> ↳ ${prefix}evx core install tidak\n\n` +
+      `> Konfirmasi berlaku selama 5 menit.\n\n` +
       `─━━━━━━━━━━━━━━─`
     : `╭─❏「 🧬 KONFIRMASI UNINSTALL 」❏\n` +
-      `│ ⚠️ *PERIKSA DETAIL ABILITY*\n` +
+      `│ ⚠️ *PERIKSA DETAIL SC CORE*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `🧬 *INFORMASI ABILITY*\n` +
+      `🧬 *INFORMASI SC CORE*\n` +
       `> ↳ Nama: ${ability.name}\n\n` +
       `⚠️ *PERHATIAN*\n` +
-      `> ↳ Ability akan dilepas dan dihancurkan secara permanen.\n` +
+      `> ↳ SC Core akan dilepas dan dihancurkan secara permanen.\n` +
       `> ↳ Tidak ada Stellar Credit yang dikembalikan.\n` +
-      `> ↳ Ability tidak dapat digunakan kembali.\n\n` +
+      `> ↳ SC Core tidak dapat digunakan kembali.\n\n` +
       `📌 *KONFIRMASI*\n` +
-      `> ↳ ${prefix}evx uninstall ya\n` +
-      `> ↳ ${prefix}evx uninstall tidak\n\n` +
-      `> Konfirmasi berlaku selama 1 menit.\n\n` +
+      `> ↳ ${prefix}evx core uninstall ya\n` +
+      `> ↳ ${prefix}evx core uninstall tidak\n\n` +
+      `> Konfirmasi berlaku selama 5 menit.\n\n` +
       `─━━━━━━━━━━━━━━─`
   )
 }
@@ -703,9 +706,9 @@ if (mode === 'install' || mode === 'uninstall') {
 }
 
 handler.help = [
-  'evx', 'evx info', 'evx ability', 'evx ability list',
-  'evx ability info <tipe/tier> <nomor/nama>', 'evx ability search <nama>',
-  'evx install <tipe/tier> <nomor/nama>', 'evx uninstall <nama>',
+  'evx', 'evx info', 'evx core', 'evx core list',
+  'evx core info <tipe/tier> <nomor/nama>', 'evx core search <nama>',
+  'evx core install <tipe/tier> <nomor/nama>', 'evx core uninstall <nama>',
   'evx body', 'evx guide', 'evx command'
 ]
 handler.tags = ['rpg']

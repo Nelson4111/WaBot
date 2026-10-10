@@ -1,8 +1,17 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { prosesKawin, pratinjauKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan, getHewanKey } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 global.icuTernak = global.icuTernak || {}
+
+const getKawinFailureChance = (first, second) => {
+  const baseChance = peluangGagal(first, second)
+  return isRpgEventActive('breeding_season')
+    ? Math.max(0, 1 - (1 - baseChance) * 1.3)
+    : baseChance
+}
 
 let handler = async (m, { conn, args }) => {
   const wdb = loadDB()
@@ -105,7 +114,7 @@ let handler = async (m, { conn, args }) => {
       `╰─━━━━━━━━━━━━━━─`
     )
 
-    if(Date.now() - data.waktu > 60000) {
+    if(Date.now() - data.waktu > RPG_CONFIRMATION_TTL) {
       delete wdb.temp.kawin[m.sender]
       saveDB(wdb)
       return m.reply(
@@ -175,7 +184,8 @@ let handler = async (m, { conn, args }) => {
 
   let sekarang = Date.now()
   let jenis = h1 === h2? 'biasa' : 'silang'
-  let cd = scaleDifficultyCooldown(user, jenis === 'biasa'? 2 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000)
+  let cd = Math.floor(scaleDifficultyCooldown(user, jenis === 'biasa'? 2 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000) *
+    (isRpgEventActive('breeding_season') ? 0.75 : 1))
 
   if(user.cooldown.kawin && sekarang - user.cooldown.kawin < cd) {
     let sisa = cd - (sekarang - user.cooldown.kawin)
@@ -216,7 +226,7 @@ let handler = async (m, { conn, args }) => {
       `╭─❏「 ⚠️ PERINGATAN EVOLUSI 」❏\n` +
       `│ 🧬 ${d1.nama} ${d1.emoji} + ${d2.nama} ${d2.emoji}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ 📊 Resiko Gagal : ${peluangGagal(d1,d2) * 100}%\n` +
+      `> ↳ 📊 Resiko Gagal : ${(getKawinFailureChance(d1, d2) * 100).toFixed(1)}%\n` +
       `> ↳ 🎯 Hasil : E${Math.min(eTertinggi + 1, 7)}\n` +
       `> ↳ 🎁 Nama : ${teksHasil}\n` +
       `> ↳ ✨ Exp : ${Math.floor(exp)} / ${Math.floor(exp / 2)}\n` +
@@ -232,7 +242,8 @@ let handler = async (m, { conn, args }) => {
       `> ↳ ICU = Ruang penyelamatan. Jika gagal dan punya asuransi,\n` +
       `> ↳ hewan masuk ICU 30 menit. Ketik.icu untuk menyelamatkan\n\n` +
       `> ↳ ICU menyelamatkan hewan selama 30 menit jika gagal.\n` +
-      `> ↳ Ketik *.kawin proses* untuk lanjut atau *.kawin batal* untuk batal.\n\n` +
+      `> ↳ Ketik *.kawin proses* untuk lanjut atau *.kawin batal* untuk batal.\n` +
+      `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
       `─━━━━━━━━━━━━━━─`
 
     return m.reply(ket)
@@ -242,10 +253,11 @@ let handler = async (m, { conn, args }) => {
   user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
   user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
   user.cooldown.kawin = sekarang
-  user.kawinCooldownDuration = jenis === 'biasa' ? 2 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000
+  user.kawinCooldownDuration = cd
   delete wdb.temp.kawin[m.sender]
 
-  let gagal = Math.random() < peluangGagal(d1,d2)
+  const failureChance = getKawinFailureChance(d1, d2)
+  let gagal = Math.random() < failureChance
 
   if(gagal) {
     user.exp += scaleDifficultyXP(user, Math.floor(exp / 2))

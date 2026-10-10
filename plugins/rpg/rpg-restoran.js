@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import {
   hargaBeli as sharedHargaBeli,
   masakanResep,
@@ -372,7 +373,7 @@ return m.reply(cap)
         return total + Math.floor(unitPrice * sellBonus) * entry.quantity
       }, 0)
       const total = scaleDifficultyIncome(user, baseTotal)
-      user.pendingRestoranSell = { entries, total, expiresAt: Date.now() + 60000 }
+      user.pendingRestoranSell = { entries, total, expiresAt: Date.now() + RPG_CONFIRMATION_TTL }
       saveDB(wdb)
       const list = entries.map(entry => `> ↳ ${formatNama(entry.item)} x${entry.quantity}`).join('\n')
       return m.reply(
@@ -383,7 +384,7 @@ return m.reply(cap)
         `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
         `✅ Ketik *${usedPrefix}restoran jual ya* untuk lanjut\n` +
         `❌ Ketik *${usedPrefix}restoran jual batal* untuk membatalkan\n` +
-        `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+        `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
       )
 
       let totalHasil = 0, listJual = []
@@ -430,7 +431,7 @@ if (amount === 'all') {
   user.pendingRestoranSell = {
     entries: [{ source, item, quantity: jual }],
     total,
-    expiresAt: Date.now() + 60000
+    expiresAt: Date.now() + RPG_CONFIRMATION_TTL
   }
 
   saveDB(wdb)
@@ -442,7 +443,7 @@ if (amount === 'all') {
     `> ↳ Item : ${display}\n` +
     `> ↳ Jumlah : x${jual}\n` +
     `> ↳ Total : Rp ${total.toLocaleString()}\n` +
-    `> ↳ Konfirmasi berlaku 60 detik.\n\n` +
+    `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
     `📌 *KONFIRMASI*\n` +
     `> ↳ Ketik *${usedPrefix}restoran jual ya* untuk lanjut.\n` +
     `> ↳ Ketik *${usedPrefix}restoran jual batal* untuk membatalkan.\n\n` +

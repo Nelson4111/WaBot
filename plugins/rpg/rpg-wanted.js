@@ -122,9 +122,29 @@ let handler = async (m, { conn, args, isOwner, groupMetadata }) => {
       `│ *.buronan* - Jumlah buronan aktif\n` +
       `│ *.buronan list [halaman]* - Daftar buronan, 10 orang/halaman\n` +
       `│ *.buronan detail <nomor/tag/reply>* - Detail buronan\n` +
+      `│ *.buronan data* / *.kriminal data* - Data buronanmu: poin aktif dan riwayat\n` +
       `│ *.buronan info* - Penjelasan poin dan patroli\n` +
       (isOwner ? `│ *.buronan reset* - Reset data kriminal\n` : '') +
       `╰─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'data') {
+    const data = wdb.crime?.[m.sender]
+    const activeScore = getActiveCrimeScore(data)
+    const lifetimeScore = computeCrimeScore(data)
+    const archivedScore = Math.max(0, Number(data?.pardonedScore) || 0)
+    const crimeCounts = RPG_CRIME_TYPES.map(({ key, label, emoji, score }) =>
+      `> ${emoji} ${label}: *${Number(data?.[key]) || 0}x* (${(Number(data?.[key]) || 0) * score} poin)`
+    )
+    return m.reply(
+      `╭─❏「 📊 DATA BURONANMU 」❏\n` +
+      `│ 💀 Poin aktif: *${activeScore} poin*\n` +
+      `│ 📜 Poin riwayat tersimpan untuk top: *${archivedScore} poin*\n` +
+      `│ 🧾 Total poin kriminal: *${lifetimeScore} poin*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${crimeCounts.join('\n')}\n\n` +
+      `Poin aktif bertambah dari tindak kriminal baru; riwayat lama tetap tersimpan.`
     )
   }
 
@@ -231,8 +251,8 @@ let handler = async (m, { conn, args, isOwner, groupMetadata }) => {
   return m.reply('❌ Subcommand tidak dikenal. Ketik *.buronan command* untuk melihat semua command.')
 }
 
-handler.help = ['buronan', 'buronan list', 'buronan detail', 'buronan info', 'buronan command']
+handler.help = ['buronan', 'kriminal', 'buronan list', 'buronan detail', 'buronan data', 'kriminal data', 'buronan info', 'buronan command']
 handler.tags = ['rpg']
-handler.command = /^(buronan|mostwanted|topkriminal|dpo)$/i
+handler.command = /^(buronan|kriminal|mostwanted|topkriminal|dpo)$/i
 handler.group = true
 export default handler

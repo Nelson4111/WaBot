@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
+import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 function formatNama(nama) {
   if (!nama) return ''
@@ -321,7 +322,7 @@ let handler = async (m, { text, usedPrefix }) => {
 
     const baseTotal = entries.reduce((total, entry) => total + Math.floor(harga[entry.item].harga * sellBonus) * entry.quantity, 0)
     const total = scaleDifficultyIncome(user, baseTotal)
-    user.pendingPasarSell = { entries, total, expiresAt: Date.now() + 60000 }
+    user.pendingPasarSell = { entries, total, expiresAt: Date.now() + RPG_CONFIRMATION_TTL }
     saveDB(wdb)
     const list = entries.map(({ item, quantity }) => `> ↳ ${harga[item].emoji} ${formatNama(item)} x${quantity}`).join('\n')
     return m.reply(
@@ -332,7 +333,7 @@ let handler = async (m, { text, usedPrefix }) => {
       `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
       `✅ Ketik *${usedPrefix}pasar jual ya* untuk lanjut\n` +
       `❌ Ketik *${usedPrefix}pasar jual batal* untuk membatalkan\n` +
-      `⏳ Konfirmasi berlaku 60 detik.\n\n─━━━━━━━━━━━━━━─`
+      `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
     )
   }
 
@@ -377,7 +378,7 @@ if (amount === 'all') {
   user.pendingPasarSell = {
     entries: [{ item: itemInput, quantity: jual, bucket }],
     total,
-    expiresAt: Date.now() + 60000
+    expiresAt: Date.now() + RPG_CONFIRMATION_TTL
   }
 
   saveDB(wdb)
@@ -389,7 +390,7 @@ if (amount === 'all') {
     `> ↳ Item : ${formatNama(itemInput)}\n` +
     `> ↳ Jumlah : x${jual}\n` +
     `> ↳ Total : Rp ${total.toLocaleString()}\n` +
-    `> ↳ Konfirmasi berlaku 60 detik.\n\n` +
+    `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
     `📌 *KONFIRMASI*\n` +
     `> ↳ Ketik *${usedPrefix}pasar jual ya* untuk lanjut.\n` +
     `> ↳ Ketik *${usedPrefix}pasar jual batal* untuk membatalkan.\n\n` +
