@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import auctionHandler from '../plugins/rpg/rpg-auction.js'
 import bankHandler from '../plugins/rpg/rpg-bank.js'
 import { AUCTION_ITEMS } from '../lib/rpg-auctionData.js'
+import { finishAuctionNow } from '../plugins/rpg/rpg-auction.js'
 
 const firstJid = '628123456789@s.whatsapp.net'
 const secondJid = '628987654321@s.whatsapp.net'
@@ -135,6 +136,33 @@ test('a solo confirmed bidder wins when the auction expires', async () => {
     assert.equal(global.db.data.users[firstJid].rpg.auctionHistory[0].amount, amount)
     assert.equal(global.db.data.users[firstJid].rpg.auctionBids[item.id], undefined)
     assert.match(await runAuction(firstJid, 'list'), /HASIL LELANG TERAKHIR/)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
+test('owner finish action settles bids immediately and starts the next auction', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+
+  try {
+    await runAuction(firstJid, 'list')
+    const currentSession = global.db.data.auctionHouse
+    const item = AUCTION_ITEMS.find(entry => entry.id === currentSession.itemIds[0])
+    const amount = Math.floor(item.price / 2)
+
+    await runAuction(firstJid, `bid ${item.id}`)
+    await runAuction(firstJid, 'bid konfirmasi')
+    const result = await finishAuctionNow()
+
+    assert.equal(result.alreadyEnded, false)
+    assert.equal(result.results.length, 1)
+    assert.equal(result.results[0].jid, firstJid)
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - amount)
+    assert.equal(global.db.data.users[firstJid].rpg.auctionVault[item.id], 1)
+    assert.ok(result.nextSession.endsAt > currentSession.endsAt)
+    assert.equal(result.nextSession.bids[item.id], undefined)
   } finally {
     if (previousDb === undefined) delete global.db
     else global.db = previousDb
