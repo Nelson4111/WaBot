@@ -26,6 +26,7 @@ import {
 } from '../plugins/rpg/rpg-bank.js'
 import { applyBankTierRewards, BANK_CROWN_ITEM_ID, claimBankCrown } from '../lib/rpg-bankData.js'
 import { hargaBeli as RESTAURANT_MENU } from '../lib/rpg-masakanData.js'
+import { formatFullTierFacilities, formatUpgradeChanges } from '../plugins/rpg/rpg-upgradebank.js'
 
 test('bank security and insurance increase with every card tier', () => {
   for (let tier = 1; tier < Object.keys(BANK_TIERS).length; tier++) {
@@ -204,6 +205,20 @@ test('bank benefits use symbol badges for new facilities and upgrades', () => {
   assert.equal(formatBankTierFacility('Chat CS', 2), 'Chat CS ◆ NEW')
   assert.equal(formatBankTierFacility('Chat CS 24jam', 9), 'Chat CS 24jam ▲ UP')
   assert.equal(formatBankTierFacility('Digital Access', 3), 'Digital Access ◆ NEW')
+})
+
+test('bank upgrade confirmation shows only changed facilities, success shows the full tier', () => {
+  const preview = formatUpgradeChanges(BANK_TIERS[2], 2, BANK_TIERS[1])
+  assert.match(preview, /Keamanan Lv\.\d+ ▲ UP/)
+  assert.match(preview, /Chat CS ◆ NEW/)
+  assert.match(preview, /Asuransi 3% ▲ UP/)
+  assert.doesNotMatch(preview, /Penyimpanan Uang/)
+  assert.doesNotMatch(preview, /Penjaga Biasa/)
+
+  const confirmed = formatFullTierFacilities(BANK_TIERS[2], 2)
+  assert.match(confirmed, /Penyimpanan Uang/)
+  assert.match(confirmed, /Chat CS ◆ NEW/)
+  assert.match(confirmed, /Asuransi 3% ▲ UP/)
 })
 
 test('Crystal Fortress adds five effective security and lowers robbery chance', () => {

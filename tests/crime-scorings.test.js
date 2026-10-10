@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { computeCrimeScore, ensurePatrolReleaseProtection, getCrimeScoreSummary, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, markPatrolRelease, PATROL_CAPTURE_PROTECTION_MS, PATROL_CRIME_PROTECTION_MS, PATROL_PRISON_PROTECTION_MS, recordEscapeCrime, syncAllEscapeCrimeCounts, syncEscapeCrimeCounts } from '../lib/crimeHelper.js'
+import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getCrimeScoreSummary, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, markPatrolRelease, PATROL_CAPTURE_PROTECTION_MS, PATROL_CRIME_PROTECTION_MS, PATROL_PRISON_PROTECTION_MS, recordEscapeCrime, setActiveCrimeScore, syncAllEscapeCrimeCounts, syncEscapeCrimeCounts } from '../lib/crimeHelper.js'
 import { normalizeFishKey } from '../lib/rpg-fishCatalog.js'
 import { PATROL_RESTRICTED_RSHIP_ACTIONS } from '../lib/patrolHelper.js'
 
@@ -15,6 +15,14 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
   weight: { rampok: 4, bunuh: 3, begal: 2, copet: 1, kabur: 5, breakout: 5 }
 })
 assert.equal(computeCrimeScore({ kabur: 1, breakout: 2 }), 15)
+const adjustableCrime = { rampok: 2, pardonedScore: 4 }
+assert.equal(getActiveCrimeScore(adjustableCrime), 4)
+assert.equal(setActiveCrimeScore(adjustableCrime, 0), 0)
+adjustableCrime.copet = 3
+assert.equal(getActiveCrimeScore(adjustableCrime), 3)
+assert.equal(setActiveCrimeScore(adjustableCrime, 8), 8)
+assert.throws(() => setActiveCrimeScore(adjustableCrime, -1), RangeError)
+assert.throws(() => setActiveCrimeScore(adjustableCrime, 1.5), RangeError)
 assert.equal(getPatrolCaptureChance(0), 0)
 assert.ok(Math.abs(getPatrolCaptureChance(4) - 0.003) < 1e-10)
 assert.ok(Math.abs(getPatrolCaptureChance(10) - 0.006) < 1e-10)

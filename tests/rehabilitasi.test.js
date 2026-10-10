@@ -4,6 +4,7 @@ import { getCrimeRestriction } from '../lib/rpgDifficulty.js'
 import {
   applyRehabilitationPayment,
   completeRehabilitation,
+  forceCompleteRehabilitation,
   getRehabilitationCompletion,
   getRehabilitationPaymentStatus,
   getRehabilitationRequirements,
@@ -109,7 +110,33 @@ assert.equal(rpg.rehabilitation.status, 'completed')
 
 crimeData.copet += 1
 assert.equal(getActiveCrimeScore(crimeData), 1)
+assert.equal(forceCompleteRehabilitation(rpg, crimeData, process.completesAt + 1), false)
+assert.equal(startRehabilitation(rpg, 1, process.completesAt + 2), true)
+assert.equal(forceCompleteRehabilitation(rpg, crimeData, process.completesAt + 3), true)
+assert.equal(getActiveCrimeScore(crimeData), 0)
+assert.equal(computeCrimeScore(crimeData), totalCrimeScore + 1)
+assert.equal(rpg.rehabilitation.forcedCompletion, true)
+crimeData.begal = 1
+assert.equal(getActiveCrimeScore(crimeData), 2)
 assert.equal(REHABILITATION_DAY_MS, 24 * 60 * 60 * 1000)
+
+const previouslyRehabilitated = {
+  rehabilitation: { status: 'completed' },
+  penjara: now,
+  lamaPenjara: 60000,
+  pardonedScore: 4
+}
+const previouslyRehabilitatedJid = 'previously-rehabilitated@s.whatsapp.net'
+global.db.data.users[previouslyRehabilitatedJid] = { rpg: previouslyRehabilitated }
+const previouslyRehabilitatedDB = {
+  users: { [previouslyRehabilitatedJid]: { rpg: previouslyRehabilitated } },
+  crime: { [previouslyRehabilitatedJid]: { rampok: 1, pardonedScore: 4 } },
+  penjara: []
+}
+assert.ok(registerPrisoner(previouslyRehabilitatedDB, previouslyRehabilitatedJid))
+assert.equal(previouslyRehabilitatedDB.crime[previouslyRehabilitatedJid].pardonedScore, 4)
+assert.equal(getActiveCrimeScore(previouslyRehabilitatedDB.crime[previouslyRehabilitatedJid]), 0)
+assert.equal(previouslyRehabilitated.rehabilitation.status, 'revoked')
 
 const protectedJid = 'rehab@s.whatsapp.net'
 const protectedRpg = {
