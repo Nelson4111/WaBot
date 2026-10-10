@@ -162,8 +162,6 @@ function getPlayerCasinoRoom(wdb, jid) {
 
 function isActiveAuctionBidder(wdb, jid) {
   const auction = wdb?.data?.auctionHouse
-  if (!auction || Number(auction.endsAt) <= Date.now()) return false
-
   const normalizeJid = value => {
     if (!value) return ''
     const resolved = value.endsWith('@lid')
@@ -173,8 +171,15 @@ function isActiveAuctionBidder(wdb, jid) {
   }
   const sender = normalizeJid(jid)
 
-  return Object.values(auction.bids || {}).some(bids =>
+  const hasSessionBid = auction && Number(auction.endsAt) > Date.now() &&
+    Object.values(auction.bids || {}).some(bids =>
     Array.isArray(bids) && bids.some(bid => normalizeJid(bid?.jid) === sender)
+  )
+  if (hasSessionBid) return true
+
+  const user = wdb?.users?.[jid]
+  return Object.values(user?.rpg?.auctionBids || {}).some(bid =>
+    Number(bid?.endsAt) > Date.now()
   )
 }
 

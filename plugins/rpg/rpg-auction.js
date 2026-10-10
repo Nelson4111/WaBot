@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
@@ -11,6 +11,12 @@ const AUCTION_NEWS_LIMIT = 10
 const money = value => `Rp ${Number(value).toLocaleString('id-ID')}`
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 let auctionTimer
+
+async function persistAuctionDB() {
+  if (global.db && typeof global.db.write === 'function') {
+    await global.db.write()
+  }
+}
 
 function shuffle(items) {
   const shuffled = [...items]
@@ -43,6 +49,24 @@ function getHighestBid(session, itemId) {
   return bids.reduce((highest, bid) =>
     Number(bid?.amount) > Number(highest?.amount) ? bid : highest, null
   )
+}
+
+function restoreAuctionBids(db, session) {
+  let changed = false
+  for (const [userJid, user] of Object.entries(db.data.users || {})) {
+    const personalBids = user?.rpg?.auctionBids
+    if (!personalBids || typeof personalBids !== 'object') continue
+    for (const [itemId, bid] of Object.entries(personalBids)) {
+      if (!session.itemIds.includes(itemId) || Number(bid?.endsAt) !== Number(session.endsAt)) continue
+      if (!Number.isSafeInteger(Number(bid.amount)) || Number(bid.amount) <= 0) continue
+      const jid = normalizeJid(userJid)
+      const bids = Array.isArray(session.bids[itemId]) ? session.bids[itemId] : (session.bids[itemId] = [])
+      if (bids.some(entry => normalizeJid(entry?.jid) === jid)) continue
+      bids.push({ jid, amount: Number(bid.amount), at: Number(bid.at) || 0, escrowed: bid.escrowed === true })
+      changed = true
+    }
+  }
+  return changed
 }
 
 function addAuctionHistory(state, entry) {
@@ -127,6 +151,14 @@ function settleAuctionSession(db, session, now = Date.now()) {
     addAuctionHistory(state, historyEntry)
   }
 
+  for (const user of Object.values(db.data.users || {})) {
+    const personalBids = user?.rpg?.auctionBids
+    if (!personalBids || typeof personalBids !== 'object') continue
+    for (const [itemId, bid] of Object.entries(personalBids)) {
+      if (Number(bid?.endsAt) === Number(session.endsAt)) delete personalBids[itemId]
+    }
+  }
+
   db.data.auctionHouse = {
     ...state,
     ...makeAuctionSession(now),
@@ -143,8 +175,9 @@ function scheduleAuctionClose(endsAt) {
       const db = loadDB()
       const session = db.data.auctionHouse
       if (session && Number(session.endsAt) <= Date.now()) {
+        if (session.bids && typeof session.bids === 'object') restoreAuctionBids(db, session)
         settleAuctionSession(db, session)
-        await saveDB(db)
+        await persistAuctionDB()
       }
       if (db.data.auctionHouse?.endsAt) scheduleAuctionClose(db.data.auctionHouse.endsAt)
     } catch (error) {
@@ -164,6 +197,7 @@ async function getAuctionSession(db, now = Date.now()) {
   let changed = false
 
   if (session && Number.isFinite(Number(session.endsAt)) && Number(session.endsAt) <= now && hasValidItems) {
+    if (session.bids && typeof session.bids === 'object') restoreAuctionBids(db, session)
     settleAuctionSession(db, session, now)
     session = data.auctionHouse
     changed = true
@@ -192,11 +226,12 @@ async function getAuctionSession(db, now = Date.now()) {
     session.pendingConfirmations = {}
     changed = true
   }
+  if (restoreAuctionBids(db, session)) changed = true
   if (!Array.isArray(session.history)) session.history = []
   if (!Array.isArray(session.news)) session.news = []
 
   scheduleAuctionClose(session.endsAt)
-  if (changed) await saveDB(db)
+  if (changed) await persistAuctionDB()
   return session
 }
 
@@ -393,7 +428,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     if (!rpg.mallInventory || typeof rpg.mallInventory !== 'object') rpg.mallInventory = {}
     rpg.auctionVault[selected.itemId] -= 1
     rpg.mallInventory[selected.itemId] = (Number(rpg.mallInventory[selected.itemId]) || 0) + 1
-    await saveDB(db)
+    await persistAuctionDB()
     return m.reply(
       `╭─❏「 ✅ HADIAH DIKLAIM 」❏\n` +
       `│ ${selected.item.emoji} *${selected.item.name}*\n` +
@@ -483,26 +518,26 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const pending = session.pendingConfirmations[jid]
       if (!pending || pending.expiresAt <= Date.now()) {
         delete session.pendingConfirmations[jid]
-        await saveDB(db)
+        await persistAuctionDB()
         return m.reply(`❌ Tidak ada konfirmasi bid yang aktif. Ajukan lagi dengan *${prefix}ah bid <nomor/nama> [nominal]*.`)
       }
       if (pending.endsAt !== session.endsAt || session.endsAt <= Date.now()) {
         delete session.pendingConfirmations[jid]
-        await saveDB(db)
+        await persistAuctionDB()
         return m.reply('❌ Waktu lelang sudah berakhir. Bid ini tidak dapat dikonfirmasi.')
       }
 
       const item = AUCTION_ITEMS.find(entry => entry.id === pending.itemId)
       if (!item || !session.itemIds.includes(item.id)) {
         delete session.pendingConfirmations[jid]
-        await saveDB(db)
+        await persistAuctionDB()
         return m.reply('❌ Item lelang tidak lagi tersedia. Ajukan bid baru pada sesi aktif.')
       }
       const highest = getHighestBid(session, item.id)
       const currentFloor = Math.max(item.price, Number(highest?.amount) || 0)
       if (pending.amount < item.price || pending.amount <= Number(highest?.amount || 0)) {
         delete session.pendingConfirmations[jid]
-        await saveDB(db)
+        await persistAuctionDB()
         return m.reply(
           `❌ Bid tertinggi sudah berubah. Bid minimum sekarang *${money(currentFloor)}*.\n` +
           `Ajukan bid baru melalui *${prefix}ah bid ${item.id}*.`
@@ -521,15 +556,22 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
       if (balance + previousHeldAmount < pending.amount) {
         delete session.pendingConfirmations[jid]
-        await saveDB(db)
+        await persistAuctionDB()
         return m.reply(`❌ Saldo bank tidak cukup untuk bid ${money(pending.amount)}. Saldo saat ini: ${money(balance)}.`)
       }
 
       rpg.bank = balance + previousHeldAmount - pending.amount
       session.bids[item.id] = existingBids.filter(bid => normalizeJid(bid?.jid) !== jid)
       session.bids[item.id].push({ jid, amount: pending.amount, at: Date.now(), escrowed: true })
+      if (!rpg.auctionBids || typeof rpg.auctionBids !== 'object') rpg.auctionBids = {}
+      rpg.auctionBids[item.id] = {
+        amount: pending.amount,
+        at: Date.now(),
+        endsAt: session.endsAt,
+        escrowed: true
+      }
       delete session.pendingConfirmations[jid]
-      await saveDB(db)
+      await persistAuctionDB()
       return m.reply(
         `✅ *BID DIKONFIRMASI*\n` +
         `> ↳ Item: ${item.emoji} ${item.name}\n` +
@@ -575,7 +617,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       endsAt: session.endsAt,
       expiresAt: Date.now() + BID_CONFIRMATION_TTL
     }
-    await saveDB(db)
+    await persistAuctionDB()
     return m.reply(
       `⚠️ *KONFIRMASI BID*\n` +
       `> ↳ Item: ${item.emoji} ${item.name}\n` +
