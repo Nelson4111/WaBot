@@ -70,19 +70,19 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
 
   try {
     await runAuction(firstJid, 'list')
-    const session = global.db.data.auctionHouse
+    let session = global.db.data.auctionHouse
     const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
-    const competingAmount = item.price + 500_000
+    const firstAmount = Math.floor(item.price / 2)
+    const competingAmount = firstAmount + 500_000
 
-    await runAuction(firstJid, `bid ${item.id} ${item.price}`)
-    await runAuction(firstJid, 'bid konfirmasi')
-    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - item.price)
-    delete session.bids[item.id]
+    await runAuction(firstJid, `bid ${item.id}`)
+    await runAuction(firstJid, 'konfirmasi')
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - firstAmount)
+    session.bids[item.id] = []
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Bid tertinggi/)
-    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${item.price.toLocaleString('id-ID')}`))
+    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${firstAmount.toLocaleString('id-ID')}`))
 
-    delete session.bids[item.id]
     const depositMessage = makeMessage(firstJid)
     await bankHandler(depositMessage.m, { text: 'simpan 1000', usedPrefix: '.', command: 'bank' })
     assert.match(depositMessage.replies.at(-1), /TRANSAKSI BERHASIL/)
@@ -102,6 +102,39 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance + 1_000)
     assert.equal(global.db.data.users[secondJid].rpg.bank, initialBalance - competingAmount)
     assert.equal(global.db.data.users[secondJid].rpg.auctionVault[item.id], 1)
+    assert.match(await runAuction(firstJid, 'list'), /HASIL LELANG TERAKHIR/)
+    assert.match(await runAuction(firstJid, 'list'), /Penawar Dua/)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
+test('a solo confirmed bidder wins when the auction expires', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+
+  try {
+    await runAuction(firstJid, 'list')
+    const session = global.db.data.auctionHouse
+    const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
+    const amount = Math.floor(item.price / 2)
+
+    await runAuction(firstJid, `bid ${item.id}`)
+    await runAuction(firstJid, 'bid konfirmasi')
+    global.db.data.auctionHouse = { history: [], news: [] }
+    assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
+    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${amount.toLocaleString('id-ID')}`))
+    const recoveredSession = global.db.data.auctionHouse
+    recoveredSession.endsAt = Date.now() - 1
+    global.db.data.users[firstJid].rpg.auctionBids[item.id].endsAt = recoveredSession.endsAt
+
+    await runAuction(firstJid, 'history')
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - amount)
+    assert.equal(global.db.data.users[firstJid].rpg.auctionVault[item.id], 1)
+    assert.equal(global.db.data.users[firstJid].rpg.auctionHistory[0].amount, amount)
+    assert.equal(global.db.data.users[firstJid].rpg.auctionBids[item.id], undefined)
+    assert.match(await runAuction(firstJid, 'list'), /HASIL LELANG TERAKHIR/)
   } finally {
     if (previousDb === undefined) delete global.db
     else global.db = previousDb
