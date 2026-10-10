@@ -1,3 +1,5 @@
+import { sendPasanganActivity } from '../../lib/pasanganHelper.js'
+
 /**
  * Sistem Lamaran & Pernikahan Plugin
  * Mengelola pengajuan lamaran, penerimaan, dan penolakan pernikahan
@@ -35,10 +37,13 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     const alreadyMarried = users[sender].pasangan.some(p => p.jid === target)
     if (alreadyMarried) {
       const targetNum = target.split('@')[0].replace(/\D/g, '')
-      return conn.sendMessage(m.chat, {
-        text: `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu telah berstatus sah menjadi pasangan dari @${targetNum}!\n*╰───────────────*`,
-        mentions: [target]
-      }, { quoted: m })
+      return sendPasanganActivity(
+        conn,
+        m,
+        `*╭  〔 ᰔ ɪ ɴ ꜰ ᴏ 〕*\n> Kamu telah berstatus sah menjadi pasangan dari @${targetNum}!\n*╰───────────────*`,
+        [target],
+        [target]
+      )
     }
 
     proposals[target] = {
@@ -61,10 +66,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 > Atau ketik *.tolak* jika belum bersedia.
 > ⧗ _Surat lamaran berlaku selama 𝟼𝟶 detik._`.trim()
 
-    return conn.sendMessage(m.chat, {
-      text: msg,
-      mentions: [sender, target]
-    }, { quoted: m })
+    return sendPasanganActivity(conn, m, msg, [sender, target], [target])
   }
 
   // 2. TERIMA LAMARAN SEBAGAI PERINTAH
@@ -98,10 +100,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
 > ｡˚ ⊹ _Ketik .pasangan untuk cek profil atau .kartunikah untuk kartu digital!_ ⊹ ˚ ｡`.trim()
 
-    return conn.sendMessage(m.chat, {
-      text: ann,
-      mentions: [fromJid, sender]
-    }, { quoted: m })
+    return sendPasanganActivity(conn, m, ann, [fromJid, sender], [fromJid, sender])
   }
 
   // 3. TOLAK LAMARAN SEBAGAI PERINTAH
@@ -124,10 +123,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
 > Tetap berlapang dada, takdir terbaik menantimu di waktu yang tepat ♡`.trim()
 
-    return conn.sendMessage(m.chat, {
-      text: txt,
-      mentions: [sender, fromJid]
-    }, { quoted: m })
+    return sendPasanganActivity(conn, m, txt, [sender, fromJid], [sender, fromJid])
   }
 }
 
@@ -178,10 +174,7 @@ handler.before = async function (m, { conn }) {
 
 > ｡˚ ⊹ _Ketik .pasangan untuk cek status atau .kartunikah untuk kartu digital!_ ⊹ ˚ ｡`.trim()
 
-    conn.sendMessage(m.chat, {
-      text: ann,
-      mentions: [fromJid, sender]
-    }, { quoted: m })
+    await sendPasanganActivity(conn, m, ann, [fromJid, sender], [fromJid, sender])
     return true
   }
 
@@ -197,10 +190,7 @@ handler.before = async function (m, { conn }) {
 
 > Tetap berlapang dada, takdir terbaik menantimu di waktu yang tepat ♡`.trim()
 
-    conn.sendMessage(m.chat, {
-      text: rej,
-      mentions: [sender, fromJid]
-    }, { quoted: m })
+    await sendPasanganActivity(conn, m, rej, [sender, fromJid], [sender, fromJid])
     return true
   }
 }

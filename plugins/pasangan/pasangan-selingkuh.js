@@ -3,6 +3,7 @@
  * Simulasi drama asmara rahasia dengan berbagai skenario lucu
  * Style: Zen Shinto Aesthetic (STYLE_GUIDE.md)
  */
+import { sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 let handler = async (m, { conn, usedPrefix, command }) => {
   const target = m.mentionedJid?.[0]
@@ -34,10 +35,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
 > ｡˚ ⊹ _Kesetiaan adalah mahkota tertinggi dalam sebuah hubungan_ ⊹ ˚ ｡`.trim()
 
-  return conn.sendMessage(m.chat, {
-    text: txt,
-    mentions: [senderJid, target]
-  }, { quoted: m })
+  return sendPasanganActivity(conn, m, txt, [senderJid, target], [target])
 }
 
 handler.help = ['selingkuh @user']

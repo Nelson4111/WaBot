@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { getPasanganHiddenNotice, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { isPasanganHidden, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Perceraian Pasangan Plugin
@@ -26,8 +26,19 @@ let handler = async (m, { conn }) => {
     if (senderPasangan.length === 1) {
       target = senderPasangan[0].jid
     } else {
-      const listP = senderPasangan.map((p, i) => `*┆*   ${toSmallNum(i + 1)}. @${p.jid.split('@')[0].replace(/\D/g, '')}`).join('\n')
-      return sendResult(`*╭  〔 ◈ ᴘ ɪ ʟ ɪ ʜ  ᴘ ᴀ ꜱ ᴀ ɴ ɢ ᴀ ɴ 〕*\n> Tandai pasangan yang ingin kamu ceraikan:\n${listP}\n*╰───────────────*`, senderPasangan.map(p => p.jid))
+      const listP = senderPasangan.map((p, i) => {
+        const display = isPasanganHidden(users[p.jid] || {})
+          ? '🔒 DIKUNCI'
+          : `@${p.jid.split('@')[0].replace(/\D/g, '')}`
+        return `*┆*   ${toSmallNum(i + 1)}. ${display}`
+      }).join('\n')
+      return sendPasanganActivity(
+        conn,
+        m,
+        `*╭  〔 ◈ ᴘ ɪ ʟ ɪ ʜ  ᴘ ᴀ ꜱ ᴀ ɴ ɢ ᴀ ɴ 〕*\n> Tandai pasangan yang ingin kamu ceraikan:\n${listP}\n*╰───────────────*`,
+        senderPasangan.map(p => p.jid),
+        senderPasangan.map(p => p.jid)
+      )
     }
   }
 
@@ -35,7 +46,13 @@ let handler = async (m, { conn }) => {
   const targetNum = target.split('@')[0].replace(/\D/g, '')
 
   if (pIndex === -1) {
-    return sendResult(`*╭  〔 ◈ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> @${targetNum} bukan merupakan pasangan sahmu.\n*╰───────────────*`, [target])
+    return sendPasanganActivity(
+      conn,
+      m,
+      `*╭  〔 ◈ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n> @${targetNum} bukan merupakan pasangan sahmu.\n*╰───────────────*`,
+      [target],
+      [target]
+    )
   }
 
   // Hapus ikatan pernikahan dari kedua belah pihak
@@ -55,7 +72,7 @@ let handler = async (m, { conn }) => {
 
 > Setiap perpisahan membawa pelajaran hidup untuk masa depan yang lebih baik ♡`.trim()
 
-  return sendResult(txt, [sender, target])
+  return sendPasanganActivity(conn, m, txt, [sender, target], [target])
 }
 
 handler.help = ['cerai [@user]']

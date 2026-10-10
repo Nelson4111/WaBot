@@ -1,7 +1,7 @@
 import { toSmallNum } from '../../lib/style.js'
 import { saveDB } from '../../lib/waifuHelper.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
-import { formatDuration, formatPasanganAlias, getIntimacyRank, getRingIcon, HUBUNGAN_ALIASES, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { formatDuration, formatPasanganAlias, getIntimacyRank, getRingIcon, HUBUNGAN_ALIASES, isPasanganHidden, getPasanganHiddenNotice, migrateLegacyRingData, normalizeRingName, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Status Pernikahan Plugin
@@ -82,7 +82,7 @@ let handler = async (m, { conn, args, command }) => {
   const aliasDisplay = formatPasanganAlias(users[who]?.pasanganAlias || 'pasangan')
 
   if (hidden && !isSelf) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(whoNum, isSelf))
+    return sendPasanganActivity(conn, m, getPasanganHiddenNotice(whoNum, isSelf), [], [who])
   }
 
   const sendPasanganResult = async (text, mentions = []) => {
@@ -121,6 +121,12 @@ let handler = async (m, { conn, args, command }) => {
   let cards = []
   pList.forEach((p, i) => {
     const partnerNum = p.jid.split('@')[0].replace(/\D/g, '')
+    if (isPasanganHidden(users[p.jid] || {})) {
+      cards.push(`*╭  〔 ᰔ ${aliasDisplay} ${toSmallNum(i + 1)} 〕*
+*┆* ⟡ ${aliasDisplay} : 🔒 DIKUNCI
+*╰───────────────*`)
+      return
+    }
     const dur = formatDuration(Date.now() - p.nikahTime)
     const dateStr = new Date(p.nikahTime).toLocaleDateString('id-ID', {
       day: 'numeric',
@@ -151,7 +157,7 @@ ${cards.join('\n\n')}
 
 > ｡˚ ⊹ _Ketik .kencan atau .loveclaim untuk meningkatkan keharmonisan!_ ⊹ ˚ ｡`.trim()
 
-  return sendPasanganResult(fullText, [who, ...pList.map(p => p.jid)])
+  return sendPasanganActivity(conn, m, fullText, [who, ...pList.map(p => p.jid)], pList.map(p => p.jid))
 }
 
 handler.help = ['pasangan [@user]', 'ceknikah [@user]', 'istri', 'suami', 'pasangan hide', 'pasangan unhide', 'hubungan', 'hubungan alias <jenis>']

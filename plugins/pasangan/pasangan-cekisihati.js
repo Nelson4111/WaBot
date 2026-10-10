@@ -3,6 +3,7 @@
  * Mengintip perasaan / isi hati seseorang terhadap pengguna
  * Style: Zen Shinto Aesthetic (STYLE_GUIDE.md)
  */
+import { sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 const isiHatiResponses = [
   "90% Menyimpan rasa suka padamu, namun masih gengsi untuk berbicara langsung.",
@@ -34,7 +35,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
 > ｡˚ ⊹ _Perasaan hati adalah misteri, ungkapkan kejujuranmu_ ⊹ ˚ ｡`.trim()
 
-  return conn.sendMessage(m.chat, { text: txt, mentions: [target] }, { quoted: m })
+  return sendPasanganActivity(conn, m, txt, [target], [target])
 }
 
 handler.help = ['cekisihati @user']

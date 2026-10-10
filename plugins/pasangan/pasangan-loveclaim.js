@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { formatDuration, isPasanganHidden, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Tunjangan Berkah Nikah Harian Plugin
@@ -60,7 +60,7 @@ let handler = async (m, { conn }) => {
 
 > ｡˚ ⊹ _Semoga ikatan pernikahan kalian senantiasa diberkahi kebahagiaan_ ⊹ ˚ ｡`.trim()
 
-  return sendResult(txt)
+  return sendPasanganActivity(conn, m, txt, [], pList.map(partner => partner.jid))
 }
 
 handler.help = ['loveclaim', 'berkahnikah', 'hadiahpasangan']

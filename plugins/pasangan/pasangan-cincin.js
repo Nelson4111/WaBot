@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { CINCIN_SHOP, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { CINCIN_SHOP, isPasanganHidden, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 
 /**
@@ -69,7 +69,7 @@ ${rows.join('\n')}
 
 > Terpasang pada seluruh ikatan hubunganmu.`.trim()
 
-  return sendResult(successText)
+  return sendPasanganActivity(conn, m, successText, [], pList.map(partner => partner.jid))
 }
 
 handler.help = ['belicincin <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>', 'cincin']

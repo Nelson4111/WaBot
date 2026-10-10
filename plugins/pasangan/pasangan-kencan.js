@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { formatDuration, isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { formatDuration, isPasanganHidden, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Kencan Harian Pasangan Plugin
@@ -61,6 +61,11 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     'Kapal Pesiar Cakrawala'
   ]
   const place = places[Math.floor(Math.random() * places.length)]
+  const partnerNames = await Promise.all(selected.map(async ({ partner }) => {
+    const jid = partner.jid || ''
+    const number = jid.split('@')[0].split(':')[0]
+    return partner.name || users[jid]?.name || (jid ? await conn.getName(jid) : '') || number || 'Pasangan'
+  }))
 
   const resText = `*──  ୨୧ ✧ KENCAN ROMANTIS BERHASIL ✧ ୨୧  ──*
 
@@ -70,12 +75,12 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
 *┆* ⟡ ʟᴏᴋᴀꜱɪ   : *${place}*
 *┆* ✧ ʙᴏɴᴜꜱ ᴇxᴘ : *+${toSmallNum(expBonus)} EXP*
 *┆* ✦ ᴋᴇᴍᴇꜱʀᴀᴀɴ : *+${toSmallNum(bucinBonus)} Poin Bucin*
-*┆* ✧ ᴘᴀsᴀɴɢᴀɴ   : *${selected.map(({ partner }) => partner.name).join(', ')}*
+*┆* ✧ ᴘᴀsᴀɴɢᴀɴ   : *${partnerNames.join(', ')}*
 *╰───────────────*
 
 > ｡˚ ⊹ _Setiap kebersamaan menumbuhkan kehangatan dan keabadian cinta_ ⊹ ˚ ｡`.trim()
 
-  return sendResult(resText)
+  return sendPasanganActivity(conn, m, resText, [], selected.map(({ partner }) => partner.jid))
 }
 
 handler.help = ['kencan']

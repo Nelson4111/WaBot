@@ -1,5 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
-import { isPasanganHidden, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { isPasanganHidden, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Hadiah Pasangan Plugin
@@ -93,7 +93,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
 
 > Berbagi rezeki bersama pasangan mempererat tali kasih dan keharmonisan ♡`.trim()
 
-  return sendResult(successText, [sender, target])
+  return sendPasanganActivity(conn, m, successText, [sender, target], [target])
 }
 
 handler.help = ['hadiah <tipe> <jumlah>']

@@ -1,4 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
+import { sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Ramalan Jodoh & Jodohin Plugin
@@ -49,10 +50,7 @@ let handler = async (m, { conn, usedPrefix, command, participants }) => {
 
 > ｡˚ ⊹ _Mulailah menyapa jodohmu dengan perintah .lamar @tag!_ ⊹ ˚ ｡`.trim()
 
-    return conn.sendMessage(m.chat, {
-      text: txt,
-      mentions: [senderJid, randomJodoh]
-    }, { quoted: m })
+    return sendPasanganActivity(conn, m, txt, [senderJid, randomJodoh], [randomJodoh])
   }
 
   // 2. JODOHIN / CEKJODOH (Menganalisis 2 orang tertentu)
@@ -80,10 +78,7 @@ let handler = async (m, { conn, usedPrefix, command, participants }) => {
 
 > ｡˚ ⊹ _Keserasian hati dibangun melalui saling pengertian dan komitmen_ ⊹ ˚ ｡`.trim()
 
-    return conn.sendMessage(m.chat, {
-      text: txt,
-      mentions: [user1, user2]
-    }, { quoted: m })
+    return sendPasanganActivity(conn, m, txt, [user1, user2], [user1, user2])
   }
 }
 

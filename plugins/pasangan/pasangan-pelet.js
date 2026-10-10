@@ -1,4 +1,5 @@
 import { toSmallNum } from '../../lib/style.js'
+import { sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Mantra Pelet Cinta Plugin
@@ -35,10 +36,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
 > ｡˚ ⊹ _Cinta sejati tumbuh dari ketulusan, bukan paksaan mantra_ ⊹ ˚ ｡`.trim()
 
-  return conn.sendMessage(m.chat, {
-    text: txt,
-    mentions: [senderJid, target]
-  }, { quoted: m })
+  return sendPasanganActivity(conn, m, txt, [senderJid, target], [target])
 }
 
 handler.help = ['pelet @user']

@@ -1,7 +1,7 @@
 import { createCanvas, loadImage } from 'canvas'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
-import { formatDuration, getPasanganHiddenNotice, getRingIcon, isPasanganHidden, normalizeRingName, migrateLegacyRingData, replyPasanganPrivately } from '../../lib/pasanganHelper.js'
+import { formatDuration, getPasanganHiddenNotice, getRingIcon, isPasanganHidden, normalizeRingName, migrateLegacyRingData, replyPasanganPrivately, sendPasanganActivity } from '../../lib/pasanganHelper.js'
 
 /**
  * Kartu Nikah Digital Canvas Plugin
@@ -17,7 +17,13 @@ let handler = async (m, { conn }) => {
   const pList = users[who]?.pasangan || []
 
   if (hidden && who !== sender) {
-    return replyPasanganPrivately(conn, m, getPasanganHiddenNotice(who.split('@')[0].replace(/\D/g, ''), who === sender))
+    return sendPasanganActivity(
+      conn,
+      m,
+      getPasanganHiddenNotice(who.split('@')[0].replace(/\D/g, ''), false),
+      [],
+      [who]
+    )
   }
 
   if (pList.length === 0) {
@@ -26,6 +32,21 @@ let handler = async (m, { conn }) => {
   }
 
   const partnerJid = pList[0].jid
+  if (isPasanganHidden(users[partnerJid] || {})) {
+    const privateMessage = `*──  ୨୧ ✧ PRIVASI PASANGAN ✧ ୨୧  ──*\n\n> 🔒 Kartu nikah tidak dapat ditampilkan karena pasanganmu menyembunyikan informasi hubungannya.\n> 🛡️ Pesan ini tidak menandai pasanganmu.`.trim()
+    const groupMessage = '> 🔒 Kartu nikah disembunyikan oleh pemilik informasi.'
+    if (m.isGroup || m.chat?.endsWith('@g.us')) {
+      await conn.sendMessage(m.chat, { text: groupMessage }, { quoted: m })
+    } else {
+      await m.reply(groupMessage)
+    }
+    await conn.sendMessage(sender, { text: privateMessage })
+    await conn.sendMessage(partnerJid, {
+      text: `*──  ୨୧ ✧ PRIVASI PASANGAN ✧ ୨୧  ──*\n\n> 🔒 Pasanganmu mencoba melihat kartu nikah digital.\n> 🛡️ Kartu dan identitasmu tidak ditampilkan di grup.`.trim()
+    })
+    return
+  }
+
   const defaultPp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
 
   let pp1 = defaultPp
