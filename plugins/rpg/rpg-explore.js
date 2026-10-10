@@ -4,13 +4,14 @@ import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import {
   INTERSTELLAR_ITEM_BY_ID,
+  rollInterstellarCommonItem,
   rollInterstellarItem,
   rollInterstellarPlanet
 } from '../../lib/rpg-exploreData.js'
 
 const EXPLORE_COOLDOWN = 15 * 60 * 1000
 
-let handler = async (m) => {
+let handler = async (m, { conn }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
   if (!account?.rpg) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
@@ -54,23 +55,45 @@ let handler = async (m) => {
     LEGENDARY: (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
     MYTHIC: (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1)
   }
-  const item = rollInterstellarItem(Math.random, tierMultipliers)
+  const items = [
+    rollInterstellarCommonItem(),
+    rollInterstellarCommonItem()
+  ]
+  const bonusRoll = Math.random()
+  const bonusCount = bonusRoll < 0.5 ? 0 : bonusRoll < 0.8 ? 1 : bonusRoll < 0.95 ? 2 : 3
+  for (let i = 0; i < bonusCount; i++) {
+    items.push(rollInterstellarItem(Math.random, tierMultipliers))
+  }
+
   const destination = rollInterstellarPlanet()
-  rpg.inventory[item.id] = (Number(rpg.inventory[item.id]) || 0) + 1
-  const foundItem = INTERSTELLAR_ITEM_BY_ID.get(item.id)
+  const itemCounts = new Map()
+  for (const item of items) {
+    rpg.inventory[item.id] = (Number(rpg.inventory[item.id]) || 0) + 1
+    itemCounts.set(item.id, (itemCounts.get(item.id) || 0) + 1)
+  }
+  const foundItems = [...itemCounts].map(([itemId, quantity]) => ({
+    item: INTERSTELLAR_ITEM_BY_ID.get(itemId),
+    quantity
+  }))
   await saveDB(db)
 
-  return m.reply(
+  const caption =
     `╭─❏「 🚀 INTERSTELLAR EXPLORATION 」❏\n` +
     `│ 💫 *PENJELAJAHAN ANTARBINTANG*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `Kamu berhasil mengunjungi *${destination}* dan menemukan:\n\n` +
-    `> ${foundItem.emoji} *${foundItem.name}* ×1 • ${foundItem.tier}\n` +
-    `> ↳ ${foundItem.description}\n\n` +
+    `Kamu mengunjungi planet *${destination}* dan menemukan ${items.length} item:\n\n` +
+    foundItems.map(({ item, quantity }) =>
+      `> ${item.emoji} *${item.name}* ×${quantity} • ${item.tier}\n` +
+      `> ↳ ${item.description}\n`
+    ).join('') +
+    `\n` +
     `🧭 Total penjelajahan : ${rpg.interstellarExplores}\n` +
     `⏳ Cooldown : ${Math.ceil(cooldown / 60000)} menit\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  const image = Math.random() < 0.5
+    ? 'https://c.termai.cc/i143/rU2.jpg'
+    : 'https://c.termai.cc/i123/9R4g.jpg'
+  return conn.sendMessage(m.chat, { image: { url: image }, caption }, { quoted: m })
 }
 
 handler.help = ['explore']

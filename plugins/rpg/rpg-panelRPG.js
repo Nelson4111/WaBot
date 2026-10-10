@@ -12,6 +12,7 @@ import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/le
 import { EVONEXUS_ABILITIES, getEvonexusAbilityTier, normalizeEvonexusValue } from '../../lib/rpg-evonexusData.js'
 import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
 import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
+import { finishAuctionNow } from './rpg-auction.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import {
@@ -171,6 +172,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama SC Core> ya/tidak*\n` +
   `> ↳ *${usedPrefix}rpgpanel mall @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel giveauction @tag <item lelang> <jml>* - Masukkan hadiah ke Auction Vault user\n` +
   `> ↳ *${usedPrefix}rpgpanel home @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
@@ -257,6 +259,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel setbanktier @tag <0-${MAX_BANK_TIER}>*\n` +
   `> ↳ *${usedPrefix}rpgpanel freezebank @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel unfreezebank @tag*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel endauction* - Selesaikan lelang aktif dan mulai sesi berikutnya\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -500,6 +503,25 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     global.db.data.lottery.jackpot = prize
     await saveDB(global.db)
     return m.reply(`✅ Hadiah dasar lottery diatur menjadi *Rp ${prize.toLocaleString()}*.`)
+  }
+
+  if (['endauction', 'finishauction'].includes(aksi)) {
+    const { alreadyEnded, results, nextSession } = await finishAuctionNow()
+    const resultText = results.length
+      ? results.map(entry =>
+        `> ${entry.emoji} *${entry.itemName}* — ${entry.winnerName} (Rp ${Number(entry.amount).toLocaleString('id-ID')})`
+      ).join('\n')
+      : '> Tidak ada bid yang menang pada sesi tersebut.'
+    const nextItems = nextSession.itemIds
+      .map(id => AUCTION_ITEMS.find(item => item.id === id))
+      .filter(Boolean)
+      .map(item => `> ${item.emoji} ${item.name}`)
+      .join('\n')
+    return m.reply(
+      `${alreadyEnded ? 'ℹ️ Lelang aktif ternyata sudah selesai.' : '✅ Lelang aktif berhasil diselesaikan.'}\n\n` +
+      `🏁 *HASIL LELANG*\n${resultText}\n\n` +
+      `🔨 *SESI BERIKUTNYA DIMULAI*\n${nextItems}`
+    )
   }
 
   if (['autolevelup', 'notiflevel', 'setnotiflevel', 'setlevelnotif', 'groupnotiflevel', 'setgroupnotiflevel'].includes(aksi)) {
@@ -1118,6 +1140,36 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   let jumlah = parseInt(remaining.find(a => !isNaN(parseInt(a)))) || 0
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
   let item = normalizeFishKey(itemInput?.toLowerCase().replace(/ /g, '_'))
+
+  if (aksi === 'giveauction') {
+    let amountIndex = -1
+    for (let index = remaining.length - 1; index >= 0; index--) {
+      if (/^\d+$/.test(remaining[index])) {
+        amountIndex = index
+        break
+      }
+    }
+    const amount = amountIndex < 0 ? 0 : Number(remaining[amountIndex])
+    const query = normalizeEvonexusValue(remaining
+      .filter((_, index) => index !== amountIndex)
+      .join(' '))
+    const selectedItem = AUCTION_ITEMS.find(entry =>
+      normalizeEvonexusValue(entry.id) === query ||
+      normalizeEvonexusValue(entry.name) === query
+    )
+    if (!selectedItem || !Number.isSafeInteger(amount) || amount < 1) {
+      return m.reply(`Contoh: *${usedPrefix}rpgpanel giveauction @tag Stormbreaker 1*`)
+    }
+    user.auctionVault ||= {}
+    user.auctionVault[selectedItem.id] = (Number(user.auctionVault[selectedItem.id]) || 0) + amount
+    await global.db.write()
+    return m.reply(
+      `✅ ${selectedItem.emoji} *${selectedItem.name}* ×${amount} ditambahkan ke Auction Vault @${who.split('@')[0]}.\n` +
+      `> User dapat mengambilnya dengan *.ah claim ${selectedItem.id}*.`,
+      null,
+      { mentions: [who] }
+    )
+  }
 
   if (['setmallitem', 'addmallitem', 'delmallitem'].includes(aksi)) {
     const amountIndex = remaining.findIndex(value => /^\d+$/.test(value))

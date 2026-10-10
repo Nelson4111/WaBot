@@ -13,9 +13,10 @@ const normalize = value => String(value || '').normalize('NFKD').replace(/[\u030
 let auctionTimer
 
 async function persistAuctionDB() {
-  if (global.db && typeof global.db.write === 'function') {
-    await global.db.write()
+  if (!global.db || typeof global.db.write !== 'function') {
+    throw new Error('[auction-house] Database tidak tersedia untuk menyimpan perubahan.')
   }
+  await global.db.write()
 }
 
 function shuffle(items) {
@@ -51,6 +52,10 @@ function getHighestBid(session, itemId) {
   )
 }
 
+function getMinimumBid(item) {
+  return Math.floor(Number(item.price) / 2)
+}
+
 function restoreAuctionBids(db, session) {
   let changed = false
   for (const [userJid, user] of Object.entries(db.data.users || {})) {
@@ -69,6 +74,79 @@ function restoreAuctionBids(db, session) {
   return changed
 }
 
+function recoverAuctionSession(db, previousSession, now) {
+  const recoverable = new Map()
+  for (const [userJid, user] of Object.entries(db.data.users || {})) {
+    for (const [itemId, bid] of Object.entries(user?.rpg?.auctionBids || {})) {
+      const endsAt = Number(bid?.endsAt)
+      const itemIds = Array.isArray(bid?.itemIds) ? bid.itemIds : []
+      if (!Number.isFinite(endsAt) || endsAt <= now || itemIds.length !== AUCTION_ITEM_LIMIT) continue
+      if (new Set(itemIds).size !== AUCTION_ITEM_LIMIT ||
+        !itemIds.includes(itemId) ||
+        !itemIds.every(id => AUCTION_ITEMS.some(item => item.id === id))) continue
+      let session = recoverable.get(endsAt)
+      if (!session) {
+        session = {
+          itemIds: [...itemIds],
+          bids: {},
+          pendingConfirmations: {},
+          endsAt,
+          history: Array.isArray(previousSession?.history) ? previousSession.history : [],
+          news: Array.isArray(previousSession?.news) ? previousSession.news : []
+        }
+        recoverable.set(endsAt, session)
+      }
+      if (!session.itemIds.includes(itemId) || !Number.isSafeInteger(Number(bid.amount))) continue
+      if (!Array.isArray(session.bids[itemId])) session.bids[itemId] = []
+      session.bids[itemId].push({
+        jid: normalizeJid(userJid),
+        amount: Number(bid.amount),
+        at: Number(bid.at) || 0,
+        escrowed: bid.escrowed === true
+      })
+    }
+  }
+  const candidates = [...recoverable.values()].sort((a, b) => b.endsAt - a.endsAt)
+  return candidates[0] || null
+}
+
+function settleOrphanedAuctionBids(db, now) {
+  const currentSession = db.data.auctionHouse
+  const currentSessionItemIds = Array.isArray(currentSession?.itemIds) ? currentSession.itemIds : []
+  const currentSessionValid = currentSessionItemIds.length === AUCTION_ITEM_LIMIT &&
+    new Set(currentSessionItemIds).size === AUCTION_ITEM_LIMIT &&
+    currentSessionItemIds.every(id => AUCTION_ITEMS.some(item => item.id === id))
+  const currentSessionEndsAt = currentSessionValid ? Number(currentSession.endsAt) : NaN
+  const orphaned = new Map()
+
+  for (const [userJid, user] of Object.entries(db.data.users || {})) {
+    for (const [itemId, bid] of Object.entries(user?.rpg?.auctionBids || {})) {
+      const endsAt = Number(bid?.endsAt)
+      if (!Number.isFinite(endsAt) || endsAt > now || endsAt === currentSessionEndsAt) continue
+      if (!AUCTION_ITEMS.some(item => item.id === itemId)) continue
+      if (!Number.isSafeInteger(Number(bid.amount)) || Number(bid.amount) <= 0) continue
+      let session = orphaned.get(endsAt)
+      if (!session) {
+        session = { itemIds: [], bids: {}, pendingConfirmations: {}, endsAt }
+        orphaned.set(endsAt, session)
+      }
+      if (!session.itemIds.includes(itemId)) session.itemIds.push(itemId)
+      if (!Array.isArray(session.bids[itemId])) session.bids[itemId] = []
+      session.bids[itemId].push({
+        jid: normalizeJid(userJid),
+        amount: Number(bid.amount),
+        at: Number(bid.at) || 0,
+        escrowed: bid.escrowed === true
+      })
+    }
+  }
+
+  for (const session of orphaned.values()) {
+    settleAuctionSession(db, session, now, { replaceSession: false })
+  }
+  return orphaned.size > 0
+}
+
 function addAuctionHistory(state, entry) {
   state.history.unshift(entry)
   state.history.length = Math.min(state.history.length, AUCTION_HISTORY_LIMIT)
@@ -76,8 +154,8 @@ function addAuctionHistory(state, entry) {
   state.news.length = Math.min(state.news.length, AUCTION_NEWS_LIMIT)
 }
 
-function settleAuctionSession(db, session, now = Date.now()) {
-  const state = db.data.auctionHouse
+function settleAuctionSession(db, session, now = Date.now(), { replaceSession = true } = {}) {
+  const state = db.data.auctionHouse || (db.data.auctionHouse = { history: [], news: [] })
   if (session.settled) return
   if (!Array.isArray(state.history)) state.history = []
   if (!Array.isArray(state.news)) state.news = []
@@ -159,11 +237,46 @@ function settleAuctionSession(db, session, now = Date.now()) {
     }
   }
 
-  db.data.auctionHouse = {
-    ...state,
-    ...makeAuctionSession(now),
-    history: state.history,
-    news: state.news
+  if (replaceSession) {
+    db.data.auctionHouse = {
+      ...state,
+      ...makeAuctionSession(now),
+      history: state.history,
+      news: state.news
+    }
+  }
+}
+
+export async function finishAuctionNow() {
+  const db = loadDB()
+  const now = Date.now()
+  const storedSession = db.data.auctionHouse
+  const storedItemIds = Array.isArray(storedSession?.itemIds) ? storedSession.itemIds : []
+  const storedSessionValid = storedItemIds.length === AUCTION_ITEM_LIMIT &&
+    new Set(storedItemIds).size === AUCTION_ITEM_LIMIT &&
+    storedItemIds.every(id => AUCTION_ITEMS.some(item => item.id === id))
+
+  if (storedSessionValid && Number(storedSession.endsAt) <= now) {
+    const nextSession = await getAuctionSession(db, now)
+    return {
+      alreadyEnded: true,
+      results: nextSession.news.filter(entry => Number(entry.endedAt) === now),
+      nextSession
+    }
+  }
+
+  const session = await getAuctionSession(db, now)
+  const endedAt = Date.now()
+
+  restoreAuctionBids(db, session)
+  settleAuctionSession(db, session, endedAt)
+  scheduleAuctionClose(db.data.auctionHouse.endsAt)
+  await persistAuctionDB()
+
+  return {
+    alreadyEnded: false,
+    results: db.data.auctionHouse.news.filter(entry => Number(entry.endedAt) === endedAt),
+    nextSession: db.data.auctionHouse
   }
 }
 
@@ -182,6 +295,7 @@ function scheduleAuctionClose(endsAt) {
       if (db.data.auctionHouse?.endsAt) scheduleAuctionClose(db.data.auctionHouse.endsAt)
     } catch (error) {
       console.error('[auction-house] Gagal menyelesaikan lelang otomatis:', error)
+      scheduleAuctionClose(Date.now() + 60_000)
     }
   }, delay)
   auctionTimer.unref?.()
@@ -202,8 +316,9 @@ async function getAuctionSession(db, now = Date.now()) {
     session = data.auctionHouse
     changed = true
   }
+  if (settleOrphanedAuctionBids(db, now)) changed = true
 
-  const currentItemIds = Array.isArray(session?.itemIds) ? session.itemIds : []
+  let currentItemIds = Array.isArray(session?.itemIds) ? session.itemIds : []
   const currentSessionValid = Number.isFinite(Number(session?.endsAt)) &&
     Number(session.endsAt) > now &&
     currentItemIds.length === AUCTION_ITEM_LIMIT &&
@@ -211,6 +326,22 @@ async function getAuctionSession(db, now = Date.now()) {
     currentItemIds.every(id => AUCTION_ITEMS.some(item => item.id === id))
 
   if (!currentSessionValid) {
+    const recovered = recoverAuctionSession(db, session, now)
+    if (recovered) {
+      session = recovered
+      data.auctionHouse = session
+      changed = true
+      currentItemIds = session.itemIds
+    }
+  }
+
+  const recoveredSessionValid = Number.isFinite(Number(session?.endsAt)) &&
+    Number(session.endsAt) > now &&
+    currentItemIds.length === AUCTION_ITEM_LIMIT &&
+    new Set(currentItemIds).size === AUCTION_ITEM_LIMIT &&
+    currentItemIds.every(id => AUCTION_ITEMS.some(item => item.id === id))
+
+  if (!recoveredSessionValid) {
     const history = Array.isArray(session?.history) ? session.history : []
     const news = Array.isArray(session?.news) ? session.news : []
     session = { ...makeAuctionSession(now), history, news }
@@ -343,8 +474,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `│ 📖 *PANDUAN LELANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Lima item koleksi dilelang bersama selama 5 jam dan daftar ini sama di semua grup.\n` +
-      `> ↳ Harga yang tertera adalah bid minimum. Pemenang ditentukan oleh bid tertinggi saat waktu habis.\n` +
-      `> ↳ Bid perlu dikonfirmasi. Jika nominal tidak ditulis, bot akan menaikkan bid tertinggi (atau bid minimum) sebesar Rp 500.000.\n` +
+      `> ↳ Bid minimum pembuka adalah setengah harga asli item. Bid perlu dikonfirmasi; bid berikutnya tanpa nominal naik Rp 500.000 dari bid tertinggi.\n` +
       `> ↳ Saldo bid ditahan saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
       `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku.\n\n` +
       `📌 *INFORMASI*\n` +
@@ -364,6 +494,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ ${prefix}ah info <nomor/nama> — detail item lelang\n` +
       `> ↳ ${prefix}ah bid <nomor/nama> [nominal] — ajukan bid, lalu konfirmasi\n` +
       `> ↳ ${prefix}ah bid konfirmasi — konfirmasi bid yang tertunda\n` +
+      `> ↳ ${prefix}ah konfirmasi — alias untuk konfirmasi bid\n` +
       `> ↳ ${prefix}ah info — lihat bid yang sedang kamu ikuti\n` +
       `> ↳ ${prefix}ah vault — lihat hadiah lelang yang bisa diklaim\n` +
       `> ↳ ${prefix}ah claim <nomor/nama> — klaim hadiah ke koleksi/rumah\n` +
@@ -457,7 +588,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         const leading = highest && Number(highest.amount) === Number(bid.amount) && normalizeJid(highest.jid) === jid
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
           `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
-          `> ↳ Bid tertinggi: ${highest ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : money(item.price)}`
+          `> ↳ Bid tertinggi: ${highest ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : 'Belum ada bid'}`
       }).join('\n\n') : '> ↳ Kamu belum mengikuti bid aktif.'}\n\n` +
       `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
       `─━━━━━━━━━━━━━━─`
@@ -469,17 +600,21 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╭─❏「 🔨 AUCTION HOUSE 」❏\n` +
       `│ 🔨 *LELANG BERSAMA* • ${BANK_TIERS[Number(rpg.bankTier)]?.color || BANK_TIERS[0].color} ${BANK_TIERS[Number(rpg.bankTier)]?.name || BANK_TIERS[0].name}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `📖 *Cerita Auction House*\n` +
-      `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh grup berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
+
+      `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh penjuru dunia berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
       `${offers.map((item, index) => {
         const highest = getHighestBid(session, item.id)
         const leader = highest
           ? `${money(highest.amount)} • ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}`
           : 'Belum ada bid'
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
-          `> ↳ Bid minimum: ${money(item.price)}\n` +
+          `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
           `> ↳ Tertinggi: ${leader}`
       }).join('\n\n')}\n\n` +
+      `${session.news.length ? `🏁 *HASIL LELANG TERAKHIR*\n` +
+        `${session.news.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
+          `> ${entry.emoji} ${entry.itemName} — ${entry.winnerName} (${money(entry.amount)})`
+        ).join('\n')}\n\n` : ''}` +
       `⏳ Lelang berakhir dalam: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
       `📌 *INFO*\n` +
       `> ↳ Bid: ${prefix}ah bid <nomor/nama> [nominal]\n` +
@@ -489,8 +624,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     )
   }
 
-  if (mode === 'bid') {
-    const action = String(tokens[1] || '').toLowerCase()
+  if (mode === 'bid' || ['confirm', 'konfirmasi', 'ya'].includes(mode)) {
+    const action = mode === 'bid' ? String(tokens[1] || '').toLowerCase() : mode
     if (action === 'info') {
       const myBids = offers.map((item, index) => ({
         item,
@@ -508,7 +643,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
           const leading = highest && Number(highest.amount) === Number(bid.amount) && normalizeJid(highest.jid) === jid
           return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
             `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
-            `> ↳ Bid tertinggi: ${highest ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : money(item.price)}`
+            `> ↳ Bid tertinggi: ${highest ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : 'Belum ada bid'}`
         }).join('\n\n') : '> ↳ Kamu belum mengikuti bid aktif.'}\n\n` +
         `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
         `─━━━━━━━━━━━━━━─`
@@ -534,8 +669,9 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         return m.reply('❌ Item lelang tidak lagi tersedia. Ajukan bid baru pada sesi aktif.')
       }
       const highest = getHighestBid(session, item.id)
-      const currentFloor = Math.max(item.price, Number(highest?.amount) || 0)
-      if (pending.amount < item.price || pending.amount <= Number(highest?.amount || 0)) {
+      const minimumBid = getMinimumBid(item)
+      const currentFloor = Math.max(minimumBid, Number(highest?.amount) || 0)
+      if (pending.amount < minimumBid || pending.amount <= Number(highest?.amount || 0)) {
         delete session.pendingConfirmations[jid]
         await persistAuctionDB()
         return m.reply(
@@ -568,6 +704,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         amount: pending.amount,
         at: Date.now(),
         endsAt: session.endsAt,
+        itemIds: [...session.itemIds],
         escrowed: true
       }
       delete session.pendingConfirmations[jid]
@@ -598,10 +735,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     if (rpg.kartuBeku) return m.reply('❌ Kartu bank sedang beku. Lunasi tagihan bulanan sebelum melakukan penawaran.')
 
     const highest = getHighestBid(session, item.id)
-    const currentFloor = Math.max(item.price, Number(highest?.amount) || 0)
-    if (amount === null) amount = currentFloor + 500_000
-    if (!Number.isSafeInteger(amount) || amount < item.price || amount <= Number(highest?.amount || 0)) {
-      return m.reply(`❌ Bid harus lebih tinggi dari bid tertinggi dan minimal ${money(item.price)}. Bid minimum saat ini: ${money(currentFloor + 1)}.`)
+    const minimumBid = getMinimumBid(item)
+    const currentFloor = Math.max(minimumBid, Number(highest?.amount) || 0)
+    if (amount === null) amount = highest ? currentFloor + 500_000 : minimumBid
+    if (!Number.isSafeInteger(amount) || amount < minimumBid || amount <= Number(highest?.amount || 0)) {
+      return m.reply(`❌ Bid harus minimal ${money(minimumBid)} dan lebih tinggi dari bid tertinggi. Bid minimum saat ini: ${money(Math.max(minimumBid, currentFloor + (highest ? 1 : 0)))}.`)
     }
     const balance = Number(rpg.bank) || 0
     const heldAmount = (Array.isArray(session.bids[item.id]) ? session.bids[item.id] : [])
@@ -622,7 +760,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `⚠️ *KONFIRMASI BID*\n` +
       `> ↳ Item: ${item.emoji} ${item.name}\n` +
       `> ↳ Penawaran: ${money(amount)}\n` +
-      `> ↳ Bid tertinggi saat ini: ${highest ? money(highest.amount) : money(item.price)}\n` +
+      `> ↳ Bid tertinggi saat ini: ${highest ? money(highest.amount) : 'Belum ada bid'}\n` +
       `> ↳ Saldo belum ditahan sebelum konfirmasi. Setelah dikonfirmasi, saldo ditahan dan dikembalikan jika kamu kalah.\n\n` +
       `Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.`
     )
@@ -637,7 +775,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `│ ${item.emoji} *${item.name}*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Deskripsi: ${item.description}\n` +
-      `> ↳ Bid minimum: ${money(item.price)}\n` +
+      `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
       `> ↳ Bid tertinggi: ${highest ? money(highest.amount) : 'Belum ada bid'}\n` +
       `> ↳ Pemimpin bid: ${highest ? db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0] : '-'}\n` +
       `> ↳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +

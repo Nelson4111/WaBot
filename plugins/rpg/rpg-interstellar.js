@@ -23,9 +23,10 @@ function getOwnedItems(rpg) {
     .filter(item => item.quantity > 0)
 }
 
-function formatInventory(items, prefix) {
+function formatInventory(items, prefix, stellarCredit) {
   if (!items.length) {
     return `╭─❏「 🎒 INTERSTELLAR INVENTORY 」❏\n` +
+      `│ 💠 Stellar Credit: ${stellarCredit.toLocaleString()}\n` +
       `│ Inventory antarbintangmu masih kosong.\n` +
       `│ Gunakan *${prefix}explore* untuk mencari item.\n` +
       `╰─━━━━━━━━━━━━━━─`
@@ -33,8 +34,9 @@ function formatInventory(items, prefix) {
 
   return `╭─❏「 🎒 INTERSTELLAR INVENTORY 」❏\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
+    `💠 Stellar Credit: ${stellarCredit.toLocaleString()}\n\n` +
     items.map((item, index) =>
-      `> ${index + 1}. ${item.name}`
+      `> ${index + 1}. ${item.name} ×${item.quantity}`
     ).join('\n\n') +
     `\n\n💡 Jual dengan *${prefix}int sell <all/nomor/nama item>*.`
 }
@@ -44,7 +46,11 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   const prefix = usedPrefix || '.'
   const root = String(command || '').toLowerCase()
   const args = String(text || '').trim().split(/\s+/).filter(Boolean)
-  const mode = root === 'invst' ? 'inventory' : String(args.shift() || '').toLowerCase()
+  const mode = root === 'invst'
+    ? 'inventory'
+    : ['intercred', 'isc', 'interstellarcredit'].includes(root)
+      ? 'credit'
+      : String(args.shift() || '').toLowerCase()
 
   if (mode === 'guide') {
     return m.reply(
@@ -54,9 +60,13 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `> ↳ Gunakan *${prefix}explore* untuk mengunjungi planet dan menemukan item antarbintang.\n` +
       `> ↳ Item temuan masuk ke inventory Interstellar dan bisa ditukar menjadi Stellar Credit.\n` +
       `> ↳ Planet yang dikunjungi mendapat nomor dimensi acak; daftar planet tidak menampilkan dimensi.\n\n` +
+      `> ↳ Cek saldo: *${prefix}intercred* / *${prefix}isc* / *${prefix}interstellarcredit*.\n` +
+      `> ↳ Gift: tag dengan *${prefix}int gift sc @tag <nominal>* atau reply dengan *${prefix}int gift sc <nominal>*.\n\n` +
       `📌 *COMMAND*\n` +
       `> ↳ *${prefix}int* — pusat Interstellar\n` +
       `> ↳ *${prefix}invst* — cek inventory antarbintang\n` +
+      `> ↳ *${prefix}intercred* — cek saldo Stellar Credit\n` +
+      `> ↳ *${prefix}int gift sc/stellar/credit <tag/reply> <nominal>* — kirim Stellar Credit\n` +
       `> ↳ *${prefix}int sell <all/nomor/nama item>* — jual item\n` +
       `> ↳ *${prefix}int planet* — daftar planet\n` +
       `> ↳ *${prefix}int top* — leaderboard Stellar Credit\n` +
@@ -72,6 +82,8 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ *${prefix}explore* — jelajahi planet dan cari item\n` +
       `> ↳ *${prefix}invst* — lihat inventory item Interstellar\n` +
+      `> ↳ *${prefix}intercred* — cek saldo Stellar Credit\n` +
+      `> ↳ *${prefix}int gift sc/stellar/credit <tag/reply> <nominal>* — kirim Stellar Credit\n` +
       `> ↳ *${prefix}int sell all* — jual semua item\n` +
       `> ↳ *${prefix}int sell <nomor/nama item>* — jual item tertentu\n` +
       `> ↳ *${prefix}int planet* — lihat daftar planet\n` +
@@ -124,7 +136,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
     )
   }
 
-  if (!['', 'inventory', 'sell'].includes(mode)) {
+  if (!['', 'inventory', 'sell', 'credit', 'gift'].includes(mode)) {
     return m.reply(`Subcommand tidak dikenal. Ketik *${prefix}int command* untuk melihat panduan.`)
   }
 
@@ -137,6 +149,8 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `> ↳ Gunakan *${prefix}explore* untuk memulai penjelajahan.\n\n` +
       `📌 *MENU*\n` +
       `> ↳ *${prefix}invst* — inventory antarbintang\n` +
+      `> ↳ *${prefix}intercred* — cek saldo Stellar Credit\n` +
+      `> ↳ *${prefix}int gift sc/stellar/credit <tag/reply> <nominal>* — kirim Stellar Credit\n` +
       `> ↳ *${prefix}int sell <all/nomor/nama>* — jual item\n` +
       `> ↳ *${prefix}int planet* — daftar planet\n` +
       `> ↳ *${prefix}int top* — leaderboard Stellar Credit\n` +
@@ -156,7 +170,50 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   const stellarCredit = Number(rpg.stellarCredit) || 0
 
   if (mode === 'inventory') {
-    return m.reply(formatInventory(items, prefix))
+    return m.reply(formatInventory(items, prefix, stellarCredit))
+  }
+
+  if (mode === 'credit') {
+    return m.reply(`💠 Stellar Credit kamu: *${stellarCredit.toLocaleString()}*`)
+  }
+
+  if (mode === 'gift') {
+    const giftArgs = args.map(arg => arg.trim())
+    const creditAliases = ['sc', 'stellar', 'credit']
+    if (!creditAliases.includes(String(giftArgs[0] || '').toLowerCase())) {
+      return m.reply(`Format: *${prefix}int gift <sc/stellar/credit> <tag/reply> <nominal>*`)
+    }
+
+    const target = m.mentionedJid?.[0] || m.quoted?.sender
+    const amountInput = m.mentionedJid?.length
+      ? giftArgs.slice(2).find(arg => !arg.startsWith('@'))
+      : m.quoted
+        ? giftArgs[1]
+        : giftArgs[2]
+    const amount = Number(amountInput)
+    if (!target || !Number.isSafeInteger(amount) || amount < 1) {
+      return m.reply(
+        `Format:\n` +
+        `> Tag: *${prefix}int gift sc @tag <nominal>*\n` +
+        `> Reply: *${prefix}int gift sc <nominal>*`
+      )
+    }
+    if (target === m.sender) return m.reply('❌ Tidak bisa mengirim Stellar Credit ke diri sendiri.')
+    const targetAccount = getUserRPG(db, target)
+    if (!targetAccount?.rpg) return m.reply('❌ Target belum memiliki data RPG.')
+    if (stellarCredit < amount) return m.reply('❌ Stellar Credit kamu tidak cukup.')
+
+    rpg.stellarCredit = stellarCredit - amount
+    targetAccount.rpg.stellarCredit = (Number(targetAccount.rpg.stellarCredit) || 0) + amount
+    await saveDB(db)
+    return m.reply(
+      `╭─❏「 💠 STELLAR CREDIT GIFT 」❏\n` +
+      `│ Berhasil mengirim *${amount.toLocaleString()} Stellar Credit* ke @${target.split('@')[0]}.\n` +
+      `│ Saldo kamu: ${rpg.stellarCredit.toLocaleString()} 💠\n` +
+      `╰─━━━━━━━━━━━━━━─`,
+      null,
+      { mentions: [target] }
+    )
   }
 
   const target = args.join(' ').trim()
@@ -206,9 +263,9 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   )
 }
 
-handler.help = ['interstellar', 'int', 'invst']
+handler.help = ['interstellar', 'int', 'invst', 'intercred', 'isc', 'interstellarcredit']
 handler.tags = ['rpg']
-handler.command = /^(interstellar|int|invst)$/i
+handler.command = /^(interstellar|int|invst|intercred|isc|interstellarcredit)$/i
 handler.group = true
 
 export default handler

@@ -3,7 +3,7 @@ import { ensurePrisonCell, EXCLUSIVE_JAIL_BLOCKED_COMMANDS, getRandomPrisonCell,
 import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { markPatrolRelease, recordEscapeCrime } from '../../lib/crimeHelper.js'
-import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
+import { KIDNAP_ESCAPE_STORIES, RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
 import {
     dialogVisitNapi,
     dialogVisitPengunjung,
@@ -44,6 +44,7 @@ const formatTime = (ms) => {
     if(menit > 0) return `${menit}m ${detik}d`
     return `${detik}d`
 }
+const pickKidnapEscapeStory = () => KIDNAP_ESCAPE_STORIES[Math.floor(Math.random() * KIDNAP_ESCAPE_STORIES.length)]
 
 let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
@@ -236,15 +237,17 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
         const now = Date.now()
         if (now >= Number(rpg.kidnappedUntil)) {
+            const story = pickKidnapEscapeStory()
             clearKidnapState(rpg)
             await saveDB(wdb)
-            return m.reply('✅ Masa penculikan sudah habis. Kamu bebas.')
+            return m.reply(`${story} Masa penculikanmu sudah habis; kamu bebas.`)
         }
         rpg.kidnapLastActivityAt = now
         rpg.kidnappedUntil = now + RPG_CRIME_ACTIONS.culik.kidnapDuration
 
         const attempt = rpg.kidnapEscapeAttempt
         if (attempt && now >= Number(attempt.expiresAt)) {
+            const story = pickKidnapEscapeStory()
             clearKidnapState(rpg)
             await saveDB(wdb)
             return conn.reply(
@@ -252,7 +255,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                 `╭─❏「 🏃 BERHASIL KABUR 」❏\n` +
                 `│ 👤 Korban: ${playerLabel(m.sender)}\n` +
                 `╰─━━━━━━━━━━━━━━─\n\n` +
-                `Penculik tidak merespons dalam 5 menit. Kamu berhasil melarikan diri. Kabur dari penculikan tidak menambah poin buronan.`,
+                `${story} Penculik tidak sempat merespons dalam 5 menit. Kamu bebas tanpa mendapat poin buronan.`,
                 m,
                 { mentions: playerMentions([m.sender]) }
             )
@@ -276,13 +279,15 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         rpg.kidnapEscapeCooldownAt = now
         rpg.kidnapEscapeAttempt = {
             startedAt: now,
-            expiresAt: now + RPG_CRIME_ACTIONS.culik.escapeWindow
+            expiresAt: now + RPG_CRIME_ACTIONS.culik.escapeWindow,
+            chat: m.chat
         }
         await saveDB(wdb)
         const attemptChat = m.chat
         const escapeTimer = setTimeout(async () => {
             const activeRPG = getRPG(m.sender)
             if (Number(activeRPG?.kidnapEscapeAttempt?.startedAt) !== now) return
+            const story = pickKidnapEscapeStory()
             clearKidnapState(activeRPG)
             await saveDB(wdb)
             try {
@@ -291,7 +296,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
                     `╭─❏「 🏃 BERHASIL KABUR 」❏\n` +
                     `│ 👤 Korban: ${playerLabel(m.sender)}\n` +
                     `╰─━━━━━━━━━━━━━━─\n\n` +
-                    `Penculik tidak merespons dalam 5 menit. Kamu berhasil melarikan diri. Kabur dari penculikan tidak menambah poin buronan.`,
+                    `${story} Penculik tidak sempat merespons dalam 5 menit. Kamu bebas tanpa mendapat poin buronan.`,
                     null,
                     { mentions: playerMentions([m.sender]) }
                 )
@@ -314,7 +319,6 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         if (!targetJid) return m.reply('❌ Tag atau reply tahanan yang sedang berusaha kabur.')
         const targetRPG = getRPG(targetJid)
         if (resolveJid(targetRPG?.kidnappedBy) !== resolveJid(m.sender) ||
-            targetRPG?.kasus !== '🕶️ Culik' ||
             !targetRPG.kidnapEscapeAttempt) {
             return m.reply('❌ Target tersebut tidak sedang mencoba kabur dari penculikanmu.')
         }
@@ -333,7 +337,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         await saveDB(wdb)
         return conn.reply(
             m.chat,
-            `🚨 ${playerLabel(m.sender)} berhasil menangkap kembali ${playerLabel(targetJid)} sebelum kabur.\nTahanan masih berada di SEL ${targetRPG.sel}.`,
+            `🚨 ${playerLabel(m.sender)} berhasil menangkap kembali ${playerLabel(targetJid)} sebelum kabur.\nKorban masih tertahan dalam penculikan.`,
             m,
             { mentions: playerMentions([m.sender, targetJid]) }
         )

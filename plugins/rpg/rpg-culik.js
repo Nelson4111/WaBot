@@ -1,9 +1,17 @@
 import { loadDB, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
-import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
+import {
+  KIDNAP_ESCAPE_STORIES,
+  KIDNAP_INACTIVITY_LABEL,
+  KIDNAP_INACTIVITY_STORIES,
+  KIDNAP_INACTIVITY_TIMEOUT,
+  RPG_CRIME_ACTIONS
+} from '../../lib/rpgCrimeData.js'
 import { runRpgCrimeAction } from '../../lib/rpgCrimeAction.js'
 
 const formatMoney = value => `Rp ${Number(value).toLocaleString('id-ID')}`
-const KIDNAP_INACTIVITY_TIMEOUT = RPG_CRIME_ACTIONS.culik.kidnapDuration
+const pickStory = stories => stories[Math.floor(Math.random() * stories.length)]
+const pickInactivityStory = () => pickStory(KIDNAP_INACTIVITY_STORIES)
+  .replace(/\{duration\}/g, KIDNAP_INACTIVITY_LABEL)
 
 async function releaseInactiveKidnappedUsers() {
   const db = loadDB()
@@ -12,9 +20,26 @@ async function releaseInactiveKidnappedUsers() {
   for (const [jid, account] of Object.entries(db.users || {})) {
     const rpg = account?.rpg
     if (!rpg?.kidnappedBy) continue
+    const escapeAttempt = rpg.kidnapEscapeAttempt
+    if (escapeAttempt && now >= Number(escapeAttempt.expiresAt)) {
+      const story = pickStory(KIDNAP_ESCAPE_STORIES)
+      released.push({ jid, chat: escapeAttempt.chat || rpg.kidnapChat, story })
+      delete rpg.kidnappedBy
+      delete rpg.kidnappedAt
+      delete rpg.kidnappedUntil
+      delete rpg.kidnapRansom
+      delete rpg.kidnapLastActivityAt
+      delete rpg.kidnapChat
+      delete rpg.kidnapEscapeAttempt
+      delete rpg.kidnapEscapeCooldownAt
+      rpg.riwayat = Array.isArray(rpg.riwayat) ? rpg.riwayat : []
+      rpg.riwayat.unshift(story)
+      continue
+    }
     const lastActivity = Number(rpg.kidnapLastActivityAt || rpg.kidnappedAt) || 0
     if (now - lastActivity < KIDNAP_INACTIVITY_TIMEOUT) continue
-    released.push({ jid, chat: rpg.kidnapChat })
+    const story = pickInactivityStory()
+    released.push({ jid, chat: rpg.kidnapChat, story })
     delete rpg.kidnappedBy
     delete rpg.kidnappedAt
     delete rpg.kidnappedUntil
@@ -24,17 +49,17 @@ async function releaseInactiveKidnappedUsers() {
     delete rpg.kidnapEscapeAttempt
     delete rpg.kidnapEscapeCooldownAt
     rpg.riwayat = Array.isArray(rpg.riwayat) ? rpg.riwayat : []
-    rpg.riwayat.unshift('🏃 Kabur otomatis setelah 5 jam tanpa respons penculik maupun korban.')
+    rpg.riwayat.unshift(story)
   }
   if (!released.length) return
   await saveDB(db)
   const conn = global.conn
   if (!conn?.reply) return
-  for (const { jid, chat } of released) {
+  for (const { jid, chat, story } of released) {
     if (!chat) continue
     await conn.reply(
       chat,
-      `🏃 @${jid.split('@')[0]} berhasil kabur otomatis setelah penculikan berlangsung 5 jam tanpa respons.`,
+      `${story}\n@${jid.split('@')[0]} sudah bebas dari penculikan.`,
       null,
       { mentions: [jid] }
     )
