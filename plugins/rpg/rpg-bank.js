@@ -536,8 +536,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
     if (topic === 'simpan' || topic === 'tarik') {
       if (service === 'Chat CS') return m.reply('❌ Chat CS menyediakan informasi dasar saja. Bantuan setor/tarik tersedia mulai Chat CS 24jam.')
-      if (topic === 'simpan' && isActiveAuctionBidder(wdb, m.sender)) {
-        return m.reply('❌ Setor bank diblokir selama kamu masih mengikuti lelang aktif. Setoran akan tersedia kembali setelah lelang selesai.')
+      if (topic === 'tarik' && isActiveAuctionBidder(wdb, m.sender)) {
+        return m.reply('❌ Penarikan bank diblokir selama bid kamu masih aktif. Setoran tetap tersedia; penarikan kembali tersedia setelah lelang selesai.')
       }
       const amount = Number(args[2])
       if (!Number.isSafeInteger(amount) || amount <= 0) return m.reply(`Gunakan *.bank cs ${topic} <jumlah>* dengan jumlah rupiah positif.`)
@@ -765,9 +765,6 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
   // SIMPAN + ALIAS "all"
   if (action === 'simpan' || action === 'all') {
-    if (isActiveAuctionBidder(wdb, m.sender)) {
-      return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ SETOR DIBLOKIR\n◈ KAMU SEDANG MENGIKUTI LELANG ◈\n◆ Setor bank tidak tersedia selama bid kamu masih aktif.\n◆ Setoran akan tersedia kembali setelah lelang selesai.\n\n─━━━━━━━━━─`)
-    }
     if (getPlayerCasinoRoom(wdb, m.sender)) {
       return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ SETOR DIBLOKIR\n◈ KAMU SEDANG DI ROOM CASINO ◈\n◆ Saat ikut room, bank tidak bisa menerima deposit.\n◆ Tarik tunai tetap diperbolehkan.\n\n─━━━━━━━━━─`)
     }
@@ -792,6 +789,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
   // TARIK + ALIAS "all"
   if (action === 'tarik') {
+    if (isActiveAuctionBidder(wdb, m.sender)) {
+      return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ PENARIKAN DIBLOKIR\n◈ KAMU SEDANG MENGIKUTI LELANG ◈\n◆ Dana bid ditahan selama lelang berlangsung.\n◆ Setor bank tetap tersedia; penarikan kembali tersedia setelah lelang selesai.\n\n─━━━━━━━━━─`)
+    }
     if (args[1] === 'all') amount = userRPG.bank
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
@@ -926,7 +926,7 @@ handler.all = async function (m, { conn }) {
     || (messageWords[1]?.toLowerCase() === 'cs' && ['simpan', 'tarik'].includes(messageWords[2]?.toLowerCase()))
   )
 
-  if (assistant.autoSetor?.aktif && !changingAutoDeposit && !manualBankTransfer && !isActiveAuctionBidder(wdb, m.sender)) {
+  if (assistant.autoSetor?.aktif && !changingAutoDeposit && !manualBankTransfer) {
     const wallet = Number(wdb.money[m.sender]) || 0
     const threshold = Math.max(1, Number(assistant.autoSetor.ambang) || 1_000_000)
     const room = tier.limit === null ? wallet : Math.max(0, tier.limit - userRPG.bank)

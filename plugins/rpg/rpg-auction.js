@@ -77,37 +77,54 @@ function settleAuctionSession(db, session, now = Date.now()) {
       Number(b.amount) - Number(a.amount) || Number(a.at) - Number(b.at)
     )
 
+    let winner = null
     for (const bid of candidates) {
       const account = getUserRPG(db, bid.jid)
       if (!account?.rpg) continue
       const balance = Number(account.rpg.bank) || 0
-      if (balance < bid.amount) continue
-
-      account.rpg.bank = balance - bid.amount
-      if (!account.rpg.auctionVault || typeof account.rpg.auctionVault !== 'object') {
-        account.rpg.auctionVault = {}
-      }
-      account.rpg.auctionVault[itemId] = (Number(account.rpg.auctionVault[itemId]) || 0) + 1
-      if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
-      account.rpg.riwayat.unshift(`-${money(bid.amount)} Lelang ${item.name}`)
-      account.rpg.riwayat.length = Math.min(account.rpg.riwayat.length, 20)
-
-      const winnerName = db.data.users?.[bid.jid]?.name || bid.jid.split('@')[0]
-      const historyEntry = {
-        itemId,
-        itemName: item.name,
-        emoji: item.emoji,
-        jid: bid.jid,
-        winnerName,
-        amount: bid.amount,
-        endedAt: now
-      }
-      if (!Array.isArray(account.rpg.auctionHistory)) account.rpg.auctionHistory = []
-      account.rpg.auctionHistory.unshift(historyEntry)
-      account.rpg.auctionHistory.length = Math.min(account.rpg.auctionHistory.length, AUCTION_HISTORY_LIMIT)
-      addAuctionHistory(state, historyEntry)
+      if (!bid.escrowed && balance < bid.amount) continue
+      winner = { bid, account }
       break
     }
+
+    for (const [bidderJid, bid] of bestBidByUser) {
+      if (winner && bidderJid === winner.bid.jid) continue
+      if (!bid.escrowed) continue
+      const account = getUserRPG(db, bidderJid)
+      if (account?.rpg) {
+        account.rpg.bank = (Number(account.rpg.bank) || 0) + Number(bid.amount)
+        if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
+        account.rpg.riwayat.unshift(`+${money(bid.amount)} Pengembalian bid ${item.name}`)
+        account.rpg.riwayat.length = Math.min(account.rpg.riwayat.length, 20)
+      }
+    }
+
+    if (!winner) continue
+
+    const { bid, account } = winner
+    if (!bid.escrowed) account.rpg.bank = (Number(account.rpg.bank) || 0) - Number(bid.amount)
+    if (!account.rpg.auctionVault || typeof account.rpg.auctionVault !== 'object') {
+      account.rpg.auctionVault = {}
+    }
+    account.rpg.auctionVault[itemId] = (Number(account.rpg.auctionVault[itemId]) || 0) + 1
+    if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
+    account.rpg.riwayat.unshift(`-${money(bid.amount)} Lelang ${item.name}`)
+    account.rpg.riwayat.length = Math.min(account.rpg.riwayat.length, 20)
+
+    const winnerName = db.data.users?.[bid.jid]?.name || bid.jid.split('@')[0]
+    const historyEntry = {
+      itemId,
+      itemName: item.name,
+      emoji: item.emoji,
+      jid: bid.jid,
+      winnerName,
+      amount: bid.amount,
+      endedAt: now
+    }
+    if (!Array.isArray(account.rpg.auctionHistory)) account.rpg.auctionHistory = []
+    account.rpg.auctionHistory.unshift(historyEntry)
+    account.rpg.auctionHistory.length = Math.min(account.rpg.auctionHistory.length, AUCTION_HISTORY_LIMIT)
+    addAuctionHistory(state, historyEntry)
   }
 
   db.data.auctionHouse = {
@@ -293,7 +310,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ Lima item koleksi dilelang bersama selama 5 jam dan daftar ini sama di semua grup.\n` +
       `> ↳ Harga yang tertera adalah bid minimum. Pemenang ditentukan oleh bid tertinggi saat waktu habis.\n` +
       `> ↳ Bid perlu dikonfirmasi. Jika nominal tidak ditulis, bot akan menaikkan bid tertinggi (atau bid minimum) sebesar Rp 500.000.\n` +
-      `> ↳ Saldo bank pemenang dipotong saat lelang selesai; item masuk ke Auction Vault dan dapat diklaim ke koleksi.\n` +
+      `> ↳ Saldo bid ditahan saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
       `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku.\n\n` +
       `📌 *INFORMASI*\n` +
       `> ↳ Daftar perintah : *${prefix}ah command*\n` +
@@ -476,6 +493,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       }
 
       const item = AUCTION_ITEMS.find(entry => entry.id === pending.itemId)
+      if (!item || !session.itemIds.includes(item.id)) {
+        delete session.pendingConfirmations[jid]
+        await saveDB(db)
+        return m.reply('❌ Item lelang tidak lagi tersedia. Ajukan bid baru pada sesi aktif.')
+      }
       const highest = getHighestBid(session, item.id)
       const currentFloor = Math.max(item.price, Number(highest?.amount) || 0)
       if (pending.amount < item.price || pending.amount <= Number(highest?.amount || 0)) {
@@ -493,21 +515,26 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       }
       if (rpg.kartuBeku) return m.reply('❌ Kartu bank sedang beku. Lunasi tagihan bulanan sebelum melakukan penawaran.')
       const balance = Number(rpg.bank) || 0
-      if (balance < pending.amount) {
+      const existingBids = Array.isArray(session.bids[item.id]) ? session.bids[item.id] : []
+      const previousHeldAmount = existingBids
+        .filter(bid => normalizeJid(bid?.jid) === jid && bid?.escrowed)
+        .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
+      if (balance + previousHeldAmount < pending.amount) {
         delete session.pendingConfirmations[jid]
         await saveDB(db)
         return m.reply(`❌ Saldo bank tidak cukup untuk bid ${money(pending.amount)}. Saldo saat ini: ${money(balance)}.`)
       }
 
-      if (!Array.isArray(session.bids[item.id])) session.bids[item.id] = []
-      session.bids[item.id].push({ jid, amount: pending.amount, at: Date.now() })
+      rpg.bank = balance + previousHeldAmount - pending.amount
+      session.bids[item.id] = existingBids.filter(bid => normalizeJid(bid?.jid) !== jid)
+      session.bids[item.id].push({ jid, amount: pending.amount, at: Date.now(), escrowed: true })
       delete session.pendingConfirmations[jid]
       await saveDB(db)
       return m.reply(
         `✅ *BID DIKONFIRMASI*\n` +
         `> ↳ Item: ${item.emoji} ${item.name}\n` +
         `> ↳ Bid kamu: ${money(pending.amount)}\n` +
-        `> ↳ Saldo belum dipotong; pemotongan dilakukan jika kamu menang saat waktu habis.\n` +
+        `> ↳ Dana sudah ditahan dari saldo bank. Jika kalah, dana dikembalikan saat lelang berakhir.\n` +
         `> ↳ Cek status: *${prefix}ah info*`
       )
     }
@@ -535,7 +562,10 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       return m.reply(`❌ Bid harus lebih tinggi dari bid tertinggi dan minimal ${money(item.price)}. Bid minimum saat ini: ${money(currentFloor + 1)}.`)
     }
     const balance = Number(rpg.bank) || 0
-    if (balance < amount) {
+    const heldAmount = (Array.isArray(session.bids[item.id]) ? session.bids[item.id] : [])
+      .filter(bid => normalizeJid(bid?.jid) === jid && bid?.escrowed)
+      .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
+    if (balance + heldAmount < amount) {
       return m.reply(`❌ Saldo bank tidak cukup.\n> ↳ Bid: ${money(amount)}\n> ↳ Saldo: ${money(balance)}`)
     }
 
@@ -551,12 +581,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ Item: ${item.emoji} ${item.name}\n` +
       `> ↳ Penawaran: ${money(amount)}\n` +
       `> ↳ Bid tertinggi saat ini: ${highest ? money(highest.amount) : money(item.price)}\n` +
-      `> ↳ Saldo tidak dipotong sekarang. Jika menang, saldo bank dipotong saat lelang berakhir.\n\n` +
+      `> ↳ Saldo belum ditahan sebelum konfirmasi. Setelah dikonfirmasi, saldo ditahan dan dikembalikan jika kamu kalah.\n\n` +
       `Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.`
     )
   }
 
-  if (mode === 'info') {
+  if (mode === 'info' && tokens[1]) {
     const item = findAuctionItem(tokens.slice(1).join(' '), offers)
     if (!item) return m.reply(`❌ Item tidak ada di sesi lelang ini. Gunakan *${prefix}ah list* atau *${prefix}ah info*.`)
     const highest = getHighestBid(session, item.id)
