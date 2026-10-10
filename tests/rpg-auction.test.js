@@ -77,10 +77,12 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     await runAuction(firstJid, `bid ${item.id} ${item.price}`)
     await runAuction(firstJid, 'bid konfirmasi')
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - item.price)
+    delete session.bids[item.id]
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Bid tertinggi/)
     assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${item.price.toLocaleString('id-ID')}`))
 
+    delete session.bids[item.id]
     const depositMessage = makeMessage(firstJid)
     await bankHandler(depositMessage.m, { text: 'simpan 1000', usedPrefix: '.', command: 'bank' })
     assert.match(depositMessage.replies.at(-1), /TRANSAKSI BERHASIL/)
@@ -92,6 +94,9 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     await runAuction(secondJid, `bid ${item.id} ${competingAmount}`)
     await runAuction(secondJid, 'bid konfirmasi')
     session.endsAt = Date.now() - 1
+    for (const jid of [firstJid, secondJid]) {
+      global.db.data.users[jid].rpg.auctionBids[item.id].endsAt = session.endsAt
+    }
     await runAuction(firstJid, 'list')
 
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance + 1_000)
