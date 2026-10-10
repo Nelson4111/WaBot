@@ -116,9 +116,9 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   const rpgBar = createProgressBar(rpgPercent, 10)
 
   // 5. Data Hubungan & Asmara (Mendukung Multi-Pasangan Real & Waifu Virtual 2D)
-  let mentions = [who]
-  let hubunganCard = ''
   const rel = getUserRelationship(who)
+  let mentions = rel.pasanganHidden ? [] : [who]
+  let hubunganCard = ''
 
   if (rel.pasanganHidden) {
     hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
@@ -130,13 +130,18 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
     let partnerInfo = ''
     if (rel.realPartners.length === 1) {
       let p = rel.realPartners[0]
-      let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
-      let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
-      let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
-      let rank = getIntimacyRank(p.poinBucin || 0)
-      partnerInfo = `*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *@${partnerNum}* (${dur})\n*┆*    ◈ ᴄɪɴᴄɪɴ: *${ring}* | ᰔ: *${toSmallNum(p.poinBucin || 0)} Poin* (${rank.title})`
+      if (p.isHidden) {
+        partnerInfo = '*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: 🔒 DIKUNCI'
+      } else {
+        let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
+        let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
+        let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
+        let rank = getIntimacyRank(p.poinBucin || 0)
+        partnerInfo = `*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *@${partnerNum}* (${dur})\n*┆*    ◈ ᴄɪɴᴄɪɴ: *${ring}* | ᰔ: *${toSmallNum(p.poinBucin || 0)} Poin* (${rank.title})`
+      }
     } else {
       partnerInfo = `*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *${toSmallNum(rel.realPartners.length)} Pasangan*\n` + rel.realPartners.map((p, i) => {
+        if (p.isHidden) return `*┆*    ⟡ [${toSmallNum(i + 1)}] 🔒 DIKUNCI`
         let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
         return `*┆*    ⟡ [${toSmallNum(i + 1)}] *@${partnerNum}*`
       }).join('\n')
@@ -157,20 +162,27 @@ ${partnerInfo}
     mentions.push(...rel.mentions)
     if (rel.realPartners.length === 1) {
       let p = rel.realPartners[0]
-      let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
-      let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
-      let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
-      let rank = getIntimacyRank(p.poinBucin || 0)
-
-      hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+      if (p.isHidden) {
+        hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
+*┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
+*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : 🔒 DIKUNCI
+*╰──────────────────────*`
+      } else {
+        let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
+        let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
+        let ring = normalizeRingName(p.cincin || user.pasanganCincin || 'Silver Ring')
+        let rank = getIntimacyRank(p.poinBucin || 0)
+        hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
 *┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *@${partnerNum}*
 *┆* ✦ ᴅᴜʀᴀꜱɪ    : *${dur}*
 *┆* ◈ ᴄɪɴᴄɪɴ    : *${ring}*
 *┆* ᰔ ᴋᴇɪɴᴛɪᴍᴀɴ : *${toSmallNum(p.poinBucin || 0)} Poin* (${rank.title})
 *╰──────────────────────*`
+      }
     } else {
       let spouseList = rel.realPartners.map((p, i) => {
+        if (p.isHidden) return `*┆*   ⟡ [${toSmallNum(i + 1)}] 🔒 DIKUNCI`
         let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
         let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
         let ring = normalizeRingName(p.cincin || 'Silver Ring')
