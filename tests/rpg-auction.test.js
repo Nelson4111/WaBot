@@ -65,6 +65,32 @@ test('auction command initializes its session and displays the command guide', a
   }
 })
 
+test('a bidder addressed by LID sees their active bid and leads by their real name', async () => {
+  const previousDb = global.db
+  const lid = '123456789012345@lid'
+  global.db = makeDb()
+  global.db.data.lids = { [lid]: firstJid }
+
+  try {
+    await runAuction(firstJid, 'list')
+    const session = global.db.data.auctionHouse
+    const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
+    const amount = item.price + 500_000
+
+    await runAuction(lid, `bid ${item.id} ${amount}`)
+    await runAuction(lid, 'bid konfirmasi')
+
+    const info = await runAuction(lid, 'info')
+    assert.match(info, /Penawar Satu/)
+    assert.doesNotMatch(info, /belum mengikuti bid aktif/i)
+    const listing = await runAuction(lid, 'list')
+    assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${amount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
 test('confirmed bids are shown, held in the bank, and settled with loser refunds', async () => {
   const previousDb = global.db
   global.db = makeDb()
@@ -89,7 +115,8 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Bid tertinggi/)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Pemimpin bid: Penawar Satu/)
-    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${firstAmount.toLocaleString('id-ID')} • Penawar Satu`))
+    const firstListing = await runAuction(firstJid, 'list')
+    assert.match(firstListing, new RegExp(`Bid Tertinggi : Rp ${firstAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
 
     const depositMessage = makeMessage(firstJid)
     await bankHandler(depositMessage.m, { text: 'simpan 1000', usedPrefix: '.', command: 'bank' })
@@ -102,6 +129,9 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.match(await runAuction(secondJid, `bid ${item.id} ${firstAmount}`), /Bid harus lebih tinggi/)
     await runAuction(secondJid, `bid ${item.id} ${competingAmount}`)
     await runAuction(secondJid, 'bid konfirmasi')
+    assert.match(await runAuction(secondJid, 'info'), /Bid kamu:/)
+    const leadingListing = await runAuction(secondJid, 'list')
+    assert.match(leadingListing, new RegExp(`Bid Tertinggi : Rp ${competingAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Dua`))
     session.endsAt = Date.now() - 1
     for (const jid of [firstJid, secondJid]) {
       global.db.data.users[jid].rpg.auctionBids[item.id].endsAt = session.endsAt
