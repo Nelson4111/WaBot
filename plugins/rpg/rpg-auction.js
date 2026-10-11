@@ -116,7 +116,7 @@ function getAuctionUserJids(db, jid, account) {
       user?.rpg === account?.rpg || normalizeJid(userJid) === normalizedSenderJid
     )
     .map(([userJid]) => normalizeJid(userJid))
-  return [...new Set([...accountJids, normalizedSenderJid].filter(Boolean))]
+  return [...new Set([normalizedSenderJid, ...accountJids].filter(Boolean))]
 }
 
 function getAuctionRivalName(session, itemId) {
@@ -553,7 +553,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 
   const rpg = account.rpg
   const userJids = getAuctionUserJids(db, m.sender, account)
-  const jid = userJids[0] || normalizeJid(m.sender)
+  const jid = normalizeJid(m.sender)
   const tokens = String(text).trim().split(/\s+/).filter(Boolean)
   const mode = String(tokens[0] || '').toLowerCase()
   const prefix = usedPrefix || '.'
@@ -737,28 +737,29 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   if (mode === 'bid' || ['confirm', 'konfirmasi', 'ya'].includes(mode)) {
     const action = mode === 'bid' ? String(tokens[1] || '').toLowerCase() : mode
     if (['confirm', 'konfirmasi', 'ya'].includes(action)) {
-      const pending = session.pendingConfirmations[jid]
+      const pendingJid = userJids.find(userJid => session.pendingConfirmations[userJid])
+      const pending = pendingJid ? session.pendingConfirmations[pendingJid] : null
       if (!pending || pending.expiresAt <= Date.now()) {
-        delete session.pendingConfirmations[jid]
+        for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply(`❌ Tidak ada konfirmasi bid yang aktif. Ajukan lagi dengan *${prefix}ah bid <nomor/nama> [nominal]*.`)
       }
       if (pending.endsAt !== session.endsAt || session.endsAt <= Date.now()) {
-        delete session.pendingConfirmations[jid]
+        for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply('❌ Waktu lelang sudah berakhir. Bid ini tidak dapat dikonfirmasi.')
       }
 
       const item = AUCTION_ITEMS.find(entry => entry.id === pending.itemId)
       if (!item || !session.itemIds.includes(item.id)) {
-        delete session.pendingConfirmations[jid]
+        for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply('❌ Item lelang tidak lagi tersedia. Ajukan bid baru pada sesi aktif.')
       }
       const highest = getHighestBid(db, session, item.id)
       const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
       if (pending.amount <= currentFloor) {
-        delete session.pendingConfirmations[jid]
+        for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply(
           `❌ Bid tertinggi sudah berubah. Bid minimum sekarang *${money(currentFloor + 1)}*.\n` +
@@ -777,29 +778,37 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         .filter(bid => normalizeJid(bid?.jid) === jid && bid?.escrowed)
         .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
       if (balance + previousHeldAmount < pending.amount) {
-        delete session.pendingConfirmations[jid]
+        for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply(`❌ Saldo bank tidak cukup untuk bid ${money(pending.amount)}. Saldo saat ini: ${money(balance)}.`)
       }
 
       rpg.bank = balance + previousHeldAmount - pending.amount
-      session.bids[item.id] = existingBids.filter(bid => normalizeJid(bid?.jid) !== jid)
-      session.bids[item.id].push({ jid, amount: pending.amount, at: Date.now(), escrowed: true })
+      const confirmedAt = Date.now()
+      session.bids[item.id] = existingBids.filter(bid => !isAuctionUser(bid?.jid, userJids))
+      session.bids[item.id].push({ jid, amount: pending.amount, at: confirmedAt, escrowed: true })
       if (!rpg.auctionBids || typeof rpg.auctionBids !== 'object') rpg.auctionBids = {}
       rpg.auctionBids[item.id] = {
         jid,
         amount: pending.amount,
-        at: Date.now(),
+        at: confirmedAt,
         endsAt: session.endsAt,
         itemIds: [...session.itemIds],
         escrowed: true
       }
-      delete session.pendingConfirmations[jid]
+      for (const userJid of userJids) delete session.pendingConfirmations[userJid]
       await persistAuctionDB()
+      const activeBid = getActiveUserBid(db, session, item.id, userJids, rpg)
+      if (!activeBid || Number(activeBid.amount) !== pending.amount) {
+        throw new Error('[auction-house] Bid terkonfirmasi tidak ditemukan kembali pada sumber status aktif.')
+      }
+      const visibleHighest = getVisibleHighestBid(db, session, item)
+      const leading = isAuctionUser(visibleHighest.jid, userJids)
       return m.reply(
         `✅ *BID DIKONFIRMASI*\n` +
         `> ↳ Item: ${item.emoji} ${item.name}\n` +
-        `> ↳ Bid kamu: ${money(pending.amount)}\n` +
+        `> ↳ Bid kamu: ${money(activeBid.amount)}\n` +
+        `> ↳ Bid tertinggi: ${money(visibleHighest.amount)} oleh ${leading ? 'Kamu' : visibleHighest.jid ? getAuctionBidderName(db, visibleHighest.jid) : '-'}\n` +
         `> ↳ Dana sudah ditahan dari saldo bank. Jika kalah, dana dikembalikan saat lelang berakhir.\n` +
         `> ↳ Cek status: *${prefix}ah info*`
       )
