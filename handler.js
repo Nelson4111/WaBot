@@ -16,7 +16,7 @@ import { botArbitrator } from './lib/botArbitrator.js'
 import { ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncEscapeCrimeCounts } from './lib/crimeHelper.js'
 import { getPatrolCaptureStory, isPatrolExemptCommand, PATROL_RESTRICTED_CRIME_COMMANDS, PATROL_RESTRICTED_RSHIP_ACTIONS } from './lib/patrolHelper.js'
 import { loadDB, saveDB } from './lib/waifuHelper.js'
-import { registerPrisoner } from './lib/prisonHelper.js'
+import { EXCLUSIVE_JAIL_BLOCKED_COMMANDS, registerPrisoner } from './lib/prisonHelper.js'
 import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimit.js'
 import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
@@ -26,14 +26,7 @@ import { BANK_TIERS } from './lib/rpg-bankData.js'
  */
 const { proto } = (await import('@whiskeysockets/baileys')).default
 const isNumber = x => typeof x === 'number' && !isNaN(x)
-const EXCLUSIVE_JAIL_BLOCKED_COMMANDS = new Set([
-    'adventure', 'adv', 'petualang', 'explore',
-    'mining', 'tambang', 'mancing', 'fishing',
-    'kerja', 'work', 'daily', 'panen', 'harvest', 'tanam', 'plant',
-    'kebun', 'ternak', 'peternakan', 'craft', 'forge',
-    'dungeon', 'arena', 'gym', 'mt', 'raid', 'guildwar',
-    'copet', 'begal', 'rampok', 'jarah', 'culik', 'bunuh', 'fitnah'
-])
+const EXCLUSIVE_JAIL_BLOCKED_COMMAND_SET = new Set(EXCLUSIVE_JAIL_BLOCKED_COMMANDS)
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
 const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
 
@@ -844,7 +837,7 @@ async function processMessage(m, chatUpdate) {
                 delete senderRPG.kidnapEscapeAttempt
                 delete senderRPG.kidnapEscapeCooldownAt
                 await saveDB(loadDB())
-            } else if (commandCandidate?.command !== 'kabur') {
+            } else if (commandCandidate && commandCandidate.command !== 'kabur') {
                 await this.reply(
                     m.chat,
                     '🚨 Kamu sedang diculik dan tidak dapat menggunakan command lain. Gunakan *.kabur* untuk mencoba melarikan diri.',
@@ -976,7 +969,7 @@ async function processMessage(m, chatUpdate) {
                         } else {
                             const jailTier = BANK_TIERS[Number(userRPG.bankTier)] || BANK_TIERS[0];
                             const hasExclusiveAccess = jailTier.fasilitas.includes('Akses Eksklusif');
-                            const blockedByExclusiveAccess = EXCLUSIVE_JAIL_BLOCKED_COMMANDS.has(command);
+                            const blockedByExclusiveAccess = EXCLUSIVE_JAIL_BLOCKED_COMMAND_SET.has(command);
                             if (!hasExclusiveAccess || blockedByExclusiveAccess) {
                             let jam = Math.floor(sisa / 3600000);
                             let menit = Math.floor((sisa % 3600000) / 60000);
