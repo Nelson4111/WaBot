@@ -5,7 +5,7 @@ import {
   getSkipCooldownEntries,
   resolveSkipCooldownTarget,
   selectSkipCooldownEntries,
-  SKIPCD_COST_PER_MINUTE
+  SKIPCD_COST_PER_SECOND
 } from '../lib/rpgCooldownSkip.js'
 
 test('skip cooldown target aliases are limited to the supported activities', () => {
@@ -14,7 +14,7 @@ test('skip cooldown target aliases are limited to the supported activities', () 
   assert.equal(resolveSkipCooldownTarget('casino'), null)
 })
 
-test('skip price charges each started minute of remaining cooldown', () => {
+test('skip price charges each started second of remaining cooldown', () => {
   const now = 1_700_000_000_000
   const rpg = { premium: true, lastMining: now - 30_000 }
   const [mining] = selectSkipCooldownEntries(
@@ -23,7 +23,7 @@ test('skip price charges each started minute of remaining cooldown', () => {
   )
 
   assert.equal(mining.remaining, 66_000)
-  assert.equal(mining.cost, SKIPCD_COST_PER_MINUTE * 2)
+  assert.equal(mining.cost, SKIPCD_COST_PER_SECOND * 66)
 })
 
 test('criminal target aggregates active crime cooldowns and clears their timestamps', () => {

@@ -73,9 +73,13 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     await runAuction(firstJid, 'list')
     let session = global.db.data.auctionHouse
     const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
-    const firstAmount = Math.floor(item.price / 2)
+    const firstAmount = item.price + 500_000
     const competingAmount = firstAmount + 500_000
+    const listing = await runAuction(firstJid, 'list')
+    assert.match(listing, new RegExp(`Bid Minimum : Rp ${Math.floor(item.price / 2).toLocaleString('id-ID')}`))
+    assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${item.price.toLocaleString('id-ID')}`))
 
+    assert.match(await runAuction(firstJid, `bid ${item.id} ${item.price}`), /Bid harus lebih tinggi/)
     await runAuction(firstJid, `bid ${item.id}`)
     await runAuction(firstJid, 'konfirmasi')
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - firstAmount)
@@ -92,6 +96,7 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     await bankHandler(withdrawMessage.m, { text: 'tarik 1000', usedPrefix: '.', command: 'bank' })
     assert.match(withdrawMessage.replies.at(-1), /PENARIKAN DIBLOKIR/)
 
+    assert.match(await runAuction(secondJid, `bid ${item.id} ${firstAmount}`), /Bid harus lebih tinggi/)
     await runAuction(secondJid, `bid ${item.id} ${competingAmount}`)
     await runAuction(secondJid, 'bid konfirmasi')
     session.endsAt = Date.now() - 1
@@ -119,7 +124,7 @@ test('a solo confirmed bidder wins when the auction expires', async () => {
     await runAuction(firstJid, 'list')
     const session = global.db.data.auctionHouse
     const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
-    const amount = Math.floor(item.price / 2)
+    const amount = item.price + 500_000
 
     await runAuction(firstJid, `bid ${item.id}`)
     await runAuction(firstJid, 'bid konfirmasi')
@@ -150,7 +155,7 @@ test('owner finish action settles bids immediately and starts the next auction',
     await runAuction(firstJid, 'list')
     const currentSession = global.db.data.auctionHouse
     const item = AUCTION_ITEMS.find(entry => entry.id === currentSession.itemIds[0])
-    const amount = Math.floor(item.price / 2)
+    const amount = item.price + 500_000
 
     await runAuction(firstJid, `bid ${item.id}`)
     await runAuction(firstJid, 'bid konfirmasi')
