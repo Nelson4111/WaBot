@@ -56,7 +56,7 @@ function makeAuctionSession(now = Date.now(), previousItemIds = []) {
 }
 
 function belongsToAuctionSession(bid, session) {
-  if (Number(bid?.endsAt) === Number(session.endsAt)) return true
+  if (Number.isFinite(Number(bid?.endsAt)) && Number(bid.endsAt) === Number(session.endsAt)) return true
   const bidItemIds = Array.isArray(bid?.itemIds) ? bid.itemIds : []
   return bidItemIds.length === session.itemIds.length &&
     new Set(bidItemIds).size === session.itemIds.length &&
@@ -77,7 +77,7 @@ function getAuctionBids(db, session, itemId) {
     if (!belongsToAuctionSession(bid, session) ||
       !Number.isSafeInteger(Number(bid.amount)) ||
       Number(bid.amount) <= 0) continue
-    const jid = normalizeJid(userJid)
+    const jid = normalizeJid(bid.jid || userJid)
     const current = byJid.get(jid)
     const snapshotBid = { jid, amount: Number(bid.amount), at: Number(bid.at) || 0, escrowed: bid.escrowed === true }
     if (!current ||
@@ -109,7 +109,7 @@ function getAuctionBidderName(db, jid) {
 
 function getAuctionUserJids(db, jid, account) {
   const accountJid = Object.entries(db.data.users || {})
-    .find(([, user]) => user === account)?.[0]
+    .find(([, user]) => user?.rpg === account?.rpg)?.[0]
   const normalizedAccountJid = accountJid ? normalizeJid(accountJid) : null
   const normalizedSenderJid = normalizeJid(jid)
   return [...new Set([normalizedAccountJid, normalizedSenderJid].filter(Boolean))]
@@ -121,11 +121,30 @@ function getAuctionRivalName(session, itemId) {
   return AUCTION_BIDDER_NAMES[hash % AUCTION_BIDDER_NAMES.length]
 }
 
-function getActiveUserBid(db, session, itemId, jids) {
+function getActiveUserBid(db, session, itemId, jids, rpg) {
   const normalizedJids = new Set((Array.isArray(jids) ? jids : [jids]).map(normalizeJid))
-  return getAuctionBids(db, session, itemId)
+  const matchingBids = getAuctionBids(db, session, itemId)
     .filter(bid => normalizedJids.has(normalizeJid(bid.jid)))
-    .reduce((highest, bid) => Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
+  const accountEntry = Object.entries(db.data.users || {})
+    .find(([, user]) => user?.rpg === rpg)
+  const accountBid = accountEntry?.[1]?.rpg?.auctionBids?.[itemId]
+  if (belongsToAuctionSession(accountBid, session) &&
+    Number.isSafeInteger(Number(accountBid.amount)) &&
+    Number(accountBid.amount) > 0) {
+    matchingBids.push({
+      jid: normalizeJid(accountBid.jid || accountEntry[0]),
+      amount: Number(accountBid.amount),
+      at: Number(accountBid.at) || 0,
+      escrowed: accountBid.escrowed === true
+    })
+  }
+  return matchingBids.reduce((highest, bid) =>
+    Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
+}
+
+function isAuctionUser(bidJid, userJids) {
+  const normalizedBidJid = normalizeJid(bidJid)
+  return userJids.some(userJid => normalizeJid(userJid) === normalizedBidJid)
 }
 
 function getMinimumBid(item) {
@@ -579,6 +598,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ ${prefix}ah list — daftar item dan bid tertinggi\n` +
       `> ↳ ${prefix}ah info <nomor/nama> — detail item lelang\n` +
       `> ↳ ${prefix}ah bid <nomor/nama> [nominal] — ajukan bid, lalu konfirmasi\n` +
+      `> ↳ ${prefix}ah bid — lihat bid aktif milikmu\n` +
+      `> ↳ ${prefix}ah bid info — alias untuk melihat bid aktif\n` +
       `> ↳ ${prefix}ah bid konfirmasi — konfirmasi bid yang tertunda\n` +
       `> ↳ ${prefix}ah konfirmasi — alias untuk konfirmasi bid\n` +
       `> ↳ ${prefix}ah info — lihat bid yang sedang kamu ikuti\n` +
@@ -657,11 +678,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     )
   }
 
-  if (mode === 'info' && !tokens[1]) {
+  if ((mode === 'info' && !tokens[1]) ||
+    (mode === 'bid' && (!tokens[1] || String(tokens[1]).toLowerCase() === 'info'))) {
     const myBids = offers.map((item, index) => ({
       item,
       index,
-      bid: getActiveUserBid(db, session, item.id, userJids)
+      bid: getActiveUserBid(db, session, item.id, userJids, rpg)
     })).filter(entry => entry.bid)
 
     return m.reply(
@@ -670,7 +692,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${myBids.length ? myBids.map(({ item, index, bid }) => {
         const highest = getVisibleHighestBid(db, session, item)
-        const leading = highest && Number(highest.amount) === Number(bid.amount) && normalizeJid(highest.jid) === jid
+        const leading = highest && Number(highest.amount) === Number(bid.amount) &&
+          isAuctionUser(highest.jid, userJids)
         const leaderName = highest.jid ? getAuctionBidderName(db, highest.jid) : getAuctionRivalName(session, item.id)
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
           `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
@@ -702,7 +725,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `⏳ Lelang berakhir dalam: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
       `📌 *INFO*\n` +
       `> ↳ Bid: ${prefix}ah bid <nomor/nama> [nominal]\n` +
-      `> ↳ Bid aktifmu: ${prefix}ah info\n` +
+      `> ↳ Bid aktifmu: ${prefix}ah info • ${prefix}ah bid\n` +
       `> ↳ Vault hadiah: ${prefix}ah vault • News: ${prefix}ah news\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -710,29 +733,6 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 
   if (mode === 'bid' || ['confirm', 'konfirmasi', 'ya'].includes(mode)) {
     const action = mode === 'bid' ? String(tokens[1] || '').toLowerCase() : mode
-    if (action === 'info') {
-      const myBids = offers.map((item, index) => ({
-        item,
-        index,
-        bid: getActiveUserBid(db, session, item.id, userJids)
-      })).filter(entry => entry.bid)
-
-      return m.reply(
-        `╭─❏「 🔎 BID YANG KAMU IKUTI 」❏\n` +
-        `│ 🔎 *BID AKTIF MILIKMU*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `${myBids.length ? myBids.map(({ item, index, bid }) => {
-          const highest = getVisibleHighestBid(db, session, item)
-          const leading = highest && Number(highest.amount) === Number(bid.amount) && normalizeJid(highest.jid) === jid
-          const leaderName = highest.jid ? getAuctionBidderName(db, highest.jid) : getAuctionRivalName(session, item.id)
-          return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
-            `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
-            `> ↳ Bid tertinggi: ${money(highest.amount)} oleh ${leaderName}`
-        }).join('\n\n') : '> ↳ Kamu belum mengikuti bid aktif.'}\n\n` +
-        `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
     if (['confirm', 'konfirmasi', 'ya'].includes(action)) {
       const pending = session.pendingConfirmations[jid]
       if (!pending || pending.expiresAt <= Date.now()) {
@@ -784,6 +784,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       session.bids[item.id].push({ jid, amount: pending.amount, at: Date.now(), escrowed: true })
       if (!rpg.auctionBids || typeof rpg.auctionBids !== 'object') rpg.auctionBids = {}
       rpg.auctionBids[item.id] = {
+        jid,
         amount: pending.amount,
         at: Date.now(),
         endsAt: session.endsAt,
