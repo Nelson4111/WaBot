@@ -45,11 +45,43 @@ function makeAuctionSession(now = Date.now()) {
   }
 }
 
-function getHighestBid(session, itemId) {
+function getAuctionBids(db, session, itemId) {
+  const byJid = new Map()
   const bids = Array.isArray(session.bids?.[itemId]) ? session.bids[itemId] : []
+  for (const bid of bids) {
+    if (!bid?.jid || !Number.isSafeInteger(Number(bid.amount))) continue
+    const jid = normalizeJid(bid.jid)
+    const current = byJid.get(jid)
+    if (!current || Number(bid.amount) > Number(current.amount)) byJid.set(jid, { ...bid, jid })
+  }
+  for (const [userJid, user] of Object.entries(db.data.users || {})) {
+    const bid = user?.rpg?.auctionBids?.[itemId]
+    if (Number(bid?.endsAt) !== Number(session.endsAt) || !Number.isSafeInteger(Number(bid.amount))) continue
+    const jid = normalizeJid(userJid)
+    const current = byJid.get(jid)
+    if (!current || Number(bid.amount) > Number(current.amount)) {
+      byJid.set(jid, { jid, amount: Number(bid.amount), at: Number(bid.at) || 0, escrowed: bid.escrowed === true })
+    }
+  }
+  return [...byJid.values()]
+}
+
+function getHighestBid(db, session, itemId) {
+  const bids = getAuctionBids(db, session, itemId)
   return bids.reduce((highest, bid) =>
     Number(bid?.amount) > Number(highest?.amount) ? bid : highest, null
   )
+}
+
+function getVisibleHighestBid(db, session, item) {
+  return getHighestBid(db, session, item.id) || { amount: Number(item.price), jid: null }
+}
+
+function getActiveUserBid(db, session, itemId, jid) {
+  const normalizedJid = normalizeJid(jid)
+  return getAuctionBids(db, session, itemId)
+    .filter(bid => normalizeJid(bid.jid) === normalizedJid)
+    .reduce((highest, bid) => Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
 }
 
 function getMinimumBid(item) {
@@ -575,8 +607,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     const myBids = offers.map((item, index) => ({
       item,
       index,
-      bid: (session.bids[item.id] || []).filter(entry => normalizeJid(entry.jid) === jid)
-        .reduce((highest, entry) => Number(entry.amount) > Number(highest?.amount) ? entry : highest, null)
+      bid: getActiveUserBid(db, session, item.id, jid)
     })).filter(entry => entry.bid)
 
     return m.reply(
@@ -584,11 +615,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `│ 🔎 *BID AKTIF MILIKMU*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${myBids.length ? myBids.map(({ item, index, bid }) => {
-        const highest = getHighestBid(session, item.id)
+        const highest = getVisibleHighestBid(db, session, item)
         const leading = highest && Number(highest.amount) === Number(bid.amount) && normalizeJid(highest.jid) === jid
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
           `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
-          `> ↳ Bid tertinggi: ${highest ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : 'Belum ada bid'}`
+          `> ↳ Bid tertinggi: ${highest.jid ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : money(highest.amount)}`
       }).join('\n\n') : '> ↳ Kamu belum mengikuti bid aktif.'}\n\n` +
       `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
       `─━━━━━━━━━━━━━━─`
@@ -603,18 +634,15 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 
       `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh penjuru dunia berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
       `${offers.map((item, index) => {
-        const highest = getHighestBid(session, item.id)
-        const leader = highest
+        const highest = getVisibleHighestBid(db, session, item)
+        const leader = highest.jid
           ? `${money(highest.amount)} • ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}`
-          : 'Belum ada bid'
+          : money(highest.amount)
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
-          `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
-          `> ↳ Tertinggi: ${leader}`
+          `> ↳ Bid Minimum : ${money(getMinimumBid(item))}\n` +
+          `> ↳ Bid Tertinggi : ${leader}`
       }).join('\n\n')}\n\n` +
-      `${session.news.length ? `🏁 *HASIL LELANG TERAKHIR*\n` +
-        `${session.news.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
-          `> ${entry.emoji} ${entry.itemName} — ${entry.winnerName} (${money(entry.amount)})`
-        ).join('\n')}\n\n` : ''}` +
+      
       `⏳ Lelang berakhir dalam: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
       `📌 *INFO*\n` +
       `> ↳ Bid: ${prefix}ah bid <nomor/nama> [nominal]\n` +
@@ -630,8 +658,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const myBids = offers.map((item, index) => ({
         item,
         index,
-        bid: (session.bids[item.id] || []).filter(entry => normalizeJid(entry.jid) === jid)
-          .reduce((highest, entry) => Number(entry.amount) > Number(highest?.amount) ? entry : highest, null)
+        bid: getActiveUserBid(db, session, item.id, jid)
       })).filter(entry => entry.bid)
 
       return m.reply(
@@ -639,11 +666,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         `│ 🔎 *BID AKTIF MILIKMU*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `${myBids.length ? myBids.map(({ item, index, bid }) => {
-          const highest = getHighestBid(session, item.id)
+          const highest = getVisibleHighestBid(db, session, item)
           const leading = highest && Number(highest.amount) === Number(bid.amount) && normalizeJid(highest.jid) === jid
           return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
             `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
-            `> ↳ Bid tertinggi: ${highest ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : 'Belum ada bid'}`
+            `> ↳ Bid tertinggi: ${highest.jid ? `${money(highest.amount)} oleh ${db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0]}` : money(highest.amount)}`
         }).join('\n\n') : '> ↳ Kamu belum mengikuti bid aktif.'}\n\n` +
         `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
         `─━━━━━━━━━━━━━━─`
@@ -668,14 +695,13 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         await persistAuctionDB()
         return m.reply('❌ Item lelang tidak lagi tersedia. Ajukan bid baru pada sesi aktif.')
       }
-      const highest = getHighestBid(session, item.id)
-      const minimumBid = getMinimumBid(item)
-      const currentFloor = Math.max(minimumBid, Number(highest?.amount) || 0)
-      if (pending.amount < minimumBid || pending.amount <= Number(highest?.amount || 0)) {
+      const highest = getHighestBid(db, session, item.id)
+      const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
+      if (pending.amount <= currentFloor) {
         delete session.pendingConfirmations[jid]
         await persistAuctionDB()
         return m.reply(
-          `❌ Bid tertinggi sudah berubah. Bid minimum sekarang *${money(currentFloor)}*.\n` +
+          `❌ Bid tertinggi sudah berubah. Bid minimum sekarang *${money(currentFloor + 1)}*.\n` +
           `Ajukan bid baru melalui *${prefix}ah bid ${item.id}*.`
         )
       }
@@ -734,12 +760,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     }
     if (rpg.kartuBeku) return m.reply('❌ Kartu bank sedang beku. Lunasi tagihan bulanan sebelum melakukan penawaran.')
 
-    const highest = getHighestBid(session, item.id)
-    const minimumBid = getMinimumBid(item)
-    const currentFloor = Math.max(minimumBid, Number(highest?.amount) || 0)
-    if (amount === null) amount = highest ? currentFloor + 500_000 : minimumBid
-    if (!Number.isSafeInteger(amount) || amount < minimumBid || amount <= Number(highest?.amount || 0)) {
-      return m.reply(`❌ Bid harus minimal ${money(minimumBid)} dan lebih tinggi dari bid tertinggi. Bid minimum saat ini: ${money(Math.max(minimumBid, currentFloor + (highest ? 1 : 0)))}.`)
+    const highest = getHighestBid(db, session, item.id)
+    const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
+    if (amount === null) amount = currentFloor + 500_000
+    if (!Number.isSafeInteger(amount) || amount <= currentFloor) {
+      return m.reply(`❌ Bid harus lebih tinggi dari bid tertinggi. Bid minimum saat ini: ${money(currentFloor + 1)}.`)
     }
     const balance = Number(rpg.bank) || 0
     const heldAmount = (Array.isArray(session.bids[item.id]) ? session.bids[item.id] : [])
@@ -760,7 +785,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `⚠️ *KONFIRMASI BID*\n` +
       `> ↳ Item: ${item.emoji} ${item.name}\n` +
       `> ↳ Penawaran: ${money(amount)}\n` +
-      `> ↳ Bid tertinggi saat ini: ${highest ? money(highest.amount) : 'Belum ada bid'}\n` +
+      `> ↳ Bid tertinggi saat ini: ${money(currentFloor)}\n` +
       `> ↳ Saldo belum ditahan sebelum konfirmasi. Setelah dikonfirmasi, saldo ditahan dan dikembalikan jika kamu kalah.\n\n` +
       `Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.`
     )
@@ -769,15 +794,15 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   if (mode === 'info' && tokens[1]) {
     const item = findAuctionItem(tokens.slice(1).join(' '), offers)
     if (!item) return m.reply(`❌ Item tidak ada di sesi lelang ini. Gunakan *${prefix}ah list* atau *${prefix}ah info*.`)
-    const highest = getHighestBid(session, item.id)
+    const highest = getVisibleHighestBid(db, session, item)
     return m.reply(
       `╭─❏「 🔎 DETAIL LELANG 」❏\n` +
       `│ ${item.emoji} *${item.name}*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Deskripsi: ${item.description}\n` +
-      `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
-      `> ↳ Bid tertinggi: ${highest ? money(highest.amount) : 'Belum ada bid'}\n` +
-      `> ↳ Pemimpin bid: ${highest ? db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0] : '-'}\n` +
+      `> ↳ Bid Minimum : ${money(getMinimumBid(item))}\n` +
+      `> ↳ Bid Tertinggi : ${money(highest.amount)}\n` +
+      `> ↳ Pemimpin bid: ${highest.jid ? db.data.users?.[normalizeJid(highest.jid)]?.name || highest.jid.split('@')[0] : '-'}\n` +
       `> ↳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
       `> ↳ Ajukan bid: *${prefix}ah bid ${item.id} [nominal]*\n` +
       `─━━━━━━━━━━━━━━─`

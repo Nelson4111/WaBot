@@ -25,8 +25,10 @@ import {
 } from '../../lib/rpgHomeData.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { computeCrimeScore, setActiveCrimeScore } from '../../lib/crimeHelper.js'
-import { createRpgCrimeRecord } from '../../lib/rpgCrimeData.js'
+import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
+import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
+import { generateWAMessageContent } from '@whiskeysockets/baileys'
 
 import fs from 'fs'
 
@@ -96,18 +98,23 @@ function normalizeRpgPanelCategory(value) {
 const RPG_PANEL_CATEGORIES = Object.freeze([
   { title: 'GLOBAL', marker: '📊 *GLOBAL*', aliases: ['global'] },
   { title: 'USER STAT', marker: '👤 *USER STAT*', aliases: ['user', 'userstat', 'user-stat', 'stat'] },
-  { title: 'GUDANG', marker: '📦 *GUDANG*', aliases: ['gudang', 'inventory'] },
-  { title: 'TERNAK', marker: '🏡 *TERNAK*', aliases: ['ternak', 'peternakan'] },
+  { title: 'LEADERBOARD', marker: '🏆 *LEADERBOARD*', aliases: ['leaderboard', 'top'] },
+  { title: 'INVENTORY', marker: '🎒 *INVENTORY*', aliases: ['inventory', 'inv'] },
+  { title: 'GUDANG', marker: '📦 *GUDANG*', aliases: ['gudang', 'storage'] },
+  { title: 'TERNAK', marker: '🐄 *TERNAK*', aliases: ['ternak', 'peternakan'] },
+  { title: 'PERTANIAN', marker: '🌾 *PERTANIAN*', aliases: ['pertanian', 'panen'] },
   { title: 'ADVENTURE', marker: '🗺️ *ADVENTURE*', aliases: ['adventure', 'adv'] },
   { title: 'BANK', marker: '🏦 *BANK*', aliases: ['bank'] },
-  { title: 'EVONEXUS, MALL & HOME', marker: '🧬 *EVONEXUS, MALL & HOME*', aliases: ['evx', 'mall', 'home', 'assets'] },
+  { title: 'EVONEXUS', marker: '🧬 *EVONEXUS*', aliases: ['evx', 'evonexus'] },
+  { title: 'MALL', marker: '🛍️ *MALL*', aliases: ['mall'] },
+  { title: 'HOME', marker: '🏠 *HOME*', aliases: ['home', 'rumah'] },
+  { title: 'AUCTION', marker: '🔨 *AUCTION*', aliases: ['auction', 'lelang'] },
   { title: 'RSHIP', marker: '💕 *RSHIP*', aliases: ['rship', 'relationship'] },
   { title: 'CSM PANEL', marker: '⛓️ *CSM PANEL*', aliases: ['csm'] },
-  { title: 'UPDATE RPG', marker: '🧬 *UPDATE RPG*', aliases: ['update', 'updates', 'fitur', 'rpg'] },
-  { title: 'ADMIN', marker: '🛠️ *ADMIN*', aliases: ['admin', 'owner', 'limit', 'news'] },
-  { title: 'COMMAND RPG', marker: '📜 *COMMAND RPG*', aliases: ['commands', 'command', 'perintah'] },
-  { title: 'ADMIN COMMANDS', marker: '👑 *ADMIN COMMANDS*', aliases: ['admincommands', 'ownercommands'] },
-  { title: 'LAINNYA', marker: '💊 *LAINNYA*', aliases: ['lainnya', 'other'] }
+  { title: 'MODERASI & RESET', marker: '💊 *MODERASI & RESET*', aliases: ['lainnya', 'moderasi', 'reset'] },
+  { title: 'UPDATE RPG', marker: '🧬 *UPDATE RPG*', aliases: ['update', 'updates', 'fitur'] },
+  { title: 'ADMIN', marker: '🛠️ *ADMIN*', aliases: ['admin', 'owner', 'limit', 'news', 'admincommands', 'ownercommands'] },
+  { title: 'RPG COMMANDS', marker: '📜 *RPG COMMANDS*', aliases: ['commands', 'command', 'perintah', 'rpg'] }
 ])
 
 function getRpgPanelSection(panelText, category) {
@@ -134,7 +141,87 @@ function getPluginCommandLines(tag, usedPrefix) {
     : '> ↳ Belum ada command yang terdaftar.'
 }
 
-let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
+let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, command }) => {
+  const sourceMessage = m
+  const originalReply = m.reply.bind(m)
+  const isPrivateRpgPanel = String(command || '').toLowerCase() === 'rp' &&
+    (m.isGroup || m.chat?.endsWith('@g.us'))
+  const responseChat = m.chat
+  if (isPrivateRpgPanel && sourceMessage.key) {
+    try {
+      await conn.sendMessage(responseChat, { delete: sourceMessage.key })
+    } catch (error) {
+      console.warn('[RPG-PANEL-PRIVACY] Gagal menghapus command .rp dari grup:', error?.message || error)
+    }
+  }
+
+  const sendPanelResponse = async (content, options = {}) => {
+    if (!isPrivateRpgPanel) {
+      return conn.sendMessage(responseChat, content, { quoted: sourceMessage, ...options })
+    }
+
+    const playerJid = conn.decodeJid ? conn.decodeJid(sourceMessage.sender) : sourceMessage.sender
+    const payload = typeof content === 'string' ? { text: content } : { ...content }
+    const mentions = [...new Set([
+      ...(Array.isArray(payload.mentions) ? payload.mentions : []),
+      ...(Array.isArray(options.mentions) ? options.mentions : [])
+    ])]
+    delete payload.mentions
+
+    let playerMessage
+    if (typeof payload.text === 'string' && !payload.image && !payload.video && !payload.document && !payload.sticker) {
+      const contextInfo = {
+        ...(payload.contextInfo || {}),
+        ...(options.contextInfo || {}),
+        ...(mentions.length ? { mentionedJid: mentions } : {})
+      }
+      playerMessage = {
+        extendedTextMessage: {
+          text: payload.text,
+          ...(Object.keys(contextInfo).length ? { contextInfo } : {})
+        }
+      }
+    } else {
+      if (mentions.length) {
+        payload.contextInfo = {
+          ...(payload.contextInfo || {}),
+          ...(options.contextInfo || {}),
+          mentionedJid: mentions
+        }
+      }
+      playerMessage = await generateWAMessageContent(payload, { upload: conn.waUploadToServer })
+    }
+
+    const playerNumber = String(playerJid || '').split('@')[0]
+    try {
+      return await sendDualGroupMessage(
+        conn,
+        responseChat,
+        playerJid,
+        playerMessage,
+        `> 🔒 Balasan RPG khusus untuk @${playerNumber}.`,
+        { contextInfo: { mentionedJid: [playerJid] } }
+      )
+    } catch (error) {
+      console.error('[RPG-PANEL-PRIVACY] Gagal mengirim balasan khusus di grup:', error?.message || error)
+      return conn.sendMessage(responseChat, {
+        text: `> 🔒 Balasan RPG khusus untuk @${playerNumber} tidak dapat dikirim.`,
+        mentions: [playerJid]
+      }, { quoted: sourceMessage })
+    }
+  }
+
+  m = Object.create(m)
+  Object.defineProperty(m, 'reply', {
+    value: (...args) => {
+      if (!isPrivateRpgPanel) return originalReply(...args)
+      const [content, chatIdOrOptions, replyOptions] = args
+      const options = replyOptions ??
+        (chatIdOrOptions && typeof chatIdOrOptions === 'object' ? chatIdOrOptions : {})
+      return sendPanelResponse(content, options)
+    }
+  })
+
   if (!isOwner) return m.reply('❌ Fitur khusus Owner')
 
   const wdb = loadDB()
@@ -153,9 +240,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `╰─━━━━━━━━━━━━━━─\n\n` +
 
   `📊 *GLOBAL*\n` +
-  `> ↳ *${usedPrefix}rpgpanel toprpg*\n` +
-  `> ↳ *${usedPrefix}rpgpanel rpgstat*\n` +
-  `> ↳ *${usedPrefix}rpgpanel topyt*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel rpgstat* - Ringkasan statistik seluruh RPG\n` +
   `> ↳ *${usedPrefix}rpgpanel setlottery <hadiah>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setautolevelup <level>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setgroupnotiflevel <level>*\n` +
@@ -163,18 +248,15 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
+  `🏆 *LEADERBOARD*\n` +
+  `> ↳ *${usedPrefix}rpgpanel toprpg* - Peringkat level, kekayaan, dan diamond\n` +
+  `> ↳ *${usedPrefix}rpgpanel topyt* - Peringkat YouTuber RPG\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel set/add/del stellarcredit @tag <jml>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel evx @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama SC Core>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <rank|level|resonance|statpoints|explores> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama SC Core> ya/tidak*\n` +
-  `> ↳ *${usedPrefix}rpgpanel mall @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel giveauction @tag <item lelang> <jml>* - Masukkan hadiah ke Auction Vault user\n` +
-  `> ↳ *${usedPrefix}rpgpanel home @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setjob @tag <nama pekerjaan>* - Ganti nama pekerjaan yang tampil saat bekerja\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
@@ -195,20 +277,35 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel set/add/del stone @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del cont @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel set maxhp @tag <jml>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel set sword/armor/pickaxe/fishingrod @tag <lvl>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel inv @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel gudang @tag*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel set sword/armor/pickaxe/fishingrod @tag <lvl>*\n\n` +
 
-  `🧬 *EVONEXUS, MALL & HOME*\n` +
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🎒 *INVENTORY*\n` +
+  `> ↳ *${usedPrefix}rpgpanel inv @tag* - Ringkasan status dan perlengkapan\n` +
+  `> ↳ *${usedPrefix}rpgpanel gudang @tag* - Isi penyimpanan pemain\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🧬 *EVONEXUS*\n` +
   `> ↳ *${usedPrefix}rpgpanel evx @tag* - Lihat Stellar Credit dan SC Core terpasang\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del stellarcredit @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setevx @tag <tipe> <nama SC Core>* - Pasang SC Core via panel\n` +
-  `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <field> <nilai>* - Atur data Evonexus\n` +
-  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama SC Core> ya/tidak* - Konfirmasi pelepasan SC Core\n` +
+  `> ↳ *${usedPrefix}rpgpanel setevxstat @tag <rank|level|resonance|statpoints|explores> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel delevx @tag <nama SC Core> ya/tidak* - Konfirmasi pelepasan SC Core\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🛍️ *MALL*\n` +
   `> ↳ *${usedPrefix}rpgpanel mall @tag* - Lihat inventaris Mall\n` +
-  `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del mallitem @tag <item> <jml>*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🏠 *HOME*\n` +
   `> ↳ *${usedPrefix}rpgpanel home @tag* - Lihat data rumah\n` +
   `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|public> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel homeadd/homedel @tag <item Mall>*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel homeadd/homedel @tag <item Mall>* - Kelola furnitur rumah\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -226,22 +323,25 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
-  `🏡 *TERNAK*\n` +
+  `🐄 *TERNAK*\n` +
   `> ↳ *${usedPrefix}rpgpanel addternak @tag <hewan> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delternak @tag <hewan> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel kawinforce @tag <h1> <h2>*\n` +
   `> ↳ *${usedPrefix}rpgpanel icuforce @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setstreak @tag <angka>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel addstreak @tag <angka>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n` +
   `> ↳ *${usedPrefix}kawin <h1> <h2> [asuransi]*\n` +
   `> ↳ *${usedPrefix}kawin proses / batal / guide*\n` +
   `> ↳ *${usedPrefix}ternak / ${usedPrefix}kandang*\n` +
   `> ↳ *${usedPrefix}ternak list / beli / ambil / sembelih / jual*\n` +
   `> ↳ *${usedPrefix}hybrid* atau *${usedPrefix}ternak hybrid*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🌾 *PERTANIAN*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setstreak @tag <angka>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addstreak @tag <angka>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -259,6 +359,11 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ *${usedPrefix}rpgpanel setbanktier @tag <0-${MAX_BANK_TIER}>*\n` +
   `> ↳ *${usedPrefix}rpgpanel freezebank @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel unfreezebank @tag*\n\n` +
+
+  `─━━━━━━━━━━━━━━─\n\n` +
+
+  `🔨 *AUCTION*\n` +
+  `> ↳ *${usedPrefix}rpgpanel giveauction @tag <item lelang> <jml>* - Masukkan hadiah ke Auction Vault user\n` +
   `> ↳ *${usedPrefix}rpgpanel endauction* - Selesaikan lelang aktif dan mulai sesi berikutnya\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
@@ -286,10 +391,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
-  `💊 *LAINNYA*\n` +
+  `💊 *MODERASI & RESET*\n` +
   `> ↳ *${usedPrefix}rpgpanel blockcasino @tag/reply*\n` +
   `> ↳ *${usedPrefix}rpgpanel unblockcasino @tag/reply*\n` +
-  `> ↳ *${usedPrefix}rp unblockcasino @tag/reply*\n` +
   `> ↳ *${usedPrefix}rpgpanel afk @tag <alasan>*\n` +
   `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
@@ -298,20 +402,13 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setstreak @tag <angka>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel addstreak @tag <angka>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel resetstreak @tag*\n\n` +
-  `> ↳ *${usedPrefix}rpgpanel skippanen @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel skipmasak @tag*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
   `🧬 *UPDATE RPG*\n` +
   `> ↳ Karakter/Bloodline: *${usedPrefix}mychar*, *${usedPrefix}bl list/info/ubah*\n` +
   `> ↳ Wardrobe: *${usedPrefix}wardrobe* / *${usedPrefix}lemari*\n` +
-  `> ↳ Mall & diskon: *${usedPrefix}mall*, *${usedPrefix}mall diskon*\n` +
-  `> ↳ Rumah: *${usedPrefix}home* / *${usedPrefix}rumah*\n` +
   `> ↳ Koleksi: *${usedPrefix}cl* / *${usedPrefix}collection*\n` +
   `> ↳ Limit: *${usedPrefix}limit*, *${usedPrefix}limit buy/price/guide/command*\n` +
   `> ↳ Rincian update: *${usedPrefix}news RPG*\n\n` +
@@ -324,16 +421,14 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   `> ↳ Reset limit harian: *${usedPrefix}resetlimit*\n` +
   `> ↳ News: *${usedPrefix}news info/all/guide*\n` +
   `> ↳ Kelola news (owner): *${usedPrefix}news add/del <bagian/nomor>*\n\n` +
-
-  `─━━━━━━━━━━━━━━─`
+  `> ↳ *Perintah owner lainnya:*\n`
 )
 
   panelText +=
-    `\n\n📜 *COMMAND RPG*\n` +
+    `${getPluginCommandLines('owner', usedPrefix)}` +
+    `\n\n─━━━━━━━━━━━━━━─\n\n` +
+    `📜 *RPG COMMANDS*\n` +
     `${getPluginCommandLines('rpg', usedPrefix)}\n\n` +
-    `─━━━━━━━━━━━━━━─\n\n` +
-    `👑 *ADMIN COMMANDS*\n` +
-    `${getPluginCommandLines('owner', usedPrefix)}\n\n` +
     `─━━━━━━━━━━━━━━─`
 
   if (!aksi || ['kategori', 'categories'].includes(aksi)) {
@@ -410,11 +505,11 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     topMoney.forEach((id, i) => addUserLine(id, i + 1, `Rp ${(wdb.money[id] || 0).toLocaleString()}`))
     text += `\n💎 *TOP 10 COLLECTOR*\n`
     topDiamond.forEach((id, i) => addUserLine(id, i + 1, `${wdb.users[id].rpg.diamond || 0} Diamond`))
-    return conn.sendMessage(m.chat, { 
+    return sendPanelResponse({ 
       image: { url: 'https://files.cloudkuimages.guru/images/e0684787315c.jpeg' }, 
       caption: text,
       mentions: [...new Set(mentions)]
-    }, { quoted: m })
+    })
   }
 
   if(aksi === 'rpgstat'){
@@ -431,10 +526,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     const chats = global.db?.data?.chats || {}
     const totalGroups = Object.keys(chats).filter(id => id.endsWith('@g.us')).length
     let cap = `*───「 RPG GLOBAL STATS 」───*\n\n👥 *Groupchat:* ${totalGroups.toLocaleString()}\n👤 *Pemain:* ${totalUsers.toLocaleString()}\n💰 *Uang:* Rp ${totalMoney.toLocaleString()}\n💎 *Diamond:* ${totalDiamond.toLocaleString()}\n⛓️ *Iron:* ${totalIron.toLocaleString()}\n✨ *Gold:* ${totalGold.toLocaleString()}`
-    return conn.sendMessage(m.chat, { 
+    return sendPanelResponse({ 
       image: { url: 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg' }, 
       caption: cap 
-    }, { quoted: m })
+    })
   } 
   
   if(aksi === 'topyt'){
@@ -446,10 +541,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
     if (topYoutuber.length === 0) return m.reply('Belum ada YouTuber')
     let caption = `*───「 TOP YOUTUBER 」───*\n\n`
     topYoutuber.slice(0, 10).forEach((u, i) => { caption += `${i + 1}. ${u.name}\n *Subs*: ${u.subs.toLocaleString()}\n\n` })
-    return conn.sendMessage(m.chat, { 
+    return sendPanelResponse({ 
       image: { url: 'https://c.termai.cc/i174/Uwc' }, 
       caption: caption.trim() 
-    }, { quoted: m })
+    })
   }
 
   // 2. Normalisasi 2-kata aksi (misal: "set money", "add diamond", "del wood")
@@ -653,6 +748,24 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
   const account = wdb.users[who]
   let user = account.rpg
   syncUserLimit(account)
+
+  if (aksi === 'setjob') {
+    const newJobName = remaining.join(' ').trim()
+    if (!newJobName) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setjob @tag <nama pekerjaan>*`)
+    }
+    if (newJobName.length > 40) {
+      return m.reply('❌ Nama pekerjaan maksimal 40 karakter.')
+    }
+
+    user.customJob = newJobName
+    saveDB(wdb)
+    return m.reply(
+      `✅ Nama pekerjaan @${who.split('@')[0]} diubah menjadi *${newJobName}*.`,
+      null,
+      { mentions: [who] }
+    )
+  }
 
   if (aksi === 'evx') {
     return m.reply(`╭─❏「 🌌 EVONEXUS PANEL 」❏\n@${who.split('@')[0]}\n\n${formatPanelEvonexus(user)}`, null, { mentions: [who] })
@@ -1357,7 +1470,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) => {
       return m.reply(`✅ *HAPUS ITEM*\n@${who.split('@')[0]}\n${formatNama(item)} -${jumlah}`, null, {mentions: [who]})
     }
     if(aksi === 'wipe'){ user.inventory = {}; user.ikan = {}; user.ores = {}; user.items = {}; user.masakan = {}; saveDB(wdb); return m.reply(`🧹 *WIPE GUDANG*\n@${who.split('@')[0]}`, null, {mentions: [who]}) }
-    if(aksi === 'cek'){ let allItems = {...user.inventory,...user.ikan,...user.ores,...user.items,...user.masakan}; if(Object.keys(allItems).length === 0) return m.reply(`🏚️ Gudang kosong`, null, {mentions: [who]}); let sorted = Object.entries(allItems).sort((a,b) => b[1] - a[1]); let cap = `*───「 📦 GUDANG @${who.split('@')[0]} 」───*\n`; sorted.forEach(([n,j]) => cap += `├ ${formatNama(n)} x${j.toLocaleString()}\n`); return conn.reply(m.chat, cap, m, {mentions: [who]}) }
+    if(aksi === 'cek'){ let allItems = {...user.inventory,...user.ikan,...user.ores,...user.items,...user.masakan}; if(Object.keys(allItems).length === 0) return m.reply(`🏚️ Gudang kosong`, null, {mentions: [who]}); let sorted = Object.entries(allItems).sort((a,b) => b[1] - a[1]); let cap = `*───「 📦 GUDANG @${who.split('@')[0]} 」───*\n`; sorted.forEach(([n,j]) => cap += `├ ${formatNama(n)} x${j.toLocaleString()}\n`); return sendPanelResponse({ text: cap, mentions: [who] }) }
   }
   
   // 4.5 IKAN
@@ -1529,7 +1642,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       cap += entries.map(([nama, jumlah]) => `• ${formatNama(nama)} x${Number(jumlah).toLocaleString()}`).join('\n') + '\n\n'
     }
     cap += `📦 *Catatan:* Data gudang tersimpan di database RPG.`
-    return conn.reply(m.chat, cap, m, {mentions: [who]})
+    return sendPanelResponse({ text: cap, mentions: [who] })
   }
 
   // 6. HEAL

@@ -1,6 +1,6 @@
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
-import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
+import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
 
 const COOLDOWN_TIMES = {
   kawin: 7 * 60 * 60 * 1000,

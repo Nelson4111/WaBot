@@ -2,7 +2,7 @@ import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncAllEscapeCrimeCounts } from '../../lib/crimeHelper.js'
 import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
-import { RPG_CRIME_TYPES } from '../../lib/rpgCrimeData.js'
+import { RPG_CRIME_TYPES } from '../../lib/rpgCrimeAction.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 
 function getWantedList(db, conn) {

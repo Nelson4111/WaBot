@@ -1,5 +1,5 @@
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
+import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
 import { runRpgCrimeAction } from '../../lib/rpgCrimeAction.js'
 
 let handler = async (m, { conn, args = [] }) => {

@@ -6,7 +6,7 @@ import {
   resolveSkipCooldownTarget,
   selectSkipCooldownEntries,
   SKIPCD_CONFIRMATION_TTL,
-  SKIPCD_COST_PER_MINUTE
+  SKIPCD_COST_PER_SECOND
 } from '../../lib/rpgCooldownSkip.js'
 
 const CONFIRM_YES = new Set(['ya', 'yes', 'ok', 'confirm'])
@@ -88,7 +88,7 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
       `> ↳ ${usedPrefix}skipcd <mining|mancing|dungeon|adventure|work|kriminal|kawin|explore>\n` +
       `> ↳ Contoh: ${usedPrefix}skipcd mining\n` +
       `> ↳ Semua tindak kriminal: ${usedPrefix}skipcd kriminal\n` +
-      `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_MINUTE)} per menit tersisa, dibulatkan ke atas untuk setiap aktivitas/aksi.\n` +
+      `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_SECOND)} per detik tersisa, dibulatkan ke atas untuk setiap aktivitas/aksi.\n` +
       `> ↳ Konfirmasi: ${usedPrefix}skipcd ya | ${usedPrefix}skipcd batal`
     )
   }
@@ -115,7 +115,7 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
     `│ Premium • Berlaku 5 menit\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Cooldown: ${entries.map(({ label, remaining }) => `${label} (${Math.ceil(remaining / 60000)} menit)`).join(', ')}\n` +
-    `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_MINUTE)} per menit tersisa (dibulatkan per aktivitas/aksi)\n` +
+    `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_SECOND)} per detik tersisa (dibulatkan per aktivitas/aksi)\n` +
     `> ↳ Total biaya: *${formatMoney(cost)}*\n\n` +
     `Ketik *${usedPrefix}skipcd ya* untuk lanjut atau *${usedPrefix}skipcd batal* untuk membatalkan.`
   )

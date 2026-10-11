@@ -78,7 +78,7 @@ let handler = async (m, { conn }) => {
   await saveDB(db)
 
   const caption =
-    `╭─❏「 🚀 INTERSTELLAR EXPLORATION 」❏\n` +
+    `╭─❏「 🚀 INTERSTELLAR 」❏\n` +
     `│ 💫 *PENJELAJAHAN ANTARBINTANG*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `Kamu mengunjungi planet *${destination}* dan menemukan ${items.length} item:\n\n` +

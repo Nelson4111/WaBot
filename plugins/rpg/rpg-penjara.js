@@ -3,7 +3,8 @@ import { ensurePrisonCell, EXCLUSIVE_JAIL_BLOCKED_COMMANDS, getRandomPrisonCell,
 import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { markPatrolRelease, recordEscapeCrime } from '../../lib/crimeHelper.js'
-import { KIDNAP_ESCAPE_STORIES, RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeData.js'
+import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
+import { KIDNAP_ESCAPE_ATTEMPT_STORIES, KIDNAP_ESCAPE_STORIES } from '../../lib/rpgCrimeStories.js'
 import {
     dialogVisitNapi,
     dialogVisitPengunjung,
@@ -45,6 +46,7 @@ const formatTime = (ms) => {
     return `${detik}d`
 }
 const pickKidnapEscapeStory = () => KIDNAP_ESCAPE_STORIES[Math.floor(Math.random() * KIDNAP_ESCAPE_STORIES.length)]
+const pickKidnapEscapeAttemptStory = () => KIDNAP_ESCAPE_ATTEMPT_STORIES[Math.floor(Math.random() * KIDNAP_ESCAPE_ATTEMPT_STORIES.length)]
 
 let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
 
@@ -284,6 +286,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         }
         await saveDB(wdb)
         const attemptChat = m.chat
+        const attemptStory = pickKidnapEscapeAttemptStory()
         const escapeTimer = setTimeout(async () => {
             const activeRPG = getRPG(m.sender)
             if (Number(activeRPG?.kidnapEscapeAttempt?.startedAt) !== now) return
@@ -307,6 +310,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
         escapeTimer.unref?.()
         return conn.reply(
             m.chat,
+            `${attemptStory}\n\n` +
             `🏃 ${playerLabel(m.sender)} sedang berusaha kabur!\n` +
             `Penculik harus aktif dan merespons dengan *.tangkap @${m.sender.split('@')[0]}* dalam 5 menit. Jika tidak, tahanan berhasil bebas.`,
             m,
