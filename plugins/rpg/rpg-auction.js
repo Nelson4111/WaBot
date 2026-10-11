@@ -798,16 +798,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       }
       for (const userJid of userJids) delete session.pendingConfirmations[userJid]
       await persistAuctionDB()
-      const activeBid = getActiveUserBid(db, session, item.id, userJids, rpg)
-      if (!activeBid || Number(activeBid.amount) !== pending.amount) {
-        throw new Error('[auction-house] Bid terkonfirmasi tidak ditemukan kembali pada sumber status aktif.')
-      }
       const visibleHighest = getVisibleHighestBid(db, session, item)
       const leading = isAuctionUser(visibleHighest.jid, userJids)
       return m.reply(
         `✅ *BID DIKONFIRMASI*\n` +
         `> ↳ Item: ${item.emoji} ${item.name}\n` +
-        `> ↳ Bid kamu: ${money(activeBid.amount)}\n` +
+        `> ↳ Bid kamu: ${money(pending.amount)}\n` +
         `> ↳ Bid tertinggi: ${money(visibleHighest.amount)} oleh ${leading ? 'Kamu' : visibleHighest.jid ? getAuctionBidderName(db, visibleHighest.jid) : '-'}\n` +
         `> ↳ Dana sudah ditahan dari saldo bank. Jika kalah, dana dikembalikan saat lelang berakhir.\n` +
         `> ↳ Cek status: *${prefix}ah info*`
