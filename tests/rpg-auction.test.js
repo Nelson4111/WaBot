@@ -114,8 +114,10 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
 
     assert.match(await runAuction(firstJid, `bid ${item.id} ${item.price}`), /Bid harus lebih tinggi/)
     await runAuction(firstJid, `bid ${item.id}`)
-    await runAuction(firstJid, 'konfirmasi')
+    assert.match(await runAuction(firstJid, 'konfirmasi'), /Bid tertinggi: .* oleh Kamu/)
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - firstAmount)
+    assert.equal(session.bids[item.id][0].jid, firstJid)
+    assert.equal(global.db.data.users[firstJid].rpg.auctionBids[item.id].amount, firstAmount)
     session.bids[item.id] = []
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
     assert.doesNotMatch(await runAuction(firstJid, 'info'), /belum mengikuti bid aktif/i)
@@ -123,6 +125,12 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Pemimpin bid: Penawar Satu/)
     const firstListing = await runAuction(firstJid, 'list')
     assert.match(firstListing, new RegExp(`Bid Tertinggi : Rp ${firstAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+
+    const personalBid = global.db.data.users[firstJid].rpg.auctionBids[item.id]
+    delete global.db.data.users[firstJid].rpg.auctionBids[item.id]
+    assert.match(await runAuction(firstJid, 'info'), /Bid kamu:/)
+    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Bid Tertinggi : Rp ${firstAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+    global.db.data.users[firstJid].rpg.auctionBids[item.id] = personalBid
 
     const depositMessage = makeMessage(firstJid)
     await bankHandler(depositMessage.m, { text: 'simpan 1000', usedPrefix: '.', command: 'bank' })
