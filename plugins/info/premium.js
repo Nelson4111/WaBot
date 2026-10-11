@@ -293,7 +293,7 @@ if (action === 'cd' || action === 'cooldown') {
     `│ ⏰ *PREMIUM COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `🎮 *STATUS COOLDOWN RPG*\n` +
-    `> ↳ Lewati cooldown tertentu dengan *.skipcd <aktivitas>*; biaya *Rp 100.000 per menit tersisa* dan perlu konfirmasi.\n\n` +
+    `> ↳ Lewati cooldown tertentu dengan *.skipcd <aktivitas>*; biaya *Rp 100.000 per detik tersisa* dan perlu konfirmasi.\n\n` +
     `${cooldownList}\n\n` +
     `🎁 *PREMIUM DAILY*\n` +
     `> ↳ ${dailyRemaining ? `⏳ ${formatRemaining(dailyRemaining)}` : '✅ Siap'}\n\n` +
@@ -359,7 +359,7 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `> ↳ Fitur khusus: *${usedPrefix}home staff hire all <durasi 1-7>* merekrut semua staff rumah sekaligus.\n` +
     `> ↳ Diskon *20%* untuk semua biaya uang pada *.upgrade* dan diskon *25%* upgrade kartu bank.\n` +
     `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
-    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Pengguna Premium juga dapat melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per menit tersisa.\n` +
+    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Pengguna Premium juga dapat melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per detik tersisa.\n` +
     `> ↳ Command berlimit, termasuk sticker, maker, dan downloader, tetap memakai limit untuk pengguna Premium.\n` +
     `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap hari untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
     `> ↳ Premium Protection otomatis melindungi sekali saat terpicu, lalu masuk cooldown terpisah 5 jam untuk aksi kriminal serta cooldown kematian universal; proteksi kematian berlaku saat HP mencapai 0 dari dungeon, adventure, guild war, atau aksi bunuh/begal. Cek statusnya dengan *${usedPrefix}prem cd*.\n` +
