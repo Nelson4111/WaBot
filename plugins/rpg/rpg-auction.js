@@ -55,6 +55,14 @@ function makeAuctionSession(now = Date.now(), previousItemIds = []) {
   }
 }
 
+function belongsToAuctionSession(bid, session) {
+  if (Number(bid?.endsAt) === Number(session.endsAt)) return true
+  const bidItemIds = Array.isArray(bid?.itemIds) ? bid.itemIds : []
+  return bidItemIds.length === session.itemIds.length &&
+    new Set(bidItemIds).size === session.itemIds.length &&
+    session.itemIds.every(itemId => bidItemIds.includes(itemId))
+}
+
 function getAuctionBids(db, session, itemId) {
   const byJid = new Map()
   const bids = Array.isArray(session.bids?.[itemId]) ? session.bids[itemId] : []
@@ -66,7 +74,7 @@ function getAuctionBids(db, session, itemId) {
   }
   for (const [userJid, user] of Object.entries(db.data.users || {})) {
     const bid = user?.rpg?.auctionBids?.[itemId]
-    if (Number(bid?.endsAt) !== Number(session.endsAt) ||
+    if (!belongsToAuctionSession(bid, session) ||
       !Number.isSafeInteger(Number(bid.amount)) ||
       Number(bid.amount) <= 0) continue
     const jid = normalizeJid(userJid)
@@ -95,8 +103,16 @@ function getVisibleHighestBid(db, session, item) {
 function getAuctionBidderName(db, jid) {
   const normalizedJid = normalizeJid(jid)
   const user = Object.entries(db.data.users || {})
-    .find(([userJid]) => normalizeJid(userJid) === normalizedJid)?.[1]
+    .find(([userJid]) => userJid === jid || normalizeJid(userJid) === normalizedJid)?.[1]
   return user?.name || normalizedJid.split('@')[0]
+}
+
+function getAuctionUserJids(db, jid, account) {
+  const accountJid = Object.entries(db.data.users || {})
+    .find(([, user]) => user === account)?.[0]
+  const normalizedAccountJid = accountJid ? normalizeJid(accountJid) : null
+  const normalizedSenderJid = normalizeJid(jid)
+  return [...new Set([normalizedAccountJid, normalizedSenderJid].filter(Boolean))]
 }
 
 function getAuctionRivalName(session, itemId) {
@@ -105,10 +121,10 @@ function getAuctionRivalName(session, itemId) {
   return AUCTION_BIDDER_NAMES[hash % AUCTION_BIDDER_NAMES.length]
 }
 
-function getActiveUserBid(db, session, itemId, jid) {
-  const normalizedJid = normalizeJid(jid)
+function getActiveUserBid(db, session, itemId, jids) {
+  const normalizedJids = new Set((Array.isArray(jids) ? jids : [jids]).map(normalizeJid))
   return getAuctionBids(db, session, itemId)
-    .filter(bid => normalizeJid(bid.jid) === normalizedJid)
+    .filter(bid => normalizedJids.has(normalizeJid(bid.jid)))
     .reduce((highest, bid) => Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
 }
 
@@ -122,7 +138,7 @@ function restoreAuctionBids(db, session) {
     const personalBids = user?.rpg?.auctionBids
     if (!personalBids || typeof personalBids !== 'object') continue
     for (const [itemId, bid] of Object.entries(personalBids)) {
-      if (!session.itemIds.includes(itemId) || Number(bid?.endsAt) !== Number(session.endsAt)) continue
+      if (!session.itemIds.includes(itemId) || !belongsToAuctionSession(bid, session)) continue
       if (!Number.isSafeInteger(Number(bid.amount)) || Number(bid.amount) <= 0) continue
       const jid = normalizeJid(userJid)
       const bids = Array.isArray(session.bids[itemId]) ? session.bids[itemId] : (session.bids[itemId] = [])
@@ -514,7 +530,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   if (!account?.rpg) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const rpg = account.rpg
-  const jid = normalizeJid(m.sender)
+  const userJids = getAuctionUserJids(db, m.sender, account)
+  const jid = userJids[0] || normalizeJid(m.sender)
   const tokens = String(text).trim().split(/\s+/).filter(Boolean)
   const mode = String(tokens[0] || '').toLowerCase()
   const prefix = usedPrefix || '.'
@@ -644,7 +661,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     const myBids = offers.map((item, index) => ({
       item,
       index,
-      bid: getActiveUserBid(db, session, item.id, jid)
+      bid: getActiveUserBid(db, session, item.id, userJids)
     })).filter(entry => entry.bid)
 
     return m.reply(
@@ -674,11 +691,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `${offers.map((item, index) => {
         const highest = getVisibleHighestBid(db, session, item)
         const leader = highest.jid
-          ? `${money(highest.amount)} • ${getAuctionBidderName(db, highest.jid)}`
-          : `${money(highest.amount)} • ${getAuctionRivalName(session, item.id)}`
+          ? getAuctionBidderName(db, highest.jid)
+          : getAuctionRivalName(session, item.id)
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
           `> ↳ Bid Minimum : ${money(getMinimumBid(item))}\n` +
-          `> ↳ Bid Tertinggi : ${leader}`
+          `> ↳ Bid Tertinggi : ${money(highest.amount)}\n` +
+          `> ↳ Pemimpin Bid : ${leader}`
       }).join('\n\n')}\n\n` +
       
       `⏳ Lelang berakhir dalam: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
@@ -696,7 +714,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const myBids = offers.map((item, index) => ({
         item,
         index,
-        bid: getActiveUserBid(db, session, item.id, jid)
+        bid: getActiveUserBid(db, session, item.id, userJids)
       })).filter(entry => entry.bid)
 
       return m.reply(
