@@ -1,4 +1,5 @@
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
@@ -30,9 +31,10 @@ function shuffle(items) {
 
 function normalizeJid(jid) {
   if (!jid) return jid
-  const resolved = jid.endsWith('@lid')
-    ? global.lids?.[jid] || global.db?.data?.lids?.[jid] || jid
-    : jid
+  const normalized = jid.split(':')[0]
+  const resolved = normalized.endsWith('@lid')
+    ? resolveLid(normalized) || global.lids?.[normalized] || global.db?.data?.lids?.[normalized] || normalized
+    : normalized
   return `${resolved.split('@')[0].split(':')[0]}${resolved.includes('@lid') ? '@lid' : '@s.whatsapp.net'}`
 }
 
@@ -108,11 +110,13 @@ function getAuctionBidderName(db, jid) {
 }
 
 function getAuctionUserJids(db, jid, account) {
-  const accountJid = Object.entries(db.data.users || {})
-    .find(([, user]) => user?.rpg === account?.rpg)?.[0]
-  const normalizedAccountJid = accountJid ? normalizeJid(accountJid) : null
   const normalizedSenderJid = normalizeJid(jid)
-  return [...new Set([normalizedAccountJid, normalizedSenderJid].filter(Boolean))]
+  const accountJids = Object.entries(db.data.users || {})
+    .filter(([userJid, user]) =>
+      user?.rpg === account?.rpg || normalizeJid(userJid) === normalizedSenderJid
+    )
+    .map(([userJid]) => normalizeJid(userJid))
+  return [...new Set([...accountJids, normalizedSenderJid].filter(Boolean))]
 }
 
 function getAuctionRivalName(session, itemId) {
@@ -125,14 +129,13 @@ function getActiveUserBid(db, session, itemId, jids, rpg) {
   const normalizedJids = new Set((Array.isArray(jids) ? jids : [jids]).map(normalizeJid))
   const matchingBids = getAuctionBids(db, session, itemId)
     .filter(bid => normalizedJids.has(normalizeJid(bid.jid)))
-  const accountEntry = Object.entries(db.data.users || {})
-    .find(([, user]) => user?.rpg === rpg)
-  const accountBid = accountEntry?.[1]?.rpg?.auctionBids?.[itemId]
+  const accountBid = rpg?.auctionBids?.[itemId]
   if (belongsToAuctionSession(accountBid, session) &&
     Number.isSafeInteger(Number(accountBid.amount)) &&
     Number(accountBid.amount) > 0) {
+    const accountJid = normalizedJids.values().next().value
     matchingBids.push({
-      jid: normalizeJid(accountBid.jid || accountEntry[0]),
+      jid: normalizeJid(accountJid || accountBid.jid),
       amount: Number(accountBid.amount),
       at: Number(accountBid.at) || 0,
       escrowed: accountBid.escrowed === true
