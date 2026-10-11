@@ -104,6 +104,8 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
     const firstAmount = item.price + 500_000
     const competingAmount = firstAmount + 500_000
+    assert.match(await runAuction(secondJid, 'info'), /belum mengikuti bid aktif/i)
+    assert.match(await runAuction(secondJid, 'bid'), /belum mengikuti bid aktif/i)
     const listing = await runAuction(firstJid, 'list')
     assert.match(listing, new RegExp(`Bid Minimum : Rp ${Math.floor(item.price / 2).toLocaleString('id-ID')}`))
     assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${item.price.toLocaleString('id-ID')}`))
@@ -116,6 +118,7 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - firstAmount)
     session.bids[item.id] = []
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
+    assert.doesNotMatch(await runAuction(firstJid, 'info'), /belum mengikuti bid aktif/i)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Bid tertinggi/)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Pemimpin bid: Penawar Satu/)
     const firstListing = await runAuction(firstJid, 'list')
