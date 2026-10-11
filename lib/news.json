@@ -579,7 +579,7 @@
     "id": "10.8",
     "section": "PASANGAN",
     "title": "Privasi Pasangan",
-    "content": "\u003e .pasangan hide menyembunyikan informasi hubungan dari pengguna lain. Aktivitas yang menyebut pasangan tersembunyi tidak akan menampilkan nama atau men-tag mereka di grup; identitas diganti 🔒 DIKUNCI. Pemilik menerima detail dan pemberitahuan privasi secara pribadi. Berlaku untuk profil pasangan, kencan, hadiah, cincin, lamaran, perceraian, kartu nikah, serta aktivitas terkait lainnya.",
+    "content": "\u003e .pasangan hide menyembunyikan informasi hubungan dari pengguna lain. Aktivitas yang menyebut pasangan tersembunyi hanya menampilkan 🔒 DIKUNCI di grup, tanpa men-tag atau mengirim pemberitahuan ke chat pribadi. Berlaku untuk profil pasangan, kencan, hadiah, cincin, lamaran, perceraian, kartu nikah, serta aktivitas terkait lainnya.",
     "author": "Eza",
     "createdAt": 1791608531797
   },
@@ -595,7 +595,7 @@
     "id": "10.10",
     "section": "RPG",
     "title": "Event RPG Universal",
-    "content": "\u003e Event RPG menghadirkan efek sementara seperti bonus mancing, casino, panen, dan aktivitas lainnya. Saat event aktif, efeknya berlaku otomatis untuk semua pemain di semua grup. Cek event yang berlangsung dengan .ev active, daftar event dengan .ev list, detail efek dengan .ev info <nomor/nama>, dan waktu tersisa dengan .ev cd. Ketik .event untuk membaca panduan.",
+    "content": "\u003e Event RPG menghadirkan efek sementara seperti bonus mancing, casino, panen, dan aktivitas lainnya. Saat event aktif, efeknya berlaku otomatis untuk semua pemain di semua grup. Cek jadwal dengan .ev jadwal, event yang berlangsung dengan .ev active, daftar event dengan .ev list, detail efek dengan .ev info <nomor/nama>, dan waktu tersisa dengan .ev cd. Jadwal event lain dapat ditentukan secara acak oleh owner/admin; ingatkan admin jika ingin mengusulkan event.",
     "author": "Eza",
     "createdAt": 1791616710000
   }
