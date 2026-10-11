@@ -56,8 +56,11 @@ let handler = async (m, { conn, args, command }) => {
           { extendedTextMessage: { text: summary } },
           '> 🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
         )
-      } catch {
-        return conn.sendMessage(sender, { text: summary })
+      } catch (error) {
+        console.warn('[HUBUNGAN-PRIVASI] Gagal mengirim pesan khusus di grup:', error?.message || error)
+        return conn.sendMessage(m.chat, {
+          text: '> 🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
+        }, { quoted: m })
       }
     }
     return conn.sendMessage(m.chat, { text: summary }, { quoted: m })
@@ -95,8 +98,12 @@ let handler = async (m, { conn, args, command }) => {
           { extendedTextMessage: { text, contextInfo: { mentionedJid: mentions } } },
           '> 🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.'
         )
-      } catch {
-        return conn.sendMessage(sender, { text, mentions })
+      } catch (error) {
+        console.warn('[PASANGAN-PRIVASI] Gagal mengirim pesan khusus di grup:', error?.message || error)
+        return conn.sendMessage(m.chat, {
+          text: '> 🔒 Informasi hubungan ini disembunyikan oleh pemiliknya.',
+          mentions: []
+        }, { quoted: m })
       }
     }
     return conn.sendMessage(m.chat, { text, mentions }, { quoted: m })

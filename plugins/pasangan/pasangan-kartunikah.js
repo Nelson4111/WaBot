@@ -33,18 +33,10 @@ let handler = async (m, { conn }) => {
 
   const partnerJid = pList[0].jid
   if (isPasanganHidden(users[partnerJid] || {})) {
-    const privateMessage = `*──  ୨୧ ✧ PRIVASI PASANGAN ✧ ୨୧  ──*\n\n> 🔒 Kartu nikah tidak dapat ditampilkan karena pasanganmu menyembunyikan informasi hubungannya.\n> 🛡️ Pesan ini tidak menandai pasanganmu.`.trim()
-    const groupMessage = '> 🔒 Kartu nikah disembunyikan oleh pemilik informasi.'
-    if (m.isGroup || m.chat?.endsWith('@g.us')) {
-      await conn.sendMessage(m.chat, { text: groupMessage }, { quoted: m })
-    } else {
-      await m.reply(groupMessage)
-    }
-    await conn.sendMessage(sender, { text: privateMessage })
-    await conn.sendMessage(partnerJid, {
-      text: `*──  ୨୧ ✧ PRIVASI PASANGAN ✧ ୨୧  ──*\n\n> 🔒 Pasanganmu mencoba melihat kartu nikah digital.\n> 🛡️ Kartu dan identitasmu tidak ditampilkan di grup.`.trim()
-    })
-    return
+    const hiddenMessage = '> 🔒 Kartu nikah disembunyikan oleh pemilik informasi.'
+    return m.isGroup || m.chat?.endsWith('@g.us')
+      ? conn.sendMessage(m.chat, { text: hiddenMessage }, { quoted: m })
+      : m.reply(hiddenMessage)
   }
 
   const defaultPp = 'https://telegra.ph/file/24fa902ead26340f3df2c.png'
@@ -223,8 +215,10 @@ let handler = async (m, { conn }) => {
         )
       } catch (error) {
         console.warn('[KARTU NIKAH PRIVAT ERROR]:', error?.message || error)
-        await conn.sendMessage(m.chat, { text: '> 🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.' }, { quoted: m }).catch(() => {})
-        return conn.sendFile(sender, buffer, 'kartu-nikah.png', caption, null, false, { mentions: [who, partnerJid] })
+        return conn.sendMessage(m.chat, {
+          text: '> 🔒 Kartu hubungan ini disembunyikan oleh pemiliknya.',
+          mentions: []
+        }, { quoted: m })
       }
     }
     return conn.sendFile(m.chat, buffer, 'kartu-nikah.png', caption, m, false, { mentions: [who, partnerJid] })
