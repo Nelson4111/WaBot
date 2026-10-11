@@ -83,6 +83,9 @@ test('a bidder addressed by LID sees their active bid and leads by their real na
     const info = await runAuction(lid, 'info')
     assert.match(info, /Penawar Satu/)
     assert.doesNotMatch(info, /belum mengikuti bid aktif/i)
+    const bidInfo = await runAuction(lid, 'bid')
+    assert.match(bidInfo, /Bid kamu:/)
+    assert.doesNotMatch(bidInfo, /belum mengikuti bid aktif/i)
     const listing = await runAuction(lid, 'list')
     assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${amount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
   } finally {
@@ -132,6 +135,9 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.match(await runAuction(secondJid, 'info'), /Bid kamu:/)
     const leadingListing = await runAuction(secondJid, 'list')
     assert.match(leadingListing, new RegExp(`Bid Tertinggi : Rp ${competingAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Dua`))
+    const leadingInfo = await runAuction(secondJid, `info ${item.id}`)
+    assert.match(leadingInfo, /Pemimpin bid: Penawar Dua/)
+    assert.match(leadingInfo, new RegExp(`Bid Tertinggi : Rp ${competingAmount.toLocaleString('id-ID')}`))
     session.endsAt = Date.now() - 1
     for (const jid of [firstJid, secondJid]) {
       global.db.data.users[jid].rpg.auctionBids[item.id].endsAt = session.endsAt
