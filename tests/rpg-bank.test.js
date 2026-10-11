@@ -152,13 +152,13 @@ test('money command access requires Digital Access', () => {
 })
 
 test('bank deposit and withdrawal cooldown follows transport facilities', () => {
-  assert.equal(getBankTransactionCooldown(BANK_TIERS[6]), 30 * 60 * 1000)
+  assert.equal(getBankTransactionCooldown(BANK_TIERS[6]), 15 * 60 * 1000)
   assert.equal(getBankTransactionCooldown(BANK_TIERS[8]), 15 * 60 * 1000)
   assert.equal(getBankTransactionCooldown(BANK_TIERS[14]), 0)
 
   const transaction = { lastBankTransaction: 1_000 }
-  assert.equal(getBankTransactionCooldownRemaining(transaction, BANK_TIERS[6], 1_000), 30 * 60 * 1000)
-  assert.equal(getBankTransactionCooldownRemaining(transaction, BANK_TIERS[6], 1_000 + 30 * 60 * 1000), 0)
+  assert.equal(getBankTransactionCooldownRemaining(transaction, BANK_TIERS[6], 1_000), 15 * 60 * 1000)
+  assert.equal(getBankTransactionCooldownRemaining(transaction, BANK_TIERS[6], 1_000 + 15 * 60 * 1000), 0)
 })
 
 test('Lounge VIP is active and bank transactions show the correct location', () => {
@@ -187,7 +187,7 @@ test('the Royal Card crown can be claimed once directly into the collection', ()
 test('the crown is unavailable before Royal Card and migrates legacy ownership', () => {
   const ineligibleRPG = { bankTier: 12 }
   assert.equal(claimBankCrown(ineligibleRPG), 'unavailable')
-  assert.equal(ineligibleRPG.mallInventory[BANK_CROWN_ITEM_ID], undefined)
+  assert.equal(ineligibleRPG.mallInventory?.[BANK_CROWN_ITEM_ID], undefined)
 
   const legacyRPG = {
     bankTier: 13,

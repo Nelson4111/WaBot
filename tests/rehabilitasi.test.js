@@ -76,13 +76,13 @@ assert.equal(getRehabilitationCompletion(rpg, completionTime - 1).ready, false)
 const crimeData = { rampok: 1, copet: 2 }
 const totalCrimeScore = computeCrimeScore(crimeData)
 assert.equal(getActiveCrimeScore(crimeData), totalCrimeScore)
-assert.equal(getRehabilitationCompletion(rpg, now + rpg.rehabilitation.completesAt).reason, 'progress')
-assert.equal(completeRehabilitation(rpg, crimeData, now + rpg.rehabilitation.completesAt), false)
-
 const process = rpg.rehabilitation
 process.progress = 0
 process.socialActivities = 0
 process.paidAmount = 0
+assert.equal(getRehabilitationCompletion(rpg, rpg.rehabilitation.completesAt).reason, 'progress')
+assert.equal(completeRehabilitation(rpg, crimeData, rpg.rehabilitation.completesAt), false)
+
 process.progress = process.requiredProgress
 process.socialActivities = 1
 assert.equal(applyRehabilitationPayment(process, 25000).remainingAmount, 175000)
@@ -127,7 +127,7 @@ const previouslyRehabilitated = {
   pardonedScore: 4
 }
 const previouslyRehabilitatedJid = 'previously-rehabilitated@s.whatsapp.net'
-global.db.data.users[previouslyRehabilitatedJid] = { rpg: previouslyRehabilitated }
+global.db = { data: { users: { [previouslyRehabilitatedJid]: { rpg: previouslyRehabilitated } } } }
 const previouslyRehabilitatedDB = {
   users: { [previouslyRehabilitatedJid]: { rpg: previouslyRehabilitated } },
   crime: { [previouslyRehabilitatedJid]: { rampok: 1, pardonedScore: 4 } },

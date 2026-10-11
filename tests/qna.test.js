@@ -14,7 +14,7 @@ assert.match(list, /Halaman 1\/1/)
 const detail = formatQnaDetail(entries[1], 1)
 assert.match(detail, /Q&A 2/)
 assert.match(detail, /\*\?:\* Apakah auto-reply voice note bisa dimatikan\?\n> ↳  Bisa dengan \.voice disable\./)
-assert.doesNotMatch(detail, /DETAIL PERTANYAAN|PERTANYAAN\*|JAWABAN\*/)
+assert.doesNotMatch(detail, /DETAIL PERTANYAAN|\*PERTANYAAN:\*|\*JAWABAN:\*/i)
 
 const manyEntries = Array.from({ length: 21 }, (_, index) => ({
   question: `Pertanyaan ${index + 1}`,

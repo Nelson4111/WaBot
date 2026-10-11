@@ -15,11 +15,12 @@ import {
 } from '../lib/rpgHomeData.js'
 import { MALL_CATEGORIES } from '../lib/rpgMallData.js'
 
-test('home upgrades expose 10 named, increasingly expensive levels', () => {
-  assert.equal(HOME_MAX_UPGRADES, 10)
-  assert.equal(HOME_LEVELS.length, 11)
-  assert.equal(getHomeLevel(0).name, 'Rumah Sederhana')
+test('home upgrades expose 20 named, increasingly expensive levels', () => {
+  assert.equal(HOME_MAX_UPGRADES, 20)
+  assert.equal(HOME_LEVELS.length, 21)
+  assert.equal(getHomeLevel(0).name, 'Simple House')
   assert.equal(getHomeLevel(10).name, 'Grand Palace')
+  assert.equal(getHomeLevel(20).name, 'Supreme Celestial Estate')
   assert.ok(HOME_LEVELS.every((tier, index) =>
     index === 0 || tier.security > HOME_LEVELS[index - 1].security
   ))

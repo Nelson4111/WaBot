@@ -30,13 +30,13 @@ test('grants up to 20 free limits per Jakarta day, capped at 50', () => {
   assert.deepEqual(grantFreeDailyLimit(user, dayOne), { granted: true, amount: 15, limit: 50 })
   assert.deepEqual(grantFreeDailyLimit(user, dayOne + 60_000), { granted: false, amount: 0, limit: 50 })
 
-  user.limit = 45
+  setUserLimit(user, 45)
   assert.deepEqual(
     grantFreeDailyLimit(user, Date.parse('2026-10-10T00:00:00+07:00')),
     { granted: true, amount: 5, limit: 50 }
   )
 
-  user.limit = 51
+  setUserLimit(user, 51)
   assert.deepEqual(
     grantFreeDailyLimit(user, Date.parse('2026-10-11T00:00:00+07:00')),
     { granted: true, amount: 0, limit: 51 }
@@ -46,7 +46,7 @@ test('grants up to 20 free limits per Jakarta day, capped at 50', () => {
 
 test('premium daily is available once per Jakarta day, regardless of 24 hours', () => {
   const user = { limit: 0 }
-  const firstClaim = Date.parse('2026-10-09T23:55:00+07:00')
+  const firstClaim = Date.parse('2026-10-09T23:45:00+07:00')
   assert.deepEqual(claimPremiumDailyLimit(user, firstClaim, 50), { claimed: true, amount: 50, limit: 50 })
   assert.equal(claimPremiumDailyLimit(user, firstClaim + 10 * 60_000, 50).claimed, false)
   assert.equal(
@@ -96,7 +96,7 @@ test('buys one limit for Rp100,000 and synchronizes both balances', async () => 
   assert.equal(user.limit, 101)
   assert.equal(user.rpg.limit, 101)
   assert.equal(writes, 1)
-  assert.match(replies[0], /Rp 100\.000 terpakai/)
+  assert.match(replies[0], /Uang terpakai: Rp 100\.000/)
 })
 
 test('retains the premium discount and rejects insufficient funds', async () => {

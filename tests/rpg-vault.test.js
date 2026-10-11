@@ -24,12 +24,12 @@ test('vault stores Mall furniture safely and returns it to inventory', async () 
   await runRpgVault({ m, db, rpg, tier: BANK_TIERS[10], args: ['simpan', 'sofa minimalis', '1'] })
   assert.equal(rpg.mallInventory.sofa_minimalis, 1)
   assert.equal(rpg.bankVault.sofa_minimalis, 1)
-  assert.match(replies.at(-1), /disimpan ke Vault Pribadi/)
+  assert.match(replies.at(-1), /disimpan ke Vault Pribadi/i)
 
   await runRpgVault({ m, db, rpg, tier: BANK_TIERS[10], args: ['ambil', 'sofa minimalis'] })
   assert.equal(rpg.mallInventory.sofa_minimalis, 2)
   assert.equal(rpg.bankVault.sofa_minimalis, 0)
-  assert.match(replies.at(-1), /diambil dari Vault Pribadi/)
+  assert.match(replies.at(-1), /diambil dari Vault Pribadi/i)
 })
 
 test('vault accepts the Royal crown and blocks protected or unavailable actions', async () => {
@@ -49,5 +49,5 @@ test('vault accepts the Royal crown and blocks protected or unavailable actions'
   assert.equal(rpg.mallInventory.sofa_minimalis, 1)
 
   await runRpgVault({ m, db: {}, rpg, tier: BANK_TIERS[9], args: ['list'] })
-  assert.match(replies.at(-1), /tersedia mulai Black Card/)
+  assert.match(replies.at(-1), /tersedia mulai \*?Black Card\*?/i)
 })

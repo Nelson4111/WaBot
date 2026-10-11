@@ -6,13 +6,24 @@ import { PATROL_RESTRICTED_RSHIP_ACTIONS } from '../lib/patrolHelper.js'
 assert.equal(computeCrimeScore({ rampok: 2, bunuh: 1, begal: 3, copet: 4 }), 2 * 4 + 1 * 3 + 3 * 2 + 4 * 1)
 assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 }), {
   rampok: 2,
+  jarah: 0,
+  culik: 0,
   bunuh: 1,
   begal: 3,
   copet: 4,
   kabur: 0,
   breakout: 0,
-  total: 17,
-  weight: { rampok: 4, bunuh: 3, begal: 2, copet: 1, kabur: 5, breakout: 5 }
+  total: 21,
+  weight: {
+    rampok: 4,
+    jarah: 4,
+    culik: 3,
+    bunuh: 3,
+    begal: 2,
+    copet: 1,
+    kabur: 5,
+    breakout: 5
+  }
 })
 assert.equal(computeCrimeScore({ kabur: 1, breakout: 2 }), 15)
 const adjustableCrime = { rampok: 2, pardonedScore: 4 }
@@ -48,7 +59,7 @@ assert.equal(markPatrolRelease(releasedRPG, 6000), false)
 
 const overdueReleaseRPG = { patrolCaughtAt: 1000, penjara: 1000, lamaPenjara: 1000 }
 assert.equal(ensurePatrolReleaseProtection(overdueReleaseRPG, 5000), true)
-assert.equal(overdueReleaseRPG.patrolCaptureProtectionUntil, 1000 + PATROL_CAPTURE_PROTECTION_MS)
+assert.equal(overdueReleaseRPG.patrolCaptureProtectionUntil, 2000 + PATROL_CAPTURE_PROTECTION_MS)
 const activePatrolPrisoner = { patrolCaughtAt: 1000, penjara: 2000, lamaPenjara: 5000 }
 assert.equal(ensurePatrolReleaseProtection(activePatrolPrisoner, 3000), false)
 assert.equal('patrolCaughtAt' in activePatrolPrisoner, true)

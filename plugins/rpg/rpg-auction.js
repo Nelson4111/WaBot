@@ -94,7 +94,7 @@ function getAuctionBids(db, session, itemId) {
 function getHighestBid(db, session, itemId) {
   const bids = getAuctionBids(db, session, itemId)
   return bids.reduce((highest, bid) =>
-    Number(bid?.amount) > Number(highest?.amount) ? bid : highest, null
+    !highest || Number(bid?.amount) > Number(highest?.amount) ? bid : highest, null
   )
 }
 
@@ -103,15 +103,18 @@ function getVisibleHighestBid(db, session, item) {
 }
 
 function getAuctionBidderName(db, jid) {
+  if (!jid) return '-'
   const normalizedJid = normalizeJid(jid)
-  const user = Object.entries(db.data.users || {})
+  const users = db?.data?.users || db?.users || global.db?.data?.users || {}
+  const user = Object.entries(users)
     .find(([userJid]) => userJid === jid || normalizeJid(userJid) === normalizedJid)?.[1]
   return user?.name || normalizedJid.split('@')[0]
 }
 
 function getAuctionUserJids(db, jid, account) {
   const normalizedSenderJid = normalizeJid(jid)
-  const accountJids = Object.entries(db.data.users || {})
+  const users = db?.data?.users || db?.users || global.db?.data?.users || {}
+  const accountJids = Object.entries(users)
     .filter(([userJid, user]) =>
       user?.rpg === account?.rpg || normalizeJid(userJid) === normalizedSenderJid
     )
@@ -142,7 +145,7 @@ function getActiveUserBid(db, session, itemId, jids, rpg) {
     })
   }
   return matchingBids.reduce((highest, bid) =>
-    Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
+    !highest || Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
 }
 
 function isAuctionUser(bidJid, userJids) {
@@ -724,7 +727,10 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
           `> ↳ Bid Tertinggi : ${money(highest.amount)}\n` +
           `> ↳ Pemimpin Bid : ${leader}`
       }).join('\n\n')}\n\n` +
-      
+      `${session.news?.length ? `🏁 *HASIL LELANG TERAKHIR*\n` +
+        `${session.news.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
+          `> ${entry.emoji} ${entry.itemName} — ${entry.winnerName} (${money(entry.amount)})`
+        ).join('\n')}\n\n` : ''}` +
       `⏳ Lelang berakhir dalam: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
       `📌 *INFO*\n` +
       `> ↳ Bid: ${prefix}ah bid <nomor/nama> [nominal]\n` +
