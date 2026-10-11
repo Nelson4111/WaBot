@@ -78,6 +78,8 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     const listing = await runAuction(firstJid, 'list')
     assert.match(listing, new RegExp(`Bid Minimum : Rp ${Math.floor(item.price / 2).toLocaleString('id-ID')}`))
     assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${item.price.toLocaleString('id-ID')}`))
+    const detail = await runAuction(firstJid, `info ${item.id}`)
+    assert.match(detail, /Pemimpin bid: (Bruce Wayne|Tony Stark|Diana Prince|Clark Kent|Natasha Romanoff|Peter Parker|T’Challa|Selina Kyle)/)
 
     assert.match(await runAuction(firstJid, `bid ${item.id} ${item.price}`), /Bid harus lebih tinggi/)
     await runAuction(firstJid, `bid ${item.id}`)
@@ -86,7 +88,8 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     session.bids[item.id] = []
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Bid tertinggi/)
-    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${firstAmount.toLocaleString('id-ID')}`))
+    assert.match(await runAuction(firstJid, `info ${item.id}`), /Pemimpin bid: Penawar Satu/)
+    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${firstAmount.toLocaleString('id-ID')} • Penawar Satu`))
 
     const depositMessage = makeMessage(firstJid)
     await bankHandler(depositMessage.m, { text: 'simpan 1000', usedPrefix: '.', command: 'bank' })
@@ -159,6 +162,7 @@ test('owner finish action settles bids immediately and starts the next auction',
 
     await runAuction(firstJid, `bid ${item.id}`)
     await runAuction(firstJid, 'bid konfirmasi')
+    currentSession.bids[item.id] = []
     const result = await finishAuctionNow()
 
     assert.equal(result.alreadyEnded, false)
@@ -168,6 +172,16 @@ test('owner finish action settles bids immediately and starts the next auction',
     assert.equal(global.db.data.users[firstJid].rpg.auctionVault[item.id], 1)
     assert.ok(result.nextSession.endsAt > currentSession.endsAt)
     assert.equal(result.nextSession.bids[item.id], undefined)
+    assert.notDeepEqual([...result.nextSession.itemIds].sort(), [...currentSession.itemIds].sort())
+
+    const nextItem = AUCTION_ITEMS.find(entry => entry.id === result.nextSession.itemIds[0])
+    const nextAmount = nextItem.price + 500_000
+    await runAuction(secondJid, `bid ${nextItem.id} ${nextAmount}`)
+    await runAuction(secondJid, 'bid konfirmasi')
+    const nextResult = await finishAuctionNow()
+    assert.equal(nextResult.results.length, 1)
+    assert.equal(nextResult.results[0].jid, secondJid)
+    assert.equal(global.db.data.users[secondJid].rpg.auctionVault[nextItem.id], 1)
   } finally {
     if (previousDb === undefined) delete global.db
     else global.db = previousDb
