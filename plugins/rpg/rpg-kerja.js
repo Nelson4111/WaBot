@@ -18,6 +18,7 @@ import {
   JOB_APPLY_REJECT_STORIES,
   JOB_WORK_STORIES,
   getJobByIdentifier,
+  getUnlockedJobs,
   getJobTitleByPoints,
   getJobTitleMultiplier,
   withJobExp
@@ -162,7 +163,7 @@ function applyAttendancePenalty(userRPG, now = Date.now()) {
   return false
 }
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
   const wdb = loadDB()
   if (!wdb.users[m.sender]) wdb.users[m.sender] = {}
   if (!wdb.users[m.sender].rpg) wdb.users[m.sender].rpg = {}
@@ -178,6 +179,83 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let payload = command === 'work' ? parsed : parts.slice(1).join(' ')
   const listJobs = withJobExp()
 
+  if (action === 'autoapply' && command.toLowerCase() === 'job') {
+    if (!isOwner) return m.reply(`╭─❏「 🔒 AKSES DITOLAK 」❏
+│ 🔐 AKSES OWNER
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Perintah ini khusus owner/co-owner.`)
+
+    const assignedByJob = new Map()
+    let alreadyWorking = 0
+    let blockedByApplicationLimit = 0
+    let withoutEligibleJob = 0
+
+    for (const account of Object.values(wdb.users)) {
+      if (!account?.rpg || typeof account.rpg !== 'object') continue
+
+      const targetRPG = ensureRpgState(account.rpg)
+      if (getActiveJob(targetRPG)) {
+        alreadyWorking++
+        continue
+      }
+
+      const unlockedJobs = getUnlockedJobs(targetRPG.level)
+      let selectedJob = unlockedJobs.at(-1)
+      if (!selectedJob) {
+        withoutEligibleJob++
+        continue
+      }
+
+      if (
+        !targetRPG.appliedJobs.includes(selectedJob.job) &&
+        targetRPG.appliedJobs.length >= JOB_MAX_APPLIED
+      ) {
+        selectedJob = unlockedJobs
+          .filter(job => targetRPG.appliedJobs.includes(job.job))
+          .at(-1)
+        if (!selectedJob) {
+          blockedByApplicationLimit++
+          continue
+        }
+      }
+
+      if (!targetRPG.appliedJobs.includes(selectedJob.job)) {
+        targetRPG.appliedJobs.push(selectedJob.job)
+      }
+      targetRPG.currentJobName = selectedJob.job
+      targetRPG.jobHistory = Array.from(new Set([...targetRPG.jobHistory, selectedJob.job]))
+      const progress = getJobProgress(targetRPG, selectedJob.job)
+      targetRPG.promotionPoints = Number(progress.promotionPoints || 0)
+      targetRPG.jobTitle = getJobTitleByPoints(targetRPG.promotionPoints, selectedJob.job)
+      assignedByJob.set(selectedJob.job, (assignedByJob.get(selectedJob.job) || 0) + 1)
+    }
+
+    await saveDB(wdb)
+    const totalAssigned = [...assignedByJob.values()].reduce((total, count) => total + count, 0)
+    const jobSummary = [...assignedByJob.entries()]
+      .map(([job, count]) => `> 💼 ${job}: ${count} player`)
+    return m.reply([
+      '╭─❏「 ✅ AUTO APPLY PEKERJAAN 」❏',
+      '│ 📋 HASIL PENEMPATAN PEKERJA',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `👥 *STATISTIK PENEMPATAN*`,
+      `> ↳ Player yang diberi pekerjaan: ${totalAssigned}`,
+      `> ↳ Player yang sudah punya pekerjaan aktif: ${alreadyWorking}`,
+      `> ↳ Tidak diproses karena batas lamaran: ${blockedByApplicationLimit}`,
+      `> ↳ Tidak ada pekerjaan sesuai level: ${withoutEligibleJob}`,
+      '',
+      '─━━━━━━━━━━━━━━─',
+      '💼 *DAFTAR PEKERJAAN YANG DIBERIKAN*',
+      ...(jobSummary.length ? jobSummary : ['> ↳ Tidak ada penempatan baru.']),
+      '',
+      '─━━━━━━━━━━━━━━─',
+      'ℹ️ *INFORMASI*',
+      '> ↳ Penempatan memakai pekerjaan yang tersedia di sistem sesuai level.',
+      '> ↳ Penempatan ini bukan klaim adanya lowongan terbatas atau jaminan pekerjaan.'
+    ].join('\n'))
+  }
 
   if (!parsed && command === 'job') {
     const statusCooldown = scaleDifficultyCooldown(userRPG, 120000)
@@ -211,10 +289,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (['guide', 'command', 'help'].includes(action)) {
     const guideText = [
-      '╭─❏「 💼 JOB GUIDE 」❏',
-      '│ 📖 PANDUAN SISTEM PEKERJAAN',
-      '╰─━━━━━━━━━━━━━━─',
-      '',
       ...JOB_GUIDE.map(line => line)
     ].join('\n')
     return m.reply(guideText)
@@ -593,6 +667,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `> 🎖️ Jabatan: ${afterTitle}`,
       `> 💰 Gaji: +${fmtRp(earnedMoney)}`,
       `> ✨ XP: +${earnedExp}`,
+      '',
       `> ${story}`,
       '',
       '─━━━━━━━━━━━━━━─',
