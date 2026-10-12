@@ -715,32 +715,42 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     )
   }
 
+
+
+
   if (!mode || mode === 'list' || mode === 'daftar') {
     return m.reply(
       `╭─❏「 🔨 AUCTION HOUSE 」❏\n` +
-      `│ 🔨 *LELANG BERSAMA* • ${BANK_TIERS[Number(rpg.bankTier)]?.color || BANK_TIERS[0].color} ${BANK_TIERS[Number(rpg.bankTier)]?.name || BANK_TIERS[0].name}\n` +
+      `│ 🏛️ LELANG BERSAMA\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-
+      `💳 *Kartu Bank:* ${BANK_TIERS[Number(rpg.bankTier)]?.color || BANK_TIERS[0].color} ${BANK_TIERS[Number(rpg.bankTier)]?.name || BANK_TIERS[0].name}\n\n` +
       `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh penjuru dunia berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `🔨 *DAFTAR ITEM LELANG*\n\n` +
       `${offers.map((item, index) => {
         const highest = getVisibleHighestBid(db, session, item)
         const leader = highest.jid
           ? getAuctionBidderName(db, highest.jid)
           : getAuctionRivalName(session, item.id)
         return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
-          `> ↳ Bid Minimum : ${money(getMinimumBid(item))}\n` +
-          `> ↳ Bid Tertinggi : ${money(highest.amount)}\n` +
-          `> ↳ Pemimpin Bid : ${leader}`
+          `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
+          `> ↳ Bid tertinggi: ${money(highest.amount)}\n` +
+          `> ↳ Pemimpin bid: ${leader}`
       }).join('\n\n')}\n\n` +
-      `${session.news?.length ? `🏁 *HASIL LELANG TERAKHIR*\n` +
+      `${session.news?.length ? `─━━━━━━━━━━━━━━─\n` +
+        `🏁 *HASIL LELANG TERAKHIR*\n\n` +
         `${session.news.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
-          `> ${entry.emoji} ${entry.itemName} — ${entry.winnerName} (${money(entry.amount)})`
+          `> ${entry.emoji} ${entry.itemName}\n` +
+          `> ↳ Bid akhir: ${money(entry.amount)}\n` +
+          `> ↳ Pemenang: ${entry.winnerName}`
         ).join('\n')}\n\n` : ''}` +
-      `⏳ Lelang berakhir dalam: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
-      `📌 *INFO*\n` +
-      `> ↳ Bid: ${prefix}ah bid <nomor/nama> [nominal]\n` +
-      `> ↳ Bid aktifmu: ${prefix}ah info • ${prefix}ah bid\n` +
-      `> ↳ Vault hadiah: ${prefix}ah vault • News: ${prefix}ah news\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `⏳ *Waktu tersisa:* ${formatRemaining(session.endsAt - Date.now())}\n\n` +
+      `📌 *DAFTAR COMMAND*\n` +
+      `> 🔨 ${prefix}ah bid <nomor/nama> [nominal]\n` +
+      `> 📊 ${prefix}ah info\n` +
+      `> 🎁 ${prefix}ah vault\n` +
+      `> 📰 ${prefix}ah news\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -753,19 +763,34 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       if (!pending || pending.expiresAt <= Date.now()) {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
-        return m.reply(`❌ Tidak ada konfirmasi bid yang aktif. Ajukan lagi dengan *${prefix}ah bid <nomor/nama> [nominal]*.`)
+        return m.reply(`╭─❏「 ❌ KONFIRMASI BID 」❏
+│ ⚠️ KONFIRMASI KEDALUWARSA
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Tidak ada konfirmasi bid yang aktif.
+> ↳ Ajukan kembali dengan *${prefix}ah bid <nomor/nama> [nominal]*.`)
       }
       if (pending.endsAt !== session.endsAt || session.endsAt <= Date.now()) {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
-        return m.reply('❌ Waktu lelang sudah berakhir. Bid ini tidak dapat dikonfirmasi.')
+        return m.reply(`╭─❏「 ❌ LELANG BERAKHIR 」❏
+│ ⏳ WAKTU LELANG HABIS
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Waktu lelang sudah berakhir.
+> ↳ Bid ini tidak dapat dikonfirmasi.`)
       }
 
       const item = AUCTION_ITEMS.find(entry => entry.id === pending.itemId)
       if (!item || !session.itemIds.includes(item.id)) {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
-        return m.reply('❌ Item lelang tidak lagi tersedia. Ajukan bid baru pada sesi aktif.')
+        return m.reply(`╭─❏「 ❌ ITEM TIDAK TERSEDIA 」❏
+│ 🔨 STATUS LELANG
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Item lelang tidak lagi tersedia.
+> ↳ Ajukan bid baru pada sesi lelang aktif.`)
       }
       const highest = getHighestBid(db, session, item.id)
       const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
@@ -773,16 +798,30 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply(
-          `❌ Bid tertinggi sudah berubah. Bid minimum sekarang *${money(currentFloor + 1)}*.\n` +
-          `Ajukan bid baru melalui *${prefix}ah bid ${item.id}*.`
+          `╭─❏「 ⚠️ BID BERUBAH 」❏\n` +
+          `│ 📈 BID TERTINGGI DIPERBARUI\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Bid tertinggi sudah berubah.\n` +
+          `> ↳ Bid minimum sekarang: *${money(currentFloor + 1)}*.\n\n` +
+          `> ↳ Ajukan bid baru melalui *${prefix}ah bid ${item.id}*.\n` +
+          `─━━━━━━━━━━━━━━─`
         )
       }
 
       const tier = BANK_TIERS[Number(rpg.bankTier)] || BANK_TIERS[0]
       if (!tier.fasilitas.includes('Auction Pass')) {
-        return m.reply('❌ Ikut lelang membutuhkan Auction Pass dari Cosmic Card.')
+        return m.reply(`╭─❏「 🔒 AUCTION PASS 」❏
+│ 💳 AKSES LELANG
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Ikut lelang membutuhkan Auction Pass dari Cosmic Card.`)
       }
-      if (rpg.kartuBeku) return m.reply('❌ Kartu bank sedang beku. Lunasi tagihan bulanan sebelum melakukan penawaran.')
+      if (rpg.kartuBeku) return m.reply(`╭─❏「 ❄️ KARTU BANK BEKU 」❏
+│ 💳 STATUS KARTU BANK
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kartu bank sedang beku.
+> ↳ Lunasi tagihan bulanan sebelum melakukan penawaran.`)
       const balance = Number(rpg.bank) || 0
       const existingBids = Array.isArray(session.bids[item.id]) ? session.bids[item.id] : []
       const previousHeldAmount = getAuctionBids(db, session, item.id)
@@ -791,7 +830,14 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       if (balance + previousHeldAmount < pending.amount) {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
-        return m.reply(`❌ Saldo bank tidak cukup untuk bid ${money(pending.amount)}. Saldo saat ini: ${money(balance)}.`)
+        return m.reply(
+          `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
+          `│ 💳 PEMBAYARAN BID\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Nominal bid: *${money(pending.amount)}*\n` +
+          `> ↳ Saldo bank: *${money(balance)}*\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
       }
 
       rpg.bank = balance + previousHeldAmount - pending.amount
@@ -812,12 +858,19 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const visibleHighest = getVisibleHighestBid(db, session, item)
       const leading = isAuctionUser(visibleHighest.jid, userJids)
       return m.reply(
-        `✅ *BID DIKONFIRMASI*\n` +
-        `> ↳ Item: ${item.emoji} ${item.name}\n` +
-        `> ↳ Bid kamu: ${money(pending.amount)}\n` +
-        `> ↳ Bid tertinggi: ${money(visibleHighest.amount)} oleh ${leading ? 'Kamu' : visibleHighest.jid ? getAuctionBidderName(db, visibleHighest.jid) : '-'}\n` +
-        `> ↳ Dana sudah ditahan dari saldo bank. Jika kalah, dana dikembalikan saat lelang berakhir.\n` +
-        `> ↳ Cek status: *${prefix}ah info*`
+        `╭─❏「 ✅ BID DIKONFIRMASI 」❏\n` +
+        `│ 🔨 HASIL PENAWARAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> 🏷️ Item: ${item.emoji} ${item.name}\n` +
+        `> 💰 Bid kamu: ${money(pending.amount)}\n` +
+        `> 🏆 Bid tertinggi: ${money(visibleHighest.amount)}\n` +
+        `> 👤 Pemimpin bid: ${leading ? 'Kamu' : visibleHighest.jid ? getAuctionBidderName(db, visibleHighest.jid) : '-'}\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `💳 *INFORMASI DANA*\n` +
+        `> ↳ Dana sudah ditahan dari saldo bank.\n` +
+        `> ↳ Jika kalah, dana dikembalikan saat lelang berakhir.\n\n` +
+        `> ↳ Cek status bid: *${prefix}ah info*\n` +
+        `─━━━━━━━━━━━━━━─`
       )
     }
 
@@ -829,26 +882,55 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     }
     const itemInput = (amount === null ? bidTokens : bidTokens.slice(0, -1)).join(' ')
     const item = findAuctionItem(itemInput, offers)
-    if (!item) return m.reply(`❌ Item tidak ditemukan. Gunakan *${prefix}ah list* untuk melihat nomor item.`)
+    if (!item) return m.reply(`╭─❏「 ❌ ITEM TIDAK DITEMUKAN 」❏
+│ 🔨 INFORMASI LELANG
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Item tidak ditemukan.
+> ↳ Gunakan *${prefix}ah list* untuk melihat nomor item.`)
 
     const tier = BANK_TIERS[Number(rpg.bankTier)] || BANK_TIERS[0]
     if (!tier.fasilitas.includes('Auction Pass')) {
-      return m.reply('❌ Ikut lelang membutuhkan Auction Pass dari Cosmic Card. Upgrade kartu bank terlebih dahulu.')
+      return m.reply(`╭─❏「 🔒 AUCTION PASS 」❏
+│ 💳 AKSES LELANG
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Ikut lelang membutuhkan Auction Pass dari Cosmic Card.
+> ↳ Upgrade kartu bank terlebih dahulu.`)
     }
-    if (rpg.kartuBeku) return m.reply('❌ Kartu bank sedang beku. Lunasi tagihan bulanan sebelum melakukan penawaran.')
+    if (rpg.kartuBeku) return m.reply(`╭─❏「 ❄️ KARTU BANK BEKU 」❏
+│ 💳 STATUS KARTU BANK
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kartu bank sedang beku.
+> ↳ Lunasi tagihan bulanan sebelum melakukan penawaran.`)
 
     const highest = getHighestBid(db, session, item.id)
     const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
     if (amount === null) amount = currentFloor + 500_000
     if (!Number.isSafeInteger(amount) || amount <= currentFloor) {
-      return m.reply(`❌ Bid harus lebih tinggi dari bid tertinggi. Bid minimum saat ini: ${money(currentFloor + 1)}.`)
+      return m.reply(
+        `╭─❏「 ❌ BID TIDAK VALID 」❏\n` +
+        `│ 💰 SYARAT PENAWARAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Bid harus lebih tinggi dari bid tertinggi.\n` +
+        `> ↳ Bid minimum saat ini: *${money(currentFloor + 1)}*.\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
     const balance = Number(rpg.bank) || 0
     const heldAmount = getAuctionBids(db, session, item.id)
       .filter(bid => normalizeJid(bid?.jid) === jid && bid?.escrowed)
       .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
     if (balance + heldAmount < amount) {
-      return m.reply(`❌ Saldo bank tidak cukup.\n> ↳ Bid: ${money(amount)}\n> ↳ Saldo: ${money(balance)}`)
+      return m.reply(
+        `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
+        `│ 💳 PEMBAYARAN BID\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Nominal bid: *${money(amount)}*\n` +
+        `> ↳ Saldo bank: *${money(balance)}*\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
 
     session.pendingConfirmations[jid] = {
@@ -859,35 +941,61 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     }
     await persistAuctionDB()
     return m.reply(
-      `⚠️ *KONFIRMASI BID*\n` +
-      `> ↳ Item: ${item.emoji} ${item.name}\n` +
-      `> ↳ Penawaran: ${money(amount)}\n` +
-      `> ↳ Bid tertinggi saat ini: ${money(currentFloor)}\n` +
-      `> ↳ Saldo belum ditahan sebelum konfirmasi. Setelah dikonfirmasi, saldo ditahan dan dikembalikan jika kamu kalah.\n\n` +
-      `Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.`
+      `╭─❏「 ⚠️ KONFIRMASI BID 」❏\n` +
+      `│ 🔨 DETAIL PENAWARAN\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 🏷️ Item: ${item.emoji} ${item.name}\n` +
+      `> 💰 Penawaran kamu: ${money(amount)}\n` +
+      `> 🏆 Bid tertinggi saat ini: ${money(currentFloor)}\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `💳 *INFORMASI DANA*\n` +
+      `> ↳ Saldo belum ditahan sebelum konfirmasi.\n` +
+      `> ↳ Setelah dikonfirmasi, saldo ditahan dan dikembalikan jika kamu kalah.\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `📌 *KONFIRMASI PENAWARAN*\n` +
+      `> ↳ Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
 
   if (mode === 'info' && tokens[1]) {
     const item = findAuctionItem(tokens.slice(1).join(' '), offers)
-    if (!item) return m.reply(`❌ Item tidak ada di sesi lelang ini. Gunakan *${prefix}ah list* atau *${prefix}ah info*.`)
+    if (!item) return m.reply(`╭─❏「 ❌ ITEM TIDAK DITEMUKAN 」❏
+│ 🔨 INFORMASI LELANG
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Item tidak ada di sesi lelang ini.
+> ↳ Gunakan *${prefix}ah list* atau *${prefix}ah info*.`)
     const highest = getVisibleHighestBid(db, session, item)
     return m.reply(
       `╭─❏「 🔎 DETAIL LELANG 」❏\n` +
-      `│ ${item.emoji} *${item.name}*\n` +
+      `│ 🏛️ INFORMASI ITEM\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🏷️ *${item.emoji} ${item.name}*\n\n` +
       `> ↳ Deskripsi: ${item.description}\n` +
-      `> ↳ Bid Minimum : ${money(getMinimumBid(item))}\n` +
-      `> ↳ Bid Tertinggi : ${money(highest.amount)}\n` +
+      `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
+      `> ↳ Bid tertinggi: ${money(highest.amount)}\n` +
       `> ↳ Pemimpin bid: ${highest.jid ? getAuctionBidderName(db, highest.jid) : getAuctionRivalName(session, item.id)}\n` +
       `> ↳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n\n` +
-      `> ↳ Ajukan bid: *${prefix}ah bid ${item.id} [nominal]*\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `📌 *AJUKAN PENAWARAN*\n` +
+      `> ↳ *${prefix}ah bid ${item.id} [nominal]*\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
   return m.reply(
-    `Gunakan *.ah list*, *.ah bid <nomor/nama> [nominal]*, *.ah info*, *.ah vault*, *.ah claim <item>*, *.ah news*, atau *.ah history*.`
+    `╭─❏「 📌 AUCTION HOUSE 」❏\n` +
+    `│ 🔨 DAFTAR COMMAND\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ *.ah list* — daftar item lelang\n` +
+    `> ↳ *.ah bid <nomor/nama> [nominal]* — ajukan bid\n` +
+    `> ↳ *.ah info* — lihat bid aktif\n` +
+    `> ↳ *.ah vault* — lihat vault hadiah\n` +
+    `> ↳ *.ah claim <item>* — klaim hadiah\n` +
+    `> ↳ *.ah news* — berita lelang\n` +
+    `> ↳ *.ah history* — riwayat lelang\n` +
+    `─━━━━━━━━━━━━━━─`
   )
 }
 

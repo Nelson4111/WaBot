@@ -658,24 +658,28 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 
     const story = pick(JOB_WORK_STORIES)
     const nextLevel = listJobs.find(job => job.lv > userRPG.level)
+
     const message = [
       '╭─❏「 💼 KERJA BERHASIL 」❏',
-      '│ 📋 HASIL PEKERJAAN',
+      '│ 📋 HASIL PEKERJAAN KAMU',
       '╰─━━━━━━━━━━━━━━─',
       '',
       `> 🏢 Pekerjaan: *${selectedJob.job}*`,
       `> 🎖️ Jabatan: ${afterTitle}`,
       `> 💰 Gaji: +${fmtRp(earnedMoney)}`,
       `> ✨ XP: +${earnedExp}`,
+      '─━━━━━━━━━━━━━━─',
       '',
       `> ${story}`,
       '',
       '─━━━━━━━━━━━━━━─',
       `📊 *Level:* Lv.${userRPG.level}`,
       `📈 *XP:* ${userRPG.exp}/${userRPG.level * 500}`,
-      nextLevel ? `➡️ *Pekerjaan selanjutnya:* ${nextLevel.job} (Lv.${nextLevel.lv})` : '🏆 *Pekerjaan tertinggi sudah tercapai!*',
+      nextLevel ? `➡️ *Next:* ${nextLevel.job} (Lv.${nextLevel.lv})` : '🏆 *Pekerjaan tertinggi sudah tercapai!*',
       jumlahLevel > 0 ? `🎉 *LEVEL UP!* +${jumlahLevel} level` : '',
-      `⏰ *Cooldown:* 2 menit`
+      `⏰ *Cooldown:* 2 menit`,
+      '',
+      '─━━━━━━━━━━━━━━─'
     ].filter(Boolean).join('\n')
 
     saveDB(wdb)
