@@ -619,7 +619,7 @@
     "id": "12.3",
     "section": "RPG",
     "title": "Pembaruan Sistem Pekerjaan",
-    "content": "\u003e .work/.job work mencatat absensi; absen lebih dari 7 hari dipecat, tetapi progres jabatan tiap pekerjaan tersimpan. Tersedia cuti/return, resign, apply manual (maksimal 5 pekerjaan; semua pekerjaan sebelumnya harus mencapai Karyawan Tetap untuk apply pekerjaan baru), cooldown dan peluang ditolak berdasarkan kriminal aktif. Poin, jabatan, serta multiplier gaji dihitung per pekerjaan; title dibedakan untuk kerja tim dan individu. Tambahan job baru, .job profile/performance/salary, 5 variasi cerita work/apply/promosi, dan .job talk berupa dialog.",
+    "content": "\u003e .work/.job work mencatat absensi; absen lebih dari 7 hari dipecat, tetapi progres jabatan tiap pekerjaan tersimpan. Tersedia cuti/return, resign, apply manual (maksimal 5 pekerjaan; semua pekerjaan sebelumnya harus mencapai Karyawan Tetap untuk apply pekerjaan baru), cooldown dan peluang ditolak berdasarkan kriminal aktif. Poin, jabatan, serta multiplier gaji dihitung per pekerjaan; title dibedakan untuk kerja tim dan individu. Tambahan job baru, .job profile/performance/salary.",
     "author": "Eza",
     "createdAt": 1791807489600
   }
