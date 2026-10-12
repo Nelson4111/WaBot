@@ -3,6 +3,19 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { registerPrisoner } from '../../lib/prisonHelper.js'
+import {
+  CHILD_ACTIVITIES,
+  CHILD_FACILITIES,
+  CHILD_LOSS_STORIES,
+  CHILD_NEGLECT,
+  CHILD_RUNAWAY_STORIES,
+  CHILD_STAGES,
+  RSHIP_COOLDOWN_NAMES as cooldownNames,
+  RSHIP_GIFT_LIST as GIFT_LIST,
+  RSHIP_ACTIVITY_COOLDOWNS as activityCooldowns,
+  RSHIP_BATCH_ACTIVITY_RULES as batchActivityRules
+} from '../../lib/rpgRshipData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -80,58 +93,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return '👋 Kenalan'
 }
   
-  // === DATABASE 50 HADIAH URUT DARI MURAH KE MAHAL ===
-const GIFT_LIST = [
-  {nama: 'bunga', desc: 'Bunga Mawar', harga: 10000, exp: 40, love: 10, emoji: '🌸'},
-  {nama: 'eskrim', desc: 'Es Krim 2 Cup', harga: 30000, exp: 80, love: 12, emoji: '🍦'},
-  {nama: 'sate', desc: 'Sate 10 Tusuk', harga: 50000, exp: 100, love: 11, emoji: '🍢'},
-  {nama: 'coklat', desc: 'Coklat Import', harga: 50000, exp: 120, love: 15, emoji: '🍫'},
-  {nama: 'buku', desc: 'Buku Novel', harga: 150000, exp: 300, love: 14, emoji: '📚'},
-  {nama: 'pizza', desc: 'Pizza Jumbo', harga: 200000, exp: 250, love: 16, emoji: '🍕'},
-  {nama: 'boneka', desc: 'Boneka Besar', harga: 250000, exp: 400, love: 25, emoji: '🧸'},
-  {nama: 'baju', desc: 'Baju Branded', harga: 300000, exp: 650, love: 20, emoji: '👗'},
-  {nama: 'kue', desc: 'Kue Ulang Tahun', harga: 500000, exp: 550, love: 22, emoji: '🎂'},
-  {nama: 'make', desc: 'Make Up Set', harga: 500000, exp: 1000, love: 25, emoji: '💄'},
-  {nama: 'topi', desc: 'Topi Branded', harga: 800000, exp: 700, love: 18, emoji: '🧢'},
-  {nama: 'restoran', desc: 'Dinner Restoran Mewah', harga: 1000000, exp: 1500, love: 30, emoji: '🍽️'},
-  {nama: 'spa', desc: 'Voucher Spa', harga: 1000000, exp: 1200, love: 28, emoji: '💆'},
-  {nama: 'tas', desc: 'Tas Branded', harga: 2000000, exp: 2000, love: 40, emoji: '👜'},
-  {nama: 'keyboard', desc: 'Keyboard RGB', harga: 2500000, exp: 2200, love: 33, emoji: '⌨️'},
-  {nama: 'gitar', desc: 'Gitar Akustik', harga: 3000000, exp: 2800, love: 35, emoji: '🎸'},
-  {nama: 'jaket', desc: 'Jaket Kulit', harga: 3500000, exp: 3000, love: 36, emoji: '🧥'},
-  {nama: 'kacamata', desc: 'Kacamata Branded', harga: 4000000, exp: 3600, love: 38, emoji: '🕶️'},
-  {nama: 'sepatu', desc: 'Sepatu Mahal', harga: 5000000, exp: 4000, love: 45, emoji: '👠'},
-  {nama: 'ac', desc: 'AC 1 PK', harga: 5000000, exp: 3800, love: 39, emoji: '❄️'},
-  {nama: 'tiket', desc: 'Tiket Pesawat', harga: 5000000, exp: 5000, love: 43, emoji: '✈️'},
-  {nama: 'konser', desc: 'Tiket Konser VIP', harga: 5000000, exp: 7000, love: 50, emoji: '🎤'},
-  {nama: 'mesin cuci', desc: 'Mesin Cuci', harga: 6000000, exp: 4200, love: 40, emoji: '🧺'},
-  {nama: 'kulkas', desc: 'Kulkas 2 Pintu', harga: 7000000, exp: 4500, love: 41, emoji: '🧊'},
-  {nama: 'gelang', desc: 'Gelang Emas', harga: 8000000, exp: 4800, love: 42, emoji: '📿'},
-  {nama: 'jam', desc: 'Jam Tangan Mewah', harga: 10000000, exp: 6500, love: 48, emoji: '⌚'},
-  {nama: 'kebun', desc: 'Kebun Bunga', harga: 10000000, exp: 5500, love: 44, emoji: '🌷'},
-  {nama: 'ps', desc: 'PS5 + Game', harga: 12000000, exp: 8000, love: 47, emoji: '🎮'},
-  {nama: 'anting', desc: 'Anting Berlian', harga: 12000000, exp: 7200, love: 46, emoji: '💎'},
-  {nama: 'hp', desc: 'HP Flagship', harga: 15000000, exp: 12000, love: 50, emoji: '📱'},
-  {nama: 'tv', desc: 'TV 65 Inch', harga: 15000000, exp: 10500, love: 49, emoji: '📺'},
-  {nama: 'emas', desc: 'Emas 10 Gram', harga: 15000000, exp: 9000, love: 51, emoji: '🥇'},
-  {nama: 'kalung', desc: 'Kalung Berlian', harga: 15000000, exp: 10000, love: 50, emoji: '📿'},
-  {nama: 'cincin', desc: 'Cincin Emas', harga: 20000000, exp: 15000, love: 55, emoji: '💍'},
-  {nama: 'liburan', desc: 'Paket Honeymoon', harga: 20000000, exp: 22000, love: 65, emoji: '🏖️'},
-  {nama: 'kamera', desc: 'Kamera DSLR', harga: 20000000, exp: 13500, love: 52, emoji: '📷'},
-  {nama: 'saham', desc: 'Saham 100 Lot', harga: 20000000, exp: 20000, love: 58, emoji: '📈'},
-  {nama: 'laptop', desc: 'Laptop Gaming', harga: 25000000, exp: 16000, love: 55, emoji: '💻'},
-  {nama: 'motor', desc: 'Motor Sport', harga: 30000000, exp: 25000, love: 60, emoji: '🏍️'},
-  {nama: 'mobil', desc: 'Mobil Mewah', harga: 50000000, exp: 40000, love: 70, emoji: '🚗'},
-  {nama: 'perhiasan', desc: 'Set Perhiasan Lengkap', harga: 100000000, exp: 70000, love: 78, emoji: '💎'},
-  {nama: 'rumah', desc: 'Rumah Pribadi', harga: 500000000, exp: 150000, love: 80, emoji: '🏠'},
-  {nama: 'apartemen', desc: 'Apartemen Mewah', harga: 1000000000, exp: 500000, love: 84, emoji: '🏙️'},
-  {nama: 'villa', desc: 'Villa di Bali', harga: 5000000000, exp: 400000, love: 82, emoji: '🏡'},
-  {nama: 'yacht', desc: 'Yacht Pribadi', harga: 2500000000, exp: 400000, love: 85, emoji: '🛥️'},
-  {nama: 'jet', desc: 'Jet Pribadi', harga: 10000000000, exp: 800000, love: 90, emoji: '✈️'},
-  {nama: 'hotel', desc: 'Hotel Bintang 5', harga: 50000000000, exp: 4000000, love: 95, emoji: '🏨'},
-  {nama: 'pulau', desc: 'Pulau Pribadi', harga: 250000000000, exp: 15000000, love: 100, emoji: '🏝️'}
-]
-
   const getMood = (love) => {
     if(love >= 90) return '🥰 Sangat Bahagia'
     if(love >= 70) return '😍 Jatuh Cinta'
@@ -142,14 +103,6 @@ const GIFT_LIST = [
   }
 
   const getGenderEmoji = (g) => g === 'cowok'? '♂️' : g === 'cewek'? '♀️' : '❓'
-  const CHILD_STAGES = [
-    { name: '👶 Bayi', care: 0 },
-    { name: '🧒 Balita', care: 10 },
-    { name: '👦 Anak', care: 30 },
-    { name: '🧑 Remaja', care: 70 },
-    { name: '🧑‍🎓 Dewasa', care: 120 },
-  ]
-
   const getChildCareCount = child => {
     if (Number.isFinite(child.careCount)) return Math.max(0, child.careCount)
     return Math.max(0, Math.round((Number(child.umur) || 0) * 10))
@@ -163,6 +116,125 @@ const GIFT_LIST = [
     const nextStage = CHILD_STAGES.find(stage => stage.care > careCount)
     if (!nextStage) return '✅ Selesai diasuh'
     return `${careCount}/${nextStage.care} kali ke ${nextStage.name}`
+  }
+
+  const childEvents = []
+  const now = Date.now()
+  let childStateChanged = false
+  if (!Array.isArray(user.orphanageKids)) user.orphanageKids = []
+
+  const initializeChildState = child => {
+    if (child.lastCaredAt == null || !Number.isFinite(Number(child.lastCaredAt))) {
+      child.lastCaredAt = now
+      childStateChanged = true
+    }
+    if (!child.activityCooldowns || typeof child.activityCooldowns !== 'object') {
+      child.activityCooldowns = {}
+      childStateChanged = true
+    }
+  }
+
+  const settleFacility = (child, returnToFamily) => {
+    const facility = child.facility
+    if (!facility || !CHILD_FACILITIES[facility.type]) return false
+    const config = CHILD_FACILITIES[facility.type]
+    const paidUntil = Math.max(0, Number(facility.paidUntil) || now)
+    if (paidUntil > now) return false
+
+    const returnChild = () => {
+      delete child.facility
+      child.lastCaredAt = now
+      child.lastNeglectCheckAt = now
+      childStateChanged = true
+      if (!returnToFamily) user.kids.push(child)
+      childEvents.push(returnToFamily
+        ? `💸 Biaya daycare *${child.nama}* tidak dibayar selama 3 hari. ${child.nama} dikembalikan ke daftar keluarga.`
+        : `💸 Biaya panti asuhan *${child.nama}* tidak dibayar selama 3 hari. ${child.nama} kembali ke keluarga dan masuk daftar anak.`)
+      return true
+    }
+    if (Number(facility.unpaidSince) > 0 &&
+      now - Number(facility.unpaidSince) >= CHILD_NEGLECT.facilityGracePeriod) {
+      return returnChild()
+    }
+
+    const periodsDue = Math.floor((now - paidUntil) / config.feePeriod) + 1
+    const amountDue = periodsDue * config.fee
+    if (user.bank >= amountDue) {
+      user.bank -= amountDue
+      facility.paidUntil = paidUntil + periodsDue * config.feePeriod
+      delete facility.unpaidSince
+      childStateChanged = true
+      return false
+    }
+
+    if (!(Number(facility.unpaidSince) > 0)) {
+      facility.unpaidSince = paidUntil
+      childStateChanged = true
+    }
+    if (now - Number(facility.unpaidSince) < CHILD_NEGLECT.facilityGracePeriod) return false
+
+    return returnChild()
+  }
+
+  for (const child of user.kids) {
+    initializeChildState(child)
+    settleFacility(child, true)
+  }
+  for (let index = user.orphanageKids.length - 1; index >= 0; index--) {
+    const child = user.orphanageKids[index]
+    initializeChildState(child)
+    if (settleFacility(child, false)) user.orphanageKids.splice(index, 1)
+  }
+
+  for (let index = user.kids.length - 1; index >= 0; index--) {
+    const child = user.kids[index]
+    if (child.facility) continue
+    const careCount = getChildCareCount(child)
+    const stage = getChildStage(careCount)
+    const adult = careCount >= CHILD_STAGES[CHILD_STAGES.length - 1].care
+    const young = stage === CHILD_STAGES[0] || stage === CHILD_STAGES[1]
+    if (!adult && !young) continue
+
+    const eligibleAt = Number(child.lastCaredAt) + (adult ? CHILD_NEGLECT.gracePeriod : 0)
+    const checkedAt = Number(child.lastNeglectCheckAt) || eligibleAt
+    if (now < eligibleAt + CHILD_NEGLECT.checkPeriod || now < checkedAt + CHILD_NEGLECT.checkPeriod) continue
+    const elapsedPeriods = Math.floor((now - Math.max(eligibleAt, checkedAt)) / CHILD_NEGLECT.checkPeriod)
+    if (elapsedPeriods < 1) continue
+    child.lastNeglectCheckAt = Math.max(eligibleAt, checkedAt) + elapsedPeriods * CHILD_NEGLECT.checkPeriod
+    childStateChanged = true
+
+    const chance = adult ? CHILD_NEGLECT.adultEscapeChance : CHILD_NEGLECT.youngChildLossChance
+    if (Math.random() >= 1 - Math.pow(1 - chance, elapsedPeriods)) continue
+
+    user.kids.splice(index, 1)
+    if (!adult) {
+      const story = CHILD_LOSS_STORIES[Math.floor(Math.random() * CHILD_LOSS_STORIES.length)]
+      childEvents.push(`💔 *${child.nama} hilang.* ${story}`)
+      childStateChanged = true
+      continue
+    }
+
+    const story = CHILD_RUNAWAY_STORIES[Math.floor(Math.random() * CHILD_RUNAWAY_STORIES.length)]
+    const alreadyImprisoned = user.penjara && now - Number(user.penjara) < (Number(user.lamaPenjara) || 0)
+    if (!alreadyImprisoned) {
+      user.penjara = now
+      user.lamaPenjara = 2 * 60 * 60 * 1000
+      user.tebusan = 2000000
+      user.kasus = '🚔 Penelantaran anak'
+      user.sel = registerPrisoner(wdb, m.sender)
+    }
+    if (!Array.isArray(user.riwayat)) user.riwayat = []
+    user.riwayat.unshift(`🚔 Anak dewasa ${child.nama} melaporkan penelantaran`)
+    childEvents.push(
+      `🚨 *${child.nama} kabur dari rumah.* ${story}\n` +
+      `${alreadyImprisoned ? 'Kasus ini tercatat saat kamu sedang menjalani hukuman.' : user.sel ? `Kamu dipenjara 2 jam di sel ${user.sel} atas kasus penelantaran anak. Tebusan: Rp 2.000.000.` : 'Pihak berwenang memproses laporan; perlindungan yang aktif mencegah penahanan.'}`
+    )
+    childStateChanged = true
+  }
+
+  if (childStateChanged) {
+    await saveDB(wdb)
+    if (childEvents.length) await m.reply(`╭─❏「 👶 KABAR ANAK 」❏\n╰─━━━━━━━━━━━━━━─\n\n${childEvents.join('\n\n')}`)
   }
 
   const formatRemaining = seconds => {
@@ -187,22 +259,6 @@ const GIFT_LIST = [
   }
 
   if (action === 'cd' || action === 'cooldown') {
-    const cooldownNames = {
-      date: ['Date', 60 * 60 * 1000], liburan: ['Liburan', 12 * 60 * 60 * 1000],
-      makan: ['Makan', 2 * 60 * 60 * 1000], peluk: ['Peluk', 30 * 60 * 1000],
-      mandi: ['Mandi', 60 * 60 * 1000], tidur: ['Tidur', 8 * 60 * 60 * 1000],
-      belanja: ['Belanja', 2 * 60 * 60 * 1000], kerja: ['Kerja', 4 * 60 * 60 * 1000],
-      usil: ['Usil', 60 * 60 * 1000], marah: ['Marah', 60 * 60 * 1000],
-      maaf: ['Maaf', 30 * 60 * 1000], talk: ['Talk', 15 * 60 * 1000],
-      kiss: ['Kiss', 4 * 60 * 60 * 1000], nonton: ['Nonton', 3 * 60 * 60 * 1000],
-      swim: ['Swim', 4 * 60 * 60 * 1000], wohoo: ['Wohoo', 6 * 60 * 60 * 1000],
-      anak: ['Anak', 24 * 60 * 60 * 1000], urusanak: ['Urus anak', 4 * 60 * 60 * 1000],
-      duel: ['Duel', 6 * 60 * 60 * 1000], kill: ['Kill', 7 * 24 * 60 * 60 * 1000],
-      debat: ['Debat', 30 * 60 * 1000], prank: ['Prank', 60 * 60 * 1000],
-      rampok: ['Rampok', 6 * 60 * 60 * 1000], staycation: ['Staycation', 6 * 60 * 60 * 1000],
-      santet: ['Santet', 2 * 60 * 60 * 1000], putus: ['Putus', 7 * 24 * 60 * 60 * 1000],
-      all: ['All Premium', 30 * 60 * 1000]
-    }
     let cap = `╭─❏「 ⏰ RSHIP COOLDOWN 」❏\n│ 📋 *STATUS SEMUA AKTIVITAS*\n╰─━━━━━━━━━━━━━━─\n\n`
     for (const [key, [label, duration]] of Object.entries(cooldownNames)) {
       if (!user.harem.length) {
@@ -361,7 +417,7 @@ const GIFT_LIST = [
 if (action === 'guide' || action === 'panduan') {
   return m.reply(
     `RSHIP GUIDE\n\n` +
-    `1. Buat pasangan: ${usedPrefix}rship tembak <nama> <cowok/cewek>\n` +
+    `1. Buat pasangan: ${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>\n` +
     `2. Lihat pasangan: ${usedPrefix}rship harem\n` +
     `3. Jalankan aktivitas: ${usedPrefix}rship date <no>\n` +
     `4. Cek level dan fitur: ${usedPrefix}rship status <no>\n` +
@@ -379,7 +435,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
   cap += `💕 *DASAR*\n`
-  cap += `> *${usedPrefix}rship tembak <nama> <cowok/cewek>*\n`
+  cap += `> *${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>*\n`
   cap += `> ↳ Membuat pasangan baru.\n`
   cap += `> *${usedPrefix}rship harem*\n`
   cap += `> ↳ Melihat semua pasangan.\n`
@@ -393,8 +449,10 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Melihat fitur yang terbuka berdasarkan level.\n`
   cap += `> *${usedPrefix}rship cincin*\n`
   cap += `> ↳ Melihat pilihan dan harga cincin.\n`
-  cap += `> *${usedPrefix}rship anak list*\n`
-  cap += `> ↳ Melihat daftar anak.\n`
+  cap += `> *${usedPrefix}rship kid info*\n`
+  cap += `> ↳ Melihat daftar anak keluarga.\n`
+  cap += `> *${usedPrefix}rship kid guide/command*\n`
+  cap += `> ↳ Panduan dan daftar command pengasuhan.\n`
 
   cap += `─━━━━━━━━━━━━━━─\n`
 
@@ -463,16 +521,24 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   cap += `> ↳ Menikahi pasangan yang memenuhi syarat.\n`
   cap += `> *${usedPrefix}rship anak <no>*\n`
   cap += `> ↳ Memiliki anak bersama pasangan.\n`
-  cap += `> *${usedPrefix}rship urusanak <no>*\n`
-  cap += `> ↳ Merawat anak dan mendapatkan EXP.\n`
+  cap += `> *${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>*\n`
+  cap += `> ↳ Aktivitas: hibur, main, jalan, makan, tidur, mandi, peluk, puji, motivasi.\n`
+  cap += `> *${usedPrefix}rship urus <pasangan/all> <anak/all>*\n`
+  cap += `> ↳ Premium: menjalankan semua 9 aktivitas pengasuhan.\n`
+  cap += `> *${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>*\n`
+  cap += `> ↳ Mengganti nama anak.\n`
+  cap += `> *${usedPrefix}rship kid daycare/orphanage <pasangan> <anak>*\n`
+  cap += `> ↳ Menitipkan anak dengan konfirmasi dan biaya berkala.\n`
+  cap += `> *${usedPrefix}rship kid moveout <pasangan> <anak>*\n`
+  cap += `> ↳ Anak dewasa pindah rumah dengan konfirmasi.\n`
   cap += `> *${usedPrefix}rship duel <no>*\n`
   cap += `> ↳ Mengajak pasangan untuk berduel.\n`
   cap += `> *${usedPrefix}rship kill <no>*\n`
   cap += `> ↳ Meminta konfirmasi untuk memindahkan pasangan ke makam.\n`
-  cap += `> *${usedPrefix}rship all <no pasangan>*\n`
-  cap += `> ↳ Premium: menjalankan semua aktivitas yang siap untuk pasangan tersebut; cooldown all 30 menit.\n`
+  cap += `> *${usedPrefix}rship all <no pasangan/all>*\n`
+  cap += `> ↳ Premium: menjalankan semua aktivitas yang siap untuk pasangan pilihan; cooldown all 30 menit.\n`
   cap += `> ↳ Batch: date, liburan, makan, peluk, mandi, tidur, belanja, kerja, usil, marah, maaf, talk, kiss, nonton, swim, wohoo, debat, prank, staycation, rampok.\n`
-  cap += `> ↳ Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all date.\n`
+  cap += `> ↳ Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all all.\n`
 
   cap += `─━━━━━━━━━━━━━━─\n`
 
@@ -532,7 +598,12 @@ if (!action) {
     let nama = args[1]
     let gender = args[2]?.toLowerCase()
     if (!nama ||!gender) return m.reply(`╭─❏「 ❌ FORMAT 」❏\n\nContoh:.rship tembak Rem cewek\n╰─━━━━━━━━━━━━━━─`)
-    if(gender!== 'cowok' && gender!== 'cewek') return m.reply(`╭─❏「 ❌ SALAH 」❏\n\nGender: cowok / cewek\n╰─━━━━━━━━━━━━━━─`)
+    const genderAliases = {
+      cowok: 'cowok', pria: 'cowok', male: 'cowok', cowo: 'cowok',
+      cewek: 'cewek', perempuan: 'cewek', female: 'cewek', cewe: 'cewek'
+    }
+    gender = genderAliases[gender]
+    if (!gender) return m.reply(`╭─❏「 ❌ SALAH 」❏\n\nGender: cowok / pria / male atau cewek / perempuan / female\n╰─━━━━━━━━━━━━━━─`)
     user.harem.push({ name: nama, gender: gender, love: 50, exp: 0, level: 1, menikah: false, cincin: null })
     saveDB(wdb)
     return m.reply(`╭─❏「 💕 JADIAN! 」❏\n\n${getGenderEmoji(gender)} *${nama}* jadi pasanganmu!\n📊 Lv.1 ${getTitle(1)}\n╰─━━━━━━━━━━━━━━─`)
@@ -556,6 +627,9 @@ if (!action) {
       const oldName = partner.name
       partner.name = pendingRename.newName
       user.kids.forEach(child => {
+        if (child.ortu === oldName) child.ortu = pendingRename.newName
+      })
+      user.orphanageKids.forEach(child => {
         if (child.ortu === oldName) child.ortu = pendingRename.newName
       })
       delete user.pendingRshipRename
@@ -803,48 +877,686 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 }
 
   // === ANAK LIST ===
-if (action === 'anak' && args[1]?.toLowerCase() === 'list') {
-  if(user.kids.length === 0) return m.reply(
-    `╭─❏「 💔 KOSONG 」❏\n` +
-    `│ 💔 *BELUM PUNYA ANAK*\n` +
-    `╰─━━━━━━━━━━━━━━─`
-  )
+const kidGuide = () =>
+`╭─❏「 👶 PANDUAN KID 」❏\n` +
+`│ 📋 *FORMAT AKTIVITAS*\n` +
+`╰─━━━━━━━━━━━━━━─\n\n` +
+`🧸 *AKTIVITAS ANAK*\n` +
+`> ↳ Format: ${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>\n` +
+`> ↳ Aktivitas: ${Object.keys(CHILD_ACTIVITIES).join(', ')}\n` +
+`> ↳ Contoh: ${usedPrefix}rship kid main 1 1\n` +
+`> ↳ Batch premium: ${usedPrefix}rship urus <pasangan/all> <anak/all>\n\n` +
+`👨‍👩‍👧 *PENGELOLAAN ANAK*\n` +
+`> ↳ Info: ${usedPrefix}rship kid info\n` +
+`> ↳ Rename: ${usedPrefix}rship kid rename <pasangan> <anak> <nama>\n` +
+`> ↳ Moveout: ${usedPrefix}rship kid moveout <pasangan> <anak>\n\n` +
+`🏠 *PENITIPAN ANAK*\n` +
+`> ↳ Daycare: ${usedPrefix}rship kid daycare <pasangan> <anak>\n` +
+`> ↳ Panti asuhan: ${usedPrefix}rship kid orphanage <pasangan> <anak>\n` +
+`> ↳ Bisa menggunakan nomor global anak.\n\n` +
+`📝 *ALIAS COMMAND*\n` +
+`> ↳ Daycare: daycare / dayc / dc\n` +
+`> ↳ Orphanage: orphanage / pa / pantiasuhan / orp\n\n` +
+`⚠️ *ATURAN PENITIPAN*\n` +
+`> ↳ Konfirmasi menggunakan command tujuan diikuti yes atau no.\n` +
+`> ↳ Biaya ditagih otomatis setiap 24 jam.\n` +
+`> ↳ Tiga hari tanpa pembayaran membuat anak kembali ke keluarga.\n\n` +
+`💰 *PEMBAYARAN DI MUKA*\n` +
+`> ↳ ${usedPrefix}rship kid <daycare/orphanage> bayar <pasangan> <anak> <hari>\n\n` +
+`📌 *PANDUAN LANJUTAN*\n` +
+`> ↳ Daftar command: ${usedPrefix}rship kid command\n` +
+`> ↳ Panduan fitur: ${usedPrefix}rship kid guide\n\n` +
+`─━━━━━━━━━━━━━━─`
 
-  let cap = `╭─❏「 👶 DAFTAR ANAK 」❏\n`
-  cap += `│ 👶 *DAFTAR ANAK*\n`
-  cap += `╰─━━━━━━━━━━━━━━─\n\n`
+const kidCommandGuide = () =>
+`╭─❏「 📋 COMMAND KID 」❏\n` +
+`│ 📚 *DAFTAR COMMAND ANAK*\n` +
+`╰─━━━━━━━━━━━━━━─\n\n` +
+`👶 *INFORMASI & PANDUAN*\n` +
+`> ↳ ${usedPrefix}rship kid info\n` +
+`> ↳ ${usedPrefix}rship kid guide\n` +
+`> ↳ ${usedPrefix}rship kid command\n\n` +
+`🧸 *AKTIVITAS ANAK*\n` +
+`> ↳ ${usedPrefix}rship kid hibur <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid main <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid jalan <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid makan <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid tidur <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid mandi <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid peluk <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid puji <pasangan/all> <anak/all>\n` +
+`> ↳ ${usedPrefix}rship kid motivasi <pasangan/all> <anak/all>\n\n` +
+`💎 *FITUR PREMIUM*\n` +
+`> ↳ ${usedPrefix}rship urus <pasangan/all> <anak/all>\n` +
+`> ↳ Menjalankan seluruh 9 aktivitas sekaligus.\n\n` +
+`✏️ *PENGELOLAAN ANAK*\n` +
+`> ↳ ${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>\n` +
+`> ↳ ${usedPrefix}rship kid moveout <pasangan> <anak>\n` +
+`> ↳ Moveout hanya berlaku untuk anak dewasa dan memerlukan konfirmasi.\n\n` +
+`🏠 *DAYCARE*\n` +
+`> ↳ ${usedPrefix}rship kid daycare info\n` +
+`> ↳ ${usedPrefix}rship kid daycare guide\n` +
+`> ↳ ${usedPrefix}rship kid daycare command\n` +
+`> ↳ ${usedPrefix}rship kid daycare list\n` +
+`> ↳ ${usedPrefix}rship kid daycare bayar <pasangan> <anak> <hari>\n` +
+`> ↳ ${usedPrefix}rship kid daycare <pasangan> <anak>\n\n` +
+`🏡 *ORPHANAGE / PANTI ASUHAN*\n` +
+`> ↳ ${usedPrefix}rship kid orphanage info\n` +
+`> ↳ ${usedPrefix}rship kid orphanage guide\n` +
+`> ↳ ${usedPrefix}rship kid orphanage command\n` +
+`> ↳ ${usedPrefix}rship kid orphanage list\n` +
+`> ↳ ${usedPrefix}rship kid orphanage bayar <pasangan> <anak> <hari>\n` +
+`> ↳ ${usedPrefix}rship kid orphanage <pasangan> <anak>\n\n` +
+`⚠️ *CATATAN*\n` +
+`> ↳ Konfirmasi penitipan menggunakan yes atau no.\n` +
+`> ↳ Pembayaran otomatis dilakukan setiap 24 jam.\n` +
+`> ↳ Jika tidak membayar selama 3 hari, anak kembali ke keluarga.\n\n` +
+`─━━━━━━━━━━━━━━─`
 
-  user.kids.forEach((k,i) => {
-    const careCount = getChildCareCount(k)
 
-    cap += `*${i + 1}. ${getGenderEmoji(k.jenis === 'Laki-laki' ? 'cowok' : 'cewek')} ${k.nama}*\n`
-    cap += `> ↳ Tahap: ${getChildStage(careCount).name}\n`
-    cap += `> ↳ Asuhan: ${getChildProgress(careCount)}\n`
-    cap += `> ↳ Ortu: ${k.ortu}\n\n`
-  })
-
-  cap += `─━━━━━━━━━━━━━━─\n\n`
-  cap += `📌 *CARA MENGELOLA*\n`
-  cap += `> ↳ ${usedPrefix}rship urusanak <no>\n\n`
-  cap += `> ↳ ${usedPrefix}rship anak nama <no> <nama baru>\n\n`
-  cap += `> ↳ ${usedPrefix}rship anak adopsi <no> — alihkan pengasuhan dengan konfirmasi\n\n`
-  cap += `─━━━━━━━━━━━━━━─`
-
-  return m.reply(cap)
+const getKidTargets = (partnerSelector, childSelector, sourceKids = user.kids) => {
+  const partnerIndices = partnerSelector?.toLowerCase() === 'all'
+    ? user.harem.map((_, index) => index)
+    : [Number(partnerSelector) - 1]
+  if (!partnerSelector || partnerIndices.some(index => !Number.isInteger(index) || !user.harem[index])) return null
+  const targets = []
+  for (const partnerIndex of partnerIndices) {
+    const partner = user.harem[partnerIndex]
+    const children = sourceKids
+      .map((child, globalIndex) => ({ child, globalIndex }))
+      .filter(({ child }) => child.ortu === partner.name)
+    const chosen = childSelector?.toLowerCase() === 'all'
+      ? children
+      : children.filter((_, childIndex) => childIndex === Number(childSelector) - 1)
+    targets.push(...chosen.map(({ child, globalIndex }, index) => ({
+      child,
+      partner,
+      partnerIndex,
+      childIndex: children.findIndex(entry => entry.child === child),
+      globalIndex,
+      index
+    })))
+  }
+  return targets
 }
 
-if (action === 'anak' && ['nama', 'rename'].includes(args[1]?.toLowerCase())) {
-  const index = Number(args[2]) - 1
-  const child = user.kids[index]
-  const newName = args.slice(3).join(' ').trim()
-  if (!child) return m.reply(`❌ Anak tidak ditemukan. Lihat daftar dengan *${usedPrefix}rship anak list*.`)
-  if (!newName || newName.length > 30) return m.reply(`❌ Nama harus 1-30 karakter.\n> ↳ Format: *${usedPrefix}rship anak nama <no> <nama baru>*`)
-  const oldName = child.nama
-  child.nama = newName
+const getFacilityTargets = (facilityType, partnerSelector, childSelector) => {
+  const sourceKids = facilityType === 'orphanage' ? user.orphanageKids : user.kids
+  if (partnerSelector === 'all' || childSelector === 'all') {
+    return getKidTargets(partnerSelector, childSelector, sourceKids)
+  }
+  if (childSelector === undefined && /^\d+$/.test(partnerSelector || '')) {
+    const child = user.kids[Number(partnerSelector) - 1]
+    if (!child || child.facility || !user.harem.some(partner => partner.name === child.ortu)) return []
+    return [{
+      child,
+      partner: user.harem.find(partner => partner.name === child.ortu),
+      partnerIndex: user.harem.findIndex(partner => partner.name === child.ortu),
+      childIndex: Number(partnerSelector) - 1,
+      globalIndex: Number(partnerSelector) - 1
+    }]
+  }
+  return getKidTargets(partnerSelector, childSelector, sourceKids)
+}
+
+const facilityAliases = {
+  daycare: 'daycare', dayc: 'daycare', dc: 'daycare',
+  orphanage: 'orphanage', pa: 'orphanage', pantiasuhan: 'orphanage', orp: 'orphanage'
+}
+if (action === 'urus') args = ['kid', 'urus', ...args.slice(1)]
+const kidSubcommand = action === 'kid' || action === 'urus' ||
+  (action === 'anak' && args[1] &&
+    !['adopsi', 'jual', 'jualanak', 'buang', 'buanganak', 'bunuh', 'bunuhanak'].includes(args[1].toLowerCase()) &&
+    !/^\d+$/.test(args[1]))
+
+
+if (kidSubcommand) {
+  const sub = args[1]?.toLowerCase()
+  const confirmationWord = args[2]?.toLowerCase()
+  const facilityType = facilityAliases[sub]
+
+  if (!sub || ['guide', 'panduan'].includes(sub)) return m.reply(kidGuide())
+  if (['command', 'commands', 'cmd'].includes(sub)) return m.reply(kidCommandGuide())
+  if (['info', 'list'].includes(sub)) {
+    if (user.kids.length === 0) {
+      return m.reply(
+        `╭─❏「 👶 ANAK KELUARGA 」❏\n` +
+        `│ 📋 DAFTAR ANAK\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Belum ada anak yang terdaftar dalam keluargamu.\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `📌 *PANDUAN*\n` +
+        `> ↳ ${usedPrefix}rship kid guide`
+      )
+    }
+
+    const lines = user.kids.map((child, index) => {
+      const parentIndex = user.harem.findIndex(partner => partner.name === child.ortu)
+      const partnerChildIndex = user.kids.filter(entry => entry.ortu === child.ortu).indexOf(child) + 1
+      const careCount = getChildCareCount(child)
+      const facility = child.facility ? ` • 🏠 ${CHILD_FACILITIES[child.facility.type]?.label || child.facility.type}` : ''
+      return `*${index + 1}. ${getGenderEmoji(child.jenis === 'Laki-laki' ? 'cowok' : 'cewek')} ${child.nama}*\n` +
+        `> ↳ Pasangan ${parentIndex + 1}: ${child.ortu} • Anak ke-${partnerChildIndex} • ${getChildStage(careCount).name}${facility}\n` +
+        `> ↳ Asuhan: ${getChildProgress(careCount)}`
+    })
+    return m.reply(
+      `╭─❏「 👶 ANAK KELUARGA 」❏\n` +
+      `│ 📋 DAFTAR ANAK TERDAFTAR\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${lines.join('\n\n')}\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `📖 *PANDUAN*\n` +
+      `> ↳ ${usedPrefix}rship kid guide`
+    )
+  }
+
+  if (facilityType) {
+    const facility = CHILD_FACILITIES[facilityType]
+    const verb = facilityType === 'daycare' ? 'daycare' : 'orphanage'
+    const facilityKids = facilityType === 'orphanage' ? user.orphanageKids : user.kids.filter(child => child.facility?.type === facilityType)
+
+    if (['guide', 'command', 'info'].includes(confirmationWord)) {
+      if (confirmationWord === 'command') return m.reply(kidCommandGuide())
+
+      if (confirmationWord === 'guide') {
+        return m.reply(
+          `╭─❏「 📖 PANDUAN ${facility.label.toUpperCase()} 」❏\n` +
+          `│ 👶 SISTEM PENITIPAN ANAK\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Fasilitas ini memungkinkanmu menitipkan anak dengan biaya perawatan berkala.\n\n` +
+          `─━━━━━━━━━━━━━━─\n` +
+          `📌 *PERINTAH UTAMA*\n` +
+          `> 🔎 ${usedPrefix}rship kid info\n` +
+          `> ↳ Melihat daftar anak dan nomor pasangan.\n` +
+          `> 🏠 ${usedPrefix}rship kid ${verb} <pasangan> <anak>\n` +
+          `> ↳ Memulai proses penitipan anak.\n` +
+          `> ✅ ${usedPrefix}rship kid ${verb} yes\n` +
+          `> ↳ Mengonfirmasi penitipan anak.\n` +
+          `> ❌ ${usedPrefix}rship kid ${verb} no\n` +
+          `> ↳ Membatalkan pemindahan anak.\n` +
+          `> 📋 ${usedPrefix}rship kid ${verb} list\n` +
+          `> ↳ Melihat anak yang berada di fasilitas.\n` +
+          `> 💳 ${usedPrefix}rship kid ${verb} bayar <pasangan> <anak> <hari>\n` +
+          `> ↳ Membayar biaya penitipan di muka.\n\n` +
+          `─━━━━━━━━━━━━━━─\n` +
+          `💰 *BIAYA PENITIPAN*\n` +
+          `> ↳ Tarif: Rp ${facility.fee.toLocaleString('id-ID')} per anak setiap 24 jam.\n` +
+          `> ↳ Jika saldo bank tidak mencukupi, anak kembali setelah 3 hari.\n\n` +
+          `─━━━━━━━━━━━━━━─\n` +
+          `📖 *PANDUAN LENGKAP*\n` +
+          `> ↳ ${usedPrefix}rship kid ${verb} info\n` +
+          `> ↳ ${usedPrefix}rship kid ${verb} command`
+        )
+      }
+
+      const lines = facilityKids.length
+        ? facilityKids.map((child, index) => {
+          const parentIndex = user.harem.findIndex(partner => partner.name === child.ortu)
+          const childSource = facilityType === 'daycare' ? user.kids : facilityKids
+          const partnerChildIndex = childSource.filter(entry => entry.ortu === child.ortu).indexOf(child) + 1
+          return `*${index + 1}. 👶 ${child.nama}*\n` +
+            `> ↳ Pasangan ${parentIndex + 1}: ${child.ortu} • Anak ke-${partnerChildIndex}\n` +
+            `> ↳ Biaya: Rp ${facility.fee.toLocaleString('id-ID')} setiap 24 jam\n` +
+            `> ↳ Tagihan berikutnya: ${new Date(Number(child.facility?.paidUntil) || now).toLocaleString('id-ID')}`
+        }).join('\n\n')
+        : 'Belum ada anak yang terdaftar di fasilitas ini.'
+
+      return m.reply(
+        `╭─❏「 ${facility.label.toUpperCase()} 」❏\n` +
+        `│ 👶 INFORMASI FASILITAS\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `💰 *BIAYA PENITIPAN*\n` +
+        `> ↳ Tarif: Rp ${facility.fee.toLocaleString('id-ID')} per anak setiap 24 jam.\n` +
+        `> ↳ Jika saldo bank tidak mencukupi, anak kembali setelah 3 hari.\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `📋 *DAFTAR ANAK*\n` +
+        `${lines}\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `📌 *PERINTAH*\n` +
+        `> 🏠 Masukkan anak:\n` +
+        `> ↳ ${usedPrefix}rship kid ${verb} <pasangan> <anak>\n` +
+        `> 💳 Bayar di muka:\n` +
+        `> ↳ ${usedPrefix}rship kid ${verb} bayar <pasangan> <anak> <hari>`
+      )
+    }
+
+    if (['list', 'daftar'].includes(confirmationWord)) {
+      return m.reply(facilityKids.length
+        ? `╭─❏「 ${facility.label.toUpperCase()} 」❏\n` +
+          `│ 📋 DAFTAR ANAK DI FASILITAS\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `${facilityKids.map(child => {
+            const partnerIndex = user.harem.findIndex(partner => partner.name === child.ortu)
+            const childSource = facilityType === 'daycare' ? user.kids : facilityKids
+            const childIndex = childSource.filter(entry => entry.ortu === child.ortu).indexOf(child) + 1
+            return `> 👶 *${child.nama}*\n` +
+              `> ↳ Pasangan ${partnerIndex + 1}, anak ke-${childIndex}: ${child.ortu}`
+          }).join('\n\n')}\n\n` +
+          `─━━━━━━━━━━━━━━─`
+        : `╭─❏「 ${facility.label.toUpperCase()} 」❏\n` +
+          `│ 📋 DAFTAR ANAK\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Belum ada anak yang terdaftar di ${facility.label.toLowerCase()}.`
+      )
+    }
+
+    if (['bayar', 'pay'].includes(confirmationWord)) {
+      if (args[3]?.toLowerCase() === 'all' || args[4]?.toLowerCase() === 'all') {
+        return m.reply(
+          `╭─❏「 ⚠️ PEMBAYARAN FASILITAS 」❏\n` +
+          `│ 📌 TARGET PEMBAYARAN\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Pembayaran dilakukan untuk satu anak dalam satu transaksi.\n\n` +
+          `> ↳ Pilih nomor pasangan dan nomor anak.\n` +
+          `> ↳ Penggunaan *all* tidak didukung.`
+        )
+      }
+
+      const targets = getFacilityTargets(facilityType, args[3], args[4])
+      const days = Number(args[5] || 1)
+
+      if (!targets?.length || !Number.isInteger(days) || days < 1 || days > 365) {
+        return m.reply(
+          `╭─❏「 💳 PEMBAYARAN FASILITAS 」❏\n` +
+          `│ 📌 FORMAT PERINTAH\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ ${usedPrefix}rship kid ${verb} bayar <pasangan> <anak> <hari>\n\n` +
+          `📖 *KETERANGAN*\n` +
+          `> ↳ Durasi pembayaran: 1–365 hari.`
+        )
+      }
+
+      const target = targets.find(entry => entry.child.facility?.type === facilityType)
+
+      if (!target) {
+        return m.reply(
+          `╭─❏「 ❌ ANAK TIDAK DITEMUKAN 」❏\n` +
+          `│ Anak tersebut tidak terdaftar di ${facility.label.toLowerCase()}.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      const total = facility.fee * days
+
+      if (user.bank < total) {
+        return m.reply(
+          `╭─❏「 ❌ SALDO TIDAK MENCUKUPI 」❏\n` +
+          `│ 💳 PEMBAYARAN FASILITAS\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> 👶 Anak: ${target.child.nama}\n` +
+          `> ⏳ Durasi: ${days} hari\n` +
+          `> 💰 Total biaya: Rp ${total.toLocaleString('id-ID')}\n\n` +
+          `─━━━━━━━━━━━━━━─\n` +
+          `Silakan periksa saldo bank sebelum melakukan pembayaran.`
+        )
+      }
+
+      const paidUntil = Math.max(now, Number(target.child.facility.paidUntil) || now)
+      user.bank -= total
+      target.child.facility.paidUntil = paidUntil + facility.feePeriod * days
+      delete target.child.facility.unpaidSince
+      await saveDB(wdb)
+
+      return m.reply(
+        `╭─❏「 ✅ PEMBAYARAN BERHASIL 」❏\n` +
+        `│ 💳 BIAYA FASILITAS TERBAYAR\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> 👶 Anak: ${target.child.nama}\n` +
+        `> 🏠 Fasilitas: ${facility.label}\n` +
+        `> ⏳ Durasi: ${days} hari\n` +
+        `> 💰 Total pembayaran: Rp ${total.toLocaleString('id-ID')}\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `✨ Biaya penitipan berhasil dibayar.`
+      )
+    }
+
+    if (['yes', 'ya', 'iya', 'konfirmasi', 'no', 'tidak', 'batal', 'cancel'].includes(confirmationWord)) {
+      const pending = user.pendingKidFacility
+      const approve = ['yes', 'ya', 'iya', 'konfirmasi'].includes(confirmationWord)
+
+      if (!pending || pending.type !== facilityType) {
+        return m.reply(
+          `╭─❏「 ⚠️ KONFIRMASI FASILITAS 」❏\n` +
+          `│ Tidak ada konfirmasi fasilitas yang sesuai.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      if (!approve) {
+        delete user.pendingKidFacility
+        await saveDB(wdb)
+
+        return m.reply(
+          `╭─❏「 ❌ PEMINDAHAN DIBATALKAN 」❏\n` +
+          `│ 👶 Proses pemindahan anak dibatalkan.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      if (now - Number(pending.createdAt || 0) > 5 * 60 * 1000) {
+        delete user.pendingKidFacility
+        await saveDB(wdb)
+
+        return m.reply(
+          `╭─❏「 ⏳ KONFIRMASI KEDALUWARSA 」❏\n` +
+          `│ Batas waktu konfirmasi pemindahan telah berakhir.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      const child = user.kids[pending.globalIndex]
+
+      if (!child || child.nama !== pending.name || child.ortu !== pending.parent || child.facility) {
+        delete user.pendingKidFacility
+        await saveDB(wdb)
+
+        return m.reply(
+          `╭─❏「 ❌ DATA ANAK BERUBAH 」❏\n` +
+          `│ Pemindahan dibatalkan karena data anak tidak lagi sesuai.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      child.facility = { type: facilityType, paidUntil: now + facility.feePeriod }
+
+      if (facilityType === 'orphanage') {
+        user.kids.splice(pending.globalIndex, 1)
+        user.orphanageKids.push(child)
+      }
+
+      delete user.pendingKidFacility
+      await saveDB(wdb)
+
+      return m.reply(
+        `╭─❏「 ✅ PEMINDAHAN BERHASIL 」❏\n` +
+        `│ 👶 ${child.nama}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> 🏠 Fasilitas: ${facility.label}\n` +
+        `> 💰 Biaya: Rp ${facility.fee.toLocaleString('id-ID')} setiap 24 jam\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `✨ Anak berhasil dimasukkan ke fasilitas.`
+      )
+    }
+
+    if (!confirmationWord) {
+      return m.reply(
+        `╭─❏「 🏠 ${facility.label.toUpperCase()} 」❏\n` +
+        `│ 👶 SISTEM PENITIPAN ANAK\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Fasilitas ini digunakan untuk mengelola penitipan anak.\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `📖 *PANDUAN*\n` +
+        `> ↳ ${usedPrefix}rship kid ${verb} guide\n` +
+        `> 📋 *DAFTAR COMMAND*\n` +
+        `> ↳ ${usedPrefix}rship kid ${verb} command`
+      )
+    }
+
+    if (args[2]?.toLowerCase() === 'all' || args[3]?.toLowerCase() === 'all') {
+      return m.reply(
+        `╭─❏「 ⚠️ PEMINDAHAN ANAK 」❏\n` +
+        `│ 📌 TARGET PEMINDAHAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Pilih satu pasangan dan satu anak untuk fasilitas.\n\n` +
+        `> ↳ Gunakan nomor tertentu, bukan *all*.`
+      )
+    }
+
+    const targets = args[3] === undefined
+      ? getFacilityTargets(facilityType, args[2], args[3])
+      : getKidTargets(args[2], args[3], user.kids)
+
+    const target = targets?.find(entry => !entry.child.facility)
+
+    if (!target || !user.kids.includes(target.child)) {
+      return m.reply(
+        `╭─❏「 ❌ ANAK TIDAK DITEMUKAN 」❏\n` +
+        `│ Anak tidak ditemukan atau sudah berada di fasilitas.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📌 *PERIKSA DAFTAR ANAK*\n` +
+        `> ↳ ${usedPrefix}rship kid info`
+      )
+    }
+
+    user.pendingKidFacility = {
+      type: facilityType,
+      globalIndex: target.globalIndex,
+      name: target.child.nama,
+      parent: target.child.ortu,
+      createdAt: now
+    }
+
+    await saveDB(wdb)
+
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI PENITIPAN 」❏\n` +
+      `│ 👶 ${target.child.nama}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 🏠 Fasilitas: ${facility.label}\n` +
+      `> 💰 Biaya: Rp ${facility.fee.toLocaleString('id-ID')} setiap 24 jam\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `📌 *KONFIRMASI PEMINDAHAN*\n` +
+      `> ✅ ${usedPrefix}rship kid ${verb} yes\n` +
+      `> ↳ Konfirmasi penitipan anak.\n` +
+      `> ❌ ${usedPrefix}rship kid ${verb} no\n` +
+      `> ↳ Batalkan pemindahan anak.`
+    )
+  }
+
+
+  if (sub === 'rename') {
+    const targets = getKidTargets(args[2], args[3])
+    const target = targets?.[0]
+    const newName = args.slice(4).join(' ').trim()
+    if (!target || target.child.facility) return m.reply(
+      `╭─❏「 ❌ ANAK TIDAK DITEMUKAN 」❏\n` +
+      `│ Anak tidak ditemukan atau sedang berada di fasilitas.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📌 *DAFTAR ANAK*\n` +
+      `> ↳ ${usedPrefix}rship kid info`
+    )
+    if (!newName || newName.length > 30) return m.reply(
+      `╭─❏「 ✏️ GANTI NAMA ANAK 」❏\n` +
+      `│ 📌 FORMAT PERINTAH\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Nama anak harus terdiri dari 1–30 karakter.\n\n` +
+      `> ↳ ${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>`
+    )
+    target.child.nama = newName
+    await saveDB(wdb)
+    return m.reply(
+      `╭─❏「 ✅ NAMA ANAK DIPERBARUI 」❏\n` +
+      `│ ✏️ PERUBAHAN NAMA BERHASIL\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 👤 Pasangan: ${target.partner.name}\n` +
+      `> 👶 Nama baru: *${newName}*\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `✨ Nama anak berhasil diperbarui.`
+    )
+  }
+
+  if (sub === 'moveout') {
+    const pending = user.pendingKidMoveout
+    if (['yes', 'ya', 'iya', 'konfirmasi'].includes(confirmationWord)) {
+      const child = pending && user.kids[pending.globalIndex]
+      if (!pending || now - Number(pending.createdAt || 0) > 5 * 60 * 1000 ||
+        !child || child.nama !== pending.name || child.ortu !== pending.parent ||
+        getChildCareCount(child) < CHILD_STAGES[CHILD_STAGES.length - 1].care) {
+        delete user.pendingKidMoveout
+        await saveDB(wdb)
+        return m.reply(
+          `╭─❏「 ❌ PEMINDAHAN DIBATALKAN 」❏\n` +
+          `│ Data anak berubah, anak belum dewasa, atau konfirmasi telah kedaluwarsa.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
+      user.kids.splice(pending.globalIndex, 1)
+      delete user.pendingKidMoveout
+      await saveDB(wdb)
+      return m.reply(
+        `╭─❏「 🏡 ANAK PINDAH RUMAH 」❏\n` +
+        `│ 👶 *${child.nama}*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ✅ Status: Telah dewasa\n` +
+        `> 🏡 Keadaan: Resmi pindah rumah\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `✨ Kamu tidak perlu mengurusnya lagi.`
+      )
+    }
+    if (['no', 'tidak', 'batal', 'cancel'].includes(confirmationWord)) {
+      delete user.pendingKidMoveout
+      await saveDB(wdb)
+      return m.reply(
+        `╭─❏「 ❌ PINDAH RUMAH DIBATALKAN 」❏\n` +
+        `│ Konfirmasi pindah rumah berhasil dibatalkan.\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
+    }
+    const target = getKidTargets(args[2], args[3])?.[0]
+    if (!target || target.child.facility) return m.reply(
+      `╭─❏「 ❌ ANAK TIDAK DITEMUKAN 」❏\n` +
+      `│ Anak tidak ditemukan atau sedang berada di fasilitas.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📌 *DAFTAR ANAK*\n` +
+      `> ↳ ${usedPrefix}rship kid info`
+    )
+    if (getChildCareCount(target.child) < CHILD_STAGES[CHILD_STAGES.length - 1].care) return m.reply(
+      `╭─❏「 ⚠️ ANAK BELUM DEWASA 」❏\n` +
+      `│ Anak harus sudah dewasa sebelum dapat pindah rumah.\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+    user.pendingKidMoveout = {
+      globalIndex: target.globalIndex,
+      name: target.child.nama,
+      parent: target.child.ortu,
+      createdAt: now
+    }
+    await saveDB(wdb)
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI PINDAH RUMAH 」❏\n` +
+      `│ 👶 *${target.child.nama}*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Anak telah dewasa dan siap meninggalkan daftar anak keluarga.\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `📌 *KONFIRMASI PEMINDAHAN*\n` +
+      `> ✅ ${usedPrefix}rship kid moveout yes\n` +
+      `> ↳ Konfirmasi pindah rumah.\n` +
+      `> ❌ ${usedPrefix}rship kid moveout no\n` +
+      `> ↳ Batalkan pemindahan anak.`
+    )
+  }
+
+  const isBatchCare = sub === 'urus'
+  const activity = CHILD_ACTIVITIES[sub]
+  if (!activity && !isBatchCare) return m.reply(kidGuide())
+  if (isBatchCare && !isPremiumUser(m.sender, wdb)) return m.reply(
+    `╭─❏「 🔒 AKSES PREMIUM 」❏\n` +
+    `│ 👶 PENGASUHAN ANAK\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Fitur pengasuhan seluruh aktivitas khusus pengguna premium.\n\n` +
+    `> ↳ Fitur: ${usedPrefix}rship urus`
+  )
+  if ((args[2]?.toLowerCase() === 'all' || args[3]?.toLowerCase() === 'all') && !isPremiumUser(m.sender, wdb)) {
+    return m.reply(
+      `╭─❏「 🔒 AKSES PREMIUM 」❏\n` +
+      `│ 📋 PEMILIHAN ANAK\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Pemilihan *all* untuk anak hanya tersedia bagi pengguna premium.`
+    )
+  }
+  const targets = getKidTargets(args[2], args[3])
+  if (!targets?.length) {
+    return m.reply(
+      `╭─❏「 📖 PENGASUHAN ANAK 」❏\n` +
+      `│ 📌 FORMAT PERINTAH\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ ${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>\n\n` +
+      `📖 *CONTOH*\n` +
+      `> ↳ ${usedPrefix}rship kid main 1 1`
+    )
+  }
+  const actions = isBatchCare ? Object.entries(CHILD_ACTIVITIES) : [[sub, activity]]
+  const eligible = targets.filter(({ child }) =>
+    !child.facility &&
+    getChildCareCount(child) < CHILD_STAGES[CHILD_STAGES.length - 1].care &&
+    (!Number(child.lastKidActivityAt) || now - Number(child.lastKidActivityAt) >= CHILD_NEGLECT.careCooldown) &&
+    actions.every(([name]) => !(Number(child.activityCooldowns?.[name]) > 0 && now - Number(child.activityCooldowns[name]) < CHILD_ACTIVITIES[name].cooldown))
+  )
+  if (!eligible.length) return m.reply(
+    `╭─❏「 ⚠️ ANAK TIDAK TERSEDIA 」❏\n` +
+    `│ 👶 STATUS PENGASUHAN\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Tidak ada anak yang dapat melakukan aktivitas saat ini.\n\n` +
+    `> ↳ Anak mungkin sudah dewasa, sedang berada di daycare, atau aktivitasnya masih cooldown.`
+  )
+  if (eligible.length !== targets.length) {
+    const unavailable = targets.length - eligible.length
+    if (!isBatchCare && args[3]?.toLowerCase() !== 'all') return m.reply(
+      `╭─❏「 ⚠️ AKTIVITAS BELUM TERSEDIA 」❏\n` +
+      `│ Anak sedang tidak tersedia atau aktivitasnya masih cooldown.\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  let totalCost = 0
+  for (const [, rule] of actions) {
+    for (const target of eligible) totalCost += rule.cost || 0
+  }
+  if (user.bank < totalCost) return m.reply(
+    `╭─❏「 ❌ SALDO TIDAK MENCUKUPI 」❏\n` +
+    `│ 💳 BIAYA PENGASUHAN\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> 💰 Total biaya: Rp ${totalCost.toLocaleString('id-ID')}\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `Silakan periksa saldo bank sebelum melakukan aktivitas.`
+  )
+
+  const completed = []
+  const levelUps = new Map()
+  user.bank -= totalCost
+  for (const target of eligible) {
+    const { child, partner } = target
+    const childStories = []
+    for (const [name, rule] of actions) {
+      child.activityCooldowns[name] = now
+      child.love = Math.min(100, (Number(child.love) || 0) + rule.love)
+      const previousUps = levelUps.get(partner.name) || 0
+      if (addExp(partner, rule.exp)) levelUps.set(partner.name, previousUps + 1)
+      childStories.push(`${rule.emoji} ${rule.label}`)
+    }
+    child.careCount = getChildCareCount(child) + 1
+    child.umur = child.careCount / 10
+    child.lastKidActivityAt = now
+    child.lastCaredAt = now
+    child.lastNeglectCheckAt = now
+    user.dateStats.urusAnak = (Number(user.dateStats.urusAnak) || 0) + 1
+    completed.push(`*${child.nama}* (${partner.name}): ${childStories.join(', ')}`)
+  }
   await saveDB(wdb)
+  const totalUps = [...levelUps.values()].reduce((sum, value) => sum + value, 0)
+  const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString('id-ID')}` : ''
+  const levelLine = totalUps ? `\n> ↳ Level pasangan naik ${totalUps} kali` : ''
   return m.reply(
-    `╭─❏「 👶 NAMA ANAK 」❏\n│ ✅ *NAMA DIPERBARUI*\n╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Sebelumnya: ${oldName}\n> ↳ Sekarang: *${newName}*\n\n─━━━━━━━━━━━━━━─`
+    `╭─❏「 👶 PENGASUHAN ANAK 」❏\n` +
+    `│ ${isBatchCare ? '✨ SEMUA AKTIVITAS PENGASUHAN' : `💗 ${activity.label.toUpperCase()}`}\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ${isBatchCare ? '✅ Semua 9 aktivitas pengasuhan selesai.' : `✅ Aktivitas ${activity.label} selesai.`}\n\n` +
+    `${completed.join('\n')}${costLine}${levelLine}\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `⏳ *WAKTU COOLDOWN*\n` +
+    `> ↳ ${isBatchCare ? 'Cooldown pengasuhan anak: 4 jam.' : `Cooldown pengasuhan: ${formatRemaining(CHILD_NEGLECT.careCooldown / 1000)}.`}`
+  )
+}
+
+if (action === 'urusanak') {
+  return m.reply(
+    `╭─❏「 👶 PENGASUHAN ANAK 」❏\n` +
+    `│ 📌 PERINTAH BARU\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Gunakan command pengasuhan yang baru:\n` +
+    `> ↳ ${usedPrefix}rship urus <pasangan/all> <anak/all>\n\n` +
+    `📖 *PANDUAN*\n` +
+    `> ↳ ${usedPrefix}rship kid guide`
   )
 }
 
@@ -853,7 +1565,14 @@ if (
   (action === 'anak' && ['jual', 'jualanak', 'buang', 'buanganak', 'bunuh', 'bunuhanak'].includes(args[1]?.toLowerCase()))
 ) {
   return m.reply(
-    `❌ Jual atau menyakiti anak tidak tersedia. Jika ingin mengalihkan pengasuhan, gunakan *${usedPrefix}rship anak adopsi <no>*; aksi itu meminta konfirmasi dan mengurangi love pasangan.`
+    `╭─❏「 ⚠️ SISTEM PENGASUHAN 」❏\n` +
+    `│ 👶 PENGALIHAN PENGASUHAN\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Jual atau menyakiti anak tidak tersedia dalam sistem.\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `📌 *ALTERNATIF*\n` +
+    `> ↳ ${usedPrefix}rship anak adopsi <no>\n` +
+    `> ↳ Pengalihan pengasuhan memerlukan konfirmasi dan mengurangi love pasangan.`
   )
 }
 
@@ -864,13 +1583,21 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'adopsi') {
     if (!pending || Date.now() - Number(pending.createdAt || 0) > 5 * 60 * 1000) {
       delete user.pendingChildAdoption
       await saveDB(wdb)
-      return m.reply('❌ Konfirmasi adopsi tidak ada atau sudah kedaluwarsa.')
+      return m.reply(
+        `╭─❏「 ❌ KONFIRMASI KEDALUWARSA 」❏\n` +
+        `│ Konfirmasi pengalihan pengasuhan tidak ditemukan atau sudah kedaluwarsa.\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
     }
     const child = user.kids[pending.index]
     if (!child || child.nama !== pending.name) {
       delete user.pendingChildAdoption
       await saveDB(wdb)
-      return m.reply('❌ Data anak berubah. Aksi dibatalkan.')
+      return m.reply(
+        `╭─❏「 ❌ DATA ANAK BERUBAH 」❏\n` +
+        `│ Pengalihan pengasuhan dibatalkan karena data anak tidak lagi sesuai.\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
     }
     user.kids.splice(pending.index, 1)
     const parent = user.harem.find(partner => partner.name === child.ortu)
@@ -878,33 +1605,62 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'adopsi') {
     delete user.pendingChildAdoption
     await saveDB(wdb)
     return m.reply(
-      `╭─❏「 👶 PENGASUHAN ANAK 」❏\n│ ✅ *PENGASUHAN DIALIHKAN*\n╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ ${child.nama} telah dialihkan ke keluarga yang siap mengasuh.\n` +
-      `${parent ? `> ↳ Love ${parent.name} berkurang 50 (${parent.love}/100).\n` : ''}\n─━━━━━━━━━━━━━━─`
+      `╭─❏「 👶 PENGASUHAN ANAK 」❏\n` +
+      `│ ✅ PENGASUHAN DIALIHKAN\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 👶 Anak: ${child.nama}\n` +
+      `> ↳ Telah dialihkan ke keluarga yang siap mengasuh.\n` +
+      `${parent ? `> 💗 Love ${parent.name} berkurang 50 (${parent.love}/100).\n` : ''}\n` +
+      `─━━━━━━━━━━━━━━─`
     )
   }
   if (['no', 'tidak', 'batal', 'cancel'].includes(answer)) {
     if (pending) delete user.pendingChildAdoption
     await saveDB(wdb)
-    return m.reply('✅ Pengalihan pengasuhan dibatalkan.')
+    return m.reply(
+      `╭─❏「 ❌ PENGALIHAN DIBATALKAN 」❏\n` +
+      `│ Konfirmasi pengalihan pengasuhan berhasil dibatalkan.\n` +
+      `╰─━━━━━━━━━━━━━━─`
+    )
   }
   const index = Number(args[2]) - 1
   const child = user.kids[index]
-  if (!child) return m.reply(`❌ Anak tidak ditemukan. Lihat daftar dengan *${usedPrefix}rship anak list*.`)
+  if (!child) return m.reply(
+    `╭─❏「 ❌ ANAK TIDAK DITEMUKAN 」❏\n` +
+    `│ Periksa kembali nomor anak yang dipilih.\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📌 *DAFTAR ANAK*\n` +
+    `> ↳ ${usedPrefix}rship kid info`
+  )
   if (pending && Date.now() - Number(pending.createdAt || 0) <= 5 * 60 * 1000) {
-    return m.reply(`⚠️ Masih ada konfirmasi pengasuhan. Balas *${usedPrefix}rship anak adopsi yes* atau *${usedPrefix}rship anak adopsi no*.`)
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI MASIH AKTIF 」❏\n` +
+      `│ Selesaikan konfirmasi pengasuhan yang sebelumnya.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ✅ ${usedPrefix}rship anak adopsi yes\n` +
+      `> ↳ Setujui pengalihan pengasuhan.\n` +
+      `> ❌ ${usedPrefix}rship anak adopsi no\n` +
+      `> ↳ Batalkan pengalihan pengasuhan.`
+    )
   }
   user.pendingChildAdoption = { index, name: child.nama, createdAt: Date.now() }
   await saveDB(wdb)
   return m.reply(
-    `╭─❏「 ⚠️ KONFIRMASI PENGASUHAN 」❏\n│ 👶 *${child.nama}*\n╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Alihkan pengasuhan anak ke keluarga lain?\n` +
+    `╭─❏「 ⚠️ KONFIRMASI PENGASUHAN 」❏\n` +
+    `│ 👶 *${child.nama}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `Apakah kamu ingin mengalihkan pengasuhan anak ini ke keluarga lain?\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `📊 *DAMPAK PENGALIHAN*\n` +
     `> ↳ Love pasangan ${child.ortu} akan berkurang 50.\n\n` +
-    `> ↳ Balas *${usedPrefix}rship anak adopsi yes* untuk setuju.\n` +
-    `> ↳ Balas *${usedPrefix}rship anak adopsi no* untuk batal (5 menit).\n\n─━━━━━━━━━━━━━━─`
+    `─━━━━━━━━━━━━━━─\n` +
+    `📌 *KONFIRMASI*\n` +
+    `> ✅ ${usedPrefix}rship anak adopsi yes\n` +
+    `> ↳ Setujui pengalihan pengasuhan.\n` +
+    `> ❌ ${usedPrefix}rship anak adopsi no\n` +
+    `> ↳ Batalkan pengalihan pengasuhan (batas 5 menit).`
   )
 }
-
 
 if (user.harem.length === 0) return m.reply(
   `╭─❏「 ❌ JOMBLO 」❏\n` +
@@ -964,66 +1720,42 @@ if (action === 'santet') {
     : `╭─❏「 🕯️ SANTET GAGAL 」❏\n╰─━━━━━━━━━━━━━━─\n\n${story}\n\n💰 Uang: -Rp ${amount.toLocaleString()}\n\n─━━━━━━━━━━━━━━─`)
 }
 
-const activityCooldowns = {
-  date: 3600000, liburan: 12 * 3600000, makan: 2 * 3600000, peluk: 1800000,
-  mandi: 3600000, tidur: 8 * 3600000, belanja: 2 * 3600000, kerja: 4 * 3600000,
-  usil: 3600000, marah: 3600000, maaf: 1800000, talk: 900000, kiss: 4 * 3600000,
-  nonton: 3 * 3600000, swim: 4 * 3600000, wohoo: 6 * 3600000, duel: 6 * 3600000,
-  kill: 7 * 24 * 3600000, debat: 1800000, prank: 3600000, rampok: 6 * 3600000,
-  staycation: 6 * 3600000, santet: 2 * 3600000
-}
-const batchActivityRules = {
-  date: { level: 1, love: 10, exp: 20, cooldown: 3600000 },
-  liburan: { level: 20, love: 20, exp: 40, costMin: 250000, costMax: 250000, cooldown: 12 * 3600000 },
-  makan: { level: 1, love: 8, exp: 12, costMin: 15000, costMax: 25000, cooldown: 2 * 3600000 },
-  peluk: { level: 10, love: 5, exp: 8, cooldown: 1800000 },
-  mandi: { level: 40, love: 8, exp: 12, cooldown: 3600000 },
-  tidur: { level: 40, love: 10, exp: 15, cooldown: 8 * 3600000 },
-  belanja: { level: 10, love: 10, exp: 15, costMin: 10000, costMax: 30000, cooldown: 2 * 3600000 },
-  kerja: { level: 40, love: 8, exp: 15, incomeMin: 15000, incomeMax: 45000, married: true, cooldown: 4 * 3600000 },
-  usil: { level: 1, conflictIntensity: 3, exp: 10, cooldown: 3600000 },
-  marah: { level: 1, conflictIntensity: 8, exp: 5, cooldown: 3600000 },
-  maaf: { level: 1, love: 12, exp: 8, cooldown: 1800000 },
-  talk: { level: 1, love: 4, exp: 3, cooldown: 900000 },
-  kiss: { level: 27, love: 15, exp: 30, married: true, cooldown: 4 * 3600000 },
-  nonton: { level: 20, love: 12, exp: 18, cooldown: 3 * 3600000 },
-  swim: { level: 20, love: 20, exp: 50, cooldown: 4 * 3600000 },
-  wohoo: { level: 40, love: 25, exp: 60, cooldown: 6 * 3600000 },
-  debat: { level: 1, conflictIntensity: 5, exp: 10, cooldown: 1800000 },
-  prank: { level: 1, conflictIntensity: 7, exp: 12, cooldown: 3600000 },
-  staycation: { level: 10, love: 18, exp: 30, costMin: 500000, costMax: 500000, cooldown: 6 * 3600000 },
-  rampok: { level: 20, love: -5, exp: 20, incomeMin: 25000, incomeMax: 100000, cooldown: 6 * 3600000 }
-}
 if (action === 'all') {
   if (!isPremiumUser(m.sender, wdb)) return m.reply('Fitur `.rship all` khusus pengguna premium.')
-  const partnerIndex = Number(args[1]) - 1
-  const partner = user.harem[partnerIndex]
-  if (!Number.isInteger(partnerIndex) || !partner) return m.reply(`Pilih nomor pasangan dari daftar .rship. Contoh: ${usedPrefix}rship all 1`)
+  const partnerSelector = args[1]?.toLowerCase()
+  const partners = partnerSelector === 'all'
+    ? user.harem
+    : [user.harem[Number(partnerSelector) - 1]].filter(Boolean)
+  if (!partners.length) return m.reply(`Pilih nomor pasangan atau all. Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all all`)
   const allCooldown = cekCD('all', 30 * 60 * 1000)
   if (allCooldown > 0) return m.reply(`⏰ Cooldown rship all masih aktif. Tunggu ${formatRemaining(allCooldown)}.`)
-  const readyActivities = Object.entries(batchActivityRules).filter(([activity, rule]) =>
-    cekCD(activity, rule.cooldown) === 0 &&
-    (partner.level || 1) >= rule.level &&
-    (!rule.married || partner.menikah)
+  const activityCosts = partners.flatMap(partner =>
+    Object.entries(batchActivityRules)
+      .filter(([activity, rule]) =>
+        cekCD(activity, rule.cooldown) === 0 &&
+        (partner.level || 1) >= rule.level &&
+        (!rule.married || partner.menikah)
+      )
+      .map(([activity, rule]) => ({
+        partner,
+        activity,
+        rule,
+        cost: rule.costMin === undefined
+          ? 0
+          : Math.floor(Math.random() * (rule.costMax - rule.costMin + 1)) + rule.costMin
+      }))
   )
-  if (!readyActivities.length) return m.reply(`Belum ada aktivitas yang siap untuk *${partner.name}*. Cek cooldown dan syarat level dengan ${usedPrefix}rship cd/fitur.`)
+  if (!activityCosts.length) return m.reply(`Belum ada aktivitas yang siap untuk pasangan pilihan. Cek cooldown dan syarat level dengan ${usedPrefix}rship cd/fitur.`)
 
-  const activityCosts = readyActivities.map(([activity, rule]) => ({
-    activity,
-    rule,
-    cost: rule.costMin === undefined
-      ? 0
-      : Math.floor(Math.random() * (rule.costMax - rule.costMin + 1)) + rule.costMin
-  }))
   const totalCost = activityCosts.reduce((total, item) => total + item.cost, 0)
   if (user.bank < totalCost) return m.reply(`Saldo bank tidak cukup. Butuh Rp ${totalCost.toLocaleString()}.`)
 
   const now = Date.now()
   user.bank -= totalCost
   let totalIncome = 0
-  const completedActivities = []
+  const completedByPartner = new Map()
   let levelUps = 0
-  for (const { activity, rule } of activityCosts) {
+  for (const { partner, activity, rule } of activityCosts) {
     const loveChange = rule.conflictIntensity === undefined ? rule.love : conflictEffect(partner, rule.conflictIntensity)
     applyActivityLove(partner, loveChange)
     if (addExp(partner, rule.exp)) levelUps++
@@ -1031,7 +1763,8 @@ if (action === 'all') {
       totalIncome += Math.floor(Math.random() * (rule.incomeMax - rule.incomeMin + 1)) + rule.incomeMin
     }
     user.cooldown[activity] = now
-    completedActivities.push(activity)
+    if (!completedByPartner.has(partner.name)) completedByPartner.set(partner.name, [])
+    completedByPartner.get(partner.name).push(activity)
     if (activity === 'date') user.dateStats.totalDate++
     if (activity === 'wohoo') user.dateStats.wohoo++
   }
@@ -1043,7 +1776,10 @@ if (action === 'all') {
   const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString()}` : ''
   const incomeLine = totalIncome ? `\n> ↳ Pendapatan: +Rp ${totalIncome.toLocaleString()}` : ''
   const levelLine = levelUps ? `\n> ↳ Level up: ${levelUps} kali` : ''
-  return m.reply(`✅ Aktivitas untuk *${partner.name}* selesai.\n> ↳ Dijalankan: ${completedActivities.join(', ')}\n> ↳ EXP dan Love mengikuti hasil tiap aktivitas${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown all: 30 menit`)
+  const partnerLines = [...completedByPartner]
+    .map(([name, activities]) => `> ↳ *${name}*: ${activities.join(', ')}`)
+    .join('\n')
+  return m.reply(`✅ Aktivitas relationship selesai.\n${partnerLines}\n> ↳ EXP dan Love mengikuti hasil tiap aktivitas${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown all: 30 menit`)
 }
 
 let no = parseInt(args[1]) - 1
@@ -2415,50 +3151,6 @@ if (action === 'kiss') {
     )
   }
 
-  // === URUS ANAK ===
-  if (action === 'urusanak') {
-    let no = parseInt(args[1]) - 1
-    if(isNaN(no) ||!user.kids[no]) return m.reply(`╭─❏「 ❌ SALAH 」❏\n\nContoh:.rship urusanak 1\n╰─━━━━━━━━━━━━━━─`)
-    let anak = user.kids[no]
-    const previousCareCount = getChildCareCount(anak)
-
-    if (previousCareCount >= CHILD_STAGES[CHILD_STAGES.length - 1].care) {
-      return m.reply(
-        `╭─❏「 ✅ ANAK SUDAH DEWASA 」❏\n` +
-        `│ 👶 *${anak.nama}*\n` +
-        `│ Sudah dewasa.\n` +
-        `│ Tidak perlu diurus lagi.\n` +
-        `╰─━━━━━━━━━━━━━━─`
-      )
-    }
-
-    if(cekCD('urusanak', 14400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nAnak masih kenyang\n╰─━━━━━━━━━━━━━━─`)
-    anak.careCount = previousCareCount + 1
-    anak.umur = anak.careCount / 10
-    const previousStage = getChildStage(previousCareCount)
-    const currentStage = getChildStage(anak.careCount)
-    const expOrtu = 20 + anak.careCount
-    let cariOrtu = user.harem.find(p => p.name === anak.ortu)
-    if(cariOrtu) addExp(cariOrtu, expOrtu)
-    user.dateStats.urusAnak++
-    user.cooldown.urusanak = Date.now()
-    saveDB(wdb)
-
-    const stageUp = previousStage.name !== currentStage.name
-
-    return m.reply(
-      `╭─❏「 👶 URUS ANAK 」❏\n` +
-      `│ ${getGenderEmoji(anak.jenis === 'Laki-laki' ? 'cowok' : 'cewek')} *${anak.nama}*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Tahap : ${currentStage.name}\n` +
-      `> ↳ Asuhan : ${getChildProgress(anak.careCount)}\n` +
-      `> ↳ EXP Ortu : +${expOrtu}\n` +
-      `${stageUp ? `> ↳ 🎉 Naik tahap dari ${previousStage.name}\n` : ''}` +
-      `${currentStage === CHILD_STAGES[CHILD_STAGES.length - 1] ? `> ↳ ✅ Sudah dewasa, tidak perlu diurus lagi.\n` : ''}` +
-      `\n─━━━━━━━━━━━━━━─`
-    )
-  }
-
   // === DUEL LV80 ===
   if (action === 'duel') {
     let err = cekLevel(p, 1, 'Duel')
@@ -2550,7 +3242,7 @@ if (action === 'kiss') {
   }
 }
 
-handler.help = ['rship', 'rship command', 'rship cincin', 'rship all <no pasangan>', 'rship mantan', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
+handler.help = ['rship', 'rship command', 'rship kid info', 'rship kid guide', 'rship kid command', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
 handler.command = ['rship']
 handler.group = true

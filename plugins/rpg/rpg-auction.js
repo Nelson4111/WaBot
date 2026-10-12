@@ -684,6 +684,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     )
   }
 
+
   if ((mode === 'info' && !tokens[1]) ||
     (mode === 'bid' && (!tokens[1] || String(tokens[1]).toLowerCase() === 'info'))) {
     const myBids = offers.map((item, index) => ({
@@ -694,17 +695,21 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 
     return m.reply(
       `╭─❏「 🔎 BID YANG KAMU IKUTI 」❏\n` +
-      `│ 🔎 *BID AKTIF MILIKMU*\n` +
+      `│ 📋 INFORMASI BID AKTIF\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${myBids.length ? myBids.map(({ item, index, bid }) => {
         const highest = getVisibleHighestBid(db, session, item)
         const leading = highest && Number(highest.amount) === Number(bid.amount) &&
           isAuctionUser(highest.jid, userJids)
         const leaderName = highest.jid ? getAuctionBidderName(db, highest.jid) : getAuctionRivalName(session, item.id)
-        return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
-          `> ↳ Bid kamu: ${money(bid.amount)}${leading ? ' • TERTINGGI' : ''}\n` +
-          `> ↳ Bid tertinggi: ${money(highest.amount)} oleh ${leaderName}`
+        return `╭─❏「 ${item.emoji} BID ${index + 1} 」❏\n` +
+          `│ 🏷️ ${item.name}\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> 💰 Bid kamu: *${money(bid.amount)}*${leading ? ' • TERTINGGI' : ''}\n` +
+          `> 🏆 Bid tertinggi: *${money(highest.amount)}*\n` +
+          `> 👤 Penawar tertinggi: ${leaderName}`
       }).join('\n\n') : '> ↳ Kamu belum mengikuti bid aktif.'}\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
       `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
       `─━━━━━━━━━━━━━━─`
     )

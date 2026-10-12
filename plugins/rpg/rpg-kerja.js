@@ -1,351 +1,655 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+﻿import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
+import {
+  JOBS,
+  JOB_GUIDE,
+  JOB_APPLY_COOLDOWN_MS,
+  JOB_ATTENDANCE_MAX_NO_WORK_DAYS,
+  JOB_MULTI_APPLY_MIN_POINTS,
+  JOB_ABSENT_INCOME_MULTIPLIER_1,
+  JOB_ABSENT_INCOME_MULTIPLIER_2,
+  JOB_LEAVE_COOLDOWN_MS,
+  JOB_MAX_APPLIED,
+  JOB_TALK_COOLDOWN_MS,
+  JOB_TALK_STORIES,
+  JOB_PROMOTION_STORIES,
+  JOB_APPLY_STORIES,
+  JOB_APPLY_REJECT_STORIES,
+  JOB_WORK_STORIES,
+  getJobByIdentifier,
+  getJobTitleByPoints,
+  getJobTitleMultiplier,
+  withJobExp
+} from '../../lib/rpgJobData.js'
+
+const fmtRp = value => `Rp ${Number(value || 0).toLocaleString('id-ID')}`
+const pick = arr => arr[Math.floor(Math.random() * arr.length)]
+
+function ensureRpgState(userRPG) {
+  if (!userRPG) return null
+  if (userRPG.lastkerja === undefined) userRPG.lastkerja = 0
+  if (typeof userRPG.level !== 'number' || Number.isNaN(userRPG.level)) userRPG.level = 1
+  if (typeof userRPG.exp !== 'number' || Number.isNaN(userRPG.exp)) userRPG.exp = 0
+  if (typeof userRPG.promotionPoints !== 'number' || Number.isNaN(userRPG.promotionPoints)) userRPG.promotionPoints = Number(userRPG.promotionPoints || 0)
+  if (!Array.isArray(userRPG.appliedJobs)) userRPG.appliedJobs = []
+  if (!userRPG.performance || typeof userRPG.performance !== 'object') userRPG.performance = {}
+  if (!Array.isArray(userRPG.jobHistory)) userRPG.jobHistory = []
+  if (!userRPG.jobProgress || typeof userRPG.jobProgress !== 'object') userRPG.jobProgress = {}
+  if (!userRPG.attendance || typeof userRPG.attendance !== 'object') userRPG.attendance = {}
+  if (!userRPG.leave || typeof userRPG.leave !== 'object') userRPG.leave = { active: false }
+  const resolveJobName = value => {
+    const savedName = String(value || '')
+    const job = JOBS.find(entry => {
+      const legacyId = entry.job.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      return entry.job.toLowerCase() === savedName.toLowerCase() || legacyId === savedName.toLowerCase()
+    })
+    return job?.job || savedName
+  }
+  userRPG.appliedJobs = Array.from(new Set(userRPG.appliedJobs.map(resolveJobName)))
+  userRPG.jobHistory = Array.from(new Set(userRPG.jobHistory.map(resolveJobName)))
+  userRPG.currentJobName = resolveJobName(userRPG.currentJobName)
+  if (!userRPG.currentJobName && userRPG.currentJobId) {
+    userRPG.currentJobName = resolveJobName(userRPG.currentJobId)
+  }
+  delete userRPG.currentJobId
+  userRPG.promotionPoints = Number(userRPG.promotionPoints || 0)
+  const currentJobName = userRPG.currentJobName
+  const hasPerJobProgress = Object.keys(userRPG.jobProgress).length > 0
+  for (const jobName of new Set([...userRPG.appliedJobs, ...userRPG.jobHistory, currentJobName].filter(Boolean))) {
+    const progress = userRPG.jobProgress[jobName]
+    if (!progress || typeof progress !== 'object') {
+      userRPG.jobProgress[jobName] = {
+        promotionPoints: hasPerJobProgress
+          ? (jobName === currentJobName ? userRPG.promotionPoints : Number(progress || 0))
+          : userRPG.promotionPoints,
+        works: 0,
+        talks: 0
+      }
+    } else {
+      progress.promotionPoints = Number(progress.promotionPoints ?? (
+        !hasPerJobProgress || jobName === currentJobName ? userRPG.promotionPoints : 0
+      )) || 0
+      progress.works = Number(progress.works || 0)
+      progress.talks = Number(progress.talks || 0)
+    }
+  }
+  if (!userRPG.jobTitle) userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, currentJobName)
+  userRPG.performance = {
+    works: Number(userRPG.performance.works || 0),
+    attendance: Number(userRPG.performance.attendance || 0),
+    absent: Number(userRPG.performance.absent || 0),
+    leave: Number(userRPG.performance.leave || 0),
+    talks: Number(userRPG.performance.talks || 0),
+    promotions: Number(userRPG.performance.promotions || 0),
+    applied: Number(userRPG.performance.applied || 0),
+    ...userRPG.performance
+  }
+  return userRPG
+}
+
+function getJobProgress(userRPG, jobName = userRPG.currentJobName) {
+  if (!jobName) return { promotionPoints: Number(userRPG.promotionPoints || 0), works: 0, talks: 0 }
+  if (!userRPG.jobProgress[jobName]) {
+    userRPG.jobProgress[jobName] = { promotionPoints: 0, works: 0, talks: 0 }
+  }
+  return userRPG.jobProgress[jobName]
+}
+
+function getCurrentJobTitle(userRPG, jobName = userRPG.currentJobName) {
+  const points = Number(getJobProgress(userRPG, jobName).promotionPoints || 0)
+  return getJobTitleByPoints(points, jobName) || 'Anak Magang'
+}
+
+function getHighestRankedJob(userRPG) {
+  return userRPG.appliedJobs
+    .map(jobName => JOBS.find(job => job.job.toLowerCase() === jobName.toLowerCase()))
+    .filter(Boolean)
+    .reduce((highest, job) => {
+      if (!highest) return job
+      return Number(getJobProgress(userRPG, job.job).promotionPoints || 0) >
+        Number(getJobProgress(userRPG, highest.job).promotionPoints || 0)
+        ? job
+        : highest
+    }, null)
+}
+
+function getActiveJob(userRPG, levelOverride = userRPG.level) {
+  const currentJobName = userRPG.currentJobName ?? null
+  if (!currentJobName) return null
+  const current = JOBS.find(job => job.job.toLowerCase() === currentJobName.toLowerCase())
+  if (current && current.lv <= levelOverride) return current
+  return null
+}
+
+function getTitleFromJob(job, userRPG = null) {
+  if (!job) return 'Belum ada jabatan'
+  if (!userRPG) return 'Anak Magang'
+  return getCurrentJobTitle(userRPG, job.job)
+}
+
+function getJobLabel(job) {
+  return job?.job || 'Belum ada pekerjaan'
+}
+
+function getSelectedJob(userRPG, input = '') {
+  const text = String(input || '').trim()
+  if (!text) return getActiveJob(userRPG)
+  return getJobByIdentifier(text, userRPG.level)
+}
+
+function getAttendanceMultiplier(userRPG, now = Date.now()) {
+  const lastWork = Number(userRPG.lastkerja || 0)
+  if (!lastWork) return 1
+  const diff = now - lastWork
+  if (diff > JOB_ATTENDANCE_MAX_NO_WORK_DAYS * 24 * 60 * 60 * 1000) return 1
+  if (diff > 2 * 24 * 60 * 60 * 1000) return JOB_ABSENT_INCOME_MULTIPLIER_2
+  if (diff > 24 * 60 * 60 * 1000) return JOB_ABSENT_INCOME_MULTIPLIER_1
+  return 1
+}
+
+function applyAttendancePenalty(userRPG, now = Date.now()) {
+  const lastWork = Number(userRPG.lastkerja || 0)
+  if (!lastWork) return false
+  const diff = now - lastWork
+  if (diff > JOB_ATTENDANCE_MAX_NO_WORK_DAYS * 24 * 60 * 60 * 1000) {
+    userRPG.currentJobName = null
+    userRPG.firedAt = now
+    userRPG.performance.absent = Number(userRPG.performance.absent || 0) + 1
+    userRPG.attendance.lastPenaltyAt = now
+    return true
+  }
+  return false
+}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    const wdb = loadDB()
-    
-    if (!wdb.users[m.sender]) wdb.users[m.sender] = {}
-    if (!wdb.users[m.sender].rpg) wdb.users[m.sender].rpg = {}
-    
-    let userRPG = wdb.users[m.sender].rpg
-    
-    if (userRPG.lastkerja === undefined) userRPG.lastkerja = 0
-    if (typeof userRPG.level !== 'number' || isNaN(userRPG.level)) userRPG.level = 1
-    if (typeof userRPG.exp !== 'number' || isNaN(userRPG.exp)) userRPG.exp = 0
+  const wdb = loadDB()
+  if (!wdb.users[m.sender]) wdb.users[m.sender] = {}
+  if (!wdb.users[m.sender].rpg) wdb.users[m.sender].rpg = {}
+  if (!wdb.money) wdb.money = {}
+  if (!wdb.money[m.sender]) wdb.money[m.sender] = 0
 
-    let listJobs = [
-      { lv: 1, job: "Pemulung", gaji: 5000 },
-      { lv: 2, job: "Pengamen", gaji: 8000 },
-      { lv: 3, job: "Pembersih Jalan", gaji: 12000 },
-      { lv: 4, job: "Tukang Parkir Liar", gaji: 18000 },
-      { lv: 5, job: "Penjual Tissue", gaji: 25000 },
-      { lv: 6, job: "Karyawan Toko", gaji: 45000 },
-      { lv: 7, job: "Kasir Minimarket", gaji: 75000 },
-      { lv: 8, job: "Kurir", gaji: 112000 },
-      { lv: 9, job: "Driver Ojol", gaji: 157000 },
-      { lv: 10, job: "Satpam", gaji: 210000 },
-      { lv: 11, job: "Barista", gaji: 270000 },
-      { lv: 12, job: "Mekanik Bengkel", gaji: 337000 },
-      { lv: 13, job: "Badut", gaji: 412000 },
-      { lv: 14, job: "Koki", gaji: 495000 },
-      { lv: 15, job: "Tukang Cukur", gaji: 585000 },
-      { lv: 16, job: "SPG/SPB", gaji: 682000 },
-      { lv: 17, job: "Waiter Restoran", gaji: 787000 },
-      { lv: 18, job: "Admin Online Shop", gaji: 900000 },
-      { lv: 19, job: "Tukang Jahit Kostum", gaji: 1020000 },
-      { lv: 20, job: "Tukang Parkir", gaji: 1147000 },
-      { lv: 25, job: "Operator Pabrik", gaji: 1320000 },
-      { lv: 30, job: "Guru Les Privat", gaji: 1500000 },
-      { lv: 35, job: "Petugas Pemadam Kebakaran", gaji: 1687000 },
-      { lv: 40, job: "Staff Gudang", gaji: 1882000 },
-      { lv: 45, job: "Teller Bank", gaji: 2085000 },
-      { lv: 50, job: "Admin Kantor", gaji: 2295000 },
-      { lv: 55, job: "Pembawa Berita", gaji: 2520000 },
-      { lv: 60, job: "Desainer Grafis", gaji: 2752000 },
-      { lv: 65, job: "Video Editor", gaji: 2992000 },
-      { lv: 70, job: "Marketing", gaji: 3240000 },
-      { lv: 75, job: "Customer Service", gaji: 3495000 },
-      { lv: 80, job: "Guru", gaji: 3757000 },
-      { lv: 85, job: "Content Creator", gaji: 4027000 },
-      { lv: 87, job: "Streamer", gaji: 4140000 },
-      { lv: 88, job: "Cosplayer", gaji: 4252000 },
-      { lv: 89, job: "VTuber", gaji: 4365000 },
-      { lv: 90, job: "HRD Staff", gaji: 4485000 },
-      { lv: 95, job: "Digital Marketing", gaji: 4785000 },
-      { lv: 100, job: "Supervisor", gaji: 5092000 },
-      { lv: 110, job: "Perawat", gaji: 5475000 },
-      { lv: 120, job: "Akuntan Junior", gaji: 5865000 },
-      { lv: 130, job: "Social Media Specialist", gaji: 6262000 },
-      { lv: 140, job: "UI/UX Designer", gaji: 6667000 },
-      { lv: 150, job: "Polisi", gaji: 8000000 },
-      { lv: 160, job: "Dosen", gaji: 8800000 },
-      { lv: 170, job: "Apoteker", gaji: 9650000 },
-      { lv: 180, job: "Web Developer", gaji: 10550000 },
-      { lv: 190, job: "Project Manager", gaji: 11500000 },
-      { lv: 200, job: "Tentara", gaji: 12500000 },
-      { lv: 220, job: "Dokter Umum", gaji: 13800000 },
-      { lv: 240, job: "Arsitek", gaji: 15200000 },
-      { lv: 260, job: "Event Organizer", gaji: 16700000 },
-      { lv: 280, job: "Akuntan", gaji: 18300000 },
-      { lv: 300, job: "Manager", gaji: 20000000 },
-      { lv: 330, job: "Pengacara", gaji: 22000000 },
-      { lv: 360, job: "Programmer Senior", gaji: 24100000 },
-      { lv: 390, job: "Penari Profesional", gaji: 26300000 },
-      { lv: 420, job: "Programmer", gaji: 28600000 },
-      { lv: 450, job: "Model Busana", gaji: 31000000 },
-      { lv: 480, job: "Konsultan", gaji: 33500000 },
-      { lv: 520, job: "Direktur", gaji: 36500000 },
-      { lv: 550, job: "Dokter Spesialis", gaji: 39000000 },
-      { lv: 600, job: "Pilot", gaji: 42500000 },
-      { lv: 650, job: "Hakim", gaji: 46000000 },
-      { lv: 700, job: "Selebgram", gaji: 49500000 },
-      { lv: 800, job: "Pemilik UMKM", gaji: 55000000 },
-      { lv: 900, job: "Youtuber", gaji: 60500000 },
-      { lv: 1000, job: "Gamer Profesional", gaji: 66000000 },
-      { lv: 1200, job: "Pemilik Franchise", gaji: 75000000 },
-      { lv: 1400, job: "Pemilik Pabrik", gaji: 84000000 },
-      { lv: 1600, job: "CEO Perusahaan", gaji: 93000000 },
-      { lv: 1800, job: "Selebriti TV", gaji: 98000000 },
-      { lv: 2000, job: "Gubernur", gaji: 99500000 },
-      { lv: 2250, job: "Menteri", gaji: 99800000 },
-      { lv: 2500, job: "CEO", gaji: 100000000 }
+  const userRPG = ensureRpgState(wdb.users[m.sender].rpg)
+  const now = Date.now()
+
+  const parsed = (text || '').trim()
+  const parts = parsed ? parsed.split(/\s+/) : []
+  let action = command === 'work' ? 'work' : (parts[0] || '').toLowerCase()
+  let payload = command === 'work' ? parsed : parts.slice(1).join(' ')
+  const listJobs = withJobExp()
+
+
+  if (!parsed && command === 'job') {
+    const statusCooldown = scaleDifficultyCooldown(userRPG, 120000)
+    const remaining = Math.max(0, statusCooldown - (now - Number(userRPG.lastkerja || 0)))
+    const currentJob = getActiveJob(userRPG)
+    const highestJob = getHighestRankedJob(userRPG)
+    const displayJob = highestJob || currentJob
+    const displayPoints = Number(getJobProgress(userRPG, displayJob?.job).promotionPoints || 0)
+
+    const caption = [
+      '╭─❏「 💼 JOB SYSTEM 」❏',
+      '│ 💼 INFORMASI PEKERJAAN',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 🎮 Level: Lv.${userRPG.level}`,
+      `> 💼 Pekerjaan: ${getJobLabel(displayJob)}`,
+      `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, displayJob?.job)}`,
+      `> 💰 Income: ${fmtRp(Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(displayPoints, displayJob?.job)))}`,
+      `> 📊 Status: ${remaining > 0 ? `⏳ ${Math.ceil(remaining / 1000)} detik lagi` : '✅ Siap kerja'}`,
+      '',
+      '📌 *INFORMASI JOB SYSTEM*',
+      '> ↳ Sistem kerja harian dengan absensi, lamaran, cuti, promosi, dan profil kerja.',
+      `> 📖 ${usedPrefix}job guide`,
+      '> ↳ Panduan sistem pekerjaan.',
+      `> 📋 ${usedPrefix}job command`,
+      '> ↳ Daftar perintah pekerjaan.',
+      `> 💼 Alias kerja: ${usedPrefix}work / ${usedPrefix}job work`
+    ].join('\n')
+    return m.reply(caption)
+  }
+
+  if (['guide', 'command', 'help'].includes(action)) {
+    const guideText = [
+      '╭─❏「 💼 JOB GUIDE 」❏',
+      '│ 📖 PANDUAN SISTEM PEKERJAAN',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      ...JOB_GUIDE.map(line => line)
+    ].join('\n')
+    return m.reply(guideText)
+  }
+
+  if (['list', 'l', 'info', 'daftar'].includes(action)) {
+    const currentJob = getActiveJob(userRPG)
+    const caption = [
+      '╭─❏「 💼 DAFTAR PEKERJAAN 」❏',
+      '│ 📋 INFORMASI LOWONGAN KERJA',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 🎮 Level kamu: Lv.${userRPG.level}`,
+      `> 💼 Pekerjaan aktif: ${getJobLabel(currentJob)}`,
+      `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, currentJob?.job)}`,
+      '',
+      '📋 *LIST PEKERJAAN*'
     ]
 
-    // Auto kasih exp = gaji / 1000
-    listJobs = listJobs.map(j => ({...j, exp: Math.floor(j.gaji / 1000) }))
+    listJobs.forEach((job, index) => {
+      const unlock = userRPG.level >= job.lv ? '✅' : '🔒'
+      caption.push(`> ${index + 1}. ${unlock} ${job.job}`)
+      caption.push(`> ↳ Lv.${job.lv} • ${fmtRp(job.gaji)} • XP +${job.exp}`)
+    })
 
-    let args = (text || '').trim().toLowerCase()
-
-    let currentJob = listJobs.filter(j => userRPG.level >= j.lv).at(-1)
-    let jobName = userRPG.customJob || currentJob?.job
-
-    // STATUS DAN LIST KERJA
-    if (args === '' && command === 'job') {
-  let cooldown = scaleDifficultyCooldown(userRPG, 120000)
-  let sisa = Math.max(0, cooldown - (Date.now() - userRPG.lastkerja))
-  let status = sisa > 0
-    ? `⏳ ${Math.ceil(sisa / 1000)} detik lagi`
-    : '✅ Siap bekerja'
-
-  let caption = `╭─❏「 💼 JOB STATUS 」❏\n`
-  caption += `│ Lv.${userRPG.level} | ${jobName || 'Belum ada pekerjaan'}\n`
-  caption += `│ 💰 Gaji: Rp ${(currentJob?.gaji || 0).toLocaleString()}\n`
-  caption += `│ ⏰ Status: ${status}\n`
-  caption += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  caption += `📌 *MENU PEKERJAAN*\n`
-  caption += `> 📋 Daftar: *${usedPrefix}job list*\n`
-  caption += `> 🔄 Ganti job: *${usedPrefix}job change <nama/nomor>*\n`
-  caption += `> 👷 Kerja: *${usedPrefix}work [nama/nomor job]*\n`
-  caption += `> ↳ Alias: *${usedPrefix}kerja* / *${usedPrefix}work*`
-
-  return m.reply(caption)
-}
-
-if (args === 'list' || args === 'l') {
-  let caption = `╭─❏「 💼 DAFTAR PEKERJAAN 」❏\n`
-  caption += `│ 📊 Level kamu: Lv.${userRPG.level}\n`
-  caption += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  caption += `💼 *PEKERJAAN TERSEDIA*\n`
-  caption += `> ↳ Upah mengikuti level; nama pekerjaan bisa dipilih dari seluruh daftar.\n`
-
-  let jobBisa = listJobs.filter(j => userRPG.level >= j.lv)
-  let jobTerkini = jobBisa[jobBisa.length - 1]
-
-  if (jobTerkini) {
-    caption += `\n─━━━━━━━━━━━━━━─\n`
-    caption += `⚡ *JOB SEKARANG*\n`
-    caption += `> ↳ ${jobName || jobTerkini.job}\n`
-    caption += `> 💰 Gaji: Rp ${jobTerkini.gaji.toLocaleString()}\n`
-    caption += `> ✨ XP: +${jobTerkini.exp}\n`
+    caption.push('')
+    caption.push('📌 *CARA KERJA*')
+    caption.push(`> 💼 ${usedPrefix}work`)
+    caption.push(`> 💼 ${usedPrefix}job work`)
+    return m.reply(caption.join('\n'))
   }
 
-  caption += `\n─━━━━━━━━━━━━━━─\n`
+  if (action === 'profile') {
+    const currentJob = getActiveJob(userRPG)
+    const displayJob = getHighestRankedJob(userRPG) || currentJob
+    const promotion = Number(getJobProgress(userRPG, displayJob?.job).promotionPoints || 0)
+    const income = Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(promotion, displayJob?.job))
+    const caption = [
+      '╭─❏「 💼 JOB PROFILE 」❏',
+      '│ 👤 PROFIL PEKERJA',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 👤 Nama: ${m.pushName || 'Player'}`,
+      `> 🎮 Level: Lv.${userRPG.level}`,
+      `> 💼 Pekerjaan: ${getJobLabel(displayJob)}`,
+      `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, displayJob?.job)}`,
+      `> 💰 Income: ${fmtRp(income)}`,
+      `> ⭐ Poin promosi: ${promotion}`,
+      '',
+      '📊 *STATISTIK KERJA*',
+      `> 📅 Absensi: ${Number(userRPG.performance.attendance || 0)} hari`,
+      `> 💼 Kerja: ${Number(userRPG.performance.works || 0)} kali`,
+      '',
+      '📂 *PROGRES PEKERJAAN*',
+      ...(userRPG.appliedJobs.length
+        ? userRPG.appliedJobs.map(jobName => {
+          const points = Number(getJobProgress(userRPG, jobName).promotionPoints || 0)
+          return `> ${jobName}: ${getCurrentJobTitle(userRPG, jobName)} (${points} poin)`
+        })
+        : ['> Belum ada pekerjaan yang dilamar.'])
+    ].join('\n')
+    return m.reply(caption)
+  }
 
-  listJobs.forEach((v, i) => {
-    let bisa = userRPG.level >= v.lv ? '✅' : '🔒'
+  if (action === 'performance') {
+    const perf = userRPG.performance || {}
+    const caption = [
+      '╭─❏「 💼 JOB PERFORMANCE 」❏',
+      '│ 📊 STATISTIK PEKERJAAN',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 💼 Kerja: ${Number(perf.works || 0)}x`,
+      `> 📅 Absensi: ${Number(perf.attendance || 0)}x`,
+      `> 🌴 Cuti: ${Number(perf.leave || 0)}x`,
+      `> ❌ Alpha: ${Number(perf.absent || 0)}x`,
+      `> 💬 Talk: ${Number(perf.talks || 0)}x`,
+      '',
+      '🏆 *RIWAYAT KARIER*',
+      `> 📈 Promosi: ${Number(perf.promotions || 0)}x`,
+      `> 📝 Lamaran: ${Number(perf.applied || 0)}x`,
+      '',
+      '💼 *PERFORMA TIAP PEKERJAAN*',
+      ...(userRPG.appliedJobs.length
+        ? userRPG.appliedJobs.map(jobName => {
+          const progress = getJobProgress(userRPG, jobName)
+          return `> ${jobName}: ${getCurrentJobTitle(userRPG, jobName)} • ${Number(progress.promotionPoints || 0)} poin • ${Number(progress.works || 0)}x kerja • ${Number(progress.talks || 0)}x talk`
+        })
+        : ['> Belum ada pekerjaan yang dilamar.'])
+    ].join('\n')
+    return m.reply(caption)
+  }
 
-    caption += `💼 *${i + 1}. ${bisa} ${v.job}*\n`
-    caption += `> 📊 Syarat: Lv.${v.lv}\n`
-    caption += `> 💰 Gaji: Rp ${v.gaji.toLocaleString()}\n`
-    caption += `> ✨ XP: +${v.exp}\n`
-  })
+  if (action === 'salary') {
+    const target = payload || ''
+    const job = getJobByIdentifier(target, userRPG.level)
+    if (!job) return m.reply(`╭─❏「 ⚠️ JOB SALARY 」❏\n│ ❌ Pekerjaan *${target || 'yang kamu cari'}* tidak ditemukan.\n╰─━━━━━━━━━━━━━━─`)
+    const jobPoints = Number(userRPG.jobProgress[job.job]?.promotionPoints || 0)
+    const salaryMultiplier = getJobTitleMultiplier(jobPoints, job.job)
+    const caption = [
+      '╭─❏「 💰 JOB SALARY 」❏',
+      '│ 💵 INFORMASI GAJI PEKERJAAN',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 💼 Pekerjaan: ${job.job}`,
+      `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, job.job)}`,
+      `> 💰 Gaji dasar: ${fmtRp(job.gaji)}`,
+      `> 📈 Multiplier jabatan: x${salaryMultiplier}`,
+      `> 💵 Gaji per absen: ${fmtRp(Math.floor(job.gaji * salaryMultiplier))}`,
+      `> 🎮 Minimal level: Lv.${job.lv}`
+    ].join('\n')
+    return m.reply(caption)
+  }
 
-  caption += `\n─━━━━━━━━━━━━━━─\n`
-  caption += `📌 *CARA KERJA*\n`
-  caption += `> ↳ *${usedPrefix}work [nama/nomor job]*\n`
-  caption += `> ↳ Nama job bebas dipilih; upah tetap mengikuti level.\n`
-  caption += `> ↳ Ganti job: *${usedPrefix}job change <nama/nomor>*`
+  if (['apply', 'lamar'].includes(action)) {
+    const target = payload.trim()
+    const selectedJob = getSelectedJob(userRPG, target)
+    if (!selectedJob) return m.reply(`╭─❏「 ⚠️ JOB APPLICATION 」❏\n│ ❌ Nama/nomor pekerjaan tidak ditemukan.\n│ 📋 Cek *${usedPrefix}job list* untuk melihat daftar pekerjaan.\n╰─━━━━━━━━━━━━━━─`)
+    if (selectedJob.lv > userRPG.level) return m.reply(`╭─❏「 🔒 JOB APPLICATION 」❏\n│ 💼 Pekerjaan: ${selectedJob.job}\n│ 🎮 Minimal level: Lv.${selectedJob.lv}\n│ ❌ Level kamu belum mencukupi.\n╰─━━━━━━━━━━━━━━─`)
+    const alreadyApplied = userRPG.appliedJobs.includes(selectedJob.job)
+    if (!alreadyApplied && userRPG.appliedJobs.length >= JOB_MAX_APPLIED) return m.reply(`╭─❏「 ⚠️ JOB APPLICATION 」❏\n│ 📝 Batas lamaran: ${JOB_MAX_APPLIED} pekerjaan.\n│ Kamu sudah mencapai batas maksimal lamaran.\n│ Pilih salah satu pekerjaan yang sudah ada.\n╰─━━━━━━━━━━━━━━─`)
+    if (!alreadyApplied) {
+      const unqualifiedJob = userRPG.appliedJobs.find(jobName => {
+        return Number(getJobProgress(userRPG, jobName).promotionPoints || 0) < JOB_MULTI_APPLY_MIN_POINTS
+      })
+      if (unqualifiedJob) {
+        return m.reply(`╭─❏「 🔒 SYARAT LAMARAN 」❏
+│ 🏢 Pekerjaan: ${unqualifiedJob}
+│ 🎖️ Jabatan saat ini: ${getCurrentJobTitle(userRPG, unqualifiedJob)}
+│ 📈 Syarat: ${getJobTitleByPoints(JOB_MULTI_APPLY_MIN_POINTS, unqualifiedJob)} (${JOB_MULTI_APPLY_MIN_POINTS} poin)
+╰─━━━━━━━━━━━━━━─
 
-  return m.reply(caption)
-}
-
-const changeActions = ['change', 'ubah', 'rename']
-const [jobAction, ...changeArgs] = args.split(/\s+/)
-
-if (changeActions.includes(jobAction)) {
-  const confirmAction = changeArgs[0]
-  const confirmYes = ['yes', 'ya', 'ok', 'confirm', 'konfirmasi'].includes(confirmAction)
-  const confirmNo = ['no', 'tidak', 'batal', 'cancel', 'tolak'].includes(confirmAction)
-  const pendingChange = userRPG.pendingJobChange
-
-  if (confirmYes || confirmNo) {
-    if (!pendingChange) {
-      return m.reply('❌ Tidak ada perubahan job yang menunggu konfirmasi.')
+> Capai jabatan setara syarat minimum pada semua pekerjaan yang sudah kamu lamar sebelum melamar pekerjaan baru.`)
+      }
     }
-    if (Date.now() > pendingChange.expiresAt) {
-      delete userRPG.pendingJobChange
+
+    const nowMs = Date.now()
+    const lastApply = Number(userRPG.lastApplyAt || 0)
+    if (lastApply && nowMs - lastApply < JOB_APPLY_COOLDOWN_MS) {
+      const remaining = Math.ceil((JOB_APPLY_COOLDOWN_MS - (nowMs - lastApply)) / 1000)
+      return m.reply(`╭─❏「 ⏳ JOB APPLICATION 」❏\n│ Kamu masih dalam cooldown lamaran kerja.\n│ ↳ Coba lagi dalam *${remaining} detik*.\n╰─━━━━━━━━━━━━━━─`)
+    }
+
+    const crimeScore = getActiveCrimeScore(userRPG.crime || {})
+    const rejectChance = 0.5 + Math.min(0.4, crimeScore * 0.06)
+    const accepted = Math.random() > rejectChance
+    userRPG.lastApplyAt = nowMs
+    userRPG.performance.applied = Number(userRPG.performance.applied || 0) + 1
+
+    if (!accepted) {
+      const story = pick(JOB_APPLY_REJECT_STORIES)
       saveDB(wdb)
-      return m.reply('❌ Konfirmasi ganti job sudah kedaluwarsa. Ajukan perubahan lagi.')
-    }
-    if (confirmNo) {
-      delete userRPG.pendingJobChange
-      saveDB(wdb)
-      return m.reply('❌ Perubahan job dibatalkan.')
-    }
-
-    const confirmedJob = listJobs.find(job => job.job === pendingChange.job)
-    if (!confirmedJob) {
-      delete userRPG.pendingJobChange
-      saveDB(wdb)
-      return m.reply('❌ Job yang dipilih tidak lagi tersedia. Ajukan perubahan lagi.')
-    }
-    if (confirmedJob.lv > userRPG.level) {
-      delete userRPG.pendingJobChange
-      saveDB(wdb)
-      return m.reply(`❌ Job *${confirmedJob.job}* belum terbuka. Syaratnya Lv.${confirmedJob.lv}, level kamu saat ini Lv.${userRPG.level}.`)
+      return m.reply([
+        '╭─❏「 ⚠️ JOB APPLICATION 」❏',
+        '│ Status: Lamaran ditolak.',
+        '╰─━━━━━━━━━━━━━━─',
+        '',
+        `> ↳ ${story}`,
+        '> ↳ Peluang ditolak naik karena poin kriminal aktifmu lebih tinggi.'
+      ].join('\n'))
     }
 
-    userRPG.customJob = confirmedJob.job
-    delete userRPG.pendingJobChange
+    if (!alreadyApplied) {
+      userRPG.appliedJobs.push(selectedJob.job)
+      userRPG.jobProgress[selectedJob.job] = { promotionPoints: 0, works: 0, talks: 0 }
+    }
+    userRPG.currentJobName = selectedJob.job
+    userRPG.jobHistory = Array.from(new Set([...(Array.isArray(userRPG.jobHistory) ? userRPG.jobHistory : []), selectedJob.job]))
+    const selectedProgress = getJobProgress(userRPG, selectedJob.job)
+    userRPG.promotionPoints = Number(selectedProgress.promotionPoints || 0)
+    userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, selectedJob.job)
+
+    const story = pick(JOB_APPLY_STORIES)
     saveDB(wdb)
-    return m.reply(`✅ Job berhasil diubah menjadi *${confirmedJob.job}*.`)
+    return m.reply([
+      '╭─❏「 ✅ JOB APPLICATION 」❏',
+      '│ 🎉 LAMARAN DITERIMA',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 💼 Pekerjaan: ${selectedJob.job}`,
+      `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG)}`,
+      `> ↳ ${story}`
+    ].join('\n'))
   }
 
-  if (pendingChange) {
-    if (Date.now() > pendingChange.expiresAt) {
-      delete userRPG.pendingJobChange
-      saveDB(wdb)
-    } else {
-      return m.reply(
-        `⚠️ Masih ada perubahan job yang menunggu konfirmasi.\n` +
-        `> ${usedPrefix}job change yes\n` +
-        `> ${usedPrefix}job change batal`
-      )
+
+  if (['leave', 'cuti'].includes(action)) {
+    const leaveState = userRPG.leave || {}
+    if (leaveState.active) {
+      const remaining = Math.max(0, Number(leaveState.until || 0) - now)
+      return m.reply(`╭─❏「 ⏳ CUTI KERJA 」❏
+│ 💼 STATUS CUTI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu masih sedang cuti.
+> ↳ Sisa cooldown: *${Math.ceil(remaining / 1000)} detik*.`)
     }
+
+    userRPG.leave = {
+      active: true,
+      startedAt: now,
+      until: now + JOB_LEAVE_COOLDOWN_MS
+    }
+    userRPG.performance.leave = Number(userRPG.performance.leave || 0) + 1
+    return m.reply(`╭─❏「 🌴 CUTI KERJA 」❏
+│ 💼 CUTI BERHASIL DIAJUKAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu telah mengambil cuti kerja.
+> ↳ Gaji dihentikan sementara selama cuti.
+> ↳ Kembali bekerja dengan *${usedPrefix}job return*.`)
   }
 
-  const requestedJob = changeArgs.join(' ').trim()
-  if (!requestedJob) {
-    return m.reply(`❌ Format salah. Gunakan *${usedPrefix}job change <nama/nomor job>* atau *${usedPrefix}job list*.`)
+  if (action === 'return') {
+    const leaveState = userRPG.leave || {}
+    if (!leaveState.active) return m.reply(`╭─❏「 💼 KEMBALI BEKERJA 」❏
+│ 📋 STATUS PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu belum sedang cuti.
+> ↳ Gunakan *${usedPrefix}job leave* untuk mengambil cuti.`)
+    if (now < Number(leaveState.until || 0)) {
+      const remaining = Math.ceil((Number(leaveState.until || 0) - now) / 1000)
+      return m.reply(`╭─❏「 ⏳ CUTI MASIH AKTIF 」❏
+│ 🌴 STATUS CUTI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu belum bisa kembali bekerja.
+> ↳ Sisa waktu cuti: *${remaining} detik*.`)
+    }
+
+    userRPG.leave = { active: false, endedAt: now }
+    return m.reply(`╭─❏「 💼 KEMBALI BEKERJA 」❏
+│ ✅ CUTI SELESAI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu sudah kembali bekerja.
+> ↳ Semangat kembali menjalani rutinitas kerja!`)
   }
 
-  const jobIndex = /^\d+$/.test(requestedJob) ? Number(requestedJob) - 1 : -1
-  const selectedChangeJob = jobIndex >= 0 && jobIndex < listJobs.length
-    ? listJobs[jobIndex]
-    : listJobs.find(job => job.job.toLowerCase() === requestedJob)
+  if (action === 'resign' || action === 'keluar') {
+    const currentJob = getActiveJob(userRPG)
+    userRPG.currentJobName = null
+    userRPG.jobTitle = getJobTitleByPoints(Number(userRPG.promotionPoints || 0), currentJob?.job)
+    userRPG.resignedAt = now
+    return m.reply(`╭─❏「 📋 RESIGN PEKERJAAN 」❏
+│ 💼 STATUS PEKERJAAN
+╰─━━━━━━━━━━━━━━─
 
-  if (!selectedChangeJob) {
-    return m.reply(`❌ Nama/nomor job tidak ditemukan. Lihat daftar dengan *${usedPrefix}job list*.`)
-  }
-  if (selectedChangeJob.lv > userRPG.level) {
-    return m.reply(`❌ Job *${selectedChangeJob.job}* belum terbuka. Syaratnya Lv.${selectedChangeJob.lv}, level kamu saat ini Lv.${userRPG.level}.`)
-  }
-  if (selectedChangeJob.job === jobName) {
-    return m.reply(`ℹ️ Job kamu sudah *${selectedChangeJob.job}*.`)
+> ↳ Kamu telah resign dari pekerjaan *${currentJob?.job || 'pekerjaan'}*.
+> ↳ Kamu bisa kembali bekerja lagi nanti.`)
   }
 
-  userRPG.pendingJobChange = {
-    job: selectedChangeJob.job,
-    expiresAt: Date.now() + RPG_CONFIRMATION_TTL
+  if (action === 'talk') {
+    const lastTalk = Number(userRPG.lastTalkAt || 0)
+    if (lastTalk && now - lastTalk < JOB_TALK_COOLDOWN_MS) {
+      const remaining = Math.ceil((JOB_TALK_COOLDOWN_MS - (now - lastTalk)) / 1000)
+      return m.reply(`╭─❏「 💬 JOB TALK 」❏
+│ ⏳ COOLDOWN OBROLAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu baru saja mengajak seseorang mengobrol.
+> ↳ Coba lagi dalam *${remaining} detik*.`)
+    }
+
+    const activeJob = getActiveJob(userRPG)
+    if (!activeJob) return m.reply(`Kamu belum punya pekerjaan aktif. Lamar pekerjaan dulu dengan *${usedPrefix}job apply <nama/nomor>*.`)
+    const progress = getJobProgress(userRPG, activeJob.job)
+    const beforeTitle = getJobTitleByPoints(progress.promotionPoints, activeJob.job)
+    userRPG.lastTalkAt = now
+    userRPG.performance.talks = Number(userRPG.performance.talks || 0) + 1
+    progress.promotionPoints += 1
+    progress.talks += 1
+    userRPG.promotionPoints = progress.promotionPoints
+    const afterTitle = getJobTitleByPoints(progress.promotionPoints, activeJob.job)
+    userRPG.jobTitle = afterTitle
+    if (afterTitle !== beforeTitle) userRPG.performance.promotions = Number(userRPG.performance.promotions || 0) + 1
+    saveDB(wdb)
+    return m.reply(`╭─❏「 💬 JOB TALK 」❏
+│ 🤝 OBROLAN PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ${pick(JOB_TALK_STORIES)}
+
+─━━━━━━━━━━━━━━─
+📈 *Poin Promosi*
+> ↳ Bertambah +1 poin.`)
   }
-  saveDB(wdb)
-  return m.reply(
-    `⚠️ Kamu akan mengganti job menjadi *${selectedChangeJob.job}*.\n` +
-    `> Konfirmasi: *${usedPrefix}job change yes*\n` +
-    `> Batalkan: *${usedPrefix}job change batal*\n` +
-    `⏳ Konfirmasi berlaku selama 5 menit.`
-  )
+
+  if (action === 'work') {
+    if (userRPG.leave && userRPG.leave.active) {
+      return m.reply(`╭─❏「 🌴 CUTI KERJA 」❏
+│ ⚠️ TIDAK BISA BEKERJA
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu sedang cuti.
+> ↳ Gunakan *.job return* untuk kembali bekerja.`)
+    }
+
+    const wasFired = applyAttendancePenalty(userRPG, now)
+    if (wasFired) {
+      saveDB(wdb)
+      return m.reply(`╭─❏「 ⚠️ PEMECATAN KERJA 」❏
+│ 📋 STATUS PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu dipecat karena sudah tidak masuk kerja selama lebih dari 7 hari.
+> ↳ Lamar pekerjaan baru dengan *${usedPrefix}job apply*.`)
+    }
+
+    const selectedJob = getSelectedJob(userRPG, payload)
+    if (!selectedJob) return m.reply(`╭─❏「 ❌ PEKERJAAN TIDAK DITEMUKAN 」❏
+│ 💼 INFORMASI PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Pekerjaan yang kamu pilih tidak ditemukan.
+> ↳ Periksa daftar pekerjaan dengan *${usedPrefix}job list*.`)
+    if (selectedJob.lv > userRPG.level) return m.reply(`╭─❏「 ⚠️ LEVEL BELUM CUKUP 」❏
+│ 💼 PERSYARATAN PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Pekerjaan *${selectedJob.job}* belum bisa kamu pilih.
+> ↳ Minimal level: *Lv.${selectedJob.lv}*.`)
+
+    const gap = now - Number(userRPG.lastkerja || 0)
+    const jobCooldown = scaleDifficultyCooldown(userRPG, 120000)
+    const remainingCooldown = Math.max(0, jobCooldown - gap)
+    if (gap < jobCooldown) {
+      return m.reply(`╭─❏「 ⏳ JOB COOLDOWN 」❏
+│ 💼 STATUS PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu masih lelah setelah bekerja.
+> ↳ Sisa cooldown: *${Math.ceil(remainingCooldown / 1000)} detik*.`)
+    }
+
+    if (!userRPG.appliedJobs.includes(selectedJob.job)) {
+      return m.reply(`Kamu belum melamar pekerjaan *${selectedJob.job}*. Gunakan *${usedPrefix}job apply ${selectedJob.job}* dulu.`)
+    }
+
+    const progress = getJobProgress(userRPG, selectedJob.job)
+    const beforeTitle = getJobTitleByPoints(progress.promotionPoints, selectedJob.job)
+    const incomeMultiplier = getAttendanceMultiplier(userRPG, now) * getJobTitleMultiplier(progress.promotionPoints, selectedJob.job)
+    const baseJob = selectedJob
+    const earnedMoney = Math.max(0, Math.floor(scaleDifficultyIncome(userRPG, baseJob.gaji) * incomeMultiplier))
+    const earnedExp = scaleDifficultyXP(userRPG, baseJob.exp)
+
+    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + earnedMoney
+    userRPG.exp = Number(userRPG.exp || 0) + earnedExp
+    userRPG.lastkerja = now
+    userRPG.performance.works = Number(userRPG.performance.works || 0) + 1
+    userRPG.performance.attendance = Number(userRPG.performance.attendance || 0) + 1
+    userRPG.currentJobName = selectedJob.job
+    userRPG.jobHistory = Array.from(new Set([...(Array.isArray(userRPG.jobHistory) ? userRPG.jobHistory : []), selectedJob.job]))
+    progress.promotionPoints += 1
+    progress.works += 1
+    userRPG.promotionPoints = progress.promotionPoints
+    userRPG.jobTitle = getJobTitleByPoints(progress.promotionPoints, selectedJob.job)
+    const afterTitle = getCurrentJobTitle(userRPG, selectedJob.job)
+    if (afterTitle !== beforeTitle) userRPG.performance.promotions = Number(userRPG.performance.promotions || 0) + 1
+
+    let jumlahLevel = 0
+    while (userRPG.exp >= userRPG.level * 500) {
+      userRPG.exp -= userRPG.level * 500
+      userRPG.level += 1
+      jumlahLevel += 1
+    }
+
+    const story = pick(JOB_WORK_STORIES)
+    const nextLevel = listJobs.find(job => job.lv > userRPG.level)
+    const message = [
+      '╭─❏「 💼 KERJA BERHASIL 」❏',
+      '│ 📋 HASIL PEKERJAAN',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 🏢 Pekerjaan: *${selectedJob.job}*`,
+      `> 🎖️ Jabatan: ${afterTitle}`,
+      `> 💰 Gaji: +${fmtRp(earnedMoney)}`,
+      `> ✨ XP: +${earnedExp}`,
+      `> ${story}`,
+      '',
+      '─━━━━━━━━━━━━━━─',
+      `📊 *Level:* Lv.${userRPG.level}`,
+      `📈 *XP:* ${userRPG.exp}/${userRPG.level * 500}`,
+      nextLevel ? `➡️ *Pekerjaan selanjutnya:* ${nextLevel.job} (Lv.${nextLevel.lv})` : '🏆 *Pekerjaan tertinggi sudah tercapai!*',
+      jumlahLevel > 0 ? `🎉 *LEVEL UP!* +${jumlahLevel} level` : '',
+      `⏰ *Cooldown:* 2 menit`
+    ].filter(Boolean).join('\n')
+
+    saveDB(wdb)
+    await m.reply(message)
+
+    if (afterTitle !== beforeTitle) {
+      const promoMessage = [
+        '╭─❏「 🔥 PROMOSI JABATAN 」❏',
+        '│ 📈 INFORMASI PROMOSI',
+        '╰─━━━━━━━━━━━━━━─',
+        '',
+        `> 📉 Jabatan sebelumnya: ${beforeTitle}`,
+        `> 📈 Jabatan baru: ${afterTitle}`,
+        `> ⭐ Poin promosi: ${userRPG.promotionPoints}`,
+        '',
+        '─━━━━━━━━━━━━━━─',
+        pick(JOB_PROMOTION_STORIES)
+      ].join('\n')
+      return m.reply(promoMessage)
+    }
+
+    return
+  }
+
+  if (action === '') {
+    const currentJob = getActiveJob(userRPG)
+    const caption = [
+      '╭─❏「 💼 JOB INFORMATION 」❏',
+      '│ 📋 INFORMASI PEKERJAAN',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      `> 🏢 Pekerjaan aktif: ${getJobLabel(currentJob)}`,
+      `> 🎖️ Jabatan: ${getTitleFromJob(currentJob, userRPG)}`,
+      `> 💰 Income: ${fmtRp(currentJob?.gaji || 0)}`,
+      '',
+      `> ↳ Ketik *${usedPrefix}job guide* untuk melihat semua command.`
+    ].join('\n')
+    return m.reply(caption)
+  }
+
+  return m.reply(`╭─❏「 ❌ PERINTAH TIDAK DIKENAL 」❏
+│ 💼 JOB SYSTEM
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Perintah job tidak dikenal.
+> ↳ Gunakan *${usedPrefix}job guide* untuk melihat daftar command.`)
 }
 
-if (args === 'job' || args === 'work') args = ''
-else if (args.startsWith('work ') || args.startsWith('job ')) args = args.slice(args.indexOf(' ') + 1).trim()
-
-const requestedJob = args
-const availableJobs = listJobs.filter(j => userRPG.level >= j.lv)
-const earningJob = availableJobs.at(-1)
-let selectedJob = earningJob
-
-if (requestedJob) {
-  const jobIndex = /^\d+$/.test(requestedJob) ? Number(requestedJob) - 1 : -1
-  selectedJob = jobIndex >= 0 && jobIndex < listJobs.length
-    ? listJobs[jobIndex]
-    : listJobs.find(job => job.job.toLowerCase() === requestedJob)
-  if (!selectedJob) {
-    return m.reply(`❌ Nama/nomor job tidak ditemukan. Lihat daftar dengan *${usedPrefix}job list*, lalu gunakan *${usedPrefix}work <nama/nomor job>.*`)
-  }
-}
-
-let cooldown = scaleDifficultyCooldown(userRPG, 120000)
-let timers = cooldown - (Date.now() - userRPG.lastkerja)
-
-if (Date.now() - userRPG.lastkerja < cooldown) {
-  return m.reply(
-    `╭─❏「 ⏳ JOB COOLDOWN 」❏\n` +
-    `│ 👷 Kamu masih lelah!\n` +
-    `│ ↳ Istirahat selama *${Math.ceil(timers / 1000)} detik* lagi.\n` +
-    `╰─━━━━━━━━━━━━━━─`
-  )
-}
-
-// KERJA OTOMATIS
-if (!earningJob) {
-  return m.reply(
-    `╭─❏「 ❌ JOB 」❏\n` +
-    `│ 📊 Level kamu terlalu rendah untuk bekerja.\n` +
-    `╰─━━━━━━━━━━━━━━─`
-  )
-}
-
-try {
-  const earnedMoney = scaleDifficultyIncome(userRPG, earningJob.gaji)
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
-  const earnedExp = scaleDifficultyXP(userRPG, earningJob.exp)
-  userRPG.exp += earnedExp
-  userRPG.lastkerja = Date.now()
-  let jumlahLevel = 0
-  while (userRPG.exp >= userRPG.level * 500) {
-    userRPG.exp -= userRPG.level * 500
-    userRPG.level++
-    jumlahLevel++
-  }
-
-  const defaultJob = listJobs.filter(job => userRPG.level >= job.lv).at(-1)
-  const displayedJob = requestedJob
-    ? selectedJob.job
-    : userRPG.customJob || defaultJob?.job
-
-  saveDB(wdb)
-
-  let msg = `╭─❏「 💼 KERJA BERHASIL 」❏\n`
-  msg += `│ 👷 Pekerjaan: *${displayedJob || selectedJob.job}*\n`
-  msg += `│ 💰 Pendapatan: +Rp ${earnedMoney.toLocaleString()}\n`
-  msg += `│ ✨ XP: +${earnedExp.toLocaleString()}\n`
-  msg += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  msg += `📊 *STATUS*\n`
-  msg += `> ↳ Level: Lv.${userRPG.level}\n`
-  msg += `> ↳ XP: ${userRPG.exp}/${userRPG.level * 500}\n`
-  const nextJob = listJobs.find(job => job.lv > userRPG.level)
-  msg += nextJob
-    ? `> ↳ Job berikutnya: ${nextJob.job} (Lv.${nextJob.lv})\n`
-    : `> ↳ Kamu sudah mencapai job tertinggi.\n`
-
-  if (jumlahLevel > 0) {
-    msg += `> 🎉 *LEVEL UP!* +${jumlahLevel} Lv.${userRPG.level}\n`
-  }
-
-  msg += `> Upah tetap mengikuti level kamu.\n`
-  msg += `\n─━━━━━━━━━━━━━━─\n`
-  msg += `⏰ *Cooldown:* 2 menit`
-
-  return m.reply(msg)
-
-} catch (e) {
-  console.error(e)
-
-  return m.reply(
-    `╭─❏「 ❌ JOB ERROR 」❏\n` +
-    `│ Terjadi kesalahan saat bekerja.\n` +
-    `╰─━━━━━━━━━━━━━━─`
-  )
-}
-
-}
-
-handler.help = ['job', 'job list', 'job change/ubah/rename <nama/nomor>', 'job work [nama/nomor]', 'kerja', 'work [nama/nomor]']
+handler.help = ['job', 'job guide', 'job list', 'job info', 'job profile', 'job performance', 'job work', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk', 'job leave', 'job return', 'job resign', 'work', 'kerja']
 handler.tags = ['rpg']
 handler.command = /^(job|kerja|work)$/i
 handler.alias = ['job', 'kerja', 'work']
