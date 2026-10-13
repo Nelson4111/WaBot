@@ -13,6 +13,7 @@ import {
   JOB_MAX_APPLIED,
   JOB_TALK_COOLDOWN_MS,
   JOB_TALK_STORIES,
+  JOB_INDIVIDUAL_TALK_STORIES,
   JOB_PROMOTION_STORIES,
   JOB_APPLY_STORIES,
   JOB_APPLY_REJECT_STORIES,
@@ -642,8 +643,9 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 
   if (action === 'talk') {
     const lastTalk = Number(userRPG.lastTalkAt || 0)
-    if (lastTalk && now - lastTalk < JOB_TALK_COOLDOWN_MS) {
-      const remaining = Math.ceil((JOB_TALK_COOLDOWN_MS - (now - lastTalk)) / 1000)
+    const talkCooldown = scaleDifficultyCooldown(userRPG, JOB_TALK_COOLDOWN_MS)
+    if (lastTalk && now - lastTalk < talkCooldown) {
+      const remaining = Math.ceil((talkCooldown - (now - lastTalk)) / 1000)
       return m.reply(`╭─❏「 💬 JOB TALK 」❏
 │ ⏳ COOLDOWN OBROLAN
 ╰─━━━━━━━━━━━━━━─
@@ -663,6 +665,9 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 > ↳ Lamar pekerjaan dengan *${usedPrefix}job apply <nama/nomor>*.
 
 ─━━━━━━━━━━━━━━─`)
+    const talkStories = isIndividualJob(activeJob.job)
+      ? JOB_INDIVIDUAL_TALK_STORIES
+      : JOB_TALK_STORIES
     const progress = getJobProgress(userRPG, activeJob.job)
     const beforeTitle = getJobTitleByPoints(progress.promotionPoints, activeJob.job)
     userRPG.lastTalkAt = now
@@ -679,7 +684,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 │ 🤝 OBROLAN PEKERJAAN
 ╰─━━━━━━━━━━━━━━─
 
-${pick(JOB_TALK_STORIES)}
+${pick(talkStories)}
 ${promoted ? `> 🎉 Jabatan naik: ${beforeTitle} → ${afterTitle}` : ''}
 
 ─━━━━━━━━━━━━━━─

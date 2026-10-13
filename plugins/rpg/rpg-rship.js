@@ -287,6 +287,50 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return sisa > 0 ? Math.ceil(sisa / 1000) : 0
   }
 
+  const addExp = (partner, amount) => {
+    const eventMultiplier = (isRpgEventActive('love_season') ? 1.5 : 1) *
+      (isRpgEventActive('cold_war') ? 0.7 : 1)
+    partner.exp = (Number(partner.exp) || 0) + Math.floor(amount * eventMultiplier)
+    const needed = (Number(partner.level) || 1) * 200
+    if (partner.exp < needed) return false
+    partner.exp -= needed
+    partner.level = (Number(partner.level) || 1) + 1
+    partner.love = Math.min(100, (Number(partner.love) || 0) + 5)
+    partner.waitTitleUp = true
+    return true
+  }
+
+  const getActivityLoveAmount = amount => {
+    const eventMultiplier = (isRpgEventActive('love_season') ? 1.25 : 1) *
+      (isRpgEventActive('cold_war') ? 0.75 : 1)
+    return amount > 0 ? Math.floor(amount * eventMultiplier) : amount
+  }
+
+  const applyActivityLove = (partner, amount) => {
+    const adjustedAmount = getActivityLoveAmount(amount)
+    partner.love = Math.max(0, Math.min(100, (Number(partner.love) || 0) + adjustedAmount))
+    return adjustedAmount
+  }
+
+  const cekLevel = (partner, level, feature) => {
+    if ((Number(partner.level) || 1) >= level) return null
+    return `╭─❏「 ❌ LEVEL KURANG 」❏\n\nButuh Lv.${level} ${getTitle(level)}.\nSekarang Lv.${partner.level || 1}\nFitur: ${feature}\n╰─━━━━━━━━━━━━━━─`
+  }
+
+  const conflictEffect = (partner, intensity) => {
+    const level = Number(partner.level) || 1
+    if (level < 5) return -Math.floor(Math.random() * intensity) - 1
+    if (level < 10) return Math.random() < 0.55
+      ? -Math.floor(Math.random() * intensity) - 1
+      : Math.floor(Math.random() * 3) + 1
+    return Math.floor(Math.random() * 4) + 1
+  }
+
+  const formatLoveChange = change => {
+    const adjustedChange = getActivityLoveAmount(change)
+    return `${adjustedChange >= 0 ? '+' : ''}${adjustedChange}`
+  }
+
 
   if (action === 'lamar') {
     const mahar = Number(args[args.length - 1])
@@ -370,6 +414,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 💰 *DETAIL LAMARAN*
 > ↳ Mahar yang ditawarkan: Rp ${mahar.toLocaleString('id-ID')}
+> ↳ Peluang diterima: ${acceptanceChance}%
 > ↳ Mahar tidak dipotong karena lamaran ditolak.
 
 💡 *SARAN*
@@ -405,6 +450,7 @@ ${getGenderEmoji(gender)} *${nama}* menerima lamaranmu!
 > ↳ Status: Suami/Istri 💍
 > ↳ Level awal: Lv.1
 > ↳ Mahar: -Rp ${mahar.toLocaleString('id-ID')} dari bank RPG
+> ↳ Peluang diterima: ${acceptanceChance}%
 
 ─━━━━━━━━━━━━━━─
 
@@ -2665,15 +2711,48 @@ if (action === 'santet') {
     : `╭─❏「 🕯️ SANTET GAGAL 」❏\n╰─━━━━━━━━━━━━━━─\n\n${story}\n\n💰 Uang: -Rp ${amount.toLocaleString()}\n\n─━━━━━━━━━━━━━━─`)
 }
 
+
 if (action === 'all') {
-  if (!isPremiumUser(m.sender, wdb)) return m.reply('Fitur `.rship all` khusus pengguna premium.')
+  if (!isPremiumUser(m.sender, wdb)) {
+    return m.reply(
+      `╭─❏「 💞 RSHIP ALL 」❏
+│ 🔒 FITUR KHUSUS PREMIUM
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Fitur \`.rship all\` hanya tersedia untuk pengguna premium.
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
   const partnerSelector = args[1]?.toLowerCase()
   const partners = partnerSelector === 'all'
     ? user.harem
     : [user.harem[Number(partnerSelector) - 1]].filter(Boolean)
-  if (!partners.length) return m.reply(`Pilih nomor pasangan atau all. Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all all`)
+  if (!partners.length) {
+    return m.reply(
+      `╭─❏「 💞 RSHIP ALL 」❏
+│ 📋 FORMAT PENGGUNAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Pilih nomor pasangan atau gunakan \`all\`.
+> ↳ Contoh: ${usedPrefix}rship all 1
+> ↳ Contoh: ${usedPrefix}rship all all
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
   const allCooldown = cekCD('all', 30 * 60 * 1000)
-  if (allCooldown > 0) return m.reply(`⏰ Cooldown rship all masih aktif. Tunggu ${formatRemaining(allCooldown)}.`)
+  if (allCooldown > 0) {
+    return m.reply(
+      `╭─❏「 ⏰ RSHIP ALL 」❏
+│ AKTIVITAS MASIH COOLDOWN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Tunggu ${formatRemaining(allCooldown)} sebelum menggunakan aktivitas ini kembali.
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
   const activityCosts = partners.flatMap(partner =>
     Object.entries(batchActivityRules)
       .filter(([activity, rule]) =>
@@ -2690,10 +2769,32 @@ if (action === 'all') {
           : Math.floor(Math.random() * (rule.costMax - rule.costMin + 1)) + rule.costMin
       }))
   )
-  if (!activityCosts.length) return m.reply(`Belum ada aktivitas yang siap untuk pasangan pilihan. Cek cooldown dan syarat level dengan ${usedPrefix}rship cd/fitur.`)
+  if (!activityCosts.length) {
+    return m.reply(
+      `╭─❏「 💞 RSHIP ALL 」❏
+│ ⚠️ TIDAK ADA AKTIVITAS TERSEDIA
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Belum ada aktivitas yang siap untuk pasangan pilihan.
+> ↳ Periksa cooldown dan syarat level dengan ${usedPrefix}rship cd/fitur.
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
 
   const totalCost = activityCosts.reduce((total, item) => total + item.cost, 0)
-  if (user.bank < totalCost) return m.reply(`Saldo bank tidak cukup. Butuh Rp ${totalCost.toLocaleString()}.`)
+  if (user.bank < totalCost) {
+    return m.reply(
+      `╭─❏「 💰 RSHIP ALL 」❏
+│ ⚠️ SALDO BANK TIDAK MENCUKUPI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Total biaya: Rp ${totalCost.toLocaleString()}
+> ↳ Saldo bank tidak cukup untuk menjalankan aktivitas.
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
 
   const now = Date.now()
   user.bank -= totalCost
@@ -2724,7 +2825,22 @@ if (action === 'all') {
   const partnerLines = [...completedByPartner]
     .map(([name, activities]) => `> ↳ *${name}*: ${activities.join(', ')}`)
     .join('\n')
-  return m.reply(`✅ Aktivitas relationship selesai.\n${partnerLines}\n> ↳ EXP dan Love mengikuti hasil tiap aktivitas${costLine}${incomeLine}${levelLine}\n> ↳ Cooldown all: 30 menit`)
+  return m.reply(
+    `╭─❏「 💞 RSHIP ALL 」❏
+│ ✅ AKTIVITAS RELATIONSHIP SELESAI
+╰─━━━━━━━━━━━━━━─
+
+💑 *DAFTAR AKTIVITAS*
+${partnerLines}
+> ↳ EXP dan Love mengikuti hasil tiap aktivitas${costLine}${incomeLine}${levelLine}
+
+─━━━━━━━━━━━━━━─
+
+⏰ *COOLDOWN*
+> ↳ Cooldown all: 30 menit
+
+─━━━━━━━━━━━━━━─`
+  )
 }
 
 if (['putus', 'kill'].includes(action)) {
@@ -2733,17 +2849,58 @@ if (['putus', 'kill'].includes(action)) {
     ? user.harem[partnerNumber - 1]
     : null
   if (!partner) {
-    return m.reply(`Pilih nomor pasangan yang valid.\n> ↳ ${usedPrefix}rship ${action} <nomor pasangan>\n> ↳ Lihat nomor dengan ${usedPrefix}rship harem`)
+    return m.reply(
+      `╭─❏「 💔 RSHIP ${action.toUpperCase()} 」❏
+│ ⚠️ NOMOR PASANGAN TIDAK VALID
+╰─━━━━━━━━━━━━━━─
+
+📋 *PANDUAN*
+> ↳ Pilih nomor pasangan yang valid.
+> ↳ ${usedPrefix}rship ${action} <nomor pasangan>
+> ↳ Lihat nomor dengan ${usedPrefix}rship harem
+
+─━━━━━━━━━━━━━━─`
+    )
   }
   if (user.pendingRshipCustody) {
-    return m.reply(`Selesaikan hak asuh yang masih menunggu terlebih dahulu: ${usedPrefix}rship custody`)
+    return m.reply(
+      `╭─❏「 ⚖️ HAK ASUH RSHIP 」❏
+│ ⚠️ PENGATURAN MASIH TERTUNDA
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Selesaikan hak asuh yang masih menunggu terlebih dahulu.
+> ↳ Gunakan ${usedPrefix}rship custody
+
+─━━━━━━━━━━━━━━─`
+    )
   }
   const cooldownKey = action
   const cooldown = cekCD(cooldownKey, 7 * 24 * 60 * 60 * 1000)
-  if (cooldown > 0) return m.reply(`⏰ ${action} masih cooldown ${formatRemaining(cooldown)}. Cek dengan ${usedPrefix}rship cd.`)
+  if (cooldown > 0) {
+    return m.reply(
+      `╭─❏「 ⏰ RSHIP ${action.toUpperCase()} 」❏
+│ AKTIVITAS MASIH COOLDOWN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Tunggu ${formatRemaining(cooldown)}.
+> ↳ Periksa status dengan ${usedPrefix}rship cd.
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
   const pendingKey = action === 'putus' ? 'pendingRshipPutus' : 'pendingRshipKill'
   if (user[pendingKey] && now - Number(user[pendingKey].createdAt || 0) <= 5 * 60 * 1000) {
-    return m.reply(`Selesaikan konfirmasi ${action} yang masih aktif terlebih dahulu:\n> ${usedPrefix}rship ${action} konfirmasi\n> ${usedPrefix}rship ${action} batal`)
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI ${action.toUpperCase()} 」❏
+│ KONFIRMASI MASIH AKTIF
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Selesaikan konfirmasi yang masih aktif terlebih dahulu.
+> ↳ ${usedPrefix}rship ${action} konfirmasi
+> ↳ ${usedPrefix}rship ${action} batal
+
+─━━━━━━━━━━━━━━─`
+    )
   }
   user[pendingKey] = { name: partner.name, createdAt: now }
   await saveDB(wdb)
@@ -2751,12 +2908,22 @@ if (['putus', 'kill'].includes(action)) {
     ? `pasangan masuk daftar *mantan/exspouse* selama 7 hari (${usedPrefix}rship ex)`
     : `pasangan masuk *makam* selama 7 hari (${usedPrefix}rship makam)`
   return m.reply(
-    `⚠️ *KONFIRMASI ${action.toUpperCase()}*\n` +
-    `> Pasangan: *${partner.name}*\n` +
-    `> Jika dikonfirmasi, ${destination}.\n` +
-    `> Jika ada anak, kamu akan diminta memilih hak asuh setelahnya.\n\n` +
-    `✅ ${usedPrefix}rship ${action} konfirmasi\n` +
-    `❌ ${usedPrefix}rship ${action} batal`
+    `╭─❏「 ⚠️ KONFIRMASI ${action.toUpperCase()} 」❏
+│ 💔 TINDAKAN TERHADAP PASANGAN
+╰─━━━━━━━━━━━━━━─
+
+👤 *DETAIL PASANGAN*
+> ↳ Pasangan: *${partner.name}*
+> ↳ Jika dikonfirmasi, ${destination}.
+> ↳ Jika ada anak, kamu akan diminta memilih hak asuh setelahnya.
+
+─━━━━━━━━━━━━━━─
+
+📋 *PILIH TINDAKAN*
+> ↳ ✅ ${usedPrefix}rship ${action} konfirmasi
+> ↳ ❌ ${usedPrefix}rship ${action} batal
+
+─━━━━━━━━━━━━━━─`
   )
 }
 
@@ -2765,7 +2932,17 @@ if (Number.isNaN(no) || !user.harem[no]) {
   const available = user.harem
     .map((partner, index) => ({ partner, index }))
     .filter(({ partner }) => !activityCooldowns[action] || !cekCD(action, activityCooldowns[action]))
-  if (!available.length) return m.reply(`❌ Tidak ada pasangan yang siap untuk kegiatan *${action}*.`)
+  if (!available.length) {
+    return m.reply(
+      `╭─❏「 💞 RSHIP ${action.toUpperCase()} 」❏
+│ ❌ TIDAK ADA PASANGAN TERSEDIA
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Tidak ada pasangan yang siap untuk kegiatan *${action}*.
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
   no = available[Math.floor(Math.random() * available.length)].index
 }
 
