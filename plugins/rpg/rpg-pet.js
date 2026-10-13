@@ -760,7 +760,19 @@ if (action === 'all') {
   user.petLastAllAt = user.petCareAt
   user.pendingPetDispatch = [...getPendingPetDispatches(), { startedAt: now, readyAt: now + 1800000, money: dispatchMoney }]
   saveDB(wdb)
-  return safeReply(`✅ *PET ALL SELESAI*\nTrain, walk, play, dan hunt sudah dilakukan untuk ${user.pets.length} pet.\n> ↳ Hasil hunt: +Rp ${huntMoney.toLocaleString('id-ID')}\n> ↳ Dispatch selesai dalam 30 menit; hasilnya bisa ditumpuk tanpa klaim dulu. Cek *${usedPrefix}pet dispatch info* dan klaim dengan *${usedPrefix}pet dispatch collect*.${levelUps.length ? `\n> ↳ Level up: ${levelUps.length} pet.` : ''}`)
+  return safeReply(
+    `✅ *PET ALL SELESAI*\n` +
+    `\n📋 *DAFTAR AKTIVITAS*\n` +
+    `> ↳ Train: dilakukan untuk ${user.pets.length} pet.\n` +
+    `> ↳ Walk: dilakukan untuk ${user.pets.length} pet.\n` +
+    `> ↳ Play: dilakukan untuk ${user.pets.length} pet.\n` +
+    `> ↳ Hunt: dilakukan untuk ${user.pets.length} pet.\n` +
+    `\n📊 *HASIL*\n` +
+    `> ↳ Hasil hunt: +Rp ${huntMoney.toLocaleString('id-ID')}\n` +
+    `> ↳ Dispatch selesai dalam 30 menit; hasilnya bisa ditumpuk tanpa klaim dulu.\n` +
+    `> ↳ Info dispatch: *${usedPrefix}pet dispatch info*.\n` +
+    `> ↳ Klaim dispatch: *${usedPrefix}pet dispatch collect*.${levelUps.length ? `\n> ↳ Level up: ${levelUps.length} pet.` : ''}`
+  )
 }
   const getPet = (name) => user.pets.find(p => p.tipe === name)
   const getMood = (p) => {
