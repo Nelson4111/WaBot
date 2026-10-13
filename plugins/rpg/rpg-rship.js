@@ -2465,12 +2465,17 @@ Belum ada anak yang terdaftar dalam keluargamu.
     const lines = user.kids.map((child, index) => {
       const careCount = getChildCareCount(child)
       const facility = child.facility ? ` • 🏠 ${CHILD_FACILITIES[child.facility.type]?.label || child.facility.type}` : ''
-      const biologicalParents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
-        ? child.biologicalParents.join(' & ')
-        : child.ortu || 'Tidak diketahui'
-      return `*${index + 1}. ${getGenderEmoji(child.jenis === 'Laki-laki' ? 'cowok' : 'cewek')} ${child.nama}*\n` +
-        `> ↳ Orang tua asli: ${biologicalParents}\n` +
-        `> ↳ ${getChildStage(careCount).name}${facility}\n` +
+      const partner = user.harem.find(entry => entry.name === child.ortu)
+      const biologicalParent = Array.isArray(child.biologicalParents)
+        ? child.biologicalParents.find(parent => typeof parent === 'string' && parent.trim())
+        : null
+      const parentLine = partner
+        ? `> ↳ Pasangan: ${partner.name}\n`
+        : biologicalParent
+          ? `> ↳ Orang tua asli: ${biologicalParent}\n`
+          : ''
+      return `*${index + 1}. ${getGenderEmoji(child.jenis === 'Laki-laki' ? 'cowok' : 'cewek')} ${child.nama}* (${getChildStage(careCount).name}${facility})\n` +
+        parentLine +
         `> ↳ Asuhan: ${getChildProgress(careCount)}`
     })
     return m.reply(
@@ -3194,7 +3199,7 @@ ${completed.join('\n')}${costLine}${levelLine}
 ─━━━━━━━━━━━━━━─
 
 ⏳ *WAKTU COOLDOWN*
-> ↳ ${isBatchCare ? 'Cooldown pengasuhan anak: 4 jam.' : `Cooldown pengasuhan: ${formatRemaining(CHILD_NEGLECT.careCooldown / 1000)}.`}
+> ↳ ${isBatchCare ? `Cooldown pengasuhan anak: ${formatRemaining(CHILD_NEGLECT.careCooldown / 1000)}.` : `Cooldown pengasuhan: ${formatRemaining(CHILD_NEGLECT.careCooldown / 1000)}.`}
 
 ─━━━━━━━━━━━━━━─`
   )

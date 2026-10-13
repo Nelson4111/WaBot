@@ -36,6 +36,7 @@ import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
 import { hargaBeli, masakanResep, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { CHILD_NEGLECT } from '../../lib/rpgRshipData.js'
 
 const money = value => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
@@ -114,6 +115,26 @@ function getHomeMembers(rpg) {
   const children = Array.isArray(rpg.kids) ? rpg.kids : []
   const pets = Array.isArray(rpg.pets) ? rpg.pets : []
   return { spouses, children, pets }
+}
+
+function isHomeChildAvailable(child, now = Date.now()) {
+  const lastActivityAt = Number(child.lastKidActivityAt) || 0
+  return !child.facility && (!lastActivityAt || now - lastActivityAt >= CHILD_NEGLECT.careCooldown)
+}
+
+function markHomeChildActivity(child, now = Date.now()) {
+  child.lastKidActivityAt = now
+  child.lastCaredAt = now
+  child.lastNeglectCheckAt = now
+}
+
+function rewardHomeChildren(children, love, now = Date.now()) {
+  const rewarded = children.filter(child => isHomeChildAvailable(child, now)).slice(0, 2)
+  for (const child of rewarded) {
+    child.love = Math.min(100, (Number(child.love) || 0) + love)
+    markHomeChildActivity(child, now)
+  }
+  return rewarded
 }
 
 function getStaffRecord(home, name) {
@@ -425,13 +446,20 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
 
   if (pending.type === 'eat') {
     const members = getHomeMembers(rpg)
+    const activityAt = Date.now()
     const mealText = (pending.meals || []).map(meal => `${meal.emoji || '🍽️'} ${formatMasakanNama(meal.name)} x${meal.amount}`).join(', ')
     const story = HOME_CARE_STORIES.eat[Math.floor(Math.random() * HOME_CARE_STORIES.eat.length)]
     const previousHarmony = home.harmony
     home.harmony = clampHomeStat(home.harmony + HOME_EAT_HARMONY)
     const harmonyGained = home.harmony - previousHarmony
-    for (const partner of members.spouses.slice(0, 2)) partner.love = Math.min(100, (Number(partner.love) || 0) + 1)
-    for (const pet of members.pets.slice(0, 2)) pet.happy = clampHomeStat((Number(pet.happy) || 0) + 5)
+    const rewardedPartners = members.spouses.slice(0, 2)
+    for (const partner of rewardedPartners) partner.love = Math.min(100, (Number(partner.love) || 0) + 1)
+    const rewardedChildren = rewardHomeChildren(members.children, 2, activityAt)
+    const rewardedPets = members.pets.slice(0, 2)
+    for (const pet of rewardedPets) {
+      pet.happy = clampHomeStat((Number(pet.happy) || 0) + 5)
+      pet.exp = (Number(pet.exp) || 0) + 5
+    }
     await saveDB(db)
     return m.reply(
       `╭─❏「 🍽️ MAKAN BERSAMA 」❏\n` +
@@ -442,6 +470,10 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       `🍽️ *MENU MAKANAN*\n` +
       `> ↳ Menu: ${mealText}\n` +
       `> ↳ Biaya hidangan: Gratis (termasuk layanan Private Chef)\n\n` +
+      `👨‍👩‍👧 *EFEK KE PENGHUNI*\n` +
+      `${rewardedPartners.length ? `> ↳ Pasangan: +1 Love untuk ${rewardedPartners.map(partner => partner.name).join(', ')}\n` : ''}` +
+      `${rewardedChildren.length ? `> ↳ Anak: +2 Love untuk ${rewardedChildren.map(child => child.nama || child.name || 'Anak').join(', ')}\n` : ''}` +
+      `${rewardedPets.length ? `> ↳ Pet: +5 bahagia dan +5 EXP untuk ${rewardedPets.map(pet => pet.nickname || pet.tipe || pet.name || 'Pet').join(', ')}\n\n` : '\n'}` +
       `🏡 *KONDISI RUMAH*\n` +
       `> ↳ Harmony rumah: +${harmonyGained} (sekarang ${home.harmony}/100)\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -787,7 +819,7 @@ if (mode === 'command') {
     `> ↳ ${prefix}home act — aktivitas rumah (alias: activity/aktivitas; cooldown 5 menit)\n` +
     `> ↳ ${prefix}home eat <menu> [jumlah] — makan dari kulkas; menu Private Chef gratis (alias: makan)\n` +
     `> ↳ ${prefix}home clean — bersihkan rumah\n` +
-    `> ↳ ${prefix}home childcare — rawat anak\n` +
+    `> ↳ ${prefix}home childcare — rawat anak (cooldown anak 30 menit)\n` +
     `> ↳ ${prefix}home petcare — rawat pet\n` +
     `> ↳ ${prefix}home cd — lihat cooldown aktivitas\n\n` +
     `🏡 *STAFF RUMAH*\n` +
@@ -1460,20 +1492,26 @@ if (mode === 'act' || mode === 'activity' || mode === 'aktivitas') {
   }
 
   const members = getHomeMembers(rpg)
+  const availableChildren = members.children.filter(child => isHomeChildAvailable(child))
   const canCollect = home.furniture.length + home.trophies.length + Object.values(furnitureInventory).reduce((sum, count) => sum + (Number(count) || 0), 0) > 0
   const eligible = ['solo']
   if (members.spouses.length) eligible.push('relationship')
   if (members.pets.length) eligible.push('pet')
+  if (availableChildren.length) eligible.push('children')
   if (members.spouses.length && members.pets.length) eligible.push('family')
   if (canCollect) eligible.push('collection')
   if (members.spouses.length && members.pets.length && canCollect) eligible.push('everything')
   const type = eligible[Math.floor(Math.random() * eligible.length)]
   const stories = HOME_STORIES[type]
   const story = stories[Math.floor(Math.random() * stories.length)]
+  const activityAt = Date.now()
   const chosen = (items, limit = 2) => [...items].sort(() => Math.random() - 0.5).slice(0, Math.min(limit, items.length))
   const involvedPartners = ['relationship', 'family', 'everything'].includes(type) ? chosen(members.spouses) : []
   const involvedPets = ['pet', 'family', 'everything'].includes(type) ? chosen(members.pets) : []
-  const involvedChildren = ['family', 'everything'].includes(type) ? chosen(members.children) : []
+  const selectedChildren = ['children', 'family', 'everything'].includes(type)
+    ? chosen(members.children.filter(child => isHomeChildAvailable(child, activityAt)))
+    : []
+  const involvedChildren = rewardHomeChildren(selectedChildren, story.childLove || 3, activityAt)
   const heldItems = Object.entries(furnitureInventory)
     .filter(([, count]) => Number(count) > 0)
     .map(([id, count]) => ({ id, count: Number(count), source: 'inventori' }))
@@ -1504,7 +1542,7 @@ if (mode === 'act' || mode === 'activity' || mode === 'aktivitas') {
     petRewards.push({ name: pet.nickname || pet.tipe || pet.name || 'Pet', happy: pet.happy })
   }
 
-  home.lastActivityAt = Date.now()
+  home.lastActivityAt = activityAt
   await saveDB(db)
 
   const partnerMentions = relationshipRewards.map(partner => partner.jid).filter(Boolean)
@@ -1517,6 +1555,7 @@ if (mode === 'act' || mode === 'activity' || mode === 'aktivitas') {
     solo: 'AKTIVITAS SENDIRI',
     relationship: 'BERSAMA PASANGAN',
     pet: 'BERSAMA PET',
+    children: 'BERSAMA ANAK',
     family: 'BERSAMA KELUARGA & PET',
     collection: 'BERSAMA FURNITURE & KOLEKSI',
     everything: 'BERSAMA SEMUA PENGHUNI & BARANG'
@@ -1536,7 +1575,8 @@ if (mode === 'act' || mode === 'activity' || mode === 'aktivitas') {
     `📊 *HASIL AKTIVITAS*\n` +
     `> ↳ Harmony rumah: +${story.harmony} (sekarang ${home.harmony}/100)\n` +
     `${relationshipRewards.length ? `> ↳ Love pasangan: ${relationshipRewards.map(partner => `${partner.name} +${story.love || 0} (sekarang ${partner.love}/100)`).join('; ')}\n` : ''}` +
-    `${petRewards.length ? `> ↳ Kebahagiaan pet: ${petRewards.map(pet => `${pet.name} +${story.petHappy || 0} (sekarang ${pet.happy}/100)`).join('; ')}\n` : ''}` +
+    `${involvedChildren.length ? `> ↳ Kedekatan anak: ${involvedChildren.map(child => `${child.nama || child.name || 'Anak'} +${story.childLove || 3} Love (sekarang ${child.love}/100)`).join('; ')}\n` : ''}` +
+    `${petRewards.length ? `> ↳ Pet: ${petRewards.map(pet => `${pet.name} +${story.petHappy || 0} bahagia, +5 EXP (bahagia ${pet.happy}/100)`).join('; ')}\n` : ''}` +
     `${story.aesthetics ? `> ↳ Aesthetics: +${story.aesthetics}\n` : ''}\n` +
     `⏳ *COOLDOWN*\n` +
     `> ↳ 5 menit.\n\n` +
@@ -1675,13 +1715,20 @@ if (mode === 'eat' || mode === 'makan') {
   }
 
   const members = getHomeMembers(rpg)
+  const activityAt = Date.now()
   const story = HOME_CARE_STORIES.eat[Math.floor(Math.random() * HOME_CARE_STORIES.eat.length)]
   const previousHarmony = home.harmony
   home.harmony = clampHomeStat(home.harmony + HOME_EAT_HARMONY)
   const harmonyGained = home.harmony - previousHarmony
 
-  for (const partner of members.spouses.slice(0, 2)) partner.love = Math.min(100, (Number(partner.love) || 0) + 1)
-  for (const pet of members.pets.slice(0, 2)) pet.happy = clampHomeStat((Number(pet.happy) || 0) + 5)
+  const rewardedPartners = members.spouses.slice(0, 2)
+  for (const partner of rewardedPartners) partner.love = Math.min(100, (Number(partner.love) || 0) + 1)
+  const rewardedChildren = rewardHomeChildren(members.children, 2, activityAt)
+  const rewardedPets = members.pets.slice(0, 2)
+  for (const pet of rewardedPets) {
+    pet.happy = clampHomeStat((Number(pet.happy) || 0) + 5)
+    pet.exp = (Number(pet.exp) || 0) + 5
+  }
 
   await saveDB(db)
 
@@ -1692,6 +1739,10 @@ if (mode === 'eat' || mode === 'makan') {
     `> ${story}\n\n` +
     `🍱 *MENU MAKANAN*\n` +
     `> ↳ ${meals.map(meal => `${meal.emoji} ${formatMasakanNama(meal.name)} x${meal.amount}`).join('\n> ↳ ')}\n\n` +
+    `👨‍👩‍👧 *EFEK KE PENGHUNI*\n` +
+    `${rewardedPartners.length ? `> ↳ Pasangan: +1 Love untuk ${rewardedPartners.map(partner => partner.name).join(', ')}\n` : ''}` +
+    `${rewardedChildren.length ? `> ↳ Anak: +2 Love untuk ${rewardedChildren.map(child => child.nama || child.name || 'Anak').join(', ')}\n` : ''}` +
+    `${rewardedPets.length ? `> ↳ Pet: +5 bahagia dan +5 EXP untuk ${rewardedPets.map(pet => pet.nickname || pet.tipe || pet.name || 'Pet').join(', ')}\n\n` : '\n'}` +
     `📊 *HASIL AKTIVITAS*\n` +
     `> ↳ Harmony rumah: +${harmonyGained} (sekarang ${home.harmony}/100)\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -1731,6 +1782,28 @@ if (mode === 'clean' || mode === 'childcare' || mode === 'petcare') {
     )
   }
 
+  const activityAt = Date.now()
+  const caredChildren = mode === 'childcare'
+    ? members.children.filter(child => isHomeChildAvailable(child, activityAt))
+    : []
+  if (mode === 'childcare' && !caredChildren.length) {
+    const atHomeChildren = members.children.filter(child => !child.facility)
+    const nextReadyAt = atHomeChildren.length
+      ? Math.min(...atHomeChildren.map(child =>
+        (Number(child.lastKidActivityAt) || 0) + CHILD_NEGLECT.careCooldown
+      ))
+      : 0
+    const remaining = Math.max(0, nextReadyAt - activityAt)
+    return m.reply(
+      `╭─❏「 ⏳ PERAWATAN ANAK 」❏\n` +
+      `│ 👶 *ANAK BELUM SIAP DIRAWAT*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${remaining ? `> ↳ Cooldown anak tersisa: ${formatHomeStaffCooldown(remaining)}.\n` : '> ↳ Semua anak sedang berada di fasilitas penitipan.\n'}` +
+      `> ↳ Cooldown aktivitas anak: 30 menit.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   const story = HOME_CARE_STORIES[mode][Math.floor(Math.random() * HOME_CARE_STORIES[mode].length)]
 
   if (mode === 'clean') home.hygiene = clampHomeStat(home.hygiene + 20)
@@ -1738,8 +1811,11 @@ if (mode === 'clean' || mode === 'childcare' || mode === 'petcare') {
   if (mode === 'childcare') {
     const tutor = home.staff.some(staff => staff.key === 'tutor' && staff.expiresAt > Date.now())
     home.harmony = clampHomeStat(home.harmony + 10 + (tutor ? 5 : 0))
-    members.children.forEach(child => {
+    caredChildren.forEach(child => {
       child.careCount = (Number(child.careCount) || 0) + 1
+      child.umur = child.careCount / 10
+      child.love = Math.min(100, (Number(child.love) || 0) + 5)
+      markHomeChildActivity(child, activityAt)
       const parent = (rpg.harem || []).find(partner => partner.name === child.ortu)
       if (parent) parent.exp = (Number(parent.exp) || 0) + 20 + child.careCount
     })
@@ -1765,7 +1841,10 @@ if (mode === 'clean' || mode === 'childcare' || mode === 'petcare') {
     `${mode === 'petcare' && home.staff.some(staff => staff.key === 'pet sitter' && staff.expiresAt > Date.now()) ? `🐾 *BANTUAN STAFF*\n> ↳ Pet Sitter membantu merawat seluruh pet.\n\n` : ''}` +
     `📊 *HASIL PERAWATAN*\n` +
     `${mode === 'clean' ? `> ↳ Hygiene: ${home.hygiene}/100\n` : ''}` +
-    `${mode !== 'clean' ? `> ↳ Harmony rumah: ${home.harmony}/100\n> ↳ Total penghuni yang dirawat: ${mode === 'childcare' ? members.children.length : members.pets.length}\n` : ''}\n` +
+    `${mode === 'childcare' ? `> ↳ Anak: ${caredChildren.map(child => `${child.nama || child.name || 'Anak'} +5 Love, tahap pengasuhan bertambah`).join('; ')}\n` : ''}` +
+    `${mode === 'petcare' ? `> ↳ Pet: ${members.pets.map(pet => `${pet.nickname || pet.tipe || pet.name || 'Pet'} +15 bahagia, +10 EXP`).join('; ')}\n` : ''}` +
+    `${mode !== 'clean' ? `> ↳ Harmony rumah: ${home.harmony}/100\n> ↳ Total penghuni yang dirawat: ${mode === 'childcare' ? caredChildren.length : members.pets.length}\n` : ''}` +
+    `${mode === 'childcare' ? '> ↳ Cooldown aktivitas anak: 30 menit.\n' : ''}\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
