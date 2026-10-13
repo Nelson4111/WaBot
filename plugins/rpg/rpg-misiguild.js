@@ -308,7 +308,7 @@ for (const [item, label] of Object.entries(rewardLabels)) {
 }
 cap += `\n🎁 *PENDING GUILD LOOT UNTUK ANGGOTA LAIN*\n`
 cap += `> ↳ Penerima aktif: ${pendingRecipients} anggota\n`
-cap += `> ↳ Kriteria: memakai fitur RPG apa pun dalam 4 hari terakhir\n`
+cap += `> ↳ Kriteria: memakai command atau fitur bot apa pun dalam 4 hari terakhir\n`
 const pendingTotalLines = Object.entries(rewardLabels)
   .filter(([item]) => pendingLootTotals[item] > 0)
   .map(([item, label]) => `> ↳ ${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`)

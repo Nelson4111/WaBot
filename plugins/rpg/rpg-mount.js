@@ -638,7 +638,7 @@ if (action === 'history' || action === 'riwayat') {
 }
 
 if (action === 'start' || action === 'mulai') {
-    const mountain = MOUNTAINS.find(item => item.name === mount.mountain)
+    let mountain = MOUNTAINS.find(item => item.name === mount.mountain)
 
     if (!mountain) return m.reply(
         `╭─❏「 ⛰️ PENDAKIAN 」❏\n` +

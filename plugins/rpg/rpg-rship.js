@@ -297,7 +297,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       ? kids.map((child, index) => {
         if (child.facility) {
           const facilityName = CHILD_FACILITIES[child.facility.type]?.label || child.facility.type
-          return `> *${index + 1}. ${child.nama}:* berada di ${facilityName}; aktivitas pengasuhan tidak tersedia.`
+          return `> 🏠 *${index + 1}. ${child.nama}:* berada di ${facilityName}; aktivitas pengasuhan tidak tersedia.`
         }
         const careRemaining = Math.max(
           0,
@@ -308,10 +308,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
           const remaining = last
             ? Math.max(0, Math.ceil((activity.cooldown - (now - last)) / 1000))
             : 0
-          return `${activity.label}: ${remaining ? formatRemaining(remaining) : 'Siap'}`
-        }).join(' • ')
-        return `> *${index + 1}. ${child.nama}* — cooldown rawat: ${careRemaining ? formatRemaining(careRemaining) : 'Siap'}\n` +
-          `> ↳ ${activityStatus}`
+          return `> ${remaining ? '⏳' : '✅'} *${activity.label}:* ${remaining ? formatRemaining(remaining) : 'Siap'}`
+        }).join('\n')
+        return `> *${index + 1}. ${child.nama}*\n` +
+          `> ${careRemaining ? '⏳' : '✅'} *Cooldown rawat:* ${careRemaining ? formatRemaining(careRemaining) : 'Siap'}\n` +
+          `${activityStatus}`
       })
       : ['> Belum ada anak yang terdaftar.']
 
