@@ -105,11 +105,12 @@ function getCurrentJobTitle(userRPG, jobName = userRPG.currentJobName) {
   return getJobTitleByPoints(points, jobName) || 'Anak Magang'
 }
 
+
 function getPromotionProgressText(points, jobName) {
   const titles = isIndividualJob(jobName) ? INDIVIDUAL_JOB_TITLES : JOB_TITLES
   const nextTitle = titles.find(entry => points < entry.points)
-  if (!nextTitle) return `> ⭐ Poin promosi: ${points} • Jabatan tertinggi tercapai`
-  return `> ⭐ Progres promosi: ${points}/${nextTitle.points} poin • kurang ${nextTitle.points - points} poin menuju ${nextTitle.title}`
+  if (!nextTitle) return `> ⭐ Poin promosi: ${points}\n> ⭐ ↳ Jabatan tertinggi tercapai`
+  return `> ⭐ Progres promosi: ${points}/${nextTitle.points} poin\n> ⭐ ↳ ${nextTitle.points - points} poin menuju ${nextTitle.title}`
 }
 
 function getHighestRankedJob(userRPG) {
@@ -682,8 +683,9 @@ ${pick(JOB_TALK_STORIES)}
 ${promoted ? `> 🎉 Jabatan naik: ${beforeTitle} → ${afterTitle}` : ''}
 
 ─━━━━━━━━━━━━━━─
-📈 *PROGRES PROMOSI*
-> ↳ Poin promosi bertambah +1 untuk pekerjaan ${activeJob.job}.
+*PROGRES PROMOSI*
+> 📈 Poin promosi bertambah +1
+> 🏢 Pekerjaan ${activeJob.job}.
 ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
 ─━━━━━━━━━━━━━━─`)
