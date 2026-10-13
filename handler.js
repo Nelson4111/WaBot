@@ -1012,10 +1012,10 @@ async function processMessage(m, chatUpdate) {
                     isRAdmin, isAdmin, isBotAdmin, isPrems, chatUpdate, __dirname: ___dirname, __filename
                 }
                 try {
-                    if (isRpgPlugin && user?.rpg) user.rpg.lastRpgActivityAt = Date.now()
+                    const commandUser = global.db.data.users[m.sender]
+                    if (commandUser?.rpg) commandUser.rpg.lastRpgActivityAt = Date.now()
                     await plugin.call(this, m, extra)
                     syncUserLimit(user)
-                    if (isRpgPlugin && user?.rpg && !user.rpg.lastRpgActivityAt) user.rpg.lastRpgActivityAt = Date.now()
                     m.limit = m.limit || plugin.limit || false
                     botArbitrator.resolve(m.key?.id, this)
                 } catch (e) {
