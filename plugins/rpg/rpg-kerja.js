@@ -43,6 +43,7 @@ function ensureRpgState(userRPG) {
   if (!userRPG.jobProgress || typeof userRPG.jobProgress !== 'object') userRPG.jobProgress = {}
   if (!userRPG.attendance || typeof userRPG.attendance !== 'object') userRPG.attendance = {}
   if (!userRPG.leave || typeof userRPG.leave !== 'object') userRPG.leave = { active: false }
+  if (!userRPG.firedJobs || typeof userRPG.firedJobs !== 'object') userRPG.firedJobs = {}
   const resolveJobName = value => {
     const savedName = String(value || '')
     const job = JOBS.find(entry => {
@@ -53,7 +54,11 @@ function ensureRpgState(userRPG) {
   }
   userRPG.appliedJobs = Array.from(new Set(userRPG.appliedJobs.map(resolveJobName)))
   userRPG.jobHistory = Array.from(new Set(userRPG.jobHistory.map(resolveJobName)))
+  userRPG.firedJobs = Object.fromEntries(
+    Object.entries(userRPG.firedJobs).map(([jobName, firedAt]) => [resolveJobName(jobName), Number(firedAt) || 0])
+  )
   userRPG.currentJobName = resolveJobName(userRPG.currentJobName)
+  if (userRPG.firedJobName) userRPG.firedJobName = resolveJobName(userRPG.firedJobName)
   if (!userRPG.currentJobName && userRPG.currentJobId) {
     userRPG.currentJobName = resolveJobName(userRPG.currentJobId)
   }
@@ -166,8 +171,15 @@ function applyAttendancePenalty(userRPG, now = Date.now()) {
   if (!lastWork) return false
   const diff = now - lastWork
   if (diff > JOB_ATTENDANCE_MAX_NO_WORK_DAYS * 24 * 60 * 60 * 1000) {
+    const firedJobName = userRPG.currentJobName
+    if (firedJobName) {
+      userRPG.appliedJobs = userRPG.appliedJobs.filter(jobName => jobName !== firedJobName)
+      userRPG.firedJobs[firedJobName] = now
+      userRPG.firedJobName = firedJobName
+    }
     userRPG.currentJobName = null
     userRPG.firedAt = now
+    userRPG.lastkerja = 0
     userRPG.performance.absent = Number(userRPG.performance.absent || 0) + 1
     userRPG.attendance.lastPenaltyAt = now
     return true
@@ -202,6 +214,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const assignedByJob = new Map()
     let alreadyWorking = 0
     let blockedByApplicationLimit = 0
+    let blockedByRecentFiring = 0
     let withoutEligibleJob = 0
 
     for (const account of Object.values(wdb.users)) {
@@ -214,9 +227,14 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       }
 
       const unlockedJobs = getUnlockedJobs(targetRPG.level)
-      let selectedJob = unlockedJobs.at(-1)
+      const eligibleJobs = unlockedJobs.filter(job => {
+        const firedAt = Number(targetRPG.firedJobs[job.job] || 0)
+        return !firedAt || now - firedAt >= JOB_APPLY_COOLDOWN_MS
+      })
+      let selectedJob = eligibleJobs.at(-1)
       if (!selectedJob) {
-        withoutEligibleJob++
+        if (unlockedJobs.length) blockedByRecentFiring++
+        else withoutEligibleJob++
         continue
       }
 
@@ -224,7 +242,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
         !targetRPG.appliedJobs.includes(selectedJob.job) &&
         targetRPG.appliedJobs.length >= JOB_MAX_APPLIED
       ) {
-        selectedJob = unlockedJobs
+        selectedJob = eligibleJobs
           .filter(job => targetRPG.appliedJobs.includes(job.job))
           .at(-1)
         if (!selectedJob) {
@@ -257,6 +275,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       `> ↳ Player yang diberi pekerjaan: ${totalAssigned}`,
       `> ↳ Player yang sudah punya pekerjaan aktif: ${alreadyWorking}`,
       `> ↳ Tidak diproses karena batas lamaran: ${blockedByApplicationLimit}`,
+      `> ↳ Tidak diproses karena baru dipecat dari semua pekerjaan yang tersedia: ${blockedByRecentFiring}`,
       `> ↳ Tidak ada pekerjaan sesuai level: ${withoutEligibleJob}`,
       '',
       '─━━━━━━━━━━━━━━─',
@@ -288,6 +307,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, displayJob?.job)}`,
       `> 💰 Income: ${fmtRp(Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(displayPoints, displayJob?.job)))}`,
       `> 📊 Status: ${remaining > 0 ? `⏳ ${Math.ceil(remaining / 1000)} detik lagi` : '✅ Siap kerja'}`,
+      userRPG.firedJobName ? `> ⚠️ Pemecatan terakhir dari: ${userRPG.firedJobName}` : '',
       '',
       '📌 *INFORMASI JOB SYSTEM*',
       '> ↳ Sistem kerja harian dengan absensi, lamaran, cuti, promosi, dan profil kerja.',
@@ -337,15 +357,17 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       '',
       '─━━━━━━━━━━━━━━─',
       '📂 *PEKERJAAN DAN JABATAN*',
+      '> Gunakan nomor pekerjaan di bawah untuk resign, contoh: *.job resign 1*.',
       '',
       ...(jobsWithIncome.length
-        ? jobsWithIncome.map(({ job, points, income, title, active }) => [
-          `> ${active ? '✅' : '▫️'} *${job.job}*${active ? ' (aktif)' : ''}`,
+        ? jobsWithIncome.map(({ job, points, income, title, active }, index) => [
+          `> ${index + 1}. ${active ? '✅' : '▫️'} *${job.job}*${active ? ' (aktif)' : ''}`,
           `> ↳ Jabatan: ${title}`,
           `> ↳ Poin promosi: ${points}`,
           `> ↳ Income: ${fmtRp(income)}`
         ].join('\n'))
         : ['> Belum ada pekerjaan yang dilamar.']),
+      userRPG.firedJobName ? `> ⚠️ Pemecatan terakhir dari: *${userRPG.firedJobName}*` : '',
       '',
       '─━━━━━━━━━━━━━━─',
       'ℹ️ *INFORMASI*',
@@ -502,6 +524,12 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const selectedJob = getSelectedJob(userRPG, target)
     if (!selectedJob) return m.reply(`╭─❏「 ⚠️ JOB APPLICATION 」❏\n│ ❌ Nama/nomor pekerjaan tidak ditemukan.\n│ 📋 Cek *${usedPrefix}job list* untuk melihat daftar pekerjaan.\n╰─━━━━━━━━━━━━━━─`)
     if (selectedJob.lv > userRPG.level) return m.reply(`╭─❏「 🔒 JOB APPLICATION 」❏\n│ 💼 Pekerjaan: ${selectedJob.job}\n│ 🎮 Minimal level: Lv.${selectedJob.lv}\n│ ❌ Level kamu belum mencukupi.\n╰─━━━━━━━━━━━━━━─`)
+    if (userRPG.leave.active) return m.reply(`╭─❏「 🌴 CUTI KERJA 」❏\n│ Kamu sedang cuti dan belum bisa melamar pekerjaan.\n│ Gunakan *${usedPrefix}job return* untuk kembali bekerja.\n╰─━━━━━━━━━━━━━━─`)
+    const firedAt = Number(userRPG.firedJobs[selectedJob.job] || 0)
+    if (firedAt && now - firedAt < JOB_APPLY_COOLDOWN_MS) {
+      const remaining = Math.ceil((JOB_APPLY_COOLDOWN_MS - (now - firedAt)) / 1000)
+      return m.reply(`╭─❏「 ⏳ LAMARAN DITANGGUHKAN 」❏\n│ Kamu baru dipecat dari *${selectedJob.job}*.\n│ Coba lamar pekerjaan ini lagi dalam *${remaining} detik*.\n╰─━━━━━━━━━━━━━━─`)
+    }
     const alreadyApplied = userRPG.appliedJobs.includes(selectedJob.job)
     if (!alreadyApplied && userRPG.appliedJobs.length >= JOB_MAX_APPLIED) return m.reply(`╭─❏「 ⚠️ JOB APPLICATION 」❏\n│ 📝 Batas lamaran: ${JOB_MAX_APPLIED} pekerjaan.\n│ Kamu sudah mencapai batas maksimal lamaran.\n│ Pilih salah satu pekerjaan yang sudah ada.\n╰─━━━━━━━━━━━━━━─`)
     if (!alreadyApplied) {
@@ -575,22 +603,31 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 
   if (['leave', 'cuti'].includes(action)) {
     const leaveState = userRPG.leave || {}
+    const activeJob = getActiveJob(userRPG)
+    if (!activeJob) return m.reply(`╭─❏「 💼 CUTI KERJA 」❏\n│ Kamu belum memiliki pekerjaan aktif untuk mengambil cuti.\n╰─━━━━━━━━━━━━━━─`)
     if (leaveState.active) {
-      const remaining = Math.max(0, Number(leaveState.until || 0) - now)
       return m.reply(`╭─❏「 ⏳ CUTI KERJA 」❏
 │ 💼 STATUS CUTI
 ╰─━━━━━━━━━━━━━━─
 
 > ↳ Kamu masih sedang cuti.
-> ↳ Sisa cooldown: *${Math.ceil(remaining / 1000)} detik*.`)
+> ↳ Gunakan *${usedPrefix}job return* untuk kembali bekerja.`)
+    }
+    const lastLeaveReturnAt = Number(userRPG.lastLeaveReturnAt || 0)
+    if (lastLeaveReturnAt && now - lastLeaveReturnAt < JOB_LEAVE_COOLDOWN_MS) {
+      const remaining = Math.ceil((JOB_LEAVE_COOLDOWN_MS - (now - lastLeaveReturnAt)) / 1000)
+      return m.reply(`╭─❏「 ⏳ CUTI KERJA 」❏
+│ Cooldown cuti setelah kembali masih aktif.
+│ ↳ Coba ambil cuti lagi dalam *${remaining} detik*.
+╰─━━━━━━━━━━━━━━─`)
     }
 
     userRPG.leave = {
       active: true,
-      startedAt: now,
-      until: now + JOB_LEAVE_COOLDOWN_MS
+      startedAt: now
     }
     userRPG.performance.leave = Number(userRPG.performance.leave || 0) + 1
+    saveDB(wdb)
     return m.reply(`╭─❏「 🌴 CUTI KERJA 」❏
 │ 💼 CUTI BERHASIL DIAJUKAN
 ╰─━━━━━━━━━━━━━━─
@@ -608,36 +645,56 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 
 > ↳ Kamu belum sedang cuti.
 > ↳ Gunakan *${usedPrefix}job leave* untuk mengambil cuti.`)
-    if (now < Number(leaveState.until || 0)) {
-      const remaining = Math.ceil((Number(leaveState.until || 0) - now) / 1000)
-      return m.reply(`╭─❏「 ⏳ CUTI MASIH AKTIF 」❏
-│ 🌴 STATUS CUTI
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Kamu belum bisa kembali bekerja.
-> ↳ Sisa waktu cuti: *${remaining} detik*.`)
-    }
-
-    userRPG.leave = { active: false, endedAt: now }
+    userRPG.leave = { ...leaveState, active: false, endedAt: now }
+    userRPG.lastLeaveReturnAt = now
+    saveDB(wdb)
     return m.reply(`╭─❏「 💼 KEMBALI BEKERJA 」❏
 │ ✅ CUTI SELESAI
 ╰─━━━━━━━━━━━━━━─
 
 > ↳ Kamu sudah kembali bekerja.
+> ↳ Cooldown untuk mengambil cuti lagi dimulai sekarang (12 jam).
 > ↳ Semangat kembali menjalani rutinitas kerja!`)
   }
 
   if (action === 'resign' || action === 'keluar') {
-    const currentJob = getActiveJob(userRPG)
-    userRPG.currentJobName = null
-    userRPG.jobTitle = getJobTitleByPoints(Number(userRPG.promotionPoints || 0), currentJob?.job)
+    if (userRPG.leave.active) return m.reply(`╭─❏「 🌴 CUTI KERJA 」❏
+│ Kamu sedang cuti dan belum bisa resign.
+│ ↳ Gunakan *${usedPrefix}job return* sebelum resign.
+╰─━━━━━━━━━━━━━━─`)
+    const target = payload.trim()
+    const numericIndex = /^\d+$/.test(target) ? Number(target) - 1 : -1
+    const listedJobs = userRPG.appliedJobs.filter(jobName =>
+      JOBS.some(job => job.job.toLowerCase() === jobName.toLowerCase())
+    )
+    const selectedJobName = numericIndex >= 0
+      ? listedJobs[numericIndex]
+      : userRPG.appliedJobs.find(jobName => {
+        const normalized = target.toLowerCase()
+        const jobId = jobName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        const targetId = normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        return jobName.toLowerCase() === normalized || jobId === targetId
+      })
+    if (!selectedJobName) {
+      return m.reply(`╭─❏「 📋 RESIGN PEKERJAAN 」❏
+│ Pilih pekerjaan yang ingin ditinggalkan dengan nama atau nomor dari *${usedPrefix}job info*.
+│ Contoh: *${usedPrefix}job resign 1*
+╰─━━━━━━━━━━━━━━─`)
+    }
+    userRPG.appliedJobs = userRPG.appliedJobs.filter(jobName => jobName !== selectedJobName)
+    if (userRPG.currentJobName?.toLowerCase() === selectedJobName.toLowerCase()) {
+      userRPG.currentJobName = null
+      userRPG.promotionPoints = 0
+      userRPG.jobTitle = getJobTitleByPoints(0, '')
+    }
     userRPG.resignedAt = now
+    saveDB(wdb)
     return m.reply(`╭─❏「 📋 RESIGN PEKERJAAN 」❏
 │ 💼 STATUS PEKERJAAN
 ╰─━━━━━━━━━━━━━━─
 
-> ↳ Kamu telah resign dari pekerjaan *${currentJob?.job || 'pekerjaan'}*.
-> ↳ Kamu bisa kembali bekerja lagi nanti.`)
+> ↳ Kamu telah keluar dari pekerjaan *${selectedJobName}*.
+> ↳ Lamaran pekerjaan ini sudah dihapus. Kamu bisa melamar pekerjaan lain.`)
   }
 
 
@@ -716,6 +773,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 ╰─━━━━━━━━━━━━━━─
 
 > ↳ Kamu dipecat karena sudah tidak masuk kerja selama lebih dari 7 hari.
+> ↳ Pekerjaan yang memecatmu: *${userRPG.firedJobName || 'tidak diketahui'}*.
 > ↳ Lamar pekerjaan baru dengan *${usedPrefix}job apply*.
 
 ─━━━━━━━━━━━━━━─`)
@@ -869,7 +927,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 > ↳ Gunakan *${usedPrefix}job guide* untuk melihat daftar command.`)
 }
 
-handler.help = ['job', 'job guide', 'job list', 'job info', 'job profile', 'job performance', 'job work', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk', 'job leave', 'job return', 'job resign', 'work', 'kerja']
+handler.help = ['job', 'job guide', 'job list', 'job info', 'job profile', 'job performance', 'job work', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk', 'job leave', 'job return', 'job resign <nama/nomor>', 'work', 'kerja']
 handler.tags = ['rpg']
 handler.command = /^(job|kerja|work)$/i
 handler.alias = ['job', 'kerja', 'work']

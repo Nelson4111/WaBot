@@ -156,7 +156,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ${usedPrefix}guild loot take
 > ${usedPrefix}guild loot list (leader)
 > ${usedPrefix}guild loot collect (leader)
-> Loot bertambah untuk anggota yang memakai command atau fitur bot apa pun dalam 4 hari terakhir. Batas Lv.1: Money Rp1.000.000 dan tiap loot lain 50; kapasitas anggota serta batas loot bertambah tiap 10 level dan batas loot berhenti naik mulai Lv.101. Batas membatasi loot baru, bukan pengambilan pending.
+> Loot bertambah untuk anggota yang memakai command atau fitur bot apa pun dalam 4 hari terakhir.
 
 📌 *9. Guild Storage*
 > ${usedPrefix}guild storage

@@ -38,6 +38,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
+  if (action === 'anak' && ['adopt', 'adopsi'].includes(args[1]?.toLowerCase())) {
+    action = 'kid'
+    args = ['kid', ...args.slice(1)]
+  }
   if (['cerai', 'divorce'].includes(action)) action = 'putus'
   if (['ex', 'exspouse', 'ex-spouse'].includes(action)) action = 'mantan'
   if (action === 'asuh') action = 'custody'
@@ -132,6 +136,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let childStateChanged = false
   if (!Array.isArray(user.orphanageKids)) user.orphanageKids = []
 
+  const normalizeBiologicalParents = child => {
+    if (!Array.isArray(child.biologicalParents)) return false
+    const normalized = [...new Set(child.biologicalParents.filter(parent => typeof parent === 'string' && parent.trim()).map(parent => parent.trim()))].slice(0, 2)
+    if (normalized.length === child.biologicalParents.length &&
+      normalized.every((parent, index) => parent === child.biologicalParents[index])) return false
+    child.biologicalParents = normalized
+    return true
+  }
+
   const initializeChildState = child => {
     if (child.lastCaredAt == null || !Number.isFinite(Number(child.lastCaredAt))) {
       child.lastCaredAt = now
@@ -141,6 +154,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       child.activityCooldowns = {}
       childStateChanged = true
     }
+    if (normalizeBiologicalParents(child)) childStateChanged = true
   }
 
   const settleFacility = (child, returnToFamily) => {
@@ -200,11 +214,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     if (child.facility) continue
     const careCount = getChildCareCount(child)
     const stage = getChildStage(careCount)
-    const adult = careCount >= CHILD_STAGES[CHILD_STAGES.length - 1].care
-    const young = stage === CHILD_STAGES[0] || stage === CHILD_STAGES[1]
-    if (!adult && !young) continue
+    const adolescent = careCount >= CHILD_STAGES[3].care
+    const childStage = careCount >= CHILD_STAGES[2].care && !adolescent
+    const young = careCount < CHILD_STAGES[2].care
+    if (!adolescent && !childStage && !young) continue
 
-    const eligibleAt = Number(child.lastCaredAt) + (adult ? CHILD_NEGLECT.gracePeriod : 0)
+    const eligibleAt = Number(child.lastCaredAt) + (adolescent ? CHILD_NEGLECT.gracePeriod : 0)
     const checkedAt = Number(child.lastNeglectCheckAt) || eligibleAt
     if (now < eligibleAt + CHILD_NEGLECT.checkPeriod || now < checkedAt + CHILD_NEGLECT.checkPeriod) continue
     const elapsedPeriods = Math.floor((now - Math.max(eligibleAt, checkedAt)) / CHILD_NEGLECT.checkPeriod)
@@ -212,11 +227,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     child.lastNeglectCheckAt = Math.max(eligibleAt, checkedAt) + elapsedPeriods * CHILD_NEGLECT.checkPeriod
     childStateChanged = true
 
-    const chance = adult ? CHILD_NEGLECT.adultEscapeChance : CHILD_NEGLECT.youngChildLossChance
+    const chance = adolescent ? CHILD_NEGLECT.adultEscapeChance : CHILD_NEGLECT.youngChildLossChance
     if (Math.random() >= 1 - Math.pow(1 - chance, elapsedPeriods)) continue
 
+    const runsAway = adolescent || (childStage && Math.random() < 0.5)
     user.kids.splice(index, 1)
-    if (!adult) {
+    if (!runsAway) {
       const story = CHILD_LOSS_STORIES[Math.floor(Math.random() * CHILD_LOSS_STORIES.length)]
       childEvents.push(
         `╭─❏「 💔 ANAK HILANG 」❏\n` +
@@ -240,7 +256,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       user.sel = registerPrisoner(wdb, m.sender)
     }
     if (!Array.isArray(user.riwayat)) user.riwayat = []
-    user.riwayat.unshift(`🚔 Anak dewasa ${child.nama} melaporkan penelantaran`)
+    user.riwayat.unshift(`🚔 Anak ${stage.name} ${child.nama} melaporkan penelantaran`)
     childEvents.push(
       `╭─❏「 🚨 ANAK KABUR 」❏\n` +
       `│ 👶 LAPORAN PENELANTARAN ANAK\n` +
@@ -630,6 +646,10 @@ ${entries.join('\n')}
           pendingOffer.sourceName,
           pendingOffer.partnerName
         ].filter(Boolean)
+        child.biologicalParents = [...new Set(child.biologicalParents
+          .filter(parent => typeof parent === 'string' && parent.trim())
+          .map(parent => parent.trim()))].slice(0, 2)
+        child.originalOwnerJid ||= pendingOffer.sourceJid
         child.custody = { type: 'foster', guardianJid: m.sender }
         delete child.facility
         transferred.push(child)
@@ -1780,6 +1800,8 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 👨‍👩‍👧 *PENGELOLAAN ANAK*
 > ↳ Info: ${usedPrefix}rship kid info
 > ↳ Rename: ${usedPrefix}rship kid rename <pasangan> <anak> <nama>
+> ↳ Rename anak asuh: ${usedPrefix}rship kid rename custody <no-anak> <nama>
+> ↳ Kembalikan anak asuh ke pemilik asal: ${usedPrefix}rship kid return <no-anak>
 > ↳ Moveout: ${usedPrefix}rship kid moveout <pasangan> <anak>
 
 ─━━━━━━━━━━━━━━─
@@ -1796,16 +1818,18 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 🏡 *ADOPSI DARI PANTI ASUHAN*
 > ↳ Panduan dan command: ${usedPrefix}rship kid adopt
 > ↳ Lihat daftar anak: ${usedPrefix}rship kid adopt list
-> ↳ Ajukan adopsi dengan nomor: ${usedPrefix}rship kid adopt <no>
+> ↳ Tawarkan anakmu ke pemain lain: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>
+> ↳ Pilih anak panti dari daftar: ${usedPrefix}rship kid adopt <no>
 > ↳ Selesaikan konfirmasi: ${usedPrefix}rship kid adopt yes/no
 > ↳ Alias command: ${usedPrefix}rship kid adopsi
 > ↳ Daftar berisi anak orphaned yang dititipkan di panti; nama orang tua asal tetap tercatat.
 
 👨‍👩‍👧 *PINDAHKAN ANAKMU KE PEMAIN LAIN*
 > ↳ Ini transfer langsung dari keluargamu, bukan adopsi anak panti; tag pemain RPG yang bersedia.
-> ↳ Pemilik: ${usedPrefix}rship anak adopsi <no-anak> @user
-> ↳ Penerima: ${usedPrefix}rship anak asuh terima atau ${usedPrefix}rship anak asuh tolak
-> ↳ Anak baru pindah setelah penerima menerima tawaran.
+> ↳ Pemilik: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>
+> ↳ Penerima: ${usedPrefix}rship kid adopt yes atau ${usedPrefix}rship kid adopt no
+> ↳ Biaya opsional dipotong dari bank pemilik dan masuk ke bank penerima setelah diterima.
+> ↳ Anak baru pindah setelah penerima menerima tawaran; gunakan kid return untuk mengembalikannya.
 
 ─━━━━━━━━━━━━━━─
 
@@ -1871,13 +1895,16 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 
 ✏️ *PENGELOLAAN ANAK*
 > ↳ ${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>
+> ↳ Anak asuh: ${usedPrefix}rship kid rename custody <no-anak> <nama baru>
+> ↳ Kembalikan anak asuh ke pemilik asal: ${usedPrefix}rship kid return <no-anak>
 > ↳ ${usedPrefix}rship kid moveout <pasangan> <anak>
 > ↳ Moveout hanya berlaku untuk anak dewasa dan memerlukan konfirmasi.
 > ↳ Panduan adopsi panti: ${usedPrefix}rship kid adopt
 > ↳ Daftar anak untuk diadopsi: ${usedPrefix}rship kid adopt list
 > ↳ Pilih anak untuk diadopsi: ${usedPrefix}rship kid adopt <no>
-> ↳ Alihkan anak ke pemain lain: ${usedPrefix}rship anak adopsi <no-anak> @user
-> ↳ Pemain yang ditag menerima/menolak: ${usedPrefix}rship anak asuh terima/tolak
+> ↳ Tawari anak ke pemain lain: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>
+> ↳ Pemain yang ditag menerima/menolak: ${usedPrefix}rship kid adopt yes/no
+> ↳ Biaya asuh dibayar oleh pengirim hanya saat tawaran diterima.
 
 ─━━━━━━━━━━━━━━─
 
@@ -2004,8 +2031,277 @@ const facilityAliases = {
   orphanage: 'orphanage', pa: 'orphanage', pantiasuhan: 'orphanage', orp: 'orphanage'
 }
 
+const isChildAdoptionCommand = action === 'kid' && ['adopt', 'adopsi'].includes(args[1]?.toLowerCase())
+const clearChildTransferOffer = offer => {
+  if (!offer?.sourceJid) return
+  const source = getUserRPG(wdb, offer.sourceJid)
+  const sourceUser = source?.rpg || source
+  if (sourceUser?.pendingChildTransfer?.id === offer.id) {
+    const child = sourceUser.kids?.find(entry => entry.pendingTransferId === offer.id)
+    if (child) delete child.pendingTransferId
+    delete sourceUser.pendingChildTransfer
+  }
+}
+const respondToChildTransfer = async response => {
+  const offer = user.pendingChildFosterOffer
+  if (!offer) return m.reply(`Tidak ada tawaran pengasuhan anak yang menunggu.`)
+  if (['no', 'tidak', 'batal', 'tolak', 'reject'].includes(response)) {
+    clearChildTransferOffer(offer)
+    delete user.pendingChildFosterOffer
+    await saveDB(wdb)
+    return m.reply(`❌ Tawaran ditolak. Anak tetap berada di daftar keluarga pemiliknya.`)
+  }
+  if (now - Number(offer.createdAt || 0) > 5 * 60 * 1000) {
+    clearChildTransferOffer(offer)
+    delete user.pendingChildFosterOffer
+    await saveDB(wdb)
+    return m.reply(`Tawaran pengasuhan sudah kedaluwarsa. Minta pemilik anak mengirim tawaran baru.`)
+  }
+
+  const source = getUserRPG(wdb, offer.sourceJid)
+  const sourceUser = source?.rpg || source
+  const childIndex = sourceUser?.kids?.findIndex(child =>
+    child.pendingTransferId === offer.id &&
+    child.nama === offer.childName &&
+    child.ortu === offer.parentName &&
+    !child.facility) ?? -1
+  const amount = Number(offer.amount) || 0
+  if (!sourceUser || source?.isDummy || childIndex < 0 || !Number.isSafeInteger(amount) || amount < 0) {
+    clearChildTransferOffer(offer)
+    delete user.pendingChildFosterOffer
+    await saveDB(wdb)
+    return m.reply(`Tawaran gagal karena data anak, nominal, atau permintaan pemilik sudah berubah.`)
+  }
+  if ((Number(sourceUser.bank) || 0) < amount) {
+    clearChildTransferOffer(offer)
+    delete user.pendingChildFosterOffer
+    await saveDB(wdb)
+    return m.reply(`Tawaran dibatalkan karena saldo bank pemilik tidak lagi cukup untuk membayar biaya pengasuhan.`)
+  }
+
+  const [child] = sourceUser.kids.splice(childIndex, 1)
+  delete child.pendingTransferId
+  if (!Array.isArray(child.biologicalParents) || !child.biologicalParents.length) {
+    child.biologicalParents = [offer.sourceName, offer.parentName]
+      .filter(parent => typeof parent === 'string' && parent.trim())
+      .map(parent => parent.trim())
+      .slice(0, 2)
+  } else {
+    child.biologicalParents = [...new Set(child.biologicalParents
+      .filter(parent => typeof parent === 'string' && parent.trim())
+      .map(parent => parent.trim()))].slice(0, 2)
+  }
+  child.originalOwnerJid ||= offer.sourceJid
+  child.custody = { type: 'foster', guardianJid: m.sender }
+  delete child.facility
+  if (!Array.isArray(user.kids)) user.kids = []
+  sourceUser.bank = (Number(sourceUser.bank) || 0) - amount
+  user.bank = (Number(user.bank) || 0) + amount
+  user.kids.push(child)
+  delete sourceUser.pendingChildTransfer
+  delete user.pendingChildFosterOffer
+  await saveDB(wdb)
+  return m.reply(
+    `✅ Kamu menerima pengasuhan *${child.nama}*. Anak sekarang masuk ke daftar anakmu.\n` +
+    `> ↳ Uang asuh diterima: Rp ${amount.toLocaleString('id-ID')}.\n` +
+    `> ↳ Rawat: ${usedPrefix}rship kid <aktivitas> custody <no-anak>\n` +
+    `> ↳ Kembalikan ke pemilik asal: ${usedPrefix}rship kid return <no-anak>`
+  )
+}
+
+if (isChildAdoptionCommand && ['yes', 'ya', 'iya', 'terima', 'konfirmasi', 'no', 'tidak', 'batal', 'tolak', 'reject'].includes(args[2]?.toLowerCase()) &&
+  user.pendingChildFosterOffer) {
+  return respondToChildTransfer(args[2].toLowerCase())
+}
+
+if (isChildAdoptionCommand) {
+  const option = args[2]?.toLowerCase()
+  const pendingAdoption = user.pendingKidAdoption
+  const targetJid = conn.decodeJid?.(m.mentionedJid?.[0] || '') || m.mentionedJid?.[0]
+
+  if (targetJid) {
+    const childNumber = Number(args[2])
+    const child = Number.isInteger(childNumber) && childNumber > 0 ? user.kids[childNumber - 1] : null
+    const targetData = getUserRPG(wdb, targetJid)
+    const targetUser = targetData?.rpg || targetData
+    const amountTokens = args.slice(3).filter(token => !token.startsWith('@'))
+    const amountText = amountTokens.length === 1 ? amountTokens[0].replace(/[.,]/g, '') : '0'
+    const amount = amountTokens.length ? Number(amountText) : 0
+    if (!child || child.facility || targetJid === m.sender || !targetUser || targetData?.isDummy ||
+      amountTokens.length > 1 || !Number.isSafeInteger(amount) || amount < 0) {
+      return m.reply(
+        `Format: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>\n` +
+        `> ↳ Biaya opsional, dipotong dari bank pengirim dan diterima saat tawaran disetujui.\n` +
+        `> ↳ Contoh: ${usedPrefix}rship kid adopt 5 @user 1000000`
+      )
+    }
+    if (user.pendingChildTransfer) {
+      const oldOffer = user.pendingChildTransfer
+      if (now - Number(oldOffer.createdAt || 0) <= 5 * 60 * 1000) {
+        return m.reply(`Selesaikan tawaran pengasuhan sebelumnya sebelum mengirim tawaran baru.`)
+      }
+      const oldTargetData = getUserRPG(wdb, oldOffer.targetJid)
+      const oldTarget = oldTargetData?.rpg || oldTargetData
+      if (oldTarget?.pendingChildFosterOffer?.id === oldOffer.id) delete oldTarget.pendingChildFosterOffer
+      const oldChild = user.kids.find(entry => entry.pendingTransferId === oldOffer.id)
+      if (oldChild) delete oldChild.pendingTransferId
+      delete user.pendingChildTransfer
+    }
+    if (child.pendingTransferId) {
+      return m.reply(`Anak ini sudah memiliki tawaran pengasuhan yang sedang menunggu jawaban.`)
+    }
+    if (targetUser.pendingChildFosterOffer) {
+      const previousOffer = targetUser.pendingChildFosterOffer
+      if (now - Number(previousOffer.createdAt || 0) <= 5 * 60 * 1000) {
+        return m.reply(`Pemain tersebut masih memiliki tawaran pengasuhan anak yang belum dijawab.`)
+      }
+      clearChildTransferOffer(previousOffer)
+      delete targetUser.pendingChildFosterOffer
+    }
+    if ((Number(user.bank) || 0) < amount) {
+      return m.reply(`Saldo bank tidak cukup untuk biaya asuh Rp ${amount.toLocaleString('id-ID')}.`)
+    }
+
+    const transferId = `${m.sender}-${now}-${Math.random().toString(36).slice(2, 10)}`
+    child.pendingTransferId = transferId
+    user.pendingChildTransfer = { id: transferId, targetJid, createdAt: now }
+    targetUser.pendingChildFosterOffer = {
+      id: transferId,
+      sourceJid: m.sender,
+      sourceName: wdb.users[m.sender]?.name || m.sender.split('@')[0],
+      childName: child.nama,
+      parentName: child.ortu,
+      amount,
+      createdAt: now
+    }
+    await saveDB(wdb)
+    return m.reply(
+      `📨 Tawaran pengasuhan *${child.nama}* dikirim ke @${targetJid.split('@')[0]}.\n` +
+      `> ↳ Biaya asuh: Rp ${amount.toLocaleString('id-ID')} (dibayar saat diterima).\n` +
+      `> ↳ Penerima: ${usedPrefix}rship kid adopt yes atau ${usedPrefix}rship kid adopt no.\n` +
+      `> ↳ Anak tetap berada di daftar keluargamu sampai disetujui.`,
+      null,
+      { mentions: [targetJid] }
+    )
+  }
+
+  const clearPendingAdoption = pending => {
+    const sourceData = pending?.sourceJid && wdb.users[pending.sourceJid]
+    const sourceUser = sourceData?.rpg || sourceData
+    const child = sourceUser?.orphanageKids?.find(entry => entry.pendingAdoptionId === pending?.id)
+    if (child) {
+      delete child.pendingAdoptionId
+      delete child.pendingAdoptionAt
+    }
+  }
+  if (['no', 'tidak', 'batal', 'cancel'].includes(option)) {
+    if (pendingAdoption) {
+      clearPendingAdoption(pendingAdoption)
+      delete user.pendingKidAdoption
+      await saveDB(wdb)
+      return m.reply(`❌ Adopsi dibatalkan. Anak tetap berada di panti asuhan.`)
+    }
+    return m.reply(`Tidak ada tawaran adopsi yang menunggu.`)
+  }
+  if (['yes', 'ya', 'iya', 'terima', 'konfirmasi'].includes(option)) {
+    if (!pendingAdoption) return m.reply(`Tidak ada konfirmasi adopsi yang menunggu.`)
+    if (now - Number(pendingAdoption.createdAt || 0) > 5 * 60 * 1000) {
+      clearPendingAdoption(pendingAdoption)
+      delete user.pendingKidAdoption
+      await saveDB(wdb)
+      return m.reply(`Konfirmasi adopsi kedaluwarsa. Lihat daftar lagi dengan ${usedPrefix}rship kid adopt list.`)
+    }
+    const sourceData = wdb.users[pendingAdoption.sourceJid]
+    const sourceUser = sourceData?.rpg || sourceData
+    const childIndex = sourceUser?.orphanageKids?.findIndex(child =>
+      child.pendingAdoptionId === pendingAdoption.id &&
+      child.nama === pendingAdoption.childName &&
+      child.ortu === pendingAdoption.parentName &&
+      child.custody?.type === 'orphaned') ?? -1
+    if (!sourceUser || childIndex < 0) {
+      clearPendingAdoption(pendingAdoption)
+      delete user.pendingKidAdoption
+      await saveDB(wdb)
+      return m.reply(`Adopsi gagal karena data anak sudah berubah. Tampilkan ulang ${usedPrefix}rship kid adopt list.`)
+    }
+    const [child] = sourceUser.orphanageKids.splice(childIndex, 1)
+    delete child.pendingAdoptionId
+    delete child.pendingAdoptionAt
+    delete child.facility
+    normalizeBiologicalParents(child)
+    child.originalOwnerJid ||= pendingAdoption.sourceJid
+    child.custody = { type: 'foster', guardianJid: m.sender }
+    if (!Array.isArray(user.kids)) user.kids = []
+    user.kids.push(child)
+    delete user.pendingKidAdoption
+    await saveDB(wdb)
+    return m.reply(`✅ *${child.nama}* berhasil diadopsi dan masuk ke daftar anakmu. Orang tua kandungnya tetap tercatat.`)
+  }
+  if (pendingAdoption) {
+    return m.reply(`Selesaikan konfirmasi sebelumnya dengan ${usedPrefix}rship kid adopt yes atau ${usedPrefix}rship kid adopt no.`)
+  }
+  if (['list', 'daftar'].includes(option)) {
+    const available = Object.entries(wdb.users).flatMap(([sourceJid, sourceData]) => {
+      const sourceUser = sourceData?.rpg || sourceData
+      return sourceData?.isDummy || !Array.isArray(sourceUser?.orphanageKids)
+        ? []
+        : sourceUser.orphanageKids
+          .filter(child => child.custody?.type === 'orphaned' && !child.pendingAdoptionId)
+          .map((child, sourceIndex) => ({ child, sourceJid, sourceIndex, sourceData }))
+    })
+    return m.reply(available.length
+      ? `╭─❏「 🏡 DAFTAR ADOPSI 」❏\n│ ANAK DI PANTI ASUHAN\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `${available.map(({ child, sourceData }, index) =>
+          `> *${index + 1}. ${child.nama}*\n> ↳ Orang tua asli: ${child.biologicalParents?.slice(0, 2).join(' & ') || child.ortu || 'Tidak diketahui'}\n> ↳ Dititipkan oleh: ${sourceData?.name || 'Pemain RPG'}`
+        ).join('\n\n')}\n\n` +
+        `> ↳ Pilih anak: ${usedPrefix}rship kid adopt <no>\n> ↳ Adopsi dari daftar ini tidak membutuhkan mention.`
+      : `╭─❏「 🏡 DAFTAR ADOPSI 」❏\n│ Belum ada anak orphaned yang tersedia di panti asuhan.\n╰─━━━━━━━━━━━━━━─`)
+  }
+  if (/^\d+$/.test(option || '')) {
+    const selectedIndex = Number(option) - 1
+    const available = Object.entries(wdb.users).flatMap(([sourceJid, sourceData]) => {
+      const sourceUser = sourceData?.rpg || sourceData
+      return sourceData?.isDummy || !Array.isArray(sourceUser?.orphanageKids)
+        ? []
+        : sourceUser.orphanageKids
+          .filter(child => child.custody?.type === 'orphaned' && !child.pendingAdoptionId)
+          .map((child, sourceIndex) => ({ child, sourceJid, sourceIndex }))
+    })
+    const selected = available[selectedIndex]
+    if (!selected) return m.reply(`Nomor anak tidak valid. Lihat daftar dengan ${usedPrefix}rship kid adopt list.`)
+    const id = `${m.sender}-${now}-${Math.random().toString(36).slice(2, 10)}`
+    user.pendingKidAdoption = {
+      id,
+      sourceJid: selected.sourceJid,
+      childName: selected.child.nama,
+      parentName: selected.child.ortu,
+      createdAt: now
+    }
+    selected.child.pendingAdoptionId = id
+    selected.child.pendingAdoptionAt = now
+    await saveDB(wdb)
+    return m.reply(
+      `⚠️ Konfirmasi adopsi *${selected.child.nama}* dari panti?\n` +
+      `> ↳ Orang tua kandung: ${selected.child.biologicalParents?.slice(0, 2).join(' & ') || selected.child.ortu || 'Tidak diketahui'}\n` +
+      `> ↳ Terima: ${usedPrefix}rship kid adopt yes\n> ↳ Batal: ${usedPrefix}rship kid adopt no`
+    )
+  }
+  return m.reply(
+    `╭─❏「 🏡 PANDUAN ADOPSI 」❏\n` +
+    `│ Anak sendiri: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>\n` +
+    `│ Terima/tolak tawaran: ${usedPrefix}rship kid adopt yes/no\n` +
+    `│ Daftar anak panti: ${usedPrefix}rship kid adopt list\n` +
+    `│ Adopsi anak panti: ${usedPrefix}rship kid adopt <no>\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
+
 if (action === 'anak' && args[1]?.toLowerCase() === 'asuh') {
   const response = args[2]?.toLowerCase()
+  if (user.pendingChildFosterOffer &&
+    ['terima', 'accept', 'yes', 'iya', 'ya', 'tolak', 'reject', 'no', 'tidak', 'batal'].includes(response)) {
+    return respondToChildTransfer(response)
+  }
   const offer = user.pendingChildFosterOffer
   const clearSourceOffer = pendingOffer => {
     if (!pendingOffer?.sourceJid) return
@@ -2088,6 +2384,7 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'asuh') {
       offer.sourceName,
       offer.parentName
     ].filter(Boolean))]
+    normalizeBiologicalParents(child)
     child.custody = { type: 'foster', guardianJid: m.sender }
     delete child.facility
     if (!Array.isArray(user.kids)) user.kids = []
@@ -2166,20 +2463,15 @@ Belum ada anak yang terdaftar dalam keluargamu.
   
 
     const lines = user.kids.map((child, index) => {
-      const parentIndex = user.harem.findIndex(partner => partner.name === child.ortu)
-      const partnerChildIndex = user.kids.filter(entry => entry.ortu === child.ortu).indexOf(child) + 1
       const careCount = getChildCareCount(child)
       const facility = child.facility ? ` • 🏠 ${CHILD_FACILITIES[child.facility.type]?.label || child.facility.type}` : ''
-      const custody = child.custody?.type
-        ? ` • ⚖️ Hak asuh ${child.custody.type}${child.custody.custodianName ? ` (${child.custody.custodianName})` : ''}`
-        : ''
-      const originalParents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
-        ? `\n> ↳ Orang tua kandung: ${child.biologicalParents.join(' & ')}`
-        : ''
+      const biologicalParents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
+        ? child.biologicalParents.join(' & ')
+        : child.ortu || 'Tidak diketahui'
       return `*${index + 1}. ${getGenderEmoji(child.jenis === 'Laki-laki' ? 'cowok' : 'cewek')} ${child.nama}*\n` +
-        `> ↳ ${parentIndex >= 0 ? `Pasangan ${parentIndex + 1}` : 'Orang tua'}: ${child.ortu}\n` +
-        `> ↳ Anak ke-${partnerChildIndex} • ${getChildStage(careCount).name}${facility}${custody}\n` +
-        `> ↳ Asuhan: ${getChildProgress(careCount)}${originalParents}`
+        `> ↳ Orang tua asli: ${biologicalParents}\n` +
+        `> ↳ ${getChildStage(careCount).name}${facility}\n` +
+        `> ↳ Asuhan: ${getChildProgress(careCount)}`
     })
     return m.reply(
       `╭─❏「 👶 ANAK KELUARGA 」❏
@@ -2282,6 +2574,7 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'asuh') {
       offer.sourceName,
       offer.parentName
     ].filter(Boolean))]
+    normalizeBiologicalParents(child)
     child.custody = { type: 'foster', guardianJid: m.sender }
     delete child.facility
     if (!Array.isArray(user.kids)) user.kids = []
@@ -2631,6 +2924,38 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
   }
 
 
+  if (['return', 'kembalikan'].includes(sub)) {
+    const target = getKidTargets('custody', args[2])?.[0]
+    const child = target?.child
+    const ownerJid = child?.originalOwnerJid
+    if (!child || !ownerJid || child.facility) {
+      return m.reply(
+        `Anak asuh tersebut tidak memiliki data pemilik asal untuk dikembalikan.\n` +
+        `> ↳ Format: ${usedPrefix}rship kid return <no-anak>`
+      )
+    }
+    const ownerData = getUserRPG(wdb, ownerJid)
+    const owner = ownerData?.rpg || ownerData
+    if (!owner || ownerData?.isDummy || ownerJid === m.sender) {
+      return m.reply(`Pemilik asal tidak tersedia atau anak sudah berada di akun pemilik asal.`)
+    }
+    const childIndex = user.kids.indexOf(child)
+    if (childIndex < 0) return m.reply(`Anak tidak ditemukan di daftar keluargamu.`)
+
+    user.kids.splice(childIndex, 1)
+    if (!Array.isArray(owner.kids)) owner.kids = []
+    delete child.custody
+    delete child.originalOwnerJid
+    delete child.pendingTransferId
+    owner.kids.push(child)
+    await saveDB(wdb)
+    return m.reply(
+      `✅ *${child.nama}* sudah dikembalikan ke pemilik asalnya.\n` +
+      `> ↳ Nama orang tua kandung tidak berubah.\n` +
+      `> ↳ Biaya asuh yang sudah dibayarkan tidak dikembalikan.`
+    )
+  }
+
   if (sub === 'rename') {
     const targets = getKidTargets(args[2], args[3])
     const target = targets?.[0]
@@ -2655,7 +2980,6 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
       `╭─❏「 ✅ NAMA ANAK DIPERBARUI 」❏\n` +
       `│ ✏️ PERUBAHAN NAMA BERHASIL\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> 👤 Pasangan: ${target.partner.name}\n` +
       `> 👶 Nama baru: *${newName}*\n\n` +
       `─━━━━━━━━━━━━━━─\n` +
       `✨ Nama anak berhasil diperbarui.`
@@ -4710,7 +5034,7 @@ if (action === 'kiss') {
 
 }
 
-handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship kid guide', 'rship kid command', 'rship kid adopt [list|<no>|yes|no]', 'rship anak adopsi <no-anak> @user', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan/ex/exspouse', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
+handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship kid guide', 'rship kid command', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan/ex/exspouse', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
 handler.command = ['rship', 'rsh']
 handler.group = true
