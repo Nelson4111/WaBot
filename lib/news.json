@@ -600,7 +600,7 @@
     "createdAt": 1791616710000
   },
   {
-    "id": "12.1",
+    "id": "12.0",
     "section": "RPG",
     "title": "Pembaruan dan Perbaikan Bug",
     "content": "\u003e Di Auction House (.ah), penawar tertinggi kini otomatis menggantikan NPC sebagai pemimpin bid, informasi bid pada .ah info diperbarui, dan riwayat lelang terakhir kembali ditampilkan. Batas upgrade rumah kini mencapai level 20, Supreme Celestial Estate. Pengamanan notifikasi bunga mingguan bank ditingkatkan, dan input batch kini dapat membaca angka generasi Romawi.",
@@ -608,7 +608,7 @@
     "createdAt": 1791783411947
   },
   {
-    "id": "12.2",
+    "id": "12.1",
     "section": "RPG",
     "title": "Pembaruan Pengasuhan Anak Relationship",
     "content": "\u003e Pengasuhan anak kini memiliki 9 aktivitas melalui .rship kid, info/guide/command, dan batch premium .rship urus. Anak dapat diganti nama, dititipkan di daycare atau panti asuhan dengan biaya berkala, serta pindah rumah setelah dewasa dengan konfirmasi. Anak yang lama diabaikan berisiko hilang atau kabur; laporan anak dewasa dapat membuat orang tua dipenjara. .rship all kini mendukung semua pasangan dan tetap khusus premium.",
@@ -616,11 +616,27 @@
     "createdAt": 1791788122000
   },
   {
-    "id": "12.3",
+    "id": "12.2",
     "section": "RPG",
     "title": "Pembaruan Sistem Pekerjaan",
     "content": "\u003e .work/.job work mencatat absensi; absen lebih dari 7 hari dipecat, tetapi progres jabatan tiap pekerjaan tersimpan. Tersedia cuti/return, resign, apply manual (maksimal 5 pekerjaan; semua pekerjaan sebelumnya harus mencapai Karyawan Tetap untuk apply pekerjaan baru), cooldown dan peluang ditolak berdasarkan kriminal aktif. Poin, jabatan, serta multiplier gaji dihitung per pekerjaan; title dibedakan untuk kerja tim dan individu. Tambahan job baru, .job profile/performance/salary.",
     "author": "Eza",
     "createdAt": 1791807489600
+  },
+  {
+    "id": "12.3",
+    "section": "RPG",
+    "title": "Perbaikan Sistem Pekerjaan",
+    "content": "\u003e .job info menampilkan pekerjaan, jabatan, dan total income. Progres jabatan terlihat saat work/talk; dialog talk menyesuaikan jenis pekerjaan dan cooldown sama dengan work. Semua pekerjaan mendapat XP, peluang lamaran ditolak kecil kecuali poin kriminal aktif di atas 50.",
+    "author": "Eza",
+    "createdAt": 1791807489601
+  },
+  {
+    "id": "14.0",
+    "section": "RPG",
+    "title": "Pembaruan Relationship dan Pengasuhan",
+    "content": "\u003e Cooldown aktivitas anak 30 menit; .kidcare merawat semua anak untuk Premium. Aktivitas Home kini memberi efek ke pasangan, anak, dan pet. Info anak dirapikan; anak hilang/kabur masuk shelter dan dapat dicoba retrieve. Tambahan .rship shelter/mantan/makam list serta panduan fitur.",
+    "author": "Eza",
+    "createdAt": 1791963446119
   }
 ]
