@@ -950,6 +950,7 @@ async function processMessage(m, chatUpdate) {
                 // Game & RPG sekarang bisa dimainkan di private chat maupun grup
                 // CEK STATUS PENJARA RPG
                 const isRpgPlugin = (plugin.tags && (plugin.tags.includes('rpg') || plugin.tags.includes('pasangan'))) || name.includes('/rpg/') || name.includes('\\rpg\\');
+                const isGuildRpgActivity = plugin.tags?.includes('rpg') || name.includes('/rpg/') || name.includes('\\rpg\\');
                 if (isRpgPlugin && !['penjara', 'tebus', 'bebasin', 'penjarain', 'statuspenjara'].includes(command)) {
                     let userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
                     if (userRPG?.penjara) {
@@ -1011,9 +1012,11 @@ async function processMessage(m, chatUpdate) {
                     participants, groupMetadata, user, bot, isROwner, isOwner,
                     isRAdmin, isAdmin, isBotAdmin, isPrems, chatUpdate, __dirname: ___dirname, __filename
                 }
-                try {
+                if (isGuildRpgActivity) {
                     const commandUser = global.db.data.users[m.sender]
-                    if (commandUser?.rpg) commandUser.rpg.lastRpgActivityAt = Date.now()
+                    if (commandUser) commandUser.lastGuildRpgActivityAt = Date.now()
+                }
+                try {
                     await plugin.call(this, m, extra)
                     syncUserLimit(user)
                     m.limit = m.limit || plugin.limit || false
