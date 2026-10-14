@@ -81,10 +81,17 @@ function getAuctionBids(db, session, itemId) {
       Number(bid.amount) <= 0) continue
     const jid = normalizeJid(bid.jid || userJid)
     const current = byJid.get(jid)
-    const snapshotBid = { jid, amount: Number(bid.amount), at: Number(bid.at) || 0, escrowed: bid.escrowed === true }
+    const snapshotBid = {
+      jid,
+      amount: Number(bid.amount),
+      at: Number(bid.at) || 0,
+      escrowed: bid.escrowed === true,
+      chatId: bid.chatId
+    }
     if (!current ||
       snapshotBid.amount > Number(current.amount) ||
-      (snapshotBid.amount === Number(current.amount) && snapshotBid.escrowed && !current.escrowed)) {
+      (snapshotBid.amount === Number(current.amount) &&
+        ((snapshotBid.escrowed && !current.escrowed) || (snapshotBid.chatId && !current.chatId)))) {
       byJid.set(jid, snapshotBid)
     }
   }
@@ -168,14 +175,20 @@ function restoreAuctionBids(db, session) {
       const jid = normalizeJid(userJid)
       const bids = Array.isArray(session.bids[itemId]) ? session.bids[itemId] : (session.bids[itemId] = [])
       const existingIndex = bids.findIndex(entry => normalizeJid(entry?.jid) === jid)
-      const restoredBid = { jid, amount: Number(bid.amount), at: Number(bid.at) || 0, escrowed: bid.escrowed === true }
+      const restoredBid = {
+        jid,
+        amount: Number(bid.amount),
+        at: Number(bid.at) || 0,
+        escrowed: bid.escrowed === true,
+        chatId: bid.chatId
+      }
       if (existingIndex < 0) {
         bids.push(restoredBid)
         changed = true
       } else if (Number(bids[existingIndex].amount) < restoredBid.amount ||
         (Number(bids[existingIndex].amount) === restoredBid.amount &&
-          restoredBid.escrowed &&
-          !bids[existingIndex].escrowed)) {
+          ((restoredBid.escrowed && !bids[existingIndex].escrowed) ||
+            (restoredBid.chatId && !bids[existingIndex].chatId)))) {
         bids[existingIndex] = restoredBid
         changed = true
       }
@@ -212,7 +225,8 @@ function recoverAuctionSession(db, previousSession, now) {
         jid: normalizeJid(userJid),
         amount: Number(bid.amount),
         at: Number(bid.at) || 0,
-        escrowed: bid.escrowed === true
+        escrowed: bid.escrowed === true,
+        chatId: bid.chatId
       })
     }
   }
@@ -246,7 +260,8 @@ function settleOrphanedAuctionBids(db, now) {
         jid: normalizeJid(userJid),
         amount: Number(bid.amount),
         at: Number(bid.at) || 0,
-        escrowed: bid.escrowed === true
+        escrowed: bid.escrowed === true,
+        chatId: bid.chatId
       })
     }
   }
@@ -331,6 +346,7 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
       jid: bid.jid,
       winnerName,
       amount: bid.amount,
+      chatId: bid.chatId,
       endedAt: now
     }
     if (!Array.isArray(account.rpg.auctionHistory)) account.rpg.auctionHistory = []
@@ -562,6 +578,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   const prefix = usedPrefix || '.'
   const session = await getAuctionSession(db)
   const offers = session.itemIds.map(id => AUCTION_ITEMS.find(item => item.id === id))
+  const groupAuctionNews = session.news.filter(entry => entry.chatId === m.chat)
 
   if (mode === 'top') {
     const ranked = getAuctionLeaderboard(db, conn, groupMetadata)
@@ -585,6 +602,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `│ 📖 *PANDUAN LELANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Lima item koleksi dilelang bersama selama 5 jam dan daftar ini sama di semua grup.\n` +
+      `> ↳ Hasil lelang dan berita pemenang hanya ditampilkan di grup asal bid pemenang.\n` +
       `> ↳ Bid Minimum yang ditampilkan adalah setengah harga asli. Bid sungguhan harus lebih tinggi dari harga asli atau bid tertinggi. Bid perlu dikonfirmasi; bid berikutnya tanpa nominal naik Rp 500.000.\n` +
       `> ↳ Saldo bid ditahan saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
       `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku.\n\n` +
@@ -620,7 +638,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   }
 
   if (mode === 'news') {
-    const rows = session.news.map((entry, index) =>
+    const rows = groupAuctionNews.map((entry, index) =>
       `*${index + 1}. ${entry.emoji} ${entry.itemName}*\n` +
       `> ↳ ${entry.winnerName} memenangkan lelang seharga ${money(entry.amount)}`
     ).join('\n\n')
@@ -737,9 +755,9 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
           `> ↳ Bid tertinggi: ${money(highest.amount)}\n` +
           `> ↳ Pemimpin bid: ${leader}`
       }).join('\n\n')}\n\n` +
-      `${session.news?.length ? `─━━━━━━━━━━━━━━─\n` +
+      `${groupAuctionNews.length ? `─━━━━━━━━━━━━━━─\n` +
         `🏁 *HASIL LELANG TERAKHIR*\n\n` +
-        `${session.news.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
+        `${groupAuctionNews.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
           `> ${entry.emoji} ${entry.itemName}\n` +
           `> ↳ Bid akhir: ${money(entry.amount)}\n` +
           `> ↳ Pemenang: ${entry.winnerName}`
@@ -843,12 +861,19 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       rpg.bank = balance + previousHeldAmount - pending.amount
       const confirmedAt = Date.now()
       session.bids[item.id] = existingBids.filter(bid => !isAuctionUser(bid?.jid, userJids))
-      session.bids[item.id].push({ jid, amount: pending.amount, at: confirmedAt, escrowed: true })
+      session.bids[item.id].push({
+        jid,
+        amount: pending.amount,
+        at: confirmedAt,
+        escrowed: true,
+        chatId: pending.chatId || m.chat
+      })
       if (!rpg.auctionBids || typeof rpg.auctionBids !== 'object') rpg.auctionBids = {}
       rpg.auctionBids[item.id] = {
         jid,
         amount: pending.amount,
         at: confirmedAt,
+        chatId: pending.chatId || m.chat,
         endsAt: session.endsAt,
         itemIds: [...session.itemIds],
         escrowed: true
@@ -936,6 +961,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     session.pendingConfirmations[jid] = {
       itemId: item.id,
       amount,
+      chatId: m.chat,
       endsAt: session.endsAt,
       expiresAt: Date.now() + BID_CONFIRMATION_TTL
     }

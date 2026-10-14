@@ -6,7 +6,8 @@ import {
   areGuildJidsSame,
   advanceGuildLevel,
   findGuildByMember,
-  GUILD_MEMBER_INACTIVE_MS,
+  findGuildMemberId,
+  isGuildMemberActive,
   normalizeGuildLoot,
   normalizeGuildPendingLoot
 } from '../../lib/rpgGuild.js'
@@ -226,6 +227,9 @@ if(command === 'latihanguild'){
   myGuild.contribution[m.sender] = (myGuild.contribution[m.sender] || 0) + msn.contrib
   myGuild.exp += reward.exp
   myGuild.lastMission = Date.now()
+  const executorMemberId = findGuildMemberId(myGuild, m.sender, conn) || m.sender
+  myGuild.missionCounts = myGuild.missionCounts || {}
+  myGuild.missionCounts[executorMemberId] = (Number(myGuild.missionCounts[executorMemberId]) || 0) + 1
 
   myGuild.pendingLoot = myGuild.pendingLoot || {}
   normalizeGuildPendingLoot(myGuild, conn)
@@ -251,11 +255,12 @@ if(command === 'latihanguild'){
 
   for (const jid of myGuild.members) {
     if (areGuildJidsSame(jid, m.sender, conn)) continue
-    let u = wdb.users[jid]?.rpg
+    const memberUser = wdb.users[jid]
+    if (!memberUser || !isGuildMemberActive(memberUser, now)) continue
+    let u = memberUser.rpg || getUserRPG(wdb, jid).rpg
     if (!u) continue
 
     normalizeGuildLoot(u)
-    if (now - (Number(u.lastRpgActivityAt) || 0) > GUILD_MEMBER_INACTIVE_MS) continue
 
     {
       const rewardItems = {
@@ -308,7 +313,7 @@ for (const [item, label] of Object.entries(rewardLabels)) {
 }
 cap += `\n🎁 *PENDING GUILD LOOT UNTUK ANGGOTA LAIN*\n`
 cap += `> ↳ Penerima aktif: ${pendingRecipients} anggota\n`
-cap += `> ↳ Kriteria: memakai command atau fitur bot apa pun dalam 4 hari terakhir\n`
+cap += `> ↳ Kriteria: memakai command atau fitur RPG dalam 4 hari terakhir\n`
 const pendingTotalLines = Object.entries(rewardLabels)
   .filter(([item]) => pendingLootTotals[item] > 0)
   .map(([item, label]) => `> ↳ ${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`)

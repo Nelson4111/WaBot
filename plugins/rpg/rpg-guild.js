@@ -13,6 +13,7 @@ import {
   findGuildMemberId,
   getGuildMemberCap,
   getGuildLootCaps,
+  isGuildMemberActive,
   normalizeGuildLoot,
   normalizeGuildPendingLoot
 } from '../../lib/rpgGuild.js'
@@ -91,6 +92,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `${usedPrefix}guild loot take`,
       `${usedPrefix}guild loot list`,
       `${usedPrefix}guild loot collect`,
+      `${usedPrefix}guild status`,
       `${usedPrefix}guild storage`,
       `${usedPrefix}guild storage add/take <item> <jumlah>`,
       `${usedPrefix}guild command`,
@@ -156,24 +158,74 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ${usedPrefix}guild loot take
 > ${usedPrefix}guild loot list (leader)
 > ${usedPrefix}guild loot collect (leader)
-> Loot bertambah untuk anggota yang memakai command atau fitur bot apa pun dalam 4 hari terakhir.
+> Loot bertambah untuk anggota yang memakai command atau fitur RPG dalam 4 hari terakhir.
 
-📌 *9. Guild Storage*
+📌 *9. Status Aktivitas Guild*
+> ${usedPrefix}guild status
+> Lihat anggota aktif dan tidak aktif serta jumlah misi Guild yang pernah diselesaikan.
+
+📌 *10. Guild Storage*
 > ${usedPrefix}guild storage
 > ${usedPrefix}guild storage add <item> <jumlah>
 > ${usedPrefix}guild storage take <item> <jumlah> (semua anggota)
 
-📌 *10. Guild War*
+📌 *11. Guild War*
 > ${usedPrefix}guild war @tag
 > ${usedPrefix}guild war acak
 > Tantang guild lain dan ikuti instruksi penerimaan war.
 
-📌 *11. Keluar dari Guild*
+📌 *12. Keluar dari Guild*
 > ${usedPrefix}guild leave
 > Setelah keluar, ada cooldown sebelum bisa join/create lagi.
 
 ⚠️ *Catatan:* Satu user hanya bisa berada di satu guild dan beberapa aktivitas memiliki cooldown.`
     return m.reply(guide)
+  }
+
+  if (action === 'status') {
+    const myGuild = findGuildByMember(wdb.guilds, m.sender, conn)
+    if (!myGuild) {
+      return m.reply(
+        `╭─❏「 ❌ GUILD STATUS 」❏\n` +
+        `│ ❌ *Kamu belum bergabung dengan Guild.*\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const now = Date.now()
+    const members = (myGuild.members || []).map(jid => {
+      const memberUser = wdb.users[jid]
+      return {
+        jid,
+        active: isGuildMemberActive(memberUser, now),
+        missionCount: Math.max(0, Number(myGuild.missionCounts?.[jid]) || 0)
+      }
+    }).sort((a, b) =>
+      b.missionCount - a.missionCount || a.jid.localeCompare(b.jid)
+    )
+    const activeMembers = members.filter(member => member.active)
+    const inactiveMembers = members.filter(member => !member.active)
+    const formatMembers = list => list.length
+      ? list.map(({ jid, missionCount }, index) =>
+        `> ${index + 1}. @${jid.split('@')[0]} -\n> ↳ ${missionCount}x Misi Guild telah dilakukan`
+      ).join('\n')
+      : '> ↳ Tidak ada'
+    const mentions = members.map(({ jid }) => jid)
+
+    return m.reply(
+      `╭─❏「 📊 GUILD STATUS 」❏\n` +
+      `│ 🏰 *${myGuild.name}*\n` +
+      `│ ✅ Aktif: ${activeMembers.length} / ${members.length} member\n` +
+      `│ ⏱️ Aktif jika menggunakan fitur RPG dalam 4 hari terakhir\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🟢 *MEMBER AKTIF*\n` +
+      `${formatMembers(activeMembers)}\n\n` +
+      `🔴 *MEMBER TIDAK AKTIF*\n` +
+      `${formatMembers(inactiveMembers)}\n\n` +
+      `─━━━━━━━━━━━━━━─`,
+      null,
+      { mentions }
+    )
   }
 
   if (action === 'loot') {
@@ -686,7 +738,7 @@ if (action === 'donate') {
 }
 }
 
-handler.help = ['guild', 'guild command', 'guild guide', 'guild list', 'guild top', 'guild loot', 'guild storage']
+handler.help = ['guild', 'guild command', 'guild guide', 'guild list', 'guild top', 'guild status', 'guild loot', 'guild storage']
 handler.tags = ['rpg']
 handler.command = ['guild']
 export default handler
