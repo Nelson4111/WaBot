@@ -17,7 +17,8 @@ import {
   RSHIP_COOLDOWN_NAMES as cooldownNames,
   RSHIP_GIFT_LIST as GIFT_LIST,
   RSHIP_ACTIVITY_COOLDOWNS as activityCooldowns,
-  RSHIP_BATCH_ACTIVITY_RULES as batchActivityRules
+  RSHIP_BATCH_ACTIVITY_RULES as batchActivityRules,
+  RSHIP_STANDARD_PARTNER_EXP
 } from '../../lib/rpgRshipData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -241,12 +242,29 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const runsAway = adolescent || (childStage && Math.random() < 0.5)
     user.kids.splice(index, 1)
     child.originalOwnerJid ||= m.sender
-    child.shelterStatus = {
-      reason: runsAway ? 'runaway' : 'lost',
-      enteredAt: now
+    let returnedToOriginalParent = false
+    if (runsAway && child.custody?.type === 'foster' && child.originalOwnerJid !== m.sender) {
+      const originalOwnerData = getUserRPG(wdb, child.originalOwnerJid)
+      const originalOwner = originalOwnerData?.rpg || originalOwnerData
+      if (originalOwner && !originalOwnerData?.isDummy) {
+        if (!Array.isArray(originalOwner.kids)) originalOwner.kids = []
+        delete child.custody
+        delete child.originalOwnerJid
+        delete child.shelterStatus
+        child.lastCaredAt = now
+        child.lastNeglectCheckAt = now
+        originalOwner.kids.push(child)
+        returnedToOriginalParent = true
+      }
     }
-    normalizeBiologicalParents(child)
-    user.shelterKids.push(child)
+    if (!returnedToOriginalParent) {
+      child.shelterStatus = {
+        reason: runsAway ? 'runaway' : 'lost',
+        enteredAt: now
+      }
+      normalizeBiologicalParents(child)
+      user.shelterKids.push(child)
+    }
     if (!runsAway) {
       const story = CHILD_LOSS_STORIES[Math.floor(Math.random() * CHILD_LOSS_STORIES.length)]
       childEvents.push(
@@ -279,7 +297,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ *${child.nama} kabur dari rumah.*\n` +
       `> ${story}\n\n` +
-      `> ↳ Anak berada di shelter. Lihat ${usedPrefix}rship shelter list dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n` +
+      (returnedToOriginalParent
+        ? `> ↳ Karena anak ini berstatus asuh, *${child.nama}* dikembalikan ke orang tua/pemilik asalnya, bukan ke shelter.\n\n`
+        : `> ↳ Anak berada di shelter. Lihat ${usedPrefix}rship shelter list dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n`) +
       `─━━━━━━━━━━━━━━─\n` +
       `🚔 *STATUS HUKUM*\n\n` +
       `> ↳ ${alreadyImprisoned ? 'Kasus ini tercatat saat kamu sedang menjalani hukuman.' : user.sel ? `Kamu dipenjara 2 jam di sel ${user.sel} atas kasus penelantaran anak.\n> ↳ Tebusan: Rp 2.000.000.` : 'Pihak berwenang memproses laporan; perlindungan yang aktif mencegah penahanan.'}\n\n` +
@@ -373,6 +393,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     partner.waitTitleUp = true
     return true
   }
+
+  const standardPartnerActivityExp = () => RSHIP_STANDARD_PARTNER_EXP
 
   const getActivityLoveAmount = amount => {
     const eventMultiplier = (isRpgEventActive('love_season') ? 1.25 : 1) *
@@ -1296,8 +1318,285 @@ ${options}
   }
 
 
+  const rshipGuideExp = () => `╭─❏「 📊 RSHIP EXP GUIDE 」❏
+│ 💕 STANDAR EXP PASANGAN & KELUARGA
+╰─━━━━━━━━━━━━━━─
+
+💞 *PASANGAN*
+> ↳ Base EXP tiap aktivitas pasangan: +${RSHIP_STANDARD_PARTNER_EXP} EXP.
+> ↳ Semua aktivitas pasangan memakai nilai yang sama agar tidak ada perbedaan EXP antar kegiatan.
+> ↳ Contoh: date, talk, makan, liburan, peluk, mandi, tidur, belanja, kerja, usil, marah, maaf, kiss, nonton, swim, wohoo, debat, prank, staycation, rampok, duel, dll. semua memakai +${RSHIP_STANDARD_PARTNER_EXP} EXP dasar.
+> ↳ Catatan: event seperti love_season/cold_war bisa menambah atau menurunkan multiplier, tetapi aturan dasarnya tetap sama.
+
+👶 *ANAK*
+> ↳ hibur: +8 EXP
+> ↳ main: +10 EXP
+> ↳ jalan: +12 EXP
+> ↳ makan: +8 EXP
+> ↳ tidur: +7 EXP
+> ↳ mandi: +8 EXP
+> ↳ peluk: +10 EXP
+> ↳ puji: +6 EXP
+> ↳ motivasi: +9 EXP
+
+🏠 *HOME / RUMAH*
+> ↳ Aktivitas rumah tidak memakai EXP pasangan seperti .rship date; fokus utamanya memberi love/harmony dan support untuk anggota rumah.
+> ↳ Rumah memberi bonus love: pasangan terpilih +1 love, anak terpilih +2 love, pet terpilih +5 bahagia dan +5 EXP.
+> ↳ Jadi sumber EXP dari rumah itu bersifat pendukung, bukan aktivitas pasangan dengan base ${RSHIP_STANDARD_PARTNER_EXP}.
+
+🎁 *HADIAH*
+> ↳ Gift item juga memberi EXP sesuai nominal hadiah, misalnya bunga 40, eskrim 80, sate 100, coklat 120, dll.
+> ↳ Nilai EXP hadiah berubah sesuai item; ini berbeda dari aktivitas pasangan yang tetap seragam.
+
+─━━━━━━━━━━━━━━─
+
+> ↳ Gunakan ${usedPrefix}rship command all untuk lihat semua fitur.
+> ↳ Gunakan ${usedPrefix}rship command pasangan untuk aktivitas pasangan.
+> ↳ Gunakan ${usedPrefix}rship command anak untuk aktivitas keluarga.
+> ↳ Gunakan ${usedPrefix}rship command rumah untuk aktivitas rumah.
+
+─━━━━━━━━━━━━━━─`
+
+  const buildRshipCommandBlock = (category = 'all') => {
+    const sections = {
+      dasar: `╭─❏「 📋 RSHIP COMMAND 」❏
+│ 💕 KATEGORI: DASAR
+╰─━━━━━━━━━━━━━━─
+
+💕 *SETUP & STATUS*
+> *${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>*
+> ↳ Membuat pasangan baru.
+> *${usedPrefix}rship lamar <nama> <gender> <mahar>*
+> ↳ Lamaran langsung menikah dan memakai mahar dari bank RPG.
+> *${usedPrefix}rship harem*
+> ↳ Melihat semua pasangan.
+> *${usedPrefix}rship status <no>*
+> ↳ Menampilkan status pasangan.
+> *${usedPrefix}rship detail <no>*
+> ↳ Detail lengkap pasangan.
+> *${usedPrefix}rship fitur*
+> ↳ Melihat syarat level fitur.
+> *${usedPrefix}rship cincin*
+> ↳ Melihat pilihan cincin dan harga.
+> *${usedPrefix}rship cd*
+> ↳ Melihat cooldown pasangan dan anak.
+
+─━━━━━━━━━━━━━━─
+
+> ↳ Ketik ${usedPrefix}rship command all untuk lihat semua kategori.
+
+─━━━━━━━━━━━━━━─`,
+      pasangan: `╭─❏「 📋 RSHIP COMMAND 」❏
+│ 💕 KATEGORI: PASANGAN
+╰─━━━━━━━━━━━━━━─
+
+🎭 *AKTIVITAS PASANGAN*
+> *${usedPrefix}rship date <no>*
+> ↳ Berkencan; EXP dasar +${RSHIP_STANDARD_PARTNER_EXP}.
+> *${usedPrefix}rship talk <no>*
+> ↳ Mengobrol.
+> *${usedPrefix}rship makan <no>*
+> ↳ Makan bersama.
+> *${usedPrefix}rship liburan <no>*
+> ↳ Liburan bersama.
+> *${usedPrefix}rship peluk <no>*
+> ↳ Memeluk.
+> *${usedPrefix}rship usil <no>*
+> ↳ Mengusili pasangan.
+> *${usedPrefix}rship prank <no>*
+> ↳ Menggoda/bercanda.
+> *${usedPrefix}rship debat <no>*
+> ↳ Berdebat.
+> *${usedPrefix}rship maaf <no>*
+> ↳ Meminta maaf.
+> *${usedPrefix}rship mandi <no>*
+> ↳ Mandi bersama.
+> *${usedPrefix}rship tidur <no>*
+> ↳ Tidur bersama.
+> *${usedPrefix}rship nonton <no>*
+> ↳ Menonton bersama.
+> *${usedPrefix}rship swim <no>*
+> ↳ Berenang bersama.
+> *${usedPrefix}rship belanja <no>*
+> ↳ Berbelanja bersama.
+> *${usedPrefix}rship marah <no>*
+> ↳ Melampiaskan emosi.
+> *${usedPrefix}rship rampok <no>*
+> ↳ Merampok pasangan.
+> *${usedPrefix}rship staycation <no>*
+> ↳ Staycation romantis.
+> *${usedPrefix}rship kerja <no>*
+> ↳ Bekerja bersama.
+> *${usedPrefix}rship kiss <no>*
+> ↳ Mencium pasangan.
+> *${usedPrefix}rship wohoo <no>*
+> ↳ Aktivitas level tinggi.
+
+> ↳ Semua aktivitas pasangan memakai EXP dasar +${RSHIP_STANDARD_PARTNER_EXP}.
+
+─━━━━━━━━━━━━━━─`,
+      keluarga: `╭─❏「 📋 RSHIP COMMAND 」❏
+│ 💕 KATEGORI: KELUARGA
+╰─━━━━━━━━━━━━━━─
+
+💍 *HADIAH & KELUARGA*
+> *${usedPrefix}rship gift list*
+> ↳ Daftar hadiah pasangan.
+> *${usedPrefix}rship gift item ...*
+> ↳ Memberi item ke pasangan.
+> *${usedPrefix}rship gift money ...*
+> ↳ Memberi uang ke pasangan.
+> *${usedPrefix}rship gift anak <no> item ...*
+> ↳ Memberi item ke anak.
+> *${usedPrefix}rship gift anak <no> money ...*
+> ↳ Memberi uang ke anak.
+> *${usedPrefix}rship nikah <no>*
+> ↳ Menikahkan pasangan.
+> *${usedPrefix}rship anak <no>*
+> ↳ Memiliki anak.
+> *${usedPrefix}rship kid info*
+> ↳ Lihat daftar anak.
+> *${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>*
+> ↳ Aktivitas: hibur, main, jalan, makan, tidur, mandi, peluk, puji, motivasi.
+> *${usedPrefix}rship urus <pasangan/all> <anak/all>*
+> ↳ Premium: semua aktivitas anak sekaligus.
+> *${usedPrefix}rship kid adopt/list/adopt <no>*
+> ↳ Mengadopsi anak dari panti asuhan.
+> *${usedPrefix}rship anak adopsi <no-anak> @user*
+> ↳ Menawarkan anak untuk diasuh.
+> *${usedPrefix}rship custody <joint|sole|foster|spouse|orphaned> <anak> [@user]*
+> ↳ Mengatur hak asuh.
+> *${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>*
+> ↳ Mengganti nama anak.
+> *${usedPrefix}rship kid daycare/orphanage <pasangan> <anak>*
+> ↳ Menitipkan anak.
+> *${usedPrefix}rship kid moveout <pasangan> <anak>*
+> ↳ Anak dewasa pindah rumah.
+
+─━━━━━━━━━━━━━━─`,
+      rumah: `╭─❏「 📋 RSHIP COMMAND 」❏
+│ 💕 KATEGORI: RUMAH
+╰─━━━━━━━━━━━━━━─
+
+🏠 *AKTIVITAS RUMAH / HOME*
+> *${usedPrefix}home*
+> ↳ Menu utama rumah.
+> *${usedPrefix}home care*
+> ↳ Menjaga kebersihan dan kenyamanan rumah.
+> *${usedPrefix}home staff*
+> ↳ Kelola staf rumah.
+> *${usedPrefix}home upgrade*
+> ↳ Upgrade dan tingkatkan kualitas rumah.
+> *${usedPrefix}home visit* / *${usedPrefix}home explore*
+> ↳ Kunjungi rumah atau melihat rumah publik.
+
+> ↳ Sumber EXP rumah biasanya berupa bonus love + pet +5 EXP, bukan EXP pasangan seragam.
+
+─━━━━━━━━━━━━━━─`,
+      lainnya: `╭─❏「 📋 RSHIP COMMAND 」❏
+│ 💕 KATEGORI: LAINNYA
+╰─━━━━━━━━━━━━━━─
+
+💔 *LAINNYA*
+> *${usedPrefix}rship rename yes/konfirmasi/no/batal*
+> ↳ Konfirmasi atau batalkan perubahan nama.
+> *${usedPrefix}rship title <no> ya/tidak*
+> ↳ Mengatur title pasangan.
+> *${usedPrefix}rship putus <no>* / *${usedPrefix}rship divorce <no>*
+> ↳ Memutus hubungan / cerai.
+> *${usedPrefix}rship exspouse* / *ex* / *balikan <no>*
+> ↳ Lihat mantan dan balikan.
+> *${usedPrefix}rship duel <no>*
+> ↳ Mengajak pasangan berduel.
+> *${usedPrefix}rship kill <no>*
+> ↳ Memindahkan pasangan ke makam.
+> *${usedPrefix}rship makam* / *revive <no>*
+> ↳ Lihat dan pulihkan makam.
+> *${usedPrefix}rship shelter list* / *retrieve <no>*
+> ↳ Lihat dan ambil anak yang ada di shelter.
+
+─━━━━━━━━━━━━━━─`,
+      all: `╭─❏「 📋 RSHIP COMMAND 」❏
+│ 💕 DAFTAR COMMAND RELATIONSHIP
+╰─━━━━━━━━━━━━━━─
+
+💕 *DASAR*
+> *${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>*
+> ↳ Membuat pasangan baru.
+> *${usedPrefix}rship lamar <nama> <gender> <mahar>*
+> ↳ Lamaran langsung menikah.
+> *${usedPrefix}rship harem*
+> ↳ Melihat semua pasangan.
+> *${usedPrefix}rship status <no>*
+> ↳ Melihat status pasangan.
+> *${usedPrefix}rship detail <no>*
+> ↳ Melihat detail pasangan.
+> *${usedPrefix}rship fitur*
+> ↳ Melihat fitur berdasarkan level.
+> *${usedPrefix}rship cd*
+> ↳ Melihat cooldown aktivitas.
+
+─━━━━━━━━━━━━━━─
+
+🎭 *PASANGAN*
+> *${usedPrefix}rship date <no>*
+> ↳ Berkencan; EXP dasar +${RSHIP_STANDARD_PARTNER_EXP}.
+> *${usedPrefix}rship talk <no>*
+> ↳ Mengobrol.
+> *${usedPrefix}rship makan <no>*
+> ↳ Makan bersama.
+> *${usedPrefix}rship liburan <no>*
+> ↳ Liburan bersama.
+> *${usedPrefix}rship all <no/all>*
+> ↳ Premium: menjalankan semua aktivitas pasangan yang siap.
+
+─━━━━━━━━━━━━━━─
+
+💍 *KELUARGA & HADIAH*
+> *${usedPrefix}rship gift list*
+> ↳ Melihat daftar hadiah pasangan.
+> *${usedPrefix}rship kid info*
+> ↳ Melihat daftar anak keluarga.
+> *${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>*
+> ↳ Aktivitas: hibur, main, jalan, makan, tidur, mandi, peluk, puji, motivasi.
+> *${usedPrefix}rship urus <pasangan/all> <anak/all>*
+> ↳ Premium: semua aktivitas pengasuhan sekaligus.
+> *${usedPrefix}rship kid adopt/list/adopt <no>*
+> ↳ Panduan dan pilih adopsi anak.
+
+─━━━━━━━━━━━━━━─
+
+🏠 *RUMAH / HOME*
+> *${usedPrefix}home*
+> ↳ Menu rumah utama.
+> *${usedPrefix}home care*
+> ↳ Merawat rumah.
+> *${usedPrefix}home staff*
+> ↳ Kelola staf rumah.
+
+─━━━━━━━━━━━━━━─
+
+💔 *LAINNYA*
+> *${usedPrefix}rship rename yes/konfirmasi/no/batal*
+> ↳ Konfirmasi nama.
+> *${usedPrefix}rship putus <no>*
+> ↳ Cerai / putus.
+> *${usedPrefix}rship exspouse* / *ex* / *balikan <no>*
+> ↳ Mantan dan balikan.
+> *${usedPrefix}rship custody <joint|sole|foster|spouse|orphaned> <anak> [@user]*
+> ↳ Hak asuh anak.
+
+> ↳ Ketik ${usedPrefix}rship command <all|dasar|pasangan|keluarga|rumah|lainnya> untuk melihat kategori tertentu.
+
+─━━━━━━━━━━━━━━─`
+    }
+    return sections[category] || sections.all
+  }
+
   // === PANDUAN RSHIP ===
   if (action === 'guide' || action === 'panduan') {
+    const guideTarget = (args[1] || '').toLowerCase()
+    if (guideTarget === 'exp' || guideTarget === 'xp') return m.reply(rshipGuideExp())
     return m.reply(
       `╭─❏「 📖 RSHIP GUIDE 」❏
 │ 💕 PANDUAN FITUR RELATIONSHIP
@@ -1311,6 +1610,7 @@ ${options}
 > 5. Cek level dan fitur: ${usedPrefix}rship status <no>
 > 6. Lihat cooldown: ${usedPrefix}rship cd
 > 7. Lihat daftar hadiah: ${usedPrefix}rship gift list
+> 8. Cek EXP per aktivitas: ${usedPrefix}rship guide exp
 
 ─━━━━━━━━━━━━━━─
 
@@ -1319,7 +1619,8 @@ ${options}
 > ↳ Mahar lebih besar meningkatkan peluang lamaran diterima.
 > ↳ Lamaran langsung menikah pada Lv.1; fitur anak tetap butuh Lv.50.
 > ↳ Cooldown aktivitas berlaku untuk semua pasangan.
-> ↳ Gunakan ${usedPrefix}rship command untuk daftar command lengkap.
+> ↳ Gunakan ${usedPrefix}rship command all untuk daftar command lengkap.
+> ↳ Gunakan ${usedPrefix}rship command <all|dasar|pasangan|keluarga|rumah|lainnya> untuk kategori tertentu.
 > ↳ Gunakan ${usedPrefix}rship fitur untuk syarat level.
 
 ─━━━━━━━━━━━━━━─`
@@ -1328,155 +1629,18 @@ ${options}
 
   // === DAFTAR COMMAND RSHIP ===
   if (action === 'command' || action === 'commands' || action === 'cmd') {
-    let cap = `╭─❏「 📋 RSHIP COMMAND 」❏
-│ 💕 DAFTAR COMMAND RELATIONSHIP
-╰─━━━━━━━━━━━━━━─
-
-💕 *DASAR*
-> *${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>*
-> ↳ Membuat pasangan baru.
-> *${usedPrefix}rship lamar <nama> <cowok/cewek> <mahar>*
-> ↳ Mahar dari bank RPG; peluang diterima meningkat seiring nominal. Jika diterima, langsung menikah pada Lv.1.
-> *${usedPrefix}rship harem*
-> ↳ Melihat semua pasangan.
-> *${usedPrefix}rship status <no>*
-> ↳ Melihat status pasangan.
-> *${usedPrefix}rship detail <no>*
-> ↳ Melihat detail pasangan.
-> *${usedPrefix}rship rename <no> <nama baru>*
-> ↳ Ganti nama pasangan dengan konfirmasi.
-> *${usedPrefix}rship fitur*
-> ↳ Melihat fitur yang terbuka berdasarkan level.
-> *${usedPrefix}rship cincin*
-> ↳ Melihat pilihan dan harga cincin.
-> *${usedPrefix}rship kid info*
-> ↳ Melihat daftar anak keluarga.
-> *${usedPrefix}rship kid guide/command*
-> ↳ Panduan dan daftar command pengasuhan.
-> *${usedPrefix}rship cd*
-> ↳ Melihat cooldown semua aktivitas pasangan dan anak.
-
-─━━━━━━━━━━━━━━─
-
-🎭 *AKTIVITAS PASANGAN*
-> *${usedPrefix}rship date <no>*
-> ↳ Pergi berkencan dengan pasangan.
-> *${usedPrefix}rship talk <no>*
-> ↳ Mengobrol dengan pasangan.
-> *${usedPrefix}rship makan <no>*
-> ↳ Makan bersama pasangan.
-> *${usedPrefix}rship liburan <no>*
-> ↳ Pergi liburan bersama pasangan.
-> *${usedPrefix}rship peluk <no>*
-> ↳ Memeluk pasangan.
-> *${usedPrefix}rship usil <no>*
-> ↳ Mengusili pasangan.
-> *${usedPrefix}rship prank <no>*
-> ↳ Mengerjai pasangan.
-> *${usedPrefix}rship debat <no>*
-> ↳ Berdebat dengan pasangan.
-> *${usedPrefix}rship maaf <no>*
-> ↳ Meminta maaf kepada pasangan.
-> *${usedPrefix}rship mandi <no>*
-> ↳ Melakukan aktivitas mandi bersama.
-> *${usedPrefix}rship tidur <no>*
-> ↳ Tidur bersama pasangan.
-> *${usedPrefix}rship nonton <no>*
-> ↳ Menonton bersama pasangan.
-> *${usedPrefix}rship swim <no>*
-> ↳ Berenang bersama pasangan.
-> *${usedPrefix}rship belanja <no>*
-> ↳ Berbelanja bersama pasangan.
-> *${usedPrefix}rship marah <no>*
-> ↳ Melampiaskan amarah kepada pasangan.
-> *${usedPrefix}rship rampok <no>*
-> ↳ Merampok pasangan dan mengambil uang.
-> *${usedPrefix}rship staycation <no>*
-> ↳ Staycation romantis bersama pasangan.
-> *${usedPrefix}rship santet <uang>*
-> ↳ Mencoba mendapatkan pasangan dengan ritual.
-> *${usedPrefix}rship kerja <no>*
-> ↳ Bekerja bersama pasangan.
-> *${usedPrefix}rship kiss <no>*
-> ↳ Mencium pasangan.
-> *${usedPrefix}rship wohoo <no>*
-> ↳ Aktivitas khusus pasangan level tinggi.
-
-─━━━━━━━━━━━━━━─
-
-💍 *KELUARGA & HADIAH*
-> *${usedPrefix}rship gift list*
-> ↳ Melihat daftar hadiah pasangan.
-> *${usedPrefix}rship gift item ...*
-> ↳ Memberikan item kepada pasangan.
-> *${usedPrefix}rship gift money ...*
-> ↳ Memberikan uang kepada pasangan.
-> *${usedPrefix}rship gift anak <no> item ...*
-> ↳ Memberikan item kepada anak.
-> *${usedPrefix}rship gift anak <no> money ...*
-> ↳ Memberikan uang kepada anak.
-> *${usedPrefix}rship gift <no/nama> item/money ...*
-> ↳ Memilih pasangan tertentu dengan nomor atau nama.
-> *${usedPrefix}rship belicincin <no> <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>*
-> ↳ Membeli cincin pernikahan.
-> *${usedPrefix}rship nikah <no>*
-> ↳ Menikahi pasangan yang memenuhi syarat.
-> *${usedPrefix}rship anak <no>*
-> ↳ Memiliki anak bersama pasangan.
-> *${usedPrefix}rship kid adopt*
-> ↳ Panduan adopsi dari panti asuhan.
-> *${usedPrefix}rship kid adopt list*
-> ↳ Melihat anak orphaned yang tersedia untuk diadopsi.
-> *${usedPrefix}rship kid adopt <no>*
-> ↳ Memilih anak dari daftar; perpindahan memerlukan konfirmasi.
-> *${usedPrefix}rship anak adopsi <no-anak> @user*
-> ↳ Tawarkan anakmu ke pemain RPG; anak baru pindah setelah penerima menerima.
-> *${usedPrefix}rship anak asuh terima/tolak*
-> ↳ Penerima menerima atau menolak tawaran pengasuhan langsung.
-> *${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>*
-> ↳ Aktivitas: hibur, main, jalan, makan, tidur, mandi, peluk, puji, motivasi.
-> *${usedPrefix}rship urus <pasangan/all> <anak/all>*
-> ↳ Premium: menjalankan semua 9 aktivitas pengasuhan.
-> *${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>*
-> ↳ Mengganti nama anak.
-> *${usedPrefix}rship kid daycare/orphanage <pasangan> <anak>*
-> ↳ Menitipkan anak dengan konfirmasi dan biaya berkala.
-> *${usedPrefix}rship kid moveout <pasangan> <anak>*
-> ↳ Anak dewasa pindah rumah dengan konfirmasi.
-> *${usedPrefix}rship duel <no>*
-> ↳ Mengajak pasangan untuk berduel.
-> *${usedPrefix}rship kill <no>*
-> ↳ Meminta konfirmasi untuk memindahkan pasangan ke makam.
-> *${usedPrefix}rship all <no pasangan/all>*
-> ↳ Premium: menjalankan semua aktivitas yang siap untuk pasangan pilihan; cooldown all 30 menit.
-> ↳ Batch: date, liburan, makan, peluk, mandi, tidur, belanja, kerja, usil, marah, maaf, talk, kiss, nonton, swim, wohoo, debat, prank, staycation, rampok.
-> ↳ Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all all.
-
-─━━━━━━━━━━━━━━─
-
-💔 *LAINNYA*
-> *${usedPrefix}rship rename yes/konfirmasi/no/batal*
-> ↳ Konfirmasi atau batalkan perubahan nama.
-> *${usedPrefix}rship title <no> ya/tidak*
-> ↳ Mengatur title pasangan.
-> *${usedPrefix}rship putus <no>*
-> ↳ Alias: cerai/divorce. Meminta konfirmasi; pasangan masuk daftar mantan 7 hari.
-> *${usedPrefix}rship kill <no>*
-> ↳ Meminta konfirmasi; pasangan masuk makam 7 hari.
-> *${usedPrefix}rship putus/kill konfirmasi/batal*
-> ↳ Menyetujui atau membatalkan perpisahan/pemakaman.
-> *${usedPrefix}rship exspouse* / *ex* / *balikan <no>*
-> ↳ Lihat mantan dan balikan dalam 7 hari.
-> *${usedPrefix}rship custody <joint|sole|foster|spouse|orphaned> <anak> [@user]*
-> ↳ Atur hak asuh setelah putus; spouse tidak tersedia untuk kill.
-> *${usedPrefix}rship custody terima/tolak*
-> ↳ Terima atau tolak permintaan mengasuh anak foster.
-> *${usedPrefix}rship makam* / *revive <no>*
-> ↳ Lihat makam dan pulihkan dalam 7 hari.
-
-─━━━━━━━━━━━━━━─`
-
-    return m.reply(cap)
+    const categoryMap = {
+      all: 'all', semua: 'all', default: 'all',
+      dasar: 'dasar', basic: 'dasar', base: 'dasar',
+      pasangan: 'pasangan', partner: 'pasangan', couple: 'pasangan',
+      keluarga: 'keluarga', family: 'keluarga', anak: 'keluarga', kid: 'keluarga',
+      rumah: 'rumah', home: 'rumah',
+      lainnya: 'lainnya', other: 'lainnya', lain: 'lainnya',
+      hadiah: 'keluarga', gift: 'keluarga'
+    }
+    const requestedCategory = (args[1] || 'all').toLowerCase()
+    const category = categoryMap[requestedCategory] || 'all'
+    return m.reply(buildRshipCommandBlock(category))
   }
 
   // === MENU RINGKAS TANPA DAFTAR COMMAND ===

@@ -705,7 +705,18 @@ if (action === 'care') {
   user.petCareAt = now
   user.cooldown.petcare = now
   saveDB(wdb)
-  return safeReply(`✅ *PET CARE SELESAI*\nSemua pet sudah di-feed, di-rest, dan dibersihkan.\n> ↳ Biaya: Rp ${totalCost.toLocaleString('id-ID')}\n> ↳ *.pet all* bisa digunakan sekarang. Cooldown care: 30 menit.`)
+  const careResult = `✅ *PET CARE SELESAI*\nSemua pet sudah di-feed, di-rest, dan dibersihkan.\n> ↳ Biaya: Rp ${totalCost.toLocaleString('id-ID')}\n> ↳ *.pet all* bisa digunakan sekarang. Cooldown care: 30 menit.`
+  const buttons = [['❖ AKTIVITAS PET', `${usedPrefix}pet all`]]
+
+  if (typeof conn.sendButton === 'function') {
+    try {
+      return await conn.sendButton(m.chat, careResult, 'AVELIA PET CENTER', buttons, m)
+    } catch (error) {
+      console.error('[.pet care sendButton failed]:', error?.message || error)
+    }
+  }
+
+  return safeReply(careResult)
 }
 
 if (action === 'all') {

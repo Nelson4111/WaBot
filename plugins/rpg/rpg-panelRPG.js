@@ -304,7 +304,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
 
   `🏠 *HOME*\n` +
   `> ↳ *${usedPrefix}rpgpanel home @tag* - Lihat data rumah\n` +
-  `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|public> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|visitcount|public> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel homeadd/homedel @tag <item Mall>* - Kelola furnitur rumah\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
@@ -373,8 +373,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
   `> ↳ *${usedPrefix}rpgpanel setcincin @tag/reply <pasangan ke berapa/all> <key/nama cincin>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addharem @tag <nama> <cowok/cewek>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delharem @tag <no>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <level/love/exp/nikah> <val>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <name/gender/level/love/exp/nikah/title> <val>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addanak @tag <nama_anak>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @tag <no> <nama/jenis/umur/carecount/love/ortu/biologicalparents> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat daftar anak dan nomor untuk pengaturan\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
@@ -795,12 +797,28 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
       `> Hygiene : ${Number(home.hygiene) || 0}/100\n` +
       `> Aesthetics : ${Number(home.aesthetics) || 0}/100\n` +
       `> Public : ${home.public ? 'Ya' : 'Tidak'}\n` +
+      `> Kunjungan : ${Number(home.visitCount) || 0}\n` +
       `> Furniture : ${(home.furniture || []).length}\n` +
       `> Trophies : ${(home.trophies || []).length}\n` +
       `> Staff : ${(home.staff || []).length}`,
       null,
       { mentions: [who] }
     )
+  }
+
+  if (aksi === 'anak') {
+    const children = Array.isArray(user.kids) ? user.kids : []
+    if (!children.length) return m.reply(`👶 @${who.split('@')[0]} belum memiliki anak.`, null, { mentions: [who] })
+    const entries = children.map((child, index) => {
+      const custody = child.custody?.type ? ` • Hak asuh: ${child.custody.type}` : ''
+      const facility = child.facility?.type ? ` • Fasilitas: ${child.facility.type}` : ''
+      const parents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
+        ? ` • Ortu kandung: ${child.biologicalParents.join(' & ')}`
+        : ''
+      return `> ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
+        `> ↳ Ortu: ${child.ortu || 'tidak diketahui'}${custody}${facility}${parents}`
+    })
+    return m.reply(`╭─❏「 👶 ANAK PANEL 」❏\n@${who.split('@')[0]}\n\n${entries.join('\n')}`, null, { mentions: [who] })
   }
 
   if (aksi === 'setevx') {
@@ -900,14 +918,19 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
 
   if (aksi === 'sethome') {
     const [fieldInput, value] = remaining
-    const field = normalizeEvonexusValue(fieldInput)
-    if (!['level', 'harmony', 'hygiene', 'aesthetics', 'public'].includes(field) || value === undefined) {
-      return m.reply(`❌ Format: *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|public> <nilai>*`)
+    const normalizedField = normalizeEvonexusValue(fieldInput)
+    const field = normalizedField === 'visits' ? 'visitcount' : normalizedField
+    if (!['level', 'harmony', 'hygiene', 'aesthetics', 'visitcount', 'public'].includes(field) || value === undefined) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel sethome @tag <level|harmony|hygiene|aesthetics|visitcount|public> <nilai>*`)
     }
     user.home ||= { level: 0, public: false, access: [], blocked: [], visitors: [], visitCount: 0, likes: [], furniture: [], trophies: [], staff: [] }
     if (field === 'public') {
       if (!['on', 'off', 'true', 'false', 'ya', 'tidak'].includes(String(value).toLowerCase())) return m.reply('❌ Nilai public harus on/off.')
       user.home.public = ['on', 'true', 'ya'].includes(String(value).toLowerCase())
+    } else if (field === 'visitcount') {
+      const amount = Number(value)
+      if (!Number.isInteger(amount) || amount < 0) return m.reply('❌ Visit count harus berupa bilangan bulat nonnegatif.')
+      user.home.visitCount = amount
     } else {
       const amount = Number(value)
       if (!Number.isFinite(amount) || amount < 0) return m.reply('❌ Nilai harus berupa angka positif.')
@@ -1825,15 +1848,37 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 
     if(aksi === 'setharem'){
       let noH = parseInt(args[0]) - 1
-      let tipe = args[1]?.toLowerCase() // level/love/exp/nikah
-      let val = args[2]
-      if(isNaN(noH) ||!user.harem[noH] ||!tipe || val === undefined) return m.reply(`Contoh: *${usedPrefix}rpgpanel setharem @tag 1 level 100*`)
-      if(tipe === 'level') user.harem[noH].level = parseInt(val)
-      if(tipe === 'love') user.harem[noH].love = parseInt(val)
-      if(tipe === 'exp') user.harem[noH].exp = parseInt(val)
-      if(tipe === 'nikah') user.harem[noH].menikah = val === 'true' || val === '1' || val === 'ya'
+      let tipe = args[1]?.toLowerCase()
+      let val = args.slice(2).join(' ').trim()
+      const pasangan = user.harem[noH]
+      if(!Number.isInteger(noH) || !pasangan || !tipe || !val) return m.reply(`Contoh: *${usedPrefix}rpgpanel setharem @tag 1 level 100*`)
+      if (tipe === 'name' || tipe === 'nama') {
+        pasangan.name = val
+      } else if (tipe === 'gender' || tipe === 'jenis') {
+        const gender = val.toLowerCase()
+        if (!['cowok', 'cewek'].includes(gender)) return m.reply('❌ Gender pasangan harus cowok atau cewek.')
+        pasangan.gender = gender
+      } else if (tipe === 'nikah' || tipe === 'menikah') {
+        const status = val.toLowerCase()
+        if (!['true', 'false', '1', '0', 'ya', 'tidak', 'on', 'off'].includes(status)) return m.reply('❌ Status menikah harus ya/tidak.')
+        pasangan.menikah = ['true', '1', 'ya', 'on'].includes(status)
+      } else if (tipe === 'title' || tipe === 'customtitle') {
+        if (val.length > 40) return m.reply('❌ Title pasangan maksimal 40 karakter.')
+        if (['hapus', 'reset', 'default'].includes(val.toLowerCase())) delete pasangan.customTitle
+        else pasangan.customTitle = val
+      } else if (['level', 'love', 'exp'].includes(tipe)) {
+        const amount = Number(val)
+        if (!Number.isInteger(amount) || amount < 0 || (tipe === 'level' && amount < 1) || (tipe === 'love' && amount > 100)) {
+          return m.reply(tipe === 'love'
+            ? '❌ Love harus berupa bilangan bulat 0-100.'
+            : `❌ ${tipe} harus berupa bilangan bulat nonnegatif${tipe === 'level' ? ' dan minimal 1' : ''}.`)
+        }
+        pasangan[tipe] = amount
+      } else {
+        return m.reply('❌ Field pasangan: name, gender, level, love, exp, nikah, atau title. Cincin gunakan setcincin.')
+      }
       saveDB(wdb)
-      return m.reply(`✅ Set ${tipe} *${user.harem[noH].name}* = ${val}`, null, {mentions: [who]})
+      return m.reply(`✅ Set ${tipe} *${pasangan.name}* berhasil.`, null, {mentions: [who]})
     }
   }
 
@@ -1845,7 +1890,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     if(aksi === 'addanak'){
       let nama = args.join(' ')
       if(!nama) return m.reply(`Contoh: *${usedPrefix}rpgpanel addanak @tag Bayi Avelia*`)
-      user.kids.push({ nama, jenis: 'Laki-laki', umur: 0, ortu: 'Admin' })
+      user.kids.push({ nama, jenis: 'Laki-laki', umur: 0, careCount: 0, ortu: 'Admin' })
       saveDB(wdb)
       return m.reply(`✅ Tambah anak *${nama}* ke @${who.split('@')[0]}`, null, {mentions: [who]})
     }
@@ -1855,6 +1900,55 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       user.kids.splice(no, 1)
       saveDB(wdb)
       return m.reply(`✅ Hapus anak *${namaA}* dari @${who.split('@')[0]}`, null, {mentions: [who]})
+    }
+    if (aksi === 'setanak') {
+      const child = user.kids[no]
+      const fieldInput = args[1]?.toLowerCase()
+      const value = args.slice(2).join(' ').trim()
+      const fieldAliases = {
+        name: 'nama',
+        gender: 'jenis',
+        age: 'umur',
+        care: 'carecount',
+        love: 'love',
+        parent: 'ortu',
+        parents: 'biologicalparents',
+        biologicalparent: 'biologicalparents'
+      }
+      const field = fieldAliases[fieldInput] || fieldInput
+      const validFields = ['nama', 'jenis', 'umur', 'carecount', 'love', 'ortu', 'biologicalparents']
+      if (!Number.isInteger(no) || !child || !validFields.includes(field) || !value) {
+        return m.reply(`❌ Format: *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama|jenis|umur|carecount|love|ortu|biologicalparents> <nilai>*`)
+      }
+      if (field === 'nama' || field === 'ortu') {
+        if (value.length > 60) return m.reply('❌ Nama maksimal 60 karakter.')
+        child[field] = value
+      } else if (field === 'jenis') {
+        const gender = value.toLowerCase()
+        if (!['laki-laki', 'perempuan', 'cowok', 'cewek'].includes(gender)) return m.reply('❌ Jenis kelamin anak harus laki-laki atau perempuan.')
+        child.jenis = ['laki-laki', 'cowok'].includes(gender) ? 'Laki-laki' : 'Perempuan'
+      } else if (field === 'umur') {
+        const age = Number(value)
+        if (!Number.isFinite(age) || age < 0) return m.reply('❌ Umur harus berupa angka nonnegatif.')
+        child.umur = age
+        child.careCount = Math.round(age * 10)
+      } else if (field === 'carecount' || field === 'love') {
+        const amount = Number(value)
+        const max = field === 'love' ? 100 : Infinity
+        if (!Number.isInteger(amount) || amount < 0 || amount > max) {
+          return m.reply(field === 'love' ? '❌ Love anak harus berupa bilangan bulat 0-100.' : '❌ Care count harus berupa bilangan bulat nonnegatif.')
+        }
+        child[field === 'carecount' ? 'careCount' : 'love'] = amount
+        if (field === 'carecount') child.umur = amount / 10
+      } else {
+        const parents = value.toLowerCase() === 'hapus'
+          ? []
+          : [...new Set(value.split(',').map(parent => parent.trim()).filter(Boolean))].slice(0, 2)
+        if (value.toLowerCase() !== 'hapus' && !parents.length) return m.reply('❌ Masukkan nama orang tua kandung dipisahkan koma, atau ketik hapus.')
+        child.biologicalParents = parents
+      }
+      await saveDB(wdb)
+      return m.reply(`✅ Data anak *${child.nama}* (${field}) berhasil diatur.`, null, { mentions: [who] })
     }
   }
   
