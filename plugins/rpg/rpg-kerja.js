@@ -1,6 +1,7 @@
 ﻿import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
+import { sendRpgButtons, sendRpgExpActivityList } from '../../lib/rpgActionButtons.js'
 import {
   JOBS,
   JOB_GUIDE,
@@ -172,6 +173,8 @@ function applyAttendancePenalty(userRPG, now = Date.now()) {
   const diff = now - lastWork
   if (diff > JOB_ATTENDANCE_MAX_NO_WORK_DAYS * 24 * 60 * 60 * 1000) {
     const firedJobName = userRPG.currentJobName
+    const firedJob = JOBS.find(job => job.job === firedJobName)
+    if (firedJob?.lv === 1) return false
     if (firedJobName) {
       userRPG.appliedJobs = userRPG.appliedJobs.filter(jobName => jobName !== firedJobName)
       userRPG.firedJobs[firedJobName] = now
@@ -203,7 +206,6 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
   let action = isWorkAlias ? 'work' : (parts[0] || '').toLowerCase()
   let payload = isWorkAlias ? parsed : parts.slice(1).join(' ')
   const listJobs = withJobExp()
-
   if (action === 'autoapply' && command.toLowerCase() === 'job') {
     if (!isOwner) return m.reply(`╭─❏「 🔒 AKSES DITOLAK 」❏
 │ 🔐 AKSES OWNER
@@ -523,7 +525,17 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const target = payload.trim()
     const selectedJob = getSelectedJob(userRPG, target)
     if (!selectedJob) return m.reply(`╭─❏「 ⚠️ JOB APPLICATION 」❏\n│ ❌ Nama/nomor pekerjaan tidak ditemukan.\n│ 📋 Cek *${usedPrefix}job list* untuk melihat daftar pekerjaan.\n╰─━━━━━━━━━━━━━━─`)
-    if (selectedJob.lv > userRPG.level) return m.reply(`╭─❏「 🔒 JOB APPLICATION 」❏\n│ 💼 Pekerjaan: ${selectedJob.job}\n│ 🎮 Minimal level: Lv.${selectedJob.lv}\n│ ❌ Level kamu belum mencukupi.\n╰─━━━━━━━━━━━━━━─`)
+    if (selectedJob.lv > userRPG.level) {
+      return sendRpgExpActivityList(conn, m, usedPrefix,
+        `╭─❏「 🔒 JOB APPLICATION 」❏\n` +
+        `│ 💼 PEKERJAAN BELUM TERBUKA\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pekerjaan: *${selectedJob.job}*\n` +
+        `> ↳ Minimal level: Lv.${selectedJob.lv}\n` +
+        `> ↳ Level kamu saat ini: Lv.${userRPG.level}\n` +
+        `> ↳ Kumpulkan EXP lewat aktivitas berikut:`
+      )
+    }
     if (userRPG.leave.active) return m.reply(`╭─❏「 🌴 CUTI KERJA 」❏\n│ Kamu sedang cuti dan belum bisa melamar pekerjaan.\n│ Gunakan *${usedPrefix}job return* untuk kembali bekerja.\n╰─━━━━━━━━━━━━━━─`)
     const firedAt = Number(userRPG.firedJobs[selectedJob.job] || 0)
     if (firedAt && now - firedAt < JOB_APPLY_COOLDOWN_MS) {
@@ -768,7 +780,8 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
     const wasFired = applyAttendancePenalty(userRPG, now)
     if (wasFired) {
       saveDB(wdb)
-      return m.reply(`╭─❏「 ⚠️ PEMECATAN KERJA 」❏
+      const firedJobIndex = listJobs.findIndex(job => job.job === userRPG.firedJobName)
+      const firingMessage = `╭─❏「 ⚠️ PEMECATAN KERJA 」❏
 │ 📋 STATUS PEKERJAAN
 ╰─━━━━━━━━━━━━━━─
 
@@ -776,7 +789,18 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 > ↳ Pekerjaan yang memecatmu: *${userRPG.firedJobName || 'tidak diketahui'}*.
 > ↳ Lamar pekerjaan baru dengan *${usedPrefix}job apply*.
 
-─━━━━━━━━━━━━━━─`)
+─━━━━━━━━━━━━━━─`
+      if (firedJobIndex > 0) {
+        return sendRpgButtons(conn, {
+          chat: m.chat,
+          text: firingMessage,
+          footer: 'AVELIA • JOB SYSTEM',
+          buttons: [['⬇️ Coba Job Sebelumnya', `${usedPrefix}job apply ${firedJobIndex}`]],
+          quoted: m,
+          reply: text => m.reply(text)
+        })
+      }
+      return m.reply(firingMessage)
     }
 
     const selectedJob = getSelectedJob(userRPG, payload)
@@ -788,14 +812,17 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 > ↳ Periksa daftar pekerjaan dengan *${usedPrefix}job list*.
 
 ─━━━━━━━━━━━━━━─`)
-    if (selectedJob.lv > userRPG.level) return m.reply(`╭─❏「 ⚠️ LEVEL BELUM CUKUP 」❏
-│ 💼 PERSYARATAN PEKERJAAN
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Pekerjaan *${selectedJob.job}* belum bisa kamu pilih.
-> ↳ Minimal level: *Lv.${selectedJob.lv}*.
-
-─━━━━━━━━━━━━━━─`)
+    if (selectedJob.lv > userRPG.level) {
+      return sendRpgExpActivityList(conn, m, usedPrefix,
+        `╭─❏「 ⚠️ LEVEL BELUM CUKUP 」❏\n` +
+        `│ 💼 PERSYARATAN PEKERJAAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pekerjaan *${selectedJob.job}* belum bisa kamu pilih.\n` +
+        `> ↳ Minimal level: *Lv.${selectedJob.lv}*.\n` +
+        `> ↳ Level kamu saat ini: Lv.${userRPG.level}.\n` +
+        `> ↳ Kumpulkan EXP lewat aktivitas berikut:`
+      )
+    }
 
     const gap = now - Number(userRPG.lastkerja || 0)
     const jobCooldown = scaleDifficultyCooldown(userRPG, 120000)
@@ -880,7 +907,14 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
     ].filter(Boolean).join('\n')
 
     saveDB(wdb)
-    await m.reply(message)
+    await sendRpgButtons(conn, {
+      chat: m.chat,
+      text: message,
+      footer: 'AVELIA • JOB SYSTEM',
+      buttons: [['💬 Ngobrol & Naik Jabatan', `${usedPrefix}job talk`]],
+      quoted: m,
+      reply: text => m.reply(text)
+    })
 
     if (afterTitle !== beforeTitle) {
       const promoMessage = [

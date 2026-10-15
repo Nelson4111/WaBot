@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { ensurePrisonCell, EXCLUSIVE_JAIL_BLOCKED_COMMANDS, getRandomPrisonCell, hasExclusiveJailAccess } from '../../lib/prisonHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
@@ -211,7 +212,7 @@ let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
     if (command === 'penjara' && ['nickname', 'nick'].includes(args[0]?.toLowerCase())) {
         const value = args.slice(1).join(' ').trim()
         const rpg = getRPG(m.sender)
-        if (!rpg) return m.reply('❌ Kamu belum memiliki data RPG.')
+        if (!rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
         if (!value || ['hapus', 'reset', 'off'].includes(value.toLowerCase())) {
             delete rpg.nickname
             await saveDB(wdb)
@@ -951,12 +952,12 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'escord') {
 if (command === 'penjara' && ['exs', 'exclusive', 'eks', 'eksklusif'].includes(args[0]?.toLowerCase())) {
   const rpg = getRPG(m.sender)
   if (!rpg) {
-    return m.reply(
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix,
       `╭─❏「 🔐 AKSES PENJARA EKSKLUSIF 」❏\n` +
-      `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Kamu belum memiliki data RPG.\n\n` +
-      `─━━━━━━━━━━━━━━─`
+        `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Kamu belum memiliki data RPG.\n\n` +
+        `─━━━━━━━━━━━━━━─`
     )
   }
 

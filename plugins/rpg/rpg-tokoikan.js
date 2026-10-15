@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -15,11 +16,11 @@ function formatNama(nama) {
     .join(' ')
 }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if (!user.ikan) user.ikan = {}
   if (!user.inventory) user.inventory = {}
 

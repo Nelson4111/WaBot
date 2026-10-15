@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -20,11 +21,11 @@ function formatNama(nama) {
 const resepEmoji = { ...sharedResepEmoji }
 const deskripsiMakanan = { ...sharedDeskripsiMakanan }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.masakan) user.masakan = {}
   if(!user.inventory) user.inventory = {}
   if(!user.paketKonfirmasi) user.paketKonfirmasi = {}

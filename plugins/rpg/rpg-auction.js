@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
@@ -568,7 +569,7 @@ function getVaultContents(rpg) {
 let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
-  if (!account?.rpg) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const rpg = account.rpg
   const userJids = getAuctionUserJids(db, m.sender, account)

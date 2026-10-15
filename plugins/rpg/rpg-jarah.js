@@ -1,11 +1,12 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
 import { runRpgCrimeAction } from '../../lib/rpgCrimeAction.js'
 
-let handler = async (m, { conn, args = [] }) => {
+let handler = async (m, { conn, args = [], usedPrefix }) => {
   const db = loadDB()
   const user = getUserRPG(db, m.sender)
-  if (!user?.rpg) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
+  if (!user?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
 
   return runRpgCrimeAction({
     m,

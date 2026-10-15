@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   INTERSTELLAR_ITEMS,
@@ -161,7 +162,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
 
   const account = getUserRPG(db, m.sender)
   if (!account?.rpg) {
-    return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
   }
 
   const rpg = account.rpg

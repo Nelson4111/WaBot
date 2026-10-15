@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { scaleDifficultyHealingCost } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 global.healRequests = global.healRequests || {}
 
@@ -46,11 +47,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     const user = getUserRPG(wdb, m.sender).rpg
 
     if (!user) {
-      return m.reply(
-        `╭─❏「 ❌ DATA RPG 」❏\n` +
-        `│ ❌ *Kamu belum memiliki data RPG.*\n` +
-        `╰─━━━━━━━━━━━━━━─`
-      )
+      return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
     }
 
     if (!user.maxDarahBonus) user.maxDarahBonus = 0
@@ -163,11 +160,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
   let user = getUserRPG(wdb, m.sender).rpg
 
   if (!user) {
-    return m.reply(
-      `╭─❏「 ❌ DATA RPG 」❏\n` +
-      `│ ❌ *Kamu belum memiliki data RPG.*\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   }
 
   if (!user.maxDarahBonus) user.maxDarahBonus = 0

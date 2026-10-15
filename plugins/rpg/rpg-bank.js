@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { hargaBeli as MENU_RESTAURAN, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -186,7 +187,7 @@ function isActiveAuctionBidder(wdb, jid) {
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let userRPG = getUserRPG(wdb, m.sender).rpg
-  if (!userRPG) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!userRPG) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
   // Init
   if (userRPG.bank === undefined) userRPG.bank = 0

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { bibit } from './rpg-panen.js'
 
@@ -9,7 +10,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   const data = getUserRPG(wdb, m.sender)
   const user = data?.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
   initLadang(user)
 

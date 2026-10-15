@@ -1,6 +1,7 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
-let handler = async (m, { args }) => {
+let handler = async (m, { conn, args, usedPrefix }) => {
   if(!global.icuTernak || !global.icuTernak[m.sender])
     return m.reply(
       `╭─❏「 🏥 ICU TERNAK 」❏\n` +
@@ -13,7 +14,7 @@ let handler = async (m, { args }) => {
   let userData = getUserRPG(wdb, m.sender)
   let user = userData?.rpg || userData
 
-  if (!user) return m.reply('❌ Data RPG tidak ditemukan.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Data RPG tidak ditemukan.')
 
   if(!user.ternak) user.ternak = {} // init jaga2
 

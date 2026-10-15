@@ -4,6 +4,7 @@ import { isPremiumUser } from './rpg-bank.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -882,13 +883,7 @@ if (action === 'join') {
   }
 
   if (!wdb.users?.[m.sender]?.rpg) {
-    return m.reply(
-      `╭─❏「 ❌ DATA RPG 」❏\n` +
-      `│ ❌ *Kamu belum memiliki data RPG.*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Mulai dengan *.adventure* terlebih dahulu.\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   }
 
   if (Number(wdb.money?.[m.sender] || 0) < room.stake) {
@@ -1200,21 +1195,52 @@ return m.reply(
 let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
   const wdb = loadDB()
   const user = wdb.users?.[m.sender]?.rpg
+  const input = (args[0] || '').toLowerCase()
+
+  if (input === 'command' || input === 'commands') {
+    const sections = [
+      {
+        title: '🎰 Casino',
+        rows: [
+          ['🎮 Daftar permainan', 'casino games', 'Pilih game yang ingin dimainkan'],
+          ['📖 Panduan', 'casino guide', 'Baca aturan dan panduan casino'],
+          ['👤 Profil', 'casino profile', 'Lihat statistik dan permainanmu'],
+          ['💰 Profit', 'casino profit', 'Lihat ringkasan profit'],
+          ['🏆 Peringkat', 'casino top', 'Lihat leaderboard casino'],
+          ['⏰ Cooldown', 'casino cd', 'Cek waktu bermain berikutnya'],
+          ['🧪 Simulasi', 'casino simulation', 'Coba simulasi tanpa mempertaruhkan saldo']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      },
+      {
+        title: '👥 Casino room',
+        rows: [
+          ['🏠 Panduan room', 'cs room guide', 'Pelajari permainan bersama teman'],
+          ['🎲 Pilih game room', 'cs room games', 'Lihat game yang tersedia di room'],
+          ['📊 Status room', 'cs room status', 'Cek status room yang sedang diikuti']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🎰 MENU COMMAND CASINO',
+      subtitle: 'Pilih fitur casino',
+      text: 'Buka menu casino yang kamu butuhkan.',
+      buttonText: '🎰 PILIH MENU CASINO',
+      sections,
+      fallbackText: casinoCommands(usedPrefix)
+    })
+  }
 
   if (!user) {
-    return m.reply(
-      `╭─❏「 ❌ CASINO 」❏\n` +
-      `│ Kamu belum memiliki data RPG.\n` +
-      `│ ↳ Mulailah dengan *${usedPrefix}adventure*.\n` +
-      `╰─━━━━━━━━━━━━━━─`
-    )
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   }
 
   if (!wdb.money) wdb.money = {}
   if (user.casinoBlocked) {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
-  const input = (args[0] || '').toLowerCase()
   const casinoShutdown = isRpgEventActive('casino_shutdown')
   const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil']
   const roomReadOnlyActions = ['info', 'games', 'guide']

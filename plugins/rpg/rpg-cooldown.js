@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
@@ -73,7 +74,7 @@ const handler = async (m, { usedPrefix }) => {
   const user = userData?.rpg || userData
   const account = wdb.users?.[m.sender] || {}
   const now = Date.now()
-  if (!user) return m.reply('❌ Data RPG kamu belum tersedia.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Data RPG kamu belum tersedia.')
 
   const cooldowns = user.cooldown || {}
   const activeCooldowns = []

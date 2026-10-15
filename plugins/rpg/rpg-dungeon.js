@@ -1,15 +1,17 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { addUserLimit, syncUserLimit } from '../../lib/userLimit.js'
+import { sendRpgExpActivityList, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   const account = wdb.users[m.sender]
   let user = account?.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
   syncUserLimit(account)
 
   // INIT
@@ -99,14 +101,64 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let selected = dungeons[type]
 
-  if (user.level < selected.minLevel) return m.reply(`❌ Butuh Player Level ${selected.minLevel} untuk dungeon ini!`)
-  if (swordLvl < selected.minSword) return m.reply(`❌ Butuh Sword Level ${selected.minSword} untuk dungeon ini!`)
-  if (user.darah < (maxHP * 0.2)) return m.reply(`❌ Darah kritis (${user.darah}/${maxHP}). Gunakan.heal dulu!`)
+
+  if (user.level < selected.minLevel) {
+    return sendRpgExpActivityList(conn, m, usedPrefix,
+      `╭─❏「 🏰 DUNGEON 」❏
+│ ⚠️ LEVEL PLAYER TIDAK MENCUKUPI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Butuh Player Level ${selected.minLevel} untuk dungeon ini!
+> ↳ Level kamu saat ini: ${user.level}.
+> ↳ Kumpulkan EXP lewat aktivitas RPG berikut:
+
+─━━━━━━━━━━━━━━─`
+    )
+  }
+  if (swordLvl < selected.minSword) {
+    return sendRpgQuickButton(conn, m, {
+      title: '⚔️ SWORD PERLU DI-UPGRADE',
+      buttonText: '⚒️ Upgrade Sword Sekarang',
+      command: `${usedPrefix}upgrade sword`,
+      text: `╭─❏「 ⚔️ DUNGEON 」❏
+│ ⚠️ LEVEL SWORD TIDAK MENCUKUPI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Butuh Sword Level ${selected.minSword} untuk dungeon ini!
+> ↳ Sword kamu saat ini Level ${swordLvl}.
+> ↳ Tingkatkan senjatamu agar siap menghadapi boss!
+
+─━━━━━━━━━━━━━━─`
+    })
+  }
+  if (user.darah < (maxHP * 0.2)) {
+    return sendRpgQuickButton(conn, m, {
+      title: '❤️ PULIHKAN DARAHMU',
+      buttonText: '💖 Gunakan Heal',
+      command: `${usedPrefix}heal`,
+      text: `╭─❏「 ❤️ DUNGEON 」❏
+│ ⚠️ DARAH KRITIS
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Darah saat ini: ${user.darah}/${maxHP}
+> ↳ Pulihkan darah sebelum kembali ke dungeon.
+
+─━━━━━━━━━━━━━━─`
+    })
+  }
 
   const difficultyCooldown = scaleDifficultyCooldown(user, selected.cooldown)
   if (Date.now() - (user.lastDungeon || 0) < difficultyCooldown) {
     let sisa = ((difficultyCooldown - (Date.now() - user.lastDungeon)) / 1000).toFixed(0)
-    return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
+    return m.reply(
+      `╭─❏「 ⏳ DUNGEON COOLDOWN 」❏
+│ AKTIVITAS MASIH COOLDOWN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Tunggu ${sisa} detik lagi sebelum memasuki dungeon.
+
+─━━━━━━━━━━━━━━─`
+    )
   }
 
   // DMG USER
@@ -147,19 +199,47 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       user.lastDungeon = Date.now()
       await saveDB(wdb)
       return m.reply(
-        `♻️ *PHOENIX BANGKIT KEMBALI*\nKamu kembali hidup dengan ${revivedHP}/${maxHP} HP. Dungeon gagal dan cooldown tetap berlaku.`
+        `╭─❏「 ♻️ PHOENIX BANGKIT KEMBALI 」❏
+│ ✨ KAMU HIDUP KEMBALI
+╰─━━━━━━━━━━━━━━─
+
+> ↳ HP dipulihkan: ${revivedHP}/${maxHP}
+> ↳ Dungeon gagal dan cooldown tetap berlaku.
+
+─━━━━━━━━━━━━━━─`
       )
     }
     if (tryPremiumProtection(m.sender, 'death')) {
       user.darah = 1
       user.lastDungeon = Date.now()
       await saveDB(wdb)
-      return m.reply(`🛡️ *PREMIUM PROTECTION KEMATIAN AKTIF*\nKamu selamat dari serangan ${selected.enemy} dengan 1 HP. Dungeon gagal dan proteksi kematian cooldown selama 5 jam.`)
+      return m.reply(
+        `╭─❏「 🛡️ PREMIUM PROTECTION 」❏
+│ KAMU SELAMAT DARI KEMATIAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu selamat dari serangan ${selected.enemy} dengan 1 HP.
+> ↳ Dungeon gagal dan proteksi kematian cooldown selama 5 jam.
+
+─━━━━━━━━━━━━━━─`
+      )
     }
     user.darah = 0
     user.lastDungeon = Date.now()
     await saveDB(wdb)
-    return m.reply(`💀 *KAMU TEWAS!*\nBoss ${selected.enemy} menghancurkan pertahananmu.\nGunakan *.heal* untuk bangkit.`)
+    return sendRpgQuickButton(conn, m, {
+      title: '💀 BANGKIT DAN COBA LAGI',
+      buttonText: '💖 Bangkit dengan Heal',
+      command: `${usedPrefix}heal`,
+      text: `╭─❏「 💀 DUNGEON FAILED 」❏
+│ KAMU TEWAS!
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Boss ${selected.enemy} menghancurkan pertahananmu.
+> ↳ Jangan menyerah—pulihkan darahmu dan coba lagi!
+
+─━━━━━━━━━━━━━━─`
+    })
   }
 
   // REWARD
@@ -188,46 +268,52 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   await saveDB(wdb)
 
-  let winMsg = `╭─❏「 🏰 DUNGEON CLEAR 」❏\n`
-winMsg += `│ 🏰 Dungeon: *${selected.name}*\n`
-winMsg += `│ ⚔️ Damage: ${userDmg.toLocaleString()}\n`
+  let winMsg = `╭─❏「 🏰 DUNGEON CLEAR 」❏
+│ 🏰 Dungeon: *${selected.name}*
+╰─━━━━━━━━━━━━━━─
 
-if (bonusDmgGuild > 0) {
-  winMsg += `│ ↳ 🏰 Guild Boost Damage: +${bonusDmgGuild}\n`
-}
+⚔️ *STATISTIK PERTARUNGAN*
+> ↳ Damage: ${userDmg.toLocaleString()}
+`
 
-winMsg += `│ 🛡️ Defense: ${userDef.toLocaleString()}\n`
+  if (bonusDmgGuild > 0) {
+    winMsg += `> ↳ 🏰 Guild Boost Damage: +${bonusDmgGuild}\n`
+  }
 
-if (bonusDefGuild > 0) {
-  winMsg += `│ ↳ 🏰 Guild Boost Defense: +${bonusDefGuild}\n`
-}
+  winMsg += `> ↳ 🛡️ Defense: ${userDef.toLocaleString()}\n`
 
-winMsg += `│ 🩸 HP Terkuras: -${finalDamage.toLocaleString()}\n`
-winMsg += `│ ❤️ Sisa HP: ${user.darah}/${maxHP}\n`
-winMsg += `╰─━━━━━━━━━━━━━━─\n\n`
+  if (bonusDefGuild > 0) {
+    winMsg += `> ↳ 🏰 Guild Boost Defense: +${bonusDefGuild}\n`
+  }
 
-winMsg += `🎁 *HADIAH*\n`
-winMsg += `> 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
-winMsg += `> 🌟 XP: +${earnedExp.toLocaleString()}\n`
+  winMsg += `> ↳ 🩸 HP Terkuras: -${finalDamage.toLocaleString()}\n`
+  winMsg += `> ↳ ❤️ Sisa HP: ${user.darah}/${maxHP}\n`
+  winMsg += `\n─━━━━━━━━━━━━━━─\n\n`
 
-if (earnedGold > 0) {
-  winMsg += `> 🪙 Gold: +${earnedGold}\n`
-}
+  winMsg += `🎁 *HADIAH DUNGEON*\n`
+  winMsg += `> ↳ 💰 Money: +Rp ${earnedMoney.toLocaleString()}\n`
+  winMsg += `> ↳ 🌟 XP: +${earnedExp.toLocaleString()}\n`
 
-if (earnedDiamond > 0) {
-  winMsg += `> 💎 Diamond: +${earnedDiamond}\n`
-}
+  if (earnedGold > 0) {
+    winMsg += `> ↳ 🪙 Gold: +${earnedGold}\n`
+  }
 
-if (earnedLimit > 0) {
-  winMsg += `> 🎫 Limit: +${earnedLimit}\n`
-}
+  if (earnedDiamond > 0) {
+    winMsg += `> ↳ 💎 Diamond: +${earnedDiamond}\n`
+  }
 
-return sendRpgMsg(
-  conn,
-  m,
-  winMsg,
-  'https://c.termai.cc/i187/iFxwQG'
-)
+  if (earnedLimit > 0) {
+    winMsg += `> ↳ 🎫 Limit: +${earnedLimit}\n`
+  }
+
+  winMsg += `\n─━━━━━━━━━━━━━━─`
+
+  return sendRpgMsg(
+    conn,
+    m,
+    winMsg,
+    'https://c.termai.cc/i187/iFxwQG'
+  )
 }
 
 handler.help = ['dungeon']

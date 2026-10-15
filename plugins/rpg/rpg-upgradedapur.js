@@ -1,10 +1,11 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.dapur) user.dapur = { slot: 1, antrian: [] }
   if(user.dapur.slot >= 10) return m.reply('❌ Dapur kamu sudah mentok level 10!')
 

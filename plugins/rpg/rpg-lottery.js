@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { addUserLimit, setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -391,7 +392,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   }
 
   if (input === 'buy' || input === 'beli') {
-    if (!user?.rpg) return m.reply(`Kamu belum memiliki data RPG. Mulai dulu dengan *${usedPrefix}adventure*.`)
+    if (!user?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, `Kamu belum memiliki data RPG. Mulai dulu dengan *${usedPrefix}adventure*.`)
     const confirmation = (args[1] || '').toLowerCase()
     const pendingPurchase = state.pendingPurchases[sender]
 

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, getActiveCrimeScore } from '../../lib/crimeHelper.js'
 import { REHABILITATION_ACTIVITY_STORIES } from '../../lib/rehabilitationStories.js'
@@ -105,7 +106,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
   const userRPG = getUserRPG(wdb, m.sender)
   if (!userRPG && !['command', 'commands', 'cmd', 'guide'].includes(action)) {
-    return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
   }
 
   const process = userRPG?.rehabilitation

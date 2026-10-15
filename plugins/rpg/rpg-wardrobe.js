@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, getEquipmentName } from '../../lib/waifuHelper.js'
 import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
 import {
@@ -18,10 +19,10 @@ function findFashion(query) {
     || fashion.find(item => normalize(item.name).includes(key))
 }
 
-let handler = async (m, { text = '', usedPrefix = '.' }) => {
+let handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
-  if (!account?.rpg) return m.reply('Kamu belum memiliki data RPG. Mulailah dengan .adventure.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum memiliki data RPG. Mulailah dengan .adventure.')
   const rpg = account.rpg
   if (!rpg.mallInventory || typeof rpg.mallInventory !== 'object') rpg.mallInventory = {}
   if (!rpg.character || typeof rpg.character !== 'object') rpg.character = {}

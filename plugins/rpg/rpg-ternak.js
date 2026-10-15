@@ -1,15 +1,16 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
-let handler = async (m, { conn, args, command }) => {
+let handler = async (m, { conn, args, command, usedPrefix }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
   const safeReply = (text, options = {}) => sendRpgMsg(conn, m, text, ternakImageUrl, options)
 
   const wdb = loadDB()
   let user = getUserRPG(wdb, m.sender).rpg
-  if (!user) return safeReply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}
 

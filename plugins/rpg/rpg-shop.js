@@ -4,6 +4,7 @@ import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -146,7 +147,28 @@ if (mode === 'guide') {
        `> ${usedPrefix || '.'}koperasi command\n` +
        `> ${usedPrefix || '.'}restoran command\n\n` +
        `─━━━━━━━━━━━━━━─`
-     return m.reply(cap)
+     const prefix = usedPrefix || '.'
+     const rows = [
+       { title: '🛒 Daftar item', description: 'Lihat barang yang tersedia', id: `${prefix}shop list` },
+       { title: '🪙 Beli item', description: 'Belanja item di shop', id: `${prefix}shop beli` },
+       { title: '💰 Jual barang', description: 'Jual item dari gudang', id: `${prefix}shop jual all` },
+       { title: '📖 Panduan toko', description: 'Pelajari alur toko RPG', id: `${prefix}shop guide` },
+       { title: '🏭 Pabrik', description: 'Command toko hasil mining', id: `${prefix}pabrik command` },
+       { title: '🐟 Pasar', description: 'Command penjualan hasil memancing', id: `${prefix}pasar command` },
+       { title: '🌾 Koperasi', description: 'Command toko hasil panen', id: `${prefix}koperasi command` },
+       { title: '🍽️ Restoran', description: 'Command toko hasil masakan', id: `${prefix}restoran command` }
+     ]
+     return sendRpgButtons(conn, {
+       chat: m.chat,
+       message: m,
+       quoted: m,
+       title: '🛍️ MENU COMMAND SHOP',
+       subtitle: 'Pilih layanan toko RPG',
+       text: 'Pilih kebutuhanmu dari daftar berikut.',
+       buttonText: '🛍️ BUKA MENU SHOP',
+       sections: [{ title: 'Toko & layanan', rows }],
+       fallbackText: cap
+     })
    }
 
    if (mode === 'list') {

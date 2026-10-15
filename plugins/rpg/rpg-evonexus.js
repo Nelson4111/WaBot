@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -92,7 +93,7 @@ function formatMenu(prefix) {
   )
 }
 
-let handler = async (m, { text = '', usedPrefix }) => {
+let handler = async (m, { conn, text = '', usedPrefix }) => {
   const prefix = usedPrefix || '.'
   const args = String(text).trim().split(/\s+/).filter(Boolean)
   let mode = String(args.shift() || '').toLowerCase()
@@ -104,7 +105,7 @@ let handler = async (m, { text = '', usedPrefix }) => {
   const rpg = account?.rpg
 
   if (mode === 'info') {
-    if (!rpg) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+    if (!rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
     if (!hasEvonexusAccess(rpg)) return m.reply('❌ Evonexus terbuka setelah mencapai Eternal Card dan memperoleh fasilitas Evonexus.')
     const interstellarItems = Object.entries(rpg.inventory || {})
       .filter(([itemId, quantity]) => itemId !== 'stellar_credit' && Number(quantity) > 0)
@@ -346,14 +347,14 @@ return m.reply(
 
 if (mode === 'body') {
   if (!rpg) {
-    return m.reply(
-      `╭─❏「 🧬 EVONEXUS BODY 」❏\n` +
+  return sendRpgRegistrationPrompt(conn, m, usedPrefix,
+    `╭─❏「 🧬 EVONEXUS BODY 」❏\n` +
       `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Kamu belum memiliki data RPG.\n` +
       `> ↳ Mulai petualangan dengan *.adventure*.\n\n` +
       `─━━━━━━━━━━━━━━─`
-    )
+  )
   }
 
   if (!hasEvonexusAccess(rpg)) {
@@ -405,13 +406,13 @@ if (mode === 'body') {
 
 if (mode === 'install' || mode === 'uninstall') {
   if (!rpg) {
-    return m.reply(
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix,
       `╭─❏「 🧬 EVONEXUS 」❏\n` +
-      `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Kamu belum memiliki data RPG.\n` +
-      `> ↳ Mulai petualangan dengan *.adventure*.\n\n` +
-      `─━━━━━━━━━━━━━━─`
+        `│ ❌ *DATA RPG TIDAK DITEMUKAN*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Kamu belum memiliki data RPG.\n` +
+        `> ↳ Mulai petualangan dengan *.adventure*.\n\n` +
+        `─━━━━━━━━━━━━━━─`
     )
   }
 

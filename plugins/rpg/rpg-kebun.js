@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 
 function formatNama(nama) {
@@ -7,7 +8,7 @@ function formatNama(nama) {
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
-  if(!user) return m.reply('❌ Kamu belum punya data RPG')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG')
   if(!user.inventory) user.inventory = {}
 
   // AMBIL LIST DARI PANEN.JS BIAR SINKRON

@@ -4,6 +4,7 @@ import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
+import { sendRpgButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import {
   CHILD_ACTIVITIES,
   CHILD_FACILITIES,
@@ -27,7 +28,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!wdb.money) wdb.money = {}
   let uData = getUserRPG(wdb, m.sender)
   let user = wdb.users[m.sender]?.rpg || uData?.rpg || uData
-  if (!user) return m.reply(`╭─❏「 ❌ ERROR 」❏\n├ Ketik .adventure dulu buat daftar RPG.\n╰─━━━━━━━━━━━━━━─`)
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if (user.bank === undefined) user.bank = 0
   if (!wdb.users[m.sender]) wdb.users[m.sender] = { rpg: user }
   if (!wdb.users[m.sender].rpg) wdb.users[m.sender].rpg = user
@@ -1272,7 +1273,48 @@ ${options}
 
 ─━━━━━━━━━━━━━━─`
 
-    return m.reply(cap)
+    const commandSections = [
+      {
+        title: '💕 Dasar & pasangan',
+        rows: [
+          ['💞 Daftar pasangan', 'rship harem', 'Lihat status semua pasangan'],
+          ['📊 Status pasangan', 'rship status', 'Cek level dan hubungan'],
+          ['💬 Aktivitas pasangan', 'rship date', 'Pilih aktivitas hubungan'],
+          ['⏰ Cooldown pasangan', 'rship cd', 'Cek semua cooldown'],
+          ['💍 Fitur & cincin', 'rship fitur', 'Syarat level dan pilihan cincin']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      },
+      {
+        title: '👶 Keluarga & anak',
+        rows: [
+          ['👶 Daftar anak', 'rship kid info', 'Lihat anak dalam keluarga'],
+          ['📚 Panduan anak', 'rship kid guide', 'Cara merawat anak'],
+          ['⏰ Cooldown anak', 'rship kid cd', 'Cek kapan aktivitas anak siap'],
+          ['🧸 Aktivitas anak', 'rship kid', 'Pilih aktivitas pengasuhan'],
+          ['🎁 Hadiah keluarga', 'rship gift list', 'Lihat hadiah pasangan dan anak']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      },
+      {
+        title: '🏠 Fitur lainnya',
+        rows: [
+          ['🪦 Makam pasangan', 'rship makam', 'Lihat status pasangan di makam'],
+          ['💔 Mantan', 'rship mantan list', 'Lihat daftar mantan'],
+          ['🛟 Shelter anak', 'rship shelter list', 'Lihat status anak di shelter'],
+          ['📋 Semua command', 'rship command all', 'Tampilkan daftar command lengkap']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '💕 RSHIP • PILIH MENU',
+      subtitle: 'Akses fitur hubungan dan keluarga',
+      text: 'Pilih fitur yang ingin kamu buka.',
+      buttonText: '💕 BUKA MENU RSHIP',
+      sections: commandSections,
+      fallbackText: cap
+    })
   }
 
   // === MENU RINGKAS TANPA DAFTAR COMMAND ===
@@ -2741,7 +2783,50 @@ if (kidSubcommand) {
   const facilityType = facilityAliases[sub]
 
   if (!sub || ['guide', 'panduan'].includes(sub)) return m.reply(kidGuide())
-  if (['command', 'commands', 'cmd'].includes(sub)) return m.reply(kidCommandGuide())
+  if (['command', 'commands', 'cmd'].includes(sub)) {
+    const rows = [
+      { header: '📚 Panduan', title: 'Panduan pengasuhan', description: 'Cara merawat dan membesarkan anak', id: `${usedPrefix}rship kid guide` },
+      { header: '👶 Anak', title: 'Info anak', description: 'Lihat daftar dan status anak', id: `${usedPrefix}rship kid info` },
+      { header: '⏰ Cooldown', title: 'Cooldown aktivitas anak', description: 'Cek kapan aktivitas anak siap lagi', id: `${usedPrefix}rship kid cd` },
+      { header: '🧸 Rawat', title: 'Aktivitas pengasuhan', description: 'Buka pilihan aktivitas anak', id: `${usedPrefix}rship kid` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '👶 MENU PENGASUHAN',
+      subtitle: 'Pilih yang ingin kamu lihat',
+      text: 'Rawat keluarga dengan mudah lewat menu interaktif ini.',
+      buttonText: '👶 PILIH MENU ANAK',
+      sections: [{ title: 'Fitur anak', rows }],
+      fallbackText: kidCommandGuide()
+    })
+  }
+  if (sub === 'cd' || sub === 'cooldown') {
+    const kids = user.kids.filter(child => !child.facility)
+    const status = kids.length
+      ? kids.map((child, index) => {
+        const careRemaining = Math.max(
+          0,
+          Math.ceil((CHILD_NEGLECT.careCooldown - (now - Number(child.lastKidActivityAt || 0))) / 1000)
+        )
+        const activityStatus = Object.entries(CHILD_ACTIVITIES).map(([key, activity]) => {
+          const last = Number(child.activityCooldowns?.[key]) || 0
+          const remaining = last ? Math.max(0, Math.ceil((activity.cooldown - (now - last)) / 1000)) : 0
+          return `> ${remaining ? '⏳' : '✅'} ${activity.label}: ${remaining ? formatRemaining(remaining) : 'Siap'}`
+        }).join('\n')
+        return `*${index + 1}. ${child.nama}*\n> ${careRemaining ? '⏳' : '✅'} Rawat: ${careRemaining ? formatRemaining(careRemaining) : 'Siap'}\n${activityStatus}`
+      }).join('\n\n')
+      : '> Belum ada anak yang bisa dicek. Adopsi atau daftarkan anak terlebih dahulu.'
+    return m.reply(
+      `╭─❏「 ⏰ COOLDOWN AKTIVITAS ANAK 」❏\n` +
+      `│ 👶 WAKTU ISTIRAHAT KELUARGA\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${status}\n\n` +
+      `> ✨ Cek lagi nanti setelah cooldown selesai.\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
   if (['info', 'list'].includes(sub)) {
     if (user.kids.length === 0) {
       return m.reply(
@@ -3413,8 +3498,11 @@ Pemilihan *all* untuk anak hanya tersedia bagi pengguna premium.
     (!Number(child.lastKidActivityAt) || now - Number(child.lastKidActivityAt) >= CHILD_NEGLECT.careCooldown) &&
     actions.every(([name]) => !(Number(child.activityCooldowns?.[name]) > 0 && now - Number(child.activityCooldowns[name]) < CHILD_ACTIVITIES[name].cooldown))
   )
-  if (!eligible.length) return m.reply(
-    `╭─❏「 ⚠️ ANAK TIDAK TERSEDIA 」❏
+  if (!eligible.length) return sendRpgQuickButton(conn, m, {
+    title: '⏰ CEK WAKTU AKTIVITAS ANAK',
+    buttonText: '🕰️ Lihat Cooldown Anak',
+    command: `${usedPrefix}rship kid cd`,
+    text: `╭─❏「 ⚠️ ANAK TIDAK TERSEDIA 」❏
 │ 👶 STATUS PENGASUHAN
 ╰─━━━━━━━━━━━━━━─
 
@@ -3424,20 +3512,25 @@ Tidak ada anak yang dapat melakukan aktivitas saat ini.
 
 📌 *KETERANGAN*
 > ↳ Anak mungkin sudah dewasa, sedang berada di daycare, atau aktivitasnya masih cooldown.
+> ↳ Cek kapan aktivitas siap lagi lewat tombol di bawah.
 
 ─━━━━━━━━━━━━━━─`
-  )
+  })
   if (eligible.length !== targets.length) {
     const unavailable = targets.length - eligible.length
-    if (!isBatchCare && args[3]?.toLowerCase() !== 'all') return m.reply(
-      `╭─❏「 ⚠️ AKTIVITAS BELUM TERSEDIA 」❏
+    if (!isBatchCare && args[3]?.toLowerCase() !== 'all') return sendRpgQuickButton(conn, m, {
+      title: '⏰ AKTIVITAS ANAK MASIH ISTIRAHAT',
+      buttonText: '🕰️ Cek Cooldown Anak',
+      command: `${usedPrefix}rship kid cd`,
+      text: `╭─❏「 ⚠️ AKTIVITAS BELUM TERSEDIA 」❏
 │ 👶 STATUS AKTIVITAS
 ╰─━━━━━━━━━━━━━━─
 
 Anak sedang tidak tersedia atau aktivitasnya masih cooldown.
+> ↳ Cek waktu tersisa sebelum mencoba lagi.
 
 ─━━━━━━━━━━━━━━─`
-    )
+    })
   }
 
   let totalCost = 0

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
@@ -58,7 +59,7 @@ let handler = async (m, { conn, text = '', usedPrefix, command, groupMetadata })
   const db = loadDB()
   const sender = normalizeJid(m.sender)
   const account = getUserRPG(db, sender)
-  if (!account?.rpg) return m.reply('Kamu belum memiliki data RPG.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum memiliki data RPG.')
 
   const rpg = account.rpg
   const inventory = getCollection(rpg)

@@ -5,6 +5,7 @@ import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -706,17 +707,14 @@ if (action === 'care') {
   user.cooldown.petcare = now
   saveDB(wdb)
   const careResult = `✅ *PET CARE SELESAI*\nSemua pet sudah di-feed, di-rest, dan dibersihkan.\n> ↳ Biaya: Rp ${totalCost.toLocaleString('id-ID')}\n> ↳ *.pet all* bisa digunakan sekarang. Cooldown care: 30 menit.`
-  const buttons = [['❖ AKTIVITAS PET', `${usedPrefix}pet all`]]
-
-  if (typeof conn.sendButton === 'function') {
-    try {
-      return await conn.sendButton(m.chat, careResult, 'AVELIA PET CENTER', buttons, m)
-    } catch (error) {
-      console.error('[.pet care sendButton failed]:', error?.message || error)
-    }
-  }
-
-  return safeReply(careResult)
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: careResult,
+    footer: 'AVELIA PET CENTER',
+    buttons: [['❖ AKTIVITAS PET', `${usedPrefix}pet all`]],
+    quoted: m,
+    reply: text => safeReply(text)
+  })
 }
 
 if (action === 'all') {
@@ -819,16 +817,34 @@ if (action === 'guide') {
 }
 
 if (action === 'command' || action === 'commands' || action === 'cmd') {
-  const commands = handler.help
-    .filter(item => item.startsWith('pet '))
-    .map(item => `> ↳ *${usedPrefix}${item}*`)
-    .join('\n')
-  return safeReply(
-    `╭─❏「 📋 COMMAND PET 」❏\n` +
-    `╰─━━━━━━━━━━━━━━─\n\n` +
-    `${commands}\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
+  const commands = handler.help.filter(item => item.startsWith('pet '))
+  const sections = []
+  for (let index = 0; index < commands.length; index += 10) {
+    sections.push({
+      title: `🐾 Pet • ${Math.floor(index / 10) + 1}`,
+      rows: commands.slice(index, index + 10).map(item => {
+        const commandText = item.slice(4)
+        return {
+          title: commandText.length > 24 ? commandText.slice(0, 24) : commandText,
+          description: `Jalankan ${usedPrefix}${item}`,
+          id: `${usedPrefix}${item}`
+        }
+      })
+    })
+  }
+  const commandText = commands.map(item => `> ↳ *${usedPrefix}${item}*`).join('\n')
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🐾 MENU COMMAND PET',
+    subtitle: 'Pilih fitur pet yang ingin dijalankan',
+    text: 'Semua aktivitas pet. Pilih command dari daftar.',
+    buttonText: '🐾 PILIH COMMAND PET',
+    sections,
+    fallbackText: `╭─❏「 📋 COMMAND PET 」❏\n╰─━━━━━━━━━━━━━━─\n\n${commandText}\n\n─━━━━━━━━━━━━━━─`,
+    reply: text => safeReply(text)
+  })
 }
 
   // === DAFTAR COOLDOWN ===

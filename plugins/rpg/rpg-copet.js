@@ -6,11 +6,12 @@ import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown,
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
-  if (!userRPG) return m.reply('❌ Kamu belum punya data RPG. Mulai dengan *.adventure*')
+  if (!userRPG) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG')
   const actorRestriction = getCrimeRestriction(userRPG)
   if (actorRestriction) return m.reply(actorRestriction)
   if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []

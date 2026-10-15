@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -361,11 +362,11 @@ function getBankProfile(user) {
   return { id: tierId, ...BANK_TIERS[tierId] }
 }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const db = loadDB()
   const data = getUserRPG(db, m.sender)
   const user = data?.rpg || data
-  if (!user || data?.isDummy) return m.reply('Kamu belum memiliki data RPG. Mulai dengan .adventure.')
+  if (!user || data?.isDummy) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum memiliki data RPG. Mulai dengan .adventure.')
   if (user.bank === undefined) user.bank = 0
 
   const market = ensureMarket(db)

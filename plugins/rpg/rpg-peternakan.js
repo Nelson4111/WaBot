@@ -1,11 +1,12 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 import { hewanList, getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 
-let handler = async (m, { text }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   const data = getUserRPG(wdb, m.sender)
   const user = data?.rpg || data
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   initLadang(user)
   user.ternak = user.ternak || {}
   user.inventory = user.inventory || {}

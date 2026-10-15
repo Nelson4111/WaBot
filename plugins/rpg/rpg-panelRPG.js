@@ -29,6 +29,8 @@ import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
+import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '../../lib/rpgJobData.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 import fs from 'fs'
 
@@ -257,6 +259,8 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setjob @tag <nama pekerjaan>* - Ganti nama pekerjaan yang tampil saat bekerja\n` +
+  `> ↳ *${usedPrefix}rpgpanel firejob @tag [nomor/nama job]* - Pecat user dari pekerjaan\n` +
+  `> ↳ *${usedPrefix}rpgpanel applyjob @tag <nomor/nama job>* - Lamar/angkat user ke pekerjaan tertentu\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
@@ -433,15 +437,60 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
     `${getPluginCommandLines('rpg', usedPrefix)}\n\n` +
     `─━━━━━━━━━━━━━━─`
 
+  const panelCategoryRows = RPG_PANEL_CATEGORIES.map(({ title, aliases }) => ({
+    title: title.length > 24 ? title.slice(0, 24) : title,
+    description: `Buka kategori ${title.toLowerCase()}`,
+    id: `${usedPrefix}${command || 'rpgpanel'} ${aliases[0]}`
+  }))
+  const panelCategorySections = Array.from(
+    { length: Math.ceil(panelCategoryRows.length / 10) },
+    (_, index) => ({
+      title: `Kategori RPG ${index + 1}`,
+      rows: panelCategoryRows.slice(index * 10, (index + 1) * 10)
+    })
+  )
+  const panelCategoryFallback =
+    `╭─❏「 👑 KATEGORI RPG PANEL 」❏\n` +
+    `│ Gunakan *${usedPrefix}rp <kategori>* atau *${usedPrefix}rp all*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    RPG_PANEL_CATEGORIES.map(({ title, aliases }) =>
+      `> ↳ *${title}* — ${usedPrefix}rp ${aliases[0]}`
+    ).join('\n') +
+    `\n\n> ↳ Semua kategori: ${usedPrefix}rp all`
+
+  if (['command', 'commands', 'cmd'].includes(aksi)) {
+    if (isPrivateRpgPanel) return m.reply(panelCategoryFallback)
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '👑 MENU COMMAND RPG PANEL',
+      subtitle: 'Pilih kategori panel owner',
+      text: 'Buka kategori panel.',
+      buttonText: '👑 PILIH KATEGORI PANEL',
+      sections: panelCategorySections,
+      fallbackText: panelCategoryFallback,
+      reply: text => m.reply(text)
+    })
+  }
+
   if (!aksi || ['kategori', 'categories'].includes(aksi)) {
+    if (String(command || '').toLowerCase() !== 'rp') {
+      return sendRpgButtons(conn, {
+        chat: m.chat,
+        message: m,
+        quoted: m,
+        title: '👑 KATEGORI RPG PANEL',
+        subtitle: 'Pilih kategori panel owner',
+        text: 'Semua fitur panel owner.',
+        buttonText: '👑 PILIH KATEGORI',
+        sections: panelCategorySections,
+        fallbackText: panelCategoryFallback,
+        reply: text => m.reply(text)
+      })
+    }
     return m.reply(
-      `╭─❏「 👑 KATEGORI RPG PANEL 」❏\n` +
-      `│ Gunakan *${usedPrefix}rp <kategori>* atau *${usedPrefix}rp all*\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      RPG_PANEL_CATEGORIES.map(({ title, aliases }) =>
-        `> ↳ *${title}* — ${usedPrefix}rp ${aliases[0]}`
-      ).join('\n') +
-      `\n\n> ↳ Semua kategori: ${usedPrefix}rp all`
+      panelCategoryFallback
     )
   }
 
@@ -750,6 +799,97 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
   const account = wdb.users[who]
   let user = account.rpg
   syncUserLimit(account)
+
+  if (aksi === 'firejob') {
+    const jobInput = remaining.join(' ').trim()
+    const job = jobInput
+      ? getJobByIdentifier(jobInput, Number(user.level) || 1)
+      : JOBS.find(entry => entry.job === user.currentJobName)
+    if (!job) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel firejob @tag [nomor/nama job]*\nContoh: *${usedPrefix}rpgpanel firejob @tag 50*`)
+    }
+    if (job.lv === 1) return m.reply(`❌ Pekerjaan level 1 (*${job.job}*) tidak bisa dipecat.`)
+    const appliedJobs = Array.isArray(user.appliedJobs) ? user.appliedJobs : []
+    if (!appliedJobs.includes(job.job) && user.currentJobName !== job.job) {
+      return m.reply(`❌ @${who.split('@')[0]} tidak sedang bekerja atau melamar di *${job.job}*.`, null, { mentions: [who] })
+    }
+
+    user.appliedJobs = appliedJobs.filter(jobName => jobName !== job.job)
+    user.firedJobs = user.firedJobs && typeof user.firedJobs === 'object' ? user.firedJobs : {}
+    const firedAt = Date.now()
+    user.firedJobs[job.job] = firedAt
+    user.firedJobName = job.job
+    user.firedAt = firedAt
+    if (user.currentJobName === job.job) {
+      user.currentJobName = null
+      user.lastkerja = 0
+      user.promotionPoints = 0
+      user.jobTitle = getJobTitleByPoints(0, '')
+    }
+    saveDB(wdb)
+
+    const jobIndex = JOBS.findIndex(entry => entry.job === job.job)
+    const nextJobNumber = jobIndex
+    let notified = false
+    if (jobIndex > 0) {
+      const notice = `⚠️ Kamu dipecat dari pekerjaan *${job.job}* oleh admin.\n\n⬇️ Coba lamar pekerjaan sebelumnya dengan menekan tombol berikut.`
+      const button = [['⬇️ Lamar Job Sebelumnya', `${usedPrefix}job apply ${nextJobNumber}`]]
+      try {
+        await sendRpgButtons(conn, {
+          chat: who,
+          text: notice,
+          footer: 'AVELIA • JOB CENTER',
+          buttons: button
+        })
+        notified = true
+      } catch (error) {
+        console.error('[RPG-PANEL firejob notification failed]:', error?.message || error)
+      }
+    }
+
+    let firingResult = `✅ @${who.split('@')[0]} dipecat dari pekerjaan *${job.job}*.`
+    if (jobIndex > 0) {
+      if (notified) {
+        firingResult += ` Tombol untuk mencoba *${JOBS[jobIndex - 1].job}* sudah dikirim secara pribadi.`
+      } else {
+        firingResult += ' Notifikasi pribadi gagal dikirim; periksa koneksi bot.'
+      }
+    }
+    return m.reply(firingResult, null, { mentions: [who] })
+  }
+
+  if (aksi === 'applyjob') {
+    const jobInput = remaining.join(' ').trim()
+    const job = getJobByIdentifier(jobInput, Number(user.level) || 1)
+    if (!job) {
+      return m.reply(`❌ Pekerjaan tidak ditemukan.\nFormat: *${usedPrefix}rpgpanel applyjob @tag <nomor/nama job>*\nCek daftar pekerjaan dengan *${usedPrefix}job list*.`)
+    }
+    if (job.lv > (Number(user.level) || 1)) {
+      return m.reply(`❌ Level @${who.split('@')[0]} belum cukup untuk *${job.job}* (minimal Lv.${job.lv}; level saat ini Lv.${Number(user.level) || 1}).`, null, { mentions: [who] })
+    }
+    const appliedJobs = Array.isArray(user.appliedJobs) ? user.appliedJobs : []
+    if (!appliedJobs.includes(job.job) && appliedJobs.length >= JOB_MAX_APPLIED) {
+      return m.reply(`❌ @${who.split('@')[0]} sudah mencapai batas lamaran (${JOB_MAX_APPLIED} pekerjaan).`, null, { mentions: [who] })
+    }
+
+    user.appliedJobs = appliedJobs
+    if (!user.appliedJobs.includes(job.job)) user.appliedJobs.push(job.job)
+    user.jobProgress = user.jobProgress && typeof user.jobProgress === 'object' ? user.jobProgress : {}
+    if (!user.jobProgress[job.job] || typeof user.jobProgress[job.job] !== 'object') {
+      user.jobProgress[job.job] = { promotionPoints: 0, works: 0, talks: 0 }
+    }
+    user.jobProgress[job.job].promotionPoints = Number(user.jobProgress[job.job].promotionPoints) || 0
+    user.jobProgress[job.job].works = Number(user.jobProgress[job.job].works) || 0
+    user.jobProgress[job.job].talks = Number(user.jobProgress[job.job].talks) || 0
+    user.currentJobName = job.job
+    user.jobHistory = Array.from(new Set([...(Array.isArray(user.jobHistory) ? user.jobHistory : []), job.job]))
+    user.firedJobs = user.firedJobs && typeof user.firedJobs === 'object' ? user.firedJobs : {}
+    delete user.firedJobs[job.job]
+    user.promotionPoints = user.jobProgress[job.job].promotionPoints
+    user.jobTitle = getJobTitleByPoints(user.promotionPoints, job.job)
+    saveDB(wdb)
+    return m.reply(`✅ @${who.split('@')[0]} berhasil diterima/ditugaskan ke pekerjaan *${job.job}* (urutan ${JOBS.findIndex(entry => entry.job === job.job) + 1}).`, null, { mentions: [who] })
+  }
 
   if (aksi === 'setjob') {
     const newJobName = remaining.join(' ').trim()

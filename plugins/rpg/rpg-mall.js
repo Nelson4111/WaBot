@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -49,11 +50,11 @@ function formatItemList(items, priceFor, sellPriceFor) {
   }).join('\n\n')
 }
 
-let handler = async (m, { text = '', usedPrefix, command }) => {
+let handler = async (m, { conn, text = '', usedPrefix, command }) => {
   const db = loadDB()
   const sender = normalizeJid(m.sender)
   const account = getUserRPG(db, sender)
-  if (!account?.rpg) return m.reply('Kamu belum memiliki data RPG.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum memiliki data RPG.')
   if (!db.money) db.money = {}
 
   const rpg = account.rpg

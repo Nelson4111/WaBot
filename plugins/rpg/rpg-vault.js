@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
@@ -5,7 +6,7 @@ import { runRpgVault } from '../../lib/rpgVault.js'
 const handler = async (m, { text = '', usedPrefix = '.' }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
-  if (!account?.rpg) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const tier = BANK_TIERS[Number(account.rpg.bankTier)] || BANK_TIERS[0]
   const args = String(text).trim().split(/\s+/).filter(Boolean)

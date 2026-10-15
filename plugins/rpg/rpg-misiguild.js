@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { sendRpgExpActivityList } from '../../lib/rpgActionButtons.js'
 import {
   addGuildLootReward,
   areGuildJidsSame,
@@ -202,7 +203,14 @@ if(command === 'latihanguild'){
 
   let user = wdb.users[m.sender]?.rpg || (getUserRPG(wdb, m.sender).rpg)
   migrateRpgCurrencies(user)
-  if (user.level < msn.minLevel) return m.reply(`❌ Butuh Player Lv.${msn.minLevel} untuk misi ini.`)
+  if (user.level < msn.minLevel) {
+    return sendRpgExpActivityList(conn, m, usedPrefix,
+      `❌ *LEVEL PLAYER BELUM CUKUP*\n` +
+      `> ↳ Misi ini membutuhkan Player Lv.${msn.minLevel}.\n` +
+      `> ↳ Level kamu saat ini: Lv.${user.level}.\n` +
+      `> ↳ Pilih kegiatan untuk mengumpulkan EXP:`
+    )
+  }
 
   if (typeof myGuild.exp!== 'number') myGuild.exp = 0
   if (typeof myGuild.level!== 'number') myGuild.level = 1

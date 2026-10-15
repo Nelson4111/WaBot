@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -8,7 +9,7 @@ const UPGRADE_IMAGE = 'https://c.termai.cc/i108/l3q'
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulailah dengan .adventure')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulailah dengan .adventure')
 
   const upgradeable = ['sword', 'armor', 'pickaxe', 'fishingrod']
   let [item = '', confirmArg = ''] = text ? text.trim().toLowerCase().split(/\s+/) : []

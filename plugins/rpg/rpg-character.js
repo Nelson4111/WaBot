@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, getEquipmentName } from '../../lib/waifuHelper.js'
 import { MALL_CATEGORIES } from '../../lib/rpgMallData.js'
 import {
@@ -22,7 +23,7 @@ import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 const FASHION_ITEMS = MALL_CATEGORIES.fashion.items
 const formatFashionItem = item => item ? `${item.emoji} ${item.name}` : '-'
 
-let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
+let handler = async (m, { conn, text = '', usedPrefix = '.', command = '' }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
   const tokens = String(text).trim().split(/\s+/).filter(Boolean)
@@ -47,7 +48,7 @@ let handler = async (m, { text = '', usedPrefix = '.', command = '' }) => {
       `─━━━━━━━━━━━━━━─`
     )
   }
-  if (!account?.rpg) return m.reply('Kamu belum memiliki data RPG. Mulailah dengan .adventure.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum memiliki data RPG. Mulailah dengan .adventure.')
   const rpg = account.rpg
   const registeredUser = db.users[m.sender] || {}
   syncUserLimit(registeredUser)

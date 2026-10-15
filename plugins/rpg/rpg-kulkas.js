@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { jenisMasakan, resepEmoji as sharedResepEmoji } from '../../lib/rpg-masakanData.js'
 
@@ -19,7 +20,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
   user.masakan = user.masakan || {}
 

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { bibit } from './rpg-tanam.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -8,11 +9,11 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(/\s+/).filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.inventory) user.inventory = {}
 
   const isPrem = global.db.data.users[m.sender]?.premium === true

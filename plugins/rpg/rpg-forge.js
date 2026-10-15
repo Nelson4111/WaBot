@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { miningOreKeys } from './rpg-mining.js'
 import { getMaterialCount, consumeMaterial, addMaterial } from '../../lib/rpg-libternakData.js'
@@ -10,7 +11,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Ketik *.adventure* dulu.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Ketik *.adventure* dulu.')
   if (!user.ores) user.ores = {}
   if (!user.inventory) user.inventory = {}
 

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS, formatBankLimit, formatBankTierFacility, getBankEffectiveSecurity, getBankPrice, isPremiumUser } from './rpg-bank.js'
 import { applyBankTierRewards } from '../../lib/rpg-bankData.js'
@@ -27,7 +28,7 @@ function formatPriceOptions(label, normalPrice, premiumPrice, isPremium) {
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let user = getUserRPG(wdb, m.sender)?.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if (user.bankTier === undefined) user.bankTier = 0
 
   let args = text?.toLowerCase().trim().split(/\s+/).filter(Boolean) || []

@@ -1,12 +1,13 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
-  if(!user.dapur) return m.reply('❌ Kamu belum punya dapur.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
+  if (!user.dapur) return m.reply('❌ Kamu belum punya dapur.')
 
   let sekarang = Date.now()
   let selesai = user.dapur.antrian.filter(item => item.selesai <= sekarang)

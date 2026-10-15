@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { KIDNAP_INACTIVITY_LABEL, KIDNAP_INACTIVITY_TIMEOUT, RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
 import { KIDNAP_ESCAPE_STORIES, KIDNAP_INACTIVITY_STORIES } from '../../lib/rpgCrimeStories.js'
@@ -88,7 +89,7 @@ const kidnapCleanupTimer = setInterval(() => {
 
 kidnapCleanupTimer.unref?.()
 
-let handler = async (m, { conn, args = [], command }) => {
+let handler = async (m, { conn, args = [], command, usedPrefix }) => {
   const db = loadDB()
 
   if (command === 'tebus') {
@@ -195,11 +196,11 @@ let handler = async (m, { conn, args = [], command }) => {
   const user = getUserRPG(db, m.sender)
 
   if (!user?.rpg) {
-    return m.reply(
+    return sendRpgRegistrationPrompt(conn, m, usedPrefix,
       `╭─❏「 ❌ DATA RPG TIDAK DITEMUKAN 」❏\n` +
-      `│ Kamu belum memiliki data RPG.\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `📌 Mulai petualangan dengan *.adventure*`
+        `│ Kamu belum memiliki data RPG.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📌 Mulai petualangan dengan *.adventure*`
     )
   }
 

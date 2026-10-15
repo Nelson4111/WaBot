@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isDifficultyRanked, scaleDifficultyDamage, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
@@ -110,7 +111,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
   const sender = conn.decodeJid(m.sender)
   const data = getUserRPG(wdb, sender)
   const user = data?.rpg || data
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   const stats = initStats(user)
 
   const isVersusCommand = command === 'versus'

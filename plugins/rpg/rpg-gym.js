@@ -1,11 +1,12 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
-let handler = async (m, { conn, text }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if (!user.stats || typeof user.stats !== 'object') user.stats = {}
   user.stats.gym = Number.isFinite(Number(user.stats.gym)) ? Number(user.stats.gym) : 0
   if(!user.cooldown) user.cooldown = {}

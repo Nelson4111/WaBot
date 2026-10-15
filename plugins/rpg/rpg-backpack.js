@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
@@ -48,7 +49,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
   user.inventory = normalizeUserMaterial(user.inventory || {})
   user.ores = normalizeUserMaterial(user.ores || {})

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
@@ -22,7 +23,7 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
     return m.reply('❌ `.skipcd` hanya tersedia untuk pengguna Premium.')
   }
   const rpg = account?.rpg
-  if (!rpg) return m.reply('❌ Data RPG kamu belum tersedia.')
+  if (!rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Data RPG kamu belum tersedia.')
   if (!global.db.data.fitnah || typeof global.db.data.fitnah !== 'object') {
     global.db.data.fitnah = {}
   }

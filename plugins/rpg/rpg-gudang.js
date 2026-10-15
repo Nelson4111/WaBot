@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg, saveDB } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
@@ -76,7 +77,7 @@ const masakanEmoji = {
 let handler = async (m, { conn, usedPrefix, args }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
-  if (!user) return m.reply('❌ Kamu belum punya data RPG')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG')
   if (migrateRpgCurrencies(user)) saveDB(wdb)
 
   user.inventory = normalizeUserMaterial(user.inventory || {})

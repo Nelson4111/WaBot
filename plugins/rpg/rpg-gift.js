@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { changeTransferBalance, findTransferItems, getTransferBalance } from '../../lib/rpgTransfer.js'
@@ -9,7 +10,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let who, itemInput, count
 
   // CEK DATA
-  if (!wdb.users[m.sender]?.rpg) return m.reply('Kamu belum punya data RPG.')
+  if (!wdb.users[m.sender]?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum punya data RPG.')
 
   // DAPATKAN TARGET
   const mentionedJid = m.mentionedJid || []

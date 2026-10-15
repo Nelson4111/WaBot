@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
@@ -11,10 +12,10 @@ import {
 
 const EXPLORE_COOLDOWN = 15 * 60 * 1000
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
-  if (!account?.rpg) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+  if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const rpg = account.rpg
   const tier = BANK_TIERS[Number(rpg.bankTier)] || BANK_TIERS[0]

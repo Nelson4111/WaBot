@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -30,11 +31,11 @@ const oreEmoji = {
   'pecahan_bintang': '🌠', 'air_mata_dewi': '💧', 'segel_dewa': '📜', 'jiwa_abadi': '👻'
 }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.inventory) user.inventory = {}
   if(!user.ores) user.ores = {}
   if(!user.items) user.items = {}

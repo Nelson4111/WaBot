@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   getDifficultyCooldownRemaining,
@@ -26,11 +27,11 @@ function getGuide(prefix) {
     `> ${prefix}difficulty set <peaceful|easy|normal|hardcore|nightmare>`
 }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   const data = getUserRPG(wdb, m.sender)
   const user = data?.rpg
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const [action = 'info', rawDifficulty] = String(text || '').trim().split(/\s+/)
   const normalizedAction = action.toLowerCase()

@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   getMbgMenu,
@@ -73,7 +74,7 @@ function getClaimSummary(claims, premium, dateKey) {
     `> ↳ Kesempatan : *${limit}x*`
 }
 
-let handler = async (m, { text, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
   const action = args[0]
   const params = args.slice(1)
@@ -146,7 +147,7 @@ let handler = async (m, { text, usedPrefix }) => {
 const wdb = loadDB()
 const data = getUserRPG(wdb, m.sender)
 const user = data.rpg
-if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
 const premium = isPremiumUser(m.sender, wdb)
 const menu = getMbgMenu()

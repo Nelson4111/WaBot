@@ -1,3 +1,4 @@
+import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { prosesKawin, pratinjauKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan, getHewanKey } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -13,13 +14,13 @@ const getKawinFailureChance = (first, second) => {
     : baseChance
 }
 
-let handler = async (m, { conn, args }) => {
+let handler = async (m, { conn, args, usedPrefix }) => {
   const wdb = loadDB()
   wdb.temp = wdb.temp || {}
   wdb.temp.kawin = wdb.temp.kawin || {}
   let userRPG = getUserRPG(wdb, m.sender)
   let user = userRPG?.rpg || userRPG
-  if (!user) return m.reply('❌ Kamu belum memiliki data RPG.')
+  if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}
   if(!user.cooldown) user.cooldown = {}
