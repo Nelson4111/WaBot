@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
@@ -615,7 +615,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   }
 
   if (mode === 'command') {
-    return m.reply(
+    const fallbackText =
       `╭─❏「 📋 AUCTION HOUSE COMMAND 」❏\n` +
       `│ 📋 *DAFTAR COMMAND LELANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -635,7 +635,28 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ ${prefix}ah top — lihat kolektor item lelang terbanyak\n\n` +
       `> ↳ Alias lain: ${prefix}lelang dan ${prefix}auctionhouse\n\n` +
       `─━━━━━━━━━━━━━━─`
-    )
+    const rows = [
+      { title: '🔨 Buka balai lelang', description: 'Masuk ke pelelangan bersama dan cek waktunya', id: `${prefix}ah` },
+      { title: '📦 Lihat barang', description: 'Jelajahi item dan penawaran tertinggi', id: `${prefix}ah list` },
+      { title: '🔎 Detail barang', description: 'Periksa informasi item sebelum menawar', id: `${prefix}ah info` },
+      { title: '💰 Ajukan penawaran', description: 'Masukkan nominal bid untuk item pilihan', id: `${prefix}ah bid` },
+      { title: '✅ Konfirmasi bid', description: 'Sahkan penawaran yang masih tertunda', id: `${prefix}ah bid konfirmasi` },
+      { title: '🎁 Hadiah lelang', description: 'Lihat hadiah yang menunggu untuk diklaim', id: `${prefix}ah vault` },
+      { title: '📰 Berita lelang', description: 'Ikuti kabar pemenang dan lelang terbaru', id: `${prefix}ah news` },
+      { title: '📜 Riwayat lelang', description: 'Lihat pemenang dari lelang sebelumnya', id: `${prefix}ah history` },
+      { title: '🏆 Kolektor teratas', description: 'Lihat peringkat kolektor item lelang', id: `${prefix}ah top` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🔨 AUCTION HOUSE',
+      subtitle: 'Pilih langkahmu di balai lelang Avelia',
+      text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
+      buttonText: '🔨 JELAJAHI LELANG',
+      sections: [{ title: 'Balai lelang', rows }],
+      fallbackText
+    })
   }
 
   if (mode === 'news') {

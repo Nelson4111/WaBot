@@ -4,6 +4,7 @@ import { reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { areGuildJidsSame, findGuildByMember } from '../../lib/rpgGuild.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 global.warRequests = global.warRequests || {}
 
@@ -139,6 +140,7 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
 
   let totalRampasan = 0
   let gugur = 0
+  const fallenMembers = []
 
   // PROSES PIHAK KALAH
   loser.members.forEach(jid => {
@@ -154,7 +156,11 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
         if(Math.random() < 0.3){ u.darah = 1 } // 30% selamat
         else if (!reviveBloodline(u, Number(u.maxDarah) || 100)) {
           if (tryPremiumProtection(jid, 'death')) u.darah = 1
-          else { u.darah = 0; gugur++ }
+          else {
+            u.darah = 0
+            gugur++
+            fallenMembers.push(jid)
+          }
         }
       }
       if(!jid.startsWith('rand_')) wdb.users[jid].rpg = u
@@ -212,6 +218,19 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
   }
 
   let allMembers = isRandom? myGuild.members : [...myGuild.members,...enemyGuild.members]
+  if (fallenMembers.length) {
+    const mentions = allMembers.filter(jid => !jid.startsWith('rand_'))
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      text: cap,
+      footer: '',
+      buffer: 'https://c.termai.cc/i108/l3q',
+      buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
+      quoted: m,
+      mentions,
+      reply: text => conn.sendMessage(m.chat, { text, mentions }, { quoted: m })
+    })
+  }
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q', { contextInfo: { mentionedJid: allMembers.filter(j =>!j.startsWith('rand_')) } })
 }
 

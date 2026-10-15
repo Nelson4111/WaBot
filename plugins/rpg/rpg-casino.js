@@ -1200,23 +1200,23 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
   if (input === 'command' || input === 'commands') {
     const sections = [
       {
-        title: '🎰 Casino',
+        title: '🎰 Meja permainan',
         rows: [
-          ['🎮 Daftar permainan', 'casino games', 'Pilih game yang ingin dimainkan'],
-          ['📖 Panduan', 'casino guide', 'Baca aturan dan panduan casino'],
-          ['👤 Profil', 'casino profile', 'Lihat statistik dan permainanmu'],
-          ['💰 Profit', 'casino profit', 'Lihat ringkasan profit'],
-          ['🏆 Peringkat', 'casino top', 'Lihat leaderboard casino'],
-          ['⏰ Cooldown', 'casino cd', 'Cek waktu bermain berikutnya'],
-          ['🧪 Simulasi', 'casino simulation', 'Coba simulasi tanpa mempertaruhkan saldo']
+          ['🎲 Pilih permainan', 'casino games', 'Temukan meja yang cocok dengan gayamu'],
+          ['📖 Kenali aturannya', 'casino guide', 'Pelajari peluang dan cara bermain dengan bijak'],
+          ['🪪 Profil pemain', 'casino profile', 'Lihat perjalanan dan catatan permainanmu'],
+          ['💹 Rekap keberuntungan', 'casino profit', 'Pantau hasil permainan secara ringkas'],
+          ['🏆 Papan peringkat', 'casino top', 'Lihat para pemain paling beruntung'],
+          ['⏳ Waktu bermain', 'casino cd', 'Periksa kapan kesempatan berikutnya tiba'],
+          ['🧪 Coba simulasi', 'casino simulation', 'Kenali mekanisme tanpa mempertaruhkan saldo']
         ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
       },
       {
-        title: '👥 Casino room',
+        title: '👥 Main bersama',
         rows: [
-          ['🏠 Panduan room', 'cs room guide', 'Pelajari permainan bersama teman'],
-          ['🎲 Pilih game room', 'cs room games', 'Lihat game yang tersedia di room'],
-          ['📊 Status room', 'cs room status', 'Cek status room yang sedang diikuti']
+          ['🏠 Ruang permainan', 'cs room guide', 'Siapkan sesi seru bersama teman-teman'],
+          ['🎲 Pilih permainan grup', 'cs room games', 'Temukan permainan yang bisa dimainkan bersama'],
+          ['📊 Status ruang', 'cs room status', 'Periksa sesi yang sedang kamu ikuti']
         ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
       }
     ]
@@ -1224,10 +1224,10 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      title: '🎰 MENU COMMAND CASINO',
-      subtitle: 'Pilih fitur casino',
-      text: 'Buka menu casino yang kamu butuhkan.',
-      buttonText: '🎰 PILIH MENU CASINO',
+      title: '🎰 MALAM DI CASINO',
+      subtitle: 'Pilih meja dan suasana permainanmu',
+      text: 'Nikmati permainan dengan bijak, atau ajak teman meramaikan suasana.',
+      buttonText: '🎰 JELAJAHI CASINO',
       sections,
       fallbackText: casinoCommands(usedPrefix)
     })

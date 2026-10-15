@@ -1,3 +1,5 @@
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+
 const CORE_COMMANDS = [
   ['.adventure', 'Profil dan aktivitas petualangan'],
   ['.explore', 'Menjelajahi antarbintang dengan Interstellar Gateway'],
@@ -43,7 +45,7 @@ const CORE_COMMANDS = [
   ['.guide', 'Membuka panduan detail RPG']
 ]
 
-let handler = async (m, { text }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const action = text?.trim().toLowerCase()
 
   if (action === 'info') {
@@ -92,7 +94,29 @@ let handler = async (m, { text }) => {
     }
     cap += `\n─━━━━━━━━━━━━━━─\n`
     cap += `Ketik *.rpg info* untuk penjelasan tentang RPG.`
-    return m.reply(cap)
+    const rows = CORE_COMMANDS.map(([entry, description]) => {
+      const commandName = entry.replace(/^\./, '')
+      return {
+        title: `✦ ${entry}`,
+        description: description.slice(0, 72),
+        id: `${usedPrefix}${commandName}`
+      }
+    })
+    const sections = Array.from({ length: Math.ceil(rows.length / 10) }, (_, index) => ({
+      title: `Petualangan RPG ${index + 1}`,
+      rows: rows.slice(index * 10, (index + 1) * 10)
+    }))
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '📜 PETUALANGAN RPG AVELIA',
+      subtitle: 'Pilih pintu untuk mulai menjelajah',
+      text: 'Dunia Avelia menyimpan banyak kisah, tantangan, dan hadiah untukmu.',
+      buttonText: '📜 JELAJAHI COMMAND RPG',
+      sections,
+      fallbackText: cap
+    })
   }
 
   return m.reply(

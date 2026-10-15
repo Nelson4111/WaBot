@@ -1,3 +1,4 @@
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, syncAllEscapeCrimeCounts } from '../../lib/crimeHelper.js'
 import { getPatrolCaptureStory, hasRpgPanelAccess } from '../../lib/patrolHelper.js'
@@ -22,7 +23,7 @@ function findWantedByJid(crimeList, jid) {
   })
 }
 
-let handler = async (m, { conn, args, isOwner, groupMetadata }) => {
+let handler = async (m, { conn, args, isOwner, groupMetadata, usedPrefix }) => {
   const wdb = loadDB()
   if (!wdb.crime) wdb.crime = {}
 
@@ -117,7 +118,7 @@ let handler = async (m, { conn, args, isOwner, groupMetadata }) => {
   }
 
   if (action === 'command' || action === 'commands' || action === 'cmd') {
-    return m.reply(
+    const fallbackText =
       `╭─❏「 📋 COMMAND BURONAN 」❏\n` +
       `│ *.buronan* - Jumlah buronan aktif\n` +
       `│ *.buronan list [halaman]* - Daftar buronan, 10 orang/halaman\n` +
@@ -126,7 +127,25 @@ let handler = async (m, { conn, args, isOwner, groupMetadata }) => {
       `│ *.buronan info* - Penjelasan poin dan patroli\n` +
       (isOwner ? `│ *.buronan reset* - Reset data kriminal\n` : '') +
       `╰─━━━━━━━━━━━━━━─`
-    )
+    const rows = [
+      { title: '🚨 Pantau buronan', description: 'Lihat jumlah buronan aktif di Kota Avelia', id: `${usedPrefix}buronan` },
+      { title: '📋 Daftar buronan', description: 'Telusuri pemain berdasarkan halaman', id: `${usedPrefix}buronan list` },
+      { title: '🔎 Detail buronan', description: 'Periksa status berdasarkan nomor atau pemain', id: `${usedPrefix}buronan detail` },
+      { title: '📊 Data kriminalmu', description: 'Lihat poin aktif dan riwayat kriminal', id: `${usedPrefix}buronan data` },
+      { title: '📖 Sistem patroli', description: 'Pelajari poin buronan dan mekanisme patroli', id: `${usedPrefix}buronan info` },
+      ...(isOwner ? [{ title: '🧹 Reset data kriminal', description: 'Atur ulang catatan kriminal pemain', id: `${usedPrefix}buronan reset` }] : [])
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🚨 PUSAT BURONAN AVELIA',
+      subtitle: 'Pilih informasi yang ingin kamu telusuri',
+      text: 'Pantau status buronan dan kenali sistem patroli kota.',
+      buttonText: '🚨 BUKA PUSAT BURONAN',
+      sections: [{ title: 'Informasi kriminal', rows }],
+      fallbackText
+    })
   }
 
   if (action === 'data') {

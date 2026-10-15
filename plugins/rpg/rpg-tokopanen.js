@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { bibit } from './rpg-tanam.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -117,14 +117,29 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   if (tipe === 'command') {
-    const cap = `╭─❏「 📋 COMMAND KOPERASI 」❏\n` +
+    const fallbackText = `╭─❏「 📋 COMMAND KOPERASI 」❏\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ${usedPrefix}koperasi list\n` +
       `> ${usedPrefix}koperasi jual <no/nama> <jumlah/all>\n` +
       `> ${usedPrefix}koperasi jual all\n` +
       `> ${usedPrefix}koperasi guide\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    const rows = [
+      { title: '🌾 Hasil panen', description: 'Jelajahi komoditas dan nilai jualnya', id: `${usedPrefix}koperasi list` },
+      { title: '💰 Jual hasil panen', description: 'Pilih hasil panen untuk ditukar menjadi uang', id: `${usedPrefix}koperasi jual` },
+      { title: '📦 Jual seluruh stok', description: 'Jual semua hasil panen yang tersedia', id: `${usedPrefix}koperasi jual all` },
+      { title: '🌱 Mulai bertani', description: 'Pilih bibit dan rencanakan panen berikutnya', id: `${usedPrefix}tanam` },
+      { title: '📖 Panduan koperasi', description: 'Pelajari cara kerja toko hasil panen', id: `${usedPrefix}koperasi guide` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat, message: m, quoted: m,
+      title: '🌾 KOPERASI AVELIA',
+      subtitle: 'Tukar hasil kebun menjadi bekal petualangan',
+      text: 'Pilih hasil panen untuk melihat harga atau menjual stokmu.',
+      buttonText: '🌾 BUKA KOPERASI',
+      sections: [{ title: 'Hasil pertanian', rows }],
+      fallbackText
+    })
   }
 
   if (tipe === 'guide') {

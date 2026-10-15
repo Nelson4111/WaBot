@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -115,7 +115,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   if (tipe === 'command') {
-    const cap = `╭─❏「 📋 COMMAND PABRIK 」❏\n` +
+    const fallbackText = `╭─❏「 📋 COMMAND PABRIK 」❏\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ${usedPrefix}pabrik list\n` +
       `> ${usedPrefix}pabrik beli <no/nama> <jumlah>\n` +
@@ -123,7 +123,22 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ${usedPrefix}pabrik jual all\n` +
       `> ${usedPrefix}pabrik guide\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    const rows = [
+      { title: '⛏️ Material & harga', description: 'Lihat material, stok, dan nilai jual', id: `${usedPrefix}pabrik list` },
+      { title: '🛒 Beli material', description: 'Siapkan bahan untuk craft dan upgrade', id: `${usedPrefix}pabrik beli` },
+      { title: '💰 Jual hasil tambang', description: 'Pilih material atau hasil petualangan untuk dijual', id: `${usedPrefix}pabrik jual` },
+      { title: '📦 Jual seluruh stok', description: 'Tukar semua barang yang bisa dijual', id: `${usedPrefix}pabrik jual all` },
+      { title: '📖 Panduan pabrik', description: 'Pelajari alur jual-beli material', id: `${usedPrefix}pabrik guide` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat, message: m, quoted: m,
+      title: '⛏️ PABRIK AVELIA',
+      subtitle: 'Kelola material dan hasil petualanganmu',
+      text: 'Cari bahan untuk perlengkapan, atau tukarkan hasil tambangmu.',
+      buttonText: '⛏️ BUKA PABRIK',
+      sections: [{ title: 'Material & hasil tambang', rows }],
+      fallbackText
+    })
   }
 
   if (tipe === 'guide') {

@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -135,7 +135,7 @@ const hargaBeli = { ...sharedHargaBeli }
   }
 
   if (tipe === 'command') {
-    const cap = `╭─❏「 📋 COMMAND RESTORAN 」❏\n` +
+    const fallbackText = `╭─❏「 📋 COMMAND RESTORAN 」❏\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ${usedPrefix}restoran list\n` +
       `> ${usedPrefix}restoran info <no/nama>\n` +
@@ -146,7 +146,24 @@ const hargaBeli = { ...sharedHargaBeli }
       `> ${usedPrefix}restoran jual all\n` +
       `> ${usedPrefix}restoran guide\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    const rows = [
+      { title: '🍽️ Jelajahi menu', description: 'Lihat hidangan dan minuman yang tersedia', id: `${usedPrefix}restoran list` },
+      { title: '🔎 Detail hidangan', description: 'Periksa bahan dan harga menu pilihan', id: `${usedPrefix}restoran info` },
+      { title: '🛍️ Beli hidangan', description: 'Pilih makanan atau minuman untuk dibeli', id: `${usedPrefix}restoran beli` },
+      { title: '📦 Paket spesial', description: 'Jelajahi paket makanan dan minuman', id: `${usedPrefix}restoran paket list` },
+      { title: '💰 Jual masakan', description: 'Tukar hasil masak atau ternak menjadi uang', id: `${usedPrefix}restoran jual` },
+      { title: '🥘 Jual seluruh stok', description: 'Jual semua masakan dan hasil ternak yang tersedia', id: `${usedPrefix}restoran jual all` },
+      { title: '📖 Panduan restoran', description: 'Pelajari alur belanja dan penjualan restoran', id: `${usedPrefix}restoran guide` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat, message: m, quoted: m,
+      title: '🍽️ RESTORAN AVELIA',
+      subtitle: 'Pilih hidangan atau kelola hasil masakan',
+      text: 'Temukan menu favorit dan tukarkan masakanmu dengan uang.',
+      buttonText: '🍽️ JELAJAHI RESTORAN',
+      sections: [{ title: 'Menu restoran', rows }],
+      fallbackText
+    })
   }
 
   if (tipe === 'guide') {

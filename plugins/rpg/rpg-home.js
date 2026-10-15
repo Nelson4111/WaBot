@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
@@ -798,7 +798,7 @@ if (mode === 'guide') {
 }
 
 if (mode === 'command') {
-  return m.reply(
+  const commandFallback =
     `╭─❏「 📋 HOME COMMAND 」❏\n` +
     `│ 📋 *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -848,7 +848,64 @@ if (mode === 'command') {
     `📦 Kategori barang: ${Object.keys(MALL_CATEGORIES).join(', ')} (fashion tidak dapat dipasang).\n` +
     `> ↳ Alias rumah: ${prefix}rumah\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  const commandSections = [
+    {
+      title: '🏠 Rumah & dekorasi',
+      rows: [
+        { title: '📖 Panduan rumah', description: 'Kenali fitur dan cara mengembangkan rumah', id: `${prefix}home guide` },
+        { title: '🏡 Lihat rumah', description: 'Buka ringkasan rumah dan statusnya', id: `${prefix}home info` },
+        { title: '🪑 Furniture', description: 'Lihat barang yang sedang terpasang', id: `${prefix}home furniture` },
+        { title: '🧸 Koleksi pajangan', description: 'Atur koleksi yang menghiasi rumah', id: `${prefix}home pajangan` },
+        { title: '⬆️ Upgrade rumah', description: 'Tingkatkan level, kapasitas, dan kenyamanan', id: `${prefix}home upgrade` },
+        { title: '📈 Statistik rumah', description: 'Pantau status dan perkembangan rumah', id: `${prefix}home stats` },
+        { title: '🪄 Pasang barang', description: 'Pilih dekorasi dari barang yang dimiliki', id: `${prefix}home pasang` },
+        { title: '📦 Daftar barang', description: 'Lihat kategori barang yang kamu miliki', id: `${prefix}home list` }
+      ]
+    },
+    {
+      title: '🍽️ Aktivitas & perawatan',
+      rows: [
+        { title: '✨ Aktivitas rumah', description: 'Luangkan waktu dan bangun keharmonisan', id: `${prefix}home act` },
+        { title: '🍲 Santap bersama', description: 'Nikmati hidangan dari kulkas rumah', id: `${prefix}home eat` },
+        { title: '🧹 Bersihkan rumah', description: 'Jaga rumah tetap nyaman dan terawat', id: `${prefix}home clean` },
+        { title: '👶 Rawat anak', description: 'Temani dan tingkatkan kedekatan keluarga', id: `${prefix}home childcare` },
+        { title: '🐾 Rawat pet', description: 'Berikan perhatian pada pet di rumah', id: `${prefix}home petcare` },
+        { title: '⏰ Cek cooldown', description: 'Lihat jadwal aktivitas yang siap kembali', id: `${prefix}home cd` }
+      ]
+    },
+    {
+      title: '🏡 Staff & akses',
+      rows: [
+        { title: '🧑‍🍳 Staff rumah', description: 'Kelola staff dan kontrak layanan rumah', id: `${prefix}home staff` },
+        { title: '👋 Undang pemain', description: 'Bagikan akses rumah kepada teman', id: `${prefix}home invite` },
+        { title: '🚪 Kunjungi rumah', description: 'Bertamu ke rumah pemain lain', id: `${prefix}home visit` },
+        { title: '🔒 Atur privasi', description: 'Pilih rumah terbuka atau privat', id: `${prefix}home public` },
+        { title: '⭐ Rumah favorit', description: 'Simpan rumah yang ingin dikunjungi lagi', id: `${prefix}home favorite` },
+        { title: '👥 Daftar tamu', description: 'Lihat kunjungan terbaru ke rumahmu', id: `${prefix}home tamu` },
+        { title: '💖 Beri like', description: 'Apresiasi rumah yang sedang dikunjungi', id: `${prefix}home like` }
+      ]
+    },
+    {
+      title: '🌆 Jelajah & lainnya',
+      rows: [
+        { title: '🗺️ Jelajahi rumah', description: 'Temukan rumah publik untuk dikunjungi', id: `${prefix}home explore` },
+        { title: '🏘️ Daftar rumah', description: 'Lihat rumah yang tersedia untuk dikunjungi', id: `${prefix}home list` },
+        { title: '🏆 Rumah populer', description: 'Lihat rumah dengan apresiasi terbanyak', id: `${prefix}home top` },
+        { title: '✅ Konfirmasi aksi', description: 'Lanjutkan atau batalkan aksi tertunda', id: `${prefix}home yes` }
+      ]
+    }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🏡 MENU RUMAH AVELIA',
+    subtitle: 'Pilih layanan untuk merawat dan mempercantik rumah',
+    text: 'Jadikan rumah tempat ternyaman untuk keluarga dan teman.',
+    buttonText: '🏡 JELAJAHI MENU RUMAH',
+    sections: commandSections,
+    fallbackText: commandFallback
+  })
 }
 
 const ownedCategory = MALL_CATEGORY_ALIASES[normalize(mode)]

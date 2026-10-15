@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, getActiveCrimeScore } from '../../lib/crimeHelper.js'
 import { REHABILITATION_ACTIVITY_STORIES } from '../../lib/rehabilitationStories.js'
@@ -114,7 +114,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   const wantedScore = getActiveCrimeScore(crimeData)
 
   if (action === 'command' || action === 'commands' || action === 'cmd') {
-  return m.reply(
+  const fallbackText =
     `╭─❏「 📋 COMMAND REHABILITASI 」❏\n` +
     `│ 📋 *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -139,7 +139,45 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     `> ↳ *.rh batal* — Membatalkan rehabilitasi\n\n` +
 
     `─━━━━━━━━━━━━━━─`
-  )
+  const sections = [
+    {
+      title: '🕊️ Perjalanan pemulihan',
+      rows: [
+        { title: '📊 Status pemulihan', description: 'Lihat waktu dan progres rehabilitasimu', id: `${usedPrefix}rh` },
+        { title: '📖 Info proses', description: 'Periksa syarat dan status rehabilitasi', id: `${usedPrefix}rh info` },
+        { title: '📚 Panduan', description: 'Pelajari tahapan pemulihan dengan lengkap', id: `${usedPrefix}rh guide` },
+        { title: '🚀 Mulai rehabilitasi', description: 'Ajukan proses pemulihan dari status buronan', id: `${usedPrefix}rh mulai` },
+        { title: '📈 Lihat progres', description: 'Pantau perkembangan semua persyaratan', id: `${usedPrefix}rh progres` },
+        { title: '📋 Daftar peserta', description: 'Lihat pemain yang sedang menjalani rehabilitasi', id: `${usedPrefix}rh list` },
+        { title: '✅ Laporkan selesai', description: 'Ajukan penyelesaian jika seluruh syarat terpenuhi', id: `${usedPrefix}rh lapor` },
+        { title: '🛑 Batalkan proses', description: 'Hentikan rehabilitasi yang sedang berjalan', id: `${usedPrefix}rh batal` }
+      ]
+    },
+    {
+      title: '🌱 Aktivitas & kebutuhan',
+      rows: [
+        { title: '💼 Bekerja', description: 'Tambahkan progres melalui aktivitas kerja', id: `${usedPrefix}rh kerja` },
+        { title: '🤝 Kegiatan sosial', description: 'Bangun kembali kepercayaan masyarakat', id: `${usedPrefix}rh sosial` },
+        { title: '🙏 Beribadah', description: 'Tenangkan diri dan tambah progres', id: `${usedPrefix}rh ibadah` },
+        { title: '🏃 Berolahraga', description: 'Jaga kebugaran selama pemulihan', id: `${usedPrefix}rh olahraga` },
+        { title: '📚 Belajar', description: 'Tingkatkan wawasan dan progres pemulihan', id: `${usedPrefix}rh belajar` },
+        { title: '⚡ Jalankan aktivitas siap', description: 'Lakukan semua aktivitas yang cooldown-nya selesai', id: `${usedPrefix}rh all` },
+        { title: '💰 Bayar biaya', description: 'Cicil atau lunasi biaya rehabilitasi', id: `${usedPrefix}rh bayar` },
+        { title: '⏰ Cek cooldown', description: 'Lihat waktu aktivitas kembali tersedia', id: `${usedPrefix}rh cd` }
+      ]
+    }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🕊️ JALAN PEMULIHAN',
+    subtitle: 'Pilih langkah untuk menata kembali hidupmu',
+    text: 'Pulihkan reputasi melalui waktu, tanggung jawab, dan kegiatan positif.',
+    buttonText: '🕊️ PILIH LANGKAH',
+    sections,
+    fallbackText
+  })
 }
 
 if (action === 'guide') {

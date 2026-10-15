@@ -322,7 +322,30 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     return m.reply(caption)
   }
 
-  if (['guide', 'command', 'help'].includes(action)) {
+  if (['command', 'commands'].includes(action)) {
+    const rows = [
+      { title: '📋 Lihat lowongan', description: 'Temukan pekerjaan yang sesuai dengan levelmu', id: `${usedPrefix}job list` },
+      { title: '📝 Ajukan pekerjaan', description: 'Pilih posisi yang ingin kamu tekuni', id: `${usedPrefix}job apply` },
+      { title: '💬 Bicara dengan atasan', description: 'Bangun relasi dan buka peluang karier', id: `${usedPrefix}job talk` },
+      { title: '💼 Mulai bekerja', description: 'Jalani giliran kerja dan kumpulkan hasil', id: `${usedPrefix}work` },
+      { title: '📊 Profil pekerjaan', description: 'Tinjau status dan perkembangan kariermu', id: `${usedPrefix}job info` },
+      { title: '🏅 Promosi jabatan', description: 'Periksa peluang naik pangkat di pekerjaanmu', id: `${usedPrefix}job promotion` },
+      { title: '📖 Panduan karier', description: 'Kenali sistem kerja, cuti, dan promosi', id: `${usedPrefix}job guide` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '💼 PUSAT KARIER AVELIA',
+      subtitle: 'Pilih langkah untuk membangun kariermu',
+      text: 'Temukan pekerjaan, asah kemampuan, dan raih jabatan yang lebih tinggi.',
+      buttonText: '💼 JELAJAHI KARIER',
+      sections: [{ title: 'Perjalanan kerja', rows }],
+      fallbackText: `╭─❏「 💼 MENU KARIER 」❏\n${rows.map(row => `> ${row.title}: *${row.id}* — ${row.description}`).join('\n')}\n╰─━━━━━━━━━━━━━━─`
+    })
+  }
+
+  if (['guide', 'help'].includes(action)) {
     const guideText = [
       ...JOB_GUIDE.map(line => line)
     ].join('\n')

@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 import { hewanList, getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 
@@ -15,7 +15,39 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (hasilMigration.changed) saveDB(wdb)
 
   if (['command', 'commands', 'cmd'].includes((text || '').trim().toLowerCase())) {
-    return m.reply(`╭─❏「 📋 PETERNAKAN COMMAND 」❏\n\n📌 *PERINTAH UTAMA*\n> *.peternakan*\n> *.ternak kandang*\n> *.ternak list*\n> *.ternak hybrid*\n\n🛒 *TRANSAKSI & TERNAK*\n> *.ternak beli <hewan> <jumlah>*\n> *.ternak ambil <hewan>*\n> *.ternak sembelih <hewan> <jumlah>*\n> *.ternak jual <item> <jumlah>*\n\n🧬 *KAWIN & ICU*\n> *.kawin <hewan1> <hewan2>*\n> *.kawin ... asuransi*\n> *.kawin proses / batal*\n> *.icu* atau *.icu auto*\n╰─━━━━━━━━━━━━━━─`)
+    const prefix = usedPrefix || '.'
+    const fallbackText = `╭─❏「 📋 PETERNAKAN COMMAND 」❏\n\n📌 *PERINTAH UTAMA*\n> *.peternakan*\n> *.ternak kandang*\n> *.ternak list*\n> *.ternak hybrid*\n\n🛒 *TRANSAKSI & TERNAK*\n> *.ternak beli <hewan> <jumlah>*\n> *.ternak ambil <hewan>*\n> *.ternak sembelih <hewan> <jumlah>*\n> *.ternak jual <item> <jumlah>*\n\n🧬 *KAWIN & ICU*\n> *.kawin <hewan1> <hewan2>*\n> *.kawin ... asuransi*\n> *.kawin proses / batal*\n> *.icu* atau *.icu auto*\n╰─━━━━━━━━━━━━━━─`
+    const sections = [
+      {
+        title: '🐄 Kandang & ternak',
+        rows: [
+          { title: '🏡 Ringkasan kandang', description: 'Lihat jumlah dan status hewan ternak', id: `${prefix}ternak kandang` },
+          { title: '📋 Daftar hewan', description: 'Jelajahi hewan yang kamu miliki', id: `${prefix}ternak list` },
+          { title: '🧬 Koleksi hybrid', description: 'Temukan hasil kawin silang yang unik', id: `${prefix}ternak hybrid` },
+          { title: '🛒 Beli hewan', description: 'Tambahkan hewan baru ke kandang', id: `${prefix}ternak beli` },
+          { title: '🥚 Ambil hasil', description: 'Kumpulkan hasil ternak yang siap', id: `${prefix}ternak ambil` }
+        ]
+      },
+      {
+        title: '🧰 Perawatan & transaksi',
+        rows: [
+          { title: '🔪 Sembelih hewan', description: 'Olah hewan menjadi hasil peternakan', id: `${prefix}ternak sembelih` },
+          { title: '💰 Jual hasil ternak', description: 'Tukarkan hasil ternak menjadi uang', id: `${prefix}ternak jual` },
+          { title: '💕 Kawinkan hewan', description: 'Pilih dua hewan untuk dikawinkan', id: `${prefix}kawin` },
+          { title: '🏥 Rawat di ICU', description: 'Atur perawatan khusus untuk ternak', id: `${prefix}icu` },
+          { title: '📋 Semua command', description: 'Buka panduan tombol peternakan lengkap', id: `${prefix}ternak command` }
+        ]
+      }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat, message: m, quoted: m,
+      title: '🐄 PETERNAKAN AVELIA',
+      subtitle: 'Rawat kandang dan kembangkan koleksi ternak',
+      text: 'Kumpulkan hasil, kawinkan hewan, dan temukan hybrid istimewa.',
+      buttonText: '🐄 BUKA MENU PETERNAKAN',
+      sections,
+      fallbackText
+    })
   }
   const totalHewan = Object.values(user.ternak).reduce((total, jumlah) => total + Number(jumlah || 0), 0)
   const jenisHewan = Object.keys(user.ternak).filter(key => user.ternak[key] > 0).length

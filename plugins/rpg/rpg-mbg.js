@@ -1,4 +1,5 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   getMbgMenu,
@@ -128,7 +129,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
  if (['command', 'commands', 'cmd'].includes(action)) {
-  return m.reply(
+  const fallbackText =
     `╭─❏「 📋 COMMAND MBG 」❏\n` +
     `│ 📋 *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -141,7 +142,26 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     `> ↳ *${usedPrefix}mbg tukar* — Tukar menu\n` +
     `> ↳ *${usedPrefix}mbg ambil* — Ambil jatah\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  const rows = [
+    { title: '🍱 Menu hari ini', description: 'Lihat menu dan status jatah makanmu', id: `${usedPrefix}mbg` },
+    { title: '📖 Tentang MBG', description: 'Kenali fitur Makan Bergizi Gratis', id: `${usedPrefix}mbg info` },
+    { title: '🥗 Pilihan menu', description: 'Telusuri makanan dan minuman tersedia', id: `${usedPrefix}mbg list` },
+    { title: '🧭 Panduan pemakaian', description: 'Pelajari cara mengambil jatah harian', id: `${usedPrefix}mbg guide` },
+    { title: '👑 Fasilitas premium', description: 'Lihat status dan pilihan menu premium', id: `${usedPrefix}mbg premium` },
+    { title: '🔄 Tukar menu', description: 'Pilih menu pengganti yang tersedia', id: `${usedPrefix}mbg tukar` },
+    { title: '🎁 Ambil jatah', description: 'Klaim makanan dan minuman harianmu', id: `${usedPrefix}mbg ambil` }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🍱 MAKAN BERGIZI GRATIS',
+    subtitle: 'Pilih menu dan manfaatkan jatah harianmu',
+    text: 'Menu bergizi sudah menanti—lihat pilihan dan ambil jatahmu.',
+    buttonText: '🍱 JELAJAHI MENU MBG',
+    sections: [{ title: 'Layanan MBG', rows }],
+    fallbackText
+  })
 }
 
 const wdb = loadDB()

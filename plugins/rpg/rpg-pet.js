@@ -818,15 +818,51 @@ if (action === 'guide') {
 
 if (action === 'command' || action === 'commands' || action === 'cmd') {
   const commands = handler.help.filter(item => item.startsWith('pet '))
+  const menuCopy = {
+    guide: ['📖 Panduan Pet', 'Kenali kebutuhan, perawatan, dan perkembangan pet-mu.'],
+    command: ['📋 Aktivitas Pet', 'Temukan semua cara berinteraksi dengan teman kecilmu.'],
+    care: ['💖 Rawat Pet', 'Berikan perhatian agar pet tetap sehat dan bahagia.'],
+    all: ['⚡ Perawatan Lengkap', 'Jalankan perawatan pet yang siap dilakukan sekaligus.'],
+    list: ['🐾 Koleksi Pet', 'Jelajahi teman-teman yang sudah menemanimu.'],
+    shop: ['🛍️ Toko Pet', 'Cari perlengkapan dan teman baru untuk koleksimu.'],
+    adopt: ['🏡 Adopsi Pet', 'Sambut teman baru untuk menemani petualanganmu.'],
+    gacha: ['🎁 Pet Kejutan', 'Coba peruntungan untuk menemukan pet istimewa.'],
+    feed: ['🍖 Isi Energi', 'Pulihkan tenaga pet dengan makanan kesukaannya.'],
+    charge: ['🔋 Pulihkan Stamina', 'Bantu pet kembali siap beraktivitas.'],
+    walk: ['🚶 Jalan Bersama', 'Nikmati waktu santai dan bangun kedekatan.'],
+    play: ['🎾 Ajak Bermain', 'Buat suasana ceria bersama pet kesayangan.'],
+    train: ['💪 Latihan Pet', 'Asah kemampuan agar pet makin tangguh.'],
+    rest: ['😴 Waktu Istirahat', 'Biarkan pet beristirahat setelah beraktivitas.'],
+    clean: ['🫧 Bersihkan Pet', 'Jaga penampilan pet tetap bersih dan nyaman.'],
+    heal: ['🩹 Pulihkan Pet', 'Bantu pet kembali sehat dan bugar.'],
+    gift: ['🎀 Hadiah untuk Pet', 'Berikan sesuatu yang membuat pet senang.'],
+    rename: ['🏷️ Ganti Nama', 'Pilih nama yang cocok untuk temanmu.'],
+    battle: ['⚔️ Tantangan Pet', 'Uji kemampuan pet dalam pertarungan.'],
+    hunt: ['🎯 Berburu Bersama', 'Ajak pet mencari hasil di alam liar.'],
+    dispatch: ['🧭 Misi Pet', 'Kirim pet menjalankan ekspedisi khusus.'],
+    status: ['📊 Status Pet', 'Pantau kesehatan dan perkembangan temanmu.'],
+    sell: ['💰 Jual Pet', 'Kelola koleksi dengan melepas pet pilihan.'],
+    release: ['🕊️ Lepaskan Pet', 'Antarkan pet kembali ke alam dengan baik.'],
+    breed: ['💕 Kawinkan Pet', 'Temukan keturunan dengan kombinasi unik.'],
+    playwith: ['🤍 Waktu Berkualitas', 'Pererat ikatan lewat momen kebersamaan.'],
+    transfer: ['🤝 Pindahkan Pet', 'Percayakan pet kepada pemain lain.'],
+    kill: ['🛑 Kelola Pet', 'Lihat opsi pengelolaan pet yang tersedia.'],
+    claim: ['🎁 Klaim Pet', 'Ambil pet yang sudah menantimu.'],
+    sanctuary: ['🌿 Suaka Pet', 'Titipkan pet dalam tempat yang aman.'],
+    revive: ['✨ Bangkitkan Pet', 'Bantu pet kembali menemanimu.'],
+    lb: ['🏆 Peringkat Pet', 'Lihat pet dan pemilik paling berprestasi.']
+  }
   const sections = []
   for (let index = 0; index < commands.length; index += 10) {
     sections.push({
       title: `🐾 Pet • ${Math.floor(index / 10) + 1}`,
       rows: commands.slice(index, index + 10).map(item => {
         const commandText = item.slice(4)
+        const action = commandText.split(/\s+/)[0].toLowerCase()
+        const [title, description] = menuCopy[action] || ['🐾 Interaksi Pet', 'Pilih cara untuk menjaga ikatan dengan teman kecilmu.']
         return {
-          title: commandText.length > 24 ? commandText.slice(0, 24) : commandText,
-          description: `Jalankan ${usedPrefix}${item}`,
+          title,
+          description,
           id: `${usedPrefix}${item}`
         }
       })
@@ -837,10 +873,10 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     chat: m.chat,
     message: m,
     quoted: m,
-    title: '🐾 MENU COMMAND PET',
-    subtitle: 'Pilih fitur pet yang ingin dijalankan',
-    text: 'Semua aktivitas pet. Pilih command dari daftar.',
-    buttonText: '🐾 PILIH COMMAND PET',
+    title: '🐾 DUNIA PET AVELIA',
+    subtitle: 'Temani, rawat, dan tumbuh bersama pet-mu',
+    text: 'Setiap pet punya kisahnya sendiri. Pilih momen yang ingin kamu jalani bersama.',
+    buttonText: '🐾 JELAJAHI AKTIVITAS',
     sections,
     fallbackText: `╭─❏「 📋 COMMAND PET 」❏\n╰─━━━━━━━━━━━━━━─\n\n${commandText}\n\n─━━━━━━━━━━━━━━─`,
     reply: text => safeReply(text)

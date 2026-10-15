@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -116,7 +116,7 @@ if (mode === 'guide') {
 }
 
 if (mode === 'command') {
-  return m.reply(
+  const fallbackText =
     `╭─❏「 📋 MALL COMMAND 」❏\n` +
     `│ 📋 *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -133,11 +133,30 @@ if (mode === 'command') {
     `📌 *KATEGORI TERSEDIA*\n` +
     `> ↳ ${Object.keys(MALL_CATEGORIES).join(', ')}\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  const rows = [
+    { title: '🗂️ Jelajahi kategori', description: 'Pilih jenis barang yang ingin dicari', id: `${prefix}mall kategori` },
+    { title: '🔎 Cari barang', description: 'Telusuri item berdasarkan kategori dan nama', id: `${prefix}mall` },
+    { title: '🛍️ Beli barang', description: 'Pilih barang untuk melengkapi petualanganmu', id: `${prefix}mall beli` },
+    { title: '💰 Jual barang', description: 'Tukar barang milikmu menjadi uang', id: `${prefix}mall jual` },
+    { title: '🏷️ Penawaran diskon', description: 'Lihat barang pilihan dengan harga spesial', id: `${prefix}mall diskon` },
+    { title: '🌟 Promo harian', description: 'Temukan penawaran yang berganti setiap hari', id: `${prefix}mall harian` },
+    { title: '🔥 Barang populer', description: 'Lihat item yang sedang diminati pemain', id: `${prefix}mall populer` }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🛍️ AVELIA MALL',
+    subtitle: 'Pilih kategori atau layanan belanja',
+    text: 'Lengkapi perjalananmu dengan perlengkapan dan koleksi pilihan.',
+    buttonText: '🛍️ JELAJAHI MALL',
+    sections: [{ title: 'Layanan Mall', rows }],
+    fallbackText
+  })
 }
 
 if (mode === 'kategori') {
-  return m.reply(
+  const fallbackText =
     `╭─❏「 🗂️ KATEGORI MALL 」❏\n` +
     `│ 🗂️ *DAFTAR KATEGORI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -146,7 +165,26 @@ if (mode === 'kategori') {
       `> ↳ ${prefix}mall ${key} list`
     ).join('\n\n')}\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  const categoryRows = Object.entries(MALL_CATEGORIES).map(([key, value]) => ({
+    title: `${value.emoji} ${value.label}`,
+    description: `Temukan perlengkapan dalam kategori ${value.label.toLowerCase()}`,
+    id: `${prefix}mall ${key} list`
+  }))
+  const sections = Array.from({ length: Math.ceil(categoryRows.length / 10) }, (_, index) => ({
+    title: `Pilihan Mall ${index + 1}`,
+    rows: categoryRows.slice(index * 10, (index + 1) * 10)
+  }))
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🗂️ KATEGORI AVELIA MALL',
+    subtitle: 'Temukan perlengkapan sesuai kebutuhanmu',
+    text: 'Setiap rak menyimpan item untuk petualangan yang berbeda.',
+    buttonText: '🗂️ PILIH KATEGORI',
+    sections,
+    fallbackText
+  })
 }
 
 if (mode === 'diskon') {

@@ -149,23 +149,23 @@ if (mode === 'guide') {
        `─━━━━━━━━━━━━━━─`
      const prefix = usedPrefix || '.'
      const rows = [
-       { title: '🛒 Daftar item', description: 'Lihat barang yang tersedia', id: `${prefix}shop list` },
-       { title: '🪙 Beli item', description: 'Belanja item di shop', id: `${prefix}shop beli` },
-       { title: '💰 Jual barang', description: 'Jual item dari gudang', id: `${prefix}shop jual all` },
-       { title: '📖 Panduan toko', description: 'Pelajari alur toko RPG', id: `${prefix}shop guide` },
-       { title: '🏭 Pabrik', description: 'Command toko hasil mining', id: `${prefix}pabrik command` },
-       { title: '🐟 Pasar', description: 'Command penjualan hasil memancing', id: `${prefix}pasar command` },
-       { title: '🌾 Koperasi', description: 'Command toko hasil panen', id: `${prefix}koperasi command` },
-       { title: '🍽️ Restoran', description: 'Command toko hasil masakan', id: `${prefix}restoran command` }
+       { title: '🛍️ Jelajahi etalase', description: 'Temukan perlengkapan untuk petualanganmu', id: `${prefix}shop list` },
+       { title: '✨ Belanja kebutuhan', description: 'Pilih barang untuk memperkuat perjalanan', id: `${prefix}shop beli` },
+       { title: '📦 Tukar barang', description: 'Ubah stok yang tidak terpakai menjadi uang', id: `${prefix}shop jual all` },
+       { title: '🧭 Panduan belanja', description: 'Kenali alur toko dan tempat menjual hasil', id: `${prefix}shop guide` },
+       { title: '⛏️ Hasil tambang', description: 'Kelola material dan temuan dari ekspedisi', id: `${prefix}pabrik command` },
+       { title: '🐟 Hasil tangkapan', description: 'Jelajahi nilai ikan dan hasil pendakian', id: `${prefix}pasar command` },
+       { title: '🌾 Hasil kebun', description: 'Tukar panen menjadi bekal dan uang', id: `${prefix}koperasi command` },
+       { title: '🍽️ Sajian & masakan', description: 'Belanja hidangan atau jual hasil dapur', id: `${prefix}restoran command` }
      ]
      return sendRpgButtons(conn, {
        chat: m.chat,
        message: m,
        quoted: m,
-       title: '🛍️ MENU COMMAND SHOP',
-       subtitle: 'Pilih layanan toko RPG',
-       text: 'Pilih kebutuhanmu dari daftar berikut.',
-       buttonText: '🛍️ BUKA MENU SHOP',
+       title: '🛍️ PASAR AVELIA',
+       subtitle: 'Bekali petualangan lewat toko-toko Avelia',
+       text: 'Jelajahi perlengkapan, tukarkan hasil aktivitas, dan temukan penawaran.',
+       buttonText: '🛍️ JELAJAHI TOKO',
        sections: [{ title: 'Toko & layanan', rows }],
        fallbackText: cap
      })

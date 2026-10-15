@@ -7,7 +7,7 @@ import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
@@ -112,6 +112,17 @@ txt += userRPG.sel
 txt += `╰─━━━━━━━━━━━━━━─`
 txt += `\n\n${story}`
 
+if (!revivedHP && !deathProtected) {
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: txt,
+    footer: '',
+    buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
+    quoted: m,
+    mentions: [m.sender, who],
+    reply: text => conn.reply(m.chat, text, m, { mentions: [m.sender, who] })
+  })
+}
 return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
 

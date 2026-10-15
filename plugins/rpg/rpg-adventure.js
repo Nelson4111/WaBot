@@ -1,6 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
+import { sendRpgButtons, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -121,7 +122,15 @@ let handler = async (m, { conn, command }) => {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastAdventure)) / 1000)
     return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
   }
-  if (user.darah <= 10) return m.reply('❌ Darah terlalu rendah! Minum potion dulu')
+  if (user.darah <= 10) {
+    return sendRpgQuickButton(conn, m, {
+      title: '❤️ DARAH TERLALU RENDAH',
+      text: '❌ Darah terlalu rendah! Minum potion dulu',
+      buttonText: '💖 Gunakan Heal',
+      command: `${usedPrefix || '.'}heal`,
+      footer: ''
+    })
+  }
 
   let advLvl = user.adventureLevel || 1
   let swordLvl = user.sword || 0
@@ -241,6 +250,16 @@ if (bonus > 0) {
 
 cap += levelUpMsg
 
+  if (user.darah <= 0 && !revivedHP && !deathProtected) {
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      text: cap,
+      footer: '',
+      buffer: 'https://c.termai.cc/i166/r7V1',
+      buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
+      quoted: m
+    })
+  }
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')
 }
 

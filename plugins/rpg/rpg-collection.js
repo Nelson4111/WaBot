@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
@@ -103,7 +103,7 @@ if (mode === 'guide') {
 }
 
 if (mode === 'command') {
-  return m.reply(
+  const fallbackText =
     `╭─❏「 📋 COLLECTION COMMAND 」❏\n` +
     `│ 📋 *DAFTAR COMMAND*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -124,7 +124,41 @@ if (mode === 'command') {
     `🛒 *PEMBELIAN*\n` +
     `> ↳ Beli koleksi : ${prefix}mall koleksi list\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  const sections = [
+    {
+      title: '📚 Koleksi pribadimu',
+      rows: [
+        { title: '🎒 Lihat koleksi', description: 'Jelajahi semua koleksi yang kamu miliki', id: `${prefix}cl list` },
+        { title: '🔎 Detail item', description: 'Baca kisah dan informasi sebuah koleksi', id: `${prefix}cl info` },
+        { title: '🗂️ Kategori koleksi', description: 'Temukan koleksi berdasarkan kategorinya', id: `${prefix}cl kategori` },
+        { title: '⭐ Tandai favorit', description: 'Simpan item yang paling berkesan', id: `${prefix}cl favorite` },
+        { title: '🖼️ Etalase koleksi', description: 'Atur koleksi yang tampil di profil', id: `${prefix}cl showcase` },
+        { title: '🏆 Peringkat kolektor', description: 'Lihat para kolektor paling aktif', id: `${prefix}cl top` }
+      ]
+    },
+    {
+      title: '🎁 Berbagi & bertukar',
+      rows: [
+        { title: '👤 Koleksi pemain', description: 'Lihat koleksi milik pemain lain', id: `${prefix}cl` },
+        { title: '🎁 Hadiahkan item', description: 'Pilih koleksi untuk diberikan ke teman', id: `${prefix}cl hadiah` },
+        { title: '🔁 Ajukan pertukaran', description: 'Tukar koleksi dengan pemain lain', id: `${prefix}cl tukar` },
+        { title: '🤝 Terima pertukaran', description: 'Tanggapi tawaran tukar yang masuk', id: `${prefix}cl terima` },
+        { title: '✋ Tolak pertukaran', description: 'Tolak tawaran yang tidak sesuai', id: `${prefix}cl tolak` },
+        { title: '🛍️ Jelajahi Mall', description: 'Cari koleksi baru untuk melengkapi album', id: `${prefix}mall koleksi list` }
+      ]
+    }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '📚 GALERI KOLEKSI',
+    subtitle: 'Pilih cara untuk merawat koleksi dan berbagi',
+    text: 'Simpan kenangan, pamerkan item favorit, atau tukar koleksi dengan teman.',
+    buttonText: '📚 BUKA GALERI',
+    sections,
+    fallbackText
+  })
 }
 
 if (mode === 'kategori') {

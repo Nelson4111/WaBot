@@ -1,3 +1,4 @@
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { addRpgExp, getUserRPG, loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
@@ -92,7 +93,8 @@ const handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata }) =>
   const mount = getUserMount(user)
   const team = findTeamForUser(teams, senderJid)
 
-const showCommands = () => m.reply(
+const showCommands = () => {
+  const fallbackText =
   `╭─❏「 ⛰️ MOUNT COMMAND 」❏\n` +
   `│ 📌 *DAFTAR COMMAND*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -121,7 +123,52 @@ const showCommands = () => m.reply(
   `🛠️ *OWNER / CO-OWNER*\n` +
   `> ↳ ${usedPrefix}mt done <nama/nomor> — Hapus request (owner/co-owner)\n\n` +
   `─━━━━━━━━━━━━━━─`
-)
+  const sections = [
+    {
+      title: '⛰️ Persiapan pendakian',
+      rows: [
+        { title: '📋 Pilih gunung', description: 'Bandingkan jalur dan destinasi pendakian', id: `${usedPrefix}mt list` },
+        { title: '🔎 Detail gunung', description: 'Kenali medan sebelum menentukan tujuan', id: `${usedPrefix}mt detail` },
+        { title: '🧭 Atur destinasi', description: 'Pilih puncak yang ingin kamu daki', id: `${usedPrefix}mt pilih` },
+        { title: '🧍 Mode solo', description: 'Siapkan perjalanan pendakian seorang diri', id: `${usedPrefix}mt solo` },
+        { title: '👥 Bentuk tim', description: 'Buat rombongan untuk mendaki bersama', id: `${usedPrefix}mt team create` },
+        { title: '🤝 Gabung tim', description: 'Temukan teman untuk ekspedisi bersama', id: `${usedPrefix}mt team join` },
+        { title: '🥾 Mulai pendakian', description: 'Berangkat setelah destinasi siap dipilih', id: `${usedPrefix}mt start` }
+      ]
+    },
+    {
+      title: '📊 Profil & perjalanan',
+      rows: [
+        { title: '📍 Status pendakian', description: 'Cek destinasi dan kesiapan perjalanan', id: `${usedPrefix}mt status` },
+        { title: '⏰ Waktu istirahat', description: 'Periksa cooldown sebelum mendaki lagi', id: `${usedPrefix}mt cd` },
+        { title: '🪪 Profil pendaki', description: 'Lihat pencapaian dan statistikmu', id: `${usedPrefix}mt profile` },
+        { title: '📜 Riwayat ekspedisi', description: 'Kenang perjalanan yang telah ditempuh', id: `${usedPrefix}mt history` },
+        { title: '🏆 Papan pendaki', description: 'Lihat para penakluk puncak teratas', id: `${usedPrefix}mt top` },
+        { title: '📖 Panduan ekspedisi', description: 'Pelajari aturan dan alur pendakian', id: `${usedPrefix}mt guide` },
+        { title: '💡 Ajukan gunung', description: 'Usulkan destinasi baru untuk Avelia', id: `${usedPrefix}mt request` }
+      ]
+    },
+    {
+      title: '🧑‍🤝‍🧑 Kelola tim',
+      rows: [
+        { title: '👥 Info tim', description: 'Lihat anggota dan kesiapan tim', id: `${usedPrefix}mt team info` },
+        { title: '🚶 Keluar dari tim', description: 'Atur ulang rencana pendakianmu', id: `${usedPrefix}mt team leave` },
+        { title: '🗂️ Daftar permintaan', description: 'Lihat usulan destinasi pendaki', id: `${usedPrefix}mt request` }
+      ]
+    }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '⛰️ PETUALANGAN MUNCAK',
+    subtitle: 'Persiapkan langkah menuju puncak berikutnya',
+    text: 'Pilih destinasi, susun tim, lalu ukir kisah pendakianmu.',
+    buttonText: '⛰️ JELAJAHI MENU MUNCAK',
+    sections,
+    fallbackText
+  })
+}
 
 if (!action || action === 'command' || action === 'commands') return showCommands()
 

@@ -1,3 +1,4 @@
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import guildMissionHandler from './rpg-misiguild.js'
@@ -82,39 +83,57 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     .join('\n')
 
   if (action === 'command') {
-    const commands = [
-      `${usedPrefix}guild`,
-      `${usedPrefix}guild create <nama>`,
-      `${usedPrefix}guild list`,
-      `${usedPrefix}guild top`,
-      `${usedPrefix}guild donate <jumlah>`,
-      `${usedPrefix}guild loot`,
-      `${usedPrefix}guild loot take`,
-      `${usedPrefix}guild loot list`,
-      `${usedPrefix}guild loot collect`,
-      `${usedPrefix}guild status`,
-      `${usedPrefix}guild storage`,
-      `${usedPrefix}guild storage add/take <item> <jumlah>`,
-      `${usedPrefix}guild command`,
-      `${usedPrefix}guild guide`,
-      `${usedPrefix}guild join <nama>`,
-      `${usedPrefix}guild leave`,
-      `${usedPrefix}guild kick @member`,
-      `${usedPrefix}guild misi [nomor] (atau mission/list)`,
-      `${usedPrefix}guild party (atau pesta)`,
-      `${usedPrefix}guild latihan (atau training)`,
-      `${usedPrefix}guild shop`,
-      `${usedPrefix}guild war @tag/acak/terima/tolak`,
-      `${usedPrefix}joinguild <nama> (alias lama)`,
-      `${usedPrefix}leaveguild (alias lama)`,
-      `${usedPrefix}kickguild @member (alias lama)`,
-      `${usedPrefix}misiguild [nomor] (alias lama)`,
-      `${usedPrefix}pestaguild (alias lama)`,
-      `${usedPrefix}latihanguild (alias lama)`,
-      `${usedPrefix}guildshop (alias lama)`,
-      `${usedPrefix}guildwar @tag/acak (alias lama)`
+    const sections = [
+      {
+        title: '🏰 Guild & anggota',
+        rows: [
+          { title: '🏰 Markas guild', description: 'Buka informasi guild dan keanggotaanmu', id: `${usedPrefix}guild` },
+          { title: '✨ Dirikan guild', description: 'Bentuk komunitas dan tentukan namanya', id: `${usedPrefix}guild create` },
+          { title: '🗺️ Cari guild', description: 'Jelajahi guild yang membuka keanggotaan', id: `${usedPrefix}guild list` },
+          { title: '🤝 Gabung guild', description: 'Ajukan diri untuk bergabung ke sebuah guild', id: `${usedPrefix}guild join` },
+          { title: '🚶 Keluar guild', description: 'Tinggalkan guild yang sedang diikuti', id: `${usedPrefix}guild leave` },
+          { title: '📊 Status guild', description: 'Periksa kondisi dan perkembangan guild', id: `${usedPrefix}guild status` },
+          { title: '🏆 Peringkat guild', description: 'Lihat guild unggulan di Avelia', id: `${usedPrefix}guild top` },
+          { title: '📖 Panduan guild', description: 'Kenali aturan dan fitur guild', id: `${usedPrefix}guild guide` }
+        ]
+      },
+      {
+        title: '⚔️ Misi & aktivitas',
+        rows: [
+          { title: '🧭 Misi guild', description: 'Pilih misi untuk dikerjakan bersama', id: `${usedPrefix}guild misi` },
+          { title: '🎉 Pesta guild', description: 'Bangun kebersamaan lewat aktivitas pesta', id: `${usedPrefix}guild party` },
+          { title: '🏋️ Latihan guild', description: 'Tingkatkan kesiapan tim bersama anggota', id: `${usedPrefix}guild latihan` },
+          { title: '⚔️ Tantang guild', description: 'Mulai atau tanggapi perang antarguild', id: `${usedPrefix}guild war` },
+          { title: '🛍️ Toko guild', description: 'Belanja perlengkapan khusus guild', id: `${usedPrefix}guild shop` },
+          { title: '💰 Donasi guild', description: 'Sumbangkan dana untuk kebutuhan bersama', id: `${usedPrefix}guild donate` },
+          { title: '🥇 Ambil hasil loot', description: 'Klaim hadiah yang tersedia untukmu', id: `${usedPrefix}guild loot take` }
+        ]
+      },
+      {
+        title: '📦 Harta & pengelolaan',
+        rows: [
+          { title: '🎁 Lihat loot', description: 'Periksa hadiah dan hasil aktivitas guild', id: `${usedPrefix}guild loot` },
+          { title: '🗃️ Gudang guild', description: 'Lihat penyimpanan bersama guild', id: `${usedPrefix}guild storage` },
+          { title: '📜 Perintah lengkap', description: 'Kembali ke daftar fitur guild', id: `${usedPrefix}guild command` },
+          { title: '🛡️ Kelola anggota', description: 'Keluarkan anggota sesuai hak akses', id: `${usedPrefix}guild kick` }
+        ]
+      }
     ]
-    return m.reply(`╭─❏「 📜 GUILD COMMAND 」❏\n${commands.map(value => `│ ${value}`).join('\n')}\n╰─━━━━━━━━━━━━━━─`)
+    const fallbackText = `╭─❏「 📜 GUILD COMMAND 」❏\n` +
+      `│ Gunakan *${usedPrefix}guild* untuk membuka markas.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      sections.flatMap(section => section.rows.map(row => `> ${row.title}: *${row.id}* — ${row.description}`)).join('\n')
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🏰 GUILD AVELIA',
+      subtitle: 'Bangun kekuatan bersama komunitasmu',
+      text: 'Kelola anggota, jalankan misi, dan kumpulkan kejayaan bersama guild.',
+      buttonText: '🏰 JELAJAHI GUILD',
+      sections,
+      fallbackText
+    })
   }
 
   if (action === 'guide') {

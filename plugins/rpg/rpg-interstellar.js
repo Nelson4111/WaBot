@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   INTERSTELLAR_ITEMS,
@@ -77,7 +77,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   }
 
   if (mode === 'command') {
-    return m.reply(
+    const fallbackText =
       `╭─❏「 📋 INTERSTELLAR COMMAND 」❏\n` +
       `│ 📋 *DAFTAR COMMAND*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -91,7 +91,27 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `> ↳ *${prefix}int top* — lihat pemilik Stellar Credit terbanyak\n` +
       `> ↳ *${prefix}int guide* — panduan Interstellar\n\n` +
       `─━━━━━━━━━━━━━━─`
-    )
+    const rows = [
+      { title: '🌌 Jelajahi planet', description: 'Temukan planet, item, dan petualangan baru', id: `${prefix}explore` },
+      { title: '🎒 Tas antarbintang', description: 'Lihat item yang berhasil kamu kumpulkan', id: `${prefix}invst` },
+      { title: '💠 Saldo Stellar Credit', description: 'Periksa mata uang antarbintangmu', id: `${prefix}intercred` },
+      { title: '🎁 Kirim Stellar Credit', description: 'Berbagi saldo dengan pemain lain', id: `${prefix}int gift sc` },
+      { title: '💰 Jual semua item', description: 'Tukar seluruh hasil jelajah menjadi kredit', id: `${prefix}int sell all` },
+      { title: '🪐 Daftar planet', description: 'Pilih dunia yang ingin kamu kenali', id: `${prefix}int planet` },
+      { title: '🏆 Peringkat kredit', description: 'Lihat penjelajah dengan saldo tertinggi', id: `${prefix}int top` },
+      { title: '📖 Panduan antarbintang', description: 'Pelajari sistem Interstellar', id: `${prefix}int guide` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🌌 INTERSTELLAR',
+      subtitle: 'Pilih perjalananmu di antara bintang',
+      text: 'Jelajahi dunia baru, kumpulkan relik, dan bangun kekayaan Stellar Credit.',
+      buttonText: '🌌 BUKA MENU ANTARBINTANG',
+      sections: [{ title: 'Ekspedisi antarbintang', rows }],
+      fallbackText
+    })
   }
 
   if (mode === 'planet') {

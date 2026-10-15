@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { hargaBeli as MENU_RESTAURAN, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -432,7 +432,7 @@ if (automaticCharges.length) {
 }
 
 if (action === 'command' || action === 'commands' || action === 'cmd') {
-  return m.reply(`─━━ 📋 DAFTAR COMMAND BANK ━━─
+  const fallbackText = `─━━ 📋 DAFTAR COMMAND BANK ━━─
 
 ◈ 💳 INFORMASI KARTU ◈
 > *.bank* - Lihat saldo dan informasi kartu
@@ -472,7 +472,56 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
 ─━━━━━━━━━─
 ◈ 📊 LAINNYA ◈
-> *.bank riwayat* - Lihat riwayat transaksi`)
+> *.bank riwayat* - Lihat riwayat transaksi`
+  const sections = [
+    {
+      title: '💳 Kartu & saldo',
+      rows: [
+        { title: '💳 Ringkasan kartu', description: 'Cek saldo dan informasi kartu bank', id: `${usedPrefix}bank` },
+        { title: '📊 Detail fasilitas', description: 'Lihat rincian saldo dan layanan kartu', id: `${usedPrefix}bank info` },
+        { title: '🪪 Pilih kartu', description: 'Jelajahi tier dan pilihan kartu bank', id: `${usedPrefix}bank kartu` },
+        { title: '✨ Fasilitas kartu', description: 'Temukan benefit yang tersedia untukmu', id: `${usedPrefix}bank benefit` },
+        { title: '🔐 Vault pribadi', description: 'Lihat barang yang tersimpan di Vault', id: `${usedPrefix}bank vault list` },
+        { title: '🎒 Akses Vault', description: 'Kelola barang di Vault pribadi', id: `${usedPrefix}vault list` },
+        { title: '📜 Riwayat transaksi', description: 'Telusuri transaksi bank terakhirmu', id: `${usedPrefix}bank riwayat` },
+        { title: '📋 Menu command bank', description: 'Kembali melihat seluruh layanan bank', id: `${usedPrefix}bank command` }
+      ]
+    },
+    {
+      title: '💰 Transaksi',
+      rows: [
+        { title: '📥 Simpan uang', description: 'Setorkan uang saku ke rekening bank', id: `${usedPrefix}bank simpan` },
+        { title: '📤 Tarik uang', description: 'Pindahkan saldo bank ke uang saku', id: `${usedPrefix}bank tarik` },
+        { title: '🔄 Transfer saldo', description: 'Kirim uang kepada pemain lain', id: `${usedPrefix}bank tf` },
+        { title: '🤝 Ajukan pinjaman', description: 'Ajukan pinjaman sesuai kelayakan kartu', id: `${usedPrefix}bank pinjam` },
+        { title: '✅ Bayar pinjaman', description: 'Lunasi kewajiban pinjaman bank', id: `${usedPrefix}bank bayar` },
+        { title: '🧾 Tagihan bulanan', description: 'Periksa dan bayar tagihan yang jatuh tempo', id: `${usedPrefix}bank bulanan` },
+        { title: '⚡ Simpan semua', description: 'Setorkan seluruh uang saku jika memenuhi syarat', id: `${usedPrefix}bank all` }
+      ]
+    },
+    {
+      title: '💬 Layanan & fasilitas',
+      rows: [
+        { title: '🆘 Bantuan CS', description: 'Minta bantuan terkait saldo atau layanan', id: `${usedPrefix}bank cs bantuan` },
+        { title: '🔎 Analisis CS', description: 'Dapatkan analisis fasilitas kartu yang tersedia', id: `${usedPrefix}bank cs analisis` },
+        { title: '🍽️ F&B kartu', description: 'Klaim fasilitas makanan dan minuman', id: `${usedPrefix}bank fnb` },
+        { title: '🤖 Banking Manager', description: 'Atur target dan otomatisasi tabungan', id: `${usedPrefix}bank asisten` },
+        { title: '🎯 Target tabungan', description: 'Tentukan target saldo pribadi', id: `${usedPrefix}bank asisten target` },
+        { title: '🔔 Pengingat tabungan', description: 'Kelola pengingat dari asisten bank', id: `${usedPrefix}bank asisten pengingat` }
+      ]
+    }
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🏦 BANK AVELIA',
+    subtitle: 'Pilih layanan finansial yang kamu butuhkan',
+    text: 'Kelola saldo, kartu, transaksi, dan fasilitas bank dalam satu tempat.',
+    buttonText: '🏦 BUKA LAYANAN BANK',
+    sections,
+    fallbackText
+  })
 }
 
   if (action === 'fnb' && args[1]?.toLowerCase() === 'list') {

@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -130,7 +130,41 @@ let handler = async (m, { conn, text = '', usedPrefix }) => {
     )
   }
 
-  if (mode === 'guide' || mode === 'command' || mode === 'commands' || mode === 'cmd') {
+  if (['command', 'commands', 'cmd'].includes(mode)) {
+    const rows = [
+      { title: '🧬 Jelajahi SC Core', description: 'Temukan tipe dan tingkat kelangkaan core', id: `${prefix}evx core list` },
+      { title: '🔎 Cari SC Core', description: 'Temukan core berdasarkan nama atau kategori', id: `${prefix}evx core search` },
+      { title: '📖 Detail kemampuan', description: 'Pelajari efek sebuah core sebelum memilih', id: `${prefix}evx core info` },
+      { title: '✨ Pasang SC Core', description: 'Tambahkan kemampuan pasif ke profil RPG', id: `${prefix}evx core install` },
+      { title: '🗑️ Lepas SC Core', description: 'Kelola core yang sudah terpasang', id: `${prefix}evx core uninstall` },
+      { title: '✅ Konfirmasi pemasangan', description: 'Selesaikan atau batalkan pemasangan core', id: `${prefix}evx core install ya` },
+      { title: '📦 Core terpasang', description: 'Lihat kemampuan yang aktif pada profilmu', id: `${prefix}evx body` },
+      { title: '📊 Statistik Evonexus', description: 'Tinjau progres dan resonansi antarbintang', id: `${prefix}evx info` },
+      { title: '🧭 Panduan Evonexus', description: 'Pelajari cara mengembangkan SC Core', id: `${prefix}evx guide` }
+    ]
+    const fallbackText = `╭─❏「 📋 EVONEXUS 」❏\n` +
+      `> ${prefix}evx core list — jelajahi tipe dan rarity\n` +
+      `> ${prefix}evx core search <nama> — cari SC Core\n` +
+      `> ${prefix}evx core info <tipe/tier> <nomor/nama> — detail\n` +
+      `> ${prefix}evx core install <tipe/tier> <nomor/nama> — pasang\n` +
+      `> ${prefix}evx core uninstall <nama> — lepas\n` +
+      `> ${prefix}evx body — core terpasang\n` +
+      `> ${prefix}evx info — statistik\n` +
+      `> ${prefix}evx guide — panduan\n╰─━━━━━━━━━━━━━━─`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🧬 EVONEXUS',
+      subtitle: 'Bangkitkan potensi melalui SC Core',
+      text: 'Pilih core, kenali kemampuannya, lalu sesuaikan dengan gaya bermainmu.',
+      buttonText: '🧬 JELAJAHI EVONEXUS',
+      sections: [{ title: 'Pengembangan SC Core', rows }],
+      fallbackText
+    })
+  }
+
+  if (mode === 'guide') {
     return m.reply(
       `╭─❏「 📖 EVONEXUS GUIDE 」❏\n` +
       `│ *PANDUAN EVONEXUS*\n` +

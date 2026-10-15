@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -232,14 +232,29 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   if (tipe === 'command') {
-    const cap = `╭─❏「 📋 COMMAND PASAR 」❏\n` +
+    const fallbackText = `╭─❏「 📋 COMMAND PASAR 」❏\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ${usedPrefix}pasar list\n` +
       `> ${usedPrefix}pasar jual <no/nama> <jumlah/all>\n` +
       `> ${usedPrefix}pasar jual all\n` +
       `> ${usedPrefix}pasar guide\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    const rows = [
+      { title: '🐟 Hasil tangkapan', description: 'Lihat ikan, hasil mancing, dan harga jual', id: `${usedPrefix}pasar list` },
+      { title: '🎣 Jual hasil mancing', description: 'Pilih item untuk ditukar menjadi uang', id: `${usedPrefix}pasar jual` },
+      { title: '📦 Jual seluruh stok', description: 'Jual semua ikan dan sampah pendakian', id: `${usedPrefix}pasar jual all` },
+      { title: '🎣 Mulai memancing', description: 'Kumpulkan tangkapan baru untuk dijual', id: `${usedPrefix}mancing` },
+      { title: '📖 Panduan pasar', description: 'Pelajari harga dan cara menjual hasil', id: `${usedPrefix}pasar guide` }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat, message: m, quoted: m,
+      title: '🐟 PASAR AVELIA',
+      subtitle: 'Jual hasil tangkapan dan jelajahi harga',
+      text: 'Pilih ikan atau hasil pendakian yang ingin kamu perdagangkan.',
+      buttonText: '🐟 BUKA PASAR',
+      sections: [{ title: 'Hasil memancing', rows }],
+      fallbackText
+    })
   }
 
   if (tipe === 'guide') {

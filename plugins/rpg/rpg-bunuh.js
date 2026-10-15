@@ -7,7 +7,7 @@ import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
@@ -114,6 +114,17 @@ let handler = async (m, { conn, usedPrefix }) => {
       : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
     txt += `╰─━━━━━━━━━━━━━━─`
     txt += `\n\n${story}`
+    if (!revivedHP && !deathProtected && userRPG.darah !== undefined) {
+      return sendRpgButtons(conn, {
+        chat: m.chat,
+        text: txt,
+        footer: '',
+        buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
+        quoted: m,
+        mentions: [m.sender, who],
+        reply: text => conn.reply(m.chat, text, m, { mentions: [m.sender, who] })
+      })
+    }
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
@@ -163,7 +174,18 @@ txt += targetRevived
   ? `♻️ *TARGET BANGKIT KEMBALI!*\n> ↳ Bloodline Phoenix memulihkan target dengan ${targetRevived} HP.`
   : `⚰️ *TARGET MATI!*\n> ↳ Harus *heal* terlebih dahulu.`
 
-conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+if (!targetRevived && target.darah !== undefined) {
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: txt,
+    footer: '',
+    buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
+    quoted: m,
+    mentions: [m.sender, who],
+    reply: text => conn.reply(m.chat, text, m, { mentions: [m.sender, who] })
+  })
+}
+return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
 
 handler.help = ['bunuh (reply)']

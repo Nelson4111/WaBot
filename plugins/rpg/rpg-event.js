@@ -1,3 +1,4 @@
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { EVENT_SCHEDULE, findRpgEvent, findRpgEventCategory, findRpgEventScheduleDay, getActiveRpgEvents, getRpgEventCategories, getRpgEventScheduleDayForNow, getRpgEventScheduleForNow, RPG_EVENTS } from '../../lib/rpgEvents.js'
 
 const durationUnits = {
@@ -140,7 +141,7 @@ function commandList(prefix) {
     `> ${prefix}ev terminate Casino`
 }
 
-let handler = async (m, { args, text = '', usedPrefix, isOwner }) => {
+let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
   const prefix = usedPrefix || '.'
   const root = String(args[0] || '').toLowerCase()
   const now = Date.now()
@@ -230,7 +231,29 @@ let handler = async (m, { args, text = '', usedPrefix, isOwner }) => {
   }
 
   if (root === 'command' || root === 'commands' || root === 'cmd') {
-    return m.reply(commandList(prefix))
+    const rows = [
+      { title: '🌟 Event berlangsung', description: 'Lihat event yang sedang aktif di Avelia', id: `${prefix}ev active` },
+      { title: '🗂️ Jelajahi event', description: 'Telusuri kategori dan daftar event', id: `${prefix}ev list` },
+      { title: '🗓️ Jadwal event', description: 'Cari event berdasarkan hari tertentu', id: `${prefix}ev jadwal` },
+      { title: '🔎 Detail event', description: 'Pelajari efek dan status event pilihan', id: `${prefix}ev info` },
+      { title: '⏳ Countdown event', description: 'Cek waktu tersisa untuk event aktif', id: `${prefix}ev cd` },
+      { title: '📖 Panduan event', description: 'Kenali cara kerja event RPG', id: `${prefix}ev guide` },
+      ...(isOwner ? [
+        { title: '🚀 Luncurkan event', description: 'Aktifkan event untuk durasi tertentu', id: `${prefix}ev launch` },
+        { title: '🛑 Hentikan event', description: 'Kelola event yang sedang berlangsung', id: `${prefix}ev terminate` }
+      ] : [])
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🌟 EVENT RPG AVELIA',
+      subtitle: 'Pilih kisah yang ingin kamu jelajahi',
+      text: 'Ikuti event aktif, lihat jadwal, dan temukan efek spesialnya.',
+      buttonText: '🌟 JELAJAHI EVENT',
+      sections: [{ title: 'Pusat event', rows }],
+      fallbackText: commandList(prefix)
+    })
   }
 
   if (root === 'list') {

@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -74,7 +74,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   jml = quantity > 0 ? quantity : 1
 
   if (sub === 'command' || sub === 'commands' || sub === 'cmd') {
-    return safeReply(
+    const fallbackText =
       `╭─❏「 📋 TERNAK COMMAND 」❏\n` +
       `│ 📌 *PERINTAH TERNAK*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -94,7 +94,43 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       `> ↳ *.icu* atau *.icu auto*\n\n` +
 
       `─━━━━━━━━━━━━━━─`
-    )
+    const prefix = usedPrefix || '.'
+    const sections = [
+      {
+        title: '🐄 Rawat peternakan',
+        rows: [
+          { title: '🏡 Kondisi kandang', description: 'Lihat ringkasan ternak yang kamu rawat', id: `${prefix}ternak kandang` },
+          { title: '🐾 Daftar hewan', description: 'Jelajahi hewan dan jumlah yang dimiliki', id: `${prefix}ternak list` },
+          { title: '🧬 Temukan hybrid', description: 'Lihat kombinasi hewan langka yang ditemukan', id: `${prefix}ternak hybrid` },
+          { title: '🛒 Beli hewan', description: 'Pilih hewan baru untuk mengisi kandang', id: `${prefix}ternak beli` },
+          { title: '🥚 Ambil hasil', description: 'Kumpulkan hasil ternak yang siap dipanen', id: `${prefix}ternak ambil` },
+          { title: '🔪 Sembelih hewan', description: 'Tukar hewan pilihan menjadi bahan', id: `${prefix}ternak sembelih` },
+          { title: '💰 Jual hasil ternak', description: 'Dapatkan uang dari hasil peternakan', id: `${prefix}ternak jual` },
+          { title: '📊 Status ternak', description: 'Lihat keadaan dan aktivitas kandang', id: `${prefix}ternak status` }
+        ]
+      },
+      {
+        title: '🧬 Kawin & perawatan',
+        rows: [
+          { title: '💕 Kawinkan hewan', description: 'Pilih pasangan ternak untuk dikawinkan', id: `${prefix}kawin` },
+          { title: '⏳ Proses perkawinan', description: 'Periksa perkembangan kawin ternak', id: `${prefix}kawin proses` },
+          { title: '🛑 Batalkan perkawinan', description: 'Hentikan proses perkawinan yang berjalan', id: `${prefix}kawin batal` },
+          { title: '🏥 Perawatan ICU', description: 'Rawat hewan yang membutuhkan perhatian khusus', id: `${prefix}icu` },
+          { title: '⚡ ICU otomatis', description: 'Atur perawatan otomatis untuk ternak', id: `${prefix}icu auto` }
+        ]
+      }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🐄 DUNIA PETERNAKAN',
+      subtitle: 'Rawat ternak dan temukan hasil istimewa',
+      text: 'Kembangkan kandangmu, kumpulkan hasil, dan temukan hybrid langka.',
+      buttonText: '🐄 JELAJAHI PETERNAKAN',
+      sections,
+      fallbackText
+    })
   }
 
   if (sub === 'peternakan' || sub === 'status') {

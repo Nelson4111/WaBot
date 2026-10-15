@@ -437,9 +437,30 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
     `${getPluginCommandLines('rpg', usedPrefix)}\n\n` +
     `─━━━━━━━━━━━━━━─`
 
+  const panelCategoryDescriptions = {
+    GLOBAL: 'Pantau kondisi dunia RPG dan ringkasan aktivitas.',
+    'USER STAT': 'Tinjau profil, status, dan perkembangan pemain.',
+    LEADERBOARD: 'Temukan pemain teratas dan pencapaian terbesar.',
+    INVENTORY: 'Kelola isi tas dan kepemilikan item pemain.',
+    GUDANG: 'Atur stok, material, dan ruang penyimpanan.',
+    TERNAK: 'Tinjau kandang dan koleksi hewan pemain.',
+    PERTANIAN: 'Pantau kebun, panen, dan hasil pertanian.',
+    ADVENTURE: 'Kelola perjalanan, dungeon, dan eksplorasi.',
+    BANK: 'Atur saldo, kartu, dan transaksi perbankan.',
+    EVONEXUS: 'Tinjau sistem SC Core dan progres antarbintang.',
+    MALL: 'Kelola barang, kategori, dan penawaran toko.',
+    HOME: 'Atur rumah, penghuni, dekorasi, dan kunjungan.',
+    AUCTION: 'Pantau lelang, bid, dan hadiah pemain.',
+    RSHIP: 'Kelola pasangan, keluarga, serta aktivitas sosial.',
+    'CSM PANEL': 'Atur data dan progres dunia Chainsawman.',
+    'MODERASI & RESET': 'Tinjau tindakan moderasi dan pengelolaan data.',
+    'UPDATE RPG': 'Lihat pembaruan dan fitur terbaru RPG.',
+    ADMIN: 'Kelola akses, limit, dan pengumuman bot.',
+    'RPG COMMANDS': 'Jelajahi daftar fitur RPG yang tersedia.'
+  }
   const panelCategoryRows = RPG_PANEL_CATEGORIES.map(({ title, aliases }) => ({
     title: title.length > 24 ? title.slice(0, 24) : title,
-    description: `Buka kategori ${title.toLowerCase()}`,
+    description: panelCategoryDescriptions[title],
     id: `${usedPrefix}${command || 'rpgpanel'} ${aliases[0]}`
   }))
   const panelCategorySections = Array.from(
@@ -458,40 +479,50 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
     ).join('\n') +
     `\n\n> ↳ Semua kategori: ${usedPrefix}rp all`
 
+  const sendPanelCategoryMenu = async () => {
+    let result
+    try {
+      result = await sendRpgButtons(conn, {
+        chat: responseChat,
+        message: sourceMessage,
+        quoted: sourceMessage,
+        title: '👑 KATEGORI RPG PANEL',
+        subtitle: 'Pilih kategori panel owner',
+        text: 'Setiap fitur panel sudah dirapikan ke dalam kategori.',
+        buttonText: '👑 JELAJAHI KATEGORI',
+        sections: panelCategorySections,
+        fallbackText: panelCategoryFallback,
+        reply: text => m.reply(text),
+        ...(isPrivateRpgPanel ? {
+          sendInteractive: playerMessage => {
+            const playerJid = conn.decodeJid
+              ? conn.decodeJid(sourceMessage.sender)
+              : sourceMessage.sender
+            const playerNumber = String(playerJid || '').split('@')[0]
+            return sendDualGroupMessage(
+              conn,
+              responseChat,
+              playerJid,
+              playerMessage,
+              `> 🔒 Balasan RPG khusus untuk @${playerNumber}.`,
+              { contextInfo: { mentionedJid: [playerJid] } }
+            )
+          }
+        } : {})
+      })
+    } catch (error) {
+      console.error('[RPG-PANEL] Gagal mengirim menu kategori:', error?.message || error)
+      return m.reply('⚠️ Menu RPG Panel gagal dikirim. Coba lagi sebentar.')
+    }
+    return result
+  }
+
   if (['command', 'commands', 'cmd'].includes(aksi)) {
-    if (isPrivateRpgPanel) return m.reply(panelCategoryFallback)
-    return sendRpgButtons(conn, {
-      chat: m.chat,
-      message: m,
-      quoted: m,
-      title: '👑 MENU COMMAND RPG PANEL',
-      subtitle: 'Pilih kategori panel owner',
-      text: 'Buka kategori panel.',
-      buttonText: '👑 PILIH KATEGORI PANEL',
-      sections: panelCategorySections,
-      fallbackText: panelCategoryFallback,
-      reply: text => m.reply(text)
-    })
+    return sendPanelCategoryMenu()
   }
 
   if (!aksi || ['kategori', 'categories'].includes(aksi)) {
-    if (String(command || '').toLowerCase() !== 'rp') {
-      return sendRpgButtons(conn, {
-        chat: m.chat,
-        message: m,
-        quoted: m,
-        title: '👑 KATEGORI RPG PANEL',
-        subtitle: 'Pilih kategori panel owner',
-        text: 'Semua fitur panel owner.',
-        buttonText: '👑 PILIH KATEGORI',
-        sections: panelCategorySections,
-        fallbackText: panelCategoryFallback,
-        reply: text => m.reply(text)
-      })
-    }
-    return m.reply(
-      panelCategoryFallback
-    )
+    return sendPanelCategoryMenu()
   }
 
   if (aksi === 'all' && rawArgs.length === 1) return m.reply(panelText)
