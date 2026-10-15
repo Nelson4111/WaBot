@@ -6,14 +6,17 @@ import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown,
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgHealPrompt, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
   if (!userRPG) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG')
   const actorRestriction = getCrimeRestriction(userRPG)
-  if (actorRestriction) return m.reply(actorRestriction)
+  if (actorRestriction) {
+    if (actorRestriction.includes('.heal')) return sendRpgHealPrompt(conn, m, { text: actorRestriction, usedPrefix })
+    return m.reply(actorRestriction)
+  }
   if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
   // CEK PENJARA
@@ -50,7 +53,14 @@ let handler = async (m, { conn, usedPrefix }) => {
   if(!target) return m.reply('❌ Target belum punya data RPG')
   const targetRestriction = getCrimeRestriction(target, { target: true })
   if (targetRestriction) return m.reply(targetRestriction)
-  if (Number(target.darah) <= 0) return m.reply(`💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`)
+  if (Number(target.darah) <= 0) {
+    return sendRpgHealPrompt(conn, m, {
+      text: `💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`,
+      usedPrefix,
+      target: who,
+      mentions: [who]
+    })
+  }
   if(!target.riwayat) target.riwayat = []
 
   let uangTarget = wdb.money[who] || 0

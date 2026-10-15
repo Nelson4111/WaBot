@@ -2,6 +2,7 @@ import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah } from '../../lib/fitnahHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { sendRpgHealPrompt } from '../../lib/rpgActionButtons.js'
 
 /* =========================================================
    KONFIGURASI
@@ -180,12 +181,27 @@ Fitnah orang biar masuk penjara.
     let sender = resolveJid(m.sender)
     const senderRPG = getUserRPG(sender)
     const actorRestriction = getCrimeRestriction(senderRPG)
-    if (actorRestriction) return m.reply(actorRestriction)
+    if (actorRestriction) {
+        if (actorRestriction.includes('.heal')) {
+            return sendRpgHealPrompt(conn, m, { text: actorRestriction, usedPrefix })
+        }
+        return m.reply(actorRestriction)
+    }
 
     if (who === sender) return m.reply('❌ Kamu tidak bisa memfitnah diri sendiri.')
     const targetRPG = getUserRPG(who)
     const targetRestriction = getCrimeRestriction(targetRPG, { target: true })
-    if (targetRestriction) return m.reply(targetRestriction)
+    if (targetRestriction) {
+        if (Number(targetRPG?.darah) <= 0) {
+            return sendRpgHealPrompt(conn, m, {
+                text: targetRestriction,
+                usedPrefix,
+                target: who,
+                mentions: [who]
+            })
+        }
+        return m.reply(targetRestriction)
+    }
     if (cekPenjara(wdb, who)) return m.reply(`❌ @${who.split('@')[0]} sudah di penjara.`, undefined, { mentions: [who] })
 
     /* =====================================================

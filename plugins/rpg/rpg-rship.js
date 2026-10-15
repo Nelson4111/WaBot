@@ -3502,6 +3502,7 @@ Pemilihan *all* untuk anak hanya tersedia bagi pengguna premium.
     title: '⏰ CEK WAKTU AKTIVITAS ANAK',
     buttonText: '🕰️ Lihat Cooldown Anak',
     command: `${usedPrefix}rship kid cd`,
+    noThumbnail: true,
     text: `╭─❏「 ⚠️ ANAK TIDAK TERSEDIA 」❏
 │ 👶 STATUS PENGASUHAN
 ╰─━━━━━━━━━━━━━━─
@@ -3522,6 +3523,7 @@ Tidak ada anak yang dapat melakukan aktivitas saat ini.
       title: '⏰ AKTIVITAS ANAK MASIH ISTIRAHAT',
       buttonText: '🕰️ Cek Cooldown Anak',
       command: `${usedPrefix}rship kid cd`,
+      noThumbnail: true,
       text: `╭─❏「 ⚠️ AKTIVITAS BELUM TERSEDIA 」❏
 │ 👶 STATUS AKTIVITAS
 ╰─━━━━━━━━━━━━━━─

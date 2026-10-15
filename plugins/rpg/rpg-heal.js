@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { scaleDifficultyHealingCost } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 global.healRequests = global.healRequests || {}
 
@@ -109,7 +109,14 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     )
   }
 
-  const target = m.mentionedJid?.[0] || m.quoted?.sender
+  const targetInput = action.match(/^@?(\d{8,20})(?:@s\.whatsapp\.net)?$/)?.[1]
+  const target = m.mentionedJid?.[0] || (targetInput
+    ? [...new Set([
+        ...Object.keys(wdb.users || {}),
+        ...Object.keys(global.db?.data?.users || {})
+      ])].find(jid => String(jid).split('@')[0].split(':')[0].replace(/\D/g, '') === targetInput) ||
+      `${targetInput}@s.whatsapp.net`
+    : m.quoted?.sender || null)
 
   if (target) {
     if (target === m.sender) {
@@ -137,7 +144,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
       expire: Date.now() + RPG_CONFIRMATION_TTL
     }
 
-    return m.reply(
+    const requestText =
       `╭─❏「 🏥 HEAL REQUEST 」❏\n` +
       `│ 🏥 *PERMINTAAN HEAL*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -151,10 +158,22 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
       `> ↳ Biaya akan dibayar target jika diterima.\n` +
       `> ↳ Permintaan berlaku 5 menit.\n\n` +
 
-      `─━━━━━━━━━━━━━━─`,
-      null,
-      { mentions: [m.sender, target] }
-    )
+      `─━━━━━━━━━━━━━━─`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      text: requestText,
+      title: '🏥 TAWARAN PERAWATAN',
+      subtitle: 'Bantuan tersedia—pilih responsmu',
+      footer: 'AVELIA • RPG MEDICAL',
+      buttons: [
+        ['💖 Terima Perawatan', `${usedPrefix}${command} terima`],
+        ['🙏 Tolak dengan Baik', `${usedPrefix}${command} tolak`]
+      ],
+      quoted: m,
+      mentions: [m.sender, target],
+      preferV2: true,
+      reply: fallbackText => m.reply(fallbackText, null, { mentions: [m.sender, target] })
+    })
   }
 
   let user = getUserRPG(wdb, m.sender).rpg
