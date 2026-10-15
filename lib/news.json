@@ -638,5 +638,13 @@
     "content": "\u003e Cooldown aktivitas anak 30 menit; .kidcare merawat semua anak untuk Premium. Aktivitas Home memberi efek ke pasangan, anak, dan pet. Info anak dirapikan; anak hilang/kabur masuk shelter dan dapat dicoba retrieve. Tersedia .rship shelter/mantan/makam list serta panduan fitur. Anak asuh yang kabur kembali ke orang tua asal jika tersedia. Panel RPG dapat mengatur data relationship, anak, dan home. EXP dasar aktivitas pasangan diseragamkan, panduan gift disinkronkan, serta .rship command <all/kategori> dan .rship guide exp menampilkan kategori command dan reward pasangan, anak, serta home.",
     "author": "Eza",
     "createdAt": 1791963446119
+  },
+  {
+    "id": "14.1",
+    "section": "RPG",
+    "title": "Tombol Aksi RPG",
+    "content": "\u003e Menu RPG kini memakai daftar tombol; notifikasi heal dan cooldown anak menyediakan tombol aksi langsung.",
+    "author": "Eza",
+    "createdAt": 1792075349000
   }
 ]
