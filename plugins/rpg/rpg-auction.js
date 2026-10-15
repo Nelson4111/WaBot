@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
@@ -759,44 +759,44 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 
 
   if (!mode || mode === 'list' || mode === 'daftar') {
-    return m.reply(
+    const rows = offers.map((item, index) => {
+      const highest = getVisibleHighestBid(db, session, item)
+      return {
+        title: `${index + 1}. ${item.emoji} ${item.name}`,
+        description: `Tertinggi ${money(highest.amount)} · bid cepat naik Rp 500.000`,
+        id: `${prefix}ah bid ${item.id}`
+      }
+    })
+    const fallbackText =
       `╭─❏「 🔨 AUCTION HOUSE 」❏\n` +
       `│ 🏛️ LELANG BERSAMA\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `💳 *Kartu Bank:* ${BANK_TIERS[Number(rpg.bankTier)]?.color || BANK_TIERS[0].color} ${BANK_TIERS[Number(rpg.bankTier)]?.name || BANK_TIERS[0].name}\n\n` +
-      `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh penjuru dunia berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
-      `─━━━━━━━━━━━━━━─\n` +
-      `🔨 *DAFTAR ITEM LELANG*\n\n` +
-      `${offers.map((item, index) => {
-        const highest = getVisibleHighestBid(db, session, item)
-        const leader = highest.jid
-          ? getAuctionBidderName(db, highest.jid)
-          : getAuctionRivalName(session, item.id)
-        return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
-          `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
-          `> ↳ Bid tertinggi: ${money(highest.amount)}\n` +
-          `> ↳ Pemimpin bid: ${leader}`
-      }).join('\n\n')}\n\n` +
-      `${groupAuctionNews.length ? `─━━━━━━━━━━━━━━─\n` +
-        `🏁 *HASIL LELANG TERAKHIR*\n\n` +
-        `${groupAuctionNews.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
-          `> ${entry.emoji} ${entry.itemName}\n` +
-          `> ↳ Bid akhir: ${money(entry.amount)}\n` +
-          `> ↳ Pemenang: ${entry.winnerName}`
-        ).join('\n')}\n\n` : ''}` +
-      `─━━━━━━━━━━━━━━─\n` +
-      `⏳ *Waktu tersisa:* ${formatRemaining(session.endsAt - Date.now())}\n\n` +
-      `📌 *DAFTAR COMMAND*\n` +
-      `> 🔨 ${prefix}ah bid <nomor/nama> [nominal]\n` +
-      `> 📊 ${prefix}ah info\n` +
-      `> 🎁 ${prefix}ah vault\n` +
-      `> 📰 ${prefix}ah news\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+      `Pilih item lelang untuk mengajukan bid cepat. Penawaran awal otomatis Rp 500.000 di atas bid tertinggi.\n\n` +
+      `${rows.map(row => `> ↳ ${row.title}\n> ↳ ${row.description}\n> ↳ *${row.id}*`).join('\n\n')}\n\n` +
+      `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
+      `> ↳ Cek bid aktif: *${prefix}ah info*\n\n─━━━━━━━━━━━━━━─`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🔨 AUCTION HOUSE',
+      subtitle: `Balai lelang tutup dalam ${formatRemaining(session.endsAt - Date.now())}`,
+      text: 'Pilih koleksi yang ingin kamu tawar. Bid cepat akan dimulai Rp 500.000 di atas bid tertinggi dan tetap menunggu konfirmasi darimu.',
+      buttonText: '🔨 PILIH ITEM LELANG',
+      sections: [{ title: 'Barang yang sedang dilelang', rows }],
+      fallbackText
+    })
   }
 
   if (mode === 'bid' || ['confirm', 'konfirmasi', 'ya'].includes(mode)) {
     const action = mode === 'bid' ? String(tokens[1] || '').toLowerCase() : mode
+    if (['batal', 'cancel', 'tidak'].includes(action)) {
+      const pendingJid = userJids.find(userJid => session.pendingConfirmations[userJid])
+      if (!pendingJid) return m.reply('Tidak ada penawaran yang menunggu konfirmasi.')
+      for (const userJid of userJids) delete session.pendingConfirmations[userJid]
+      await persistAuctionDB()
+      return m.reply('↩️ Penawaran dibatalkan. Saldo bank kamu tetap aman.')
+    }
     if (['confirm', 'konfirmasi', 'ya'].includes(action)) {
       const pendingJid = userJids.find(userJid => session.pendingConfirmations[userJid])
       const pending = pendingJid ? session.pendingConfirmations[pendingJid] : null
@@ -988,8 +988,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       expiresAt: Date.now() + BID_CONFIRMATION_TTL
     }
     await persistAuctionDB()
-    return m.reply(
-      `╭─❏「 ⚠️ KONFIRMASI BID 」❏\n` +
+    return sendRpgConfirmButtons(conn, m, {
+      text: `╭─❏「 ⚠️ KONFIRMASI BID 」❏\n` +
       `│ 🔨 DETAIL PENAWARAN\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> 🏷️ Item: ${item.emoji} ${item.name}\n` +
@@ -1002,8 +1002,14 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `─━━━━━━━━━━━━━━─\n` +
       `📌 *KONFIRMASI PENAWARAN*\n` +
       `> ↳ Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+      `─━━━━━━━━━━━━━━─`,
+      title: '🔨 PASTIKAN PENAWARAN',
+      subtitle: 'Dana hanya ditahan setelah kamu menyetujui bid',
+      acceptText: '🏆 Konfirmasi Bid',
+      acceptCommand: `${prefix}ah bid konfirmasi`,
+      cancelText: '↩️ Batalkan Bid',
+      cancelCommand: `${prefix}ah bid batal`
+    })
   }
 
   if (mode === 'info' && tokens[1]) {

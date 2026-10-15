@@ -4,7 +4,7 @@ import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js'
-import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -132,7 +132,7 @@ if (mode === 'guide') {
 
   cap += `─━━━━━━━━━━━━━━─`
 
-   return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
+  return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
 }
 
    if (mode === 'command') {
@@ -247,7 +247,16 @@ if (mode === 'guide') {
 
     user.jualAllConfirm = { items: semuaItem, time: Date.now() }
     saveDB(wdb)
-    return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
+    return sendRpgConfirmButtons(conn, m, {
+      text: cap,
+      title: '🛍️ KEPUTUSAN PENJUALAN',
+      subtitle: 'Tentukan nasib seluruh barangmu',
+      buffer: SHOP_IMAGE,
+      acceptText: '💰 Jual Semua',
+      acceptCommand: `${usedPrefix || '.'}jual ya`,
+      cancelText: '📦 Simpan Barang',
+      cancelCommand: `${usedPrefix || '.'}jual tidak`
+    })
   }
 
   if (isJualYa) {

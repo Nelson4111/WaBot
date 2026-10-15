@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -394,16 +394,22 @@ return m.reply(cap)
       user.pendingRestoranSell = { entries, total, expiresAt: Date.now() + RPG_CONFIRMATION_TTL }
       saveDB(wdb)
       const list = entries.map(entry => `> ↳ ${formatNama(entry.item)} x${entry.quantity}`).join('\n')
-      return m.reply(
-        `╭─❏「 ⚠️ KONFIRMASI JUAL RESTORAN 」❏\n` +
+      return sendRpgConfirmButtons(conn, m, {
+        text: `╭─❏「 ⚠️ KONFIRMASI JUAL RESTORAN 」❏\n` +
         `│ 🍽️ ${entries.length} jenis stok akan dijual\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `${list}\n\n` +
         `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
         `✅ Ketik *${usedPrefix}restoran jual ya* untuk lanjut\n` +
         `❌ Ketik *${usedPrefix}restoran jual batal* untuk membatalkan\n` +
-        `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
-      )
+        `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`,
+        title: '🍽️ PENAWARAN DAPUR',
+        subtitle: 'Hasil olahan siap menjadi saldo',
+        acceptText: '💰 Jual Stok',
+        acceptCommand: `${usedPrefix}restoran jual ya`,
+        cancelText: '🍲 Simpan Stok',
+        cancelCommand: `${usedPrefix}restoran jual batal`
+      })
 
       let totalHasil = 0, listJual = []
       for(let item in user.masakan){
@@ -454,8 +460,8 @@ if (amount === 'all') {
 
   saveDB(wdb)
 
-  return m.reply(
-    `╭─❏「 🍽️ KONFIRMASI SETOR 」❏\n` +
+  return sendRpgConfirmButtons(conn, m, {
+    text: `╭─❏「 🍽️ KONFIRMASI SETOR 」❏\n` +
     `│ 🍽️ *SETOR RESTORAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Item : ${display}\n` +
@@ -465,8 +471,14 @@ if (amount === 'all') {
     `📌 *KONFIRMASI*\n` +
     `> ↳ Ketik *${usedPrefix}restoran jual ya* untuk lanjut.\n` +
     `> ↳ Ketik *${usedPrefix}restoran jual batal* untuk membatalkan.\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
+    `─━━━━━━━━━━━━━━─`,
+    title: '🍽️ PENAWARAN DAPUR',
+    subtitle: 'Hasil olahan siap menjadi saldo',
+    acceptText: '💰 Jual Stok',
+    acceptCommand: `${usedPrefix}restoran jual ya`,
+    cancelText: '🍲 Simpan Stok',
+    cancelCommand: `${usedPrefix}restoran jual batal`
+  })
 }
 
     let hasil = Math.floor(harga * sellBonus) * jual

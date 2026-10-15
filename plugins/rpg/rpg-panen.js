@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/wa
 import { scaleDifficultyCooldown, scaleDifficultyHarvest, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -273,7 +274,16 @@ if (text.toLowerCase() === 'all') {
 
   teks += `─━━━━━━━━━━━━━━─`
 
-  return safeReply(teks)
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: teks,
+    title: '🌾 PANEN KEMBALI',
+    subtitle: 'Lanjutkan dengan memanen semua slot yang siap',
+    buttons: [['🌾 Panen Semua', `${usedPrefix}panen all`]],
+    quoted: m,
+    preferV2: true,
+    reply: fallbackText => m.reply(fallbackText)
+  })
 }
 
 // PANEN 1 SLOT
@@ -345,7 +355,16 @@ if (sisaWaktu <= 0) {
 
   teks += `─━━━━━━━━━━━━━━─`
 
-  return safeReply(teks)
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: teks,
+    title: '🌾 PANEN BERIKUTNYA',
+    subtitle: 'Periksa dan kumpulkan hasil ladang lainnya',
+    buttons: [['🌾 Panen Semua', `${usedPrefix}panen all`]],
+    quoted: m,
+    preferV2: true,
+    reply: fallbackText => m.reply(fallbackText)
+  })
 } else {
   let mnt = Math.floor(sisaWaktu / 60000)
   let dtk = Math.floor((sisaWaktu % 60000) / 1000)

@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -341,16 +341,22 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     user.pendingPasarSell = { entries, total, expiresAt: Date.now() + RPG_CONFIRMATION_TTL }
     saveDB(wdb)
     const list = entries.map(({ item, quantity }) => `> ↳ ${harga[item].emoji} ${formatNama(item)} x${quantity}`).join('\n')
-    return m.reply(
-      `╭─❏「 ⚠️ KONFIRMASI JUAL IKAN 」❏\n` +
+    return sendRpgConfirmButtons(conn, m, {
+      text: `╭─❏「 ⚠️ KONFIRMASI JUAL IKAN 」❏\n` +
       `│ 📦 ${entries.length} jenis ikan/sampah akan dijual\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${list}\n\n` +
       `> ↳ Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
       `✅ Ketik *${usedPrefix}pasar jual ya* untuk lanjut\n` +
       `❌ Ketik *${usedPrefix}pasar jual batal* untuk membatalkan\n` +
-      `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
-    )
+      `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`,
+      title: '🎣 PENAWARAN PASAR',
+      subtitle: 'Lepas seluruh ikan dengan satu sentuhan',
+      acceptText: '💰 Jual ke Pasar',
+      acceptCommand: `${usedPrefix}pasar jual ya`,
+      cancelText: '🎣 Simpan Hasil',
+      cancelCommand: `${usedPrefix}pasar jual batal`
+    })
   }
 
   let amount = 1, itemInput = ''
@@ -399,8 +405,8 @@ if (amount === 'all') {
 
   saveDB(wdb)
 
-  return m.reply(
-    `╭─❏「 🛒 KONFIRMASI JUAL 」❏\n` +
+  return sendRpgConfirmButtons(conn, m, {
+    text: `╭─❏「 🛒 KONFIRMASI JUAL 」❏\n` +
     `│ 🛒 *JUAL DI PASAR*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Item : ${formatNama(itemInput)}\n` +
@@ -410,8 +416,14 @@ if (amount === 'all') {
     `📌 *KONFIRMASI*\n` +
     `> ↳ Ketik *${usedPrefix}pasar jual ya* untuk lanjut.\n` +
     `> ↳ Ketik *${usedPrefix}pasar jual batal* untuk membatalkan.\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
+    `─━━━━━━━━━━━━━━─`,
+    title: '🎣 PENAWARAN PASAR',
+    subtitle: 'Konfirmasikan penjualan hasil tangkapan',
+    acceptText: '💰 Jual ke Pasar',
+    acceptCommand: `${usedPrefix}pasar jual ya`,
+    cancelText: '🎣 Simpan Hasil',
+    cancelCommand: `${usedPrefix}pasar jual batal`
+  })
 }
 
   let hasil = Math.floor(harga[itemInput].harga * sellBonus) * jual

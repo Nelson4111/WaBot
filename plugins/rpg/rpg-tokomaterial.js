@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -307,16 +307,22 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       const list = Object.entries(plan.grouped)
         .map(([item, quantity]) => `> ↳ ${oreEmoji[item] || '📦'} ${formatNama(item)} x${quantity}`)
         .join('\n')
-      return m.reply(
-        `╭─❏「 ⚠️ KONFIRMASI JUAL PABRIK 」❏\n` +
+      return sendRpgConfirmButtons(conn, m, {
+        text: `╭─❏「 ⚠️ KONFIRMASI JUAL PABRIK 」❏\n` +
         `│ 📦 ${entries.length} jenis item akan dijual\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `${list}\n\n` +
         `> ↳ Perkiraan diterima: Rp ${plan.total.toLocaleString()}\n\n` +
         `✅ Ketik *${usedPrefix}pabrik jual ya* untuk lanjut\n` +
         `❌ Ketik *${usedPrefix}pabrik jual batal* untuk membatalkan\n` +
-        `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
-      )
+        `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`,
+        title: '🏭 PENAWARAN PABRIK',
+        subtitle: 'Ubah material pilihan menjadi saldo',
+        acceptText: '💰 Jual Material',
+        acceptCommand: `${usedPrefix}pabrik jual ya`,
+        cancelText: '📦 Simpan Material',
+        cancelCommand: `${usedPrefix}pabrik jual batal`
+      })
 
       let totalHasil = 0
       let listJual = []
@@ -410,8 +416,8 @@ if (amount === 'all') {
 
   saveDB(wdb)
 
-  return m.reply(
-    `╭─❏「 🏭 KONFIRMASI JUAL 」❏\n` +
+  return sendRpgConfirmButtons(conn, m, {
+    text: `╭─❏「 🏭 KONFIRMASI JUAL 」❏\n` +
     `│ 🏭 *JUAL HASIL PABRIK*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Item : ${formatNama(item)}\n` +
@@ -421,8 +427,14 @@ if (amount === 'all') {
     `📌 *KONFIRMASI*\n` +
     `> ↳ Ketik *${usedPrefix}pabrik jual ya* untuk lanjut.\n` +
     `> ↳ Ketik *${usedPrefix}pabrik jual batal* untuk membatalkan.\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
+    `─━━━━━━━━━━━━━━─`,
+    title: '🏭 PENAWARAN PABRIK',
+    subtitle: 'Ubah material pilihan menjadi saldo',
+    acceptText: '💰 Jual Material',
+    acceptCommand: `${usedPrefix}pabrik jual ya`,
+    cancelText: '📦 Simpan Material',
+    cancelCommand: `${usedPrefix}pabrik jual batal`
+  })
 }
 
     let stok = item === 'diamond'

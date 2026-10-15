@@ -334,6 +334,39 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return parts.join(' ') || '0detik'
   }
 
+  const getKidCooldownSummary = kids => {
+    const careEntries = []
+    const activityEntries = Object.entries(CHILD_ACTIVITIES).map(([key, activity]) => ({
+      label: `${activity.emoji} ${activity.label}`,
+      children: []
+    }))
+
+    for (const child of kids) {
+      if (child.facility) continue
+
+      const careRemaining = Math.max(
+        0,
+        Math.ceil((CHILD_NEGLECT.careCooldown - (now - Number(child.lastKidActivityAt || 0))) / 1000)
+      )
+      if (careRemaining) careEntries.push(`${child.nama} (${formatRemaining(careRemaining)})`)
+
+      Object.entries(CHILD_ACTIVITIES).forEach(([key, activity], index) => {
+        const last = Number(child.activityCooldowns?.[key]) || 0
+        const remaining = last
+          ? Math.max(0, Math.ceil((activity.cooldown - (now - last)) / 1000))
+          : 0
+        if (remaining) activityEntries[index].children.push(`${child.nama} (${formatRemaining(remaining)})`)
+      })
+    }
+
+    const lines = []
+    if (careEntries.length) lines.push(`> ⏳ *Rawat:* ${careEntries.join(', ')}`)
+    for (const activity of activityEntries) {
+      if (activity.children.length) lines.push(`> ⏳ *${activity.label}:* ${activity.children.join(', ')}`)
+    }
+    return lines
+  }
+
   const cekCD = (key, durasi) => {
     const legacyKeys = Object.keys(user.cooldown).filter(storedKey => storedKey.startsWith(key) && /^\d+$/.test(storedKey.slice(key.length)))
     const last = Math.max(0, ...[key, ...legacyKeys].map(storedKey => Number(user.cooldown[storedKey]) || 0))
@@ -347,28 +380,19 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       return `> ${remaining ? '⏳' : '✅'} *${label}:* ${remaining ? formatRemaining(remaining) : 'Siap'}`
     })
     const kids = [...user.kids, ...user.orphanageKids]
-    const kidCooldowns = kids.length
-      ? kids.map((child, index) => {
-        if (child.facility) {
-          const facilityName = CHILD_FACILITIES[child.facility.type]?.label || child.facility.type
-          return `> 🏠 *${index + 1}. ${child.nama}:* berada di ${facilityName}; aktivitas pengasuhan tidak tersedia.`
-        }
-        const careRemaining = Math.max(
-          0,
-          Math.ceil((CHILD_NEGLECT.careCooldown - (now - Number(child.lastKidActivityAt || 0))) / 1000)
-        )
-        const activityStatus = Object.entries(CHILD_ACTIVITIES).map(([key, activity]) => {
-          const last = Number(child.activityCooldowns?.[key]) || 0
-          const remaining = last
-            ? Math.max(0, Math.ceil((activity.cooldown - (now - last)) / 1000))
-            : 0
-          return `> ${remaining ? '⏳' : '✅'} *${activity.label}:* ${remaining ? formatRemaining(remaining) : 'Siap'}`
-        }).join('\n')
-        return `> *${index + 1}. ${child.nama}*\n` +
-          `> ${careRemaining ? '⏳' : '✅'} *Cooldown rawat:* ${careRemaining ? formatRemaining(careRemaining) : 'Siap'}\n` +
-          `${activityStatus}`
-      })
-      : ['> Belum ada anak yang terdaftar.']
+    const facilities = new Map()
+    for (const child of kids) {
+      if (!child.facility) continue
+      const facilityName = CHILD_FACILITIES[child.facility.type]?.label || child.facility.type
+      if (!facilities.has(facilityName)) facilities.set(facilityName, [])
+      facilities.get(facilityName).push(child.nama)
+    }
+    const kidCooldowns = getKidCooldownSummary(kids)
+    for (const [facilityName, names] of facilities) {
+      kidCooldowns.push(`> 🏠 *${facilityName}:* ${names.join(', ')} (aktivitas pengasuhan tidak tersedia)`)
+    }
+    if (!kids.length) kidCooldowns.push('> Belum ada anak yang terdaftar.')
+    else if (!kidCooldowns.length) kidCooldowns.push('> ✅ Tidak ada cooldown anak yang aktif.')
 
     return m.reply(
       `╭─❏「 ⏰ COOLDOWN RSHIP 」❏\n` +
@@ -376,7 +400,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `💕 *PASANGAN*\n${partnerCooldowns.join('\n')}\n\n` +
       `👶 *ANAK*\n` +
-      `> Cooldown rawat umum: ${formatRemaining(CHILD_NEGLECT.careCooldown / 1000)} per anak.\n` +
       `${kidCooldowns.join('\n')}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -2804,26 +2827,17 @@ if (kidSubcommand) {
   }
   if (sub === 'cd' || sub === 'cooldown') {
     const kids = user.kids.filter(child => !child.facility)
-    const status = kids.length
-      ? kids.map((child, index) => {
-        const careRemaining = Math.max(
-          0,
-          Math.ceil((CHILD_NEGLECT.careCooldown - (now - Number(child.lastKidActivityAt || 0))) / 1000)
-        )
-        const activityStatus = Object.entries(CHILD_ACTIVITIES).map(([key, activity]) => {
-          const last = Number(child.activityCooldowns?.[key]) || 0
-          const remaining = last ? Math.max(0, Math.ceil((activity.cooldown - (now - last)) / 1000)) : 0
-          return `> ${remaining ? '⏳' : '✅'} ${activity.label}: ${remaining ? formatRemaining(remaining) : 'Siap'}`
-        }).join('\n')
-        return `*${index + 1}. ${child.nama}*\n> ${careRemaining ? '⏳' : '✅'} Rawat: ${careRemaining ? formatRemaining(careRemaining) : 'Siap'}\n${activityStatus}`
-      }).join('\n\n')
-      : '> Belum ada anak yang bisa dicek. Adopsi atau daftarkan anak terlebih dahulu.'
+    const cooldowns = getKidCooldownSummary(kids)
+    const status = !kids.length
+      ? '> Belum ada anak yang bisa dicek. Adopsi atau daftarkan anak terlebih dahulu.'
+      : cooldowns.length
+        ? cooldowns.join('\n')
+        : '> ✅ Tidak ada cooldown anak yang aktif.'
     return m.reply(
       `╭─❏「 ⏰ COOLDOWN AKTIVITAS ANAK 」❏\n` +
       `│ 👶 WAKTU ISTIRAHAT KELUARGA\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${status}\n\n` +
-      `> ✨ Cek lagi nanti setelah cooldown selesai.\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -3558,7 +3572,6 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
   user.bank -= totalCost
   for (const target of eligible) {
     const { child, partner } = target
-    const childStories = []
     for (const [name, rule] of actions) {
       child.activityCooldowns[name] = now
       child.love = Math.min(100, (Number(child.love) || 0) + rule.love)
@@ -3566,7 +3579,6 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
         const previousUps = levelUps.get(partner.name) || 0
         if (addExp(partner, rule.exp)) levelUps.set(partner.name, previousUps + 1)
       }
-      childStories.push(`${rule.emoji} ${rule.label}`)
     }
     child.careCount = getChildCareCount(child) + 1
     child.umur = child.careCount / 10
@@ -3574,14 +3586,13 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
     child.lastCaredAt = now
     child.lastNeglectCheckAt = now
     user.dateStats.urusAnak = (Number(user.dateStats.urusAnak) || 0) + 1
-    completed.push(
-      `*${child.nama}* (${partner.name})\n${childStories.map(story => `> ↳ ${story}`).join('\n')}`
-    )
+    completed.push(`*${child.nama}* (${partner.name})`)
   }
   await saveDB(wdb)
   const totalUps = [...levelUps.values()].reduce((sum, value) => sum + value, 0)
   const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString('id-ID')}` : ''
   const levelLine = totalUps ? `\n> ↳ Level pasangan naik ${totalUps} kali` : ''
+  const activitySummary = actions.map(([, rule]) => `${rule.emoji} ${rule.label}`).join(', ')
   return m.reply(
     `╭─❏「 👶 PENGASUHAN ANAK 」❏
 │ ${isBatchCare ? '✨ SEMUA AKTIVITAS PENGASUHAN' : `💗 ${activity.label.toUpperCase()}`}
@@ -3589,7 +3600,8 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
 
 > ${isBatchCare ? '✅ Semua 9 aktivitas pengasuhan selesai.' : `✅ Aktivitas ${activity.label} selesai.`}
 
-${completed.join('\n')}${costLine}${levelLine}
+> 👶 Anak: ${completed.join(', ')}
+> 🧸 Aktivitas: ${activitySummary}${costLine}${levelLine}
 
 ─━━━━━━━━━━━━━━─
 

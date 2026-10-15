@@ -4,7 +4,7 @@ import { isPremiumUser } from './rpg-bank.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -1537,8 +1537,8 @@ if (elapsed < cooldownDuration) {
         : `💀 *KALAH*`
   const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
 
-return m.reply(
-  `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
+return sendRpgQuickButton(conn, m, {
+  text: `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
   `│ 🎲 *HASIL PERMAINAN*\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
   `${result.text}\n\n` +
@@ -1556,8 +1556,11 @@ return m.reply(
   `─━━━━━━━━━━━━━━─\n\n` +
   `⚠️ *PENGINGAT*\n` +
   `> ↳ Main secukupnya.\n` +
-  `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`
-)
+  `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`,
+  title: '🎲 SATU RONDE LAGI?',
+  buttonText: '🎲 Main Lagi',
+  command: `${usedPrefix}casino ${randomGame ? 'random' : game} ${bet}`
+})
 }
 
 handler.help = [

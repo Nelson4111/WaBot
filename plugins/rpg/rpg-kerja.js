@@ -1,7 +1,7 @@
 ﻿import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
-import { sendRpgButtons, sendRpgExpActivityList } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgExpActivityList, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 import {
   JOBS,
   JOB_GUIDE,
@@ -772,7 +772,8 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const promoted = afterTitle !== beforeTitle
     if (promoted) userRPG.performance.promotions = Number(userRPG.performance.promotions || 0) + 1
     saveDB(wdb)
-    return m.reply(`╭─❏「 💬 JOB TALK 」❏
+    return sendRpgQuickButton(conn, m, {
+      text: `╭─❏「 💬 JOB TALK 」❏
 │ 🤝 OBROLAN PEKERJAAN
 ╰─━━━━━━━━━━━━━━─
 
@@ -785,7 +786,11 @@ ${promoted ? `> 🎉 Jabatan naik: ${beforeTitle} → ${afterTitle}` : ''}
 > 🏢 Pekerjaan ${activeJob.job}.
 ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
-─━━━━━━━━━━━━━━─`)
+─━━━━━━━━━━━━━━─`,
+      title: '💼 LANGKAH KARIER BERIKUTNYA',
+      buttonText: '✨ Lihat Info Pekerjaan',
+      command: `${usedPrefix}job info`
+    })
   }
 
   if (action === 'work') {
