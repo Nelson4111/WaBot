@@ -154,6 +154,42 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let hargaFinal = Math.floor(info.harga * buyDiscount)
   let userMoney = wdb.money[m.sender] || 0
 
+  if (args[1] === 'ulang' && /^\d+$/.test(args[2] || '')) {
+    const requestedCount = Number(args[2])
+    if (!Number.isSafeInteger(requestedCount) || requestedCount < 1) {
+      return safeReply('❌ Jumlah bibit untuk ditanam ulang tidak valid.')
+    }
+    let count = 0
+    let totalBiaya = 0
+    for (const slot of slotKosong.slice(0, requestedCount)) {
+      if (userMoney < hargaFinal) break
+      user.ladang[slot] = { jenis, waktuTanam: Date.now(), waktuPanen: plantingDuration }
+      userMoney -= hargaFinal
+      totalBiaya += hargaFinal
+      count++
+    }
+    if (!count) {
+      return safeReply(
+        `╭─❏「 ❌ BELUM BISA TANAM ULANG 」❏\n` +
+        `│ 🌱 *${formatNama(jenis)}*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pastikan ada slot kosong dan saldo cukup untuk membeli bibit.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    wdb.money[m.sender] = userMoney
+    saveDB(wdb)
+    return safeReply(
+      `╭─❏「 🌱 TANAM ULANG BERHASIL 」❏\n` +
+      `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}* ×${count}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Bibit yang sama kembali mengisi ladang.\n` +
+      `> ↳ Biaya: Rp ${totalBiaya.toLocaleString()}\n` +
+      `> ↳ Sisa saldo: Rp ${userMoney.toLocaleString()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   if (isAll) {
     let count = 0
     let totalBiaya = 0
@@ -215,7 +251,7 @@ return safeReply(
 )
 }
 
-handler.help = ['tanam', 'tanam list', 'tanam guide', 'tanam command']
+handler.help = ['tanam', 'tanam list', 'tanam guide', 'tanam command', 'tanam <bibit> ulang <jumlah>']
 handler.tags = ['rpg']
 handler.command = /^(tanam|berkebun)$/i
 handler.group = true

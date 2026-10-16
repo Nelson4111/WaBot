@@ -213,6 +213,7 @@ if (text.toLowerCase() === 'all') {
   let hasil = {}
   let count = 0
   let listHasil = []
+  let tanamUlangCounts = {}
 
   for (let i = 1; i <= user.maxLadang; i++) {
     if (user.ladang[i]) {
@@ -226,6 +227,7 @@ if (text.toLowerCase() === 'all') {
         addItem(user, h.item, harvested)
         totalExp += dataBibit.exp
         hasil[l.jenis] = (hasil[l.jenis] || 0) + harvested
+        tanamUlangCounts[l.jenis] = (tanamUlangCounts[l.jenis] || 0) + 1
         listHasil.push(`${dataBibit.emoji} ${formatNama(h.item)} x${harvested}`)
         delete user.ladang[i]
         count++
@@ -274,15 +276,24 @@ if (text.toLowerCase() === 'all') {
 
   teks += `─━━━━━━━━━━━━━━─`
 
+  const replantRows = Object.entries(tanamUlangCounts).map(([jenis, quantity]) => ({
+    title: `${bibit[jenis].emoji} ${formatNama(jenis)} ×${quantity}`,
+    description: `Tanam kembali bibit yang baru dipanen`,
+    id: `${usedPrefix}tanam ${jenis} ulang ${quantity}`
+  }))
+  const replantFallback = `${teks}\n\n🌱 *TANAM KEMBALI*\n` +
+    replantRows.map(row => `> ↳ ${row.title}: *${row.id}*`).join('\n')
   return sendRpgButtons(conn, {
     chat: m.chat,
-    text: teks,
-    title: '🌾 PANEN KEMBALI',
-    subtitle: 'Lanjutkan dengan memanen semua slot yang siap',
-    buttons: [['🌾 Panen Semua', `${usedPrefix}panen all`]],
+    message: m,
     quoted: m,
-    preferV2: true,
-    reply: fallbackText => m.reply(fallbackText)
+    text: teks,
+    title: '🌱 TANAM KEMBALI',
+    subtitle: 'Pilih bibit yang baru saja kamu panen',
+    buttonText: '🌱 PILIH BIBIT',
+    sections: [{ title: 'Bibit dari panen ini', rows: replantRows }],
+    fallbackText: replantFallback,
+    noThumbnail: true
   })
 }
 
@@ -358,9 +369,9 @@ if (sisaWaktu <= 0) {
   return sendRpgButtons(conn, {
     chat: m.chat,
     text: teks,
-    title: '🌾 PANEN BERIKUTNYA',
-    subtitle: 'Periksa dan kumpulkan hasil ladang lainnya',
-    buttons: [['🌾 Panen Semua', `${usedPrefix}panen all`]],
+    title: '🌱 TANAM KEMBALI',
+    subtitle: 'Mulai lagi dengan bibit yang baru kamu panen',
+    buttons: [[`🌱 Tanam ${formatNama(l.jenis)}`, `${usedPrefix}tanam ${l.jenis} ulang 1`]],
     quoted: m,
     preferV2: true,
     reply: fallbackText => m.reply(fallbackText)

@@ -379,30 +379,17 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       const remaining = cekCD(key, duration)
       return `> ${remaining ? '⏳' : '✅'} *${label}:* ${remaining ? formatRemaining(remaining) : 'Siap'}`
     })
-    const kids = [...user.kids, ...user.orphanageKids]
-    const facilities = new Map()
-    for (const child of kids) {
-      if (!child.facility) continue
-      const facilityName = CHILD_FACILITIES[child.facility.type]?.label || child.facility.type
-      if (!facilities.has(facilityName)) facilities.set(facilityName, [])
-      facilities.get(facilityName).push(child.nama)
-    }
-    const kidCooldowns = getKidCooldownSummary(kids)
-    for (const [facilityName, names] of facilities) {
-      kidCooldowns.push(`> 🏠 *${facilityName}:* ${names.join(', ')} (aktivitas pengasuhan tidak tersedia)`)
-    }
-    if (!kids.length) kidCooldowns.push('> Belum ada anak yang terdaftar.')
-    else if (!kidCooldowns.length) kidCooldowns.push('> ✅ Tidak ada cooldown anak yang aktif.')
-
-    return m.reply(
-      `╭─❏「 ⏰ COOLDOWN RSHIP 」❏\n` +
-      `│ STATUS COOLDOWN PASANGAN & ANAK\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `💕 *PASANGAN*\n${partnerCooldowns.join('\n')}\n\n` +
-      `👶 *ANAK*\n` +
-      `${kidCooldowns.join('\n')}\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+    return sendRpgQuickButton(conn, m, {
+      text: `╭─❏「 ⏰ COOLDOWN RSHIP 」❏\n` +
+        `│ STATUS COOLDOWN PASANGAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `💕 *PASANGAN*\n${partnerCooldowns.join('\n')}\n\n` +
+        `─━━━━━━━━━━━━━━─`,
+      title: '👶 COOLDOWN AKTIVITAS ANAK',
+      buttonText: '🕰️ Cek Waktu Aktivitas Anak',
+      command: `${usedPrefix}rship kid cd`,
+      noThumbnail: true
+    })
   }
 
   const addExp = (partner, amount) => {

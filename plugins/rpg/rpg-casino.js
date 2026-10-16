@@ -1384,18 +1384,44 @@ return m.reply(
     return m.reply(cooldownMenu(user, usedPrefix))
   }
 
+  const retryMode = input === 'retry'
   const legacySlot = /^\d+$/.test(input)
   const legacyAll = input === 'all'
-  const randomGame = input === 'random'
-  const randomBet = args[1]?.toLowerCase() === 'all' ? Number(wdb.money[m.sender] || 0) : Number(args[1])
+  const randomGame = input === 'random' || retryMode
+  const randomBet = retryMode
+    ? Number(user.casinoReplay?.bet)
+    : args[1]?.toLowerCase() === 'all' ? Number(wdb.money[m.sender] || 0) : Number(args[1])
   const eligibleGames = Object.keys(games).filter(key => games[key].minBet <= randomBet)
-  const game = legacySlot
+  let game = legacySlot
     ? 'slot'
     : legacyAll
       ? 'slot'
     : randomGame
       ? pick(eligibleGames.length ? eligibleGames : Object.keys(games))
       : aliases[input]
+
+  if (retryMode) {
+    if (!Number.isSafeInteger(randomBet) || randomBet < 1) {
+      return m.reply('❌ Belum ada permainan sebelumnya yang bisa diulang.')
+    }
+    const cooldowns = getCooldowns(user)
+    const now = Date.now()
+    const readyGames = eligibleGames.filter(key => {
+      const duration = Number(user.casinoCooldownDurations?.[key]) || getGameCooldownDuration(key, 2, user)
+      return now - (Number(cooldowns[key]) || 0) >= duration
+    })
+    if (!readyGames.length) {
+      return m.reply(
+        `╭─❏「 ⏳ MEJA CASINO 」❏\n` +
+        `│ 🎲 SEMUA PERMAINAN MASIH BERISTIRAHAT\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Belum ada meja yang siap dimainkan dengan taruhan ${money(randomBet)}.\n` +
+        `> ↳ Coba lagi setelah cooldown salah satu permainan selesai.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    game = pick(readyGames)
+  }
 
   if (!game) {
     const overview = menu(usedPrefix, wdb, conn, groupMetadata)
@@ -1415,7 +1441,7 @@ return m.reply(
   )
 }
 
-const betInput = legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
+const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
 const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : Number(betInput)
 
 if (!Number.isInteger(bet) || bet < games[game].minBet) {
@@ -1520,6 +1546,7 @@ if (elapsed < cooldownDuration) {
     wdb.casinoStats.totalWinnings = Number(wdb.casinoStats.totalWinnings || 0) + payout
   }
 
+  user.casinoReplay = { bet }
   saveDB(wdb)
 
   const status = result.blackout
@@ -1559,7 +1586,8 @@ return sendRpgQuickButton(conn, m, {
   `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`,
   title: '🎲 SATU RONDE LAGI?',
   buttonText: '🎲 Main Lagi',
-  command: `${usedPrefix}casino ${randomGame ? 'random' : game} ${bet}`
+  command: `${usedPrefix}casino retry`,
+  noThumbnail: true
 })
 }
 

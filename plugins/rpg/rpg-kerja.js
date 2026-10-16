@@ -789,7 +789,8 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 ─━━━━━━━━━━━━━━─`,
       title: '💼 LANGKAH KARIER BERIKUTNYA',
       buttonText: '✨ Lihat Info Pekerjaan',
-      command: `${usedPrefix}job info`
+      command: `${usedPrefix}job info`,
+      noThumbnail: true
     })
   }
 
@@ -939,7 +940,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       chat: m.chat,
       text: message,
       footer: 'AVELIA • JOB SYSTEM',
-      buttons: [['💬 Ngobrol & Naik Jabatan', `${usedPrefix}job talk`]],
+      buttons: [['💬 Ngobrol (+1 Poin)', `${usedPrefix}job talk`]],
       quoted: m,
       reply: text => m.reply(text)
     })

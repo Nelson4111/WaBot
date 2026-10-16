@@ -763,28 +763,54 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const highest = getVisibleHighestBid(db, session, item)
       return {
         title: `${index + 1}. ${item.emoji} ${item.name}`,
-        description: `Tertinggi ${money(highest.amount)} · bid cepat naik Rp 500.000`,
+        description: `Bid tertinggi ${money(highest.amount)} · ajukan bid cepat`,
         id: `${prefix}ah bid ${item.id}`
       }
     })
-    const fallbackText =
+    const auctionText =
       `╭─❏「 🔨 AUCTION HOUSE 」❏\n` +
       `│ 🏛️ LELANG BERSAMA\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `Pilih item lelang untuk mengajukan bid cepat. Penawaran awal otomatis Rp 500.000 di atas bid tertinggi.\n\n` +
-      `${rows.map(row => `> ↳ ${row.title}\n> ↳ ${row.description}\n> ↳ *${row.id}*`).join('\n\n')}\n\n` +
-      `⏳ Waktu tersisa: *${formatRemaining(session.endsAt - Date.now())}*\n` +
-      `> ↳ Cek bid aktif: *${prefix}ah info*\n\n─━━━━━━━━━━━━━━─`
+      `💳 *Kartu Bank:* ${BANK_TIERS[Number(rpg.bankTier)]?.color || BANK_TIERS[0].color} ${BANK_TIERS[Number(rpg.bankTier)]?.name || BANK_TIERS[0].name}\n\n` +
+      `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh penjuru dunia berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `🔨 *DAFTAR ITEM LELANG*\n\n` +
+      `${offers.map((item, index) => {
+        const highest = getVisibleHighestBid(db, session, item)
+        const leader = highest.jid
+          ? getAuctionBidderName(db, highest.jid)
+          : getAuctionRivalName(session, item.id)
+        return `*${index + 1}. ${item.emoji} ${item.name}*\n` +
+          `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
+          `> ↳ Bid tertinggi: ${money(highest.amount)}\n` +
+          `> ↳ Pemimpin bid: ${leader}`
+      }).join('\n\n')}\n\n` +
+      `${groupAuctionNews.length ? `─━━━━━━━━━━━━━━─\n` +
+        `🏁 *HASIL LELANG TERAKHIR*\n\n` +
+        `${groupAuctionNews.slice(0, AUCTION_ITEM_LIMIT).map(entry =>
+          `> ${entry.emoji} ${entry.itemName}\n` +
+          `> ↳ Bid akhir: ${money(entry.amount)}\n` +
+          `> ↳ Pemenang: ${entry.winnerName}`
+        ).join('\n')}\n\n` : ''}` +
+      `─━━━━━━━━━━━━━━─\n` +
+      `⏳ *Waktu tersisa:* ${formatRemaining(session.endsAt - Date.now())}\n\n` +
+      `📌 *DAFTAR COMMAND*\n` +
+      `> 🔨 ${prefix}ah bid <nomor/nama> [nominal]\n` +
+      `> 📊 ${prefix}ah info\n` +
+      `> 🎁 ${prefix}ah vault\n` +
+      `> 📰 ${prefix}ah news\n\n` +
+      `─━━━━━━━━━━━━━━─`
     return sendRpgButtons(conn, {
       chat: m.chat,
       message: m,
       quoted: m,
       title: '🔨 AUCTION HOUSE',
-      subtitle: `Balai lelang tutup dalam ${formatRemaining(session.endsAt - Date.now())}`,
-      text: 'Pilih koleksi yang ingin kamu tawar. Bid cepat akan dimulai Rp 500.000 di atas bid tertinggi dan tetap menunggu konfirmasi darimu.',
+      subtitle: 'Pilih item lelang untuk mengajukan penawaran',
+      text: auctionText,
       buttonText: '🔨 PILIH ITEM LELANG',
       sections: [{ title: 'Barang yang sedang dilelang', rows }],
-      fallbackText
+      fallbackText: auctionText,
+      noThumbnail: true
     })
   }
 
