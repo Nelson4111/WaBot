@@ -100,12 +100,12 @@ function getSortedMansion(gacha) {
 }
 
 function normalizeClaimedState(gacha) {
-  gacha.claimed = getClaimedCharacters(gacha)
-  gacha.claimedMap = gacha.claimedMap && typeof gacha.claimedMap === 'object'
-    ? gacha.claimedMap
-    : {}
+  gacha.claimed = getClaimedCharacters(gacha).filter(character =>
+    character && !String(character.id || '').startsWith('placeholder-')
+  )
+  gacha.claimedMap = {}
   for (const character of gacha.claimed) {
-    if (character?.id) gacha.claimedMap[character.id] = true
+    if (character.id) gacha.claimedMap[character.id] = true
   }
   return gacha
 }
@@ -160,7 +160,11 @@ function getUserGacha(user) {
 
   normalizeClaimedState(user.gacha)
   user.gacha.lastRoll = Array.isArray(user.gacha.lastRoll) ? user.gacha.lastRoll : []
+  user.gacha.lastRoll = user.gacha.lastRoll.filter(character =>
+    character && !String(character.id || '').startsWith('placeholder-')
+  )
   user.gacha.favoriteIds = Array.isArray(user.gacha.favoriteIds) ? user.gacha.favoriteIds : []
+  user.gacha.favoriteIds = user.gacha.favoriteIds.filter(id => !String(id).startsWith('placeholder-'))
   user.gacha.claimCooldownUntil = Number(user.gacha.claimCooldownUntil || 0)
 
   return user.gacha
@@ -179,53 +183,10 @@ function dedupeCharacters(characters) {
   return [...seen.values()]
 }
 
-function ensureMinimumSeriesSize(characters) {
-  const grouped = new Map()
-
-  characters.forEach(character => {
-    const series = String(character.series || 'Custom').trim() || 'Custom'
-    if (!grouped.has(series)) {
-      grouped.set(series, [])
-    }
-
-    grouped.get(series).push(character)
-  })
-
-  const padded = [...characters]
-
-  grouped.forEach((entries, series) => {
-    if (entries.length >= 10) return
-
-    const source = entries[0]?.source || 'anime'
-    const roles = entries.map(entry => entry.role).filter(Boolean)
-    const genders = entries.map(entry => entry.gender).filter(Boolean)
-    const required = 10 - entries.length
-
-    for (let i = 0; i < required; i++) {
-      const fallbackRole = roles[i % roles.length] || 'waifu'
-      const fallbackGender = genders[i % genders.length] || 'female'
-      const slot = entries.length + i + 1
-      const slug = String(series).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'custom'
-
-      padded.push({
-        id: `placeholder-${slug}-${slot}`,
-        name: `${series} Character ${slot}`,
-        rarity: 'R',
-        source,
-        role: fallbackRole,
-        gender: fallbackGender,
-        series
-      })
-    }
-  })
-
-  return dedupeCharacters(padded)
-}
-
 function getAllCharacters(wdb = {}) {
   const custom = Array.isArray(wdb.gachaCustom) ? wdb.gachaCustom : []
-  const base = dedupeCharacters([...AVELIA_GACHA_POOL, ...custom])
-  return ensureMinimumSeriesSize(base)
+  return dedupeCharacters([...AVELIA_GACHA_POOL, ...custom])
+    .filter(character => !String(character.id || '').startsWith('placeholder-'))
 }
 
 function sortCharacters(characters, field = 'name') {
@@ -275,8 +236,7 @@ function buildRollText(characters, usedPrefix, filter) {
   lines += `╰─━━━━━━━━━━━━━━─\n\n`
 
   characters.forEach((character, index) => {
-    const seriesText = character.series ? ` (${character.series})` : ''
-    lines += `> *${index + 1}. ${character.name}${seriesText}*\n`
+    lines += `> *${index + 1}. ${character.name}*\n`
   })
 
   lines += `\n📌 *Cara claim:*\n`
