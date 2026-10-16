@@ -235,7 +235,7 @@ if (text.toLowerCase() === 'all') {
     }
   }
 
-  if (count === 0) return safeReply(
+  if (count === 0) return m.reply(
     `╭─❏「 🌾 PANEN MASSAL 」❏\n` +
     `│ ❌ *BELUM ADA PANEN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +

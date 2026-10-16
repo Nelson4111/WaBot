@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
@@ -681,17 +681,36 @@ const requestConfirmation = async (pending, summary) => {
   }
   home.pendingConfirmation = { ...pending, createdAt: Date.now() }
   await saveDB(db)
-  return m.reply(
+  if (pending.type !== 'upgrade') {
+    return m.reply(
+      `╭─❏「 ⚠️ KONFIRMASI RUMAH 」❏\n` +
+      `│ ⚠️ *PERIKSA SEBELUM MELANJUTKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${summary}\n\n` +
+      `📌 *PILIHAN KONFIRMASI*\n` +
+      `> ↳ Balas *${prefix}home yes* untuk melanjutkan.\n` +
+      `> ↳ Balas *${prefix}home no* untuk membatalkan.\n` +
+      `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+  return sendRpgConfirmButtons(conn, m, {
+    title: '🏠 UPGRADE RUMAH',
+    subtitle: 'Rumahmu siap naik ke tahap berikutnya',
+    text:
     `╭─❏「 ⚠️ KONFIRMASI RUMAH 」❏\n` +
-    `│ ⚠️ *PERIKSA SEBELUM MELANJUTKAN*\n` +
+    `│ ✨ *SATU LANGKAH MENUJU RUMAH IMPIAN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${summary}\n\n` +
-    `📌 *PILIHAN KONFIRMASI*\n` +
-    `> ↳ Balas *${prefix}home yes* untuk melanjutkan.\n` +
-    `> ↳ Balas *${prefix}home no* untuk membatalkan.\n` +
-    `> ↳ Konfirmasi berlaku 5 menit.\n\n` +
-    `─━━━━━━━━━━━━━━─`
-  )
+    `> ↳ Kapasitas dan kenyamanan rumah akan meningkat.\n` +
+    `> ↳ Konfirmasi berlaku selama 5 menit.\n\n` +
+    `Pilih tombol di bawah untuk melanjutkan atau membatalkan.`,
+    acceptText: '🏠 Upgrade Sekarang',
+    acceptCommand: `${prefix}home yes`,
+    cancelText: '↩️ Batalkan',
+    cancelCommand: `${prefix}home no`,
+    noThumbnail: true
+  })
 }
 
 if (!mode) {

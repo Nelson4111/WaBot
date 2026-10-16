@@ -184,18 +184,152 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10)
 }
 
+const CASINO_OUTCOME_KEYS = ['wins', 'losses', 'jackpots', 'blackouts', 'payoutDenied', 'escapes', 'dealerMercies']
+
+function emptyCasinoOutcomes() {
+  return { games: 0, wins: 0, losses: 0, jackpots: 0, blackouts: 0, payoutDenied: 0, escapes: 0, dealerMercies: 0, byGame: {} }
+}
+
+function normalizeCasinoOutcomes(outcomes) {
+  const normalized = outcomes && typeof outcomes === 'object' ? outcomes : emptyCasinoOutcomes()
+  normalized.games = Number(normalized.games || 0)
+  for (const key of CASINO_OUTCOME_KEYS) normalized[key] = Number(normalized[key] || 0)
+  if (!normalized.byGame || typeof normalized.byGame !== 'object') normalized.byGame = {}
+  for (const [game, entry] of Object.entries(normalized.byGame)) {
+    normalized.byGame[game] = { ...emptyCasinoOutcomes(), ...entry }
+    for (const key of ['games', ...CASINO_OUTCOME_KEYS]) {
+      normalized.byGame[game][key] = Number(normalized.byGame[game][key] || 0)
+    }
+    delete normalized.byGame[game].byGame
+  }
+  return normalized
+}
+
 function getCasinoStats(user) {
   user.casinoStats = user.casinoStats || { wins: 0, games: 0, profit: 0, byGame: {} }
   user.casinoStats.byGame = user.casinoStats.byGame || {}
   if (user.casinoStats.dailyDate !== todayKey()) {
     user.casinoStats.dailyDate = todayKey()
     user.casinoStats.dailyGames = 0
+    user.casinoStats.dailyResults = emptyCasinoOutcomes()
+    user.casinoStats.dailyHistory = []
   }
   user.casinoStats.dailyGames = Number(user.casinoStats.dailyGames || 0)
   user.casinoStats.games = Number(user.casinoStats.games || 0)
   user.casinoStats.wins = Number(user.casinoStats.wins || 0)
   user.casinoStats.profit = Number(user.casinoStats.profit || 0)
+  user.casinoStats.dailyResults = normalizeCasinoOutcomes(user.casinoStats.dailyResults)
+  user.casinoStats.dailyHistory = Array.isArray(user.casinoStats.dailyHistory) ? user.casinoStats.dailyHistory : []
+  if (!user.casinoStats.recordResults || typeof user.casinoStats.recordResults !== 'object') {
+    const byGame = {}
+    for (const [game, entry] of Object.entries(user.casinoStats.byGame)) {
+      const gamesPlayed = Number(entry?.games || 0)
+      const wins = Number(entry?.wins || 0)
+      byGame[game] = { games: gamesPlayed, wins, losses: Math.max(0, gamesPlayed - wins), jackpots: 0, blackouts: 0, payoutDenied: 0, escapes: 0, dealerMercies: 0 }
+    }
+    user.casinoStats.recordResults = {
+      ...emptyCasinoOutcomes(),
+      games: user.casinoStats.games,
+      wins: user.casinoStats.wins,
+      losses: Math.max(0, user.casinoStats.games - user.casinoStats.wins),
+      byGame
+    }
+  } else {
+    user.casinoStats.recordResults = normalizeCasinoOutcomes(user.casinoStats.recordResults)
+  }
   return user.casinoStats
+}
+
+function incrementCasinoOutcome(outcomes, game, result) {
+  outcomes.games++
+  const entry = outcomes.byGame[game] || (outcomes.byGame[game] = {
+    games: 0, wins: 0, losses: 0, jackpots: 0, blackouts: 0, payoutDenied: 0, escapes: 0, dealerMercies: 0
+  })
+  entry.games++
+
+  const add = key => {
+    outcomes[key]++
+    entry[key]++
+  }
+  if (result.blackout) add('blackouts')
+  else if (result.payoutDenied) {
+    add('payoutDenied')
+    if (result.multiplier > 0) add('wins')
+  }
+  else if (result.escaped) add('escapes')
+  else if (result.dealerMercy) add('dealerMercies')
+  else if (result.multiplier >= 10) {
+    add('wins')
+    add('jackpots')
+  } else if (result.multiplier > 0) add('wins')
+  else add('losses')
+}
+
+function formatCasinoOutcomeSummary(outcomes) {
+  return `> ↳ Total ronde: ${outcomes.games}x\n` +
+    `> ↳ Menang: ${outcomes.wins}x (termasuk jackpot)\n` +
+    `> ↳ Jackpot: ${outcomes.jackpots}x\n` +
+    `> ↳ Kalah: ${outcomes.losses}x\n` +
+    `> ↳ Blackout: ${outcomes.blackouts}x\n` +
+    `> ↳ Hadiah tidak cair: ${outcomes.payoutDenied}x\n` +
+    `> ↳ Berhasil kabur: ${outcomes.escapes}x\n` +
+    `> ↳ Bandar berbaik hati: ${outcomes.dealerMercies}x`
+}
+
+function casinoHistoryText(stats, dailyLimit, usedPrefix) {
+  const rounds = stats.dailyHistory.slice().reverse()
+  const history = rounds.length
+    ? rounds.map((round, index) => {
+      const game = games[round.game]
+      const time = new Date(round.at).toLocaleTimeString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      return `*${index + 1}. ${game?.emoji || '🎲'} ${game?.name || round.game}* · ${time}\n` +
+        `> ↳ Hasil: ${round.outcome}\n` +
+        `> ↳ Taruhan: ${money(round.bet)} · Hadiah: ${money(round.payout)}\n` +
+        `> ↳ Profit: ${signedMoney(round.profit)}`
+    }).join('\n\n')
+    : '> ↳ Belum ada permainan casino hari ini.'
+
+  return `╭─❏「 🗓️ RIWAYAT CASINO 」❏\n` +
+    `│ CATATAN PERMAINAN HARI INI\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📊 *RINGKASAN HASIL*\n` +
+    `> ↳ Kesempatan terpakai: ${stats.dailyGames}/${dailyLimit}x\n` +
+    `${formatCasinoOutcomeSummary(stats.dailyResults)}\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `🎲 *RONDE TERAKHIR HARI INI*\n\n` +
+    `${history}\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `Catatan ini direset bersama kesempatan casino harian. Rekap permanen tetap tersimpan di *${usedPrefix}cs record*.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+}
+
+function casinoRecordText(stats) {
+  const outcomes = stats.recordResults
+  const byGame = Object.entries(outcomes.byGame)
+    .filter(([, entry]) => entry.games > 0)
+    .sort(([, first], [, second]) => second.games - first.games)
+    .map(([key, entry]) => {
+      const game = games[key]
+      return `${game?.emoji || '🎲'} *${game?.name || key}*\n` +
+        `> ↳ Main ${entry.games}x · Menang ${entry.wins}x · Kalah ${entry.losses}x\n` +
+        `> ↳ Jackpot ${entry.jackpots}x · Blackout ${entry.blackouts}x\n` +
+        `> ↳ Hadiah tidak cair ${entry.payoutDenied}x · Kabur ${entry.escapes}x · Bandar berbaik hati ${entry.dealerMercies}x`
+    }).join('\n\n')
+
+  return `╭─❏「 🏆 CASINO RECORD 」❏\n` +
+    `│ REKAP SEPANJANG WAKTU\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📈 *SEMUA PERMAINAN*\n` +
+    `${formatCasinoOutcomeSummary(outcomes)}\n` +
+    `> ↳ Profit bersih: ${signedMoney(stats.profit)}\n\n` +
+    `─━━━━━━━━━━━━━━─\n` +
+    `🎮 *RINCIAN PER GAME*\n\n` +
+    `${byGame || '> ↳ Belum ada catatan permainan.'}\n\n` +
+    `─━━━━━━━━━━━━━━─`
 }
 
 function getCasinoTitle(gamesPlayed) {
@@ -395,6 +529,8 @@ function casinoCommands(prefix) {
     `> ↳ 🎲 ${prefix}casino random <taruhan>`,
     `> ↳ 🧪 ${prefix}casino simulation <game/random> [nominal] atau ${prefix}cs sl <game/random> [nominal]`,
     `> ↳ 📖 ${prefix}cs hasil`,
+    `> ↳ 🗓️ ${prefix}cs history`,
+    `> ↳ 🏆 ${prefix}cs record`,
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 👤 ${prefix}casino profile`,
@@ -506,6 +642,8 @@ function menu(prefix, wdb, conn, groupMetadata) {
   text += `📌 *PERINTAH*\n`
   text += `> ↳ ${prefix}casino command\n`
   text += `> ↳ ${prefix}casino guide\n\n`
+  text += `> ↳ ${prefix}cs history — hasil hari ini\n`
+  text += `> ↳ ${prefix}cs record — rekap sepanjang waktu\n\n`
 
   text += `─━━━━━━━━━━━━━━─`
 
@@ -1242,7 +1380,7 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const casinoShutdown = isRpgEventActive('casino_shutdown')
-  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil']
+  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record']
   const roomReadOnlyActions = ['info', 'games', 'guide']
   if (casinoShutdown && !readOnlyCasinoInputs.includes(input) &&
       !(input === 'room' && roomReadOnlyActions.includes(String(args[1] || '').toLowerCase()))) {
@@ -1250,7 +1388,7 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
   }
   const inCasinoRoom = getPlayerCasinoRoom(wdb, m.sender)
 
-  if (inCasinoRoom && input !== 'room' && input !== 'hasil') {
+  if (inCasinoRoom && input !== 'room' && !['hasil', 'history', 'record'].includes(input)) {
     return m.reply(
       `╭─❏「 🚫 CASINO ROOM 」❏\n` +
       `│ 🔒 *Kamu sedang berada di room casino.*\n` +
@@ -1340,6 +1478,20 @@ return m.reply(
 
   const stats = getCasinoStats(user)
   const dailyLimit = getDailyLimit(m.sender, wdb)
+
+  if (input === 'history') {
+    return sendRpgQuickButton(conn, m, {
+      text: casinoHistoryText(stats, dailyLimit, usedPrefix),
+      title: '🗓️ RIWAYAT CASINO',
+      buttonText: '🏆 BUKA RECORD',
+      command: `${usedPrefix}cs record`,
+      noThumbnail: true
+    })
+  }
+
+  if (input === 'record') {
+    return m.reply(casinoRecordText(stats))
+  }
 
   if (!input) {
     const overview = menu(usedPrefix, wdb, conn, groupMetadata)
@@ -1541,6 +1693,29 @@ if (elapsed < cooldownDuration) {
   }
 
   stats.profit = Number(stats.profit || 0) + net
+  incrementCasinoOutcome(stats.dailyResults, game, result)
+  incrementCasinoOutcome(stats.recordResults, game, result)
+  stats.dailyHistory.push({
+    at: Date.now(),
+    game,
+    outcome: result.blackout
+      ? '🌑 Blackout'
+      : result.payoutDenied
+        ? '🎟️ Hadiah tidak cair'
+        : result.escaped
+          ? '🏃 Berhasil kabur'
+          : result.dealerMercy
+            ? '🤝 Bandar berbaik hati'
+            : result.multiplier >= 10
+              ? '🏆 Jackpot'
+              : result.multiplier > 0
+                ? '🎉 Menang'
+                : '💀 Kalah',
+    bet,
+    payout,
+    profit: net
+  })
+  stats.dailyHistory = stats.dailyHistory.slice(-PREMIUM_DAILY_LIMIT)
   wdb.casinoStats = wdb.casinoStats || { totalWinnings: 0 }
   if (result.multiplier > 0 && !result.payoutDenied) {
     wdb.casinoStats.totalWinnings = Number(wdb.casinoStats.totalWinnings || 0) + payout
@@ -1601,6 +1776,8 @@ handler.help = [
   'casino simulation <game/random> [nominal]',
   'cs sl <game/random> [nominal]',
   'cs hasil',
+  'cs history',
+  'cs record',
   'casino top',
   'casino profile',
   'casino nickname <julukan>',

@@ -44,10 +44,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   let args = text ? text.trim().split(/\s+/) : []
   let action = args[0]?.toLowerCase()
-  if (action === 'kidcare' || String(command || '').toLowerCase() === 'kidcare') {
+  if (['kidcare', 'childcare'].includes(action) || ['kidcare', 'childcare'].includes(String(command || '').toLowerCase())) {
     action = 'kid'
     args = ['kid', 'urus', 'all', 'all']
   }
+  if (action === 'child') action = 'kid'
   if (action === 'anak' && ['adopt', 'adopsi'].includes(args[1]?.toLowerCase())) {
     action = 'kid'
     args = ['kid', ...args.slice(1)]
@@ -5433,8 +5434,8 @@ if (action === 'kiss') {
 
 }
 
-handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship kid guide', 'rship kid command', 'kidcare', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan list', 'rship makam list', 'rship shelter list', 'rship shelter retrieve <no>', 'rship exspouse/ex', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
+handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship child info', 'rship kid guide', 'rship child guide', 'rship kid command', 'rship child command', 'kidcare', 'childcare', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan list', 'rship makam list', 'rship shelter list', 'rship shelter retrieve <no>', 'rship exspouse/ex', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
-handler.command = ['rship', 'rsh', 'kidcare']
+handler.command = ['rship', 'rsh', 'kidcare', 'childcare']
 handler.group = true
 export default handler

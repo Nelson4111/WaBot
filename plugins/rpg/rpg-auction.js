@@ -655,7 +655,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
       buttonText: '🔨 JELAJAHI LELANG',
       sections: [{ title: 'Balai lelang', rows }],
-      fallbackText
+      fallbackText,
+      noThumbnail: true
     })
   }
 
@@ -763,7 +764,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const highest = getVisibleHighestBid(db, session, item)
       return {
         title: `${index + 1}. ${item.emoji} ${item.name}`,
-        description: `Bid tertinggi ${money(highest.amount)} · ajukan bid cepat`,
+        description: `Bid tertinggi ${money(highest.amount)}`,
         id: `${prefix}ah bid ${item.id}`
       }
     })
@@ -1034,7 +1035,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       acceptText: '🏆 Konfirmasi Bid',
       acceptCommand: `${prefix}ah bid konfirmasi`,
       cancelText: '↩️ Batalkan Bid',
-      cancelCommand: `${prefix}ah bid batal`
+      cancelCommand: `${prefix}ah bid batal`,
+      noThumbnail: true
     })
   }
 

@@ -271,7 +271,7 @@ function ensureLotteryState(wdb) {
 
     wdb.lottery.jackpot = hasWinner
       ? wdb.lottery.basePrize
-      : currentPrize + (wdb.lottery.basePrize * elapsedDays)
+      : Math.min(Number.MAX_SAFE_INTEGER, Math.floor(currentPrize * (2 ** elapsedDays)))
     wdb.lottery.dailyDate = todayKey()
     wdb.lottery.pool = {}
   }

@@ -113,6 +113,7 @@ user.pets = user.pets.filter(p => {
 
   let args = (text || '').trim().split(/\s+/).filter(Boolean)
   let action = args[0]?.toLowerCase()
+  if (String(command || '').toLowerCase() === 'petcare') action = 'care'
   let jam = new Date().getHours()
   let menit = new Date().getMinutes().toString().padStart(2, '0')
   let isMalam = jam >= 18 || jam < 6
@@ -2997,9 +2998,9 @@ if (action === 'claim') {
   return safeReply(`❌ Command tidak dikenal. Ketik *.pet* buat lihat menu`)
 }
 
-handler.help = ['pet', 'pet guide', 'pet command', 'pet care', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
+handler.help = ['pet', 'pet guide', 'pet command', 'pet care', 'petcare', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
 handler.tags = ['rpg']
-handler.command = ['pet']
+handler.command = ['pet', 'petcare']
 handler.alias = ['pet']
 handler.group = true
 export default handler

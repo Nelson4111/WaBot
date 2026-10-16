@@ -157,7 +157,6 @@ return m.reply(
 
   if(isChanged) saveDB(wdb)
 
-  let pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
   let threshold = user.level * 500
   let armorLvl = user.armor || 0
   let maxHP = 100 + (armorLvl * 20) + (user.maxDarahBonus || 0)
@@ -265,7 +264,7 @@ cap += `> 🐠 Cek Aquarium: *.aquarium*\n`
 cap += `> 🌾 Cek Kebun: *.kebun*\n`
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, pp)
+return sendRpgMsg(conn, m, cap)
 }
 
 handler.help = ['inventory', 'inv', 'equipment list']
