@@ -216,7 +216,7 @@ let res = await (await fetch(`https://raw.githubusercontent.com/KazukoGans/datab
 let cita = res[Math.floor(Math.random() * res.length)]
 conn.sendFile(m.chat, cita, 'result.jpg', `Nihh ${command} nya @${m.sender.split('@')[0]}`, m) 
 }
-if (command == 'pokemon') {
+if (command == 'pokemonn') {
 let res = await (await fetch(`https://raw.githubusercontent.com/KazukoGans/database/main/anime/pokemon.json`)).json()
 let cita = res[Math.floor(Math.random() * res.length)]
 conn.sendFile(m.chat, cita, 'result.jpg', `Nihh ${command} nya @${m.sender.split('@')[0]}`, m) 
@@ -334,7 +334,7 @@ handler.command = handler.help = [
 'nezuko', 
 'nishimiya', 
 'onepiece', 
-'pokemon',
+'pokemonn',
 'rem', 
 'rize',
 'sagiri',
