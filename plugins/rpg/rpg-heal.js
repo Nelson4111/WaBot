@@ -172,6 +172,7 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
       quoted: m,
       mentions: [m.sender, target],
       preferV2: true,
+      noThumbnail: true,
       reply: fallbackText => m.reply(fallbackText, null, { mentions: [m.sender, target] })
     })
   }

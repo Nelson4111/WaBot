@@ -136,6 +136,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       title: '❤️ PULIHKAN DARAHMU',
       buttonText: '💖 Gunakan Heal',
       command: `${usedPrefix}heal`,
+      noThumbnail: true,
       text: `╭─❏「 ❤️ DUNGEON 」❏
 │ ⚠️ DARAH KRITIS
 ╰─━━━━━━━━━━━━━━─
@@ -231,6 +232,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       title: '💀 BANGKIT DAN COBA LAGI',
       buttonText: '💖 Bangkit dengan Heal',
       command: `${usedPrefix}heal`,
+      noThumbnail: true,
       text: `╭─❏「 💀 DUNGEON FAILED 」❏
 │ KAMU TEWAS!
 ╰─━━━━━━━━━━━━━━─

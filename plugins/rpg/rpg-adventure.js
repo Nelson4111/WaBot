@@ -128,7 +128,8 @@ let handler = async (m, { conn, command }) => {
       text: '❌ Darah terlalu rendah! Minum potion dulu',
       buttonText: '💖 Gunakan Heal',
       command: `${usedPrefix || '.'}heal`,
-      footer: ''
+      footer: '',
+      noThumbnail: true
     })
   }
 
@@ -255,9 +256,9 @@ cap += levelUpMsg
       chat: m.chat,
       text: cap,
       footer: '',
-      buffer: 'https://c.termai.cc/i166/r7V1',
       buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
-      quoted: m
+      quoted: m,
+      noThumbnail: true
     })
   }
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')

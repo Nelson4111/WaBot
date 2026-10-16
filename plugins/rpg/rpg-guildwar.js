@@ -224,9 +224,9 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
       chat: m.chat,
       text: cap,
       footer: '',
-      buffer: 'https://c.termai.cc/i108/l3q',
       buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
       quoted: m,
+      noThumbnail: true,
       mentions,
       reply: text => conn.sendMessage(m.chat, { text, mentions }, { quoted: m })
     })

@@ -1,5 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { sendRpgQuickButton, sendRpgRegistrationPrompt, sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   getMbgMenu,
@@ -205,6 +204,26 @@ if (options && (!Array.isArray(options) || options.length !== 5 || !options.ever
   )
 }
 
+const sendSwapChoices = (messageText, menus) => sendRpgButtons(conn, {
+  chat: m.chat,
+  message: m,
+  quoted: m,
+  title: '🍱 PILIH MENU FAVORITMU',
+  subtitle: 'Satu sentuhan untuk menetapkan menu pilihan',
+  text: messageText,
+  buttonText: '✨ TENTUKAN MENU',
+  sections: [{
+    title: 'Pilihan menu MBG',
+    rows: menus.map((menu, index) => ({
+      title: `✨ Pilihan ${index + 1} · ${formatMasakanNama(menu.food)}`,
+      description: `🥤 ${formatMasakanNama(menu.drink)} · menu bergizi pilihan`,
+      id: `${usedPrefix}mbg tukar ${index + 1}`
+    }))
+  }],
+  fallbackText: messageText,
+  noThumbnail: true
+})
+
 if (action === 'premium') {
   if (!premium) {
     return m.reply(
@@ -220,7 +239,7 @@ if (action === 'premium') {
   const pending = user.mbgSwapPending === true && options
   const availableMenus = options || []
 
-  return m.reply(
+  const premiumText =
     `╭─❏「 👑 MBG PREMIUM 」❏\n` +
     `│ 👑 *FASILITAS MBG PREMIUM*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -252,7 +271,7 @@ if (action === 'premium') {
     `\n\n` +
     `> ↳ Pilihan tukar tidak dapat dibatalkan.\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  return pending ? sendSwapChoices(premiumText, availableMenus) : m.reply(premiumText)
 }
 
 if (action === 'tukar' || action === 'swap') {
@@ -306,16 +325,20 @@ if (action === 'tukar' || action === 'swap') {
     user.mbgSwapSelection = selected
     saveDB(wdb)
 
-    return m.reply(
-      `╭─❏「 🔄 MENU MBG DITETAPKAN 」❏\n` +
+    return sendRpgQuickButton(conn, m, {
+      text: `╭─❏「 🔄 MENU MBG DITETAPKAN 」❏\n` +
       `│ 🍱 *MENU PILIHAN ${selected}*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ ${menuDescription(dailyMenu)}\n\n` +
       `> ↳ Pilihan tidak dapat dibatalkan.\n` +
       `> ↳ Klaim dengan *${usedPrefix}mbg ambil*.\n` +
       `> ↳ Atau pilih nomor menu untuk jatah dengan *${usedPrefix}mbg ambil 1 2*.\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+      `─━━━━━━━━━━━━━━─`,
+      title: '🎁 MENU SIAP DIKLAIM',
+      buttonText: '🍱 Ambil Jatah MBG',
+      command: `${usedPrefix}mbg ambil`,
+      noThumbnail: true
+    })
   }
 
   if (claims.length && (!premium || claims.length >= 2)) {
@@ -331,7 +354,7 @@ if (action === 'tukar' || action === 'swap') {
 
   if (user.mbgSwapDate === dateKey) {
     if (premium && user.mbgSwapPending === true && options) {
-      return m.reply(
+      const messageText =
         `╭─❏「 🔄 PILIH MENU MBG 」❏\n` +
         `│ ⏳ *PILIH SALAH SATU MENU*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -339,7 +362,7 @@ if (action === 'tukar' || action === 'swap') {
         `> ↳ Pilih dengan *${usedPrefix}mbg tukar 1–5*.\n` +
         `> ↳ Pilihan ini tidak dapat dibatalkan.\n\n` +
         `─━━━━━━━━━━━━━━─`
-      )
+      return sendSwapChoices(messageText, options)
     }
 
     return m.reply(
@@ -366,7 +389,7 @@ if (action === 'tukar' || action === 'swap') {
     user.mbgSwapPending = true
     saveDB(wdb)
 
-    return m.reply(
+    const messageText =
       `╭─❏「 🔄 PILIH MENU MBG 」❏\n` +
       `│ 👑 *MENU PREMIUM*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -377,7 +400,7 @@ if (action === 'tukar' || action === 'swap') {
       `> ↳ Pilih satu dengan *${usedPrefix}mbg tukar 1–5*.\n` +
       `> ↳ Pilihan tidak dapat dibatalkan.\n\n` +
       `─━━━━━━━━━━━━━━─`
-    )
+    return sendSwapChoices(messageText, swapOptions)
   }
 
   dailyMenu = getRandomMenu([dailyMenu])
