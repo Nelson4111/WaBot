@@ -77,7 +77,7 @@ function sendGachaText(conn, m, text, options = {}) {
     buttons: options.buttons,
     mentions: options.mentions || [],
     fallbackText: options.fallbackText || text,
-    noThumbnail: true
+    noThumbnail: false
   })
 }
 
