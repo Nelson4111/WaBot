@@ -646,5 +646,29 @@
     "content": "\u003e Menu RPG kini memakai daftar tombol; notifikasi heal dan cooldown anak menyediakan tombol aksi langsung.",
     "author": "Eza",
     "createdAt": 1792075349000
+  },
+  {
+    "id": "17.0",
+    "section": "RPG",
+    "title": "Petualangan Pokémon",
+    "content": "\u003e Encounter Pokémon muncul bergantian tiap 50 pesan grup atau lewat daily. Tangkap, latih hingga naik level, bentuk tim, battle, tukar Pokémon, dan cek koleksi, profile, title, leaderboard, serta cooldown lewat .pokemon.",
+    "author": "Eza",
+    "createdAt": 1792173530445
+  },
+  {
+    "id": "17.1",
+    "section": "RPG",
+    "title": "Ghost Hunter",
+    "content": "\u003e Encounter hantu muncul bergantian tiap 50 pesan grup atau lewat daily. Tangkap entitas, latih, bentuk tim, battle, tukar koleksi, dan cek profile, title, leaderboard, serta cooldown lewat .ghost. Admin grup dapat mengatur spawn otomatis.",
+    "author": "Eza",
+    "createdAt": 1792176960000
+  },
+  {
+    "id": "17.2",
+    "section": "RPG",
+    "title": "Pembaruan Avelia Gacha",
+    "content": "\u003e Avelia Gacha kini punya menu, guide, profile/title, leaderboard, cooldown, dan pengelolaan mansion: rename, favorit, release dengan konfirmasi, serta give karakter. Roll tetap manual tanpa encounter otomatis.",
+    "author": "Eza",
+    "createdAt": 1792176960001
   }
 ]
