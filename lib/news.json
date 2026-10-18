@@ -699,7 +699,7 @@
     "id": "19.2",
     "section": "RPG",
     "title": "Perbaikan Work dan Misi Guild",
-    "content": "\u003e Work otomatis memakai pekerjaan aktif yang siap; .work all khusus Premium. Reward misi guild, EXP karakter, dan ringkasan loot diperbaiki.",
+    "content": "\u003e Work all menampilkan total reward dengan cooldown 5 menit per pekerjaan; Premium dapat memakai .job talk all. Reward misi guild dan EXP karakter diperbaiki.",
     "author": "Eza",
     "createdAt": 1792343673000
   },
