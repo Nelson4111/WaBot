@@ -670,5 +670,13 @@
     "content": "\u003e Avelia Gacha kini punya menu, guide, profile/title, leaderboard, cooldown, dan pengelolaan mansion: rename, favorit, release dengan konfirmasi, serta give karakter. Roll tetap manual tanpa encounter otomatis.",
     "author": "Eza",
     "createdAt": 1792176960001
+  },
+  {
+    "id": "18.0",
+    "section": "GAME",
+    "title": "Pembaruan Ular Tangga Dual-Message dan Zen Shinto",
+    "content": "\u003e Ular Tangga diperbarui dengan sistem Dual-Message (tombol dadu interaktif khusus pemain aktif), perbaikan bug antarmuka dan anti-macet, mode solo lawan Bot AI, aturan pantulan kotak 100, auto-timeout 90 detik, dan tampilan Zen Shinto.",
+    "author": "Nenel",
+    "createdAt": 1792330123260
   }
 ]
