@@ -282,19 +282,17 @@ if (text.toLowerCase() === 'all') {
   }))
   const replantFallback = `${teks}\n\n🌱 *TANAM KEMBALI*\n` +
     replantRows.map(row => `> ↳ ${row.title}: *${row.id}*`).join('\n')
-  await sendRpgMsg(conn, m, teks, ladangImageUrl)
   return sendRpgButtons(conn, {
     chat: m.chat,
     message: m,
     quoted: m,
-    text: 'Panen selesai! Pilih bibit yang ingin kamu tanam kembali.',
-    title: '🌱 PILIH BIBIT',
-    subtitle: 'Pilih bibit yang baru saja kamu panen',
+    text: teks,
+    title: '🌾 HASIL PANEN',
+    subtitle: 'Pilih bibit untuk ditanam kembali',
     buttonText: '🌱 TANAM KEMBALI',
     sections: [{ title: 'Bibit dari panen ini', rows: replantRows }],
     fallbackText: replantFallback,
-    noThumbnail: true,
-    noHeader: true
+    thumbnailUrl: ladangImageUrl
   })
 }
 
@@ -367,17 +365,15 @@ if (sisaWaktu <= 0) {
 
   teks += `─━━━━━━━━━━━━━━─`
 
-  await sendRpgMsg(conn, m, teks, ladangImageUrl)
   return sendRpgButtons(conn, {
     chat: m.chat,
-    text: 'Panen selesai! Tanam kembali bibitmu lewat tombol berikut.',
+    text: teks,
     title: '🌱 TANAM KEMBALI',
     subtitle: 'Mulai lagi dengan bibit yang baru kamu panen',
+    thumbnailUrl: ladangImageUrl,
     buttons: [[`🌱 Tanam ${formatNama(l.jenis)}`, `${usedPrefix}tanam ${l.jenis} ulang 1`]],
     quoted: m,
     preferV2: true,
-    noThumbnail: true,
-    noHeader: true,
     reply: fallbackText => m.reply(fallbackText)
   })
 } else {

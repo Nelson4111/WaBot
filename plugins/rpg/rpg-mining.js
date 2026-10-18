@@ -1,4 +1,4 @@
-import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
 import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -166,15 +166,14 @@ if(miningYieldEffect !== 0) caption += `> ↳ 🧬 Efek Bloodline: hasil ore ${m
 if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk hasil secret\n`
 caption += `\n─━━━━━━━━━━━━━━─`
 
-await sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i140/srjE7x6')
 return sendRpgButtons(conn, {
   chat: m.chat,
-  text: 'Hasil tambang sudah tersimpan. Buka tas untuk melihat koleksimu.',
+  text: caption,
   title: '⛏️ HASIL TAMBANG',
   subtitle: 'Semua ore sudah tersimpan di tasmu',
+  thumbnailUrl: 'https://c.termai.cc/i140/srjE7x6',
   buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
   quoted: m,
-  noThumbnail: true,
   reply: fallbackText => m.reply(fallbackText)
 })
 }

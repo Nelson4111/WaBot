@@ -239,30 +239,28 @@ if (bonus > 0) {
 
 cap += levelUpMsg
 
-await sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')
-
   if (user.darah <= 0 && !revivedHP && !deathProtected) {
     return sendRpgButtons(conn, {
       chat: m.chat,
-      text: 'Hasil adventure sudah tersimpan. Cek tas atau pulihkan diri untuk melanjutkan.',
+      text: cap,
       title: '🗺️ HASIL ADVENTURE',
       subtitle: 'Loot tersimpan di tas, pulihkan diri untuk lanjut',
+      thumbnailUrl: 'https://c.termai.cc/i166/r7V1',
       buttons: [
         ['🎒 Buka Tas', `${usedPrefix || '.'}bag`],
         ['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]
       ],
       quoted: m,
-      noThumbnail: true
     })
   }
   return sendRpgButtons(conn, {
     chat: m.chat,
-    text: 'Hasil adventure sudah tersimpan. Buka tas untuk melihat koleksimu.',
+    text: cap,
     title: '🗺️ HASIL ADVENTURE',
     subtitle: 'Loot petualangan sudah tersimpan di tasmu',
+    thumbnailUrl: 'https://c.termai.cc/i166/r7V1',
     buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
     quoted: m,
-    noThumbnail: true,
     reply: fallbackText => m.reply(fallbackText)
   })
 }

@@ -100,7 +100,33 @@ const handler = async (m, { usedPrefix }) => {
   } else {
     addCooldown(activeCooldowns, 'Daily', account.lastDaily, dailyDuration)
   }
-  addCooldown(activeCooldowns, 'Kerja RPG', user.lastkerja, scaleDifficultyCooldown(user, COOLDOWN_TIMES.kerja_rpg))
+  const appliedJobs = Array.isArray(user.appliedJobs) ? user.appliedJobs : []
+  const jobReadyAt = user.jobWorkCooldowns && typeof user.jobWorkCooldowns === 'object'
+    ? user.jobWorkCooldowns
+    : null
+  let jobCooldownRemaining = []
+  if (jobReadyAt) {
+    jobCooldownRemaining = appliedJobs
+      .map(jobName => Math.max(0, (Number(jobReadyAt[jobName]) || 0) - now))
+      .filter(remaining => remaining > 0)
+  } else if (Number(user.lastkerja)) {
+    const legacyRemaining = Math.max(
+      0,
+      Number(user.lastkerja) +
+        scaleDifficultyCooldown(
+          user,
+          COOLDOWN_TIMES.kerja_rpg * Math.max(1, Number(user.lastkerjaJobCount) || 1)
+        ) -
+        now
+    )
+    if (legacyRemaining > 0) jobCooldownRemaining = [legacyRemaining]
+  }
+  if (jobCooldownRemaining.length) {
+    activeCooldowns.push({
+      label: 'Kerja RPG',
+      remaining: Math.min(...jobCooldownRemaining)
+    })
+  }
   addCooldown(activeCooldowns, 'Adventure', user.lastAdventure, scaleDifficultyCooldown(user, COOLDOWN_TIMES.adventure))
   addCooldown(activeCooldowns, 'Mining', user.lastMining, scaleDifficultyCooldown(user, COOLDOWN_TIMES.mining))
   addCooldown(activeCooldowns, 'Dungeon', user.lastDungeon, scaleDifficultyCooldown(user, COOLDOWN_TIMES.dungeon))

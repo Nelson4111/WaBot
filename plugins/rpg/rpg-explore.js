@@ -1,5 +1,5 @@
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
@@ -111,15 +111,14 @@ let handler = async (m, { conn, usedPrefix }) => {
   const image = Math.random() < 0.5
     ? 'https://c.termai.cc/i143/rU2.jpg'
     : 'https://c.termai.cc/i123/9R4g.jpg'
-  await sendRpgMsg(conn, m, caption, image)
   return sendRpgButtons(conn, {
     chat: m.chat,
-    text: 'Temuan penjelajahan sudah tersimpan. Buka tas untuk melihat koleksimu.',
+    text: caption,
     title: '🚀 HASIL PENJELAJAHAN',
     subtitle: `Temuan di Planet ${destination} sudah tersimpan di tas`,
+    thumbnailUrl: image,
     buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
     quoted: m,
-    noThumbnail: true,
     reply: fallbackText => m.reply(fallbackText)
   })
 }

@@ -1,5 +1,5 @@
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -270,14 +270,15 @@ caption += `\n─━━━━━━━━━━━━━━─`
 
   let pp = 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
   try { pp = await conn.profilePictureUrl(m.sender, 'image') } catch {}
-  const sendButtons = () => sendRpgButtons(conn, {
+  const sendButtons = ({ buffer, thumbnailUrl } = {}) => sendRpgButtons(conn, {
     chat: m.chat,
-    text: 'Hasil tangkapan sudah tersimpan. Buka aquarium untuk melihat koleksimu.',
+    text: caption,
     title: '🎣 HASIL MEMANCING',
     subtitle: 'Koleksi ikanmu menunggu untuk dilihat',
+    buffer,
+    thumbnailUrl,
     buttons: [['🐠 Buka Aquarium', `${usedPrefix || '.'}aquarium`]],
     quoted: m,
-    noThumbnail: true,
     reply: fallbackText => m.reply(fallbackText)
   })
   try {
@@ -290,24 +291,11 @@ caption += `\n─━━━━━━━━━━━━━━─`
       rodLevel: rodLvl,
       tier: highest
     })
-    if (cardBuf) {
-      await conn.sendMessage(m.chat, { image: cardBuf, caption, mentions: [m.sender] }, { quoted: m })
-      return sendButtons()
-    }
+    if (cardBuf) return sendButtons({ buffer: cardBuf })
   } catch (e) {
     console.error('[FishingCard] Error:', e.message)
   }
-  await sendRpgMsg(conn, m, caption, pp)
-  return sendRpgButtons(conn, {
-    chat: m.chat,
-    text: 'Hasil tangkapan sudah tersimpan. Buka aquarium untuk melihat koleksimu.',
-    title: '🎣 HASIL MEMANCING',
-    subtitle: 'Koleksi ikanmu menunggu untuk dilihat',
-    buttons: [['🐠 Buka Aquarium', `${usedPrefix || '.'}aquarium`]],
-    quoted: m,
-    noThumbnail: true,
-    reply: fallbackText => m.reply(fallbackText)
-  })
+  return sendButtons({ thumbnailUrl: pp })
 }
 
 handler.help = ['mancing', 'fishing', 'pancing']
