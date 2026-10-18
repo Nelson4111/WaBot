@@ -1,31 +1,30 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js';
-import { status, toSmallNum, shintoDivider } from '../../lib/style.js';
+import { status, toSmallNum } from '../../lib/style.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const BOARD_IMAGE_PATH = path.resolve(__dirname, '../../media/ulartangga_board.jpg');
-
-// Konfigurasi Tangga & Ular
+// Konfigurasi Peta Tangga & Ular Sesuai Papan Ilustrasi HD Asli (media/ulartangga_board.jpg)
 const SNAKES_AND_LADDERS = [
     // 🪜 Tangga (Naik)
-    { start: 15, end: 37, type: 'ladder' },
-    { start: 23, end: 41, type: 'ladder' },
-    { start: 49, end: 86, type: 'ladder' },
-    { start: 67, end: 87, type: 'ladder' },
-    { start: 74, end: 95, type: 'ladder' },
+    { start: 4, end: 25, type: 'ladder' },
+    { start: 21, end: 39, type: 'ladder' },
+    { start: 29, end: 74, type: 'ladder' },
+    { start: 43, end: 76, type: 'ladder' },
+    { start: 63, end: 80, type: 'ladder' },
+    { start: 71, end: 89, type: 'ladder' },
 
     // 🐍 Ular (Turun)
-    { start: 18, end: 7, type: 'snake' },
-    { start: 24, end: 12, type: 'snake' },
-    { start: 72, end: 36, type: 'snake' },
-    { start: 75, end: 64, type: 'snake' },
-    { start: 90, end: 56, type: 'snake' },
-    { start: 91, end: 72, type: 'snake' },
-    { start: 97, end: 78, type: 'snake' }
+    { start: 30, end: 7, type: 'snake' },
+    { start: 47, end: 15, type: 'snake' },
+    { start: 56, end: 19, type: 'snake' },
+    { start: 73, end: 51, type: 'snake' },
+    { start: 82, end: 42, type: 'snake' },
+    { start: 92, end: 75, type: 'snake' },
+    { start: 98, end: 55, type: 'snake' }
 ];
+
+const LADDER_STARTS = new Set(SNAKES_AND_LADDERS.filter(s => s.type === 'ladder').map(s => s.start));
+const SNAKE_STARTS = new Set(SNAKES_AND_LADDERS.filter(s => s.type === 'snake').map(s => s.start));
 
 // Helper: Ambil kelas Button dari conn atau package elaina-baileys
 async function getButtonClass(conn) {
@@ -38,96 +37,215 @@ async function getButtonClass(conn) {
     }
 }
 
-// Render Papan Ular Tangga menggunakan @napi-rs/canvas (dengan fallback Jimp jika diperlukan)
-async function renderBoard(room) {
+// Helper: Hapus pesan bot sebelumnya agar ruang obrolan bersih & hemat memori HP
+async function deletePreviousMessages(conn, chatId, room) {
+    if (!room || !Array.isArray(room.lastMsgKeys) || room.lastMsgKeys.length === 0) return;
+    const keysToDelete = [...room.lastMsgKeys];
+    room.lastMsgKeys = [];
+    for (const key of keysToDelete) {
+        try {
+            if (key) await conn.sendMessage(chatId, { delete: key });
+        } catch {
+            // Abaikan bila pesan sudah terhapus atau dibersihkan
+        }
+    }
+}
+
+// Render Papan Ular Tangga Realistis (Gambar Latar HD Zig-Zag + Bidak Pion 3D Klasik)
+export async function renderBoard(room) {
     try {
         const { createCanvas, loadImage } = await import('@napi-rs/canvas');
-        let bgImg;
-        if (fs.existsSync(BOARD_IMAGE_PATH)) {
-            bgImg = await loadImage(BOARD_IMAGE_PATH);
-        } else {
-            bgImg = await loadImage('https://i.pinimg.com/originals/2f/68/a7/2f68a7e1eee18556b055418f7305b3c0.jpg');
-        }
-
-        const size = 500;
-        const canvas = createCanvas(size, size);
+        const boardSize = 1000;
+        const canvas = createCanvas(boardSize, boardSize);
         const ctx = canvas.getContext('2d');
 
-        // Gambar papan latar belakang
-        ctx.drawImage(bgImg, 0, 0, size, size);
+        // 1. Muat Template Gambar Papan Ilustrasi HD Asli (media/ulartangga_board.jpg)
+        const boardImagePath = path.join(process.cwd(), 'media', 'ulartangga_board.jpg');
+        if (fs.existsSync(boardImagePath)) {
+            const boardImg = await loadImage(boardImagePath);
+            ctx.drawImage(boardImg, 0, 0, boardSize, boardSize);
+        } else {
+            // Fallback latar belakang jika gambar belum tersedia
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, boardSize, boardSize);
+        }
 
-        // Grid kalkulasi kotak (1 - 100)
-        const margin = 12;
-        const gridW = size - (margin * 2);
-        const gridH = size - (margin * 2);
-        const cellW = gridW / 10;
-        const cellH = gridH / 10;
-
-        const p1 = room.players[0];
-        const p2 = room.players[1];
-        const pos1 = room.positions[p1] || 1;
-        const pos2 = room.positions[p2] || 1;
-        const sameCell = pos1 === pos2;
-
-        const getCellCenter = (pos, playerIdx) => {
-            const row = 9 - Math.floor((pos - 1) / 10);
-            const col = (pos - 1) % 10;
-            let cx = margin + (col + 0.5) * cellW;
-            let cy = margin + (row + 0.5) * cellH;
-
-            // Offset jika berada di kotak yang sama
-            if (sameCell) {
-                cx += (playerIdx === 0 ? -cellW * 0.22 : cellW * 0.22);
+        // 2. Kalkulasi Koordinat Grid 10x10 Papan Asli Zig-Zag (100px per petak)
+        // Baris 1 (bawah): 1 - 10 (kiri ke kanan)
+        // Baris 2: 11 - 20 (kanan ke kiri, 11 di atas 10)
+        // Baris 3: 21 - 30 (kiri ke kanan, 21 di atas 20)
+        // ...
+        // Baris 10 (atas): 91 - 100 (kanan ke kiri, 100 di kiri atas)
+        const tileSize = boardSize / 10;
+        const getCoords = (pos) => {
+            const safePos = Math.max(1, Math.min(100, pos));
+            const row = Math.floor((safePos - 1) / 10);
+            let col = (safePos - 1) % 10;
+            // Baris ganjil berbalik arah (zig-zag / Boustrophedon resmi)
+            if (row % 2 === 1) {
+                col = 9 - col;
             }
-            return { cx, cy };
+            const x = col * tileSize + tileSize / 2;
+            const y = (9 - row) * tileSize + tileSize / 2;
+            return { x, y };
         };
 
-        const drawPawn = (cx, cy, color, strokeColor, label) => {
+        // 3. Gambar Bidak Pion 3D Klasik Asli (Authentic Plastic Board Game Pawn)
+        const drawClassicPawn = (pos, pIdx, colorBase, colorLight, colorDark, label, isActive = false) => {
+            const c = getCoords(pos);
+            const sameCell = room.positions[room.players[0]] === room.positions[room.players[1]];
+            const px = c.x + (sameCell ? (pIdx === 0 ? -tileSize * 0.22 : tileSize * 0.22) : (pIdx === 0 ? -12 : 12));
+            const py = c.y + 6;
+            const size = 78;
+
             ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-            ctx.shadowBlur = 6;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
 
-            ctx.fillStyle = color;
+            // A. Bayangan kontak di lantai petak (ambient occlusion & soft drop shadow)
             ctx.beginPath();
-            ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ctx.ellipse(px + 4, py + size * 0.42, size * 0.38, size * 0.14, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.filter = 'blur(4px)';
             ctx.fill();
-            ctx.restore();
+            ctx.filter = 'none';
 
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = strokeColor;
+            // B. Lingkaran Aura Cahaya & Tag Giliran jika pemain aktif
+            if (isActive) {
+                ctx.beginPath();
+                ctx.ellipse(px, py + size * 0.36, size * 0.46, size * 0.18, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fde047';
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = '#fde047';
+                ctx.shadowBlur = 12;
+                ctx.stroke();
+
+                // Indikator panah giliran melayang ▼
+                ctx.fillStyle = '#fde047';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 4;
+                const arrowY = py - size * 0.62;
+                ctx.beginPath();
+                ctx.moveTo(px, arrowY + 8);
+                ctx.lineTo(px - 7, arrowY);
+                ctx.lineTo(px + 7, arrowY);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('GILIRAN', px, arrowY - 2);
+            }
+
+            // C. Alas Piringan Pedestal
+            const baseY = py + size * 0.28;
+            const baseW = size * 0.34;
+            const baseH = size * 0.13;
+
+            // Ketebalan rim alas
+            const rimGrad = ctx.createLinearGradient(px - baseW, baseY, px + baseW, baseY);
+            rimGrad.addColorStop(0, colorDark);
+            rimGrad.addColorStop(0.3, colorLight);
+            rimGrad.addColorStop(0.7, colorBase);
+            rimGrad.addColorStop(1, colorDark);
+
             ctx.beginPath();
-            ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ctx.ellipse(px, baseY + 5, baseW, baseH, 0, 0, Math.PI);
+            ctx.lineTo(px - baseW, baseY);
+            ctx.ellipse(px, baseY, baseW, baseH, 0, Math.PI, 0, true);
+            ctx.closePath();
+            ctx.fillStyle = colorDark;
+            ctx.fill();
+
+            // Piringan atas alas
+            ctx.beginPath();
+            ctx.ellipse(px, baseY, baseW, baseH, 0, 0, Math.PI * 2);
+            ctx.fillStyle = rimGrad;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
+            // D. Badan Kerucut Menjulang (Flared Cone Body)
+            const neckY = py - size * 0.1;
+            const neckW = size * 0.11;
+
+            const bodyGrad = ctx.createLinearGradient(px - baseW, py, px + baseW, py);
+            bodyGrad.addColorStop(0, colorDark);
+            bodyGrad.addColorStop(0.25, colorLight);
+            bodyGrad.addColorStop(0.65, colorBase);
+            bodyGrad.addColorStop(1, colorDark);
+
+            ctx.beginPath();
+            ctx.moveTo(px - neckW, neckY);
+            ctx.bezierCurveTo(px - neckW * 0.8, py + size * 0.1, px - baseW * 0.85, baseY - 2, px - baseW * 0.85, baseY);
+            ctx.lineTo(px + baseW * 0.85, baseY);
+            ctx.bezierCurveTo(px + baseW * 0.85, baseY - 2, px + neckW * 0.8, py + size * 0.1, px + neckW, neckY);
+            ctx.closePath();
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
+
+            // E. Cincin Leher (Neck Collar Ring)
+            const collarGrad = ctx.createLinearGradient(px - neckW * 1.35, neckY, px + neckW * 1.35, neckY);
+            collarGrad.addColorStop(0, colorDark);
+            collarGrad.addColorStop(0.4, colorLight);
+            collarGrad.addColorStop(1, colorDark);
+
+            ctx.beginPath();
+            ctx.ellipse(px, neckY, neckW * 1.4, size * 0.048, 0, 0, Math.PI * 2);
+            ctx.fillStyle = collarGrad;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // F. Kepala Bola Bulat Mengkilap (Glossy Sphere Head)
+            const headY = py - size * 0.32;
+            const headR = size * 0.2;
+
+            const headGrad = ctx.createRadialGradient(
+                px - headR * 0.35, headY - headR * 0.35, headR * 0.08,
+                px, headY, headR
+            );
+            headGrad.addColorStop(0, '#ffffff'); // Specular highlight glint
+            headGrad.addColorStop(0.25, colorLight);
+            headGrad.addColorStop(0.7, colorBase);
+            headGrad.addColorStop(1, colorDark);
+
+            ctx.beginPath();
+            ctx.arc(px, headY, headR, 0, Math.PI * 2);
+            ctx.fillStyle = headGrad;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // G. Label Pemain pada Bodi Pion
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 12px sans-serif';
+            ctx.font = 'bold ' + Math.round(size * 0.15) + 'px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(label, cx, cy);
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            ctx.fillText(label, px, py + size * 0.13);
+
+            ctx.restore();
         };
 
-        const c1 = getCellCenter(pos1, 0);
-        drawPawn(c1.cx, c1.cy, '#e63946', '#ffffff', 'P1');
+        const pos1 = room.positions[room.players[0]] || 1;
+        const pos2 = room.positions[room.players[1]] || 1;
+        const isTurnP1 = room.turn === 0;
 
-        if (p2) {
-            const c2 = getCellCenter(pos2, 1);
-            drawPawn(c2.cx, c2.cy, '#1d3557', '#ffffff', 'P2');
+        drawClassicPawn(pos1, 0, '#dc2626', '#f87171', '#7f1d1d', 'P1', isTurnP1);
+        if (room.players[1]) {
+            drawClassicPawn(pos2, 1, '#2563eb', '#60a5fa', '#1e3a8a', 'P2', !isTurnP1);
         }
 
         return await canvas.encode('png');
     } catch (err) {
-        console.warn('[ULAR TANGGA] Canvas render error, fallback to Jimp:', err?.message);
-        const Jimp = (await import('jimp')).default;
-        let boardImg;
-        if (fs.existsSync(BOARD_IMAGE_PATH)) {
-            boardImg = await Jimp.read(BOARD_IMAGE_PATH);
-        } else {
-            boardImg = await Jimp.read('https://i.pinimg.com/originals/2f/68/a7/2f68a7e1eee18556b055418f7305b3c0.jpg');
-        }
-        boardImg.resize(420, 420);
-        return await boardImg.getBufferAsync(Jimp.MIME_PNG);
+        console.warn('[ULAR TANGGA] Board render error:', err?.message);
+        throw err;
     }
 }
 
@@ -142,6 +260,9 @@ function resetAfkTimeout(conn, chatId) {
         const currentP = room.players[room.turn];
         const isBot = currentP === 'BOT';
         const pName = isBot ? 'Bot AI' : currentP.split('@')[0];
+
+        // Hapus pesan-pesan gambar & tombol sebelumnya
+        await deletePreviousMessages(conn, chatId, room);
 
         const timeoutMsg = `*──  ୨୧ ✧ ULAR TANGGA ✧ ୨୧  ──*\n\n` +
             `*╭  〔 ⏱ ᴡ ᴀ ᴋ ᴛ ᴜ  ʜ ᴀ ʙ ɪ ꜱ 〕*\n` +
@@ -182,10 +303,14 @@ async function sendTurnMessage(conn, m, room, promptText = '') {
     // Jika giliran Bot AI: Otomatis melempar setelah jeda 1.5 detik
     if (isBot) {
         const botTurnText = `${baseCard}\n\n> 🤖 _Bot AI sedang memutar dadu keberuntungan..._`;
-        await conn.sendMessage(m.chat, {
+        const sentBot = await conn.sendMessage(m.chat, {
             text: botTurnText,
             mentions: room.players.filter(p => p !== 'BOT')
         });
+        if (sentBot?.key) {
+            room.lastMsgKeys = room.lastMsgKeys || [];
+            room.lastMsgKeys.push(sentBot.key);
+        }
         setTimeout(() => {
             if (conn.ulartangga?.[m.chat] && conn.ulartangga[m.chat].players[conn.ulartangga[m.chat].turn] === 'BOT') {
                 processRoll(conn, m, 'BOT');
@@ -213,23 +338,35 @@ async function sendTurnMessage(conn, m, room, promptText = '') {
             btn.addReply('🏳️ Menyerah', `.ular nyerah`);
             const built = await btn.build(m.chat);
 
-            await sendDualGroupMessage(conn, m.chat, currentPlayer, built.message, spectatorText, {
+            const sentDual = await sendDualGroupMessage(conn, m.chat, currentPlayer, built.message, spectatorText, {
                 contextInfo: {
                     mentionedJid: room.players.filter(p => p !== 'BOT')
                 }
             });
+            if (sentDual?.key) {
+                room.lastMsgKeys = room.lastMsgKeys || [];
+                room.lastMsgKeys.push(sentDual.key);
+            }
         } else {
-            await conn.sendMessage(m.chat, {
+            const sentStandard = await conn.sendMessage(m.chat, {
                 text: bodyText,
                 mentions: room.players.filter(p => p !== 'BOT')
             });
+            if (sentStandard?.key) {
+                room.lastMsgKeys = room.lastMsgKeys || [];
+                room.lastMsgKeys.push(sentStandard.key);
+            }
         }
     } catch (err) {
         console.warn('[ULAR TANGGA] Dual message failed, fallback to standard text:', err?.message);
-        await conn.sendMessage(m.chat, {
+        const sentFallback = await conn.sendMessage(m.chat, {
             text: bodyText,
             mentions: room.players.filter(p => p !== 'BOT')
         });
+        if (sentFallback?.key) {
+            room.lastMsgKeys = room.lastMsgKeys || [];
+            room.lastMsgKeys.push(sentFallback.key);
+        }
     }
 
     resetAfkTimeout(conn, m.chat);
@@ -293,15 +430,22 @@ async function processRoll(conn, m, sender) {
     }
     resultCard += `*╰───────────────*`;
 
-    // Render Gambar Papan Terbaru
+    // 1. Hapus pesan gambar dan tombol sebelumnya agar chat grup bersih & hemat memori HP
+    await deletePreviousMessages(conn, m.chat, room);
+
+    // 2. Render Gambar Papan Terbaru HD Zig-Zag
     const boardBuffer = await renderBoard(room);
 
-    // Kirim gambar papan terbaru beserta status lemparan
-    await conn.sendMessage(m.chat, {
+    // 3. Kirim gambar papan terbaru beserta status lemparan
+    const sentBoard = await conn.sendMessage(m.chat, {
         image: boardBuffer,
         caption: resultCard,
         mentions: [currentPlayer].filter(p => p !== 'BOT')
     });
+    if (sentBoard?.key) {
+        room.lastMsgKeys = room.lastMsgKeys || [];
+        room.lastMsgKeys.push(sentBoard.key);
+    }
 
     // Pengecekan Kemenangan (Tepat di Kotak 100)
     if (newPos === 100) {
@@ -323,7 +467,7 @@ async function processRoll(conn, m, sender) {
             `*┆* ⟡ ᴊᴜᴀʀᴀ    : ${isBotWin ? '🤖 *Bot AI*' : `@${winner.split('@')[0]} 👑`}\n` +
             `*┆* ✧ ᴋᴏᴛᴀᴋ    : *${toSmallNum(100)} (ꜰɪɴɪꜱʜ)*\n` +
             `*┆* ❖ ʜᴀᴅɪᴀʜ   : *+${toSmallNum(winRewardExp)} ᴇxᴘ*\n` +
-            `> Selamat kepada pemenang! Berhasil menaklukkan papan Ular Tangga dengan gemilang ♡\n` +
+            `> Selamat kepada pemenang! Berhasil menaklukkan arena Ular Tangga dengan gemilang ♡\n` +
             `*╰───────────────*\n\n` +
             `> ｡˚ ⊹ *ᴋᴇᴛɪᴋ .ᴜʟᴀʀ ꜱᴛᴀʀᴛ ᴜɴᴛᴜᴋ ʙᴇʀᴍᴀɪɴ ʟᴀɢɪ* ⊹ ˚ ｡`;
 
@@ -380,7 +524,8 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 players: [m.sender],
                 positions: { [m.sender]: 1 },
                 turn: 0,
-                timeout: null
+                timeout: null,
+                lastMsgKeys: []
             };
 
             const joinCard = `*──  ୨୧ ✧ ULAR TANGGA CELESTIAL ✧ ୨୧  ──*\n\n` +
@@ -416,6 +561,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
             room.positions[m.sender] = 1;
             room.state = 'PLAYING';
             room.turn = 0;
+            room.lastMsgKeys = [];
 
             const startCard = `*──  ୨୧ ✧ ARENA ULAR TANGGA ✧ ୨୧  ──*\n\n` +
                 `> @${m.sender.split('@')[0]} telah bergabung sebagai *Pemain 2 (🔵 Biru)*!\n\n` +
@@ -431,13 +577,14 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 mentions: room.players.filter(p => p !== 'BOT')
             });
 
-            // Render dan kirim papan awal
+            // Render dan kirim papan awal HD Zig-Zag
             const boardBuf = await renderBoard(room);
-            await conn.sendMessage(chatId, {
+            const sentBoard = await conn.sendMessage(chatId, {
                 image: boardBuf,
                 caption: `*──  ୨୧ ✧ PAPAN PERMAINAN ✧ ୨୧  ──*\n\n> Bidak telah ditempatkan pada garis awal kotak ${toSmallNum(1)}.\n> Bersiaplah untuk melempar dadu pertama!`,
                 mentions: room.players.filter(p => p !== 'BOT')
             });
+            if (sentBoard?.key) room.lastMsgKeys.push(sentBoard.key);
 
             // Kirim giliran pertama via Dual-Message
             await sendTurnMessage(conn, m, room);
@@ -456,7 +603,8 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 players: [m.sender, 'BOT'],
                 positions: { [m.sender]: 1, 'BOT': 1 },
                 turn: 0,
-                timeout: null
+                timeout: null,
+                lastMsgKeys: []
             };
             room = conn.ulartangga[chatId];
 
@@ -474,11 +622,12 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
             });
 
             const boardBuf = await renderBoard(room);
-            await conn.sendMessage(chatId, {
+            const sentBoard = await conn.sendMessage(chatId, {
                 image: boardBuf,
                 caption: `*──  ୨୧ ✧ PAPAN PERMAINAN ✧ ୨୧  ──*\n\n> Pertandingan solo telah dimulai! Giliran pertama ada pada dirimu ♡`,
                 mentions: [m.sender]
             });
+            if (sentBoard?.key) room.lastMsgKeys.push(sentBoard.key);
 
             await sendTurnMessage(conn, m, room);
             break;
@@ -506,6 +655,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
             const winner = room.players.find(p => p !== surrenderPlayer) || 'BOT';
 
             if (room.timeout) clearTimeout(room.timeout);
+            await deletePreviousMessages(conn, chatId, room);
             delete conn.ulartangga[chatId];
 
             const surrenderCard = `*──  ୨୧ ✧ ULAR TANGGA SELESAI ✧ ୨୧  ──*\n\n` +
@@ -530,6 +680,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
             }
 
             if (room.timeout) clearTimeout(room.timeout);
+            await deletePreviousMessages(conn, chatId, room);
             delete conn.ulartangga[chatId];
             await m.reply(status.success('Sesi permainan Ular Tangga berhasil dibersihkan tuntas.'));
             break;
@@ -554,6 +705,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 `*┆* ✕ *${usedPrefix + command} reset* : Bersihkan sesi yang macet\n` +
                 `*╰───────────────*\n\n` +
                 `*╭  〔 💡 ꜰ ɪ ᴛ ᴜ ʀ  ᴍ ᴏ ᴅ ᴇ ʀ ɴ 〕*\n` +
+                `> ✦ Desain grafis papan modern HD prosedural dengan efek 3D & bayangan halus.\n` +
                 `> ✦ Tombol Dual-Message otomatis aktif di layarmu saat giliran tiba!\n` +
                 `> ✧ Bisa langsung ketik \`roll\` atau huruf \`r\` tanpa prefix.\n` +
                 `> ⏱ Auto-timeout ${toSmallNum(90)} detik melindungi grup dari pemain AFK.\n` +
@@ -592,6 +744,7 @@ export async function before(m) {
         if (room.players.includes(m.sender)) {
             const winner = room.players.find(p => p !== m.sender) || 'BOT';
             if (room.timeout) clearTimeout(room.timeout);
+            await deletePreviousMessages(this, m.chat, room);
             delete this.ulartangga[m.chat];
 
             const surrenderCard = `*──  ୨୧ ✧ ULAR TANGGA SELESAI ✧ ୨୧  ──*\n\n` +
