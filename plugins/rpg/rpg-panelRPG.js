@@ -561,6 +561,8 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel all* - Reset level dan XP semua akun RPG\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetpokemon all* - Reset level koleksi Pokémon semua user\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetghost all* - Reset level koleksi Ghost Hunter semua user\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
@@ -815,6 +817,39 @@ let handler = async (m, {
     await saveDB(wdb)
     return m.reply(
       `🔄 Reset level massal selesai.\n> ↳ Akun RPG direset: *${resetCount}*\n> ↳ Semua level menjadi 1 dan XP menjadi 0.`
+    )
+  }
+
+  if (['resetpokemon', 'resetpokemonlevel', 'resetghost', 'resetghostlevel'].includes(aksi)) {
+    if (!['all', 'semua'].includes(String(remaining[0] || '').toLowerCase())) {
+      return m.reply(
+        `❌ Pilih cakupan semua user:\n` +
+        `> ↳ *${usedPrefix}rpgpanel ${aksi.startsWith('resetpokemon') ? 'resetpokemon' : 'resetghost'} all*`
+      )
+    }
+    const creatureField = aksi.startsWith('resetpokemon') ? 'pokemonCreatures' : 'ghostCreatures'
+    const label = creatureField === 'pokemonCreatures' ? 'Pokémon' : 'Ghost Hunter'
+    let resetUsers = 0
+    let resetCreatures = 0
+    for (const account of Object.values(wdb.users)) {
+      const creatures = account?.rpg?.[creatureField]
+      if (!Array.isArray(creatures) || !creatures.length) continue
+      let userWasReset = false
+      for (const creature of creatures) {
+        if (!creature || typeof creature !== 'object') continue
+        creature.level = 1
+        creature.xp = 0
+        resetCreatures++
+        userWasReset = true
+      }
+      if (userWasReset) resetUsers++
+    }
+    await saveDB(wdb)
+    return m.reply(
+      `🔄 Reset level ${label} selesai.\n` +
+      `> ↳ User terdampak: *${resetUsers}*\n` +
+      `> ↳ Koleksi direset: *${resetCreatures}*\n` +
+      `> ↳ Semua level menjadi 1 dan XP latihan menjadi 0.`
     )
   }
 
