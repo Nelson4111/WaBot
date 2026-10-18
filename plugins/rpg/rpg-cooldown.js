@@ -9,7 +9,7 @@ const COOLDOWN_TIMES = {
   dungeon: 2 * 60 * 1000,
   fishing: 2 * 60 * 1000,
   adventure: 2 * 60 * 1000,
-  kerja_rpg: 2 * 60 * 1000,
+  kerja_rpg: 5 * 60 * 1000,
 }
 
 const LABELS = {
