@@ -678,5 +678,53 @@
     "content": "\u003e Ular Tangga diperbarui dengan sistem Dual-Message (tombol dadu interaktif khusus pemain aktif), perbaikan bug antarmuka dan anti-macet, mode solo lawan Bot AI, aturan pantulan kotak 100, auto-timeout 90 detik, dan tampilan Zen Shinto.",
     "author": "Nenel",
     "createdAt": 1792330123260
+  },
+  {
+    "id": "19.0",
+    "section": "RPG",
+    "title": "Pembaruan Tombol RPG, Daily, dan Bank",
+    "content": "\u003e Pembaruan tombol panen, upgrade rumah, daily streak, leaderboard daily, dan transaksi bank.",
+    "author": "Eza",
+    "createdAt": 1792343147000
+  },
+  {
+    "id": "19.1",
+    "section": "RPG",
+    "title": "Pembaruan Blackout Casino",
+    "content": "\u003e Blackout casino dibatasi sekali sehari dan tidak mengurangi profit. Avelia Guard dapat memulihkan uang; Premium mendapat proteksi mingguan yang direset setiap Senin.",
+    "author": "Eza",
+    "createdAt": 1792343476000
+  },
+  {
+    "id": "19.2",
+    "section": "RPG",
+    "title": "Perbaikan Work dan Misi Guild",
+    "content": "\u003e Perhitungan reward work dan misi guild diperjelas; misi kini memberi EXP karakter dan notifikasi loot diringkas.",
+    "author": "Eza",
+    "createdAt": 1792343673000
+  },
+  {
+    "id": "19.3",
+    "section": "GAME",
+    "title": "Fitur Taruhan Werewolf",
+    "content": "\u003e Werewolf kini mendukung taruhan opsional yang diatur saat room dibuat, dengan hadiah untuk tim pemenang atau Jester.",
+    "author": "Eza",
+    "createdAt": 1792344966562
+  },
+  {
+    "id": "19.4",
+    "section": "RPG",
+    "title": "Pembaruan Hasil Aktivitas RPG",
+    "content": "\u003e Tampilan hasil panen, mining, adventure, mancing, dan explore dirapikan; tier diseragamkan dan tombol cek koleksi ditambahkan.",
+    "author": "Eza",
+    "createdAt": 1792344966563
+  },
+  {
+    "id": "19.5",
+    "section": "RPG",
+    "title": "Pembaruan Auction House",
+    "content": "\u003e Nominal lelang kini ringkas dengan sufiks yang bisa dipakai saat bid; menu menyediakan tombol cek saldo dan daftar sufiks.",
+    "author": "Eza",
+    "createdAt": 1792344966564
   }
 ]
