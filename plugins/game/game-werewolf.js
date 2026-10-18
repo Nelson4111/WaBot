@@ -32,6 +32,7 @@ import {
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
+import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 
 const thumbNight = "https://user-images.githubusercontent.com/72728486/235316834-f9f84ba0-8df3-4444-81d8-db5270995e6d.jpg"
 const thumbMorning = "https://user-images.githubusercontent.com/72728486/235344562-4677d2ad-48ee-419d-883f-e0ca9ba1c7b8.jpg"
@@ -105,6 +106,20 @@ const createWargaPlayer = (room, order) => ({
 })
 
 const normalizePhone = (value = '') => String(value || '').replace(/[^0-9]/g, '')
+
+const parseWager = (value) => {
+    const input = String(value || '').trim().toLowerCase()
+    if (!input) return 0
+    const match = input.match(/^(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|jt|juta|m)?$/)
+    if (!match) return null
+
+    const amount = Number(match[1].replace(',', '.'))
+    const multiplier = ['k', 'rb', 'ribu'].includes(match[2]) ? 1_000
+        : ['jt', 'juta', 'm'].includes(match[2]) ? 1_000_000
+            : 1
+    const wager = amount * multiplier
+    return Number.isSafeInteger(wager) && wager > 0 ? wager : null
+}
 
 const hasRpgPanelAccess = (sender = '') => {
     const senderPhone = normalizePhone(sender)
@@ -597,6 +612,8 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     if (value === "create") {
         if (chat in ww) return m.reply(status.warning("Group masih dalam sesi permainan Werewolf."))
         if (playerOnGame(sender, ww) === true) return m.reply(status.warning("Kamu masih terdaftar dalam sesi game Werewolf lain."))
+        const wager = parseWager(args[1])
+        if (wager === null) return m.reply(status.error("Nominal taruhan tidak valid. Gunakan angka seperti *.ww create 1000000* atau *.ww create 1jt*."))
 
         ww[chat] = {
             room: chat,
@@ -611,9 +628,13 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             voting: false,
             seer: false,
             guardian: [],
+            wager,
             phaseTimeout: null
         }
 
+        const wagerInfo = wager > 0
+            ? `> ⟡ Taruhan : *Rp ${wager.toLocaleString('id-ID')} per pemain*\n`
+            : `> ⟡ Taruhan : *Tanpa taruhan*\n`
         const createCard = `*──  ୨୧ ✧ WEREWOLF ROOM CREATED ✧ ୨୧  ──*
 > 🏰 _Balai desa telah dibuka untuk petualangan baru..._
 
@@ -621,7 +642,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 > ⟡ Pemilik : *@${sender.split('@')[0]}*
 > ⟡ Minimal : *𝟻 Pemain*
 > ⟡ Maksimal : *𝟷𝟻 Pemain*
-*╰───────────────*
+${wagerInfo}*╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Tekan tombol di bawah atau ketik *.ww join* untuk bergabung._`
 
@@ -675,6 +696,8 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 ${rosterText.trim()}
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
+> 💰 Taruhan: *${ww[chat].wager > 0 ? `Rp ${ww[chat].wager.toLocaleString('id-ID')} per pemain` : 'Tanpa taruhan'}*
+· · ─ ─ ✦ ─ ─ · ·
 > _Syarat bermain: Minimal 𝟻 pemain & maksimal 𝟷𝟻 pemain._`
 
         const joinButtons = []
@@ -714,10 +737,23 @@ ${rosterText.trim()}
 
     } else if (value === "start") {
         if (!ww[chat]) return m.reply(status.error("Belum ada sesi permainan."))
+        if (args[1] !== undefined) return m.reply(status.warning("Taruhan ditentukan saat membuat room. Gunakan *.ww create <taruhan>*; tanpa taruhan cukup *.ww create*."))
         if (getRealPlayerCount(ww[chat]) < 1) return m.reply(status.error("Minimal 1 pemain asli untuk memulai game."))
         if (ww[chat].player.length < 5) return m.reply(status.warning(`Pemain belum mencukupi! Minimal 𝟻 pemain (saat ini: ${toSmallNum(ww[chat].player.length)}). Gunakan *.ww add warga* jika ingin menambah simulasi.`))
         if (ww[chat].status === true) return m.reply(status.warning("Permainan sudah berjalan."))
         if (ww[chat].owner !== sender && !hasRpgPanelAccess(sender)) return m.reply(status.error(`Hanya owner room (@${ww[chat].owner.split('@')[0]}) yang dapat memulai permainan.`))
+
+        const wager = ww[chat].wager === undefined ? 0 : Number(ww[chat].wager)
+        if (ww[chat].testMode && wager > 0) return m.reply(status.warning("Taruhan tidak tersedia dalam mode test."))
+        const wagerPlayers = ww[chat].player.filter((player) => !player.isDummy)
+        if (!Number.isSafeInteger(wager) || wager < 0) return m.reply(status.error("Nominal taruhan room tidak valid. Buat ulang room tanpa taruhan atau dengan nominal yang benar."))
+        if (!Number.isSafeInteger(wager * wagerPlayers.length)) return m.reply(status.error("Total pot taruhan terlalu besar."))
+        const wdb = loadDB()
+        const playersWithoutFunds = wagerPlayers.filter((player) => Number(wdb.money[player.id]) < wager)
+        if (playersWithoutFunds.length) {
+            const playerNames = playersWithoutFunds.map(getDisplayPlayerLabel).join(', ')
+            return m.reply(status.error(`Saldo taruhan Rp ${wager.toLocaleString('id-ID')} per pemain tidak mencukupi: ${playerNames}.`))
+        }
 
         if (!roleGenerator(chat, ww)) {
             return m.reply(status.error("Gagal mendistribusikan role. Pastikan room valid."))
@@ -726,10 +762,21 @@ ${rosterText.trim()}
             return m.reply(status.error("Terdapat pemain yang belum memperoleh role. Game dibatalkan."))
         }
 
+        if (wager > 0) {
+            wagerPlayers.forEach((player) => {
+                wdb.money[player.id] = Number(wdb.money[player.id]) - wager
+            })
+            ww[chat].wager = wager
+            ww[chat].wagerPlayers = wagerPlayers.map((player) => player.id)
+            ww[chat].wagerSettled = false
+        }
+
         addTimer(chat, ww)
         startGame(chat, ww)
+        if (wager > 0) await saveDB(wdb)
 
-        await m.reply(status.success("Role rahasia berhasil dibagikan langsung di dalam grup via Dual Stanza! Tidak ada pesan yang dikirim ke PC/DM."))
+        const wagerNotice = wager > 0 ? ` Taruhan Rp ${wager.toLocaleString('id-ID')} per pemain sudah ditahan.` : ""
+        await m.reply(status.success(`Role rahasia berhasil dibagikan langsung di dalam grup via Dual Stanza! Tidak ada pesan yang dikirim ke PC/DM.${wagerNotice}`))
 
         // Luncurkan Stanza Multi-Partisipan untuk Malam Pertama
         await sendNightPhaseStanza(conn, chat, ww[chat])
@@ -843,7 +890,7 @@ ${rosterText.trim()}
 > 📖 _Langkah-langkah memulai dan memainkan Werewolf:_
 
 *╭  〔 ✦ 𝟷. ᴍᴇᴍʙᴜᴀᴛ ʀᴏᴏᴍ 〕*
-> Ketik *.ww create* untuk membuka room.
+> Ketik *.ww create* untuk tanpa taruhan, atau *.ww create <taruhan>* (contoh: *.ww create 1jt*).
 > Pemain lain ketik *.ww join* (Minimal 𝟻, Maksimal 𝟷𝟻).
 *╰───────────────*
 
@@ -851,6 +898,8 @@ ${rosterText.trim()}
 > Owner room mengetik *.ww start*.
 > Bot otomatis mengirimkan pesan terenkripsi ke grup.
 > Hanya kamu yang bisa melihat role & tombol tokomu!
+> Jika room memakai taruhan, nominal per pemain ditentukan saat membuat room; saldo dicek dan taruhan ditahan saat game dimulai.
+> Tim pemenang membagi pot, sedangkan Jester yang menang mengambil seluruh pot. Jika Jester kalah, taruhannya dikembalikan.
 *╰───────────────*
 
 *╭  〔 ✦ 𝟹. ꜰᴀꜱᴇ ᴍᴀʟᴀᴍ 〕*
@@ -896,7 +945,7 @@ ${rosterText.trim()}
 > 🐺 _Perintah yang tersedia untuk permainan Werewolf:_
 
 *╭  〔 ✦ ᴄᴏᴍᴍᴀɴᴅ ᴜᴛᴀᴍᴀ 〕*
-> ⟡ *.ww create* : Buat room baru
+> ⟡ *.ww create [taruhan]* : Buat room (contoh taruhan: 1jt)
 > ⟡ *.ww join* : Gabung ke room
 > ⟡ *.ww start* : Mulai game (Owner)
 > ⟡ *.ww player* : Lihat daftar pemain & status
