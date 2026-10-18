@@ -1,5 +1,6 @@
 ﻿import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
 import { sendRpgButtons, sendRpgExpActivityList, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 import {
@@ -31,6 +32,16 @@ import {
 
 const fmtRp = value => `Rp ${Number(value || 0).toLocaleString('id-ID')}`
 const pick = arr => arr[Math.floor(Math.random() * arr.length)]
+const JOB_WORK_COOLDOWN_MS = 5 * 60 * 1000
+const JOB_TALK_ALL_COOLDOWN_MS = 5 * 60 * 1000
+const formatDuration = milliseconds => {
+  const seconds = Math.ceil(Math.max(0, milliseconds) / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return [minutes ? `${minutes} menit` : '', remainingSeconds ? `${remainingSeconds} detik` : '']
+    .filter(Boolean)
+    .join(' ') || '0 detik'
+}
 
 function ensureRpgState(userRPG) {
   if (!userRPG) return null
@@ -39,6 +50,10 @@ function ensureRpgState(userRPG) {
   if (typeof userRPG.exp !== 'number' || Number.isNaN(userRPG.exp)) userRPG.exp = 0
   if (typeof userRPG.promotionPoints !== 'number' || Number.isNaN(userRPG.promotionPoints)) userRPG.promotionPoints = Number(userRPG.promotionPoints || 0)
   if (!Array.isArray(userRPG.appliedJobs)) userRPG.appliedJobs = []
+  const hadActiveJobNames = Array.isArray(userRPG.activeJobNames)
+  if (!hadActiveJobNames) userRPG.activeJobNames = []
+  const hadJobWorkCooldowns = userRPG.jobWorkCooldowns && typeof userRPG.jobWorkCooldowns === 'object'
+  if (!hadJobWorkCooldowns) userRPG.jobWorkCooldowns = {}
   if (!userRPG.performance || typeof userRPG.performance !== 'object') userRPG.performance = {}
   if (!Array.isArray(userRPG.jobHistory)) userRPG.jobHistory = []
   if (!userRPG.jobProgress || typeof userRPG.jobProgress !== 'object') userRPG.jobProgress = {}
@@ -54,11 +69,30 @@ function ensureRpgState(userRPG) {
     return job?.job || savedName
   }
   userRPG.appliedJobs = Array.from(new Set(userRPG.appliedJobs.map(resolveJobName)))
+  userRPG.jobWorkCooldowns = Object.fromEntries(
+    Object.entries(userRPG.jobWorkCooldowns).map(([jobName, readyAt]) => [
+      resolveJobName(jobName),
+      Number(readyAt) || 0
+    ])
+  )
+  for (const jobName of userRPG.appliedJobs) {
+    if (!Number.isFinite(userRPG.jobWorkCooldowns[jobName])) userRPG.jobWorkCooldowns[jobName] = 0
+  }
   userRPG.jobHistory = Array.from(new Set(userRPG.jobHistory.map(resolveJobName)))
   userRPG.firedJobs = Object.fromEntries(
     Object.entries(userRPG.firedJobs).map(([jobName, firedAt]) => [resolveJobName(jobName), Number(firedAt) || 0])
   )
   userRPG.currentJobName = resolveJobName(userRPG.currentJobName)
+  userRPG.activeJobNames = Array.from(new Set(
+    (hadActiveJobNames ? userRPG.activeJobNames : [userRPG.currentJobName])
+      .map(resolveJobName)
+      .filter(jobName => userRPG.appliedJobs.includes(jobName))
+  ))
+  if (!hadJobWorkCooldowns && Number(userRPG.lastkerja) > 0) {
+    const legacyJobCount = Math.max(1, Number(userRPG.lastkerjaJobCount) || 1)
+    const legacyReadyAt = Number(userRPG.lastkerja) + scaleDifficultyCooldown(userRPG, JOB_WORK_COOLDOWN_MS * legacyJobCount)
+    for (const jobName of userRPG.activeJobNames) userRPG.jobWorkCooldowns[jobName] = legacyReadyAt
+  }
   if (userRPG.firedJobName) userRPG.firedJobName = resolveJobName(userRPG.firedJobName)
   if (!userRPG.currentJobName && userRPG.currentJobId) {
     userRPG.currentJobName = resolveJobName(userRPG.currentJobId)
@@ -141,6 +175,10 @@ function getActiveJob(userRPG, levelOverride = userRPG.level) {
   return null
 }
 
+function getWorkCooldownRemaining(userRPG, jobName, now = Date.now()) {
+  return Math.max(0, Number(userRPG.jobWorkCooldowns[jobName] || 0) - now)
+}
+
 function getTitleFromJob(job, userRPG = null) {
   if (!job) return 'Belum ada jabatan'
   if (!userRPG) return 'Anak Magang'
@@ -177,10 +215,17 @@ function applyAttendancePenalty(userRPG, now = Date.now()) {
     if (firedJob?.lv === 1) return false
     if (firedJobName) {
       userRPG.appliedJobs = userRPG.appliedJobs.filter(jobName => jobName !== firedJobName)
+      userRPG.activeJobNames = userRPG.activeJobNames.filter(jobName => jobName !== firedJobName)
+      delete userRPG.jobWorkCooldowns[firedJobName]
       userRPG.firedJobs[firedJobName] = now
       userRPG.firedJobName = firedJobName
     }
-    userRPG.currentJobName = null
+    userRPG.currentJobName = userRPG.activeJobNames[0] || null
+    const nextProgress = userRPG.currentJobName
+      ? getJobProgress(userRPG, userRPG.currentJobName)
+      : { promotionPoints: 0 }
+    userRPG.promotionPoints = Number(nextProgress.promotionPoints || 0)
+    userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, userRPG.currentJobName || '')
     userRPG.firedAt = now
     userRPG.lastkerja = 0
     userRPG.performance.absent = Number(userRPG.performance.absent || 0) + 1
@@ -257,6 +302,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
         targetRPG.appliedJobs.push(selectedJob.job)
       }
       targetRPG.currentJobName = selectedJob.job
+      targetRPG.activeJobNames = [selectedJob.job]
       targetRPG.jobHistory = Array.from(new Set([...targetRPG.jobHistory, selectedJob.job]))
       const progress = getJobProgress(targetRPG, selectedJob.job)
       targetRPG.promotionPoints = Number(progress.promotionPoints || 0)
@@ -292,12 +338,21 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
   }
 
   if (!parsed && command === 'job') {
-    const statusCooldown = scaleDifficultyCooldown(userRPG, 120000)
-    const remaining = Math.max(0, statusCooldown - (now - Number(userRPG.lastkerja || 0)))
+    const availableJobs = userRPG.appliedJobs
+      .map(jobName => JOBS.find(job => job.job.toLowerCase() === jobName.toLowerCase()))
+      .filter(job => job && job.lv <= userRPG.level)
+    const remaining = availableJobs.length
+      ? Math.min(...availableJobs.map(job => getWorkCooldownRemaining(userRPG, job.job, now)))
+      : 0
     const currentJob = getActiveJob(userRPG)
     const highestJob = getHighestRankedJob(userRPG)
     const displayJob = highestJob || currentJob
     const displayPoints = Number(getJobProgress(userRPG, displayJob?.job).promotionPoints || 0)
+    const estimatedIncome = Math.floor(
+      scaleDifficultyIncome(userRPG, Number(displayJob?.gaji || 0)) *
+      getJobTitleMultiplier(displayPoints, displayJob?.job) *
+      getAttendanceMultiplier(userRPG, now)
+    )
 
     const caption = [
       '╭─❏「 💼 JOB SYSTEM 」❏',
@@ -307,8 +362,8 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       `> 🎮 Level: Lv.${userRPG.level}`,
       `> 💼 Pekerjaan: ${getJobLabel(displayJob)}`,
       `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, displayJob?.job)}`,
-      `> 💰 Income: ${fmtRp(Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(displayPoints, displayJob?.job)))}`,
-      `> 📊 Status: ${remaining > 0 ? `⏳ ${Math.ceil(remaining / 1000)} detik lagi` : '✅ Siap kerja'}`,
+      `> 💰 Perkiraan gaji diterima: ${fmtRp(estimatedIncome)}`,
+      `> 📊 Status: ${availableJobs.length && remaining > 0 ? `⏳ ${formatDuration(remaining)} lagi` : availableJobs.length ? '✅ Siap kerja' : 'Belum ada pekerjaan aktif'}`,
       userRPG.firedJobName ? `> ⚠️ Pemecatan terakhir dari: ${userRPG.firedJobName}` : '',
       '',
       '📌 *INFORMASI JOB SYSTEM*',
@@ -360,13 +415,17 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
         if (!job) return null
         const progress = getJobProgress(userRPG, job.job)
         const points = Number(progress.promotionPoints || 0)
-        const income = Math.floor(Number(job.gaji || 0) * getJobTitleMultiplier(points, job.job))
+        const income = Math.floor(
+          scaleDifficultyIncome(userRPG, Number(job.gaji || 0)) *
+          getJobTitleMultiplier(points, job.job) *
+          getAttendanceMultiplier(userRPG, now)
+        )
         return {
           job,
           points,
           income,
           title: getCurrentJobTitle(userRPG, job.job),
-          active: userRPG.currentJobName?.toLowerCase() === job.job.toLowerCase()
+          active: userRPG.activeJobNames.includes(job.job)
         }
       })
       .filter(Boolean)
@@ -378,7 +437,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       '',
       `> 🎮 Level: Lv.${userRPG.level}`,
       `> 💼 Jumlah pekerjaan: ${jobsWithIncome.length}`,
-      `> 💰 Total potensi income: ${fmtRp(totalIncome)} per kerja`,
+      `> 💰 Perkiraan total gaji saat ini: ${fmtRp(totalIncome)} per kerja`,
       '',
       '─━━━━━━━━━━━━━━─',
       '📂 *PEKERJAAN DAN JABATAN*',
@@ -389,7 +448,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
           `> ${index + 1}. ${active ? '✅' : '▫️'} *${job.job}*${active ? ' (aktif)' : ''}`,
           `> ↳ Jabatan: ${title}`,
           `> ↳ Poin promosi: ${points}`,
-          `> ↳ Income: ${fmtRp(income)}`
+          `> ↳ Perkiraan diterima: ${fmtRp(income)}`
         ].join('\n'))
         : ['> Belum ada pekerjaan yang dilamar.']),
       userRPG.firedJobName ? `> ⚠️ Pemecatan terakhir dari: *${userRPG.firedJobName}*` : '',
@@ -397,14 +456,83 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       '─━━━━━━━━━━━━━━─',
       'ℹ️ *INFORMASI*',
       '',
-      '> ↳ Total income menjumlahkan potensi gaji semua pekerjaan.',
-      '> ↳ Setiap perintah kerja hanya membayar pekerjaan yang dipilih.',
+      '> ↳ Gunakan .work untuk otomatis bekerja di pekerjaan yang cooldown-nya siap.',
+      '> ↳ .work all khusus Premium untuk semua pekerjaan aktif yang cooldown-nya siap.',
+      `> ↳ Pilih satu pekerjaan: *${usedPrefix}job active <nomor/nama>* atau aktifkan semua: *${usedPrefix}job active all*`,
       '',
       `📌 Lihat daftar pekerjaan dengan *${usedPrefix}job list*.`,
       '',
       '─━━━━━━━━━━━━━━─'
     ].join('\n')
     return m.reply(caption)
+  }
+
+  if (['active', 'aktif', 'switch'].includes(action)) {
+    const target = payload.trim()
+    const appliedJobs = userRPG.appliedJobs
+      .map(jobName => JOBS.find(job => job.job.toLowerCase() === jobName.toLowerCase()))
+      .filter(Boolean)
+    if (target.toLowerCase() === 'all') {
+      if (!appliedJobs.length) {
+        return m.reply(`╭─❏「 ⚠️ BELUM MELAMAR 」❏
+│ Lamar pekerjaan terlebih dahulu sebelum mengaktifkan semuanya.
+╰─━━━━━━━━━━━━━━─`)
+      }
+      const eligibleJobs = appliedJobs.filter(job => job.lv <= userRPG.level)
+      if (!eligibleJobs.length) {
+        const lockedJob = appliedJobs[0]
+        return m.reply(`╭─❏「 🔒 LEVEL BELUM CUKUP 」❏
+│ *${lockedJob.job}* membutuhkan Lv.${lockedJob.lv}.
+│ Level kamu saat ini: Lv.${userRPG.level}.
+╰─━━━━━━━━━━━━━━─`)
+      }
+      userRPG.activeJobNames = eligibleJobs.map(job => job.job)
+      if (!userRPG.activeJobNames.includes(userRPG.currentJobName)) {
+        userRPG.currentJobName = eligibleJobs[0].job
+      }
+      const progress = getJobProgress(userRPG, userRPG.currentJobName)
+      userRPG.promotionPoints = Number(progress.promotionPoints || 0)
+      userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, userRPG.currentJobName)
+      saveDB(wdb)
+      return m.reply(`╭─❏「 ✅ SEMUA PEKERJAAN AKTIF 」❏
+│ ${eligibleJobs.length} pekerjaan aktif untuk *.work*.
+│ Gunakan *.work all* untuk menjalankan semuanya sekaligus (Premium).
+╰─━━━━━━━━━━━━━━─`)
+    }
+    const numericIndex = /^\d+$/.test(target) ? Number(target) - 1 : -1
+    const normalizedTarget = target.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const selectedJob = numericIndex >= 0
+      ? appliedJobs[numericIndex]
+      : appliedJobs.find(job => {
+        const jobId = job.job.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        return job.job.toLowerCase() === target.toLowerCase() || jobId === normalizedTarget
+      })
+
+    if (!selectedJob) {
+      return m.reply(`╭─❏「 ⚠️ PILIH PEKERJAAN 」❏
+│ Gunakan nomor atau nama pekerjaan dari *${usedPrefix}job info*.
+│ Contoh: *${usedPrefix}job active 1*
+╰─━━━━━━━━━━━━━━─`)
+    }
+    if (selectedJob.lv > userRPG.level) {
+      return m.reply(`╭─❏「 🔒 LEVEL BELUM CUKUP 」❏
+│ Pekerjaan *${selectedJob.job}* membutuhkan Lv.${selectedJob.lv}.
+│ Level kamu saat ini: Lv.${userRPG.level}.
+╰─━━━━━━━━━━━━━━─`)
+    }
+
+    userRPG.currentJobName = selectedJob.job
+    userRPG.activeJobNames = [selectedJob.job]
+    const progress = getJobProgress(userRPG, selectedJob.job)
+    userRPG.promotionPoints = Number(progress.promotionPoints || 0)
+    userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, selectedJob.job)
+    saveDB(wdb)
+    return m.reply(`╭─❏「 ✅ PEKERJAAN AKTIF 」❏
+│ Pekerjaan aktif: *${selectedJob.job}*
+│ Jabatan: ${userRPG.jobTitle}
+│ Pekerjaan aktif lainnya dinonaktifkan.
+│ Gunakan *.work* untuk bekerja saat cooldown siap.
+╰─━━━━━━━━━━━━━━─`)
   }
 
   if (['list', 'l', 'daftar'].includes(action)) {
@@ -427,8 +555,8 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       const unlock = userRPG.level >= job.lv ? '✅' : '🔒'
       caption.push(`> ${index + 1}. ${unlock} *${job.job}*`)
       caption.push(`> ↳ Level minimum: Lv.${job.lv}`)
-      caption.push(`> ↳ Gaji: ${fmtRp(job.gaji)}`)
-      caption.push(`> ↳ XP: +${job.exp}`)
+      caption.push(`> ↳ Gaji dasar: ${fmtRp(job.gaji)}`)
+      caption.push(`> ↳ XP dasar: +${job.exp}`)
       if (index < listJobs.length - 1) caption.push('')
     })
 
@@ -437,7 +565,13 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     caption.push('📌 *CARA KERJA*')
     caption.push('')
     caption.push(`> 💼 ${usedPrefix}work`)
-    caption.push(`> 💼 ${usedPrefix}job work`)
+    caption.push(`> 💼 ${usedPrefix}work all`)
+    caption.push('')
+    caption.push('> Work otomatis memilih pekerjaan yang cooldown-nya siap.')
+    caption.push('> Work all menjalankan semua pekerjaan yang cooldown-nya siap.')
+    caption.push('')
+    caption.push('> Gaji akhir dipengaruhi difficulty, jabatan, dan absensi. XP dipengaruhi difficulty.')
+    caption.push('> Hasil kerja menampilkan jumlah akhir yang benar-benar diterima.')
     caption.push('')
     caption.push('─━━━━━━━━━━━━━━─')
     return m.reply(caption.join('\n'))
@@ -447,7 +581,11 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const currentJob = getActiveJob(userRPG)
     const displayJob = getHighestRankedJob(userRPG) || currentJob
     const promotion = Number(getJobProgress(userRPG, displayJob?.job).promotionPoints || 0)
-    const income = Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(promotion, displayJob?.job))
+    const income = Math.floor(
+      scaleDifficultyIncome(userRPG, Number(displayJob?.gaji || 0)) *
+      getJobTitleMultiplier(promotion, displayJob?.job) *
+      getAttendanceMultiplier(userRPG, now)
+    )
     const caption = [
       '╭─❏「 💼 JOB PROFILE 」❏',
       '│ 👤 PROFIL PEKERJA',
@@ -537,8 +675,10 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       `> 💼 Pekerjaan: ${job.job}`,
       `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, job.job)}`,
       `> 💰 Gaji dasar: ${fmtRp(job.gaji)}`,
+      `> ↳ Setelah difficulty: ${fmtRp(scaleDifficultyIncome(userRPG, job.gaji))}`,
       `> 📈 Multiplier jabatan: x${salaryMultiplier}`,
-      `> 💵 Gaji per absen: ${fmtRp(Math.floor(job.gaji * salaryMultiplier))}`,
+      `> 📅 Multiplier absensi saat ini: x${getAttendanceMultiplier(userRPG, now)}`,
+      `> 💵 Perkiraan gaji diterima: ${fmtRp(Math.floor(scaleDifficultyIncome(userRPG, job.gaji) * salaryMultiplier * getAttendanceMultiplier(userRPG, now)))}`,
       `> 🎮 Minimal level: Lv.${job.lv}`
     ].join('\n')
     return m.reply(caption)
@@ -617,6 +757,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       userRPG.jobProgress[selectedJob.job] = { promotionPoints: 0, works: 0, talks: 0 }
     }
     userRPG.currentJobName = selectedJob.job
+    userRPG.activeJobNames = [selectedJob.job]
     userRPG.jobHistory = Array.from(new Set([...(Array.isArray(userRPG.jobHistory) ? userRPG.jobHistory : []), selectedJob.job]))
     const selectedProgress = getJobProgress(userRPG, selectedJob.job)
     userRPG.promotionPoints = Number(selectedProgress.promotionPoints || 0)
@@ -717,10 +858,15 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 ╰─━━━━━━━━━━━━━━─`)
     }
     userRPG.appliedJobs = userRPG.appliedJobs.filter(jobName => jobName !== selectedJobName)
+    userRPG.activeJobNames = userRPG.activeJobNames.filter(jobName => jobName !== selectedJobName)
+    delete userRPG.jobWorkCooldowns[selectedJobName]
     if (userRPG.currentJobName?.toLowerCase() === selectedJobName.toLowerCase()) {
-      userRPG.currentJobName = null
-      userRPG.promotionPoints = 0
-      userRPG.jobTitle = getJobTitleByPoints(0, '')
+      userRPG.currentJobName = userRPG.activeJobNames[0] || null
+      const progress = userRPG.currentJobName
+        ? getJobProgress(userRPG, userRPG.currentJobName)
+        : { promotionPoints: 0 }
+      userRPG.promotionPoints = Number(progress.promotionPoints || 0)
+      userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, userRPG.currentJobName || '')
     }
     userRPG.resignedAt = now
     saveDB(wdb)
@@ -734,18 +880,87 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 
 
   if (action === 'talk') {
+    const isTalkAll = payload.trim().toLowerCase() === 'all'
+    if (payload.trim() && !isTalkAll) {
+      return m.reply(`Gunakan *${usedPrefix}job talk* atau *${usedPrefix}job talk all*.`)
+    }
+    if (isTalkAll && !isPremiumAccount(wdb.users[m.sender], now)) {
+      return m.reply(`╭─❏「 🔒 AKSES PREMIUM 」❏
+│ Perintah *.job talk all* khusus pengguna Premium.
+╰─━━━━━━━━━━━━━━─`)
+    }
+    const previousTalkCooldown = Number(userRPG.lastTalkCooldownMs) || JOB_TALK_COOLDOWN_MS
     const lastTalk = Number(userRPG.lastTalkAt || 0)
-    const talkCooldown = scaleDifficultyCooldown(userRPG, JOB_TALK_COOLDOWN_MS)
+    const talkCooldown = scaleDifficultyCooldown(
+      userRPG,
+      isTalkAll ? JOB_TALK_ALL_COOLDOWN_MS : previousTalkCooldown
+    )
     if (lastTalk && now - lastTalk < talkCooldown) {
       const remaining = Math.ceil((talkCooldown - (now - lastTalk)) / 1000)
       return m.reply(`╭─❏「 💬 JOB TALK 」❏
 │ ⏳ COOLDOWN OBROLAN
 ╰─━━━━━━━━━━━━━━─
 
-> 💬 Kamu baru saja mengajak seseorang mengobrol.
-> ⏳ Coba lagi dalam *${remaining} detik*.
+> ⏳ Cooldown: *${formatDuration(remaining * 1000)}*.
 
 ─━━━━━━━━━━━━━━─`)
+    }
+
+    if (isTalkAll) {
+      const activeJobs = userRPG.activeJobNames
+        .map(jobName => JOBS.find(job => job.job === jobName && job.lv <= userRPG.level))
+        .filter(Boolean)
+      if (!activeJobs.length) {
+        return m.reply(`╭─❏「 ⚠️ JOB TALK 」❏
+│ Belum ada pekerjaan aktif yang bisa diajak bicara.
+╰─━━━━━━━━━━━━━━─`)
+      }
+
+      const promotions = []
+      for (const job of activeJobs) {
+        const progress = getJobProgress(userRPG, job.job)
+        const beforeTitle = getJobTitleByPoints(progress.promotionPoints, job.job)
+        progress.promotionPoints += 1
+        progress.talks += 1
+        const afterTitle = getJobTitleByPoints(progress.promotionPoints, job.job)
+        if (afterTitle !== beforeTitle) promotions.push({ job, beforeTitle, afterTitle })
+      }
+      userRPG.lastTalkAt = now
+      userRPG.lastTalkCooldownMs = JOB_TALK_ALL_COOLDOWN_MS
+      userRPG.performance.talks = Number(userRPG.performance.talks || 0) + activeJobs.length
+      userRPG.performance.promotions = Number(userRPG.performance.promotions || 0) + promotions.length
+      const currentProgress = getJobProgress(userRPG, userRPG.currentJobName)
+      userRPG.promotionPoints = Number(currentProgress.promotionPoints || 0)
+      userRPG.jobTitle = getJobTitleByPoints(userRPG.promotionPoints, userRPG.currentJobName || '')
+      const storyJob = activeJobs.find(job => job.job === userRPG.currentJobName) || activeJobs[0]
+      const talkStories = isIndividualJob(storyJob.job)
+        ? JOB_INDIVIDUAL_TALK_STORIES
+        : JOB_TALK_STORIES
+      const message = [
+        '╭─❏「 💬 JOB TALK ALL 」❏',
+        '│ 🤝 OBROLAN PEKERJAAN',
+        '╰─━━━━━━━━━━━━━━─',
+        '',
+        pick(talkStories),
+        ...(promotions.length
+          ? [
+            '',
+            '🎉 *JABATAN NAIK*',
+            ...promotions.map(({ job, beforeTitle, afterTitle }) =>
+              `> ${job.job}: ${beforeTitle} → ${afterTitle}`)
+          ]
+          : []),
+        '',
+        `> ⏰ Cooldown: ${formatDuration(talkCooldown)}`
+      ].join('\n')
+      saveDB(wdb)
+      return sendRpgQuickButton(conn, m, {
+        text: message,
+        title: '💼 INFO PEKERJAAN',
+        buttonText: '📋 Lihat Pekerjaan',
+        command: `${usedPrefix}job info`,
+        noThumbnail: true
+      })
     }
 
     const activeJob = getActiveJob(userRPG)
@@ -763,6 +978,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const progress = getJobProgress(userRPG, activeJob.job)
     const beforeTitle = getJobTitleByPoints(progress.promotionPoints, activeJob.job)
     userRPG.lastTalkAt = now
+    userRPG.lastTalkCooldownMs = JOB_TALK_COOLDOWN_MS
     userRPG.performance.talks = Number(userRPG.performance.talks || 0) + 1
     progress.promotionPoints += 1
     progress.talks += 1
@@ -832,72 +1048,149 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       return m.reply(firingMessage)
     }
 
-    const selectedJob = getSelectedJob(userRPG, payload)
-    if (!selectedJob) return m.reply(`╭─❏「 ❌ PEKERJAAN TIDAK DITEMUKAN 」❏
+    const appliedJobs = userRPG.appliedJobs
+      .map(jobName => listJobs.find(job => job.job.toLowerCase() === jobName.toLowerCase()))
+      .filter(Boolean)
+    const selection = String(payload || '').trim()
+    if (!appliedJobs.length) {
+      return m.reply(`╭─❏「 ⚠️ BELUM MELAMAR 」❏
+│ 💼 DAFTAR PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ↳ Kamu belum melamar pekerjaan.
+> ↳ Gunakan *${usedPrefix}job apply* untuk melamar terlebih dahulu.
+
+─━━━━━━━━━━━━━━─`)
+    }
+
+    const isWorkAll = selection.toLowerCase() === 'all'
+    if (isWorkAll && !isPremiumAccount(wdb.users[m.sender], now)) {
+      return m.reply(`╭─❏「 🔒 AKSES PREMIUM 」❏
+│ Perintah *.work all* khusus pengguna Premium.
+│ Kamu tetap bisa memakai *.work* untuk bekerja satu per satu.
+╰─━━━━━━━━━━━━━━─`)
+    }
+    if (selection && !isWorkAll) return m.reply(`╭─❏「 ❌ FORMAT WORK TIDAK VALID 」❏
 │ 💼 INFORMASI PEKERJAAN
 ╰─━━━━━━━━━━━━━━─
 
-> ↳ Pekerjaan yang kamu pilih tidak ditemukan.
-> ↳ Periksa daftar pekerjaan dengan *${usedPrefix}job list*.
+> ↳ Gunakan *${usedPrefix}work* untuk pekerjaan yang siap.
+> ↳ Gunakan *${usedPrefix}work all* untuk semua pekerjaan.
 
 ─━━━━━━━━━━━━━━─`)
-    if (selectedJob.lv > userRPG.level) {
+    const activeJobs = userRPG.activeJobNames
+      .map(jobName => appliedJobs.find(job => job.job === jobName))
+      .filter(Boolean)
+    if (!activeJobs.length) {
+      return m.reply(`╭─❏「 ⚠️ BELUM ADA PEKERJAAN AKTIF 」❏
+│ Gunakan *.job active all* atau pilih dengan *.job active <nomor>*.
+╰─━━━━━━━━━━━━━━─`)
+    }
+    const lockedJob = isWorkAll ? activeJobs.find(job => job.lv > userRPG.level) : null
+    if (lockedJob) {
       return sendRpgExpActivityList(conn, m, usedPrefix,
         `╭─❏「 ⚠️ LEVEL BELUM CUKUP 」❏\n` +
         `│ 💼 PERSYARATAN PEKERJAAN\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Pekerjaan *${selectedJob.job}* belum bisa kamu pilih.\n` +
-        `> ↳ Minimal level: *Lv.${selectedJob.lv}*.\n` +
+        `> ↳ Pekerjaan *${lockedJob.job}* belum bisa dipilih.\n` +
+        `> ↳ Minimal level: *Lv.${lockedJob.lv}*.\n` +
         `> ↳ Level kamu saat ini: Lv.${userRPG.level}.\n` +
         `> ↳ Kumpulkan EXP lewat aktivitas berikut:`
       )
     }
+    const unlockedAppliedJobs = activeJobs.filter(job => job.lv <= userRPG.level)
+    if (!unlockedAppliedJobs.length) {
+      const requiredJob = activeJobs[0]
+      return sendRpgExpActivityList(conn, m, usedPrefix,
+        `╭─❏「 ⚠️ LEVEL BELUM CUKUP 」❏\n` +
+        `│ 💼 PERSYARATAN PEKERJAAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pekerjaan *${requiredJob.job}* membutuhkan Lv.${requiredJob.lv}.\n` +
+        `> ↳ Level kamu saat ini: Lv.${userRPG.level}.\n` +
+        `> ↳ Kumpulkan EXP lewat aktivitas berikut:`
+      )
+    }
+    const availableJobs = unlockedAppliedJobs.filter(job =>
+      getWorkCooldownRemaining(userRPG, job.job, now) === 0
+    )
+    const coolingJobs = unlockedAppliedJobs
+      .map(job => ({ job, remaining: getWorkCooldownRemaining(userRPG, job.job, now) }))
+      .filter(({ remaining }) => remaining > 0)
 
-    const gap = now - Number(userRPG.lastkerja || 0)
-    const jobCooldown = scaleDifficultyCooldown(userRPG, 120000)
-    const remainingCooldown = Math.max(0, jobCooldown - gap)
-    if (gap < jobCooldown) {
+    let selectedJobs
+    if (isWorkAll) {
+      if (coolingJobs.length) {
+        const longestCooldown = Math.max(...coolingJobs.map(({ remaining }) => remaining))
+        return m.reply(`╭─❏「 ⏳ JOB COOLDOWN 」❏
+│ 💼 STATUS PEKERJAAN
+╰─━━━━━━━━━━━━━━─
+
+> ⏰ Cooldown: *${formatDuration(longestCooldown)}*.
+
+─━━━━━━━━━━━━━━─`)
+      }
+      selectedJobs = unlockedAppliedJobs
+    } else if (availableJobs.length) {
+      const preferredJob = availableJobs.find(job =>
+        job.job.toLowerCase() === String(userRPG.currentJobName || '').toLowerCase()
+      )
+      selectedJobs = [preferredJob || availableJobs[0]]
+    } else {
+      const shortestCooldown = Math.min(...coolingJobs.map(({ remaining }) => remaining))
       return m.reply(`╭─❏「 ⏳ JOB COOLDOWN 」❏
 │ 💼 STATUS PEKERJAAN
 ╰─━━━━━━━━━━━━━━─
 
-> ↳ Kamu masih lelah setelah bekerja.
-> ↳ Sisa cooldown: *${Math.ceil(remainingCooldown / 1000)} detik*.
+> ↳ Semua pekerjaan masih cooldown.
+> ↳ Pekerjaan terdekat siap dalam *${formatDuration(shortestCooldown)}*.
 
 ─━━━━━━━━━━━━━━─`)
     }
 
-    if (!userRPG.appliedJobs.includes(selectedJob.job)) {
-      return m.reply(`╭─❏「 ⚠️ BELUM MELAMAR 」❏
-│ 💼 STATUS LAMARAN KERJA
-╰─━━━━━━━━━━━━━━─
+    const jobCooldown = scaleDifficultyCooldown(userRPG, JOB_WORK_COOLDOWN_MS * selectedJobs.length)
+    const attendanceMultiplier = getAttendanceMultiplier(userRPG, now)
+    let totalMoney = 0
+    let totalExp = 0
+    const workResults = selectedJobs.map(job => {
+      const progress = getJobProgress(userRPG, job.job)
+      const beforeTitle = getJobTitleByPoints(progress.promotionPoints, job.job)
+      const titleMultiplier = getJobTitleMultiplier(progress.promotionPoints, job.job)
+      const difficultyAdjustedIncome = scaleDifficultyIncome(userRPG, job.gaji)
+      const difficultyAdjustedExp = scaleDifficultyXP(userRPG, job.exp)
+      const earnedMoney = Math.max(0, Math.floor(
+        difficultyAdjustedIncome * attendanceMultiplier * titleMultiplier
+      ))
+      const earnedExp = Math.max(1, difficultyAdjustedExp)
 
-> ↳ Kamu belum melamar pekerjaan *${selectedJob.job}*.
-> ↳ Gunakan *${usedPrefix}job apply ${selectedJob.job}* untuk melamar.
+      totalMoney += earnedMoney
+      totalExp += earnedExp
+      progress.promotionPoints += 1
+      progress.works += 1
+      const afterTitle = getJobTitleByPoints(progress.promotionPoints, job.job)
+      if (afterTitle !== beforeTitle) {
+        userRPG.performance.promotions = Number(userRPG.performance.promotions || 0) + 1
+      }
 
-─━━━━━━━━━━━━━━─`)
-    }
+      return { job, progress, beforeTitle, afterTitle, earnedMoney, earnedExp }
+    })
 
-    const progress = getJobProgress(userRPG, selectedJob.job)
-    const beforeTitle = getJobTitleByPoints(progress.promotionPoints, selectedJob.job)
-    const incomeMultiplier = getAttendanceMultiplier(userRPG, now) * getJobTitleMultiplier(progress.promotionPoints, selectedJob.job)
-    const baseJob = selectedJob
-    const earnedMoney = Math.max(0, Math.floor(scaleDifficultyIncome(userRPG, baseJob.gaji) * incomeMultiplier))
-    const earnedExp = Math.max(1, scaleDifficultyXP(userRPG, baseJob.exp))
-
-    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + earnedMoney
-    userRPG.exp = Number(userRPG.exp || 0) + earnedExp
+    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + totalMoney
+    userRPG.exp = Number(userRPG.exp || 0) + totalExp
     userRPG.lastkerja = now
-    userRPG.performance.works = Number(userRPG.performance.works || 0) + 1
+    const nextWorkReadyAt = now + jobCooldown
+    for (const job of selectedJobs) userRPG.jobWorkCooldowns[job.job] = nextWorkReadyAt
+    userRPG.performance.works = Number(userRPG.performance.works || 0) + selectedJobs.length
     userRPG.performance.attendance = Number(userRPG.performance.attendance || 0) + 1
-    userRPG.currentJobName = selectedJob.job
-    userRPG.jobHistory = Array.from(new Set([...(Array.isArray(userRPG.jobHistory) ? userRPG.jobHistory : []), selectedJob.job]))
-    progress.promotionPoints += 1
-    progress.works += 1
-    userRPG.promotionPoints = progress.promotionPoints
-    userRPG.jobTitle = getJobTitleByPoints(progress.promotionPoints, selectedJob.job)
-    const afterTitle = getCurrentJobTitle(userRPG, selectedJob.job)
-    if (afterTitle !== beforeTitle) userRPG.performance.promotions = Number(userRPG.performance.promotions || 0) + 1
+    if (!selectedJobs.some(job => job.job === userRPG.currentJobName)) {
+      userRPG.currentJobName = selectedJobs[0].job
+    }
+    userRPG.jobHistory = Array.from(new Set([
+      ...userRPG.jobHistory,
+      ...selectedJobs.map(job => job.job)
+    ]))
+    const lastProgress = getJobProgress(userRPG, userRPG.currentJobName)
+    userRPG.promotionPoints = lastProgress.promotionPoints
+    userRPG.jobTitle = getJobTitleByPoints(lastProgress.promotionPoints, userRPG.currentJobName)
 
     let jumlahLevel = 0
     while (userRPG.exp >= userRPG.level * 500) {
@@ -908,29 +1201,43 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
     const story = pick(JOB_WORK_STORIES)
     const nextLevel = listJobs.find(job => job.lv > userRPG.level)
+    const workCooldown = formatDuration(jobCooldown)
 
     const message = [
       '╭─❏「 💼 KERJA BERHASIL 」❏',
       '│ 📋 HASIL PEKERJAAN KAMU',
       '╰─━━━━━━━━━━━━━━─',
       '',
-      `> 🏢 Pekerjaan: *${selectedJob.job}*`,
-      `> 🎖️ Jabatan: ${afterTitle}`,
-      getPromotionProgressText(progress.promotionPoints, selectedJob.job),
-      `> 💰 Gaji: +${fmtRp(earnedMoney)}`,
-      `> ✨ XP: +${earnedExp}`,
+      ...(isWorkAll
+        ? [
+          '> 🏢 Pekerjaan:',
+          ...selectedJobs.map(job => `> ↳ *${job.job}*`)
+        ]
+        : workResults.flatMap(({ job, progress, afterTitle, earnedMoney, earnedExp }) => [
+          `> 🏢 Pekerjaan: *${job.job}*`,
+          `> 🎖️ Jabatan: ${afterTitle}`,
+          `> 💰 Gaji: +${fmtRp(earnedMoney)}`,
+          `> ✨ XP: +${earnedExp}`,
+          getPromotionProgressText(progress.promotionPoints, job.job)
+        ])),
+      `> 💰 ${isWorkAll ? 'Total gaji' : 'Gaji'}: +${fmtRp(totalMoney)}`,
+      `> ✨ ${isWorkAll ? 'Total XP' : 'XP'}: +${totalExp}`,
       '',
       '─━━━━━━━━━━━━━━─',
       `> ${story}`,
-      '',
-      '─━━━━━━━━━━━━━━─',
-      '📊 *STATUS KARAKTER*',
-      '',
-      `> 🎮 Level: Lv.${userRPG.level}`,
-      `> 📈 XP: ${userRPG.exp}/${userRPG.level * 500}`,
-      nextLevel ? `> ➡️ Next: ${nextLevel.job} (Lv.${nextLevel.lv})` : '> 🏆 Pekerjaan tertinggi sudah tercapai!',
+      ...(!isWorkAll
+        ? [
+          '',
+          '─━━━━━━━━━━━━━━─',
+          '📊 *STATUS KARAKTER*',
+          '',
+          `> 🎮 Level: Lv.${userRPG.level}`,
+          `> 📈 XP: ${userRPG.exp}/${userRPG.level * 500}`,
+          nextLevel ? `> ➡️ Next: ${nextLevel.job} (Lv.${nextLevel.lv})` : '> 🏆 Pekerjaan tertinggi sudah tercapai!'
+        ]
+        : []),
       jumlahLevel > 0 ? `> 🎉 LEVEL UP! +${jumlahLevel} level` : '',
-      `> ⏰ Cooldown: 2 menit`,
+      `> ⏰ Cooldown: ${workCooldown}`,
       '',
       '─━━━━━━━━━━━━━━─'
     ].filter(Boolean).join('\n')
@@ -940,20 +1247,23 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       chat: m.chat,
       text: message,
       footer: 'AVELIA • JOB SYSTEM',
-      buttons: [['💬 Ngobrol (+1 Poin)', `${usedPrefix}job talk`]],
+      buttons: [[
+        isWorkAll ? '💬 Ngobrol Semua (Premium)' : '💬 Ngobrol (+1 Poin)',
+        `${usedPrefix}job talk${isWorkAll ? ' all' : ''}`
+      ]],
       quoted: m,
       reply: text => m.reply(text)
     })
 
-    if (afterTitle !== beforeTitle) {
+    const promotions = workResults.filter(result => result.afterTitle !== result.beforeTitle)
+    if (promotions.length) {
       const promoMessage = [
         '╭─❏「 🔥 PROMOSI JABATAN 」❏',
         '│ 📈 INFORMASI PROMOSI',
         '╰─━━━━━━━━━━━━━━─',
         '',
-        `> 📉 Jabatan sebelumnya: ${beforeTitle}`,
-        `> 📈 Jabatan baru: ${afterTitle}`,
-        getPromotionProgressText(progress.promotionPoints, selectedJob.job),
+        ...promotions.map(({ job, beforeTitle, afterTitle }) =>
+          `> 💼 ${job.job}: ${beforeTitle} → ${afterTitle}`),
         '',
         '─━━━━━━━━━━━━━━─',
         `> ${pick(JOB_PROMOTION_STORIES)}`,
@@ -968,6 +1278,11 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
   if (action === '') {
     const currentJob = getActiveJob(userRPG)
+    const currentJobIncome = Math.floor(
+      scaleDifficultyIncome(userRPG, Number(currentJob?.gaji || 0)) *
+      getJobTitleMultiplier(getJobProgress(userRPG, currentJob?.job).promotionPoints, currentJob?.job) *
+      getAttendanceMultiplier(userRPG, now)
+    )
     const caption = [
       '╭─❏「 💼 JOB INFORMATION 」❏',
       '│ 📋 INFORMASI PEKERJAAN',
@@ -975,7 +1290,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       '',
       `> 🏢 Pekerjaan aktif: ${getJobLabel(currentJob)}`,
       `> 🎖️ Jabatan: ${getTitleFromJob(currentJob, userRPG)}`,
-      `> 💰 Income: ${fmtRp(currentJob?.gaji || 0)}`,
+      `> 💰 Perkiraan gaji diterima: ${fmtRp(currentJobIncome)}`,
       '',
       `> ↳ Ketik *${usedPrefix}job guide* untuk melihat semua command.`
     ].join('\n')
@@ -990,7 +1305,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 > ↳ Gunakan *${usedPrefix}job guide* untuk melihat daftar command.`)
 }
 
-handler.help = ['job', 'job guide', 'job list', 'job info', 'job profile', 'job performance', 'job work', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk', 'job leave', 'job return', 'job resign <nama/nomor>', 'work', 'kerja']
+handler.help = ['job', 'job guide', 'job list', 'job info', 'job active <nama/nomor>', 'job profile', 'job performance', 'job work [all]', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk [all]', 'job leave', 'job return', 'job resign <nama/nomor>', 'work [all]', 'kerja [all]']
 handler.tags = ['rpg']
 handler.command = /^(job|kerja|work)$/i
 handler.alias = ['job', 'kerja', 'work']

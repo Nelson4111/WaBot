@@ -212,7 +212,6 @@ if (text.toLowerCase() === 'all') {
   let totalExp = 0
   let hasil = {}
   let count = 0
-  let listHasil = []
   let tanamUlangCounts = {}
 
   for (let i = 1; i <= user.maxLadang; i++) {
@@ -226,9 +225,9 @@ if (text.toLowerCase() === 'all') {
         const harvested = applyFarmingYieldBonus(h.jumlah)
         addItem(user, h.item, harvested)
         totalExp += dataBibit.exp
-        hasil[l.jenis] = (hasil[l.jenis] || 0) + harvested
+        if (!hasil[h.item]) hasil[h.item] = { emoji: dataBibit.emoji, jumlah: 0 }
+        hasil[h.item].jumlah += harvested
         tanamUlangCounts[l.jenis] = (tanamUlangCounts[l.jenis] || 0) + 1
-        listHasil.push(`${dataBibit.emoji} ${formatNama(h.item)} x${harvested}`)
         delete user.ladang[i]
         count++
       }
@@ -258,8 +257,8 @@ if (text.toLowerCase() === 'all') {
   teks += `─━━━━━━━━━━━━━━─\n\n`
 
   teks += `📦 *HASIL PANEN*\n`
-  listHasil.forEach((v, i) => {
-    teks += `> ↳ ${i + 1}. ${v}\n`
+  Object.entries(hasil).forEach(([item, total]) => {
+    teks += `> ↳ ${total.emoji} ${formatNama(item)} x${total.jumlah}\n`
   })
 
   teks += `\n─━━━━━━━━━━━━━━─\n\n`
@@ -288,12 +287,12 @@ if (text.toLowerCase() === 'all') {
     message: m,
     quoted: m,
     text: teks,
-    title: '🌱 TANAM KEMBALI',
-    subtitle: 'Pilih bibit yang baru saja kamu panen',
-    buttonText: '🌱 PILIH BIBIT',
+    title: '🌾 HASIL PANEN',
+    subtitle: 'Pilih bibit untuk ditanam kembali',
+    buttonText: '🌱 TANAM KEMBALI',
     sections: [{ title: 'Bibit dari panen ini', rows: replantRows }],
     fallbackText: replantFallback,
-    noThumbnail: true
+    thumbnailUrl: ladangImageUrl
   })
 }
 
@@ -371,6 +370,7 @@ if (sisaWaktu <= 0) {
     text: teks,
     title: '🌱 TANAM KEMBALI',
     subtitle: 'Mulai lagi dengan bibit yang baru kamu panen',
+    thumbnailUrl: ladangImageUrl,
     buttons: [[`🌱 Tanam ${formatNama(l.jenis)}`, `${usedPrefix}tanam ${l.jenis} ulang 1`]],
     quoted: m,
     preferV2: true,

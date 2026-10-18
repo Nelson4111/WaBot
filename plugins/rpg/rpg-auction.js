@@ -4,13 +4,15 @@ import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgMoney as money, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 const AUCTION_DURATION = 5 * 60 * 60 * 1000
 const AUCTION_ITEM_LIMIT = 5
 const BID_CONFIRMATION_TTL = 2 * 60 * 1000
 const AUCTION_HISTORY_LIMIT = 50
 const AUCTION_NEWS_LIMIT = 10
-const money = value => `Rp ${Number(value).toLocaleString('id-ID')}`
+const isValidAuctionAmount = amount =>
+  Number.isFinite(Number(amount)) && Number.isInteger(Number(amount)) && Number(amount) > 0
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 let auctionTimer
 
@@ -70,7 +72,7 @@ function getAuctionBids(db, session, itemId) {
   const byJid = new Map()
   const bids = Array.isArray(session.bids?.[itemId]) ? session.bids[itemId] : []
   for (const bid of bids) {
-    if (!bid?.jid || !Number.isSafeInteger(Number(bid.amount)) || Number(bid.amount) <= 0) continue
+    if (!bid?.jid || !isValidAuctionAmount(bid.amount)) continue
     const jid = normalizeJid(bid.jid)
     const current = byJid.get(jid)
     if (!current || Number(bid.amount) > Number(current.amount)) byJid.set(jid, { ...bid, jid })
@@ -78,8 +80,7 @@ function getAuctionBids(db, session, itemId) {
   for (const [userJid, user] of Object.entries(db.data.users || {})) {
     const bid = user?.rpg?.auctionBids?.[itemId]
     if (!belongsToAuctionSession(bid, session) ||
-      !Number.isSafeInteger(Number(bid.amount)) ||
-      Number(bid.amount) <= 0) continue
+      !isValidAuctionAmount(bid.amount)) continue
     const jid = normalizeJid(bid.jid || userJid)
     const current = byJid.get(jid)
     const snapshotBid = {
@@ -142,8 +143,7 @@ function getActiveUserBid(db, session, itemId, jids, rpg) {
     .filter(bid => normalizedJids.has(normalizeJid(bid.jid)))
   const accountBid = rpg?.auctionBids?.[itemId]
   if (belongsToAuctionSession(accountBid, session) &&
-    Number.isSafeInteger(Number(accountBid.amount)) &&
-    Number(accountBid.amount) > 0) {
+    isValidAuctionAmount(accountBid.amount)) {
     const accountJid = normalizedJids.values().next().value
     matchingBids.push({
       jid: normalizeJid(accountJid || accountBid.jid),
@@ -172,7 +172,7 @@ function restoreAuctionBids(db, session) {
     if (!personalBids || typeof personalBids !== 'object') continue
     for (const [itemId, bid] of Object.entries(personalBids)) {
       if (!session.itemIds.includes(itemId) || !belongsToAuctionSession(bid, session)) continue
-      if (!Number.isSafeInteger(Number(bid.amount)) || Number(bid.amount) <= 0) continue
+      if (!isValidAuctionAmount(bid.amount)) continue
       const jid = normalizeJid(userJid)
       const bids = Array.isArray(session.bids[itemId]) ? session.bids[itemId] : (session.bids[itemId] = [])
       const existingIndex = bids.findIndex(entry => normalizeJid(entry?.jid) === jid)
@@ -220,7 +220,7 @@ function recoverAuctionSession(db, previousSession, now) {
         }
         recoverable.set(endsAt, session)
       }
-      if (!session.itemIds.includes(itemId) || !Number.isSafeInteger(Number(bid.amount))) continue
+      if (!session.itemIds.includes(itemId) || !isValidAuctionAmount(bid.amount)) continue
       if (!Array.isArray(session.bids[itemId])) session.bids[itemId] = []
       session.bids[itemId].push({
         jid: normalizeJid(userJid),
@@ -249,7 +249,7 @@ function settleOrphanedAuctionBids(db, now) {
       const endsAt = Number(bid?.endsAt)
       if (!Number.isFinite(endsAt) || endsAt > now || endsAt === currentSessionEndsAt) continue
       if (!AUCTION_ITEMS.some(item => item.id === itemId)) continue
-      if (!Number.isSafeInteger(Number(bid.amount)) || Number(bid.amount) <= 0) continue
+      if (!isValidAuctionAmount(bid.amount)) continue
       let session = orphaned.get(endsAt)
       if (!session) {
         session = { itemIds: [], bids: {}, pendingConfirmations: {}, endsAt }
@@ -293,7 +293,7 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
     const bestBidByUser = new Map()
 
     for (const bid of bids) {
-      if (!bid?.jid || !Number.isSafeInteger(Number(bid.amount))) continue
+      if (!bid?.jid || !isValidAuctionAmount(bid.amount)) continue
       const jid = normalizeJid(bid.jid)
       const previous = bestBidByUser.get(jid)
       if (!previous || Number(bid.amount) > Number(previous.amount)) {
@@ -511,16 +511,7 @@ function findVaultItem(input, contents) {
 }
 
 function parseBidAmount(input) {
-  const value = String(input || '').replace(/^rp/i, '').replace(/\s/g, '')
-  const shorthand = value.match(/^(\d+(?:[.,]\d+)?)([km])$/i)
-  let amount
-  if (shorthand) {
-    const multiplier = shorthand[2].toLowerCase() === 'k' ? 1_000 : 1_000_000
-    amount = Number(shorthand[1].replace(',', '.')) * multiplier
-  } else if (/^\d[\d.,]*$/.test(value)) {
-    amount = Number(value.replace(/[.,]/g, ''))
-  }
-  return Number.isSafeInteger(amount) && amount > 0 ? amount : null
+  return parseRpgMoneyAmount(input)
 }
 
 function formatRemaining(milliseconds) {
@@ -604,12 +595,25 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Lima item koleksi dilelang bersama selama 5 jam dan daftar ini sama di semua grup.\n` +
       `> ↳ Hasil lelang dan berita pemenang hanya ditampilkan di grup asal bid pemenang.\n` +
-      `> ↳ Bid Minimum yang ditampilkan adalah setengah harga asli. Bid sungguhan harus lebih tinggi dari harga asli atau bid tertinggi. Bid perlu dikonfirmasi; bid berikutnya tanpa nominal naik Rp 500.000.\n` +
+      `> ↳ Bid minimum yang ditampilkan adalah setengah harga asli. Bid sungguhan harus lebih tinggi dari harga asli atau bid tertinggi. Bid perlu dikonfirmasi; bid berikutnya tanpa nominal naik Rp 500.000.\n` +
+      `> ↳ Nominal bid bisa memakai sufiks, misalnya *1.5B*, *19Qa*, atau *2Ce*. Lihat daftar lengkap dengan *${prefix}ah money*.\n` +
       `> ↳ Saldo bid ditahan saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
       `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku.\n\n` +
       `📌 *INFORMASI*\n` +
       `> ↳ Daftar perintah : *${prefix}ah command*\n` +
       `> ↳ Peringkat kolektor : *${prefix}ah top*\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (mode === 'money') {
+    return m.reply(
+      `╭─❏「 💰 DAFTAR SUFIKS UANG 」❏\n` +
+      `│ 💰 NOMINAL RINGKAS UNTUK TAMPILAN & BID\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Gunakan sufiks langsung setelah angka, contoh: *${prefix}ah bid 1 19Qa*.\n` +
+      `Nominal bid dan saldo ditampilkan ringkas; nama di bawah menunjukkan nilai tiap sufiks.\n\n` +
+      `${getRpgMoneySuffixGuide()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -633,6 +637,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ ${prefix}ah news — 10 berita lelang terbaru\n` +
       `> ↳ ${prefix}ah history/riwayat — pemenang lelang terakhir\n` +
       `> ↳ ${prefix}ah top — lihat kolektor item lelang terbanyak\n\n` +
+      `> ↳ ${prefix}ah money — daftar sufiks nominal uang\n\n` +
       `> ↳ Alias lain: ${prefix}lelang dan ${prefix}auctionhouse\n\n` +
       `─━━━━━━━━━━━━━━─`
     const rows = [
@@ -799,7 +804,9 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> 🔨 ${prefix}ah bid <nomor/nama> [nominal]\n` +
       `> 📊 ${prefix}ah info\n` +
       `> 🎁 ${prefix}ah vault\n` +
-      `> 📰 ${prefix}ah news\n\n` +
+      `> 📰 ${prefix}ah news\n` +
+      `> 💳 ${prefix}money — cek saldo\n` +
+      `> 🔤 ${prefix}money suffix — cek daftar sufiks\n\n` +
       `─━━━━━━━━━━━━━━─`
     return sendRpgButtons(conn, {
       chat: m.chat,
@@ -808,8 +815,17 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       title: '🔨 AUCTION HOUSE',
       subtitle: 'Pilih item lelang untuk mengajukan penawaran',
       text: auctionText,
-      buttonText: '🔨 PILIH ITEM LELANG',
-      sections: [{ title: 'Barang yang sedang dilelang', rows }],
+      buttonText: '🔨 PILIH ITEM / CEK SALDO',
+      sections: [
+        { title: 'Barang yang sedang dilelang', rows },
+        {
+          title: 'Saldo & nominal',
+          rows: [
+            { title: '💳 Cek saldo', description: 'Lihat saldo uang dan bank', id: `${prefix}money` },
+            { title: '🔤 Daftar sufiks uang', description: 'Lihat singkatan K sampai Ce', id: `${prefix}money suffix` }
+          ]
+        }
+      ],
       fallbackText: auctionText,
       noThumbnail: true
     })
@@ -982,7 +998,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
     const highest = getHighestBid(db, session, item.id)
     const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
     if (amount === null) amount = currentFloor + 500_000
-    if (!Number.isSafeInteger(amount) || amount <= currentFloor) {
+    if (!isValidAuctionAmount(amount) || amount <= currentFloor) {
       return m.reply(
         `╭─❏「 ❌ BID TIDAK VALID 」❏\n` +
         `│ 💰 SYARAT PENAWARAN\n` +
@@ -1085,8 +1101,9 @@ handler.help = [
   'ah',
   'ah list',
   'ah info [nomor/nama]',
-  'ah bid <nomor/nama> [nominal]',
+  'ah bid <nomor/nama> [nominal/sufiks]',
   'ah bid konfirmasi',
+  'ah money',
   'ah vault',
   'ah claim <nomor/nama>',
   'ah news',

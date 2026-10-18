@@ -1,6 +1,6 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
-import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { sendRpgExpActivityList } from '../../lib/rpgActionButtons.js'
 import {
   addGuildLootReward,
@@ -165,7 +165,9 @@ if(command === 'latihanguild'){
   list += `│ 🎯 Level pemain: Lv.${playerLevel}\n`
   list += `│ 🔓 Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
   list += `📌 *PILIH MISI*\n`
-  list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/ .bag; tidak masuk Guild Loot.\n`
+  list += `> ↳ Uang dan EXP karakter mengikuti difficulty; uang/EXP di bawah belum termasuk Buff Luck.\n`
+  list += `> ↳ Jumlah bahan mengikuti daftar dan tidak dikurangi difficulty.\n`
+  list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/.bag; tidak masuk Guild Loot.\n`
   list += `> ↳ Anggota aktif lain mendapat 50% sebagai pending loot. Klaim dengan .guild loot take.\n\n`
   list += `> ↳ Anggota aktif berarti memakai fitur RPG apa pun dalam 4 hari terakhir.\n`
   list += `─━━━━━━━━━━━━━━─\n\n`
@@ -174,10 +176,14 @@ if(command === 'latihanguild'){
     list += `*${i + 1}. ${v.minLevel <= playerLevel ? '✅' : '🔒'} ⚔️ ${v.name}*\n`
     list += `> ↳ 📊 Syarat: Lv.${v.minLevel}${v.minLevel > playerLevel ? ' (belum terbuka)' : ''}\n`
     list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
-    list += `> ↳ ✨ Exp: +${v.reward.exp}\n`
+    list += `> ↳ ✨ Guild Exp dasar: +${v.reward.exp}\n`
+    list += `> ↳ ✨ EXP karakter (sesuai difficulty): +${scaleDifficultyXP(player, v.reward.exp)}\n`
     const rewards = Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' })
       .filter(([item]) => Number(v.reward[item]) > 0)
-      .map(([item, name]) => `>   ${name}: ${item === 'money' ? `Rp ${Number(v.reward[item]).toLocaleString('id-ID')}` : Number(v.reward[item]).toLocaleString('id-ID')}`)
+      .map(([item, name]) => {
+        const amount = item === 'money' ? scaleDifficultyIncome(player, v.reward[item]) : Number(v.reward[item])
+        return `>   ${name}: ${item === 'money' ? `Rp ${amount.toLocaleString('id-ID')} (dasar Rp ${Number(v.reward[item]).toLocaleString('id-ID')})` : Number(v.reward[item]).toLocaleString('id-ID')}`
+      })
     list += `> ↳ 🎁 Hadiah:\n${rewards.join('\n')}\n\n`
   })
 
@@ -220,18 +226,21 @@ if(command === 'latihanguild'){
   let isMulti = Date.now() < myGuild.buffMulti
   let reward = {...msn.reward}
   let extraText = ''
+  let luckMultiplier = 1
 
   if(isLuck){
-    let multiplier = 1 + (Math.random() * 0.5)
-    reward.money = Math.floor(reward.money * multiplier)
-    reward.exp = Math.floor(reward.exp * multiplier)
-    extraText += `\n🍀 *LUCK BUFF:* Hadiah x${multiplier.toFixed(2)}`
+    luckMultiplier = 1 + (Math.random() * 0.5)
+    reward.money = Math.floor(reward.money * luckMultiplier)
+    reward.exp = Math.floor(reward.exp * luckMultiplier)
+    extraText += `\n🍀 *LUCK BUFF:* Hadiah x${luckMultiplier.toFixed(2)}`
   }
   if(isMulti){
     reward.exp = Math.floor(reward.exp * 1.5)
     extraText += `\n📈 *MULTIPLIER:* +50% Exp Guild`
   }
 
+  const earnedPlayerExp = scaleDifficultyXP(player, Math.floor(msn.reward.exp * luckMultiplier))
+  const playerLevelsGained = addRpgExp(player, earnedPlayerExp)
   myGuild.contribution[m.sender] = (myGuild.contribution[m.sender] || 0) + msn.contrib
   myGuild.exp += reward.exp
   myGuild.lastMission = Date.now()
@@ -243,15 +252,14 @@ if(command === 'latihanguild'){
   normalizeGuildPendingLoot(myGuild, conn)
   const now = Date.now()
   const executorLoot = {}
-  const pendingLootTotals = { money: 0, iron: 0, gold: 0, stone: 0, diamond: 0, gemstone: 0 }
   let pendingRecipients = 0
   const executorRewardItems = {
     money: scaleDifficultyIncome(player, reward.money),
-    iron: scaleDifficultyIncome(player, msn.reward.iron || 0),
-    gold: scaleDifficultyIncome(player, msn.reward.gold || 0),
-    stone: scaleDifficultyIncome(player, msn.reward.stone || 0),
-    diamond: scaleDifficultyIncome(player, msn.reward.diamond || 0),
-    gemstone: scaleDifficultyIncome(player, msn.reward.gemstone || 0)
+    iron: Number(msn.reward.iron) || 0,
+    gold: Number(msn.reward.gold) || 0,
+    stone: Number(msn.reward.stone) || 0,
+    diamond: Number(msn.reward.diamond) || 0,
+    gemstone: Number(msn.reward.gemstone) || 0
   }
   player.inventory = player.inventory || {}
   for (const [item, amount] of Object.entries(executorRewardItems)) {
@@ -273,11 +281,11 @@ if(command === 'latihanguild'){
     {
       const rewardItems = {
         money: scaleDifficultyIncome(u, reward.money),
-        iron: scaleDifficultyIncome(u, msn.reward.iron || 0),
-        gold: scaleDifficultyIncome(u, msn.reward.gold || 0),
-        stone: scaleDifficultyIncome(u, msn.reward.stone || 0),
-        diamond: scaleDifficultyIncome(u, msn.reward.diamond || 0),
-        gemstone: scaleDifficultyIncome(u, msn.reward.gemstone || 0)
+        iron: Number(msn.reward.iron) || 0,
+        gold: Number(msn.reward.gold) || 0,
+        stone: Number(msn.reward.stone) || 0,
+        diamond: Number(msn.reward.diamond) || 0,
+        gemstone: Number(msn.reward.gemstone) || 0
       }
       for (const item of Object.keys(rewardItems)) {
         rewardItems[item] = Math.floor(rewardItems[item] * 0.5)
@@ -287,7 +295,6 @@ if(command === 'latihanguild'){
       for (const [item, amount] of Object.entries(rewardItems)) {
         const accepted = addGuildLootReward(myGuild, u, jid, item, amount, { pending: true })
         myGuild.pendingLoot[jid][item] = (Number(myGuild.pendingLoot[jid][item]) || 0) + accepted
-        pendingLootTotals[item] += accepted
         if (accepted > 0) receivedPendingLoot = true
       }
       if (receivedPendingLoot) pendingRecipients++
@@ -309,24 +316,18 @@ cap += `📋 *INFORMASI MISI*\n`
 cap += `> ↳ 📜 Misi: ${msn.name}\n`
 cap += `> ↳ 👤 Eksekutor: ${executorName}\n`
 cap += `> ↳ ✨ Guild Exp: +${reward.exp}${extraText}\n`
+cap += `> ↳ ✨ EXP karakter: +${earnedPlayerExp}${playerLevelsGained ? ` (naik ${playerLevelsGained} level)` : ''}\n`
 cap += `> ↳ 🏆 Kontribusi: +${msn.contrib} Pts\n\n`
 
 cap += `─━━━━━━━━━━━━━━─\n\n`
 
-cap += `🎁 *HADIAH EKSEKUTOR (LANGSUNG MASUK SALDO / .BAG)*\n`
+cap += `🎁 *HADIAH EKSEKUTOR*\n`
 const rewardLabels = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }
 for (const [item, label] of Object.entries(rewardLabels)) {
   const amount = executorLoot[item] || 0
   if (Number(amount) > 0) cap += `> ↳ ${label}: ${item === 'money' ? `Rp ${Number(amount).toLocaleString('id-ID')}` : Number(amount).toLocaleString('id-ID')}\n`
 }
-cap += `\n🎁 *PENDING GUILD LOOT UNTUK ANGGOTA LAIN*\n`
 cap += `> ↳ Penerima aktif: ${pendingRecipients} anggota\n`
-cap += `> ↳ Kriteria: memakai command atau fitur RPG dalam 4 hari terakhir\n`
-const pendingTotalLines = Object.entries(rewardLabels)
-  .filter(([item]) => pendingLootTotals[item] > 0)
-  .map(([item, label]) => `> ↳ ${label}: ${item === 'money' ? `Rp ${pendingLootTotals[item].toLocaleString('id-ID')}` : pendingLootTotals[item].toLocaleString('id-ID')}`)
-cap += `${pendingTotalLines.length ? pendingTotalLines.join('\n') : '> ↳ Total: Tidak ada'}\n`
-cap += `> ↳ Anggota mengambil bagiannya sendiri dengan *.guild loot take*; hadiah eksekutor tidak masuk loot.\n`
 
 cap += `\n╰─━━━━━━━━━━━━━━─`
 

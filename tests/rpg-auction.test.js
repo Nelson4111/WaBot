@@ -8,6 +8,15 @@ import { finishAuctionNow } from '../plugins/rpg/rpg-auction.js'
 const firstJid = '628123456789@s.whatsapp.net'
 const secondJid = '628987654321@s.whatsapp.net'
 const initialBalance = 200_000_000_000_000
+const moneySuffixes = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc']
+
+function compactMoney(value) {
+  const amount = Number(value)
+  if (amount < 1_000) return amount.toLocaleString('id-ID')
+  const suffixIndex = Math.floor(Math.log10(amount) / 3)
+  const scaledAmount = amount / 10 ** (suffixIndex * 3)
+  return `${scaledAmount.toLocaleString('id-ID', { maximumFractionDigits: 2 })}${moneySuffixes[suffixIndex - 1]}`
+}
 
 function makeDb() {
   return {
@@ -65,6 +74,70 @@ test('auction command initializes its session and displays the command guide', a
   }
 })
 
+test('auction list includes shortcuts for checking balance and money suffixes', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+
+  try {
+    const listing = await runAuction(firstJid, 'list')
+
+    assert.match(listing, /> 💳 \.money — cek saldo/)
+    assert.match(listing, /> 🔤 \.money suffix — cek daftar sufiks/)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
+test('money suffix guide lists abbreviations through centillion', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+
+  try {
+    const guide = await runAuction(firstJid, 'money')
+
+    assert.match(guide, /10\^3 = K — Ribu \(Thousand\)/)
+    assert.match(guide, /10\^9 = B — Miliar \(Billion\)/)
+    assert.match(guide, /10\^15 = Qa — Quadrillion/)
+    assert.match(guide, /10\^63 = Vg — vigintillion/i)
+    assert.match(guide, /10\^303 = Ce — Centillion/)
+    assert.equal(guide.match(/> 10\^\d+ = /g).length, 101)
+
+    const { m, replies } = makeMessage(firstJid)
+    await bankHandler(m, { text: 'suffix', usedPrefix: '.', command: 'money' })
+    assert.match(replies.at(-1), /10\^303 = Ce — Centillion/)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
+test('auction bids accept large suffixes and display compact amounts', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+  global.db.data.users[firstJid].rpg.bank = 20_000_000_000_000_000
+
+  try {
+    await runAuction(firstJid, 'list')
+    const session = global.db.data.auctionHouse
+    const item = AUCTION_ITEMS.find(entry => entry.id === session.itemIds[0])
+
+    const pending = await runAuction(firstJid, `bid ${item.id} 19Qa`)
+    assert.match(pending, /Penawaran kamu: Rp 19Qa/)
+    const confirmed = await runAuction(firstJid, 'bid konfirmasi')
+    assert.match(confirmed, /Bid kamu: Rp 19Qa/)
+    assert.equal(global.db.data.users[firstJid].rpg.bank, 1_000_000_000_000_000)
+    assert.equal(session.bids[item.id][0].amount, 19_000_000_000_000_000)
+
+    const tooLarge = await runAuction(secondJid, `bid ${item.id} 1Ce`)
+    assert.match(tooLarge, /SALDO TIDAK CUKUP/)
+    assert.match(tooLarge, /Nominal bid: \*Rp 1Ce\*/)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
 test('a bidder addressed by LID sees their active bid and leads by their real name', async () => {
   const previousDb = global.db
   const lid = '123456789012345@lid'
@@ -87,7 +160,7 @@ test('a bidder addressed by LID sees their active bid and leads by their real na
     assert.match(bidInfo, /Bid kamu:/)
     assert.doesNotMatch(bidInfo, /belum mengikuti bid aktif/i)
     const listing = await runAuction(lid, 'list')
-    assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${amount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+    assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${compactMoney(amount)}\\n> ↳ Pemimpin Bid : Penawar Satu`))
   } finally {
     if (previousDb === undefined) delete global.db
     else global.db = previousDb
@@ -107,8 +180,8 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.match(await runAuction(secondJid, 'info'), /belum mengikuti bid aktif/i)
     assert.match(await runAuction(secondJid, 'bid'), /belum mengikuti bid aktif/i)
     const listing = await runAuction(firstJid, 'list')
-    assert.match(listing, new RegExp(`Bid Minimum : Rp ${Math.floor(item.price / 2).toLocaleString('id-ID')}`))
-    assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${item.price.toLocaleString('id-ID')}`))
+    assert.match(listing, new RegExp(`Bid Minimum : Rp ${compactMoney(Math.floor(item.price / 2))}`))
+    assert.match(listing, new RegExp(`Bid Tertinggi : Rp ${compactMoney(item.price)}`))
     const detail = await runAuction(firstJid, `info ${item.id}`)
     assert.match(detail, /Pemimpin bid: .+/i)
 
@@ -119,21 +192,21 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.equal(session.bids[item.id][0].jid, firstJid)
     assert.equal(global.db.data.users[firstJid].rpg.auctionBids[item.id].amount, firstAmount)
     const confirmedInfo = await runAuction(firstJid, 'info')
-    assert.match(confirmedInfo, new RegExp(`Bid kamu: Rp ${firstAmount.toLocaleString('id-ID')} • TERTINGGI`))
+    assert.match(confirmedInfo, new RegExp(`Bid kamu: Rp ${compactMoney(firstAmount)} • TERTINGGI`))
     const confirmedListing = await runAuction(firstJid, 'list')
-    assert.match(confirmedListing, new RegExp(`Bid Tertinggi : Rp ${firstAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+    assert.match(confirmedListing, new RegExp(`Bid Tertinggi : Rp ${compactMoney(firstAmount)}\\n> ↳ Pemimpin Bid : Penawar Satu`))
     session.bids[item.id] = []
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
     assert.doesNotMatch(await runAuction(firstJid, 'info'), /belum mengikuti bid aktif/i)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Bid tertinggi/i)
     assert.match(await runAuction(firstJid, `info ${item.id}`), /Pemimpin bid: Penawar Satu/)
     const firstListing = await runAuction(firstJid, 'list')
-    assert.match(firstListing, new RegExp(`Bid Tertinggi : Rp ${firstAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+    assert.match(firstListing, new RegExp(`Bid Tertinggi : Rp ${compactMoney(firstAmount)}\\n> ↳ Pemimpin Bid : Penawar Satu`))
 
     const personalBid = global.db.data.users[firstJid].rpg.auctionBids[item.id]
     delete global.db.data.users[firstJid].rpg.auctionBids[item.id]
     assert.match(await runAuction(firstJid, 'info'), /Bid kamu:/)
-    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Bid Tertinggi : Rp ${firstAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Satu`))
+    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Bid Tertinggi : Rp ${compactMoney(firstAmount)}\\n> ↳ Pemimpin Bid : Penawar Satu`))
     global.db.data.users[firstJid].rpg.auctionBids[item.id] = personalBid
 
     const depositMessage = makeMessage(firstJid)
@@ -149,10 +222,10 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     await runAuction(secondJid, 'bid konfirmasi')
     assert.match(await runAuction(secondJid, 'info'), /Bid kamu:/)
     const leadingListing = await runAuction(secondJid, 'list')
-    assert.match(leadingListing, new RegExp(`Bid Tertinggi : Rp ${competingAmount.toLocaleString('id-ID')}\\n> ↳ Pemimpin Bid : Penawar Dua`))
+    assert.match(leadingListing, new RegExp(`Bid Tertinggi : Rp ${compactMoney(competingAmount)}\\n> ↳ Pemimpin Bid : Penawar Dua`))
     const leadingInfo = await runAuction(secondJid, `info ${item.id}`)
     assert.match(leadingInfo, /Pemimpin bid: Penawar Dua/)
-    assert.match(leadingInfo, new RegExp(`Bid Tertinggi : Rp ${competingAmount.toLocaleString('id-ID')}`))
+    assert.match(leadingInfo, new RegExp(`Bid Tertinggi : Rp ${compactMoney(competingAmount)}`))
     session.endsAt = Date.now() - 1
     for (const jid of [firstJid, secondJid]) {
       global.db.data.users[jid].rpg.auctionBids[item.id].endsAt = session.endsAt
@@ -184,7 +257,7 @@ test('a solo confirmed bidder wins when the auction expires', async () => {
     await runAuction(firstJid, 'bid konfirmasi')
     global.db.data.auctionHouse = { history: [], news: [] }
     assert.match(await runAuction(firstJid, 'info'), /BID AKTIF MILIKMU/)
-    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${amount.toLocaleString('id-ID')}`))
+    assert.match(await runAuction(firstJid, 'list'), new RegExp(`Rp ${compactMoney(amount)}`))
     const recoveredSession = global.db.data.auctionHouse
     recoveredSession.endsAt = Date.now() - 1
     global.db.data.users[firstJid].rpg.auctionBids[item.id].endsAt = recoveredSession.endsAt

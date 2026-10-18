@@ -5,6 +5,7 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, claimBankCrown } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
+import { getRpgMoneySuffixGuide } from '../../lib/rpgMoney.js'
 import upgradeBankHandler from './rpg-upgradebank.js'
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
@@ -208,6 +209,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
   let args = text.split(' ')
   let action = args[0]?.toLowerCase()
+  if (action === 'setor') action = 'simpan'
   if (action === 'upgrade') {
     return upgradeBankHandler(m, {
       conn,
@@ -318,6 +320,17 @@ if (automaticCharges.length) {
 
   // === MENU MONEY / UANG ===
   if(command === 'money' || command === 'uang'){
+    if (['suffix', 'suffixes'].includes(action)) {
+      return m.reply(
+        `╭─❏「 💰 DAFTAR SUFIKS UANG 」❏\n` +
+        `│ 💰 NOMINAL RINGKAS UNTUK TAMPILAN & BID\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Gunakan sufiks langsung setelah angka, contoh: *${usedPrefix || '.'}ah bid 1 19Qa*.\n` +
+        `Nama di bawah menunjukkan nilai tiap sufiks.\n\n` +
+        `${getRpgMoneySuffixGuide()}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
     if (!canUseBankMoneyCommand(tier)) return m.reply(`❌ Perintah *.${command}* membutuhkan fasilitas Digital Access. Upgrade kartu untuk mengakses saldo digital.`)
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
     cap += `◈ INFORMASI SALDO ◈\n`
@@ -326,8 +339,20 @@ if (automaticCharges.length) {
     cap += `◆ Total Aset : Rp ${((wdb.money[m.sender] || 0) + userRPG.bank).toLocaleString()}\n\n`
     cap += `◈ KARTU BANK ◈\n`
     cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
-    cap += `─━━━━━━━━━─`
-    return m.reply(cap)
+    cap += `─━━━━━━━━━─\n\n`
+    cap += `Kelola saldo dengan cepat lewat tombol berikut.${canUseBankBulkDeposit(tier) ? '' : '\n> Setor semua memerlukan fasilitas Fast Track.'}`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      quoted: m,
+      text: cap,
+      buttons: [
+        ['📥 Setor Semua', `${usedPrefix}bank setor all`],
+        ['📤 Tarik Semua', `${usedPrefix}bank tarik all`]
+      ],
+      noThumbnail: true,
+      noHeader: true,
+      reply: fallbackText => m.reply(fallbackText)
+    })
   }
 
   if (action === 'info') {
@@ -955,7 +980,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'uang']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {

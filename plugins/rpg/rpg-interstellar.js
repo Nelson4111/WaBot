@@ -1,5 +1,10 @@
-import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import {
+  sendRpgButtons,
+  sendRpgConfirmButtons,
+  sendRpgRegistrationPrompt
+} from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { formatRpgMoney, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import {
   INTERSTELLAR_ITEMS,
   INTERSTELLAR_PLANETS
@@ -10,6 +15,9 @@ import {
   getLeaderboardUserIdentity
 } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+
+const STELLAR_EXCHANGE_RATE = 500_000_000_000_000
+const STELLAR_EXCHANGE_CONFIRMATION_TTL = 2 * 60 * 1000
 
 const normalize = value => String(value || '')
   .normalize('NFKD')
@@ -63,11 +71,16 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `> ↳ Planet yang dikunjungi mendapat nomor dimensi acak; daftar planet tidak menampilkan dimensi.\n\n` +
       `> ↳ Cek saldo: *${prefix}intercred* / *${prefix}isc* / *${prefix}interstellarcredit*.\n` +
       `> ↳ Gift: tag dengan *${prefix}int gift sc @tag <nominal>* atau reply dengan *${prefix}int gift sc <nominal>*.\n\n` +
+      `> ↳ Tukar uang saku: *${prefix}int exchange <nominal/all>*; format sufiks mengikuti uang RPG, misalnya *500T* = *1 Stellar Credit*.\n` +
+      `> ↳ Opsi *all* hanya memakai uang saku yang tersedia; saldo bank tidak ikut dihitung. Pertukaran selalu perlu konfirmasi.\n` +
+      `> ↳ Stellar Credit tidak dapat ditukar kembali menjadi uang RPG.\n\n` +
       `📌 *COMMAND*\n` +
       `> ↳ *${prefix}int* — pusat Interstellar\n` +
       `> ↳ *${prefix}invst* — cek inventory antarbintang\n` +
       `> ↳ *${prefix}intercred* — cek saldo Stellar Credit\n` +
       `> ↳ *${prefix}int gift sc/stellar/credit <tag/reply> <nominal>* — kirim Stellar Credit\n` +
+      `> ↳ *${prefix}int exchange/tukar <nominal/all>* — tukar uang saku menjadi Stellar Credit\n` +
+      `> ↳ *${prefix}int exchange confirm/cancel* — konfirmasi atau batalkan pertukaran\n` +
       `> ↳ *${prefix}int sell <all/nomor/nama item>* — jual item\n` +
       `> ↳ *${prefix}int planet* — daftar planet\n` +
       `> ↳ *${prefix}int top* — leaderboard Stellar Credit\n` +
@@ -85,6 +98,8 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `> ↳ *${prefix}invst* — lihat inventory item Interstellar\n` +
       `> ↳ *${prefix}intercred* — cek saldo Stellar Credit\n` +
       `> ↳ *${prefix}int gift sc/stellar/credit <tag/reply> <nominal>* — kirim Stellar Credit\n` +
+      `> ↳ *${prefix}int exchange/tukar <nominal/all>* — tukar uang saku menjadi Stellar Credit\n` +
+      `> ↳ *${prefix}int exchange confirm/cancel* — konfirmasi atau batalkan pertukaran\n` +
       `> ↳ *${prefix}int sell all* — jual semua item\n` +
       `> ↳ *${prefix}int sell <nomor/nama item>* — jual item tertentu\n` +
       `> ↳ *${prefix}int planet* — lihat daftar planet\n` +
@@ -96,6 +111,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       { title: '🎒 Tas antarbintang', description: 'Lihat item yang berhasil kamu kumpulkan', id: `${prefix}invst` },
       { title: '💠 Saldo Stellar Credit', description: 'Periksa mata uang antarbintangmu', id: `${prefix}intercred` },
       { title: '🎁 Kirim Stellar Credit', description: 'Berbagi saldo dengan pemain lain', id: `${prefix}int gift sc` },
+      { title: '💱 Tukar uang saku', description: 'Konversi uang RPG menjadi Stellar Credit', id: `${prefix}int exchange` },
       { title: '💰 Jual semua item', description: 'Tukar seluruh hasil jelajah menjadi kredit', id: `${prefix}int sell all` },
       { title: '🪐 Daftar planet', description: 'Pilih dunia yang ingin kamu kenali', id: `${prefix}int planet` },
       { title: '🏆 Peringkat kredit', description: 'Lihat penjelajah dengan saldo tertinggi', id: `${prefix}int top` },
@@ -157,7 +173,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
     )
   }
 
-  if (!['', 'inventory', 'sell', 'credit', 'gift'].includes(mode)) {
+  if (!['', 'inventory', 'sell', 'credit', 'gift', 'exchange', 'tukar'].includes(mode)) {
     return m.reply(`Subcommand tidak dikenal. Ketik *${prefix}int command* untuk melihat panduan.`)
   }
 
@@ -168,6 +184,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Jelajahi planet, kumpulkan item, lalu tukarkan item menjadi Stellar Credit.\n` +
       `> ↳ Gunakan *${prefix}explore* untuk memulai penjelajahan.\n\n` +
+      `> ↳ Tukar uang saku dengan *${prefix}int exchange <nominal/all>* — setiap *500T* menjadi *1 Stellar Credit*.\n\n` +
       `📌 *MENU*\n` +
       `> ↳ *${prefix}invst* — inventory antarbintang\n` +
       `> ↳ *${prefix}intercred* — cek saldo Stellar Credit\n` +
@@ -189,6 +206,114 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   rpg.inventory = rpg.inventory && typeof rpg.inventory === 'object' ? rpg.inventory : {}
   const items = getOwnedItems(rpg)
   const stellarCredit = Number(rpg.stellarCredit) || 0
+
+  if (mode === 'exchange' || mode === 'tukar') {
+    const exchangeAction = String(args[0] || '').toLowerCase()
+    const pending = rpg.pendingStellarExchange
+
+    if (['confirm', 'konfirmasi', 'ya'].includes(exchangeAction)) {
+      if (!pending || !Number.isFinite(Number(pending.expiresAt)) ||
+        Number(pending.expiresAt) <= Date.now()) {
+        delete rpg.pendingStellarExchange
+        await saveDB(db)
+        return m.reply(
+          `╭─❏「 ⏳ KONFIRMASI PERTUKARAN 」❏\n` +
+          `│ Tidak ada pertukaran yang menunggu persetujuan.\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Ajukan kembali dengan *${prefix}int exchange <nominal/all>*.`
+        )
+      }
+
+      const wallet = Number(db.money[m.sender]) || 0
+      if (!Number.isInteger(pending.moneyAmount) || !Number.isInteger(pending.creditAmount) ||
+        pending.moneyAmount <= 0 || pending.creditAmount <= 0 ||
+        wallet < pending.moneyAmount) {
+        delete rpg.pendingStellarExchange
+        await saveDB(db)
+        return m.reply(
+          `╭─❏「 ❌ SALDO BERUBAH 」❏\n` +
+          `│ Uang saku yang tersedia tidak lagi cukup untuk pertukaran ini.\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Saldo uang saku saat ini: *${formatRpgMoney(wallet)}*.\n` +
+          `Buat pertukaran baru dengan *${prefix}int exchange <nominal/all>*.`
+        )
+      }
+
+      delete rpg.pendingStellarExchange
+      db.money[m.sender] = wallet - pending.moneyAmount
+      rpg.stellarCredit = (Number(rpg.stellarCredit) || 0) + pending.creditAmount
+      await saveDB(db)
+      return m.reply(
+        `╭─❏「 💱 PERTUKARAN BERHASIL 」❏\n` +
+        `│ 💵 Uang saku ditukar: *${formatRpgMoney(pending.moneyAmount)}*\n` +
+        `│ 💠 Stellar Credit didapat: *+${pending.creditAmount.toLocaleString()} SC*\n` +
+        `│ 💰 Sisa uang saku: *${formatRpgMoney(wallet - pending.moneyAmount)}*\n` +
+        `│ 💠 Saldo Stellar Credit: *${rpg.stellarCredit.toLocaleString()} SC*\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    if (['batal', 'cancel', 'tidak'].includes(exchangeAction)) {
+      if (!pending) return m.reply('Tidak ada pertukaran yang menunggu konfirmasi.')
+      delete rpg.pendingStellarExchange
+      await saveDB(db)
+      return m.reply('↩️ Pertukaran dibatalkan. Saldo uang saku dan Stellar Credit tidak berubah.')
+    }
+
+    const amountInput = args[0]
+    const wallet = Number(db.money[m.sender]) || 0
+    let requestedAmount
+    if (String(amountInput || '').toLowerCase() === 'all') {
+      requestedAmount = Math.floor(wallet / STELLAR_EXCHANGE_RATE) * STELLAR_EXCHANGE_RATE
+    } else {
+      requestedAmount = parseRpgMoneyAmount(amountInput)
+      if (requestedAmount === null) {
+        return m.reply(
+          `Format: *${prefix}int exchange <nominal/all>*\n` +
+          `Contoh: *${prefix}int exchange 1Qa* atau *${prefix}int tukar all*.\n` +
+          `Setiap *500T* uang saku menjadi *1 Stellar Credit*.`
+        )
+      }
+      if (requestedAmount > wallet) {
+        return m.reply(
+          `❌ Uang saku tidak cukup. Saldo tersedia: *${formatRpgMoney(wallet)}*.`
+        )
+      }
+    }
+
+    const creditAmount = Math.floor(requestedAmount / STELLAR_EXCHANGE_RATE)
+    const moneyAmount = creditAmount * STELLAR_EXCHANGE_RATE
+    if (!Number.isInteger(moneyAmount) || !Number.isInteger(creditAmount) || creditAmount < 1) {
+      return m.reply(
+        `❌ Pertukaran minimum adalah *${formatRpgMoney(STELLAR_EXCHANGE_RATE)}* untuk *1 Stellar Credit*.\n` +
+        `Saldo uang saku tersedia: *${formatRpgMoney(wallet)}*.`
+      )
+    }
+
+    rpg.pendingStellarExchange = {
+      moneyAmount,
+      creditAmount,
+      expiresAt: Date.now() + STELLAR_EXCHANGE_CONFIRMATION_TTL
+    }
+    await saveDB(db)
+    return sendRpgConfirmButtons(conn, m, {
+      text:
+        `╭─❏「 💱 KONFIRMASI PERTUKARAN 」❏\n` +
+        `│ 💵 Uang saku ditukar: *${formatRpgMoney(moneyAmount)}*\n` +
+        `│ 💠 Stellar Credit diterima: *${creditAmount.toLocaleString()} SC*\n` +
+        `│ 💱 Nilai tukar: *${formatRpgMoney(STELLAR_EXCHANGE_RATE)} = 1 SC*\n` +
+        `│ 💰 Sisa uang saku: *${formatRpgMoney(wallet - moneyAmount)}*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Saldo bank tidak ikut ditukar. Persetujuan berlaku selama 2 menit.`,
+      title: '💱 PERTUKARAN ANTARBINTANG',
+      subtitle: 'Pastikan nominal sebelum menukar uang saku',
+      acceptText: '💠 Tukar Sekarang',
+      acceptCommand: `${prefix}int exchange confirm`,
+      cancelText: '↩️ Batalkan',
+      cancelCommand: `${prefix}int exchange cancel`,
+      noThumbnail: true
+    })
+  }
 
   if (mode === 'inventory') {
     return m.reply(formatInventory(items, prefix, stellarCredit))
@@ -284,7 +409,17 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   )
 }
 
-handler.help = ['interstellar', 'int', 'invst', 'intercred', 'isc', 'interstellarcredit']
+handler.help = [
+  'interstellar',
+  'int',
+  'int exchange <nominal/all>',
+  'int exchange confirm',
+  'int exchange cancel',
+  'invst',
+  'intercred',
+  'isc',
+  'interstellarcredit'
+]
 handler.tags = ['rpg']
 handler.command = /^(interstellar|int|invst|intercred|isc|interstellarcredit)$/i
 handler.group = true

@@ -2,6 +2,11 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
+import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
+import { fishRenameMap, ikanEmoji, migrateLegacyFishInventory, normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
+import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
+import { bibit } from './rpg-panen.js'
+import { adventureItemKeys } from './rpg-adventure.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -51,55 +56,78 @@ let handler = async (m, { conn, usedPrefix }) => {
   let user = data.rpg
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
-  user.inventory = normalizeUserMaterial(user.inventory || {})
+  user.inventory = user.inventory && typeof user.inventory === 'object' ? user.inventory : {}
   user.ores = normalizeUserMaterial(user.ores || {})
   user.items = normalizeUserMaterial(user.items || {})
+  user.ikan = migrateLegacyFishInventory(user.ikan || {})
+  user.masakan = user.masakan || {}
+  const hasilMigration = migrateHasilTernakInventory(user.inventory)
+  user.inventory = hasilMigration.inventory
+  if (hasilMigration.changed) await saveDB(wdb)
   if (migrateRpgCurrencies(user)) await saveDB(wdb)
 
+  const categoryOrder = ['HASIL PANEN', 'HASIL TERNAK', 'IKAN', 'MATERIAL TAMBANG', 'ITEM ADVENTURE', 'JELAJAH ANTARBINTANG', 'MASAKAN', 'LAINNYA']
+  const grouped = Object.fromEntries(categoryOrder.map(category => [category, []]))
+  const cropKeys = new Set(Object.values(bibit)
+    .map(({ hasil }) => hasil.item)
+    .filter(item => item !== 'money' && item !== 'exp'))
+  const adventureKeys = new Set([...adventureItemKeys, ...MOUNT_TRASH.map(({ id }) => id)])
+  const knownMaterialKeys = new Set([...Object.keys(oreEmoji), 'wood', 'iron', 'stone', 'gold', 'diamond', 'coin', 'gemstone'])
   let totalItem = 0
   let totalJenis = 0
-  let materialTambang = []
-  let itemAdventure = []
-
-  // 1. GABUNGIN ORE + MATERIAL DARI INVENTORY
-  let gabungMaterial = {}
-  for (const storage of [user.ores, user.inventory]) {
-    for (const [nama, jumlah] of Object.entries(storage || {})) {
-      gabungMaterial[nama] = (Number(gabungMaterial[nama]) || 0) + (Number(jumlah) || 0)
-    }
-  }
-  gabungMaterial.gold = (Number(gabungMaterial.gold) || 0) + (Number(user.gold) || 0)
-  for(let nama in gabungMaterial){
-    if(gabungMaterial[nama] > 0){
-      totalItem += gabungMaterial[nama]
+  const addItem = (category, nama, emoji, amount) => {
+    const quantity = Number(amount) || 0
+    if (quantity <= 0) return
+    const existing = grouped[category].find(item => item.nama === nama)
+    if (existing) existing.jml += quantity
+    else {
+      grouped[category].push({ nama, emoji, jml: quantity })
       totalJenis++
-      materialTambang.push({
-        nama,
-        emoji: oreEmoji[nama] || '📦',
-        jml: gabungMaterial[nama]
-      })
     }
+    totalItem += quantity
   }
 
-  // 2. ITEM ADVENTURE
-  for(let nama in user.items){
-    if(user.items[nama] > 0){
-      totalItem += user.items[nama]
-      totalJenis++
-      itemAdventure.push({
-        nama,
-        emoji: oreEmoji[nama] || '📦',
-        jml: user.items[nama]
-      })
+  for (const [nama, amount] of Object.entries(user.inventory)) {
+    const quantity = Number(amount) || 0
+    if (quantity <= 0 || nama === 'money' || nama === 'exp') continue
+    const interstellarItem = INTERSTELLAR_ITEM_BY_ID.get(nama)
+    if (interstellarItem) {
+      addItem('JELAJAH ANTARBINTANG', interstellarItem.name, interstellarItem.emoji, quantity)
+    } else if (isHasilTernakKey(nama)) {
+      const hasil = getHasilDisplay(nama)
+      addItem('HASIL TERNAK', hasil.nama, hasil.emoji, quantity)
+    } else if (cropKeys.has(nama)) {
+      const crop = Object.values(bibit).find(({ hasil }) => hasil.item === nama)
+      addItem('HASIL PANEN', formatNama(nama), crop?.emoji || '🌾', quantity)
+    } else if (adventureKeys.has(nama)) {
+      addItem('ITEM ADVENTURE', formatNama(nama), oreEmoji[nama] || '📦', quantity)
+    } else if (knownMaterialKeys.has(nama)) {
+      addItem('MATERIAL TAMBANG', formatNama(nama), oreEmoji[nama] || '⛏️', quantity)
+    } else {
+      addItem('LAINNYA', formatNama(nama), oreEmoji[nama] || '📦', quantity)
     }
+  }
+
+  for (const [nama, amount] of Object.entries(user.ores)) {
+    addItem('MATERIAL TAMBANG', formatNama(nama), oreEmoji[nama] || '⛏️', amount)
+  }
+  for (const [nama, amount] of Object.entries(user.items)) {
+    addItem('ITEM ADVENTURE', formatNama(nama), oreEmoji[nama] || '⚔️', amount)
+  }
+  for (const [rawNama, amount] of Object.entries(user.ikan)) {
+    const nama = normalizeFishKey(rawNama)
+    addItem('IKAN', formatNama(nama), ikanEmoji[nama] || ikanEmoji[`ikan_${nama}`] || ikanEmoji[fishRenameMap[rawNama]] || '🐟', amount)
+  }
+  for (const [nama, amount] of Object.entries(user.masakan)) {
+    addItem('MASAKAN', formatNama(nama), '🍲', amount)
   }
 
   if(totalJenis === 0)
     return m.reply('╭─❏「 🎒 BACKPACK KOSONG 」❏\n│ Isi tasmu masih kosong.\n│ Mining atau Adventure dulu!\n╰─━━━━━━━━━━━━━━─')
 
-  // URUTIN DARI PALING BANYAK
-  materialTambang.sort((a,b) => b.jml - a.jml)
-  itemAdventure.sort((a,b) => b.jml - a.jml)
+  for (const items of Object.values(grouped)) {
+    items.sort((a, b) => b.jml - a.jml)
+  }
 
   let cap = `╭─❏「 🎒 BACKPACK 」❏\n`
 cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
@@ -107,34 +135,27 @@ cap += `│ 📦 Total: ${totalItem.toLocaleString()} Item\n`
 cap += `│ 🧬 Jenis: ${totalJenis}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-// 1. MATERIAL TAMBANG + MATERIAL TOKO
-if (materialTambang.length > 0) {
-  cap += `╭─❏「 ⛏️ MATERIAL TAMBANG 」❏\n`
-  cap += `│ Item tambang dan material.\n`
+const categoryIcons = {
+  'HASIL PANEN': '🌾',
+  'HASIL TERNAK': '🐄',
+  'IKAN': '🐠',
+  'MATERIAL TAMBANG': '⛏️',
+  'ITEM ADVENTURE': '⚔️',
+  'JELAJAH ANTARBINTANG': '🌌',
+  'MASAKAN': '🍲',
+  'LAINNYA': '📦'
+}
+for (const category of categoryOrder) {
+  if (grouped[category].length === 0) continue
+  cap += `╭─❏「 ${categoryIcons[category]} ${category} 」❏\n`
   cap += `╰─━━━━━━━━━━━━━━─\n`
-
-  materialTambang.forEach((v, i) => {
-    cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
+  grouped[category].forEach((item, index) => {
+    cap += `> *${index + 1}. ${item.nama} ${item.emoji}* x${item.jml.toLocaleString()}\n`
   })
-
   cap += `\n`
 }
 
-// 2. ITEM ADVENTURE
-if (itemAdventure.length > 0) {
-  cap += `╭─❏「 ⚔️ ITEM ADVENTURE 」❏\n`
-  cap += `│ Item dari adventure.\n`
-  cap += `╰─━━━━━━━━━━━━━━─\n`
-
-  itemAdventure.forEach((v, i) => {
-    cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
-  })
-
-  cap += `\n`
-}
-
-  cap += `💡 Sampah pendakian bisa dijual di *${usedPrefix}pasar* atau *${usedPrefix}jual all*.\n`
-  cap += `Contoh: *${usedPrefix}pasar jual botol_air_mineral all*`
+  cap += `💡 Jual hasil panen: *${usedPrefix}koperasi* · Ikan/item: *${usedPrefix}pasar* · Material: *${usedPrefix}pabrik*`
 
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
 }

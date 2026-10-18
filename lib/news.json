@@ -686,5 +686,53 @@
     "content": "\u003e Papan Ular Tangga kini menggunakan template ilustrasi HD dengan penomoran resmi zig-zag 1-100 dan bidak pion 3D klasik. Gambar papan dan tombol interaktif kini menyatu dalam 1 pesan tunggal terpadu, dilengkapi auto-delete pesan sebelumnya agar grup bebas spam dan hemat memori.",
     "author": "Nenel",
     "createdAt": 1792335100000
+  },
+  {
+    "id": "19.0",
+    "section": "RPG",
+    "title": "Pembaruan Tombol RPG, Daily, dan Bank",
+    "content": "\u003e Pembaruan tombol panen, upgrade rumah, daily streak, leaderboard daily, dan transaksi bank.",
+    "author": "Eza",
+    "createdAt": 1792343147000
+  },
+  {
+    "id": "19.1",
+    "section": "RPG",
+    "title": "Pembaruan Blackout Casino",
+    "content": "\u003e Blackout casino dibatasi sekali sehari dan tidak mengurangi profit. Avelia Guard dapat memulihkan uang; Premium mendapat proteksi mingguan yang direset setiap Senin.",
+    "author": "Eza",
+    "createdAt": 1792343476000
+  },
+  {
+    "id": "19.2",
+    "section": "RPG",
+    "title": "Perbaikan Work dan Misi Guild",
+    "content": "\u003e Work all menampilkan total reward dengan cooldown 5 menit per pekerjaan; Premium dapat memakai .job talk all. Reward misi guild dan EXP karakter diperbaiki.",
+    "author": "Eza",
+    "createdAt": 1792343673000
+  },
+  {
+    "id": "19.3",
+    "section": "GAME",
+    "title": "Fitur Taruhan Werewolf",
+    "content": "\u003e Werewolf kini mendukung taruhan opsional yang diatur saat room dibuat, dengan hadiah untuk tim pemenang atau Jester.",
+    "author": "Eza",
+    "createdAt": 1792344966562
+  },
+  {
+    "id": "19.4",
+    "section": "RPG",
+    "title": "Pembaruan Hasil Aktivitas RPG",
+    "content": "\u003e Tampilan hasil panen, mining, adventure, mancing, dan explore dirapikan; tier diseragamkan dan tombol cek koleksi ditambahkan.",
+    "author": "Eza",
+    "createdAt": 1792344966563
+  },
+  {
+    "id": "19.5",
+    "section": "RPG",
+    "title": "Pembaruan Auction House",
+    "content": "\u003e Nominal lelang kini ringkas dengan sufiks yang bisa dipakai saat bid; menu menyediakan tombol cek saldo dan daftar sufiks.",
+    "author": "Eza",
+    "createdAt": 1792344966564
   }
 ]

@@ -1,8 +1,9 @@
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -106,7 +107,7 @@ let uncommon = ['ikan_mas', 'ikan_nila', 'ikan_lele', 'ikan_patin', 'ikan_gurame
 let common = ['ikan_teri', 'ikan_pepetek', 'ikan_layang', 'ikan_kembung_kecil', 'ikan_selar', 'ikan_tembang', 'ikan_julung'];
 let trash = ['sampah_plastik', 'ban_bekas', 'botol_kaca', 'kaleng', 'kayu_hanyut', 'jaring_rusak', 'sepatu', 'botol', 'kantong_plastik', 'duri', 'batu', 'rumput', 'lumpur', 'daun', 'ranting', 'tali', 'kawat', 'pecahan_kaca', 'kaos_kaki', 'mie_instan', 'pakaian_dalam', 'gelas_plastik', 'sedotan', 'sumpit', 'piring', 'stik_es', 'serabut', 'cangkang', 'sandal', 'kapal_mainan', 'sisir_kayu', 'topi', 'tutup_botol'];
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
@@ -229,31 +230,31 @@ let handler = async (m, { conn }) => {
   user.lastMancing = Date.now()
   await saveDB(wdb)
 
-  let pp = 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
-  try { pp = await conn.profilePictureUrl(m.sender, 'image') } catch {}
-
   let tierData = {
-    SECRET:    {stars: '★★★★★★★', emoji: '🔮'},
-    MYTHIC:    {stars: '★★★★★★☆', emoji: '🌌'},
-    LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑'},
-    EPIC:      {stars: '★★★★☆☆☆', emoji: '💎'},
-    RARE:      {stars: '★★★☆☆☆☆', emoji: '✨'},
-    UNCOMMON:  {stars: '★★☆☆☆☆☆', emoji: '💙'},
-    COMMON:    {stars: '★☆☆☆☆☆☆', emoji: '🤍'},
-    TRASH:     {stars: '☆☆☆☆☆☆☆', emoji: '🗑️'}
+    SECRET: { stars: '★★★★★★★', icon: '🔮' },
+    MYTHIC: { stars: '★★★★★★☆', icon: '🌌' },
+    LEGENDARY: { stars: '★★★★★☆☆', icon: '👑' },
+    EPIC: { stars: '★★★★☆☆☆', icon: '💎' },
+    RARE: { stars: '★★★☆☆☆☆', icon: '✨' },
+    UNCOMMON: { stars: '★★☆☆☆☆☆', icon: '💙' },
+    COMMON: { stars: '★☆☆☆☆☆☆', icon: '🤍' },
+    TRASH: { stars: '☆☆☆☆☆☆☆', icon: '🗑️' }
   }
 
-  let caption = `╭─❏「 🎣 FISHING RESULT 」❏\n`
+  let caption = `╭─❏「 🎣 AVELIA LAKE 」❏\n`
 caption += `│ 🐟 *HASIL MEMANCING*\n`
 caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-caption += `⭐ *TIER TANGKAPAN*\n`
-caption += `> ↳ ${tierData[highest].stars}\n`
-caption += `> ↳ ${highest} ${tierData[highest].emoji}\n\n`
+caption += `> ↳ ${tierData[highest].stars} ${highest} ${tierData[highest].icon}\n\n`
 
 caption += `🏆 *HASIL TANGKAPAN*\n`
+const fishCounts = new Map()
 for (const item of draws) {
-  caption += `> ↳ ${formatNama(item.ikan)} ${ikanEmoji[item.ikan] || '🐟'} ×1\n`
+  const fishKey = normalizeFishKey(item.ikan)
+  fishCounts.set(fishKey, (fishCounts.get(fishKey) || 0) + 1)
+}
+for (const [fish, quantity] of fishCounts) {
+  caption += `> ↳ ${formatNama(fish)} ×${quantity}\n`
 }
 caption += `\n`
 
@@ -267,14 +268,34 @@ if(getBloodlineBuff(user, 'fishingRarity') > 0) caption += `> ↳ 🧬 Efek Bloo
 
 caption += `\n─━━━━━━━━━━━━━━─`
 
-  let username = conn.getName(m.sender) || m.pushName || 'Player'
+  let pp = 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+  try { pp = await conn.profilePictureUrl(m.sender, 'image') } catch {}
+  const sendButtons = ({ buffer, thumbnailUrl } = {}) => sendRpgButtons(conn, {
+    chat: m.chat,
+    text: caption,
+    title: '🎣 HASIL MEMANCING',
+    subtitle: 'Koleksi ikanmu menunggu untuk dilihat',
+    buffer,
+    thumbnailUrl,
+    buttons: [['🐠 Buka Aquarium', `${usedPrefix || '.'}aquarium`]],
+    quoted: m,
+    reply: fallbackText => m.reply(fallbackText)
+  })
   try {
     const firstFish = draws[0]?.ikan || ''
-    let cardBuf = await generateFishingCard({ avatarUrl: pp, username, ikan: `${ikanEmoji[firstFish] || '🐟'} ${formatNama(firstFish)}`, exp: totalExp, rodLevel: rodLvl, tier: highest })
-    if (cardBuf) return conn.sendMessage(m.chat, { image: cardBuf, caption, mentions: [m.sender] }, { quoted: m })
-  } catch (e) { console.error('[FishingCard] Error:', e.message) }
-
-  return sendRpgMsg(conn, m, caption, pp)
+    const cardBuf = await generateFishingCard({
+      avatarUrl: pp,
+      username: conn.getName(m.sender) || m.pushName || 'Player',
+      ikan: `${ikanEmoji[firstFish] || '🐟'} ${formatNama(firstFish)}`,
+      exp: totalExp,
+      rodLevel: rodLvl,
+      tier: highest
+    })
+    if (cardBuf) return sendButtons({ buffer: cardBuf })
+  } catch (e) {
+    console.error('[FishingCard] Error:', e.message)
+  }
+  return sendButtons({ thumbnailUrl: pp })
 }
 
 handler.help = ['mancing', 'fishing', 'pancing']

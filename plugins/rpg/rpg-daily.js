@@ -1,9 +1,12 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { claimPremiumDailyLimit, getJakartaDate } from '../../lib/userLimit.js'
 import { isPremiumAccount, PREMIUM_DAILY_MIN_DONATION, PREMIUM_DAILY_REWARD } from '../../lib/rpgPremium.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 
-let handler = async (m, { usedPrefix, text = '' }) => {
+let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
   const wdb = loadDB()
   if (!wdb.users) wdb.users = {}
 
@@ -24,43 +27,103 @@ let handler = async (m, { usedPrefix, text = '' }) => {
   const today = getJakartaDate(now)
   const rpgUser = user.rpg || user
 
-  if (String(text).trim().toLowerCase() === 'restreak') {
-    const previousClaimDate = user.dailyDate || (user.lastDaily ? getJakartaDate(user.lastDaily) : null)
-    const previousStreak = Number(user.dailyBrokenStreak || user.rpg?.dailyBrokenStreak || user.dailyStreak || rpgUser.dailyStreak) || 0
-    const hasAlreadyRestreaked = user.dailyRestreakDate === today
-    const missedDays = previousClaimDate
-      ? Math.floor((Date.parse(`${today}T00:00:00+07:00`) - Date.parse(`${previousClaimDate}T00:00:00+07:00`)) / 86400000)
-      : 0
-    const canRestoreBrokenStreak = previousStreak > 0 && (user.dailyBrokenStreak || user.rpg?.dailyBrokenStreak)
-    const canProtectLateClaim = previousStreak > 0 && missedDays > 1 && user.dailyDate !== today
-    if (hasAlreadyRestreaked || (!canRestoreBrokenStreak && !canProtectLateClaim)) {
-      return m.reply(`Tidak ada streak yang bisa dipulihkan. Klaim daily tepat waktu atau gunakan .daily restreak setelah streak terputus.`)
-    }
-    const savedCooldown = Number(user.dailyCooldownDuration || user.rpg?.dailyCooldownDuration) || 0
-    if (canProtectLateClaim && user.lastDaily && savedCooldown > now - user.lastDaily) {
-      return m.reply('Cooldown daily difficulty masih aktif. Restreak belum ditagih; coba lagi setelah cooldown berakhir.')
+  const subcommand = String(text).trim().toLowerCase()
+  if (subcommand === 'top') {
+    const rankedUsers = filterLeaderboardUsers(
+      filterRpgPanelUsers(Object.entries(wdb.users), ([jid]) => jid),
+      conn,
+      ([jid]) => jid
+    )
+      .filter(([jid]) => isValidRpgUserId(jid))
+      .map(([jid, player]) => ({
+        jid,
+        streak: Number(player.dailyStreak ?? player.rpg?.dailyStreak) || 0
+      }))
+      .filter(player => player.streak > 0)
+      .sort((a, b) => b.streak - a.streak)
+      .slice(0, 10)
+
+    const entries = rankedUsers.length
+      ? rankedUsers.map((player, index) => {
+        const identity = getLeaderboardUserIdentity(player.jid, {
+          conn,
+          groupMetadata,
+          name: conn?.getName?.(player.jid)
+        })
+        return `🏆 *${index + 1}. ${identity.display}*\n` +
+          `> ↳ 🔥 Streak: ${player.streak} hari`
+      }).join('\n\n')
+      : 'Belum ada pemain dengan streak daily.'
+
+    return m.reply(
+      `╭─❏「 🏆 DAILY STREAK TOP 」❏\n` +
+      `│ 🔥 *TOP 10 STREAK DAILY*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${entries}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (subcommand === 'restreak') {
+    const previousStreak = Math.max(0, Math.floor(Number(
+      user.dailyBrokenStreak || user.rpg?.dailyBrokenStreak
+    ) || 0))
+    const offerDate = user.dailyRestreakOfferDate || user.rpg?.dailyRestreakOfferDate ||
+      (user.dailyDate === today ? user.dailyDate : null)
+    const offerAvailable = previousStreak > 0 && user.dailyDate === today && offerDate === today
+    if (!offerAvailable) {
+      if (previousStreak > 0 && offerDate !== today) {
+        delete user.dailyBrokenStreak
+        delete user.dailyRestreakOfferDate
+        if (user.rpg) {
+          delete user.rpg.dailyBrokenStreak
+          delete user.rpg.dailyRestreakOfferDate
+        }
+        await saveDB(wdb)
+      }
+      return m.reply(
+        `╭─❏「 🔥 DAILY RESTREAK 」❏\n` +
+        `│ ⏳ *KESEMPATAN TELAH BERAKHIR*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Restreak hanya tersedia pada hari yang sama saat streak terputus.\n` +
+        `> ↳ Klaim daily berikutnya akan menutup kesempatan pemulihan.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
     }
 
-    const cost = scaleDifficultyIncome(rpgUser, 50000) * 2
+    const cost = scaleDifficultyIncome(rpgUser, 50000) * 2 * previousStreak
     const balance = Number(wdb.money[senderKey]) || 0
-    if (balance < cost) return m.reply(`Saldo Money tidak cukup. Restreak membutuhkan *Rp ${cost.toLocaleString('id-ID')}* (2x hadiah daily).`)
+    if (balance < cost) {
+      return m.reply(
+        `╭─❏「 🔥 DAILY RESTREAK 」❏\n` +
+        `│ ❌ *SALDO BELUM MENCUKUPI*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Pulihkan streak ${previousStreak} hari dengan biaya *Rp ${cost.toLocaleString('id-ID')}*.\n` +
+        `> ↳ Restreak tidak memakai cooldown; kesempatan berlaku sampai hari ini berakhir.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
 
     wdb.money[senderKey] = balance - cost
     user.dailyStreak = previousStreak
-    if (user.dailyDate !== today) user.dailyRestreakDate = today
-    else delete user.dailyRestreakDate
     delete user.dailyBrokenStreak
+    delete user.dailyRestreakOfferDate
     if (user.rpg) {
       user.rpg.dailyStreak = previousStreak
-      if (user.dailyRestreakDate) user.rpg.dailyRestreakDate = today
-      else delete user.rpg.dailyRestreakDate
       delete user.rpg.dailyBrokenStreak
+      delete user.rpg.dailyRestreakOfferDate
     }
     await saveDB(wdb)
-    const nextStep = user.dailyDate === today
-      ? 'Klaim daily berikutnya besok setelah reset.'
-      : `Lanjutkan klaim dengan ${usedPrefix}daily.`
-    return m.reply(`✅ Streak ${previousStreak} hari berhasil dipulihkan.\n> Biaya: -Rp ${cost.toLocaleString('id-ID')} (2x hadiah daily)\n> ${nextStep}`)
+    const nextStep = 'Streak tersambung kembali. Klaim daily besok untuk melanjutkannya.'
+    return m.reply(
+      `╭─❏「 🔥 DAILY RESTREAK 」❏\n` +
+      `│ ✅ *STREAK BERHASIL DIPULIHKAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Streak kembali menjadi *${previousStreak} hari*.\n` +
+      `> ↳ Biaya: -Rp ${cost.toLocaleString('id-ID')} (2× hadiah daily × ${previousStreak} hari streak).\n` +
+      `> ↳ ${nextStep}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
   }
 
   // Hitung waktu tepat hingga pergantian hari (pukul 00:00:00 WIB)
@@ -73,6 +136,16 @@ let handler = async (m, { usedPrefix, text = '' }) => {
       0, 0, 0, 0
     ))
     return nextMidnightWib.getTime() - 7 * 3600000
+  }
+
+  if (user.dailyRestreakOfferDate && user.dailyRestreakOfferDate !== today) {
+    delete user.dailyBrokenStreak
+    delete user.dailyRestreakOfferDate
+    if (user.rpg) {
+      delete user.rpg.dailyBrokenStreak
+      delete user.rpg.dailyRestreakOfferDate
+    }
+    await saveDB(wdb)
   }
 
   if (user.lastDaily && user.dailyDate === today) {
@@ -126,8 +199,9 @@ let handler = async (m, { usedPrefix, text = '' }) => {
         streakInfo = `\n🛡️ *Streak Freeze Aktif*: Kamu terlewat 1 hari kemarin, tetapi 1 Streak Freeze digunakan untuk menyelamatkan streak-mu!`
       } else {
         user.dailyBrokenStreak = Number(user.dailyStreak) || 0
+        user.dailyRestreakOfferDate = today
         user.dailyStreak = 1
-        streakInfo = `\n⚠️ *Streak Terputus*: Terakhir klaim ${previousClaimDate} (terlewat 1 hari). Streak dimulai kembali dari 1.\n> Pulihkan streak lama dengan .daily restreak.`
+        streakInfo = `\n⚠️ *Streak Terputus*: Terakhir klaim ${previousClaimDate} (terlewat 1 hari). Streak dimulai kembali dari 1.`
       }
     } else if (diffDays > 2) {
       if (user.dailyRestreakDate === today) {
@@ -135,17 +209,20 @@ let handler = async (m, { usedPrefix, text = '' }) => {
         streakInfo = `\n✅ *Restreak Aktif*: streak lama berhasil dilanjutkan.`
       } else {
         user.dailyBrokenStreak = Number(user.dailyStreak) || 0
+        user.dailyRestreakOfferDate = today
         user.dailyStreak = 1
-        streakInfo = `\n⚠️ *Streak Terputus*: Terakhir klaim ${previousClaimDate} (terlewat ${diffDays - 1} hari). Streak dimulai kembali dari 1.\n> Pulihkan streak lama dengan .daily restreak.`
+        streakInfo = `\n⚠️ *Streak Terputus*: Terakhir klaim ${previousClaimDate} (terlewat ${diffDays - 1} hari). Streak dimulai kembali dari 1.`
       }
     } else {
       user.dailyStreak = Number(user.dailyStreak) || 1
+      delete user.dailyBrokenStreak
+      delete user.dailyRestreakOfferDate
     }
   } else {
     user.dailyStreak = 1
+    delete user.dailyBrokenStreak
+    delete user.dailyRestreakOfferDate
   }
-
-  if (user.dailyRestreakDate === today) delete user.dailyRestreakDate
 
   user.dailyDate = today
   user.lastDaily = now
@@ -157,7 +234,8 @@ let handler = async (m, { usedPrefix, text = '' }) => {
     user.rpg.lastDaily = now
     user.rpg.dailyCooldownDuration = user.dailyCooldownDuration
     user.rpg.dailyBrokenStreak = user.dailyBrokenStreak
-    user.rpg.dailyRestreakDate = user.dailyRestreakDate
+    if (user.dailyRestreakOfferDate) user.rpg.dailyRestreakOfferDate = user.dailyRestreakOfferDate
+    else delete user.rpg.dailyRestreakOfferDate
   }
 
   let hadiah = scaleDifficultyIncome(rpgUser, 50000)
@@ -211,10 +289,28 @@ let handler = async (m, { usedPrefix, text = '' }) => {
   cap += `📌 *INFO*\n`
   cap += `> ↳ Klaim berikutnya tersedia besok setelah pukul 00:00 WIB!`
 
-  m.reply(cap)
+  if (user.dailyBrokenStreak && user.dailyRestreakOfferDate === today) {
+    const restreakCost = scaleDifficultyIncome(rpgUser, 50000) * 2 * user.dailyBrokenStreak
+    cap += `\n\n🔥 Pulihkan streak ${user.dailyBrokenStreak} hari hari ini seharga *Rp ${restreakCost.toLocaleString('id-ID')}*.\n` +
+      `Kesempatan berakhir saat hari berganti.`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      quoted: m,
+      title: '🔥 STREAK TERPUTUS',
+      subtitle: 'Kesempatan pulih hanya berlaku hari ini',
+      text: cap,
+      buttons: [[
+        '🔥 Pulihkan Streak',
+        `${usedPrefix || '.'}daily restreak`
+      ]],
+      noThumbnail: true,
+      reply: fallbackText => m.reply(fallbackText)
+    })
+  }
+  return m.reply(cap)
 }
 
-handler.help = ['daily', 'daily restreak', 'claim']
+handler.help = ['daily', 'daily restreak', 'daily top', 'claim']
 handler.tags = ['rpg']
 handler.command = ['daily', 'claim']
 export default handler
