@@ -1,7 +1,8 @@
-import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
 import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -56,7 +57,7 @@ function rollOre(hance, bonus, pickLvl, rareChanceFactor = 1){
   return {ore: common[Math.floor(Math.random() * common.length)], tier: 'COMMON', exp: 15}
 }
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
@@ -133,49 +134,47 @@ let handler = async (m, { conn }) => {
   user.lastMining = Date.now()
   await saveDB(wdb)
 
-  let pp = 'https://c.termai.cc/i140/srjE7x6'
   let tierData = {
-    SECRET: {stars: '★★★★★★★', emoji: '🔮'},
-    MYTHIC: {stars: '★★★★★★☆', emoji: '🌌'},
-    LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑'},
-    EPIC: {stars: '★★★★☆☆☆', emoji: '💎'},
-    RARE: {stars: '★★★☆☆☆☆', emoji: '✨'},
-    UNCOMMON: {stars: '★★☆☆☆☆☆', emoji: '💙'},
-    COMMON: {stars: '★☆☆☆☆☆☆', emoji: '🤍'}
+    SECRET: { stars: '★★★★★★★', icon: '🔮' },
+    MYTHIC: { stars: '★★★★★★☆', icon: '🌌' },
+    LEGENDARY: { stars: '★★★★★☆☆', icon: '👑' },
+    EPIC: { stars: '★★★★☆☆☆', icon: '💎' },
+    RARE: { stars: '★★★☆☆☆☆', icon: '✨' },
+    UNCOMMON: { stars: '★★☆☆☆☆☆', icon: '💙' },
+    COMMON: { stars: '★☆☆☆☆☆☆', icon: '🤍' }
   }
 
-
   let caption = `╭─❏「 ⛏️ MINING RESULT 」❏\n`
-caption += `│ ⛏️ *HASIL TAMBANG*\n`
-caption += `╰─━━━━━━━━━━━━━━─\n\n`
+  caption += `│ ⛏️ *HASIL TAMBANG*\n`
+  caption += `╰─━━━━━━━━━━━━━━─\n\n`
+  caption += `> ${tierData[tierTertinggi].stars} ${tierTertinggi} ${tierData[tierTertinggi].icon}\n\n`
 
-caption += `⭐ *TIER TERTINGGI*\n`
-caption += `> ↳ ${tierData[tierTertinggi].stars}\n`
-caption += `> ↳ ${tierTertinggi} ${tierData[tierTertinggi].emoji}\n\n`
-
-caption += `🏆 *RINGKASAN HASIL*\n`
-caption += `> ↳ ${jumlahJenisDrop} jenis\n`
-caption += `> ↳ Total: x${totalOreDidapat} ore\n\n`
-
-let nomor = 1
 for(let ore in hasilTambang){
-  caption += `*${nomor++}. ${formatNama(ore)} ${oreEmoji[ore] || '📦'}*\n`
-  caption += `> ↳ Jumlah: x${hasilTambang[ore].toLocaleString()}\n\n`
+  caption += `> ${formatNama(ore)} ×${hasilTambang[ore].toLocaleString()}\n`
 }
 
-caption += `─━━━━━━━━━━━━━━─\n\n`
+caption += `\n─━━━━━━━━━━━━━━─\n\n`
 
 caption += `✨ *HASIL PENGALAMAN*\n`
-caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
-caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
-caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
-if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
+caption += `> ✨ Total XP: +${totalExp.toLocaleString()}\n`
+caption += `> 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
+caption += `> ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
+if(bonus > 0) caption += `> 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
 const miningYieldEffect = getBloodlineBuff(user, 'miningYield') - getBloodlineDrawback(user).miningYieldPenalty
-if(miningYieldEffect !== 0) caption += `> ↳ 🧬 Efek Bloodline: hasil ore ${miningYieldEffect > 0 ? '+' : ''}${(miningYieldEffect * 100).toFixed(0)}%\n`
-if(pickLvl < 25) caption += `> ↳ 🔮 Upgrade pickaxe untuk hasil secret\n`
+if(miningYieldEffect !== 0) caption += `> 🧬 Efek Bloodline: hasil ore ${miningYieldEffect > 0 ? '+' : ''}${(miningYieldEffect * 100).toFixed(0)}%\n`
+if(pickLvl < 25) caption += `> 🔮 Upgrade pickaxe untuk hasil secret\n`
 caption += `\n─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i140/srjE7x6')
+return sendRpgButtons(conn, {
+  chat: m.chat,
+  text: caption,
+  title: '⛏️ HASIL TAMBANG',
+  subtitle: 'Semua ore sudah tersimpan di tasmu',
+  buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
+  quoted: m,
+  noThumbnail: true,
+  reply: fallbackText => m.reply(fallbackText)
+})
 }
 
 handler.help = ['mining', 'tambang']

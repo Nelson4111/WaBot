@@ -5,6 +5,7 @@ import { sendRpgButtons, sendRpgQuickButton } from '../../lib/rpgActionButtons.j
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -47,7 +48,7 @@ const tierInfo = {
   SECRET: {icon:'🔮', stars:'★★★★★★★'}, MYTHIC: {icon:'🌌', stars:'★★★★★★☆'},
   LEGENDARY: {icon:'👑', stars:'★★★★★☆☆'}, EPIC: {icon:'💎', stars:'★★★★☆☆☆'},
   RARE: {icon:'✨', stars:'★★★☆☆☆☆'}, UNCOMMON: {icon:'💙', stars:'★★☆☆☆☆☆'},
-  COMMON: {icon:'🤍', stars:'★☆☆☆☆☆☆'}, TRASH: {icon:'🗑️', stars:'☆☆☆☆☆☆'}
+  COMMON: {icon:'🤍', stars:'★☆☆☆☆☆☆'}, TRASH: {icon:'🗑️', stars:'☆☆☆☆☆☆☆'}
 }
 
 function rollItem(hance, bonus, advLvl, swordLvl, pickLvl){
@@ -69,7 +70,7 @@ function rollItem(hance, bonus, advLvl, swordLvl, pickLvl){
   return {item: trash[Math.floor(Math.random() * trash.length)], tier: 'TRASH', exp: 20}
 }
 
-let handler = async (m, { conn, command }) => {
+let handler = async (m, { conn, command, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -210,25 +211,14 @@ let handler = async (m, { conn, command }) => {
 cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-cap += `⭐ *TIER TANGKAPAN*\n`
 if (expeditionFailed) cap += `> ↳ 🌪️ Ekspedisi gagal; tidak ada loot yang didapat.\n`
-cap += `> ↳ ${tierInfo[tierTertinggi].stars}\n`
-cap += `> ↳ ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
+cap += `> ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
 
 cap += `🎒 *HASIL PENJELAJAHAN x${jumlahLoot}*\n`
 cap += `> ↳ Item yang ditemukan selama adventure.\n`
 
-let urutan = ['SECRET', 'MYTHIC', 'LEGENDARY', 'EPIC', 'RARE', 'UNCOMMON', 'COMMON', 'TRASH']
-
-for (let t of urutan) {
-  if (groupedLoot[t]) {
-    cap += `\n─━━━━━━━━━━━━━━─\n`
-    cap += `${tierInfo[t].icon} *${t}*\n`
-
-    for (let item in groupedLoot[t]) {
-      cap += `> ${formatNama(item)} ${itemEmoji[item] || '📦'} x${groupedLoot[t][item]}\n`
-    }
-  }
+for (let item in hasilLoot) {
+cap += `> ${formatNama(item)} ×${hasilLoot[item].toLocaleString()}\n`
 }
 
 cap += `\n─━━━━━━━━━━━━━━─\n`
@@ -255,13 +245,26 @@ cap += levelUpMsg
     return sendRpgButtons(conn, {
       chat: m.chat,
       text: cap,
-      footer: '',
-      buttons: [['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]],
+      title: '🗺️ HASIL ADVENTURE',
+      subtitle: 'Loot tersimpan di tas, pulihkan diri untuk lanjut',
+      buttons: [
+        ['🎒 Buka Tas', `${usedPrefix || '.'}bag`],
+        ['💖 Bangkit dengan Heal', `${usedPrefix || '.'}heal`]
+      ],
       quoted: m,
       noThumbnail: true
     })
   }
-  return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: cap,
+    title: '🗺️ HASIL ADVENTURE',
+    subtitle: 'Loot petualangan sudah tersimpan di tasmu',
+    buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
+    quoted: m,
+    noThumbnail: true,
+    reply: fallbackText => m.reply(fallbackText)
+  })
 }
 
 handler.help = ['adventure', 'petualang', 'adv']

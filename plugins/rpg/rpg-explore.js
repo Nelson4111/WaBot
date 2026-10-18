@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
@@ -78,23 +78,44 @@ let handler = async (m, { conn, usedPrefix }) => {
   }))
   await saveDB(db)
 
+  const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
+  const tierStars = {
+    SECRET: { stars: '★★★★★★★', icon: '🔮' },
+    MYTHIC: { stars: '★★★★★★☆', icon: '🌌' },
+    LEGENDARY: { stars: '★★★★★☆☆', icon: '👑' },
+    EPIC: { stars: '★★★★☆☆☆', icon: '💎' },
+    RARE: { stars: '★★★☆☆☆☆', icon: '✨' },
+    UNCOMMON: { stars: '★★☆☆☆☆☆', icon: '💙' },
+    COMMON: { stars: '★☆☆☆☆☆☆', icon: '🤍' },
+    TRASH: { stars: '☆☆☆☆☆☆☆', icon: '🗑️' }
+  }
+  const highestTier = foundItems.reduce((highest, { item }) =>
+    tierOrder.indexOf(item.tier) > tierOrder.indexOf(highest) ? item.tier : highest,
+  'TRASH')
   const caption =
     `╭─❏「 🚀 INTERSTELLAR 」❏\n` +
     `│ 💫 *PENJELAJAHAN ANTARBINTANG*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ${tierStars[highestTier].stars} ${highestTier} ${tierStars[highestTier].icon}\n\n` +
     `Kamu mengunjungi planet *${destination}* dan menemukan ${items.length} item:\n\n` +
     foundItems.map(({ item, quantity }) =>
-      `> ${item.emoji} *${item.name}* ×${quantity} • ${item.tier}\n` +
+      `> *${item.name}* ×${quantity} • ${tierStars[item.tier].icon} ${item.tier}\n` +
       `> ↳ ${item.description}\n`
     ).join('') +
     `\n` +
     `🧭 Total penjelajahan : ${rpg.interstellarExplores}\n` +
     `⏳ Cooldown : ${Math.ceil(cooldown / 60000)} menit\n\n` +
     `─━━━━━━━━━━━━━━─`
-  const image = Math.random() < 0.5
-    ? 'https://c.termai.cc/i143/rU2.jpg'
-    : 'https://c.termai.cc/i123/9R4g.jpg'
-  return conn.sendMessage(m.chat, { image: { url: image }, caption }, { quoted: m })
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    text: caption,
+    title: '🚀 HASIL PENJELAJAHAN',
+    subtitle: `Temuan di Planet ${destination} sudah tersimpan di tas`,
+    buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
+    quoted: m,
+    noThumbnail: true,
+    reply: fallbackText => m.reply(fallbackText)
+  })
 }
 
 handler.help = ['explore']

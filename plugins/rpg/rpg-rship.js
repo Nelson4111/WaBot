@@ -65,6 +65,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     return Math.min(slot, 10)
   }
 
+  const findPartner = selector => {
+    if (!selector) return null
+    const normalizedSelector = String(selector).trim().toLowerCase()
+    const index = /^\d+$/.test(normalizedSelector)
+      ? Number(normalizedSelector) - 1
+      : user.harem.findIndex(partner => String(partner.name).toLowerCase() === normalizedSelector)
+    const partner = user.harem[index]
+    return partner ? { partner, index } : null
+  }
+
   const bar = (val, len = 10) => {
     const safeValue = Math.max(0, Math.min(100, Number(val) || 0))
     const filled = Math.round((safeValue / 100) * len)
@@ -623,7 +633,8 @@ ${entries.join('\n')}
         `> ↳ Anak tetap tercatat dan tidak terhapus dari data.\n` +
         `> ↳ Lihat anak di shelter: ${usedPrefix}rship shelter list\n` +
         `> ↳ Coba jemput anak: ${usedPrefix}rship shelter retrieve <no>\n` +
-        `> ↳ Peluang retrieve berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%; anak juga bisa menolak.\n\n` +
+        `> ↳ Peluang retrieve berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%; anak juga bisa menolak.\n` +
+        `> ↳ Setiap percobaan retrieve memiliki cooldown 30 menit; cek dengan ${usedPrefix}rship cd.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -650,7 +661,8 @@ ${entries.join('\n')}
         `│ ANAK YANG DAPAT DICOBA RETRIEVE\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `${entries.join('\n\n')}\n\n` +
-        `> ↳ Peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%; anak dapat menolak dan tetap di shelter.\n\n` +
+        `> ↳ Peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%; anak dapat menolak dan tetap di shelter.\n` +
+        `> ↳ Cooldown retrieve: 30 menit. Cek waktu tersisa dengan ${usedPrefix}rship cd.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -663,6 +675,15 @@ ${entries.join('\n')}
         )
       }
 
+      const retrieveCooldown = cooldownNames.shelterRetrieve[1]
+      const retrieveCooldownRemaining = cekCD('shelterRetrieve', retrieveCooldown)
+      if (retrieveCooldownRemaining > 0) {
+        return m.reply(
+          `⏰ Kamu masih perlu menunggu *${formatRemaining(retrieveCooldownRemaining)}* sebelum mencoba menjemput anak lagi.`
+        )
+      }
+
+      user.cooldown.shelterRetrieve = Date.now()
       const success = Math.random() < CHILD_RETRIEVE_CHANCE
       const stories = success ? CHILD_RETRIEVE_ACCEPT_STORIES : CHILD_RETRIEVE_REJECT_STORIES
       const story = stories[Math.floor(Math.random() * stories.length)]
@@ -673,7 +694,7 @@ ${entries.join('\n')}
           `│ *${child.nama}* BELUM MAU KEMBALI\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
           `> ${story}\n` +
-          `> ↳ *${child.nama}* tetap berada di shelter. Kamu bisa mencoba lagi nanti.\n\n` +
+          `> ↳ *${child.nama}* tetap berada di shelter. Kamu bisa mencoba lagi setelah cooldown jemput anak selesai.\n\n` +
           `─━━━━━━━━━━━━━━─`
         )
       }
@@ -1280,7 +1301,7 @@ ${options}
 > *${usedPrefix}rship shelter list*
 > ↳ Lihat anak yang hilang/kabur di shelter.
 > *${usedPrefix}rship shelter retrieve <no>*
-> ↳ Coba jemput anak; peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%.
+> ↳ Coba jemput anak; peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%, dengan cooldown 30 menit.
 
 ─━━━━━━━━━━━━━━─`
 
@@ -4580,6 +4601,8 @@ if (action === 'gift') {
     p = explicitPartner.partner
     pIndex = explicitPartner.index
     args = [args[0], args[2], ...args.slice(3)]
+  } else if (args[1] && !['item', 'money', 'uang'].includes(args[1].toLowerCase())) {
+    return m.reply(`Pasangan tidak ditemukan. Lihat nomor pasangan dengan *${usedPrefix}rship harem*.`)
   }
   tipe = args[1]?.toLowerCase()
 

@@ -298,6 +298,11 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const highestJob = getHighestRankedJob(userRPG)
     const displayJob = highestJob || currentJob
     const displayPoints = Number(getJobProgress(userRPG, displayJob?.job).promotionPoints || 0)
+    const estimatedIncome = Math.floor(
+      scaleDifficultyIncome(userRPG, Number(displayJob?.gaji || 0)) *
+      getJobTitleMultiplier(displayPoints, displayJob?.job) *
+      getAttendanceMultiplier(userRPG, now)
+    )
 
     const caption = [
       '╭─❏「 💼 JOB SYSTEM 」❏',
@@ -307,7 +312,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       `> 🎮 Level: Lv.${userRPG.level}`,
       `> 💼 Pekerjaan: ${getJobLabel(displayJob)}`,
       `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, displayJob?.job)}`,
-      `> 💰 Income: ${fmtRp(Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(displayPoints, displayJob?.job)))}`,
+      `> 💰 Perkiraan gaji diterima: ${fmtRp(estimatedIncome)}`,
       `> 📊 Status: ${remaining > 0 ? `⏳ ${Math.ceil(remaining / 1000)} detik lagi` : '✅ Siap kerja'}`,
       userRPG.firedJobName ? `> ⚠️ Pemecatan terakhir dari: ${userRPG.firedJobName}` : '',
       '',
@@ -360,7 +365,11 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
         if (!job) return null
         const progress = getJobProgress(userRPG, job.job)
         const points = Number(progress.promotionPoints || 0)
-        const income = Math.floor(Number(job.gaji || 0) * getJobTitleMultiplier(points, job.job))
+        const income = Math.floor(
+          scaleDifficultyIncome(userRPG, Number(job.gaji || 0)) *
+          getJobTitleMultiplier(points, job.job) *
+          getAttendanceMultiplier(userRPG, now)
+        )
         return {
           job,
           points,
@@ -378,7 +387,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       '',
       `> 🎮 Level: Lv.${userRPG.level}`,
       `> 💼 Jumlah pekerjaan: ${jobsWithIncome.length}`,
-      `> 💰 Total potensi income: ${fmtRp(totalIncome)} per kerja`,
+      `> 💰 Perkiraan total gaji saat ini: ${fmtRp(totalIncome)} per kerja`,
       '',
       '─━━━━━━━━━━━━━━─',
       '📂 *PEKERJAAN DAN JABATAN*',
@@ -389,7 +398,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
           `> ${index + 1}. ${active ? '✅' : '▫️'} *${job.job}*${active ? ' (aktif)' : ''}`,
           `> ↳ Jabatan: ${title}`,
           `> ↳ Poin promosi: ${points}`,
-          `> ↳ Income: ${fmtRp(income)}`
+          `> ↳ Perkiraan diterima: ${fmtRp(income)}`
         ].join('\n'))
         : ['> Belum ada pekerjaan yang dilamar.']),
       userRPG.firedJobName ? `> ⚠️ Pemecatan terakhir dari: *${userRPG.firedJobName}*` : '',
@@ -427,8 +436,8 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       const unlock = userRPG.level >= job.lv ? '✅' : '🔒'
       caption.push(`> ${index + 1}. ${unlock} *${job.job}*`)
       caption.push(`> ↳ Level minimum: Lv.${job.lv}`)
-      caption.push(`> ↳ Gaji: ${fmtRp(job.gaji)}`)
-      caption.push(`> ↳ XP: +${job.exp}`)
+      caption.push(`> ↳ Gaji dasar: ${fmtRp(job.gaji)}`)
+      caption.push(`> ↳ XP dasar: +${job.exp}`)
       if (index < listJobs.length - 1) caption.push('')
     })
 
@@ -439,6 +448,9 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     caption.push(`> 💼 ${usedPrefix}work`)
     caption.push(`> 💼 ${usedPrefix}job work`)
     caption.push('')
+    caption.push('> Gaji akhir dipengaruhi difficulty, jabatan, dan absensi. XP dipengaruhi difficulty.')
+    caption.push('> Hasil kerja menampilkan jumlah akhir yang benar-benar diterima.')
+    caption.push('')
     caption.push('─━━━━━━━━━━━━━━─')
     return m.reply(caption.join('\n'))
   }
@@ -447,7 +459,11 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     const currentJob = getActiveJob(userRPG)
     const displayJob = getHighestRankedJob(userRPG) || currentJob
     const promotion = Number(getJobProgress(userRPG, displayJob?.job).promotionPoints || 0)
-    const income = Math.floor(Number(displayJob?.gaji || 0) * getJobTitleMultiplier(promotion, displayJob?.job))
+    const income = Math.floor(
+      scaleDifficultyIncome(userRPG, Number(displayJob?.gaji || 0)) *
+      getJobTitleMultiplier(promotion, displayJob?.job) *
+      getAttendanceMultiplier(userRPG, now)
+    )
     const caption = [
       '╭─❏「 💼 JOB PROFILE 」❏',
       '│ 👤 PROFIL PEKERJA',
@@ -537,8 +553,10 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       `> 💼 Pekerjaan: ${job.job}`,
       `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, job.job)}`,
       `> 💰 Gaji dasar: ${fmtRp(job.gaji)}`,
+      `> ↳ Setelah difficulty: ${fmtRp(scaleDifficultyIncome(userRPG, job.gaji))}`,
       `> 📈 Multiplier jabatan: x${salaryMultiplier}`,
-      `> 💵 Gaji per absen: ${fmtRp(Math.floor(job.gaji * salaryMultiplier))}`,
+      `> 📅 Multiplier absensi saat ini: x${getAttendanceMultiplier(userRPG, now)}`,
+      `> 💵 Perkiraan gaji diterima: ${fmtRp(Math.floor(scaleDifficultyIncome(userRPG, job.gaji) * salaryMultiplier * getAttendanceMultiplier(userRPG, now)))}`,
       `> 🎮 Minimal level: Lv.${job.lv}`
     ].join('\n')
     return m.reply(caption)
@@ -880,10 +898,14 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
     const progress = getJobProgress(userRPG, selectedJob.job)
     const beforeTitle = getJobTitleByPoints(progress.promotionPoints, selectedJob.job)
-    const incomeMultiplier = getAttendanceMultiplier(userRPG, now) * getJobTitleMultiplier(progress.promotionPoints, selectedJob.job)
+    const attendanceMultiplier = getAttendanceMultiplier(userRPG, now)
+    const titleMultiplier = getJobTitleMultiplier(progress.promotionPoints, selectedJob.job)
+    const incomeMultiplier = attendanceMultiplier * titleMultiplier
     const baseJob = selectedJob
-    const earnedMoney = Math.max(0, Math.floor(scaleDifficultyIncome(userRPG, baseJob.gaji) * incomeMultiplier))
-    const earnedExp = Math.max(1, scaleDifficultyXP(userRPG, baseJob.exp))
+    const difficultyAdjustedIncome = scaleDifficultyIncome(userRPG, baseJob.gaji)
+    const difficultyAdjustedExp = scaleDifficultyXP(userRPG, baseJob.exp)
+    const earnedMoney = Math.max(0, Math.floor(difficultyAdjustedIncome * incomeMultiplier))
+    const earnedExp = Math.max(1, difficultyAdjustedExp)
 
     wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + earnedMoney
     userRPG.exp = Number(userRPG.exp || 0) + earnedExp
@@ -917,8 +939,12 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       `> 🏢 Pekerjaan: *${selectedJob.job}*`,
       `> 🎖️ Jabatan: ${afterTitle}`,
       getPromotionProgressText(progress.promotionPoints, selectedJob.job),
-      `> 💰 Gaji: +${fmtRp(earnedMoney)}`,
-      `> ✨ XP: +${earnedExp}`,
+      `> 💰 Gaji dasar: ${fmtRp(baseJob.gaji)}`,
+      `> ↳ Setelah difficulty: ${fmtRp(difficultyAdjustedIncome)}`,
+      `> ↳ Multiplier jabatan x${titleMultiplier} • absensi x${attendanceMultiplier}`,
+      `> 💰 Gaji diterima: +${fmtRp(earnedMoney)}`,
+      `> ✨ XP dasar: +${baseJob.exp} • setelah difficulty: +${difficultyAdjustedExp}`,
+      `> ✨ XP diterima: +${earnedExp}`,
       '',
       '─━━━━━━━━━━━━━━─',
       `> ${story}`,
@@ -968,6 +994,11 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
   if (action === '') {
     const currentJob = getActiveJob(userRPG)
+    const currentJobIncome = Math.floor(
+      scaleDifficultyIncome(userRPG, Number(currentJob?.gaji || 0)) *
+      getJobTitleMultiplier(getJobProgress(userRPG, currentJob?.job).promotionPoints, currentJob?.job) *
+      getAttendanceMultiplier(userRPG, now)
+    )
     const caption = [
       '╭─❏「 💼 JOB INFORMATION 」❏',
       '│ 📋 INFORMASI PEKERJAAN',
@@ -975,7 +1006,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       '',
       `> 🏢 Pekerjaan aktif: ${getJobLabel(currentJob)}`,
       `> 🎖️ Jabatan: ${getTitleFromJob(currentJob, userRPG)}`,
-      `> 💰 Income: ${fmtRp(currentJob?.gaji || 0)}`,
+      `> 💰 Perkiraan gaji diterima: ${fmtRp(currentJobIncome)}`,
       '',
       `> ↳ Ketik *${usedPrefix}job guide* untuk melihat semua command.`
     ].join('\n')

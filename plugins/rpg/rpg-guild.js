@@ -160,7 +160,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 📌 *5. Naikkan Level Guild*
 > ${usedPrefix}guild misi
 > ${usedPrefix}guild mission <nomor misi>
-> Selesaikan misi untuk mendapatkan kontribusi dan EXP Guild.
+> Selesaikan misi untuk mendapatkan kontribusi, Guild EXP, dan EXP karakter.
 
 📌 *6. Aktivitas Guild*
 > ${usedPrefix}guild latihan

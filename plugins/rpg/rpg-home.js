@@ -272,7 +272,11 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
     home.level = currentLevel + 1
     home.security = getHomeLevel(home.level).security
     await saveDB(db)
-    return m.reply(
+    const nextUpgradeAvailable = home.level < HOME_MAX_UPGRADES
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      quoted: m,
+      text:
       `╭─❏「 ⬆️ UPGRADE RUMAH 」❏\n` +
       `│ ✅ *UPGRADE BERHASIL*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -284,8 +288,17 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       `> ↳ Kapasitas penghuni: ${residentCapacity + HOME_UPGRADE_CAPACITY}\n` +
       `> ↳ Kapasitas furniture: ${capacity + HOME_UPGRADE_FURNITURE_CAPACITY}\n` +
       `> ↳ Security: ${getHomeSecurity(home)}/100\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+      `─━━━━━━━━━━━━━━─\n\n` +
+      (nextUpgradeAvailable
+        ? `✨ Rumahmu makin nyaman. Siap lanjut ke tahap berikutnya?\n`
+        : `🏆 Rumahmu sudah mencapai level maksimum!`),
+      buttons: [[
+        nextUpgradeAvailable ? '✨ Upgrade Rumah Lagi' : '🏡 Lihat Info Rumah',
+        nextUpgradeAvailable ? `${prefix}home upgrade` : `${prefix}home info`
+      ]],
+      noThumbnail: true,
+      noHeader: true
+    })
   }
 
   if (pending.type === 'invite' || pending.type === 'kick') {
@@ -707,9 +720,10 @@ const requestConfirmation = async (pending, summary) => {
     `Pilih tombol di bawah untuk melanjutkan atau membatalkan.`,
     acceptText: '🏠 Upgrade Sekarang',
     acceptCommand: `${prefix}home yes`,
-    cancelText: '↩️ Batalkan',
+    cancelText: '↩️ Nanti Saja',
     cancelCommand: `${prefix}home no`,
-    noThumbnail: true
+    noThumbnail: true,
+    noHeader: true
   })
 }
 

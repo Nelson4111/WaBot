@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { setAfk } from '../../lib/afkHelper.js'
 import { normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
@@ -30,7 +31,7 @@ import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
 import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '../../lib/rpgJobData.js'
-import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 
 import fs from 'fs'
 
@@ -143,7 +144,15 @@ function getPluginCommandLines(tag, usedPrefix) {
     : '> ↳ Belum ada command yang terdaftar.'
 }
 
-let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, command }) => {
+let handler = async (m, {
+  conn,
+  text,
+  usedPrefix,
+  isOwner,
+  groupMetadata,
+  command,
+  _rpgPanelConfirmedToken
+}) => {
   const sourceMessage = m
   const originalReply = m.reply.bind(m)
   const isPrivateRpgPanel = String(command || '').toLowerCase() === 'rp' &&
@@ -235,11 +244,158 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
   let rawArgs = (text || '').trim().split(/\s+/).filter(Boolean)
   let aksi = rawArgs[0]?.toLowerCase()
   let remaining = rawArgs.slice(1)
+  wdb.rpgPanelConfirmations = wdb.rpgPanelConfirmations || {}
+
+  const now = Date.now()
+  for (const [token, pending] of Object.entries(wdb.rpgPanelConfirmations)) {
+    if (!pending || now - Number(pending.createdAt) > RPG_CONFIRMATION_TTL) {
+      delete wdb.rpgPanelConfirmations[token]
+    }
+  }
+
+  if (aksi === 'confirm') {
+    const token = String(rawArgs[1] || '')
+    const decision = String(rawArgs[2] || '').toLowerCase()
+    const pending = wdb.rpgPanelConfirmations[token]
+    if (!pending) {
+      return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
+    }
+    if (pending.owner !== m.sender || pending.chat !== m.chat) {
+      return m.reply('🔒 Tombol konfirmasi ini hanya dapat digunakan oleh pemilik permintaan di chat asal.')
+    }
+    if (now - Number(pending.createdAt) > RPG_CONFIRMATION_TTL) {
+      delete wdb.rpgPanelConfirmations[token]
+      await saveDB(wdb)
+      return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
+    }
+    if (!['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(decision)) {
+      return m.reply(`Pilih tombol konfirmasi atau pembatalan untuk melanjutkan.`)
+    }
+    delete wdb.rpgPanelConfirmations[token]
+    await saveDB(wdb)
+    if (['tidak', 'no', 'batal', 'cancel'].includes(decision)) {
+      return m.reply('✅ Aksi RPG Panel dibatalkan; data tidak diubah.')
+    }
+    const replayMessage = Object.create(m)
+    Object.defineProperty(replayMessage, 'mentionedJid', {
+      value: pending.mentionedJid || [],
+      configurable: true
+    })
+    if (pending.quotedSender) {
+      Object.defineProperty(replayMessage, 'quoted', {
+        value: { sender: pending.quotedSender },
+        configurable: true
+      })
+    }
+    return handler(replayMessage, {
+      conn,
+      text: pending.text,
+      usedPrefix,
+      isOwner,
+      groupMetadata,
+      command,
+      _rpgPanelConfirmedToken: token
+    })
+  }
+
+  const panelReadOnlyActions = new Set([
+    'command', 'commands', 'cmd', 'all', 'kategori', 'categories',
+    'toprpg', 'rpgstat', 'topyt', 'evx', 'mall', 'home', 'anak',
+    'cekcsm', 'inv', 'gudang', 'cek', 'list', 'lihat', 'show', 'help',
+    ...RPG_PANEL_CATEGORIES.flatMap(({ title, aliases }) => [title, ...aliases])
+  ])
+  const requestedCategory = normalizeRpgPanelCategory(rawArgs.join(' '))
+  const autoLevelOptions = ['on', 'off', 'enable', 'disable', '1', '0', 'true', 'false', 'aktif', 'mati']
+  const isAutoLevelStatusQuery = aksi === 'autolevelup' && !autoLevelOptions.includes(String(remaining[0] || '').toLowerCase())
+  const isPanelReadOnlyAction = panelReadOnlyActions.has(aksi) ||
+    !aksi ||
+    isAutoLevelStatusQuery ||
+    /^(cek|check|lihat|show|list)/.test(aksi || '') ||
+    RPG_PANEL_CATEGORIES.some(({ title, aliases }) =>
+      aliases.some(alias => normalizeRpgPanelCategory(alias) === requestedCategory) ||
+      normalizeRpgPanelCategory(title) === requestedCategory
+    )
+
+  if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken) {
+    const token = randomUUID()
+    const requestedCommand = rawArgs.join(' ')
+    const privateConfirmationTarget = isPrivateRpgPanel
+      ? (conn.decodeJid ? conn.decodeJid(sourceMessage.sender) : sourceMessage.sender)
+      : m.chat
+    wdb.rpgPanelConfirmations[token] = {
+      owner: m.sender,
+      chat: privateConfirmationTarget,
+      text,
+      mentionedJid: [...(sourceMessage.mentionedJid || [])],
+      quotedSender: sourceMessage.quoted?.sender || null,
+      createdAt: now
+    }
+    await saveDB(wdb)
+
+    const confirmationText =
+      `╭─❏「 ⚠️ KONFIRMASI RPG PANEL 」❏\n` +
+      `│ PERIKSA AKSI SEBELUM DATA DIUBAH\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> Perintah: *${requestedCommand.slice(0, 300)}${requestedCommand.length > 300 ? '…' : ''}*\n` +
+      `> Konfirmasi ini berlaku selama 5 menit.\n` +
+      `> Tidak ada data yang berubah sebelum kamu memilih *Konfirmasi*.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    const acceptCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} ya`
+    const cancelCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} tidak`
+    if (isPrivateRpgPanel) {
+      const playerJid = conn.decodeJid
+        ? conn.decodeJid(sourceMessage.sender)
+        : sourceMessage.sender
+      const playerNumber = String(playerJid || '').split('@')[0]
+      const rows = [{
+        title: '⚠️ Konfirmasi perubahan',
+        rows: [
+          { title: '✅ Konfirmasi', description: 'Jalankan perubahan RPG Panel', id: acceptCommand },
+          { title: '↩️ Batalkan', description: 'Biarkan data tetap seperti semula', id: cancelCommand }
+        ]
+      }]
+      return sendRpgButtons(conn, {
+        chat: responseChat,
+        message: sourceMessage,
+        quoted: sourceMessage,
+        title: '⚠️ KONFIRMASI PANEL RPG',
+        subtitle: 'Data hanya berubah setelah dikonfirmasi',
+        text: confirmationText,
+        buttonText: '🔐 PILIH TINDAKAN',
+        sections: rows,
+        fallbackText: `${confirmationText}\n> ↳ Konfirmasi: ${acceptCommand}\n> ↳ Batalkan: ${cancelCommand}`,
+        noThumbnail: true,
+        reply: fallbackText => m.reply(fallbackText),
+        sendInteractive: async playerMessage => {
+          return sendDualGroupMessage(
+            conn,
+            responseChat,
+            playerJid,
+            playerMessage,
+            `> 🔒 Konfirmasi RPG Panel khusus untuk @${playerNumber}.`,
+            { contextInfo: { mentionedJid: [playerJid] } }
+          )
+        }
+      })
+    }
+    return sendRpgConfirmButtons(conn, m, {
+      text: confirmationText,
+      title: '⚠️ KONFIRMASI PANEL RPG',
+      subtitle: 'Data hanya berubah setelah dikonfirmasi',
+      acceptText: '✅ Konfirmasi',
+      acceptCommand,
+      cancelText: '↩️ Batalkan',
+      cancelCommand,
+      noThumbnail: true,
+      footer: 'AVELIA • OWNER PANEL'
+    })
+  }
 
  let panelText = (
   `╭─❏「 👑 RPG PANEL OWNER 」❏\n` +
   `│ 👑 *FITUR ADMIN RPG AVELIA*\n` +
-  `╰─━━━━━━━━━━━━━━─\n\n` +
+  `╰─━━━━━━━━━━━━━━─\n` +
+  `> 🔐 Semua perubahan data meminta konfirmasi sebelum diterapkan.\n\n` +
 
   `📊 *GLOBAL*\n` +
   `> ↳ *${usedPrefix}rpgpanel rpgstat* - Ringkasan statistik seluruh RPG\n` +
@@ -380,8 +536,9 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
   `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <name/gender/level/love/exp/nikah/title> <val>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addanak @tag <nama_anak>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no> <nama/jenis/umur/carecount/love/ortu/biologicalparents> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat daftar anak dan nomor untuk pengaturan\n` +
-  `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n\n` +
+  `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat daftar anak keluarga dan shelter\n` +
+  `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
+  `> ↳ Anak shelter: *setanak @tag shelter <no> <field> <nilai>* / *delanak @tag shelter <no>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -403,6 +560,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
   `> ↳ *${usedPrefix}rpgpanel afk @tag <alasan>*\n` +
   `> ↳ *${usedPrefix}rpgpanel heal @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetlevel @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetlevel all* - Reset level dan XP semua akun RPG\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
@@ -527,7 +685,6 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
 
   if (aksi === 'all' && rawArgs.length === 1) return m.reply(panelText)
 
-  const requestedCategory = normalizeRpgPanelCategory(rawArgs.join(' '))
   const selectedCategory = RPG_PANEL_CATEGORIES.find(({ title, aliases }) =>
     aliases.some(alias => normalizeRpgPanelCategory(alias) === requestedCategory) ||
     normalizeRpgPanelCategory(title) === requestedCategory
@@ -644,6 +801,21 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
       aksi = prefixAksi + nextWord;
       remaining = remaining.slice(1);
     }
+  }
+
+  if (aksi === 'resetlevel' && ['all', 'semua'].includes(String(remaining[0] || '').toLowerCase())) {
+    let resetCount = 0
+    for (const account of Object.values(wdb.users)) {
+      const rpg = account?.rpg
+      if (!rpg || typeof rpg !== 'object') continue
+      rpg.level = 1
+      rpg.exp = 0
+      resetCount++
+    }
+    await saveDB(wdb)
+    return m.reply(
+      `🔄 Reset level massal selesai.\n> ↳ Akun RPG direset: *${resetCount}*\n> ↳ Semua level menjadi 1 dan XP menjadi 0.`
+    )
   }
 
   if (aksi === 'clearmoneykey') {
@@ -821,15 +993,23 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
 
   // ========== EDIT USER HARUS ADA TARGET ==========
   if (!who) return m.reply('❌ Tag / reply / masukkan nomor target dulu untuk edit user!')
+  if (isPanelReadOnlyAction && !wdb.users[who]) {
+    return m.reply(`❌ @${who.split('@')[0]} belum memiliki data RPG.`, null, { mentions: [who] })
+  }
 
   // INISIALISASI WAJIB BIAR GA RESET
   if (!wdb.users[who]) wdb.users[who] = {}
-  if (!wdb.users[who].rpg) wdb.users[who].rpg = {}
-  if (wdb.money[who] === undefined) wdb.money[who] = 0
+  if (!wdb.users[who].rpg && !isPanelReadOnlyAction) wdb.users[who].rpg = {}
+  if (wdb.money[who] === undefined && !isPanelReadOnlyAction) wdb.money[who] = 0
 
   const account = wdb.users[who]
-  let user = account.rpg
-  syncUserLimit(account)
+  let user = account.rpg || {}
+  if (isPanelReadOnlyAction) user = { ...user }
+  if (isPanelReadOnlyAction) {
+    syncUserLimit({ ...account, rpg: user, limitHistory: [...(account.limitHistory || [])] })
+  } else {
+    syncUserLimit(account)
+  }
 
   if (aksi === 'firejob') {
     const jobInput = remaining.join(' ').trim()
@@ -979,7 +1159,10 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
 
   if (aksi === 'anak') {
     const children = Array.isArray(user.kids) ? user.kids : []
-    if (!children.length) return m.reply(`👶 @${who.split('@')[0]} belum memiliki anak.`, null, { mentions: [who] })
+    const shelterChildren = Array.isArray(user.shelterKids) ? user.shelterKids : []
+    if (!children.length && !shelterChildren.length) {
+      return m.reply(`👶 @${who.split('@')[0]} belum memiliki anak atau anak di shelter.`, null, { mentions: [who] })
+    }
     const entries = children.map((child, index) => {
       const custody = child.custody?.type ? ` • Hak asuh: ${child.custody.type}` : ''
       const facility = child.facility?.type ? ` • Fasilitas: ${child.facility.type}` : ''
@@ -989,7 +1172,18 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
       return `> ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
         `> ↳ Ortu: ${child.ortu || 'tidak diketahui'}${custody}${facility}${parents}`
     })
-    return m.reply(`╭─❏「 👶 ANAK PANEL 」❏\n@${who.split('@')[0]}\n\n${entries.join('\n')}`, null, { mentions: [who] })
+    const shelterEntries = shelterChildren.map((child, index) =>
+      `> Shelter ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
+      `> ↳ Status: ${child.shelterStatus?.reason === 'runaway' ? 'Kabur' : 'Hilang'}`
+    )
+    return m.reply(
+      `╭─❏「 👶 ANAK PANEL 」❏\n@${who.split('@')[0]}\n\n` +
+      `👨‍👩‍👧‍👦 *KELUARGA*\n${entries.join('\n') || '> Tidak ada anak di keluarga.'}\n\n` +
+      `🛟 *SHELTER*\n${shelterEntries.join('\n') || '> Tidak ada anak di shelter.'}\n\n` +
+      `> Ubah/hapus anak shelter: gunakan *setanak @tag shelter <no>* atau *delanak @tag shelter <no>*.`,
+      null,
+      { mentions: [who] }
+    )
   }
 
   if (aksi === 'setevx') {
@@ -1014,34 +1208,6 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
     const installed = Object.entries(user.evonexus?.installed || {})
       .map(([type, id]) => EVONEXUS_ABILITIES.find(ability => ability.id === id && ability.type === type))
       .filter(Boolean)
-    const response = String(remaining[remaining.length - 1] || '').toLowerCase()
-    const pending = user.evonexus?.pendingPanelUninstall
-    if (['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(response)) {
-      const pendingValid = pending &&
-        pending.owner === m.sender &&
-        Date.now() - Number(pending.createdAt) <= RPG_CONFIRMATION_TTL
-      if (!pendingValid) {
-        if (user.evonexus) delete user.evonexus.pendingPanelUninstall
-        return m.reply('❌ Tidak ada konfirmasi uninstall Evonexus yang masih berlaku.')
-      }
-      if (['tidak', 'no', 'batal', 'cancel'].includes(response)) {
-        delete user.evonexus.pendingPanelUninstall
-        await saveDB(wdb)
-        return m.reply('❎ Uninstall SC Core melalui panel dibatalkan.')
-      }
-      const ability = installed.find(item => item.id === pending.abilityId)
-      if (!ability) {
-        delete user.evonexus.pendingPanelUninstall
-        await saveDB(wdb)
-        return m.reply('❌ SC Core tersebut sudah tidak terpasang.')
-      }
-      delete user.evonexus.installed[ability.type]
-      user.evonexus.destroyedAbilities ||= []
-      if (!user.evonexus.destroyedAbilities.includes(ability.id)) user.evonexus.destroyedAbilities.push(ability.id)
-      delete user.evonexus.pendingPanelUninstall
-      await saveDB(wdb)
-      return m.reply(`🛠️ *${ability.name}* dilepas dan dihancurkan permanen dari tubuh @${who.split('@')[0]}.`, null, { mentions: [who] })
-    }
     const key = normalizeEvonexusValue(remaining.join(' '))
     const ability = installed.find(item =>
       normalizeEvonexusValue(item.id) === key ||
@@ -1049,14 +1215,12 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
     )
     if (!ability) return m.reply(`❌ SC Core tidak terpasang. Lihat dengan *${usedPrefix}rpgpanel evx @tag*.`)
     user.evonexus ||= {}
-    user.evonexus.pendingPanelUninstall = { abilityId: ability.id, owner: m.sender, createdAt: Date.now() }
+    delete user.evonexus.installed[ability.type]
+    user.evonexus.destroyedAbilities ||= []
+    if (!user.evonexus.destroyedAbilities.includes(ability.id)) user.evonexus.destroyedAbilities.push(ability.id)
+    delete user.evonexus.pendingPanelUninstall
     await saveDB(wdb)
-    return m.reply(
-      `⚠️ SC Core *${ability.name}* akan dihancurkan permanen tanpa refund.\n` +
-      `Ketik *${usedPrefix}rpgpanel delevx @tag ${ability.name} ya* untuk konfirmasi atau akhiri dengan *tidak* untuk batal. Berlaku 5 menit.`,
-      null,
-      { mentions: [who] }
-    )
+    return m.reply(`🛠️ *${ability.name}* dilepas dan dihancurkan permanen dari tubuh @${who.split('@')[0]}.`, null, { mentions: [who] })
   }
 
   if (aksi === 'setevxstat') {
@@ -1157,7 +1321,7 @@ let handler = async (m, { conn, text, usedPrefix, isOwner, groupMetadata, comman
     return m.reply(`✅ Difficulty @${who.split('@')[0]} diatur ke *${RPG_DIFFICULTIES[difficulty].name}*.`, null, { mentions: [who] })
   }
 
-  account.inventory = account.inventory || {}
+  if (!isPanelReadOnlyAction) account.inventory = account.inventory || {}
   user.inventory = user.inventory || {}
   user.ikan = user.ikan || {}
   user.ores = user.ores || {}
@@ -2055,27 +2219,48 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 
 // 5.2 RSHIP ANAK
   if(['addanak','delanak','setanak'].includes(aksi)){
-    user.kids = user.kids || []
-    let no = parseInt(args[0]) - 1
-
+    if (!Array.isArray(user.kids)) user.kids = []
     if(aksi === 'addanak'){
-      let nama = args.join(' ')
+      const nama = args.join(' ').trim()
       if(!nama) return m.reply(`Contoh: *${usedPrefix}rpgpanel addanak @tag Bayi Avelia*`)
-      user.kids.push({ nama, jenis: 'Laki-laki', umur: 0, careCount: 0, ortu: 'Admin' })
+      if (nama.length > 60) return m.reply('❌ Nama anak maksimal 60 karakter.')
+      user.kids.push({
+        nama,
+        jenis: 'Laki-laki',
+        umur: 0,
+        careCount: 0,
+        love: 0,
+        ortu: 'Admin',
+        biologicalParents: [],
+        activityCooldowns: {},
+        lastCaredAt: Date.now(),
+        lastKidActivityAt: 0,
+        lastNeglectCheckAt: Date.now()
+      })
       saveDB(wdb)
       return m.reply(`✅ Tambah anak *${nama}* ke @${who.split('@')[0]}`, null, {mentions: [who]})
     }
+    const shelterTarget = args[0]?.toLowerCase() === 'shelter'
+    const childList = shelterTarget
+      ? (Array.isArray(user.shelterKids) ? user.shelterKids : (user.shelterKids = []))
+      : user.kids
+    const index = Number(shelterTarget ? args[1] : args[0]) - 1
     if(aksi === 'delanak'){
-      if(isNaN(no) || !user.kids[no]) return m.reply(`Contoh: *${usedPrefix}rpgpanel delanak @tag 1*`)
-      let namaA = user.kids[no].nama
-      user.kids.splice(no, 1)
+      if (!Number.isInteger(index) || index < 0 || !childList[index]) {
+        return m.reply(shelterTarget
+          ? `Contoh: *${usedPrefix}rpgpanel delanak @tag shelter 1*`
+          : `Contoh: *${usedPrefix}rpgpanel delanak @tag 1*`)
+      }
+      const namaA = childList[index].nama
+      childList.splice(index, 1)
       saveDB(wdb)
-      return m.reply(`✅ Hapus anak *${namaA}* dari @${who.split('@')[0]}`, null, {mentions: [who]})
+      return m.reply(`✅ Hapus anak *${namaA}*${shelterTarget ? ' dari shelter' : ''} milik @${who.split('@')[0]}`, null, {mentions: [who]})
     }
     if (aksi === 'setanak') {
-      const child = user.kids[no]
-      const fieldInput = args[1]?.toLowerCase()
-      const value = args.slice(2).join(' ').trim()
+      const argumentOffset = shelterTarget ? 1 : 0
+      const child = childList[index]
+      const fieldInput = args[argumentOffset + 1]?.toLowerCase()
+      const value = args.slice(argumentOffset + 2).join(' ').trim()
       const fieldAliases = {
         name: 'nama',
         gender: 'jenis',
@@ -2088,8 +2273,10 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       }
       const field = fieldAliases[fieldInput] || fieldInput
       const validFields = ['nama', 'jenis', 'umur', 'carecount', 'love', 'ortu', 'biologicalparents']
-      if (!Number.isInteger(no) || !child || !validFields.includes(field) || !value) {
-        return m.reply(`❌ Format: *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama|jenis|umur|carecount|love|ortu|biologicalparents> <nilai>*`)
+      if (!Number.isInteger(index) || index < 0 || !child || !validFields.includes(field) || !value) {
+        return m.reply(shelterTarget
+          ? `❌ Format: *${usedPrefix}rpgpanel setanak @tag shelter <no-anak> <nama|jenis|umur|carecount|love|ortu|biologicalparents> <nilai>*`
+          : `❌ Format: *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama|jenis|umur|carecount|love|ortu|biologicalparents> <nilai>*`)
       }
       if (field === 'nama' || field === 'ortu') {
         if (value.length > 60) return m.reply('❌ Nama maksimal 60 karakter.')

@@ -4,7 +4,8 @@ import { isPremiumUser } from './rpg-bank.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
-import { sendRpgButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -62,6 +63,8 @@ const money = value => `Rp ${Math.max(0, value).toLocaleString()}`
 const signedMoney = value => `${value >= 0 ? '+' : '-'}Rp ${Math.abs(Number(value) || 0).toLocaleString()}`
 const DAILY_LIMIT = 25
 const PREMIUM_DAILY_LIMIT = 50
+const CASINO_BLACKOUT_TARGET_COUNT = 5
+const CASINO_GUARD_CONFIRMATION_TTL = 5 * 60 * 1000
 const MAX_CASINO_SIMULATION_BET = 1_000_000_000_000
 const MIN_RANDOM_CASINO_SIMULATION_BET = 1_000_000_001
 const CASINO_IMAGE = 'https://c.termai.cc/i173/pemtc.jpg'
@@ -184,6 +187,43 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function casinoWeekKey(now = Date.now()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(now)
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  const localDate = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)))
+  const daysFromMonday = (localDate.getUTCDay() + 6) % 7
+  localDate.setUTCDate(localDate.getUTCDate() - daysFromMonday)
+  return localDate.toISOString().slice(0, 10)
+}
+
+function getBlackoutRecoveryAmount(blackout) {
+  const amount = Number(blackout?.amount) || 0
+  const recovered = Number(blackout?.guardRecovered || 0) + Number(blackout?.insuredRecovered || 0)
+  return Math.max(0, amount - recovered)
+}
+
+function getLatestRecoverableBlackout(user, weekKey = null) {
+  const blackouts = Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : []
+  return [...blackouts].reverse().find(blackout =>
+    (!weekKey || blackout.weekKey === weekKey) && getBlackoutRecoveryAmount(blackout) > 0
+  )
+}
+
+function makeBlackoutTargets() {
+  const availableNames = [...AUCTION_BIDDER_NAMES]
+  const targets = []
+  while (targets.length < CASINO_BLACKOUT_TARGET_COUNT && availableNames.length) {
+    const index = number(0, availableNames.length - 1)
+    targets.push(availableNames.splice(index, 1)[0])
+  }
+  return targets
+}
+
 const CASINO_OUTCOME_KEYS = ['wins', 'losses', 'jackpots', 'blackouts', 'payoutDenied', 'escapes', 'dealerMercies']
 
 function emptyCasinoOutcomes() {
@@ -220,6 +260,12 @@ function getCasinoStats(user) {
   user.casinoStats.profit = Number(user.casinoStats.profit || 0)
   user.casinoStats.dailyResults = normalizeCasinoOutcomes(user.casinoStats.dailyResults)
   user.casinoStats.dailyHistory = Array.isArray(user.casinoStats.dailyHistory) ? user.casinoStats.dailyHistory : []
+  const historyBlackouts = user.casinoStats.dailyHistory.filter(round => round?.outcome === '🌑 Blackout').length
+  const trackedBlackouts = Number(user.casinoStats.dailyResults.blackouts)
+  user.casinoStats.dailyResults.blackouts = Math.max(
+    Number.isFinite(trackedBlackouts) ? Math.floor(trackedBlackouts) : 0,
+    historyBlackouts
+  )
   if (!user.casinoStats.recordResults || typeof user.casinoStats.recordResults !== 'object') {
     const byGame = {}
     for (const [game, entry] of Object.entries(user.casinoStats.byGame)) {
@@ -435,9 +481,10 @@ function normalizeResult(result) {
   return result
 }
 
-function applyCasinoSpecialOutcome(result) {
-  if (!result.payoutDenied && Math.random() < 0.02) {
+function applyCasinoSpecialOutcome(result, allowBlackout = true) {
+  if (!result.payoutDenied && Math.random() < 0.02 && allowBlackout) {
     result.blackout = true
+    result.multiplier = 0
     result.text += '\n> ↳ 🌑 Blackout! Kamu pingsan dan uang taruhan dicuri.'
     return result
   }
@@ -531,6 +578,8 @@ function casinoCommands(prefix) {
     `> ↳ 📖 ${prefix}cs hasil`,
     `> ↳ 🗓️ ${prefix}cs history`,
     `> ↳ 🏆 ${prefix}cs record`,
+    `> ↳ 👮‍♀️ ${prefix}cs guard — cari pelaku blackout`,
+    `> ↳ 🛡️ ${prefix}cs guard protect — proteksi Premium`,
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 👤 ${prefix}casino profile`,
@@ -575,7 +624,9 @@ function casinoResults(prefix) {
     `🏃 *BERHASIL KABUR* / 🤝 *BANDAR BERBAIK HATI*\n` +
     `> ↳ Hasil game kalah, tetapi taruhan tidak berkurang.\n\n` +
     `🌑 *BLACKOUT*\n` +
-    `> ↳ Uang hilang hingga maksimal 2x taruhan, dibatasi saldo yang tersedia.\n\n` +
+    `> ↳ Uang hilang hingga maksimal 2x taruhan, dibatasi saldo yang tersedia. Maksimal satu blackout per pengguna per hari; kerugian ini tidak mengurangi profit casino.\n` +
+    `> ↳ ${prefix}cs guard menampilkan pelaku virtual dan mengirim Avelia Guard untuk memulihkan saldo.\n` +
+    `> ↳ Premium dapat mengklaim proteksi satu kali per minggu kalender; kesempatan direset setiap Senin.\n\n` +
     `🧪 *SIMULASI*\n` +
     `> ↳ ${prefix}cs sl <game/random> [nominal] menampilkan hasil virtual tanpa mengubah uang, cooldown, batas harian, atau statistik.\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -594,6 +645,9 @@ function casinoGuide(prefix) {
     `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game/random> [nominal] (alias: ${prefix}cs sl <game/random> [nominal]). Nominal acak selalu di atas Rp1 miliar; nominal pilihan maksimal Rp1 triliun.\n` +
     `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
     `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x.\n\n` +
+    `> ↳ Blackout memiliki peluang normal, tetapi maksimal hanya terjadi sekali per pengguna per hari.\n` +
+    `> ↳ Kerugian blackout hanya mengurangi saldo, bukan profit casino. Pulihkan melalui ${prefix}cs guard.\n` +
+    `> ↳ Premium dapat mengambil proteksi blackout sekali dalam minggu kalender melalui ${prefix}cs guard protect; kuota kembali setiap Senin.\n\n` +
     `> ↳ Casino room tidak terpengaruh batas/progres permainan reguler.\n\n` +
 
     `👥 *MULTIPLAYER*\n` +
@@ -1345,6 +1399,8 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
           ['🪪 Profil pemain', 'casino profile', 'Lihat perjalanan dan catatan permainanmu'],
           ['💹 Rekap keberuntungan', 'casino profit', 'Pantau hasil permainan secara ringkas'],
           ['🏆 Papan peringkat', 'casino top', 'Lihat para pemain paling beruntung'],
+          ['👮‍♀️ Avelia Guard', 'cs guard', 'Lacak pelaku virtual setelah blackout'],
+          ['🛡️ Proteksi Blackout', 'cs guard protect', 'Klaim perlindungan Premium mingguan'],
           ['⏳ Waktu bermain', 'casino cd', 'Periksa kapan kesempatan berikutnya tiba'],
           ['🧪 Coba simulasi', 'casino simulation', 'Kenali mekanisme tanpa mempertaruhkan saldo']
         ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
@@ -1380,7 +1436,7 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const casinoShutdown = isRpgEventActive('casino_shutdown')
-  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record']
+  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record', 'guard']
   const roomReadOnlyActions = ['info', 'games', 'guide']
   if (casinoShutdown && !readOnlyCasinoInputs.includes(input) &&
       !(input === 'room' && roomReadOnlyActions.includes(String(args[1] || '').toLowerCase()))) {
@@ -1388,7 +1444,7 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
   }
   const inCasinoRoom = getPlayerCasinoRoom(wdb, m.sender)
 
-  if (inCasinoRoom && input !== 'room' && !['hasil', 'history', 'record'].includes(input)) {
+  if (inCasinoRoom && input !== 'room' && !['hasil', 'history', 'record', 'guard'].includes(input)) {
     return m.reply(
       `╭─❏「 🚫 CASINO ROOM 」❏\n` +
       `│ 🔒 *Kamu sedang berada di room casino.*\n` +
@@ -1425,8 +1481,9 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
         `Contoh: *${usedPrefix}cs sl random 999999999999*`
       )
     }
-    const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
+      const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
     const balanceBefore = bet * number(5, 20)
+    let blackoutLoss = 0
     let payout = result.payoutDenied
       ? 0
       : result.multiplier > 0
@@ -1438,9 +1495,10 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
       net = 0
     } else if (result.blackout) {
       payout = 0
-      net = -Math.min(balanceBefore, bet * 2)
+      blackoutLoss = Math.min(balanceBefore, bet * 2)
+      net = 0
     }
-    const balanceAfter = balanceBefore + net
+    const balanceAfter = balanceBefore + net - blackoutLoss
     const status = result.blackout
       ? '🌑 *BLACKOUT*'
       : result.escaped
@@ -1454,7 +1512,7 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
               : result.multiplier > 0
                 ? '🎉 *MENANG*'
                 : '💀 *KALAH*'
-    const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
+    const dialog = pick(!result.blackout && (result.multiplier > 0 || result.dealerMercy || result.escaped) ? winDialogs : loseDialogs)
 return m.reply(
   `╭─❏「 🧪 ${games[game].name.toUpperCase()} 」❏\n` +
   `│ 🧪 *SIMULASI CASINO*\n` +
@@ -1464,7 +1522,7 @@ return m.reply(
   `> ↳ Status : ${status}\n` +
   `> ↳ Taruhan : ${money(bet)}\n` +
   `> ↳ Hadiah: ${money(payout)}\n` +
-  `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)}\n` : ''}` +
+  `${result.blackout ? `> ↳ Uang Hilang : ${money(blackoutLoss)}\n` : ''}` +
   `> ↳ Profit : ${signedMoney(net)}\n` +
   `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
   `> ↳ 💰 Saldo Sesudah : ${money(balanceAfter)}\n\n` +
@@ -1478,6 +1536,201 @@ return m.reply(
 
   const stats = getCasinoStats(user)
   const dailyLimit = getDailyLimit(m.sender, wdb)
+  if (input === 'guard') {
+    const action = String(args[1] || '').toLowerCase()
+
+    if (action === 'cancel') {
+      delete user.casinoGuardPending
+      saveDB(wdb)
+      return m.reply('↩️ Aksi dibatalkan. Saldo dan perlindunganmu tidak berubah.')
+    }
+
+    if (action === 'protect' && ['no', 'cancel'].includes(String(args[2] || '').toLowerCase())) {
+      return m.reply('↩️ Proteksi disimpan untuk nanti. Kesempatan minggu ini tetap tersedia.')
+    }
+
+    if (action === 'target' || action === 'choose') {
+      const blackout = getLatestRecoverableBlackout(user)
+      const targetIndex = Number(args[2]) - 1
+      const target = blackout?.targets?.[targetIndex]
+      if (!blackout || !target) {
+        return m.reply(`❌ Target tidak tersedia. Buka daftar terbaru dengan *${usedPrefix}cs guard list*.`)
+      }
+
+      user.casinoGuardPending = { blackoutId: blackout.id, target, at: Date.now() }
+      saveDB(wdb)
+      return sendRpgConfirmButtons(conn, m, {
+        text: `╭─❏「 👮‍♀️ AVELIA GUARD 」❏\n` +
+          `│ 🎯 TARGET TERPILIH: *${target}*\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Avelia Guard siap menelusuri jejak pelaku ini dan mengamankan kembali *${money(getBlackoutRecoveryAmount(blackout))}*.\n\n` +
+          `> ↳ Konfirmasi untuk mengirim tim pengamanan.\n` +
+          `> ↳ Permintaan berlaku selama 5 menit.\n\n` +
+          `─━━━━━━━━━━━━━━─`,
+        title: '🛡️ KONFIRMASI PENGAMANAN',
+        subtitle: 'Pastikan target sudah sesuai',
+        acceptText: '👮‍♀️ Panggil Avelia Guard',
+        acceptCommand: `${usedPrefix}cs guard confirm`,
+        cancelText: '↩️ Pilih Nanti',
+        cancelCommand: `${usedPrefix}cs guard cancel`,
+        noThumbnail: true
+      })
+    }
+
+    if (action === 'confirm') {
+      const pending = user.casinoGuardPending
+      if (!pending || Date.now() - Number(pending.at || 0) > CASINO_GUARD_CONFIRMATION_TTL) {
+        delete user.casinoGuardPending
+        saveDB(wdb)
+        return m.reply(`⌛ Konfirmasi Avelia Guard sudah tidak berlaku. Pilih target lagi melalui *${usedPrefix}cs guard list*.`)
+      }
+
+      const blackout = (Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : [])
+        .find(entry => entry.id === pending.blackoutId)
+      const amount = getBlackoutRecoveryAmount(blackout)
+      const balance = Number(wdb.money[m.sender] || 0)
+      if (!blackout || !blackout.targets?.includes(pending.target) || amount <= 0) {
+        delete user.casinoGuardPending
+        saveDB(wdb)
+        return m.reply('ℹ️ Kasus ini sudah ditutup. Tidak ada uang yang perlu diamankan.')
+      }
+      if (!Number.isSafeInteger(balance + amount)) {
+        return m.reply('❌ Saldo hasil pemulihan melewati batas aman pencatatan. Hubungi admin sebelum melanjutkan.')
+      }
+
+      wdb.money[m.sender] = balance + amount
+      blackout.guardRecovered = Number(blackout.guardRecovered || 0) + amount
+      blackout.guardTarget = pending.target
+      blackout.guardResolvedAt = Date.now()
+      delete user.casinoGuardPending
+      saveDB(wdb)
+      const guardStories = [
+        `Avelia Guard membuntuti ${pending.target} hingga ke lorong belakang casino. Uangmu berhasil diamankan kembali.`,
+        `Jejak transaksi mengarah ke ${pending.target}. Tim Avelia bergerak cepat dan membawa pulang seluruh uangmu.`,
+        `${pending.target} tertangkap saat mencoba meninggalkan area. Avelia Guard memastikan uangmu kembali utuh.`,
+        `Dengan bantuan saksi dan rekaman casino, Avelia Guard menemukan ${pending.target}. Kasus selesai—uangmu aman.`,
+        `Operasi pengamanan berhasil! ${pending.target} menyerahkan uang yang dibawanya setelah dikepung tim Avelia.`
+      ]
+      return m.reply(
+        `╭─❏「 ✅ KASUS DIAMANKAN 」❏\n` +
+        `│ 👮‍♀️ AVELIA GUARD BERHASIL\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📖 *OPERASI*\n` +
+        `> ↳ ${pick(guardStories)}\n\n` +
+        `💰 *PEMULIHAN*\n` +
+        `> ↳ Target: ${pending.target}\n` +
+        `> ↳ Uang kembali: ${money(amount)}\n` +
+        `> ↳ Profit casino tidak berubah; saldo saja yang dipulihkan.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    if (action === 'protect') {
+      if (!isPremiumUser(m.sender, wdb)) {
+        return m.reply(`🛡️ Proteksi Blackout tersedia khusus Premium. Avelia Guard tetap bisa dipanggil melalui *${usedPrefix}cs guard list*.`)
+      }
+      const weekKey = casinoWeekKey()
+      if (user.casinoBlackoutProtectionWeek === weekKey) {
+        return m.reply(`🛡️ Proteksi minggu ini sudah digunakan. Kesempatan berikutnya terbuka lagi pada hari Senin.`)
+      }
+      const blackout = getLatestRecoverableBlackout(user, weekKey)
+      const amount = getBlackoutRecoveryAmount(blackout)
+      if (!blackout || amount <= 0) {
+        return m.reply(`🛡️ Belum ada kerugian blackout yang bisa diproteksi minggu ini. Proteksi direset otomatis setiap Senin.`)
+      }
+      if (['yes', 'confirm', 'ambil'].includes(String(args[2] || '').toLowerCase())) {
+        const balance = Number(wdb.money[m.sender] || 0)
+        if (!Number.isSafeInteger(balance + amount)) {
+          return m.reply('❌ Saldo hasil perlindungan melewati batas aman pencatatan. Hubungi admin sebelum melanjutkan.')
+        }
+        wdb.money[m.sender] = balance + amount
+        blackout.insuredRecovered = Number(blackout.insuredRecovered || 0) + amount
+        user.casinoBlackoutProtectionWeek = weekKey
+        saveDB(wdb)
+        return m.reply(
+          `╭─❏「 🛡️ PROTEKSI BLACKOUT 」❏\n` +
+          `│ KLAIM PERLINDUNGAN BERHASIL\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Dana yang diproteksi: ${money(amount)}\n` +
+          `> ↳ Kesempatan berikutnya: Senin mendatang\n` +
+          `> ↳ Profit casino tidak berubah; saldo saja yang dipulihkan.\n\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
+      }
+      return sendRpgConfirmButtons(conn, m, {
+        text: `╭─❏「 🛡️ ASURANSI BLACKOUT 」❏\n` +
+          `│ PROTEKSI PREMIUM MINGGU INI\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Kamu dapat mengambil kembali *${money(amount)}* dari kerugian blackout.\n\n` +
+          `> ↳ Bisa diklaim satu kali dalam minggu kalender.\n` +
+          `> ↳ Kesempatan direset setiap Senin, bukan dihitung 7 hari.\n` +
+          `> ↳ Klaim ini tidak mengubah profit casino.\n\n` +
+          `─━━━━━━━━━━━━━━─`,
+        title: '🛡️ PERLINDUNGAN PREMIUM',
+        subtitle: 'Satu klaim tersedia hingga Senin',
+        acceptText: '💰 Ambil Dana Proteksi',
+        acceptCommand: `${usedPrefix}cs guard protect yes`,
+        cancelText: '↩️ Simpan Proteksi',
+        cancelCommand: `${usedPrefix}cs guard protect no`,
+        noThumbnail: true
+      })
+    }
+
+    if (action && action !== 'list') {
+      return m.reply(`❌ Pilihan tidak dikenal. Gunakan *${usedPrefix}cs guard* atau *${usedPrefix}cs guard protect*.`)
+    }
+
+    const blackout = getLatestRecoverableBlackout(user)
+    if (!blackout) {
+      return m.reply(
+        `╭─❏「 👮‍♀️ AVELIA GUARD 」❏\n` +
+        `│ TIDAK ADA KASUS BLACKOUT AKTIF\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Saat terjadi blackout, daftar pelaku virtual akan muncul di sini.\n` +
+        `> ↳ Premium: klaim proteksi tersedia satu kali per minggu kalender.\n` +
+        `> ↳ Reset proteksi: setiap Senin.\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    const remaining = getBlackoutRecoveryAmount(blackout)
+    const rows = blackout.targets.map((target, index) => ({
+      title: `${index + 1}. ${target}`,
+      description: 'Pelaku virtual — pilih untuk meminta Avelia Guard menyelidiki',
+      id: `${usedPrefix}cs guard target ${index + 1}`
+    }))
+    const protectionAvailable = isPremiumUser(m.sender, wdb) &&
+      user.casinoBlackoutProtectionWeek !== casinoWeekKey() &&
+      blackout.weekKey === casinoWeekKey()
+    const fallbackText = `╭─❏「 👮‍♀️ AVELIA GUARD 」❏\n` +
+      `│ DAFTAR PELAKU VIRTUAL\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${blackout.targets.map((target, index) => `> ↳ ${index + 1}. ${target} — ${usedPrefix}cs guard target ${index + 1}`).join('\n')}\n\n` +
+      `Pilih target agar Avelia Guard mengamankan kembali ${money(remaining)}.\n` +
+      `${protectionAvailable ? `Proteksi Premium tersedia: ${usedPrefix}cs guard protect\n` : ''}` +
+      `─━━━━━━━━━━━━━━─`
+    const menuSections = [{
+      title: 'Pilih satu target',
+      rows
+    }]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '👮‍♀️ DAFTAR KASUS BLACKOUT',
+      subtitle: `Dana yang belum kembali: ${money(remaining)}`,
+      text: `Avelia Guard sedang melacak pelaku virtual. Pilih satu nama untuk memulai penyelidikan.\n\n` +
+        `> ↳ Profit casino tidak terpengaruh oleh blackout.\n` +
+        `> ↳ ${isPremiumUser(m.sender, wdb)
+          ? `Proteksi Premium: ${usedPrefix}cs guard protect (klaim 1x/minggu, reset Senin).`
+          : 'Proteksi asuransi tersedia untuk pengguna Premium.'}`,
+      buttonText: '👮‍♀️ PILIH PELAKU',
+      sections: menuSections,
+      fallbackText,
+      noThumbnail: true,
+      reply: fallback => m.reply(fallback)
+    })
+  }
 
   if (input === 'history') {
     return sendRpgQuickButton(conn, m, {
@@ -1596,7 +1849,7 @@ return m.reply(
 const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
 const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : Number(betInput)
 
-if (!Number.isInteger(bet) || bet < games[game].minBet) {
+if (!Number.isSafeInteger(bet) || bet < games[game].minBet) {
   return m.reply(
     `╭─❏「 ❌ TARUHAN 」❏\n` +
     `│ ❌ *Taruhan tidak valid.*\n` +
@@ -1631,13 +1884,17 @@ if (elapsed < cooldownDuration) {
   )
 }
 
-  const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
+  const result = applyCasinoSpecialOutcome(
+    normalizeResult(resultFor(game)),
+    stats.dailyResults.blackouts === 0
+  )
   const safetyNet = isRpgEventActive('safety_net')
   if (safetyNet && result.multiplier > 0 && Math.random() < 0.5) {
     result.multiplier = 0
     result.text += '\n🛡️ Safety Net mengurangi peluang kemenangan selama event.'
   }
-  const balanceBefore = wdb.money[m.sender] || 0
+  const balanceBefore = Number(wdb.money[m.sender]) || 0
+  let blackoutLoss = 0
   const winFactor = (isRpgEventActive('golden_hour') ? 1.2 : 1) *
     (isRpgEventActive('low_stakes') ? 0.5 : 1)
   let payout = result.payoutDenied
@@ -1656,7 +1913,8 @@ if (elapsed < cooldownDuration) {
     net = 0
   } else if (result.blackout) {
     payout = 0
-    net = -Math.min(balanceBefore, bet * 2)
+    blackoutLoss = Math.min(balanceBefore, bet * 2)
+    net = 0
   }
   if (safetyNet && net < 0 && !result.blackout) {
     payout = bet
@@ -1676,7 +1934,7 @@ if (elapsed < cooldownDuration) {
   }
   net += cashback
 
-  wdb.money[m.sender] = balanceBefore + net
+  wdb.money[m.sender] = balanceBefore + net - blackoutLoss
   cooldowns[game] = Date.now()
   user.casinoCooldownDurations = user.casinoCooldownDurations || {}
   user.casinoCooldownDurations[game] = getGameCooldownDuration(game, result.multiplier, user)
@@ -1687,7 +1945,7 @@ if (elapsed < cooldownDuration) {
   stats.byGame[game].games++
   stats.byGame[game].profit = Number(stats.byGame[game].profit || 0) + net
 
-  if (result.multiplier > 0) {
+  if (result.multiplier > 0 && !result.blackout) {
     stats.wins++
     stats.byGame[game].wins++
   }
@@ -1717,8 +1975,23 @@ if (elapsed < cooldownDuration) {
   })
   stats.dailyHistory = stats.dailyHistory.slice(-PREMIUM_DAILY_LIMIT)
   wdb.casinoStats = wdb.casinoStats || { totalWinnings: 0 }
-  if (result.multiplier > 0 && !result.payoutDenied) {
+  if (result.multiplier > 0 && !result.payoutDenied && !result.blackout) {
     wdb.casinoStats.totalWinnings = Number(wdb.casinoStats.totalWinnings || 0) + payout
+  }
+
+  if (result.blackout) {
+    const now = Date.now()
+    user.casinoBlackouts = Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : []
+    user.casinoBlackouts.push({
+      id: `${now}-${cryptoRandomInt(0, 1_000_000)}`,
+      date: stats.dailyDate,
+      weekKey: casinoWeekKey(now),
+      amount: blackoutLoss,
+      targets: makeBlackoutTargets(),
+      createdAt: now,
+      guardRecovered: 0,
+      insuredRecovered: 0
+    })
   }
 
   user.casinoReplay = { bet }
@@ -1737,7 +2010,45 @@ if (elapsed < cooldownDuration) {
       : result.multiplier > 0
         ? `🎉 *MENANG*`
         : `💀 *KALAH*`
-  const dialog = pick(result.multiplier > 0 || result.dealerMercy || result.escaped ? winDialogs : loseDialogs)
+  const dialog = pick(!result.blackout && (result.multiplier > 0 || result.dealerMercy || result.escaped) ? winDialogs : loseDialogs)
+
+if (result.blackout) {
+  const blackoutButtons = [
+    ['👮‍♀️ Panggil Avelia Guard', `${usedPrefix}cs guard`],
+    ...(isPremiumUser(m.sender, wdb)
+      ? [['🛡️ Proteksi Premium', `${usedPrefix}cs guard protect`]]
+      : []),
+    ['🎲 Main Lagi', `${usedPrefix}casino retry`]
+  ]
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🌑 BLACKOUT — PILIH LANGKAH',
+    subtitle: 'Dana hilang, profit casino tetap aman',
+    footer: 'AVELIA • RPG CASINO',
+    text: `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
+      `│ 🎲 *HASIL PERMAINAN*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${result.text}\n\n` +
+      `🎲 *HASIL*\n` +
+      `> ↳ Status : ${status}\n` +
+      `> ↳ Taruhan : ${money(bet)}\n` +
+      `> ↳ Hadiah : ${money(payout)}\n` +
+      `> ↳ Uang Hilang : ${money(blackoutLoss)}\n` +
+      `> ↳ Profit : ${signedMoney(net)}\n` +
+      `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
+      `> ↳ 💰 Saldo Sesudah : ${money(wdb.money[m.sender])}\n\n` +
+      `💬 *Dialog*\n` +
+      `> ↳ "${dialog}"\n\n` +
+      `👮‍♀️ Kerugian blackout tidak masuk ke profit casino. Avelia Guard dapat membantu mengambilnya kembali.\n` +
+      `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`,
+    buttons: blackoutButtons,
+    noThumbnail: true,
+    classicOnly: true,
+    reply: fallbackText => m.reply(fallbackText)
+  })
+}
 
 return sendRpgQuickButton(conn, m, {
   text: `╭─❏「 ${games[game].emoji} ${games[game].name.toUpperCase()} 」❏\n` +
@@ -1748,7 +2059,7 @@ return sendRpgQuickButton(conn, m, {
   `> ↳ Status : ${status}\n` +
   `> ↳ Taruhan : ${money(bet)}\n` +
   `> ↳ Hadiah : ${money(payout)}\n` +
-  `${result.blackout ? `> ↳ Uang Hilang : ${money(-net)}\n` : ''}` +
+  `${result.blackout ? `> ↳ Uang Hilang : ${money(blackoutLoss)}\n` : ''}` +
   `> ↳ Profit : ${signedMoney(net)}\n` +
   `${cashback ? `> ↳ Cashback Hour : +${money(cashback)}\n` : ''}` +
   `> ↳ 💰 Saldo Sebelum : ${money(balanceBefore)}\n` +
@@ -1778,6 +2089,10 @@ handler.help = [
   'cs hasil',
   'cs history',
   'cs record',
+  'cs guard',
+  'cs guard list',
+  'cs guard target <nomor>',
+  'cs guard protect',
   'casino top',
   'casino profile',
   'casino nickname <julukan>',

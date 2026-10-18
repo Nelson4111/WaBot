@@ -21,7 +21,7 @@ const CORE_COMMANDS = [
   ['.mall', 'Membeli dan menjual barang di Mall'],
   ['.home', 'Mengatur dan mengunjungi rumah pemain'],
   ['.cl', 'Mengelola koleksi dan showcase'],
-  ['.jarah / .culik', 'Melakukan aksi kriminal dengan risiko buronan dan penjara'],
+  ['.jarah / .culik', 'Melakukan aksi kriminal dengan risiko poin kriminal dan penjara'],
   ['.lottery', 'Menu lottery harian'],
   ['.lottery command', 'Melihat command lottery'],
   ['.lottery guide', 'Panduan lottery'],
@@ -41,7 +41,7 @@ const CORE_COMMANDS = [
   ['.liveyt', 'Mulai live streaming channel'],
   ['.topyt', 'Melihat ranking channel YouTube'],
   ['.kolab', 'Kolaborasi channel YouTube'],
-  ['.buronan', 'Jumlah, daftar, detail, info, dan patroli buronan'],
+  ['.kriminal', 'Jumlah kriminal aktif, daftar, top riwayat, detail, info, dan patroli kriminal'],
   ['.guide', 'Membuka panduan detail RPG']
 ]
 
@@ -62,7 +62,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Cari material dan ore lewat *.mining*.\n` +
       `> ↳ Lawan monster dan dapatkan reward lewat *.dungeon*.\n` +
       `> ↳ Ikuti lima arena: jambak, panco, dance, tampar, dan tinju.\n` +
-      `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, jarah, culik, bunuh, dan fitnah dengan risiko buronan serta penjara.\n\n` +
+      `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, jarah, culik, bunuh, dan fitnah dengan risiko poin kriminal serta penjara.\n\n` +
       `💰 *EKONOMI & ITEM*\n` +
       `> ↳ Dapatkan uang dari daily, kerja, adventure, dungeon, toko, dan aktivitas lainnya.\n` +
       `> ↳ Beli atau jual material, equipment, hasil panen, ikan, masakan, dan item adventure.\n` +
