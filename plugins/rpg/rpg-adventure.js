@@ -43,6 +43,7 @@ let rare = ['diamond', 'koin_emas', 'ramuan_besar', 'pedang_baja', 'armor_kulit'
 let uncommon = ['koin_perak', 'ramuan_sedang', 'belati_karat', 'perisai_kayu', 'ion_crystal', 'meteor_pearl', 'orbiting_seed'];
 let common = ['kayu', 'koin_tembaga', 'ramuan_kecil', 'tali'];
 let trash = ['tulang', 'batu', 'jamur', 'daun_kering', 'kain_lusuh', 'nebula_dust', 'lunar_alloy', 'comet_ice', 'starwood', 'stellar_credit'];
+export const adventureItemKeys = new Set([...secret, ...mythic, ...legendary, ...epic, ...rare, ...uncommon, ...common, ...trash])
 
 const tierInfo = {
   SECRET: {icon:'🔮', stars:'★★★★★★★'}, MYTHIC: {icon:'🌌', stars:'★★★★★★☆'},
@@ -207,44 +208,43 @@ let handler = async (m, { conn, command, usedPrefix }) => {
 
   await saveDB(wdb)
 
-  let cap = `╭─❏「 🗺️ ADVENTURE 」❏\n`
+  let cap = `╭─❏「 🗺️ AVELIA MAP 」❏\n`
 cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 if (expeditionFailed) cap += `> ↳ 🌪️ Ekspedisi gagal; tidak ada loot yang didapat.\n`
-cap += `> ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
+cap += `> ↳ ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
 
 cap += `🎒 *HASIL PENJELAJAHAN x${jumlahLoot}*\n`
-cap += `> ↳ Item yang ditemukan selama adventure.\n`
-
 for (let item in hasilLoot) {
-cap += `> ${formatNama(item)} ×${hasilLoot[item].toLocaleString()}\n`
+cap += `> ↳ ${formatNama(item)} ×${hasilLoot[item].toLocaleString()}\n`
 }
+cap += `> ↳ Kayu ×${baseWood + Math.floor(pickLvl / 3)}\n`
+cap += `> ↳ Iron ×${baseIron + Math.floor(pickLvl / 4)}\n`
+cap += `> ↳ Money +Rp ${money.toLocaleString()}\n`
+cap += `> ↳ XP +${totalExp}\n`
 
 cap += `\n─━━━━━━━━━━━━━━─\n`
-cap += `🪵 *Kayu* +${baseWood + Math.floor(pickLvl / 3)}\n`
-cap += `⛓️ *Iron* +${baseIron + Math.floor(pickLvl / 4)}\n`
-cap += `💰 *Money* +Rp ${money.toLocaleString()}\n`
-cap += `🌟 *XP* +${totalExp}\n`
-
-cap += `\n─━━━━━━━━━━━━━━─\n`
-cap += `❤️ *Sisa Darah:* ${user.darah}\n`
-if (revivedHP) cap += `♻️ *Phoenix bangkit kembali* dengan ${revivedHP} HP.\n`
-if (deathProtected) cap += `🛡️ *Premium Protection* mencegah kematian dan menyisakan 1 HP. Proteksi kematian cooldown 5 jam.\n`
-cap += `🗺️ *Adventure Level:* Lv.${user.adventureLevel}\n`
-cap += `⚔️ *Sword Level:* Lv.${swordLvl}\n`
-cap += `⛏️ *Pickaxe Level:* Lv.${pickLvl}\n`
+cap += `📊 *STATUS PETUALANGAN*\n`
+cap += `> ↳ ❤️ Sisa Darah: ${user.darah}\n`
+if (revivedHP) cap += `> ↳ ♻️ Phoenix bangkit kembali dengan ${revivedHP} HP.\n`
+if (deathProtected) cap += `> ↳ 🛡️ Premium Protection mencegah kematian dan menyisakan 1 HP. Proteksi kematian cooldown 5 jam.\n`
+cap += `> ↳ 🗺️ Adventure Level: Lv.${user.adventureLevel}\n`
+cap += `> ↳ ⚔️ Sword Level: Lv.${swordLvl}\n`
+cap += `> ↳ ⛏️ Pickaxe Level: Lv.${pickLvl}\n`
 
 if (bonus > 0) {
-  cap += `🍀 *Bonus:* +${bonus.toFixed(1)}%\n`
+  cap += `> ↳ 🍀 Bonus: +${bonus.toFixed(1)}%\n`
 }
 
 cap += levelUpMsg
 
+await sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i166/r7V1')
+
   if (user.darah <= 0 && !revivedHP && !deathProtected) {
     return sendRpgButtons(conn, {
       chat: m.chat,
-      text: cap,
+      text: 'Hasil adventure sudah tersimpan. Cek tas atau pulihkan diri untuk melanjutkan.',
       title: '🗺️ HASIL ADVENTURE',
       subtitle: 'Loot tersimpan di tas, pulihkan diri untuk lanjut',
       buttons: [
@@ -257,7 +257,7 @@ cap += levelUpMsg
   }
   return sendRpgButtons(conn, {
     chat: m.chat,
-    text: cap,
+    text: 'Hasil adventure sudah tersimpan. Buka tas untuk melihat koleksimu.',
     title: '🗺️ HASIL ADVENTURE',
     subtitle: 'Loot petualangan sudah tersimpan di tasmu',
     buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],

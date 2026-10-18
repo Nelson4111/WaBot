@@ -1686,8 +1686,8 @@ return m.reply(
         `╭─❏「 👮‍♀️ AVELIA GUARD 」❏\n` +
         `│ TIDAK ADA KASUS BLACKOUT AKTIF\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Saat terjadi blackout, daftar pelaku virtual akan muncul di sini.\n` +
-        `> ↳ Premium: klaim proteksi tersedia satu kali per minggu kalender.\n` +
+        `Saat terjadi blackout, daftar pelaku akan muncul di sini.\n` +
+        `> ↳ Premium: x1 per minggu.\n` +
         `> ↳ Reset proteksi: setiap Senin.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
@@ -1696,14 +1696,14 @@ return m.reply(
     const remaining = getBlackoutRecoveryAmount(blackout)
     const rows = blackout.targets.map((target, index) => ({
       title: `${index + 1}. ${target}`,
-      description: 'Pelaku virtual — pilih untuk meminta Avelia Guard menyelidiki',
+      description: 'Pelaku — pilih untuk meminta Avelia Guard menyelidiki',
       id: `${usedPrefix}cs guard target ${index + 1}`
     }))
     const protectionAvailable = isPremiumUser(m.sender, wdb) &&
       user.casinoBlackoutProtectionWeek !== casinoWeekKey() &&
       blackout.weekKey === casinoWeekKey()
     const fallbackText = `╭─❏「 👮‍♀️ AVELIA GUARD 」❏\n` +
-      `│ DAFTAR PELAKU VIRTUAL\n` +
+      `│ DAFTAR PELAKU \n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${blackout.targets.map((target, index) => `> ↳ ${index + 1}. ${target} — ${usedPrefix}cs guard target ${index + 1}`).join('\n')}\n\n` +
       `Pilih target agar Avelia Guard mengamankan kembali ${money(remaining)}.\n` +

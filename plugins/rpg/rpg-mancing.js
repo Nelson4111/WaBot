@@ -1,5 +1,6 @@
 import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
+import { generateFishingCard } from '../../lib/cardGenerator.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
@@ -240,11 +241,11 @@ let handler = async (m, { conn, usedPrefix }) => {
     TRASH: { stars: '☆☆☆☆☆☆☆', icon: '🗑️' }
   }
 
-  let caption = `╭─❏「 🎣 FISHING RESULT 」❏\n`
+  let caption = `╭─❏「 🎣 AVELIA LAKE 」❏\n`
 caption += `│ 🐟 *HASIL MEMANCING*\n`
 caption += `╰─━━━━━━━━━━━━━━─\n\n`
 
-caption += `> ${tierData[highest].stars} ${highest} ${tierData[highest].icon}\n\n`
+caption += `> ↳ ${tierData[highest].stars} ${highest} ${tierData[highest].icon}\n\n`
 
 caption += `🏆 *HASIL TANGKAPAN*\n`
 const fishCounts = new Map()
@@ -253,25 +254,55 @@ for (const item of draws) {
   fishCounts.set(fishKey, (fishCounts.get(fishKey) || 0) + 1)
 }
 for (const [fish, quantity] of fishCounts) {
-  caption += `> ${formatNama(fish)} ×${quantity}\n`
+  caption += `> ↳ ${formatNama(fish)} ×${quantity}\n`
 }
 caption += `\n`
 
 caption += `─━━━━━━━━━━━━━━─\n\n`
 
 caption += `✨ *HASIL PENGALAMAN*\n`
-caption += `> ✨ XP Didapat: +${totalExp}\n`
-caption += `> 🎣 Level Pancingan: Lv.${rodLvl}\n`
-if(bonus > 0) caption += `> 🍀 Bonus Rod: +${bonus.toFixed(1)}%\n`
-if(getBloodlineBuff(user, 'fishingRarity') > 0) caption += `> 🧬 Efek Bloodline: peluang tier tinggi +${getBloodlineBuff(user, 'fishingRarity') * 100}%\n`
+caption += `> ↳ ✨ XP Didapat: +${totalExp}\n`
+caption += `> ↳ 🎣 Level Pancingan: Lv.${rodLvl}\n`
+if(bonus > 0) caption += `> ↳ 🍀 Bonus Rod: +${bonus.toFixed(1)}%\n`
+if(getBloodlineBuff(user, 'fishingRarity') > 0) caption += `> ↳ 🧬 Efek Bloodline: peluang tier tinggi +${getBloodlineBuff(user, 'fishingRarity') * 100}%\n`
 
 caption += `\n─━━━━━━━━━━━━━━─`
 
+  let pp = 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg'
+  try { pp = await conn.profilePictureUrl(m.sender, 'image') } catch {}
+  const sendButtons = () => sendRpgButtons(conn, {
+    chat: m.chat,
+    text: 'Hasil tangkapan sudah tersimpan. Buka aquarium untuk melihat koleksimu.',
+    title: '🎣 HASIL MEMANCING',
+    subtitle: 'Koleksi ikanmu menunggu untuk dilihat',
+    buttons: [['🐠 Buka Aquarium', `${usedPrefix || '.'}aquarium`]],
+    quoted: m,
+    noThumbnail: true,
+    reply: fallbackText => m.reply(fallbackText)
+  })
+  try {
+    const firstFish = draws[0]?.ikan || ''
+    const cardBuf = await generateFishingCard({
+      avatarUrl: pp,
+      username: conn.getName(m.sender) || m.pushName || 'Player',
+      ikan: `${ikanEmoji[firstFish] || '🐟'} ${formatNama(firstFish)}`,
+      exp: totalExp,
+      rodLevel: rodLvl,
+      tier: highest
+    })
+    if (cardBuf) {
+      await conn.sendMessage(m.chat, { image: cardBuf, caption, mentions: [m.sender] }, { quoted: m })
+      return sendButtons()
+    }
+  } catch (e) {
+    console.error('[FishingCard] Error:', e.message)
+  }
+  await sendRpgMsg(conn, m, caption, pp)
   return sendRpgButtons(conn, {
     chat: m.chat,
-    text: caption,
+    text: 'Hasil tangkapan sudah tersimpan. Buka aquarium untuk melihat koleksimu.',
     title: '🎣 HASIL MEMANCING',
-    subtitle: 'Hasil tangkapan tersimpan di aquarium',
+    subtitle: 'Koleksi ikanmu menunggu untuk dilihat',
     buttons: [['🐠 Buka Aquarium', `${usedPrefix || '.'}aquarium`]],
     quoted: m,
     noThumbnail: true,
