@@ -101,12 +101,15 @@ const handler = async (m, { usedPrefix }) => {
     addCooldown(activeCooldowns, 'Daily', account.lastDaily, dailyDuration)
   }
   const appliedJobs = Array.isArray(user.appliedJobs) ? user.appliedJobs : []
+  const activeJobs = Array.isArray(user.activeJobNames)
+    ? user.activeJobNames
+    : [user.currentJobName].filter(jobName => appliedJobs.includes(jobName))
   const jobReadyAt = user.jobWorkCooldowns && typeof user.jobWorkCooldowns === 'object'
     ? user.jobWorkCooldowns
     : null
   let jobCooldownRemaining = []
   if (jobReadyAt) {
-    jobCooldownRemaining = appliedJobs
+    jobCooldownRemaining = activeJobs
       .map(jobName => Math.max(0, (Number(jobReadyAt[jobName]) || 0) - now))
       .filter(remaining => remaining > 0)
   } else if (Number(user.lastkerja)) {
