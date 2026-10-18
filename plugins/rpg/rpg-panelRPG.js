@@ -244,19 +244,19 @@ let handler = async (m, {
   let rawArgs = (text || '').trim().split(/\s+/).filter(Boolean)
   let aksi = rawArgs[0]?.toLowerCase()
   let remaining = rawArgs.slice(1)
-  wdb.rpgPanelConfirmations = wdb.rpgPanelConfirmations || {}
+  const panelConfirmations = wdb.data.rpgPanelConfirmations || (wdb.data.rpgPanelConfirmations = {})
 
   const now = Date.now()
-  for (const [token, pending] of Object.entries(wdb.rpgPanelConfirmations)) {
+  for (const [token, pending] of Object.entries(panelConfirmations)) {
     if (!pending || now - Number(pending.createdAt) > RPG_CONFIRMATION_TTL) {
-      delete wdb.rpgPanelConfirmations[token]
+      delete panelConfirmations[token]
     }
   }
 
   if (aksi === 'confirm') {
     const token = String(rawArgs[1] || '')
     const decision = String(rawArgs[2] || '').toLowerCase()
-    const pending = wdb.rpgPanelConfirmations[token]
+    const pending = panelConfirmations[token]
     if (!pending) {
       return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
     }
@@ -264,14 +264,14 @@ let handler = async (m, {
       return m.reply('🔒 Tombol konfirmasi ini hanya dapat digunakan oleh pemilik permintaan di chat asal.')
     }
     if (now - Number(pending.createdAt) > RPG_CONFIRMATION_TTL) {
-      delete wdb.rpgPanelConfirmations[token]
+      delete panelConfirmations[token]
       await saveDB(wdb)
       return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
     }
     if (!['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(decision)) {
       return m.reply(`Pilih tombol konfirmasi atau pembatalan untuk melanjutkan.`)
     }
-    delete wdb.rpgPanelConfirmations[token]
+    delete panelConfirmations[token]
     await saveDB(wdb)
     if (['tidak', 'no', 'batal', 'cancel'].includes(decision)) {
       return m.reply('✅ Aksi RPG Panel dibatalkan; data tidak diubah.')
@@ -322,7 +322,7 @@ let handler = async (m, {
     const privateConfirmationTarget = isPrivateRpgPanel
       ? (conn.decodeJid ? conn.decodeJid(sourceMessage.sender) : sourceMessage.sender)
       : m.chat
-    wdb.rpgPanelConfirmations[token] = {
+    panelConfirmations[token] = {
       owner: m.sender,
       chat: privateConfirmationTarget,
       text,
