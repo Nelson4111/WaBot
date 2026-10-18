@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { sendDualGroupMessage } from '../../lib/dual-group-message.js';
 import { status, toSmallNum } from '../../lib/style.js';
 
 // Konfigurasi Peta Tangga & Ular Sesuai Papan Ilustrasi HD Asli (media/ulartangga_board.jpg)
@@ -279,8 +278,9 @@ function resetAfkTimeout(conn, chatId) {
     }, 90000);
 }
 
-// Mengirim pesan giliran dengan arsitektur Dual-Message & format Zen Shinto
-async function sendTurnMessage(conn, m, room, promptText = '') {
+// Mengirim pesan giliran 1 pesan terpadu (Gambar Papan HD + Status Zen Shinto + Tombol Interaktif)
+async function sendTurnMessage(conn, m, room, promptText = '', boardBuffer = null) {
+    const chatId = m.chat;
     const currentPlayer = room.players[room.turn];
     const isBot = currentPlayer === 'BOT';
     const playerNumber = currentPlayer.split('@')[0];
@@ -288,6 +288,18 @@ async function sendTurnMessage(conn, m, room, promptText = '') {
     const p2Number = room.players[1] === 'BOT' ? 'Bot AI' : room.players[1].split('@')[0];
     const p1Pos = room.positions[room.players[0]] || 1;
     const p2Pos = room.positions[room.players[1]] || 1;
+
+    // Hapus pesan bot sebelumnya agar ruang obrolan bersih & hemat memori HP
+    await deletePreviousMessages(conn, chatId, room);
+
+    // Siapkan buffer gambar papan jika belum ada
+    if (!boardBuffer) {
+        try {
+            boardBuffer = await renderBoard(room);
+        } catch (err) {
+            console.warn('[ULAR TANGGA] Failed to render board:', err?.message);
+        }
+    }
 
     let baseCard = `*──  ୨୧ ✧ ULAR TANGGA ✧ ୨୧  ──*\n\n`;
     if (promptText) {
@@ -298,78 +310,78 @@ async function sendTurnMessage(conn, m, room, promptText = '') {
     baseCard += `*┆* ✧ ᴘ𝟸 ʙʟᴜᴇ  : ${room.players[1] === 'BOT' ? '🤖 Bot AI' : '@' + p2Number} (Kotak *${toSmallNum(p2Pos)}*)\n`;
     baseCard += `*┆* ✦ ɢɪʟɪʀᴀɴ   : ${isBot ? '🤖 *Bot AI*' : `@${playerNumber} ㋡`}\n`;
     baseCard += `*┆* ⏱ ᴛɪᴍᴇᴏᴜᴛ  : *${toSmallNum(90)} ᴅᴇᴛɪᴋ*\n`;
-    baseCard += `*╰───────────────*`;
+    baseCard += `*╰───────────────*\n\n`;
 
-    // Jika giliran Bot AI: Otomatis melempar setelah jeda 1.5 detik
     if (isBot) {
-        const botTurnText = `${baseCard}\n\n> 🤖 _Bot AI sedang memutar dadu keberuntungan..._`;
-        const sentBot = await conn.sendMessage(m.chat, {
-            text: botTurnText,
-            mentions: room.players.filter(p => p !== 'BOT')
-        });
-        if (sentBot?.key) {
-            room.lastMsgKeys = room.lastMsgKeys || [];
-            room.lastMsgKeys.push(sentBot.key);
+        baseCard += `> 🤖 _Bot AI sedang memutar dadu keberuntungan..._`;
+    } else {
+        baseCard += `> ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴍᴇɴɢᴏᴄᴏᴋ ᴅᴀᴅᴜ* ⊹ ˚ ｡\n` +
+            `> _Atau ketik \`roll\` / \`r\` pada kolom chat._`;
+    }
+
+    const mentions = room.players.filter(p => p !== 'BOT');
+    const ButtonClass = await getButtonClass(conn);
+    let sentSuccess = false;
+
+    // 1. Kirim 1 Pesan Terpadu Native Flow (Gambar Papan di Header + Status di Body + Tombol Dadu)
+    if (ButtonClass && boardBuffer) {
+        try {
+            const btn = new ButtonClass(conn);
+            btn.setImage(boardBuffer);
+            btn.setBody(baseCard);
+            btn.setFooter('Avelia • Ular Tangga Celestial');
+
+            if (!isBot) {
+                btn.addReply('🎲 Kocok Dadu', `.ular roll`);
+                btn.addReply('🏳️ Menyerah', `.ular nyerah`);
+            }
+
+            btn.setContextInfo({
+                mentionedJid: mentions
+            });
+
+            const sentMsg = await btn.send(chatId);
+            if (sentMsg?.key) {
+                room.lastMsgKeys = room.lastMsgKeys || [];
+                room.lastMsgKeys.push(sentMsg.key);
+                sentSuccess = true;
+            }
+        } catch (btnErr) {
+            console.warn('[ULAR TANGGA] 1-message button failed, fallback to standard image:', btnErr?.message);
         }
+    }
+
+    // 2. Fallback: Kirim 1 pesan gambar standar dengan caption teks lengkap
+    if (!sentSuccess) {
+        try {
+            const payload = boardBuffer ? {
+                image: boardBuffer,
+                caption: baseCard,
+                mentions
+            } : {
+                text: baseCard,
+                mentions
+            };
+            const sentFallback = await conn.sendMessage(chatId, payload);
+            if (sentFallback?.key) {
+                room.lastMsgKeys = room.lastMsgKeys || [];
+                room.lastMsgKeys.push(sentFallback.key);
+            }
+        } catch (sendErr) {
+            console.warn('[ULAR TANGGA] Fallback send error:', sendErr?.message);
+        }
+    }
+
+    resetAfkTimeout(conn, chatId);
+
+    // Jika giliran Bot AI, jalankan roll otomatis setelah jeda 1.5 detik
+    if (isBot) {
         setTimeout(() => {
-            if (conn.ulartangga?.[m.chat] && conn.ulartangga[m.chat].players[conn.ulartangga[m.chat].turn] === 'BOT') {
+            if (conn.ulartangga?.[chatId] && conn.ulartangga[chatId].players[conn.ulartangga[chatId].turn] === 'BOT') {
                 processRoll(conn, m, 'BOT');
             }
         }, 1500);
-        return;
     }
-
-    // Untuk pemain manusia: Susun Pesan Dual-Visibility berstandar Zen Shinto
-    const bodyText = `${baseCard}\n\n` +
-        `> ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴍᴇɴɢᴏᴄᴏᴋ ᴅᴀᴅᴜ* ⊹ ˚ ｡\n` +
-        `> _Atau ketik \`roll\` / \`r\` pada kolom chat._`;
-
-    const spectatorText = `${baseCard}\n\n` +
-        `> ⏳ _Menunggu @${playerNumber} mengocok dadu..._\n` +
-        `> 🔒 _(Tombol dadu hanya muncul dan aktif di layar @${playerNumber})_`;
-
-    try {
-        const ButtonClass = await getButtonClass(conn);
-        if (ButtonClass) {
-            const btn = new ButtonClass(conn);
-            btn.setBody(bodyText);
-            btn.setFooter('Avelia • Ular Tangga Celestial');
-            btn.addReply('🎲 Kocok Dadu', `.ular roll`);
-            btn.addReply('🏳️ Menyerah', `.ular nyerah`);
-            const built = await btn.build(m.chat);
-
-            const sentDual = await sendDualGroupMessage(conn, m.chat, currentPlayer, built.message, spectatorText, {
-                contextInfo: {
-                    mentionedJid: room.players.filter(p => p !== 'BOT')
-                }
-            });
-            if (sentDual?.key) {
-                room.lastMsgKeys = room.lastMsgKeys || [];
-                room.lastMsgKeys.push(sentDual.key);
-            }
-        } else {
-            const sentStandard = await conn.sendMessage(m.chat, {
-                text: bodyText,
-                mentions: room.players.filter(p => p !== 'BOT')
-            });
-            if (sentStandard?.key) {
-                room.lastMsgKeys = room.lastMsgKeys || [];
-                room.lastMsgKeys.push(sentStandard.key);
-            }
-        }
-    } catch (err) {
-        console.warn('[ULAR TANGGA] Dual message failed, fallback to standard text:', err?.message);
-        const sentFallback = await conn.sendMessage(m.chat, {
-            text: bodyText,
-            mentions: room.players.filter(p => p !== 'BOT')
-        });
-        if (sentFallback?.key) {
-            room.lastMsgKeys = room.lastMsgKeys || [];
-            room.lastMsgKeys.push(sentFallback.key);
-        }
-    }
-
-    resetAfkTimeout(conn, m.chat);
 }
 
 // Proses lemparan dadu dan pergerakan bidak
@@ -418,37 +430,12 @@ async function processRoll(conn, m, sender) {
     // Simpan posisi terbaru
     room.positions[currentPlayer] = newPos;
 
-    // Susun Kartu Hasil Giliran Sesuai STYLE_GUIDE
-    let resultCard = `*──  ୨୧ ✧ HASIL LEMPARAN DADU ✧ ୨୧  ──*\n\n` +
-        `*╭  〔 🎲 ʜ ᴀ ꜱ ɪ ʟ  ɢ ɪ ʟ ɪ ʀ ᴀ ɴ 〕*\n` +
-        `*┆* ⟡ ᴘᴇᴍᴀɪɴ  : ${playerTag}\n` +
-        `*┆* ✧ ᴅᴀᴅᴜ    : *${toSmallNum(dice)}*\n` +
-        `*┆* ✦ ʟᴀɴɢᴋᴀʜ : Kotak *${toSmallNum(currentPos)}* › *${toSmallNum(newPos)}*\n`;
-
-    if (eventDetail) {
-        resultCard += `${eventDetail}\n`;
-    }
-    resultCard += `*╰───────────────*`;
-
-    // 1. Hapus pesan gambar dan tombol sebelumnya agar chat grup bersih & hemat memori HP
-    await deletePreviousMessages(conn, m.chat, room);
-
-    // 2. Render Gambar Papan Terbaru HD Zig-Zag
+    // Render Gambar Papan Terbaru HD Zig-Zag dengan posisi baru
     const boardBuffer = await renderBoard(room);
-
-    // 3. Kirim gambar papan terbaru beserta status lemparan
-    const sentBoard = await conn.sendMessage(m.chat, {
-        image: boardBuffer,
-        caption: resultCard,
-        mentions: [currentPlayer].filter(p => p !== 'BOT')
-    });
-    if (sentBoard?.key) {
-        room.lastMsgKeys = room.lastMsgKeys || [];
-        room.lastMsgKeys.push(sentBoard.key);
-    }
 
     // Pengecekan Kemenangan (Tepat di Kotak 100)
     if (newPos === 100) {
+        await deletePreviousMessages(conn, m.chat, room);
         const winner = currentPlayer;
         const winRewardExp = 5000;
         const isBotWin = winner === 'BOT';
@@ -472,7 +459,8 @@ async function processRoll(conn, m, sender) {
             `> ｡˚ ⊹ *ᴋᴇᴛɪᴋ .ᴜʟᴀʀ ꜱᴛᴀʀᴛ ᴜɴᴛᴜᴋ ʙᴇʀᴍᴀɪɴ ʟᴀɢɪ* ⊹ ˚ ｡`;
 
         await conn.sendMessage(m.chat, {
-            text: winMsg,
+            image: boardBuffer,
+            caption: winMsg,
             mentions: room.players.filter(p => p !== 'BOT')
         });
 
@@ -481,20 +469,22 @@ async function processRoll(conn, m, sender) {
         return;
     }
 
+    // Susun deskripsi hasil lemparan dadu
+    let rollPrompt = `🎲 ${playerTag} melempar dadu: *${toSmallNum(dice)}* (Kotak *${toSmallNum(currentPos)}* › *${toSmallNum(newPos)}*)`;
+    if (eventDetail) {
+        rollPrompt += `\n${eventDetail}`;
+    }
+
     // Aturan Dadu 6: Bonus Giliran
     if (dice === 6) {
-        await sendTurnMessage(
-            conn,
-            m,
-            room,
-            `*おめでとう!* (ʙᴏɴᴜꜱ ᴅᴀᴅᴜ 𝟼!)\n> ${playerTag} berhak melempar dadu satu kali lagi ♡`
-        );
+        rollPrompt += `\n> *おめでとう!* (ʙᴏɴᴜꜱ ᴅᴀᴅᴜ 𝟼!)\n> ${playerTag} berhak melempar dadu satu kali lagi ♡`;
+        await sendTurnMessage(conn, m, room, rollPrompt, boardBuffer);
         return;
     }
 
     // Ganti giliran ke pemain lawan
     room.turn = 1 - room.turn;
-    await sendTurnMessage(conn, m, room);
+    await sendTurnMessage(conn, m, room, rollPrompt, boardBuffer);
 }
 
 // Handler utama plugin
@@ -541,10 +531,28 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 `> › *${usedPrefix + command} join* (Main berdua bareng teman)\n` +
                 `> › *${usedPrefix + command} bot* (Main solo langsung lawan AI)`;
 
-            await conn.sendMessage(chatId, {
-                text: joinCard,
-                mentions: [m.sender]
-            });
+            const ButtonClass = await getButtonClass(conn);
+            let sentStart = null;
+            if (ButtonClass) {
+                try {
+                    const btn = new ButtonClass(conn);
+                    btn.setBody(joinCard);
+                    btn.setFooter('Avelia • Ular Tangga Celestial');
+                    btn.addReply('🤝 Gabung Match', `${usedPrefix + command} join`);
+                    btn.addReply('🤖 Lawan Bot AI', `${usedPrefix + command} bot`);
+                    btn.setContextInfo({ mentionedJid: [m.sender] });
+                    sentStart = await btn.send(chatId);
+                } catch {}
+            }
+            if (!sentStart) {
+                sentStart = await conn.sendMessage(chatId, {
+                    text: joinCard,
+                    mentions: [m.sender]
+                });
+            }
+            if (sentStart?.key) {
+                conn.ulartangga[chatId].lastMsgKeys.push(sentStart.key);
+            }
             break;
         }
 
@@ -561,33 +569,11 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
             room.positions[m.sender] = 1;
             room.state = 'PLAYING';
             room.turn = 0;
-            room.lastMsgKeys = [];
 
-            const startCard = `*──  ୨୧ ✧ ARENA ULAR TANGGA ✧ ୨୧  ──*\n\n` +
-                `> @${m.sender.split('@')[0]} telah bergabung sebagai *Pemain 2 (🔵 Biru)*!\n\n` +
-                `*╭  〔 ✦ ᴍ ᴀ ᴛ ᴄ ʜ  ꜱ ᴛ ᴀ ʀ ᴛ 〕*\n` +
-                `*┆* ⟡ ᴘ𝟷 ʀᴇᴅ   : @${room.players[0].split('@')[0]}\n` +
-                `*┆* ✧ ᴘ𝟸 ʙʟᴜᴇ  : @${room.players[1].split('@')[0]}\n` +
-                `*┆* ◈ ᴛᴀʀɢᴇᴛ   : *Kotak ${toSmallNum(100)}*\n` +
-                `*╰───────────────*\n\n` +
-                `> ｡˚ ⊹ *ᴘᴇʀᴍᴀɪɴᴀɴ ʀᴇꜱᴍɪ ᴅɪᴍᴜʟᴀɪ! ꜱᴇʟᴀᴍᴀᴛ ʙᴇʀᴛᴀɴᴅɪɴɢ* ⊹ ˚ ｡`;
+            const startPrompt = `> @${m.sender.split('@')[0]} telah bergabung sebagai *Pemain 2 (🔵 Biru)*!\n` +
+                `> Pertandingan resmi dimulai. Target: Kotak ${toSmallNum(100)}!`;
 
-            await conn.sendMessage(chatId, {
-                text: startCard,
-                mentions: room.players.filter(p => p !== 'BOT')
-            });
-
-            // Render dan kirim papan awal HD Zig-Zag
-            const boardBuf = await renderBoard(room);
-            const sentBoard = await conn.sendMessage(chatId, {
-                image: boardBuf,
-                caption: `*──  ୨୧ ✧ PAPAN PERMAINAN ✧ ୨୧  ──*\n\n> Bidak telah ditempatkan pada garis awal kotak ${toSmallNum(1)}.\n> Bersiaplah untuk melempar dadu pertama!`,
-                mentions: room.players.filter(p => p !== 'BOT')
-            });
-            if (sentBoard?.key) room.lastMsgKeys.push(sentBoard.key);
-
-            // Kirim giliran pertama via Dual-Message
-            await sendTurnMessage(conn, m, room);
+            await sendTurnMessage(conn, m, room, startPrompt);
             break;
         }
 
@@ -597,6 +583,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 return m.reply(status.warning('Sesi permainan sedang berlangsung.'));
             }
 
+            const prevKeys = room?.lastMsgKeys || [];
             conn.ulartangga[chatId] = {
                 id: chatId,
                 state: 'PLAYING',
@@ -604,32 +591,14 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 positions: { [m.sender]: 1, 'BOT': 1 },
                 turn: 0,
                 timeout: null,
-                lastMsgKeys: []
+                lastMsgKeys: prevKeys
             };
             room = conn.ulartangga[chatId];
 
-            const botCard = `*──  ୨୧ ✧ MODE SOLO VS BOT AI ✧ ୨୧  ──*\n\n` +
-                `*╭  〔 🤖 ꜱ ᴏ ʟ ᴏ  ᴍ ᴀ ᴛ ᴄ ʜ 〕*\n` +
-                `*┆* ⟡ ᴘ𝟷 ʀᴇᴅ   : @${m.sender.split('@')[0]} ㋡\n` +
-                `*┆* ✧ ᴘ𝟸 ʙʟᴜᴇ  : 🤖 Bot AI\n` +
-                `*┆* ◈ ᴛᴀʀɢᴇᴛ   : *Kotak ${toSmallNum(100)}*\n` +
-                `*╰───────────────*\n\n` +
-                `> ｡˚ ⊹ *ꜱᴇʟᴀᴍᴀᴛ ʙᴇʀᴍᴀɪɴ ᴅᴀɴ ꜱᴇᴍᴏɢᴀ ʙᴇʀᴜɴᴛᴜɴɢ!* ⊹ ˚ ｡`;
+            const botPrompt = `> Pertandingan solo vs 🤖 *Bot AI* telah dimulai!\n` +
+                `> Giliran pertama ada pada dirimu ♡`;
 
-            await conn.sendMessage(chatId, {
-                text: botCard,
-                mentions: [m.sender]
-            });
-
-            const boardBuf = await renderBoard(room);
-            const sentBoard = await conn.sendMessage(chatId, {
-                image: boardBuf,
-                caption: `*──  ୨୧ ✧ PAPAN PERMAINAN ✧ ୨୧  ──*\n\n> Pertandingan solo telah dimulai! Giliran pertama ada pada dirimu ♡`,
-                mentions: [m.sender]
-            });
-            if (sentBoard?.key) room.lastMsgKeys.push(sentBoard.key);
-
-            await sendTurnMessage(conn, m, room);
+            await sendTurnMessage(conn, m, room, botPrompt);
             break;
         }
 
@@ -705,9 +674,10 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                 `*┆* ✕ *${usedPrefix + command} reset* : Bersihkan sesi yang macet\n` +
                 `*╰───────────────*\n\n` +
                 `*╭  〔 💡 ꜰ ɪ ᴛ ᴜ ʀ  ᴍ ᴏ ᴅ ᴇ ʀ ɴ 〕*\n` +
-                `> ✦ Desain grafis papan modern HD prosedural dengan efek 3D & bayangan halus.\n` +
-                `> ✦ Tombol Dual-Message otomatis aktif di layarmu saat giliran tiba!\n` +
-                `> ✧ Bisa langsung ketik \`roll\` atau huruf \`r\` tanpa prefix.\n` +
+                `> ✦ Desain grafis papan ilustrasi HD resmi dengan penomoran zig-zag & bidak pion 3D.\n` +
+                `> ✦ 1 Pesan Terpadu: Gambar Papan, Status Giliran, & Tombol Dadu menyatu tanpa spam!\n` +
+                `> ✧ Tombol interaktif langsung di layar atau ketik \`roll\` / \`r\` tanpa prefix.\n` +
+                `> 🧹 Auto-Delete: Pesan giliran sebelumnya otomatis dibersihkan agar hemat memori.\n` +
                 `> ⏱ Auto-timeout ${toSmallNum(90)} detik melindungi grup dari pemain AFK.\n` +
                 `*╰───────────────*`;
 

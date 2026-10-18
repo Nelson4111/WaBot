@@ -675,8 +675,16 @@
     "id": "18.0",
     "section": "GAME",
     "title": "Pembaruan Ular Tangga Dual-Message dan Zen Shinto",
-    "content": "\u003e Ular Tangga diperbarui dengan sistem Dual-Message (tombol dadu interaktif khusus pemain aktif), perbaikan bug antarmuka dan anti-macet, mode solo lawan Bot AI, aturan pantulan kotak 100, auto-timeout 90 detik, dan tampilan Zen Shinto.",
+    "content": "\u003e Ular Tangga diperbarui dengan sistem tombol dadu interaktif, perbaikan bug antarmuka dan anti-macet, mode solo lawan Bot AI, aturan pantulan kotak 100, auto-timeout 90 detik, dan tampilan Zen Shinto.",
     "author": "Nenel",
     "createdAt": 1792330123260
+  },
+  {
+    "id": "18.1",
+    "section": "GAME",
+    "title": "Ular Tangga HD Zig-Zag & Pesan Terpadu Anti-Spam",
+    "content": "\u003e Papan Ular Tangga kini menggunakan template ilustrasi HD dengan penomoran resmi zig-zag 1-100 dan bidak pion 3D klasik. Gambar papan dan tombol interaktif kini menyatu dalam 1 pesan tunggal terpadu, dilengkapi auto-delete pesan sebelumnya agar grup bebas spam dan hemat memori.",
+    "author": "Nenel",
+    "createdAt": 1792335100000
   }
 ]
