@@ -3,11 +3,14 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   canReceiveRareActivityRewards,
   getDifficultyCooldownRemaining,
+  getPremiumDifficultyChangesRemaining,
   getDifficulty,
   getDifficultyProfile,
   normalizeDifficulty,
+  recordDifficultyChange,
   RPG_DIFFICULTIES
 } from '../../lib/rpgDifficulty.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 function formatDuration(ms) {
   const days = Math.floor(ms / 86400000)
@@ -50,7 +53,7 @@ function getGuide() {
     `💡 *SEBELUM MEMILIH*\n` +
     `> ↳ Income memengaruhi uang dan jumlah hadiah.\n` +
     `> ↳ Drop Rate memengaruhi peluang mendapat item rarity lebih tinggi.\n` +
-    `> ↳ Mode dapat diganti kembali setelah 7 hari.\n\n` +
+    `> ↳ Non-Premium dapat mengganti mode setiap 7 hari; Premium mendapat 2 kali perubahan per minggu dan kuota reset setiap Senin.\n\n` +
     `Pilih mode di tombol berikut untuk menerapkannya.`
 }
 
@@ -105,22 +108,35 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     if (next === current) return m.reply(`ℹ️ Difficulty kamu sudah *${profile.name}*.`)
 
     const now = Date.now()
-    const remaining = getDifficultyCooldownRemaining(user, now)
-    if (remaining > 0) {
-      return m.reply(`⏳ Kamu baru bisa mengganti difficulty lagi dalam *${formatDuration(remaining)}*.`)
+    const premium = isPremiumAccount(data, now)
+    if (premium) {
+      const changesRemaining = getPremiumDifficultyChangesRemaining(user, now)
+      if (changesRemaining < 1) {
+        return m.reply('⏳ Kuota perubahan difficulty Premium minggu ini sudah habis. Kuota akan reset setiap Senin.')
+      }
+    } else {
+      const remaining = getDifficultyCooldownRemaining(user, now)
+      if (remaining > 0) {
+        return m.reply(`⏳ Kamu baru bisa mengganti difficulty lagi dalam *${formatDuration(remaining)}*.`)
+      }
     }
 
     user.difficulty = next
-    user.difficultyChangedAt = now
+    recordDifficultyChange(user, now)
     await saveDB(wdb)
-    return m.reply(`✅ Difficulty diubah menjadi *${RPG_DIFFICULTIES[next].name}*.\nCooldown ganti mode: *7 hari*.`)
+    return m.reply(premium
+      ? `✅ Difficulty diubah menjadi *${RPG_DIFFICULTIES[next].name}*.\nSisa perubahan minggu ini: *${getPremiumDifficultyChangesRemaining(user, now)}/2* (reset setiap Senin).`
+      : `✅ Difficulty diubah menjadi *${RPG_DIFFICULTIES[next].name}*.\nCooldown ganti mode: *7 hari*.`)
   }
 
   if (!['info', ''].includes(normalizedAction)) {
     return m.reply(`❌ Subcommand tidak dikenal. Gunakan *${usedPrefix}difficulty command*.`)
   }
 
-  const remaining = getDifficultyCooldownRemaining(user)
+  const premium = isPremiumAccount(data)
+  const remaining = premium
+    ? getPremiumDifficultyChangesRemaining(user)
+    : getDifficultyCooldownRemaining(user)
   const crimeModifier = current === 'peaceful'
     ? 'Nonaktif'
     : profile.crimeSuccess === 0
@@ -141,7 +157,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     `> 🕵️ Peluang kriminal: ${crimeModifier}\n` +
     `> 🎁 Reward langka misi & dungeon: ${canReceiveRareActivityRewards(user) ? 'Tersedia' : 'Tidak tersedia'}\n` +
     `> 🏆 Masuk leaderboard: ${profile.leaderboard ? 'Ya' : 'Tidak'}\n` +
-    `> 🔄 Ganti mode: ${remaining ? `tersedia dalam ${formatDuration(remaining)}` : 'tersedia'}\n\n` +
+    `> 🔄 Ganti mode: ${premium
+      ? `${remaining}/2 perubahan tersisa minggu ini (reset Senin)`
+      : remaining ? `tersedia dalam ${formatDuration(remaining)}` : 'tersedia'}\n\n` +
     `Pelajari efek setiap mode sebelum memilih tantangan baru.`
   return sendRpgButtons(conn, {
     chat: m.chat,

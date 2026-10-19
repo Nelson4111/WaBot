@@ -7,7 +7,7 @@ import { BANK_TIERS } from './rpg-bank.js'
 import { bibit } from './rpg-panen.js'
 import { CINCIN_SHOP, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
-import { isDifficultyRanked, normalizeDifficulty, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
+import { isDifficultyRanked, normalizeDifficulty, recordDifficultyChange, RPG_DIFFICULTIES } from '../../lib/rpgDifficulty.js'
 import { setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { EVONEXUS_ABILITIES, getEvonexusAbilityTier, normalizeEvonexusValue } from '../../lib/rpg-evonexusData.js'
@@ -1348,7 +1348,7 @@ let handler = async (m, {
       return m.reply(`❌ Pilih mode: ${Object.keys(RPG_DIFFICULTIES).join(', ')}.\nContoh: *${usedPrefix}rpgpanel difficulty @tag nightmare*`)
     }
     user.difficulty = difficulty
-    user.difficultyChangedAt = Date.now()
+    recordDifficultyChange(user)
     await saveDB(wdb)
     return m.reply(`✅ Difficulty @${who.split('@')[0]} diatur ke *${RPG_DIFFICULTIES[difficulty].name}*.`, null, { mentions: [who] })
   }
