@@ -742,5 +742,13 @@
     "content": "\u003e Difficulty kini memengaruhi reward, EXP, drop, cooldown, combat, dan aktivitas RPG/Guild/Dungeon. Pemain dengan HP 0 dibatasi dari command RPG sampai pulih lewat .heal; cooldown heal mengikuti mode. Perhitungan reward/cooldown dan tombol aksi aktivitas turut dirapikan.",
     "author": "Eza",
     "createdAt": 1792385074538
+  },
+  {
+    "id": "19.7",
+    "section": "RPG",
+    "title": "Pembaruan Lelang, Bank, Gift, dan Heal",
+    "content": "\u003e Bid lelang langsung dipotong dan dikembalikan jika kalah, dengan riwayat bank serta rarity Legendary/Mythic/Secret. Setor, tarik, riwayat, dan gift money mendukung suffix. Heal bisa untuk diri sendiri atau ditawarkan ke pengguna lain lewat konfirmasi.",
+    "author": "Eza",
+    "createdAt": 1792428600000
   }
 ]
