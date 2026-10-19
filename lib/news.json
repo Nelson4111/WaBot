@@ -734,5 +734,13 @@
     "content": "\u003e Nominal lelang kini ringkas dengan sufiks yang bisa dipakai saat bid; menu menyediakan tombol cek saldo dan daftar sufiks.",
     "author": "Eza",
     "createdAt": 1792344966564
+  },
+  {
+    "id": "19.6",
+    "section": "RPG",
+    "title": "Penyesuaian Difficulty dan Akses RPG",
+    "content": "\u003e Difficulty kini memengaruhi reward, EXP, drop, cooldown, combat, dan aktivitas RPG/Guild/Dungeon. Pemain dengan HP 0 dibatasi dari command RPG sampai pulih lewat .heal; cooldown heal mengikuti mode. Perhitungan reward/cooldown dan tombol aksi aktivitas turut dirapikan.",
+    "author": "Eza",
+    "createdAt": 1792385074538
   }
 ]
