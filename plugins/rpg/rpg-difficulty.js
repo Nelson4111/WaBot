@@ -99,7 +99,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       footer: 'AVELIA • RPG DIFFICULTY',
       buttonText: '⚔️ PILIH MODE',
       sections: [{ title: 'Pilih tingkat kesulitan', rows }],
-      fallbackText
+      fallbackText,
+      sendInteractive: typeof conn.sendInteractive === 'function'
+        ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
+        : undefined
     })
   }
 
