@@ -3640,22 +3640,26 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
     child.lastCaredAt = now
     child.lastNeglectCheckAt = now
     user.dateStats.urusAnak = (Number(user.dateStats.urusAnak) || 0) + 1
-    completed.push(`*${child.nama}* (${partner.name})`)
+    completed.push(child.nama)
   }
   await saveDB(wdb)
   const totalUps = [...levelUps.values()].reduce((sum, value) => sum + value, 0)
   const costLine = totalCost ? `\n> ↳ Biaya: -Rp ${totalCost.toLocaleString('id-ID')}` : ''
   const levelLine = totalUps ? `\n> ↳ Level pasangan naik ${totalUps} kali` : ''
-  const activitySummary = actions.map(([, rule]) => `${rule.emoji} ${rule.label}`).join(', ')
+  const childSummary = completed.map(name => `> ↳ 👶 ${name}`).join('\n')
+  const activitySummary = actions.map(([, rule]) => `> ↳ ${rule.emoji} ${rule.label}`).join('\n')
   return m.reply(
     `╭─❏「 👶 PENGASUHAN ANAK 」❏
 │ ${isBatchCare ? '✨ SEMUA AKTIVITAS PENGASUHAN' : `💗 ${activity.label.toUpperCase()}`}
 ╰─━━━━━━━━━━━━━━─
 
-> ${isBatchCare ? '✅ Semua 9 aktivitas pengasuhan selesai.' : `✅ Aktivitas ${activity.label} selesai.`}
+> ↳ ${isBatchCare ? '✅ Semua 9 aktivitas pengasuhan selesai.' : `✅ Aktivitas ${activity.label} selesai.`}
 
-> 👶 Anak: ${completed.join(', ')}
-> 🧸 Aktivitas: ${activitySummary}${costLine}${levelLine}
+👶 *ANAK*
+${childSummary}
+
+🧸 *AKTIVITAS*
+${activitySummary}${costLine}${levelLine}
 
 ─━━━━━━━━━━━━━━─
 
