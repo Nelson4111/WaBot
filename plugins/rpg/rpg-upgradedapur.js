@@ -1,5 +1,5 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
@@ -24,7 +24,20 @@ cap += `> ↳ 💸 Biaya : Rp ${harga.toLocaleString()}\n`
 cap += `> ↳ 🔧 Upgrade Berikutnya : Rp ${(user.dapur.slot * 5000000).toLocaleString()}\n`
 cap += `\n─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i108/l3q')
+return sendRpgButtons(conn, {
+  chat: m.chat,
+  message: m,
+  text: cap,
+  title: '👨‍🍳 UPGRADE DAPUR BERHASIL',
+  subtitle: `Kapasitas dapur bertambah menjadi ${user.dapur.slot}/10`,
+  thumbnailUrl: 'https://c.termai.cc/i108/l3q',
+  footer: 'AVELIA • RPG DAPUR',
+  buttons: user.dapur.slot < 10
+    ? [['👨‍🍳 Upgrade Slot Dapur Lagi', `${usedPrefix}upgradedapur`]]
+    : undefined,
+  quoted: m,
+  reply: fallbackText => m.reply(fallbackText)
+})
 }
 handler.help = ['upgradedapur']
 handler.tags = ['rpg']

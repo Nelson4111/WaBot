@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -233,16 +233,25 @@ if (getMaterialCount(user, 'diamond') < totalDiamond) {
 if (!confirmYes) {
   user.pendingUpgrade = { item, level: lvl, time: Date.now() }
   await saveDB(wdb)
-  return m.reply(
+  const confirmationText =
     `╭─❏「 ⚙️ KONFIRMASI UPGRADE 」❏\n` +
     `│ ${oldName} ➜ ${getEquipmentName(item, lvl + 1)}\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📌 *RINCIAN BIAYA*\n` +
     formatUpgradeCost(cost) + `\n` +
-    `Ketik *${usedPrefix}${command} ${item} yes* untuk lanjut.\n` +
-    `Ketik *${usedPrefix}${command} ${item} no* untuk batal.\n` +
-    `Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
-  )
+    `Konfirmasi berlaku selama 5 menit.`
+  return sendRpgConfirmButtons(conn, m, {
+    text: confirmationText,
+    title: '⚙️ KONFIRMASI UPGRADE',
+    subtitle: `${oldName} akan ditingkatkan menjadi ${getEquipmentName(item, lvl + 1)}`,
+    acceptText: '✨ Tingkatkan Equipment',
+    acceptCommand: `${usedPrefix}${command} ${item} yes`,
+    cancelText: '↩️ Batalkan Upgrade',
+    cancelCommand: `${usedPrefix}${command} ${item} no`,
+    footer: 'AVELIA • RPG UPGRADE',
+    noThumbnail: true,
+    noHeader: true
+  })
 }
 
 wdb.money[m.sender] = Math.max(0, (wdb.money[m.sender] || 0) - totalMoney)
@@ -280,7 +289,21 @@ capSuccess += `📌 *RINCIAN BIAYA TERPAKAI*\n`
 capSuccess += formatUpgradeCost(cost)
 capSuccess += `\n─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, capSuccess, UPGRADE_IMAGE)
+return sendRpgButtons(conn, {
+  chat: m.chat,
+  message: m,
+  text: capSuccess,
+  title: '✨ UPGRADE BERHASIL',
+  subtitle: `${newName} siap menemani petualanganmu`,
+  thumbnailUrl: UPGRADE_IMAGE,
+  footer: 'AVELIA • RPG UPGRADE',
+  buttons: [[
+    `⚙️ Upgrade ${item === 'fishingrod' ? 'Fishing Rod' : item}`,
+    `${usedPrefix}${command} ${item}`
+  ]],
+  quoted: m,
+  reply: fallbackText => m.reply(fallbackText)
+})
 }
 
 handler.help = ['upgrade <item>', 'upgrade guide']
