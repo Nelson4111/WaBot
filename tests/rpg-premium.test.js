@@ -1,10 +1,31 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  formatPremiumProtectionMessage,
   getPremiumProtectionRemaining,
   PREMIUM_PROTECTION_COOLDOWN,
   tryPremiumProtection
 } from '../lib/rpgPremium.js'
+
+test('Premium Protection messages share the standard layout and allow death-specific details', () => {
+  assert.equal(
+    formatPremiumProtectionMessage('copet', 'Uang target tetap aman.'),
+    `╭─❏「 🛡️ PREMIUM PROTECTION 」❏\n` +
+      `│ Aksi copet gagal.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 🔒 Perlindungan Premium target sedang aktif.\n` +
+      `> ⏳ Cooldown copet kamu telah dimulai.\n` +
+      `> ✅ Uang target tetap aman.`
+  )
+  assert.match(
+    formatPremiumProtectionMessage('dungeon', 'Kamu selamat dengan 1 HP.', {
+      actionMessage: 'Kamu selamat dari kematian saat dungeon.',
+      protectionMessage: 'Perlindungan Premium kematian kamu sedang aktif.',
+      cooldownMessage: 'Cooldown perlindungan kematian kamu telah dimulai.'
+    }),
+    /│ Kamu selamat dari kematian saat dungeon\.\n╰─━━━━━━━━━━━━━━─\n\n> 🔒 Perlindungan Premium kematian kamu sedang aktif\.\n> ⏳ Cooldown perlindungan kematian kamu telah dimulai\./
+  )
+})
 
 test('Premium Protection triggers once and then respects its per-action cooldown', () => {
   const now = 1_700_000_000_000
