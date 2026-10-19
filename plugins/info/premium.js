@@ -352,33 +352,49 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `│ 👑 *MANFAAT PREMIUM*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
 
-    `📌 *KEUNTUNGAN UMUM*\n` +
-    `> ↳ Batas casino : *50 permainan per hari* (user biasa 25).\n` +
+    `📌 *UMUM*\n` +
+    `> ↳ Command berlimit tetap memakai limit meskipun digunakan oleh pengguna Premium.\n` +
+    `> ↳ Jika mode chat pribadi khusus Premium diaktifkan oleh bot, pengguna Premium dapat memakai bot melalui chat pribadi.\n\n` +
+
+    `⚔️ *RPG & EKONOMI*\n` +
+    `> ↳ Batas casino *50 permainan per hari* (user biasa 25).\n` +
+    `> ↳ Proteksi Blackout dapat memulihkan kerugian saldo yang masih memenuhi syarat *1 kali per minggu*; kuota reset setiap Senin. Gunakan *${usedPrefix}cs guard protect*.\n` +
     `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
+    `> ↳ Diskon *20%* untuk biaya uang pada *.upgrade*, diskon *25%* upgrade kartu bank, dan biaya admin transfer bank *50%* lebih murah.\n` +
+    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Cooldown Muncak *2 jam* (user biasa 5 jam), contoh *${usedPrefix}mt start*.\n` +
+    `> ↳ Bisa melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per detik tersisa.\n` +
+    `> ↳ Bisa mengubah difficulty *2 kali per minggu*; kuota reset setiap Senin, bukan cooldown 7 hari. Cek atau ubah dengan *${usedPrefix}difficulty*.\n\n` +
+
+    `🏠 *RUMAH & STAFF*\n` +
     `> ↳ Kapasitas rumah bertambah *5 furniture* dan *2 penghuni tambahan*, diskon upgrade rumah *20%*, serta diskon kontrak staff *10%*.\n` +
-    `> ↳ Fitur khusus: *${usedPrefix}home staff hire all <durasi 1-7>* merekrut semua staff rumah sekaligus.\n` +
-    `> ↳ Diskon *20%* untuk semua biaya uang pada *.upgrade* dan diskon *25%* upgrade kartu bank.\n` +
-    `> ↳ Biaya admin transfer bank lebih murah *50%*.\n` +
-    `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Pengguna Premium juga dapat melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per detik tersisa.\n` +
-    `> ↳ Command berlimit, termasuk sticker, maker, dan downloader, tetap memakai limit untuk pengguna Premium.\n` +
-    `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap hari untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n` +
-    `> ↳ Premium Protection otomatis melindungi sekali saat terpicu, lalu masuk cooldown terpisah 5 jam untuk aksi kriminal serta cooldown kematian universal; proteksi kematian berlaku saat HP mencapai 0 dari dungeon, adventure, guild war, atau aksi bunuh/begal. Cek statusnya dengan *${usedPrefix}prem cd*.\n` +
-    `> ↳ Cooldown Muncak lebih singkat : *2 jam* (user biasa 5 jam). Contoh : *${usedPrefix}mt start*.\n` +
-    `> ↳ Cooldown interaksi pasangan lebih singkat : *30 detik* (user biasa 60 detik). Contoh : *${usedPrefix}act*.\n\n` +
+    `> ↳ *${usedPrefix}home staff hire all <durasi 1-7>* merekrut semua staff sekaligus; *${usedPrefix}home staff renew all <durasi 1-7>* memperpanjang semua kontrak sekaligus.\n\n` +
+
+    `🎁 *DONASI & REWARD*\n` +
+    `> ↳ Mulai title *Donatur Setia* (total donasi Rp ${PREMIUM_DAILY_MIN_DONATION.toLocaleString('id-ID')}), klaim *${usedPrefix}prem daily* setiap hari untuk mendapat *${PREMIUM_DAILY_REWARD} limit*.\n\n` +
+
+    `🛡️ *PROTEKSI*\n` +
+    `> ↳ Premium Protection otomatis melindungi sekali saat terpicu, lalu masuk cooldown terpisah 5 jam untuk aksi kriminal serta cooldown kematian universal; proteksi kematian berlaku saat HP mencapai 0 dari dungeon, adventure, guild war, atau aksi bunuh/begal. Cek statusnya dengan *${usedPrefix}prem cd*.\n\n` +
 
     `🌱 *LADANG*\n` +
-    `> ↳ Bisa upgrade hingga *20 slot ladang* (user biasa maksimal 10).\n` +
+    `> ↳ Bisa upgrade hingga *20 slot ladang* (user biasa maksimal 10) dan mendapat diskon *20%* untuk membeli bibit.\n` +
     `> ↳ Contoh : *${usedPrefix}buyladang* untuk upgrade, *${usedPrefix}tanam list* untuk melihat bibit.\n\n` +
 
     `🐾 *PET*\n` +
     `> ↳ Kapasitas pet bertambah menjadi *15 slot* (user biasa 10).\n` +
     `> ↳ *${usedPrefix}pet care* memberi feed, rest, dan clean ke semua pet; cooldown 30 menit.\n` +
     `> ↳ Setelah care, *${usedPrefix}pet all* menjalankan train, walk, play, hunt, dan dispatch untuk semua pet; cooldown 30 menit.\n` +
+    `> ↳ *${usedPrefix}pokemon train all* dan *${usedPrefix}ghost train all* melatih semua makhluk sekaligus; cooldown 30 menit.\n` +
     `> ↳ Contoh : *${usedPrefix}pet care*, lalu *${usedPrefix}pet all*.\n\n` +
+
+    `💼 *PEKERJAAN*\n` +
+    `> ↳ *${usedPrefix}work all* menjalankan semua pekerjaan aktif yang cooldown-nya siap.\n` +
+    `> ↳ *${usedPrefix}job talk all* mengobrol dengan semua pekerjaan sekaligus.\n\n` +
 
     `💕 *RELATIONSHIP*\n` +
     `> ↳ *${usedPrefix}rship all <no pasangan>* menjalankan semua aktivitas yang siap untuk pasangan tersebut; cooldown all 30 menit.\n` +
+    `> ↳ Cooldown interaksi pasangan lebih singkat: *30 detik* (user biasa 60 detik). Contoh: *${usedPrefix}act*.\n` +
     `> ↳ Contoh : *${usedPrefix}rship all 1*.\n\n` +
+    `> ↳ *${usedPrefix}rship kid urus <pasangan/all> <anak/all>* menjalankan semua *9 aktivitas pengasuhan* sekaligus; pemilihan semua anak juga khusus Premium.\n\n` +
 
     `🕊️ *REHABILITASI*\n` +
     `> ↳ *${usedPrefix}rh all* menjalankan semua aktivitas rehabilitasi yang cooldown-nya siap.\n` +
@@ -387,6 +403,10 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `🍱 *MBG*\n` +
     `> ↳ Dapat mengambil hingga *2 pasangan menu per hari* dan memilih dari *5 menu* saat menukar.\n` +
     `> ↳ Contoh : *${usedPrefix}mbg tukar*, pilih dengan *${usedPrefix}mbg tukar 1–5*, lalu klaim dengan *${usedPrefix}mbg ambil 1 2*.\n\n` +
+
+    `✨ *AKSES PREMIUM LAINNYA*\n` +
+    `> ↳ Akses command Premium untuk sticker Telegram/FStik, maker khusus, video HD, dan pencarian grup.\n` +
+    `> ↳ *${usedPrefix}spamtag* dapat mengirim hingga *5 panggilan* (user biasa 3); hanya untuk admin grup. Command *${usedPrefix}msgch* juga Premium dan memerlukan moderator.\n\n` +
 
     `📌 *INFORMASI*\n` +
     `> ↳ Profil donasi/title : *${usedPrefix}premium profile*; cek cooldown dengan *${usedPrefix}prem cd*.\n` +
