@@ -534,12 +534,16 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel delharem @tag <no>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <name/gender/level/love/exp/nikah/title> <val>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addanak @tag <nama_anak>* / *addanak @tag shelter <nama_anak>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setanak @tag <no> <nama/gender/umur/carecount/love/ortu/biologicalparents> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat daftar anak keluarga dan shelter\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> ortu <no/nama-pasangan>* - Atur anak dari pasangan tertentu\n` +
+  `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @tag 1 ortu 2*; nomor pasangan lihat lewat *${usedPrefix}rpgpanel anak @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama/gender/umur/carecount/love/biologicalparents> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
   `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +
   `> ↳ *${usedPrefix}rpgpanel asuhanak @tag [shelter] <no> @pengasuh* / *kembalianak @pengasuh <no>*\n` +
-  `> ↳ Anak shelter: *setanak @tag shelter <no> <nama/gender/umur/carecount/love/ortu/biologicalparents> <nilai>* / *delanak @tag shelter <no>*\n\n` +
+  `> ↳ Tag pemilik/pengasuh dapat diisi dengan reply jika salah satu mention dikosongkan.\n` +
+  `> ↳ Anak shelter: *setanak @tag shelter <no> ortu <no/nama-pasangan>* untuk atur asal pasangan saat masuk keluarga.\n` +
+  `> ↳ Field lain anak shelter: *setanak @tag shelter <no> <nama/gender/umur/carecount/love/biologicalparents> <nilai>* / *delanak @tag shelter <no>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -1196,17 +1200,22 @@ let handler = async (m, {
   if (aksi === 'anak') {
     const children = Array.isArray(user.kids) ? user.kids : []
     const shelterChildren = Array.isArray(user.shelterKids) ? user.shelterKids : []
+    const partners = Array.isArray(user.harem) ? user.harem : []
     if (!children.length && !shelterChildren.length) {
       return m.reply(`👶 @${who.split('@')[0]} belum memiliki anak atau anak di shelter.`, null, { mentions: [who] })
     }
     const entries = children.map((child, index) => {
       const custody = child.custody?.type ? ` • Hak asuh: ${child.custody.type}` : ''
       const facility = child.facility?.type ? ` • Fasilitas: ${child.facility.type}` : ''
+      const partnerIndex = partners.findIndex(partner => partner.name === child.ortu)
+      const parent = partnerIndex >= 0
+        ? `Pasangan ${partnerIndex + 1}: ${child.ortu}`
+        : child.ortu || 'tidak diketahui'
       const parents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
         ? ` • Ortu kandung: ${child.biologicalParents.join(' & ')}`
         : ''
       return `> ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
-        `> ↳ Ortu: ${child.ortu || 'tidak diketahui'}${custody}${facility}${parents}`
+        `> ↳ Ortu: ${parent}${custody}${facility}${parents}`
     })
     const shelterEntries = shelterChildren.map((child, index) => {
       const parents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
@@ -1220,6 +1229,7 @@ let handler = async (m, {
       `╭─❏「 👶 ANAK PANEL 」❏\n@${who.split('@')[0]}\n\n` +
       `👨‍👩‍👧‍👦 *KELUARGA*\n${entries.join('\n') || '> Tidak ada anak di keluarga.'}\n\n` +
       `🛟 *SHELTER*\n${shelterEntries.join('\n') || '> Tidak ada anak di shelter.'}\n\n` +
+      `💕 *PASANGAN PEMILIK*\n${partners.map((partner, index) => `> ↳ ${index + 1}. ${partner.name}`).join('\n') || '> Tidak ada pasangan.'}\n\n` +
       `> Atur anak shelter: *setanak @tag shelter <no> <nama|gender|umur|carecount|love|ortu|biologicalparents> <nilai>*\n` +
       `> Hapus anak shelter: *delanak @tag shelter <no>*.`,
       null,
@@ -2330,25 +2340,63 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
     if (aksi === 'asuhanak') {
       const shelterSource = remaining[0]?.toLowerCase() === 'shelter'
-      const sourceList = shelterSource ? user.shelterKids : user.kids
       const childNumber = Number(remaining[shelterSource ? 1 : 0])
+      const mentions = m.mentionedJid || []
+      let ownerJid = who
+      let owner = user
+      let guardianJid = mentions[1] ||
+        (mentions.length && m.quoted?.sender && m.quoted.sender !== who ? m.quoted.sender : null)
+      const normalizeTargetJid = jid => {
+        let normalized = conn?.decodeJid ? conn.decodeJid(jid) : jid
+        if (normalized?.endsWith('@lid')) {
+          normalized = global.lids?.[normalized] || global.db?.data?.lids?.[normalized] || wdb.lids?.[normalized] || normalized
+        }
+        return normalized
+      }
+      if (mentions.length === 1 && m.quoted?.sender && m.quoted.sender !== who) {
+        const mentionedJid = normalizeTargetJid(mentions[0])
+        const quotedJid = normalizeTargetJid(m.quoted.sender)
+        const mentionedAccount = wdb.users[mentionedJid]
+        const quotedAccount = wdb.users[quotedJid]
+        const mentionedOwner = mentionedAccount?.rpg || mentionedAccount
+        const quotedOwner = quotedAccount?.rpg || quotedAccount
+        const mentionedList = shelterSource ? mentionedOwner?.shelterKids : mentionedOwner?.kids
+        const quotedList = shelterSource ? quotedOwner?.shelterKids : quotedOwner?.kids
+        const mentionedHasChild = Number.isInteger(childNumber) && childNumber > 0 && Boolean(mentionedList?.[childNumber - 1])
+        const quotedHasChild = Number.isInteger(childNumber) && childNumber > 0 && Boolean(quotedList?.[childNumber - 1])
+        if (mentionedHasChild === quotedHasChild) {
+          return m.reply(
+            `❌ Tidak bisa menentukan mana pemilik anak dan mana pengasuh dari mention/reply.\n` +
+            `> ↳ Tag pemilik terlebih dahulu lalu tag pengasuh.\n` +
+            `> ↳ Format: *${usedPrefix}rpgpanel asuhanak @pemilik ${shelterSource ? 'shelter ' : ''}<no-anak> @pengasuh*`
+          )
+        }
+        if (quotedHasChild) {
+          ownerJid = quotedJid
+          owner = quotedOwner
+          guardianJid = mentionedJid
+        } else {
+          ownerJid = mentionedJid
+          owner = mentionedOwner
+          guardianJid = quotedJid
+        }
+      }
+      const sourceList = shelterSource
+        ? (Array.isArray(owner?.shelterKids) ? owner.shelterKids : [])
+        : (Array.isArray(owner?.kids) ? owner.kids : [])
       const child = Number.isInteger(childNumber) && childNumber > 0 ? sourceList[childNumber - 1] : null
-      const targetJid = m.mentionedJid?.[1]
-      if (!child || !targetJid || child.facility || child.pendingTransferId || child.custody?.type === 'foster') {
+      guardianJid = guardianJid ? normalizeTargetJid(guardianJid) : null
+      if (!child || !guardianJid || child.facility || child.pendingTransferId || child.custody?.type === 'foster') {
         return m.reply(
           `❌ Format:\n` +
-          `> Anak keluarga: *${usedPrefix}rpgpanel asuhanak @tag <no-anak> @pengasuh*\n` +
-          `> Anak shelter: *${usedPrefix}rpgpanel asuhanak @tag shelter <no-anak> @pengasuh*`
+          `> Anak keluarga: *${usedPrefix}rpgpanel asuhanak @pemilik <no-anak> @pengasuh*\n` +
+          `> Anak shelter: *${usedPrefix}rpgpanel asuhanak @pemilik shelter <no-anak> @pengasuh*\n` +
+          `> Jika salah satu tag dikosongkan, reply pesan pemilik/pengasuh.`
         )
-      }
-      let guardianJid = targetJid
-      if (conn && typeof conn.decodeJid === 'function') guardianJid = conn.decodeJid(guardianJid)
-      if (guardianJid.endsWith('@lid')) {
-        guardianJid = global.lids?.[guardianJid] || global.db?.data?.lids?.[guardianJid] || wdb.lids?.[guardianJid] || guardianJid
       }
       const guardianData = wdb.users[guardianJid]
       const guardian = guardianData?.rpg || guardianData
-      if (!guardian || guardianData?.isDummy || guardianJid === who) {
+      if (!guardian || guardianData?.isDummy || guardianJid === ownerJid) {
         return m.reply('❌ Pengasuh harus user RPG lain yang sudah terdaftar.')
       }
       sourceList.splice(childNumber - 1, 1)
@@ -2358,19 +2406,19 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
         delete child.shelterStatus
       } else {
         child.originalOwnerLocation = 'kids'
-        if (child.custody) child.originalCustody = child.custody
       }
-      child.originalOwnerJid = who
+      if (child.custody) child.originalCustody = child.custody
+      child.originalOwnerJid = ownerJid
       child.custody = { type: 'foster', guardianJid }
       if (!Array.isArray(guardian.kids)) guardian.kids = []
       guardian.kids.push(child)
       await saveDB(wdb)
       return m.reply(
         `✅ Anak *${child.nama}* sekarang berada dalam pengasuhan @${guardianJid.split('@')[0]}.\n` +
-        `> ↳ Asal: ${shelterSource ? 'shelter' : 'keluarga'} @${who.split('@')[0]}.\n` +
+        `> ↳ Asal: ${shelterSource ? 'shelter' : 'keluarga'} @${ownerJid.split('@')[0]}.\n` +
         `> ↳ Pengasuh dapat mengembalikannya lewat Panel: *${usedPrefix}rpgpanel kembalianak @pengasuh <no-anak-asuh>*.`,
         null,
-        { mentions: [who, guardianJid] }
+        { mentions: [ownerJid, guardianJid] }
       )
     }
     if (aksi === 'kembalianak') {
@@ -2395,6 +2443,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       if (returningToShelter) {
         if (!Array.isArray(owner.shelterKids)) owner.shelterKids = []
         child.shelterStatus = child.originalShelterStatus || { reason: 'lost', enteredAt: Date.now() }
+        delete child.originalShelterStatus
         owner.shelterKids.push(child)
       } else {
         if (!Array.isArray(owner.kids)) owner.kids = []
@@ -2487,9 +2536,23 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
           ? `❌ Format: *${usedPrefix}rpgpanel setanak @tag shelter <no-anak> <nama|gender|umur|carecount|love|ortu|biologicalparents> <nilai>*`
           : `❌ Format: *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama|gender|umur|carecount|love|ortu|biologicalparents> <nilai>*`)
       }
-      if (field === 'nama' || field === 'ortu') {
+      if (field === 'nama') {
         if (value.length > 60) return m.reply('❌ Nama maksimal 60 karakter.')
         child[field] = value
+      } else if (field === 'ortu') {
+        const isPartnerNumber = /^\d+$/.test(value)
+        const partnerIndex = isPartnerNumber ? Number(value) - 1 : -1
+        const partner = isPartnerNumber
+          ? user.harem?.[partnerIndex]
+          : user.harem?.find(entry => String(entry.name).trim().toLowerCase() === value.toLowerCase())
+        if (partner) {
+          child.ortu = partner.name
+        } else if (isPartnerNumber) {
+          return m.reply(`❌ Pasangan nomor ${value} tidak ditemukan. Cek daftar pasangan terlebih dahulu.`)
+        } else {
+          if (value.length > 60) return m.reply('❌ Nama orang tua maksimal 60 karakter.')
+          child.ortu = value
+        }
       } else if (field === 'jenis') {
         const gender = value.toLowerCase()
         if (!['laki-laki', 'perempuan', 'cowok', 'cewek'].includes(gender)) return m.reply('❌ Jenis kelamin anak harus laki-laki atau perempuan.')
@@ -2515,7 +2578,11 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
         child.biologicalParents = parents
       }
       await saveDB(wdb)
-      return m.reply(`✅ Data anak *${child.nama}* (${field}) berhasil diatur.`, null, { mentions: [who] })
+      return m.reply(
+        `✅ Data anak *${child.nama}* (${field}) berhasil diatur${field === 'ortu' ? ` ke pasangan *${child.ortu}*` : ''}.`,
+        null,
+        { mentions: [who] }
+      )
     }
   }
   

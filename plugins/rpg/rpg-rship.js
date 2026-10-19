@@ -2240,17 +2240,14 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 > ↳ Selesaikan konfirmasi: ${usedPrefix}rship kid adopt yes/no
 > ↳ Alias command: ${usedPrefix}rship kid adopsi
 > ↳ Daftar berisi anak orphaned yang dititipkan di panti; nama orang tua asal tetap tercatat.
-> ↳ Tambah/hapus anak shelter via RPG Panel: *addanak @tag shelter <nama>* / *delanak @tag shelter <no>*
 
 👨‍👩‍👧 *PINDAHKAN ANAKMU KE PEMAIN LAIN*
 > ↳ Ini transfer langsung dari keluargamu, bukan adopsi anak panti; tag pemain RPG yang bersedia.
 > ↳ Pemilik: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>
-> ↳ Tawarkan anak shelter: ${usedPrefix}rship kid adopt shelter <no-shelter> @user <biaya>
 > ↳ Penerima: ${usedPrefix}rship kid adopt yes atau ${usedPrefix}rship kid adopt no
 > ↳ Biaya opsional dipotong dari bank pemilik dan masuk ke bank penerima setelah diterima.
 > ↳ Anak baru pindah setelah penerima menerima tawaran.
 > ↳ Kembalikan anak asuh: ${usedPrefix}rship kid return <no-anak-asuh>
-> ↳ Anak asal keluarga kembali ke keluarga pemilik; anak asal shelter kembali ke shelter pemilik.
 
 ─━━━━━━━━━━━━━━─
 
@@ -2325,7 +2322,6 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 > ↳ Daftar anak untuk diadopsi: ${usedPrefix}rship kid adopt list
 > ↳ Pilih anak untuk diadopsi: ${usedPrefix}rship kid adopt <no>
 > ↳ Tawari anak ke pemain lain: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>
-> ↳ Tawari anak shelter: ${usedPrefix}rship kid adopt shelter <no-shelter> @user <biaya>
 > ↳ Pemain yang ditag menerima/menolak: ${usedPrefix}rship kid adopt yes/no
 > ↳ Biaya asuh dibayar oleh pengirim hanya saat tawaran diterima.
 > ↳ Kembalikan anak asuh: ${usedPrefix}rship kid return <no-anak>
@@ -2462,8 +2458,7 @@ const clearChildTransferOffer = offer => {
   const source = getUserRPG(wdb, offer.sourceJid)
   const sourceUser = source?.rpg || source
   if (sourceUser?.pendingChildTransfer?.id === offer.id) {
-    const sourceList = offer.sourceList === 'shelterKids' ? sourceUser.shelterKids : sourceUser.kids
-    const child = sourceList?.find(entry => entry.pendingTransferId === offer.id)
+    const child = sourceUser.kids?.find(entry => entry.pendingTransferId === offer.id)
     if (child) delete child.pendingTransferId
     delete sourceUser.pendingChildTransfer
   }
@@ -2486,8 +2481,7 @@ const respondToChildTransfer = async response => {
 
   const source = getUserRPG(wdb, offer.sourceJid)
   const sourceUser = source?.rpg || source
-  const sourceList = offer.sourceList === 'shelterKids' ? sourceUser?.shelterKids : sourceUser?.kids
-  const childIndex = sourceList?.findIndex(child =>
+  const childIndex = sourceUser?.kids?.findIndex(child =>
     child.pendingTransferId === offer.id &&
     child.nama === offer.childName &&
     child.ortu === offer.parentName &&
@@ -2506,13 +2500,9 @@ const respondToChildTransfer = async response => {
     return m.reply(`Tawaran dibatalkan karena saldo bank pemilik tidak lagi cukup untuk membayar biaya pengasuhan.`)
   }
 
-  const [child] = sourceList.splice(childIndex, 1)
+  const [child] = sourceUser.kids.splice(childIndex, 1)
   delete child.pendingTransferId
-  if (offer.sourceList === 'shelterKids') {
-    child.originalShelterStatus = child.shelterStatus
-    child.originalOwnerLocation = 'shelterKids'
-    delete child.shelterStatus
-  } else if (!Array.isArray(child.biologicalParents) || !child.biologicalParents.length) {
+  if (!Array.isArray(child.biologicalParents) || !child.biologicalParents.length) {
     child.biologicalParents = [offer.sourceName, offer.parentName]
       .filter(parent => typeof parent === 'string' && parent.trim())
       .map(parent => parent.trim())
@@ -2551,21 +2541,19 @@ if (isChildAdoptionCommand) {
   const targetJid = conn.decodeJid?.(m.mentionedJid?.[0] || '') || m.mentionedJid?.[0]
 
   if (targetJid) {
-    const shelterSource = args[2]?.toLowerCase() === 'shelter'
-    const sourceList = shelterSource ? user.shelterKids : user.kids
-    const childNumber = Number(args[shelterSource ? 3 : 2])
-    const child = Number.isInteger(childNumber) && childNumber > 0 ? sourceList[childNumber - 1] : null
+    const childNumber = Number(args[2])
+    const child = Number.isInteger(childNumber) && childNumber > 0 ? user.kids[childNumber - 1] : null
     const targetData = getUserRPG(wdb, targetJid)
     const targetUser = targetData?.rpg || targetData
-    const amountTokens = args.slice(shelterSource ? 4 : 3).filter(token => !token.startsWith('@'))
+    const amountTokens = args.slice(3).filter(token => !token.startsWith('@'))
     const amountText = amountTokens.length === 1 ? amountTokens[0].replace(/[.,]/g, '') : '0'
     const amount = amountTokens.length ? Number(amountText) : 0
     if (!child || child.facility || child.pendingTransferId || targetJid === m.sender || !targetUser || targetData?.isDummy ||
       amountTokens.length > 1 || !Number.isSafeInteger(amount) || amount < 0) {
       return m.reply(
-        `Format: ${usedPrefix}rship kid adopt ${shelterSource ? 'shelter ' : ''}<no-anak> @user <biaya>\n` +
+        `Format: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>\n` +
         `> ↳ Biaya opsional, dipotong dari bank pengirim dan diterima saat tawaran disetujui.\n` +
-        `> ↳ Contoh: ${usedPrefix}rship kid adopt ${shelterSource ? 'shelter ' : ''}1 @user 1000000`
+        `> ↳ Contoh: ${usedPrefix}rship kid adopt 1 @user 1000000`
       )
     }
     if (user.pendingChildTransfer) {
@@ -2576,8 +2564,7 @@ if (isChildAdoptionCommand) {
       const oldTargetData = getUserRPG(wdb, oldOffer.targetJid)
       const oldTarget = oldTargetData?.rpg || oldTargetData
       if (oldTarget?.pendingChildFosterOffer?.id === oldOffer.id) delete oldTarget.pendingChildFosterOffer
-      const oldSourceList = oldOffer.sourceList === 'shelterKids' ? user.shelterKids : user.kids
-      const oldChild = oldSourceList.find(entry => entry.pendingTransferId === oldOffer.id)
+      const oldChild = user.kids.find(entry => entry.pendingTransferId === oldOffer.id)
       if (oldChild) delete oldChild.pendingTransferId
       delete user.pendingChildTransfer
     }
@@ -2598,12 +2585,10 @@ if (isChildAdoptionCommand) {
 
     const transferId = `${m.sender}-${now}-${Math.random().toString(36).slice(2, 10)}`
     child.pendingTransferId = transferId
-    const sourceArray = shelterSource ? 'shelterKids' : 'kids'
-    user.pendingChildTransfer = { id: transferId, targetJid, sourceList: sourceArray, createdAt: now }
+    user.pendingChildTransfer = { id: transferId, targetJid, createdAt: now }
     targetUser.pendingChildFosterOffer = {
       id: transferId,
       sourceJid: m.sender,
-      sourceList: sourceArray,
       sourceName: wdb.users[m.sender]?.name || m.sender.split('@')[0],
       childName: child.nama,
       parentName: child.ortu,
@@ -2615,7 +2600,7 @@ if (isChildAdoptionCommand) {
       `📨 Tawaran pengasuhan *${child.nama}* dikirim ke @${targetJid.split('@')[0]}.\n` +
       `> ↳ Biaya asuh: Rp ${amount.toLocaleString('id-ID')} (dibayar saat diterima).\n` +
       `> ↳ Penerima: ${usedPrefix}rship kid adopt yes atau ${usedPrefix}rship kid adopt no.\n` +
-      `> ↳ Anak tetap berada di ${shelterSource ? 'shelter' : 'daftar keluargamu'} sampai disetujui.`,
+      `> ↳ Anak tetap berada di daftar keluargamu sampai disetujui.`,
       null,
       { mentions: [targetJid] }
     )
@@ -5863,7 +5848,7 @@ if (action === 'kiss') {
 
 }
 
-handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship child info', 'rship kid guide', 'rship child guide', 'rship kid command', 'rship child command', 'kidcare', 'childcare', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid adopt shelter <no-shelter> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan list', 'rship makam list', 'rship shelter list', 'rship shelter retrieve <no>', 'rship exspouse/ex', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
+handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship child info', 'rship kid guide', 'rship child guide', 'kidcare', 'childcare', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan list', 'rship makam list', 'rship shelter list', 'rship shelter retrieve <no>', 'rship exspouse/ex', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
 handler.command = ['rship', 'rsh', 'kidcare', 'childcare']
 handler.group = true
