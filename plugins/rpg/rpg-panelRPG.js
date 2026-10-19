@@ -319,12 +319,9 @@ let handler = async (m, {
   if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken) {
     const token = randomUUID()
     const requestedCommand = rawArgs.join(' ')
-    const privateConfirmationTarget = isPrivateRpgPanel
-      ? (conn.decodeJid ? conn.decodeJid(sourceMessage.sender) : sourceMessage.sender)
-      : m.chat
     panelConfirmations[token] = {
       owner: m.sender,
-      chat: privateConfirmationTarget,
+      chat: m.chat,
       text,
       mentionedJid: [...(sourceMessage.mentionedJid || [])],
       quotedSender: sourceMessage.quoted?.sender || null,
