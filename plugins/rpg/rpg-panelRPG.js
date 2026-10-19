@@ -956,9 +956,28 @@ let handler = async (m, {
   // 3. Resolusi Target User (Mendukung: Tag / Mention, Reply / Quoted, Nomor HP, JID, LID)
   let who = null;
   let targetArgIndex = -1;
+  const explicitTargetIndex = remaining.findIndex(arg =>
+    arg.includes('@s.whatsapp.net') ||
+    arg.includes('@lid') ||
+    /^@\d{8,16}$/.test(arg) ||
+    (!m.quoted && !m.mentionedJid?.length && /^\d{8,16}$/.test(arg))
+  )
 
+  // Prefer explicit numeric/JID targets over the quoted sender.
+  if (explicitTargetIndex !== -1) {
+    const rawTarget = remaining[explicitTargetIndex].trim()
+    const cleanTarget = rawTarget.replace(/^@/, '')
+    if (cleanTarget.includes('@s.whatsapp.net') || cleanTarget.includes('@lid')) {
+      who = cleanTarget
+    } else {
+      let digits = cleanTarget.replace(/\D/g, '')
+      if (digits.startsWith('08')) digits = `628${digits.slice(2)}`
+      who = `${digits}@s.whatsapp.net`
+    }
+    targetArgIndex = explicitTargetIndex
+  }
   // A. Cek dari Mention / Tag (@user)
-  if (m.mentionedJid && m.mentionedJid.length > 0) {
+  else if (m.mentionedJid && m.mentionedJid.length > 0) {
     who = m.mentionedJid[0];
     for (let i = 0; i < remaining.length; i++) {
       if (remaining[i].startsWith('@') || remaining[i].includes('@s.whatsapp.net') || remaining[i].includes('@lid')) {
@@ -970,25 +989,6 @@ let handler = async (m, {
   // B. Cek dari Quoted / Reply pesan user
   else if (m.quoted && m.quoted.sender) {
     who = m.quoted.sender;
-  }
-  // C. Cek dari argumen teks (nomor HP / string JID / LID)
-  else {
-    for (let i = 0; i < remaining.length; i++) {
-      let arg = remaining[i].trim();
-      let clean = arg.replace(/^@/, '');
-      if (clean.includes('@s.whatsapp.net') || clean.includes('@lid')) {
-        who = clean;
-        targetArgIndex = i;
-        break;
-      }
-      let digits = clean.replace(/[^0-9]/g, '');
-      if (digits.length >= 8 && digits.length <= 16) {
-        if (digits.startsWith('08')) digits = '628' + digits.slice(2);
-        who = digits + '@s.whatsapp.net';
-        targetArgIndex = i;
-        break;
-      }
-    }
   }
 
   if (targetArgIndex !== -1) {
@@ -1024,6 +1024,21 @@ let handler = async (m, {
       who = who + '@s.whatsapp.net';
     } else if (!who.endsWith('@s.whatsapp.net') && !who.endsWith('@lid')) {
       who = who.split('@')[0] + '@s.whatsapp.net';
+    }
+
+    const targetDigits = who.split('@')[0].replace(/\D/g, '')
+    if (targetDigits) {
+      if (targetDigits.startsWith('08')) {
+        const normalizedDigits = `628${targetDigits.slice(2)}`
+        who = `${normalizedDigits}@s.whatsapp.net`
+      }
+      const matchingUser = Object.entries(wdb.users).find(([jid, account]) => {
+        const jidDigits = jid.split('@')[0].replace(/\D/g, '')
+        const lidDigits = String(account?.lid || '').split('@')[0].replace(/\D/g, '')
+        return jidDigits === targetDigits || jidDigits === who.split('@')[0] ||
+          lidDigits === targetDigits || lidDigits === who.split('@')[0]
+      })
+      if (matchingUser) who = matchingUser[0]
     }
 
     if (who === '@s.whatsapp.net' || who.startsWith('NaN') || who === 'undefined@s.whatsapp.net') {
@@ -2344,8 +2359,14 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       const mentions = m.mentionedJid || []
       let ownerJid = who
       let owner = user
+      const guardianToken = remaining.find(value =>
+        value.includes('@s.whatsapp.net') ||
+        value.includes('@lid') ||
+        /^@\d{8,16}$/.test(value)
+      )
       let guardianJid = mentions[1] ||
-        (mentions.length && m.quoted?.sender && m.quoted.sender !== who ? m.quoted.sender : null)
+        (mentions.length && m.quoted?.sender && m.quoted.sender !== who ? m.quoted.sender : null) ||
+        (guardianToken ? guardianToken.replace(/^@/, '') : null)
       const normalizeTargetJid = jid => {
         let normalized = conn?.decodeJid ? conn.decodeJid(jid) : jid
         if (normalized?.endsWith('@lid')) {
@@ -2379,6 +2400,28 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
           ownerJid = mentionedJid
           owner = mentionedOwner
           guardianJid = quotedJid
+        }
+      } else if (!mentions.length && m.quoted?.sender && m.quoted.sender !== who) {
+        const explicitJid = normalizeTargetJid(who)
+        const quotedJid = normalizeTargetJid(m.quoted.sender)
+        const explicitAccount = wdb.users[explicitJid]
+        const quotedAccount = wdb.users[quotedJid]
+        const explicitOwner = explicitAccount?.rpg || explicitAccount
+        const quotedOwner = quotedAccount?.rpg || quotedAccount
+        const explicitList = shelterSource ? explicitOwner?.shelterKids : explicitOwner?.kids
+        const quotedList = shelterSource ? quotedOwner?.shelterKids : quotedOwner?.kids
+        const explicitHasChild = Number.isInteger(childNumber) && childNumber > 0 && Boolean(explicitList?.[childNumber - 1])
+        const quotedHasChild = Number.isInteger(childNumber) && childNumber > 0 && Boolean(quotedList?.[childNumber - 1])
+        if (explicitHasChild !== quotedHasChild) {
+          if (quotedHasChild) {
+            ownerJid = quotedJid
+            owner = quotedOwner
+            guardianJid = explicitJid
+          } else {
+            ownerJid = explicitJid
+            owner = explicitOwner
+            guardianJid = quotedJid
+          }
         }
       }
       const sourceList = shelterSource
