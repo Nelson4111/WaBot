@@ -6,13 +6,17 @@ import {
   canReceiveRareActivityRewards,
   DIFFICULTY_COOLDOWN,
   getDifficultyCooldownRemaining,
+  getDifficultyWeekKey,
   getDifficultyDeathHealCooldownRemaining,
+  getPremiumDifficultyChangesRemaining,
   getCrimeRestriction,
   getDifficulty,
   isPlayerDead,
   isDifficultyRanked,
   normalizeDifficulty,
   markDifficultyDeath,
+  recordDifficultyChange,
+  PREMIUM_DIFFICULTY_CHANGES_PER_WEEK,
   scaleDifficultyCooldown,
   scaleDifficultyCrimeLoss,
   scaleDifficultyDamage,
@@ -87,13 +91,30 @@ test('dead players cannot perform crimes', () => {
   assert.equal(isPlayerDead({}), false)
 })
 
-test('difficulty changes have a seven-day cooldown', () => {
+test('non-premium difficulty changes have a seven-day cooldown', () => {
   const changedAt = 1000000
   const user = { difficultyChangedAt: changedAt }
   assert.equal(getDifficultyCooldownRemaining({}, changedAt), 0)
   assert.equal(getDifficultyCooldownRemaining(user, changedAt), DIFFICULTY_COOLDOWN)
   assert.equal(getDifficultyCooldownRemaining(user, changedAt + DIFFICULTY_COOLDOWN - 1), 1)
   assert.equal(getDifficultyCooldownRemaining(user, changedAt + DIFFICULTY_COOLDOWN), 0)
+})
+
+test('premium difficulty changes are limited to twice per Jakarta week and reset on Monday', () => {
+  const monday = Date.parse('2024-01-01T00:00:00+07:00')
+  const sundayBefore = monday - 1
+  const nextMonday = monday + 7 * 24 * 60 * 60 * 1000
+  const user = {}
+
+  assert.equal(getDifficultyWeekKey(sundayBefore), '2023-12-25')
+  assert.equal(getDifficultyWeekKey(monday), '2024-01-01')
+  assert.equal(getPremiumDifficultyChangesRemaining(user, monday), PREMIUM_DIFFICULTY_CHANGES_PER_WEEK)
+
+  recordDifficultyChange(user, monday)
+  assert.equal(getPremiumDifficultyChangesRemaining(user, monday), 1)
+  recordDifficultyChange(user, monday + 1)
+  assert.equal(getPremiumDifficultyChangesRemaining(user, monday + 1), 0)
+  assert.equal(getPremiumDifficultyChangesRemaining(user, nextMonday), PREMIUM_DIFFICULTY_CHANGES_PER_WEEK)
 })
 
 test('death healing cooldown differs for Hardcore and Nightmare', () => {
