@@ -91,6 +91,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       text: guideText,
       title: '🎚️ PANDUAN DIFFICULTY',
       subtitle: 'Pahami risikonya, lalu pilih tantanganmu',
+      noHeader: true,
       footer: 'AVELIA • RPG DIFFICULTY',
       buttonText: '⚔️ PILIH MODE',
       sections: [{ title: 'Pilih tingkat kesulitan', rows }],
@@ -149,6 +150,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     text: infoText,
     title: '🎚️ PROFIL DIFFICULTY',
     subtitle: 'Status dan pengaturan tantangan RPG-mu',
+    noHeader: true,
     footer: 'AVELIA • RPG DIFFICULTY',
     buttons: [[`📖 LIHAT PANDUAN MODE`, `${usedPrefix}difficulty guide`]],
     reply: fallbackText => m.reply(fallbackText)

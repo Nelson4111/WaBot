@@ -283,12 +283,12 @@ if (text.toLowerCase() === 'all') {
     message: m,
     quoted: m,
     text: teks,
-    title: '🌾 PANEN BERHASIL',
+    title: '🌾 TANAM KEMBALI',
     subtitle: 'Semua tanaman siap panen sudah diproses',
+    noHeader: true,
     buttonText: '🌱 PILIH BIBIT TANAM ULANG',
     sections: [{ title: 'Bibit dari panen ini', rows: replantRows }],
     fallbackText: replantFallback,
-    thumbnailUrl: ladangImageUrl,
     sendInteractive: typeof conn.sendInteractive === 'function'
       ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
       : undefined
@@ -369,7 +369,7 @@ if (sisaWaktu <= 0) {
     text: teks,
     title: '🌱 TANAM KEMBALI',
     subtitle: 'Mulai lagi dengan bibit yang baru kamu panen',
-    thumbnailUrl: ladangImageUrl,
+    noHeader: true,
     buttons: [[`🌱 Tanam ${formatNama(l.jenis)}`, `${usedPrefix}tanam ${l.jenis} ulang 1`]],
     quoted: m,
     preferV2: true,
