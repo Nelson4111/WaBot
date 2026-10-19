@@ -167,7 +167,7 @@ test('a bidder addressed by LID sees their active bid and leads by their real na
   }
 })
 
-test('confirmed bids are shown, held in the bank, and settled with loser refunds', async () => {
+test('confirmed bids are recorded, deducted, and settled with loser refunds', async () => {
   const previousDb = global.db
   global.db = makeDb()
 
@@ -189,6 +189,7 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     await runAuction(firstJid, `bid ${item.id}`)
     assert.match(await runAuction(firstJid, 'konfirmasi'), /Bid tertinggi: .* oleh Kamu/)
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - firstAmount)
+    assert.match(global.db.data.users[firstJid].rpg.riwayat[0], /Bid lelang/)
     assert.equal(session.bids[item.id][0].jid, firstJid)
     assert.equal(global.db.data.users[firstJid].rpg.auctionBids[item.id].amount, firstAmount)
     const confirmedInfo = await runAuction(firstJid, 'info')
@@ -210,12 +211,15 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     global.db.data.users[firstJid].rpg.auctionBids[item.id] = personalBid
 
     const depositMessage = makeMessage(firstJid)
-    await bankHandler(depositMessage.m, { text: 'simpan 1000', usedPrefix: '.', command: 'bank' })
+    await bankHandler(depositMessage.m, { text: 'simpan 1K', usedPrefix: '.', command: 'bank' })
     assert.match(depositMessage.replies.at(-1), /TRANSAKSI BERHASIL/)
 
     const withdrawMessage = makeMessage(firstJid)
-    await bankHandler(withdrawMessage.m, { text: 'tarik 1000', usedPrefix: '.', command: 'bank' })
-    assert.match(withdrawMessage.replies.at(-1), /PENARIKAN DIBLOKIR/)
+    await bankHandler(withdrawMessage.m, { text: 'tarik 1K', usedPrefix: '.', command: 'bank' })
+    assert.match(withdrawMessage.replies.at(-1), /TRANSAKSI BERHASIL/)
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - firstAmount)
+    assert.ok(global.db.data.users[firstJid].rpg.riwayat.some(entry => /Simpan/.test(entry)))
+    assert.ok(global.db.data.users[firstJid].rpg.riwayat.some(entry => /Tarik/.test(entry)))
 
     assert.match(await runAuction(secondJid, `bid ${item.id} ${firstAmount}`), /Bid harus lebih tinggi/)
     await runAuction(secondJid, `bid ${item.id} ${competingAmount}`)
@@ -235,6 +239,9 @@ test('confirmed bids are shown, held in the bank, and settled with loser refunds
     assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance + 1_000)
     assert.equal(global.db.data.users[secondJid].rpg.bank, initialBalance - competingAmount)
     assert.equal(global.db.data.users[secondJid].rpg.auctionVault[item.id], 1)
+    assert.match(global.db.data.users[secondJid].rpg.riwayat[0], /Bid lelang/)
+    assert.equal(global.db.data.users[secondJid].rpg.riwayat.filter(entry => /Bid lelang/.test(entry)).length, 1)
+    assert.ok(global.db.data.users[firstJid].rpg.riwayat.some(entry => /Pengembalian bid/.test(entry)))
     assert.match(await runAuction(firstJid, 'list'), /HASIL LELANG TERAKHIR/)
     assert.match(await runAuction(firstJid, 'list'), /Penawar Dua/)
   } finally {
