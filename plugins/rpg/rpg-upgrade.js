@@ -5,8 +5,6 @@ import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
 
-const UPGRADE_IMAGE = 'https://c.termai.cc/i108/l3q'
-
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
@@ -124,7 +122,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   listUpgrade += `📌 *Contoh:* Ketik ${usedPrefix}${command} guide atau ${usedPrefix}${command} sword\n\n`
   listUpgrade += `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, listUpgrade, UPGRADE_IMAGE)
+  return sendRpgMsg(conn, m, listUpgrade)
 }
 
 if (!user[item] || user[item] < 1) {
@@ -295,7 +293,8 @@ return sendRpgButtons(conn, {
   text: capSuccess,
   title: '✨ UPGRADE BERHASIL',
   subtitle: `${newName} siap menemani petualanganmu`,
-  thumbnailUrl: UPGRADE_IMAGE,
+  noThumbnail: true,
+  noHeader: true,
   footer: 'AVELIA • RPG UPGRADE',
   buttons: [[
     `⚙️ Upgrade ${item === 'fishingrod' ? 'Fishing Rod' : item}`,

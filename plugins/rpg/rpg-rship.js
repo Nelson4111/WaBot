@@ -3,7 +3,9 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
+import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { sendRpgButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import {
   CHILD_ACTIVITIES,
@@ -85,8 +87,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 │ 💝 PANDUAN HADIAH PASANGAN
 ╰─━━━━━━━━━━━━━━─
 
-🎁 *DAFTAR HADIAH*
-> ↳ ${usedPrefix}rship gift list
+🎁 *HADIAH INTERAKTIF*
+> ↳ ${usedPrefix}rship gift
+> ↳ Pilih pasangan, hadiah, lalu konfirmasi sebelum saldo dipotong.
 
 ─━━━━━━━━━━━━━━─
 💝 *HADIAH ITEM*
@@ -112,6 +115,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > ↳ ${usedPrefix}rship gift anak <no> money 50000
 
 ─━━━━━━━━━━━━━━─`
+  const giftPageSize = 20
+  const giftPageCount = Math.ceil(GIFT_LIST.length / giftPageSize)
+  const giftDraftTtl = 5 * 60 * 1000
+  const formatGiftCatalogPage = page => {
+    const start = (page - 1) * giftPageSize
+    const gifts = GIFT_LIST.slice(start, start + giftPageSize)
+    const lines = gifts.map((gift, index) =>
+      `*${start + index + 1}. ${gift.emoji} ${gift.desc}*\n` +
+      `> ↳ Rp ${gift.harga.toLocaleString('id-ID')} · +${gift.exp.toLocaleString('id-ID')} EXP · +${gift.love} Love`
+    )
+    return `╭─❏「 🎁 KATALOG HADIAH 」❏\n` +
+      `│ 💝 PILIHAN ${start + 1}–${start + gifts.length} DARI ${GIFT_LIST.length}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${lines.join('\n\n')}\n\n` +
+      `📖 Halaman *${page}/${giftPageCount}* · Tiap halaman berisi maksimal ${giftPageSize} hadiah.\n` +
+      `> ↳ Buka: ${usedPrefix}rship gift list ${page < giftPageCount ? page + 1 : 1}\n` +
+      `> ↳ Mulai gift interaktif: ${usedPrefix}rship gift`
+  }
 
   const getTitle = (lvl, custom) => {
     if (custom) return custom
@@ -277,6 +298,27 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       normalizeBiologicalParents(child)
       user.shelterKids.push(child)
     }
+    wdb.crime = wdb.crime || {}
+    wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
+    wdb.crime[m.sender].penelantaran = (Number(wdb.crime[m.sender].penelantaran) || 0) + 1
+    wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
+
+    const alreadyImprisoned = user.penjara && now - Number(user.penjara) < (Number(user.lamaPenjara) || 0)
+    if (!alreadyImprisoned) {
+      user.penjara = now
+      user.lamaPenjara = 2 * 60 * 60 * 1000
+      user.tebusan = 2000000
+      user.kasus = '👶 Penelantaran anak'
+      user.sel = registerPrisoner(wdb, m.sender)
+    }
+    if (!Array.isArray(user.riwayat)) user.riwayat = []
+    user.riwayat.unshift(`🚔 Anak ${stage.name} ${child.nama} ${runsAway ? 'kabur' : 'hilang'}; laporan penelantaran anak`)
+    const legalStatus = alreadyImprisoned
+      ? 'Kasus ini tercatat saat kamu sedang menjalani hukuman.'
+      : user.sel
+        ? `Kamu dipenjara 2 jam di sel ${user.sel} atas kasus penelantaran anak.\n> ↳ Tebusan: Rp 2.000.000.`
+        : 'Laporan diproses, tetapi perlindungan atau rehabilitasi aktif mencegah penahanan.'
+
     if (!runsAway) {
       const story = CHILD_LOSS_STORIES[Math.floor(Math.random() * CHILD_LOSS_STORIES.length)]
       childEvents.push(
@@ -286,6 +328,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         `> ↳ *${child.nama} hilang.*\n` +
         `> ${story}\n\n` +
         `> ↳ Anak dibawa ke shelter. Lihat ${usedPrefix}rship shelter list untuk status dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `🚔 *STATUS HUKUM*\n\n` +
+        `> ↳ Poin kriminal penelantaran: *+3 poin*.\n` +
+        `> ↳ ${legalStatus}\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
       childStateChanged = true
@@ -293,16 +339,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     const story = CHILD_RUNAWAY_STORIES[Math.floor(Math.random() * CHILD_RUNAWAY_STORIES.length)]
-    const alreadyImprisoned = user.penjara && now - Number(user.penjara) < (Number(user.lamaPenjara) || 0)
-    if (!alreadyImprisoned) {
-      user.penjara = now
-      user.lamaPenjara = 2 * 60 * 60 * 1000
-      user.tebusan = 2000000
-      user.kasus = '🚔 Penelantaran anak'
-      user.sel = registerPrisoner(wdb, m.sender)
-    }
-    if (!Array.isArray(user.riwayat)) user.riwayat = []
-    user.riwayat.unshift(`🚔 Anak ${stage.name} ${child.nama} melaporkan penelantaran`)
     childEvents.push(
       `╭─❏「 🚨 ANAK KABUR 」❏\n` +
       `│ 👶 LAPORAN PENELANTARAN ANAK\n` +
@@ -314,7 +350,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         : `> ↳ Anak berada di shelter. Lihat ${usedPrefix}rship shelter list dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n`) +
       `─━━━━━━━━━━━━━━─\n` +
       `🚔 *STATUS HUKUM*\n\n` +
-      `> ↳ ${alreadyImprisoned ? 'Kasus ini tercatat saat kamu sedang menjalani hukuman.' : user.sel ? `Kamu dipenjara 2 jam di sel ${user.sel} atas kasus penelantaran anak.\n> ↳ Tebusan: Rp 2.000.000.` : 'Pihak berwenang memproses laporan; perlindungan yang aktif mencegah penahanan.'}\n\n` +
+      `> ↳ Poin kriminal penelantaran: *+3 poin*.\n` +
+      `> ↳ ${legalStatus}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
     childStateChanged = true
@@ -403,17 +440,24 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     })
   }
 
+  const applyPartnerExp = (partner, amount) => {
+    partner.level = Math.max(1, Math.floor(Number(partner.level) || 1))
+    partner.exp = Math.max(0, Number(partner.exp) || 0) + amount
+    let levelUps = 0
+    while (partner.level < Number.MAX_SAFE_INTEGER && partner.exp >= partner.level * 200) {
+      partner.exp -= partner.level * 200
+      partner.level++
+      partner.love = Math.min(100, (Number(partner.love) || 0) + 5)
+      partner.waitTitleUp = true
+      levelUps++
+    }
+    return levelUps
+  }
+
   const addExp = (partner, amount) => {
     const eventMultiplier = (isRpgEventActive('love_season') ? 1.5 : 1) *
       (isRpgEventActive('cold_war') ? 0.7 : 1)
-    partner.exp = (Number(partner.exp) || 0) + Math.floor(amount * eventMultiplier)
-    const needed = (Number(partner.level) || 1) * 200
-    if (partner.exp < needed) return false
-    partner.exp -= needed
-    partner.level = (Number(partner.level) || 1) + 1
-    partner.love = Math.min(100, (Number(partner.love) || 0) + 5)
-    partner.waitTitleUp = true
-    return true
+    return applyPartnerExp(partner, Math.floor(amount * eventMultiplier))
   }
 
   const standardPartnerActivityExp = () => RSHIP_STANDARD_PARTNER_EXP
@@ -1323,7 +1367,7 @@ ${options}
           ['📚 Panduan anak', 'rship kid guide', 'Cara merawat anak'],
           ['⏰ Cooldown anak', 'rship kid cd', 'Cek kapan aktivitas anak siap'],
           ['🧸 Aktivitas anak', 'rship kid', 'Pilih aktivitas pengasuhan'],
-          ['🎁 Hadiah keluarga', 'rship gift list', 'Lihat hadiah pasangan dan anak']
+          ['🎁 Kirim hadiah', 'rship gift', 'Pilih pasangan dan hadiah secara interaktif']
         ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
       },
       {
@@ -1944,6 +1988,11 @@ ${options}
     if(user.harem.length === 0) return m.reply(`╭─❏「 💔 JOMBLO 」❏
 │ 📋 STATUS HUBUNGAN
 ╰─━━━━━━━━━━━━━━─`)
+    let progressRepaired = false
+    for (const partner of user.harem) {
+      if (applyPartnerExp(partner, 0)) progressRepaired = true
+    }
+    if (progressRepaired) await saveDB(wdb)
     let maxSlot = getMaxSlot()
     let cap = `╭─❏「 💕 DAFTAR PASANGAN 」❏
 │ 📌 Slot: ${user.harem.length}/${maxSlot}
@@ -1978,6 +2027,7 @@ if (action === 'status') {
   }
 
   let p = user.harem[no]
+  if (applyPartnerExp(p, 0)) await saveDB(wdb)
   let need = (p.level || 1) * 200
   let anakPasangan = user.kids.filter(k => k.ortu === p.name)
 
@@ -2130,30 +2180,25 @@ if (action === 'fitur') {
 
 // === GIFT LIST ===
 if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
-  let cap = `╭─❏「 🎁 DAFTAR 50 HADIAH 」❏\n`
-  cap += `│ 🎁 *DAFTAR HADIAH*\n`
-  cap += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  cap += `💝 *50 HADIAH UNTUK PASANGAN*\n`
-  cap += `> ↳ Hadiah memakai saldo bank dan menaikkan Love pasangan.\n\n`
-
-  GIFT_LIST.forEach((g, i) => {
-    cap += `*${i + 1}. ${g.desc} ${g.emoji}*\n`
-    cap += `> ↳ Buy: Rp ${g.harga.toLocaleString()}\n`
-    cap += `> ↳ XP: +${g.exp.toLocaleString()}\n`
-    cap += `> ↳ Love: +${g.love}\n\n`
+  const requestedPage = Number(args[2] || 1)
+  if (!Number.isSafeInteger(requestedPage) || requestedPage < 1 || requestedPage > giftPageCount) {
+    return m.reply(`❌ Pilih halaman katalog dari *1–${giftPageCount}*.\nContoh: *${usedPrefix}rship gift list 1*`)
+  }
+  const navigationButtons = []
+  if (requestedPage > 1) navigationButtons.push(['⬅️ Sebelumnya', `${usedPrefix}rship gift list ${requestedPage - 1}`])
+  if (requestedPage < giftPageCount) navigationButtons.push(['Berikutnya ➡️', `${usedPrefix}rship gift list ${requestedPage + 1}`])
+  navigationButtons.push(['💝 Mulai pilih hadiah', `${usedPrefix}rship gift`])
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🎁 KATALOG HADIAH',
+    subtitle: `Halaman ${requestedPage} dari ${giftPageCount}`,
+    text: formatGiftCatalogPage(requestedPage),
+    footer: 'AVELIA • RSHIP GIFT',
+    buttons: navigationButtons,
+    fallbackText: formatGiftCatalogPage(requestedPage)
   })
-
-  cap += `─━━━━━━━━━━━━━━─\n\n`
-
-  cap += `📌 *CARA PAKAI*\n`
-  cap += `> ↳ Item: ${usedPrefix}rship gift item 5 2\n`
-  cap += `> ↳ Nama: ${usedPrefix}rship gift item baju 1\n`
-  cap += `> ↳ Uang: ${usedPrefix}rship gift money 50000000 1\n\n`
-
-  cap += `─━━━━━━━━━━━━━━─`
-
-  return m.reply(cap)
 }
 
   // === ANAK LIST ===
@@ -3586,7 +3631,8 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
       child.love = Math.min(100, (Number(child.love) || 0) + rule.love)
       if (target.partnerIndex >= 0) {
         const previousUps = levelUps.get(partner.name) || 0
-        if (addExp(partner, rule.exp)) levelUps.set(partner.name, previousUps + 1)
+        const newUps = addExp(partner, rule.exp)
+        if (newUps) levelUps.set(partner.name, previousUps + newUps)
       }
     }
     child.careCount = getChildCareCount(child) + 1
@@ -3877,7 +3923,7 @@ if (action === 'all') {
   for (const { partner, activity, rule } of activityCosts) {
     const loveChange = rule.conflictIntensity === undefined ? rule.love : conflictEffect(partner, rule.conflictIntensity)
     applyActivityLove(partner, loveChange)
-    if (addExp(partner, rule.exp)) levelUps++
+    levelUps += addExp(partner, rule.exp)
     if (rule.incomeMin !== undefined) {
       totalIncome += Math.floor(Math.random() * (rule.incomeMax - rule.incomeMin + 1)) + rule.incomeMin
     }
@@ -4478,30 +4524,318 @@ if (action === 'kerja') {
 // === GIFT HANDLER ===
 if (action === 'gift') {
   let tipe = args[1]?.toLowerCase()
+  let confirmedGiftDraft = null
+
+  const sendGiftPartnerMenu = () => {
+    const rows = user.harem.map((partner, index) => ({
+      title: `💕 Pasangan ${index + 1}`,
+      description: `${String(partner.name).slice(0, 24)} · Lv.${partner.level || 1} · 💖 ${partner.love || 0}${partner.menikah ? ' · 💍' : ''}`,
+      id: `${usedPrefix}rship gift flow partner ${index}`
+    }))
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '💝 KADO UNTUK SIAPA?',
+      subtitle: 'Pilih satu pasangan untuk menerima hadiah',
+      text: 'Setiap kado punya cerita. Pilih pasangan yang ingin kamu bahagiakan, lalu tentukan hadiahnya.',
+      buttonText: '💕 PILIH PASANGAN',
+      footer: 'AVELIA • RSHIP GIFT',
+      sections: [{ title: '💕 Pasanganmu', rows }],
+      fallbackText:
+        `╭─❏「 💝 PILIH PASANGAN 」❏\n` +
+        `${rows.map((row, index) => `> ${index + 1}. ${user.harem[index].name} — ${usedPrefix}rship gift flow partner ${index}`).join('\n')}\n\n` +
+        `Pilih pasangan sebelum menentukan hadiah.`
+    })
+  }
+
+  const sendGiftTypeMenu = draft => {
+    const rows = []
+    for (let page = 1; page <= giftPageCount; page++) {
+      const firstGift = (page - 1) * giftPageSize + 1
+      const lastGift = Math.min(page * giftPageSize, GIFT_LIST.length)
+      rows.push({
+        title: `🎁 Kado ${firstGift}–${lastGift}`,
+        description: `Jelajahi ${lastGift - firstGift + 1} pilihan kado`,
+        id: `${usedPrefix}rship gift flow page ${page}`
+      })
+    }
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🎀 PILIH JENIS HADIAH',
+      subtitle: `Untuk ${draft.partnerName} · ${giftPageCount} halaman kado`,
+      text:
+        `💕 Pasangan: *${draft.partnerName}*\n\n` +
+        `Pilih satu dari *${giftPageCount} halaman*. Setiap halaman berisi maksimal ${giftPageSize} kado. ` +
+        `Setelah memilih hadiah, cek ringkasan lalu konfirmasi sebelum dikirim.\n\n` +
+        `💵 Untuk hadiah uang, gunakan *${usedPrefix}rship gift flow money* lalu ikuti petunjuknya.`,
+      buttonText: '🎁 LIHAT PILIHAN HADIAH',
+      footer: 'AVELIA • RSHIP GIFT',
+      sections: [{ title: '🎁 Pilih halaman katalog', rows }],
+      fallbackText:
+        `🎀 *PILIH HADIAH UNTUK ${draft.partnerName}*\n` +
+        `${rows.map(row => `> ↳ ${row.title}: ${row.id}`).join('\n')}\n` +
+        `> ↳ Hadiah uang: ${usedPrefix}rship gift flow money`
+    })
+  }
+
+  const sendGiftItemPage = (draft, page) => {
+    const start = (page - 1) * giftPageSize
+    const gifts = GIFT_LIST.slice(start, start + giftPageSize)
+    const sections = [{
+      title: `✨ Kado ${start + 1}–${start + gifts.length}`,
+      rows: gifts.map((gift, index) => ({
+        title: `${gift.emoji} Kado #${gift.id}`,
+        description: `${gift.desc.slice(0, 18)} · Rp ${gift.harga.toLocaleString('id-ID')} · +${gift.love} Love`,
+        id: `${usedPrefix}rship gift flow item ${gift.id}`
+      }))
+    }]
+    const navigation = []
+    if (page > 1) navigation.push({
+      title: '⬅️ Halaman sebelumnya',
+      description: `Kado ${Math.max(1, start - giftPageSize + 1)}–${start}`,
+      id: `${usedPrefix}rship gift flow page ${page - 1}`
+    })
+    if (page < giftPageCount) navigation.push({
+      title: '➡️ Halaman berikutnya',
+      description: `Kado ${start + gifts.length + 1}–${Math.min((page + 1) * giftPageSize, GIFT_LIST.length)}`,
+      id: `${usedPrefix}rship gift flow page ${page + 1}`
+    })
+    navigation.push({
+      title: '🎀 Ganti jenis hadiah',
+      description: 'Kembali ke pilihan halaman atau hadiah uang',
+      id: `${usedPrefix}rship gift flow ulang`
+    })
+    sections.push({ title: '📖 Jelajahi katalog', rows: navigation })
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🎁 KATALOG KADO',
+      subtitle: `${draft.partnerName} · Halaman ${page}/${giftPageCount}`,
+      text:
+        `Pilih satu hadiah untuk *${draft.partnerName}*.\n` +
+        `💰 Harga dibayar dari bank · 💖 Love dan EXP tercantum di setiap pilihan.\n` +
+        `📚 Menampilkan ${gifts.length} hadiah pada halaman ini.`,
+      buttonText: '🎁 PILIH SEBUAH KADO',
+      footer: 'AVELIA • RSHIP GIFT',
+      sections,
+      fallbackText:
+        `${formatGiftCatalogPage(page)}\n\n` +
+        `${gifts.map((gift, index) => `> ↳ ${start + index + 1}. ${gift.desc}: ${usedPrefix}rship gift flow item ${gift.id}`).join('\n')}`
+    })
+  }
+
+  const sendGiftReview = draft => {
+    const gift = draft.kind === 'item'
+      ? GIFT_LIST.find(entry => entry.id === Number(draft.giftId))
+      : null
+    const quantity = Number(draft.quantity) || 1
+    const totalHarga = draft.kind === 'item' ? gift.harga * quantity : Number(draft.amount)
+    const totalExp = draft.kind === 'item' ? gift.exp * quantity : Math.floor(totalHarga / 1000)
+    const totalLove = draft.kind === 'item'
+      ? gift.love * quantity
+      : Math.min(100, Math.floor(totalHarga / 10000000))
+    const balance = Number(user.bank) || 0
+    const enoughBalance = balance >= totalHarga
+    const giftName = draft.kind === 'item'
+      ? `${quantity}x ${gift.desc} ${gift.emoji}`
+      : `Uang Rp ${totalHarga.toLocaleString('id-ID')}`
+    const itemAmount = draft.kind === 'item'
+      ? quantity
+      : totalHarga
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '💌 CEK KADO TERAKHIR',
+      subtitle: `Kado untuk ${draft.partnerName}`,
+      text:
+        `╭─❏「 💝 RINGKASAN HADIAH 」❏\n` +
+        `│ 💕 PENERIMA: ${draft.partnerName}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `🎁 *${giftName}*\n` +
+        `> ↳ 💰 Biaya: Rp ${totalHarga.toLocaleString('id-ID')}\n` +
+        `> ↳ 💖 Tambahan Love: +${totalLove}\n` +
+        `> ↳ ✨ Tambahan EXP: +${totalExp.toLocaleString('id-ID')}\n` +
+        `${draft.kind === 'item' ? `> ↳ Jumlah: ${usedPrefix}rship gift flow jumlah <jumlah>\n` : ''}` +
+        `> ↳ 🏦 Saldo bank: Rp ${balance.toLocaleString('id-ID')} ${enoughBalance ? '✅' : '❌ belum cukup'}\n\n` +
+        `${enoughBalance
+          ? 'Sudah sesuai? Pilih *Kirim hadiah* untuk konfirmasi. Kalau belum, pilih *Pilih ulang* untuk menentukan kado lain.'
+          : 'Saldo bank belum cukup. Pilih *Pilih ulang* untuk mengganti kado, atau isi saldo bank sebelum mencoba lagi.'}`,
+      footer: 'AVELIA • HADIAH DENGAN HATI',
+      buttons: [
+        [`💝 Kirim hadiah ${draft.kind === 'item' ? `${itemAmount}x` : ''}`.trim(), `${usedPrefix}rship gift flow konfirmasi`],
+        ['🔁 Belum, pilih ulang', `${usedPrefix}rship gift flow ulang`],
+        ['✖️ Batalkan', `${usedPrefix}rship gift flow batal`]
+      ],
+      fallbackText:
+        `💕 ${draft.partnerName} · 🎁 ${giftName}\n` +
+        `💰 Rp ${totalHarga.toLocaleString('id-ID')} · 💖 +${totalLove} Love · ✨ +${totalExp.toLocaleString('id-ID')} EXP\n` +
+        `${enoughBalance ? 'Konfirmasi' : 'Saldo belum cukup'}: ${usedPrefix}rship gift flow konfirmasi\n` +
+        `Pilih ulang: ${usedPrefix}rship gift flow ulang`
+    })
+  }
+
+  if (!tipe) {
+    if (!user.harem.length) return m.reply(
+      `╭─❏「 💔 BELUM ADA PASANGAN 」❏\n` +
+      `│ 🎁 HADIAH MENUNGGU UNTUK DIBERIKAN\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Buat pasangan terlebih dahulu, lalu buka kembali *${usedPrefix}rship gift*.`
+    )
+    user.rshipGiftDraft = { stage: 'partner', createdAt: Date.now() }
+    await saveDB(wdb)
+    return sendGiftPartnerMenu()
+  }
+
+  if (tipe === 'flow') {
+    const step = args[2]?.toLowerCase()
+    const draft = user.rshipGiftDraft
+    if (draft && Date.now() - Number(draft.createdAt) > giftDraftTtl) {
+      delete user.rshipGiftDraft
+      await saveDB(wdb)
+      return m.reply(`⌛ Pilihan hadiah sudah kedaluwarsa. Mulai lagi dengan *${usedPrefix}rship gift*.`)
+    }
+    if (step === 'partner') {
+      const partnerIndex = Number(args[3])
+      const partner = Number.isSafeInteger(partnerIndex) ? user.harem[partnerIndex] : null
+      if (!partner || draft?.stage !== 'partner') {
+        return m.reply(`❌ Pilihan pasangan sudah tidak berlaku. Mulai lagi dengan *${usedPrefix}rship gift*.`)
+      }
+      user.rshipGiftDraft = {
+        stage: 'type',
+        partnerIndex,
+        partnerName: partner.name,
+        createdAt: Date.now()
+      }
+      await saveDB(wdb)
+      return sendGiftTypeMenu(user.rshipGiftDraft)
+    }
+    if (!draft || !Number.isSafeInteger(Number(draft.partnerIndex)) ||
+      user.harem[Number(draft.partnerIndex)]?.name !== draft.partnerName) {
+      delete user.rshipGiftDraft
+      await saveDB(wdb)
+      return m.reply(`❌ Pasangan atau sesi hadiah sudah berubah. Mulai lagi dengan *${usedPrefix}rship gift*.`)
+    }
+    if (step === 'page') {
+      const page = Number(args[3])
+      if (draft.stage !== 'type' || !Number.isSafeInteger(page) || page < 1 || page > giftPageCount) {
+        return m.reply(`❌ Halaman katalog tidak valid. Pilih lagi dengan *${usedPrefix}rship gift*.`)
+      }
+      return sendGiftItemPage(draft, page)
+    }
+    if (step === 'item') {
+      const gift = GIFT_LIST.find(entry => entry.id === Number(args[3]))
+      if (draft.stage !== 'type' || !gift) {
+        return m.reply(`❌ Pilihan kado sudah tidak berlaku. Pilih lagi dari *${usedPrefix}rship gift*.`)
+      }
+      user.rshipGiftDraft = {
+        ...draft,
+        stage: 'review',
+        kind: 'item',
+        giftId: gift.id,
+        quantity: 1,
+        createdAt: Date.now()
+      }
+      await saveDB(wdb)
+      return sendGiftReview(user.rshipGiftDraft)
+    }
+    if (step === 'money') {
+      if (draft.stage !== 'type') return m.reply(`❌ Pilihan hadiah uang sudah tidak berlaku. Mulai lagi dengan *${usedPrefix}rship gift*.`)
+      user.rshipGiftDraft = { ...draft, stage: 'moneyAmount', createdAt: Date.now() }
+      await saveDB(wdb)
+      return m.reply(
+        `╭─❏「 💵 HADIAH UANG 」❏\n` +
+        `│ 💕 UNTUK ${draft.partnerName.toUpperCase()}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Kirim nominal yang ingin diberikan:\n` +
+        `> ↳ *${usedPrefix}rship gift flow uang <nominal>*\n` +
+        `> ↳ Contoh: *${usedPrefix}rship gift flow uang 5000000*\n\n` +
+        `Kamu akan melihat ringkasan dan mengonfirmasi sebelum uang dikirim.`
+      )
+    }
+    if (['uang', 'money'].includes(step)) {
+      const amount = Number(args[3])
+      if (draft.stage !== 'moneyAmount' || !Number.isSafeInteger(amount) || amount <= 0) {
+        return m.reply(`❌ Masukkan nominal positif. Contoh: *${usedPrefix}rship gift flow uang 5000000*`)
+      }
+      user.rshipGiftDraft = { ...draft, stage: 'review', kind: 'money', amount, createdAt: Date.now() }
+      await saveDB(wdb)
+      return sendGiftReview(user.rshipGiftDraft)
+    }
+    if (step === 'jumlah') {
+      const quantity = Number(args[3])
+      if (draft.stage !== 'review' || draft.kind !== 'item' ||
+        !Number.isSafeInteger(quantity) || quantity <= 0 ||
+        !Number.isSafeInteger(GIFT_LIST.find(entry => entry.id === Number(draft.giftId))?.harga * quantity)) {
+        return m.reply(`❌ Jumlah harus bilangan bulat positif. Contoh: *${usedPrefix}rship gift flow jumlah 2*`)
+      }
+      user.rshipGiftDraft = { ...draft, quantity, createdAt: Date.now() }
+      await saveDB(wdb)
+      return sendGiftReview(user.rshipGiftDraft)
+    }
+    if (step === 'ulang' || step === 'again') {
+      if (!draft || draft.stage === 'partner') return sendGiftPartnerMenu()
+      user.rshipGiftDraft = {
+        stage: 'type',
+        partnerIndex: draft.partnerIndex,
+        partnerName: draft.partnerName,
+        createdAt: Date.now()
+      }
+      await saveDB(wdb)
+      return sendGiftTypeMenu(user.rshipGiftDraft)
+    }
+    if (step === 'batal' || step === 'cancel') {
+      delete user.rshipGiftDraft
+      await saveDB(wdb)
+      return m.reply(
+        `╭─❏「 🌷 HADIAH DIBATALKAN 」❏\n` +
+        `│ Pilihan hadiah dihapus; saldo dan hubunganmu tidak berubah.\n` +
+        `╰─━━━━━━━━━━━━━━─`
+      )
+    }
+    if (step === 'konfirmasi' || step === 'confirm') {
+      if (draft.stage !== 'review') return m.reply(`❌ Belum ada hadiah yang siap dikirim. Mulai dengan *${usedPrefix}rship gift*.`)
+      const partner = user.harem[Number(draft.partnerIndex)]
+      if (!partner || partner.name !== draft.partnerName) {
+        delete user.rshipGiftDraft
+        await saveDB(wdb)
+        return m.reply(`❌ Pasangan sudah berubah. Mulai lagi dengan *${usedPrefix}rship gift*.`)
+      }
+      const gift = draft.kind === 'item'
+        ? GIFT_LIST.find(entry => entry.id === Number(draft.giftId))
+        : null
+      if (draft.kind === 'item' && (!gift || !Number.isSafeInteger(gift.harga * Number(draft.quantity)))) {
+        return m.reply(`❌ Detail kado tidak valid. Pilih ulang dari *${usedPrefix}rship gift*.`)
+      }
+      if (draft.kind === 'money' && (!Number.isSafeInteger(Number(draft.amount)) || Number(draft.amount) <= 0)) {
+        return m.reply(`❌ Nominal hadiah tidak valid. Pilih ulang dari *${usedPrefix}rship gift*.`)
+      }
+      if (!['item', 'money'].includes(draft.kind)) {
+        return m.reply(`❌ Jenis hadiah tidak valid. Pilih ulang dari *${usedPrefix}rship gift*.`)
+      }
+      confirmedGiftDraft = draft
+      if (draft.kind === 'item') {
+        args = ['gift', String(Number(draft.partnerIndex) + 1), 'item', String(gift.id), String(draft.quantity)]
+      } else {
+        args = ['gift', String(Number(draft.partnerIndex) + 1), 'money', String(draft.amount)]
+      }
+      tipe = args[1]?.toLowerCase()
+    } else {
+      return m.reply(`❌ Pilihan menu tidak dikenali. Mulai ulang dengan *${usedPrefix}rship gift*.`)
+    }
+  }
 
   // MODE LIST:.rship gift list
   if(tipe === 'list'){
-    let cap = `╭─❏「 🎁 DAFTAR 50 HADIAH 」❏\n`
-    cap += `│ 🎁 *DAFTAR HADIAH*\n`
-    cap += `╰─━━━━━━━━━━━━━━─\n\n`
-
-    GIFT_LIST.forEach((g, i) => {
-      cap += `*${g.emoji} ${i+1}. ${g.desc}*\n`
-      cap += `> ↳ Harga: Rp ${g.harga.toLocaleString()}\n`
-      cap += `> ↳ EXP: ${g.exp.toLocaleString()}\n\n`
-    })
-
-    cap += `─━━━━━━━━━━━━━━─\n\n`
-    cap += `📌 *CARA PAKAI*\n`
-    cap += `> ↳ Item: .rship gift item 5 2\n`
-    cap += `> ↳ Nama: .rship gift item baju 1\n`
-    cap += `> ↳ Uang: .rship gift money 50000000\n\n`
-    cap += `📌 *TARGET PASANGAN*\n`
-    cap += `> ↳ Nomor: .rship gift 2 item 5 1\n`
-    cap += `> ↳ Nama: .rship gift NamaPasangan item baju 1\n\n`
-    cap += `─━━━━━━━━━━━━━━─`
-
-    return m.reply(cap)
+    const requestedPage = Number(args[2] || 1)
+    if (!Number.isSafeInteger(requestedPage) || requestedPage < 1 || requestedPage > giftPageCount) {
+      return m.reply(`❌ Pilih halaman katalog dari *1–${giftPageCount}*.`)
+    }
+    return m.reply(formatGiftCatalogPage(requestedPage))
   }
 
   // MODE HADIAH ANAK: .rship gift anak <no> item/money ...
@@ -4646,16 +4980,14 @@ if (action === 'gift') {
       `> ↳ Butuh Rp ${jumlah.toLocaleString()} di bank`
     )
 
+    if (confirmedGiftDraft) delete user.rshipGiftDraft
     let exp = Math.floor(jumlah / 1000)
     let love = Math.min(100, Math.floor(jumlah / 10000000))
     let cooldown = scaleDifficultyCooldown(user, Math.min(86400000, Math.floor(jumlah / 100000) * 60000))
 
     user.bank -= jumlah
     p.love = Math.min(100, p.love + love)
-    p.exp = (p.exp || 0) + exp
-    let up = false
-    let need = p.level * 500
-    if(p.exp >= need){ p.exp -= need; p.level++; up = true }
+    const up = applyPartnerExp(p, exp) > 0
 
     user.cooldown['gift_'+p.name] = Date.now()
     user.cooldown['gift_cd_'+p.name] = cooldown
@@ -4756,12 +5088,10 @@ if (action === 'gift') {
       `> ↳ Butuh Rp ${totalHarga.toLocaleString()} di bank`
     )
 
+    if (confirmedGiftDraft) delete user.rshipGiftDraft
     user.bank -= totalHarga
     p.love = Math.min(100, p.love + totalLove)
-    p.exp = (p.exp || 0) + totalExp
-    let up = false
-    let need = p.level * 500
-    if(p.exp >= need){ p.exp -= need; p.level++; up = true }
+    const up = applyPartnerExp(p, totalExp) > 0
 
     user.cooldown['gift_'+p.name] = Date.now()
     user.cooldown['gift_cd_'+p.name] = cooldown
@@ -5436,6 +5766,7 @@ if (action === 'kiss') {
     let no = parseInt(args[1]) - 1
     if(isNaN(no) ||!user.harem[no]) return m.reply(`╭─❏「 ❌ SALAH 」❏\n\nContoh:.rship detail 1\n╰─━━━━━━━━━━━━━━─`)
     let p = user.harem[no]
+    if (applyPartnerExp(p, 0)) await saveDB(wdb)
     let need = (p.level || 1) * 200
 
     let cap = `╭─❏「 📋 DETAIL ${p.name.toUpperCase()} 」❏\n`

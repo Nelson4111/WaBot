@@ -62,7 +62,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Cari material dan ore lewat *.mining*.\n` +
       `> ↳ Lawan monster dan dapatkan reward lewat *.dungeon*.\n` +
       `> ↳ Ikuti lima arena: jambak, panco, dance, tampar, dan tinju.\n` +
-      `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, jarah, culik, bunuh, dan fitnah dengan risiko poin kriminal serta penjara.\n\n` +
+      `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, jarah, culik, bunuh, dan fitnah; penelantaran anak juga berisiko poin kriminal serta penjara.\n\n` +
       `💰 *EKONOMI & ITEM*\n` +
       `> ↳ Dapatkan uang dari daily, kerja, adventure, dungeon, toko, dan aktivitas lainnya.\n` +
       `> ↳ Beli atau jual material, equipment, hasil panen, ikan, masakan, dan item adventure.\n` +

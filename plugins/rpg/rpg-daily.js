@@ -27,6 +27,14 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
   const today = getJakartaDate(now)
   const rpgUser = user.rpg || user
 
+  user.dailyStreak ??= rpgUser.dailyStreak
+  user.dailyDate ??= rpgUser.dailyDate
+  user.lastDaily ??= rpgUser.lastDaily
+  user.dailyCooldownDuration ??= rpgUser.dailyCooldownDuration
+  user.dailyBrokenStreak ??= rpgUser.dailyBrokenStreak
+  user.dailyRestreakOfferDate ??= rpgUser.dailyRestreakOfferDate
+  user.dailyRestreakDate ??= rpgUser.dailyRestreakDate
+
   const subcommand = String(text).trim().toLowerCase()
   if (subcommand === 'top') {
     const rankedUsers = filterLeaderboardUsers(

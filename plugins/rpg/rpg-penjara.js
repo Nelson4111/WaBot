@@ -1538,7 +1538,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     `> ↳ Penjara berisi pemain yang gagal melakukan kejahatan atau terkena hukuman Owner.\n` +
     `> ↳ Penculikan adalah status terpisah dari penjara; korban tidak masuk sel atau tercatat sebagai tahanan. Korban hanya dapat memakai *.kabur* untuk memulai percobaan kabur; penculik harus merespons dengan *.tangkap @tag* dalam 5 menit. Kabur dari penculikan tidak menambah poin buronan atau statistik kabur penjara.\n` +
     `> ↳ Gunakan *.penjara tebus @tag* atau *.penjara tebus sel <kode>* untuk menebus pemain lain.\n` +
-    `> ↳ Kasus penjara dapat berasal dari copet, begal, bunuh, rampok, jarah, culik, fitnah, atau Owner Jail.\n` +
+    `> ↳ Kasus penjara dapat berasal dari copet, begal, bunuh, rampok, jarah, culik, penelantaran anak, fitnah, atau Owner Jail.\n` +
     `> ↳ Routine dan talk menambah progres kabur.\n\n` +
 
     `─━━━━━━━━━━━━━━─\n\n` +

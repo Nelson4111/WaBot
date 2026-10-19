@@ -25,8 +25,8 @@ import {
   clampHomeStat
 } from '../../lib/rpgHomeData.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
-import { computeCrimeScore, setActiveCrimeScore } from '../../lib/crimeHelper.js'
-import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
+import { computeCrimeScore, getActiveCrimeScore, setActiveCrimeScore, setCrimeCount } from '../../lib/crimeHelper.js'
+import { createRpgCrimeRecord, RPG_CRIME_TYPES } from '../../lib/rpgCrimeAction.js'
 import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
@@ -419,6 +419,8 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setrhprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setburonan @tag <poin>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setcrime @tag <jenis> <jumlah>* - Atur jumlah tiap jenis kriminal (poin dihitung otomatis)\n` +
+  `> ↳ Jenis: *${RPG_CRIME_TYPES.map(({ key }) => key).join('|')}*\n` +
   `> ↳ *${usedPrefix}rpgpanel selesairh @tag* - Paksa selesaikan rehabilitasi\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
@@ -1434,6 +1436,37 @@ let handler = async (m, {
     await saveDB(wdb)
     return m.reply(
       `✅ Poin buronan aktif @${who.split('@')[0]} diatur menjadi *${score} poin*. Total riwayat kriminal: *${computeCrimeScore(wdb.crime[who])} poin*.`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
+  if (['setcrime', 'setcriminal', 'setjeniskriminal'].includes(aksi)) {
+    const crimeType = remaining[0]
+    const count = Number(remaining[1])
+    if (remaining.length !== 2 || !Number.isSafeInteger(count) || count < 0) {
+      return m.reply(
+        `❌ Format: *${usedPrefix}rpgpanel setcrime @tag <jenis> <jumlah>*\n` +
+        `Jenis: *${RPG_CRIME_TYPES.map(({ key }) => key).join('|')}*\n` +
+        `Contoh: *${usedPrefix}rpgpanel setcrime @tag penelantaran 2*`
+      )
+    }
+    const selectedCrime = RPG_CRIME_TYPES.find(({ key }) => key === crimeType.toLowerCase())
+    if (!selectedCrime) {
+      return m.reply(
+        `❌ Jenis kriminal tidak dikenal. Pilih: *${RPG_CRIME_TYPES.map(({ key }) => key).join('|')}*`
+      )
+    }
+
+    const crimeData = createRpgCrimeRecord(wdb.crime[who] || {})
+    setCrimeCount(crimeData, selectedCrime.key, count)
+    wdb.crime[who] = crimeData
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Kriminal *${selectedCrime.label}* @${who.split('@')[0]} diatur menjadi *${count}x*.\n` +
+      `Poin jenis ini: *${count * selectedCrime.score} poin* · ` +
+      `Total riwayat: *${computeCrimeScore(wdb.crime[who])} poin* · ` +
+      `Poin aktif: *${getActiveCrimeScore(wdb.crime[who])} poin*.`,
       null,
       { mentions: [who] }
     )
