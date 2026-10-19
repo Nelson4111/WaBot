@@ -533,11 +533,11 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel addharem @tag <nama> <cowok/cewek>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delharem @tag <no>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setharem @tag <no> <name/gender/level/love/exp/nikah/title> <val>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel addanak @tag <nama_anak>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setanak @tag <no> <nama/jenis/umur/carecount/love/ortu/biologicalparents> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addanak @tag <nama_anak>* / *addanak @tag shelter <nama_anak>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @tag <no> <nama/gender/umur/carecount/love/ortu/biologicalparents> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat daftar anak keluarga dan shelter\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
-  `> ↳ Anak shelter: *setanak @tag shelter <no> <field> <nilai>* / *delanak @tag shelter <no>*\n\n` +
+  `> ↳ Anak shelter: *setanak @tag shelter <no> <nama/gender/umur/carecount/love/ortu/biologicalparents> <nilai>* / *delanak @tag shelter <no>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
 
@@ -1206,15 +1206,20 @@ let handler = async (m, {
       return `> ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
         `> ↳ Ortu: ${child.ortu || 'tidak diketahui'}${custody}${facility}${parents}`
     })
-    const shelterEntries = shelterChildren.map((child, index) =>
-      `> Shelter ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
-      `> ↳ Status: ${child.shelterStatus?.reason === 'runaway' ? 'Kabur' : 'Hilang'}`
-    )
+    const shelterEntries = shelterChildren.map((child, index) => {
+      const parents = Array.isArray(child.biologicalParents) && child.biologicalParents.length
+        ? ` • Ortu kandung: ${child.biologicalParents.join(' & ')}`
+        : ''
+      const reason = child.shelterStatus?.reason === 'runaway' ? 'Kabur' : 'Hilang'
+      return `> Shelter ${index + 1}. *${child.nama || 'Tanpa nama'}* (${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
+        `> ↳ Status: ${reason} • Care: ${Number(child.careCount) || 0} • Love: ${Number(child.love) || 0}${parents}`
+    })
     return m.reply(
       `╭─❏「 👶 ANAK PANEL 」❏\n@${who.split('@')[0]}\n\n` +
       `👨‍👩‍👧‍👦 *KELUARGA*\n${entries.join('\n') || '> Tidak ada anak di keluarga.'}\n\n` +
       `🛟 *SHELTER*\n${shelterEntries.join('\n') || '> Tidak ada anak di shelter.'}\n\n` +
-      `> Ubah/hapus anak shelter: gunakan *setanak @tag shelter <no>* atau *delanak @tag shelter <no>*.`,
+      `> Atur anak shelter: *setanak @tag shelter <no> <nama|gender|umur|carecount|love|ortu|biologicalparents> <nilai>*\n` +
+      `> Hapus anak shelter: *delanak @tag shelter <no>*.`,
       null,
       { mentions: [who] }
     )
@@ -2288,24 +2293,41 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   if(['addanak','delanak','setanak'].includes(aksi)){
     if (!Array.isArray(user.kids)) user.kids = []
     if(aksi === 'addanak'){
-      const nama = args.join(' ').trim()
-      if(!nama) return m.reply(`Contoh: *${usedPrefix}rpgpanel addanak @tag Bayi Avelia*`)
+      const shelterTarget = args[0]?.toLowerCase() === 'shelter'
+      const nama = args.slice(shelterTarget ? 1 : 0).join(' ').trim()
+      if(!nama) return m.reply(
+        `Contoh:\n` +
+        `> *${usedPrefix}rpgpanel addanak @tag Bayi Avelia*\n` +
+        `> *${usedPrefix}rpgpanel addanak @tag shelter Anak Shelter*`
+      )
       if (nama.length > 60) return m.reply('❌ Nama anak maksimal 60 karakter.')
-      user.kids.push({
+      const now = Date.now()
+      const child = {
         nama,
         jenis: 'Laki-laki',
         umur: 0,
         careCount: 0,
         love: 0,
-        ortu: 'Admin',
+        ortu: shelterTarget ? 'Shelter' : 'Admin',
         biologicalParents: [],
         activityCooldowns: {},
-        lastCaredAt: Date.now(),
+        lastCaredAt: now,
         lastKidActivityAt: 0,
-        lastNeglectCheckAt: Date.now()
-      })
+        lastNeglectCheckAt: now
+      }
+      if (shelterTarget) {
+        if (!Array.isArray(user.shelterKids)) user.shelterKids = []
+        child.shelterStatus = { reason: 'lost', enteredAt: now }
+        user.shelterKids.push(child)
+      } else {
+        user.kids.push(child)
+      }
       saveDB(wdb)
-      return m.reply(`✅ Tambah anak *${nama}* ke @${who.split('@')[0]}`, null, {mentions: [who]})
+      return m.reply(
+        `✅ Tambah anak *${nama}* ${shelterTarget ? 'ke shelter' : 'ke keluarga'} @${who.split('@')[0]}`,
+        null,
+        { mentions: [who] }
+      )
     }
     const shelterTarget = args[0]?.toLowerCase() === 'shelter'
     const childList = shelterTarget
@@ -2342,8 +2364,8 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       const validFields = ['nama', 'jenis', 'umur', 'carecount', 'love', 'ortu', 'biologicalparents']
       if (!Number.isInteger(index) || index < 0 || !child || !validFields.includes(field) || !value) {
         return m.reply(shelterTarget
-          ? `❌ Format: *${usedPrefix}rpgpanel setanak @tag shelter <no-anak> <nama|jenis|umur|carecount|love|ortu|biologicalparents> <nilai>*`
-          : `❌ Format: *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama|jenis|umur|carecount|love|ortu|biologicalparents> <nilai>*`)
+          ? `❌ Format: *${usedPrefix}rpgpanel setanak @tag shelter <no-anak> <nama|gender|umur|carecount|love|ortu|biologicalparents> <nilai>*`
+          : `❌ Format: *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama|gender|umur|carecount|love|ortu|biologicalparents> <nilai>*`)
       }
       if (field === 'nama' || field === 'ortu') {
         if (value.length > 60) return m.reply('❌ Nama maksimal 60 karakter.')

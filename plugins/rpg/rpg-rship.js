@@ -695,7 +695,7 @@ ${entries.join('\n')}
       const entries = user.shelterKids.map((child, index) => {
         const reason = child.shelterStatus?.reason === 'runaway' ? 'Kabur' : 'Hilang'
         const stage = getChildStage(getChildCareCount(child)).name
-        return `> *${index + 1}. ${child.nama}* (${stage})\n` +
+        return `> *${index + 1}. ${child.nama}* (${stage}, ${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
           `> ↳ Status: ${reason}\n` +
           `> ↳ Coba retrieve: ${usedPrefix}rship shelter retrieve ${index + 1}`
       })
