@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getCrimeScoreSummary, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, markPatrolRelease, PATROL_CAPTURE_PROTECTION_MS, PATROL_CRIME_PROTECTION_MS, PATROL_PRISON_PROTECTION_MS, recordEscapeCrime, setActiveCrimeScore, syncAllEscapeCrimeCounts, syncEscapeCrimeCounts } from '../lib/crimeHelper.js'
+import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getCrimeScoreSummary, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, markPatrolRelease, PATROL_CAPTURE_PROTECTION_MS, PATROL_CRIME_PROTECTION_MS, PATROL_PRISON_PROTECTION_MS, recordEscapeCrime, setActiveCrimeScore, setCrimeCount, syncAllEscapeCrimeCounts, syncEscapeCrimeCounts } from '../lib/crimeHelper.js'
 import { normalizeFishKey } from '../lib/rpg-fishCatalog.js'
 import { PATROL_RESTRICTED_RSHIP_ACTIONS } from '../lib/patrolHelper.js'
 
@@ -13,6 +13,7 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
   copet: 4,
   kabur: 0,
   breakout: 0,
+  penelantaran: 0,
   total: 21,
   weight: {
     rampok: 4,
@@ -22,7 +23,38 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
     begal: 2,
     copet: 1,
     kabur: 5,
-    breakout: 5
+    breakout: 5,
+    penelantaran: 3
+  }
+})
+assert.equal(computeCrimeScore({ penelantaran: 2 }), 6)
+const configuredCrime = setCrimeCount({ copet: 1 }, 'penelantaran', 2)
+assert.equal(configuredCrime.penelantaran, 2)
+assert.equal(configuredCrime.total, 7)
+assert.equal(setCrimeCount(configuredCrime, 'Penelantaran Anak', 3).total, 10)
+assert.throws(() => setCrimeCount(configuredCrime, 'unknown', 1), RangeError)
+assert.throws(() => setCrimeCount(configuredCrime, 'copet', -1), RangeError)
+assert.deepEqual(getCrimeScoreSummary({ penelantaran: 2 }), {
+  rampok: 0,
+  jarah: 0,
+  culik: 0,
+  bunuh: 0,
+  begal: 0,
+  copet: 0,
+  kabur: 0,
+  breakout: 0,
+  penelantaran: 2,
+  total: 6,
+  weight: {
+    rampok: 4,
+    jarah: 4,
+    culik: 3,
+    bunuh: 3,
+    begal: 2,
+    copet: 1,
+    kabur: 5,
+    breakout: 5,
+    penelantaran: 3
   }
 })
 assert.equal(computeCrimeScore({ kabur: 1, breakout: 2 }), 15)
