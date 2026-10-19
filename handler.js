@@ -20,6 +20,7 @@ import { EXCLUSIVE_JAIL_BLOCKED_COMMANDS, registerPrisoner } from './lib/prisonH
 import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimit.js'
 import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
+import { isPlayerDead } from './lib/rpgDifficulty.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -981,6 +982,13 @@ async function processMessage(m, chatUpdate) {
                             continue;
                             }
                         }
+                    }
+                }
+                if (isRpgPlugin && command !== 'heal') {
+                    const userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
+                    if (isPlayerDead(userRPG)) {
+                        this.reply(m.chat, '💀 Kamu masih mati dan tidak bisa menggunakan fitur RPG. Gunakan *.heal* terlebih dahulu untuk pulih.', m);
+                        continue;
                     }
                 }
 
