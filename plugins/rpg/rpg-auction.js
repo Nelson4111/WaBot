@@ -671,10 +671,9 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      buttonTitle: '🔨 AUCTION HOUSE',
+      footer: '',
       text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
-      buttonText: '🔨 JELAJAHI LELANG',
-      sections: [{ title: 'Balai lelang', rows }],
+      buttons: rows.map(row => [row.title, row.id]),
       fallbackText,
       noThumbnail: true,
       noHeader: true
@@ -828,18 +827,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      buttonTitle: '🔨 AUCTION HOUSE',
+      footer: '',
       text: auctionText,
-      buttonText: '🔨 PILIH ITEM / CEK SALDO',
-      sections: [
-        { title: 'Barang yang sedang dilelang', rows },
-        {
-          title: 'Saldo & nominal',
-          rows: [
-            { title: '💳 Cek saldo', description: 'Lihat saldo uang dan bank', id: `${prefix}money` },
-            { title: '🔤 Daftar sufiks uang', description: 'Lihat singkatan K sampai Ce', id: `${prefix}money suffix` }
-          ]
-        }
+      buttons: [
+        ...rows.map(row => [row.title, row.id]),
+        ['💳 Cek saldo', `${prefix}money`],
+        ['🔤 Daftar sufiks uang', `${prefix}money suffix`]
       ],
       fallbackText: auctionText,
       noThumbnail: true,
@@ -1070,8 +1063,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `📌 *KONFIRMASI PENAWARAN*\n` +
       `> ↳ Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.\n` +
       `─━━━━━━━━━━━━━━─`,
-      title: '🔨 PASTIKAN PENAWARAN',
-      subtitle: 'Dana dipotong setelah kamu menyetujui bid',
+      footer: '',
       acceptText: '🏆 Konfirmasi Bid',
       acceptCommand: `${prefix}ah bid konfirmasi`,
       cancelText: '↩️ Batalkan Bid',
