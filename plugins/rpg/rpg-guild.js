@@ -148,6 +148,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 📌 *2. Lihat Guild yang Tersedia*
 > ${usedPrefix}guild list
+> ${usedPrefix}guild info <nama/nomor>
 > ${usedPrefix}guild top
 
 📌 *3. Bergabung ke Guild*
@@ -518,31 +519,59 @@ if (action === 'storage') {
 }
 
   if (action === 'list' || action === 'top') {
-    const guilds = Object.values(wdb.guilds)
+  const guilds = Object.entries(wdb.guilds)
     if (!guilds.length) return m.reply(
         `╭─❏「 🏰 GUILD 」❏\n` +
         `│ ❌ *Belum ada Guild yang terdaftar.*\n` +
         `╰─━━━━━━━━━━━━━━─`
     )
 
-    if (action === 'top') guilds.sort((a, b) => (b.level || 1) - (a.level || 1) || (b.exp || 0) - (a.exp || 0))
+  if (action === 'top') guilds.sort(([, a], [, b]) => (b.level || 1) - (a.level || 1) || (b.exp || 0) - (a.exp || 0))
 
     const title = action === 'top' ? '🏆 TOP GUILD' : '🏰 DAFTAR GUILD'
 
-    const lines = (action === 'top' ? guilds.slice(0, 10) : guilds).map((guild, index) =>
-        `🏰 *${index + 1}. ${guild.name}*\n` +
-        `> ↳ Level: ${guild.level || 1}\n` +
-        `> ↳ EXP: ${(Number(guild.exp) || 0).toLocaleString('id-ID')}\n` +
-        `> ↳ ${guild.members?.length || 0} member`
-    )
+  const lines = (action === 'top' ? guilds.slice(0, 10) : guilds).map(([name, guild], index) =>
+    action === 'top'
+      ? `🏰 *${index + 1}. ${guild.name || name}*\n> ↳ Level: ${guild.level || 1}\n> ↳ EXP: ${(Number(guild.exp) || 0).toLocaleString('id-ID')}\n> ↳ ${guild.members?.length || 0} member`
+      : `🏰 *${index + 1}. ${guild.name || name}*`
+  )
 
-    return m.reply(
-        `╭─❏「 ${title} 」❏\n` +
-        `│ 📋 *DAFTAR GUILD*\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `${lines.join('\n\n')}\n\n` +
-        `─━━━━━━━━━━━━━━─`
+  return m.reply(
+      `╭─❏「 ${title} 」❏\n` +
+      `│ 📋 *DAFTAR GUILD*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${lines.join('\n\n')}\n\n` +
+      (action === 'list' ? `ℹ️ Detail: *${usedPrefix}guild info <nama/nomor>*\n\n` : '') +
+      `─━━━━━━━━━━━━━━─`
+  )
+}
+
+if (action === 'info') {
+  const target = args.slice(1).join(' ').trim()
+  if (!target) return m.reply(`Gunakan *${usedPrefix}guild info <nama/nomor>* untuk melihat detail guild.`)
+
+  const guildEntries = Object.entries(wdb.guilds)
+  const numericIndex = /^\d+$/.test(target) ? Number(target) - 1 : -1
+  const selected = numericIndex >= 0
+    ? guildEntries[numericIndex]
+    : guildEntries.find(([name, guild]) =>
+      String(guild.name || name).toLowerCase() === target.toLowerCase() ||
+      name.toLowerCase() === target.toLowerCase()
     )
+  if (!selected) return m.reply(`❌ Guild tidak ditemukan. Cek *${usedPrefix}guild list*.`)
+
+  const [name, guild] = selected
+  const maxMembers = getGuildMemberCap(guild.level)
+  return m.reply(
+    `╭─❏「 🏰 DETAIL GUILD 」❏\n` +
+    `│ *${guild.name || name}*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> 👑 Leader: ${conn.getName(guild.leader)}\n` +
+    `> 🌟 Level: Lv.${guild.level || 1}\n` +
+    `> ✨ EXP: ${(Number(guild.exp) || 0).toLocaleString('id-ID')}\n` +
+    `> 👥 Member: ${(guild.members || []).length}/${maxMembers}\n\n` +
+    `📌 Join: *${usedPrefix}guild join ${guild.name || name}*`
+  )
 }
 
 if (!action) {
@@ -757,7 +786,7 @@ if (action === 'donate') {
 }
 }
 
-handler.help = ['guild', 'guild command', 'guild guide', 'guild list', 'guild top', 'guild status', 'guild loot', 'guild storage']
+handler.help = ['guild', 'guild command', 'guild guide', 'guild list', 'guild info <nama/nomor>', 'guild top', 'guild status', 'guild loot', 'guild storage']
 handler.tags = ['rpg']
 handler.command = ['guild']
 export default handler

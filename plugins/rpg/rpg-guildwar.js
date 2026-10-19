@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { scaleDifficultyDamage } from '../../lib/rpgDifficulty.js'
+import { markDifficultyDeath, scaleDifficultyDamage } from '../../lib/rpgDifficulty.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { areGuildJidsSame, findGuildByMember } from '../../lib/rpgGuild.js'
@@ -158,6 +158,7 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
           if (tryPremiumProtection(jid, 'death')) u.darah = 1
           else {
             u.darah = 0
+            markDifficultyDeath(u)
             gugur++
             fallenMembers.push(jid)
           }

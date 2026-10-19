@@ -247,11 +247,7 @@ if (text.toLowerCase() === 'all') {
   cekLevelUp(user)
   await saveDB(wdb)
 
-  let teks = `╭─❏「 🌾 PANEN MASSAL 」❏\n`
-  teks += `│ 🌾 *PANEN BERHASIL*\n`
-  teks += `╰─━━━━━━━━━━━━━━─\n\n`
-
-  teks += `📊 *RINGKASAN PANEN*\n`
+  let teks = `📊 *RINGKASAN PANEN*\n`
   teks += `> ↳ ✅ Berhasil: ${count} Slot\n\n`
 
   teks += `─━━━━━━━━━━━━━━─\n\n`
@@ -277,7 +273,7 @@ if (text.toLowerCase() === 'all') {
 
   const replantRows = Object.entries(tanamUlangCounts).map(([jenis, quantity]) => ({
     title: `${bibit[jenis].emoji} ${formatNama(jenis)} ×${quantity}`,
-    description: `Tanam kembali bibit yang baru dipanen`,
+    description: `Tanam kembali ${quantity} slot ${formatNama(jenis)}`,
     id: `${usedPrefix}tanam ${jenis} ulang ${quantity}`
   }))
   const replantFallback = `${teks}\n\n🌱 *TANAM KEMBALI*\n` +
@@ -287,9 +283,9 @@ if (text.toLowerCase() === 'all') {
     message: m,
     quoted: m,
     text: teks,
-    title: '🌾 HASIL PANEN',
-    subtitle: 'Pilih bibit untuk ditanam kembali',
-    buttonText: '🌱 TANAM KEMBALI',
+    title: '🌾 PANEN BERHASIL',
+    subtitle: 'Semua tanaman siap panen sudah diproses',
+    buttonText: '🌱 PILIH BIBIT TANAM ULANG',
     sections: [{ title: 'Bibit dari panen ini', rows: replantRows }],
     fallbackText: replantFallback,
     thumbnailUrl: ladangImageUrl,

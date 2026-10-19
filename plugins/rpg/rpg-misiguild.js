@@ -1,6 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
-import { scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { canReceiveRareActivityRewards, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { sendRpgExpActivityList } from '../../lib/rpgActionButtons.js'
 import {
   addGuildLootReward,
@@ -165,8 +165,9 @@ if(command === 'latihanguild'){
   list += `│ 🎯 Level pemain: Lv.${playerLevel}\n`
   list += `│ 🔓 Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
   list += `📌 *PILIH MISI*\n`
-  list += `> ↳ Uang dan EXP karakter mengikuti difficulty; uang/EXP di bawah belum termasuk Buff Luck.\n`
-  list += `> ↳ Jumlah bahan mengikuti daftar dan tidak dikurangi difficulty.\n`
+  list += `> ↳ Income dan EXP karakter mengikuti difficulty; hadiah di bawah belum termasuk Buff Luck.\n`
+  list += `> ↳ Hadiah bahan personal juga mengikuti multiplier difficulty penerima.\n`
+  if (!canReceiveRareActivityRewards(player)) list += `> ↳ Difficulty ini tidak mendapat Diamond/Gemstone dari misi Guild.\n`
   list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/.bag; tidak masuk Guild Loot.\n`
   list += `> ↳ Anggota aktif lain mendapat 50% sebagai pending loot. Klaim dengan .guild loot take.\n\n`
   list += `> ↳ Anggota aktif berarti memakai fitur RPG apa pun dalam 4 hari terakhir.\n`
@@ -179,10 +180,10 @@ if(command === 'latihanguild'){
     list += `> ↳ ✨ Guild Exp dasar: +${v.reward.exp}\n`
     list += `> ↳ ✨ EXP karakter (sesuai difficulty): +${scaleDifficultyXP(player, v.reward.exp)}\n`
     const rewards = Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' })
-      .filter(([item]) => Number(v.reward[item]) > 0)
+      .filter(([item]) => Number(v.reward[item]) > 0 && (canReceiveRareActivityRewards(player) || !['diamond', 'gemstone', 'limit'].includes(item)))
       .map(([item, name]) => {
-        const amount = item === 'money' ? scaleDifficultyIncome(player, v.reward[item]) : Number(v.reward[item])
-        return `>   ${name}: ${item === 'money' ? `Rp ${amount.toLocaleString('id-ID')} (dasar Rp ${Number(v.reward[item]).toLocaleString('id-ID')})` : Number(v.reward[item]).toLocaleString('id-ID')}`
+        const amount = scaleDifficultyIncome(player, v.reward[item])
+        return `>   ${name}: ${item === 'money' ? `Rp ${amount.toLocaleString('id-ID')} (dasar Rp ${Number(v.reward[item]).toLocaleString('id-ID')})` : `${amount.toLocaleString('id-ID')} (dasar ${Number(v.reward[item]).toLocaleString('id-ID')})`}`
       })
     list += `> ↳ 🎁 Hadiah:\n${rewards.join('\n')}\n\n`
   })
@@ -255,11 +256,11 @@ if(command === 'latihanguild'){
   let pendingRecipients = 0
   const executorRewardItems = {
     money: scaleDifficultyIncome(player, reward.money),
-    iron: Number(msn.reward.iron) || 0,
-    gold: Number(msn.reward.gold) || 0,
-    stone: Number(msn.reward.stone) || 0,
-    diamond: Number(msn.reward.diamond) || 0,
-    gemstone: Number(msn.reward.gemstone) || 0
+    iron: scaleDifficultyIncome(player, Number(msn.reward.iron) || 0),
+    gold: scaleDifficultyIncome(player, Number(msn.reward.gold) || 0),
+    stone: scaleDifficultyIncome(player, Number(msn.reward.stone) || 0),
+    diamond: canReceiveRareActivityRewards(player) ? scaleDifficultyIncome(player, Number(msn.reward.diamond) || 0) : 0,
+    gemstone: canReceiveRareActivityRewards(player) ? scaleDifficultyIncome(player, Number(msn.reward.gemstone) || 0) : 0
   }
   player.inventory = player.inventory || {}
   for (const [item, amount] of Object.entries(executorRewardItems)) {
@@ -281,11 +282,11 @@ if(command === 'latihanguild'){
     {
       const rewardItems = {
         money: scaleDifficultyIncome(u, reward.money),
-        iron: Number(msn.reward.iron) || 0,
-        gold: Number(msn.reward.gold) || 0,
-        stone: Number(msn.reward.stone) || 0,
-        diamond: Number(msn.reward.diamond) || 0,
-        gemstone: Number(msn.reward.gemstone) || 0
+        iron: scaleDifficultyIncome(u, Number(msn.reward.iron) || 0),
+        gold: scaleDifficultyIncome(u, Number(msn.reward.gold) || 0),
+        stone: scaleDifficultyIncome(u, Number(msn.reward.stone) || 0),
+        diamond: canReceiveRareActivityRewards(u) ? scaleDifficultyIncome(u, Number(msn.reward.diamond) || 0) : 0,
+        gemstone: canReceiveRareActivityRewards(u) ? scaleDifficultyIncome(u, Number(msn.reward.gemstone) || 0) : 0
       }
       for (const item of Object.keys(rewardItems)) {
         rewardItems[item] = Math.floor(rewardItems[item] * 0.5)

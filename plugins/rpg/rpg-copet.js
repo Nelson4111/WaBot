@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -121,7 +121,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   // SUKSES
   userRPG.gagalCopet = 0
-  let hasil = scaleDifficultyIncome(userRPG, Math.floor(Math.random() * 5000) + 1000) // 1k - 6k
+  let hasil = Math.min(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.floor(Math.random() * 5000) + 1000)))
 
   wdb.money[who] -= hasil
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil

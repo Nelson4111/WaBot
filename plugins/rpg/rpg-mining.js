@@ -1,5 +1,5 @@
 import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
-import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { adjustAbilityDropChance, adjustDifficultyFailureChance, getDifficultyProfile, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
@@ -53,7 +53,7 @@ function rollOre(hance, bonus, pickLvl, rareChanceFactor = 1){
   if (bisaLegend && hance > cutoff(99 - bonus)) return {ore: legendary[Math.floor(Math.random() * legendary.length)], tier: 'LEGENDARY', exp: 500}
   if (bisaEpic && hance > cutoff(96 - bonus)) return {ore: epic[Math.floor(Math.random() * epic.length)], tier: 'EPIC', exp: 250}
   if (bisaRare && hance > cutoff(88 - bonus)) return {ore: rare[Math.floor(Math.random() * rare.length)], tier: 'RARE', exp: 120}
-  if (hance > (65 - bonus)) return {ore: uncommon[Math.floor(Math.random() * uncommon.length)], tier: 'UNCOMMON', exp: 50}
+  if (hance > 100 - Math.min(100, (100 - (65 - bonus)) * rareChanceFactor)) return {ore: uncommon[Math.floor(Math.random() * uncommon.length)], tier: 'UNCOMMON', exp: 50}
   return {ore: common[Math.floor(Math.random() * common.length)], tier: 'COMMON', exp: 15}
 }
 
@@ -67,11 +67,17 @@ let handler = async (m, { conn, usedPrefix }) => {
   // COOLDOWN
   const mineralRush = isRpgEventActive('mineral_rush')
   const caveCollapse = isRpgEventActive('cave_collapse')
-  const rareChanceFactor = (mineralRush ? 1.5 : 1) * (caveCollapse ? 0.75 : 1)
+  const rareChanceFactor = (mineralRush ? 1.5 : 1) * (caveCollapse ? 0.75 : 1) * getDifficultyProfile(user).dropRate
   let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * (caveCollapse ? 1.3 : 1))
   if (Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
     return m.reply(`╭─❏「 ⛏️ MINING 」❏\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n╰─━━━━━━━━━━━━━━─`)
+  }
+
+  if (Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
+    user.lastMining = Date.now()
+    await saveDB(wdb)
+    return m.reply('⛏️ Terowongan runtuh sebelum sempat menambang. Aktivitas gagal; coba lagi setelah cooldown.')
   }
 
   let pickLvl = user.pickaxe || 0

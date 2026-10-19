@@ -5,7 +5,7 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, claimBankCrown } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
-import { getRpgMoneySuffixGuide } from '../../lib/rpgMoney.js'
+import { getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import upgradeBankHandler from './rpg-upgradebank.js'
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
@@ -160,29 +160,6 @@ function getPlayerCasinoRoom(wdb, jid) {
     if (Array.isArray(room?.players) && room.players.includes(jid)) return room
   }
   return null
-}
-
-function isActiveAuctionBidder(wdb, jid) {
-  const auction = wdb?.data?.auctionHouse
-  const normalizeJid = value => {
-    if (!value) return ''
-    const resolved = value.endsWith('@lid')
-      ? global.lids?.[value] || wdb.data.lids?.[value] || value
-      : value
-    return `${resolved.split('@')[0].split(':')[0]}${resolved.includes('@lid') ? '@lid' : '@s.whatsapp.net'}`
-  }
-  const sender = normalizeJid(jid)
-
-  const hasSessionBid = auction && Number(auction.endsAt) > Date.now() &&
-    Object.values(auction.bids || {}).some(bids =>
-    Array.isArray(bids) && bids.some(bid => normalizeJid(bid?.jid) === sender)
-  )
-  if (hasSessionBid) return true
-
-  const user = wdb?.users?.[jid]
-  return Object.values(user?.rpg?.auctionBids || {}).some(bid =>
-    Number(bid?.endsAt) > Date.now()
-  )
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -616,11 +593,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
     if (topic === 'simpan' || topic === 'tarik') {
       if (service === 'Chat CS') return m.reply('❌ Chat CS menyediakan informasi dasar saja. Bantuan setor/tarik tersedia mulai Chat CS 24jam.')
-      if (topic === 'tarik' && isActiveAuctionBidder(wdb, m.sender)) {
-        return m.reply('❌ Penarikan bank diblokir selama bid kamu masih aktif. Setoran tetap tersedia; penarikan kembali tersedia setelah lelang selesai.')
-      }
-      const amount = Number(args[2])
-      if (!Number.isSafeInteger(amount) || amount <= 0) return m.reply(`Gunakan *.bank cs ${topic} <jumlah>* dengan jumlah rupiah positif.`)
+      const amount = parseRpgMoneyAmount(args[2])
+      if (!amount) return m.reply(`Gunakan *.bank cs ${topic} <jumlah>* dengan jumlah rupiah positif, misalnya 1K atau 1.5M.`)
       const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
       if (cooldownRemaining > 0) return m.reply(`⏳ Transaksi setor/tarik masih cooldown. Coba lagi dalam ${Math.ceil(cooldownRemaining / 60000)} menit.`)
       if (topic === 'simpan') {
@@ -852,9 +826,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       if (!canUseBankBulkDeposit(tier)) return m.reply('❌ Fitur setor semua hanya tersedia untuk kartu dengan akses Fast Track. Gunakan *.bank simpan <angka>* untuk setor manual.')
       if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
       amount = userMoney
-    }
+    } else amount = parseRpgMoneyAmount(args[1])
     if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
-    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
+    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid. Gunakan nominal positif seperti 1K atau 1.5M.')
     if (userMoney < amount) return m.reply('❌ Uang saku tidak cukup')
     if (exceedsBankLimit(userRPG.bank, amount, tier)) return m.reply(`❌ Melebihi limit. Sisa: Rp ${(tier.limit - userRPG.bank).toLocaleString()}`)
     const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
@@ -869,11 +843,9 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
   // TARIK + ALIAS "all"
   if (action === 'tarik') {
-    if (isActiveAuctionBidder(wdb, m.sender)) {
-      return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ PENARIKAN DIBLOKIR\n◈ KAMU SEDANG MENGIKUTI LELANG ◈\n◆ Dana bid ditahan selama lelang berlangsung.\n◆ Setor bank tetap tersedia; penarikan kembali tersedia setelah lelang selesai.\n\n─━━━━━━━━━─`)
-    }
     if (args[1] === 'all') amount = userRPG.bank
-    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
+    else amount = parseRpgMoneyAmount(args[1])
+    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid. Gunakan nominal positif seperti 1K atau 1.5M.')
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
     const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
     if (cooldownRemaining > 0) return m.reply(`⏳ Transaksi setor/tarik masih cooldown. Coba lagi dalam ${Math.ceil(cooldownRemaining / 60000)} menit.`)
@@ -980,7 +952,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah>', 'bank tarik', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah>', 'bank cs tarik <jumlah>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {

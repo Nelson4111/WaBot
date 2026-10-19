@@ -409,6 +409,32 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
 
 
   if (action === 'info') {
+    const target = payload.trim()
+    if (target) {
+      const numericIndex = /^\d+$/.test(target) ? Number(target) - 1 : -1
+      const normalizedTarget = target.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      const selectedJob = numericIndex >= 0
+        ? listJobs[numericIndex]
+        : listJobs.find(job => {
+          const jobId = job.job.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+          return job.job.toLowerCase() === target.toLowerCase() || jobId === normalizedTarget
+        })
+      if (!selectedJob) {
+        return m.reply(`❌ Pekerjaan tidak ditemukan. Cek *${usedPrefix}job list* atau *${usedPrefix}job info <nama/nomor>*.`)
+      }
+      return m.reply([
+        '╭─❏「 💼 DETAIL PEKERJAAN 」❏',
+        `│ *${selectedJob.job}*`,
+        '╰─━━━━━━━━━━━━━━─',
+        '',
+        `> 🎮 Level minimum: Lv.${selectedJob.lv}`,
+        `> 💰 Gaji dasar: ${fmtRp(selectedJob.gaji)}`,
+        `> 🌟 XP dasar: +${selectedJob.exp}`,
+        `> 🔓 Status: ${userRPG.level >= selectedJob.lv ? 'Terbuka' : 'Terkunci'}`,
+        '',
+        `📌 Lamar: *${usedPrefix}job apply ${selectedJob.job}*`
+      ].join('\n'))
+    }
     const jobsWithIncome = userRPG.appliedJobs
       .map(jobName => {
         const job = JOBS.find(entry => entry.job.toLowerCase() === jobName.toLowerCase())
@@ -552,16 +578,13 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     ]
 
     listJobs.forEach((job, index) => {
-      const unlock = userRPG.level >= job.lv ? '✅' : '🔒'
-      caption.push(`> ${index + 1}. ${unlock} *${job.job}*`)
-      caption.push(`> ↳ Level minimum: Lv.${job.lv}`)
-      caption.push(`> ↳ Gaji dasar: ${fmtRp(job.gaji)}`)
-      caption.push(`> ↳ XP dasar: +${job.exp}`)
-      if (index < listJobs.length - 1) caption.push('')
+      caption.push(`> ${index + 1}. *${job.job}*`)
     })
 
     caption.push('')
     caption.push('─━━━━━━━━━━━━━━─')
+    caption.push(`ℹ️ Detail: ${usedPrefix}job info <nama/nomor>`)
+    caption.push('')
     caption.push('📌 *CARA KERJA*')
     caption.push('')
     caption.push(`> 💼 ${usedPrefix}work`)
@@ -1305,7 +1328,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 > ↳ Gunakan *${usedPrefix}job guide* untuk melihat daftar command.`)
 }
 
-handler.help = ['job', 'job guide', 'job list', 'job info', 'job active <nama/nomor>', 'job profile', 'job performance', 'job work [all]', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk [all]', 'job leave', 'job return', 'job resign <nama/nomor>', 'work [all]', 'kerja [all]']
+handler.help = ['job', 'job guide', 'job list', 'job info [nama/nomor]', 'job active <nama/nomor>', 'job profile', 'job performance', 'job work [all]', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk [all]', 'job leave', 'job return', 'job resign <nama/nomor>', 'work [all]', 'kerja [all]']
 handler.tags = ['rpg']
 handler.command = /^(job|kerja|work)$/i
 handler.alias = ['job', 'kerja', 'work']

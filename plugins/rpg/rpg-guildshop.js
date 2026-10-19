@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { areGuildJidsSame, findGuildByMember, findGuildMemberId } from '../../lib/rpgGuild.js'
+import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -49,7 +50,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     myGuild.buffHeal = Date.now() + durasi
     myGuild.members.forEach(jid => {
       let u = wdb.users[jid]?.rpg
-      if(u){
+      if(u && getDifficultyDeathHealCooldownRemaining(u) === 0){
         if(!u.maxDarahBonus) u.maxDarahBonus = 0
         let maxHP = 100 + (u.armor || 0) * 20 + u.maxDarahBonus
         let heal = Math.floor(maxHP * 0.3)

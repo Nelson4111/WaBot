@@ -1,6 +1,6 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { getDifficultyDeathHealCooldownRemaining, scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
@@ -12,7 +12,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if(!user.cooldown) user.cooldown = {}
   if(!user.maxDarahBonus) user.maxDarahBonus = 0
   if(!user.gymMembership) user.gymMembership = { tier: null, expired: 0 }
-  if(!user.darah) user.darah = 100
+  if (user.darah == null) user.darah = 100
+  const healLock = getDifficultyDeathHealCooldownRemaining(user)
+  if (healLock > 0) return m.reply(`💀 Kamu masih dalam masa pemulihan. Bisa berlatih lagi setelah *${Math.ceil(healLock / 60000)} menit*.`)
+  if (user.darah <= 0) return m.reply(`💀 HP-mu habis. Gunakan *${usedPrefix}heal* untuk pulih sebelum latihan.`)
 
   let armorLvl = user.armor || 0
   let maxHP = 100 + (armorLvl * 20) + user.maxDarahBonus

@@ -1,5 +1,5 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
-import { adjustAbilityDropChance, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { adjustAbilityDropChance, adjustDifficultyFailureChance, getDifficultyProfile, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { sendRpgButtons, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
@@ -52,7 +52,8 @@ const tierInfo = {
   COMMON: {icon:'🤍', stars:'★☆☆☆☆☆☆'}, TRASH: {icon:'🗑️', stars:'☆☆☆☆☆☆☆'}
 }
 
-function rollItem(hance, bonus, advLvl, swordLvl, pickLvl){
+function rollItem(hance, bonus, advLvl, swordLvl, pickLvl, dropRate = 1){
+  const threshold = value => 100 - ((100 - value) * dropRate)
   let bisaSecret = advLvl >= 250 && swordLvl >= 50 && pickLvl >= 50
   let bisaMythic = advLvl >= 200 && swordLvl >= 40 && pickLvl >= 40
   let bisaLegend = advLvl >= 150
@@ -61,13 +62,13 @@ function rollItem(hance, bonus, advLvl, swordLvl, pickLvl){
   let bisaUncommon = advLvl >= 25
   let bisaCommon = advLvl >= 10
 
-  if (bisaSecret && hance > (99.999 - (bonus * 0.001))) return {item: secret[Math.floor(Math.random() * secret.length)], tier: 'SECRET', exp: 200000}
-  if (bisaMythic && hance > (99.99 - (bonus * 0.002))) return {item: mythic[Math.floor(Math.random() * mythic.length)], tier: 'MYTHIC', exp: 50000}
-  if (bisaLegend && hance > (99.9 - (bonus * 0.004))) return {item: legendary[Math.floor(Math.random() * legendary.length)], tier: 'LEGENDARY', exp: 15000}
-  if (bisaEpic && hance > (99 - (bonus * 0.01))) return {item: epic[Math.floor(Math.random() * epic.length)], tier: 'EPIC', exp: 5000}
-  if (bisaRare && hance > (92 - (bonus * 0.02))) return {item: rare[Math.floor(Math.random() * rare.length)], tier: 'RARE', exp: 1500}
-  if (bisaUncommon && hance > (67 - (bonus * 0.04))) return {item: uncommon[Math.floor(Math.random() * uncommon.length)], tier: 'UNCOMMON', exp: 400}
-  if (bisaCommon && hance > (17 - (bonus * 0.05))) return {item: common[Math.floor(Math.random() * common.length)], tier: 'COMMON', exp: 100}
+  if (bisaSecret && hance > threshold(99.999 - (bonus * 0.001))) return {item: secret[Math.floor(Math.random() * secret.length)], tier: 'SECRET', exp: 200000}
+  if (bisaMythic && hance > threshold(99.99 - (bonus * 0.002))) return {item: mythic[Math.floor(Math.random() * mythic.length)], tier: 'MYTHIC', exp: 50000}
+  if (bisaLegend && hance > threshold(99.9 - (bonus * 0.004))) return {item: legendary[Math.floor(Math.random() * legendary.length)], tier: 'LEGENDARY', exp: 15000}
+  if (bisaEpic && hance > threshold(99 - (bonus * 0.01))) return {item: epic[Math.floor(Math.random() * epic.length)], tier: 'EPIC', exp: 5000}
+  if (bisaRare && hance > threshold(92 - (bonus * 0.02))) return {item: rare[Math.floor(Math.random() * rare.length)], tier: 'RARE', exp: 1500}
+  if (bisaUncommon && hance > threshold(67 - (bonus * 0.04))) return {item: uncommon[Math.floor(Math.random() * uncommon.length)], tier: 'UNCOMMON', exp: 400}
+  if (bisaCommon && hance > threshold(17 - (bonus * 0.05))) return {item: common[Math.floor(Math.random() * common.length)], tier: 'COMMON', exp: 100}
   return {item: trash[Math.floor(Math.random() * trash.length)], tier: 'TRASH', exp: 20}
 }
 
@@ -141,7 +142,8 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   let oldTitle = getAdvTitle(advLvl)
 
   const dangerousExpedition = isRpgEventActive('dangerous_expedition')
-  const expeditionFailed = dangerousExpedition && Math.random() < 0.15
+  const expeditionBaseFailure = 0.05 + (dangerousExpedition ? 0.15 : 0)
+  const expeditionFailed = Math.random() < adjustDifficultyFailureChance(user, expeditionBaseFailure)
   let bonus = Math.min(70, Math.min(advLvl * 2 + swordLvl + Math.floor(pickLvl / 2), 60) + adjustAbilityDropChance(user, 0) * 100) *
     (dangerousExpedition ? 0.75 : 1)
   let darahKurang = Math.floor(scaleDifficultyDamage(user, Math.floor(Math.random() * 15) + 5) * (dangerousExpedition ? 1.3 : 1))
@@ -165,7 +167,7 @@ let handler = async (m, { conn, command, usedPrefix }) => {
 
   while (Object.keys(hasilLoot).length < jumlahLoot) {
     let hance = Math.random() * 100
-    let {item, tier, exp} = rollItem(hance, bonus, advLvl, swordLvl, pickLvl)
+    let {item, tier, exp} = rollItem(hance, bonus, advLvl, swordLvl, pickLvl, getDifficultyProfile(user).dropRate)
     if (seen.has(item)) continue
     seen.add(item)
 
@@ -196,6 +198,7 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   const revivedHP = user.darah <= 0 ? reviveBloodline(user, Number(user.maxDarah) || 100) : 0
   const deathProtected = user.darah <= 0 && !revivedHP && tryPremiumProtection(m.sender, 'death')
   if (deathProtected) user.darah = 1
+  if (user.darah <= 0 && !revivedHP && !deathProtected) markDifficultyDeath(user)
   user.lastAdventure = Date.now()
 
   let levelUpMsg = ''

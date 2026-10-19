@@ -1,4 +1,4 @@
-import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { adjustDifficultyFailureChance, getDifficultyProfile, scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
 import { generateFishingCard } from '../../lib/cardGenerator.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
@@ -133,6 +133,12 @@ let handler = async (m, { conn, usedPrefix }) => {
     return m.reply(`Sabar, ikan belum makan umpan. Tunggu ${sisa} detik lagi`)
   }
 
+  if (Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
+    user.lastMancing = Date.now()
+    await saveDB(wdb)
+    return m.reply('🎣 Umpanmu lepas dan ikan kabur. Aktivitas gagal; coba lagi setelah cooldown.')
+  }
+
   let rodLvl = user.fishingrod || 0
   let bonus = Math.min(rodLvl * 2, 40)
 
@@ -143,7 +149,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   let pRare = Math.min(15.0 + (rodLvl * 1.2), 30.0)
   let pUncommon = Math.max(15.0, 30.0 - (rodLvl * 0.5))
   let pCommon = Math.max(15.0, 30.0 - (rodLvl * 0.8))
-  const rareChanceFactor = (luckyCatch ? 1.5 : 1) * (murkyWaters ? 0.6 : 1)
+  const rareChanceFactor = (luckyCatch ? 1.5 : 1) * (murkyWaters ? 0.6 : 1) * getDifficultyProfile(user).dropRate
   pSecret *= (secretAwakening ? 2 : 1) * (luckyCatch ? 1.5 : 1)
   pMythic *= rareChanceFactor
   pLegend *= rareChanceFactor

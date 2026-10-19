@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -94,6 +94,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     const deathProtected = userRPG.darah !== undefined && !revivedHP &&
       tryPremiumProtection(m.sender, 'death')
     if (userRPG.darah !== undefined && !revivedHP) userRPG.darah = deathProtected ? 1 : 0
+    if (userRPG.darah !== undefined && !revivedHP && !deathProtected) markDifficultyDeath(userRPG)
     wdb.penjara = wdb.penjara || []
     userRPG.penjara = Date.now()
     userRPG.lamaPenjara = 7200000 // 2 jam
@@ -136,7 +137,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   // SUKSES
   let persen = Math.floor(Math.random() * 16) + 5 // 5% - 20%
-  let hasil = scaleDifficultyIncome(userRPG, Math.max(1000, Math.floor(uangTarget * (persen / 100))))
+  let hasil = Math.min(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.max(1000, Math.floor(uangTarget * (persen / 100))))))
 
   const targetRevived = target.darah !== undefined
     ? reviveBloodline(target, Number(target.maxDarah) || 100)
@@ -144,6 +145,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   const targetDeathProtected = target.darah !== undefined && !targetRevived &&
     tryPremiumProtection(who, 'death')
   if (target.darah !== undefined && !targetRevived) target.darah = targetDeathProtected ? 1 : 0
+  if (target.darah !== undefined && !targetRevived && !targetDeathProtected) markDifficultyDeath(target)
   if (targetDeathProtected) {
     target.riwayat.unshift(`🛡️ Premium Protection mencegah kematian saat dibunuh @${m.sender.split('@')[0]}`)
     userRPG.riwayat.unshift(`🛡️ Target selamat dari aksi bunuh @${who.split('@')[0]}`)

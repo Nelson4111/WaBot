@@ -3,6 +3,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg, getEquipmentName } from '../../
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { isPremiumUser } from './rpg-bank.js'
+import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
 
 const UPGRADE_IMAGE = 'https://c.termai.cc/i108/l3q'
 
@@ -13,6 +14,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   const upgradeable = ['sword', 'armor', 'pickaxe', 'fishingrod']
   let [item = '', confirmArg = ''] = text ? text.trim().toLowerCase().split(/\s+/) : []
+  if (item === 'armor' && getDifficultyDeathHealCooldownRemaining(user) > 0) {
+    return m.reply(`💀 Kamu masih dalam masa pemulihan. Upgrade armor yang memulihkan HP bisa dilakukan lagi setelah *${Math.ceil(getDifficultyDeathHealCooldownRemaining(user) / 60000)} menit*.`)
+  }
   const confirmYes = ['yes', 'ya', 'ok', 'confirm'].includes(confirmArg)
   const confirmNo = ['no', 'tidak', 'batal', 'cancel', 'tolak'].includes(confirmArg)
 

@@ -1,7 +1,7 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
-import { scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { canReceiveRareActivityRewards, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { addUserLimit, syncUserLimit } from '../../lib/userLimit.js'
@@ -68,38 +68,56 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     'final': { name: 'Genesis Realm', enemy: 'The Creator', minLevel: 2500, minSword: 200, hpEnemy: 7000000, dmgEnemy: 75000, reward: { exp: 6000000, money: 120000000, gold: 25000, limit: 20 }, cooldown: 120000 }
   }
 
-  let type = text?.toLowerCase() || ''
-  if (!type || !dungeons[type]) {
-  let list = `╭─❏「 🏰 RPG DUNGEON 」❏\n`
-  list += `│ Pilih dungeon sesuai level dan kekuatan sword.\n`
-  list += `╰─━━━━━━━━━━━━━━─\n\n`
+  const [action = '', ...targetParts] = String(text || '').trim().toLowerCase().split(/\s+/)
+  const target = targetParts.join(' ')
+  const formatReward = dungeon => [
+    dungeon.reward.money ? `💰 Rp ${dungeon.reward.money.toLocaleString('id-ID')}` : '',
+    dungeon.reward.exp ? `🌟 ${dungeon.reward.exp.toLocaleString('id-ID')} XP` : '',
+    dungeon.reward.gold ? `🪙 ${dungeon.reward.gold.toLocaleString('id-ID')} Gold` : '',
+    dungeon.reward.diamond ? `💎 ${dungeon.reward.diamond.toLocaleString('id-ID')} Diamond` : '',
+    dungeon.reward.limit ? `🎫 ${dungeon.reward.limit.toLocaleString('id-ID')} Limit` : ''
+  ].filter(Boolean).join(' - ')
 
-  for (let i in dungeons) {
-    let d = dungeons[i]
+  if (action === 'list') {
+    let list = `╭─❏「 🏰 RPG DUNGEON 」❏\n`
+    list += `│ Daftar nama dungeon.\n`
+    list += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    let reward = [
-      d.reward.money ? `💰 Rp ${d.reward.money.toLocaleString()}` : '',
-      d.reward.exp ? `🌟 ${d.reward.exp} XP` : '',
-      d.reward.gold ? `🪙 ${d.reward.gold} Gold` : '',
-      d.reward.diamond ? `💎 ${d.reward.diamond} Diamond` : '',
-      d.reward.limit ? `🎫 ${d.reward.limit} Limit` : ''
-    ].filter(Boolean).join(' - ')
+    list += Object.entries(dungeons)
+      .map(([key, dungeon]) => `> *${key.toUpperCase()}* • ${dungeon.name}`)
+      .join('\n')
+    list += `\n\nℹ️ Detail: *${usedPrefix}dungeon info <nama>*`
 
-    list += `🏰 *${i.toUpperCase()} • ${d.name}*\n`
-    list += `> 💀 Enemy: ${d.enemy}\n`
-    list += `> ❤️ HP: ${d.hpEnemy.toLocaleString()}\n`
-    list += `> 📊 Syarat: Player Lv.${d.minLevel} • Sword Lv.${d.minSword}\n`
-    list += `> 🎁 Reward: ${reward}\n`
-    list += `\n─━━━━━━━━━━━━━━─\n`
+    return m.reply(list)
   }
 
-  list += `\n📌 *CARA MAIN*\n`
-  list += `> ↳ *.dungeon easy*`
+  if (action === 'info') {
+    const selectedKey = Object.keys(dungeons).find(key => key === target || dungeons[key].name.toLowerCase() === target)
+    const selected = selectedKey ? dungeons[selectedKey] : null
+    if (!selected) {
+      return m.reply(`❌ Dungeon tidak ditemukan. Cek *${usedPrefix}dungeon list* atau gunakan *${usedPrefix}dungeon info <nama>.*`)
+    }
+    return m.reply(
+      `╭─❏「 🏰 DETAIL DUNGEON 」❏\n` +
+      `│ *${selectedKey.toUpperCase()} • ${selected.name}*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 💀 Enemy: ${selected.enemy}\n` +
+      `> ❤️ HP: ${selected.hpEnemy.toLocaleString('id-ID')}\n` +
+      `> 📊 Syarat: Player Lv.${selected.minLevel} • Sword Lv.${selected.minSword}\n` +
+      `> 🎁 Reward: ${formatReward(selected)}\n\n` +
+      `📌 Main: *${usedPrefix}dungeon ${selectedKey}*`
+    )
+  }
 
-  return m.reply(list)
-}
+  if (!action) {
+    return m.reply(`🏰 Untuk melihat dungeon, gunakan *${usedPrefix}dungeon list*.\nCek detail: *${usedPrefix}dungeon info <nama>*.\nUntuk mulai, gunakan *${usedPrefix}dungeon <nama dungeon>.*`)
+  }
 
+  let type = [action, ...targetParts].join(' ')
   let selected = dungeons[type]
+  if (!selected) {
+    return m.reply(`❌ Dungeon tidak ditemukan. Cek *${usedPrefix}dungeon list*.`)
+  }
 
 
   if (user.level < selected.minLevel) {
@@ -226,6 +244,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       )
     }
     user.darah = 0
+    markDifficultyDeath(user)
     user.lastDungeon = Date.now()
     await saveDB(wdb)
     return sendRpgQuickButton(conn, m, {
@@ -248,8 +267,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let earnedExp = selected.reward.exp
   let earnedMoney = selected.reward.money
   let earnedGold = selected.reward.gold || 0
-  let earnedDiamond = selected.reward.diamond || 0
-  let earnedLimit = selected.reward.limit || 0
+  let earnedDiamond = canReceiveRareActivityRewards(user) ? selected.reward.diamond || 0 : 0
+  let earnedLimit = canReceiveRareActivityRewards(user) ? selected.reward.limit || 0 : 0
 
   if (pet.tipe === 'kucing') earnedExp += Math.floor(earnedExp * (pet.level * 0.10))
   if (pet.tipe === 'anjing') earnedMoney += Math.floor(earnedMoney * (pet.level * 0.10))
@@ -318,7 +337,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   )
 }
 
-handler.help = ['dungeon']
+handler.help = ['dungeon', 'dungeon list', 'dungeon info <nama>']
 handler.tags = ['rpg']
 handler.command = ['dungeon']
 export default handler

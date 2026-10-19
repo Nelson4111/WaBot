@@ -1,7 +1,7 @@
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
-import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { adjustDifficultyFailureChance, getDifficultyProfile, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import {
   INTERSTELLAR_ITEM_BY_ID,
@@ -36,7 +36,8 @@ let handler = async (m, { conn, usedPrefix }) => {
   const dimensionalRift = isRpgEventActive('dimensional_rift')
   const voidCorruption = isRpgEventActive('void_corruption')
   const cosmicTurbulence = isRpgEventActive('cosmic_turbulence')
-  const failureChance = (voidCorruption ? 0.45 : 0) + (cosmicTurbulence ? 0.15 : 0)
+  const difficultyDropRate = getDifficultyProfile(rpg).dropRate
+  const failureChance = adjustDifficultyFailureChance(rpg, (voidCorruption ? 0.45 : 0) + (cosmicTurbulence ? 0.15 : 0))
   rpg.lastExplore = now
   rpg.interstellarExplores = (Number(rpg.interstellarExplores) || 0) + 1
   if (Math.random() < failureChance) {
@@ -51,10 +52,10 @@ let handler = async (m, { conn, usedPrefix }) => {
     )
   }
   const tierMultipliers = {
-    RARE: (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
-    EPIC: (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
-    LEGENDARY: (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
-    MYTHIC: (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1)
+    RARE: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
+    EPIC: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
+    LEGENDARY: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
+    MYTHIC: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1)
   }
   const items = [
     rollInterstellarCommonItem(),

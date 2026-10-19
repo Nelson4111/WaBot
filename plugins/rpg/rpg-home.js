@@ -1,6 +1,7 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
 import {
   MALL_CATEGORY_ALIASES,
   MALL_CATEGORIES
@@ -1963,9 +1964,14 @@ if (mode === 'masuk' || mode === 'pulang') {
 
   if (mode === 'pulang' && staffActive('private nurse')) {
     const maxHealth = Math.max(1, Number(rpg.maxDarah) || 100)
-    const healed = Math.max(0, maxHealth - (Number(rpg.darah) || 0))
-    rpg.darah = maxHealth
-    nurseStory = `\n> ↳ Private Nurse menyambutmu dan merawat luka; darah pulih ${healed} HP (${rpg.darah}/${maxHealth}).`
+    const healLock = getDifficultyDeathHealCooldownRemaining(rpg)
+    if (healLock > 0) {
+      nurseStory = `\n> ↳ Private Nurse menunggu masa pemulihanmu selesai (${Math.ceil(healLock / 60000)} menit lagi).`
+    } else {
+      const healed = Math.max(0, maxHealth - (Number(rpg.darah) || 0))
+      rpg.darah = maxHealth
+      nurseStory = `\n> ↳ Private Nurse menyambutmu dan merawat luka; darah pulih ${healed} HP (${rpg.darah}/${maxHealth}).`
+    }
   }
 
   if (mode === 'pulang' && staffActive('housekeeper')) home.hygiene = clampHomeStat(home.hygiene + 2)

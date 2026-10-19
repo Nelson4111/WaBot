@@ -3,7 +3,7 @@ import { BANK_TIERS, calculateBankRobberyLoss, getBankEffectiveSecurity, getBank
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -116,7 +116,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
 // SUKSES
 let persen = 0.05 + (Math.random() * 0.25) // 5% - 30%
-let hasil = scaleDifficultyIncome(userRPG, calculateBankRobberyLoss(bankTarget, persen, tier))
+let hasil = Math.min(bankTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, calculateBankRobberyLoss(bankTarget, persen, tier))))
 
 target.bank -= hasil
 userRPG.bank = (userRPG.bank || 0) + hasil

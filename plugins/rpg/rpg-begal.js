@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, getCrimeRestriction, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -91,6 +91,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     const revivedHP = reviveBloodline(userRPG, Number(userRPG.maxDarah) || 100)
     const deathProtected = !revivedHP && tryPremiumProtection(m.sender, 'death')
     if (!revivedHP) userRPG.darah = deathProtected ? 1 : 0
+    if (!revivedHP && !deathProtected) markDifficultyDeath(userRPG)
     wdb.penjara = wdb.penjara || []
     userRPG.penjara = Date.now()
     userRPG.lamaPenjara = 7200000 // 2 jam
@@ -133,7 +134,7 @@ return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
 
 // SUKSES
-let hasil = scaleDifficultyIncome(userRPG, Math.max(500, Math.floor(uangTarget * 0.1)))
+let hasil = Math.min(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.max(500, Math.floor(uangTarget * 0.1)))))
 
 wdb.money[who] -= hasil
 wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil

@@ -88,6 +88,7 @@ function getAuctionBids(db, session, itemId) {
       amount: Number(bid.amount),
       at: Number(bid.at) || 0,
       escrowed: bid.escrowed === true,
+      historyRecorded: bid.historyRecorded === true,
       chatId: bid.chatId
     }
     if (!current ||
@@ -181,6 +182,7 @@ function restoreAuctionBids(db, session) {
         amount: Number(bid.amount),
         at: Number(bid.at) || 0,
         escrowed: bid.escrowed === true,
+        historyRecorded: bid.historyRecorded === true,
         chatId: bid.chatId
       }
       if (existingIndex < 0) {
@@ -227,6 +229,7 @@ function recoverAuctionSession(db, previousSession, now) {
         amount: Number(bid.amount),
         at: Number(bid.at) || 0,
         escrowed: bid.escrowed === true,
+        historyRecorded: bid.historyRecorded === true,
         chatId: bid.chatId
       })
     }
@@ -262,6 +265,7 @@ function settleOrphanedAuctionBids(db, now) {
         amount: Number(bid.amount),
         at: Number(bid.at) || 0,
         escrowed: bid.escrowed === true,
+        historyRecorded: bid.historyRecorded === true,
         chatId: bid.chatId
       })
     }
@@ -301,6 +305,15 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
       }
     }
 
+    for (const [bidderJid, bid] of bestBidByUser) {
+      if (!bid.escrowed || bid.historyRecorded) continue
+      const account = getUserRPG(db, bidderJid)
+      if (!account?.rpg) continue
+      if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
+      account.rpg.riwayat.unshift(`-${money(bid.amount)} Bid lelang ${item.name}`)
+      account.rpg.riwayat.length = Math.min(account.rpg.riwayat.length, 20)
+    }
+
     const candidates = [...bestBidByUser.values()].sort((a, b) =>
       Number(b.amount) - Number(a.amount) || Number(a.at) - Number(b.at)
     )
@@ -330,13 +343,16 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
     if (!winner) continue
 
     const { bid, account } = winner
-    if (!bid.escrowed) account.rpg.bank = (Number(account.rpg.bank) || 0) - Number(bid.amount)
+    if (!bid.escrowed) {
+      account.rpg.bank = (Number(account.rpg.bank) || 0) - Number(bid.amount)
+      if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
+      account.rpg.riwayat.unshift(`-${money(bid.amount)} Bid lelang ${item.name}`)
+    }
     if (!account.rpg.auctionVault || typeof account.rpg.auctionVault !== 'object') {
       account.rpg.auctionVault = {}
     }
     account.rpg.auctionVault[itemId] = (Number(account.rpg.auctionVault[itemId]) || 0) + 1
     if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
-    account.rpg.riwayat.unshift(`-${money(bid.amount)} Lelang ${item.name}`)
     account.rpg.riwayat.length = Math.min(account.rpg.riwayat.length, 20)
 
     const winnerName = getAuctionBidderName(db, bid.jid)
@@ -597,7 +613,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ Hasil lelang dan berita pemenang hanya ditampilkan di grup asal bid pemenang.\n` +
       `> ↳ Bid minimum yang ditampilkan adalah setengah harga asli. Bid sungguhan harus lebih tinggi dari harga asli atau bid tertinggi. Bid perlu dikonfirmasi; bid berikutnya tanpa nominal naik Rp 500.000.\n` +
       `> ↳ Nominal bid bisa memakai sufiks, misalnya *1.5B*, *19Qa*, atau *2Ce*. Lihat daftar lengkap dengan *${prefix}ah money*.\n` +
-      `> ↳ Saldo bid ditahan saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
+      `> ↳ Nominal bid langsung dipotong dari saldo bank saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
       `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku.\n\n` +
       `📌 *INFORMASI*\n` +
       `> ↳ Daftar perintah : *${prefix}ah command*\n` +
@@ -661,7 +677,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       buttonText: '🔨 JELAJAHI LELANG',
       sections: [{ title: 'Balai lelang', rows }],
       fallbackText,
-      noThumbnail: true
+      noThumbnail: true,
+      noHeader: true
     })
   }
 
@@ -827,7 +844,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         }
       ],
       fallbackText: auctionText,
-      noThumbnail: true
+      noThumbnail: true,
+      noHeader: true
     })
   }
 
@@ -924,6 +942,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       }
 
       rpg.bank = balance + previousHeldAmount - pending.amount
+      if (!Array.isArray(rpg.riwayat)) rpg.riwayat = []
+      if (previousHeldAmount > 0) {
+        rpg.riwayat.unshift(`+${money(previousHeldAmount)} Pengembalian bid sebelumnya ${item.name}`)
+      }
+      rpg.riwayat.unshift(`-${money(pending.amount)} Bid lelang ${item.name}`)
+      rpg.riwayat.length = Math.min(rpg.riwayat.length, 20)
       const confirmedAt = Date.now()
       session.bids[item.id] = existingBids.filter(bid => !isAuctionUser(bid?.jid, userJids))
       session.bids[item.id].push({
@@ -931,6 +955,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         amount: pending.amount,
         at: confirmedAt,
         escrowed: true,
+        historyRecorded: true,
         chatId: pending.chatId || m.chat
       })
       if (!rpg.auctionBids || typeof rpg.auctionBids !== 'object') rpg.auctionBids = {}
@@ -941,7 +966,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         chatId: pending.chatId || m.chat,
         endsAt: session.endsAt,
         itemIds: [...session.itemIds],
-        escrowed: true
+        escrowed: true,
+        historyRecorded: true
       }
       for (const userJid of userJids) delete session.pendingConfirmations[userJid]
       await persistAuctionDB()
@@ -957,7 +983,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         `> 👤 Pemimpin bid: ${leading ? 'Kamu' : visibleHighest.jid ? getAuctionBidderName(db, visibleHighest.jid) : '-'}\n\n` +
         `─━━━━━━━━━━━━━━─\n` +
         `💳 *INFORMASI DANA*\n` +
-        `> ↳ Dana sudah ditahan dari saldo bank.\n` +
+        `> ↳ Dana sudah dipotong dari saldo bank.\n` +
         `> ↳ Jika kalah, dana dikembalikan saat lelang berakhir.\n\n` +
         `> ↳ Cek status bid: *${prefix}ah info*\n` +
         `─━━━━━━━━━━━━━━─`
@@ -1041,18 +1067,19 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `─━━━━━━━━━━━━━━─\n` +
       `💳 *INFORMASI DANA*\n` +
       `> ↳ Saldo belum ditahan sebelum konfirmasi.\n` +
-      `> ↳ Setelah dikonfirmasi, saldo ditahan dan dikembalikan jika kamu kalah.\n\n` +
+      `> ↳ Setelah dikonfirmasi, nominal langsung dipotong dan dikembalikan jika kamu kalah.\n\n` +
       `─━━━━━━━━━━━━━━─\n` +
       `📌 *KONFIRMASI PENAWARAN*\n` +
       `> ↳ Ketik *${prefix}ah bid konfirmasi* dalam 2 menit untuk mengirim bid ini.\n` +
       `─━━━━━━━━━━━━━━─`,
       title: '🔨 PASTIKAN PENAWARAN',
-      subtitle: 'Dana hanya ditahan setelah kamu menyetujui bid',
+      subtitle: 'Dana dipotong setelah kamu menyetujui bid',
       acceptText: '🏆 Konfirmasi Bid',
       acceptCommand: `${prefix}ah bid konfirmasi`,
       cancelText: '↩️ Batalkan Bid',
       cancelCommand: `${prefix}ah bid batal`,
-      noThumbnail: true
+      noThumbnail: true,
+      noHeader: true
     })
   }
 
