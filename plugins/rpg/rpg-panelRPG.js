@@ -537,6 +537,8 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no> <nama/gender/umur/carecount/love/ortu/biologicalparents> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat daftar anak keluarga dan shelter\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +
+  `> ↳ *${usedPrefix}rpgpanel asuhanak @tag [shelter] <no> @pengasuh* / *kembalianak @pengasuh <no>*\n` +
   `> ↳ Anak shelter: *setanak @tag shelter <no> <nama/gender/umur/carecount/love/ortu/biologicalparents> <nilai>* / *delanak @tag shelter <no>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
@@ -2290,8 +2292,123 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   }
 
 // 5.2 RSHIP ANAK
-  if(['addanak','delanak','setanak'].includes(aksi)){
+  if(['addanak','delanak','setanak','pindahanak','asuhanak','kembalianak'].includes(aksi)){
     if (!Array.isArray(user.kids)) user.kids = []
+    if (!Array.isArray(user.shelterKids)) user.shelterKids = []
+    if (aksi === 'pindahanak') {
+      const shelterSource = remaining[0]?.toLowerCase() === 'shelter'
+      const sourceList = shelterSource ? user.shelterKids : user.kids
+      const childNumber = Number(shelterSource ? remaining[1] : remaining[0])
+      const destination = String(remaining[shelterSource ? 2 : 1] || '').toLowerCase()
+      const child = Number.isInteger(childNumber) && childNumber > 0 ? sourceList[childNumber - 1] : null
+      const validDestination = shelterSource
+        ? ['keluarga', 'family', 'anak'].includes(destination)
+        : ['shelter'].includes(destination)
+      if (!child || !validDestination || child.facility || child.pendingTransferId || child.custody?.type === 'foster') {
+        return m.reply(
+          `❌ Format:\n` +
+          `> Keluarga ke shelter: *${usedPrefix}rpgpanel pindahanak @tag <no-anak> shelter*\n` +
+          `> Shelter ke keluarga: *${usedPrefix}rpgpanel pindahanak @tag shelter <no-anak> keluarga*`
+        )
+      }
+      sourceList.splice(childNumber - 1, 1)
+      if (shelterSource) {
+        delete child.shelterStatus
+        child.lastCaredAt = Date.now()
+        child.lastNeglectCheckAt = Date.now()
+        user.kids.push(child)
+      } else {
+        child.shelterStatus = { reason: 'lost', enteredAt: Date.now() }
+        user.shelterKids.push(child)
+      }
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Anak *${child.nama}* dipindahkan ${shelterSource ? 'dari shelter ke daftar keluarga' : 'dari keluarga ke shelter'} @${who.split('@')[0]}.`,
+        null,
+        { mentions: [who] }
+      )
+    }
+    if (aksi === 'asuhanak') {
+      const shelterSource = remaining[0]?.toLowerCase() === 'shelter'
+      const sourceList = shelterSource ? user.shelterKids : user.kids
+      const childNumber = Number(remaining[shelterSource ? 1 : 0])
+      const child = Number.isInteger(childNumber) && childNumber > 0 ? sourceList[childNumber - 1] : null
+      const targetJid = m.mentionedJid?.[1]
+      if (!child || !targetJid || child.facility || child.pendingTransferId || child.custody?.type === 'foster') {
+        return m.reply(
+          `❌ Format:\n` +
+          `> Anak keluarga: *${usedPrefix}rpgpanel asuhanak @tag <no-anak> @pengasuh*\n` +
+          `> Anak shelter: *${usedPrefix}rpgpanel asuhanak @tag shelter <no-anak> @pengasuh*`
+        )
+      }
+      let guardianJid = targetJid
+      if (conn && typeof conn.decodeJid === 'function') guardianJid = conn.decodeJid(guardianJid)
+      if (guardianJid.endsWith('@lid')) {
+        guardianJid = global.lids?.[guardianJid] || global.db?.data?.lids?.[guardianJid] || wdb.lids?.[guardianJid] || guardianJid
+      }
+      const guardianData = wdb.users[guardianJid]
+      const guardian = guardianData?.rpg || guardianData
+      if (!guardian || guardianData?.isDummy || guardianJid === who) {
+        return m.reply('❌ Pengasuh harus user RPG lain yang sudah terdaftar.')
+      }
+      sourceList.splice(childNumber - 1, 1)
+      if (shelterSource) {
+        child.originalOwnerLocation = 'shelterKids'
+        child.originalShelterStatus = child.shelterStatus
+        delete child.shelterStatus
+      } else {
+        child.originalOwnerLocation = 'kids'
+        if (child.custody) child.originalCustody = child.custody
+      }
+      child.originalOwnerJid = who
+      child.custody = { type: 'foster', guardianJid }
+      if (!Array.isArray(guardian.kids)) guardian.kids = []
+      guardian.kids.push(child)
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Anak *${child.nama}* sekarang berada dalam pengasuhan @${guardianJid.split('@')[0]}.\n` +
+        `> ↳ Asal: ${shelterSource ? 'shelter' : 'keluarga'} @${who.split('@')[0]}.\n` +
+        `> ↳ Pengasuh dapat mengembalikannya lewat Panel: *${usedPrefix}rpgpanel kembalianak @pengasuh <no-anak-asuh>*.`,
+        null,
+        { mentions: [who, guardianJid] }
+      )
+    }
+    if (aksi === 'kembalianak') {
+      const childNumber = Number(remaining[0])
+      const child = Number.isInteger(childNumber) && childNumber > 0 ? user.kids[childNumber - 1] : null
+      const ownerJid = child?.originalOwnerJid
+      const ownerData = ownerJid && wdb.users[ownerJid]
+      const owner = ownerData?.rpg || ownerData
+      if (!child || child.custody?.type !== 'foster' || !owner || ownerData?.isDummy) {
+        return m.reply(`❌ Format: *${usedPrefix}rpgpanel kembalianak @pengasuh <no-anak-asuh>*\nAnak harus memiliki pemilik asal yang masih terdaftar.`)
+      }
+      const returningToShelter = child.originalOwnerLocation === 'shelterKids'
+      user.kids.splice(childNumber - 1, 1)
+      if (child.originalCustody) {
+        child.custody = child.originalCustody
+        delete child.originalCustody
+      } else {
+        delete child.custody
+      }
+      delete child.originalOwnerJid
+      delete child.pendingTransferId
+      if (returningToShelter) {
+        if (!Array.isArray(owner.shelterKids)) owner.shelterKids = []
+        child.shelterStatus = child.originalShelterStatus || { reason: 'lost', enteredAt: Date.now() }
+        owner.shelterKids.push(child)
+      } else {
+        if (!Array.isArray(owner.kids)) owner.kids = []
+        owner.kids.push(child)
+      }
+      delete child.originalOwnerLocation
+      delete child.originalShelterStatus
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Anak *${child.nama}* dikembalikan ke ${returningToShelter ? 'shelter' : 'keluarga'} @${ownerJid.split('@')[0]}.`,
+        null,
+        { mentions: [who, ownerJid] }
+      )
+    }
     if(aksi === 'addanak'){
       const shelterTarget = args[0]?.toLowerCase() === 'shelter'
       const nama = args.slice(shelterTarget ? 1 : 0).join(' ').trim()
@@ -2339,6 +2456,9 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
         return m.reply(shelterTarget
           ? `Contoh: *${usedPrefix}rpgpanel delanak @tag shelter 1*`
           : `Contoh: *${usedPrefix}rpgpanel delanak @tag 1*`)
+      }
+      if (childList[index].pendingTransferId) {
+        return m.reply('❌ Anak sedang menunggu persetujuan pengasuhan. Selesaikan atau batalkan tawarannya terlebih dahulu.')
       }
       const namaA = childList[index].nama
       childList.splice(index, 1)

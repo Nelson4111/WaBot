@@ -5,7 +5,7 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, claimBankCrown } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
-import { getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { formatRpgMoney, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import upgradeBankHandler from './rpg-upgradebank.js'
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
@@ -612,7 +612,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       userRPG.lastBankTransaction = now
       userRPG.riwayat.length = Math.min(userRPG.riwayat.length, 20)
       await saveDB(wdb)
-      return m.reply(`✅ Bantuan ${topic === 'simpan' ? 'setor' : 'tarik'} melalui ${service} berhasil.\nSaldo bank: Rp ${userRPG.bank.toLocaleString()}\nUang saku: Rp ${(Number(wdb.money[m.sender]) || 0).toLocaleString()}`)
+      return m.reply(`✅ Bantuan ${topic === 'simpan' ? 'setor' : 'tarik'} melalui ${service} berhasil.\nSaldo bank: ${formatRpgMoney(userRPG.bank)}\nUang saku: ${formatRpgMoney(Number(wdb.money[m.sender]) || 0)}`)
     }
 
     if (topic === 'analisis') {
@@ -837,7 +837,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     userRPG.lastBankTransaction = now
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Simpan`)
     await saveDB(wdb)
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n◆ Tempat : ${getBankTransactionLocation(tier)}\n\n─━━━━━━━━━─`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : ${formatRpgMoney(amount)}\n◆ Saldo Baru : ${formatRpgMoney(userRPG.bank)}\n◆ Tempat : ${getBankTransactionLocation(tier)}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
 
@@ -853,7 +853,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     userRPG.lastBankTransaction = now
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
     await saveDB(wdb)
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : ${formatRpgMoney(amount)}\n◆ Saldo Tersisa : ${formatRpgMoney(userRPG.bank)}\n`
     msg += `◆ Tempat : ${getBankTransactionLocation(tier)}\n`
     if(tier.fasilitas.includes('Kendaraan Pribadi')) msg += `◆ Kurir : Kendaraan Pribadi\n`
     msg += `\n─━━━━━━━━━─`
@@ -943,7 +943,13 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   if (action === 'riwayat') {
     if (!tier.fasilitas.includes('Riwayat Transaksi')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa lihat riwayat\n─━━━━━━━━━─`)
     if (userRPG.riwayat.length === 0) return m.reply('❌ Belum ada riwayat')
-    let riwayat = userRPG.riwayat.slice(0, 10).map((r,i)=>` ${i+1}. ${r}`).join('\n')
+    let riwayat = userRPG.riwayat.slice(0, 10).map((entry, index) => {
+      const compactEntry = String(entry).replace(/Rp\s*([\d.,]+)/g, (match, rawAmount) => {
+        const amount = Number(rawAmount.replace(/[.,]/g, ''))
+        return Number.isFinite(amount) ? formatRpgMoney(amount) : match
+      })
+      return ` ${index + 1}. ${compactEntry}`
+    }).join('\n')
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n◈ RIWAYAT TRANSAKSI ◈\n\n${riwayat}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }

@@ -2,12 +2,13 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { changeTransferBalance, findTransferItems, getTransferBalance } from '../../lib/rpgTransfer.js'
+import { formatRpgMoney, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   if (!wdb.money) wdb.money = {}
   let args = (text || '').trim().split(/\s+/).filter(Boolean)
-  let who, itemInput, count
+  let who, itemInput, countInput
 
   // CEK DATA
   if (!wdb.users[m.sender]?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum punya data RPG.')
@@ -17,14 +18,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (mentionedJid[0]) {
     who = mentionedJid[0]
     itemInput = args[1]
-    count = parseInt(args[2])
+    countInput = args[2]
   } else if (m.quoted) {
     who = m.quoted.sender
     itemInput = args[0]
-    count = parseInt(args[1])
+    countInput = args[1]
   }
 
-  if (!who || !isValidRpgUserId(who) || !itemInput || isNaN(count) || count <= 0) {
+  if (!who || !isValidRpgUserId(who) || !itemInput || !countInput) {
     return m.reply(
       `╭─❏「 🎁 GIFT SYSTEM 」❏\n` +
       `│ Kirim item langsung tanpa persetujuan.\n` +
@@ -33,6 +34,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `> 🏷️ Tag: *${usedPrefix}${command} @tag <item> <jumlah>*\n` +
       `> 💬 Reply: *${usedPrefix}${command} <item> <jumlah>*\n` +
       `> 📦 Item bisa dari gudang, tas, aquarium, kulkas, atau saldo RPG.\n` +
+      `> 💰 Gift money menerima nominal suffix, misalnya *1K* atau *1.5M*.\n` +
       `> ↳ Sumber khusus: *inventory:item*, *ikan:item*, *ores:item*, *items:item*, *masakan:item*, atau *balance:diamond*`
     )
   }
@@ -58,6 +60,14 @@ if (matches.length > 1) {
 }
 const item = matches[0]
 if (!item) return m.reply(`❌ Item *${itemInput}* tidak ditemukan di stok yang bisa dikirim.`)
+const count = item.money
+  ? parseRpgMoneyAmount(countInput)
+  : /^\d+$/.test(countInput) ? Number(countInput) : null
+if (!Number.isFinite(count) || !Number.isInteger(count) || count <= 0) {
+  return m.reply(item.money
+    ? '❌ Jumlah uang tidak valid. Gunakan angka atau suffix seperti 1K atau 1.5M.'
+    : '❌ Jumlah item harus berupa angka bulat positif.')
+}
 
 // CEK STOK & KIRIM
 if (item.money) {
@@ -93,7 +103,7 @@ return sendRpgMsg(
   `│ 📤 Dari: @${m.sender.split('@')[0]}\n` +
   `│ 📥 Ke: @${who.split('@')[0]}\n` +
   `│ 📦 Item: ${item.item.toUpperCase()}${item.field && item.field !== 'balance' && item.field !== 'bank' ? ` (${item.field})` : ''}\n` +
-  `│ 🔢 Jumlah: ${count.toLocaleString()}\n` +
+  `│ 🔢 Jumlah: ${item.money ? formatRpgMoney(count) : count.toLocaleString()}\n` +
   `╰─━━━━━━━━━━━━━━─\n\n` +
   `🔄 *TRADE*\n` +
   `> ↳ Tukar barang: *.trade @tag*`,
