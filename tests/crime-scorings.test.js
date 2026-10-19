@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { computeCrimeScore, ensurePatrolReleaseProtection, getActiveCrimeScore, getCrimeScoreSummary, getPatrolCaptureChance, getPatrolCapturePenalty, getPatrolProtectionRemaining, markPatrolRelease, PATROL_CAPTURE_PROTECTION_MS, PATROL_CRIME_PROTECTION_MS, PATROL_PRISON_PROTECTION_MS, recordEscapeCrime, setActiveCrimeScore, setCrimeCount, syncAllEscapeCrimeCounts, syncEscapeCrimeCounts } from '../lib/crimeHelper.js'
 import { normalizeFishKey } from '../lib/rpg-fishCatalog.js'
 import { PATROL_RESTRICTED_RSHIP_ACTIONS } from '../lib/patrolHelper.js'
+import { createRpgCrimeRecord } from '../lib/rpgCrimeAction.js'
 
 assert.equal(computeCrimeScore({ rampok: 2, bunuh: 1, begal: 3, copet: 4 }), 2 * 4 + 1 * 3 + 3 * 2 + 4 * 1)
 assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 }), {
@@ -13,7 +14,7 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
   copet: 4,
   kabur: 0,
   breakout: 0,
-  penelantaran: 0,
+  aniaya: 0,
   total: 21,
   weight: {
     rampok: 4,
@@ -24,14 +25,31 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
     copet: 1,
     kabur: 5,
     breakout: 5,
-    penelantaran: 3
+    aniaya: 3
   }
 })
+assert.equal(computeCrimeScore({ aniaya: 2 }), 6)
 assert.equal(computeCrimeScore({ penelantaran: 2 }), 6)
-const configuredCrime = setCrimeCount({ copet: 1 }, 'penelantaran', 2)
-assert.equal(configuredCrime.penelantaran, 2)
+assert.deepEqual(createRpgCrimeRecord({ penelantaran: 2 }), {
+  rampok: 0,
+  jarah: 0,
+  culik: 0,
+  bunuh: 0,
+  begal: 0,
+  copet: 0,
+  kabur: 0,
+  breakout: 0,
+  aniaya: 2,
+  total: 0
+})
+const configuredCrime = setCrimeCount({ copet: 1 }, 'aniaya', 2)
+assert.equal(configuredCrime.aniaya, 2)
+assert.equal('penelantaran' in configuredCrime, false)
 assert.equal(configuredCrime.total, 7)
-assert.equal(setCrimeCount(configuredCrime, 'Penelantaran Anak', 3).total, 10)
+assert.equal(setCrimeCount(configuredCrime, 'Aniaya', 3).total, 10)
+const migratedCrime = setCrimeCount({ penelantaran: 2 }, 'copet', 1)
+assert.equal(migratedCrime.aniaya, 2)
+assert.equal(migratedCrime.total, 7)
 assert.throws(() => setCrimeCount(configuredCrime, 'unknown', 1), RangeError)
 assert.throws(() => setCrimeCount(configuredCrime, 'copet', -1), RangeError)
 assert.deepEqual(getCrimeScoreSummary({ penelantaran: 2 }), {
@@ -43,7 +61,7 @@ assert.deepEqual(getCrimeScoreSummary({ penelantaran: 2 }), {
   copet: 0,
   kabur: 0,
   breakout: 0,
-  penelantaran: 2,
+  aniaya: 2,
   total: 6,
   weight: {
     rampok: 4,
@@ -54,7 +72,7 @@ assert.deepEqual(getCrimeScoreSummary({ penelantaran: 2 }), {
     copet: 1,
     kabur: 5,
     breakout: 5,
-    penelantaran: 3
+    aniaya: 3
   }
 })
 assert.equal(computeCrimeScore({ kabur: 1, breakout: 2 }), 15)

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import auctionHandler from '../plugins/rpg/rpg-auction.js'
 import bankHandler from '../plugins/rpg/rpg-bank.js'
-import { AUCTION_ITEMS } from '../lib/rpg-auctionData.js'
+import { AUCTION_ITEMS, AUCTION_RARITIES, getAuctionItemRarity } from '../lib/rpg-auctionData.js'
 import { finishAuctionNow } from '../plugins/rpg/rpg-auction.js'
 
 const firstJid = '628123456789@s.whatsapp.net'
@@ -83,6 +83,40 @@ test('auction list includes shortcuts for checking balance and money suffixes', 
 
     assert.match(listing, /> 💳 \.money — cek saldo/)
     assert.match(listing, /> 🔤 \.money suffix — cek daftar sufiks/)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
+test('auction rarity is evenly distributed by price and displayed only in item info', async () => {
+  const rarityCounts = new Map(Object.keys(AUCTION_RARITIES).map(name => [name, 0]))
+  const sortedItems = [...AUCTION_ITEMS].sort((first, second) => first.price - second.price)
+  let previousRarityIndex = -1
+
+  for (const item of sortedItems) {
+    const rarity = getAuctionItemRarity(item)
+    const rarityIndex = Object.keys(AUCTION_RARITIES).indexOf(rarity.name)
+    assert.ok(rarityIndex >= previousRarityIndex)
+    previousRarityIndex = rarityIndex
+    rarityCounts.set(rarity.name, rarityCounts.get(rarity.name) + 1)
+  }
+
+  const counts = [...rarityCounts.values()]
+  assert.ok(Math.max(...counts) - Math.min(...counts) <= 1)
+
+  const previousDb = global.db
+  global.db = makeDb()
+  try {
+    await runAuction(firstJid, 'list')
+    const item = AUCTION_ITEMS.find(entry => entry.id === global.db.data.auctionHouse.itemIds[0])
+    const rarity = getAuctionItemRarity(item)
+    const details = await runAuction(firstJid, `info ${item.id}`)
+    const listing = await runAuction(firstJid, 'list')
+
+    assert.match(details, new RegExp(`Rarity: ${rarity.stars} ${rarity.name}`))
+    assert.match(details, new RegExp(`${rarity.icon}`))
+    assert.doesNotMatch(listing, /Rarity:/i)
   } finally {
     if (previousDb === undefined) delete global.db
     else global.db = previousDb
