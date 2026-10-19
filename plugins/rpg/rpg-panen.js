@@ -292,7 +292,10 @@ if (text.toLowerCase() === 'all') {
     buttonText: '🌱 TANAM KEMBALI',
     sections: [{ title: 'Bibit dari panen ini', rows: replantRows }],
     fallbackText: replantFallback,
-    thumbnailUrl: ladangImageUrl
+    thumbnailUrl: ladangImageUrl,
+    sendInteractive: typeof conn.sendInteractive === 'function'
+      ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
+      : undefined
   })
 }
 
