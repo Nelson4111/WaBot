@@ -3,7 +3,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
@@ -69,7 +69,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (tryPremiumProtection(who, 'begal', Date.now(), m.sender)) {
     userRPG.lastbegal = Date.now()
     await saveDB(wdb)
-    return m.reply('🛡️ Aksi begal gagal: Premium Protection target aktif. Cooldown begal kamu tetap berlaku; tidak ada uang yang berpindah.')
+    return m.reply(formatPremiumProtectionMessage('begal', 'Uang target tetap aman.'))
   }
 
   userRPG.lastbegal = Date.now()
@@ -79,7 +79,11 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (gagal && tryPremiumProtection(m.sender, 'begal', Date.now(), who)) {
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat begal @${who.split('@')[0]}`)
     await saveDB(wdb)
-    return m.reply(`🛡️ Premium protection aktif: kamu selamat dari kegagalan begal dan tidak masuk penjara.\n\n${story}`)
+    return m.reply(
+      `${formatPremiumProtectionMessage('begal', 'Kamu selamat dari hukuman dan tidak masuk penjara.', {
+        protectionMessage: 'Perlindungan Premium kamu sedang aktif.'
+      })}\n\n${story}`
+    )
   }
 
   // INIT CRIME
@@ -109,21 +113,35 @@ let handler = async (m, { conn, usedPrefix }) => {
     )
 
     saveDB(wdb)
+    if (deathProtected) {
+      const prisonStatus = userRPG.sel
+        ? `> 🚔 Kamu tetap masuk PENJARA SEL ${userRPG.sel} selama 2 jam. Tebusan: Rp 2.000.000.`
+        : '> 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.'
+      return conn.reply(
+        m.chat,
+        `${formatPremiumProtectionMessage('begal', 'Kamu selamat dengan 1 HP.', {
+          actionMessage: 'Kamu selamat dari kematian saat gagal begal.',
+          protectionMessage: 'Perlindungan Premium kematian kamu sedang aktif.',
+          cooldownMessage: 'Cooldown perlindungan kematian kamu telah dimulai.'
+        })}\n\n${prisonStatus}\n\n${story}`,
+        m,
+        { mentions: [m.sender, who] }
+      )
+    }
+
  let txt = `╭─❏「 💀 BEGAL GAGAL 」❏\n`
 txt += `│ 🏴‍☠️ Pembegal: @${m.sender.split('@')[0]}\n`
 txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
 txt += revivedHP
   ? `│ ♻️ Bloodline Phoenix membangkitkanmu dengan ${revivedHP} HP.\n`
-  : deathProtected
-    ? `│ 🛡️ Premium Protection mencegah kematian; tersisa 1 HP.\n`
-    : `│ ⚰️ Kamu tertembak dan mati.\n`
+  : `│ ⚰️ Kamu tertembak dan mati.\n`
 txt += userRPG.sel
   ? `│ 🚔 Penjara: *SEL ${userRPG.sel}* • *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
   : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
 txt += `╰─━━━━━━━━━━━━━━─`
 txt += `\n\n${story}`
 
-if (!revivedHP && !deathProtected) {
+if (!revivedHP) {
   return sendRpgHealPrompt(conn, m, {
     text: txt,
     usedPrefix,

@@ -4,7 +4,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { sendRpgHealPrompt, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
@@ -71,7 +71,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     if (tryPremiumProtection(who, 'rampok', Date.now(), m.sender)) {
         userRPG.lastrob = Date.now()
         await saveDB(wdb)
-        return m.reply('🛡️ Aksi rampok gagal: Premium Protection target aktif. Cooldown rampok kamu tetap berlaku; saldo bank target aman.')
+        return m.reply(formatPremiumProtectionMessage('rampok', 'Saldo bank target tetap aman.'))
     }
 
     userRPG.lastrob = Date.now()

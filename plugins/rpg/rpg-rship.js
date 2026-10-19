@@ -87,9 +87,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 │ 💝 PANDUAN HADIAH PASANGAN
 ╰─━━━━━━━━━━━━━━─
 
-🎁 *HADIAH INTERAKTIF*
-> ↳ ${usedPrefix}rship gift
-> ↳ Pilih pasangan, hadiah, lalu konfirmasi sebelum saldo dipotong.
+🎁 *DAFTAR HADIAH*
+> ↳ ${usedPrefix}rship gift list
 
 ─━━━━━━━━━━━━━━─
 💝 *HADIAH ITEM*
@@ -300,7 +299,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
     wdb.crime = wdb.crime || {}
     wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
-    wdb.crime[m.sender].penelantaran = (Number(wdb.crime[m.sender].penelantaran) || 0) + 1
+    wdb.crime[m.sender].aniaya = (Number(wdb.crime[m.sender].aniaya) || 0) + 1
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])
 
     const alreadyImprisoned = user.penjara && now - Number(user.penjara) < (Number(user.lamaPenjara) || 0)
@@ -308,15 +307,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       user.penjara = now
       user.lamaPenjara = 2 * 60 * 60 * 1000
       user.tebusan = 2000000
-      user.kasus = '👶 Penelantaran anak'
+      user.kasus = '👶 Aniaya'
       user.sel = registerPrisoner(wdb, m.sender)
     }
     if (!Array.isArray(user.riwayat)) user.riwayat = []
-    user.riwayat.unshift(`🚔 Anak ${stage.name} ${child.nama} ${runsAway ? 'kabur' : 'hilang'}; laporan penelantaran anak`)
+    user.riwayat.unshift(`🚔 Anak ${stage.name} ${child.nama} ${runsAway ? 'kabur' : 'hilang'}; kasus Aniaya`)
     const legalStatus = alreadyImprisoned
       ? 'Kasus ini tercatat saat kamu sedang menjalani hukuman.'
       : user.sel
-        ? `Kamu dipenjara 2 jam di sel ${user.sel} atas kasus penelantaran anak.\n> ↳ Tebusan: Rp 2.000.000.`
+        ? `Kamu dipenjara 2 jam di sel ${user.sel} atas kasus Aniaya.\n> ↳ Tebusan: Rp 2.000.000.`
         : 'Laporan diproses, tetapi perlindungan atau rehabilitasi aktif mencegah penahanan.'
 
     if (!runsAway) {
@@ -330,7 +329,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         `> ↳ Anak dibawa ke shelter. Lihat ${usedPrefix}rship shelter list untuk status dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n` +
         `─━━━━━━━━━━━━━━─\n` +
         `🚔 *STATUS HUKUM*\n\n` +
-        `> ↳ Poin kriminal penelantaran: *+3 poin*.\n` +
+        `> ↳ Poin kriminal Aniaya: *+3 poin*.\n` +
         `> ↳ ${legalStatus}\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
@@ -341,7 +340,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const story = CHILD_RUNAWAY_STORIES[Math.floor(Math.random() * CHILD_RUNAWAY_STORIES.length)]
     childEvents.push(
       `╭─❏「 🚨 ANAK KABUR 」❏\n` +
-      `│ 👶 LAPORAN PENELANTARAN ANAK\n` +
+      `│ 👶 LAPORAN ANIAYA\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ *${child.nama} kabur dari rumah.*\n` +
       `> ${story}\n\n` +
@@ -350,7 +349,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         : `> ↳ Anak berada di shelter. Lihat ${usedPrefix}rship shelter list dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n`) +
       `─━━━━━━━━━━━━━━─\n` +
       `🚔 *STATUS HUKUM*\n\n` +
-      `> ↳ Poin kriminal penelantaran: *+3 poin*.\n` +
+      `> ↳ Poin kriminal Aniaya: *+3 poin*.\n` +
       `> ↳ ${legalStatus}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -4549,6 +4548,21 @@ if (action === 'gift') {
     })
   }
 
+  const sendGiftGuide = () => sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    title: '🎁 RSHIP • HADIAH PASANGAN',
+    subtitle: 'Pilih kado dengan penuh perhatian',
+    text: giftGuide(),
+    footer: 'AVELIA • RSHIP GIFT',
+    buttons: [[
+      user.harem.length ? '💝 Pilih pasangan & hadiah' : '💕 Lihat pasangan',
+      user.harem.length ? `${usedPrefix}rship gift flow start` : `${usedPrefix}rship harem`
+    ]],
+    fallbackText: giftGuide()
+  })
+
   const sendGiftTypeMenu = draft => {
     const rows = []
     for (let page = 1; page <= giftPageCount; page++) {
@@ -4680,20 +4694,23 @@ if (action === 'gift') {
   }
 
   if (!tipe) {
-    if (!user.harem.length) return m.reply(
-      `╭─❏「 💔 BELUM ADA PASANGAN 」❏\n` +
-      `│ 🎁 HADIAH MENUNGGU UNTUK DIBERIKAN\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `Buat pasangan terlebih dahulu, lalu buka kembali *${usedPrefix}rship gift*.`
-    )
-    user.rshipGiftDraft = { stage: 'partner', createdAt: Date.now() }
-    await saveDB(wdb)
-    return sendGiftPartnerMenu()
+    return sendGiftGuide()
   }
 
   if (tipe === 'flow') {
     const step = args[2]?.toLowerCase()
     const draft = user.rshipGiftDraft
+    if (step === 'start') {
+      if (!user.harem.length) return m.reply(
+        `╭─❏「 💔 BELUM ADA PASANGAN 」❏\n` +
+        `│ 🎁 HADIAH MENUNGGU UNTUK DIBERIKAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Buat pasangan terlebih dahulu, lalu buka kembali *${usedPrefix}rship gift*.`
+      )
+      user.rshipGiftDraft = { stage: 'partner', createdAt: Date.now() }
+      await saveDB(wdb)
+      return sendGiftPartnerMenu()
+    }
     if (draft && Date.now() - Number(draft.createdAt) > giftDraftTtl) {
       delete user.rshipGiftDraft
       await saveDB(wdb)

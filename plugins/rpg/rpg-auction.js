@@ -1,7 +1,7 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
-import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
+import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS, getAuctionItemRarity } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { formatRpgMoney as money, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
@@ -671,8 +671,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      title: '🔨 AUCTION HOUSE',
-      subtitle: 'Pilih langkahmu di balai lelang Avelia',
+      buttonTitle: '🔨 AUCTION HOUSE',
       text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
       buttonText: '🔨 JELAJAHI LELANG',
       sections: [{ title: 'Balai lelang', rows }],
@@ -829,8 +828,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      title: '🔨 AUCTION HOUSE',
-      subtitle: 'Pilih item lelang untuk mengajukan penawaran',
+      buttonTitle: '🔨 AUCTION HOUSE',
       text: auctionText,
       buttonText: '🔨 PILIH ITEM / CEK SALDO',
       sections: [
@@ -1092,11 +1090,13 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 > ↳ Item tidak ada di sesi lelang ini.
 > ↳ Gunakan *${prefix}ah list* atau *${prefix}ah info*.`)
     const highest = getVisibleHighestBid(db, session, item)
+    const rarity = getAuctionItemRarity(item)
     return m.reply(
       `╭─❏「 🔎 DETAIL LELANG 」❏\n` +
       `│ 🏛️ INFORMASI ITEM\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `🏷️ *${item.emoji} ${item.name}*\n\n` +
+      `> ↳ Rarity: ${rarity.stars} ${rarity.name} ${rarity.icon}\n` +
       `> ↳ Deskripsi: ${item.description}\n` +
       `> ↳ Bid minimum: ${money(getMinimumBid(item))}\n` +
       `> ↳ Bid tertinggi: ${money(highest.amount)}\n` +

@@ -207,7 +207,7 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
   const items = getOwnedItems(rpg)
   const stellarCredit = Number(rpg.stellarCredit) || 0
 
-  if (mode === 'exchange' || mode === 'tukar') {
+if (mode === 'exchange' || mode === 'tukar') {
     const exchangeAction = String(args[0] || '').toLowerCase()
     const pending = rpg.pendingStellarExchange
 
@@ -218,9 +218,10 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
         await saveDB(db)
         return m.reply(
           `╭─❏「 ⏳ KONFIRMASI PERTUKARAN 」❏\n` +
-          `│ Tidak ada pertukaran yang menunggu persetujuan.\n` +
+          `│ 💱 Tidak ada pertukaran yang menunggu persetujuan.\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `Ajukan kembali dengan *${prefix}int exchange <nominal/all>*.`
+          `📝 *AJUKAN PERTUKARAN*\n` +
+          `> ↳ ${prefix}int exchange <nominal/all>`
         )
       }
 
@@ -232,10 +233,11 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
         await saveDB(db)
         return m.reply(
           `╭─❏「 ❌ SALDO BERUBAH 」❏\n` +
-          `│ Uang saku yang tersedia tidak lagi cukup untuk pertukaran ini.\n` +
+          `│ 💰 Uang saku yang tersedia tidak lagi cukup untuk pertukaran ini.\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
-          `Saldo uang saku saat ini: *${formatRpgMoney(wallet)}*.\n` +
-          `Buat pertukaran baru dengan *${prefix}int exchange <nominal/all>*.`
+          `💵 *Saldo Uang Saku:* ${formatRpgMoney(wallet)}\n\n` +
+          `📝 *AJUKAN PERTUKARAN BARU*\n` +
+          `> ↳ ${prefix}int exchange <nominal/all>`
         )
       }
 
@@ -245,19 +247,32 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       await saveDB(db)
       return m.reply(
         `╭─❏「 💱 PERTUKARAN BERHASIL 」❏\n` +
-        `│ 💵 Uang saku ditukar: *${formatRpgMoney(pending.moneyAmount)}*\n` +
-        `│ 💠 Stellar Credit didapat: *+${pending.creditAmount.toLocaleString()} SC*\n` +
-        `│ 💰 Sisa uang saku: *${formatRpgMoney(wallet - pending.moneyAmount)}*\n` +
-        `│ 💠 Saldo Stellar Credit: *${rpg.stellarCredit.toLocaleString()} SC*\n` +
-        `╰─━━━━━━━━━━━━━━─`
+        `│ 💠 STELLAR CREDIT EXCHANGE\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `💵 *Uang Saku Ditukar:* ${formatRpgMoney(pending.moneyAmount)}\n` +
+        `💠 *Stellar Credit Didapat:* +${pending.creditAmount.toLocaleString()} SC\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `💰 *Sisa Uang Saku:* ${formatRpgMoney(wallet - pending.moneyAmount)}\n` +
+        `💠 *Saldo Stellar Credit:* ${rpg.stellarCredit.toLocaleString()} SC`
       )
     }
 
     if (['batal', 'cancel', 'tidak'].includes(exchangeAction)) {
-      if (!pending) return m.reply('Tidak ada pertukaran yang menunggu konfirmasi.')
+      if (!pending) {
+        return m.reply(
+          `╭─❏「 ↩️ PERTUKARAN DIBATALKAN 」❏\n` +
+          `│ Tidak ada pertukaran yang menunggu konfirmasi.\n` +
+          `╰─━━━━━━━━━━━━━━─`
+        )
+      }
       delete rpg.pendingStellarExchange
       await saveDB(db)
-      return m.reply('↩️ Pertukaran dibatalkan. Saldo uang saku dan Stellar Credit tidak berubah.')
+      return m.reply(
+        `╭─❏「 ↩️ PERTUKARAN DIBATALKAN 」❏\n` +
+        `│ 💱 Pertukaran berhasil dibatalkan.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Saldo uang saku dan Stellar Credit tidak berubah.`
+      )
     }
 
     const amountInput = args[0]
@@ -269,14 +284,24 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
       requestedAmount = parseRpgMoneyAmount(amountInput)
       if (requestedAmount === null) {
         return m.reply(
-          `Format: *${prefix}int exchange <nominal/all>*\n` +
-          `Contoh: *${prefix}int exchange 1Qa* atau *${prefix}int tukar all*.\n` +
-          `Setiap *500T* uang saku menjadi *1 Stellar Credit*.`
+          `╭─❏「 💱 PERTUKARAN STELLAR CREDIT 」❏\n` +
+          `│ 💠 Tukarkan uang saku menjadi Stellar Credit.\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `📝 *FORMAT PENGGUNAAN*\n` +
+          `> ↳ ${prefix}int exchange <nominal/all>\n\n` +
+          `📌 *CONTOH*\n` +
+          `> ↳ ${prefix}int exchange 1Qa\n` +
+          `> ↳ ${prefix}int tukar all\n\n` +
+          `💱 *NILAI TUKAR*\n` +
+          `> ↳ Setiap 500T uang saku menjadi 1 Stellar Credit.`
         )
       }
       if (requestedAmount > wallet) {
         return m.reply(
-          `❌ Uang saku tidak cukup. Saldo tersedia: *${formatRpgMoney(wallet)}*.`
+          `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
+          `│ 💰 Uang saku tidak mencukupi untuk pertukaran.\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `💵 *Saldo Tersedia:* ${formatRpgMoney(wallet)}`
         )
       }
     }
@@ -285,8 +310,12 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
     const moneyAmount = creditAmount * STELLAR_EXCHANGE_RATE
     if (!Number.isInteger(moneyAmount) || !Number.isInteger(creditAmount) || creditAmount < 1) {
       return m.reply(
-        `❌ Pertukaran minimum adalah *${formatRpgMoney(STELLAR_EXCHANGE_RATE)}* untuk *1 Stellar Credit*.\n` +
-        `Saldo uang saku tersedia: *${formatRpgMoney(wallet)}*.`
+        `╭─❏「 ❌ NOMINAL TIDAK VALID 」❏\n` +
+        `│ 💱 Nominal pertukaran belum memenuhi batas minimum.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📌 *MINIMUM PERTUKARAN*\n` +
+        `> ↳ ${formatRpgMoney(STELLAR_EXCHANGE_RATE)} untuk 1 Stellar Credit.\n\n` +
+        `💰 *Saldo Uang Saku:* ${formatRpgMoney(wallet)}`
       )
     }
 
@@ -299,12 +328,16 @@ let handler = async (m, { conn, groupMetadata, text = '', usedPrefix, command })
     return sendRpgConfirmButtons(conn, m, {
       text:
         `╭─❏「 💱 KONFIRMASI PERTUKARAN 」❏\n` +
-        `│ 💵 Uang saku ditukar: *${formatRpgMoney(moneyAmount)}*\n` +
-        `│ 💠 Stellar Credit diterima: *${creditAmount.toLocaleString()} SC*\n` +
-        `│ 💱 Nilai tukar: *${formatRpgMoney(STELLAR_EXCHANGE_RATE)} = 1 SC*\n` +
-        `│ 💰 Sisa uang saku: *${formatRpgMoney(wallet - moneyAmount)}*\n` +
+        `│ 💠 PERTUKARAN UANG SAKU KE STELLAR CREDIT\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Saldo bank tidak ikut ditukar. Persetujuan berlaku selama 2 menit.`,
+        `💵 *Uang Saku Ditukar:* ${formatRpgMoney(moneyAmount)}\n` +
+        `💠 *Stellar Credit Diterima:* ${creditAmount.toLocaleString()} SC\n` +
+        `💱 *Nilai Tukar:* ${formatRpgMoney(STELLAR_EXCHANGE_RATE)} = 1 SC\n` +
+        `💰 *Sisa Uang Saku:* ${formatRpgMoney(wallet - moneyAmount)}\n\n` +
+        `─━━━━━━━━━━━━━━─\n` +
+        `📌 *INFORMASI*\n` +
+        `> ↳ Saldo bank tidak ikut ditukar.\n` +
+        `> ↳ Persetujuan berlaku selama 2 menit.`,
       title: '💱 PERTUKARAN ANTARBINTANG',
       subtitle: 'Pastikan nominal sebelum menukar uang saku',
       acceptText: '💠 Tukar Sekarang',

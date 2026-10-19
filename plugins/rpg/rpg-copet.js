@@ -3,7 +3,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { sendRpgHealPrompt, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
@@ -12,11 +12,13 @@ let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   let userRPG = wdb.users[m.sender]?.rpg
   if (!userRPG) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG')
+
   const actorRestriction = getCrimeRestriction(userRPG)
   if (actorRestriction) {
     if (actorRestriction.includes('.heal')) return sendRpgHealPrompt(conn, m, { text: actorRestriction, usedPrefix })
     return m.reply(actorRestriction)
   }
+
   if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
   // CEK PENJARA
@@ -24,35 +26,56 @@ let handler = async (m, { conn, usedPrefix }) => {
     const previousCell = userRPG.sel
     ensurePrisonCell(wdb, m.sender)
     if (userRPG.sel !== previousCell) saveDB(wdb)
+
     let sisa = userRPG.lamaPenjara - (Date.now() - userRPG.penjara)
     let jam = Math.floor(sisa / 3600000)
     let menit = Math.floor((sisa % 3600000) / 60000)
     let tebusan = userRPG.tebusan || 1000000
-    return m.reply(`🚔 *KAMU DI PENJARA SEL ${userRPG.sel}*\nSisa: *${jam}j ${menit}m*\nTebusan: *Rp ${tebusan.toLocaleString()}*\n\nKetik *.penjara tebus*`)
+
+    return m.reply(
+      `╭─❏「 🚔 STATUS PENJARA 」❏\n` +
+      `│ 🔒 Kamu sedang menjalani hukuman di sel ${userRPG.sel}.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `⏳ *Sisa Hukuman:* ${jam}j ${menit}m\n` +
+      `💰 *Tebusan:* Rp ${tebusan.toLocaleString()}\n\n` +
+      `📝 *CARA MENEBUS*\n` +
+      `> ↳ Ketik *.penjara tebus*`
+    )
   }
 
   // COOLDOWN 10 MENIT
   let cd = scaleDifficultyCooldown(userRPG, 300000)
   if (!userRPG.lastcopet) userRPG.lastcopet = 0
   let sisa = cd - (Date.now() - userRPG.lastcopet)
+
   if (sisa > 0) {
     let menit = Math.floor(sisa / 60000)
     let detik = Math.floor((sisa % 60000) / 1000)
-    return m.reply(`⏳ *COOLDOWN COPET*\nTunggu *${menit}m ${detik}d* lagi`)
+
+    return m.reply(
+      `╭─❏「 ⏳ COOLDOWN COPET 」❏\n` +
+      `│ 🤏 Kamu belum bisa melakukan aksi copet lagi.\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Tunggu *${menit}m ${detik}d* lagi.`
+    )
   }
 
   let who = m.mentionedJid?.[0] || m.quoted?.sender
   if (!who) return m.reply(`❌ Tag atau reply pesan target yg mau dicopet`)
   if (who === m.sender) return m.reply('❌ Ga bisa copet diri sendiri')
+
   const senderUser = (global.db?.data?.users || {})[m.sender] || wdb.users?.[m.sender] || {}
   const targetUser = (global.db?.data?.users || {})[who] || wdb.users?.[who] || {}
+
   if (isAfk(senderUser)) return m.reply('❌ Kamu sedang AFK. Nonaktifkan dulu status AFK sebelum melakukan aksi kriminal.')
   if (isAfk(targetUser)) return m.reply('❌ Target sedang AFK dan tidak bisa dijadikan sasaran tindakan kriminal.')
 
   let target = getUserRPG(wdb, who).rpg
-  if(!target) return m.reply('❌ Target belum punya data RPG')
+  if (!target) return m.reply('❌ Target belum punya data RPG')
+
   const targetRestriction = getCrimeRestriction(target, { target: true })
   if (targetRestriction) return m.reply(targetRestriction)
+
   if (Number(target.darah) <= 0) {
     return sendRpgHealPrompt(conn, m, {
       text: `💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`,
@@ -61,14 +84,20 @@ let handler = async (m, { conn, usedPrefix }) => {
       mentions: [who]
     })
   }
-  if(!target.riwayat) target.riwayat = []
+
+  if (!target.riwayat) target.riwayat = []
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 1000) return m.reply('❌ Target terlalu miskin. Minimal Rp 1.000')
+
   if (tryPremiumProtection(who, 'copet', Date.now(), m.sender)) {
     userRPG.lastcopet = Date.now()
     await saveDB(wdb)
-    return m.reply('🛡️ Aksi copet gagal: Premium Protection target aktif. Cooldown copet kamu tetap berlaku.')
+
+    return m.reply(formatPremiumProtectionMessage(
+      'copet',
+      'Uang target tetap aman.'
+    ))
   }
 
   userRPG.lastcopet = Date.now()
@@ -82,7 +111,8 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (gagal) {
     userRPG.gagalCopet = (userRPG.gagalCopet || 0) + 1
     let denda = Math.max(1000, Math.floor((wdb.money[m.sender] || 0) * 0.05))
-    if(denda > 0) {
+
+    if (denda > 0) {
       wdb.money[m.sender] -= denda
       wdb.money[who] += denda
     }
@@ -102,20 +132,42 @@ let handler = async (m, { conn, usedPrefix }) => {
       userRPG.sel = registerPrisoner(wdb, m.sender)
       userRPG.gagalCopet = 0
       saveDB(wdb)
+
       if (!userRPG.sel) {
-        return m.reply(`⚠️ Kamu gagal copet dan membayar denda Rp ${denda.toLocaleString('id-ID')}, tetapi perlindungan mantan napi mencegahmu masuk penjara.`)
+        return m.reply(
+          `╭─❏「 ⚠️ AKSI COPET GAGAL 」❏\n` +
+          `│ 💸 Denda: Rp ${denda.toLocaleString('id-ID')}\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Perlindungan mantan napi mencegahmu masuk penjara.`
+        )
       }
-      return m.reply(`🚔 *KETANGKEP POLISI!*\n${story}\n\nGagal copet 2x berturut.\nKamu masuk *PENJARA SEL ${userRPG.sel}* selama *1 jam*\nTebusan: *Rp 1.000.000*\n\nKetik *.penjara tebus*`)
+
+      return m.reply(
+        `╭─❏「 🚔 KETANGKEP POLISI! 」❏\n` +
+        `│ 🤏 Kasus: Copet gagal 2x berturut-turut.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${story}\n\n` +
+        `⚖️ *HUKUMAN*\n` +
+        `> ↳ Lokasi: Penjara Sel ${userRPG.sel}\n` +
+        `> ↳ Durasi: 1 jam\n` +
+        `> ↳ Tebusan: Rp 1.000.000\n\n` +
+        `📝 *CARA MENEBUS*\n` +
+        `> ↳ Ketik *.penjara tebus*`
+      )
     }
+
     saveDB(wdb)
 
     let txt = `╭─❏「 🤏 COPET GAGAL 」❏\n`
-    txt += `│ 👤 Copet: @${m.sender.split('@')[0]}\n`
-    txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
-    txt += `│ 💸 Denda: Rp ${denda.toLocaleString()}\n`
-    txt += `│ ⚠️ Strike: ${userRPG.gagalCopet}/2\n`
-    txt += `╰─━━━━━━━━━━━━━━─`
-    txt += `\n\n${story}`
+    txt += `│ ⚠️ AKSI KRIMINAL GAGAL\n`
+    txt += `╰─━━━━━━━━━━━━━━─\n\n`
+    txt += `👤 *Pelaku:* @${m.sender.split('@')[0]}\n`
+    txt += `🎯 *Target:* @${who.split('@')[0]}\n`
+    txt += `💸 *Denda:* Rp ${denda.toLocaleString()}\n`
+    txt += `🚨 *Strike:* ${userRPG.gagalCopet}/2\n\n`
+    txt += `─━━━━━━━━━━━━━━─\n`
+    txt += `${story}`
+
     return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
   }
 
@@ -133,16 +185,18 @@ let handler = async (m, { conn, usedPrefix }) => {
   userRPG.riwayat.unshift(`+Rp ${hasil.toLocaleString()} Copet @${who.split('@')[0]}`)
   saveDB(wdb)
 
-let txt = `╭─❏「 ✅ COPET BERHASIL 」❏\n`
-txt += `│ 🤏 Copet: @${m.sender.split('@')[0]}\n`
-txt += `│ 🎯 Korban: @${who.split('@')[0]}\n`
-txt += `│ 💰 Jarahan: Rp ${hasil.toLocaleString()}\n`
-txt += `╰─━━━━━━━━━━━━━━─\n\n`
-txt += `${story}\n\n`
-txt += `💡 *INFO*\n`
-txt += `> ↳ Cek *.buronan* untuk melihat DPO.`
+  let txt = `╭─❏「 ✅ COPET BERHASIL 」❏\n`
+  txt += `│ 🤏 AKSI KRIMINAL BERHASIL\n`
+  txt += `╰─━━━━━━━━━━━━━━─\n\n`
+  txt += `👤 *Pelaku:* @${m.sender.split('@')[0]}\n`
+  txt += `🎯 *Korban:* @${who.split('@')[0]}\n`
+  txt += `💰 *Jarahan:* Rp ${hasil.toLocaleString()}\n\n`
+  txt += `─━━━━━━━━━━━━━━─\n`
+  txt += `${story}\n\n`
+  txt += `💡 *INFORMASI*\n`
+  txt += `> ↳ Cek *.buronan* untuk melihat DPO.`
 
-conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
+  conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 }
 
 handler.help = ['copet (reply)']

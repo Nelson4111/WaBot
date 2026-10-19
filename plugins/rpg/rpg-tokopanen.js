@@ -264,7 +264,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       acceptText: '💰 Jual Hasil Panen',
       acceptCommand: `${usedPrefix}koperasi jual ya`,
       cancelText: '🌱 Simpan Panen',
-      cancelCommand: `${usedPrefix}koperasi jual batal`
+      cancelCommand: `${usedPrefix}koperasi jual batal`,
+      noThumbnail: true,
+      noHeader: true
     })
   }
 
@@ -341,7 +343,9 @@ if (amount === 'all') {
     acceptText: '💰 Jual Hasil Panen',
     acceptCommand: `${usedPrefix}koperasi jual ya`,
     cancelText: '🌱 Simpan Panen',
-    cancelCommand: `${usedPrefix}koperasi jual batal`
+    cancelCommand: `${usedPrefix}koperasi jual batal`,
+    noThumbnail: true,
+    noHeader: true
   })
 }
 

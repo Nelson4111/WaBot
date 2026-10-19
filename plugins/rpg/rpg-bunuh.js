@@ -3,7 +3,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { reviveBloodline } from '../../lib/rpgCharacterData.js'
@@ -69,7 +69,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (tryPremiumProtection(who, 'bunuh', Date.now(), m.sender)) {
     userRPG.lastbunuh = Date.now()
     await saveDB(wdb)
-    return m.reply('🛡️ Aksi bunuh gagal: Premium Protection target aktif. Cooldown bunuh kamu tetap berlaku; target tetap aman.')
+    return m.reply(formatPremiumProtectionMessage('bunuh', 'Target tetap aman.'))
   }
 
   userRPG.lastbunuh = Date.now()
@@ -79,7 +79,11 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (gagal && tryPremiumProtection(m.sender, 'bunuh', Date.now(), who)) {
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat bunuh @${who.split('@')[0]}`)
     await saveDB(wdb)
-    return m.reply(`🛡️ Premium protection aktif: kamu selamat dari kegagalan aksi bunuh dan tidak masuk penjara.\n\n${story}`)
+    return m.reply(
+      `${formatPremiumProtectionMessage('bunuh', 'Kamu selamat dari hukuman dan tidak masuk penjara.', {
+        protectionMessage: 'Perlindungan Premium kamu sedang aktif.'
+      })}\n\n${story}`
+    )
   }
 
   // INIT CRIME
@@ -112,20 +116,34 @@ let handler = async (m, { conn, usedPrefix }) => {
     )
 
     saveDB(wdb)
+    if (deathProtected) {
+      const prisonStatus = userRPG.sel
+        ? `> 🚔 Kamu tetap masuk PENJARA SEL ${userRPG.sel} selama 2 jam. Tebusan: Rp 2.000.000.`
+        : '> 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.'
+      return conn.reply(
+        m.chat,
+        `${formatPremiumProtectionMessage('bunuh', 'Kamu selamat dengan 1 HP.', {
+          actionMessage: 'Kamu selamat dari kematian saat gagal bunuh.',
+          protectionMessage: 'Perlindungan Premium kematian kamu sedang aktif.',
+          cooldownMessage: 'Cooldown perlindungan kematian kamu telah dimulai.'
+        })}\n\n${prisonStatus}\n\n${story}`,
+        m,
+        { mentions: [m.sender, who] }
+      )
+    }
+
     let txt = `╭─❏「 💀 BUNUH GAGAL 」❏\n`
     txt += `│ 🔪 Pembunuh: @${m.sender.split('@')[0]}\n`
     txt += `│ 🎯 Target: @${who.split('@')[0]}\n`
     txt += revivedHP
       ? `│ ♻️ Bloodline Phoenix membangkitkanmu dengan ${revivedHP} HP.\n`
-      : deathProtected
-        ? `│ 🛡️ Premium Protection mencegah kematian; tersisa 1 HP.\n`
-        : `│ ⚰️ Kamu dibunuh duluan\n`
+      : `│ ⚰️ Kamu dibunuh duluan\n`
     txt += userRPG.sel
       ? `│ 🚔 Masuk *PENJARA SEL ${userRPG.sel}* selama *2 jam*\n│ 💰 Tebusan: *Rp 2.000.000*\n`
       : `│ 🛡️ Perlindungan mantan napi mencegahmu masuk penjara.\n`
     txt += `╰─━━━━━━━━━━━━━━─`
     txt += `\n\n${story}`
-    if (!revivedHP && !deathProtected && userRPG.darah !== undefined) {
+    if (!revivedHP && userRPG.darah !== undefined) {
       return sendRpgHealPrompt(conn, m, {
         text: txt,
         usedPrefix,
@@ -152,8 +170,14 @@ let handler = async (m, { conn, usedPrefix }) => {
     saveDB(wdb)
     return conn.reply(
       m.chat,
-      `🛡️ *PREMIUM PROTECTION KEMATIAN AKTIF*\n` +
-      `@${who.split('@')[0]} selamat dari aksi bunuh dengan 1 HP. Tidak ada uang yang berpindah; proteksi kematian cooldown selama 5 jam.`,
+      formatPremiumProtectionMessage(
+        'bunuh',
+        `@${who.split('@')[0]} selamat dengan 1 HP; tidak ada uang yang berpindah.`,
+        {
+          protectionMessage: 'Perlindungan Premium kematian target sedang aktif.',
+          cooldownMessage: 'Cooldown perlindungan kematian target telah dimulai.'
+        }
+      ),
       m,
       { mentions: [m.sender, who] }
     )

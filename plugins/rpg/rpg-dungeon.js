@@ -2,7 +2,7 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { canReceiveRareActivityRewards, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback, reviveBloodline } from '../../lib/rpgCharacterData.js'
 import { addUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 import { sendRpgExpActivityList, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
@@ -78,6 +78,28 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     dungeon.reward.limit ? `🎫 ${dungeon.reward.limit.toLocaleString('id-ID')} Limit` : ''
   ].filter(Boolean).join(' - ')
 
+  if (!action) {
+    const playerLevel = Math.max(1, Number(user.level) || 1)
+    const highestAvailable = Object.entries(dungeons).reduce((highest, [key, dungeon]) =>
+      playerLevel >= dungeon.minLevel && swordLvl >= dungeon.minSword
+        ? { key, dungeon }
+        : highest, null)
+    const cooldown = scaleDifficultyCooldown(user, dungeons.easy.cooldown)
+    const remainingCooldown = Math.max(0, cooldown - (Date.now() - (Number(user.lastDungeon) || 0)))
+    const status = remainingCooldown > 0
+      ? `⏳ Cooldown: ${Math.ceil(remainingCooldown / 1000)} detik lagi`
+      : '✅ Status: Siap menjalankan dungeon'
+
+    return m.reply(
+      `╭─❏「 🏰 RPG DUNGEON 」❏\n` +
+      `│ ${status}\n` +
+      `│ 🎯 Level pemain: Lv.${playerLevel}\n` +
+      `│ 🔓 Dungeon tertinggi yang terbuka: ${highestAvailable ? `${highestAvailable.key.toUpperCase()} • ${highestAvailable.dungeon.name}` : 'belum tersedia'}\n` +
+      `╰─━━━━━━━━━━━━━━─\n` +
+      `Ketik *${usedPrefix}dungeon list* untuk melihat daftar dungeon.`
+    )
+  }
+
   if (action === 'list') {
     let list = `╭─❏「 🏰 RPG DUNGEON 」❏\n`
     list += `│ Daftar nama dungeon.\n`
@@ -107,10 +129,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `> 🎁 Reward: ${formatReward(selected)}\n\n` +
       `📌 Main: *${usedPrefix}dungeon ${selectedKey}*`
     )
-  }
-
-  if (!action) {
-    return m.reply(`🏰 Untuk melihat dungeon, gunakan *${usedPrefix}dungeon list*.\nCek detail: *${usedPrefix}dungeon info <nama>*.\nUntuk mulai, gunakan *${usedPrefix}dungeon <nama dungeon>.*`)
   }
 
   let type = [action, ...targetParts].join(' ')
@@ -232,16 +250,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       user.darah = 1
       user.lastDungeon = Date.now()
       await saveDB(wdb)
-      return m.reply(
-        `╭─❏「 🛡️ PREMIUM PROTECTION 」❏
-│ KAMU SELAMAT DARI KEMATIAN
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Kamu selamat dari serangan ${selected.enemy} dengan 1 HP.
-> ↳ Dungeon gagal dan proteksi kematian cooldown selama 5 jam.
-
-─━━━━━━━━━━━━━━─`
-      )
+      return m.reply(formatPremiumProtectionMessage(
+        'dungeon',
+        `Kamu selamat dari serangan ${selected.enemy} dengan 1 HP; dungeon gagal.`,
+        {
+          protectionMessage: 'Perlindungan Premium kematian kamu sedang aktif.',
+          cooldownMessage: 'Cooldown perlindungan kematian kamu telah dimulai.'
+        }
+      ))
     }
     user.darah = 0
     markDifficultyDeath(user)

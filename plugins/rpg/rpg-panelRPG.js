@@ -420,7 +420,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setrhprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setburonan @tag <poin>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcrime @tag <jenis> <jumlah>* - Atur jumlah tiap jenis kriminal (poin dihitung otomatis)\n` +
-  `> ↳ Jenis: *${RPG_CRIME_TYPES.map(({ key }) => key).join('|')}*\n` +
+  `> ↳ Jenis: *${RPG_CRIME_TYPES.map(({ label }) => label.toLowerCase()).join('|')}*\n` +
   `> ↳ *${usedPrefix}rpgpanel selesairh @tag* - Paksa selesaikan rehabilitasi\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
@@ -1447,14 +1447,16 @@ let handler = async (m, {
     if (remaining.length !== 2 || !Number.isSafeInteger(count) || count < 0) {
       return m.reply(
         `❌ Format: *${usedPrefix}rpgpanel setcrime @tag <jenis> <jumlah>*\n` +
-        `Jenis: *${RPG_CRIME_TYPES.map(({ key }) => key).join('|')}*\n` +
-        `Contoh: *${usedPrefix}rpgpanel setcrime @tag penelantaran 2*`
+        `Jenis: *${RPG_CRIME_TYPES.map(({ label }) => label.toLowerCase()).join('|')}*\n` +
+        `Contoh: *${usedPrefix}rpgpanel setcrime @tag aniaya 2*`
       )
     }
-    const selectedCrime = RPG_CRIME_TYPES.find(({ key }) => key === crimeType.toLowerCase())
+    const selectedCrime = RPG_CRIME_TYPES.find(({ key, label }) =>
+      key === crimeType.toLowerCase() || label.toLowerCase() === crimeType.toLowerCase()
+    )
     if (!selectedCrime) {
       return m.reply(
-        `❌ Jenis kriminal tidak dikenal. Pilih: *${RPG_CRIME_TYPES.map(({ key }) => key).join('|')}*`
+        `❌ Jenis kriminal tidak dikenal. Pilih: *${RPG_CRIME_TYPES.map(({ label }) => label.toLowerCase()).join('|')}*`
       )
     }
 

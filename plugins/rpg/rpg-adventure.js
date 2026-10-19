@@ -5,7 +5,7 @@ import { sendRpgButtons, sendRpgQuickButton } from '../../lib/rpgActionButtons.j
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -231,7 +231,13 @@ cap += `\n─━━━━━━━━━━━━━━─\n`
 cap += `📊 *STATUS PETUALANGAN*\n`
 cap += `> ↳ ❤️ Sisa Darah: ${user.darah}\n`
 if (revivedHP) cap += `> ↳ ♻️ Phoenix bangkit kembali dengan ${revivedHP} HP.\n`
-if (deathProtected) cap += `> ↳ 🛡️ Premium Protection mencegah kematian dan menyisakan 1 HP. Proteksi kematian cooldown 5 jam.\n`
+if (deathProtected) {
+  cap += `\n${formatPremiumProtectionMessage('adventure', 'Kamu selamat dengan 1 HP.', {
+    actionMessage: 'Kamu selamat dari kematian saat adventure.',
+    protectionMessage: 'Perlindungan Premium kematian kamu sedang aktif.',
+    cooldownMessage: 'Cooldown perlindungan kematian kamu telah dimulai.'
+  })}\n`
+}
 cap += `> ↳ 🗺️ Adventure Level: Lv.${user.adventureLevel}\n`
 cap += `> ↳ ⚔️ Sword Level: Lv.${swordLvl}\n`
 cap += `> ↳ ⛏️ Pickaxe Level: Lv.${pickLvl}\n`

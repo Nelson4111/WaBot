@@ -1,7 +1,7 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah } from '../../lib/fitnahHelper.js'
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
-import { tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { sendRpgHealPrompt } from '../../lib/rpgActionButtons.js'
 
 /* =========================================================
@@ -261,7 +261,7 @@ Fitnah orang biar masuk penjara.
     if (tryPremiumProtection(who, 'fitnah', Date.now(), sender)) {
         wdb.fitnah[sender] = Date.now()
         await saveDB(wdb)
-        return m.reply('🛡️ Aksi fitnah gagal: Premium Protection target aktif. Cooldown fitnah kamu tetap berlaku; tidak ada uang yang dipotong.')
+        return m.reply(formatPremiumProtectionMessage('fitnah', 'Uang taruhan kamu tidak dipotong.'))
     }
 
     wdb.fitnah[sender] = now
