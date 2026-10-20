@@ -316,6 +316,30 @@ let handler = async (m, {
         { mentions: [validated.ownerJid, validated.guardianJid] }
       )
     }
+    if (pending.operation === 'setanak-owner') {
+      const validated = pending.validated
+      const guardianData = validated && wdb.users[validated.guardianJid]
+      const ownerData = validated && wdb.users[validated.ownerJid]
+      const guardian = guardianData?.rpg || guardianData
+      const owner = ownerData?.rpg || ownerData
+      const child = guardian?.kids?.[validated?.childIndex]
+      if (
+        !guardian || guardianData?.isDummy || !owner || ownerData?.isDummy || !child ||
+        child.nama !== validated.childName || child.custody?.type !== 'foster'
+      ) {
+        return m.reply('❌ Anak asuh tidak lagi cocok dengan data yang diperiksa. Tidak ada perubahan; jalankan ulang perintah Panel.')
+      }
+      child.originalOwnerJid = validated.ownerJid
+      child.originalOwnerLocation = 'kids'
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Asal anak *${child.nama}* ditautkan ke keluarga @${validated.ownerJid.split('@')[0]}.\n` +
+        `> ↳ Pengasuh saat ini: @${validated.guardianJid.split('@')[0]}.\n` +
+        `> ↳ Setelah dikonfirmasi, anak dapat dikembalikan lewat *${usedPrefix}rpgpanel kembalianak @pengasuh ${validated.childIndex + 1}*.`,
+        null,
+        { mentions: [validated.ownerJid, validated.guardianJid] }
+      )
+    }
     const replayMessage = Object.create(m)
     Object.defineProperty(replayMessage, 'mentionedJid', {
       value: pending.mentionedJid || [],
@@ -357,6 +381,7 @@ let handler = async (m, {
     )
 
   let validatedFosterChild = null
+  let validatedFosterOwner = null
   if (aksi === 'asuhanak' && !_rpgPanelConfirmedToken) {
     const normalizeTargetJid = jid => {
       let normalized = String(jid || '')
@@ -472,6 +497,50 @@ let handler = async (m, {
       childName: child.nama
     }
   }
+  if (aksi === 'setanak' && !_rpgPanelConfirmedToken) {
+    const commandArgs = rawArgs.slice(1)
+    const fieldIndex = commandArgs.findIndex(arg => ['pemilik', 'owner', 'originalowner'].includes(arg.toLowerCase()))
+    if (fieldIndex !== -1) {
+      const ownerToken = commandArgs[fieldIndex + 1]
+      if (!/^@me$/i.test(ownerToken || '')) {
+        return m.reply(`❌ Untuk menautkan anak asuh ke akunmu, gunakan:\n> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak-asuh> pemilik @me*`)
+      }
+      const ownerData = wdb.users[sourceMessage.sender]
+      const owner = ownerData?.rpg || ownerData
+      const mentionedJid = sourceMessage.mentionedJid?.[0]
+      let guardianJid = mentionedJid ? String(mentionedJid) : ''
+      if (conn?.decodeJid) guardianJid = conn.decodeJid(guardianJid)
+      if (guardianJid.endsWith('@lid')) {
+        guardianJid = global.lids?.[guardianJid] || global.db?.data?.lids?.[guardianJid] || wdb.lids?.[guardianJid] || guardianJid
+      }
+      const guardianDigits = guardianJid.split('@')[0].replace(/\D/g, '')
+      const matchedGuardian = Object.entries(wdb.users).find(([jid, account]) =>
+        jid.split('@')[0].replace(/\D/g, '') === guardianDigits ||
+        String(account?.lid || '').split('@')[0].replace(/\D/g, '') === guardianDigits
+      )
+      if (matchedGuardian) guardianJid = matchedGuardian[0]
+      const childNumber = Number(commandArgs[1])
+      const childIndex = childNumber - 1
+      const guardianData = guardianJid && wdb.users[guardianJid]
+      const guardian = guardianData?.rpg || guardianData
+      const child = Number.isInteger(childNumber) && childNumber > 0
+        ? guardian?.kids?.[childIndex]
+        : null
+      if (!owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy || !child || child.custody?.type !== 'foster') {
+        return m.reply(
+          `❌ Tidak ditemukan anak asuh yang cocok pada user tersebut.\n` +
+          `> ↳ Pastikan akunmu dan pengasuh memiliki RPG aktif.\n` +
+          `> ↳ Format: *${usedPrefix}rpgpanel setanak @pengasuh <no-anak-asuh> pemilik @me*`
+        )
+      }
+      validatedFosterOwner = {
+        guardianJid,
+        ownerJid: sourceMessage.sender,
+        childIndex,
+        childName: child.nama
+      }
+    }
+  }
 
   if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken) {
     const token = randomUUID()
@@ -484,6 +553,9 @@ let handler = async (m, {
       quotedSender: sourceMessage.quoted?.sender || null,
       ...(validatedFosterChild
         ? { operation: 'asuhanak', validated: validatedFosterChild }
+        : {}),
+      ...(validatedFosterOwner
+        ? { operation: 'setanak-owner', validated: validatedFosterOwner }
         : {}),
       createdAt: now
     }
@@ -697,6 +769,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> ortu <no/nama-pasangan>* - Atur anak dari pasangan tertentu\n` +
   `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @tag 1 ortu 2*; nomor pasangan lihat lewat *${usedPrefix}rpgpanel anak @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama/gender/umur/carecount/love/biologicalparents> <nilai>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak-asuh> pemilik @me* - Tautkan asal anak asuh ke keluargamu\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
   `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +
