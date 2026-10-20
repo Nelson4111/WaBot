@@ -322,20 +322,27 @@ let handler = async (m, {
       const ownerData = validated && wdb.users[validated.ownerJid]
       const guardian = guardianData?.rpg || guardianData
       const owner = ownerData?.rpg || ownerData
-      const child = guardian?.kids?.[validated?.childIndex]
+      const sourceKids = guardian?.kids
+      const child = sourceKids?.[validated?.childIndex]
       if (
         !guardian || guardianData?.isDummy || !owner || ownerData?.isDummy || !child ||
-        child.nama !== validated.childName || child.custody?.type !== 'foster'
+        child.nama !== validated.childName || child.facility || child.pendingTransferId ||
+        (child.custody?.type === 'foster' && child.originalOwnerJid && child.originalOwnerJid !== validated.ownerJid) ||
+        validated.guardianJid === validated.ownerJid
       ) {
-        return m.reply('❌ Anak asuh tidak lagi cocok dengan data yang diperiksa. Tidak ada perubahan; jalankan ulang perintah Panel.')
+        return m.reply('❌ Data anak atau akun berubah setelah pemeriksaan. Tidak ada perubahan; jalankan ulang perintah Panel.')
+      }
+      if (child.custody?.type !== 'foster') {
+        if (child.custody) child.originalCustody = { ...child.custody }
       }
       child.originalOwnerJid = validated.ownerJid
-      child.originalOwnerLocation = 'kids'
+      child.originalOwnerLocation ||= 'kids'
+      child.custody = { type: 'foster', guardianJid: validated.guardianJid }
       await saveDB(wdb)
       return m.reply(
-        `✅ Asal anak *${child.nama}* ditautkan ke keluarga @${validated.ownerJid.split('@')[0]}.\n` +
-        `> ↳ Pengasuh saat ini: @${validated.guardianJid.split('@')[0]}.\n` +
-        `> ↳ Setelah dikonfirmasi, anak dapat dikembalikan lewat *${usedPrefix}rpgpanel kembalianak @pengasuh ${validated.childIndex + 1}*.`,
+        `✅ Anak *${child.nama}* sekarang tercatat sebagai anak @${validated.ownerJid.split('@')[0]}.\n` +
+        `> ↳ Anak tetap berada di daftar keluarga @${validated.guardianJid.split('@')[0]} sebagai pengasuh.\n` +
+        `> ↳ Untuk mengembalikan anak ke keluarga pemilik: *${usedPrefix}rpgpanel kembalianak @pengasuh ${validated.childIndex + 1}*.`,
         null,
         { mentions: [validated.ownerJid, validated.guardianJid] }
       )
@@ -503,7 +510,7 @@ let handler = async (m, {
     if (fieldIndex !== -1) {
       const ownerToken = commandArgs[fieldIndex + 1]
       if (!/^@me$/i.test(ownerToken || '')) {
-        return m.reply(`❌ Untuk menautkan anak asuh ke akunmu, gunakan:\n> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak-asuh> pemilik @me*`)
+      return m.reply(`❌ Gunakan *@me* sebagai pemilik baru:\n> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @me*`)
       }
       const ownerData = wdb.users[sourceMessage.sender]
       const owner = ownerData?.rpg || ownerData
@@ -526,11 +533,16 @@ let handler = async (m, {
       const child = Number.isInteger(childNumber) && childNumber > 0
         ? guardian?.kids?.[childIndex]
         : null
-      if (!owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy || !child || child.custody?.type !== 'foster') {
+      if (
+        !owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy ||
+        !child || child.facility || child.pendingTransferId ||
+        (child.custody?.type === 'foster' && child.originalOwnerJid && child.originalOwnerJid !== sourceMessage.sender) ||
+        guardianJid === sourceMessage.sender
+      ) {
         return m.reply(
-          `❌ Tidak ditemukan anak asuh yang cocok pada user tersebut.\n` +
-          `> ↳ Pastikan akunmu dan pengasuh memiliki RPG aktif.\n` +
-          `> ↳ Format: *${usedPrefix}rpgpanel setanak @pengasuh <no-anak-asuh> pemilik @me*`
+          `❌ Anak keluarga tidak ditemukan atau tidak dapat dialihkan menjadi anak asuh.\n` +
+          `> ↳ Pastikan akunmu dan pengasuh memiliki RPG aktif, serta anak tidak sedang di fasilitas atau menunggu transfer.\n` +
+          `> ↳ Format: *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @me*`
         )
       }
       validatedFosterOwner = {
@@ -769,7 +781,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> ortu <no/nama-pasangan>* - Atur anak dari pasangan tertentu\n` +
   `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @tag 1 ortu 2*; nomor pasangan lihat lewat *${usedPrefix}rpgpanel anak @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama/gender/umur/carecount/love/biologicalparents> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak-asuh> pemilik @me* - Tautkan asal anak asuh ke keluargamu\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @me* - Jadikan anak user itu anakmu dan user tersebut pengasuhnya\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
   `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +

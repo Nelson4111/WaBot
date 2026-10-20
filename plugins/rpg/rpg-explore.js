@@ -118,7 +118,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     title: '🚀 HASIL PENJELAJAHAN',
     subtitle: `Temuan di Planet ${destination} sudah tersimpan di tas`,
     thumbnailUrl: image,
-    buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
+    buttons: [['🎒 Lihat Hasil Jelajah', `${usedPrefix || '.'}invst`]],
     quoted: m,
     reply: fallbackText => m.reply(fallbackText)
   })
