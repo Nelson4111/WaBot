@@ -196,7 +196,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     })
   }
   const membershipActions = ['bulanan', 'monthly', 'tagihan']
-  let amount = parseInt(args[1])
+  let amount = parseRpgMoneyAmount(args[1])
   let now = Date.now()
   let satuHari = 86400000
   const periodeMembership = 2592000000
@@ -449,10 +449,10 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
 ─━━━━━━━━━─
 ◈ 💰 TRANSAKSI BANK ◈
-> *.bank simpan <angka>* - Setor sejumlah uang
+> *.bank simpan <jumlah/suffix>* - Setor uang, contoh 1T
 > *.bank all* atau *.bank simpan all* - Setor semua uang saku (wajib Fast Track)
-> *.bank tarik <angka|all>* - Tarik uang ke uang saku
-> *.bank tf <angka|all>* - Transfer ke pemain (wajib fitur Transfer Bank)
+> *.bank tarik <jumlah/suffix|all>* - Tarik uang ke uang saku
+> *.bank tf <jumlah/suffix|all> @tag/reply* - Transfer ke pemain (wajib fitur Transfer Bank)
 > *.bank pinjam <angka>* - Ajukan pinjaman
 > *.bank bayar* - Lunasi pinjaman
 > *.bank bulanan / monthly / tagihan* - Bayar tagihan bulanan saat jatuh tempo
@@ -460,7 +460,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 ─━━━━━━━━━─
 ◈ 💬 CUSTOMER SERVICE ◈
 > *.bank cs bantuan / saldo* - Minta informasi sesuai fasilitas CS kartu
-> *.bank cs simpan/tarik <jumlah>* - Bantuan transaksi mulai Chat CS 24jam
+> *.bank cs simpan/tarik <jumlah/suffix>* - Bantuan transaksi mulai Chat CS 24jam
 > *.bank cs analisis / fasilitas* - Fitur Chat CS AI sesuai tingkat akses
 > *.bank cs kontrol auto on/off* - Kontrol terbatas khusus Premium CS AI
 
@@ -869,11 +869,15 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     if (who === m.sender) return m.reply('❌ Gak bisa tf ke diri sendiri')
 
     let biayaAdmin
-    const transferAll = String(args[1] || '').toLowerCase() === 'all'
+    const transferAll = args.slice(1).some(argument => String(argument).toLowerCase() === 'all')
     if (transferAll) {
       biayaAdmin = getTransferAdminFee(userRPG.bank, m.sender)
       amount = userRPG.bank - biayaAdmin
       if(amount <= 0) return m.reply('❌ Saldo tidak cukup untuk biaya admin')
+    } else {
+      amount = args.slice(1)
+        .map(parseRpgMoneyAmount)
+        .find(parsedAmount => parsedAmount !== null)
     }
 
     if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
@@ -891,11 +895,11 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
     userRPG.bank -= totalPotong; targetRPG.bank += amount
-    userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} TF ke @${who.split('@')[0]} + Admin Rp ${biayaAdmin.toLocaleString()}`)
-    targetRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} TF dari @${m.sender.split('@')[0]}`)
+    userRPG.riwayat.unshift(`-${formatRpgMoney(amount)} TF ke @${who.split('@')[0]} + Admin ${formatRpgMoney(biayaAdmin)}`)
+    targetRPG.riwayat.unshift(`+${formatRpgMoney(amount)} TF dari @${m.sender.split('@')[0]}`)
     await saveDB(wdb)
 
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSFER BERHASIL\n◈ TRANSFER BANK ◈\n◆ Jumlah TF : Rp ${amount.toLocaleString()}\n◆ Biaya Admin : Rp ${biayaAdmin.toLocaleString()}\n◆ Total Potong : Rp ${totalPotong.toLocaleString()}\n◆ Ke : @${who.split('@')[0]}\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSFER BERHASIL\n◈ TRANSFER BANK ◈\n◆ Jumlah TF : ${formatRpgMoney(amount)}\n◆ Biaya Admin : ${formatRpgMoney(biayaAdmin)}\n◆ Total Potong : ${formatRpgMoney(totalPotong)}\n◆ Ke : @${who.split('@')[0]}\n◆ Saldo Tersisa : ${formatRpgMoney(userRPG.bank)}\n\n─━━━━━━━━━─`
     return m.reply(msg, null, { mentions: [who] })
   }
 
@@ -958,7 +962,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {

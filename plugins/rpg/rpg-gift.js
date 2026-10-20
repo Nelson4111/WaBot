@@ -8,7 +8,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
   if (!wdb.money) wdb.money = {}
   let args = (text || '').trim().split(/\s+/).filter(Boolean)
-  let who, itemInput, countInput
+  let who
 
   // CEK DATA
   if (!wdb.users[m.sender]?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, 'Kamu belum punya data RPG.')
@@ -17,13 +17,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const mentionedJid = m.mentionedJid || []
   if (mentionedJid[0]) {
     who = mentionedJid[0]
-    itemInput = args[1]
-    countInput = args[2]
   } else if (m.quoted) {
     who = m.quoted.sender
-    itemInput = args[0]
-    countInput = args[1]
   }
+
+  const transferArgs = args.filter(argument =>
+    !argument.startsWith('@') && !isValidRpgUserId(argument)
+  )
+  const itemInput = transferArgs.slice(0, -1).join(' ')
+  const countInput = transferArgs.at(-1)
 
   if (!who || !isValidRpgUserId(who) || !itemInput || !countInput) {
     return m.reply(

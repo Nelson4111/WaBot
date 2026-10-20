@@ -953,9 +953,10 @@ let handler = async (m, {
     return m.reply(`✅ Heal instan selesai untuk ${targets.length} akun RPG. ${healed} akun dipulihkan.`)
   }
 
-  // 3. Resolusi Target User (Mendukung: Tag / Mention, Reply / Quoted, Nomor HP, JID, LID)
+  // 3. Resolusi Target User (Mendukung: @me, Tag, Reply, Nomor HP, JID, LID)
   let who = null;
   let targetArgIndex = -1;
+  const selfTargetIndex = remaining.findIndex(arg => /^@me$/i.test(arg))
   const explicitTargetIndex = remaining.findIndex(arg =>
     arg.includes('@s.whatsapp.net') ||
     arg.includes('@lid') ||
@@ -963,8 +964,12 @@ let handler = async (m, {
     (!m.quoted && !m.mentionedJid?.length && /^\d{8,16}$/.test(arg))
   )
 
+  if (selfTargetIndex !== -1) {
+    who = m.sender
+    targetArgIndex = selfTargetIndex
+  }
   // Prefer explicit numeric/JID targets over the quoted sender.
-  if (explicitTargetIndex !== -1) {
+  else if (explicitTargetIndex !== -1) {
     const rawTarget = remaining[explicitTargetIndex].trim()
     const cleanTarget = rawTarget.replace(/^@/, '')
     if (cleanTarget.includes('@s.whatsapp.net') || cleanTarget.includes('@lid')) {
