@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgMoney, formatRpgNumber } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, groupMetadata }) => {
   const wdb = loadDB()
@@ -51,7 +52,7 @@ let handler = async (m, { conn, groupMetadata }) => {
 
   topLevel.forEach((id, i) => {
     text += `> 🏆 *${i + 1}. ${formatUser(id)}*\n`
-    text += `> ↳ Level: ${wdb.users[id].rpg.level}\n\n`
+    text += `> ↳ Level: ${formatRpgNumber(wdb.users[id].rpg.level)}\n\n`
   })
 
   text += `─━━━━━━━━━━━━━━─\n\n`
@@ -60,7 +61,7 @@ let handler = async (m, { conn, groupMetadata }) => {
 
   topMoney.forEach((id, i) => {
     text += `> 💰 *${i + 1}. ${formatUser(id)}*\n`
-    text += `> ↳ Saldo: Rp ${(wdb.money[id] || 0).toLocaleString('id-ID')}\n\n`
+    text += `> ↳ Saldo: ${formatRpgMoney(wdb.money[id] || 0)}\n\n`
   })
 
   text += `─━━━━━━━━━━━━━━─\n\n`
@@ -69,7 +70,7 @@ let handler = async (m, { conn, groupMetadata }) => {
 
   topDiamond.forEach((id, i) => {
     text += `> 💎 *${i + 1}. ${formatUser(id)}*\n`
-    text += `> ↳ Diamond: ${wdb.users[id].rpg.diamond || 0}\n\n`
+    text += `> ↳ Diamond: ${formatRpgNumber(wdb.users[id].rpg.diamond || 0)}\n\n`
   })
 
   text += `─━━━━━━━━━━━━━━─\n\n`

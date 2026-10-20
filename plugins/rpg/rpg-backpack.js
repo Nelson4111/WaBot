@@ -7,6 +7,7 @@ import { fishRenameMap, ikanEmoji, migrateLegacyFishInventory, normalizeFishKey 
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { bibit } from './rpg-panen.js'
 import { adventureItemKeys } from './rpg-adventure.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -131,7 +132,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   let cap = `╭─❏「 🎒 BACKPACK 」❏\n`
 cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
-cap += `│ 📦 Total: ${totalItem.toLocaleString()} Item\n`
+cap += `│ 📦 Total: ${formatRpgNumber(totalItem)} Item\n`
 cap += `│ 🧬 Jenis: ${totalJenis}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
@@ -150,7 +151,7 @@ for (const category of categoryOrder) {
   cap += `╭─❏「 ${categoryIcons[category]} ${category} 」❏\n`
   cap += `╰─━━━━━━━━━━━━━━─\n`
   grouped[category].forEach((item, index) => {
-    cap += `> *${index + 1}. ${item.nama} ${item.emoji}* x${item.jml.toLocaleString()}\n`
+    cap += `> *${index + 1}. ${item.nama} ${item.emoji}* x${formatRpgNumber(item.jml)}\n`
   })
   cap += `\n`
 }

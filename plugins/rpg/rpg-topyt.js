@@ -1,5 +1,6 @@
 import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { filterLeaderboardUsers } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 
 function normalizeYoutube(data = {}) {
   return {
@@ -38,8 +39,8 @@ let handler = async (m, { conn }) => {
     caption += `🏆 *${i + 1}. ${u.name}*\n`
     caption += `> ↳ Channel Level : Lv.${u.level}\n`
     caption += `> ↳ Room Level : Lv.${u.roomLevel || 0}\n`
-    caption += `> ↳ Subscribers : ${u.subs.toLocaleString()}\n`
-    caption += `> ↳ Likes : ${u.likes.toLocaleString()}\n`
+    caption += `> ↳ Subscribers : ${formatRpgNumber(u.subs)}\n`
+    caption += `> ↳ Likes : ${formatRpgNumber(u.likes)}\n`
     caption += `> ↳ Content : ${u.content}\n\n`
   })
 

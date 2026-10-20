@@ -1,5 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 
 function formatNama(ikan) {
   if (!ikan) return ''
@@ -65,7 +66,7 @@ let handler = async (m, { conn }) => {
   let urutan = ['SECRET','MYTHIC','LEGENDARY','EPIC','RARE','UNCOMMON','COMMON','TRASH']
   let cap = `╭─❏「 🐠 AQUARIUM 」❏\n`
 cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
-cap += `│ 📦 Total: ${totalIkan.toLocaleString()} Ikan\n`
+cap += `│ 📦 Total: ${formatRpgNumber(totalIkan)} Ikan\n`
 cap += `│ 🧬 Jenis: ${Object.keys(inventory).length}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
@@ -78,7 +79,7 @@ for (let t of urutan) {
     cap += `╰─━━━━━━━━━━━━━━─\n`
 
     grouped[t].list.forEach((v) => {
-      cap += `> *${nomor++}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
+      cap += `> *${nomor++}. ${formatNama(v.nama)} ${v.emoji}* x${formatRpgNumber(v.jml)}\n`
     })
 
     cap += `\n`

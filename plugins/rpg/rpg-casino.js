@@ -853,7 +853,7 @@ function playCasinoRoomRound(room, wdb, stake) {
   }
 
   const roundContribution = stake * players.length
-  if (!Number.isSafeInteger(roundContribution) || !Number.isSafeInteger((room.pot || 0) + roundContribution)) {
+  if (!Number.isInteger(roundContribution) || !Number.isInteger((room.pot || 0) + roundContribution)) {
     return { invalidPot: true }
   }
 
@@ -941,7 +941,7 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
 
   const stake = parseRpgMoneyAmount(args[2])
 
-  if (!Number.isSafeInteger(stake) || stake < 100) {
+  if (!Number.isInteger(stake) || stake < 100) {
     return m.reply(
       `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
       `│ ❌ *Format taruhan tidak valid.*\n` +
@@ -1305,7 +1305,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
   }
 
   const requestedStake = action === 'set' ? parseRpgMoneyAmount(args[2]) : null
-  if (action === 'set' && (!Number.isSafeInteger(requestedStake) || requestedStake < 100)) {
+  if (action === 'set' && (!Number.isInteger(requestedStake) || requestedStake < 100)) {
     return m.reply(
       `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
       `│ ❌ *Nominal taruhan tidak valid.*\n` +
@@ -1323,7 +1323,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
       ? Number(room.currentStake || room.stake)
       : Number(room.currentStake || room.stake) * 2
 
-  if (!Number.isSafeInteger(stake)) {
+  if (!Number.isInteger(stake)) {
     return m.reply(`Taruhan berikutnya melebihi batas aman saldo. Gunakan *.cs room next* untuk melanjutkan tanpa kenaikan.`)
   }
 
@@ -1807,7 +1807,7 @@ return m.reply(
       : aliases[input]
 
   if (retryMode) {
-    if (!Number.isSafeInteger(randomBet) || randomBet < 1) {
+    if (!Number.isInteger(randomBet) || randomBet < 1) {
       return m.reply('❌ Belum ada permainan sebelumnya yang bisa diulang.')
     }
     const cooldowns = getCooldowns(user)
@@ -1850,7 +1850,7 @@ return m.reply(
 const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
 const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : parseRpgMoneyAmount(betInput)
 
-if (!Number.isSafeInteger(bet) || bet < games[game].minBet) {
+if (!Number.isInteger(bet) || bet < games[game].minBet) {
   return m.reply(
     `╭─❏「 ❌ TARUHAN 」❏\n` +
     `│ ❌ *Taruhan tidak valid.*\n` +
