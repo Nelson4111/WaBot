@@ -89,6 +89,47 @@ test('auction list includes shortcuts for checking balance and money suffixes', 
   }
 })
 
+test('bank deposit, withdrawal, and transfer accept T suffix amounts', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+  global.db.data.users[firstJid].money = 2_000_000_000_000
+
+  try {
+    const depositMessage = makeMessage(firstJid)
+    await bankHandler(depositMessage.m, {
+      text: 'simpan 1T',
+      usedPrefix: '.',
+      command: 'bank'
+    })
+    assert.match(depositMessage.replies.at(-1), /Jumlah : Rp 1T/)
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance + 1_000_000_000_000)
+
+    const withdrawalMessage = makeMessage(firstJid)
+    await bankHandler(withdrawalMessage.m, {
+      text: 'tarik 1T',
+      usedPrefix: '.',
+      command: 'bank'
+    })
+    assert.match(withdrawalMessage.replies.at(-1), /Jumlah : Rp 1T/)
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance)
+
+    const transferMessage = makeMessage(firstJid)
+    transferMessage.m.mentionedJid = [secondJid]
+    await bankHandler(transferMessage.m, {
+      conn: { decodeJid: jid => jid },
+      text: `tf @${secondJid.split('@')[0]} 1T`,
+      usedPrefix: '.',
+      command: 'bank'
+    })
+    assert.match(transferMessage.replies.at(-1), /Jumlah TF : Rp 1T/)
+    assert.equal(global.db.data.users[secondJid].rpg.bank, initialBalance + 1_000_000_000_000)
+    assert.equal(global.db.data.users[firstJid].rpg.bank, initialBalance - 1_000_000_500_000)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
 test('auction rarity is evenly distributed by price and displayed only in item info', async () => {
   const rarityCounts = new Map(Object.keys(AUCTION_RARITIES).map(name => [name, 0]))
   const sortedItems = [...AUCTION_ITEMS].sort((first, second) => first.price - second.price)
