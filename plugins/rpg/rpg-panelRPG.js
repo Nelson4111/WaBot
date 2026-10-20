@@ -328,10 +328,23 @@ let handler = async (m, {
         !guardian || guardianData?.isDummy || !owner || ownerData?.isDummy || !child ||
         child.nama !== validated.childName || child.facility || child.pendingTransferId ||
         (child.custody?.type || null) !== (validated.previousCustody?.type || null) ||
-        (child.originalOwnerJid || null) !== validated.previousOwnerJid ||
-        validated.guardianJid === validated.ownerJid
+        (child.originalOwnerJid || null) !== validated.previousOwnerJid
       ) {
         return m.reply('❌ Data anak atau akun berubah setelah pemeriksaan. Tidak ada perubahan; jalankan ulang perintah Panel.')
+      }
+      if (validated.guardianJid === validated.ownerJid) {
+        delete child.custody
+        delete child.originalCustody
+        delete child.originalOwnerJid
+        delete child.originalOwnerLocation
+        delete child.originalShelterStatus
+        await saveDB(wdb)
+        return m.reply(
+          `✅ Anak *${child.nama}* sekarang tercatat sebagai anak sendiri @${validated.ownerJid.split('@')[0]}.\n` +
+          `> ↳ Status pengasuhan sudah dihapus; anak tetap di daftar keluarga user tersebut.`,
+          null,
+          { mentions: [validated.ownerJid] }
+        )
       }
       if (child.custody?.type !== 'foster') {
         if (child.custody) child.originalCustody = { ...child.custody }
@@ -563,8 +576,7 @@ let handler = async (m, {
         : null
       if (
         !ownerJid || !owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy ||
-        !child || child.facility || child.pendingTransferId ||
-        guardianJid === ownerJid
+        !child || child.facility || child.pendingTransferId
       ) {
         return m.reply(
           `❌ Pemilik/pengasuh atau anak tidak valid. Anak harus ada di daftar keluarga pengasuh dan tidak sedang di fasilitas/menunggu transfer.\n` +
@@ -811,7 +823,7 @@ let handler = async (m, {
   `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @tag 1 ortu 2*; nomor pasangan lihat lewat *${usedPrefix}rpgpanel anak @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama/gender/umur/carecount/love/biologicalparents> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @pemilik* - Atur pemilik anak; pengasuh tetap user yang ditag pertama\n` +
-  `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @pengasuh 1 pemilik @userlain*; gunakan *@me* untuk menetapkan dirimu sebagai pemilik\n` +
+  `> ↳ Jika pemilik dan pengasuh sama, status asuh dihapus dan anak menjadi anak sendiri\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
   `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +
