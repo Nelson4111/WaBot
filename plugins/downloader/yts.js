@@ -30,7 +30,23 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > 🎵 *Audio:* *${usedPrefix}ytmp3 ${video.url}*
 > 🎥 *Video:* *${usedPrefix}ytmp4 ${video.url}*`.trim()
 
-    await conn.sendMessage(m.chat, {
+    const buttons = [
+      [`🎵 Unduh Audio MP3`, `${usedPrefix}ytmp3 ${video.url}`],
+      [`🎬 Unduh Video MP4`, `${usedPrefix}ytmp4 ${video.url}`]
+    ]
+    if (typeof conn.sendButtonV2 === 'function') {
+      try {
+        return await conn.sendButtonV2(m.chat, {
+          text: caption,
+          image: typeof thumb === 'string' ? { url: thumb } : thumb,
+          buttons
+        }, m)
+      } catch (error) {
+        console.error('[YouTube search buttons failed]:', error?.message || error)
+      }
+    }
+
+    return conn.sendMessage(m.chat, {
       image: (typeof thumb === 'string' ? { url: thumb } : thumb),
       caption
     }, { quoted: m })
