@@ -28,6 +28,7 @@ import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { computeCrimeScore, getActiveCrimeScore, setActiveCrimeScore, setCrimeCount } from '../../lib/crimeHelper.js'
 import { createRpgCrimeRecord, RPG_CRIME_TYPES } from '../../lib/rpgCrimeAction.js'
 import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
 import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '../../lib/rpgJobData.js'
@@ -316,6 +317,38 @@ let handler = async (m, {
         { mentions: [validated.ownerJid, validated.guardianJid] }
       )
     }
+    if (pending.operation === 'pindahanak') {
+      const validated = pending.validated
+      const account = validated && wdb.users[validated.userJid]
+      const targetUser = account?.rpg || account
+      const sourceList = validated?.shelterSource ? targetUser?.shelterKids : targetUser?.kids
+      const child = sourceList?.[validated?.childIndex]
+      if (
+        !targetUser || account?.isDummy || !child ||
+        JSON.stringify(child) !== validated.childSnapshot ||
+        child.facility || child.pendingTransferId || child.custody?.type === 'foster'
+      ) {
+        return m.reply('❌ Data anak berubah atau sudah tidak bisa dipindahkan sejak pemeriksaan. Tidak ada perubahan; jalankan ulang perintah Panel.')
+      }
+      sourceList.splice(validated.childIndex, 1)
+      if (validated.shelterSource) {
+        delete child.shelterStatus
+        child.lastCaredAt = Date.now()
+        child.lastNeglectCheckAt = Date.now()
+        if (!Array.isArray(targetUser.kids)) targetUser.kids = []
+        targetUser.kids.push(child)
+      } else {
+        child.shelterStatus = { reason: 'lost', enteredAt: Date.now() }
+        if (!Array.isArray(targetUser.shelterKids)) targetUser.shelterKids = []
+        targetUser.shelterKids.push(child)
+      }
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Anak *${child.nama}* dipindahkan ${validated.shelterSource ? 'dari shelter ke keluarga' : 'dari keluarga ke shelter'} @${validated.userJid.split('@')[0]}.`,
+        null,
+        { mentions: [validated.userJid] }
+      )
+    }
     if (pending.operation === 'setanak-owner') {
       const validated = pending.validated
       const guardianData = validated && wdb.users[validated.guardianJid]
@@ -403,6 +436,74 @@ let handler = async (m, {
 
   let validatedFosterChild = null
   let validatedFosterOwner = null
+  let validatedChildMove = null
+  if (aksi === 'pindahanak' && !_rpgPanelConfirmedToken) {
+    const commandArgs = rawArgs.slice(1)
+    const userToken = commandArgs[0] || ''
+    const shelterSource = commandArgs[1]?.toLowerCase() === 'shelter'
+    const childNumber = Number(commandArgs[shelterSource ? 2 : 1])
+    const destination = String(commandArgs[shelterSource ? 3 : 2] || '').toLowerCase()
+    const mentions = [...new Set((sourceMessage.mentionedJid || []).map(jid => {
+      let normalized = String(jid)
+      if (conn?.decodeJid) normalized = conn.decodeJid(normalized)
+      if (normalized.endsWith('@lid')) {
+        normalized = global.lids?.[normalized] || global.db?.data?.lids?.[normalized] || wdb.lids?.[normalized] || normalized
+      }
+      return normalized
+    }))]
+    let userJid = /^@me$/i.test(userToken)
+      ? (conn?.decodeJid ? conn.decodeJid(sourceMessage.sender) : sourceMessage.sender)
+      : null
+    if (!userJid && (userToken.includes('@s.whatsapp.net') || userToken.includes('@lid'))) {
+      userJid = conn?.decodeJid ? conn.decodeJid(userToken) : userToken
+    }
+    if (!userJid && userToken) {
+      const digits = userToken.replace(/\D/g, '')
+      if (digits.length >= 8 && digits.length <= 16) {
+        const matched = Object.entries(wdb.users).find(([jid, account]) =>
+          jid.split('@')[0].replace(/\D/g, '') === digits ||
+          String(account?.lid || '').split('@')[0].replace(/\D/g, '') === digits
+        )
+        userJid = matched?.[0] || `${digits}@s.whatsapp.net`
+      }
+    }
+    if (!userJid && mentions.length) userJid = mentions[0]
+    if (userJid?.endsWith('@lid')) {
+      userJid = global.lids?.[userJid] || global.db?.data?.lids?.[userJid] || wdb.lids?.[userJid] || userJid
+    }
+    if (userJid) {
+      const digits = userJid.split('@')[0].replace(/\D/g, '')
+      const matched = Object.entries(wdb.users).find(([jid, account]) =>
+        jid.split('@')[0].replace(/\D/g, '') === digits ||
+        String(account?.lid || '').split('@')[0].replace(/\D/g, '') === digits
+      )
+      if (matched) userJid = matched[0]
+    }
+    const account = userJid && wdb.users[userJid]
+    const targetUser = account?.rpg || account
+    const sourceList = shelterSource ? targetUser?.shelterKids : targetUser?.kids
+    const child = Number.isInteger(childNumber) && childNumber > 0
+      ? sourceList?.[childNumber - 1]
+      : null
+    const validDestination = shelterSource
+      ? ['keluarga', 'family', 'anak'].includes(destination)
+      : destination === 'shelter'
+    if (!userJid || !targetUser || account?.isDummy || !child || !validDestination ||
+      child.facility || child.pendingTransferId || child.custody?.type === 'foster') {
+      return m.reply(
+        `❌ Target, nomor anak, atau tujuan pemindahan tidak valid.\n` +
+        `> ↳ Keluarga ke shelter: *${usedPrefix}rpgpanel pindahanak @user <no-anak> shelter*\n` +
+        `> ↳ Shelter ke keluarga: *${usedPrefix}rpgpanel pindahanak @user shelter <no-anak> keluarga*\n` +
+        `> ↳ Gunakan *@me* untuk akunmu sendiri. Anak di fasilitas, menunggu transfer, atau berstatus asuh tidak bisa dipindahkan.`
+      )
+    }
+    validatedChildMove = {
+      userJid,
+      shelterSource,
+      childIndex: childNumber - 1,
+      childSnapshot: JSON.stringify(child)
+    }
+  }
   if (aksi === 'asuhanak' && !_rpgPanelConfirmedToken) {
     const normalizeTargetJid = jid => {
       let normalized = String(jid || '')
@@ -522,51 +623,56 @@ let handler = async (m, {
     const commandArgs = rawArgs.slice(1)
     const fieldIndex = commandArgs.findIndex(arg => ['pemilik', 'owner', 'originalowner'].includes(arg.toLowerCase()))
     if (fieldIndex !== -1) {
-      const ownerToken = commandArgs[fieldIndex + 1]
-      const mentionedJid = sourceMessage.mentionedJid?.[0]
-      let guardianJid = mentionedJid ? String(mentionedJid) : ''
-      if (conn?.decodeJid) guardianJid = conn.decodeJid(guardianJid)
-      if (guardianJid.endsWith('@lid')) {
-        guardianJid = global.lids?.[guardianJid] || global.db?.data?.lids?.[guardianJid] || wdb.lids?.[guardianJid] || guardianJid
-      }
-      const guardianDigits = guardianJid.split('@')[0].replace(/\D/g, '')
-      const matchedGuardian = Object.entries(wdb.users).find(([jid, account]) =>
-        jid.split('@')[0].replace(/\D/g, '') === guardianDigits ||
-        String(account?.lid || '').split('@')[0].replace(/\D/g, '') === guardianDigits
-      )
-      if (matchedGuardian) guardianJid = matchedGuardian[0]
-      let ownerJid = null
-      if (/^@me$/i.test(ownerToken || '')) {
-        ownerJid = sourceMessage.sender
-      } else if (/^@?\d{8,16}$/.test(ownerToken || '')) {
-        const ownerDigits = ownerToken.replace(/\D/g, '')
-        const matchedOwner = Object.entries(wdb.users).find(([jid, account]) =>
-          jid.split('@')[0].replace(/\D/g, '') === ownerDigits ||
-          String(account?.lid || '').split('@')[0].replace(/\D/g, '') === ownerDigits
+      const sourceToken = commandArgs[0] || ''
+      const ownerToken = commandArgs[fieldIndex + 1] || ''
+      const mentionCandidates = [...new Set((sourceMessage.mentionedJid || []).map(jid => {
+        let normalized = String(jid)
+        if (conn?.decodeJid) normalized = conn.decodeJid(normalized)
+        if (normalized.endsWith('@lid')) {
+          normalized = global.lids?.[normalized] || global.db?.data?.lids?.[normalized] || wdb.lids?.[normalized] || normalized
+        }
+        return normalized
+      }))]
+      const usedMentions = new Set()
+      const normalizePanelTarget = (token, role) => {
+        let directTarget = /^@me$/i.test(token) ? sourceMessage.sender : ''
+        if (!directTarget && (token.includes('@s.whatsapp.net') || token.includes('@lid'))) {
+          directTarget = conn?.decodeJid ? conn.decodeJid(token) : token
+        } else if (!directTarget) {
+          const digits = token.replace(/\D/g, '')
+          if (digits.length >= 8 && digits.length <= 16) {
+            const matched = Object.entries(wdb.users).find(([jid, account]) =>
+              jid.split('@')[0].replace(/\D/g, '') === digits ||
+              String(account?.lid || '').split('@')[0].replace(/\D/g, '') === digits
+            )
+            directTarget = matched?.[0] || `${digits}@s.whatsapp.net`
+          }
+        }
+        if (directTarget.endsWith('@lid')) {
+          directTarget = global.lids?.[directTarget] || global.db?.data?.lids?.[directTarget] || wdb.lids?.[directTarget] || directTarget
+        }
+        if (directTarget) {
+          const digits = directTarget.split('@')[0].replace(/\D/g, '')
+          const matched = Object.entries(wdb.users).find(([jid, account]) =>
+            jid.split('@')[0].replace(/\D/g, '') === digits ||
+            String(account?.lid || '').split('@')[0].replace(/\D/g, '') === digits
+          )
+          return matched?.[0] || directTarget
+        }
+        const tokenDigits = token.replace(/\D/g, '')
+        const exactMention = tokenDigits && mentionCandidates.find(jid =>
+          !usedMentions.has(jid) && jid.split('@')[0].replace(/\D/g, '') === tokenDigits
         )
-        ownerJid = matchedOwner?.[0] || `${ownerDigits}@s.whatsapp.net`
-      } else if (ownerToken?.includes('@s.whatsapp.net') || ownerToken?.includes('@lid')) {
-        ownerJid = conn?.decodeJid ? conn.decodeJid(ownerToken) : ownerToken
-      } else {
-        const otherMention = (sourceMessage.mentionedJid || []).find(jid => {
-          const normalized = conn?.decodeJid ? conn.decodeJid(String(jid)) : String(jid)
-          return normalized !== guardianJid
-        })
-        if (otherMention) ownerJid = conn?.decodeJid ? conn.decodeJid(String(otherMention)) : String(otherMention)
-      }
-      if (ownerJid?.endsWith('@lid')) {
-        ownerJid = global.lids?.[ownerJid] || global.db?.data?.lids?.[ownerJid] || wdb.lids?.[ownerJid] || ownerJid
-      }
-      if (ownerJid) {
-        const ownerDigits = ownerJid.split('@')[0].replace(/\D/g, '')
-        const matchedOwner = Object.entries(wdb.users).find(([jid, account]) =>
-          jid.split('@')[0].replace(/\D/g, '') === ownerDigits ||
-          String(account?.lid || '').split('@')[0].replace(/\D/g, '') === ownerDigits
+        const fallbackMention = mentionCandidates.find(jid =>
+          !usedMentions.has(jid) && jid !== sourceMessage.sender
         )
-        if (matchedOwner) ownerJid = matchedOwner[0]
+        const selected = exactMention || fallbackMention || (role === 'source' ? sourceMessage.quoted?.sender : null)
+        if (selected) usedMentions.add(selected)
+        return selected || null
       }
-      const ownerData = ownerJid && wdb.users[ownerJid]
-      const owner = ownerData?.rpg || ownerData
+
+      const guardianJid = normalizePanelTarget(sourceToken, 'source')
+      const ownerJid = normalizePanelTarget(ownerToken, 'owner')
       const childNumber = Number(commandArgs[1])
       const childIndex = childNumber - 1
       const guardianData = guardianJid && wdb.users[guardianJid]
@@ -574,14 +680,16 @@ let handler = async (m, {
       const child = Number.isInteger(childNumber) && childNumber > 0
         ? guardian?.kids?.[childIndex]
         : null
+      const ownerData = ownerJid && wdb.users[ownerJid]
+      const owner = ownerData?.rpg || ownerData
       if (
         !ownerJid || !owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy ||
         !child || child.facility || child.pendingTransferId
       ) {
         return m.reply(
-          `❌ Pemilik/pengasuh atau anak tidak valid. Anak harus ada di daftar keluarga pengasuh dan tidak sedang di fasilitas/menunggu transfer.\n` +
+          `❌ Pemilik, pengasuh, atau anak tidak valid. Anak harus ada di daftar keluarga pengasuh dan tidak sedang di fasilitas/menunggu transfer.\n` +
           `> ↳ Format: *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @pemilik*\n` +
-          `> ↳ Untuk menjadikan dirimu pemilik: ganti *@pemilik* dengan *@me*.`
+          `> ↳ Gunakan *@me* untuk pengasuh atau pemilik yang menjalankan perintah.`
         )
       }
       validatedFosterOwner = {
@@ -609,6 +717,9 @@ let handler = async (m, {
         : {}),
       ...(validatedFosterOwner
         ? { operation: 'setanak-owner', validated: validatedFosterOwner }
+        : {}),
+      ...(validatedChildMove
+        ? { operation: 'pindahanak', validated: validatedChildMove }
         : {}),
       createdAt: now
     }
@@ -822,12 +933,12 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> ortu <no/nama-pasangan>* - Atur anak dari pasangan tertentu\n` +
   `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @tag 1 ortu 2*; nomor pasangan lihat lewat *${usedPrefix}rpgpanel anak @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama/gender/umur/carecount/love/biologicalparents> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @pemilik* - Atur pemilik anak; pengasuh tetap user yang ditag pertama\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh/@me <no-anak> pemilik @pemilik/@me* - Atur pemilik anak; pengasuh tetap target pertama\n` +
   `> ↳ Jika pemilik dan pengasuh sama, status asuh dihapus dan anak menjadi anak sendiri\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* - Pindahkan anak keluarga ke shelter\n` +
-  `> ↳ *${usedPrefix}rpgpanel pindahanak @tag shelter <no> keluarga* - Keluarkan anak shelter ke keluarga\n` +
+  `> ↳ *${usedPrefix}rpgpanel pindahanak @user/@me <no> shelter* - Pindahkan anak keluarga ke shelter\n` +
+  `> ↳ *${usedPrefix}rpgpanel pindahanak @user/@me shelter <no> keluarga* - Keluarkan anak shelter ke keluarga\n` +
   `> ↳ *${usedPrefix}rpgpanel asuhanak @tag [shelter] <no> @pengasuh* / *kembalianak @pengasuh <no>*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetnamaanak @pengasuh <no>* - Pulihkan nama sebelum rename jika tersimpan\n` +
   `> ↳ Tag pemilik/pengasuh dapat diisi dengan reply jika salah satu mention dikosongkan.\n` +
@@ -2002,6 +2113,12 @@ let handler = async (m, {
 
   let args = remaining
   let jumlah = parseInt(remaining.find(a => !isNaN(parseInt(a)))) || 0
+  if (['setmoney', 'addmoney', 'delmoney'].includes(aksi)) {
+    const moneyText = remaining.at(-1)
+    const parsedMoney = moneyText === '0' ? 0 : parseRpgMoneyAmount(moneyText)
+    if (parsedMoney === null) return m.reply('❌ Nominal uang tidak valid. Contoh: 1T.')
+    jumlah = parsedMoney
+  }
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
   let item = normalizeFishKey(itemInput?.toLowerCase().replace(/ /g, '_'))
 
@@ -2516,7 +2633,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     user.kartuBeku = user.kartuBeku || false
 
     if(['setbank', 'addbank', 'delbank'].includes(aksi)){
-      const amount = Number(args[0])
+      const amount = args[0] === '0' ? 0 : parseRpgMoneyAmount(args[0])
       if (!Number.isInteger(amount) || (aksi !== 'setbank' && amount < 1)) {
         return m.reply(`Contoh: *${usedPrefix}rpgpanel ${aksi} @tag ${aksi === 'setbank' ? '100000000' : '1000000'}*`)
       }
