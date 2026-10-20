@@ -276,6 +276,46 @@ let handler = async (m, {
     if (['tidak', 'no', 'batal', 'cancel'].includes(decision)) {
       return m.reply('✅ Aksi RPG Panel dibatalkan; data tidak diubah.')
     }
+    if (pending.operation === 'asuhanak') {
+      const validated = pending.validated
+      const ownerData = validated && wdb.users[validated.ownerJid]
+      const guardianData = validated && wdb.users[validated.guardianJid]
+      const owner = ownerData?.rpg || ownerData
+      const guardian = guardianData?.rpg || guardianData
+      const sourceList = validated?.shelterSource ? owner?.shelterKids : owner?.kids
+      const child = sourceList?.[validated?.childIndex]
+      if (
+        !owner || ownerData?.isDummy || !guardian || guardianData?.isDummy ||
+        !child || child.nama !== validated.childName ||
+        child.facility || child.pendingTransferId || child.custody?.type === 'foster' ||
+        validated.ownerJid === validated.guardianJid
+      ) {
+        await saveDB(wdb)
+        return m.reply('❌ Data anak atau pengasuh berubah setelah pemeriksaan. Tidak ada perubahan yang diterapkan; jalankan ulang perintah Panel.')
+      }
+
+      if (validated.shelterSource) {
+        child.originalOwnerLocation = 'shelterKids'
+        child.originalShelterStatus = child.shelterStatus ? { ...child.shelterStatus } : null
+        delete child.shelterStatus
+      } else {
+        child.originalOwnerLocation = 'kids'
+        if (child.custody) child.originalCustody = { ...child.custody }
+      }
+      child.originalOwnerJid = validated.ownerJid
+      child.custody = { type: 'foster', guardianJid: validated.guardianJid }
+      if (!Array.isArray(guardian.kids)) guardian.kids = []
+      sourceList.splice(validated.childIndex, 1)
+      guardian.kids.push(child)
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Anak *${child.nama}* sekarang berada dalam pengasuhan @${validated.guardianJid.split('@')[0]}.\n` +
+        `> ↳ Asal: ${validated.shelterSource ? 'shelter' : 'keluarga'} @${validated.ownerJid.split('@')[0]}.\n` +
+        `> ↳ Kembalikan melalui *${usedPrefix}rpgpanel kembalianak @pengasuh <no-anak-asuh>*.`,
+        null,
+        { mentions: [validated.ownerJid, validated.guardianJid] }
+      )
+    }
     const replayMessage = Object.create(m)
     Object.defineProperty(replayMessage, 'mentionedJid', {
       value: pending.mentionedJid || [],
@@ -316,6 +356,123 @@ let handler = async (m, {
       normalizeRpgPanelCategory(title) === requestedCategory
     )
 
+  let validatedFosterChild = null
+  if (aksi === 'asuhanak' && !_rpgPanelConfirmedToken) {
+    const normalizeTargetJid = jid => {
+      let normalized = String(jid || '')
+      if (conn?.decodeJid) normalized = conn.decodeJid(normalized)
+      if (normalized.endsWith('@lid')) {
+        normalized = global.lids?.[normalized] || global.db?.data?.lids?.[normalized] || wdb.lids?.[normalized] || normalized
+      }
+      if (!normalized.includes('@')) {
+        let digits = normalized.replace(/\D/g, '')
+        if (digits.startsWith('08')) digits = `628${digits.slice(2)}`
+        normalized = `${digits}@s.whatsapp.net`
+      }
+      const digits = normalized.split('@')[0].replace(/\D/g, '')
+      const match = Object.entries(wdb.users).find(([jid, account]) => {
+        const jidDigits = jid.split('@')[0].replace(/\D/g, '')
+        const lidDigits = String(account?.lid || '').split('@')[0].replace(/\D/g, '')
+        return jidDigits === digits || lidDigits === digits
+      })
+      return match?.[0] || normalized
+    }
+    const mentions = [...new Set((sourceMessage.mentionedJid || []).map(normalizeTargetJid))]
+    const actorJid = normalizeTargetJid(sourceMessage.sender)
+    const nonSelfMentions = mentions.filter(jid => jid !== actorJid)
+    const commandArgs = rawArgs.slice(1)
+    const shelterArgIndex = commandArgs.findIndex(arg => arg.toLowerCase() === 'shelter')
+    const shelterSource = shelterArgIndex !== -1
+    const ownerToken = commandArgs[0] || ''
+    const hasOwnerToken = /^@me$/i.test(ownerToken) ||
+      /^@?\d{8,16}$/.test(ownerToken) ||
+      ownerToken.includes('@')
+    const ownerArgIndex = hasOwnerToken ? 0 : -1
+    const childArgIndex = shelterSource
+      ? shelterArgIndex + 1
+      : ownerArgIndex === 0 ? 1 : 0
+    const childNumber = Number(commandArgs[childArgIndex])
+    const ownerRequestedSelf = ownerArgIndex === 0 && /^@me$/i.test(ownerToken)
+    const guardianToken = commandArgs[childArgIndex + 1]
+    const guardianRequestedSelf = /^@me$/i.test(guardianToken || '')
+    const quotedJid = sourceMessage.quoted?.sender
+      ? normalizeTargetJid(sourceMessage.quoted.sender)
+      : null
+    const numericOwnerJid = ownerArgIndex === 0 && /^@?\d{8,16}$/.test(ownerToken)
+      ? normalizeTargetJid(ownerToken.replace(/^@/, ''))
+      : null
+    const explicitOwnerJid = ownerArgIndex === 0 &&
+      (ownerToken.includes('@s.whatsapp.net') || ownerToken.includes('@lid'))
+      ? normalizeTargetJid(ownerToken)
+      : null
+    const numericGuardianJid = guardianToken && /^@?\d{8,16}$/.test(guardianToken)
+      ? normalizeTargetJid(guardianToken.replace(/^@/, ''))
+      : null
+    const explicitGuardianJid = guardianToken &&
+      (guardianToken.includes('@s.whatsapp.net') || guardianToken.includes('@lid'))
+      ? normalizeTargetJid(guardianToken)
+      : null
+    let ownerJid = ownerRequestedSelf
+      ? actorJid
+      : numericOwnerJid || explicitOwnerJid || (ownerArgIndex === 0 ? nonSelfMentions[0] : null)
+    let guardianJid = guardianRequestedSelf
+      ? actorJid
+      : numericGuardianJid || explicitGuardianJid || nonSelfMentions.find(jid => jid !== ownerJid) || null
+    const hasChild = jid => {
+      const account = wdb.users[jid]
+      const targetUser = account?.rpg || account
+      const list = shelterSource ? targetUser?.shelterKids : targetUser?.kids
+      return Number.isInteger(childNumber) && childNumber > 0 && Boolean(list?.[childNumber - 1])
+    }
+
+    if (!ownerJid && quotedJid && hasChild(quotedJid)) {
+      ownerJid = quotedJid
+      if (!guardianJid && nonSelfMentions.length) guardianJid = nonSelfMentions[0]
+    } else if (!ownerJid && quotedJid) {
+      ownerJid = quotedJid
+    }
+    if (!guardianJid && quotedJid && quotedJid !== ownerJid) guardianJid = quotedJid
+
+    const ownerData = ownerJid && wdb.users[ownerJid]
+    const owner = ownerData?.rpg || ownerData
+    const childList = shelterSource ? owner?.shelterKids : owner?.kids
+    const child = Number.isInteger(childNumber) && childNumber > 0
+      ? childList?.[childNumber - 1]
+      : null
+    const guardianData = guardianJid && wdb.users[guardianJid]
+    const guardian = guardianData?.rpg || guardianData
+    const invalidReason = !ownerJid
+      ? `Tag atau reply ke pemilik anak.`
+      : !owner || ownerData?.isDummy
+        ? `Pemilik @${ownerJid.split('@')[0]} belum memiliki akun RPG aktif.`
+        : !child
+          ? `Anak nomor ${Number.isInteger(childNumber) ? childNumber : '?'} tidak ditemukan di ${shelterSource ? 'shelter' : 'keluarga'} @${ownerJid.split('@')[0]}.`
+          : child.facility
+            ? `Anak *${child.nama}* sedang berada di fasilitas dan tidak bisa dipindahkan ke pengasuhan.`
+            : child.pendingTransferId
+              ? `Anak *${child.nama}* sedang menunggu proses pengasuhan lain.`
+              : child.custody?.type === 'foster'
+                ? `Anak *${child.nama}* sudah berada dalam pengasuhan user lain.`
+                : !guardianJid
+                  ? `Tag pengasuh atau tulis *@me* untuk menjadikan dirimu pengasuh.`
+                  : !guardian || guardianData?.isDummy
+                    ? `Pengasuh @${guardianJid.split('@')[0]} belum memiliki akun RPG aktif.`
+                    : guardianJid === ownerJid
+                      ? `Pemilik dan pengasuh harus user yang berbeda.`
+                      : null
+
+    if (invalidReason) {
+      return m.reply(`❌ ${invalidReason}\n\n> ↳ Contoh: *${usedPrefix}rpgpanel asuhanak @pemilik shelter 1 @me*`)
+    }
+    validatedFosterChild = {
+      ownerJid,
+      guardianJid,
+      shelterSource,
+      childIndex: childNumber - 1,
+      childName: child.nama
+    }
+  }
+
   if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken) {
     const token = randomUUID()
     const requestedCommand = rawArgs.join(' ')
@@ -325,6 +482,9 @@ let handler = async (m, {
       text,
       mentionedJid: [...(sourceMessage.mentionedJid || [])],
       quotedSender: sourceMessage.quoted?.sender || null,
+      ...(validatedFosterChild
+        ? { operation: 'asuhanak', validated: validatedFosterChild }
+        : {}),
       createdAt: now
     }
     await saveDB(wdb)
