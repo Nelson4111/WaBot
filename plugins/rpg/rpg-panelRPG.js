@@ -327,7 +327,8 @@ let handler = async (m, {
       if (
         !guardian || guardianData?.isDummy || !owner || ownerData?.isDummy || !child ||
         child.nama !== validated.childName || child.facility || child.pendingTransferId ||
-        (child.custody?.type === 'foster' && child.originalOwnerJid && child.originalOwnerJid !== validated.ownerJid) ||
+        (child.custody?.type || null) !== (validated.previousCustody?.type || null) ||
+        (child.originalOwnerJid || null) !== validated.previousOwnerJid ||
         validated.guardianJid === validated.ownerJid
       ) {
         return m.reply('❌ Data anak atau akun berubah setelah pemeriksaan. Tidak ada perubahan; jalankan ulang perintah Panel.')
@@ -509,11 +510,6 @@ let handler = async (m, {
     const fieldIndex = commandArgs.findIndex(arg => ['pemilik', 'owner', 'originalowner'].includes(arg.toLowerCase()))
     if (fieldIndex !== -1) {
       const ownerToken = commandArgs[fieldIndex + 1]
-      if (!/^@me$/i.test(ownerToken || '')) {
-      return m.reply(`❌ Gunakan *@me* sebagai pemilik baru:\n> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @me*`)
-      }
-      const ownerData = wdb.users[sourceMessage.sender]
-      const owner = ownerData?.rpg || ownerData
       const mentionedJid = sourceMessage.mentionedJid?.[0]
       let guardianJid = mentionedJid ? String(mentionedJid) : ''
       if (conn?.decodeJid) guardianJid = conn.decodeJid(guardianJid)
@@ -526,6 +522,38 @@ let handler = async (m, {
         String(account?.lid || '').split('@')[0].replace(/\D/g, '') === guardianDigits
       )
       if (matchedGuardian) guardianJid = matchedGuardian[0]
+      let ownerJid = null
+      if (/^@me$/i.test(ownerToken || '')) {
+        ownerJid = sourceMessage.sender
+      } else if (/^@?\d{8,16}$/.test(ownerToken || '')) {
+        const ownerDigits = ownerToken.replace(/\D/g, '')
+        const matchedOwner = Object.entries(wdb.users).find(([jid, account]) =>
+          jid.split('@')[0].replace(/\D/g, '') === ownerDigits ||
+          String(account?.lid || '').split('@')[0].replace(/\D/g, '') === ownerDigits
+        )
+        ownerJid = matchedOwner?.[0] || `${ownerDigits}@s.whatsapp.net`
+      } else if (ownerToken?.includes('@s.whatsapp.net') || ownerToken?.includes('@lid')) {
+        ownerJid = conn?.decodeJid ? conn.decodeJid(ownerToken) : ownerToken
+      } else {
+        const otherMention = (sourceMessage.mentionedJid || []).find(jid => {
+          const normalized = conn?.decodeJid ? conn.decodeJid(String(jid)) : String(jid)
+          return normalized !== guardianJid
+        })
+        if (otherMention) ownerJid = conn?.decodeJid ? conn.decodeJid(String(otherMention)) : String(otherMention)
+      }
+      if (ownerJid?.endsWith('@lid')) {
+        ownerJid = global.lids?.[ownerJid] || global.db?.data?.lids?.[ownerJid] || wdb.lids?.[ownerJid] || ownerJid
+      }
+      if (ownerJid) {
+        const ownerDigits = ownerJid.split('@')[0].replace(/\D/g, '')
+        const matchedOwner = Object.entries(wdb.users).find(([jid, account]) =>
+          jid.split('@')[0].replace(/\D/g, '') === ownerDigits ||
+          String(account?.lid || '').split('@')[0].replace(/\D/g, '') === ownerDigits
+        )
+        if (matchedOwner) ownerJid = matchedOwner[0]
+      }
+      const ownerData = ownerJid && wdb.users[ownerJid]
+      const owner = ownerData?.rpg || ownerData
       const childNumber = Number(commandArgs[1])
       const childIndex = childNumber - 1
       const guardianData = guardianJid && wdb.users[guardianJid]
@@ -534,22 +562,23 @@ let handler = async (m, {
         ? guardian?.kids?.[childIndex]
         : null
       if (
-        !owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy ||
+        !ownerJid || !owner || ownerData?.isDummy || !guardianJid || !guardian || guardianData?.isDummy ||
         !child || child.facility || child.pendingTransferId ||
-        (child.custody?.type === 'foster' && child.originalOwnerJid && child.originalOwnerJid !== sourceMessage.sender) ||
-        guardianJid === sourceMessage.sender
+        guardianJid === ownerJid
       ) {
         return m.reply(
-          `❌ Anak keluarga tidak ditemukan atau tidak dapat dialihkan menjadi anak asuh.\n` +
-          `> ↳ Pastikan akunmu dan pengasuh memiliki RPG aktif, serta anak tidak sedang di fasilitas atau menunggu transfer.\n` +
-          `> ↳ Format: *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @me*`
+          `❌ Pemilik/pengasuh atau anak tidak valid. Anak harus ada di daftar keluarga pengasuh dan tidak sedang di fasilitas/menunggu transfer.\n` +
+          `> ↳ Format: *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @pemilik*\n` +
+          `> ↳ Untuk menjadikan dirimu pemilik: ganti *@pemilik* dengan *@me*.`
         )
       }
       validatedFosterOwner = {
         guardianJid,
-        ownerJid: sourceMessage.sender,
+        ownerJid,
         childIndex,
-        childName: child.nama
+        childName: child.nama,
+        previousCustody: child.custody ? { ...child.custody } : null,
+        previousOwnerJid: child.originalOwnerJid || null
       }
     }
   }
@@ -781,7 +810,8 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> ortu <no/nama-pasangan>* - Atur anak dari pasangan tertentu\n` +
   `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @tag 1 ortu 2*; nomor pasangan lihat lewat *${usedPrefix}rpgpanel anak @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel setanak @tag <no-anak> <nama/gender/umur/carecount/love/biologicalparents> <nilai>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @me* - Jadikan anak user itu anakmu dan user tersebut pengasuhnya\n` +
+  `> ↳ *${usedPrefix}rpgpanel setanak @pengasuh <no-anak> pemilik @pemilik* - Atur pemilik anak; pengasuh tetap user yang ditag pertama\n` +
+  `> ↳ Contoh: *${usedPrefix}rpgpanel setanak @pengasuh 1 pemilik @userlain*; gunakan *@me* untuk menetapkan dirimu sebagai pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
   `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +
