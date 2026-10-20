@@ -1,5 +1,6 @@
 import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, command, groupMetadata }) => {
   if (command === 'debugduit') return debugduit(m, { conn })
@@ -74,9 +75,9 @@ let handler = async (m, { conn, command, groupMetadata }) => {
     if (identity.mention) mentions.push(identity.mention)
 
     teks += `${medal} *${identity.display}*\n`
-    teks += `> ↳ 💰 Total Kekayaan: *Rp ${user.total.toLocaleString('id-ID')}*\n`
-    teks += `> ↳ 💵 Cash: Rp ${user.cash.toLocaleString('id-ID')}\n`
-    teks += `> ↳ 🏦 Bank: Rp ${user.bank.toLocaleString('id-ID')}\n\n`
+    teks += `> ↳ 💰 Total Kekayaan: *${formatRpgMoney(user.total)}*\n`
+    teks += `> ↳ 💵 Cash: ${formatRpgMoney(user.cash)}\n`
+    teks += `> ↳ 🏦 Bank: ${formatRpgMoney(user.bank)}\n\n`
   })
 
   teks += `─━━━━━━━━━━━━━━─`

@@ -1,4 +1,5 @@
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, usedPrefix, command, groupMetadata }) => {
   let users = filterLeaderboardUsers(Object.entries(global.db.data.users), conn, ([jid]) => jid)
@@ -32,7 +33,7 @@ let handler = async (m, { conn, usedPrefix, command, groupMetadata }) => {
     const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`
 
     teks += `${rank} *${identity.display}*\n`
-    teks += `> ↳ Limit: *${user.limit}*\n\n`
+    teks += `> ↳ Limit: *${formatRpgNumber(user.limit)}*\n\n`
   })
 
   teks += `─━━━━━━━━━━━━━━─`

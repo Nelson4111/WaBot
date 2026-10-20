@@ -1,4 +1,5 @@
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, groupMetadata }) => {
     let users = global.db.data.users
@@ -14,7 +15,7 @@ let handler = async (m, { conn, groupMetadata }) => {
     
     let teks = `╭─❏「 📊 TOP DONASI 」❏\n`
     teks += `│ 📊 *PAPAN PERINGKAT DONASI*\n`
-    teks += `│ 💰 Total Terkumpul : *Rp ${totalGlobal.toLocaleString()}*\n`
+    teks += `│ 💰 Total Terkumpul : *${formatRpgMoney(totalGlobal)}*\n`
     teks += `╰─━━━━━━━━━━━━━━─\n\n`
 
     teks += `📌 *LIST DONATUR*\n`
@@ -37,12 +38,12 @@ let handler = async (m, { conn, groupMetadata }) => {
                 if (identity.mention) mentionsData.push(identity.mention)
             }
             
-            return `${medal} ${nameDisplay} - *Rp ${data.totalDonasi.toLocaleString()}*`
+            return `${medal} ${nameDisplay} - *${formatRpgMoney(data.totalDonasi)}*`
         }).join('\n')
     }
 
     teks += `\n\n💰 *DONASI KAMU*\n`
-    teks += `> ↳ Total : *Rp ${userDonation.toLocaleString()}*\n`
+    teks += `> ↳ Total : *${formatRpgMoney(userDonation)}*\n`
     teks += `> ↳ Terima kasih kepada semuanya yang telah mendukung bot!\n\n`
 
     teks += `─━━━━━━━━━━━━━━─`
