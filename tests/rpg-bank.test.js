@@ -27,6 +27,15 @@ import {
 import { applyBankTierRewards, BANK_CROWN_ITEM_ID, claimBankCrown } from '../lib/rpg-bankData.js'
 import { hargaBeli as RESTAURANT_MENU } from '../lib/rpg-masakanData.js'
 import { formatFullTierFacilities, formatUpgradeChanges } from '../plugins/rpg/rpg-upgradebank.js'
+import { parseRpgMoneyAmount } from '../lib/rpgMoney.js'
+
+test('RPG money parser supports suffixes used by money commands', () => {
+  assert.equal(parseRpgMoneyAmount('1K'), 1_000)
+  assert.equal(parseRpgMoneyAmount('1.5M'), 1_500_000)
+  assert.equal(parseRpgMoneyAmount('1T'), 1_000_000_000_000)
+  assert.equal(parseRpgMoneyAmount('invalid'), null)
+  assert.equal(parseRpgMoneyAmount('0'), null)
+})
 
 test('bank security and insurance increase with every card tier', () => {
   for (let tier = 1; tier < Object.keys(BANK_TIERS).length; tier++) {
