@@ -2,6 +2,7 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isDifficultyRanked, scaleDifficultyDamage, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 const MODES = {
   jambak: { nama: 'Jambak', emoji: '💇', verb: 'dijambak' },
@@ -245,7 +246,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
   }
 
   const target = getTarget(m, conn)
-  if (!target) return m.reply(`❌ Tag atau reply target yang mau ${mode.verb}.\nContoh: *${usedPrefix}${modeKey} @tag 50000*`)
+  if (!target) return m.reply(`❌ Tag atau reply target yang mau ${mode.verb}.\nContoh: *${usedPrefix}${modeKey} @tag 50K*`)
   if (target === sender) return m.reply('❌ Tidak bisa menantang diri sendiri.')
 
   const targetData = getUserRPG(wdb, target)
@@ -253,9 +254,11 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
   if (!targetUser) return m.reply('❌ Target belum memiliki data RPG.')
   initStats(targetUser)
 
-  const taruhanInput = parseInt((command === 'arena' || command === 'versus' || command === 'balap') ? args[2] : args[1])
+  const taruhanText = (command === 'arena' || command === 'versus' || command === 'balap') ? args[2] : args[1]
+  const taruhanInput = taruhanText === undefined ? null : parseRpgMoneyAmount(taruhanText)
   const taruhanDefault = Math.max(1000, Math.floor(Math.min(wdb.money[sender] || 0, wdb.money[target] || 0) * 0.1))
-  const taruhan = taruhanInput || taruhanDefault
+  if (taruhanText !== undefined && taruhanInput === null) return m.reply('❌ Nominal taruhan tidak valid. Contoh: 1M.')
+  const taruhan = taruhanInput ?? taruhanDefault
   if (taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1.000.')
   if ((wdb.money[sender] || 0) < taruhan || (wdb.money[target] || 0) < taruhan) return m.reply('❌ Saldo salah satu pemain tidak cukup untuk taruhan.')
 

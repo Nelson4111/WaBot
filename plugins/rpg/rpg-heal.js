@@ -58,6 +58,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
   const wdb = loadDB()
   const args = text.trim().split(/\s+/).filter(Boolean)
   const action = String(args[0] || '').toLowerCase()
+  const selfOnly = action === 'self' || action === 'diri'
   const prefix = usedPrefix || '.'
   const payer = getUserRPG(wdb, m.sender)?.rpg
 
@@ -118,11 +119,18 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     return m.reply(formatHealSuccess(details, payment))
   }
 
-  const targetJid = m.mentionedJid?.[0] || m.quoted?.sender
+  const targetJid = selfOnly ? null : m.mentionedJid?.[0] || m.quoted?.sender
   const decodedSender = typeof conn.decodeJid === 'function' ? conn.decodeJid(m.sender) : m.sender
   const decodedTarget = targetJid
     ? (typeof conn.decodeJid === 'function' ? conn.decodeJid(targetJid) : targetJid)
     : null
+  const botJid = conn.user?.jid || conn.user?.id
+  const decodedBot = botJid
+    ? (typeof conn.decodeJid === 'function' ? conn.decodeJid(botJid) : botJid)
+    : null
+  if (decodedTarget && decodedBot && decodedTarget === decodedBot) {
+    return m.reply(`🤖 Bot tidak bisa menjadi target heal. Gunakan *${prefix}heal* untuk memulihkan diri sendiri, atau tag/reply pengguna lain.`)
+  }
   if (decodedTarget && decodedTarget !== decodedSender) {
     const target = getUserRPG(wdb, decodedTarget)?.rpg
     if (!target) return m.reply('❌ Target belum memiliki data RPG.')
@@ -183,7 +191,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     })
   }
 
-  if (text.trim() && !targetJid) {
+  if (text.trim() && !selfOnly && !targetJid) {
     return m.reply(
       `Gunakan *${prefix}heal* untuk memulihkan diri sendiri atau *${prefix}heal @tag* / reply pesan untuk menawarkan heal ke pengguna lain.`
     )

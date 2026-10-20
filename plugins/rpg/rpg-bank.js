@@ -653,7 +653,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       assistant.autoSetor ||= { aktif: false, ambang: 1_000_000 }
       if (state === 'off') assistant.autoSetor.aktif = false
       else {
-        const threshold = args[4] === undefined ? Number(assistant.autoSetor.ambang) || 1_000_000 : Number(args[4])
+        const threshold = args[4] === undefined ? Number(assistant.autoSetor.ambang) || 1_000_000 : parseRpgMoneyAmount(args[4])
         if (!Number.isSafeInteger(threshold) || threshold <= 0) return m.reply('❌ Ambang harus berupa angka rupiah positif.')
         assistant.autoSetor = { aktif: true, ambang: threshold }
       }
@@ -680,7 +680,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         await saveDB(wdb)
         return m.reply('✅ Auto-setor Asisten Pribadi dinonaktifkan.')
       }
-      const threshold = args[3] === undefined ? Number(assistant.autoSetor.ambang) || 1_000_000 : Number(args[3])
+      const threshold = args[3] === undefined ? Number(assistant.autoSetor.ambang) || 1_000_000 : parseRpgMoneyAmount(args[3])
       if (!Number.isSafeInteger(threshold) || threshold <= 0) return m.reply('❌ Ambang harus berupa angka rupiah positif.')
       assistant.autoSetor = { aktif: true, ambang: threshold }
       await saveDB(wdb)
@@ -694,7 +694,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         await saveDB(wdb)
         return m.reply('✅ Target tabungan dihapus.')
       }
-      const target = Number(args[2])
+      const target = parseRpgMoneyAmount(args[2])
       if (!Number.isSafeInteger(target) || target <= 0) return m.reply('Gunakan *.bank asisten target <jumlah>* atau *.bank asisten target off*.')
       assistant.target = target
       assistant.targetTercapai = false

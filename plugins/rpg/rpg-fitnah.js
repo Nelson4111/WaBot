@@ -3,6 +3,7 @@ import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah
 import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { sendRpgHealPrompt } from '../../lib/rpgActionButtons.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 /* =========================================================
    KONFIGURASI
@@ -133,7 +134,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
 Fitnah orang biar masuk penjara.
 
 *Cara:* ${usedPrefix}fitnah @tag <uang>
-*Contoh:* ${usedPrefix}fitnah @628 1000000
+*Contoh:* ${usedPrefix}fitnah @628 1M
 *Contoh:* ${usedPrefix}fitnah @628 0
 
 💰 Tebusan = 50% dari uang yg kamu keluarin
@@ -159,10 +160,11 @@ Fitnah orang biar masuk penjara.
     who = resolveJid(who)
 
     const rawUang = mentionedTarget || (!quotedTarget && who) ? args[1] : args[0]
-    if (rawUang === undefined || !/^\d+$/.test(String(rawUang))) {
-        return m.reply(`❌ Masukkan uang yang valid.\nContoh: ${usedPrefix}fitnah @tag 1000000\nAtau reply pesan target: ${usedPrefix}fitnah 1000000`)
+    const uangTaruhanParsed = rawUang === '0' ? 0 : parseRpgMoneyAmount(rawUang)
+    if (uangTaruhanParsed === null) {
+        return m.reply(`❌ Masukkan uang yang valid.\nContoh: ${usedPrefix}fitnah @tag 1M\nAtau reply pesan target: ${usedPrefix}fitnah 1M`)
     }
-    let uangTaruhan = Number(rawUang)
+    let uangTaruhan = uangTaruhanParsed
 
     if (!who) {
         return m.reply(`❌ Tag target dulu\nContoh: ${usedPrefix}fitnah @tag 1000000`)

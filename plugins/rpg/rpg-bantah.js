@@ -1,5 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { cancelPendingFitnahTimer, resolvePendingFitnah } from '../../lib/fitnahHelper.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 function resolveJid(jid) {
   if (!jid) return jid
@@ -16,13 +17,9 @@ function formatMoney(amount) {
 let handler = async (m, { args, usedPrefix, conn }) => {
   const target = resolveJid(m.sender)
   const amountText = args[0]
-  if (!amountText || !/^\d+$/.test(String(amountText))) {
-    return m.reply(`Format: ${usedPrefix}bantah <biaya>\nGunakan nominal biaya yang ingin dipertaruhkan untuk membantah fitnah.`)
-  }
-
-  const amount = Number(amountText)
-  if (!Number.isSafeInteger(amount) || amount <= 0) {
-    return m.reply('❌ Biaya bantah harus berupa nominal positif yang valid.')
+  const amount = parseRpgMoneyAmount(amountText)
+  if (amount === null) {
+    return m.reply(`❌ Biaya bantah harus berupa nominal positif yang valid. Contoh: ${usedPrefix}bantah 1M.`)
   }
 
   global.db.data.fitnahPending = global.db.data.fitnahPending || {}

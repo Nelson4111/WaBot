@@ -6,6 +6,7 @@ import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/le
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -938,7 +939,7 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
     )
   }
 
-  const stake = Number(args[2])
+  const stake = parseRpgMoneyAmount(args[2])
 
   if (!Number.isSafeInteger(stake) || stake < 100) {
     return m.reply(
@@ -946,7 +947,7 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
       `│ ❌ *Format taruhan tidak valid.*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `📌 *CONTOH*\n` +
-      `> ↳ *${usedPrefix}cs room create <taruhan minimal 100>*\n\n` +
+      `> ↳ *${usedPrefix}cs room create 1K* (minimal 100)\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -1303,7 +1304,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
     return m.reply(`Room membutuhkan minimal 2 pemain untuk memulai.`)
   }
 
-  const requestedStake = action === 'set' ? Number(args[2]) : null
+  const requestedStake = action === 'set' ? parseRpgMoneyAmount(args[2]) : null
   if (action === 'set' && (!Number.isSafeInteger(requestedStake) || requestedStake < 100)) {
     return m.reply(
       `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
@@ -1790,12 +1791,12 @@ return m.reply(
   }
 
   const retryMode = input === 'retry'
-  const legacySlot = /^\d+$/.test(input)
+  const legacySlot = /^\d+$/.test(input) || parseRpgMoneyAmount(input) !== null
   const legacyAll = input === 'all'
   const randomGame = input === 'random' || retryMode
   const randomBet = retryMode
     ? Number(user.casinoReplay?.bet)
-    : args[1]?.toLowerCase() === 'all' ? Number(wdb.money[m.sender] || 0) : Number(args[1])
+    : args[1]?.toLowerCase() === 'all' ? Number(wdb.money[m.sender] || 0) : parseRpgMoneyAmount(args[1])
   const eligibleGames = Object.keys(games).filter(key => games[key].minBet <= randomBet)
   let game = legacySlot
     ? 'slot'
@@ -1847,7 +1848,7 @@ return m.reply(
 }
 
 const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
-const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : Number(betInput)
+const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : parseRpgMoneyAmount(betInput)
 
 if (!Number.isSafeInteger(bet) || bet < games[game].minBet) {
   return m.reply(

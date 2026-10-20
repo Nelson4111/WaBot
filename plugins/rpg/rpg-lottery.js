@@ -2,6 +2,7 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { addUserLimit, setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 const LOTTERY_TICKET_PRICE = 10000
 const LOTTERY_PRIZE = 500000
@@ -132,7 +133,7 @@ async function settleExpiredGiveaways(conn, chat, state) {
 function giveawayReward(args) {
   const first = (args[0] || '').toLowerCase()
   if (['money', 'uang', 'limit'].includes(first)) {
-    const amount = Number(args[1])
+    const amount = first === 'money' || first === 'uang' ? parseRpgMoneyAmount(args[1]) : Number(args[1])
     if (!Number.isSafeInteger(amount) || amount <= 0) return null
     return {
       rewardType: first === 'limit' ? 'limit' : 'money',

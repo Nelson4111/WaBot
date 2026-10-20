@@ -5,6 +5,7 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { markPatrolRelease, recordEscapeCrime } from '../../lib/crimeHelper.js'
 import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import { KIDNAP_ESCAPE_ATTEMPT_STORIES, KIDNAP_ESCAPE_STORIES } from '../../lib/rpgCrimeStories.js'
 import {
     dialogVisitNapi,
@@ -1339,8 +1340,8 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     if (command === 'penjarain') {
         if (!isOwner) return m.reply('❌ Khusus Owner')
         let who, menit, tebusan
-        if (m.quoted || m.mentionedJid?.[0]) { who = getTarget(); menit = parseInt(args[0]); tebusan = parseInt(args[1]) }
-        else { who = getTarget(args[0]); menit = parseInt(args[1]); tebusan = parseInt(args[2]) }
+        if (m.quoted || m.mentionedJid?.[0]) { who = getTarget(); menit = parseInt(args[0]); tebusan = args[1] === '0' ? 0 : parseRpgMoneyAmount(args[1]) }
+        else { who = getTarget(args[0]); menit = parseInt(args[1]); tebusan = args[2] === '0' ? 0 : parseRpgMoneyAmount(args[2]) }
         if (!who) return m.reply(`*Format:*\n${usedPrefix}penjarain @tag <menit> <tebusan>`)
         if (isNaN(menit) || menit < 1) menit = 30
         if (isNaN(tebusan) || tebusan < 0) tebusan = 1000000

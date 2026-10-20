@@ -6,6 +6,7 @@ import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -2376,7 +2377,8 @@ if (action === 'battle') {
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  let taruhan = parseInt(args[1]) || 0
+  let taruhan = args[1] === undefined || args[1] === '0' ? Number(args[1] || 0) : parseRpgMoneyAmount(args[1])
+  if (taruhan === null) return m.reply('❌ Nominal taruhan tidak valid. Gunakan nominal angka atau suffix seperti 1M.')
   let uangUser = wdb.money[m.sender] || 0
   let uangTarget = wdb.money[target] || 0
 

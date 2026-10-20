@@ -3,6 +3,7 @@ import { loadDB, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { KIDNAP_INACTIVITY_LABEL, KIDNAP_INACTIVITY_TIMEOUT, RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
 import { KIDNAP_ESCAPE_STORIES, KIDNAP_INACTIVITY_STORIES } from '../../lib/rpgCrimeStories.js'
 import { runRpgCrimeAction } from '../../lib/rpgCrimeAction.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 const formatMoney = value => `Rp ${Number(value).toLocaleString('id-ID')}`
 
@@ -205,7 +206,7 @@ let handler = async (m, { conn, args = [], command, usedPrefix }) => {
   }
 
   const ransomText = args.filter(argument => !String(argument).startsWith('@')).at(-1)
-  const ransom = Number(String(ransomText || '').replace(/[,.]/g, ''))
+  const ransom = parseRpgMoneyAmount(ransomText)
 
   if (!Number.isSafeInteger(ransom) || ransom <= 0) {
     return m.reply(
@@ -214,7 +215,7 @@ let handler = async (m, { conn, args = [], command, usedPrefix }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ *.culik <tag/reply> <nominal>*\n\n` +
       `📖 *CONTOH PENGGUNAAN*\n` +
-      `> ↳ *.culik @user 1000000*`
+      `> ↳ *.culik @user 1M*`
     )
   }
 

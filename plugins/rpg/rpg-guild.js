@@ -1,6 +1,7 @@
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import guildMissionHandler from './rpg-misiguild.js'
 import guildWarHandler from './rpg-guildwar.js'
 import guildJoinHandler from './rpg-joinguild.js'
@@ -455,7 +456,7 @@ if (action === 'storage') {
   }
 
   const item = normalizeResource(args[2])
-  const amount = Number(args[3])
+  const amount = item === 'money' ? parseRpgMoneyAmount(args[3]) : Number(args[3])
 
   if (
     !['add', 'take'].includes(operation) ||
@@ -750,7 +751,7 @@ if (action === 'donate') {
         `─━━━━━━━━━━━━━━─`
     )
 
-    let jumlah = parseInt(args[1])
+    let jumlah = parseRpgMoneyAmount(args[1])
     if (!jumlah || jumlah < 1000) return m.reply(
         `╭─❏「 ❌ DONASI GUILD 」❏\n` +
         `│ ❌ *JUMLAH TIDAK VALID*\n` +

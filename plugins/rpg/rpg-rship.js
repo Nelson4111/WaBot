@@ -6,6 +6,7 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import {
   CHILD_ACTIVITIES,
@@ -494,7 +495,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 
   if (action === 'lamar') {
-    const mahar = Number(args[args.length - 1])
+    const mahar = parseRpgMoneyAmount(args[args.length - 1])
     const genderInput = args[args.length - 2]?.toLowerCase()
     const nama = args.slice(1, -2).join(' ').trim()
     const genderAliases = {
@@ -4819,7 +4820,7 @@ if (action === 'gift') {
       )
     }
     if (['uang', 'money'].includes(step)) {
-      const amount = Number(args[3])
+      const amount = parseRpgMoneyAmount(args[3])
       if (draft.stage !== 'moneyAmount' || !Number.isSafeInteger(amount) || amount <= 0) {
         return m.reply(`❌ Masukkan nominal positif. Contoh: *${usedPrefix}rship gift flow uang 5000000*`)
       }
@@ -4919,7 +4920,7 @@ if (action === 'gift') {
     let totalLove
 
     if (giftType === 'money' || giftType === 'uang') {
-      const nominal = parseInt(args[4])
+      const nominal = parseRpgMoneyAmount(args[4])
 
       if (!nominal || nominal <= 0) return m.reply(
         `╭─❏「 ❌ FORMAT HADIAH 」❏\n` +

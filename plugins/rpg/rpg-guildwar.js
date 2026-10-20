@@ -48,7 +48,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     defenderGuild.buffDefense = defenderGuild.buffDefense || 0
     defenderGuild.buffMagic = defenderGuild.buffMagic || 0
 
-    return executeWar(conn, m, wdb, attackerGuild, defenderGuild, false)
+    return executeWar(conn, m, wdb, attackerGuild, defenderGuild, false, usedPrefix)
   }
 
   // LANJUTAN GUILDWAR BIASA
@@ -118,10 +118,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     money: Math.floor(Math.random() * 5000000) + 1000000
   }
 
-  await executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom)
+  await executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom, usedPrefix)
 }
 
-async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom) {
+async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom, usedPrefix) {
   let myBuff = 0
   if(Date.now() < myGuild.buffAttack) myBuff += 200
   if(Date.now() < myGuild.buffDefense) myBuff += 200

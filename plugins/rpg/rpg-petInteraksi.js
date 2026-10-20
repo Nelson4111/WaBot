@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -566,7 +567,8 @@ if (action === 'battle') {
     `> ↳ Pet ${formatNama(enemyPet.tipe)} target energy < 20%`
   )
 
-  let taruhan = parseInt(args[1]) || 0
+  let taruhan = args[1] === undefined || args[1] === '0' ? Number(args[1] || 0) : parseRpgMoneyAmount(args[1])
+  if (taruhan === null) return m.reply('❌ Nominal taruhan tidak valid. Gunakan nominal angka atau suffix seperti 1M.')
   let uangUser = wdb.money[m.sender] || 0
   let uangTarget = wdb.money[target] || 0
 
