@@ -3470,6 +3470,7 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
       `Nama anak harus terdiri dari 1–30 karakter.\n\n` +
       `> ↳ ${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>`
     )
+    target.child.originalName ||= target.child.nama
     target.child.nama = newName
     await saveDB(wdb)
     return m.reply(

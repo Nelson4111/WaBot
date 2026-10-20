@@ -826,8 +826,10 @@ let handler = async (m, {
   `> ↳ Jika pemilik dan pengasuh sama, status asuh dihapus dan anak menjadi anak sendiri\n` +
   `> ↳ *${usedPrefix}rpgpanel anak @tag* - Lihat anak, shelter, dan nomor pasangan pemilik\n` +
   `> ↳ *${usedPrefix}rpgpanel delanak @tag <no_anak>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* / *pindahanak @tag shelter <no> keluarga*\n` +
+  `> ↳ *${usedPrefix}rpgpanel pindahanak @tag <no> shelter* - Pindahkan anak keluarga ke shelter\n` +
+  `> ↳ *${usedPrefix}rpgpanel pindahanak @tag shelter <no> keluarga* - Keluarkan anak shelter ke keluarga\n` +
   `> ↳ *${usedPrefix}rpgpanel asuhanak @tag [shelter] <no> @pengasuh* / *kembalianak @pengasuh <no>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetnamaanak @pengasuh <no>* - Pulihkan nama sebelum rename jika tersimpan\n` +
   `> ↳ Tag pemilik/pengasuh dapat diisi dengan reply jika salah satu mention dikosongkan.\n` +
   `> ↳ Anak shelter: *setanak @tag shelter <no> ortu <no/nama-pasangan>* untuk atur asal pasangan saat masuk keluarga.\n` +
   `> ↳ Field lain anak shelter: *setanak @tag shelter <no> <nama/gender/umur/carecount/love/biologicalparents> <nilai>* / *delanak @tag shelter <no>*\n\n` +
@@ -2609,7 +2611,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   }
 
 // 5.2 RSHIP ANAK
-  if(['addanak','delanak','setanak','pindahanak','asuhanak','kembalianak'].includes(aksi)){
+  if(['addanak','delanak','setanak','pindahanak','asuhanak','kembalianak','resetnamaanak'].includes(aksi)){
     if (!Array.isArray(user.kids)) user.kids = []
     if (!Array.isArray(user.shelterKids)) user.shelterKids = []
     if (aksi === 'pindahanak') {
@@ -2793,6 +2795,28 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
         { mentions: [who, ownerJid] }
       )
     }
+    if (aksi === 'resetnamaanak') {
+      const childNumber = Number(remaining[0])
+      const child = Number.isInteger(childNumber) && childNumber > 0
+        ? user.kids[childNumber - 1]
+        : null
+      if (!child || child.custody?.type !== 'foster' || !child.originalName) {
+        return m.reply(
+          `❌ Nama asli yang tersimpan tidak ditemukan untuk anak asuh tersebut.\n` +
+          `> ↳ Format: *${usedPrefix}rpgpanel resetnamaanak @pengasuh <no-anak-asuh>*\n` +
+          `> ↳ Jika nama diganti sebelum fitur pencatatan tersedia, atur manual: *${usedPrefix}rpgpanel setanak @pengasuh <no> nama <nama-asli>*.`
+        )
+      }
+      const previousName = child.nama
+      child.nama = child.originalName
+      delete child.originalName
+      await saveDB(wdb)
+      return m.reply(
+        `✅ Nama anak asuh dipulihkan.\n> ↳ Sebelumnya: *${previousName}*\n> ↳ Nama asli: *${child.nama}*`,
+        null,
+        { mentions: [who] }
+      )
+    }
     if(aksi === 'addanak'){
       const shelterTarget = args[0]?.toLowerCase() === 'shelter'
       const nama = args.slice(shelterTarget ? 1 : 0).join(' ').trim()
@@ -2873,6 +2897,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       }
       if (field === 'nama') {
         if (value.length > 60) return m.reply('❌ Nama maksimal 60 karakter.')
+        child.originalName ||= child.nama
         child[field] = value
       } else if (field === 'ortu') {
         const isPartnerNumber = /^\d+$/.test(value)
