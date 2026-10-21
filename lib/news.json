@@ -750,5 +750,13 @@
     "content": "\u003e Bid lelang langsung dipotong dan dikembalikan jika kalah, dengan riwayat bank serta rarity Legendary/Mythic/Secret. Setor, tarik, riwayat, dan gift money mendukung suffix. Heal bisa untuk diri sendiri atau ditawarkan ke pengguna lain lewat konfirmasi.",
     "author": "Eza",
     "createdAt": 1792428600000
+  },
+  {
+    "id": "21.0",
+    "section": "RPG",
+    "title": "Ukuran Ikan dan Totem RPG",
+    "content": "\u003e Ikan kini memiliki ukuran, harga sesuai berat, favorit, dan leaderboard .topfish. Tersedia 60 totem termasuk 5 totem Casino dan 5 efek negatif all; aktif 1 jam, perpanjang dengan totem yang sama.",
+    "author": "Eza",
+    "createdAt": 1792600517000
   }
 ]
