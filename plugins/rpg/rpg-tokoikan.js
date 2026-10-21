@@ -4,6 +4,7 @@ import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory 
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { ensureFishDetails, getFishPriceMultiplier, getFishRecords, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 
 const PASAR_IMAGE = 'https://c.termai.cc/i113/GBR.jpg'
 
@@ -28,7 +29,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!user.inventory) user.inventory = {}
 
   user.ikan = migrateLegacyFishInventory(user.ikan)
-  saveDB(wdb)
+  if (ensureFishDetails(user)) await saveDB(wdb)
 
   const isPrem = global.db.data.users[m.sender]?.premium
   const sellBonus = isPrem ? 1.1 : 1
@@ -193,6 +194,11 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const nomorKeItem = {}
   keys.forEach((k, i) => nomorKeItem[i + 1] = k)
 
+  const getFishBasePrice = (item, records, bonus = sellBonus) =>
+    records.reduce((total, fish) =>
+      total + Math.floor(harga[item].harga * bonus * getFishPriceMultiplier(fish.size)), 0)
+  const getAvailableFish = item => getFishRecords(user, item).filter(fish => !fish.favorite)
+
   function getItemByInput(input) {
     if (input === undefined || input === null || input === '') return null
     if (!isNaN(input)) {
@@ -307,13 +313,23 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     }
     if (pending.entries.some(entry => {
       const inventory = entry.bucket === 'inventory' ? user.inventory : user.ikan
-      return (Number(inventory[entry.item]) || 0) < entry.quantity
+      if (entry.bucket === 'inventory' || isTrashFish(entry.item)) {
+        return (Number(inventory[entry.item]) || 0) < entry.quantity
+      }
+      const records = getFishRecords(user, entry.item)
+      const ids = new Set(records.filter(record => !record.favorite).map(record => record.id))
+      return (entry.fishIds || []).some(id => !ids.has(id)) ||
+        (!entry.fishIds && ids.size < entry.quantity)
     })) {
       delete user.pendingPasarSell
       saveDB(wdb)
       return m.reply('❌ Stok berubah sejak konfirmasi dibuat. Penjualan dibatalkan; buat konfirmasi baru.')
     }
     for (const entry of pending.entries) {
+      if (entry.bucket === 'ikan' && !isTrashFish(entry.item)) {
+        removeFishRecords(user, entry.item, entry.quantity, { ids: entry.fishIds })
+        continue
+      }
       const inventory = entry.bucket === 'inventory' ? user.inventory : user.ikan
       inventory[entry.item] -= entry.quantity
       if (inventory[entry.item] <= 0) delete inventory[entry.item]
@@ -334,13 +350,26 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (args[0] === 'all') {
     const entries = Object.entries(user.ikan)
       .filter(([item, quantity]) => harga[item] && Number.isSafeInteger(Number(quantity)) && Number(quantity) > 0)
-      .map(([item, quantity]) => ({ item, quantity: Number(quantity), bucket: 'ikan' }))
+      .flatMap(([item, quantity]) => {
+        if (isTrashFish(item)) {
+          return [{ item, quantity: Number(quantity), bucket: 'ikan', itemTotal: Math.floor(harga[item].harga * sellBonus) * Number(quantity) }]
+        }
+        const available = getAvailableFish(item)
+        if (!available.length) return []
+        return [{
+          item,
+          quantity: available.length,
+          bucket: 'ikan',
+          fishIds: available.map(fish => fish.id),
+          itemTotal: getFishBasePrice(item, available)
+        }]
+      })
     entries.push(...MOUNT_TRASH
       .filter(({ id }) => harga[id] && Number.isSafeInteger(Number(user.inventory[id])) && Number(user.inventory[id]) > 0)
-      .map(({ id }) => ({ item: id, quantity: Number(user.inventory[id]), bucket: 'inventory' })))
+      .map(({ id }) => ({ item: id, quantity: Number(user.inventory[id]), bucket: 'inventory', itemTotal: Math.floor(harga[id].harga * sellBonus) * Number(user.inventory[id]) })))
     if (!entries.length) return m.reply(`❌ Kamu tidak punya ikan yang bisa dijual.`)
 
-    const baseTotal = entries.reduce((total, entry) => total + Math.floor(harga[entry.item].harga * sellBonus) * entry.quantity, 0)
+    const baseTotal = entries.reduce((total, entry) => total + entry.itemTotal, 0)
     const total = scaleDifficultyIncome(user, baseTotal)
     user.pendingPasarSell = { entries, total, expiresAt: Date.now() + RPG_CONFIRMATION_TTL }
     saveDB(wdb)
@@ -392,17 +421,23 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   const bucket = MOUNT_TRASH.some(({ id }) => id === itemInput) ? 'inventory' : 'ikan'
   const itemStock = bucket === 'inventory' ? user.inventory : user.ikan
-  let stok = itemStock[itemInput] || 0
+  const fishRecords = bucket === 'ikan' && !isTrashFish(itemInput) ? getAvailableFish(itemInput) : []
+  let stok = bucket === 'ikan' && !isTrashFish(itemInput) ? fishRecords.length : itemStock[itemInput] || 0
   if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(itemInput)}`)
 
   let jual = amount === 'all' ? stok : amount
   if (jual > stok) return m.reply(`❌ Stok tidak cukup! Kamu punya ${stok}`)
 
 if (amount === 'all') {
-  const total = scaleDifficultyIncome(user, Math.floor(harga[itemInput].harga * sellBonus) * jual)
+  const selectedRecords = fishRecords.slice(0, jual)
+  const fishIds = selectedRecords.map(fish => fish.id)
+  const baseTotal = bucket === 'ikan' && !isTrashFish(itemInput)
+    ? getFishBasePrice(itemInput, selectedRecords)
+    : Math.floor(harga[itemInput].harga * sellBonus) * jual
+  const total = scaleDifficultyIncome(user, baseTotal)
 
   user.pendingPasarSell = {
-    entries: [{ item: itemInput, quantity: jual, bucket }],
+    entries: [{ item: itemInput, quantity: jual, bucket, ...(fishIds.length ? { fishIds } : {}) }],
     total,
     expiresAt: Date.now() + RPG_CONFIRMATION_TTL
   }
@@ -430,9 +465,16 @@ if (amount === 'all') {
   })
 }
 
-  let hasil = Math.floor(harga[itemInput].harga * sellBonus) * jual
-  itemStock[itemInput] -= jual
-  if (itemStock[itemInput] <= 0) delete itemStock[itemInput]
+  let hasil
+  if (bucket === 'ikan' && !isTrashFish(itemInput)) {
+    const selectedRecords = fishRecords.slice(0, jual)
+    hasil = getFishBasePrice(itemInput, selectedRecords)
+    removeFishRecords(user, itemInput, jual, { ids: selectedRecords.map(fish => fish.id) })
+  } else {
+    hasil = Math.floor(harga[itemInput].harga * sellBonus) * jual
+    itemStock[itemInput] -= jual
+    if (itemStock[itemInput] <= 0) delete itemStock[itemInput]
+  }
   hasil = scaleDifficultyIncome(user, hasil)
   wdb.money[m.sender] += hasil
   saveDB(wdb)

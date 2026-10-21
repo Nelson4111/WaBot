@@ -6,6 +6,7 @@ import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -120,7 +121,12 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   }
 
   // COMMAND ADVENTURE
-  let cooldown = scaleDifficultyCooldown(user, 120000)
+  const cooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'cooldown')
+  const dropBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'dropRate')
+  const yieldBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'yield')
+  const incomeBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'income')
+  const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'xp')
+  let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * cooldownBuff)
   if (Date.now() - (user.lastAdventure || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastAdventure)) / 1000)
     return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
@@ -167,7 +173,7 @@ let handler = async (m, { conn, command, usedPrefix }) => {
 
   while (Object.keys(hasilLoot).length < jumlahLoot) {
     let hance = Math.random() * 100
-    let {item, tier, exp} = rollItem(hance, bonus, advLvl, swordLvl, pickLvl, getDifficultyProfile(user).dropRate)
+    let {item, tier, exp} = rollItem(hance, bonus, advLvl, swordLvl, pickLvl, getDifficultyProfile(user).dropRate * dropBuff)
     if (seen.has(item)) continue
     seen.add(item)
 
@@ -179,6 +185,14 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   }
 
   // === MIGRATE KE 2 TEMPAT ===
+  if (yieldBuff > 1) {
+    for (const item of Object.keys(hasilLoot)) {
+      hasilLoot[item] = Math.max(1, Math.floor(hasilLoot[item] * yieldBuff))
+      for (const tierItems of Object.values(groupedLoot)) {
+        if (tierItems[item] !== undefined) tierItems[item] = hasilLoot[item]
+      }
+    }
+  }
   // 1. Masuk inventory buat.tas
   for(let item in hasilLoot){ user.inventory[item] = (user.inventory[item] || 0) + hasilLoot[item] }
   user.inventory['iron'] = (user.inventory['iron'] || 0) + baseIron + Math.floor(pickLvl / 4)
@@ -188,8 +202,8 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   user.wood = (user.wood || 0) + baseWood + Math.floor(pickLvl / 3)
   user.iron = (user.iron || 0) + baseIron + Math.floor(pickLvl / 4)
 
-  let money = scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60))
-  totalExp = scaleDifficultyXP(user, totalExp)
+  let money = Math.floor(scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)) * incomeBuff)
+  totalExp = Math.floor(scaleDifficultyXP(user, totalExp) * xpBuff)
   totalExp = applyBloodlineBuff(user, 'xp', totalExp)
   addRpgExp(user, totalExp)
   user.adventureExp = (Number(user.adventureExp) || 0) + totalExp

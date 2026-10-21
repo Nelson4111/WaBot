@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgConfirmButtons, sendRpgListButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS, getAuctionItemRarity } from '../../lib/rpg-auctionData.js'
@@ -673,13 +673,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       message: m,
       quoted: m,
       footer: '',
-      title: '🔨 AUCTION HOUSE',
-      subtitle: 'Temukan barang langka dan ajukan bid',
       text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
       buttons: rows.map(row => [row.title, row.id]),
       fallbackText,
       thumbnailUrl: AUCTION_IMAGE,
-      noHeader: false
+      noHeader: true
     })
   }
 
@@ -826,22 +824,20 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> 💳 ${prefix}money — cek saldo\n` +
       `> 🔤 ${prefix}money suffix — cek daftar sufiks\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return sendRpgListButton(conn, m, {
-      title: '🔨 AUCTION HOUSE',
-      subtitle: 'Pilih item untuk melihat atau mengajukan bid',
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
       footer: '',
       text: auctionText,
-      buttonText: '📋 PILIH ITEM LELANG',
-      sections: [{
-        title: 'Item lelang dan menu',
-        rows: [
-          ...rows,
-          { title: '💳 Cek saldo', description: 'Lihat saldo uangmu', id: `${prefix}money` },
-          { title: '🔤 Daftar sufiks uang', description: 'Lihat daftar sufiks nominal', id: `${prefix}money suffix` }
-        ]
-      }],
+      buttons: [
+        ...rows.map(row => [row.title, row.id]),
+        ['💳 Cek saldo', `${prefix}money`],
+        ['🔤 Daftar sufiks uang', `${prefix}money suffix`]
+      ],
       fallbackText: auctionText,
-      thumbnailUrl: AUCTION_IMAGE
+      thumbnailUrl: AUCTION_IMAGE,
+      noHeader: true
     })
   }
 

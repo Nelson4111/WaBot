@@ -7,6 +7,7 @@ import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/le
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -31,6 +32,9 @@ let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
   if (!user) return safeReply('Ketik.adventure dulu buat daftar RPG.')
+  const totemIncome = amount => Math.floor(scaleDifficultyIncome(user, amount) *
+    getGroupTotemBuff(wdb.data, m.chat, 'pet', 'income'))
+  const petCooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'pet', 'cooldown')
   if (!user.pets) user.pets = []
   const maxPetSlots = user.premium ? 15 : 10
 // init data baru
@@ -620,7 +624,7 @@ const getCooldown = (base, user) => {
 
   let hasil = base * multi - reduce
   if(user.pets.some(p => p.tipe === 'jack_o_lantern')) hasil -= 10000
-  return scaleDifficultyCooldown(user, Math.max(10000, hasil))
+  return Math.floor(scaleDifficultyCooldown(user, Math.max(10000, hasil)) * petCooldownBuff)
 }
 
 const formatCooldown = (ms) => {
@@ -660,7 +664,7 @@ if (action === 'care') {
   if (!user.pets.length) return safeReply('❌ Kamu belum memiliki pet.')
   if (user.pets.some(pet => pet.tipe === 'vampir') && !isMalam) return safeReply('🧛 Pet vampir hanya bisa dirawat pada pukul 18:00-05:59 WIB.')
 
-  const cooldown = 30 * 60 * 1000
+  const cooldown = Math.floor(30 * 60 * 1000 * petCooldownBuff)
   const remaining = cooldown - (Date.now() - (Number(user.cooldown.petcare) || 0))
   if (remaining > 0) return safeReply(`⏳ Cooldown *.pet care* tersisa ${Math.ceil(remaining / 60000)} menit.`)
 
@@ -688,9 +692,9 @@ if (action === 'care') {
       pet.exp = (Number(pet.exp) || 0) + applyPetFestivalExp(expGain)
       pet.energy = Math.min(100, (Number(pet.energy) || 100) + 20 + (pet.tipe === 'mermaid' ? 10 : 0) + (skill.energyBonus || 0))
       pet.happy = Math.min(100, (Number(pet.happy) || 50) + 5 + (skill.happyBonus || 0))
-      if (pet.tipe === 'alien') wdb.money[m.sender] += scaleDifficultyIncome(user, 1000 * (Number(pet.level) || 1))
-      if (pet.tipe === 'poop') wdb.money[m.sender] += scaleDifficultyIncome(user, 2000)
-      if (skill.moneyBonus > 0) wdb.money[m.sender] += scaleDifficultyIncome(user, skill.moneyBonus)
+      if (pet.tipe === 'alien') wdb.money[m.sender] += totemIncome(1000 * (Number(pet.level) || 1))
+      if (pet.tipe === 'poop') wdb.money[m.sender] += totemIncome(2000)
+      if (skill.moneyBonus > 0) wdb.money[m.sender] += totemIncome(skill.moneyBonus)
       if (pet.exp >= 100) { pet.level = (Number(pet.level) || 1) + 1; pet.exp = 0 }
       pet.lastFeed = now
     }
@@ -731,8 +735,8 @@ if (action === 'all') {
   const now = Date.now()
   let huntExp = Math.floor(Math.random() * 30) + 10
   const huntMoneyMulti = user.pets.reduce((total, pet) => total * (applySkill(pet, 'hunt').moneyMulti || 1), 1)
-  const huntMoney = scaleDifficultyIncome(user, Math.floor((Math.floor(Math.random() * 50000) + 10000) * huntMoneyMulti))
-  const dispatchMoney = scaleDifficultyIncome(user, Math.floor(Math.random() * 100000) + 50000)
+  const huntMoney = totemIncome(Math.floor((Math.floor(Math.random() * 50000) + 10000) * huntMoneyMulti))
+  const dispatchMoney = totemIncome(Math.floor(Math.random() * 100000) + 50000)
   const levelUps = []
 
   user.pets.forEach(pet => {
@@ -1347,9 +1351,9 @@ if (action === 'feed') {
       p.exp = (p.exp || 0) + expGain
       p.energy = Math.min(100, (p.energy || 100) + energyGain)
 
-      if(p.tipe === 'alien') wdb.money[m.sender] += scaleDifficultyIncome(user, 1000 * p.level)
-      if(p.tipe === 'poop') wdb.money[m.sender] += scaleDifficultyIncome(user, 2000)
-      if(feedSkill.moneyBonus > 0) wdb.money[m.sender] += scaleDifficultyIncome(user, feedSkill.moneyBonus)
+      if(p.tipe === 'alien') wdb.money[m.sender] += totemIncome(1000 * p.level)
+      if(p.tipe === 'poop') wdb.money[m.sender] += totemIncome(2000)
+      if(feedSkill.moneyBonus > 0) wdb.money[m.sender] += totemIncome(feedSkill.moneyBonus)
 
       p.lastFeed = Date.now()
       if (p.exp >= 100) { p.level = (p.level || 1) + 1; p.exp = 0; naik.push(p) }
@@ -2516,7 +2520,7 @@ if (action === 'hunt') {
   let exp = Math.floor(Math.random() * 30) + 10
   let huntMoneyMulti = user.pets.reduce((acc, p) => acc * (applySkill(p, 'hunt').moneyMulti || 1), 1)
 
-  hasil = scaleDifficultyIncome(user, Math.floor(hasil * huntMoneyMulti))
+  hasil = totemIncome(Math.floor(hasil * huntMoneyMulti))
   wdb.money[m.sender] += hasil
 
   user.pets.forEach(p => {
@@ -2593,7 +2597,7 @@ if (action === 'dispatch') {
   )
 
   const now = Date.now()
-  const hasil = scaleDifficultyIncome(user, Math.floor(Math.random() * 100000) + 50000)
+  const hasil = totemIncome(Math.floor(Math.random() * 100000) + 50000)
   user.cooldown.petdispatch = now
   user.pendingPetDispatch = [{ startedAt: now, readyAt: now + 1800000, money: hasil }]
   saveDB(wdb)
@@ -2974,7 +2978,7 @@ if (action === 'claim') {
     `─━━━━━━━━━━━━━━─`
   )
 
-  uang = scaleDifficultyIncome(user, uang)
+  uang = totemIncome(uang)
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uang
   saveDB(wdb)
 

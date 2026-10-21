@@ -2,6 +2,7 @@ import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionBu
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
@@ -264,9 +265,11 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let hasil = dapatkanHasil(h).ambil
     const hasilDisplay = getHasilDisplay(hasil)
     const productivity = isRpgEventActive('livestock_disease') ? 0.7 : 1
-    const production = Math.max(1, Math.floor(user.ternak[hewan1] * productivity))
+    const yieldBuff = getGroupTotemBuff(wdb.data, m.chat, 'livestock', 'yield')
+    const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'livestock', 'xp')
+    const production = Math.max(1, Math.floor(user.ternak[hewan1] * productivity * yieldBuff))
     user.inventory[hasil] = (user.inventory[hasil] || 0) + production
-    let exp = scaleDifficultyXP(user, h.exp * production)
+    let exp = Math.floor(scaleDifficultyXP(user, h.exp * production) * xpBuff)
     user.exp += exp
     saveDB(wdb)
 

@@ -8,6 +8,7 @@ import { sendRpgButtons, sendRpgConfirmButtons, sendRpgQuickButton, sendRpgRegis
 import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
 import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import { getRpgWibDateKey, getRpgWibWeekKey } from '../../lib/rpgTime.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -1894,7 +1895,8 @@ if (elapsed < cooldownDuration) {
   const balanceBefore = Number(wdb.money[m.sender]) || 0
   let blackoutLoss = 0
   const winFactor = (isRpgEventActive('golden_hour') ? 1.2 : 1) *
-    (isRpgEventActive('low_stakes') ? 0.5 : 1)
+    (isRpgEventActive('low_stakes') ? 0.5 : 1) *
+    getGroupTotemBuff(wdb.data, m.chat, 'casino', 'income')
   let payout = result.payoutDenied
     ? 0
     : result.multiplier > 0

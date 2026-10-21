@@ -3,6 +3,7 @@ import { adjustAbilityDropChance, adjustDifficultyFailureChance, getDifficultyPr
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -67,8 +68,13 @@ let handler = async (m, { conn, usedPrefix }) => {
   // COOLDOWN
   const mineralRush = isRpgEventActive('mineral_rush')
   const caveCollapse = isRpgEventActive('cave_collapse')
-  const rareChanceFactor = (mineralRush ? 1.5 : 1) * (caveCollapse ? 0.75 : 1) * getDifficultyProfile(user).dropRate
-  let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * (caveCollapse ? 1.3 : 1))
+  const cooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'mining', 'cooldown')
+  const rareBuff = getGroupTotemBuff(wdb.data, m.chat, 'mining', 'rareChance')
+  const yieldBuff = getGroupTotemBuff(wdb.data, m.chat, 'mining', 'yield')
+  const incomeBuff = getGroupTotemBuff(wdb.data, m.chat, 'mining', 'income')
+  const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'mining', 'xp')
+  const rareChanceFactor = (mineralRush ? 1.5 : 1) * (caveCollapse ? 0.75 : 1) * getDifficultyProfile(user).dropRate * rareBuff
+  let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * (caveCollapse ? 1.3 : 1) * cooldownBuff)
   if (Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
     return m.reply(`╭─❏「 ⛏️ MINING 」❏\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n╰─━━━━━━━━━━━━━━─`)
@@ -124,6 +130,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   for (const ore of Object.keys(hasilTambang)) {
     hasilTambang[ore] = applyBloodlineYield(user, 'miningYield', hasilTambang[ore])
+    hasilTambang[ore] = Math.floor(hasilTambang[ore] * yieldBuff)
     if (caveCollapse) hasilTambang[ore] = Math.max(1, Math.floor(hasilTambang[ore] * 0.7))
   }
   totalOreDidapat = Object.values(hasilTambang).reduce((sum, amount) => sum + amount, 0)
@@ -133,8 +140,8 @@ let handler = async (m, { conn, usedPrefix }) => {
     user.ores[ore] = (user.ores[ore] || 0) + hasilTambang[ore]
   }
 
-  totalExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp))
-  let uangDidapat = scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat)
+  totalExp = Math.floor(applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp)) * xpBuff)
+  let uangDidapat = Math.floor(scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat) * incomeBuff)
   wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uangDidapat
   addRpgExp(user, totalExp)
   user.lastMining = Date.now()

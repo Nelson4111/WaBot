@@ -1,5 +1,6 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
@@ -150,7 +151,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
 
   let info = bibit[jenis]
-  const plantingDuration = scaleDifficultyCooldown(user, info.waktu) * (isRpgEventActive('crop_blight') ? 1.25 : 1)
+  const plantingDuration = scaleDifficultyCooldown(user, info.waktu) *
+    getGroupTotemBuff(wdb.data, m.chat, 'farming', 'cooldown') *
+    (isRpgEventActive('crop_blight') ? 1.25 : 1)
   let hargaFinal = Math.floor(info.harga * buyDiscount)
   let userMoney = wdb.money[m.sender] || 0
 

@@ -2,6 +2,7 @@ import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/wa
 import { scaleDifficultyCooldown, scaleDifficultyHarvest, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
@@ -124,9 +125,11 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   function addItem(user, item, jumlah) {
     const amount = Math.max(0, Number(jumlah) || 0)
     if(item === 'money') {
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + scaleDifficultyIncome(user, amount)
+      const incomeBuff = getGroupTotemBuff(wdb.data, m.chat, 'farming', 'income')
+      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + Math.floor(scaleDifficultyIncome(user, amount) * incomeBuff)
     } else if(item === 'exp') {
-      user.exp = (Number(user.exp) || 0) + scaleDifficultyXP(user, amount)
+      const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'farming', 'xp')
+      user.exp = (Number(user.exp) || 0) + Math.floor(scaleDifficultyXP(user, amount) * xpBuff)
     } else {
       user.inventory[item] = (Number(user.inventory[item]) || 0) + amount
     }
@@ -139,6 +142,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       if (Math.random() < 0.25) harvested++
     }
     if (isRpgEventActive('crop_blight')) harvested = Math.max(1, Math.floor(harvested * 0.7))
+    harvested = Math.max(1, Math.floor(harvested * getGroupTotemBuff(wdb.data, m.chat, 'farming', 'yield')))
     return harvested
   }
 
@@ -242,7 +246,8 @@ if (text.toLowerCase() === 'all') {
     `─━━━━━━━━━━━━━━─`
   )
 
-  totalExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp))
+  totalExp = Math.floor(applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp)) *
+    getGroupTotemBuff(wdb.data, m.chat, 'farming', 'xp'))
   user.exp += totalExp
   cekLevelUp(user)
   await saveDB(wdb)
@@ -338,7 +343,8 @@ if (sisaWaktu <= 0) {
   let h = dataBibit.hasil
   const harvested = applyFarmingYieldBonus(h.jumlah)
   addItem(user, h.item, harvested)
-  const earnedExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, dataBibit.exp))
+  const earnedExp = Math.floor(applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, dataBibit.exp)) *
+    getGroupTotemBuff(wdb.data, m.chat, 'farming', 'xp'))
   user.exp += earnedExp
   cekLevelUp(user)
   delete user.ladang[slotAsli]

@@ -2,6 +2,7 @@
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { sendRpgButtons, sendRpgExpActivityList, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 import {
   JOBS,
@@ -1170,7 +1171,8 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 ─━━━━━━━━━━━━━━─`)
     }
 
-    const jobCooldown = scaleDifficultyCooldown(userRPG, JOB_WORK_COOLDOWN_MS * selectedJobs.length)
+    const jobCooldown = Math.floor(scaleDifficultyCooldown(userRPG, JOB_WORK_COOLDOWN_MS * selectedJobs.length) *
+      getGroupTotemBuff(wdb.data, m.chat, 'work', 'cooldown'))
     const attendanceMultiplier = getAttendanceMultiplier(userRPG, now)
     let totalMoney = 0
     let totalExp = 0
@@ -1197,6 +1199,8 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
       return { job, progress, beforeTitle, afterTitle, earnedMoney, earnedExp }
     })
 
+    totalMoney = Math.floor(totalMoney * getGroupTotemBuff(wdb.data, m.chat, 'work', 'income'))
+    totalExp = Math.floor(totalExp * getGroupTotemBuff(wdb.data, m.chat, 'work', 'xp'))
     wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + totalMoney
     userRPG.exp = Number(userRPG.exp || 0) + totalExp
     userRPG.lastkerja = now

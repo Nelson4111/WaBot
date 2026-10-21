@@ -4,6 +4,8 @@ import { generateFishingCard } from '../../lib/cardGenerator.js'
 import { applyBloodlineBuff, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { addFishRecord, ensureFishDetails, rollFishSize } from '../../lib/rpg-fishSizes.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -114,6 +116,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (!user.ikan) user.ikan = {}
 
   user.ikan = migrateLegacyFishInventory(user.ikan)
+  ensureFishDetails(user)
 
   for (const ikanLama in user.ikan) {
     if (ikanLama.includes(' ')) {
@@ -127,7 +130,12 @@ let handler = async (m, { conn, usedPrefix }) => {
   const luckyCatch = isRpgEventActive('lucky_catch')
   const secretAwakening = isRpgEventActive('secret_awakening')
   const doubleCatch = isRpgEventActive('double_catch')
-  let cooldown = Math.floor(scaleDifficultyCooldown(user, 60000) * (murkyWaters ? 1.25 : 1))
+  const giantFish = isRpgEventActive('giant_fish')
+  const cooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'fishing', 'cooldown')
+  const yieldBuff = getGroupTotemBuff(wdb.data, m.chat, 'fishing', 'yield')
+  const rareBuff = getGroupTotemBuff(wdb.data, m.chat, 'fishing', 'rareChance')
+  const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'fishing', 'xp')
+  let cooldown = Math.floor(scaleDifficultyCooldown(user, 60000) * (murkyWaters ? 1.25 : 1) * cooldownBuff)
   if (Date.now() - (user.lastMancing || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMancing)) / 1000)
     return m.reply(`Sabar, ikan belum makan umpan. Tunggu ${sisa} detik lagi`)
@@ -151,12 +159,13 @@ let handler = async (m, { conn, usedPrefix }) => {
   let pCommon = Math.max(15.0, 30.0 - (rodLvl * 0.8))
   const rareChanceFactor = (luckyCatch ? 1.5 : 1) * (murkyWaters ? 0.6 : 1) * getDifficultyProfile(user).dropRate
   pSecret *= (secretAwakening ? 2 : 1) * (luckyCatch ? 1.5 : 1)
-  pMythic *= rareChanceFactor
-  pLegend *= rareChanceFactor
-  pEpic *= rareChanceFactor
-  pRare *= rareChanceFactor
+  pMythic *= rareChanceFactor * rareBuff
+  pLegend *= rareChanceFactor * rareBuff
+  pEpic *= rareChanceFactor * rareBuff
+  pRare *= rareChanceFactor * rareBuff
 
-  const fishCount = 2 + Math.floor(Math.random() * 3)
+  const fishCount = 2 + Math.floor(Math.random() * 3) +
+    (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)
   const draws = []
   const seen = new Set()
   let attempts = 0
@@ -205,6 +214,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
     if (fish.tier === 'TRASH' || seen.has(fish.ikan)) continue
 
+    fish.size = rollFishSize({ giantAllowed: giantFish, giantChance: giantFish ? 0.005 : 0 })
     seen.add(fish.ikan)
     draws.push(fish)
   }
@@ -214,6 +224,9 @@ let handler = async (m, { conn, usedPrefix }) => {
     for (let attempt = 0; attempt < 200; attempt++) {
       const candidate = pickFish()
       if (!seen.has(candidate.ikan)) {
+        if (candidate.tier !== 'TRASH') {
+          candidate.size = rollFishSize({ giantAllowed: giantFish, giantChance: giantFish ? 0.005 : 0 })
+        }
         extraFish = candidate
         break
       }
@@ -226,11 +239,15 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
   const highest = draws.reduce((best, current) => tierOrder.indexOf(current.tier) > tierOrder.indexOf(best) ? current.tier : best, 'TRASH')
-  const totalExp = applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0)))
+  const totalExp = applyBloodlineBuff(user, 'xp', Math.floor(scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0)) * xpBuff))
 
   for (const fish of draws) {
     const normalizedKey = normalizeFishKey(fish.ikan)
-    user.ikan[normalizedKey] = (user.ikan[normalizedKey] || 0) + 1
+    if (fish.tier === 'TRASH') {
+      user.ikan[normalizedKey] = (user.ikan[normalizedKey] || 0) + 1
+    } else {
+      addFishRecord(user, normalizedKey, fish.size || rollFishSize({ giantAllowed: giantFish, giantChance: giantFish ? 0.005 : 0 }))
+    }
   }
   addRpgExp(user, totalExp)
   user.lastMancing = Date.now()

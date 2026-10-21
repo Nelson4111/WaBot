@@ -2,6 +2,7 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { masakanResep, normalizeMasakanKey, formatMasakanNama, resepEmoji, deskripsiMakanan } from '../../lib/rpg-masakanData.js'
+import { ensureFishDetails, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -9,6 +10,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let user = data.rpg
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
   if(!user.ikan) user.ikan = {}
+  ensureFishDetails(user)
   if(!user.inventory) user.inventory = {}
   if(!user.dapur) user.dapur = { slot: 1, antrian: [] }
 
@@ -53,8 +55,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
   function kurangiItem(nama, jumlah){
     nama = nama.replace(/ /g, '_')
-    if(user.ikan[nama]!== undefined) user.ikan[nama] -= jumlah
-    else user.inventory[nama] -= jumlah
+    if(user.ikan[nama]!== undefined) {
+      if (isTrashFish(nama)) {
+        user.ikan[nama] -= jumlah
+        if (user.ikan[nama] <= 0) delete user.ikan[nama]
+      } else {
+        removeFishRecords(user, nama, jumlah, { includeFavorites: true })
+      }
+    } else user.inventory[nama] -= jumlah
   }
   function punyaBahan(bahan) {
     for(let item in bahan) {

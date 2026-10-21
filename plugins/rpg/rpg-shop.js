@@ -5,6 +5,7 @@ import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
+import { ensureFishDetails, getFishPriceMultiplier, getFishRecords, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -54,7 +55,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const buyDiskon = isPrem ? 0.8 : 1
 
   user.ikan = migrateLegacyFishInventory(user.ikan)
-  saveDB(wdb)
+  if (ensureFishDetails(user)) await saveDB(wdb)
 
    const hargaBeli = {
     'iron': { emoji: '⛓️', harga: 10000 },
@@ -93,7 +94,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   function getAllItems() {
     const semuaItem = {}
     for (const item in user.inventory) if (!['uang', 'money'].includes(item) && (user.inventory[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.inventory[item]
-    for (const item in user.ikan) if ((user.ikan[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.ikan[item]
+    for (const item in user.ikan) {
+      const quantity = isTrashFish(item)
+        ? Number(user.ikan[item]) || 0
+        : getFishRecords(user, item).filter(fish => !fish.favorite).length
+      if (quantity > 0) semuaItem[item] = (semuaItem[item] || 0) + quantity
+    }
     for (const item in user.ores) if ((user.ores[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.ores[item]
     for (const item in user.masakan) if ((user.masakan[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.masakan[item]
     return semuaItem
@@ -234,6 +240,13 @@ if (mode === 'guide') {
   if (isJualAll) {
     const semuaItem = getAllItems()
     if (Object.keys(semuaItem).length === 0) return m.reply('❌ Kamu tidak punya item yang bisa dijual.')
+    const fishIds = {}
+    for (const item of Object.keys(semuaItem)) {
+      if (!user.ikan[item] || isTrashFish(item)) continue
+      fishIds[item] = getFishRecords(user, item)
+        .filter(fish => !fish.favorite)
+        .map(fish => fish.id)
+    }
 
     let cap = `╭─❏「 ⚠️ KONFIRMASI JUAL SEMUA 」❏\n`
     cap += `│ 📦 Total jenis item: ${Object.keys(semuaItem).length}\n`
@@ -246,7 +259,7 @@ if (mode === 'guide') {
     cap += `❌ Ketik *${usedPrefix || '.'}jual tidak* untuk batal\n`
     cap += `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
 
-    user.jualAllConfirm = { items: semuaItem, time: Date.now() }
+    user.jualAllConfirm = { items: semuaItem, fishIds, time: Date.now() }
     saveDB(wdb)
     return sendRpgConfirmButtons(conn, m, {
       text: cap,
@@ -334,6 +347,16 @@ if (mode === 'guide') {
 
     const hargaGabungNorm = Object.fromEntries(Object.entries(hargaGabung).map(([key, value]) => [normalizeFishKey(key), value]))
 
+    for (const [name, ids] of Object.entries(user.jualAllConfirm.fishIds || {})) {
+     const records = getFishRecords(user, name)
+     const currentIds = new Set(records.filter(fish => !fish.favorite).map(fish => fish.id))
+     if (ids.some(id => !currentIds.has(id))) {
+       delete user.jualAllConfirm
+       await saveDB(wdb)
+       return m.reply('❌ Daftar ikan berubah atau ada ikan yang dijadikan favorit. Tidak ada item yang dijual; jalankan ulang perintah jual.')
+     }
+    }
+
     let totalDapat = 0
     let totalStellarCredit = 0
     let terjual = 0
@@ -344,7 +367,14 @@ if (mode === 'guide') {
       const interstellarPrice = interstellarSellMap[nama] || interstellarSellMap[cleanNama]
       const hrgSatuan = interstellarPrice ?? (hargaGabungNorm[cleanNama] || hargaGabung[nama] || 1000)
       if (hrgSatuan > 0) {
-        const earned = Math.floor(hrgSatuan * sellBonus) * jumlah
+        const fishIds = user.jualAllConfirm.fishIds?.[cleanNama]
+        const selectedFish = fishIds
+          ? getFishRecords(user, cleanNama).filter(fish => fishIds.includes(fish.id))
+          : []
+        const earned = selectedFish.length
+          ? selectedFish.reduce((sum, fish) =>
+            sum + Math.floor(hrgSatuan * sellBonus * getFishPriceMultiplier(fish.size)), 0)
+          : Math.floor(hrgSatuan * sellBonus) * jumlah
         if (interstellarPrice) {
           totalStellarCredit += earned
           user.inventory[STELLAR_CREDIT.id] = (Number(user.inventory[STELLAR_CREDIT.id]) || 0) + earned
@@ -354,7 +384,14 @@ if (mode === 'guide') {
         terjual++
       }
       if (user.inventory) delete user.inventory[nama]
-      if (user.ikan) delete user.ikan[cleanNama]
+      if (user.ikan && user.ikan[cleanNama] !== undefined) {
+        if (fishIds && !isTrashFish(cleanNama)) {
+          removeFishRecords(user, cleanNama, jumlah, { ids: fishIds })
+        } else {
+          delete user.ikan[cleanNama]
+          delete user.fishDetails?.[cleanNama]
+        }
+      }
       if (user.ores) delete user.ores[nama]
       if (user.masakan) delete user.masakan[nama]
     }

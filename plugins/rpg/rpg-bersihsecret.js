@@ -1,4 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
 
 let secret = ['poseidon', 'flying dutchman', 'aquaman', 'godzilla', 'zeus laut', 'atlas laut', 'kitsune laut', 'leviathan primordial', 'davy jones', 'caylpso', 'ariel little mermaid', 'treasure chest', 'ancient relic', 'pirate gold', 'mermaid tear']; // PAKE SPASI
 
@@ -24,6 +25,7 @@ let handler = async (m, { conn }) => {
         totalIkan += u.ikan[namaIkan]
         kehapus += u.ikan[namaIkan]
         delete u.ikan[namaIkan]
+        delete u.fishDetails?.[normalizeFishKey(namaIkan)]
       }
     }
     if(kehapus > 0) totalUser++

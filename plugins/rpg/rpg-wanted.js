@@ -126,17 +126,12 @@ let handler = async (m, { conn, args, isOwner, groupMetadata, usedPrefix }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      title: '🚨 PUSAT DATA KRIMINAL',
-      subtitle: 'Pantau aktivitas dan riwayat kriminal Kota Avelia',
       text: overviewText,
-      buttonText: '📋 JELAJAHI DATA KRIMINAL',
-      sections: [{
-        title: 'Pilih tampilan data',
-        rows: [
-          { title: '🚨 Kriminal aktif', description: 'Lihat pemain dengan poin kriminal aktif saat ini', id: `${usedPrefix}kriminal list` },
-          { title: '🏆 Top riwayat kriminal', description: 'Peringkat total poin, termasuk riwayat yang telah direhabilitasi', id: `${usedPrefix}kriminal top` }
-        ]
-      }],
+      footer: '',
+      buttons: [
+        ['🚨 Kriminal aktif', `${usedPrefix}kriminal list`],
+        ['🏆 Top riwayat kriminal', `${usedPrefix}kriminal top`]
+      ],
       fallbackText: `${overviewText}\n\n📌 *PILIHAN*\n> ↳ Kriminal aktif: *${usedPrefix}kriminal list*\n> ↳ Top riwayat kriminal: *${usedPrefix}kriminal top*`,
       noThumbnail: true,
       noHeader: true
@@ -168,11 +163,9 @@ let handler = async (m, { conn, args, isOwner, groupMetadata, usedPrefix }) => {
       chat: m.chat,
       message: m,
       quoted: m,
-      title: '🚨 PUSAT DATA KRIMINAL',
-      subtitle: 'Pilih informasi kriminal yang ingin kamu telusuri',
       text: 'Pantau aktivitas kriminal, statistik, dan sistem patroli kota.',
-      buttonText: '🚨 BUKA DATA KRIMINAL',
-      sections: [{ title: 'Informasi kriminal', rows }],
+      footer: '',
+      buttons: rows.map(row => [row.title, row.id]),
       noThumbnail: true,
       noHeader: true,
       fallbackText

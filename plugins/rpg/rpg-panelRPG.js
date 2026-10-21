@@ -34,6 +34,7 @@ import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
 import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '../../lib/rpgJobData.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
+import { ensureFishDetails, isTrashFish, removeFishRecords, setFishRecordSize } from '../../lib/rpg-fishSizes.js'
 
 import fs from 'fs'
 
@@ -871,6 +872,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel del @tag <item> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addikan @tag <nama_ikan> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delikan @tag <nama_ikan> <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setfishsize @tag/reply <nama_ikan> <nomor-jenis> <small|medium|big|giant> [berat_Kg]*\n` +
   `> ↳ *${usedPrefix}rpgpanel addore @tag <nama_ore> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel delore @tag <nama_ore> <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel addmasak @tag <nama_masakan> <jml>*\n` +
@@ -2387,6 +2389,7 @@ let handler = async (m, {
       else if(user.masakan[item]!== undefined) kat = 'masakan'
 
       user[kat][item] = (user[kat][item] || 0) + jumlah
+      if (kat === 'ikan') ensureFishDetails(user)
       saveDB(wdb)
       return m.reply(`✅ *TAMBAH ITEM*\n@${who.split('@')[0]}\n${formatNama(item)} +${jumlah}\nTotal: ${user[kat][item]}`, null, {mentions: [who]})
     }
@@ -2398,29 +2401,74 @@ let handler = async (m, {
       else if(user.items[item]!== undefined) kat = 'items'
       else if(user.masakan[item]!== undefined) kat = 'masakan'
       if(!user[kat][item]) return m.reply(`❌ Tidak punya ${formatNama(item)}`, null, {mentions: [who]})
-      user[kat][item] = Math.max(0, user[kat][item] - jumlah)
+      if (kat === 'ikan') {
+        const fishCount = Math.min(Number(user.ikan[item]) || 0, jumlah)
+        if (isTrashFish(item)) user.ikan[item] = Math.max(0, (Number(user.ikan[item]) || 0) - fishCount)
+        else removeFishRecords(user, item, fishCount, { includeFavorites: true })
+      } else {
+        user[kat][item] = Math.max(0, user[kat][item] - jumlah)
+      }
       if(user[kat][item] <= 0) delete user[kat][item]
+      if (kat === 'ikan' && !user.ikan[item]) delete user.fishDetails?.[item]
       saveDB(wdb)
       return m.reply(`✅ *HAPUS ITEM*\n@${who.split('@')[0]}\n${formatNama(item)} -${jumlah}`, null, {mentions: [who]})
     }
-    if(aksi === 'wipe'){ user.inventory = {}; user.ikan = {}; user.ores = {}; user.items = {}; user.masakan = {}; saveDB(wdb); return m.reply(`🧹 *WIPE GUDANG*\n@${who.split('@')[0]}`, null, {mentions: [who]}) }
+    if(aksi === 'wipe'){ user.inventory = {}; user.ikan = {}; user.fishDetails = {}; user.ores = {}; user.items = {}; user.masakan = {}; saveDB(wdb); return m.reply(`🧹 *WIPE GUDANG*\n@${who.split('@')[0]}`, null, {mentions: [who]}) }
     if(aksi === 'cek'){ let allItems = {...user.inventory,...user.ikan,...user.ores,...user.items,...user.masakan}; if(Object.keys(allItems).length === 0) return m.reply(`🏚️ Gudang kosong`, null, {mentions: [who]}); let sorted = Object.entries(allItems).sort((a,b) => b[1] - a[1]); let cap = `*───「 📦 GUDANG @${who.split('@')[0]} 」───*\n`; sorted.forEach(([n,j]) => cap += `├ ${formatNama(n)} x${j.toLocaleString()}\n`); return sendPanelResponse({ text: cap, mentions: [who] }) }
   }
   
   // 4.5 IKAN
+  if (aksi === 'setfishsize') {
+    const values = [...remaining]
+    let weight
+    if (values.length >= 4 && /^-?\d+(?:\.\d+)?$/.test(values[values.length - 1])) {
+      weight = Number(values.pop())
+    }
+    const size = String(values.pop() || '').toLowerCase()
+    const fishIndex = Number(values.pop())
+    const fishName = normalizeFishKey(values.join('_'))
+    if (!fishName || !Number.isSafeInteger(fishIndex) || fishIndex < 1) {
+      return m.reply(`Format: *${usedPrefix}rpgpanel setfishsize @tag/reply <nama_ikan> <nomor-jenis> <small|medium|big|giant> [berat_Kg]*`)
+    }
+    if (!['small', 'medium', 'big', 'giant'].includes(size)) {
+      return m.reply('❌ Ukuran harus small, medium, big, atau giant.')
+    }
+    ensureFishDetails(user)
+    const result = setFishRecordSize(user, fishName, fishIndex, size, weight)
+    if (!result) {
+      return m.reply(`❌ @${who.split('@')[0]} tidak memiliki ikan nomor ${fishIndex} untuk ${formatNama(fishName)}.`, null, { mentions: [who] })
+    }
+    if (result.invalidWeight) {
+      return m.reply(`❌ Berat untuk ukuran ${size} harus ${result.range[0]}-${result.range[1]} Kg.`)
+    }
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Ukuran ikan @${who.split('@')[0]} berhasil diatur.\n` +
+      `> ↳ ${formatNama(fishName)} #${fishIndex}: *${result.size} · ${result.weight.toFixed(2)} Kg*`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
   if(['addikan','delikan'].includes(aksi)){
     if(!itemInput || jumlah < 1) return m.reply(`Contoh: *${usedPrefix}rpgpanel addikan @user kraken 5*`)
     let ikan = normalizeFishKey(itemInput.toLowerCase().replace(/ /g, '_'))
 
     if(aksi === 'addikan'){
       user.ikan[ikan] = (user.ikan[ikan] || 0) + jumlah
+      ensureFishDetails(user)
       saveDB(wdb)
       return m.reply(`✅ *TAMBAH IKAN*\n@${who.split('@')[0]}\n${formatNama(ikan)} +${jumlah}\nTotal: ${user.ikan[ikan]}`, null, {mentions: [who]})
     }
     if(aksi === 'delikan'){
       if(!user.ikan[ikan]) return m.reply(`❌ Tidak punya ${formatNama(ikan)}`, null, {mentions: [who]})
-      user.ikan[ikan] = Math.max(0, user.ikan[ikan] - jumlah)
-      if(user.ikan[ikan] <= 0) delete user.ikan[ikan]
+      const fishCount = Math.min(Number(user.ikan[ikan]) || 0, jumlah)
+      if (isTrashFish(ikan)) {
+        user.ikan[ikan] = Math.max(0, (Number(user.ikan[ikan]) || 0) - fishCount)
+      } else {
+        removeFishRecords(user, ikan, fishCount, { includeFavorites: true })
+      }
+      if (!user.ikan[ikan]) delete user.ikan[ikan]
       saveDB(wdb)
       return m.reply(`✅ *HAPUS IKAN*\n@${who.split('@')[0]}\n${formatNama(ikan)} -${jumlah}`, null, {mentions: [who]})
     }

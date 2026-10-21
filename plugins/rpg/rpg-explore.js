@@ -9,6 +9,7 @@ import {
   rollInterstellarItem,
   rollInterstellarPlanet
 } from '../../lib/rpg-exploreData.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 const EXPLORE_COOLDOWN = 15 * 60 * 1000
 
@@ -24,7 +25,10 @@ let handler = async (m, { conn, usedPrefix }) => {
   }
 
   const now = Date.now()
-  const cooldown = scaleDifficultyCooldown(rpg, EXPLORE_COOLDOWN)
+  const cooldownBuff = getGroupTotemBuff(db.data, m.chat, 'explore', 'cooldown')
+  const rareBuff = getGroupTotemBuff(db.data, m.chat, 'explore', 'rareChance')
+  const yieldBuff = getGroupTotemBuff(db.data, m.chat, 'explore', 'yield')
+  const cooldown = Math.floor(scaleDifficultyCooldown(rpg, EXPLORE_COOLDOWN) * cooldownBuff)
   const remaining = cooldown - (now - (Number(rpg.lastExplore) || 0))
   if (remaining > 0) {
     return m.reply(`⏳ Interstellar Gateway sedang mengisi ulang. Coba lagi dalam *${Math.ceil(remaining / 60000)} menit*.`)
@@ -52,17 +56,18 @@ let handler = async (m, { conn, usedPrefix }) => {
     )
   }
   const tierMultipliers = {
-    RARE: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
-    EPIC: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
-    LEGENDARY: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1),
-    MYTHIC: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1)
+    RARE: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1) * rareBuff,
+    EPIC: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1) * rareBuff,
+    LEGENDARY: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1) * rareBuff,
+    MYTHIC: difficultyDropRate * (dimensionalRift ? 1.5 : 1) * (legendaryDiscovery ? 1.5 : 1) * (stellarBlessing ? 1.3 : 1) * rareBuff
   }
   const items = [
     rollInterstellarCommonItem(),
     rollInterstellarCommonItem()
   ]
   const bonusRoll = Math.random()
-  const bonusCount = bonusRoll < 0.5 ? 0 : bonusRoll < 0.8 ? 1 : bonusRoll < 0.95 ? 2 : 3
+  const bonusCount = (bonusRoll < 0.5 ? 0 : bonusRoll < 0.8 ? 1 : bonusRoll < 0.95 ? 2 : 3) +
+    (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)
   for (let i = 0; i < bonusCount; i++) {
     items.push(rollInterstellarItem(Math.random, tierMultipliers))
   }
