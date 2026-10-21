@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -16,6 +16,7 @@ const formatNama = nama => String(nama)
   .join(' ')
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
+  setRpgFeatureImage(conn, m, SHOP_IMAGE)
   const wdb = loadDB()
   const data = getUserRPG(wdb, m.sender)
   const user = data?.rpg || {}

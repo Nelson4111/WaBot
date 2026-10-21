@@ -1,5 +1,5 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgListButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS, getAuctionItemRarity } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
@@ -575,6 +575,7 @@ function getVaultContents(rpg) {
 }
 
 let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
+  setRpgFeatureImage(conn, m, AUCTION_IMAGE)
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
   if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
@@ -606,7 +607,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
   }
 
   if (mode === 'guide') {
-    return m.reply(
+    return sendRpgMsg(conn, m,
       `╭─❏「 📖 AUCTION HOUSE GUIDE 」❏\n` +
       `│ 📖 *PANDUAN LELANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -619,8 +620,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `📌 *INFORMASI*\n` +
       `> ↳ Daftar perintah : *${prefix}ah command*\n` +
       `> ↳ Peringkat kolektor : *${prefix}ah top*\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+      `─━━━━━━━━━━━━━━─`, AUCTION_IMAGE)
   }
 
   if (mode === 'money') {
@@ -679,7 +679,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       buttons: rows.map(row => [row.title, row.id]),
       fallbackText,
       thumbnailUrl: AUCTION_IMAGE,
-      noHeader: true
+      noHeader: false
     })
   }
 
@@ -841,7 +841,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         ]
       }],
       fallbackText: auctionText,
-      thumbnailUrl: AUCTION_IMAGE
+      thumbnailUrl: AUCTION_IMAGE,
+      noHeader: true
     })
   }
 

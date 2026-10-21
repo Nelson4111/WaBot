@@ -1,5 +1,5 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { ensurePrisonCell, EXCLUSIVE_JAIL_BLOCKED_COMMANDS, getRandomPrisonCell, hasExclusiveJailAccess } from '../../lib/prisonHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
@@ -52,6 +52,7 @@ const pickKidnapEscapeStory = () => KIDNAP_ESCAPE_STORIES[Math.floor(Math.random
 const pickKidnapEscapeAttemptStory = () => KIDNAP_ESCAPE_ATTEMPT_STORIES[Math.floor(Math.random() * KIDNAP_ESCAPE_ATTEMPT_STORIES.length)]
 
 let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
+    setRpgFeatureImage(conn, m, PENJARA_IMAGE)
 
     const wdb = loadDB()
     if (!wdb.penjara) wdb.penjara = []
@@ -1518,13 +1519,14 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             .map(({ jid, rpg }, index) => `> ${index + 1}. SEL ${rpg.sel || '-'} • Sisa ${formatTime(sisaWaktu(rpg))}\n> ↳ ${playerLabel(jid)}`)
             .join('\n\n')
 
-        return conn.reply(
-            m.chat,
+        return sendRpgMsg(
+            conn,
+            m,
             `╭─❏「 🚔 SEL AKTIF 」❏\n` +
             `│ Total: ${activePrisoners.length} tahanan\n` +
             `╰─━━━━━━━━━━━━━━─\n\n` +
             list,
-            m,
+            PENJARA_IMAGE,
             { mentions }
         )
     }
@@ -1647,7 +1649,7 @@ pageText += `─━━━━━━━━━━━━━━─\n\n`
 
 pageText += `─━━━━━━━━━━━━━━─`
 
-return conn.reply(m.chat, pageText, m, { mentions: playerMentions(pageMentions) })
+return sendRpgMsg(conn, m, pageText, PENJARA_IMAGE, { mentions: playerMentions(pageMentions) })
 
 if (wdb.penjara.length === 0) return m.reply(
   `╭─❏「 🚔 PENJARA KOTA 」❏\n` +
@@ -1709,7 +1711,7 @@ if (isOwner) {
 cap += `\n─━━━━━━━━━━━━━━─`
 
     saveDB(wdb)
-    return conn.reply(m.chat, cap, m, { mentions: playerMentions(mentioned) })
+    return sendRpgMsg(conn, m, cap, PENJARA_IMAGE, { mentions: playerMentions(mentioned) })
 }
 
 /* =========================================================

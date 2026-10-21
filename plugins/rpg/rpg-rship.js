@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
@@ -28,6 +28,7 @@ import {
 const RSHIP_IMAGE = 'https://c.termai.cc/i147/VLRPd.jpg'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
+  setRpgFeatureImage(conn, m, RSHIP_IMAGE)
   const wdb = loadDB()
   if (!wdb.users) wdb.users = {}
   if (!wdb.money) wdb.money = {}

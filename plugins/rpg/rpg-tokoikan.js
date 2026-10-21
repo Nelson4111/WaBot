@@ -1,5 +1,5 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
@@ -19,6 +19,7 @@ function formatNama(nama) {
 }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
+  setRpgFeatureImage(conn, m, PASAR_IMAGE)
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
