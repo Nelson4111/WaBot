@@ -138,7 +138,8 @@ let handler = async (m, { conn, args, isOwner, groupMetadata, usedPrefix }) => {
         ]
       }],
       fallbackText: `${overviewText}\n\n📌 *PILIHAN*\n> ↳ Kriminal aktif: *${usedPrefix}kriminal list*\n> ↳ Top riwayat kriminal: *${usedPrefix}kriminal top*`,
-      noThumbnail: true
+      noThumbnail: true,
+      noHeader: true
     })
   }
 
@@ -173,6 +174,7 @@ let handler = async (m, { conn, args, isOwner, groupMetadata, usedPrefix }) => {
       buttonText: '🚨 BUKA DATA KRIMINAL',
       sections: [{ title: 'Informasi kriminal', rows }],
       noThumbnail: true,
+      noHeader: true,
       fallbackText
     })
   }
