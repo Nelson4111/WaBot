@@ -16,7 +16,7 @@ const formatNama = nama => String(nama)
   .join(' ')
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  setRpgFeatureImage(conn, m, SHOP_IMAGE)
+  m = setRpgFeatureImage(conn, m, SHOP_IMAGE)
   const wdb = loadDB()
   const data = getUserRPG(wdb, m.sender)
   const user = data?.rpg || {}

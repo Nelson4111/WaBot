@@ -28,7 +28,7 @@ import {
 const RSHIP_IMAGE = 'https://c.termai.cc/i147/VLRPd.jpg'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  setRpgFeatureImage(conn, m, RSHIP_IMAGE)
+  m = setRpgFeatureImage(conn, m, RSHIP_IMAGE)
   const wdb = loadDB()
   if (!wdb.users) wdb.users = {}
   if (!wdb.money) wdb.money = {}

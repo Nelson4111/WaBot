@@ -52,7 +52,7 @@ const pickKidnapEscapeStory = () => KIDNAP_ESCAPE_STORIES[Math.floor(Math.random
 const pickKidnapEscapeAttemptStory = () => KIDNAP_ESCAPE_ATTEMPT_STORIES[Math.floor(Math.random() * KIDNAP_ESCAPE_ATTEMPT_STORIES.length)]
 
 let handler = async (m, { conn, args, command, usedPrefix, isOwner }) => {
-    setRpgFeatureImage(conn, m, PENJARA_IMAGE)
+    m = setRpgFeatureImage(conn, m, PENJARA_IMAGE)
 
     const wdb = loadDB()
     if (!wdb.penjara) wdb.penjara = []

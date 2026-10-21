@@ -575,7 +575,7 @@ function getVaultContents(rpg) {
 }
 
 let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
-  setRpgFeatureImage(conn, m, AUCTION_IMAGE)
+  m = setRpgFeatureImage(conn, m, AUCTION_IMAGE)
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
   if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')

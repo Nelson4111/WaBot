@@ -34,7 +34,7 @@ const oreEmoji = {
 }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
-  setRpgFeatureImage(conn, m, PABRIK_IMAGE)
+  m = setRpgFeatureImage(conn, m, PABRIK_IMAGE)
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg

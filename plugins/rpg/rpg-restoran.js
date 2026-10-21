@@ -24,7 +24,7 @@ const resepEmoji = { ...sharedResepEmoji }
 const deskripsiMakanan = { ...sharedDeskripsiMakanan }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
-  setRpgFeatureImage(conn, m, RESTORAN_IMAGE)
+  m = setRpgFeatureImage(conn, m, RESTORAN_IMAGE)
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg

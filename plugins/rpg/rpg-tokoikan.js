@@ -19,7 +19,7 @@ function formatNama(nama) {
 }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
-  setRpgFeatureImage(conn, m, PASAR_IMAGE)
+  m = setRpgFeatureImage(conn, m, PASAR_IMAGE)
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
