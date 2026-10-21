@@ -7,6 +7,7 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
 import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { getRpgWibDateKey, getRpgWibWeekKey } from '../../lib/rpgTime.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -185,26 +186,18 @@ function getDailyLimit(jid, wdb) {
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10)
+  return getRpgWibDateKey()
 }
 
 function casinoWeekKey(now = Date.now()) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).formatToParts(now)
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
-  const localDate = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)))
-  const daysFromMonday = (localDate.getUTCDay() + 6) % 7
-  localDate.setUTCDate(localDate.getUTCDate() - daysFromMonday)
-  return localDate.toISOString().slice(0, 10)
+  return getRpgWibWeekKey(now)
 }
 
 function getBlackoutRecoveryAmount(blackout) {
   const amount = Number(blackout?.amount) || 0
-  const recovered = Number(blackout?.guardRecovered || 0) + Number(blackout?.insuredRecovered || 0)
+  const recovered = Number(blackout?.guardRecovered || 0) +
+    Number(blackout?.insuredRecovered || 0) +
+    Number(blackout?.panelRefunded || 0)
   return Math.max(0, amount - recovered)
 }
 
@@ -328,15 +321,19 @@ function casinoHistoryText(stats, dailyLimit, usedPrefix) {
   const history = rounds.length
     ? rounds.map((round, index) => {
       const game = games[round.game]
-      const time = new Date(round.at).toLocaleTimeString('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        hour: '2-digit',
+    const moneyChange = Number.isFinite(Number(round.moneyChange))
+      ? Number(round.moneyChange)
+      : Number(round.profit) || 0
+    const time = new Date(round.at).toLocaleTimeString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
         minute: '2-digit'
       })
       return `*${index + 1}. ${game?.emoji || '🎲'} ${game?.name || round.game}* · ${time}\n` +
         `> ↳ Hasil: ${round.outcome}\n` +
         `> ↳ Taruhan: ${money(round.bet)} · Hadiah: ${money(round.payout)}\n` +
-        `> ↳ Profit: ${signedMoney(round.profit)}`
+        `> ↳ Profit: ${signedMoney(round.profit)} · Perubahan uang: ${signedMoney(moneyChange)}` +
+        `${round.panelRefundedAt ? '\n> ↳ Kerugian dikembalikan lewat RPG Panel' : ''}`
     }).join('\n\n')
     : '> ↳ Belum ada permainan casino hari ini.'
 
@@ -1972,7 +1969,8 @@ if (elapsed < cooldownDuration) {
                 : '💀 Kalah',
     bet,
     payout,
-    profit: net
+    profit: net,
+    moneyChange: net - blackoutLoss
   })
   stats.dailyHistory = stats.dailyHistory.slice(-PREMIUM_DAILY_LIMIT)
   wdb.casinoStats = wdb.casinoStats || { totalWinnings: 0 }

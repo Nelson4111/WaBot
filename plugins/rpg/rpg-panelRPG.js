@@ -29,6 +29,7 @@ import { computeCrimeScore, getActiveCrimeScore, setActiveCrimeScore, setCrimeCo
 import { createRpgCrimeRecord, RPG_CRIME_TYPES } from '../../lib/rpgCrimeAction.js'
 import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
 import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { getRpgWibDateKey } from '../../lib/rpgTime.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
 import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '../../lib/rpgJobData.js'
@@ -819,6 +820,7 @@ let handler = async (m, {
   `> ↳ Jenis: *${RPG_CRIME_TYPES.map(({ label }) => label.toLowerCase()).join('|')}*\n` +
   `> ↳ *${usedPrefix}rpgpanel selesairh @tag* - Paksa selesaikan rehabilitasi\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel cshistoryrefund @tag <nomor-riwayat>* - Kembalikan uang/profit dari ronde rugi di .cs history\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotxp @tag <xp>*\n` +
@@ -1828,10 +1830,74 @@ let handler = async (m, {
       return m.reply(`❌ Format: *${usedPrefix}rpgpanel setcasinoprogress @tag <jumlah>*\nContoh: *${usedPrefix}rpgpanel setcasinoprogress @tag 10*`)
     }
     user.casinoStats = user.casinoStats || { wins: 0, games: 0, profit: 0, byGame: {} }
-    user.casinoStats.dailyDate = new Date().toISOString().slice(0, 10)
+    user.casinoStats.dailyDate = getRpgWibDateKey()
     user.casinoStats.dailyGames = gamesPlayed
     saveDB(wdb)
     return m.reply(`✅ Progress casino @${who.split('@')[0]} berhasil diatur menjadi *${gamesPlayed}x* hari ini.`, null, { mentions: [who] })
+  }
+
+  if (['cshistoryrefund', 'refundcshistory', 'refundcasinohistory'].includes(aksi)) {
+    const historyNumber = Number(remaining[0])
+    const stats = user.casinoStats
+    const history = Array.isArray(stats?.dailyHistory) ? stats.dailyHistory : []
+    const round = Number.isInteger(historyNumber) && historyNumber > 0
+      ? [...history].reverse()[historyNumber - 1]
+      : null
+    if (!round) {
+      return m.reply(`❌ Nomor riwayat tidak valid atau ronde sudah tidak ada. Cek *${usedPrefix}cs history* user tersebut, lalu gunakan: *${usedPrefix}rpgpanel cshistoryrefund @tag <nomor>*`)
+    }
+    if (round.panelRefundedAt) return m.reply('ℹ️ Ronde ini sudah pernah dikembalikan.')
+
+    let moneyChange = Number(round.moneyChange)
+    let blackoutRecord = null
+    if (!Number.isFinite(moneyChange)) {
+      if (round.outcome === '🌑 Blackout') {
+        blackoutRecord = (Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : [])
+          .filter(entry => Math.abs(Number(entry.createdAt) - Number(round.at)) <= 60_000)
+          .sort((a, b) => Math.abs(Number(a.createdAt) - Number(round.at)) - Math.abs(Number(b.createdAt) - Number(round.at)))[0]
+        const recovered = Number(blackoutRecord?.guardRecovered || 0) +
+          Number(blackoutRecord?.insuredRecovered || 0) +
+          Number(blackoutRecord?.panelRefunded || 0)
+        moneyChange = blackoutRecord
+          ? -(Math.max(0, Number(blackoutRecord.amount) - recovered))
+          : NaN
+      } else {
+        moneyChange = Number(round.profit)
+      }
+    } else if (round.outcome === '🌑 Blackout') {
+      blackoutRecord = (Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : [])
+        .find(entry => Math.abs(Number(entry.createdAt) - Number(round.at)) <= 60_000)
+    }
+
+    if (round.outcome === '🌑 Blackout' && blackoutRecord) {
+      const recovered = Number(blackoutRecord.guardRecovered || 0) +
+        Number(blackoutRecord.insuredRecovered || 0) +
+        Number(blackoutRecord.panelRefunded || 0)
+      moneyChange = -Math.max(0, Math.min(-moneyChange, Number(blackoutRecord.amount) - recovered))
+    }
+
+    if (!Number.isFinite(moneyChange) || moneyChange >= 0) {
+      return m.reply('❌ Ronde ini tidak memiliki kerugian uang yang dapat dikembalikan.')
+    }
+
+    const refundMoney = -moneyChange
+    const profitLoss = Math.min(0, Number(round.profit) || 0)
+    wdb.money[who] = (Number(wdb.money[who]) || 0) + refundMoney
+    stats.profit = (Number(stats.profit) || 0) - profitLoss
+    const gameStats = stats.byGame?.[round.game]
+    if (gameStats) gameStats.profit = (Number(gameStats.profit) || 0) - profitLoss
+    round.panelRefundedAt = Date.now()
+    round.moneyChange = moneyChange
+    if (blackoutRecord) blackoutRecord.panelRefunded = (Number(blackoutRecord.panelRefunded) || 0) + refundMoney
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Kerugian ronde #${historyNumber} ${round.game} @${who.split('@')[0]} dikembalikan.\n` +
+      `> ↳ Uang kembali: Rp ${refundMoney.toLocaleString('id-ID')}\n` +
+      `> ↳ Profit casino dipulihkan: Rp ${(-profitLoss).toLocaleString('id-ID')}\n` +
+      `> ↳ Saldo sekarang: Rp ${(Number(wdb.money[who]) || 0).toLocaleString('id-ID')}`,
+      null,
+      { mentions: [who] }
+    )
   }
 
   if (['setcasinoprofit', 'casinoprofit'].includes(aksi)) {

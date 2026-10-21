@@ -6,6 +6,10 @@ import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, claimBankCrown } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
 import { formatRpgMoney, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  BANKRUPT_PROTECTION_RATE,
+  claimBankruptProtection
+} from '../../lib/rpgBankruptProtection.js'
 import upgradeBankHandler from './rpg-upgradebank.js'
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
@@ -164,6 +168,7 @@ function getPlayerCasinoRoom(wdb, jid) {
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
+  wdb.money = wdb.money || {}
   let userRPG = getUserRPG(wdb, m.sender).rpg
   if (!userRPG) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
 
@@ -211,6 +216,33 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `│ ❌ *BELUM MEMENUHI SYARAT*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Mahkota Kehormatan hanya bisa diklaim setelah memiliki *Royal Card (Lv.13)* atau kartu yang lebih tinggi.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
+  if (action === 'bankrupt' || action === 'bankrupt-protection' || action === 'protection') {
+    const result = claimBankruptProtection(userRPG, Number(wdb.money[m.sender]) || 0, now)
+    if (result.status === 'not-bankrupt') {
+      return m.reply('❌ Proteksi hanya bisa diklaim saat uang saku dan saldo bank sama-sama Rp 0.')
+    }
+    if (result.status === 'already-claimed') {
+      return m.reply('ℹ️ Jaminan bankrupt minggu ini sudah diklaim. Jatah berikutnya tersedia mulai Senin.')
+    }
+    if (result.status !== 'claimed') {
+      return m.reply('❌ Belum ada dana bankrupt yang tercatat untuk dipulihkan.')
+    }
+    wdb.money[m.sender] = result.amount
+    userRPG.riwayat.unshift(`+${formatRpgMoney(result.amount)} Jaminan Bankrupt 50%`)
+    userRPG.riwayat.length = Math.min(userRPG.riwayat.length, 20)
+    await saveDB(wdb)
+    return m.reply(
+      `╭─❏「 🏦 BANKRUPT PROTECTION 」❏\n` +
+      `│ ✅ *KLAIM BERHASIL*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Kartu: ${tier.color} ${tier.name}\n` +
+      `> ↳ Dana bankrupt tercatat: ${formatRpgMoney(result.funds)}\n` +
+      `> ↳ Jaminan 50%: ${formatRpgMoney(result.amount)}\n` +
+      `> ↳ Klaim berikutnya tersedia mulai Senin.\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -348,6 +380,7 @@ if (automaticCharges.length) {
     cap += `> ↳ Bunga : ${(tier.bunga * 100).toFixed(2)}%/minggu • ${sisaHari ? `${sisaHari} hari lagi` : 'siap diproses'}\n`
     cap += `> ↳ Total bunga diterima : Rp ${userRPG.totalBunga.toLocaleString('id-ID')}\n`
     cap += `> ↳ Asuransi : ${(tier.asuransi * 100).toFixed(0)}% • Keamanan : Lv.${getBankEffectiveSecurity(tier)}\n`
+    cap += `> ↳ Jaminan bankrupt : ${(BANKRUPT_PROTECTION_RATE * 100).toFixed(0)}% dari dana bankrupt tercatat (klaim mingguan, reset Senin)\n`
     cap += `> ↳ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'jatuh tempo'} • Biaya Rp ${tier.biayaBulanan.toLocaleString('id-ID')}\n`
     cap += `> ↳ Cooldown setor/tarik : ${sisaTransaksi > 0 ? `${Math.ceil(sisaTransaksi / 60000)} menit` : 'siap'}\n`
     cap += `> ↳ Tempat transaksi : ${getBankTransactionLocation(tier)}\n`
@@ -442,6 +475,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 > *.bank command* - Tampilkan daftar command ini
 > *.bank kartu / card* - Lihat daftar kartu
 > *.bank benefit / benefits [list]* - Lihat fasilitas kartu
+> *.bank bankrupt* - Klaim 50% dana bankrupt yang tercatat (uang saku dan saldo bank harus Rp 0, jatah baru tiap Senin)
 > *.bank vault list* - Lihat barang Vault Pribadi
 > *.bank vault simpan/ambil <item> [jumlah]* - Kelola barang Vault Pribadi
 > *.vault [list|simpan|ambil] [item] [jumlah]* - Akses cepat Vault Pribadi
@@ -605,8 +639,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Setor melalui CS`)
       } else {
         if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup untuk penarikan melalui CS.')
-        userRPG.bank -= amount
         wdb.money[m.sender] = wallet + amount
+        userRPG.bank -= amount
         userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik melalui CS`)
       }
       userRPG.lastBankTransaction = now
@@ -794,6 +828,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         const t = BANK_TIERS[i]
         cap += `${t.color} *Lv.${i} ${t.name}*\n`
         cap += `> 🛡️ Keamanan Lv.${getBankEffectiveSecurity(t)}${Number(i) > 0 ? ' ▲ UP' : ''}\n`
+        cap += `> 🏦 Jaminan bankrupt: ${(BANKRUPT_PROTECTION_RATE * 100).toFixed(0)}% (klaim mingguan)\n`
         cap += `> ${t.fasilitas.map(f => `• ${formatBankTierFacility(f, Number(i))}`).join('\n> ')}\n\n`
         const csService = getBankCsService(t)
         if (csService) cap += `> ${csService}: ${BANK_CS_SERVICES[csService]}\n\n`
@@ -805,6 +840,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     } else {
       cap += `◈ BENEFIT ${tier.color} ${tier.name.toUpperCase()} ◈\n◆ NEW = fasilitas baru • ▲ UP = peningkatan\n\n`
       cap += `🛡️ Keamanan Lv.${getBankEffectiveSecurity(tier)}${Number(userRPG.bankTier) > 0 ? ' ▲ UP' : ''}\n`
+      cap += `🏦 Jaminan bankrupt: ${(BANKRUPT_PROTECTION_RATE * 100).toFixed(0)}% (klaim mingguan)\n`
       cap += `${tier.fasilitas.map(f => `• ${formatBankTierFacility(f, Number(userRPG.bankTier))}`).join('\n')}\n\n`
       const csService = getBankCsService(tier)
       if (csService) cap += `◈ ${csService} ◈\n${BANK_CS_SERVICES[csService]}\n\n`
@@ -849,7 +885,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
     const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
     if (cooldownRemaining > 0) return m.reply(`⏳ Transaksi setor/tarik masih cooldown. Coba lagi dalam ${Math.ceil(cooldownRemaining / 60000)} menit.`)
-    userRPG.bank -= amount; wdb.money[m.sender] += amount
+    wdb.money[m.sender] += amount; userRPG.bank -= amount
     userRPG.lastBankTransaction = now
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
     await saveDB(wdb)
@@ -962,7 +998,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {

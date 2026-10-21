@@ -1,4 +1,4 @@
-import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgConfirmButtons, sendRpgListButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS, getAuctionItemRarity } from '../../lib/rpg-auctionData.js'
@@ -823,20 +823,21 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> 💳 ${prefix}money — cek saldo\n` +
       `> 🔤 ${prefix}money suffix — cek daftar sufiks\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return sendRpgButtons(conn, {
-      chat: m.chat,
-      message: m,
-      quoted: m,
+    return sendRpgListButton(conn, m, {
+      title: '🔨 AUCTION HOUSE',
+      subtitle: 'Pilih item untuk melihat atau mengajukan bid',
       footer: '',
       text: auctionText,
-      buttons: [
-        ...rows.map(row => [row.title, row.id]),
-        ['💳 Cek saldo', `${prefix}money`],
-        ['🔤 Daftar sufiks uang', `${prefix}money suffix`]
-      ],
-      fallbackText: auctionText,
-      noThumbnail: true,
-      noHeader: true
+      buttonText: '📋 PILIH ITEM LELANG',
+      sections: [{
+        title: 'Item lelang dan menu',
+        rows: [
+          ...rows,
+          { title: '💳 Cek saldo', description: 'Lihat saldo uangmu', id: `${prefix}money` },
+          { title: '🔤 Daftar sufiks uang', description: 'Lihat daftar sufiks nominal', id: `${prefix}money suffix` }
+        ]
+      }],
+      fallbackText: auctionText
     })
   }
 

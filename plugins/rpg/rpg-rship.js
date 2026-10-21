@@ -1305,7 +1305,7 @@ ${options}
 > *${usedPrefix}rship urus <pasangan/all> <anak/all>*
 > ↳ Premium: menjalankan semua 9 aktivitas pengasuhan.
 > *${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>*
-> ↳ Mengganti nama anak.
+> ↳ Menampilkan nama sebelum/sesudah; nama baru diterapkan setelah konfirmasi tombol.
 > *${usedPrefix}rship kid daycare/orphanage <pasangan> <anak>*
 > ↳ Menitipkan anak dengan konfirmasi dan biaya berkala.
 > *${usedPrefix}rship kid moveout <pasangan> <anak>*
@@ -1863,15 +1863,19 @@ ${options}
 
 ─━━━━━━━━━━━━━━─`)
 
-      const partner = user.harem[pendingRename.index]
-      if (!partner || partner.name !== pendingRename.oldName) {
+      const partner = pendingRename ? user.harem[pendingRename.index] : null
+      if (
+        !pendingRename ||
+        now - Number(pendingRename.createdAt || 0) > 5 * 60 * 1000 ||
+        !partner || partner.name !== pendingRename.oldName
+      ) {
         delete user.pendingRshipRename
-        saveDB(wdb)
+        await saveDB(wdb)
         return m.reply(`╭─❏「 ❌ PASANGAN TIDAK DITEMUKAN 」❏
 │ 📋 VALIDASI DATA PASANGAN
 ╰─━━━━━━━━━━━━━━─
 
-> ↳ Data pasangan berubah. Ajukan rename kembali.
+> ↳ Konfirmasi kedaluwarsa atau data pasangan berubah. Ajukan rename kembali.
 
 ─━━━━━━━━━━━━━━─`)
       }
@@ -1885,12 +1889,13 @@ ${options}
         if (child.ortu === oldName) child.ortu = pendingRename.newName
       })
       delete user.pendingRshipRename
-      saveDB(wdb)
+      await saveDB(wdb)
       return m.reply(`╭─❏「 🏷️ NAMA PASANGAN DIUBAH 」❏
 │ 📋 PERUBAHAN NAMA BERHASIL
 ╰─━━━━━━━━━━━━━━─
 
-> 📝 ${oldName} menjadi *${partner.name}*
+> 📝 Sebelum: *${oldName}*
+> ✨ Sesudah: *${partner.name}*
 
 ─━━━━━━━━━━━━━━─`)
     }
@@ -1904,7 +1909,7 @@ ${options}
 
 ─━━━━━━━━━━━━━━─`)
       delete user.pendingRshipRename
-      saveDB(wdb)
+      await saveDB(wdb)
       return m.reply(`╭─❏「 ❌ RENAME DIBATALKAN 」❏
 │ 📋 STATUS PERUBAHAN NAMA
 ╰─━━━━━━━━━━━━━━─
@@ -1914,15 +1919,19 @@ ${options}
 ─━━━━━━━━━━━━━━─`)
     }
 
-    if (pendingRename) return m.reply(`╭─❏「 ⚠️ RENAME MENUNGGU 」❏
+    if (pendingRename && now - Number(pendingRename.createdAt || 0) <= 5 * 60 * 1000) return m.reply(`╭─❏「 ⚠️ RENAME MENUNGGU 」❏
 │ 📋 SELESAIKAN PERMINTAAN SEBELUMNYA
 ╰─━━━━━━━━━━━━━━─
 
-> ↳ Konfirmasi perubahan nama:
-> ${usedPrefix}rship rename yes
-> ${usedPrefix}rship rename batal
+> ↳ Sebelum: *${pendingRename.oldName}*
+> ↳ Sesudah: *${pendingRename.newName}*
+> ↳ Gunakan tombol konfirmasi yang sudah dikirim.
 
 ─━━━━━━━━━━━━━━─`)
+    if (pendingRename) {
+      delete user.pendingRshipRename
+      await saveDB(wdb)
+    }
 
     const partnerNumber = Number(args[1])
     const newName = args.slice(2).join(' ').trim()
@@ -1962,25 +1971,36 @@ ${options}
     user.pendingRshipRename = {
       index: partnerNumber - 1,
       oldName: partner.name,
-      newName
+      newName,
+      createdAt: now
     }
-    saveDB(wdb)
-    return m.reply(`╭─❏「 ⚠️ KONFIRMASI RENAME 」❏
-│ 📋 PERIKSA PERUBAHAN NAMA
-╰─━━━━━━━━━━━━━━─
-
-> 💕 Pasangan: *${partner.name}*
-> 🏷️ Nama baru: *${newName}*
-
-─━━━━━━━━━━━━━━─
-
-📝 *KONFIRMASI*
-> ✅ Lanjut: ${usedPrefix}rship rename yes
-> ✅ Lanjut: ${usedPrefix}rship rename konfirmasi
-> ❌ Batal: ${usedPrefix}rship rename no
-> ❌ Batal: ${usedPrefix}rship rename batal
-
-─━━━━━━━━━━━━━━─`)
+    await saveDB(wdb)
+    const confirmationText =
+      `╭─❏「 🏷️ KONFIRMASI RENAME PASANGAN 」❏\n` +
+      `│ PERIKSA NAMA SEBELUM DITERAPKAN\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 💕 Pasangan: *${partner.name}*\n` +
+      `> 📝 Sebelum: *${partner.name}*\n` +
+      `> ✨ Sesudah: *${newName}*\n\n` +
+      `> Nama pasangan dan nama orang tua pada data anak terkait akan diperbarui setelah konfirmasi.\n` +
+      `> Konfirmasi berlaku 5 menit.`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🏷️ RENAME PASANGAN',
+      subtitle: 'Cek perubahan nama sebelum diterapkan',
+      text: confirmationText,
+      footer: 'AVELIA • RSHIP',
+      buttons: [
+        ['✅ Konfirmasi nama', `${usedPrefix}rship rename yes`],
+        ['↩️ Batalkan', `${usedPrefix}rship rename batal`]
+      ],
+      fallbackText:
+        `${confirmationText}\n\n` +
+        `> ↳ Konfirmasi: ${usedPrefix}rship rename yes\n` +
+        `> ↳ Batalkan: ${usedPrefix}rship rename batal`
+    })
   }
 
   // === HAREM ===
@@ -2217,8 +2237,8 @@ if (action === 'gift' && args[1]?.toLowerCase() === 'list') {
 
 👨‍👩‍👧 *PENGELOLAAN ANAK*
 > ↳ Info: ${usedPrefix}rship kid info
-> ↳ Rename: ${usedPrefix}rship kid rename <pasangan> <anak> <nama>
-> ↳ Rename anak asuh: ${usedPrefix}rship kid rename custody <no-anak> <nama>
+> ↳ Rename: ${usedPrefix}rship kid rename <pasangan> <anak> <nama> (konfirmasi tombol)
+> ↳ Rename anak asuh: ${usedPrefix}rship kid rename custody <no-anak> <nama> (konfirmasi tombol)
 > ↳ Kembalikan anak asuh ke pemilik asal: ${usedPrefix}rship kid return <no-anak>
 > ↳ Moveout: ${usedPrefix}rship kid moveout <pasangan> <anak>
 
@@ -3454,6 +3474,62 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
   }
 
   if (sub === 'rename') {
+    const pendingRename = user.pendingRshipKidRename
+    if (['yes', 'ya', 'konfirmasi'].includes(confirmationWord)) {
+      const child = pendingRename && user.kids[pendingRename.globalIndex]
+      if (
+        !pendingRename ||
+        now - Number(pendingRename.createdAt || 0) > 5 * 60 * 1000 ||
+        !child ||
+        child.nama !== pendingRename.oldName ||
+        child.ortu !== pendingRename.parentName ||
+        (child.custody?.type || null) !== pendingRename.custodyType ||
+        Boolean(child.facility)
+      ) {
+        delete user.pendingRshipKidRename
+        await saveDB(wdb)
+        return m.reply(
+          `╭─❏「 ❌ RENAME ANAK DIBATALKAN 」❏\n` +
+          `│ Data anak berubah atau konfirmasi sudah kedaluwarsa.\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Silakan pilih anak dan ajukan rename kembali.`
+        )
+      }
+      child.originalName ||= child.nama
+      child.nama = pendingRename.newName
+      delete user.pendingRshipKidRename
+      await saveDB(wdb)
+      return m.reply(
+        `╭─❏「 ✅ NAMA ANAK DIPERBARUI 」❏\n` +
+        `│ PERUBAHAN NAMA BERHASIL\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> 👶 Sebelum: *${pendingRename.oldName}*\n` +
+        `> ✨ Sesudah: *${child.nama}*`
+      )
+    }
+    if (['no', 'tidak', 'batal', 'cancel'].includes(confirmationWord)) {
+      if (!pendingRename) return m.reply('ℹ️ Tidak ada perubahan nama anak yang menunggu konfirmasi.')
+      delete user.pendingRshipKidRename
+      await saveDB(wdb)
+      return m.reply(
+        `╭─❏「 ↩️ RENAME ANAK DIBATALKAN 」❏\n` +
+        `│ Nama anak tidak diubah.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> 👶 Nama tetap: *${pendingRename.oldName}*`
+      )
+    }
+    if (pendingRename && now - Number(pendingRename.createdAt || 0) <= 5 * 60 * 1000) {
+      return m.reply(
+        `⏳ Masih ada rename anak yang menunggu konfirmasi.\n` +
+        `> ↳ Sebelum: *${pendingRename.oldName}*\n` +
+        `> ↳ Sesudah: *${pendingRename.newName}*\n` +
+        `> ↳ Gunakan tombol konfirmasi atau pembatalan yang sudah dikirim.`
+      )
+    }
+    if (pendingRename) {
+      delete user.pendingRshipKidRename
+      await saveDB(wdb)
+    }
     const targets = getKidTargets(args[2], args[3])
     const target = targets?.[0]
     const newName = args.slice(4).join(' ').trim()
@@ -3471,17 +3547,41 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
       `Nama anak harus terdiri dari 1–30 karakter.\n\n` +
       `> ↳ ${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>`
     )
-    target.child.originalName ||= target.child.nama
-    target.child.nama = newName
+    if (target.child.nama === newName) return m.reply(`ℹ️ Nama anak sudah *${newName}*.`)
+    user.pendingRshipKidRename = {
+      globalIndex: target.globalIndex,
+      oldName: target.child.nama,
+      newName,
+      parentName: target.child.ortu,
+      custodyType: target.child.custody?.type || null,
+      createdAt: now
+    }
     await saveDB(wdb)
-    return m.reply(
-      `╭─❏「 ✅ NAMA ANAK DIPERBARUI 」❏\n` +
-      `│ ✏️ PERUBAHAN NAMA BERHASIL\n` +
+    const confirmationText =
+      `╭─❏「 ✏️ KONFIRMASI RENAME ANAK 」❏\n` +
+      `│ PERIKSA NAMA SEBELUM DITERAPKAN\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> 👶 Nama baru: *${newName}*\n\n` +
-      `─━━━━━━━━━━━━━━─\n` +
-      `✨ Nama anak berhasil diperbarui.`
-    )
+      `> 👶 Anak: *${target.child.nama}*\n` +
+      `> 📝 Sebelum: *${target.child.nama}*\n` +
+      `> ✨ Sesudah: *${newName}*\n\n` +
+      `> Konfirmasi berlaku 5 menit. Nama belum diubah.`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '✏️ RENAME ANAK',
+      subtitle: 'Cek nama sebelum diterapkan',
+      text: confirmationText,
+      footer: 'AVELIA • RSHIP',
+      buttons: [
+        ['✅ Konfirmasi nama', `${usedPrefix}rship kid rename konfirmasi`],
+        ['↩️ Batalkan', `${usedPrefix}rship kid rename batal`]
+      ],
+      fallbackText:
+        `${confirmationText}\n\n` +
+        `> ↳ Konfirmasi: ${usedPrefix}rship kid rename konfirmasi\n` +
+        `> ↳ Batalkan: ${usedPrefix}rship kid rename batal`
+    })
   }
 
   if (sub === 'moveout') {
