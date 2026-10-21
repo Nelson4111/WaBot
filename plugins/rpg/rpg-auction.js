@@ -841,8 +841,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         ]
       }],
       fallbackText: auctionText,
-      thumbnailUrl: AUCTION_IMAGE,
-      noHeader: true
+      thumbnailUrl: AUCTION_IMAGE
     })
   }
 
