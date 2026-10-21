@@ -1,9 +1,11 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+
+const PASAR_IMAGE = 'https://c.termai.cc/i113/GBR.jpg'
 
 function formatNama(nama) {
   if (!nama) return ''
@@ -228,7 +230,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Lihat daftar command: *${usedPrefix}pasar command*\n` +
       `> ↳ Baca panduan/tutorial: *${usedPrefix}pasar guide*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, PASAR_IMAGE)
   }
 
   if (tipe === 'command') {
@@ -253,7 +255,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       text: 'Pilih ikan atau hasil pendakian yang ingin kamu perdagangkan.',
       buttonText: '🐟 BUKA PASAR',
       sections: [{ title: 'Hasil memancing', rows }],
-      fallbackText
+      fallbackText,
+      thumbnailUrl: PASAR_IMAGE
     })
   }
 
@@ -266,7 +269,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Jual semua ikan dan sampah pendakian: *${usedPrefix}pasar jual all*\n` +
       `> ↳ Mulai memancing: *${usedPrefix}mancing*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, PASAR_IMAGE)
   }
 
   if (tipe === 'list') {
@@ -283,7 +286,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       cap += `> Sell : Rp ${hargaJual.toLocaleString()}\n\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, PASAR_IMAGE)
   }
 
   if (tipe !== 'jual') return m.reply(`❌ Pakai: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*`)

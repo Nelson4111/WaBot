@@ -1,8 +1,10 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+
+const PABRIK_IMAGE = 'https://c.termai.cc/i171/7HsD7Cq.jpg'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -111,7 +113,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `> ↳ Lihat daftar command: *${usedPrefix}pabrik command*\n`
     cap += `> ↳ Baca panduan/tutorial: *${usedPrefix}pabrik guide*\n\n`
     cap += `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, PABRIK_IMAGE)
   }
 
   if (tipe === 'command') {
@@ -137,7 +139,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       text: 'Cari bahan untuk perlengkapan, atau tukarkan hasil tambangmu.',
       buttonText: '⛏️ BUKA PABRIK',
       sections: [{ title: 'Material & hasil tambang', rows }],
-      fallbackText
+      fallbackText,
+      thumbnailUrl: PABRIK_IMAGE
     })
   }
 
@@ -150,7 +153,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Jual stok: *${usedPrefix}pabrik jual <no/nama> <jumlah/all>*\n` +
       `> ↳ Jual semua stok: *${usedPrefix}pabrik jual all*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, PABRIK_IMAGE)
   }
 
   if (tipe === 'list') {
@@ -177,7 +180,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       cap += `> Sell : ${Number.isFinite(h) ? `Rp ${h.toLocaleString()}` : 'Bisa dijual'}\n\n`
     })
     cap += `\n─━━━━━━━━━━━━━━─\n💡 *Tips:* Hasil tambang bisa dijual semua di sini.`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, PABRIK_IMAGE)
   }
 
   // ===== SISTEM BELI =====

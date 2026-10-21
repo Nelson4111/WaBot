@@ -19,6 +19,7 @@ import {
 
 const randomItem = (list) => list[Math.floor(Math.random() * list.length)]
 const BREAKOUT_ROOM_TTL = 30 * 60 * 1000
+const PENJARA_IMAGE = 'https://c.termai.cc/i196/5bNjpj.jpg'
 const rehabilitationAdvice = '\n\n📌 Jika masih memiliki poin buronan, jalani *.rh mulai* untuk membersihkan catatan buronan dan membangun kembali kepercayaan Avelia.'
 
 function cleanupExpiredBreakouts(wdb, now = Date.now()) {
@@ -1555,7 +1556,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
     `> ↳ Panduan: *${usedPrefix}penjara guide*\n` +
     `> ↳ Tebus: *${usedPrefix}penjara tebus sel A4*\n\n` +
 
-    `─━━━━━━━━━━━━━━─`)
+    `─━━━━━━━━━━━━━━─`, PENJARA_IMAGE)
 }
 
 if (!args[1]) {

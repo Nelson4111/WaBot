@@ -1,8 +1,10 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { bibit } from './rpg-tanam.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+
+const KOPERASI_IMAGE = 'https://c.termai.cc/i101/ENncHW.jpg'
 
 function formatNama(nama) {
   if (!nama || typeof nama !== 'string') return ''
@@ -113,7 +115,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Lihat daftar command: *${usedPrefix}koperasi command*\n` +
       `> ↳ Baca panduan/tutorial: *${usedPrefix}koperasi guide*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, KOPERASI_IMAGE)
   }
 
   if (tipe === 'command') {
@@ -138,7 +140,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       text: 'Pilih hasil panen untuk melihat harga atau menjual stokmu.',
       buttonText: '🌾 BUKA KOPERASI',
       sections: [{ title: 'Hasil pertanian', rows }],
-      fallbackText
+      fallbackText,
+      thumbnailUrl: KOPERASI_IMAGE
     })
   }
 
@@ -151,7 +154,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Jual semua panen: *${usedPrefix}koperasi jual all*\n` +
       `> ↳ Beli dan tanam bibit: *${usedPrefix}tanam*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, KOPERASI_IMAGE)
   }
 
   // MENU DAFTAR HARGA
@@ -183,7 +186,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `\n─━━━━━━━━━━━━━━─\n\n`
     cap += `💡 *Catatan:* Harga jual = Harga beli. Profit dari EXP`
 
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, KOPERASI_IMAGE)
   }
 
   if(tipe!== 'jual') return m.reply(

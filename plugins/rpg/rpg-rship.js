@@ -1,4 +1,4 @@
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
@@ -24,6 +24,8 @@ import {
   RSHIP_BATCH_ACTIVITY_RULES as batchActivityRules,
   RSHIP_STANDARD_PARTNER_EXP
 } from '../../lib/rpgRshipData.js'
+
+const RSHIP_IMAGE = 'https://c.termai.cc/i147/VLRPd.jpg'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -1389,7 +1391,8 @@ ${options}
       text: 'Pilih fitur yang ingin kamu buka.',
       buttonText: '💕 BUKA MENU RSHIP',
       sections: commandSections,
-      fallbackText: cap
+      fallbackText: cap,
+      thumbnailUrl: RSHIP_IMAGE
     })
   }
 
@@ -1432,7 +1435,7 @@ ${options}
 
 ─━━━━━━━━━━━━━━─`
 
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, RSHIP_IMAGE)
   }
 
 

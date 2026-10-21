@@ -1,5 +1,5 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -12,6 +12,8 @@ import {
   resepEmoji as sharedResepEmoji,
   deskripsiMakanan as sharedDeskripsiMakanan
 } from '../../lib/rpg-masakanData.js'
+
+const RESTORAN_IMAGE = 'https://c.termai.cc/i168/6QCDiTP.jpg'
 
 function formatNama(nama) {
   if (!nama || typeof nama !== 'string') return ''
@@ -131,7 +133,7 @@ const hargaBeli = { ...sharedHargaBeli }
     cap += `> ↳ Lihat daftar command: *${usedPrefix}restoran command*\n`
     cap += `> ↳ Baca panduan/tutorial: *${usedPrefix}restoran guide*\n`
     cap += `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, RESTORAN_IMAGE)
   }
 
   if (tipe === 'command') {
@@ -162,7 +164,8 @@ const hargaBeli = { ...sharedHargaBeli }
       text: 'Temukan menu favorit dan tukarkan masakanmu dengan uang.',
       buttonText: '🍽️ JELAJAHI RESTORAN',
       sections: [{ title: 'Menu restoran', rows }],
-      fallbackText
+      fallbackText,
+      thumbnailUrl: RESTORAN_IMAGE
     })
   }
 
@@ -177,7 +180,7 @@ const hargaBeli = { ...sharedHargaBeli }
       `> ↳ Jual stok: *${usedPrefix}restoran jual <no/nama> <jumlah/all>*\n` +
       `> ↳ Jual semua stok: *${usedPrefix}restoran jual all*\n\n` +
       `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, RESTORAN_IMAGE)
   }
 
   // INFO DETAIL MAKAN
@@ -221,7 +224,7 @@ const hargaBeli = { ...sharedHargaBeli }
       cap += `> Sell : Rp ${Math.floor(hargaJual[k] * sellBonus).toLocaleString()}\n\n`
     })
     cap += `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, RESTORAN_IMAGE)
   }
 
   // LIST PAKET
@@ -244,7 +247,7 @@ const hargaBeli = { ...sharedHargaBeli }
       cap += `> Hemat: Rp ${hemat.toLocaleString()}\n\n`
     }
     cap += `─━━━━━━━━━━━━━━─`
-    return m.reply(cap)
+    return sendRpgMsg(conn, m, cap, RESTORAN_IMAGE)
   }
 
   // KONFIRMASI PAKET

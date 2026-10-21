@@ -11,6 +11,7 @@ const AUCTION_ITEM_LIMIT = 5
 const BID_CONFIRMATION_TTL = 2 * 60 * 1000
 const AUCTION_HISTORY_LIMIT = 50
 const AUCTION_NEWS_LIMIT = 10
+const AUCTION_IMAGE = 'https://c.termai.cc/i101/cR27.webp'
 const isValidAuctionAmount = amount =>
   Number.isFinite(Number(amount)) && Number.isInteger(Number(amount)) && Number(amount) > 0
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
@@ -672,10 +673,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       message: m,
       quoted: m,
       footer: '',
+      title: '🔨 AUCTION HOUSE',
+      subtitle: 'Temukan barang langka dan ajukan bid',
       text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
       buttons: rows.map(row => [row.title, row.id]),
       fallbackText,
-      noThumbnail: true,
+      thumbnailUrl: AUCTION_IMAGE,
       noHeader: true
     })
   }
@@ -837,7 +840,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
           { title: '🔤 Daftar sufiks uang', description: 'Lihat daftar sufiks nominal', id: `${prefix}money suffix` }
         ]
       }],
-      fallbackText: auctionText
+      fallbackText: auctionText,
+      thumbnailUrl: AUCTION_IMAGE
     })
   }
 
