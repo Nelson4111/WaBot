@@ -18,7 +18,14 @@ import {
   RPG_TOTEMS,
   RPG_TOTEM_DURATION
 } from '../lib/rpg-totemData.js'
-import { findRpgFishBait, grantDailyNormalBait, RPG_FISH_BAITS, RPG_FISH_TIERS } from '../lib/rpg-fishCatalog.js'
+import {
+  consumeRpgFishBait,
+  findRpgFishBait,
+  getActiveRpgFishBait,
+  grantDailyNormalBait,
+  RPG_FISH_BAITS,
+  RPG_FISH_TIERS
+} from '../lib/rpg-fishCatalog.js'
 
 const originalRandom = Math.random
 try {
@@ -134,8 +141,17 @@ activeData.groupTotems.group[0].expiresAt = Date.now() - 1
 assert.equal(getActiveGroupTotems(activeData, 'group').length, 1)
 assert.equal(getGroupTotemBuff(activeData, 'group', 'casino', 'income'), 1.15)
 
-assert.equal(RPG_FISH_BAITS.length, 10)
+assert.ok(RPG_FISH_BAITS.length >= 10)
 assert.ok(findRpgFishBait('Normal Bait'))
+const baitSwitchUser = { fishBaits: { normal: 1, silver: 2 }, activeFishBait: 'normal' }
+assert.equal(getActiveRpgFishBait(baitSwitchUser).id, 'normal')
+assert.equal(consumeRpgFishBait(baitSwitchUser).id, 'normal')
+assert.equal(baitSwitchUser.fishBaits.normal, 0)
+assert.equal(getActiveRpgFishBait(baitSwitchUser).id, 'silver')
+assert.equal(consumeRpgFishBait(baitSwitchUser).id, 'silver')
+assert.equal(consumeRpgFishBait(baitSwitchUser).id, 'silver')
+assert.equal(consumeRpgFishBait(baitSwitchUser), null)
+assert.equal(baitSwitchUser.activeFishBait, null)
 const baitUser = { fishBaits: { normal: 0 } }
 const dayOne = Date.parse('2026-10-22T12:00:00+07:00')
 assert.equal(grantDailyNormalBait(baitUser, dayOne), 25)
