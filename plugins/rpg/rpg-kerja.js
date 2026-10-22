@@ -563,41 +563,14 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
   }
 
   if (['list', 'l', 'daftar'].includes(action)) {
-    const currentJob = getActiveJob(userRPG)
     const caption = [
       '╭─❏「 💼 DAFTAR PEKERJAAN 」❏',
-      '│ 📋 INFORMASI LOWONGAN KERJA',
       '╰─━━━━━━━━━━━━━━─',
       '',
-      `> 🎮 Level kamu: Lv.${userRPG.level}`,
-      `> 💼 Pekerjaan aktif: ${getJobLabel(currentJob)}`,
-      `> 🏆 Jabatan: ${getCurrentJobTitle(userRPG, currentJob?.job)}`,
+      ...listJobs.map((job, index) => `> ${index + 1}. ${job.job} (Lvl. ${job.lv})`),
       '',
-      '─━━━━━━━━━━━━━━─',
-      '📋 *LIST PEKERJAAN*',
-      '',
+      `ℹ️ Detail: ${usedPrefix}job info <angka/nama>`
     ]
-
-    listJobs.forEach((job, index) => {
-      caption.push(`> ${index + 1}. *${job.job}*`)
-    })
-
-    caption.push('')
-    caption.push('─━━━━━━━━━━━━━━─')
-    caption.push(`ℹ️ Detail: ${usedPrefix}job info <nama/nomor>`)
-    caption.push('')
-    caption.push('📌 *CARA KERJA*')
-    caption.push('')
-    caption.push(`> 💼 ${usedPrefix}work`)
-    caption.push(`> 💼 ${usedPrefix}work all`)
-    caption.push('')
-    caption.push('> Work otomatis memilih pekerjaan yang cooldown-nya siap.')
-    caption.push('> Work all menjalankan semua pekerjaan yang cooldown-nya siap.')
-    caption.push('')
-    caption.push('> Gaji akhir dipengaruhi difficulty, jabatan, dan absensi. XP dipengaruhi difficulty.')
-    caption.push('> Hasil kerja menampilkan jumlah akhir yang benar-benar diterima.')
-    caption.push('')
-    caption.push('─━━━━━━━━━━━━━━─')
     return m.reply(caption.join('\n'))
   }
 

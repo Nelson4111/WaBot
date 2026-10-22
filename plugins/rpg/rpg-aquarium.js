@@ -32,12 +32,7 @@ function getOrderedRecords(user) {
     const tierB = fishTiers.findIndex(tier => tier.name === (fishTierByName.get(b.name) || 'TRASH'))
     return tierA - tierB || b.weight - a.weight || a.name.localeCompare(b.name)
   })
-  const localIndexes = new Map()
-  return ordered.map(fish => {
-    const index = (localIndexes.get(fish.name) || 0) + 1
-    localIndexes.set(fish.name, index)
-    return { ...fish, localIndex: index }
-  })
+  return ordered
 }
 
 let handler = async (m, { conn, usedPrefix, text }) => {
@@ -103,10 +98,9 @@ let handler = async (m, { conn, usedPrefix, text }) => {
     visibleRecords.forEach((fish, index) => {
       const number = (page - 1) * pageSize + index + 1
       const emoji = ikanEmoji[fish.name] || ikanEmoji[`ikan_${fish.name}`] || '🐟'
-      const tier = fishTierByName.get(fish.name) || 'RARE'
       const marker = fish.favorite ? ' ⭐ Favorit' : ''
-      cap += `> *${number}. ${formatNama(fish.name)} ${emoji}*\n`
-      cap +=       `> ↳ #${fish.localIndex} ${tier} · ${fish.size} · ${fish.weight.toFixed(2)} Kg${marker}\n`
+      const size = fish.size.charAt(0).toUpperCase() + fish.size.slice(1)
+      cap += `> *${number}. ${size} ${formatNama(fish.name)} (${fish.weight.toFixed(2)} Kg) ${emoji}${marker}*\n`
     })
     if (trashCount) {
       cap += `\n🗑️ *SAMPAH PANCING (TANPA UKURAN)*\n`

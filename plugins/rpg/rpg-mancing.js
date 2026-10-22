@@ -246,7 +246,11 @@ let handler = async (m, { conn, usedPrefix }) => {
     if (fish.tier === 'TRASH') {
       user.ikan[normalizedKey] = (user.ikan[normalizedKey] || 0) + 1
     } else {
-      addFishRecord(user, normalizedKey, fish.size || rollFishSize({ giantAllowed: giantFish, giantChance: giantFish ? 0.005 : 0 }))
+      fish.record = addFishRecord(
+        user,
+        normalizedKey,
+        fish.size || rollFishSize({ giantAllowed: giantFish, giantChance: giantFish ? 0.005 : 0 })
+      )
     }
   }
   addRpgExp(user, totalExp)
@@ -271,13 +275,20 @@ caption += `╰─━━━━━━━━━━━━━━─\n\n`
 caption += `> ↳ ${tierData[highest].stars} ${highest} ${tierData[highest].icon}\n\n`
 
 caption += `🏆 *HASIL TANGKAPAN*\n`
-const fishCounts = new Map()
+const trashCounts = new Map()
 for (const item of draws) {
   const fishKey = normalizeFishKey(item.ikan)
-  fishCounts.set(fishKey, (fishCounts.get(fishKey) || 0) + 1)
+  if (item.tier === 'TRASH') {
+    trashCounts.set(fishKey, (trashCounts.get(fishKey) || 0) + 1)
+    continue
+  }
+  const fishEmoji = ikanEmoji[fishKey] || ikanEmoji[`ikan_${fishKey}`] || '🐟'
+  const size = item.record?.size || item.size || 'medium'
+  const weight = Number(item.record?.weight)
+  caption += `> ↳ ${size.charAt(0).toUpperCase() + size.slice(1)} ${formatNama(fishKey)} (${weight.toFixed(2)} Kg) ${fishEmoji}\n`
 }
-for (const [fish, quantity] of fishCounts) {
-  caption += `> ↳ ${formatNama(fish)} ×${quantity}\n`
+for (const [fish, quantity] of trashCounts) {
+  caption += `> ↳ ${ikanEmoji[fish] || ikanEmoji[`ikan_${fish}`] || '🗑️'} ${formatNama(fish)} ×${quantity}\n`
 }
 caption += `\n`
 

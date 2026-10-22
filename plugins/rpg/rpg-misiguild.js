@@ -156,45 +156,51 @@ if(command === 'latihanguild'){
     )
   }
 
-  if (missionInput.toLowerCase() === 'list') {
+const missionArgs = missionInput.split(/\s+/).filter(Boolean)
+const missionAction = missionArgs[0]?.toLowerCase()
+const missionTarget = missionArgs.slice(1).join(' ').trim()
+
+if (missionAction === 'list') {
   let list = `╭─❏「 📜 GUILD EXPEDITION 」❏\n`
   list += `│ ⚔️ *DAFTAR MISI GUILD*\n`
   list += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  list += `│ 📊 Status: ${remainingCooldown > 0 ? `⏳ Cooldown ${Math.ceil(remainingCooldown / 1000)} detik` : '✅ Siap menjalankan misi'}\n`
-  list += `│ 🎯 Level pemain: Lv.${playerLevel}\n`
-  list += `│ 🔓 Misi tertinggi: ${highestAvailable ? `No.${highestAvailable}` : 'belum tersedia'}\n\n`
-  list += `📌 *PILIH MISI*\n`
-  list += `> ↳ Income dan EXP karakter mengikuti difficulty; hadiah di bawah belum termasuk Buff Luck.\n`
-  list += `> ↳ Hadiah bahan personal juga mengikuti multiplier difficulty penerima.\n`
-  if (!canReceiveRareActivityRewards(player)) list += `> ↳ Difficulty ini tidak mendapat Diamond/Gemstone dari misi Guild.\n`
-  list += `> ↳ Hadiah eksekutor langsung masuk ke saldo/.bag; tidak masuk Guild Loot.\n`
-  list += `> ↳ Anggota aktif lain mendapat 50% sebagai pending loot. Klaim dengan .guild loot take.\n\n`
-  list += `> ↳ Anggota aktif berarti memakai fitur RPG apa pun dalam 4 hari terakhir.\n`
-  list += `─━━━━━━━━━━━━━━─\n\n`
+  list += missions.map((mission, index) => `> ${index + 1}. ${mission.name}`).join('\n')
+  list += `\n\nℹ️ Detail: *${usedPrefix}misiguild detail <angka/nama>*`
+  list += `\n⚔️ Jalankan misi: *${usedPrefix}misiguild <angka>*`
 
-  missions.forEach((v, i) => {
-    list += `*${i + 1}. ${v.minLevel <= playerLevel ? '✅' : '🔒'} ⚔️ ${v.name}*\n`
-    list += `> ↳ 📊 Syarat: Lv.${v.minLevel}${v.minLevel > playerLevel ? ' (belum terbuka)' : ''}\n`
-    list += `> ↳ 🏆 Kontribusi: +${v.contrib} Pts\n`
-    list += `> ↳ ✨ Guild Exp dasar: +${v.reward.exp}\n`
-    list += `> ↳ ✨ EXP karakter (sesuai difficulty): +${scaleDifficultyXP(player, v.reward.exp)}\n`
-    const rewards = Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' })
-      .filter(([item]) => Number(v.reward[item]) > 0 && (canReceiveRareActivityRewards(player) || !['diamond', 'gemstone', 'limit'].includes(item)))
-      .map(([item, name]) => {
-        const amount = scaleDifficultyIncome(player, v.reward[item])
-        return `>   ${name}: ${item === 'money' ? `Rp ${amount.toLocaleString('id-ID')} (dasar Rp ${Number(v.reward[item]).toLocaleString('id-ID')})` : `${amount.toLocaleString('id-ID')} (dasar ${Number(v.reward[item]).toLocaleString('id-ID')})`}`
-      })
-    list += `> ↳ 🎁 Hadiah:\n${rewards.join('\n')}\n\n`
-  })
-
-  list += `─━━━━━━━━━━━━━━─\n\n`
-  list += `📌 *CARA MEMILIH MISI*\n`
-  list += `> ↳ *${usedPrefix}misiguild [nomor]* atau *${usedPrefix}guild mission [nomor]*\n\n`
-  list += `─━━━━━━━━━━━━━━─`
-
-  return sendRpgMsg(conn, m, list, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg')
+  return m.reply(list)
 }
+
+  if (missionAction === 'detail') {
+    const numericIndex = /^\d+$/.test(missionTarget) ? Number(missionTarget) - 1 : -1
+    const selected = numericIndex >= 0
+      ? missions[numericIndex]
+      : missions.find(mission => mission.name.toLowerCase() === missionTarget.toLowerCase())
+    if (!selected) {
+      return m.reply(`❌ Misi tidak ditemukan. Cek *${usedPrefix}misiguild list* atau gunakan *${usedPrefix}misiguild detail <angka/nama>.*`)
+    }
+
+    const rewards = Object.entries({ money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' })
+      .filter(([item]) => Number(selected.reward[item]) > 0 && (canReceiveRareActivityRewards(player) || !['diamond', 'gemstone', 'limit'].includes(item)))
+      .map(([item, name]) => {
+        const amount = scaleDifficultyIncome(player, selected.reward[item])
+        return `> ${name}: ${item === 'money' ? `Rp ${amount.toLocaleString('id-ID')}` : amount.toLocaleString('id-ID')}`
+      })
+
+    return m.reply(
+      `╭─❏「 📜 DETAIL MISI GUILD 」❏\n` +
+      `│ *${selected.name}*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> 🎯 Syarat level: Lv.${selected.minLevel}\n` +
+      `> 🏆 Kontribusi: +${selected.contrib} Pts\n` +
+      `> ✨ Guild EXP dasar: +${selected.reward.exp}\n` +
+      `> ✨ EXP karakter: +${scaleDifficultyXP(player, selected.reward.exp)}\n` +
+      `> 🔓 Status: ${playerLevel >= selected.minLevel ? 'Terbuka' : 'Terkunci'}\n\n` +
+      `🎁 *HADIAH*\n${rewards.join('\n')}\n\n` +
+      `📌 Jalankan: *${usedPrefix}misiguild ${missions.indexOf(selected) + 1}*`
+    )
+  }
 
   if (!/^\d+$/.test(missionInput)) return m.reply(`❌ Nomor misi harus angka.\nKetik *${usedPrefix}misiguild list* untuk melihat daftar.`)
   let index = Number(missionInput) - 1
@@ -335,7 +341,7 @@ cap += `\n╰─━━━━━━━━━━━━━━─`
   return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/ea0f5aef77da.jpeg', { contextInfo: { mentionedJid: [m.sender] } })
 }
 
-handler.help = ['misiguild', 'pestaguild', 'latihanguild']
+handler.help = ['misiguild', 'misiguild list', 'misiguild detail <angka/nama>', 'pestaguild', 'latihanguild']
 handler.tags = ['rpg']
 handler.command = ['misiguild', 'pestaguild', 'latihanguild']
 

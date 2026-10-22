@@ -105,19 +105,27 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     list += `│ Daftar nama dungeon.\n`
     list += `╰─━━━━━━━━━━━━━━─\n\n`
 
-    list += Object.entries(dungeons)
-      .map(([key, dungeon]) => `> *${key.toUpperCase()}* • ${dungeon.name}`)
+    const dungeonEntries = Object.entries(dungeons)
+    list += dungeonEntries
+      .map(([, dungeon], index) => `> ${index + 1}. ${dungeon.name}`)
       .join('\n')
-    list += `\n\nℹ️ Detail: *${usedPrefix}dungeon info <nama>*`
+    list += `\n\nℹ️ Detail: *${usedPrefix}dungeon detail <angka/nama>*`
 
     return m.reply(list)
   }
 
-  if (action === 'info') {
-    const selectedKey = Object.keys(dungeons).find(key => key === target || dungeons[key].name.toLowerCase() === target)
+  if (action === 'detail' || action === 'info') {
+    const dungeonEntries = Object.entries(dungeons)
+    const numericIndex = /^\d+$/.test(target) ? Number(target) - 1 : -1
+    const selectedEntry = numericIndex >= 0
+      ? dungeonEntries[numericIndex]
+      : dungeonEntries.find(([key, dungeon]) =>
+        key.toLowerCase() === target || dungeon.name.toLowerCase() === target
+      )
+    const selectedKey = selectedEntry?.[0]
     const selected = selectedKey ? dungeons[selectedKey] : null
     if (!selected) {
-      return m.reply(`❌ Dungeon tidak ditemukan. Cek *${usedPrefix}dungeon list* atau gunakan *${usedPrefix}dungeon info <nama>.*`)
+      return m.reply(`❌ Dungeon tidak ditemukan. Cek *${usedPrefix}dungeon list* atau gunakan *${usedPrefix}dungeon detail <angka/nama>.*`)
     }
     return m.reply(
       `╭─❏「 🏰 DETAIL DUNGEON 」❏\n` +
@@ -353,7 +361,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   )
 }
 
-handler.help = ['dungeon', 'dungeon list', 'dungeon info <nama>']
+handler.help = ['dungeon', 'dungeon list', 'dungeon detail <angka/nama>']
 handler.tags = ['rpg']
 handler.command = ['dungeon']
 export default handler
