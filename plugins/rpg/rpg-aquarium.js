@@ -1,19 +1,7 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { ikanEmoji, normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
+import { ikanEmoji, normalizeFishKey, RPG_FISH_TIERS as fishTiers, RPG_FISH_TIER_BY_NAME as fishTierByName } from '../../lib/rpg-fishCatalog.js'
 import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { ensureFishDetails, getAllFishRecords, isTrashFish, migrateAllFishDetails } from '../../lib/rpg-fishSizes.js'
-
-const fishTiers = [
-  { name: 'SECRET', icon: '🔮', fish: ['poseidon', 'flying_dutchman', 'aquaman', 'godzilla', 'zeus_laut', 'atlas_laut', 'kitsune_laut', 'leviathan_primordial', 'davy_jones', 'caylpso', 'ariel_little_mermaid', 'treasure_chest', 'ancient_relic', 'pirate_gold', 'mermaid_tear', 'ikan_aurora', 'ikan_kapal_hantu', 'ikan_pahlawan', 'ikan_kaiju', 'ikan_petir', 'ikan_puncak', 'ikan_rubah_laut', 'ikan_kapten_hitam', 'ikan_laut_biru', 'ikan_putri_laut', 'peti_harta', 'artefak_laut', 'emas_pirate', 'air_mata_putri'] },
-  { name: 'MYTHIC', icon: '🌌', fish: ['kraken', 'megladon', 'leviathan', 'sea_dragon', 'phoenix_laut', 'hydra_laut', 'cerberus_laut', 'titan_kura', 'paus_putih', 'ikan_dewa', 'naga_laut', 'raja_ubur', 'penjaga_karang', 'putri_duyung', 'dewa_katak', 'kuda_kristal', 'peti_karun', 'koin_emas_kuno', 'mutiara_raja', 'mahkota_karang'] },
-  { name: 'LEGENDARY', icon: '👑', fish: ['hiu_putih', 'hiu_harimau', 'hiu_martil', 'paus_orca', 'paus_biru', 'penyu_raksasa', 'ikan_pari_manta', 'ikan_napoleon', 'kerapu_raksasa', 'marlin', 'tuna_sirip_biru', 'pedang_laut', 'ikan_koi_emas', 'lobster_raja', 'kepiting_raksasa', 'gurita_raksasa', 'sotong_raksasa', 'lionfish', 'ikan_badut', 'ikan_kupu', 'ikan_malaikat', 'ikan_diskus', 'ikan_arwana', 'ikan_arapaima', 'piranha', 'belut_listrik', 'ikan_duyung', 'ubur_ubur_bulan', 'bintang_laut', 'anemon_laut', 'karang_indah', 'kerang_mutia', 'siput_laut', 'landak_laut', 'peti_besi', 'koin_emas', 'mutiara_hitam', 'trisula_patah'] },
-  { name: 'EPIC', icon: '💎', fish: ['hiu_hitam', 'hiu_biru', 'lumba_lumba', 'paus_pembunuh', 'penyu_hijau', 'ikan_pari', 'kerapu', 'tuna', 'salmon', 'barakuda', 'ikan_todak', 'ikan_terbang', 'ubur_ubur', 'ubur_ubur_listrik', 'bintang_laut_ungu', 'karang_keras', 'kerang', 'peti_kayu', 'koin_perak', 'mutiara_biasa', 'karang_antik'] },
-  { name: 'RARE', icon: '✨', fish: ['kakap', 'kerapu_kecil', 'sarden', 'makarel', 'kembung', 'tongkol', 'cumi', 'gurita_kecil', 'udang', 'kepiting', 'lobster', 'kerang_hijau', 'kerang_darah', 'siput', 'landak_laut_kecil', 'anemon', 'rumput_laut', 'karang', 'peti_karat', 'koin_tembaga', 'mutiara_retak', 'cangkir_pecah'] },
-  { name: 'UNCOMMON', icon: '💙', fish: ['ikan_mas', 'ikan_nila', 'ikan_lele', 'ikan_patin', 'ikan_gurame', 'ikan_mujair', 'ikan_gabus', 'ikan_wader', 'ikan_seluang'] },
-  { name: 'COMMON', icon: '🤍', fish: ['ikan_teri', 'ikan_pepetek', 'ikan_layang', 'ikan_kembung_kecil', 'ikan_selar', 'ikan_tembang', 'ikan_julung'] },
-  { name: 'TRASH', icon: '🗑️', fish: [] }
-]
-const fishTierByName = new Map(fishTiers.flatMap(tier => tier.fish.map(name => [normalizeFishKey(name), tier.name])))
 
 function formatNama(name) {
   return String(name || '')
@@ -110,7 +98,7 @@ let handler = async (m, { conn, usedPrefix, text }) => {
       cap += `> *${number}. ${sizeCode} ${formatNama(fish.name)} (${fish.weight.toFixed(2)} Kg) ${emoji}${marker}*\n`
     })
     if (trashCount) {
-      cap += `\n🗑️ *SAMPAH PANCING (TANPA UKURAN)*\n`
+      cap += `\n🗑️ *TANGKAPAN SAMPAH*\n`
       for (const [name, amount] of Object.entries(user.ikan).filter(([name]) => isTrashFish(name))) {
         cap += `> ${formatNama(name)} x${formatRpgNumber(amount)}\n`
       }

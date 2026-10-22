@@ -1,5 +1,5 @@
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
+import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { ensureFishDetails, getAllFishRecords, migrateAllFishDetails } from '../../lib/rpg-fishSizes.js'
 import { ikanEmoji } from '../../lib/rpg-fishCatalog.js'
@@ -18,7 +18,7 @@ let handler = async (m, { conn, groupMetadata }) => {
     migrated = true
   }
   const users = filterLeaderboardUsers(
-    filterRpgPanelUsers(Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg)),
+    Object.keys(wdb.users).filter(id => wdb.users[id]?.rpg),
     conn
   ).filter(isValidRpgUserId)
   let best = null

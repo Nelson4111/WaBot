@@ -89,7 +89,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     if (pending.operation === 'use') {
-      if (!user.totems.includes(totem.id)) {
+      const ownedIndex = user.totems.indexOf(totem.id)
+      if (ownedIndex < 0) {
         await saveDB(wdb)
         return reply('❌ Totem ini sudah tidak ada di koleksimu.')
       }
@@ -115,9 +116,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         )
         : [...validRecords, nextRecord]
       wdb.data.groupTotems[m.chat] = nextRecords
+      user.totems.splice(ownedIndex, 1)
       await saveDB(wdb)
       return reply(
-        `✅ *${totem.name}* aktif untuk grup ini.\n` +
+        `✅ *${totem.name}* terpakai dan aktif untuk grup ini.\n` +
         (extendsDuration
           ? '> ↳ Durasi totem yang sama ditambah 1 jam.'
           : '> ↳ Durasi aktif: 1 jam.')

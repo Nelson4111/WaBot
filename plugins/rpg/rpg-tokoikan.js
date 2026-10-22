@@ -1,6 +1,13 @@
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
-import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
+import {
+  findRpgFishBait,
+  fishRenameMap,
+  ikanEmoji,
+  normalizeFishKey,
+  migrateLegacyFishInventory,
+  RPG_FISH_BAITS
+} from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
@@ -230,6 +237,119 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let args = typeof text === 'string' ? text.trim().toLowerCase().split(/\s+/).filter(Boolean) : []
   let tipe = args[0]
 
+  if (tipe === 'bait' || tipe === 'umpan') {
+    user.fishBaits ||= {}
+    const action = args[1] || 'list'
+    if (['list', 'shop', 'toko'].includes(action)) {
+      const rows = RPG_FISH_BAITS.map((bait, index) => ({
+        title: bait.name.slice(0, 24),
+        description: 'Lihat detail umpan',
+        id: `${usedPrefix}pasar bait info ${index + 1}`
+      }))
+      const names = RPG_FISH_BAITS.map(bait => `> ${bait.name}`).join('\n')
+      return sendRpgButtons(conn, {
+        chat: m.chat,
+        message: m,
+        quoted: m,
+        title: '🪱 DAFTAR UMPAN',
+        subtitle: 'Pilih nama untuk melihat detail',
+        text: `Daftar umpan:\n${names}\n\nPilih tombol umpan untuk melihat info dan harga.`,
+        buttonText: 'PILIH UMPAN',
+        sections: [{ title: 'Umpan tersedia', rows }],
+        fallbackText:
+          `╭─❏「 🪱 DAFTAR UMPAN 」❏\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n${names}\n\n` +
+          `Detail: *${usedPrefix}pasar bait info <nomor/nama>*`,
+        reply: fallback => m.reply(fallback)
+      })
+    }
+
+    if (action === 'info') {
+      const selection = args.slice(2).join(' ')
+      const bait = /^\d+$/.test(selection)
+        ? RPG_FISH_BAITS[Number(selection) - 1]
+        : findRpgFishBait(selection)
+      if (!bait) return m.reply(`Umpan tidak ditemukan. Lihat *${usedPrefix}pasar bait*.`)
+      return m.reply(
+        `╭─❏「 ${bait.emoji} INFO UMPAN 」❏\n` +
+        `│ *${bait.name}*\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Efek: ${bait.description}\n` +
+        `> ↳ Harga: Rp ${bait.price.toLocaleString('id-ID')} / buah\n` +
+        `> ↳ Stokmu: ${Math.max(0, Math.floor(Number(user.fishBaits[bait.id]) || 0))}\n\n` +
+        `Beli: *${usedPrefix}pasar bait buy ${bait.id} [jumlah]*`
+      )
+    }
+
+    if (['yes', 'ya', 'no', 'tidak'].includes(action)) {
+      const pending = user.pendingBaitPurchase
+      if (!pending || Date.now() > pending.expiresAt) {
+        delete user.pendingBaitPurchase
+        await saveDB(wdb)
+        return m.reply('⌛ Konfirmasi pembelian umpan tidak ditemukan atau sudah kedaluwarsa.')
+      }
+      delete user.pendingBaitPurchase
+      if (['no', 'tidak'].includes(action)) {
+        await saveDB(wdb)
+        return m.reply('✅ Pembelian umpan dibatalkan.')
+      }
+      const bait = findRpgFishBait(pending.baitId)
+      const amount = Number(pending.amount)
+      const total = Number(pending.total)
+      if (!bait || !Number.isSafeInteger(amount) || amount < 1 ||
+        !Number.isSafeInteger(total) || total !== bait.price * amount ||
+        (Number(wdb.money[m.sender]) || 0) < total) {
+        await saveDB(wdb)
+        return m.reply('❌ Saldo atau data pembelian berubah. Ulangi pembelian umpan.')
+      }
+      wdb.money[m.sender] -= total
+      user.fishBaits[bait.id] = Math.max(0, Math.floor(Number(user.fishBaits[bait.id]) || 0)) + amount
+      await saveDB(wdb)
+      return m.reply(`✅ Berhasil membeli ${amount}x *${bait.name}* seharga Rp ${total.toLocaleString('id-ID')}.`)
+    }
+
+    if (action === 'buy' || action === 'beli') {
+      const values = args.slice(2)
+      let amount = 1
+      if (values.length > 1 && /^\d+$/.test(values[values.length - 1])) {
+        amount = Number(values.pop())
+      }
+      const selection = values.join(' ')
+      const bait = /^\d+$/.test(selection)
+        ? RPG_FISH_BAITS[Number(selection) - 1]
+        : findRpgFishBait(selection)
+      if (!bait) return m.reply(`Umpan tidak ditemukan. Lihat *${usedPrefix}pasar bait*.`)
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000) {
+        return m.reply('Jumlah pembelian harus 1-100000.')
+      }
+      const total = bait.price * amount
+      if (!Number.isSafeInteger(total)) return m.reply('Total pembelian terlalu besar.')
+      if ((Number(wdb.money[m.sender]) || 0) < total) {
+        return m.reply(`Saldo tidak cukup. Total pembelian: Rp ${total.toLocaleString('id-ID')}.`)
+      }
+      user.pendingBaitPurchase = {
+        baitId: bait.id,
+        amount,
+        total,
+        expiresAt: Date.now() + RPG_CONFIRMATION_TTL
+      }
+      await saveDB(wdb)
+      return sendRpgConfirmButtons(conn, m, {
+        text:
+          `🪱 Beli ${amount}x *${bait.name}* seharga Rp ${total.toLocaleString('id-ID')}?\n` +
+          `Konfirmasi: *${usedPrefix}pasar bait yes* · Batalkan: *${usedPrefix}pasar bait no*`,
+        title: 'KONFIRMASI PEMBELIAN UMPAN',
+        subtitle: `${bait.name} ×${amount}`,
+        acceptText: '✅ Beli Umpan',
+        acceptCommand: `${usedPrefix}pasar bait yes`,
+        cancelText: '↩️ Batalkan',
+        cancelCommand: `${usedPrefix}pasar bait no`
+      })
+    }
+
+    return m.reply(`Gunakan *${usedPrefix}pasar bait*, *${usedPrefix}pasar bait info <nomor/nama>*, atau *${usedPrefix}pasar bait buy <nomor/nama> [jumlah]*.`)
+  }
+
   if (!args.length) {
     const cap = `╭─❏「 🎣 PASAR AVELIA 」❏\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -244,12 +364,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     const fallbackText = `╭─❏「 📋 COMMAND PASAR 」❏\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ${usedPrefix}pasar list\n` +
+      `> ${usedPrefix}pasar bait\n` +
+      `> ${usedPrefix}pasar bait info <nomor/nama>\n` +
+      `> ${usedPrefix}pasar bait buy <nomor/nama> [jumlah]\n` +
       `> ${usedPrefix}pasar jual <no/nama> <jumlah/all>\n` +
       `> ${usedPrefix}pasar jual all\n` +
       `> ${usedPrefix}pasar guide\n\n` +
       `─━━━━━━━━━━━━━━─`
     const rows = [
       { title: '🐟 Hasil tangkapan', description: 'Lihat ikan, hasil mancing, dan harga jual', id: `${usedPrefix}pasar list` },
+      { title: '🪱 Beli umpan', description: 'Lihat umpan untuk memancing', id: `${usedPrefix}pasar bait` },
       { title: '🎣 Jual hasil mancing', description: 'Pilih item untuk ditukar menjadi uang', id: `${usedPrefix}pasar jual` },
       { title: '📦 Jual seluruh stok', description: 'Jual semua ikan dan sampah pendakian', id: `${usedPrefix}pasar jual all` },
       { title: '🎣 Mulai memancing', description: 'Kumpulkan tangkapan baru untuk dijual', id: `${usedPrefix}mancing` },
@@ -272,6 +396,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `│ 🎣 Jual ikan, barang hasil memancing, dan sampah pendakian.\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Lihat daftar item dan harga: *${usedPrefix}pasar list*\n` +
+      `> ↳ Beli umpan: *${usedPrefix}pasar bait*\n` +
       `> ↳ Jual item: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n` +
       `> ↳ Jual semua ikan dan sampah pendakian: *${usedPrefix}pasar jual all*\n` +
       `> ↳ Mulai memancing: *${usedPrefix}mancing*\n\n` +
