@@ -18,6 +18,7 @@ import {
   RPG_TOTEMS,
   RPG_TOTEM_DURATION
 } from '../lib/rpg-totemData.js'
+import { findRpgFishBait, grantDailyNormalBait, RPG_FISH_BAITS, RPG_FISH_TIERS } from '../lib/rpg-fishCatalog.js'
 
 const originalRandom = Math.random
 try {
@@ -132,5 +133,17 @@ assert.equal(getGroupTotemBuff(activeData, 'group', 'casino', 'income'), 1.1 * 1
 activeData.groupTotems.group[0].expiresAt = Date.now() - 1
 assert.equal(getActiveGroupTotems(activeData, 'group').length, 1)
 assert.equal(getGroupTotemBuff(activeData, 'group', 'casino', 'income'), 1.15)
+
+assert.equal(RPG_FISH_BAITS.length, 10)
+assert.ok(findRpgFishBait('Normal Bait'))
+const baitUser = { fishBaits: { normal: 0 } }
+const dayOne = Date.parse('2026-10-22T12:00:00+07:00')
+assert.equal(grantDailyNormalBait(baitUser, dayOne), 25)
+assert.equal(grantDailyNormalBait(baitUser, dayOne + 1000), 0)
+assert.equal(grantDailyNormalBait(baitUser, dayOne + 24 * 60 * 60 * 1000), 0)
+baitUser.fishBaits.normal = 24
+assert.equal(grantDailyNormalBait(baitUser, dayOne + 48 * 60 * 60 * 1000), 25)
+assert.equal(baitUser.fishBaits.normal, 49)
+assert.equal(RPG_FISH_TIERS.length, 8)
 
 console.log('rpg fish size and totem tests passed')
