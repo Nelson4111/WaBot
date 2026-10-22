@@ -95,12 +95,19 @@ let handler = async (m, { conn, usedPrefix, text }) => {
     cap += `Kamu belum punya koleksi ikan.\nKetik *${usedPrefix}mancing* untuk mulai.`
   } else {
     cap += `🐟 *KOLEKSI IKAN*\n`
+    let lastTier
     visibleRecords.forEach((fish, index) => {
       const number = (page - 1) * pageSize + index + 1
       const emoji = ikanEmoji[fish.name] || ikanEmoji[`ikan_${fish.name}`] || '🐟'
       const marker = fish.favorite ? ' ⭐ Favorit' : ''
-      const size = fish.size.charAt(0).toUpperCase() + fish.size.slice(1)
-      cap += `> *${number}. ${size} ${formatNama(fish.name)} (${fish.weight.toFixed(2)} Kg) ${emoji}${marker}*\n`
+      const tier = fishTierByName.get(fish.name) || 'RARE'
+      if (tier !== lastTier) {
+        const tierInfo = fishTiers.find(item => item.name === tier)
+        cap += `\n${tierInfo?.icon || '🐟'} *${tier}*\n`
+        lastTier = tier
+      }
+      const sizeCode = ({ small: 'S', medium: 'M', big: 'B', giant: 'G' })[fish.size] || 'M'
+      cap += `> *${number}. ${sizeCode} ${formatNama(fish.name)} (${fish.weight.toFixed(2)} Kg) ${emoji}${marker}*\n`
     })
     if (trashCount) {
       cap += `\n🗑️ *SAMPAH PANCING (TANPA UKURAN)*\n`

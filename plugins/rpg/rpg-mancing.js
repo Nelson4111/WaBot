@@ -283,9 +283,18 @@ for (const item of draws) {
     continue
   }
   const fishEmoji = ikanEmoji[fishKey] || ikanEmoji[`ikan_${fishKey}`] || '🐟'
-  const size = item.record?.size || item.size || 'medium'
+  const sizeCode = ({ small: 'S', medium: 'M', big: 'B', giant: 'G' })[item.record?.size || item.size] || 'M'
+  const tierCode = ({
+    COMMON: 'C',
+    UNCOMMON: 'U',
+    RARE: 'R',
+    EPIC: 'E',
+    LEGENDARY: 'L',
+    MYTHIC: 'M',
+    SECRET: 'S'
+  })[item.tier] || 'R'
   const weight = Number(item.record?.weight)
-  caption += `> ↳ ${size.charAt(0).toUpperCase() + size.slice(1)} ${formatNama(fishKey)} (${weight.toFixed(2)} Kg) ${fishEmoji}\n`
+  caption += `> ↳ ${tierCode}${sizeCode} ${formatNama(fishKey)} (${weight.toFixed(2)} Kg) ${fishEmoji}\n`
 }
 for (const [fish, quantity] of trashCounts) {
   caption += `> ↳ ${ikanEmoji[fish] || ikanEmoji[`ikan_${fish}`] || '🗑️'} ${formatNama(fish)} ×${quantity}\n`
