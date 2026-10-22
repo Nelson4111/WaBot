@@ -6,7 +6,8 @@ import {
   ikanEmoji,
   normalizeFishKey,
   migrateLegacyFishInventory,
-  RPG_FISH_BAITS
+  RPG_FISH_BAITS,
+  RPG_FISH_TIERS
 } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
@@ -367,13 +368,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ${usedPrefix}pasar bait\n` +
       `> ${usedPrefix}pasar bait info <nomor/nama>\n` +
       `> ${usedPrefix}pasar bait buy <nomor/nama> [jumlah]\n` +
+      `> ${usedPrefix}pasar tier\n` +
       `> ${usedPrefix}pasar jual <no/nama> <jumlah/all>\n` +
+      `> ${usedPrefix}pasar jual tier <kategori> [jumlah/all]\n` +
       `> ${usedPrefix}pasar jual all\n` +
       `> ${usedPrefix}pasar guide\n\n` +
       `─━━━━━━━━━━━━━━─`
     const rows = [
       { title: '🐟 Hasil tangkapan', description: 'Lihat ikan, hasil mancing, dan harga jual', id: `${usedPrefix}pasar list` },
       { title: '🪱 Beli umpan', description: 'Lihat umpan untuk memancing', id: `${usedPrefix}pasar bait` },
+      { title: '🏷️ Jual berdasarkan tier', description: 'Pilih kategori ikan yang ingin dijual', id: `${usedPrefix}pasar tier` },
       { title: '🎣 Jual hasil mancing', description: 'Pilih item untuk ditukar menjadi uang', id: `${usedPrefix}pasar jual` },
       { title: '📦 Jual seluruh stok', description: 'Jual semua ikan dan sampah pendakian', id: `${usedPrefix}pasar jual all` },
       { title: '🎣 Mulai memancing', description: 'Kumpulkan tangkapan baru untuk dijual', id: `${usedPrefix}mancing` },
@@ -398,10 +402,24 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Lihat daftar item dan harga: *${usedPrefix}pasar list*\n` +
       `> ↳ Beli umpan: *${usedPrefix}pasar bait*\n` +
       `> ↳ Jual item: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n` +
+      `> ↳ Jual ikan berdasarkan tier: *${usedPrefix}pasar jual tier <kategori> [jumlah/all]*\n` +
       `> ↳ Jual semua ikan dan sampah pendakian: *${usedPrefix}pasar jual all*\n` +
+      `> ↳ Daftar tier: *${usedPrefix}pasar tier*\n` +
       `> ↳ Mulai memancing: *${usedPrefix}mancing*\n\n` +
       `─━━━━━━━━━━━━━━─`
     return sendRpgMsg(conn, m, cap, PASAR_IMAGE)
+  }
+
+  if (tipe === 'tier') {
+    return m.reply(
+      `╭─❏「 🐟 TIER PASAR 」❏\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      RPG_FISH_TIERS.map(tier =>
+        `> ${tier.icon} ${tier.name}`
+      ).join('\n') +
+      `\n\nJual semua ikan tier: *${usedPrefix}pasar jual tier <kategori>*\n` +
+      `Jual sejumlah ikan: *${usedPrefix}pasar jual tier <kategori> <jumlah>*`
+    )
   }
 
   if (tipe === 'list') {
@@ -421,7 +439,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     return sendRpgMsg(conn, m, cap, PASAR_IMAGE)
   }
 
-  if (tipe !== 'jual') return m.reply(`❌ Pakai: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*`)
+  if (tipe !== 'jual') {
+    return m.reply(
+      `❌ Pakai: *${usedPrefix}pasar jual <no/nama> <jumlah/all>* atau ` +
+      `*${usedPrefix}pasar jual tier <kategori> [jumlah/all]*`
+    )
+  }
   args = args.slice(1)
 
   if (['ya', 'yes', 'batal', 'no'].includes(args[0])) {
@@ -470,6 +493,102 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
+  }
+
+  if (args[0] === 'tier') {
+    const selectedTier = RPG_FISH_TIERS.find(tier => tier.name === String(args[1] || '').toUpperCase())
+    if (!selectedTier) {
+      return m.reply(`Kategori tier tidak ditemukan. Lihat *${usedPrefix}pasar tier*.`)
+    }
+    const quantityInput = String(args[2] || 'all').toLowerCase()
+    const requestedAmount = quantityInput === 'all' ? Infinity : Number(quantityInput)
+    if (requestedAmount !== Infinity && (!Number.isSafeInteger(requestedAmount) || requestedAmount < 1)) {
+      return m.reply('Jumlah penjualan harus berupa angka positif atau `all`.')
+    }
+
+    const candidates = []
+    const seenItems = new Set()
+    for (const rawName of selectedTier.fish) {
+      const item = normalizeFishKey(rawName)
+      if (seenItems.has(item) || !harga[item]) continue
+      seenItems.add(item)
+      if (isTrashFish(item)) {
+        const quantity = Math.max(0, Math.floor(Number(user.ikan[item]) || 0))
+        if (quantity) candidates.push({
+          item,
+          quantity,
+          bucket: 'ikan',
+          itemTotal: Math.floor(harga[item].harga * sellBonus) * quantity
+        })
+        continue
+      }
+      const fish = getAvailableFish(item)
+      if (fish.length) candidates.push({
+        item,
+        quantity: fish.length,
+        bucket: 'ikan',
+        fishIds: fish.map(record => record.id),
+        itemTotal: getFishBasePrice(item, fish)
+      })
+    }
+
+    const availableAmount = candidates.reduce((total, entry) => total + entry.quantity, 0)
+    if (!availableAmount) return m.reply(`Kamu tidak punya ikan tier ${selectedTier.name} yang bisa dijual.`)
+    if (requestedAmount !== Infinity && requestedAmount > availableAmount) {
+      return m.reply(`Stok tier ${selectedTier.name} tidak cukup. Kamu punya ${availableAmount} ikan yang bisa dijual.`)
+    }
+
+    let remaining = requestedAmount
+    const entries = candidates.flatMap(candidate => {
+      if (remaining <= 0) return []
+      const quantity = Math.min(candidate.quantity, remaining)
+      remaining -= quantity
+      if (quantity === candidate.quantity) return [candidate]
+      if (isTrashFish(candidate.item)) {
+        return [{
+          item: candidate.item,
+          quantity,
+          bucket: 'ikan',
+          itemTotal: Math.floor(harga[candidate.item].harga * sellBonus) * quantity
+        }]
+      }
+      const fishIds = candidate.fishIds.slice(0, quantity)
+      const selectedFish = getFishRecords(user, candidate.item)
+        .filter(record => fishIds.includes(record.id))
+      return [{
+        item: candidate.item,
+        quantity,
+        bucket: 'ikan',
+        fishIds,
+        itemTotal: getFishBasePrice(candidate.item, selectedFish)
+      }]
+    })
+    const baseTotal = entries.reduce((total, entry) => total + entry.itemTotal, 0)
+    const total = scaleDifficultyIncome(user, baseTotal)
+    user.pendingPasarSell = {
+      entries,
+      total,
+      expiresAt: Date.now() + RPG_CONFIRMATION_TTL
+    }
+    await saveDB(wdb)
+    const list = entries.map(entry =>
+      `> ${harga[entry.item].emoji} ${formatNama(entry.item)} ×${entry.quantity}`
+    ).join('\n')
+    return sendRpgConfirmButtons(conn, m, {
+      text:
+        `╭─❏「 ⚠️ KONFIRMASI JUAL TIER 」❏\n` +
+        `│ ${selectedTier.icon} Tier ${selectedTier.name}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${list}\n\n` +
+        `> ↳ 💰 Perkiraan diterima: Rp ${total.toLocaleString()}\n\n` +
+        `Konfirmasi: *${usedPrefix}pasar jual ya* · Batalkan: *${usedPrefix}pasar jual batal*`,
+      title: `JUAL TIER ${selectedTier.name}`,
+      subtitle: `${availableAmount} ikan tersedia`,
+      acceptText: '💰 Jual Tier',
+      acceptCommand: `${usedPrefix}pasar jual ya`,
+      cancelText: '↩️ Batalkan',
+      cancelCommand: `${usedPrefix}pasar jual batal`
+    })
   }
 
   if (args[0] === 'all') {
@@ -614,7 +733,7 @@ if (amount === 'all') {
   )
 }
 
-handler.help = ['pasar', 'pasar command', 'pasar list', 'pasar guide', 'pasar jual <no/nama> <jumlah/all>', 'pasar jual all', 'tokoikan']
+handler.help = ['pasar', 'pasar command', 'pasar list', 'pasar tier', 'pasar guide', 'pasar jual <no/nama> <jumlah/all>', 'pasar jual tier <kategori> [jumlah/all]', 'pasar jual all', 'tokoikan']
 handler.tags = ['rpg']
 handler.command = /^(pasar|tokoikan|jualikan)$/i
 handler.alias = ['pasar', 'tokoikan', 'jualikan']

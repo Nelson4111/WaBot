@@ -6,7 +6,12 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { addFishRecord, ensureFishDetails, rollFishSize } from '../../lib/rpg-fishSizes.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
-import { findRpgFishBait, grantDailyNormalBait, RPG_FISH_BAITS } from '../../lib/rpg-fishCatalog.js'
+import {
+  consumeRpgFishBait,
+  findRpgFishBait,
+  getActiveRpgFishBait,
+  grantDailyNormalBait
+} from '../../lib/rpg-fishCatalog.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -120,14 +125,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   ensureFishDetails(user)
   user.fishBaits ||= {}
   const dailyBait = grantDailyNormalBait(user)
-  const availableBaits = RPG_FISH_BAITS.filter(bait =>
-    Math.max(0, Math.floor(Number(user.fishBaits[bait.id]) || 0)) > 0
-  )
-  let activeBait = findRpgFishBait(user.activeFishBait)
-  if (!activeBait || !(Number(user.fishBaits[activeBait.id]) > 0)) {
-    activeBait = availableBaits[0] || null
-    user.activeFishBait = activeBait?.id || null
-  }
+  const activeBait = getActiveRpgFishBait(user)
   if (dailyBait) await saveDB(wdb)
 
   for (const ikanLama in user.ikan) {
@@ -156,24 +154,26 @@ let handler = async (m, { conn, usedPrefix }) => {
     return m.reply(`Sabar, ikan belum makan umpan. Tunggu ${sisa} detik lagi`)
   }
 
-  const usedBait = activeBait
-  user.fishBaits[usedBait.id] = Math.max(0, Math.floor(Number(user.fishBaits[usedBait.id]) || 0) - 1)
-  const nextBait = RPG_FISH_BAITS.find(bait => Number(user.fishBaits[bait.id]) > 0)
-  user.activeFishBait = user.fishBaits[usedBait.id] > 0 ? usedBait.id : nextBait?.id || null
-  const baitEffects = usedBait.effects
-  const rollCatchSize = () => {
+  const baitUseCounts = new Map()
+  const consumeBait = () => {
+    const bait = consumeRpgFishBait(user)
+    if (bait) baitUseCounts.set(bait.id, (baitUseCounts.get(bait.id) || 0) + 1)
+    return bait
+  }
+  const firstBait = activeBait
+  const rollCatchSize = effects => {
     const giantChance = giantFish
-      ? Math.min(0.05, 0.005 * (Number(baitEffects.giantChanceMultiplier) || 1))
+      ? Math.min(0.05, 0.005 * (Number(effects.giantChanceMultiplier) || 1))
       : 0
     const rolledSize = rollFishSize({ giantAllowed: giantFish, giantChance })
     if (rolledSize === 'giant') return rolledSize
-    return baitEffects.forcedSize || rolledSize
+    return effects.forcedSize || rolledSize
   }
 
-  if (!baitEffects.preventFailure && Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
+  if (!firstBait.effects.preventFailure && Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
     user.lastMancing = Date.now()
     await saveDB(wdb)
-    return m.reply(`🎣 ${usedBait.name} terpakai, tetapi ikan kabur. Aktivitas gagal; coba lagi setelah cooldown.`)
+    return m.reply(`🎣 Ikan kabur dan tidak ada tangkapan. Umpan tidak berkurang; coba lagi setelah cooldown.`)
   }
 
   let rodLvl = user.fishingrod || 0
@@ -186,23 +186,31 @@ let handler = async (m, { conn, usedPrefix }) => {
   let pRare = Math.min(15.0 + (rodLvl * 1.2), 30.0)
   let pUncommon = Math.max(15.0, 30.0 - (rodLvl * 0.5))
   let pCommon = Math.max(15.0, 30.0 - (rodLvl * 0.8))
-  const rareChanceFactor = (luckyCatch ? 1.5 : 1) * (murkyWaters ? 0.6 : 1) *
-    getDifficultyProfile(user).dropRate * (Number(baitEffects.rareChance) || 1)
-  pSecret *= (secretAwakening ? 2 : 1) * (luckyCatch ? 1.5 : 1)
-  pMythic *= rareChanceFactor * rareBuff
-  pLegend *= rareChanceFactor * rareBuff
-  pEpic *= rareChanceFactor * rareBuff
-  pRare *= rareChanceFactor * rareBuff
+  const baseProbabilities = {
+    secret: pSecret,
+    mythic: pMythic,
+    legendary: pLegend,
+    epic: pEpic,
+    rare: pRare
+  }
 
   const fishCount = 2 + Math.floor(Math.random() * 3) +
-    (Number(baitEffects.extraCatch) || 0) +
-    (Math.random() < (Number(baitEffects.extraCatchChance) || 0) ? 1 : 0) +
+    (Number(firstBait.effects.extraCatch) || 0) +
+    (Math.random() < (Number(firstBait.effects.extraCatchChance) || 0) ? 1 : 0) +
     (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)
   const draws = []
   const seen = new Set()
+  let fishCaughtCount = 0
   let attempts = 0
 
-  const pickFish = () => {
+  const pickFish = effects => {
+    const rareChanceFactor = (luckyCatch ? 1.5 : 1) * (murkyWaters ? 0.6 : 1) *
+      getDifficultyProfile(user).dropRate * (Number(effects.rareChance) || 1)
+    const pSecret = baseProbabilities.secret * (secretAwakening ? 2 : 1) * (luckyCatch ? 1.5 : 1)
+    const pMythic = baseProbabilities.mythic * rareChanceFactor * rareBuff
+    const pLegend = baseProbabilities.legendary * rareChanceFactor * rareBuff
+    const pEpic = baseProbabilities.epic * rareChanceFactor * rareBuff
+    const pRare = baseProbabilities.rare * rareChanceFactor * rareBuff
     let roll = Math.random() * 100
     roll = Math.max(0, Math.min(99.999, roll - getBloodlineBuff(user, 'fishingRarity') * 100 + getBloodlineDrawback(user).fishingRarityPenalty * 100))
     let cum = 0
@@ -236,31 +244,50 @@ let handler = async (m, { conn, usedPrefix }) => {
     return { ikan: trash[Math.floor(Math.random() * trash.length)], exp: 5, tier: 'TRASH' }
   }
 
-  const trashChance = Number(baitEffects.trashChanceMultiplier ?? 1)
+  const trashChance = Number(firstBait.effects.trashChanceMultiplier ?? 1)
   if (Math.random() < trashChance) {
     const trashFish = trash[Math.floor(Math.random() * trash.length)]
-    seen.add(trashFish)
-    draws.push({ ikan: trashFish, exp: 5, tier: 'TRASH' })
+    const bait = consumeBait()
+    if (bait) {
+      seen.add(trashFish)
+      draws.push({ ikan: trashFish, exp: 5, tier: 'TRASH' })
+    }
   }
 
-  while (draws.length < fishCount && attempts < 200) {
+  while (fishCaughtCount < fishCount && attempts < 200) {
+    const availableBait = getActiveRpgFishBait(user)
+    if (!availableBait) break
     attempts++
-    const fish = pickFish()
+    const fish = pickFish(availableBait.effects)
 
     if (fish.tier === 'TRASH' || seen.has(fish.ikan)) continue
 
-    fish.size = rollCatchSize()
+    const bait = consumeBait()
+    if (!bait) break
+    fish.size = rollCatchSize(bait.effects)
     seen.add(fish.ikan)
     draws.push(fish)
+    fishCaughtCount++
   }
 
+  let missedDoubleCatch = false
   if (doubleCatch && Math.random() < 0.25) {
     let extraFish
     for (let attempt = 0; attempt < 200; attempt++) {
-      const candidate = pickFish()
+      const availableBait = getActiveRpgFishBait(user)
+      if (!availableBait) {
+        missedDoubleCatch = true
+        break
+      }
+      const candidate = pickFish(availableBait.effects)
       if (!seen.has(candidate.ikan)) {
+        const bait = consumeBait()
+        if (!bait) {
+          missedDoubleCatch = true
+          break
+        }
         if (candidate.tier !== 'TRASH') {
-          candidate.size = rollCatchSize()
+          candidate.size = rollCatchSize(bait.effects)
         }
         extraFish = candidate
         break
@@ -271,6 +298,10 @@ let handler = async (m, { conn, usedPrefix }) => {
       draws.push({ ...extraFish, exp: 0 })
     }
   }
+  const baitEmpty = !getActiveRpgFishBait(user)
+  const releasedCount = baitEmpty
+    ? Math.max(0, fishCount - fishCaughtCount) + (missedDoubleCatch ? 1 : 0)
+    : 0
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
   const highest = draws.reduce((best, current) => tierOrder.indexOf(current.tier) > tierOrder.indexOf(best) ? current.tier : best, 'TRASH')
@@ -284,7 +315,7 @@ let handler = async (m, { conn, usedPrefix }) => {
       fish.record = addFishRecord(
         user,
         normalizedKey,
-        fish.size || rollCatchSize()
+        fish.size || rollCatchSize(firstBait.effects)
       )
     }
   }
@@ -341,7 +372,11 @@ caption += `─━━━━━━━━━━━━━━─\n\n`
 caption += `✨ *HASIL PENGALAMAN*\n`
 caption += `> ↳ ✨ XP Didapat: +${totalExp}\n`
 caption += `> ↳ 🎣 Level Pancingan: Lv.${rodLvl}\n`
-caption += `> ↳ 🪱 Umpan: ${usedBait.name} (sisa ${Math.floor(Number(user.fishBaits[usedBait.id]) || 0)})\n`
+const baitSummary = [...baitUseCounts].map(([id, quantity]) =>
+  `${findRpgFishBait(id).name} ×${quantity}`
+).join(', ')
+caption += `> ↳ 🪱 Umpan: ${baitSummary || firstBait.name}\n`
+if (releasedCount) caption += `> ↳ 🌊 ${releasedCount} tangkapan lepas karena umpan habis.\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Rod: +${bonus.toFixed(1)}%\n`
 if(getBloodlineBuff(user, 'fishingRarity') > 0) caption += `> ↳ 🧬 Efek Bloodline: peluang tier tinggi +${getBloodlineBuff(user, 'fishingRarity') * 100}%\n`
 

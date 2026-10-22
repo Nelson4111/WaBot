@@ -1,5 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { ikanEmoji, normalizeFishKey, RPG_FISH_TIERS as fishTiers, RPG_FISH_TIER_BY_NAME as fishTierByName } from '../../lib/rpg-fishCatalog.js'
+import { ikanEmoji, RPG_FISH_TIERS as fishTiers, RPG_FISH_TIER_BY_NAME as fishTierByName } from '../../lib/rpg-fishCatalog.js'
 import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { ensureFishDetails, getAllFishRecords, isTrashFish, migrateAllFishDetails } from '../../lib/rpg-fishSizes.js'
 
@@ -62,56 +62,98 @@ let handler = async (m, { conn, usedPrefix, text }) => {
   }
   if (migrated) await saveDB(wdb)
 
-  const page = /^\d+$/.test(args[0] || '') ? Math.max(1, Number(args[0])) : 1
-  const pageSize = 30
-  const totalPages = Math.max(1, Math.ceil(records.length / pageSize))
-  if (page > totalPages) return m.reply(`Halaman tidak tersedia. Aquarium memiliki ${totalPages} halaman.`)
-
   const trashCount = Object.entries(user.ikan || {})
     .filter(([name]) => isTrashFish(name))
     .reduce((total, [, quantity]) => total + (Number(quantity) || 0), 0)
+  const trashItems = Object.entries(user.ikan || {})
+    .filter(([name, quantity]) => isTrashFish(name) && Number(quantity) > 0)
+    .map(([name, quantity]) => ({ type: 'trash', name, quantity: Number(quantity) }))
+
+  const tierAction = action === 'tier'
+  const requestedTier = tierAction ? String(args[1] || '').toUpperCase() : action.toUpperCase()
+  const selectedTier = fishTiers.find(tier => tier.name === requestedTier)
+  const hasTierFilter = Boolean(selectedTier)
+  if ((tierAction || (action && !/^\d+$/.test(action))) && !selectedTier &&
+      !['favorite', 'fav', 'unfavorite', 'unfav'].includes(action)) {
+    return m.reply(`Tier tidak ditemukan. Gunakan *${usedPrefix}fish list* untuk melihat kategori.`)
+  }
+
+  let page = 1
+  if (tierAction) {
+    page = /^\d+$/.test(args[2] || '') ? Math.max(1, Number(args[2])) : 1
+  } else if (hasTierFilter) {
+    page = /^\d+$/.test(args[1] || '') ? Math.max(1, Number(args[1])) : 1
+  } else {
+    page = /^\d+$/.test(args[0] || '') ? Math.max(1, Number(args[0])) : 1
+  }
+
+  const filteredRecords = hasTierFilter
+    ? records.filter(fish => (fishTierByName.get(fish.name) || 'RARE') === selectedTier.name)
+    : records
+  const recordNumbers = new Map(records.map((fish, index) => [`${fish.name}\0${fish.id}`, index + 1]))
+  const listedRecords = filteredRecords.map(fish => ({
+    type: 'fish',
+    fish,
+    number: recordNumbers.get(`${fish.name}\0${fish.id}`)
+  }))
+  const entries = hasTierFilter
+    ? (selectedTier.name === 'TRASH'
+      ? trashItems.map((item, index) => ({ ...item, number: records.length + index + 1 }))
+      : listedRecords)
+    : [
+      ...listedRecords,
+      ...trashItems.map((item, index) => ({ ...item, number: records.length + index + 1 }))
+    ]
+  const pageSize = 25
+  const totalPages = Math.max(1, Math.ceil(entries.length / pageSize))
+  if (page > totalPages) return m.reply(`Halaman tidak tersedia. Aquarium memiliki ${totalPages} halaman.`)
+
   const totalFish = records.length + trashCount
-  const visibleRecords = records.slice((page - 1) * pageSize, page * pageSize)
+  const visibleEntries = entries.slice((page - 1) * pageSize, page * pageSize)
   let cap = `╭─❏「 🐠 AQUARIUM 」❏\n`
   cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
   cap += `│ 📦 Total: ${formatRpgNumber(totalFish)} ikan\n`
   cap += `│ 🐟 Berukuran: ${formatRpgNumber(records.length)} · 🗑️ Sampah: ${formatRpgNumber(trashCount)}\n`
-  cap += `│ 📄 Halaman: ${page}/${totalPages}\n`
+  if (hasTierFilter) cap += `│ 🔎 Tier: ${selectedTier.name}\n`
+  cap += `│ 📄 Halaman: ${page}/${totalPages} · 25 item/halaman\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
-  if (!totalFish) {
+  if (!entries.length) {
     cap += `Kamu belum punya koleksi ikan.\nKetik *${usedPrefix}mancing* untuk mulai.`
   } else {
-    cap += `🐟 *KOLEKSI IKAN*\n`
     let lastTier
-    visibleRecords.forEach((fish, index) => {
-      const number = (page - 1) * pageSize + index + 1
-      const emoji = ikanEmoji[fish.name] || ikanEmoji[`ikan_${fish.name}`] || '🐟'
-      const marker = fish.favorite ? ' ⭐ Favorit' : ''
-      const tier = fishTierByName.get(fish.name) || 'RARE'
+    visibleEntries.forEach(entry => {
+      const tier = entry.type === 'trash'
+        ? 'TRASH'
+        : (fishTierByName.get(entry.fish.name) || 'RARE')
       if (tier !== lastTier) {
         const tierInfo = fishTiers.find(item => item.name === tier)
         cap += `\n${tierInfo?.icon || '🐟'} *${tier}*\n`
         lastTier = tier
       }
-      const sizeCode = ({ small: 'S', medium: 'M', big: 'B', giant: 'G' })[fish.size] || 'M'
-      cap += `> *${number}. ${sizeCode} ${formatNama(fish.name)} (${fish.weight.toFixed(2)} Kg) ${emoji}${marker}*\n`
-    })
-    if (trashCount) {
-      cap += `\n🗑️ *TANGKAPAN SAMPAH*\n`
-      for (const [name, amount] of Object.entries(user.ikan).filter(([name]) => isTrashFish(name))) {
-        cap += `> ${formatNama(name)} x${formatRpgNumber(amount)}\n`
+      if (entry.type === 'trash') {
+        const emoji = ikanEmoji[entry.name] || ikanEmoji[`ikan_${entry.name}`] || '🗑️'
+        cap += `> ${entry.number}. ${formatNama(entry.name)} x${formatRpgNumber(entry.quantity)} ${emoji}\n`
+      } else {
+        const fish = entry.fish
+        const emoji = ikanEmoji[fish.name] || ikanEmoji[`ikan_${fish.name}`] || '🐟'
+        const marker = fish.favorite ? ' ⭐ Favorit' : ''
+        const sizeCode = ({ small: 'S', medium: 'M', big: 'B', giant: 'G' })[fish.size] || 'M'
+        cap += `> *${entry.number}. ${sizeCode} ${formatNama(fish.name)} (${fish.weight.toFixed(2)} Kg) ${emoji}${marker}*\n`
       }
+    })
+    if (!hasTierFilter || selectedTier.name !== 'TRASH') {
+      cap += `\n⭐ Favorit: *${usedPrefix}aquarium favorite <nomor>*\n`
+      cap += `↩️ Lepas favorit: *${usedPrefix}aquarium unfavorite <nomor>*\n`
+      cap += `🔎 Filter tier: *${usedPrefix}aquarium tier <kategori> [halaman]*\n`
     }
-    cap += `\n⭐ Favorit: *${usedPrefix}aquarium favorite <nomor>*\n`
-    cap += `↩️ Lepas favorit: *${usedPrefix}aquarium unfavorite <nomor>*\n`
-    if (totalPages > 1) cap += `📄 Halaman lain: *${usedPrefix}aquarium <nomor halaman>*\n`
-    cap += `💡 Ikan favorit tidak dapat dijual sebelum favorit dilepas.`
+    if (totalPages > 1) cap += `📄 Halaman lain: *${usedPrefix}aquarium ${hasTierFilter ? `tier ${selectedTier.name} ` : ''}<nomor halaman>*\n`
+    if (!hasTierFilter || selectedTier.name !== 'TRASH') cap += `💡 Ikan favorit tidak dapat dijual sebelum favorit dilepas.`
   }
   return m.reply(cap)
 }
 
-handler.help = ['aquarium', 'aq', 'aquarium <halaman>', 'aquarium favorite <nomor>', 'aquarium unfavorite <nomor>']
+handler.help = ['aquarium', 'aq', 'aquarium <halaman>', 'aquarium tier <kategori> [halaman]', 'aquarium favorite <nomor>', 'aquarium unfavorite <nomor>']
 handler.tags = ['rpg']
 handler.command = /^(aquarium|aq)$/i
 handler.group = true

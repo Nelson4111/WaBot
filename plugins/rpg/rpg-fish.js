@@ -88,9 +88,11 @@ let handler = async (m, { text, usedPrefix }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Mancing: *${usedPrefix}mancing*.\n` +
       `> ↳ Lihat ikan, tier, berat, dan ukuran: *${usedPrefix}aquarium*.\n` +
+      `> ↳ Filter koleksi berdasarkan tier: *${usedPrefix}aquarium tier <kategori> [halaman]*.\n` +
       `> ↳ Tandai ikan agar tidak terjual: *${usedPrefix}aquarium favorite <nomor>*.\n` +
       `> ↳ Lepas favorit: *${usedPrefix}aquarium unfavorite <nomor>*.\n` +
       `> ↳ Jual di Pasar: *${usedPrefix}pasar jual <nomor/nama> <jumlah/all>*.\n` +
+      `> ↳ Jual seluruh ikan dari tier tertentu: *${usedPrefix}pasar jual tier <kategori> [jumlah/all]*.\n` +
       `> ↳ Jual semua ikan yang tidak difavoritkan: *${usedPrefix}pasar jual all*.\n` +
       `> ↳ Ikan juga dapat dipakai sebagai bahan masakan melalui *${usedPrefix}masak*.\n` +
       `> ↳ Umpan menambah jumlah tangkapan atau memberi efek khusus; stok terpakai setiap kali memancing.\n` +
