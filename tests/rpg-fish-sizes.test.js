@@ -12,6 +12,7 @@ import {
 } from '../lib/rpg-fishSizes.js'
 import {
   getActiveGroupTotem,
+  getActiveGroupTotems,
   getActiveGroupTotemExpiry,
   getGroupTotemBuff,
   RPG_TOTEMS,
@@ -106,17 +107,30 @@ for (const totem of negativeAllTotems) {
 
 const activeData = {
   groupTotems: {
-    group: {
-      id: casinoTotems[0].id,
-      activatedAt: Date.now(),
-      expiresAt: Date.now() + RPG_TOTEM_DURATION
-    }
+    group: [
+      {
+        id: casinoTotems[0].id,
+        owner: 'user-one',
+        activatedAt: Date.now(),
+        expiresAt: Date.now() + RPG_TOTEM_DURATION
+      },
+      {
+        id: casinoTotems[1].id,
+        owner: 'user-two',
+        activatedAt: Date.now(),
+        expiresAt: Date.now() + RPG_TOTEM_DURATION
+      }
+    ]
   }
 }
 assert.equal(getActiveGroupTotem(activeData, 'group').id, casinoTotems[0].id)
+assert.equal(getActiveGroupTotems(activeData, 'group').length, 2)
 assert.ok(getActiveGroupTotemExpiry(activeData, 'group') > Date.now())
-activeData.groupTotems.group.expiresAt = Date.now() - 1
-assert.equal(getActiveGroupTotem(activeData, 'group'), null)
-assert.equal(getGroupTotemBuff(activeData, 'group', 'casino', 'income'), 1)
+assert.equal(getActiveGroupTotemExpiry(activeData, 'group', casinoTotems[0].id, 'user-one') > Date.now(), true)
+assert.equal(getActiveGroupTotemExpiry(activeData, 'group', casinoTotems[0].id, 'user-two'), 0)
+assert.equal(getGroupTotemBuff(activeData, 'group', 'casino', 'income'), 1.1 * 1.15)
+activeData.groupTotems.group[0].expiresAt = Date.now() - 1
+assert.equal(getActiveGroupTotems(activeData, 'group').length, 1)
+assert.equal(getGroupTotemBuff(activeData, 'group', 'casino', 'income'), 1.15)
 
 console.log('rpg fish size and totem tests passed')
