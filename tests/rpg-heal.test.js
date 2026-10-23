@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import healHandler from '../plugins/rpg/rpg-heal.js'
+import { sendRpgHealPrompt } from '../lib/rpgActionButtons.js'
 
 const senderJid = '628123456789@s.whatsapp.net'
 const targetJid = '628987654321@s.whatsapp.net'
@@ -51,7 +52,35 @@ function makeConn() {
   }
 }
 
-test('heal button command restores only the sender', async () => {
+test('heal prompt button targets the sender with heal me', async () => {
+  const conn = makeConn()
+  const { m } = makeMessage(senderJid)
+
+  await sendRpgHealPrompt(conn, m, { text: 'Pulihkan diri.', usedPrefix: '.' })
+
+  assert.equal(conn.buttons.at(-1)[0][1], '.heal me')
+})
+
+test('heal me command restores only the sender', async () => {
+  const previousDb = global.db
+  global.db = makeDb()
+  const sender = global.db.data.users[senderJid]
+  sender.rpg.darah = 50
+  const { m, replies } = makeMessage(senderJid)
+
+  try {
+    await healHandler(m, { conn: makeConn(), usedPrefix: '.', text: 'me' })
+
+    assert.equal(sender.rpg.darah, 100)
+    assert.match(replies.at(-1), /HEAL SUCCESS/)
+    assert.equal(global.db.data.users[targetJid].rpg.darah, 50)
+  } finally {
+    if (previousDb === undefined) delete global.db
+    else global.db = previousDb
+  }
+})
+
+test('heal without a target or me argument does not heal the sender', async () => {
   const previousDb = global.db
   global.db = makeDb()
   const sender = global.db.data.users[senderJid]
@@ -61,9 +90,9 @@ test('heal button command restores only the sender', async () => {
   try {
     await healHandler(m, { conn: makeConn(), usedPrefix: '.', text: '' })
 
-    assert.equal(sender.rpg.darah, 100)
-    assert.match(replies.at(-1), /HEAL SUCCESS/)
-    assert.equal(global.db.data.users[targetJid].rpg.darah, 50)
+    assert.equal(sender.rpg.darah, 50)
+    assert.match(replies.at(-1), /\.heal me/)
+    assert.match(replies.at(-1), /tag atau reply/)
   } finally {
     if (previousDb === undefined) delete global.db
     else global.db = previousDb

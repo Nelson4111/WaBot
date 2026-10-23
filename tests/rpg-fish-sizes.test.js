@@ -23,6 +23,7 @@ import {
   findRpgFishBait,
   getActiveRpgFishBait,
   grantDailyNormalBait,
+  rollRpgFishBaitReward,
   RPG_FISH_BAITS,
   RPG_FISH_TIERS
 } from '../lib/rpg-fishCatalog.js'
@@ -152,6 +153,14 @@ assert.equal(consumeRpgFishBait(baitSwitchUser).id, 'silver')
 assert.equal(consumeRpgFishBait(baitSwitchUser).id, 'silver')
 assert.equal(consumeRpgFishBait(baitSwitchUser), null)
 assert.equal(baitSwitchUser.activeFishBait, null)
+assert.equal(rollRpgFishBaitReward(() => 0.5).id, 'normal')
+const nonNormalRewardRolls = [0, 0.9]
+assert.notEqual(rollRpgFishBaitReward(() => nonNormalRewardRolls.shift()).id, 'normal')
+assert.equal(rollRpgFishBaitReward(() => 0.5), null)
+for (const tier of RPG_FISH_TIERS) {
+  const bait = RPG_FISH_BAITS.find(item => item.effects.targetTier === tier.name)
+  assert.ok(bait, `expected a targeted bait for ${tier.name}`)
+}
 const baitUser = { fishBaits: { normal: 0 } }
 const dayOne = Date.parse('2026-10-22T12:00:00+07:00')
 assert.equal(grantDailyNormalBait(baitUser, dayOne), 25)
