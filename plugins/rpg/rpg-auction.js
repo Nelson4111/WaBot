@@ -830,14 +830,18 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       quoted: m,
       footer: '',
       text: auctionText,
+      buttonText: '📋 PILIH ITEM / BID',
+      sections: [{ title: 'Item lelang', rows }],
       buttons: [
-        ...rows.map(row => [row.title, row.id]),
         ['💳 Cek saldo', `${prefix}money`],
         ['🔤 Daftar sufiks uang', `${prefix}money suffix`]
       ],
       fallbackText: auctionText,
       thumbnailUrl: AUCTION_IMAGE,
-      noHeader: true
+      noHeader: true,
+      sendInteractive: typeof conn.sendInteractive === 'function'
+        ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
+        : undefined
     })
   }
 

@@ -58,7 +58,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
   const wdb = loadDB()
   const args = text.trim().split(/\s+/).filter(Boolean)
   const action = String(args[0] || '').toLowerCase()
-  const selfOnly = action === 'self' || action === 'diri'
+  const selfOnly = ['me', 'self', 'diri'].includes(action)
   const prefix = usedPrefix || '.'
   const payer = getUserRPG(wdb, m.sender)?.rpg
 
@@ -129,7 +129,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     ? (typeof conn.decodeJid === 'function' ? conn.decodeJid(botJid) : botJid)
     : null
   if (decodedTarget && decodedBot && decodedTarget === decodedBot) {
-    return m.reply(`🤖 Bot tidak bisa menjadi target heal. Gunakan *${prefix}heal* untuk memulihkan diri sendiri, atau tag/reply pengguna lain.`)
+    return m.reply(`🤖 Bot tidak bisa menjadi target heal. Gunakan *${prefix}heal me* untuk memulihkan diri sendiri, atau tag/reply pengguna lain.`)
   }
   if (decodedTarget && decodedTarget !== decodedSender) {
     const target = getUserRPG(wdb, decodedTarget)?.rpg
@@ -191,9 +191,9 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     })
   }
 
-  if (text.trim() && !selfOnly && !targetJid) {
+  if (!selfOnly && !targetJid) {
     return m.reply(
-      `Gunakan *${prefix}heal* untuk memulihkan diri sendiri atau *${prefix}heal @tag* / reply pesan untuk menawarkan heal ke pengguna lain.`
+      `Untuk memulihkan diri sendiri, gunakan *${prefix}heal me*. Untuk menawarkan heal ke orang lain, tag atau reply pesannya.`
     )
   }
 
@@ -231,7 +231,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
   return m.reply(formatHealSuccess(details, payment))
 }
 
-handler.help = ['heal', 'heal @tag', 'heal reply']
+handler.help = ['heal me', 'heal @tag', 'heal reply']
 handler.tags = ['rpg']
 handler.command = ['heal']
 export default handler

@@ -56,7 +56,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (targetRestriction) return m.reply(targetRestriction)
   if (Number(target.darah) <= 0) {
     return sendRpgHealPrompt(conn, m, {
-      text: `💀 Target masih mati. Gunakan *.heal* pada target terlebih dahulu.`,
+      text: `💀 Target masih mati.`,
       usedPrefix,
       target: who,
       mentions: [who]
