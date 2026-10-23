@@ -1419,10 +1419,12 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
       quoted: m,
       title: '🎰 MALAM DI CASINO',
       subtitle: 'Pilih meja dan suasana permainanmu',
-      text: 'Nikmati permainan dengan bijak, atau ajak teman meramaikan suasana.',
+      text: casinoCommands(usedPrefix),
       buttonText: '🎰 JELAJAHI CASINO',
       sections,
-      fallbackText: casinoCommands(usedPrefix)
+      fallbackText: casinoCommands(usedPrefix),
+      noThumbnail: true,
+      noHeader: true
     })
   }
 

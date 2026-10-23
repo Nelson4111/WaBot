@@ -611,15 +611,11 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╭─❏「 📖 AUCTION HOUSE GUIDE 」❏\n` +
       `│ 📖 *PANDUAN LELANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Lima item koleksi dilelang bersama selama 5 jam dan daftar ini sama di semua grup.\n` +
-      `> ↳ Hasil lelang dan berita pemenang hanya ditampilkan di grup asal bid pemenang.\n` +
-      `> ↳ Bid minimum yang ditampilkan adalah setengah harga asli. Bid sungguhan harus lebih tinggi dari harga asli atau bid tertinggi. Bid perlu dikonfirmasi; bid berikutnya tanpa nominal naik Rp 500.000.\n` +
-      `> ↳ Nominal bid bisa memakai sufiks, misalnya *1.5B*, *19Qa*, atau *2Ce*. Lihat daftar lengkap dengan *${prefix}ah money*.\n` +
-      `> ↳ Nominal bid langsung dipotong dari saldo bank saat konfirmasi. Jika kamu kalah, dana dikembalikan saat lelang selesai; pemenang mendapat item di Auction Vault.\n` +
-      `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku.\n\n` +
-      `📌 *INFORMASI*\n` +
-      `> ↳ Daftar perintah : *${prefix}ah command*\n` +
-      `> ↳ Peringkat kolektor : *${prefix}ah top*\n\n` +
+      `> ↳ Pilih item dari tombol *PILIH ITEM / BID* pada *${prefix}ah*. Bot otomatis mengajukan bid Rp 500.000 di atas bid tertinggi, lalu meminta konfirmasi.\n` +
+      `> ↳ Untuk bid manual, ketik *${prefix}ah bid <nomor/nama> <nominal>*. Contoh: *${prefix}ah bid 1 2M*.\n` +
+      `> ↳ Daftar sufiks nominal: *${prefix}ah money*. Bid hanya dikirim setelah kamu menekan tombol konfirmasi; tekan batalkan jika tidak jadi.\n` +
+      `> ↳ Saldo dipotong setelah konfirmasi. Dana bid dikembalikan jika kamu kalah; pemenang mengambil hadiah lewat *${prefix}ah vault* lalu *${prefix}ah claim <nomor/nama>*.\n` +
+      `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku. Lelang berlangsung 5 jam.\n\n` +
       `─━━━━━━━━━━━━━━─`, AUCTION_IMAGE)
   }
 
@@ -647,6 +643,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ ${prefix}ah bid — lihat bid aktif milikmu\n` +
       `> ↳ ${prefix}ah bid info — alias untuk melihat bid aktif\n` +
       `> ↳ ${prefix}ah bid konfirmasi — konfirmasi bid yang tertunda\n` +
+      `> ↳ ${prefix}ah bid batal — batalkan bid yang menunggu konfirmasi\n` +
       `> ↳ ${prefix}ah konfirmasi — alias untuk konfirmasi bid\n` +
       `> ↳ ${prefix}ah info — lihat bid yang sedang kamu ikuti\n` +
       `> ↳ ${prefix}ah vault — lihat hadiah lelang yang bisa diklaim\n` +
@@ -655,30 +652,10 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `> ↳ ${prefix}ah history/riwayat — pemenang lelang terakhir\n` +
       `> ↳ ${prefix}ah top — lihat kolektor item lelang terbanyak\n\n` +
       `> ↳ ${prefix}ah money — daftar sufiks nominal uang\n\n` +
+      `> ↳ ${prefix}ah guide / command — panduan dan daftar perintah\n\n` +
       `> ↳ Alias lain: ${prefix}lelang dan ${prefix}auctionhouse\n\n` +
       `─━━━━━━━━━━━━━━─`
-    const rows = [
-      { title: '🔨 Buka balai lelang', description: 'Masuk ke pelelangan bersama dan cek waktunya', id: `${prefix}ah` },
-      { title: '📦 Lihat barang', description: 'Jelajahi item dan penawaran tertinggi', id: `${prefix}ah list` },
-      { title: '🔎 Detail barang', description: 'Periksa informasi item sebelum menawar', id: `${prefix}ah info` },
-      { title: '💰 Ajukan penawaran', description: 'Masukkan nominal bid untuk item pilihan', id: `${prefix}ah bid` },
-      { title: '✅ Konfirmasi bid', description: 'Sahkan penawaran yang masih tertunda', id: `${prefix}ah bid konfirmasi` },
-      { title: '🎁 Hadiah lelang', description: 'Lihat hadiah yang menunggu untuk diklaim', id: `${prefix}ah vault` },
-      { title: '📰 Berita lelang', description: 'Ikuti kabar pemenang dan lelang terbaru', id: `${prefix}ah news` },
-      { title: '📜 Riwayat lelang', description: 'Lihat pemenang dari lelang sebelumnya', id: `${prefix}ah history` },
-      { title: '🏆 Kolektor teratas', description: 'Lihat peringkat kolektor item lelang', id: `${prefix}ah top` }
-    ]
-    return sendRpgButtons(conn, {
-      chat: m.chat,
-      message: m,
-      quoted: m,
-      footer: '',
-      text: 'Temukan barang langka, pasang bid, dan rebut hadiah lelang.',
-      buttons: rows.map(row => [row.title, row.id]),
-      fallbackText,
-      thumbnailUrl: AUCTION_IMAGE,
-      noHeader: true
-    })
+    return m.reply(fallbackText)
   }
 
   if (mode === 'news') {
@@ -785,7 +762,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       const highest = getVisibleHighestBid(db, session, item)
       return {
         title: `${index + 1}. ${item.emoji} ${item.name}`,
-        description: `Bid tertinggi ${money(highest.amount)}`,
+        description: `Tertinggi ${money(highest.amount)} • pilih untuk bid +Rp500K`,
         id: `${prefix}ah bid ${item.id}`
       }
     })
@@ -795,6 +772,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `💳 *Kartu Bank:* ${BANK_TIERS[Number(rpg.bankTier)]?.color || BANK_TIERS[0].color} ${BANK_TIERS[Number(rpg.bankTier)]?.name || BANK_TIERS[0].name}\n\n` +
       `Malam ini, lonceng balai lelang kembali berdentang. Lima artefak langka dibawa keluar dari peti kaca; para kolektor dari seluruh penjuru dunia berkumpul, saling menaikkan penawaran sebelum palu emas mengetuk untuk terakhir kalinya.\n\n` +
+      `⏳ *Waktu tersisa:* ${formatRemaining(session.endsAt - Date.now())}\n\n` +
       `─━━━━━━━━━━━━━━─\n` +
       `🔨 *DAFTAR ITEM LELANG*\n\n` +
       `${offers.map((item, index) => {
@@ -815,14 +793,9 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
           `> ↳ Pemenang: ${entry.winnerName}`
         ).join('\n')}\n\n` : ''}` +
       `─━━━━━━━━━━━━━━─\n` +
-      `⏳ *Waktu tersisa:* ${formatRemaining(session.endsAt - Date.now())}\n\n` +
-      `📌 *DAFTAR COMMAND*\n` +
-      `> 🔨 ${prefix}ah bid <nomor/nama> [nominal]\n` +
-      `> 📊 ${prefix}ah info\n` +
-      `> 🎁 ${prefix}ah vault\n` +
-      `> 📰 ${prefix}ah news\n` +
-      `> 💳 ${prefix}money — cek saldo\n` +
-      `> 🔤 ${prefix}money suffix — cek daftar sufiks\n\n` +
+      `📌 *BID MANUAL*\n` +
+      `> ${prefix}ah bid <nomor/nama> [nominal]\n` +
+      `> Tanpa nominal, bid otomatis naik Rp 500.000 dari bid tertinggi.\n\n` +
       `─━━━━━━━━━━━━━━─`
     return sendRpgButtons(conn, {
       chat: m.chat,
@@ -831,7 +804,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       footer: '',
       text: auctionText,
       buttonText: '📋 PILIH ITEM / BID',
-      sections: [{ title: 'Item lelang', rows }],
+      sections: [{ title: 'Pilih item yang akan dibid', rows }],
       buttons: [
         ['💳 Cek saldo', `${prefix}money`],
         ['🔤 Daftar sufiks uang', `${prefix}money suffix`]

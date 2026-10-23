@@ -1,4 +1,4 @@
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
@@ -15,7 +15,7 @@ const CONFIRM_NO = new Set(['batal', 'no', 'tidak', 'cancel'])
 
 const formatMoney = amount => `Rp ${Number(amount).toLocaleString('id-ID')}`
 
-const handler = async (m, { text = '', usedPrefix = '.' }) => {
+const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
   const db = loadDB()
   const account = db.users?.[m.sender]
   const now = Date.now()
@@ -84,14 +84,42 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
 
   const target = resolveSkipCooldownTarget(input)
   if (!target) {
-    return m.reply(
+    const guideText =
       `📌 *Cara menggunakan*\n` +
       `> ↳ ${usedPrefix}skipcd <mining|mancing|dungeon|adventure|work|kriminal|kawin|explore>\n` +
       `> ↳ Contoh: ${usedPrefix}skipcd mining\n` +
       `> ↳ Semua tindak kriminal: ${usedPrefix}skipcd kriminal\n` +
       `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_SECOND)} per detik tersisa, dibulatkan ke atas untuk setiap aktivitas/aksi.\n` +
       `> ↳ Konfirmasi: ${usedPrefix}skipcd ya | ${usedPrefix}skipcd batal`
-    )
+    const activities = [
+      ['Mining', 'mining'],
+      ['Memancing', 'mancing'],
+      ['Dungeon', 'dungeon'],
+      ['Adventure', 'adventure'],
+      ['Work', 'work'],
+      ['Kriminal', 'kriminal'],
+      ['Kawin', 'kawin'],
+      ['Explore', 'explore']
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '⏩ SKIP COOLDOWN',
+      text: guideText,
+      buttonText: 'PILIH AKTIVITAS',
+      sections: [{
+        title: 'Pilih aktivitas',
+        rows: activities.map(([name, id]) => ({
+          title: name,
+          description: `Lewati cooldown ${name}`,
+          id: `${usedPrefix}skipcd ${id}`
+        }))
+      }],
+      fallbackText: guideText,
+      noThumbnail: true,
+      noHeader: true
+    })
   }
 
   const entries = selectSkipCooldownEntries(
@@ -111,15 +139,26 @@ const handler = async (m, { text = '', usedPrefix = '.' }) => {
   }
   await saveDB(db)
 
-  return m.reply(
+  const confirmationText =
     `╭─❏「 ⏩ KONFIRMASI SKIP COOLDOWN 」❏\n` +
     `│ Premium • Berlaku 5 menit\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Cooldown: ${entries.map(({ label, remaining }) => `${label} (${Math.ceil(remaining / 60000)} menit)`).join(', ')}\n` +
     `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_SECOND)} per detik tersisa (dibulatkan per aktivitas/aksi)\n` +
     `> ↳ Total biaya: *${formatMoney(cost)}*\n\n` +
-    `Ketik *${usedPrefix}skipcd ya* untuk lanjut atau *${usedPrefix}skipcd batal* untuk membatalkan.`
-  )
+    `Tekan tombol untuk melanjutkan atau membatalkan.`
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    text: confirmationText,
+    buttons: [
+      ['✅ Lanjutkan', `${usedPrefix}skipcd ya`],
+      ['↩️ Batalkan', `${usedPrefix}skipcd batal`]
+    ],
+    noThumbnail: true,
+    noHeader: true
+  })
 }
 
 handler.help = ['skipcd <mining|mancing|dungeon|adventure|work|kriminal|kawin|explore>']

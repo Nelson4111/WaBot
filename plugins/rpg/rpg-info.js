@@ -95,7 +95,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `\n─━━━━━━━━━━━━━━─\n`
     cap += `Ketik *.rpg info* untuk penjelasan tentang RPG.`
     const rows = CORE_COMMANDS.map(([entry, description]) => {
-      const commandName = entry.replace(/^\./, '')
+      const commandName = entry.split('/')[0].trim().replace(/^\./, '')
       return {
         title: `✦ ${entry}`,
         description: description.slice(0, 72),
@@ -112,10 +112,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       quoted: m,
       title: '📜 PETUALANGAN RPG AVELIA',
       subtitle: 'Pilih pintu untuk mulai menjelajah',
-      text: 'Dunia Avelia menyimpan banyak kisah, tantangan, dan hadiah untukmu.',
+      text: cap,
       buttonText: '📜 JELAJAHI COMMAND RPG',
       sections,
-      fallbackText: cap
+      fallbackText: cap,
+      noThumbnail: true,
+      noHeader: true
     })
   }
 
