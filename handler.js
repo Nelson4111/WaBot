@@ -987,7 +987,7 @@ async function processMessage(m, chatUpdate) {
                 if (isRpgPlugin && command !== 'heal') {
                     const userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
                     if (isPlayerDead(userRPG)) {
-                        this.reply(m.chat, '💀 Kamu masih mati dan tidak bisa menggunakan fitur RPG. Gunakan *.heal* terlebih dahulu untuk pulih.', m);
+                        this.reply(m.chat, '💀 Kamu masih mati dan tidak bisa menggunakan fitur RPG. Gunakan *.heal me* terlebih dahulu untuk pulih.', m);
                         continue;
                     }
                 }
