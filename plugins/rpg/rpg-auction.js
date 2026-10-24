@@ -810,7 +810,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         ['🔤 Daftar sufiks uang', `${prefix}money suffix`]
       ],
       fallbackText: auctionText,
-      thumbnailUrl: AUCTION_IMAGE,
+      image: AUCTION_IMAGE,
       noHeader: true,
       sendInteractive: typeof conn.sendInteractive === 'function'
         ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
@@ -1046,6 +1046,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       acceptCommand: `${prefix}ah bid konfirmasi`,
       cancelText: '↩️ Batalkan Bid',
       cancelCommand: `${prefix}ah bid batal`,
+      image: AUCTION_IMAGE,
       noThumbnail: true,
       noHeader: true
     })

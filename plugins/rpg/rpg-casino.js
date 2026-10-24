@@ -1597,11 +1597,12 @@ return m.reply(
         saveDB(wdb)
         return m.reply('ℹ️ Kasus ini sudah ditutup. Tidak ada uang yang perlu diamankan.')
       }
-      if (!Number.isSafeInteger(balance + amount)) {
-        return m.reply('❌ Saldo hasil pemulihan melewati batas aman pencatatan. Hubungi admin sebelum melanjutkan.')
+      const recoveredBalance = balance + amount
+      if (!Number.isFinite(recoveredBalance) || !Number.isInteger(recoveredBalance)) {
+        return m.reply('❌ Saldo hasil pemulihan tidak dapat dicatat karena nilainya tidak valid. Hubungi admin sebelum melanjutkan.')
       }
 
-      wdb.money[m.sender] = balance + amount
+      wdb.money[m.sender] = recoveredBalance
       blackout.guardRecovered = Number(blackout.guardRecovered || 0) + amount
       blackout.guardTarget = pending.target
       blackout.guardResolvedAt = Date.now()
@@ -1643,10 +1644,11 @@ return m.reply(
       }
       if (['yes', 'confirm', 'ambil'].includes(String(args[2] || '').toLowerCase())) {
         const balance = Number(wdb.money[m.sender] || 0)
-        if (!Number.isSafeInteger(balance + amount)) {
-          return m.reply('❌ Saldo hasil perlindungan melewati batas aman pencatatan. Hubungi admin sebelum melanjutkan.')
+        const protectedBalance = balance + amount
+        if (!Number.isFinite(protectedBalance) || !Number.isInteger(protectedBalance)) {
+          return m.reply('❌ Saldo hasil perlindungan tidak dapat dicatat karena nilainya tidak valid. Hubungi admin sebelum melanjutkan.')
         }
-        wdb.money[m.sender] = balance + amount
+        wdb.money[m.sender] = protectedBalance
         blackout.insuredRecovered = Number(blackout.insuredRecovered || 0) + amount
         user.casinoBlackoutProtectionWeek = weekKey
         saveDB(wdb)
