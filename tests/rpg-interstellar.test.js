@@ -39,37 +39,26 @@ function makeMessage() {
   }
 }
 
-test('Interstellar exchange converts available wallet money with a no-thumbnail confirmation', async () => {
+test('Interstellar exchange converts available wallet money with Native Flow confirmation buttons', async () => {
   const previousDb = global.db
   global.db = makeDb()
   const buttonCalls = []
   const { m } = makeMessage()
-  class ButtonV2 {
-    constructor(conn) {
-      this.conn = conn
-      this.buttons = []
-    }
-
-    setBody(body) {
-      this.body = body
-    }
-
-    setFooter(footer) {
-      this.footer = footer
-    }
-
-    addRawButton(button) {
-      this.buttons.push(button)
-    }
-
-    async send(chat) {
-      const sent = { chat, body: this.body, footer: this.footer, buttons: this.buttons }
+  const conn = {
+    async sendInteractive(chat, content) {
+      const interactive = content.interactiveMessage
+      const sent = {
+        chat,
+        body: interactive.body.text,
+        footer: interactive.footer.text,
+        buttons: interactive.nativeFlowMessage.buttons.map(button => {
+          const params = JSON.parse(button.buttonParamsJson)
+          return { label: params.display_text, command: params.id }
+        })
+      }
       buttonCalls.push(sent)
       return sent
     }
-  }
-  const conn = {
-    ButtonV2
   }
 
   try {
@@ -86,10 +75,7 @@ test('Interstellar exchange converts available wallet money with a no-thumbnail 
     assert.equal(account.rpg.pendingStellarExchange.moneyAmount, 1_000_000_000_000_000)
     assert.equal(account.rpg.pendingStellarExchange.creditAmount, 2)
     assert.equal(buttonCalls.length, 1)
-    const listButton = buttonCalls[0].buttons.find(button => button.nativeFlowInfo?.name === 'single_select')
-    assert.ok(listButton)
-    const rows = JSON.parse(listButton.nativeFlowInfo.paramsJson).sections[0].rows
-    assert.deepEqual(rows.map(({ title, id }) => [title, id]), [
+    assert.deepEqual(buttonCalls[0].buttons.map(({ label, command }) => [label, command]), [
       ['💠 Tukar Sekarang', '.int exchange confirm'],
       ['↩️ Batalkan', '.int exchange cancel']
     ])

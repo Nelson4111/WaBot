@@ -43,54 +43,39 @@ function makeMessage(sender, extra = {}) {
 }
 
 function makeConn() {
-  class ButtonV2 {
-    constructor(conn) {
-      this.conn = conn
-      this.rawButtons = []
-    }
-
-    setBody(body) {
-      this.body = body
-    }
-
-    setFooter(footer) {
-      this.footer = footer
-    }
-
-    addRawButton(button) {
-      this.rawButtons.push(button)
-    }
-
-    addButton(label, command) {
-      this.rawButtons.push({ label, command })
-    }
-
-    async send(chat) {
-      const sent = { chat, body: this.body, footer: this.footer, buttons: this.rawButtons }
-      this.conn.buttons.push(sent)
-      return sent
-    }
-  }
-
   return {
     buttons: [],
-    ButtonV2,
+    async sendInteractive(chat, content) {
+      const interactive = content.interactiveMessage
+      const sent = {
+        chat,
+        body: interactive.body.text,
+        footer: interactive.footer.text,
+        buttons: interactive.nativeFlowMessage.buttons.map(button => {
+          const params = JSON.parse(button.buttonParamsJson)
+          return { label: params.display_text, command: params.id }
+        })
+      }
+      this.buttons.push(sent)
+      return sent
+    },
+    async sendButtonV2() {
+      throw new Error('RPG buttons must not use ButtonV2')
+    },
     decodeJid: jid => jid,
   }
 }
 
-function getListRows(conn) {
-  const listButton = conn.buttons.at(-1).buttons.find(button => button.nativeFlowInfo?.name === 'single_select')
-  assert.ok(listButton, 'message should use a scrollable list')
-  return JSON.parse(listButton.nativeFlowInfo.paramsJson).sections.flatMap(section => section.rows)
+function getStandardButtons(conn) {
+  return conn.buttons.at(-1).buttons.filter(button => button.command)
 }
 
-test('heal prompt button targets the sender with heal me', async () => {
+test('heal prompt button targets the sender with heal me through Native Flow', async () => {
   const calls = []
   const conn = {
-    sendButtonV2: async (...args) => {
-      calls.push(args)
-      return args
+    sendInteractive: async (chat, content) => {
+      calls.push({ chat, content })
+      return content
     }
   }
   const { m } = makeMessage(senderJid)
@@ -98,10 +83,12 @@ test('heal prompt button targets the sender with heal me', async () => {
   await sendRpgHealPrompt(conn, m, { text: 'Pulihkan diri.', usedPrefix: '.' })
 
   assert.equal(calls.length, 1)
-  assert.deepEqual(calls[0][1].buttons, [['💖 Heal Diriku Sendiri', '.heal me']])
-  assert.equal(calls[0][1].noLocationHeader, true)
-  assert.equal('image' in calls[0][1], false)
-  assert.equal('buffer' in calls[0][1], false)
+  const interactive = calls[0].content.interactiveMessage
+  assert.equal('header' in interactive, false)
+  assert.deepEqual(JSON.parse(interactive.nativeFlowMessage.buttons[0].buttonParamsJson), {
+    display_text: '💖 Heal Diriku Sendiri',
+    id: '.heal me'
+  })
 })
 
 test('heal me command restores only the sender', async () => {
@@ -155,9 +142,9 @@ test('healing another user requires that user to accept and charges the sender',
     assert.equal(global.db.data.users[targetJid].rpg.darah, 50)
     assert.equal(global.db.data.users[senderJid].money, initialMoney)
     assert.match(offer.replies.at(-1), /PENAWARAN HEAL/)
-    const rows = getListRows(conn)
-    assert.equal(rows[0].title, '💖 Terima Heal')
-    const command = rows[0].id
+    const buttons = getStandardButtons(conn)
+    assert.equal(buttons[0].label, '💖 Terima Heal')
+    const command = buttons[0].command
     const offerId = command.split(/\s+/).at(-1)
 
     const acceptance = makeMessage(targetJid)
@@ -184,8 +171,8 @@ test('a replied-to user can decline a heal offer without being healed or charged
       usedPrefix: '.',
       text: ''
     })
-    const rows = getListRows(conn)
-    const command = rows[1].id
+    const buttons = getStandardButtons(conn)
+    const command = buttons[1].command
     const offerId = command.split(/\s+/).at(-1)
     const decline = makeMessage(targetJid)
 

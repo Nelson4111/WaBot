@@ -19,59 +19,19 @@ function makeDb() {
 }
 
 function makeConn() {
-  class ButtonV2 {
-    constructor(conn) {
-      this.conn = conn
-      this.buttons = []
-    }
-
-    setBody(body) {
-      this.body = body
-    }
-
-    setFooter(footer) {
-      this.footer = footer
-    }
-
-    addRawButton(button) {
-      this.buttons.push(button)
-    }
-
-    addButton(label, command) {
-      this.buttons.push({ label, command })
-    }
-
-    async send(chat) {
-      const sent = { chat, body: this.body, footer: this.footer, buttons: this.buttons }
-      this.conn.messages.push(sent)
-      return sent
-    }
-  }
-
   return {
     messages: [],
-    ButtonV2,
-    async sendButtonV2(chat, options) {
-      const sent = {
-        chat,
-        body: options.text,
-        footer: options.footer,
-        buttons: options.buttons.map(([label, command]) => ({ label, command }))
-      }
-      this.messages.push(sent)
-      return sent
-    },
     async sendInteractive(chat, content) {
-      const flowButton = content.interactiveMessage.nativeFlowMessage.buttons[0]
+      const flowButtons = content.interactiveMessage.nativeFlowMessage.buttons
       const sent = {
         chat,
         body: content.interactiveMessage.body.text,
-        buttons: [{
-          nativeFlowInfo: {
-            name: flowButton.name,
-            paramsJson: flowButton.buttonParamsJson
-          }
-        }]
+        buttons: flowButtons.map(button => {
+          const params = JSON.parse(button.buttonParamsJson)
+          return button.name === 'single_select'
+            ? { nativeFlowInfo: { name: button.name, paramsJson: button.buttonParamsJson } }
+            : { label: params.display_text, command: params.id }
+        })
       }
       this.messages.push(sent)
       return sent
