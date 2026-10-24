@@ -15,7 +15,15 @@ assert.equal(isLeaderboardBot('6281111111111@s.whatsapp.net', mainBot), true)
 assert.equal(isLeaderboardBot('6282222222222@s.whatsapp.net', mainBot), true)
 assert.deepEqual(
   filterLeaderboardUsers(
-    ['6281111111111@s.whatsapp.net', '6282222222222@s.whatsapp.net', '6283333333333@s.whatsapp.net'],
+    [
+      '6281111111111@s.whatsapp.net',
+      '6282222222222@s.whatsapp.net',
+      '6283333333333@s.whatsapp.net',
+      '123456789@lid',
+      '123456789@s.whatsapp.net',
+      'invalid@s.whatsapp.net',
+      '6283333333333@newsletter'
+    ],
     mainBot
   ),
   ['6283333333333@s.whatsapp.net']

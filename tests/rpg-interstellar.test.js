@@ -44,10 +44,32 @@ test('Interstellar exchange converts available wallet money with a no-thumbnail 
   global.db = makeDb()
   const buttonCalls = []
   const { m } = makeMessage()
-  const conn = {
-    sendButton: async (...args) => {
-      buttonCalls.push(args)
+  class ButtonV2 {
+    constructor(conn) {
+      this.conn = conn
+      this.buttons = []
     }
+
+    setBody(body) {
+      this.body = body
+    }
+
+    setFooter(footer) {
+      this.footer = footer
+    }
+
+    addRawButton(button) {
+      this.buttons.push(button)
+    }
+
+    async send(chat) {
+      const sent = { chat, body: this.body, footer: this.footer, buttons: this.buttons }
+      buttonCalls.push(sent)
+      return sent
+    }
+  }
+  const conn = {
+    ButtonV2
   }
 
   try {
@@ -64,13 +86,15 @@ test('Interstellar exchange converts available wallet money with a no-thumbnail 
     assert.equal(account.rpg.pendingStellarExchange.moneyAmount, 1_000_000_000_000_000)
     assert.equal(account.rpg.pendingStellarExchange.creditAmount, 2)
     assert.equal(buttonCalls.length, 1)
-    assert.equal(buttonCalls[0][3], null)
-    assert.deepEqual(buttonCalls[0][4], [
+    const listButton = buttonCalls[0].buttons.find(button => button.nativeFlowInfo?.name === 'single_select')
+    assert.ok(listButton)
+    const rows = JSON.parse(listButton.nativeFlowInfo.paramsJson).sections[0].rows
+    assert.deepEqual(rows.map(({ title, id }) => [title, id]), [
       ['💠 Tukar Sekarang', '.int exchange confirm'],
       ['↩️ Batalkan', '.int exchange cancel']
     ])
-    assert.match(buttonCalls[0][1], /500T = 1 SC/)
-    assert.match(buttonCalls[0][1], /Sisa uang saku/)
+    assert.match(buttonCalls[0].body, /500T = 1 SC/)
+    assert.match(buttonCalls[0].body, /Sisa uang saku/)
 
     await interstellarHandler(m, {
       conn,

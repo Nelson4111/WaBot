@@ -43,13 +43,46 @@ function makeMessage(sender, extra = {}) {
 }
 
 function makeConn() {
-  return {
-    buttons: [],
-    decodeJid: jid => jid,
-    async sendButton(...args) {
-      this.buttons.push(args[4])
+  class ButtonV2 {
+    constructor(conn) {
+      this.conn = conn
+      this.rawButtons = []
+    }
+
+    setBody(body) {
+      this.body = body
+    }
+
+    setFooter(footer) {
+      this.footer = footer
+    }
+
+    addRawButton(button) {
+      this.rawButtons.push(button)
+    }
+
+    addButton(label, command) {
+      this.rawButtons.push({ label, command })
+    }
+
+    async send(chat) {
+      const sent = { chat, body: this.body, footer: this.footer, buttons: this.rawButtons }
+      this.conn.buttons.push(sent)
+      return sent
     }
   }
+
+  return {
+    buttons: [],
+    ButtonV2,
+    decodeJid: jid => jid,
+  }
+}
+
+function getListRows(conn) {
+  const listButton = conn.buttons.at(-1).buttons.find(button => button.nativeFlowInfo?.name === 'single_select')
+  assert.ok(listButton, 'message should use a scrollable list')
+  return JSON.parse(listButton.nativeFlowInfo.paramsJson).sections.flatMap(section => section.rows)
 }
 
 test('heal prompt button targets the sender with heal me', async () => {
@@ -58,7 +91,9 @@ test('heal prompt button targets the sender with heal me', async () => {
 
   await sendRpgHealPrompt(conn, m, { text: 'Pulihkan diri.', usedPrefix: '.' })
 
-  assert.equal(conn.buttons.at(-1)[0][1], '.heal me')
+  const rows = getListRows(conn)
+  assert.equal(rows[0].id, '.heal me')
+  assert.match(rows[0].title, /Heal Diriku Sendiri/)
 })
 
 test('heal me command restores only the sender', async () => {
@@ -112,9 +147,9 @@ test('healing another user requires that user to accept and charges the sender',
     assert.equal(global.db.data.users[targetJid].rpg.darah, 50)
     assert.equal(global.db.data.users[senderJid].money, initialMoney)
     assert.match(offer.replies.at(-1), /PENAWARAN HEAL/)
-    const buttons = conn.buttons.at(-1)
-    assert.equal(buttons[0][0], '💖 Terima Heal')
-    const [, command] = buttons[0]
+    const rows = getListRows(conn)
+    assert.equal(rows[0].title, '💖 Terima Heal')
+    const command = rows[0].id
     const offerId = command.split(/\s+/).at(-1)
 
     const acceptance = makeMessage(targetJid)
@@ -141,8 +176,8 @@ test('a replied-to user can decline a heal offer without being healed or charged
       usedPrefix: '.',
       text: ''
     })
-    const buttons = conn.buttons.at(-1)
-    const [, command] = buttons[1]
+    const rows = getListRows(conn)
+    const command = rows[1].id
     const offerId = command.split(/\s+/).at(-1)
     const decline = makeMessage(targetJid)
 

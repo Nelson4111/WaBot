@@ -3,9 +3,13 @@ import test from 'node:test'
 import {
   clearSkipCooldownEntries,
   getSkipCooldownEntries,
+  getSkipCooldownUsage,
+  recordSkipCooldownUsage,
   resolveSkipCooldownTarget,
   selectSkipCooldownEntries,
-  SKIPCD_COST_PER_SECOND
+  SKIPCD_COST_PER_SECOND,
+  SKIPCD_HOURLY_LIMIT,
+  SKIPCD_USAGE_WINDOW
 } from '../lib/rpgCooldownSkip.js'
 
 test('skip cooldown target aliases are limited to the supported activities', () => {
@@ -56,4 +60,21 @@ test('fitnah cooldown is read and cleared from the account-level fitnah map', ()
   assert.equal(entries[0].id, 'fitnah')
   clearSkipCooldownEntries(rpg, db, '123@s.whatsapp.net', entries)
   assert.equal(db.fitnah['123@s.whatsapp.net'], 0)
+})
+
+test('skip cooldown usage is limited to ten successful uses in a rolling hour', () => {
+  const now = 1_700_000_000_000
+  let usage
+  for (let count = 1; count <= SKIPCD_HOURLY_LIMIT; count++) {
+    usage = recordSkipCooldownUsage(usage, now + count)
+  }
+
+  assert.equal(getSkipCooldownUsage(usage, now + 10).count, SKIPCD_HOURLY_LIMIT)
+  const resetAt = usage.startedAt + SKIPCD_USAGE_WINDOW
+  assert.equal(getSkipCooldownUsage(usage, resetAt - 1).count, SKIPCD_HOURLY_LIMIT)
+  assert.equal(getSkipCooldownUsage(usage, resetAt).count, 0)
+  assert.deepEqual(
+    recordSkipCooldownUsage(usage, resetAt),
+    { count: 1, startedAt: resetAt }
+  )
 })
