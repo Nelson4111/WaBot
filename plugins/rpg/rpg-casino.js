@@ -6,7 +6,7 @@ import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/le
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { formatRpgMoney, formatRpgNumber, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 import { getRpgWibDateKey, getRpgWibWeekKey } from '../../lib/rpgTime.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
@@ -62,8 +62,8 @@ const GAME_COOLDOWN = 60000
 const aliases = Object.fromEntries(Object.entries(games).flatMap(([key, game]) => game.aliases.map(alias => [alias, key])))
 const pick = values => values[Math.floor(Math.random() * values.length)]
 const number = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
-const money = value => `Rp ${Math.max(0, value).toLocaleString()}`
-const signedMoney = value => `${value >= 0 ? '+' : '-'}Rp ${Math.abs(Number(value) || 0).toLocaleString()}`
+const money = value => formatRpgMoney(Math.max(0, Number(value) || 0))
+const signedMoney = value => `${value >= 0 ? '+' : '-'}${formatRpgMoney(Math.abs(Number(value) || 0))}`
 const DAILY_LIMIT = 25
 const PREMIUM_DAILY_LIMIT = 50
 const CASINO_BLACKOUT_TARGET_COUNT = 5
@@ -570,9 +570,9 @@ function casinoCommands(prefix) {
     ``,
     `📌 *CASINO*`,
     `> ↳ 🎰 ${prefix}casino`,
-    `> ↳ 🎮 ${prefix}casino <game> <taruhan>`,
+    `> ↳ 🎮 ${prefix}casino <game> <taruhan> (contoh: 2M)`,
     `> ↳ 💸 ${prefix}casino <game> all (seluruh uang saku)`,
-    `> ↳ 🎲 ${prefix}casino random <taruhan>`,
+    `> ↳ 🎲 ${prefix}casino random <taruhan> (contoh: 2M)`,
     `> ↳ 🧪 ${prefix}casino simulation <game/random> [nominal] atau ${prefix}cs sl <game/random> [nominal]`,
     `> ↳ 📖 ${prefix}cs hasil`,
     `> ↳ 🗓️ ${prefix}cs history`,
@@ -581,6 +581,7 @@ function casinoCommands(prefix) {
     `> ↳ 🛡️ ${prefix}cs guard protect — proteksi Premium`,
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
+    `> ↳ 💰 ${prefix}casino money — daftar suffix nominal`,
     `> ↳ 👤 ${prefix}casino profile`,
     `> ↳ 💰 ${prefix}casino profit`,
     `> ↳ 🏆 ${prefix}casino top`,
@@ -588,7 +589,7 @@ function casinoCommands(prefix) {
     `> ↳ ✏️ ${prefix}casino nickname <julukan>`,
     ``,
     `👥 *CASINO ROOM*`,
-    `> ↳ 🏠 ${prefix}cs room create <taruhan>`,
+    `> ↳ 🏠 ${prefix}cs room create <taruhan> (contoh: 2M)`,
     `> ↳ ➕ ${prefix}cs room join`,
     `> ↳ 🚪 ${prefix}cs room leave`,
     `> ↳ 👢 ${prefix}cs room kick @tag`,
@@ -627,7 +628,7 @@ function casinoResults(prefix) {
     `> ↳ ${prefix}cs guard menampilkan pelaku virtual dan mengirim Avelia Guard untuk memulihkan saldo.\n` +
     `> ↳ Premium dapat mengklaim proteksi satu kali per minggu kalender; kesempatan direset setiap Senin.\n\n` +
     `🧪 *SIMULASI*\n` +
-    `> ↳ ${prefix}cs sl <game/random> [nominal] menampilkan hasil virtual tanpa mengubah uang, cooldown, batas harian, atau statistik.\n\n` +
+    `> ↳ ${prefix}cs sl <game/random> [nominal] menampilkan hasil virtual tanpa mengubah uang, cooldown, batas harian, atau statistik. Nominal bisa memakai suffix seperti 1K, 2M, atau 1B.\n\n` +
     `─━━━━━━━━━━━━━━─`
 }
 
@@ -638,10 +639,11 @@ function casinoGuide(prefix) {
 
     `📌 *CARA BERMAIN*\n` +
     `> ↳ Mainkan dengan ${prefix}casino <game> <taruhan>.\n` +
+    `> ↳ Nominal taruhan bisa memakai suffix seperti 1K, 2M, 1B, atau 1T; format tampilan saldo dan hasil juga ringkas.\n` +
     `> ↳ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
     `> ↳ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
     `> ↳ Taruhan dapat berupa nominal atau *all* untuk memakai seluruh uang saku.\n` +
-    `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game/random> [nominal] (alias: ${prefix}cs sl <game/random> [nominal]). Nominal acak selalu di atas Rp1 miliar; nominal pilihan maksimal Rp1 triliun.\n` +
+    `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game/random> [nominal] (alias: ${prefix}cs sl <game/random> [nominal]). Nominal bisa memakai suffix seperti 1K, 2M, atau 1B. Nominal acak selalu di atas 1B; nominal pilihan maksimal 1T.\n` +
     `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
     `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x.\n\n` +
     `> ↳ Blackout memiliki peluang normal, tetapi maksimal hanya terjadi sekali per pengguna per hari.\n` +
@@ -1309,7 +1311,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
       `│ ❌ *Nominal taruhan tidak valid.*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Nominal minimal: ${money(100)}.\n` +
-      `> ↳ Contoh: *${usedPrefix}cs room set 500000*\n\n` +
+      `> ↳ Contoh: *${usedPrefix}cs room set 500K*\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -1437,7 +1439,7 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const casinoShutdown = isRpgEventActive('casino_shutdown')
-  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record', 'guard']
+  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'money', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record', 'guard']
   const roomReadOnlyActions = ['info', 'games', 'guide']
   if (casinoShutdown && !readOnlyCasinoInputs.includes(input) &&
       !(input === 'room' && roomReadOnlyActions.includes(String(args[1] || '').toLowerCase()))) {
@@ -1475,11 +1477,11 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
     const betInput = gameArgs[1]
     const bet = betInput === undefined
       ? cryptoRandomInt(MIN_RANDOM_CASINO_SIMULATION_BET, MAX_CASINO_SIMULATION_BET + 1)
-      : /^\d+$/.test(betInput) ? Number(betInput) : NaN
+      : parseRpgMoneyAmount(betInput)
     if (!Number.isSafeInteger(bet) || bet < 1 || bet > MAX_CASINO_SIMULATION_BET) {
       return m.reply(
-        `❌ Nominal simulasi harus berupa angka bulat dari Rp1 sampai Rp${MAX_CASINO_SIMULATION_BET.toLocaleString('id-ID')}.\n` +
-        `Contoh: *${usedPrefix}cs sl random 999999999999*`
+        `❌ Nominal simulasi harus berupa angka bulat dari Rp 1 sampai ${money(MAX_CASINO_SIMULATION_BET)}.\n` +
+        `Contoh: *${usedPrefix}cs sl random 999B*`
       )
     }
       const result = applyCasinoSpecialOutcome(normalizeResult(resultFor(game)))
@@ -1760,6 +1762,18 @@ return m.reply(
     return m.reply(casinoGuide(usedPrefix))
   }
 
+  if (input === 'money') {
+    return m.reply(
+      `╭─❏「 💰 DAFTAR SUFIKS UANG 」❏\n` +
+      `│ 💰 NOMINAL RINGKAS CASINO\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `Gunakan suffix langsung setelah angka, contoh: *${usedPrefix}cs random 2M*.\n` +
+      `Nominal taruhan, saldo, profit, hadiah, dan hasil ditampilkan ringkas.\n\n` +
+      `${getRpgMoneySuffixGuide()}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   if (input === 'nickname' || input === 'nick') {
     const nickname = args.slice(1).join(' ').trim()
     if (!nickname) {
@@ -1857,7 +1871,7 @@ if (!Number.isInteger(bet) || bet < games[game].minBet) {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📌 *BATAS TARUHAN*\n` +
     `> ↳ 💰 Minimal ${games[game].name} : ${money(games[game].minBet)}\n` +
-    `> ↳ 📌 Contoh : *${usedPrefix}casino ${randomGame ? 'random' : game} ${games[game].minBet}*\n\n` +
+    `> ↳ 📌 Contoh : *${usedPrefix}casino ${randomGame ? 'random' : game} ${formatRpgNumber(games[game].minBet)}*\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -2084,6 +2098,7 @@ handler.help = [
   'casino',
   'casino command',
   'casino guide',
+  'casino money',
   'casino games',
   'casino random <taruhan>',
   'casino <game> all',
