@@ -215,7 +215,7 @@ ${donorText}
     }
   }
 
-  const menuThumb = await getMenuThumbnail()
+  const menuThumb = await getMenuThumbnail('./media/avelia_intro.jpg')
 
   try {
     let sent = false
