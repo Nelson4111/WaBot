@@ -165,11 +165,16 @@ test('keeps user numbers outside relational column ranges in raw_data', async ()
     }
   }, true)
 
-  assert.equal(storedUserRow.limit_val, 2_147_483_647)
+  assert.equal(storedUserRow.limit_val, null)
   for (const column of ['level', 'exp', 'limit_val', 'balance', 'bank', 'money']) {
-    assert.ok(Number.isSafeInteger(storedUserRow[column]), `${column} must be safe to serialize`)
+    assert.ok(
+      storedUserRow[column] === null || Number.isSafeInteger(storedUserRow[column]),
+      `${column} must be null or safe to serialize`
+    )
   }
-  assert.equal(storedUserRow.bank, Number.MAX_SAFE_INTEGER)
+  assert.equal(storedUserRow.money, null)
+  assert.equal(storedUserRow.bank, null)
+  assert.equal(storedUserRow.balance, null)
   assert.equal(storedUserRow.rpg.bank, largeMoney)
   assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.limit_val, String(largeLimit))
   assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.money, String(largeMoney))
@@ -181,4 +186,18 @@ test('keeps user numbers outside relational column ranges in raw_data', async ()
   assert.equal(data.users[jid].limit, largeLimit)
   assert.equal(data.users[jid].money, largeMoney)
   assert.equal(data.users[jid].bank, largeMoney)
+
+  await adapter._performWrite(data, true)
+  assert.equal(storedUserRow.limit_val, null)
+  assert.equal(storedUserRow.money, null)
+  assert.equal(storedUserRow.bank, null)
+  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.limit_val, String(largeLimit))
+  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.money, String(largeMoney))
+  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.bank, String(largeMoney))
+
+  adapter._fetchAll = async table => table === 'users' ? [storedUserRow] : []
+  const reloadedData = await adapter.read()
+  assert.equal(reloadedData.users[jid].limit, largeLimit)
+  assert.equal(reloadedData.users[jid].money, largeMoney)
+  assert.equal(reloadedData.users[jid].bank, largeMoney)
 })
