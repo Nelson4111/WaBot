@@ -51,6 +51,31 @@ function makeConn() {
   return {
     messages: [],
     ButtonV2,
+    async sendButtonV2(chat, options) {
+      const sent = {
+        chat,
+        body: options.text,
+        footer: options.footer,
+        buttons: options.buttons.map(([label, command]) => ({ label, command }))
+      }
+      this.messages.push(sent)
+      return sent
+    },
+    async sendInteractive(chat, content) {
+      const flowButton = content.interactiveMessage.nativeFlowMessage.buttons[0]
+      const sent = {
+        chat,
+        body: content.interactiveMessage.body.text,
+        buttons: [{
+          nativeFlowInfo: {
+            name: flowButton.name,
+            paramsJson: flowButton.buttonParamsJson
+          }
+        }]
+      }
+      this.messages.push(sent)
+      return sent
+    },
     async sendMessage(chat, content) {
       const sent = { chat, ...content }
       this.messages.push(sent)
@@ -63,6 +88,10 @@ function getListRows(conn) {
   const listButton = conn.messages.at(-1).buttons.find(button => button.nativeFlowInfo?.name === 'single_select')
   assert.ok(listButton, 'totem choice should be shown as a scrollable list')
   return JSON.parse(listButton.nativeFlowInfo.paramsJson).sections.flatMap(section => section.rows)
+}
+
+function getStandardButtons(conn) {
+  return conn.messages.at(-1).buttons.filter(button => button.command)
 }
 
 function makeMessage() {
@@ -91,7 +120,7 @@ test('totem shop, purchase and activation stay selectable through list menus', a
     assert.ok(getListRows(conn).some(row => row.id === '.totem buy tide'))
 
     await invoke('buy tide')
-    assert.deepEqual(getListRows(conn).map(row => row.id), ['.totem yes', '.totem no'])
+    assert.deepEqual(getStandardButtons(conn).map(button => button.command), ['.totem yes', '.totem no'])
     assert.match(conn.messages.at(-1).body, /Tide Totem/)
 
     await invoke('yes')
@@ -102,7 +131,7 @@ test('totem shop, purchase and activation stay selectable through list menus', a
     assert.ok(conn.messages.at(-1).buttons.some(button => button.command === '.totem use 1'))
 
     await invoke('use 1')
-    assert.deepEqual(getListRows(conn).map(row => row.id), ['.totem yes', '.totem no'])
+    assert.deepEqual(getStandardButtons(conn).map(button => button.command), ['.totem yes', '.totem no'])
 
     await invoke('yes')
     assert.deepEqual(account.rpg.totems, [])

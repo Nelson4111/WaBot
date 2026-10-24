@@ -48,18 +48,14 @@ test('one-row sections collapse to a regular action button', async () => {
     sections: [{
       title: 'Pilihan',
       rows: [{ title: '🎯 Tangkap Pokémon', id: '.pokemon catch abc' }]
-    }],
-    sendInteractive: async content => {
-      conn.sends.push({ content })
-      return content
-    }
+    }]
   })
 
   assert.equal(conn.sends.length, 1)
   assert.deepEqual(conn.sends[0].options.buttons, [['🎯 Tangkap Pokémon', '.pokemon catch abc']])
 })
 
-test('multiple RPG actions remain in a scrollable list', async () => {
+test('two RPG actions stay as regular clickable buttons', async () => {
   const conn = makeConn()
 
   await sendRpgButtons(conn, {
@@ -68,6 +64,27 @@ test('multiple RPG actions remain in a scrollable list', async () => {
     buttons: [
       ['✅ Terima', '.pokemon accept'],
       ['↩️ Tolak', '.pokemon reject']
+    ]
+  })
+
+  assert.equal(conn.sends.length, 1)
+  assert.deepEqual(conn.sends[0].options.buttons, [
+    ['✅ Terima', '.pokemon accept'],
+    ['↩️ Tolak', '.pokemon reject']
+  ])
+  assert.equal(conn.sends[0].options.noLocationHeader, true)
+})
+
+test('more than two RPG actions use a scrollable list', async () => {
+  const conn = makeConn()
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Pilih aksi.',
+    buttons: [
+      ['✅ Terima', '.pokemon accept'],
+      ['↩️ Tolak', '.pokemon reject'],
+      ['ℹ️ Detail', '.pokemon info']
     ],
     sendInteractive: async content => {
       conn.sends.push({ content })
@@ -78,5 +95,46 @@ test('multiple RPG actions remain in a scrollable list', async () => {
   const list = conn.sends[0].content.interactiveMessage.nativeFlowMessage.buttons[0]
   assert.equal(list.name, 'single_select')
   const sections = JSON.parse(list.buttonParamsJson).sections
-  assert.deepEqual(sections[0].rows.map(row => row.id), ['.pokemon accept', '.pokemon reject'])
+  assert.deepEqual(sections[0].rows.map(row => row.id), [
+    '.pokemon accept',
+    '.pokemon reject',
+    '.pokemon info'
+  ])
+})
+
+test('lists use the connection interactive sender without a location header', async () => {
+  const conn = makeConn()
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Pilih aksi.',
+    sections: [{
+      title: 'Pilihan',
+      rows: [
+        { title: 'Pilih satu', id: '.rpg one' },
+        { title: 'Pilih dua', id: '.rpg two' },
+        { title: 'Pilih tiga', id: '.rpg three' }
+      ]
+    }]
+  })
+
+  const sent = conn.sends[0].content.interactiveMessage
+  assert.equal('header' in sent, false)
+  assert.equal(sent.nativeFlowMessage.buttons[0].name, 'single_select')
+})
+
+test('auction art is sent as media and not as a location thumbnail', async () => {
+  const conn = makeConn()
+  const auctionImage = 'https://example.invalid/auction.webp'
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Balai lelang dibuka.',
+    image: auctionImage,
+    buttons: [['🔨 Buka lelang', '.ah']],
+    preferV2: true
+  })
+
+  assert.equal(conn.sends[0].options.image, auctionImage)
+  assert.equal(conn.sends[0].options.noLocationHeader, true)
 })
