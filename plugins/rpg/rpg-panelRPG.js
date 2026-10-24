@@ -972,6 +972,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel resetlevel all* - Reset level dan XP semua akun RPG\n` +
   `> ↳ *${usedPrefix}rpgpanel resetpokemon all* - Reset level koleksi Pokémon semua user\n` +
   `> ↳ *${usedPrefix}rpgpanel resetghost all* - Reset level koleksi Ghost Hunter semua user\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetguard @tag/reply* - Reset kuota klaim Proteksi Avelia Guard\n` +
   `> ↳ *${usedPrefix}rpgpanel resetmoney @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
@@ -1457,6 +1458,9 @@ let handler = async (m, {
 
   // ========== EDIT USER HARUS ADA TARGET ==========
   if (!who) return m.reply('❌ Tag / reply / masukkan nomor target dulu untuk edit user!')
+  if (['resetguard', 'resetavelia', 'resetaveliaguard'].includes(aksi) && !wdb.users[who]?.rpg) {
+    return m.reply(`❌ @${who.split('@')[0]} belum memiliki akun RPG.`, null, { mentions: [who] })
+  }
   if (isPanelReadOnlyAction && !wdb.users[who]) {
     return m.reply(`❌ @${who.split('@')[0]} belum memiliki data RPG.`, null, { mentions: [who] })
   }
@@ -2640,6 +2644,17 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   if(aksi === 'resetlevel'){ user.level = 1; user.exp = 0; saveDB(wdb); return m.reply(`🔄 Reset level @${who.split('@')[0]}`, null, {mentions: [who]}) }
   if(aksi === 'resetmoney'){ wdb.money[who] = 0; saveDB(wdb); return m.reply(`🔄 Reset money @${who.split('@')[0]}`, null, {mentions: [who]}) }
   if(aksi === 'resetdiamond'){ user.diamond = 0; saveDB(wdb); return m.reply(`🔄 Reset diamond @${who.split('@')[0]}`, null, {mentions: [who]}) }
+  if (['resetguard', 'resetavelia', 'resetaveliaguard'].includes(aksi)) {
+    const hadUsedProtection = user.casinoBlackoutProtectionWeek !== undefined
+    delete user.casinoBlackoutProtectionWeek
+    saveDB(wdb)
+    return m.reply(
+      `🛡️ Kuota klaim Proteksi Avelia Guard @${who.split('@')[0]} ${hadUsedProtection ? 'berhasil direset' : 'sudah tersedia'}.\n` +
+      `> Target tetap harus Premium dan memiliki kerugian blackout yang belum dipulihkan untuk mengklaimnya.`,
+      null,
+      { mentions: [who] }
+    )
+  }
 
   if(aksi === 'resetcd' || aksi === 'resetcooldown' || aksi === 'clearcd'){
     const resetCooldownFields = (store) => {

@@ -69,9 +69,6 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const profile = getDifficultyProfile(user)
 
   if (['list', 'guide', 'command', 'help'].includes(normalizedAction)) {
-    if (normalizedAction === 'list') {
-      return m.reply(`🎚️ *DAFTAR DIFFICULTY*\n${Object.values(RPG_DIFFICULTIES).map(item => `> ${item.name}`).join('\n')}\n\nLihat efek lengkap: *${usedPrefix}difficulty guide*`)
-    }
     const difficulties = [
       { key: 'peaceful', emoji: '🌿', description: 'Santai, risiko rendah, tanpa leaderboard' },
       { key: 'easy', emoji: '🍃', description: 'Tantangan ringan dengan hadiah yang lebih kecil' },

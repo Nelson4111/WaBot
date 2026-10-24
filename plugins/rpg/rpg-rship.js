@@ -3577,14 +3577,30 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
       subtitle: 'Cek nama sebelum diterapkan',
       text: confirmationText,
       footer: 'AVELIA • RSHIP',
-      buttons: [
-        ['✅ Konfirmasi nama', `${usedPrefix}rship kid rename konfirmasi`],
-        ['↩️ Batalkan', `${usedPrefix}rship kid rename batal`]
-      ],
+      buttonText: '✏️ PILIH KONFIRMASI',
+      noThumbnail: true,
+      sections: [{
+        title: 'Pilih tindakan rename anak',
+        rows: [
+          {
+            title: '✅ Konfirmasi nama',
+            description: 'Terapkan nama baru pada anak',
+            id: `${usedPrefix}rship kid rename konfirmasi`
+          },
+          {
+            title: '↩️ Batalkan',
+            description: 'Pertahankan nama anak saat ini',
+            id: `${usedPrefix}rship kid rename batal`
+          }
+        ]
+      }],
       fallbackText:
         `${confirmationText}\n\n` +
         `> ↳ Konfirmasi: ${usedPrefix}rship kid rename konfirmasi\n` +
-        `> ↳ Batalkan: ${usedPrefix}rship kid rename batal`
+        `> ↳ Batalkan: ${usedPrefix}rship kid rename batal`,
+      sendInteractive: typeof conn.sendInteractive === 'function'
+        ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
+        : undefined
     })
   }
 

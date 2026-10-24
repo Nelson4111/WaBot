@@ -4,16 +4,23 @@ import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
   clearSkipCooldownEntries,
   getSkipCooldownEntries,
+  getSkipCooldownUsage,
+  recordSkipCooldownUsage,
   resolveSkipCooldownTarget,
   selectSkipCooldownEntries,
   SKIPCD_CONFIRMATION_TTL,
-  SKIPCD_COST_PER_SECOND
+  SKIPCD_COST_PER_SECOND,
+  SKIPCD_HOURLY_LIMIT
 } from '../../lib/rpgCooldownSkip.js'
 
 const CONFIRM_YES = new Set(['ya', 'yes', 'ok', 'confirm'])
 const CONFIRM_NO = new Set(['batal', 'no', 'tidak', 'cancel'])
 
 const formatMoney = amount => `Rp ${Number(amount).toLocaleString('id-ID')}`
+const formatSkipCooldownLimit = ({ count, resetAt }, now) => {
+  const remainingMinutes = Math.max(1, Math.ceil((resetAt - now) / 60000))
+  return `❌ Batas skipcd ${SKIPCD_HOURLY_LIMIT} kali per jam sudah tercapai. Coba lagi dalam ${remainingMinutes} menit.`
+}
 
 const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
   const db = loadDB()
@@ -32,6 +39,7 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
   const input = text.trim().toLowerCase().replace(/\s+/g, ' ')
   if (!db.temp || typeof db.temp !== 'object') db.temp = {}
   if (!db.temp.skipcd || typeof db.temp.skipcd !== 'object') db.temp.skipcd = {}
+  if (!db.temp.skipcdUsage || typeof db.temp.skipcdUsage !== 'object') db.temp.skipcdUsage = {}
   const pending = db.temp.skipcd[m.sender]
 
   if (CONFIRM_NO.has(input)) {
@@ -46,6 +54,13 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
       delete db.temp.skipcd[m.sender]
       await saveDB(db)
       return m.reply('❌ Konfirmasi `.skipcd` tidak ada atau sudah kedaluwarsa. Buat permintaan baru.')
+    }
+
+    const usage = getSkipCooldownUsage(db.temp.skipcdUsage[m.sender], now)
+    if (usage.count >= SKIPCD_HOURLY_LIMIT) {
+      delete db.temp.skipcd[m.sender]
+      await saveDB(db)
+      return m.reply(formatSkipCooldownLimit(usage, now))
     }
 
     const currentEntries = selectSkipCooldownEntries(
@@ -71,6 +86,7 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
     }
 
     db.money[m.sender] = balance - cost
+    db.temp.skipcdUsage[m.sender] = recordSkipCooldownUsage(db.temp.skipcdUsage[m.sender], now)
     clearSkipCooldownEntries(rpg, db, m.sender, currentEntries)
     delete db.temp.skipcd[m.sender]
     await saveDB(db)
@@ -78,6 +94,7 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
       `✅ *COOLDOWN BERHASIL DILEWATI*\n` +
       `> ↳ Target: ${currentEntries.map(({ label }) => label).join(', ')}\n` +
       `> ↳ Biaya: ${formatMoney(cost)}\n` +
+      `> ↳ Sisa kuota skipcd: ${SKIPCD_HOURLY_LIMIT - usage.count - 1}/${SKIPCD_HOURLY_LIMIT} kali per jam\n` +
       `> ↳ Sisa saldo: ${formatMoney(Number(db.money[m.sender]) || 0)}`
     )
   }
@@ -90,6 +107,7 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
       `> ↳ Contoh: ${usedPrefix}skipcd mining\n` +
       `> ↳ Semua tindak kriminal: ${usedPrefix}skipcd kriminal\n` +
       `> ↳ Tarif: ${formatMoney(SKIPCD_COST_PER_SECOND)} per detik tersisa, dibulatkan ke atas untuk setiap aktivitas/aksi.\n` +
+      `> ↳ Batas pemakaian: maksimal ${SKIPCD_HOURLY_LIMIT} kali per jam.\n` +
       `> ↳ Konfirmasi: ${usedPrefix}skipcd ya | ${usedPrefix}skipcd batal`
     const activities = [
       ['Mining', 'mining'],
@@ -120,6 +138,11 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
       noThumbnail: true,
       noHeader: true
     })
+  }
+
+  const usage = getSkipCooldownUsage(db.temp.skipcdUsage[m.sender], now)
+  if (usage.count >= SKIPCD_HOURLY_LIMIT) {
+    return m.reply(formatSkipCooldownLimit(usage, now))
   }
 
   const entries = selectSkipCooldownEntries(
