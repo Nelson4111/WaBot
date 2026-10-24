@@ -123,8 +123,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         return m.reply(`Masukkan jumlah nominal donasi!\n\n*Contoh:* ${usedPrefix + command} 6281241100804 50000`)
     }
 
-    let amount = parseInt(amountStr)
-    if (isNaN(amount) || amount <= 0) return m.reply('Nominal donasi harus berupa angka positif!')
+    let amount = Number(amountStr)
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+        return m.reply('Nominal donasi harus berupa bilangan bulat positif yang masih aman dihitung!')
+    }
     if (typeof global.db.write !== 'function') {
         return m.reply('❌ Database belum siap menyimpan donasi dan Premium. Coba lagi nanti.')
     }
@@ -132,20 +134,36 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let primaryJid = jidList[0]
     if (!users[primaryJid]) users[primaryJid] = {}
 
+    const previousTotal = Number(users[primaryJid].totalDonasi) || 0
+    const nextTotal = isSet ? amount : previousTotal + amount
+    if (!Number.isSafeInteger(previousTotal) || previousTotal < 0 || !Number.isSafeInteger(nextTotal)) {
+        return m.reply('Total donasi user terlalu besar untuk dihitung dengan aman. Periksa datanya terlebih dahulu.')
+    }
+
+    const resetJids = new Set(isSet ? jidList : [])
+    let totalGlobal = 0
+    for (const [jid, data] of Object.entries(users)) {
+        const donation = jid === primaryJid
+            ? nextTotal
+            : resetJids.has(jid)
+                ? 0
+                : Number(data.totalDonasi) || 0
+        if (!Number.isSafeInteger(donation) || donation < 0 || !Number.isSafeInteger(totalGlobal + donation)) {
+            return m.reply('Total donasi global terlalu besar untuk dihitung dengan aman. Periksa datanya terlebih dahulu.')
+        }
+        totalGlobal += donation
+    }
+
     if (isSet) {
         for (let jid of jidList) {
             if (users[jid]) delete users[jid].totalDonasi
         }
-        users[primaryJid].totalDonasi = amount
-    } else {
-        users[primaryJid].totalDonasi = (Number(users[primaryJid].totalDonasi) || 0) + amount
     }
+    users[primaryJid].totalDonasi = nextTotal
     users[primaryJid].premium = true
     users[primaryJid].premiumTime = 9999999999999
     users[primaryJid].role = 'Premium user'
 
-    // Recalculate total global
-    let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (Number(curr.totalDonasi) || 0), 0)
     settings.totalDonasi = totalGlobal
 
     await global.db.write()

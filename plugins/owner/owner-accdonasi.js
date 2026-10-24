@@ -21,7 +21,11 @@ export async function before(m, { conn, isROwner }) {
     let targetJid = targetNumber + '@s.whatsapp.net'
     
     let nominalStr = nominalMatch[1].replace(/[.,]/g, '')
-    let nominal = parseInt(nominalStr)
+    let nominal = Number(nominalStr)
+    if (!Number.isSafeInteger(nominal) || nominal <= 0) {
+        await m.reply('❌ Nominal donasi tidak valid atau terlalu besar untuk dihitung dengan aman.')
+        return true
+    }
 
     let alias = aliasMatch ? aliasMatch[1].trim() : null
 
@@ -33,12 +37,31 @@ export async function before(m, { conn, isROwner }) {
     let settings = global.db.data.settings[conn.user.jid]
 
     if (text === '1') {
+        const previousTotal = Number(users[targetJid].totalDonasi) || 0
+        const nextTotal = previousTotal + nominal
+        if (!Number.isSafeInteger(previousTotal) || previousTotal < 0 || !Number.isSafeInteger(nextTotal)) {
+            await m.reply('❌ Total donasi user terlalu besar untuk dihitung dengan aman. Periksa datanya terlebih dahulu.')
+            return true
+        }
+        let totalGlobal = 0
+        for (const user of Object.values(users)) {
+            const donation = Number(user.totalDonasi) || 0
+            if (!Number.isSafeInteger(donation) || donation < 0 || !Number.isSafeInteger(totalGlobal + donation)) {
+                await m.reply('❌ Total donasi global terlalu besar untuk dihitung dengan aman. Periksa datanya terlebih dahulu.')
+                return true
+            }
+            totalGlobal += donation
+        }
+        if (!Number.isSafeInteger(totalGlobal + nominal)) {
+            await m.reply('❌ Total donasi global terlalu besar untuk dihitung dengan aman.')
+            return true
+        }
         if (typeof global.db.write !== 'function') {
             await m.reply('❌ Database belum siap menyimpan donasi. Donasi belum diverifikasi.')
             return true
         }
         // Terima & Verifikasi
-        users[targetJid].totalDonasi = (Number(users[targetJid].totalDonasi) || 0) + nominal
+        users[targetJid].totalDonasi = nextTotal
         users[targetJid].premium = true
         users[targetJid].premiumTime = 9999999999999
         users[targetJid].role = 'Premium user'
@@ -47,8 +70,7 @@ export async function before(m, { conn, isROwner }) {
         }
 
         // Recalculate global
-        let totalGlobal = Object.values(users).reduce((acc, curr) => acc + (Number(curr.totalDonasi) || 0), 0)
-        settings.totalDonasi = totalGlobal
+        settings.totalDonasi = totalGlobal + nominal
 
         await global.db.write()
 

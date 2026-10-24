@@ -3,6 +3,7 @@ import { addUserLimit } from '../../lib/userLimit.js'
 let handler = async (m, { conn, args }) => {
     let who
     let amount
+    const parseAmount = value => /^\d+$/.test(value || '') ? Number(value) : NaN
 
     if (!m.quoted && !args[0]) {
         let caption = `*Format Penggunaan Salah!*\n\n` +
@@ -13,12 +14,12 @@ let handler = async (m, { conn, args }) => {
 
     if (m.quoted) {
         who = m.quoted.sender
-        amount = parseInt(args[0])
+        amount = parseAmount(args[0])
     } else if (args[0] && args[1]) {
         let cleanNumber = args[0].replace(/[^0-9]/g, '')
         if (cleanNumber.length > 5) {
             who = cleanNumber + '@s.whatsapp.net'
-            amount = parseInt(args[1])
+            amount = parseAmount(args[1])
         }
     }
 

@@ -1,4 +1,4 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { loadDB } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -14,13 +14,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     amount = args[1]
   }
 
-  amount = parseInt(amount?.replace(/[^0-9]/g, ''))
-  if (!amount || isNaN(amount)) return m.reply('❌ Masukkan angka valid.')
+  if (!/^[\d.,]+$/.test(amount || '')) return m.reply('❌ Masukkan jumlah angka yang valid.')
+  amount = Number(amount.replace(/[.,]/g, ''))
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    return m.reply('❌ Jumlah harus berupa bilangan bulat positif yang masih aman dihitung.')
+  }
 
-  if (!wdb.money[user]) wdb.money[user] = 0
-  wdb.money[user] += amount
-  
-  saveDB(wdb)
+  const currentBalance = Number(wdb.money[user]) || 0
+  const newBalance = currentBalance + amount
+  if (!Number.isSafeInteger(currentBalance) || currentBalance < 0 || !Number.isSafeInteger(newBalance)) {
+    return m.reply('❌ Saldo atau jumlah penambahan terlalu besar untuk dihitung dengan aman.')
+  }
+  if (typeof global.db.write !== 'function') {
+    return m.reply('❌ Database belum siap menyimpan saldo. Coba lagi nanti.')
+  }
+  wdb.money[user] = newBalance
+  await global.db.write()
 
   let name = conn.getName(user) || user.split('@')[0]
   let cap = `*──「 ADD MONEY 」──*\n\n`
