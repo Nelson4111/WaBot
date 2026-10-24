@@ -1,6 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah } from '../../lib/fitnahHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, applyProtectedCrimeAttemptPenalty, getCrimeRestriction, isProtectedCrimeTarget, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { sendRpgHealPrompt } from '../../lib/rpgActionButtons.js'
 import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
@@ -260,7 +260,7 @@ Fitnah orang biar masuk penjara.
         return m.reply(`⏳ *COOLDOWN*\n\nTunggu *${formatTime(sisa)}* lagi`)
     }
 
-    if (tryPremiumProtection(who, 'fitnah', Date.now(), sender)) {
+    if (!isProtectedCrimeTarget(who) && tryPremiumProtection(who, 'fitnah', Date.now(), sender)) {
         wdb.fitnah[sender] = Date.now()
         await saveDB(wdb)
         return m.reply(formatPremiumProtectionMessage('fitnah', 'Uang taruhan kamu tidak dipotong.'))
@@ -268,6 +268,9 @@ Fitnah orang biar masuk penjara.
 
     wdb.fitnah[sender] = now
     wdb.money[sender] = uangSender - uangTaruhan // potong modal dulu
+    if (isProtectedCrimeTarget(who)) {
+        applyProtectedCrimeAttemptPenalty(wdb, sender, who)
+    }
 
     let story = randomStory()
     const pending = {
@@ -276,7 +279,7 @@ Fitnah orang biar masuk penjara.
         target: who,
         chat: m.chat,
         wager: uangTaruhan,
-        successChance: adjustCrimeSuccessChance(senderRPG, peluang),
+        successChance: adjustCrimeSuccessChance(senderRPG, peluang, who),
         duration: durasiPenjara,
         bail: tebusan,
         successStory: story.sukses,

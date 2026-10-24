@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, applyProtectedCrimeAttemptPenalty, getCrimeRestriction, isProtectedCrimeTarget, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -66,17 +66,19 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 1000) return m.reply('❌ Target ga punya uang cukup. Minimal Rp 1000')
-  if (tryPremiumProtection(who, 'bunuh', Date.now(), m.sender)) {
+  const protectedCrimeTarget = isProtectedCrimeTarget(who)
+  if (!protectedCrimeTarget && tryPremiumProtection(who, 'bunuh', Date.now(), m.sender)) {
     userRPG.lastbunuh = Date.now()
     await saveDB(wdb)
     return m.reply(formatPremiumProtectionMessage('bunuh', 'Target tetap aman.'))
   }
 
   userRPG.lastbunuh = Date.now()
-  let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.8)
+  let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.8, who)
   let story = getRpgCrimeStory('bunuh', gagal ? 'failure' : 'success')
 
   if (gagal && tryPremiumProtection(m.sender, 'bunuh', Date.now(), who)) {
+    applyProtectedCrimeAttemptPenalty(wdb, m.sender, who)
     userRPG.riwayat.unshift(`🛡️ Premium protection mencegah kematian saat bunuh @${who.split('@')[0]}`)
     await saveDB(wdb)
     return m.reply(
@@ -91,6 +93,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
 
   if (gagal) {
+    applyProtectedCrimeAttemptPenalty(wdb, m.sender, who)
     // GAGAL = KAMU MATI + PENJARA 2 JAM
     const revivedHP = userRPG.darah !== undefined
       ? reviveBloodline(userRPG, Number(userRPG.maxDarah) || 100)

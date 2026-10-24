@@ -418,6 +418,21 @@ let handler = async (m, {
     })
   }
 
+  const statAliases = [
+    'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood', 'cont',
+    'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
+    'stellarcredit', 'mallitem',
+    'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item', 'jadian'
+  ]
+  if (['set', 'add', 'del', 'tambah', 'kurang', 'reset'].includes(aksi) && remaining.length > 0) {
+    const nextWord = remaining[0].toLowerCase()
+    if (statAliases.includes(nextWord)) {
+      const prefixAksi = aksi === 'tambah' ? 'add' : aksi === 'kurang' ? 'del' : aksi
+      aksi = prefixAksi + nextWord
+      remaining = remaining.slice(1)
+    }
+  }
+
   const panelReadOnlyActions = new Set([
     'command', 'commands', 'cmd', 'all', 'kategori', 'categories',
     'toprpg', 'rpgstat', 'topyt', 'evx', 'mall', 'home', 'anak',
@@ -435,6 +450,53 @@ let handler = async (m, {
       aliases.some(alias => normalizeRpgPanelCategory(alias) === requestedCategory) ||
       normalizeRpgPanelCategory(title) === requestedCategory
     )
+  const panelMutationActions = new Set([
+    'afk', 'forceafk', 'setafk', 'resetlevel', 'resetpokemon', 'resetpokemonlevel',
+    'resetghost', 'resetghostlevel', 'clearmoneykey', 'setlottery', 'lotteryset',
+    'autolevelup', 'setautolevelup', 'notiflevel', 'setnotiflevel', 'setlevelnotif', 'groupnotiflevel',
+    'setgroupnotiflevel', 'firejob', 'applyjob', 'setjob', 'setevx', 'delevx',
+    'setevxstat', 'sethome', 'homeadd', 'homedel', 'difficulty', 'setdifficulty',
+    'setcincin', 'skippanen', 'skipmasak', 'blockcasino', 'unblockcasino', 'giveauction',
+    'endauction', 'finishauction',
+    'resetguard', 'resetavelia', 'resetaveliaguard', 'setcasinoprogress', 'setcasino',
+    'casinoprogress', 'cshistoryrefund', 'refundcshistory', 'refundcasinohistory',
+    'setcasinoprofit', 'casinoprofit', 'setrhprogress', 'setrehabprogress',
+    'setrehabilitasiprogress', 'setburonan', 'setwanted', 'setwantedscore',
+    'setcrime', 'setcriminal', 'setjeniskriminal', 'selesairh', 'finishrh',
+    'finishrehab', 'forcerh', 'setpenjaraprogress', 'setprisonprogress', 'setpenjara',
+    'setjadian', 'addjadian', 'deljadian',
+    'setcont', 'addcont', 'delcont', 'setbot', 'addbot', 'delbot', 'setmoney',
+    'setstellarcredit', 'setmaxhp', 'setuserlevel', 'setbotlevel', 'setexp', 'setbotxp',
+    'setbotlimit', 'setlevel', 'setdarah', 'setdiamond', 'setiron', 'setgold', 'setstone',
+    'setwood', 'setarmor', 'setsword', 'setpickaxe', 'setfishingrod', 'addmoney',
+    'addstellarcredit', 'addlevel', 'adduserlevel', 'addexp', 'adddarah', 'adddiamond',
+    'addiron', 'addgold', 'addstone', 'addwood', 'addsword', 'addarmor', 'addpickaxe',
+    'addfishingrod', 'addbotlevel', 'addbotxp', 'addbotlimit', 'delmoney',
+    'delstellarcredit', 'dellevel',
+    'deluserlevel', 'delexp', 'deldarah', 'deldiamond', 'deliron', 'delgold', 'delstone',
+    'delwood', 'delsword', 'delarmor', 'delpickaxe', 'delfishingrod', 'delbotlevel',
+    'delbotxp', 'delbotlimit', 'addmallitem', 'setmallitem', 'delmallitem', 'add',
+    'del', 'wipe', 'setfishsize',
+    'addikan', 'delikan', 'addore', 'delore', 'addmasak', 'delmasak', 'addternak',
+    'delternak', 'kawinforce', 'icuforce', 'additem', 'delitem', 'setadvlevel',
+    'addadvlevel', 'heal', 'resetmoney', 'resetdiamond', 'resetcd', 'resetcooldown',
+    'clearcd', 'resetstreak', 'setstreak', 'addstreak', 'setbank', 'addbank', 'delbank', 'setbanktier',
+    'freezebank', 'unfreezebank', 'addharem', 'delharem', 'setharem', 'editharem', 'pindahanak',
+    'asuhanak', 'kembalianak', 'resetnamaanak', 'addanak', 'delanak', 'setanak',
+    'setcsm', 'addcsm', 'delcsm', 'setcontract', 'delcontract', 'resetcsm', 'giveending'
+  ])
+  if (!isPanelReadOnlyAction && !panelMutationActions.has(aksi)) {
+    return m.reply(
+      `❌ Command RPG Panel tidak dikenali: *${rawArgs[0]}*.\n` +
+      `> ↳ Ketik *${usedPrefix}rp* untuk melihat kategori dan command yang benar.`
+    )
+  }
+  if (!isPanelReadOnlyAction && !remaining.length && !['endauction', 'finishauction'].includes(aksi)) {
+    return m.reply(
+      `❌ Argumen command *${aksi}* belum lengkap.\n` +
+      `> ↳ Gunakan format command yang tercantum di *${usedPrefix}rp* sebelum meminta konfirmasi.`
+    )
+  }
 
   let validatedFosterChild = null
   let validatedFosterOwner = null
@@ -1196,23 +1258,6 @@ let handler = async (m, {
       image: { url: 'https://c.termai.cc/i174/Uwc' }, 
       caption: caption.trim() 
     })
-  }
-
-  // 2. Normalisasi 2-kata aksi (misal: "set money", "add diamond", "del wood")
-  const statAliases = [
-    'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood', 'cont',
-    'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
-    'stellarcredit', 'mallitem',
-    'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item', 'jadian'
-  ];
-
-  if (['set', 'add', 'del', 'tambah', 'kurang', 'reset'].includes(aksi) && remaining.length > 0) {
-    let nextWord = remaining[0].toLowerCase();
-    if (statAliases.includes(nextWord)) {
-      let prefixAksi = aksi === 'tambah' ? 'add' : (aksi === 'kurang' ? 'del' : aksi);
-      aksi = prefixAksi + nextWord;
-      remaining = remaining.slice(1);
-    }
   }
 
   if (aksi === 'resetlevel' && ['all', 'semua'].includes(String(remaining[0] || '').toLowerCase())) {
@@ -3288,7 +3333,10 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     }
   } 
 
-  m.reply(`❌ Command tidak ada.\n\n*Global:*\n.toprpg.rpgstat.topyt\n\n*Edit:*\n.setlevel.addlevel.dellevel\n.setmoney.addmoney.delmoney\n.add @user diamond 5`)
+  return m.reply(
+    `❌ Command atau format RPG Panel tidak dikenali.\n` +
+    `> ↳ Ketik *${usedPrefix}rp* untuk melihat kategori, command, dan format yang benar.`
+  )
   
 
 }

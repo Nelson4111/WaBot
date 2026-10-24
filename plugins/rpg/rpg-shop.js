@@ -364,10 +364,10 @@ if (mode === 'guide') {
       if (['uang', 'money'].includes(nama)) continue
       const cleanNama = normalizeFishKey(nama)
       const jumlah = user.jualAllConfirm.items[nama]
+      const fishIds = user.jualAllConfirm.fishIds?.[cleanNama]
       const interstellarPrice = interstellarSellMap[nama] || interstellarSellMap[cleanNama]
       const hrgSatuan = interstellarPrice ?? (hargaGabungNorm[cleanNama] || hargaGabung[nama] || 1000)
       if (hrgSatuan > 0) {
-        const fishIds = user.jualAllConfirm.fishIds?.[cleanNama]
         const selectedFish = fishIds
           ? getFishRecords(user, cleanNama).filter(fish => fishIds.includes(fish.id))
           : []

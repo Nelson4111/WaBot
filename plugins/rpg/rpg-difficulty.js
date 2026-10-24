@@ -2,7 +2,8 @@ import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionBu
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   canReceiveRareActivityRewards,
-  getDifficultyCooldownRemaining,
+  DIFFICULTY_CHANGES_PER_WEEK,
+  getDifficultyChangesRemaining,
   getPremiumDifficultyChangesRemaining,
   getDifficulty,
   getDifficultyProfile,
@@ -19,42 +20,46 @@ function formatDuration(ms) {
   return [days && `${days} hari`, hours && `${hours} jam`, minutes && `${minutes} menit`].filter(Boolean).join(' ') || 'kurang dari 1 menit'
 }
 
+const DIFFICULTY_CHOICES = [
+  { key: 'peaceful', emoji: '🌿', description: 'Santai, regen HP, tanpa kriminal atau leaderboard' },
+  { key: 'easy', emoji: '🍃', description: 'Risiko dan cooldown lebih rendah, hadiah lebih kecil' },
+  { key: 'normal', emoji: '⚔️', description: 'Tantangan dan hadiah standar' },
+  { key: 'hardcore', emoji: '🔥', description: 'Hadiah standar, combat dan risiko lebih berat' },
+  { key: 'nightmare', emoji: '💀', description: 'Hadiah lebih besar, risiko dan cooldown ekstrem' }
+]
+
+function formatMultiplier(value) {
+  return `${Math.round(value * 100)}%`
+}
+
 function getGuide() {
-  return `🌿 *PEACEFUL*\n` +
-    `> ↳ Income, EXP & Drop Rate x0.2\n` +
-    `> ↳ Cooldown x0.2, regen 1 HP/menit\n` +
-    `> ↳ Tidak mendapat hadiah tertentu dari misi Guild/Dungeon.\n` +
-    `> ↳ Damage keluar 150%, masuk 50%\n` +
-    `> ↳ Uang hilang saat jadi target 15%\n` +
-    `> ↳ Gagal aktivitas x0.15\n` +
-    `> ↳ Tidak masuk kriminal atau top.\n\n` +
-    `🍃 *EASY*\n` +
-    `> ↳ Income, EXP & Drop Rate x0.5\n` +
-    `> ↳ Cooldown x0.5\n` +
-    `> ↳ Tidak mendapat hadiah tertentu dari misi Guild/Dungeon.\n` +
-    `> ↳ Damage keluar 120%, masuk 75%\n` +
-    `> ↳ Uang hilang saat jadi target 50%\n` +
-    `> ↳ Gagal aktivitas x0.5.\n\n` +
-    `⚔️ *NORMAL*\n` +
-    `> ↳ Income, EXP, Drop Rate, cooldown, damage, kehilangan uang, dan risiko gagal standar.\n\n` +
-    `🔥 *HARDCORE*\n` +
-    `> ↳ Income, EXP & Drop Rate x1, cooldown x1.5\n` +
-    `> ↳ Damage keluar 50%, masuk 150%\n` +
-    `> ↳ Uang hilang saat jadi target 200%\n` +
-    `> ↳ Gagal aktivitas x2\n` +
-    `> ↳ Cooldown heal 30 menit.\n\n` +
-    `💀 *NIGHTMARE*\n` +
-    `> ↳ Income, EXP & Drop Rate x1.5, cooldown x2.5\n` +
-    `> ↳ Damage keluar 20%, masuk 200%\n` +
-    `> ↳ Uang hilang saat jadi target 500%\n` +
-    `> ↳ Gagal aktivitas x5\n` +
-    `> ↳ Cooldown heal 2 jam.\n\n` +
+  const modeDescriptions = {
+    peaceful: 'Pemulihan otomatis 1 HP/menit; kriminal dinonaktifkan dan tidak masuk leaderboard.',
+    easy: 'Mode berisiko rendah; reward langka misi Guild/Dungeon tidak tersedia.',
+    normal: 'Semua modifier berada di nilai standar.',
+    hardcore: 'Kriminal lebih sulit; heal setelah mati memiliki jeda 30 menit.',
+    nightmare: 'Kriminal jauh lebih sulit; heal setelah mati memiliki jeda 2 jam.'
+  }
+  const modes = DIFFICULTY_CHOICES.map(({ key, emoji }) => {
+    const profile = RPG_DIFFICULTIES[key]
+    const crime = key === 'peaceful'
+      ? 'Kriminal: tidak bisa'
+      : `Peluang kriminal: ${profile.crimeSuccess < 0 ? `${profile.crimeSuccess * 100} poin` : 'standar'}`
+    return `${emoji} *${profile.name.toUpperCase()}*\n` +
+      `> 💰 Income / EXP / drop: x${profile.income} / x${profile.xp} / x${profile.dropRate}\n` +
+      `> ⏱️ Cooldown: x${profile.cooldown} • ⚔️ Damage keluar/diterima: ${formatMultiplier(profile.damageDealt)} / ${formatMultiplier(profile.damageReceived)}\n` +
+      `> 💸 Uang hilang saat jadi target: x${profile.crimeLoss} • 🎲 Risiko gagal: x${profile.activityFailure}\n` +
+      `> ${crime} • ${modeDescriptions[key]}`
+  })
+  return `🎚️ *PANDUAN DIFFICULTY RPG*\n\n` +
+    `${modes.join('\n\n')}\n\n` +
     `─━━━━━━━━━━━━━━─\n` +
-    `💡 *SEBELUM MEMILIH*\n` +
-    `> ↳ Income memengaruhi uang dan jumlah hadiah.\n` +
-    `> ↳ Drop Rate memengaruhi peluang mendapat item rarity lebih tinggi.\n` +
-    `> ↳ Non-Premium dapat mengganti mode setiap 7 hari; Premium mendapat 2 kali perubahan per minggu dan kuota reset setiap Senin.\n\n` +
-    `Pilih mode di tombol berikut untuk menerapkannya.`
+    `💡 *CARA MEMBACA EFEK*\n` +
+    `> ↳ Income memengaruhi uang dan jumlah hadiah; EXP dan drop rate memengaruhi progres dan peluang item.\n` +
+    `> ↳ Uang hilang berlaku saat kamu menjadi target kriminal. Risiko gagal dan damage berlaku pada aktivitas/combat yang menerapkan modifier tersebut.\n` +
+    `> ↳ Easy dan Peaceful tidak mendapat hadiah langka tertentu dari misi Guild/Dungeon. Hanya Peaceful dikecualikan dari leaderboard.\n` +
+    `> ↳ Modifier hanya berlaku pada aksi RPG yang terhubung ke sistem difficulty; tidak semua fitur RPG mengubah hasil berdasarkan mode.\n` +
+    `> ↳ Akun biasa mendapat 1 perubahan per minggu; Premium 2 perubahan. Kuota semua akun reset setiap Senin (WIB).`
 }
 
 let handler = async (m, { conn, text, usedPrefix }) => {
@@ -69,15 +74,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const profile = getDifficultyProfile(user)
 
   if (['list', 'guide', 'command', 'help'].includes(normalizedAction)) {
-    const difficulties = [
-      { key: 'peaceful', emoji: '🌿', description: 'Santai, risiko rendah, tanpa leaderboard' },
-      { key: 'easy', emoji: '🍃', description: 'Tantangan ringan dengan hadiah yang lebih kecil' },
-      { key: 'normal', emoji: '⚔️', description: 'Pengalaman seimbang dengan aturan standar' },
-      { key: 'hardcore', emoji: '🔥', description: 'Tantangan berat dengan risiko dan cooldown lebih tinggi' },
-      { key: 'nightmare', emoji: '💀', description: 'Mode ekstrem dengan hadiah dan risiko tertinggi' }
-    ]
-    const rows = difficulties.map(({ key, emoji, description }) => ({
-      title: `${emoji} ${RPG_DIFFICULTIES[key].name}`,
+    const rows = DIFFICULTY_CHOICES.map(({ key, emoji, description }) => ({
+      title: `${key === current ? '✅ ' : ''}${emoji} ${RPG_DIFFICULTIES[key].name}`,
       description,
       id: `${usedPrefix}difficulty set ${key}`
     }))
@@ -96,6 +94,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       footer: 'AVELIA • RPG DIFFICULTY',
       buttonText: '⚔️ PILIH MODE',
       sections: [{ title: 'Pilih tingkat kesulitan', rows }],
+      buttons: [[`📊 LIHAT MODE SAAT INI`, `${usedPrefix}difficulty info`]],
       fallbackText,
       sendInteractive: typeof conn.sendInteractive === 'function'
         ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
@@ -107,27 +106,35 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     const next = normalizeDifficulty(rawDifficulty)
     if (!next) return m.reply(`❌ Pilih difficulty yang valid: ${Object.keys(RPG_DIFFICULTIES).join(', ')}.`)
     if (next === current) return m.reply(`ℹ️ Difficulty kamu sudah *${profile.name}*.`)
-
     const now = Date.now()
     const premium = isPremiumAccount(data, now)
-    if (premium) {
-      const changesRemaining = getPremiumDifficultyChangesRemaining(user, now)
-      if (changesRemaining < 1) {
-        return m.reply('⏳ Kuota perubahan difficulty Premium minggu ini sudah habis. Kuota akan reset setiap Senin.')
-      }
-    } else {
-      const remaining = getDifficultyCooldownRemaining(user, now)
-      if (remaining > 0) {
-        return m.reply(`⏳ Kamu baru bisa mengganti difficulty lagi dalam *${formatDuration(remaining)}*.`)
-      }
+    const limit = premium ? 2 : DIFFICULTY_CHANGES_PER_WEEK
+    const changesRemaining = premium
+      ? getPremiumDifficultyChangesRemaining(user, now)
+      : getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, now)
+    if (changesRemaining < 1) {
+      return m.reply(`⏳ Kuota perubahan difficulty minggu ini sudah habis (${limit} kali per minggu). Kuota reset setiap Senin (WIB).`)
     }
 
     user.difficulty = next
     recordDifficultyChange(user, now)
     await saveDB(wdb)
-    return m.reply(premium
-      ? `✅ Difficulty diubah menjadi *${RPG_DIFFICULTIES[next].name}*.\nSisa perubahan minggu ini: *${getPremiumDifficultyChangesRemaining(user, now)}/2* (reset setiap Senin).`
-      : `✅ Difficulty diubah menjadi *${RPG_DIFFICULTIES[next].name}*.\nCooldown ganti mode: *7 hari*.`)
+    const remaining = premium
+      ? getPremiumDifficultyChangesRemaining(user, now)
+      : getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, now)
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      text: `✅ Difficulty diubah menjadi *${RPG_DIFFICULTIES[next].name}*.\n` +
+        `Sisa perubahan minggu ini: *${remaining}/${limit}* (reset setiap Senin, WIB).`,
+      footer: 'AVELIA • RPG DIFFICULTY',
+      buttons: [
+        ['📊 Lihat difficulty', `${usedPrefix}difficulty info`],
+        ['📖 Panduan semua mode', `${usedPrefix}difficulty guide`]
+      ],
+      reply: fallbackText => m.reply(fallbackText)
+    })
   }
 
   if (!['info', ''].includes(normalizedAction)) {
@@ -135,9 +142,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   const premium = isPremiumAccount(data)
+  const weeklyChangeLimit = premium ? 2 : DIFFICULTY_CHANGES_PER_WEEK
   const remaining = premium
     ? getPremiumDifficultyChangesRemaining(user)
-    : getDifficultyCooldownRemaining(user)
+    : getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK)
   const crimeModifier = current === 'peaceful'
     ? 'Nonaktif'
     : profile.crimeSuccess === 0
@@ -158,9 +166,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     `> 🕵️ Peluang kriminal: ${crimeModifier}\n` +
     `> 🎁 Reward langka misi & dungeon: ${canReceiveRareActivityRewards(user) ? 'Tersedia' : 'Tidak tersedia'}\n` +
     `> 🏆 Masuk leaderboard: ${profile.leaderboard ? 'Ya' : 'Tidak'}\n` +
-    `> 🔄 Ganti mode: ${premium
-      ? `${remaining}/2 perubahan tersisa minggu ini (reset Senin)`
-      : remaining ? `tersedia dalam ${formatDuration(remaining)}` : 'tersedia'}\n\n` +
+    `> 🔄 Ganti mode: ${remaining}/${weeklyChangeLimit} perubahan tersisa minggu ini (reset Senin)\n\n` +
     `Pelajari efek setiap mode sebelum memilih tantangan baru.`
   return sendRpgButtons(conn, {
     chat: m.chat,
@@ -172,6 +178,14 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     noHeader: true,
     noThumbnail: true,
     footer: 'AVELIA • RPG DIFFICULTY',
+    sections: [{
+      title: '🎚️ Pilih mode difficulty',
+      rows: DIFFICULTY_CHOICES.map(({ key, emoji, description }) => ({
+        title: `${key === current ? '✅ ' : ''}${emoji} ${RPG_DIFFICULTIES[key].name}`,
+        description,
+        id: `${usedPrefix}difficulty set ${key}`
+      }))
+    }],
     buttons: [[`📖 LIHAT PANDUAN MODE`, `${usedPrefix}difficulty guide`]],
     reply: fallbackText => m.reply(fallbackText)
   })

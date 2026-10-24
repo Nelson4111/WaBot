@@ -3,7 +3,7 @@ import { BANK_TIERS, calculateBankRobberyLoss, getBankEffectiveSecurity, getBank
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, applyProtectedCrimeAttemptPenalty, getCrimeRestriction, isProtectedCrimeTarget, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -68,7 +68,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
     let bankTarget = target.bank || 0
     if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
-    if (tryPremiumProtection(who, 'rampok', Date.now(), m.sender)) {
+    if (!isProtectedCrimeTarget(who) && tryPremiumProtection(who, 'rampok', Date.now(), m.sender)) {
         userRPG.lastrob = Date.now()
         await saveDB(wdb)
         return m.reply(formatPremiumProtectionMessage('rampok', 'Saldo bank target tetap aman.'))
@@ -81,13 +81,14 @@ let handler = async (m, { conn, usedPrefix }) => {
     let bonusBenteng = tier.fasilitas.includes('Benteng Kristal') ? ' (termasuk bonus Benteng Kristal +5)' : ''
     let peluang = getBankRobberySuccessChance(tier)
     let roll = Math.random()
-    let story = getRpgCrimeStory('rampok', roll >= adjustCrimeSuccessChance(userRPG, peluang) ? 'failure' : 'success')
+    let story = getRpgCrimeStory('rampok', roll >= adjustCrimeSuccessChance(userRPG, peluang, who) ? 'failure' : 'success')
 
     // INIT CRIME
     wdb.crime = wdb.crime || {}
     wdb.crime[m.sender] = createRpgCrimeRecord(wdb.crime[m.sender] || {})
 
-    if (roll >= adjustCrimeSuccessChance(userRPG, peluang)) {
+    if (roll >= adjustCrimeSuccessChance(userRPG, peluang, who)) {
+    applyProtectedCrimeAttemptPenalty(wdb, m.sender, who)
     // GAGAL = LANGSUNG PENJARA 4 JAM
     wdb.penjara = wdb.penjara || []
         userRPG.penjara = Date.now()

@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { ensurePrisonCell, registerPrisoner } from '../../lib/prisonHelper.js'
-import { adjustCrimeSuccessChance, getCrimeRestriction, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustCrimeSuccessChance, applyProtectedCrimeAttemptPenalty, getCrimeRestriction, isProtectedCrimeTarget, scaleDifficultyCooldown, scaleDifficultyCrimeLoss, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
@@ -90,7 +90,8 @@ let handler = async (m, { conn, usedPrefix }) => {
   let uangTarget = wdb.money[who] || 0
   if (uangTarget < 1000) return m.reply('❌ Target terlalu miskin. Minimal Rp 1.000')
 
-  if (tryPremiumProtection(who, 'copet', Date.now(), m.sender)) {
+  const protectedCrimeTarget = isProtectedCrimeTarget(who)
+  if (!protectedCrimeTarget && tryPremiumProtection(who, 'copet', Date.now(), m.sender)) {
     userRPG.lastcopet = Date.now()
     await saveDB(wdb)
 
@@ -101,7 +102,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   }
 
   userRPG.lastcopet = Date.now()
-  let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.6)
+  let gagal = Math.random() >= adjustCrimeSuccessChance(userRPG, 0.6, who)
   let story = getRpgCrimeStory('copet', gagal ? 'failure' : 'success')
 
   // INIT CRIME
@@ -110,11 +111,15 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   if (gagal) {
     userRPG.gagalCopet = (userRPG.gagalCopet || 0) + 1
-    let denda = Math.max(1000, Math.floor((wdb.money[m.sender] || 0) * 0.05))
+    let denda = protectedCrimeTarget
+      ? applyProtectedCrimeAttemptPenalty(wdb, m.sender, who)
+      : Math.max(1000, Math.floor((wdb.money[m.sender] || 0) * 0.05))
 
     if (denda > 0) {
-      wdb.money[m.sender] -= denda
-      wdb.money[who] += denda
+      if (!protectedCrimeTarget) {
+        wdb.money[m.sender] -= denda
+        wdb.money[who] += denda
+      }
     }
 
     wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])

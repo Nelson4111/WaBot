@@ -586,7 +586,7 @@ function casinoCommands(prefix) {
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 💰 ${prefix}casino money — daftar suffix nominal`,
     `> ↳ 👤 ${prefix}casino profile`,
-    `> ↳ 💰 ${prefix}casino profit`,
+    `> ↳ 💰 ${prefix}cs profit <all/nama game/nomor>`,
     `> ↳ 🏆 ${prefix}casino top`,
     `> ↳ ⏰ ${prefix}casino cd`,
     `> ↳ ✏️ ${prefix}casino nickname <julukan>`,
@@ -775,7 +775,7 @@ function profile(user, sender, dailyLimit, showProfit = false) {
 
   if (!showProfit) {
     return text +
-      `\n📌 Ketik *.casino profit* untuk melihat total dan detail profit setiap game.\n\n` +
+      `\n📌 Ketik *.cs profit* untuk melihat profit lengkap per game tanpa singkatan.\n\n` +
       `─━━━━━━━━━━━━━━─`
   }
 
@@ -793,6 +793,105 @@ function profile(user, sender, dailyLimit, showProfit = false) {
   text += `─━━━━━━━━━━━━━━─`
 
   return text
+}
+
+function formatFullProfit(value) {
+  const amount = Math.trunc(Number(value) || 0)
+  return `${amount >= 0 ? '+' : '-'}Rp ${Math.abs(amount).toLocaleString('id-ID')}`
+}
+
+function resolveProfitGame(selection) {
+  const normalized = String(selection || '').trim().toLowerCase()
+  if (!normalized || normalized === 'all') return normalized === 'all' ? 'all' : null
+
+  const entries = Object.entries(games)
+  if (/^\d+$/.test(normalized)) {
+    const index = Number(normalized) - 1
+    return entries[index]?.[0] || null
+  }
+
+  const compact = normalized.replace(/[^a-z0-9]/g, '')
+  return entries.find(([key, game]) =>
+    key.toLowerCase() === normalized ||
+    game.name.toLowerCase() === normalized ||
+    game.name.toLowerCase().replace(/[^a-z0-9]/g, '') === compact ||
+    game.aliases.some(alias => alias.toLowerCase() === normalized)
+  )?.[0] || null
+}
+
+const PROFIT_GAMES_PER_PAGE = 8
+
+function casinoProfitSections(usedPrefix, page = 1) {
+  const entries = Object.entries(games)
+  const pageCount = Math.ceil(entries.length / PROFIT_GAMES_PER_PAGE)
+  const currentPage = Math.min(pageCount, Math.max(1, page))
+  const startIndex = (currentPage - 1) * PROFIT_GAMES_PER_PAGE
+  const rows = entries.slice(startIndex, startIndex + PROFIT_GAMES_PER_PAGE)
+    .map(([key, game], index) => ({
+      title: `${game.emoji} ${startIndex + index + 1}. ${game.name}`,
+      description: 'Lihat hasil game ini',
+      id: `${usedPrefix}cs profit ${startIndex + index + 1}`
+    }))
+
+  if (currentPage > 1) {
+    rows.push({
+      title: '⬅️ Game sebelumnya',
+      description: `Halaman ${currentPage - 1} dari ${pageCount}`,
+      id: `${usedPrefix}cs profit list ${currentPage - 1}`
+    })
+  }
+  if (currentPage < pageCount) {
+    rows.push({
+      title: '➡️ Game lainnya',
+      description: `Halaman ${currentPage + 1} dari ${pageCount}`,
+      id: `${usedPrefix}cs profit list ${currentPage + 1}`
+    })
+  }
+
+  return {
+    page: currentPage,
+    pageCount,
+    sections: [{ title: `🎮 Pilih game · ${currentPage}/${pageCount}`, rows }]
+  }
+}
+
+function casinoProfitText(user, selection) {
+  const stats = user.casinoStats || {}
+  const byGame = stats.byGame || {}
+  const totalProfit = Number(stats.profit) || 0
+
+  if (selection !== 'all') {
+    const game = games[selection]
+    const entry = byGame[selection] || {}
+    const played = Number(entry.games) || 0
+    const wins = Number(entry.wins) || 0
+    const losses = Math.max(0, played - wins)
+    return `╭─❏「 ${game.emoji} PROFIT ${game.name.toUpperCase()} 」❏\n` +
+      `│ REKAP PER GAME\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Total main: ${played}x\n` +
+      `> ↳ Menang: ${wins}x · Kalah: ${losses}x\n` +
+      `> ↳ Profit game: ${formatFullProfit(entry.profit)}\n` +
+      `> ↳ Profit seluruh game: ${formatFullProfit(totalProfit)}\n\n` +
+      `─━━━━━━━━━━━━━━─`
+  }
+
+  const rows = Object.entries(games).map(([key, game], index) => {
+    const entry = byGame[key] || {}
+    const played = Number(entry.games) || 0
+    const wins = Number(entry.wins) || 0
+    const losses = Math.max(0, played - wins)
+    return `${game.emoji} *${index + 1}. ${game.name}*\n` +
+      `> ↳ Main ${played}x · Menang ${wins}x · Kalah ${losses}x\n` +
+      `> ↳ Profit: ${formatFullProfit(entry.profit)}`
+  }).join('\n\n')
+
+  return `╭─❏「 💰 PROFIT CASINO 」❏\n` +
+    `│ REKAP SEMUA PERMAINAN\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `📈 *PROFIT TOTAL: ${formatFullProfit(totalProfit)}*\n\n` +
+    `🎮 *RINCIAN PER GAME*\n\n${rows}\n\n` +
+    `─━━━━━━━━━━━━━━─`
 }
 
 function roomPlayerName(jid, wdb) {
@@ -1802,7 +1901,38 @@ return m.reply(
   }
 
   if (input === 'profile' || input === 'profil' || input === 'profit') {
-    return sendRpgMsg(conn, m, profile(user, m.sender, dailyLimit, input === 'profit'), CASINO_IMAGE, { mentions: visibleCasinoMentions([m.sender], wdb) })
+    if (input !== 'profit') {
+      return sendRpgMsg(conn, m, profile(user, m.sender, dailyLimit, false), CASINO_IMAGE, { mentions: visibleCasinoMentions([m.sender], wdb) })
+    }
+
+    const isListPage = (args[1] || '').toLowerCase() === 'list'
+    const selector = isListPage ? '' : args.slice(1).join(' ').toLowerCase()
+    const listPage = isListPage && /^\d+$/.test(args[2] || '') ? Number(args[2]) : 1
+    const profitSelection = isListPage ? 'all' : selector ? resolveProfitGame(selector) : 'all'
+    if (!isListPage && !profitSelection) {
+      return m.reply(
+        `❌ Game tidak ditemukan.\n` +
+        `Gunakan *${usedPrefix}cs games* untuk melihat urutan game, lalu pilih:\n` +
+        `• *${usedPrefix}cs profit all*\n` +
+        `• *${usedPrefix}cs profit <nama game/nomor>*`
+      )
+    }
+
+    const { page, pageCount, sections } = casinoProfitSections(usedPrefix, listPage)
+    const summaryText = profitSelection === 'all'
+      ? casinoProfitText(user, 'all')
+      : casinoProfitText(user, profitSelection)
+    const text = `${summaryText}\n\n📌 *Pilih game untuk melihat rinciannya* · Halaman ${page}/${pageCount}`
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      text,
+      image: CASINO_IMAGE,
+      sections,
+      noHeader: true,
+      footer: 'AVELIA • RPG CASINO'
+    })
   }
 
   if (input === 'cd' || input === 'cooldown') {
