@@ -23,6 +23,12 @@ test('keeps legacy and shared limit values synchronized', () => {
   assert.equal(user.rpg.limit, 75)
 })
 
+test('supports admin grants above the PostgreSQL integer limit', () => {
+  const user = { limit: 2_147_483_647 }
+  assert.equal(addUserLimit(user, 1), 2_147_483_648)
+  assert.equal(user.limit, 2_147_483_648)
+})
+
 test('grants up to 20 free limits per Jakarta day, capped at 50', () => {
   const dayOne = Date.parse('2026-10-09T10:00:00+07:00')
   const user = { limit: 35, rpg: { limit: 35 } }
@@ -136,4 +142,30 @@ test('preserves a zero limit when loading Supabase users', async () => {
   assert.deepEqual(data.users['zero-limit@s.whatsapp.net'].limitHistory, [
     { amount: 1, reason: '.sticker', timestamp: 1791514648000 }
   ])
+})
+
+test('keeps user numbers outside relational column ranges in raw_data', async () => {
+  const adapter = new SupabaseRelationalAdapter({ url: 'https://example.supabase.co', key: 'test-key' })
+  const jid = 'large-values@s.whatsapp.net'
+  const largeLimit = 2_147_483_648
+  const largeMoney = 43982362985705680000
+  let storedUserRow
+  adapter._batchUpsert = async (table, rows) => {
+    if (table === 'users') storedUserRow = rows[0]
+  }
+
+  await adapter._performWrite({
+    users: { [jid]: { limit: largeLimit, money: largeMoney } }
+  }, true)
+
+  assert.equal(storedUserRow.limit_val, 2_147_483_647)
+  assert.ok(Number.isSafeInteger(storedUserRow.money))
+  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.limit_val, String(largeLimit))
+  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.money, String(largeMoney))
+
+  adapter._fetchAll = async table => table === 'users' ? [storedUserRow] : []
+  adapter._saveLocalBackup = () => {}
+  const data = await adapter.read()
+  assert.equal(data.users[jid].limit, largeLimit)
+  assert.equal(data.users[jid].money, largeMoney)
 })

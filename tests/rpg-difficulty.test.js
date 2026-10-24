@@ -3,9 +3,10 @@ import test from 'node:test'
 import {
   adjustCrimeSuccessChance,
   adjustDifficultyFailureChance,
+  applyProtectedCrimeAttemptPenalty,
   canReceiveRareActivityRewards,
-  DIFFICULTY_COOLDOWN,
-  getDifficultyCooldownRemaining,
+  DIFFICULTY_CHANGES_PER_WEEK,
+  getDifficultyChangesRemaining,
   getDifficultyWeekKey,
   getDifficultyDeathHealCooldownRemaining,
   getPremiumDifficultyChangesRemaining,
@@ -13,6 +14,7 @@ import {
   getDifficulty,
   isPlayerDead,
   isDifficultyRanked,
+  isProtectedCrimeTarget,
   normalizeDifficulty,
   markDifficultyDeath,
   recordDifficultyChange,
@@ -84,6 +86,37 @@ test('Peaceful and Easy cannot receive rare activity rewards', () => {
   assert.equal(canReceiveRareActivityRewards({ difficulty: 'hardcore' }), true)
 })
 
+test('owner and co-owner crime targets are hidden, guaranteed to fail, and transfer a heavy penalty', () => {
+  const previousOwner = global.owner
+  const previousHiddenOwner = global.hiddenowner
+  const previousDb = global.db
+  try {
+    global.owner = [['6281111111111', 'Owner', true]]
+    global.hiddenowner = ['6282222222222']
+    global.db = {
+      data: {
+        lids: { '12345@lid': '6282222222222@s.whatsapp.net' },
+        users: { '6283333333333@s.whatsapp.net': { isCoOwner: true } }
+      }
+    }
+
+    assert.equal(isProtectedCrimeTarget('6281111111111@s.whatsapp.net'), true)
+    assert.equal(isProtectedCrimeTarget('12345@lid'), true)
+    assert.equal(isProtectedCrimeTarget('6283333333333@s.whatsapp.net'), true)
+    assert.equal(isProtectedCrimeTarget('6284444444444@s.whatsapp.net'), false)
+    assert.equal(adjustCrimeSuccessChance({ difficulty: 'normal' }, 1, '6281111111111@s.whatsapp.net'), 0)
+
+    const db = { money: { '6289999999999@s.whatsapp.net': 10000, '6281111111111@s.whatsapp.net': 0 } }
+    assert.equal(applyProtectedCrimeAttemptPenalty(db, '6289999999999@s.whatsapp.net', '6281111111111@s.whatsapp.net'), 7500)
+    assert.equal(db.money['6289999999999@s.whatsapp.net'], 2500)
+    assert.equal(db.money['6281111111111@s.whatsapp.net'], 7500)
+  } finally {
+    global.owner = previousOwner
+    global.hiddenowner = previousHiddenOwner
+    global.db = previousDb
+  }
+})
+
 test('dead players cannot perform crimes', () => {
   assert.match(getCrimeRestriction({ difficulty: 'normal', darah: 0 }), /masih mati/)
   assert.equal(isPlayerDead({ darah: 0 }), true)
@@ -91,13 +124,20 @@ test('dead players cannot perform crimes', () => {
   assert.equal(isPlayerDead({}), false)
 })
 
-test('non-premium difficulty changes have a seven-day cooldown', () => {
-  const changedAt = 1000000
-  const user = { difficultyChangedAt: changedAt }
-  assert.equal(getDifficultyCooldownRemaining({}, changedAt), 0)
-  assert.equal(getDifficultyCooldownRemaining(user, changedAt), DIFFICULTY_COOLDOWN)
-  assert.equal(getDifficultyCooldownRemaining(user, changedAt + DIFFICULTY_COOLDOWN - 1), 1)
-  assert.equal(getDifficultyCooldownRemaining(user, changedAt + DIFFICULTY_COOLDOWN), 0)
+test('non-premium difficulty changes are limited once per Jakarta week and reset on Monday', () => {
+  const monday = Date.parse('2024-01-01T00:00:00+07:00')
+  const sunday = monday + 6 * 24 * 60 * 60 * 1000
+  const nextMonday = monday + 7 * 24 * 60 * 60 * 1000
+  const user = {}
+
+  assert.equal(getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, monday), 1)
+  recordDifficultyChange(user, monday)
+  assert.equal(getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, monday), 0)
+  assert.equal(getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, sunday), 0)
+  assert.equal(getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, nextMonday), 1)
+
+  recordDifficultyChange(user, nextMonday)
+  assert.equal(getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK, nextMonday), 0)
 })
 
 test('premium difficulty changes are limited to twice per Jakarta week and reset on Monday', () => {
