@@ -155,17 +155,30 @@ test('keeps user numbers outside relational column ranges in raw_data', async ()
   }
 
   await adapter._performWrite({
-    users: { [jid]: { limit: largeLimit, money: largeMoney } }
+    users: {
+      [jid]: {
+        limit: largeLimit,
+        money: largeMoney,
+        bank: largeMoney,
+        rpg: { bank: largeMoney, balance: largeMoney }
+      }
+    }
   }, true)
 
   assert.equal(storedUserRow.limit_val, 2_147_483_647)
-  assert.ok(Number.isSafeInteger(storedUserRow.money))
+  for (const column of ['level', 'exp', 'limit_val', 'balance', 'bank', 'money']) {
+    assert.ok(Number.isSafeInteger(storedUserRow[column]), `${column} must be safe to serialize`)
+  }
+  assert.equal(storedUserRow.bank, Number.MAX_SAFE_INTEGER)
+  assert.equal(storedUserRow.rpg.bank, largeMoney)
   assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.limit_val, String(largeLimit))
   assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.money, String(largeMoney))
+  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.bank, String(largeMoney))
 
   adapter._fetchAll = async table => table === 'users' ? [storedUserRow] : []
   adapter._saveLocalBackup = () => {}
   const data = await adapter.read()
   assert.equal(data.users[jid].limit, largeLimit)
   assert.equal(data.users[jid].money, largeMoney)
+  assert.equal(data.users[jid].bank, largeMoney)
 })
