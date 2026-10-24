@@ -322,18 +322,21 @@ function casinoHistoryText(stats, dailyLimit, usedPrefix) {
   const history = rounds.length
     ? rounds.map((round, index) => {
       const game = games[round.game]
-    const moneyChange = Number.isFinite(Number(round.moneyChange))
-      ? Number(round.moneyChange)
-      : Number(round.profit) || 0
-    const time = new Date(round.at).toLocaleTimeString('id-ID', {
-      timeZone: 'Asia/Jakarta',
-      hour: '2-digit',
+      const moneyChange = Number.isFinite(Number(round.moneyChange))
+        ? Number(round.moneyChange)
+        : Number(round.profit) || 0
+      const time = new Date(round.at).toLocaleTimeString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
         minute: '2-digit'
       })
-      return `*${index + 1}. ${game?.emoji || '🎲'} ${game?.name || round.game}* · ${time}\n` +
+      return `*${index + 1}. ${game?.emoji || '🎲'} ${game?.name || round.game}*\n` +
+        `> ↳ Waktu: ${time}\n` +
         `> ↳ Hasil: ${round.outcome}\n` +
-        `> ↳ Taruhan: ${money(round.bet)} · Hadiah: ${money(round.payout)}\n` +
-        `> ↳ Profit: ${signedMoney(round.profit)} · Perubahan uang: ${signedMoney(moneyChange)}` +
+        `> ↳ Taruhan: ${money(round.bet)}\n` +
+        `> ↳ Hadiah: ${money(round.payout)}\n` +
+        `> ↳ Profit: ${signedMoney(round.profit)}\n` +
+        `> ↳ Perubahan uang: ${signedMoney(moneyChange)}` +
         `${round.panelRefundedAt ? '\n> ↳ Kerugian dikembalikan lewat RPG Panel' : ''}`
     }).join('\n\n')
     : '> ↳ Belum ada permainan casino hari ini.'
@@ -2064,7 +2067,6 @@ if (result.blackout) {
       `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`,
     buttons: blackoutButtons,
     noThumbnail: true,
-    classicOnly: true,
     reply: fallbackText => m.reply(fallbackText)
   })
 }
