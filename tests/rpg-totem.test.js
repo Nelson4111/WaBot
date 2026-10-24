@@ -37,6 +37,10 @@ function makeConn() {
       this.buttons.push(button)
     }
 
+    addButton(label, command) {
+      this.buttons.push({ label, command })
+    }
+
     async send(chat) {
       const sent = { chat, body: this.body, footer: this.footer, buttons: this.buttons }
       this.conn.messages.push(sent)
@@ -95,7 +99,7 @@ test('totem shop, purchase and activation stay selectable through list menus', a
     assert.equal(account.money, 7_500_000)
 
     await invoke('', 'mytotem')
-    assert.equal(getListRows(conn)[0].id, '.totem use 1')
+    assert.ok(conn.messages.at(-1).buttons.some(button => button.command === '.totem use 1'))
 
     await invoke('use 1')
     assert.deepEqual(getListRows(conn).map(row => row.id), ['.totem yes', '.totem no'])

@@ -86,14 +86,22 @@ function getListRows(conn) {
 }
 
 test('heal prompt button targets the sender with heal me', async () => {
-  const conn = makeConn()
+  const calls = []
+  const conn = {
+    sendButtonV2: async (...args) => {
+      calls.push(args)
+      return args
+    }
+  }
   const { m } = makeMessage(senderJid)
 
   await sendRpgHealPrompt(conn, m, { text: 'Pulihkan diri.', usedPrefix: '.' })
 
-  const rows = getListRows(conn)
-  assert.equal(rows[0].id, '.heal me')
-  assert.match(rows[0].title, /Heal Diriku Sendiri/)
+  assert.equal(calls.length, 1)
+  assert.deepEqual(calls[0][1].buttons, [['💖 Heal Diriku Sendiri', '.heal me']])
+  assert.equal(calls[0][1].noLocationHeader, true)
+  assert.equal('image' in calls[0][1], false)
+  assert.equal('buffer' in calls[0][1], false)
 })
 
 test('heal me command restores only the sender', async () => {
