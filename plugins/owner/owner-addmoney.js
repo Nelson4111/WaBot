@@ -1,21 +1,29 @@
 import { loadDB } from '../../lib/waifuHelper.js'
 import { addRpgMoney, formatRpgMoney, compareRpgMoney, normalizeRpgMoney, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { resolveRpgPanelTarget } from '../../lib/rpgPanelTarget.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
-  let user, amount
-  let args = text.trim().split(/\s+/)
+  const args = text.trim().split(/\s+/).filter(Boolean)
+  const { target, consumedIndexes } = resolveRpgPanelTarget(
+    args,
+    m,
+    conn,
+    global.db.data.users
+  )
+  const amountArgs = args.filter((_, index) => !consumedIndexes.includes(index))
+  const user = target
+  const amountInput = amountArgs[0]
 
-  if (m.quoted) {
-    user = m.quoted.sender
-    amount = args[0]
-  } else {
-    if (args.length < 2) return m.reply(`*Format:* ${usedPrefix}${command} <nomor> <jumlah>`)
-    user = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
-    amount = args[1]
+  if (!user || amountArgs.length !== 1) {
+    return m.reply(
+      `*Format:* ${usedPrefix}${command} <nomor> <jumlah>\n` +
+      `Contoh: ${usedPrefix}${command} 628123456789 10000\n` +
+      `Atau reply pesan user: ${usedPrefix}${command} 10000`
+    )
   }
 
-  amount = parseRpgMoneyAmount(amount)
+  const amount = parseRpgMoneyAmount(amountInput)
   if (amount === null || compareRpgMoney(amount, 1) < 0) return m.reply('❌ Masukkan jumlah rupiah positif yang valid.')
 
   const currentBalance = normalizeRpgMoney(wdb.money[user])
