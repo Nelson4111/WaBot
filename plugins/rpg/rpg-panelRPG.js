@@ -173,6 +173,19 @@ let handler = async (m, {
     return conn.sendMessage(responseChat, content, { quoted: sourceMessage, ...options })
   }
 
+  const sendPanelConfirmation = text => sendRpgButtons(conn, {
+    chat: responseChat,
+    message: sourceMessage,
+    text,
+    footer: 'AVELIA • RPG PANEL',
+    buttons: [
+      ['✨ Ya, lanjutkan', `${usedPrefix}rp yes`],
+      ['🛑 Tidak, batalkan', `${usedPrefix}rp no`]
+    ],
+    quoted: sourceMessage,
+    reply: fallbackText => m.reply(fallbackText)
+  })
+
   if (!isOwner) return m.reply('❌ Fitur khusus Owner')
 
   const wdb = loadDB()
@@ -227,7 +240,7 @@ let handler = async (m, {
     }
     await global.db.write()
 
-    return m.reply(
+    return sendPanelConfirmation(
       `╭─❏「 🧰 NORMALISASI RPG 」❏\n` +
       `│ PRATINJAU · DATA BELUM DIUBAH\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -243,7 +256,7 @@ let handler = async (m, {
       `Proses ini memulihkan status dan aktivitas tertunda tanpa mengubah saldo, level, atau inventory. ` +
       `Streak daily dijaga tanpa klaim reward susulan. ` +
       `Maintenance tetap aktif setelah normalisasi.\n\n` +
-      `> Konfirmasi: *${usedPrefix}rp yes* · Batal: *${usedPrefix}rp no*`
+      `> Pilih tombol di bawah untuk melanjutkan atau membatalkan.`
     )
   }
 
@@ -950,9 +963,9 @@ let handler = async (m, {
     }
     await saveDB(wdb)
 
-    return m.reply(
+    return sendPanelConfirmation(
       `Konfirmasi *${requestedCommand}*?\n` +
-      `Ketik *${usedPrefix}rp yes* untuk lanjut atau *${usedPrefix}rp no* untuk batal.`
+      `✨ Lanjutkan perubahan ini atau batalkan?`
     )
   }
 
@@ -2289,6 +2302,25 @@ let handler = async (m, {
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
   let item = normalizeFishKey(itemInput?.toLowerCase().replace(/ /g, '_'))
 
+  if (moneyMutation) {
+    const currentBalance = normalizeRpgMoney(wdb.money[who] || 0)
+    const nextBalance = aksi === 'setmoney'
+      ? jumlah
+      : aksi === 'addmoney'
+        ? addRpgMoney(currentBalance, jumlah)
+        : maxRpgMoney(0, subtractRpgMoney(currentBalance, jumlah))
+    wdb.money[who] = nextBalance
+    const updatedBalance = normalizeRpgMoney(wdb.money[who] || 0)
+    await global.db.write()
+    const action = aksi === 'setmoney' ? 'DIATUR' : aksi === 'addmoney' ? 'DITAMBAH' : 'DIKURANGI'
+    return m.reply(
+      `✅ *SALDO ${action}*\n@${who.split('@')[0]}\n` +
+      `Saldo sekarang: *${formatRpgMoney(updatedBalance)}*`,
+      null,
+      { mentions: [who] }
+    )
+  }
+
   if (aksi === 'giveauction') {
     let amountIndex = -1
     for (let index = remaining.length - 1; index >= 0; index--) {
@@ -2375,11 +2407,10 @@ let handler = async (m, {
   }
 
   // 1. SET STAT
-  if(['setmoney','setstellarcredit','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod','setbotlevel','setbotxp','setbotlimit'].includes(aksi)){
+  if(['setstellarcredit','setlevel','setuserlevel','setexp','setdarah','setdiamond','setiron','setgold','setstone','setwood','setmaxhp','setarmor','setsword','setpickaxe','setfishingrod','setbotlevel','setbotxp','setbotlimit'].includes(aksi)){
     if(jumlah < 0) return m.reply('❌ Jumlah tidak boleh minus')
 
-    if(aksi === 'setmoney') wdb.money[who] = jumlah
-    else if(aksi === 'setstellarcredit') user.stellarCredit = jumlah
+    if(aksi === 'setstellarcredit') user.stellarCredit = jumlah
     else if(aksi === 'setmaxhp') user.maxDarahBonus = jumlah
     else if (aksi === 'setuserlevel') {
       user.level = jumlah
@@ -2405,11 +2436,10 @@ let handler = async (m, {
   }
 
   // 2. ADD STAT
-  if(['addmoney','addstellarcredit','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod','addbotlevel','addbotxp','addbotlimit'].includes(aksi)){
+  if(['addstellarcredit','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod','addbotlevel','addbotxp','addbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
-    if(aksi === 'addmoney') wdb.money[who] = addRpgMoney(wdb.money[who] || 0, jumlah)
-    else if(aksi === 'addstellarcredit') user.stellarCredit = (Number(user.stellarCredit) || 0) + jumlah
+    if(aksi === 'addstellarcredit') user.stellarCredit = (Number(user.stellarCredit) || 0) + jumlah
     else if(aksi === 'adddarah') user.darah = Math.min(user.maxDarah, user.darah + jumlah)
     else if(['addlevel','adduserlevel','addbotlevel'].includes(aksi)){
       account.level = (Number(account.level) || 0) + jumlah
@@ -2443,11 +2473,10 @@ let handler = async (m, {
   }
 
   // 3. DEL STAT
-  if(['delmoney','delstellarcredit','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod','delbotlevel','delbotxp','delbotlimit'].includes(aksi)){
+  if(['delstellarcredit','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod','delbotlevel','delbotxp','delbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
-    if(aksi === 'delmoney') wdb.money[who] = maxRpgMoney(0, subtractRpgMoney(wdb.money[who] || 0, jumlah))
-    else if(aksi === 'delstellarcredit') user.stellarCredit = Math.max(0, (Number(user.stellarCredit) || 0) - jumlah)
+    if(aksi === 'delstellarcredit') user.stellarCredit = Math.max(0, (Number(user.stellarCredit) || 0) - jumlah)
     else if(aksi === 'deldarah') user.darah = Math.max(0, user.darah - jumlah)
     else if(['dellevel','deluserlevel','delbotlevel'].includes(aksi)){
       account.level = Math.max(0, (Number(account.level) || 0) - jumlah)
@@ -2470,10 +2499,9 @@ let handler = async (m, {
     }
 
     saveDB(wdb)
-    const total = aksi === 'delmoney' ? wdb.money[who]
-      : aksi === 'delstellarcredit' ? user.stellarCredit
-        : aksi === 'delbotlimit' ? account.limit
-          : user[aksi.replace('del','')]
+    const total = aksi === 'delstellarcredit' ? user.stellarCredit
+      : aksi === 'delbotlimit' ? account.limit
+        : user[aksi.replace('del','')]
     return m.reply(`✅ *KURANGI ${aksi.toUpperCase().replace('DEL','')}*\n@${who.split('@')[0]} -${jumlah.toLocaleString()}\nTotal: ${total.toLocaleString()}`, null, {mentions: [who]})
   }
 
