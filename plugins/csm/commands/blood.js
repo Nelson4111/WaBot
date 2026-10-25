@@ -4,6 +4,7 @@
 
 import { saveDB } from '../../../lib/waifuHelper.js'
 import { header } from '../lib/utils.js'
+import { subtractRpgMoney } from '../../../lib/rpgMoney.js'
 
 export async function handleBlood(ctx) {
   const { m, csm, wdb, userRPG, args } = ctx
@@ -74,7 +75,7 @@ export async function handleBlood(ctx) {
       )
     }
 
-    userRPG.bank -= harga
+    userRPG.bank = subtractRpgMoney(userRPG.bank, harga)
     csm.blood += dapat
     csm.pendingBlood = 0
     saveDB(wdb)

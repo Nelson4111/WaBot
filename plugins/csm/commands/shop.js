@@ -5,6 +5,7 @@
 import { saveDB } from '../../../lib/waifuHelper.js'
 import { WEAPON_LIST, ITEM_LIST, calcBonus } from '../../../lib/rpg-libmyCSM.js'
 import { header } from '../lib/utils.js'
+import { addRpgMoney, subtractRpgMoney } from '../../../lib/rpgMoney.js'
 
 export async function handleShop(ctx) {
   const { m, csm, wdb, userRPG, args } = ctx
@@ -37,7 +38,7 @@ export async function handleShop(ctx) {
         return m.reply(header('SALDO KURANG') + `Butuh Rp ${weaponPrice.toLocaleString()}\nSaldo: Rp ${userRPG.bank.toLocaleString()}\n━━━━━━━━━━━`)
       }
 
-      userRPG.bank -= weaponPrice
+      userRPG.bank = subtractRpgMoney(userRPG.bank, weaponPrice)
       csm.inventory.push({ nama: item.nama, dur: item.dur })
       saveDB(wdb)
 
@@ -209,7 +210,7 @@ export async function handleSell(ctx) {
     })
     const soldIndexes = new Set(sellable.map(entry => entry.inventoryIndex))
     csm.inventory = csm.inventory.filter((_, index) => !soldIndexes.has(index))
-    userRPG.bank += total
+    userRPG.bank = addRpgMoney(userRPG.bank, total)
     csm.pendingSellAll = null
     saveDB(wdb)
     return m.reply(header('SELL ALL BERHASIL') + `Terjual: ${sellable.length} item\nDapat: +Rp ${total.toLocaleString()} ke Bank\nWeapon aktif dan Fist tetap disimpan.\n━━━━━━━━━━━`)
@@ -270,7 +271,7 @@ export async function handleSell(ctx) {
   }
 
   csm.inventory.splice(inventoryIndex, 1)
-  userRPG.bank += hargaJual
+  userRPG.bank = addRpgMoney(userRPG.bank, hargaJual)
   saveDB(wdb)
 
   return m.reply(

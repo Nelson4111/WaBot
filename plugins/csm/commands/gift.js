@@ -8,6 +8,7 @@ import {
 } from '../../../lib/rpg-libmyCSM.js'
 import { header, resolveJid, checkMakimaTrigger } from '../lib/utils.js'
 import { recordPartnerDialog } from '../lib/combat.js'
+import { addRpgMoney, subtractRpgMoney } from '../../../lib/rpgMoney.js'
 
 export async function sendPartnerGiftResponse(ctx, char, jumlahLove, loveNow, tipe, biaya) {
   const { m, csm, wdb, usedPrefix } = ctx
@@ -88,12 +89,11 @@ export async function handleGift(ctx) {
       const targetJid = resolveJid(pending.target, wdb)
       const targetRPG = wdb.users[targetJid]?.rpg || wdb.users[pending.target]?.rpg
       if (!targetRPG) return m.reply(header('TARGET BELUM MAIN') + `Data target sudah tidak tersedia.\n━━━━━━━━━━━`)
-      targetRPG.bank = Number(targetRPG.bank) || 0
       targetRPG.csm = targetRPG.csm || { blood: 0 }
       if (pending.type === 'bank') {
         if (userRPG.bank < pending.amount) return m.reply(header('SALDO KURANG') + `Saldo tidak cukup.\n━━━━━━━━━━━`)
-        userRPG.bank -= pending.amount
-        targetRPG.bank += pending.amount
+        userRPG.bank = subtractRpgMoney(userRPG.bank, pending.amount)
+        targetRPG.bank = addRpgMoney(targetRPG.bank, pending.amount)
       } else {
         if (csm.blood < pending.amount) return m.reply(header('DARAH KURANG') + `Blood tidak cukup.\n━━━━━━━━━━━`)
         csm.blood -= pending.amount
@@ -109,7 +109,7 @@ export async function handleGift(ctx) {
         csm.blood -= cost
       } else {
         if (userRPG.bank < cost) return m.reply(header('SALDO KURANG') + `Butuh Rp ${cost.toLocaleString()}.\n━━━━━━━━━━━`)
-        userRPG.bank -= cost
+        userRPG.bank = subtractRpgMoney(userRPG.bank, cost)
       }
       csm.relations[pending.name] = (csm.relations[pending.name] || 0) + pending.love
       return await sendPartnerGiftResponse(ctx, pending.character, pending.love, csm.relations[pending.name], pending.type, cost)
@@ -137,12 +137,10 @@ export async function handleGift(ctx) {
     const targetRPG = wdb.users[targetJid]?.rpg || wdb.users[target]?.rpg
     if (!targetRPG) return m.reply(header('TARGET BELUM MAIN') + `|━━━━━━━━━━━`)
     if (!targetRPG.csm) targetRPG.csm = JSON.parse(JSON.stringify(csm))
-    targetRPG.bank = Number.isFinite(Number(targetRPG.bank)) ? Number(targetRPG.bank) : 0
-
     if (type === 'money') {
       if (userRPG.bank < giftAmount) return m.reply(header('SALDO KURANG') + `|━━━━━━━━━━━`)
-      userRPG.bank -= giftAmount
-      targetRPG.bank += giftAmount
+      userRPG.bank = subtractRpgMoney(userRPG.bank, giftAmount)
+      targetRPG.bank = addRpgMoney(targetRPG.bank, giftAmount)
       saveDB(wdb)
       return m.reply(header('GIFT TERKIRIM 👤') +
         ` Kamu mengirim ${giftAmount.toLocaleString()} Money ke ${conn.getName(target)}\n` +

@@ -6,6 +6,7 @@ import { saveDB } from '../../../lib/waifuHelper.js'
 import { WEAPON_LIST, ITEM_LIST } from '../../../lib/rpg-libmyCSM.js'
 import { header } from '../lib/utils.js'
 import { equipFist } from '../lib/state.js'
+import { subtractRpgMoney } from '../../../lib/rpgMoney.js'
 
 export async function handleEquip(ctx) {
   const { m, csm, wdb, args } = ctx
@@ -187,7 +188,7 @@ export async function handleRepair(ctx) {
     return m.reply(header('DUIT KURANG') + `Butuh Rp ${biaya.toLocaleString()}\nSaldo: Rp ${userRPG.bank.toLocaleString()}\n━━━━━━━━━━━`)
   }
 
-  userRPG.bank -= biaya
+  userRPG.bank = subtractRpgMoney(userRPG.bank, biaya)
   itemInv.dur = dataItem.dur
 
   if (csm.weapon && csm.weapon.nama === dataItem.nama) {
