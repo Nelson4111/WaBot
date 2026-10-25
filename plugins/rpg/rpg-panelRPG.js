@@ -40,11 +40,10 @@ import {
   subtractRpgMoney
 } from '../../lib/rpgMoney.js'
 import { getRpgWibDateKey } from '../../lib/rpgTime.js'
-import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
-import { generateWAMessageContent } from '@whiskeysockets/baileys'
 import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '../../lib/rpgJobData.js'
-import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords, setFishRecordSize } from '../../lib/rpg-fishSizes.js'
+import { normalizeRpgMaintenanceData, previewRpgMaintenanceNormalization } from '../../lib/rpgMaintenanceNormalizer.js'
 
 import fs from 'fs'
 
@@ -167,84 +166,11 @@ let handler = async (m, {
   _rpgPanelConfirmedToken
 }) => {
   const sourceMessage = m
-  const originalReply = m.reply.bind(m)
-  const isPrivateRpgPanel = String(command || '').toLowerCase() === 'rp' &&
-    (m.isGroup || m.chat?.endsWith('@g.us'))
   const responseChat = m.chat
-  if (isPrivateRpgPanel && sourceMessage.key) {
-    try {
-      await conn.sendMessage(responseChat, { delete: sourceMessage.key })
-    } catch (error) {
-      console.warn('[RPG-PANEL-PRIVACY] Gagal menghapus command .rp dari grup:', error?.message || error)
-    }
-  }
 
   const sendPanelResponse = async (content, options = {}) => {
-    if (!isPrivateRpgPanel) {
-      return conn.sendMessage(responseChat, content, { quoted: sourceMessage, ...options })
-    }
-
-    const playerJid = conn.decodeJid ? conn.decodeJid(sourceMessage.sender) : sourceMessage.sender
-    const payload = typeof content === 'string' ? { text: content } : { ...content }
-    const mentions = [...new Set([
-      ...(Array.isArray(payload.mentions) ? payload.mentions : []),
-      ...(Array.isArray(options.mentions) ? options.mentions : [])
-    ])]
-    delete payload.mentions
-
-    let playerMessage
-    if (typeof payload.text === 'string' && !payload.image && !payload.video && !payload.document && !payload.sticker) {
-      const contextInfo = {
-        ...(payload.contextInfo || {}),
-        ...(options.contextInfo || {}),
-        ...(mentions.length ? { mentionedJid: mentions } : {})
-      }
-      playerMessage = {
-        extendedTextMessage: {
-          text: payload.text,
-          ...(Object.keys(contextInfo).length ? { contextInfo } : {})
-        }
-      }
-    } else {
-      if (mentions.length) {
-        payload.contextInfo = {
-          ...(payload.contextInfo || {}),
-          ...(options.contextInfo || {}),
-          mentionedJid: mentions
-        }
-      }
-      playerMessage = await generateWAMessageContent(payload, { upload: conn.waUploadToServer })
-    }
-
-    const playerNumber = String(playerJid || '').split('@')[0]
-    try {
-      return await sendDualGroupMessage(
-        conn,
-        responseChat,
-        playerJid,
-        playerMessage,
-        `> 🔒 Balasan RPG khusus untuk @${playerNumber}.`,
-        { contextInfo: { mentionedJid: [playerJid] } }
-      )
-    } catch (error) {
-      console.error('[RPG-PANEL-PRIVACY] Gagal mengirim balasan khusus di grup:', error?.message || error)
-      return conn.sendMessage(responseChat, {
-        text: `> 🔒 Balasan RPG khusus untuk @${playerNumber} tidak dapat dikirim.`,
-        mentions: [playerJid]
-      }, { quoted: sourceMessage })
-    }
+    return conn.sendMessage(responseChat, content, { quoted: sourceMessage, ...options })
   }
-
-  m = Object.create(m)
-  Object.defineProperty(m, 'reply', {
-    value: (...args) => {
-      if (!isPrivateRpgPanel) return originalReply(...args)
-      const [content, chatIdOrOptions, replyOptions] = args
-      const options = replyOptions ??
-        (chatIdOrOptions && typeof chatIdOrOptions === 'object' ? chatIdOrOptions : {})
-      return sendPanelResponse(content, options)
-    }
-  })
 
   if (!isOwner) return m.reply('❌ Fitur khusus Owner')
 
@@ -266,6 +192,64 @@ let handler = async (m, {
     }
   }
 
+  const isMaintenanceNormalization = aksi === 'normalisasirpg' ||
+    (aksi === 'maintenance' && ['normalize', 'normalisasi'].includes(String(remaining[0] || '').toLowerCase()))
+  if (isMaintenanceNormalization) {
+    const settings = global.db.data.settings?.bot || {}
+    const allMaintenanceActive = Boolean(global.opts.maintenance)
+    const rpgMaintenanceActive = Boolean(global.opts.rpgMaintenance)
+    const maintenanceMode = allMaintenanceActive ? 'all' : rpgMaintenanceActive ? 'rpg' : ''
+    const maintenanceStartedAt = Number(maintenanceMode === 'rpg'
+      ? global.opts.rpgMaintenanceStartedAt || settings.rpgMaintenanceStartedAt
+      : global.opts.maintenanceStartedAt || settings.maintenanceStartedAt)
+    if (!maintenanceMode) {
+      return m.reply(
+        `❌ Aktifkan maintenance terlebih dahulu sebelum normalisasi.\n` +
+        `> ↳ Gunakan *${usedPrefix}maintenance rpg on*.`
+      )
+    }
+
+    const summary = previewRpgMaintenanceNormalization(wdb.data, {
+      now,
+      maintenanceStartedAt: maintenanceStartedAt || now
+    })
+    const token = randomUUID()
+    panelConfirmations[token] = {
+      owner: m.sender,
+      chat: m.chat,
+      operation: 'rpg-maintenance-normalization',
+      maintenanceMode,
+      allMaintenanceActive,
+      rpgMaintenanceActive,
+      maintenanceStartedAt: maintenanceStartedAt || now,
+      createdAt: now
+    }
+    await global.db.write()
+
+    const acceptCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} ya`
+    const cancelCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} tidak`
+    return m.reply(
+      `╭─❏「 🧰 NORMALISASI RPG 」❏\n` +
+      `│ PRATINJAU · DATA BELUM DIUBAH\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> Pemain RPG: *${summary.players}*\n` +
+      `> Pet dipulihkan: *${summary.petsRestored}*\n` +
+      `> Anak dikembalikan dari shelter/fasilitas: *${summary.childrenReturned}*\n` +
+      `> Kondisi anak dinormalkan: *${summary.childrenReset}*\n` +
+      `> Masakan diselesaikan tanpa gosong: *${summary.mealsCompleted}*\n` +
+      `> Tanaman siap dipanen: *${summary.cropsReadied}*\n` +
+      `> Cooldown kerja dibuka: *${summary.jobsUnlocked}*\n` +
+      `> Streak daily dilindungi: *${summary.dailyStreaksProtected}*\n` +
+      `> Kondisi relationship dipulihkan: *${summary.relationshipsRestored}*\n\n` +
+      `Proses ini memulihkan status dan aktivitas tertunda tanpa mengubah saldo, level, atau inventory. ` +
+      `Streak daily dijaga tanpa klaim reward susulan. ` +
+      `Maintenance tetap aktif setelah normalisasi.\n\n` +
+      `> Konfirmasi manual (berlaku 5 menit):\n` +
+      `> Jalankan: *${acceptCommand}*\n` +
+      `> Batalkan: *${cancelCommand}*`
+    )
+  }
+
   if (aksi === 'confirm') {
     const token = String(rawArgs[1] || '')
     const decision = String(rawArgs[2] || '').toLowerCase()
@@ -274,7 +258,7 @@ let handler = async (m, {
       return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
     }
     if (pending.owner !== m.sender || pending.chat !== m.chat) {
-      return m.reply('🔒 Tombol konfirmasi ini hanya dapat digunakan oleh pemilik permintaan di chat asal.')
+      return m.reply('🔒 Konfirmasi ini hanya dapat digunakan oleh pemilik permintaan di chat asal.')
     }
     if (now - Number(pending.createdAt) > RPG_CONFIRMATION_TTL) {
       delete panelConfirmations[token]
@@ -282,7 +266,55 @@ let handler = async (m, {
       return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
     }
     if (!['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(decision)) {
-      return m.reply(`Pilih tombol konfirmasi atau pembatalan untuk melanjutkan.`)
+      return m.reply(`Gunakan *ya* untuk konfirmasi atau *tidak* untuk membatalkan.`)
+    }
+    if (pending.operation === 'rpg-maintenance-normalization') {
+      if (['tidak', 'no', 'batal', 'cancel'].includes(decision)) {
+        delete panelConfirmations[token]
+        await global.db.write()
+        return m.reply('✅ Normalisasi dibatalkan. Data RPG tidak diubah dan maintenance tetap aktif.')
+      }
+      const maintenanceMode = pending.maintenanceMode
+      if (Boolean(global.opts.maintenance) !== pending.allMaintenanceActive ||
+          Boolean(global.opts.rpgMaintenance) !== pending.rpgMaintenanceActive) {
+        return m.reply('❌ Status maintenance berubah sejak pratinjau. Buat pratinjau normalisasi yang baru.')
+      }
+      const settings = global.db.data.settings?.bot || {}
+      const configuredStartedAt = Number(maintenanceMode === 'rpg'
+        ? global.opts.rpgMaintenanceStartedAt || settings.rpgMaintenanceStartedAt
+        : global.opts.maintenanceStartedAt || settings.maintenanceStartedAt)
+      const currentStartedAt = Number.isFinite(configuredStartedAt) && configuredStartedAt > 0
+        ? configuredStartedAt
+        : Number(pending.maintenanceStartedAt)
+      if (currentStartedAt !== Number(pending.maintenanceStartedAt)) {
+        delete panelConfirmations[token]
+        await global.db.write()
+        return m.reply('⌛ Sesi maintenance berubah sejak pratinjau. Buat pratinjau normalisasi yang baru.')
+      }
+
+      const summary = normalizeRpgMaintenanceData(wdb.data, {
+        now,
+        maintenanceStartedAt: currentStartedAt
+      })
+      const stopCommands = [
+        ...(pending.rpgMaintenanceActive ? [`${usedPrefix}maintenance rpg off`] : []),
+        ...(pending.allMaintenanceActive ? [`${usedPrefix}maintenance off`] : [])
+      ]
+      delete panelConfirmations[token]
+      await global.db.write()
+      return m.reply(
+        `✅ *NORMALISASI RPG SELESAI*\n\n` +
+        `Pemain RPG: *${summary.players}*\n` +
+        `Pet dipulihkan: *${summary.petsRestored}*\n` +
+        `Anak dikembalikan: *${summary.childrenReturned}* · Kondisi anak dinormalkan: *${summary.childrenReset}*\n` +
+        `Masakan selesai tanpa gosong: *${summary.mealsCompleted}*\n` +
+        `Tanaman siap dipanen: *${summary.cropsReadied}*\n` +
+        `Cooldown kerja dibuka: *${summary.jobsUnlocked}*\n` +
+        `Streak daily dilindungi: *${summary.dailyStreaksProtected}*\n` +
+        `Relationship dipulihkan: *${summary.relationshipsRestored}*\n\n` +
+        `Maintenance tetap aktif. Setelah memeriksa hasilnya, matikan secara manual:\n` +
+        stopCommands.map(command => `> ${command}`).join('\n')
+      )
     }
     delete panelConfirmations[token]
     await saveDB(wdb)
@@ -806,57 +838,13 @@ let handler = async (m, {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> Perintah: *${requestedCommand.slice(0, 300)}${requestedCommand.length > 300 ? '…' : ''}*\n` +
       `> Konfirmasi ini berlaku selama 5 menit.\n` +
-      `> Tidak ada data yang berubah sebelum kamu memilih *Konfirmasi*.\n\n` +
+      `> Tidak ada data yang berubah sebelum konfirmasi manual dijalankan.\n\n` +
       `─━━━━━━━━━━━━━━─`
-    const acceptCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} ya`
-    const cancelCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} tidak`
-    if (isPrivateRpgPanel) {
-      const playerJid = conn.decodeJid
-        ? conn.decodeJid(sourceMessage.sender)
-        : sourceMessage.sender
-      const playerNumber = String(playerJid || '').split('@')[0]
-      const rows = [{
-        title: '⚠️ Konfirmasi perubahan',
-        rows: [
-          { title: '✅ Konfirmasi', description: 'Jalankan perubahan RPG Panel', id: acceptCommand },
-          { title: '↩️ Batalkan', description: 'Biarkan data tetap seperti semula', id: cancelCommand }
-        ]
-      }]
-      return sendRpgButtons(conn, {
-        chat: responseChat,
-        message: sourceMessage,
-        quoted: sourceMessage,
-        title: '⚠️ KONFIRMASI PANEL RPG',
-        subtitle: 'Data hanya berubah setelah dikonfirmasi',
-        text: confirmationText,
-        buttonText: '🔐 PILIH TINDAKAN',
-        sections: rows,
-        fallbackText: `${confirmationText}\n> ↳ Konfirmasi: ${acceptCommand}\n> ↳ Batalkan: ${cancelCommand}`,
-        noThumbnail: true,
-        reply: fallbackText => m.reply(fallbackText),
-        sendInteractive: async playerMessage => {
-          return sendDualGroupMessage(
-            conn,
-            responseChat,
-            playerJid,
-            playerMessage,
-            `> 🔒 Konfirmasi RPG Panel khusus untuk @${playerNumber}.`,
-            { contextInfo: { mentionedJid: [playerJid] } }
-          )
-        }
-      })
-    }
-    return sendRpgConfirmButtons(conn, m, {
-      text: confirmationText,
-      title: '⚠️ KONFIRMASI PANEL RPG',
-      subtitle: 'Data hanya berubah setelah dikonfirmasi',
-      acceptText: '✅ Konfirmasi',
-      acceptCommand,
-      cancelText: '↩️ Batalkan',
-      cancelCommand,
-      noThumbnail: true,
-      footer: 'AVELIA • OWNER PANEL'
-    })
+    return m.reply(
+      `${confirmationText}\n` +
+      `> ↳ Konfirmasi manual: *${usedPrefix}${command || 'rpgpanel'} confirm ${token} ya*\n` +
+      `> ↳ Batalkan: *${usedPrefix}${command || 'rpgpanel'} confirm ${token} tidak*`
+    )
   }
 
  let panelText = (
@@ -866,6 +854,7 @@ let handler = async (m, {
   `> 🔐 Semua perubahan data meminta konfirmasi sebelum diterapkan.\n\n` +
 
   `📊 *GLOBAL*\n` +
+  `> ↳ *${usedPrefix}rp maintenance normalize* / *${usedPrefix}rpgpanel maintenance normalize* - Pratinjau dan normalisasi RPG selama maintenance\n` +
   `> ↳ *${usedPrefix}rpgpanel rpgstat* - Ringkasan statistik seluruh RPG\n` +
   `> ↳ *${usedPrefix}rpgpanel setlottery <hadiah>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setautolevelup <level>*\n` +
@@ -1145,23 +1134,7 @@ let handler = async (m, {
         buttonText: '👑 JELAJAHI KATEGORI',
         sections: panelCategorySections,
         fallbackText: panelCategoryFallback,
-        reply: text => m.reply(text),
-        ...(isPrivateRpgPanel ? {
-          sendInteractive: playerMessage => {
-            const playerJid = conn.decodeJid
-              ? conn.decodeJid(sourceMessage.sender)
-              : sourceMessage.sender
-            const playerNumber = String(playerJid || '').split('@')[0]
-            return sendDualGroupMessage(
-              conn,
-              responseChat,
-              playerJid,
-              playerMessage,
-              `> 🔒 Balasan RPG khusus untuk @${playerNumber}.`,
-              { contextInfo: { mentionedJid: [playerJid] } }
-            )
-          }
-        } : {})
+        reply: text => m.reply(text)
       })
     } catch (error) {
       console.error('[RPG-PANEL] Gagal mengirim menu kategori:', error?.message || error)
