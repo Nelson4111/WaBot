@@ -198,12 +198,37 @@ let handler = async (m, {
   let aksi = rawArgs[0]?.toLowerCase()
   let remaining = rawArgs.slice(1)
   const panelConfirmations = wdb.data.rpgPanelConfirmations || (wdb.data.rpgPanelConfirmations = {})
+  const confirmationBypassEnabled = wdb.data.rpgPanelConfirmationBypass === true
 
   const now = Date.now()
   for (const [token, pending] of Object.entries(panelConfirmations)) {
     if (!pending || now - Number(pending.createdAt) > RPG_CONFIRMATION_TTL) {
       delete panelConfirmations[token]
     }
+  }
+
+  if (aksi === 'bypass') {
+    const mode = String(remaining[0] || '').toLowerCase()
+    if (!mode) {
+      return m.reply(
+        `Bypass konfirmasi RPG Panel: *${confirmationBypassEnabled ? 'AKTIF' : 'NONAKTIF'}*\n` +
+        `> ↳ Aktifkan: *${usedPrefix}rp bypass on*\n` +
+        `> ↳ Matikan: *${usedPrefix}rp bypass off*`
+      )
+    }
+    if (remaining.length !== 1 || !['on', 'off'].includes(mode)) {
+      return m.reply(
+        `❌ Format: *${usedPrefix}rp bypass on/off*\n` +
+        `Contoh: *${usedPrefix}rp bypass on*`
+      )
+    }
+    wdb.data.rpgPanelConfirmationBypass = mode === 'on'
+    await global.db.write()
+    return m.reply(
+      mode === 'on'
+        ? '⚡ *BYPASS KONFIRMASI AKTIF*\nPerubahan RPG Panel dan normalisasi maintenance akan langsung dijalankan tanpa meminta `.rp yes`.'
+        : '🔐 *BYPASS KONFIRMASI NONAKTIF*\nPerubahan RPG Panel kembali meminta konfirmasi `.rp yes` atau `.rp no`.'
+    )
   }
 
   const isMaintenanceNormalization = aksi === 'normalisasirpg' ||
@@ -223,6 +248,25 @@ let handler = async (m, {
       )
     }
 
+    if (confirmationBypassEnabled) {
+      const normalized = normalizeRpgMaintenanceData(wdb.data, {
+        now,
+        maintenanceStartedAt: maintenanceStartedAt || now
+      })
+      await global.db.write()
+      return m.reply(
+        `✅ *NORMALISASI RPG SELESAI*\n\n` +
+        `Pemain RPG: *${normalized.players}*\n` +
+        `Pet dipulihkan: *${normalized.petsRestored}*\n` +
+        `Anak dikembalikan: *${normalized.childrenReturned}* · Kondisi anak dinormalkan: *${normalized.childrenReset}*\n` +
+        `Masakan selesai tanpa gosong: *${normalized.mealsCompleted}*\n` +
+        `Tanaman siap dipanen: *${normalized.cropsReadied}*\n` +
+        `Cooldown kerja dibuka: *${normalized.jobsUnlocked}*\n` +
+        `Streak daily dilindungi: *${normalized.dailyStreaksProtected}*\n` +
+        `Relationship dipulihkan: *${normalized.relationshipsRestored}*\n\n` +
+        `Maintenance tetap aktif. Matikan maintenance secara manual setelah memeriksa hasil normalisasi.`
+      )
+    }
     const summary = previewRpgMaintenanceNormalization(wdb.data, {
       now,
       maintenanceStartedAt: maintenanceStartedAt || now
@@ -941,7 +985,7 @@ let handler = async (m, {
     }
   }
 
-  if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken) {
+  if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken && !confirmationBypassEnabled) {
     const token = randomUUID()
     const requestedCommand = rawArgs.join(' ')
     panelConfirmations[token] = {
@@ -973,7 +1017,8 @@ let handler = async (m, {
   `╭─❏「 👑 RPG PANEL OWNER 」❏\n` +
   `│ 👑 *FITUR ADMIN RPG AVELIA*\n` +
   `╰─━━━━━━━━━━━━━━─\n` +
-  `> 🔐 Semua perubahan data meminta konfirmasi sebelum diterapkan.\n\n` +
+  `> 🔐 Perubahan meminta konfirmasi, kecuali bypass diaktifkan.\n` +
+  `> ↳ *${usedPrefix}rp bypass on/off* - Aktifkan/matikan konfirmasi RPG Panel\n\n` +
 
   `📊 *GLOBAL*\n` +
   `> ↳ *${usedPrefix}rp maintenance normalize* / *${usedPrefix}rpgpanel maintenance normalize* - Pratinjau dan normalisasi RPG selama maintenance\n` +
