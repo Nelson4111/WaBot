@@ -698,10 +698,11 @@ async function processMessage(m, chatUpdate) {
         }
 
         if (maintenanceActive && !isOwner) {
-            const prefix = commandCandidate?.usedPrefix || conn.prefix || global.prefix || '.'
-            const settings = global.db.data.settings?.bot || {}
-            const startedAt = global.opts.maintenanceStartedAt || settings.maintenanceStartedAt
-            await this.reply(m.chat, formatMaintenanceMessage(prefix, startedAt), m)
+            if (commandCandidate) {
+                const settings = global.db.data.settings?.bot || {}
+                const startedAt = global.opts.maintenanceStartedAt || settings.maintenanceStartedAt
+                await this.reply(m.chat, formatMaintenanceMessage(commandCandidate.usedPrefix, startedAt), m)
+            }
             return
         }
 
