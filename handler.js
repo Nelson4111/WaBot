@@ -21,7 +21,7 @@ import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimi
 import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
 import { isPlayerDead } from './lib/rpgDifficulty.js'
-import { formatMaintenanceMessage, isRpgCommand, isRpgPlugin } from './lib/maintenance.js'
+import { formatMaintenanceMessage, isMaintenanceBlockingCommand, shouldSkipRpgPlugin } from './lib/maintenance.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -698,8 +698,13 @@ async function processMessage(m, chatUpdate) {
             return
         }
 
-        if ((maintenanceActive && !isOwner) ||
-            (rpgMaintenanceActive && commandCandidate && isRpgCommand(commandCandidate.command, global.plugins))) {
+        if (isMaintenanceBlockingCommand({
+            command: commandCandidate?.command,
+            plugins: global.plugins,
+            maintenanceActive,
+            rpgMaintenanceActive,
+            isOwner
+        })) {
             if (commandCandidate) {
                 const settings = global.db.data.settings?.bot || {}
                 const mode = maintenanceActive && !isOwner ? 'all' : 'rpg'
@@ -871,9 +876,10 @@ async function processMessage(m, chatUpdate) {
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
             if (!plugin || plugin.disabled) continue          
-            if (rpgMaintenanceActive && isRpgPlugin(name, plugin)) continue
+            const skipRpgPlugin = shouldSkipRpgPlugin(name, plugin, rpgMaintenanceActive, isOwner)
+            if (skipRpgPlugin) continue
             const __filename = join(___dirname, ...name.split('/'))
-            if (typeof plugin.all === 'function') {
+            if (typeof plugin.all === 'function' && !skipRpgPlugin) {
                 try {
                     await plugin.all.call(this, m, { chatUpdate, __dirname: ___dirname, __filename })
                 } catch (e) {
@@ -892,7 +898,7 @@ async function processMessage(m, chatUpdate) {
             ).find(p => p[1])
 
             // plugin.before
-            if (typeof plugin.before === 'function') {
+            if (typeof plugin.before === 'function' && !skipRpgPlugin) {
                 if (await plugin.before.call(this, m, {
                     match, conn: this, participants, groupMetadata, user, bot,
                     isROwner, isOwner, isRAdmin, isAdmin, isBotAdmin, isPrems,
