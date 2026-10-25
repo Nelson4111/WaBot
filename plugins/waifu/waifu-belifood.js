@@ -1,5 +1,6 @@
 import { loadDB, saveDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
+import { compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 const MAX = 100
 
@@ -38,7 +39,7 @@ const SPECIAL = {
   }
 }
 
-const rupiah = n => 'Rp ' + Number(n).toLocaleString('id-ID')
+const rupiah = n => formatRpgMoney(n)
 const clamp = v => Math.max(0, Math.min(MAX, v || 0))
 
 let handler = async (m, { args, usedPrefix, command }) => {
@@ -56,7 +57,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
     )
   }
 
-  const money = db.money[m.sender] || 0
+  const money = normalizeRpgMoney(db.money[m.sender])
 
   if (!db.status) db.status = {}
   if (!db.status[m.sender]) {
@@ -96,7 +97,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
   decayWaifuStatus(m.sender)
   const f = ALL[args[0]]
 
-  if (money < f.price) {
+  if (compareRpgMoney(money, f.price) < 0) {
     return m.reply(
       status.error(`Saldo uang tidak cukup!\n> Harga: ${toSmallNum(rupiah(f.price))}\n> Saldo kamu: ${toSmallNum(rupiah(money))}`)
     )
@@ -109,7 +110,7 @@ let handler = async (m, { args, usedPrefix, command }) => {
     )
   }
 
-  db.money[m.sender] -= f.price
+  db.money[m.sender] = subtractRpgMoney(money, f.price)
   db.status[m.sender].lapar = clamp((db.status[m.sender].lapar || 50) + (f.feed || 0))
   db.status[m.sender].mood = clamp((db.status[m.sender].mood || 50) + (f.mood || 0))
   db.status[m.sender].afinitas = (db.status[m.sender].afinitas || 0) + (f.afk || 0)

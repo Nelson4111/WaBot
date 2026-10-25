@@ -1,5 +1,6 @@
 import { loadDB, saveDB, decayWaifuStatus } from '../../lib/waifuHelper.js'
 import { toSmallNum, status } from '../../lib/style.js'
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 
 const JOBS = [
   {
@@ -118,7 +119,7 @@ let handler = async (m, { usedPrefix, command }) => {
   const earn =
     Math.floor(Math.random() * (job.max - job.min + 1)) + job.min
 
-  db.money[m.sender] = (db.money[m.sender] || 0) + earn
+  db.money[m.sender] = addRpgMoney(db.money[m.sender], earn)
   saveDB(db)
 
   m.reply(
