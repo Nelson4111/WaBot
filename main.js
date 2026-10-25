@@ -142,6 +142,14 @@ import {
 } from './lib/mongoDB.js'
 import supabaseDBAdapter from './lib/supabaseDBAdapter.js'
 import SupabaseRelationalAdapter from './lib/supabaseRelationalAdapter.js'
+import { normalizeRpgMoneyData, serializeRpgBigInt } from './lib/rpgMoney.js'
+
+if (!BigInt.prototype.toJSON) {
+  Object.defineProperty(BigInt.prototype, 'toJSON', {
+    configurable: true,
+    value() { return serializeRpgBigInt(this) }
+  })
+}
 
 const { CONNECTING } = ws
 const { chain } = lodash
@@ -219,6 +227,7 @@ global.loadDatabase = async function loadDatabase() {
       settings: {},
       ...(db.data || {})
     }
+    normalizeRpgMoneyData(db.data)
     // Inisialisasi struktur database auxiliary dari Supabase bot_metadata
     db.data.sewa = Array.isArray(db.data.sewa) ? db.data.sewa : (Array.isArray(db.data.aux_sewa) ? db.data.aux_sewa : [])
     db.data.absen = db.data.absen && typeof db.data.absen === 'object' ? db.data.absen : (db.data.aux_absen && typeof db.data.aux_absen === 'object' ? db.data.aux_absen : {})
