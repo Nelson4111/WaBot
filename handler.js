@@ -22,6 +22,7 @@ import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
 import { isPlayerDead } from './lib/rpgDifficulty.js'
 import { formatMaintenanceMessage, isMaintenanceBlockingCommand, shouldSkipRpgPlugin } from './lib/maintenance.js'
+import { normalizeRpgMoney } from './lib/rpgMoney.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -438,8 +439,8 @@ async function processMessage(m, chatUpdate) {
                 if (!('role' in user)) user.role = 'Free user'
                 if (!('autolevelup' in user)) user.autolevelup = false
                 if (!isNumber(user.balance)) user.balance = 0
-                if (!isNumber(user.money)) user.money = 0
-                if (!isNumber(user.bank)) user.bank = 0
+                user.money = normalizeRpgMoney(user.money)
+                user.bank = normalizeRpgMoney(user.bank)
             } else {
                 global.db.data.users[m.sender] = {
                     exp: 0,
