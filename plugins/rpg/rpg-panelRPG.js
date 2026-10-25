@@ -44,6 +44,7 @@ import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords, setFishRecordSize } from '../../lib/rpg-fishSizes.js'
 import { normalizeRpgMaintenanceData, previewRpgMaintenanceNormalization } from '../../lib/rpgMaintenanceNormalizer.js'
+import { resolveRpgPanelTarget } from '../../lib/rpgPanelTarget.js'
 
 import fs from 'fs'
 
@@ -226,8 +227,6 @@ let handler = async (m, {
     }
     await global.db.write()
 
-    const acceptCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} ya`
-    const cancelCommand = `${usedPrefix}${command || 'rpgpanel'} confirm ${token} tidak`
     return m.reply(
       `╭─❏「 🧰 NORMALISASI RPG 」❏\n` +
       `│ PRATINJAU · DATA BELUM DIUBAH\n` +
@@ -244,18 +243,24 @@ let handler = async (m, {
       `Proses ini memulihkan status dan aktivitas tertunda tanpa mengubah saldo, level, atau inventory. ` +
       `Streak daily dijaga tanpa klaim reward susulan. ` +
       `Maintenance tetap aktif setelah normalisasi.\n\n` +
-      `> Konfirmasi manual (berlaku 5 menit):\n` +
-      `> Jalankan: *${acceptCommand}*\n` +
-      `> Batalkan: *${cancelCommand}*`
+      `> Konfirmasi: *${usedPrefix}rp yes* · Batal: *${usedPrefix}rp no*`
     )
   }
 
-  if (aksi === 'confirm') {
-    const token = String(rawArgs[1] || '')
-    const decision = String(rawArgs[2] || '').toLowerCase()
+  if (['yes', 'no', 'ya', 'tidak', 'confirm'].includes(aksi)) {
+    const decision = aksi === 'confirm'
+      ? String(rawArgs[2] || '').toLowerCase()
+      : aksi
+    const requestedToken = aksi === 'confirm' ? String(rawArgs[1] || '') : ''
+    const pendingEntry = requestedToken
+      ? [requestedToken, panelConfirmations[requestedToken]]
+      : Object.entries(panelConfirmations)
+        .filter(([, item]) => item?.owner === m.sender && item?.chat === m.chat)
+        .sort((a, b) => Number(b[1].createdAt) - Number(a[1].createdAt))[0]
+    const token = pendingEntry?.[0]
     const pending = panelConfirmations[token]
     if (!pending) {
-      return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
+      return m.reply(`ℹ️ Tidak ada konfirmasi yang menunggu. Jalankan dulu perintah: *${usedPrefix}rp <aksi>*.`)
     }
     if (pending.owner !== m.sender || pending.chat !== m.chat) {
       return m.reply('🔒 Konfirmasi ini hanya dapat digunakan oleh pemilik permintaan di chat asal.')
@@ -265,8 +270,8 @@ let handler = async (m, {
       await saveDB(wdb)
       return m.reply('⌛ Konfirmasi panel sudah tidak berlaku. Jalankan kembali perintah RPG Panel.')
     }
-    if (!['ya', 'yes', 'confirm', 'tidak', 'no', 'batal', 'cancel'].includes(decision)) {
-      return m.reply(`Gunakan *ya* untuk konfirmasi atau *tidak* untuk membatalkan.`)
+    if (!['ya', 'yes', 'tidak', 'no'].includes(decision)) {
+      return m.reply(`Gunakan *${usedPrefix}rp yes* atau *${usedPrefix}rp no*.`)
     }
     if (pending.operation === 'rpg-maintenance-normalization') {
       if (['tidak', 'no', 'batal', 'cancel'].includes(decision)) {
@@ -535,9 +540,28 @@ let handler = async (m, {
     )
   }
   if (!isPanelReadOnlyAction && !remaining.length && !['endauction', 'finishauction'].includes(aksi)) {
+    const examples = {
+      setmoney: 'setmoney @tag/reply <nominal>',
+      addmoney: 'addmoney @tag/reply <nominal>',
+      delmoney: 'delmoney @tag/reply <nominal>',
+      sethome: 'sethome @tag <field> <nilai>',
+      setbot: 'setbot @tag <level|xp|limit> <nilai>',
+      setevx: 'setevx @tag <tipe> <nama SC Core>',
+      setevxstat: 'setevxstat @tag <stat> <nilai>',
+      applyjob: 'applyjob @tag <nomor/nama job>',
+      setjob: 'setjob @tag <nama pekerjaan>',
+      setcrime: 'setcrime @tag <jenis> <jumlah>',
+      setpenjaraprogress: 'setpenjaraprogress @tag <routine> <talk>',
+      setlottery: 'setlottery <jumlah hadiah>',
+      setautolevelup: 'setautolevelup <level>'
+    }
+    const example = examples[aksi] || `${aksi} @tag <argumen>`
+    const phoneExample = ['setmoney', 'addmoney', 'delmoney'].includes(aksi)
+      ? `\nContoh nomor WhatsApp: *${usedPrefix}rp ${aksi} 62 822-2863-8623 12345*`
+      : ''
     return m.reply(
-      `❌ Argumen command *${aksi}* belum lengkap.\n` +
-      `> ↳ Gunakan format command yang tercantum di *${usedPrefix}rp* sebelum meminta konfirmasi.`
+      `❌ Format command belum lengkap.\n` +
+      `> ↳ Contoh format yang benar: *${usedPrefix}rp ${example}*${phoneExample}`
     )
   }
 
@@ -810,6 +834,100 @@ let handler = async (m, {
     }
   }
 
+  const targetlessPanelActions = new Set([
+    'setlottery', 'lotteryset', 'autolevelup', 'setautolevelup', 'notiflevel',
+    'setnotiflevel', 'setlevelnotif', 'groupnotiflevel', 'setgroupnotiflevel',
+    'endauction', 'finishauction', 'clearmoneykey'
+  ])
+  const allAccountActions = ['heal', 'resetlevel', 'resetpokemon', 'resetghost']
+  const isAllAccountAction = allAccountActions.includes(aksi) &&
+    remaining.some(arg => arg.toLowerCase() === 'all')
+  const targetResolution = resolveRpgPanelTarget(remaining, sourceMessage, conn, global.db.data.users)
+  const remainingWithoutTarget = remaining.filter((_, index) =>
+    !targetResolution.consumedIndexes.includes(index)
+  )
+  const requiresUserTarget = !isPanelReadOnlyAction &&
+    !targetlessPanelActions.has(aksi) &&
+    !isAllAccountAction
+  const moneyMutation = ['setmoney', 'addmoney', 'delmoney'].includes(aksi)
+  if (requiresUserTarget && !targetResolution.target) {
+    if (moneyMutation) {
+      return m.reply(
+        `❌ Format: *${usedPrefix}rp ${aksi} @tag/reply <nominal>*\n` +
+        `Contoh nomor WhatsApp: *${usedPrefix}rp ${aksi} 62 822-2863-8623 12345*`
+      )
+    }
+    return m.reply(
+      `❌ Target user belum ditemukan.\n` +
+      `> ↳ Format: *${usedPrefix}rp ${aksi} @tag/reply <argumen>*\n` +
+      `> ↳ Bisa juga pakai nomor WhatsApp, tanpa harus satu grup.`
+    )
+  }
+
+  const argumentRequirements = {
+    setbot: { count: 2, format: 'setbot @tag <level|xp|limit> <nilai>' },
+    addbot: { count: 2, format: 'addbot @tag <level|xp|limit> <nilai>' },
+    delbot: { count: 2, format: 'delbot @tag <level|xp|limit> <nilai>' },
+    sethome: { count: 2, format: 'sethome @tag <field> <nilai>' },
+    setevx: { count: 2, format: 'setevx @tag <tipe> <nama SC Core>' },
+    setevxstat: { count: 2, format: 'setevxstat @tag <rank|level|resonance|statpoints|explores> <nilai>' },
+    setcrime: { count: 2, format: 'setcrime @tag <jenis> <jumlah>' },
+    setcriminal: { count: 2, format: 'setcrime @tag <jenis> <jumlah>' },
+    setjeniskriminal: { count: 2, format: 'setcrime @tag <jenis> <jumlah>' },
+    setpenjaraprogress: { count: 2, format: 'setpenjaraprogress @tag <routine> <talk>' },
+    setprisonprogress: { count: 2, format: 'setpenjaraprogress @tag <routine> <talk>' },
+    setfishsize: { count: 3, format: 'setfishsize @tag <nama_ikan> <nomor-jenis> <small|medium|big|giant>' },
+    applyjob: { count: 1, format: 'applyjob @tag <nomor/nama job>' },
+    setjob: { count: 1, format: 'setjob @tag <nama pekerjaan>' },
+    setcontract: { count: 1, format: 'setcontract @tag <nama>' },
+    giveending: { count: 1, format: 'giveending @tag <ending>' }
+  }
+  const argumentRequirement = argumentRequirements[aksi]
+  if (argumentRequirement && remainingWithoutTarget.length < argumentRequirement.count) {
+    return m.reply(
+      `❌ Format: *${usedPrefix}rp ${argumentRequirement.format}*\n` +
+      `> ↳ Ganti @tag dengan tag, reply, atau nomor WhatsApp user.`
+    )
+  }
+
+  const numericPanelActions = new Set([
+    'setstellarcredit', 'setmaxhp', 'setuserlevel', 'setbotlevel', 'setexp',
+    'setbotxp', 'setbotlimit', 'setlevel', 'setdarah', 'setdiamond', 'setiron',
+    'setgold', 'setstone', 'setwood', 'setarmor', 'setsword', 'setpickaxe',
+    'setfishingrod', 'addstellarcredit', 'addlevel', 'adduserlevel', 'addexp',
+    'adddarah', 'adddiamond', 'addiron', 'addgold', 'addstone', 'addwood',
+    'addsword', 'addarmor', 'addpickaxe', 'addfishingrod', 'addbotlevel',
+    'addbotxp', 'addbotlimit', 'delstellarcredit', 'dellevel', 'deluserlevel',
+    'delexp', 'deldarah', 'deldiamond', 'deliron', 'delgold', 'delstone',
+    'delwood', 'delsword', 'delarmor', 'delpickaxe', 'delfishingrod',
+    'delbotlevel', 'delbotxp', 'delbotlimit'
+  ])
+  if (numericPanelActions.has(aksi)) {
+    const value = remainingWithoutTarget[0]
+    const isAddOrDelete = aksi.startsWith('add') || aksi.startsWith('del')
+    if (remainingWithoutTarget.length !== 1 || !/^\d+$/.test(value || '') ||
+      (isAddOrDelete && Number(value) < 1)) {
+      return m.reply(
+        `❌ Format: *${usedPrefix}rp ${aksi} @tag <jumlah>*\n` +
+        `> ↳ Contoh: *${usedPrefix}rp ${aksi} @tag 10* (bisa juga reply atau nomor WhatsApp).`
+      )
+    }
+  }
+
+  if (moneyMutation) {
+    const moneyArgs = remainingWithoutTarget
+    const moneyInput = moneyArgs.at(-1)
+    const amount = moneyInput === '0' ? 0 : parseRpgMoneyAmount(moneyInput)
+    const usage = `*${usedPrefix}rp ${aksi} @tag/reply <nominal>*`
+    if (moneyArgs.length !== 1 || amount === null || (aksi !== 'setmoney' && amount < 1)) {
+      return m.reply(
+        `❌ Format: ${usage}\n` +
+        `Contoh tag/reply: *${usedPrefix}rp ${aksi} @tag 12345*\n` +
+        `Contoh nomor WhatsApp: *${usedPrefix}rp ${aksi} 62 822-2863-8623 12345*`
+      )
+    }
+  }
+
   if (!isPanelReadOnlyAction && !_rpgPanelConfirmedToken) {
     const token = randomUUID()
     const requestedCommand = rawArgs.join(' ')
@@ -832,18 +950,9 @@ let handler = async (m, {
     }
     await saveDB(wdb)
 
-    const confirmationText =
-      `╭─❏「 ⚠️ KONFIRMASI RPG PANEL 」❏\n` +
-      `│ PERIKSA AKSI SEBELUM DATA DIUBAH\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> Perintah: *${requestedCommand.slice(0, 300)}${requestedCommand.length > 300 ? '…' : ''}*\n` +
-      `> Konfirmasi ini berlaku selama 5 menit.\n` +
-      `> Tidak ada data yang berubah sebelum konfirmasi manual dijalankan.\n\n` +
-      `─━━━━━━━━━━━━━━─`
     return m.reply(
-      `${confirmationText}\n` +
-      `> ↳ Konfirmasi manual: *${usedPrefix}${command || 'rpgpanel'} confirm ${token} ya*\n` +
-      `> ↳ Batalkan: *${usedPrefix}${command || 'rpgpanel'} confirm ${token} tidak*`
+      `Konfirmasi *${requestedCommand}*?\n` +
+      `Ketik *${usedPrefix}rp yes* untuk lanjut atau *${usedPrefix}rp no* untuk batal.`
     )
   }
 
@@ -871,9 +980,10 @@ let handler = async (m, {
 
   `👤 *USER STAT*\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <nominal>*\n` +
-  `> ↳ Contoh set: *${usedPrefix}rpgpanel setmoney @tag 1,5T*\n` +
-  `> ↳ Contoh tambah: *${usedPrefix}rpgpanel addmoney @tag 2M*\n` +
-  `> ↳ Contoh kurang: *${usedPrefix}rpgpanel delmoney @tag 500K*\n` +
+  `> ↳ Contoh set: *${usedPrefix}rp setmoney @tag 1,5T*\n` +
+  `> ↳ Contoh tambah: *${usedPrefix}rp addmoney @tag 2M*\n` +
+  `> ↳ Contoh kurang: *${usedPrefix}rp delmoney @tag 500K*\n` +
+  `> ↳ Tanpa tag/grup: *${usedPrefix}rp setmoney 62 822-2863-8623 12345*\n` +
   `> ↳ *${usedPrefix}rpgpanel setjob @tag <nama pekerjaan>* - Ganti nama pekerjaan yang tampil saat bekerja\n` +
   `> ↳ *${usedPrefix}rpgpanel firejob @tag [nomor/nama job]* - Pecat user dari pekerjaan\n` +
   `> ↳ *${usedPrefix}rpgpanel applyjob @tag <nomor/nama job>* - Lamar/angkat user ke pekerjaan tertentu\n` +
@@ -1398,102 +1508,8 @@ let handler = async (m, {
   }
 
   // 3. Resolusi Target User (Mendukung: @me, Tag, Reply, Nomor HP, JID, LID)
-  let who = null;
-  let targetArgIndex = -1;
-  const selfTargetIndex = remaining.findIndex(arg => /^@me$/i.test(arg))
-  const explicitTargetIndex = remaining.findIndex(arg =>
-    arg.includes('@s.whatsapp.net') ||
-    arg.includes('@lid') ||
-    /^@\d{8,16}$/.test(arg) ||
-    (!m.quoted && !m.mentionedJid?.length && /^\d{8,16}$/.test(arg))
-  )
-
-  if (selfTargetIndex !== -1) {
-    who = m.sender
-    targetArgIndex = selfTargetIndex
-  }
-  // Prefer explicit numeric/JID targets over the quoted sender.
-  else if (explicitTargetIndex !== -1) {
-    const rawTarget = remaining[explicitTargetIndex].trim()
-    const cleanTarget = rawTarget.replace(/^@/, '')
-    if (cleanTarget.includes('@s.whatsapp.net') || cleanTarget.includes('@lid')) {
-      who = cleanTarget
-    } else {
-      let digits = cleanTarget.replace(/\D/g, '')
-      if (digits.startsWith('08')) digits = `628${digits.slice(2)}`
-      who = `${digits}@s.whatsapp.net`
-    }
-    targetArgIndex = explicitTargetIndex
-  }
-  // A. Cek dari Mention / Tag (@user)
-  else if (m.mentionedJid && m.mentionedJid.length > 0) {
-    who = m.mentionedJid[0];
-    for (let i = 0; i < remaining.length; i++) {
-      if (remaining[i].startsWith('@') || remaining[i].includes('@s.whatsapp.net') || remaining[i].includes('@lid')) {
-        targetArgIndex = i;
-        break;
-      }
-    }
-  }
-  // B. Cek dari Quoted / Reply pesan user
-  else if (m.quoted && m.quoted.sender) {
-    who = m.quoted.sender;
-  }
-
-  if (targetArgIndex !== -1) {
-    remaining.splice(targetArgIndex, 1);
-  }
-
-  // 4. Konversi dan Standarisasi format JID / LID ke Database User Key
-  if (who) {
-    try {
-      if (conn && typeof conn.decodeJid === 'function') {
-        who = conn.decodeJid(who);
-      }
-    } catch (_) {}
-
-    // Konversi LID (@lid) ke nomor HP (@s.whatsapp.net) asli jika tersedia
-    if (who.endsWith('@lid')) {
-      const resolvedLid = global.lids?.[who] || 
-                          global.db?.data?.lids?.[who] || 
-                          (wdb?.lids && wdb.lids[who]);
-      if (resolvedLid) {
-        who = resolvedLid;
-      } else if (global.db?.data?.users) {
-        for (const [realJid, uData] of Object.entries(global.db.data.users)) {
-          if (uData.lid === who || realJid.split('@')[0] === who.split('@')[0]) {
-            who = realJid;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!who.includes('@')) {
-      who = who + '@s.whatsapp.net';
-    } else if (!who.endsWith('@s.whatsapp.net') && !who.endsWith('@lid')) {
-      who = who.split('@')[0] + '@s.whatsapp.net';
-    }
-
-    const targetDigits = who.split('@')[0].replace(/\D/g, '')
-    if (targetDigits) {
-      if (targetDigits.startsWith('08')) {
-        const normalizedDigits = `628${targetDigits.slice(2)}`
-        who = `${normalizedDigits}@s.whatsapp.net`
-      }
-      const matchingUser = Object.entries(wdb.users).find(([jid, account]) => {
-        const jidDigits = jid.split('@')[0].replace(/\D/g, '')
-        const lidDigits = String(account?.lid || '').split('@')[0].replace(/\D/g, '')
-        return jidDigits === targetDigits || jidDigits === who.split('@')[0] ||
-          lidDigits === targetDigits || lidDigits === who.split('@')[0]
-      })
-      if (matchingUser) who = matchingUser[0]
-    }
-
-    if (who === '@s.whatsapp.net' || who.startsWith('NaN') || who === 'undefined@s.whatsapp.net') {
-      who = null;
-    }
-  }
+  let who = targetResolution.target
+  remaining = remainingWithoutTarget
 
   // ========== EDIT USER HARUS ADA TARGET ==========
   if (!who) return m.reply('❌ Tag / reply / masukkan nomor target dulu untuk edit user!')
