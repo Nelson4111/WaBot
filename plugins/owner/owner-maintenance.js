@@ -34,7 +34,7 @@ let handler = async (m, { args, usedPrefix }) => {
 
   return m.reply(
     enabled
-      ? '🛠️ *MAINTENANCE DIAKTIFKAN*\n\nMode owner-only aktif dan akses public dinonaktifkan. User biasa akan menerima pemberitahuan maintenance; owner tetap dapat mengelola bot.'
+      ? '🛠️ *MAINTENANCE DIAKTIFKAN*\n\nMode owner-only aktif dan akses public dinonaktifkan. User biasa akan menerima pemberitahuan maintenance; owner dan co-owner tetap dapat mengakses serta mengelola bot.'
       : '✅ *MAINTENANCE SELESAI*\n\nMode owner-only dinonaktifkan dan akses public diaktifkan kembali. Avelia siap digunakan!'
   )
 }
