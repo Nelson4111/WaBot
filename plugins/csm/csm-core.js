@@ -10,6 +10,7 @@ import {
 } from './lib/utils.js'
 import { initCsmUser } from './lib/state.js'
 import { recordActivity, ensureDailyQuests } from './lib/quest.js'
+import { compareRpgMoney, normalizeRpgMoney } from '../../lib/rpgMoney.js'
 
 // Command Handlers
 import { handlePanel } from './commands/panel.js'
@@ -183,8 +184,8 @@ let handler = async (message, { conn, text, usedPrefix, command }) => {
 
   let userRPG = getUserRPG(wdb, dbJid)?.rpg || getUserRPG(wdb, m.sender)?.rpg
   if (!userRPG) return m.reply(`╭──「 ❌ ERROR 」──╮\n│ Data RPG bank tidak ditemukan.\n━━━━━━━━━━━`)
-  const bankBalance = Number(userRPG.bank)
-  userRPG.bank = Number.isFinite(bankBalance) && bankBalance >= 0 ? bankBalance : 0
+  const bankBalance = normalizeRpgMoney(userRPG.bank)
+  userRPG.bank = compareRpgMoney(bankBalance, 0) >= 0 ? bankBalance : 0
 
   // State initialization & schema normalization
   let csm = initCsmUser(user, wdb)
