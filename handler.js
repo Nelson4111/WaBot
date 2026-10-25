@@ -21,6 +21,7 @@ import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimi
 import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
 import { isPlayerDead } from './lib/rpgDifficulty.js'
+import { formatMaintenanceMessage } from './lib/maintenance.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -587,17 +588,18 @@ async function processMessage(m, chatUpdate) {
         const isPrems = isROwner ||
             isPremiumAccount(global.db.data.users[senderClean]) ||
             isPremiumAccount(global.db.data.users[m.sender])
+        const maintenanceActive = Boolean(global.opts?.maintenance)
 
         // Options Check (Owner exempt)
-        if (!isOwner) {
+        if (!isOwner && !maintenanceActive) {
             if (opts['nyimak']) { /* console.log('[PM DROP: opts nyimak]'); */ return }
             if (opts['pconly'] && m.chat.endsWith('g.us')) { /* console.log('[PM DROP: opts pconly]'); */ return }
             if (opts['gconly'] && !m.chat.endsWith('g.us')) { /* console.log('[PM DROP: opts gconly]'); */ return }
             if (opts['swonly'] && m.chat !== 'status@broadcast') { /* console.log('[PM DROP: opts swonly]'); */ return }
         }
 
-        if (!isOwner && !m.fromMe && opts['self']) { /* console.log('[PM DROP: opts self]'); */ return }
-        if (!isOwner && !m.fromMe && global.db.data.settings?.[this.user?.jid]?.self) { /* console.log('[PM DROP: settings self]'); */ return }
+        if (!maintenanceActive && !isOwner && !m.fromMe && opts['self']) { /* console.log('[PM DROP: opts self]'); */ return }
+        if (!maintenanceActive && !isOwner && !m.fromMe && global.db.data.settings?.[this.user?.jid]?.self) { /* console.log('[PM DROP: settings self]'); */ return }
 
         // Message Queue (Dihapus agar bot langsung membalas tanpa delay)
         /*
@@ -692,6 +694,14 @@ async function processMessage(m, chatUpdate) {
         
         // FAILOVER & ARBITRATION: Main Bot vs JadiBot in same group
         if (m.isGroup && !(await botArbitrator.coordinate(this, m, groupMetadata))) {
+            return
+        }
+
+        if (maintenanceActive && !isOwner) {
+            const prefix = commandCandidate?.usedPrefix || conn.prefix || global.prefix || '.'
+            const settings = global.db.data.settings?.bot || {}
+            const startedAt = global.opts.maintenanceStartedAt || settings.maintenanceStartedAt
+            await this.reply(m.chat, formatMaintenanceMessage(prefix, startedAt), m)
             return
         }
 
