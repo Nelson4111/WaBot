@@ -105,6 +105,21 @@ test('buys one limit for Rp100,000 and synchronizes both balances', async () => 
   assert.match(replies[0], /Uang terpakai: Rp 100\.000/)
 })
 
+test('deducts limit purchases from arbitrarily large money without rounding', async () => {
+  const startingMoney = 43982362985705680000n
+  const user = { limit: 0, rpg: { limit: 0 }, money: startingMoney }
+  const previousDb = global.db
+  global.db = { write: async () => {} }
+  try {
+    await buyLimit({ reply: async () => {} }, user, ['1', 'money'])
+  } finally {
+    global.db = previousDb
+  }
+
+  assert.equal(user.money, startingMoney - 100000n)
+  assert.equal(user.limit, 1)
+})
+
 test('retains the premium discount and rejects insufficient funds', async () => {
   const replies = []
   const reply = async text => replies.push(text)
@@ -144,14 +159,18 @@ test('preserves a zero limit when loading Supabase users', async () => {
   ])
 })
 
-test('keeps user numbers outside relational column ranges in raw_data', async () => {
+test('keeps large user money values exact in numeric columns', async () => {
   const adapter = new SupabaseRelationalAdapter({ url: 'https://example.supabase.co', key: 'test-key' })
   const jid = 'large-values@s.whatsapp.net'
   const largeLimit = 2_147_483_648
-  const largeMoney = 43982362985705680000
+  const largeMoney = 43982362985705680000n
   let storedUserRow
   adapter._batchUpsert = async (table, rows) => {
-    if (table === 'users') storedUserRow = rows[0]
+    if (table === 'users') {
+      storedUserRow = JSON.parse(JSON.stringify(rows, (_key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ))[0]
+    }
   }
 
   await adapter._performWrite({
@@ -165,20 +184,10 @@ test('keeps user numbers outside relational column ranges in raw_data', async ()
     }
   }, true)
 
-  assert.equal(storedUserRow.limit_val, null)
-  for (const column of ['level', 'exp', 'limit_val', 'balance', 'bank', 'money']) {
-    assert.ok(
-      storedUserRow[column] === null || Number.isSafeInteger(storedUserRow[column]),
-      `${column} must be null or safe to serialize`
-    )
-  }
-  assert.equal(storedUserRow.money, null)
-  assert.equal(storedUserRow.bank, null)
-  assert.equal(storedUserRow.balance, null)
-  assert.equal(storedUserRow.rpg.bank, largeMoney)
-  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.limit_val, String(largeLimit))
-  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.money, String(largeMoney))
-  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.bank, String(largeMoney))
+  assert.equal(storedUserRow.limit_val, String(largeLimit))
+  assert.equal(storedUserRow.money, String(largeMoney))
+  assert.equal(storedUserRow.bank, String(largeMoney))
+  assert.equal(storedUserRow.rpg.bank, String(largeMoney))
 
   adapter._fetchAll = async table => table === 'users' ? [storedUserRow] : []
   adapter._saveLocalBackup = () => {}
@@ -188,12 +197,9 @@ test('keeps user numbers outside relational column ranges in raw_data', async ()
   assert.equal(data.users[jid].bank, largeMoney)
 
   await adapter._performWrite(data, true)
-  assert.equal(storedUserRow.limit_val, null)
-  assert.equal(storedUserRow.money, null)
-  assert.equal(storedUserRow.bank, null)
-  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.limit_val, String(largeLimit))
-  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.money, String(largeMoney))
-  assert.equal(storedUserRow.raw_data.__supabaseNumericOverflow.bank, String(largeMoney))
+  assert.equal(storedUserRow.limit_val, String(largeLimit))
+  assert.equal(storedUserRow.money, String(largeMoney))
+  assert.equal(storedUserRow.bank, String(largeMoney))
 
   adapter._fetchAll = async table => table === 'users' ? [storedUserRow] : []
   const reloadedData = await adapter.read()
