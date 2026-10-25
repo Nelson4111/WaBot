@@ -293,7 +293,7 @@ if (action === 'cd' || action === 'cooldown') {
     `│ ⏰ *PREMIUM COOLDOWN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `🎮 *STATUS COOLDOWN RPG*\n` +
-    `> ↳ Lewati cooldown tertentu dengan *.skipcd <aktivitas>*; biaya *Rp 100.000 per detik tersisa* dan perlu konfirmasi.\n\n` +
+    `> ↳ Lewati cooldown tertentu dengan *.skipcd <aktivitas>*; biaya *Rp 100.000 per detik tersisa*, perlu konfirmasi, maksimal 10 kali per jam.\n\n` +
     `${cooldownList}\n\n` +
     `🎁 *PREMIUM DAILY*\n` +
     `> ↳ ${dailyRemaining ? `⏳ ${formatRemaining(dailyRemaining)}` : '✅ Siap'}\n\n` +
@@ -362,7 +362,7 @@ if (/^(benefits?|manfaat)$/.test(action)) {
     `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
     `> ↳ Diskon *20%* untuk biaya uang pada *.upgrade*, diskon *25%* upgrade kartu bank, dan biaya admin transfer bank *50%* lebih murah.\n` +
     `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Cooldown Muncak *2 jam* (user biasa 5 jam), contoh *${usedPrefix}mt start*.\n` +
-    `> ↳ Bisa melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per detik tersisa.\n` +
+    `> ↳ Bisa melewati cooldown dengan *.skipcd <aktivitas>* seharga Rp 100.000 per detik tersisa, maksimal 10 kali per jam.\n` +
     `> ↳ Bisa mengubah difficulty *2 kali per minggu*; kuota reset setiap Senin, bukan cooldown 7 hari. Cek atau ubah dengan *${usedPrefix}difficulty*.\n\n` +
 
     `🏠 *RUMAH & STAFF*\n` +

@@ -5,6 +5,7 @@ import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
 import { getIntimacyRank, isPasanganHidden, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -94,7 +95,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   const wdb = loadDB()
   const uang = wdb.money?.[who] || 0
   const bank = user.rpg?.bank || 0
-  const totalAset = uang + bank
+  const totalAset = addRpgMoney(uang, bank)
 
   // 4. Data Leveling & Progres EXP
   let { min, max, xp: reqXp } = xpRange(level, global.multiplier || 36)

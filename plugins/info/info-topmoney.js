@@ -1,6 +1,11 @@
 import { filterRpgPanelUsers } from '../../lib/rpgLeaderboard.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
-import { formatRpgMoney } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney,
+  normalizeRpgMoney
+} from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, command, groupMetadata }) => {
   if (command === 'debugduit') return debugduit(m, { conn })
@@ -21,8 +26,8 @@ let handler = async (m, { conn, command, groupMetadata }) => {
       userMap[cleanId].name = name
     }
 
-    userMap[cleanId].cash += (cash || 0)
-    userMap[cleanId].bank += (bank || 0)
+    userMap[cleanId].cash = addRpgMoney(userMap[cleanId].cash, cash || 0)
+    userMap[cleanId].bank = addRpgMoney(userMap[cleanId].bank, bank || 0)
   }
 
   // Ambil dari global.db.data.users (Database Utama Tunggal)
@@ -30,10 +35,10 @@ let handler = async (m, { conn, command, groupMetadata }) => {
     for (let [jid, u] of Object.entries(global.db.data.users)) {
       if (jid.endsWith('@lid')) continue
 
-      const cashMoney = (u.money || 0) + (u.balance || 0)
-      const bankMoney = u.rpg?.bank || 0
+      const cashMoney = addRpgMoney(normalizeRpgMoney(u.money), normalizeRpgMoney(u.balance))
+      const bankMoney = normalizeRpgMoney(u.rpg?.bank)
 
-      if (cashMoney > 0 || bankMoney > 0) {
+      if (compareRpgMoney(cashMoney, 0) > 0 || compareRpgMoney(bankMoney, 0) > 0) {
         addMoney(jid, u.name, cashMoney, bankMoney)
       }
     }
@@ -44,9 +49,9 @@ let handler = async (m, { conn, command, groupMetadata }) => {
     conn,
     user => user.jid
   )
-    .map(u => ({ ...u, total: u.cash + u.bank }))
-    .filter(u => u.total > 0)
-    .sort((a, b) => b.total - a.total)
+    .map(u => ({ ...u, total: addRpgMoney(u.cash, u.bank) }))
+    .filter(u => compareRpgMoney(u.total, 0) > 0)
+    .sort((a, b) => compareRpgMoney(b.total, a.total))
     .slice(0, 10)
 
   if (sortedUsers.length === 0) {
