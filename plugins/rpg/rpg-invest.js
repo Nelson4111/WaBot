@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
@@ -470,7 +471,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     if (action === 'buy' || action === 'beli') {
       if (user.kartuBeku) return m.reply(`Kartu bank ${bankProfile.name} sedang beku. Aktifkan kembali melalui *.bank*.`)
       if (user.bank < total) return m.reply(`Saldo bank tidak cukup. Butuh ${money(total)}.`)
-      user.bank -= total
+      user.bank = subtractRpgMoney(user.bank, total)
       const nextQty = holding.qty + qty
       holding.avgPrice = ((holding.qty * holding.avgPrice) + gross) / nextQty
       holding.qty = nextQty
@@ -487,7 +488,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     const realized = (gross - fee) - cost
     const adjustedRealized = realized > 0 ? scaleDifficultyIncome(user, realized) : realized
     const saleProceeds = cost + adjustedRealized
-    user.bank += saleProceeds
+    user.bank = addRpgMoney(user.bank, saleProceeds)
     holding.qty -= qty
     invest.realized += adjustedRealized
     if (holding.qty <= 0) delete invest.portfolio[symbol]

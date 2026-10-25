@@ -1,3 +1,4 @@
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -33,7 +34,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   })
 
   apresiasiTotal = scaleDifficultyIncome(user, apresiasiTotal)
-  if(apresiasiTotal > 0) wdb.money[m.sender] = (wdb.money[m.sender] || 0) + apresiasiTotal
+  if(apresiasiTotal > 0) wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], apresiasiTotal)
   user.dapur.antrian = user.dapur.antrian.filter(item => item.selesai > sekarang)
 
   expTotal = scaleDifficultyXP(user, expTotal)

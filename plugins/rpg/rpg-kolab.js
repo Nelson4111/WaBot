@@ -1,4 +1,5 @@
-﻿import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { addRpgMoney } from '../../lib/rpgMoney.js'
+import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 function normalizeYoutube(data = {}) {
@@ -97,7 +98,7 @@ let handler = async (m, { conn }) => {
     wdb.users[jid].youtube = yt
     const rpgUser = wdb.users[jid]?.rpg || {}
     const participantMoneyGain = scaleDifficultyIncome(rpgUser, moneyGain)
-    wdb.money[jid] = (wdb.money[jid] || 0) + participantMoneyGain
+    wdb.money[jid] = addRpgMoney(wdb.money[jid], participantMoneyGain)
 
     const nLvl = Math.floor(yt.subs / 10000) + 1
 

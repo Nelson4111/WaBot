@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
@@ -218,7 +219,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       )
     }
 
-    wdb.money[m.sender] -= totalHarga
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalHarga)
     user.inventory[item] = (user.inventory[item] || 0) + jumlah
     saveDB(wdb)
 
@@ -288,7 +289,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
           if (user[entry.source][entry.item] <= 0) delete user[entry.source][entry.item]
         }
       }
-      wdb.money[m.sender] = (wdb.money[m.sender] || 0) + pending.total
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], pending.total)
       delete user.pendingPabrikSell
       saveDB(wdb)
       return m.reply(
@@ -365,7 +366,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       )
 
       totalHasil = scaleDifficultyIncome(user, totalHasil)
-      wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalHasil
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totalHasil)
       saveDB(wdb)
 
       return m.reply(
@@ -504,7 +505,7 @@ if (amount === 'all') {
     }
 
     hasil = scaleDifficultyIncome(user, hasil)
-    wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
     saveDB(wdb)
 
     return m.reply(

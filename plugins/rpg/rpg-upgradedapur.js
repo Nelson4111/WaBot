@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
@@ -13,7 +14,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   let userMoney = wdb.money[m.sender] || 0
   if(userMoney < harga) return m.reply(`❌ Uang kurang! Upgrade ke slot ${user.dapur.slot + 1} butuh Rp ${harga.toLocaleString()}`)
 
-  wdb.money[m.sender] -= harga
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], harga)
   user.dapur.slot += 1
   saveDB(wdb)
 

@@ -1,6 +1,6 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { cancelPendingFitnahTimer, resolvePendingFitnah } from '../../lib/fitnahHelper.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { compareRpgMoney, normalizeRpgMoney, parseRpgMoneyAmount, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 function resolveJid(jid) {
   if (!jid) return jid
@@ -11,7 +11,7 @@ function resolveJid(jid) {
 }
 
 function formatMoney(amount) {
-  return Number(amount).toLocaleString('id-ID')
+  return normalizeRpgMoney(amount).toLocaleString('id-ID')
 }
 
 let handler = async (m, { args, usedPrefix, conn }) => {
@@ -31,14 +31,16 @@ let handler = async (m, { args, usedPrefix, conn }) => {
     return m.reply('⏳ Waktu bantah sudah habis; proses fitnah telah berjalan.')
   }
   const wdb = loadDB()
-  const balance = Number(wdb.money[target]) || 0
-  if (balance < amount) {
+  const balance = normalizeRpgMoney(wdb.money[target])
+  if (compareRpgMoney(balance, amount) < 0) {
     return m.reply(`❌ Uang tidak cukup.\n💰 Punya: Rp ${formatMoney(balance)}\n💸 Butuh: Rp ${formatMoney(amount)}`)
   }
 
-  wdb.money[target] = balance - amount
-  const wager = Number(pending.wager)
-  const chance = wager > 0 ? Math.min(1, amount / wager) : 1
+  wdb.money[target] = subtractRpgMoney(balance, amount)
+  const wager = normalizeRpgMoney(pending.wager)
+  const chance = compareRpgMoney(wager, 0) > 0
+    ? Math.min(1, Number((BigInt(amount) * 1_000_000_000n) / BigInt(wager)) / 1_000_000_000)
+    : 1
   const berhasil = Math.random() < chance
 
   if (berhasil) {

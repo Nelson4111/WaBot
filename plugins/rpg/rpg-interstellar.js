@@ -4,7 +4,13 @@ import {
   sendRpgRegistrationPrompt
 } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
-import { formatRpgMoney, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  compareRpgMoney,
+  formatRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import {
   INTERSTELLAR_ITEMS,
   INTERSTELLAR_PLANETS
@@ -225,10 +231,11 @@ if (mode === 'exchange' || mode === 'tukar') {
         )
       }
 
-      const wallet = Number(db.money[m.sender]) || 0
-      if (!Number.isInteger(pending.moneyAmount) || !Number.isInteger(pending.creditAmount) ||
-        pending.moneyAmount <= 0 || pending.creditAmount <= 0 ||
-        wallet < pending.moneyAmount) {
+      const wallet = normalizeRpgMoney(db.money[m.sender])
+      const moneyAmount = normalizeRpgMoney(pending.moneyAmount)
+      if (!Number.isSafeInteger(Number(pending.creditAmount)) || pending.creditAmount <= 0 ||
+        compareRpgMoney(moneyAmount, 0) <= 0 ||
+        compareRpgMoney(wallet, moneyAmount) < 0) {
         delete rpg.pendingStellarExchange
         await saveDB(db)
         return m.reply(
@@ -242,17 +249,17 @@ if (mode === 'exchange' || mode === 'tukar') {
       }
 
       delete rpg.pendingStellarExchange
-      db.money[m.sender] = wallet - pending.moneyAmount
+      db.money[m.sender] = subtractRpgMoney(wallet, moneyAmount)
       rpg.stellarCredit = (Number(rpg.stellarCredit) || 0) + pending.creditAmount
       await saveDB(db)
       return m.reply(
         `╭─❏「 💱 PERTUKARAN BERHASIL 」❏\n` +
         `│ 💠 STELLAR CREDIT EXCHANGE\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `💵 *Uang Saku Ditukar:* ${formatRpgMoney(pending.moneyAmount)}\n` +
+        `💵 *Uang Saku Ditukar:* ${formatRpgMoney(moneyAmount)}\n` +
         `💠 *Stellar Credit Didapat:* +${pending.creditAmount.toLocaleString()} SC\n\n` +
         `─━━━━━━━━━━━━━━─\n` +
-        `💰 *Sisa Uang Saku:* ${formatRpgMoney(wallet - pending.moneyAmount)}\n` +
+        `💰 *Sisa Uang Saku:* ${formatRpgMoney(subtractRpgMoney(wallet, moneyAmount))}\n` +
         `💠 *Saldo Stellar Credit:* ${rpg.stellarCredit.toLocaleString()} SC`
       )
     }
@@ -276,10 +283,14 @@ if (mode === 'exchange' || mode === 'tukar') {
     }
 
     const amountInput = args[0]
-    const wallet = Number(db.money[m.sender]) || 0
+    const wallet = normalizeRpgMoney(db.money[m.sender])
     let requestedAmount
     if (String(amountInput || '').toLowerCase() === 'all') {
-      requestedAmount = Math.floor(wallet / STELLAR_EXCHANGE_RATE) * STELLAR_EXCHANGE_RATE
+      const creditAmount = BigInt(wallet) / BigInt(STELLAR_EXCHANGE_RATE)
+      if (creditAmount > BigInt(Number.MAX_SAFE_INTEGER)) {
+        return m.reply('❌ Saldo terlalu besar untuk dikonversi dengan aman. Tukarkan jumlah yang lebih kecil.')
+      }
+      requestedAmount = creditAmount * BigInt(STELLAR_EXCHANGE_RATE)
     } else {
       requestedAmount = parseRpgMoneyAmount(amountInput)
       if (requestedAmount === null) {
@@ -296,7 +307,7 @@ if (mode === 'exchange' || mode === 'tukar') {
           `> ↳ Setiap 500T uang saku menjadi 1 Stellar Credit.`
         )
       }
-      if (requestedAmount > wallet) {
+      if (compareRpgMoney(requestedAmount, wallet) > 0) {
         return m.reply(
           `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
           `│ 💰 Uang saku tidak mencukupi untuk pertukaran.\n` +
@@ -306,9 +317,13 @@ if (mode === 'exchange' || mode === 'tukar') {
       }
     }
 
-    const creditAmount = Math.floor(requestedAmount / STELLAR_EXCHANGE_RATE)
-    const moneyAmount = creditAmount * STELLAR_EXCHANGE_RATE
-    if (!Number.isInteger(moneyAmount) || !Number.isInteger(creditAmount) || creditAmount < 1) {
+    const creditAmountBigInt = BigInt(requestedAmount) / BigInt(STELLAR_EXCHANGE_RATE)
+    if (creditAmountBigInt > BigInt(Number.MAX_SAFE_INTEGER)) {
+      return m.reply('❌ Nominal pertukaran terlalu besar. Gunakan jumlah yang lebih kecil.')
+    }
+    const creditAmount = Number(creditAmountBigInt)
+    const moneyAmount = creditAmountBigInt * BigInt(STELLAR_EXCHANGE_RATE)
+    if (creditAmount < 1) {
       return m.reply(
         `╭─❏「 ❌ NOMINAL TIDAK VALID 」❏\n` +
         `│ 💱 Nominal pertukaran belum memenuhi batas minimum.\n` +
@@ -333,7 +348,7 @@ if (mode === 'exchange' || mode === 'tukar') {
         `💵 *Uang Saku Ditukar:* ${formatRpgMoney(moneyAmount)}\n` +
         `💠 *Stellar Credit Diterima:* ${creditAmount.toLocaleString()} SC\n` +
         `💱 *Nilai Tukar:* ${formatRpgMoney(STELLAR_EXCHANGE_RATE)} = 1 SC\n` +
-        `💰 *Sisa Uang Saku:* ${formatRpgMoney(wallet - moneyAmount)}\n\n` +
+        `💰 *Sisa Uang Saku:* ${formatRpgMoney(subtractRpgMoney(wallet, moneyAmount))}\n\n` +
         `─━━━━━━━━━━━━━━─\n` +
         `📌 *INFORMASI*\n` +
         `> ↳ Saldo bank tidak ikut ditukar.\n` +

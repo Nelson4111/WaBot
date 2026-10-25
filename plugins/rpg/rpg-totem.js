@@ -1,3 +1,4 @@
+import { addRpgMoney, compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
@@ -110,11 +111,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         await saveDB(wdb)
         return reply('Kamu sudah memiliki totem ini.')
       }
-      if ((Number(wdb.money[m.sender]) || 0) < totem.price) {
+      if (compareRpgMoney(wdb.money[m.sender], totem.price) < 0) {
         await saveDB(wdb)
         return reply(`Saldo tidak cukup. Harga totem ini ${money(totem.price)}.`)
       }
-      wdb.money[m.sender] -= totem.price
+      wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totem.price)
       user.totems.push(totem.id)
       await saveDB(wdb)
       return reply(`✅ Berhasil membeli *${totem.name}* seharga ${money(totem.price)}.`)
@@ -252,7 +253,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const totem = findRpgTotem(args.slice(1).join(' '))
     if (!totem) return reply(`Totem tidak ditemukan. Lihat *${usedPrefix}totem shop all*.`)
     if (user.totems.includes(totem.id)) return reply('Kamu sudah memiliki totem ini.')
-    if ((Number(wdb.money[m.sender]) || 0) < totem.price) {
+    if (compareRpgMoney(wdb.money[m.sender], totem.price) < 0) {
       return reply(`Saldo tidak cukup. Harga *${totem.name}* adalah ${money(totem.price)}.`)
     }
     wdb.data.totemConfirmations[confirmationKey] = {

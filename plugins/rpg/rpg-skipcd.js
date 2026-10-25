@@ -1,6 +1,7 @@
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import {
   clearSkipCooldownEntries,
   getSkipCooldownEntries,
@@ -16,7 +17,7 @@ import {
 const CONFIRM_YES = new Set(['ya', 'yes', 'ok', 'confirm'])
 const CONFIRM_NO = new Set(['batal', 'no', 'tidak', 'cancel'])
 
-const formatMoney = amount => `Rp ${Number(amount).toLocaleString('id-ID')}`
+const formatMoney = amount => formatRpgMoney(amount)
 const formatSkipCooldownLimit = ({ count, resetAt }, now) => {
   const remainingMinutes = Math.max(1, Math.ceil((resetAt - now) / 60000))
   return `❌ Batas skipcd ${SKIPCD_HOURLY_LIMIT} kali per jam sudah tercapai. Coba lagi dalam ${remainingMinutes} menit.`
@@ -78,14 +79,14 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
     }
 
     const cost = Number(pending.cost) || 0
-    const balance = Number(db.money[m.sender]) || 0
-    if (balance < cost) {
+    const balance = normalizeRpgMoney(db.money[m.sender])
+    if (compareRpgMoney(balance, cost) < 0) {
       delete db.temp.skipcd[m.sender]
       await saveDB(db)
       return m.reply(`❌ Uang tidak cukup. Dibutuhkan ${formatMoney(cost)}, saldo kamu ${formatMoney(balance)}.`)
     }
 
-    db.money[m.sender] = balance - cost
+    db.money[m.sender] = subtractRpgMoney(balance, cost)
     db.temp.skipcdUsage[m.sender] = recordSkipCooldownUsage(db.temp.skipcdUsage[m.sender], now)
     clearSkipCooldownEntries(rpg, db, m.sender, currentEntries)
     delete db.temp.skipcd[m.sender]
@@ -95,7 +96,7 @@ const handler = async (m, { conn, text = '', usedPrefix = '.' }) => {
       `> ↳ Target: ${currentEntries.map(({ label }) => label).join(', ')}\n` +
       `> ↳ Biaya: ${formatMoney(cost)}\n` +
       `> ↳ Sisa kuota skipcd: ${SKIPCD_HOURLY_LIMIT - usage.count - 1}/${SKIPCD_HOURLY_LIMIT} kali per jam\n` +
-      `> ↳ Sisa saldo: ${formatMoney(Number(db.money[m.sender]) || 0)}`
+      `> ↳ Sisa saldo: ${formatMoney(db.money[m.sender])}`
     )
   }
 

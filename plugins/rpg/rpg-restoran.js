@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
@@ -259,7 +260,7 @@ const hargaBeli = { ...sharedHargaBeli }
       if(!dataKonfirmasi) return m.reply('❌ Tidak ada paket yang menunggu konfirmasi.')
       let dataPaket = paket[dataKonfirmasi.paket]
       if((wdb.money[m.sender] || 0) < dataKonfirmasi.harga) return m.reply(`❌ Uang tidak cukup!`)
-      wdb.money[m.sender] -= dataKonfirmasi.harga
+      wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], dataKonfirmasi.harga)
       let listDapat = []
       for(let item in dataPaket.isi){
         let jumlah = dataPaket.isi[item]
@@ -329,7 +330,7 @@ return m.reply(cap)
     let hargaSatuan = Math.floor(hargaBeli[item].harga * buyDiskon)
     let totalHarga = hargaSatuan * jumlah
     if((wdb.money[m.sender] || 0) < totalHarga) return m.reply(`❌ Uang tidak cukup! Butuh: Rp ${totalHarga.toLocaleString()}`)
-    wdb.money[m.sender] -= totalHarga
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalHarga)
     user.masakan[item] = (user.masakan[item] || 0) + jumlah
     saveDB(wdb)
 let cap = `╭─❏「 🛍️ TRANSAKSI SUKSES 」❏\n`
@@ -371,7 +372,7 @@ return m.reply(cap)
         user[entry.source][entry.item] -= entry.quantity
         if (user[entry.source][entry.item] <= 0) delete user[entry.source][entry.item]
       }
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], pending.total)
       delete user.pendingRestoranSell
       saveDB(wdb)
       return m.reply(
@@ -436,7 +437,7 @@ return m.reply(cap)
       }
       if(totalHasil === 0) return m.reply('❌ Dapur kosong!')
       totalHasil = scaleDifficultyIncome(user, totalHasil)
-      wdb.money[m.sender] += totalHasil; saveDB(wdb)
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totalHasil); saveDB(wdb)
       let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n│ Koki : ${m.pushName}\n╰─━━━━━━━━━━━━━━─\n\n📤 *${listJual.length} Masakan Disetor*\n\n💰 +Rp ${totalHasil.toLocaleString()}\n💵 Total: Rp ${wdb.money[m.sender].toLocaleString()}\n\n_“Terima kasih sudah memasak untuk pelanggan!”_`
       return m.reply(cap)
     }
@@ -492,7 +493,7 @@ if (amount === 'all') {
       user.inventory[item] -= jual; if(user.inventory[item] <= 0) delete user.inventory[item]
     }
     hasil = scaleDifficultyIncome(user, hasil)
-    wdb.money[m.sender] += hasil; saveDB(wdb)
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil); saveDB(wdb)
 let cap = `╭─❏「 💼 PENYETORAN KE RESTORAN 」❏\n`
 cap += `│ 🍽️ *Menu : ${display}*\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`

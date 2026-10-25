@@ -5,6 +5,7 @@ import { tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { areGuildJidsSame, findGuildByMember } from '../../lib/rpgGuild.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { addRpgMoney, divideRpgMoney, formatRpgMoney, maxRpgMoney, multiplyRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 global.warRequests = global.warRequests || {}
 
@@ -145,9 +146,9 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom, usedPrefi
   // PROSES PIHAK KALAH
   loser.members.forEach(jid => {
     let uang = enemyGuild.money || wdb.money[jid] || 0
-    let rampas = Math.floor(uang * 0.1)
-    if(!jid.startsWith('rand_')) wdb.money[jid] = Math.max(0, (wdb.money[jid] || 0) - rampas)
-    totalRampasan += rampas
+    let rampas = multiplyRpgMoney(uang, 0.1)
+    if(!jid.startsWith('rand_')) wdb.money[jid] = maxRpgMoney(0, subtractRpgMoney(wdb.money[jid] || 0, rampas))
+    totalRampasan = addRpgMoney(totalRampasan, rampas)
 
     let u = jid.startsWith('rand_')? {darah: 100} : wdb.users[jid]?.rpg
     if(u){
@@ -179,12 +180,12 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom, usedPrefi
   })
 
   // BAGI HADIAH
-  let hadiah = Math.floor(totalRampasan * 0.5)
+  let hadiah = multiplyRpgMoney(totalRampasan, 0.5)
   let expGuild = 500
 
   winner.members.forEach(jid => {
     if(!jid.startsWith('rand_')){
-      wdb.money[jid] = (wdb.money[jid] || 0) + Math.floor(hadiah / winner.members.length)
+      wdb.money[jid] = addRpgMoney(wdb.money[jid], divideRpgMoney(hadiah, winner.members.length))
     }
   })
 
@@ -202,7 +203,7 @@ async function executeWar(conn, m, wdb, myGuild, enemyGuild, isRandom, usedPrefi
   cap += `│ ⚔️ ${myGuild.name} [${myPower}] vs [${enemyPower}] ${enemyGuild.name}\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
   cap += `🏆 *Pemenang:* ${winner.name}\n`
-  cap += `💰 *Rampasan:* Rp ${totalRampasan.toLocaleString()}\n`
+  cap += `💰 *Rampasan:* ${formatRpgMoney(totalRampasan)}\n`
   cap += `✨ *Exp Guild:* +${expGuild} / +${Math.floor(expGuild/2)}\n`
   cap += `💀 *Korban Gugur:* ${gugur} orang\n`
 

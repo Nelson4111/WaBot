@@ -1,7 +1,10 @@
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { parseRpgMoneyAmount,
+  addRpgMoney,
+  normalizeRpgMoney,
+  subtractRpgMoney} from '../../lib/rpgMoney.js'
 import guildMissionHandler from './rpg-misiguild.js'
 import guildWarHandler from './rpg-guildwar.js'
 import guildJoinHandler from './rpg-joinguild.js'
@@ -62,12 +65,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const resourceNames = { money: 'Money', iron: 'Iron', gold: 'Gold', stone: 'Stone', diamond: 'Diamond', gemstone: 'Gemstone' }
   const normalizeResource = value => ({ uang: 'money' }[String(value || '').toLowerCase()] || String(value || '').toLowerCase())
   const readResource = (jid, rpg, item) => item === 'money'
-    ? Number(wdb.money[jid]) || 0
+    ? normalizeRpgMoney(wdb.money[jid])
     : item === 'gemstone'
       ? Number(rpg.inventory?.gemstone) || 0
       : Number(rpg[item]) || 0
   const changeResource = (jid, rpg, item, amount) => {
-    if (item === 'money') wdb.money[jid] = (Number(wdb.money[jid]) || 0) + amount
+    if (item === 'money') wdb.money[jid] = addRpgMoney(wdb.money[jid], amount)
     else if (item === 'gemstone') {
       rpg.inventory = rpg.inventory || {}
       rpg.inventory.gemstone = (Number(rpg.inventory.gemstone) || 0) + amount
@@ -722,7 +725,7 @@ if (action === 'create') {
         `─━━━━━━━━━━━━━━─`
     )
 
-    wdb.money[m.sender] -= price
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], price)
     wdb.guilds[name] = {
       name: name, leader: m.sender, members: [m.sender],
       contribution: { [m.sender]: 0 }, level: 1, exp: 0, lastMission: 0, warCooldown: 0,
@@ -769,9 +772,9 @@ if (action === 'donate') {
         `─━━━━━━━━━━━━━━─`
     )
 
-    wdb.money[m.sender] -= total
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], total)
     myGuild.members.forEach(jid => {
-      wdb.money[jid] = (wdb.money[jid] || 0) + jumlah
+      wdb.money[jid] = addRpgMoney(wdb.money[jid], jumlah)
     })
     saveDB(wdb)
 

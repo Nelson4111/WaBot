@@ -5,7 +5,14 @@ import { isAfk } from '../../lib/afkHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { markPatrolRelease, recordEscapeCrime } from '../../lib/crimeHelper.js'
 import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+    addRpgMoney,
+    compareRpgMoney,
+    formatRpgMoney,
+    normalizeRpgMoney,
+    parseRpgMoneyAmount,
+    subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import { KIDNAP_ESCAPE_ATTEMPT_STORIES, KIDNAP_ESCAPE_STORIES } from '../../lib/rpgCrimeStories.js'
 import {
     dialogVisitNapi,
@@ -1400,13 +1407,13 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
                 if (jid === resolveJid(m.sender)) continue
                 if (!isDiPenjara(jid)) continue
                 const rpg = getRPG(jid)
-                if (rpg && rpg.penjara && Number(rpg.tebusan) > 0) {
+                if (rpg && rpg.penjara && compareRpgMoney(rpg.tebusan, 0) > 0) {
                     const remaining = sisaTungguTebus(rpg)
                     if (remaining > 0) {
                         waiting.push(remaining)
                         continue
                     }
-                    total += Number(rpg.tebusan)
+                    total = addRpgMoney(total, rpg.tebusan)
                     targets.push({ jid, rpg })
                 }
             }
@@ -1414,9 +1421,9 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
                 if (waiting.length) return m.reply(`❌ Tahanan baru bisa ditebus setelah 5 menit di penjara.\n⏳ Coba lagi dalam *${formatTime(Math.min(...waiting))}*.`)
                 return m.reply('❌ Tidak ada orang lain di penjara')
             }
-            const uang = Number(wdb.money[m.sender]) || 0
-            if (uang < total) return m.reply(`❌ Uang tidak cukup.\n\n💰 Uang kamu : Rp ${uang.toLocaleString('id-ID')}\n💸 Dibutuhkan : Rp ${total.toLocaleString('id-ID')}`)
-            wdb.money[m.sender] = uang - total
+            const uang = normalizeRpgMoney(wdb.money[m.sender])
+            if (compareRpgMoney(uang, total) < 0) return m.reply(`❌ Uang tidak cukup.\n\n💰 Uang kamu : ${formatRpgMoney(uang)}\n💸 Dibutuhkan : ${formatRpgMoney(total)}`)
+            wdb.money[m.sender] = subtractRpgMoney(uang, total)
             const bebas = []
             for (const data of targets) {
                 markPatrolRelease(data.rpg)
@@ -1433,7 +1440,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
             wdb.penjara = wdb.penjara.filter(jid =>!targets.some(target => resolveJid(target.jid) === resolveJid(jid)))
             saveDB(wdb)
             const waitingInfo = waiting.length ? `\n│ 𖥔 ${waiting.length} tahanan belum 5 menit di penjara` : ''
-            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : Rp ${total.toLocaleString('id-ID')}\n│ 𖥔 Bebas : ${bebas.map(jid => `${playerLabel(jid)}`).join(', ')}${waitingInfo}\n╰ 𖥔 Berhasil${rehabilitationAdvice}`, m, { mentions: playerMentions(bebas) })
+            return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN MASSAL_* ]───✦\n╭ 𖥔 Total : ${bebas.length} orang\n│ 𖥔 Biaya : ${formatRpgMoney(total)}\n│ 𖥔 Bebas : ${bebas.map(jid => `${playerLabel(jid)}`).join(', ')}${waitingInfo}\n╰ 𖥔 Berhasil${rehabilitationAdvice}`, m, { mentions: playerMentions(bebas) })
         }
 
         let who = null
@@ -1480,11 +1487,11 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         const sisaTunggu = sisaTungguTebus(rpg)
         if (sisaTunggu > 0) return m.reply(`[ 🚔 ]───[ *_BELUM BISA DITEBUS_* ]───✦\n╭ 𖥔 Tahanan baru bisa ditebus setelah 5 menit di penjara\n╰ 𖥔 Tunggu *${formatTime(sisaTunggu)}* lagi`)
 
-        const tebusan = Number(rpg.tebusan) || 1000000
-        const uang = Number(wdb.money[m.sender]) || 0
-        if (uang < tebusan) return m.reply(`❌ Uang tidak cukup.\n\n💰 Uang kamu : Rp ${uang.toLocaleString('id-ID')}\n💸 Dibutuhkan : Rp ${tebusan.toLocaleString('id-ID')}`)
+        const tebusan = compareRpgMoney(rpg.tebusan, 0) > 0 ? normalizeRpgMoney(rpg.tebusan) : 1000000
+        const uang = normalizeRpgMoney(wdb.money[m.sender])
+        if (compareRpgMoney(uang, tebusan) < 0) return m.reply(`❌ Uang tidak cukup.\n\n💰 Uang kamu : ${formatRpgMoney(uang)}\n💸 Dibutuhkan : ${formatRpgMoney(tebusan)}`)
 
-        wdb.money[m.sender] = uang - tebusan
+        wdb.money[m.sender] = subtractRpgMoney(uang, tebusan)
         const selLama = rpg.sel || 0
         markPatrolRelease(rpg)
         recordPrisonRelease(who, 'ransom', m.sender)
@@ -1498,7 +1505,7 @@ if (command === 'penjara' && args[0]?.toLowerCase() === 'talk') {
         removeFromBreakouts(who)
         saveDB(wdb)
 
-        return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN_* ]───✦\n╭ 𖥔 Dari : ${playerLabel(m.sender)}\n│ 𖥔 Untuk : ${playerLabel(who)}\n│ 𖥔 Tebusan : Rp ${tebusan.toLocaleString('id-ID')}\n╰ 𖥔 Bebas dari SEL ${selLama}!${rehabilitationAdvice}`, m, { mentions: playerMentions([m.sender, who]) })
+        return conn.reply(m.chat, `[ 🚔 ]───[ *_PEMBEBASAN_* ]───✦\n╭ 𖥔 Dari : ${playerLabel(m.sender)}\n│ 𖥔 Untuk : ${playerLabel(who)}\n│ 𖥔 Tebusan : ${formatRpgMoney(tebusan)}\n╰ 𖥔 Bebas dari SEL ${selLama}!${rehabilitationAdvice}`, m, { mentions: playerMentions([m.sender, who]) })
     }
 
     /* =====================================================

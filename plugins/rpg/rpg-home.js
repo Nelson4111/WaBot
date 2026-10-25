@@ -36,11 +36,12 @@ import {
 import { getJakartaDate } from '../../lib/userLimit.js'
 import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { hargaBeli, masakanResep, normalizeMasakanKey, formatMasakanNama } from '../../lib/rpg-masakanData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { CHILD_NEGLECT } from '../../lib/rpgRshipData.js'
 
-const money = value => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`
+const money = value => formatRpgMoney(value)
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 const displayName = item => `${item.emoji} ${item.name}`
 const collectionItems = [...MALL_CATEGORIES.koleksi.items, ...AUCTION_ITEMS, ...BANK_SPECIAL_ITEMS]
@@ -204,8 +205,8 @@ let handler = async (m, { conn, text = '', usedPrefix, command, groupMetadata })
   if (!db.money) db.money = {}
 
   const rpg = account.rpg
-  const wallet = () => Number(db.money[sender]) || 0
-  const setWallet = value => { db.money[sender] = Math.max(0, Math.floor(value)) }
+  const wallet = () => normalizeRpgMoney(db.money[sender])
+  const setWallet = value => { db.money[sender] = compareRpgMoney(value, 0) < 0 ? 0 : normalizeRpgMoney(value) }
   const premium = isPremiumAccount(global.db?.data?.users?.[sender])
   const tokens = String(text || '').trim().split(/\s+/).filter(Boolean)
   const root = String(command || '').toLowerCase()
@@ -269,7 +270,7 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
         `─━━━━━━━━━━━━━━─`
       )
     }
-    setWallet(wallet() - cost)
+    setWallet(subtractRpgMoney(wallet(), cost))
     home.level = currentLevel + 1
     home.security = getHomeLevel(home.level).security
     await saveDB(db)
@@ -431,7 +432,7 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
         `─━━━━━━━━━━━━━━─`
       )
     }
-    setWallet(wallet() - price)
+    setWallet(subtractRpgMoney(wallet(), price))
     if (!record) {
       record = { name: staff.name, key: pending.staff, hiredAt: Date.now(), expiresAt: 0, paid: 0 }
       home.staff.push(record)
@@ -578,7 +579,7 @@ if (pending.type === 'renewAll') {
       `─━━━━━━━━━━━━━━─`
     )
   }
-  setWallet(wallet() - total)
+  setWallet(subtractRpgMoney(wallet(), total))
   for (const [key, staff] of active) {
     const record = getStaffRecord(home, staff.name)
     if (!record) continue
@@ -654,7 +655,7 @@ if (pending.type === 'hireAll') {
       `─━━━━━━━━━━━━━━─`
     )
   }
-  setWallet(wallet() - total)
+  setWallet(subtractRpgMoney(wallet(), total))
   for (const [key, staff] of missing) {
     const record = getStaffRecord(home, staff.name) || { name: staff.name, key, hiredAt: Date.now(), expiresAt: 0, paid: 0 }
     if (!home.staff.includes(record)) home.staff.push(record)

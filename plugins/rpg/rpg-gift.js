@@ -2,7 +2,7 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { changeTransferBalance, findTransferItems, getTransferBalance } from '../../lib/rpgTransfer.js'
-import { formatRpgMoney, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, parseRpgMoneyAmount, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -65,7 +65,9 @@ if (!item) return m.reply(`❌ Item *${itemInput}* tidak ditemukan di stok yang 
 const count = item.money
   ? parseRpgMoneyAmount(countInput)
   : /^\d+$/.test(countInput) ? Number(countInput) : null
-if (!Number.isFinite(count) || !Number.isInteger(count) || count <= 0) {
+if (item.money
+  ? count === null || compareRpgMoney(count, 0) <= 0
+  : !Number.isSafeInteger(count) || count <= 0) {
   return m.reply(item.money
     ? '❌ Jumlah uang tidak valid. Gunakan angka atau suffix seperti 1K atau 1.5M.'
     : '❌ Jumlah item harus berupa angka bulat positif.')
@@ -73,7 +75,7 @@ if (!Number.isFinite(count) || !Number.isInteger(count) || count <= 0) {
 
 // CEK STOK & KIRIM
 if (item.money) {
-  if ((wdb.money[m.sender] || 0) < count) {
+  if (compareRpgMoney(wdb.money[m.sender] || 0, count) < 0) {
     return m.reply(
       `╭─❏「 ❌ GIFT SYSTEM 」❏\n` +
       `│ 💰 Uangmu tidak cukup!\n` +
@@ -81,8 +83,8 @@ if (item.money) {
     )
   }
 
-  wdb.money[m.sender] -= count
-  wdb.money[who] = (wdb.money[who] || 0) + count
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender] || 0, count)
+  wdb.money[who] = addRpgMoney(wdb.money[who] || 0, count)
 } else {
   if (getTransferBalance(wdb.users[m.sender].rpg, item, wdb.users[m.sender]) < count) {
     return m.reply(

@@ -3,7 +3,14 @@ import { resolvePendingFitnah, restorePendingFitnahTimers, schedulePendingFitnah
 import { adjustCrimeSuccessChance, applyProtectedCrimeAttemptPenalty, getCrimeRestriction, isProtectedCrimeTarget, scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { sendRpgHealPrompt } from '../../lib/rpgActionButtons.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  compareRpgMoney,
+  divideRpgMoney,
+  formatRpgNumber,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 
 /* =========================================================
    KONFIGURASI
@@ -95,7 +102,7 @@ function randomStory() {
 }
 
 function formatMoney(n) {
-    return Number(n).toLocaleString('id-ID')
+    return formatRpgNumber(n)
 }
 
 function formatTime(ms) {
@@ -217,15 +224,15 @@ Fitnah orang biar masuk penjara.
     if (uangTaruhan >= 100000000) {
         peluang = 1.0
         durasiPenjara = HIGH_DURATION // 5 jam
-        tebusan = Math.floor(uangTaruhan / 2)
+        tebusan = divideRpgMoney(uangTaruhan, 2)
     } else if (uangTaruhan >= 10000000) {
         peluang = 0.25
         durasiPenjara = MED_DURATION // 2 jam
-        tebusan = Math.floor(uangTaruhan / 2)
+        tebusan = divideRpgMoney(uangTaruhan, 2)
     } else if (uangTaruhan > 0) {
         peluang = 0.05
         durasiPenjara = DEFAULT_DURATION // 1 jam
-        tebusan = Math.floor(uangTaruhan / 2)
+        tebusan = divideRpgMoney(uangTaruhan, 2)
     } else {
         peluang = 0.01
         durasiPenjara = DEFAULT_DURATION // 1 jam
@@ -236,8 +243,8 @@ Fitnah orang biar masuk penjara.
        CEK UANG
     ===================================================== */
 
-    let uangSender = Number(wdb.money[sender]) || 0
-    if (uangSender < uangTaruhan) {
+    let uangSender = normalizeRpgMoney(wdb.money[sender])
+    if (compareRpgMoney(uangSender, uangTaruhan) < 0) {
         return m.reply(`❌ Uang tidak cukup.\n💰 Punya: Rp ${formatMoney(uangSender)}\n💸 Butuh: Rp ${formatMoney(uangTaruhan)}`)
     }
 
@@ -267,7 +274,7 @@ Fitnah orang biar masuk penjara.
     }
 
     wdb.fitnah[sender] = now
-    wdb.money[sender] = uangSender - uangTaruhan // potong modal dulu
+    wdb.money[sender] = subtractRpgMoney(uangSender, uangTaruhan)
     if (isProtectedCrimeTarget(who)) {
         applyProtectedCrimeAttemptPenalty(wdb, sender, who)
     }

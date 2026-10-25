@@ -8,6 +8,7 @@ import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
 import { getRpgCrimeStory } from '../../lib/rpgCrimeStories.js'
 import { sendRpgHealPrompt, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { addRpgMoney, compareRpgMoney, minRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, usedPrefix }) => {
     const wdb = loadDB()
@@ -66,8 +67,8 @@ let handler = async (m, { conn, usedPrefix }) => {
     if (!Array.isArray(target.riwayat)) target.riwayat = []
     if(target.kartuBeku) return m.reply('❌ Kartu bank target sedang beku')
 
-    let bankTarget = target.bank || 0
-    if (bankTarget < 50000) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
+    let bankTarget = normalizeRpgMoney(target.bank)
+    if (compareRpgMoney(bankTarget, 50000) < 0) return m.reply('❌ Bank target terlalu sedikit. Minimal Rp 50.000')
     if (!isProtectedCrimeTarget(who) && tryPremiumProtection(who, 'rampok', Date.now(), m.sender)) {
         userRPG.lastrob = Date.now()
         await saveDB(wdb)
@@ -117,10 +118,10 @@ let handler = async (m, { conn, usedPrefix }) => {
 
 // SUKSES
 let persen = 0.05 + (Math.random() * 0.25) // 5% - 30%
-let hasil = Math.min(bankTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, calculateBankRobberyLoss(bankTarget, persen, tier))))
+let hasil = minRpgMoney(bankTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, calculateBankRobberyLoss(bankTarget, persen, tier))))
 
-target.bank -= hasil
-userRPG.bank = (userRPG.bank || 0) + hasil
+target.bank = subtractRpgMoney(target.bank, hasil)
+userRPG.bank = addRpgMoney(userRPG.bank || 0, hasil)
 
 wdb.crime[m.sender].rampok = (Number(wdb.crime[m.sender].rampok) || 0) + 1
 wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])

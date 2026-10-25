@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.js'
@@ -77,7 +78,7 @@ if (user[choice] && user[choice] > 0) {
   for (const material of ['iron', 'wood', 'stone', 'gold']) {
     if (item[material]) consumeMaterial(user, material, item[material])
   }
-  wdb.money[m.sender] -= item.money
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], item.money)
   user[choice] = 1
 
   saveDB(wdb)

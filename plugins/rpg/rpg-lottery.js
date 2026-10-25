@@ -2,7 +2,14 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { addUserLimit, setUserLimit, syncUserLimit } from '../../lib/userLimit.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 
 const LOTTERY_TICKET_PRICE = 10000
 const LOTTERY_PRIZE = 500000
@@ -24,7 +31,7 @@ function todayKey() {
 }
 
 function money(value) {
-  return `Rp ${(Number(value) || 0).toLocaleString()}`
+  return formatRpgMoney(value)
 }
 
 function totalTicketsAcrossUsers(users) {
@@ -101,12 +108,12 @@ async function finishGiveaway(conn, chat, state, giveaway) {
   const creator = wdb.users[giveaway.creator]
 
   if (winner && giveaway.rewardType === 'money') {
-    wdb.money[winner] = Number(wdb.money[winner] || 0) + giveaway.amount
+    wdb.money[winner] = addRpgMoney(wdb.money[winner], giveaway.amount)
   } else if (winner && giveaway.rewardType === 'limit') {
     const winnerUser = wdb.users[winner] = wdb.users[winner] || {}
     addUserLimit(winnerUser, giveaway.amount)
   } else if (!winner && giveaway.rewardType === 'money') {
-    wdb.money[giveaway.creator] = Number(wdb.money[giveaway.creator] || 0) + giveaway.amount
+    wdb.money[giveaway.creator] = addRpgMoney(wdb.money[giveaway.creator], giveaway.amount)
   } else if (!winner && giveaway.rewardType === 'limit' && creator) {
     addUserLimit(creator, giveaway.amount)
   }
@@ -404,14 +411,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         return m.reply(`Tidak ada pembelian yang menunggu konfirmasi. Buat pembelian baru lewat *${usedPrefix}lottery buy <jumlah>*.`)
       }
 
-      const saldoSaatIni = Number(wdb.money?.[sender] || 0)
-      if (saldoSaatIni < pendingPurchase.totalHarga) {
+      const saldoSaatIni = normalizeRpgMoney(wdb.money?.[sender])
+      if (compareRpgMoney(saldoSaatIni, pendingPurchase.totalHarga) < 0) {
         delete state.pendingPurchases[sender]
         await saveDB(wdb)
         return m.reply(`Saldo tidak cukup untuk konfirmasi. Pembelian dibatalkan.`)
       }
 
-      wdb.money[sender] = saldoSaatIni - pendingPurchase.totalHarga
+      wdb.money[sender] = subtractRpgMoney(saldoSaatIni, pendingPurchase.totalHarga)
       state.pool[sender] = (Number(state.pool[sender]) || 0) + pendingPurchase.jumlah
       user.rpg.lottery.todayTickets = Number(user.rpg.lottery.todayTickets || 0) + pendingPurchase.jumlah
       user.rpg.lottery.totalAttempts = Number(user.rpg.lottery.totalAttempts || 0) + 1
@@ -444,9 +451,9 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 }
 
 const totalHarga = jumlah * LOTTERY_TICKET_PRICE
-const saldo = Number(wdb.money?.[sender] || 0)
+const saldo = normalizeRpgMoney(wdb.money?.[sender])
 
-if (saldo < totalHarga) {
+if (compareRpgMoney(saldo, totalHarga) < 0) {
   return m.reply(
     `╭─❏「 ❌ LOTTERY 」❏\n` +
     `│ ❌ *Saldo kamu tidak cukup.*\n` +
@@ -489,8 +496,8 @@ if (saldo < totalHarga) {
       )
     }
 
-    const hadiah = Number(state.pendingPrize || LOTTERY_PRIZE)
-    wdb.money[sender] = (Number(wdb.money?.[sender] || 0)) + hadiah
+    const hadiah = normalizeRpgMoney(state.pendingPrize || LOTTERY_PRIZE)
+    wdb.money[sender] = addRpgMoney(wdb.money?.[sender], hadiah)
 
     state.pendingWinner = null
     state.pendingWinnerDate = ''
@@ -562,9 +569,9 @@ if (saldo < totalHarga) {
       if (giveawayState.draft.creator !== sender) return m.reply('Hanya pembuat giveaway yang bisa mengonfirmasi draft ini.')
       if (!duration) return m.reply(`Durasi tidak valid. Gunakan menit atau jam, maksimal 24 jam. Contoh: *${usedPrefix}giveaway konfirmasi 30m*.`)
       if (giveawayState.draft.rewardType === 'money') {
-        const balance = Number(wdb.money[sender] || 0)
-        if (balance < giveawayState.draft.amount) return m.reply(`Saldo tidak cukup. Hadiah membutuhkan ${money(giveawayState.draft.amount)}, saldomu ${money(balance)}.`)
-        wdb.money[sender] = balance - giveawayState.draft.amount
+        const balance = normalizeRpgMoney(wdb.money[sender])
+        if (compareRpgMoney(balance, giveawayState.draft.amount) < 0) return m.reply(`Saldo tidak cukup. Hadiah membutuhkan ${money(giveawayState.draft.amount)}, saldomu ${money(balance)}.`)
+        wdb.money[sender] = subtractRpgMoney(balance, giveawayState.draft.amount)
       } else if (giveawayState.draft.rewardType === 'limit') {
         const creator = wdb.users[sender]
         if (creator) syncUserLimit(creator)

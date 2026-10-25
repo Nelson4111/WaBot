@@ -4,7 +4,16 @@ import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS, getAuctionItemRarity } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
-import { formatRpgMoney as money, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney as money,
+  getRpgMoneySuffixGuide,
+  maxRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 
 const AUCTION_DURATION = 5 * 60 * 60 * 1000
 const AUCTION_ITEM_LIMIT = 5
@@ -13,7 +22,7 @@ const AUCTION_HISTORY_LIMIT = 50
 const AUCTION_NEWS_LIMIT = 10
 const AUCTION_IMAGE = 'https://c.termai.cc/i101/cR27.webp'
 const isValidAuctionAmount = amount =>
-  Number.isFinite(Number(amount)) && Number.isInteger(Number(amount)) && Number(amount) > 0
+  compareRpgMoney(normalizeRpgMoney(amount), 0) > 0
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 let auctionTimer
 
@@ -76,7 +85,7 @@ function getAuctionBids(db, session, itemId) {
     if (!bid?.jid || !isValidAuctionAmount(bid.amount)) continue
     const jid = normalizeJid(bid.jid)
     const current = byJid.get(jid)
-    if (!current || Number(bid.amount) > Number(current.amount)) byJid.set(jid, { ...bid, jid })
+    if (!current || compareRpgMoney(bid.amount, current.amount) > 0) byJid.set(jid, { ...bid, amount: normalizeRpgMoney(bid.amount), jid })
   }
   for (const [userJid, user] of Object.entries(db.data.users || {})) {
     const bid = user?.rpg?.auctionBids?.[itemId]
@@ -86,15 +95,15 @@ function getAuctionBids(db, session, itemId) {
     const current = byJid.get(jid)
     const snapshotBid = {
       jid,
-      amount: Number(bid.amount),
+      amount: normalizeRpgMoney(bid.amount),
       at: Number(bid.at) || 0,
       escrowed: bid.escrowed === true,
       historyRecorded: bid.historyRecorded === true,
       chatId: bid.chatId
     }
     if (!current ||
-      snapshotBid.amount > Number(current.amount) ||
-      (snapshotBid.amount === Number(current.amount) &&
+      compareRpgMoney(snapshotBid.amount, current.amount) > 0 ||
+      (compareRpgMoney(snapshotBid.amount, current.amount) === 0 &&
         ((snapshotBid.escrowed && !current.escrowed) || (snapshotBid.chatId && !current.chatId)))) {
       byJid.set(jid, snapshotBid)
     }
@@ -105,12 +114,12 @@ function getAuctionBids(db, session, itemId) {
 function getHighestBid(db, session, itemId) {
   const bids = getAuctionBids(db, session, itemId)
   return bids.reduce((highest, bid) =>
-    !highest || Number(bid?.amount) > Number(highest?.amount) ? bid : highest, null
+    !highest || compareRpgMoney(bid?.amount, highest?.amount) > 0 ? bid : highest, null
   )
 }
 
 function getVisibleHighestBid(db, session, item) {
-  return getHighestBid(db, session, item.id) || { amount: Number(item.price), jid: null }
+  return getHighestBid(db, session, item.id) || { amount: normalizeRpgMoney(item.price), jid: null }
 }
 
 function getAuctionBidderName(db, jid) {
@@ -149,13 +158,13 @@ function getActiveUserBid(db, session, itemId, jids, rpg) {
     const accountJid = normalizedJids.values().next().value
     matchingBids.push({
       jid: normalizeJid(accountJid || accountBid.jid),
-      amount: Number(accountBid.amount),
+      amount: normalizeRpgMoney(accountBid.amount),
       at: Number(accountBid.at) || 0,
       escrowed: accountBid.escrowed === true
     })
   }
   return matchingBids.reduce((highest, bid) =>
-    !highest || Number(bid.amount) > Number(highest?.amount) ? bid : highest, null)
+    !highest || compareRpgMoney(bid.amount, highest?.amount) > 0 ? bid : highest, null)
 }
 
 function isAuctionUser(bidJid, userJids) {
@@ -180,7 +189,7 @@ function restoreAuctionBids(db, session) {
       const existingIndex = bids.findIndex(entry => normalizeJid(entry?.jid) === jid)
       const restoredBid = {
         jid,
-        amount: Number(bid.amount),
+        amount: normalizeRpgMoney(bid.amount),
         at: Number(bid.at) || 0,
         escrowed: bid.escrowed === true,
         historyRecorded: bid.historyRecorded === true,
@@ -227,7 +236,7 @@ function recoverAuctionSession(db, previousSession, now) {
       if (!Array.isArray(session.bids[itemId])) session.bids[itemId] = []
       session.bids[itemId].push({
         jid: normalizeJid(userJid),
-        amount: Number(bid.amount),
+        amount: normalizeRpgMoney(bid.amount),
         at: Number(bid.at) || 0,
         escrowed: bid.escrowed === true,
         historyRecorded: bid.historyRecorded === true,
@@ -263,7 +272,7 @@ function settleOrphanedAuctionBids(db, now) {
       if (!Array.isArray(session.bids[itemId])) session.bids[itemId] = []
       session.bids[itemId].push({
         jid: normalizeJid(userJid),
-        amount: Number(bid.amount),
+        amount: normalizeRpgMoney(bid.amount),
         at: Number(bid.at) || 0,
         escrowed: bid.escrowed === true,
         historyRecorded: bid.historyRecorded === true,
@@ -301,7 +310,7 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
       if (!bid?.jid || !isValidAuctionAmount(bid.amount)) continue
       const jid = normalizeJid(bid.jid)
       const previous = bestBidByUser.get(jid)
-      if (!previous || Number(bid.amount) > Number(previous.amount)) {
+      if (!previous || compareRpgMoney(bid.amount, previous.amount) > 0) {
         bestBidByUser.set(jid, { ...bid, jid })
       }
     }
@@ -316,15 +325,15 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
     }
 
     const candidates = [...bestBidByUser.values()].sort((a, b) =>
-      Number(b.amount) - Number(a.amount) || Number(a.at) - Number(b.at)
+      compareRpgMoney(b.amount, a.amount) || Number(a.at) - Number(b.at)
     )
 
     let winner = null
     for (const bid of candidates) {
       const account = getUserRPG(db, bid.jid)
       if (!account?.rpg) continue
-      const balance = Number(account.rpg.bank) || 0
-      if (!bid.escrowed && balance < bid.amount) continue
+      const balance = normalizeRpgMoney(account.rpg.bank)
+      if (!bid.escrowed && compareRpgMoney(balance, bid.amount) < 0) continue
       winner = { bid, account }
       break
     }
@@ -334,7 +343,7 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
       if (!bid.escrowed) continue
       const account = getUserRPG(db, bidderJid)
       if (account?.rpg) {
-        account.rpg.bank = (Number(account.rpg.bank) || 0) + Number(bid.amount)
+        account.rpg.bank = addRpgMoney(account.rpg.bank, bid.amount)
         if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
         account.rpg.riwayat.unshift(`+${money(bid.amount)} Pengembalian bid ${item.name}`)
         account.rpg.riwayat.length = Math.min(account.rpg.riwayat.length, 20)
@@ -345,7 +354,7 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
 
     const { bid, account } = winner
     if (!bid.escrowed) {
-      account.rpg.bank = (Number(account.rpg.bank) || 0) - Number(bid.amount)
+      account.rpg.bank = subtractRpgMoney(account.rpg.bank, bid.amount)
       if (!Array.isArray(account.rpg.riwayat)) account.rpg.riwayat = []
       account.rpg.riwayat.unshift(`-${money(bid.amount)} Bid lelang ${item.name}`)
     }
@@ -738,7 +747,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `${myBids.length ? myBids.map(({ item, index, bid }) => {
         const highest = getVisibleHighestBid(db, session, item)
-        const leading = highest && Number(highest.amount) === Number(bid.amount) &&
+        const leading = highest && compareRpgMoney(highest.amount, bid.amount) === 0 &&
           isAuctionUser(highest.jid, userJids)
         const leaderName = highest.jid ? getAuctionBidderName(db, highest.jid) : getAuctionRivalName(session, item.id)
         return `╭─❏「 ${item.emoji} BID ${index + 1} 」❏\n` +
@@ -863,8 +872,8 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 > ↳ Ajukan bid baru pada sesi lelang aktif.`)
       }
       const highest = getHighestBid(db, session, item.id)
-      const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
-      if (pending.amount <= currentFloor) {
+      const currentFloor = maxRpgMoney(item.price, highest?.amount || 0)
+      if (compareRpgMoney(pending.amount, currentFloor) <= 0) {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply(
@@ -872,7 +881,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
           `│ 📈 BID TERTINGGI DIPERBARUI\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
           `> ↳ Bid tertinggi sudah berubah.\n` +
-          `> ↳ Bid minimum sekarang: *${money(currentFloor + 1)}*.\n\n` +
+          `> ↳ Bid minimum sekarang: *${money(addRpgMoney(currentFloor, 1))}*.\n\n` +
           `> ↳ Ajukan bid baru melalui *${prefix}ah bid ${item.id}*.\n` +
           `─━━━━━━━━━━━━━━─`
         )
@@ -892,12 +901,12 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 
 > ↳ Kartu bank sedang beku.
 > ↳ Lunasi tagihan bulanan sebelum melakukan penawaran.`)
-      const balance = Number(rpg.bank) || 0
+      const balance = normalizeRpgMoney(rpg.bank)
       const existingBids = Array.isArray(session.bids[item.id]) ? session.bids[item.id] : []
       const previousHeldAmount = getAuctionBids(db, session, item.id)
         .filter(bid => normalizeJid(bid?.jid) === jid && bid?.escrowed)
-        .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
-      if (balance + previousHeldAmount < pending.amount) {
+        .reduce((sum, bid) => addRpgMoney(sum, normalizeRpgMoney(bid.amount)), 0)
+      if (compareRpgMoney(addRpgMoney(balance, previousHeldAmount), pending.amount) < 0) {
         for (const userJid of userJids) delete session.pendingConfirmations[userJid]
         await persistAuctionDB()
         return m.reply(
@@ -910,9 +919,9 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
         )
       }
 
-      rpg.bank = balance + previousHeldAmount - pending.amount
+      rpg.bank = subtractRpgMoney(addRpgMoney(balance, previousHeldAmount), pending.amount)
       if (!Array.isArray(rpg.riwayat)) rpg.riwayat = []
-      if (previousHeldAmount > 0) {
+      if (compareRpgMoney(previousHeldAmount, 0) > 0) {
         rpg.riwayat.unshift(`+${money(previousHeldAmount)} Pengembalian bid sebelumnya ${item.name}`)
       }
       rpg.riwayat.unshift(`-${money(pending.amount)} Bid lelang ${item.name}`)
@@ -991,23 +1000,23 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
 > ↳ Lunasi tagihan bulanan sebelum melakukan penawaran.`)
 
     const highest = getHighestBid(db, session, item.id)
-    const currentFloor = Math.max(Number(item.price), Number(highest?.amount) || 0)
-    if (amount === null) amount = currentFloor + 500_000
-    if (!isValidAuctionAmount(amount) || amount <= currentFloor) {
+    const currentFloor = maxRpgMoney(item.price, highest?.amount || 0)
+    if (amount === null) amount = addRpgMoney(currentFloor, 500_000)
+    if (!isValidAuctionAmount(amount) || compareRpgMoney(amount, currentFloor) <= 0) {
       return m.reply(
         `╭─❏「 ❌ BID TIDAK VALID 」❏\n` +
         `│ 💰 SYARAT PENAWARAN\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Bid harus lebih tinggi dari bid tertinggi.\n` +
-        `> ↳ Bid minimum saat ini: *${money(currentFloor + 1)}*.\n` +
+        `> ↳ Bid minimum saat ini: *${money(addRpgMoney(currentFloor, 1))}*.\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
-    const balance = Number(rpg.bank) || 0
+    const balance = normalizeRpgMoney(rpg.bank)
     const heldAmount = getAuctionBids(db, session, item.id)
       .filter(bid => normalizeJid(bid?.jid) === jid && bid?.escrowed)
-      .reduce((sum, bid) => sum + (Number(bid.amount) || 0), 0)
-    if (balance + heldAmount < amount) {
+      .reduce((sum, bid) => addRpgMoney(sum, normalizeRpgMoney(bid.amount)), 0)
+    if (compareRpgMoney(addRpgMoney(balance, heldAmount), amount) < 0) {
       return m.reply(
         `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
         `│ 💳 PEMBAYARAN BID\n` +

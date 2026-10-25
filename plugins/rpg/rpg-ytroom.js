@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
@@ -272,7 +273,7 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
       return m.reply(`❌ Uang tidak cukup. Buth: Rp ${cost.toLocaleString()}.`)
     }
 
-    wdb.money[m.sender] -= cost
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], cost)
     y.roomLevel = next
     y.level = Math.max(y.level, next + 1)
     y.income = (y.income || 0) + Math.floor(cost * 0.08)

@@ -1,3 +1,4 @@
+import { addRpgMoney, maxRpgMoney, minRpgMoney, multiplyRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
@@ -113,12 +114,12 @@ let handler = async (m, { conn, usedPrefix }) => {
     userRPG.gagalCopet = (userRPG.gagalCopet || 0) + 1
     let denda = protectedCrimeTarget
       ? applyProtectedCrimeAttemptPenalty(wdb, m.sender, who)
-      : Math.max(1000, Math.floor((wdb.money[m.sender] || 0) * 0.05))
+      : maxRpgMoney(1000, multiplyRpgMoney(wdb.money[m.sender] || 0, 0.05))
 
     if (denda > 0) {
       if (!protectedCrimeTarget) {
-        wdb.money[m.sender] -= denda
-        wdb.money[who] += denda
+        wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], denda)
+        wdb.money[who] = addRpgMoney(wdb.money[who], denda)
       }
     }
 
@@ -178,10 +179,10 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   // SUKSES
   userRPG.gagalCopet = 0
-  let hasil = Math.min(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.floor(Math.random() * 5000) + 1000)))
+  let hasil = minRpgMoney(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.floor(Math.random() * 5000) + 1000)))
 
-  wdb.money[who] -= hasil
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
+  wdb.money[who] = subtractRpgMoney(wdb.money[who], hasil)
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
 
   wdb.crime[m.sender].copet = (Number(wdb.crime[m.sender].copet) || 0) + 1
   wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])

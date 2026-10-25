@@ -1,3 +1,4 @@
+import { addRpgMoney, compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import {
@@ -299,11 +300,11 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       const total = Number(pending.total)
       if (!bait || !Number.isSafeInteger(amount) || amount < 1 ||
         !Number.isSafeInteger(total) || total !== bait.price * amount ||
-        (Number(wdb.money[m.sender]) || 0) < total) {
+        compareRpgMoney(wdb.money[m.sender], total) < 0) {
         await saveDB(wdb)
         return m.reply('❌ Saldo atau data pembelian berubah. Ulangi pembelian umpan.')
       }
-      wdb.money[m.sender] -= total
+      wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], total)
       user.fishBaits[bait.id] = Math.max(0, Math.floor(Number(user.fishBaits[bait.id]) || 0)) + amount
       await saveDB(wdb)
       return m.reply(`✅ Berhasil membeli ${amount}x *${bait.name}* seharga Rp ${total.toLocaleString('id-ID')}.`)
@@ -325,7 +326,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       }
       const total = bait.price * amount
       if (!Number.isSafeInteger(total)) return m.reply('Total pembelian terlalu besar.')
-      if ((Number(wdb.money[m.sender]) || 0) < total) {
+      if (compareRpgMoney(wdb.money[m.sender], total) < 0) {
         return m.reply(`Saldo tidak cukup. Total pembelian: Rp ${total.toLocaleString('id-ID')}.`)
       }
       user.pendingBaitPurchase = {
@@ -482,7 +483,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       inventory[entry.item] -= entry.quantity
       if (inventory[entry.item] <= 0) delete inventory[entry.item]
     }
-    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], pending.total)
     delete user.pendingPasarSell
     saveDB(wdb)
     return m.reply(
@@ -720,7 +721,7 @@ if (amount === 'all') {
     if (itemStock[itemInput] <= 0) delete itemStock[itemInput]
   }
   hasil = scaleDifficultyIncome(user, hasil)
-  wdb.money[m.sender] += hasil
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
   saveDB(wdb)
 
   return m.reply(

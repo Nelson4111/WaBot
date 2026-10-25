@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
@@ -157,8 +158,8 @@ return conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 // SUKSES
 let hasil = Math.min(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.max(500, Math.floor(uangTarget * 0.1)))))
 
-wdb.money[who] -= hasil
-wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
+wdb.money[who] = subtractRpgMoney(wdb.money[who], hasil)
+wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
 
 wdb.crime[m.sender].begal = (Number(wdb.crime[m.sender].begal) || 0) + 1
 wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])

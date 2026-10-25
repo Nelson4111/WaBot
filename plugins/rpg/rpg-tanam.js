@@ -1,3 +1,4 @@
+import { addRpgMoney, formatRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
@@ -167,7 +168,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     for (const slot of slotKosong.slice(0, requestedCount)) {
       if (userMoney < hargaFinal) break
       user.ladang[slot] = { jenis, waktuTanam: Date.now(), waktuPanen: plantingDuration }
-      userMoney -= hargaFinal
+      userMoney = subtractRpgMoney(userMoney, hargaFinal)
       totalBiaya += hargaFinal
       count++
     }
@@ -187,8 +188,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}* ×${count}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Bibit yang sama kembali mengisi ladang.\n` +
-      `> ↳ Biaya: Rp ${totalBiaya.toLocaleString()}\n` +
-      `> ↳ Sisa saldo: Rp ${userMoney.toLocaleString()}\n\n` +
+      `> ↳ Biaya: ${formatRpgMoney(totalBiaya)}\n` +
+      `> ↳ Sisa saldo: ${formatRpgMoney(userMoney)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -199,7 +200,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     for (let slot of slotKosong) {
       if (userMoney >= hargaFinal) {
         user.ladang[slot] = { jenis: jenis, waktuTanam: Date.now(), waktuPanen: plantingDuration }
-        userMoney -= hargaFinal
+        userMoney = subtractRpgMoney(userMoney, hargaFinal)
         totalBiaya += hargaFinal
         count++
       } else break
@@ -218,8 +219,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `╭─❏「 🌱 TANAM MASSAL 」❏\n` +
       `│ ${info.emoji} *${formatNama(jenis).toUpperCase()}* x${count}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ 💸 Biaya : Rp ${totalBiaya.toLocaleString()}\n` +
-      `> ↳ 💰 Sisa : Rp ${userMoney.toLocaleString()}\n\n` +
+      `> ↳ 💸 Biaya : ${formatRpgMoney(totalBiaya)}\n` +
+      `> ↳ 💰 Sisa : ${formatRpgMoney(userMoney)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -239,7 +240,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     `╰─━━━━━━━━━━━━━━─`
   )
   
-  wdb.money[m.sender] -= hargaFinal
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], hargaFinal)
 user.ladang[slotPilih] = { jenis: jenis, waktuTanam: Date.now(), waktuPanen: plantingDuration }
 saveDB(wdb)
 
@@ -249,7 +250,7 @@ return safeReply(
   `╰─━━━━━━━━━━━━━━─\n\n` +
   `> ↳ 📍 Ladang : Slot ${slotPilih}\n` +
   `> ↳ 💸 Biaya : Rp ${hargaFinal.toLocaleString()}\n` +
-  `> ↳ 💰 Sisa : Rp ${wdb.money[m.sender].toLocaleString()}\n\n` +
+  `> ↳ 💰 Sisa : ${formatRpgMoney(wdb.money[m.sender])}\n\n` +
   `─━━━━━━━━━━━━━━─`
 )
 }

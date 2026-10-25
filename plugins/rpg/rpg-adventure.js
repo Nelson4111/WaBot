@@ -1,3 +1,4 @@
+import { addRpgMoney, multiplyRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { adjustAbilityDropChance, adjustDifficultyFailureChance, getDifficultyProfile, markDifficultyDeath, scaleDifficultyCooldown, scaleDifficultyDamage, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, reviveBloodline } from '../../lib/rpgCharacterData.js'
@@ -202,12 +203,12 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   user.wood = (user.wood || 0) + baseWood + Math.floor(pickLvl / 3)
   user.iron = (user.iron || 0) + baseIron + Math.floor(pickLvl / 4)
 
-  let money = Math.floor(scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)) * incomeBuff)
+  let money = multiplyRpgMoney(scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)), incomeBuff)
   totalExp = Math.floor(scaleDifficultyXP(user, totalExp) * xpBuff)
   totalExp = applyBloodlineBuff(user, 'xp', totalExp)
   addRpgExp(user, totalExp)
   user.adventureExp = (Number(user.adventureExp) || 0) + totalExp
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + money
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], money)
   user.darah -= darahKurang
   const revivedHP = user.darah <= 0 ? reviveBloodline(user, Number(user.maxDarah) || 100) : 0
   const deathProtected = user.darah <= 0 && !revivedHP && tryPremiumProtection(m.sender, 'death')

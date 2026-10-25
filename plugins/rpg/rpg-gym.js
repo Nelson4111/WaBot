@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { getDifficultyDeathHealCooldownRemaining, scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -112,7 +113,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     )
   }
 
-  wdb.money[m.sender] -= paket.harga
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], paket.harga)
   user.gymMembership.tier = pilihMember
   user.gymMembership.expired = Date.now() + (paket.hari * 86400000)
 
@@ -180,7 +181,7 @@ if (uang < biaya) {
 }
 
 if (biaya > 0) {
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
 }
 
 let hasilExp = Math.floor(

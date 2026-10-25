@@ -10,8 +10,9 @@ import {
   MALL_PREMIUM_DISCOUNT,
   MALL_PREMIUM_SELL_BONUS
 } from '../../lib/rpgMallData.js'
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
-const money = value => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`
+const money = value => formatRpgMoney(value)
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 const displayName = item => `${item.emoji} ${item.name}`
 const allItems = Object.entries(MALL_CATEGORIES).flatMap(([category, data]) =>
@@ -58,8 +59,8 @@ let handler = async (m, { conn, text = '', usedPrefix, command }) => {
   if (!db.money) db.money = {}
 
   const rpg = account.rpg
-  const wallet = () => Number(db.money[sender]) || 0
-  const setWallet = value => { db.money[sender] = Math.max(0, Math.floor(value)) }
+  const wallet = () => normalizeRpgMoney(db.money[sender])
+  const setWallet = value => { db.money[sender] = compareRpgMoney(value, 0) < 0 ? 0 : normalizeRpgMoney(value) }
   const premium = isPremiumAccount(global.db?.data?.users?.[sender])
   const tokens = String(text || '').trim().split(/\s+/).filter(Boolean)
   const root = String(command || '').toLowerCase()
@@ -388,19 +389,19 @@ if (action === 'info') {
 if (action === 'beli') {
   const total = priceFor(item) * amount
 
-  if (wallet() < total) {
+  if (compareRpgMoney(wallet(), total) < 0) {
     return m.reply(
       `╭─❏「 ❌ PEMBELIAN GAGAL 」❏\n` +
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Harga : ${money(total)}\n` +
       `> ↳ Saldo kamu : ${money(wallet())}\n` +
-      `> ↳ Kekurangan : ${money(total - wallet())}\n\n` +
+      `> ↳ Kekurangan : ${money(subtractRpgMoney(total, wallet()))}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
 
-  setWallet(wallet() - total)
+  setWallet(subtractRpgMoney(wallet(), total))
   inventory[item.id] = (Number(inventory[item.id]) || 0) + amount
   sales[item.id] = (Number(sales[item.id]) || 0) + amount
 
@@ -447,7 +448,7 @@ if (!inventory[item.id]) delete inventory[item.id]
 
 const total = Math.floor(item.sellPrice * amount * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1))
 
-setWallet(wallet() + total)
+setWallet(addRpgMoney(wallet(), total))
 
 await saveDB(db)
 

@@ -2,7 +2,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import { isDifficultyRanked } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
-import { formatRpgMoney, formatRpgNumber } from '../../lib/rpgMoney.js'
+import { compareRpgMoney, formatRpgMoney, formatRpgNumber } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, groupMetadata }) => {
   const wdb = loadDB()
@@ -33,7 +33,7 @@ let handler = async (m, { conn, groupMetadata }) => {
 
   // 2. Leaderboard Berdasarkan MONEY
   let topMoney = [...users]
-    .sort((a, b) => (wdb.money[b] || 0) - (wdb.money[a] || 0))
+    .sort((a, b) => compareRpgMoney(wdb.money[b] || 0, wdb.money[a] || 0))
     .slice(0, 10)
 
   // 3. Leaderboard Berdasarkan DIAMOND

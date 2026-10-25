@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
@@ -292,7 +293,7 @@ if(userMoney < r.biaya) return m.reply(
 )
 
 ambilBahan(r.bahan)
-wdb.money[m.sender] -= r.biaya
+wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], r.biaya)
 user.dapur.antrian.push({
   nama: keyMasak,
   emoji: r.emoji,

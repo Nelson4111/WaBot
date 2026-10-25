@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
@@ -31,7 +32,7 @@ let handler = async (m, { conn }) => {
     )
   }
 
-  wdb.money[m.sender] -= hargaSewa
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], hargaSewa)
   user.maxLadang = currentLadang + 1
 
   saveDB(wdb)

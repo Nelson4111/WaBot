@@ -5,6 +5,7 @@ import { isPremiumAccount, PREMIUM_DAILY_MIN_DONATION, PREMIUM_DAILY_REWARD } fr
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, multiplyRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
   const wdb = loadDB()
@@ -99,20 +100,20 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
       )
     }
 
-    const cost = scaleDifficultyIncome(rpgUser, 50000) * 2 * previousStreak
-    const balance = Number(wdb.money[senderKey]) || 0
-    if (balance < cost) {
+    const cost = multiplyRpgMoney(scaleDifficultyIncome(rpgUser, 50000), 2 * previousStreak)
+    const balance = normalizeRpgMoney(wdb.money[senderKey])
+    if (compareRpgMoney(balance, cost) < 0) {
       return m.reply(
         `╭─❏「 🔥 DAILY RESTREAK 」❏\n` +
         `│ ❌ *SALDO BELUM MENCUKUPI*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Pulihkan streak ${previousStreak} hari dengan biaya *Rp ${cost.toLocaleString('id-ID')}*.\n` +
+        `> ↳ Pulihkan streak ${previousStreak} hari dengan biaya *${formatRpgMoney(cost)}*.\n` +
         `> ↳ Restreak tidak memakai cooldown; kesempatan berlaku sampai hari ini berakhir.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
 
-    wdb.money[senderKey] = balance - cost
+    wdb.money[senderKey] = subtractRpgMoney(balance, cost)
     user.dailyStreak = previousStreak
     delete user.dailyBrokenStreak
     delete user.dailyRestreakOfferDate
@@ -251,14 +252,14 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
   let monthly = 0
   let premiumDailyReward = 0
 
-  wdb.money[senderKey] = (wdb.money[senderKey] || 0) + hadiah
+  wdb.money[senderKey] = addRpgMoney(wdb.money[senderKey] || 0, hadiah)
   if (user.dailyStreak % 7 === 0) {
     weekly = scaleDifficultyIncome(rpgUser, 250000)
-    wdb.money[senderKey] += weekly
+    wdb.money[senderKey] = addRpgMoney(wdb.money[senderKey], weekly)
   }
   if (user.dailyStreak % 30 === 0) {
     monthly = scaleDifficultyIncome(rpgUser, 1500000)
-    wdb.money[senderKey] += monthly
+    wdb.money[senderKey] = addRpgMoney(wdb.money[senderKey], monthly)
   }
 
   const account = global.db?.data?.users?.[senderKey] || global.db?.data?.users?.[m.sender]

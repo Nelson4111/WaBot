@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { prosesKawin, pratinjauKawin, hitungBiayaKawin, hitungBiayaObat, peluangGagal, dapatkanHasil, getHewan, getHewanKey } from '../../lib/rpg-libternakData.js'
@@ -250,7 +251,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     return m.reply(ket)
   }
 
-  wdb.money[m.sender] -= bayar
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], bayar)
   user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
   user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
   user.cooldown.kawin = sekarang

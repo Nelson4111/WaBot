@@ -1,3 +1,4 @@
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
@@ -305,7 +306,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   user.darah -= Math.floor(finalDamage)
   addRpgExp(user, earnedExp)
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + earnedMoney
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], earnedMoney)
   user.gold = (Number(user.gold) || 0) + earnedGold
   user.diamond = (Number(user.diamond) || 0) + earnedDiamond
   addUserLimit(account, earnedLimit)

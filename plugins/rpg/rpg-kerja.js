@@ -1,4 +1,5 @@
-﻿import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { addRpgMoney } from '../../lib/rpgMoney.js'
+import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
@@ -1174,7 +1175,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 
     totalMoney = Math.floor(totalMoney * getGroupTotemBuff(wdb.data, m.chat, 'work', 'income'))
     totalExp = Math.floor(totalExp * getGroupTotemBuff(wdb.data, m.chat, 'work', 'xp'))
-    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + totalMoney
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totalMoney)
     userRPG.exp = Number(userRPG.exp || 0) + totalExp
     userRPG.lastkerja = now
     const nextWorkReadyAt = now + jobCooldown

@@ -3,9 +3,9 @@ import { loadDB, getUserRPG, saveDB } from '../../lib/waifuHelper.js'
 import { KIDNAP_INACTIVITY_LABEL, KIDNAP_INACTIVITY_TIMEOUT, RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
 import { KIDNAP_ESCAPE_STORIES, KIDNAP_INACTIVITY_STORIES } from '../../lib/rpgCrimeStories.js'
 import { runRpgCrimeAction } from '../../lib/rpgCrimeAction.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, normalizeRpgMoney, parseRpgMoneyAmount, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
-const formatMoney = value => `Rp ${Number(value).toLocaleString('id-ID')}`
+const formatMoney = value => formatRpgMoney(value)
 
 const pickStory = stories => stories[Math.floor(Math.random() * stories.length)]
 
@@ -133,9 +133,9 @@ let handler = async (m, { conn, args = [], command, usedPrefix }) => {
 
     const payer = String(m.sender)
     const money = db.money || (db.money = {})
-    const payerBalance = Number(money[payer]) || 0
+    const payerBalance = normalizeRpgMoney(money[payer])
 
-    if (payerBalance < ransom) {
+    if (compareRpgMoney(payerBalance, ransom) < 0) {
       return m.reply(
         `╭─❏「 💰 SALDO TIDAK CUKUP 」❏\n` +
         `│ TEBUSAN PENCULIKAN\n` +
@@ -143,7 +143,7 @@ let handler = async (m, { conn, args = [], command, usedPrefix }) => {
         `> 👤 Korban: @${targetJid.split('@')[0]}\n` +
         `> 💵 Biaya tebus: ${formatMoney(ransom)}\n` +
         `> 💰 Saldo kamu: ${formatMoney(payerBalance)}\n` +
-        `> 📉 Kekurangan: ${formatMoney(ransom - payerBalance)}\n\n` +
+        `> 📉 Kekurangan: ${formatMoney(subtractRpgMoney(ransom, payerBalance))}\n\n` +
         `─━━━━━━━━━━━━━━─\n` +
         `Silakan kumpulkan uang yang cukup untuk membayar tebusan.`
       )
@@ -153,8 +153,8 @@ let handler = async (m, { conn, args = [], command, usedPrefix }) => {
       ? global.lids?.[kidnapperJid] || global.db?.data?.lids?.[kidnapperJid] || kidnapperJid
       : kidnapperJid
 
-    money[payer] = payerBalance - ransom
-    money[normalizedKidnapper] = (Number(money[normalizedKidnapper]) || 0) + ransom
+    money[payer] = subtractRpgMoney(payerBalance, ransom)
+    money[normalizedKidnapper] = addRpgMoney(money[normalizedKidnapper], ransom)
 
     const victimRPG = victim
     const kidnapper = getUserRPG(db, normalizedKidnapper)?.rpg

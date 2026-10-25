@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
@@ -185,8 +186,8 @@ let handler = async (m, { conn, usedPrefix }) => {
       { mentions: [m.sender, who] }
     )
   }
-  wdb.money[who] -= hasil
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + hasil
+  wdb.money[who] = subtractRpgMoney(wdb.money[who], hasil)
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
 
   wdb.crime[m.sender].bunuh = (Number(wdb.crime[m.sender].bunuh) || 0) + 1
   wdb.crime[m.sender].total = computeCrimeScore(wdb.crime[m.sender])

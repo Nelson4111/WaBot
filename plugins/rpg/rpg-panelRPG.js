@@ -28,7 +28,17 @@ import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { computeCrimeScore, getActiveCrimeScore, setActiveCrimeScore, setCrimeCount } from '../../lib/crimeHelper.js'
 import { createRpgCrimeRecord, RPG_CRIME_TYPES } from '../../lib/rpgCrimeAction.js'
 import { forceCompleteRehabilitation } from '../../lib/rehabilitationHelper.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney,
+  maxRpgMoney,
+  minRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  parseRpgMoneySignedAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import { getRpgWibDateKey } from '../../lib/rpgTime.js'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
 import { generateWAMessageContent } from '@whiskeysockets/baileys'
@@ -1201,7 +1211,7 @@ let handler = async (m, {
     }
     let topLevel = [...users].sort((a,b) => (wdb.users[b].rpg.level || 0) - (wdb.users[a].rpg.level || 0)).slice(0, 10)
     let topMoney = [...users]
-      .sort((a,b) => (wdb.money[b] || 0) - (wdb.money[a] || 0))
+      .sort((a,b) => compareRpgMoney(wdb.money[b] || 0, wdb.money[a] || 0))
       .slice(0, 10)
     let topDiamond = [...users].sort((a,b) => (wdb.users[b].rpg.diamond || 0) - (wdb.users[a].rpg.diamond || 0)).slice(0, 10)
 
@@ -1320,14 +1330,14 @@ let handler = async (m, {
       const record = wdb.users[key] || global.db?.data?.users?.[key]
       if (record) {
         found = true
-        removed += Number(record.money) || 0
+        removed = addRpgMoney(removed, record.money || 0)
         delete wdb.users[key]
         if (global.db?.data?.users) delete global.db.data.users[key]
       }
     }
     await saveDB(wdb)
     return m.reply(found
-      ? `✅ Data akun salah *${rawKey}* dihapus dari RPG dan leaderboard.\n💰 Saldo yang dibersihkan: Rp ${removed.toLocaleString()}`
+      ? `✅ Data akun salah *${rawKey}* dihapus dari RPG dan leaderboard.\n💰 Saldo yang dibersihkan: ${formatRpgMoney(removed)}`
       : `ℹ️ Key *${rawKey}* tidak ditemukan di database.`)
   }
 
@@ -1899,21 +1909,24 @@ let handler = async (m, {
     }
     if (round.panelRefundedAt) return m.reply('ℹ️ Ronde ini sudah pernah dikembalikan.')
 
-    let moneyChange = Number(round.moneyChange)
+    let moneyChange = round.moneyChange === undefined || round.moneyChange === null
+      ? NaN
+      : normalizeRpgMoney(round.moneyChange)
     let blackoutRecord = null
     if (!Number.isFinite(moneyChange)) {
       if (round.outcome === '🌑 Blackout') {
         blackoutRecord = (Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : [])
           .filter(entry => Math.abs(Number(entry.createdAt) - Number(round.at)) <= 60_000)
           .sort((a, b) => Math.abs(Number(a.createdAt) - Number(round.at)) - Math.abs(Number(b.createdAt) - Number(round.at)))[0]
-        const recovered = Number(blackoutRecord?.guardRecovered || 0) +
-          Number(blackoutRecord?.insuredRecovered || 0) +
-          Number(blackoutRecord?.panelRefunded || 0)
+        const recovered = addRpgMoney(
+          addRpgMoney(blackoutRecord?.guardRecovered || 0, blackoutRecord?.insuredRecovered || 0),
+          blackoutRecord?.panelRefunded || 0
+        )
         moneyChange = blackoutRecord
-          ? -(Math.max(0, Number(blackoutRecord.amount) - recovered))
+          ? subtractRpgMoney(0, maxRpgMoney(0, subtractRpgMoney(blackoutRecord.amount, recovered)))
           : NaN
       } else {
-        moneyChange = Number(round.profit)
+        moneyChange = normalizeRpgMoney(round.profit)
       }
     } else if (round.outcome === '🌑 Blackout') {
       blackoutRecord = (Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : [])
@@ -1921,45 +1934,48 @@ let handler = async (m, {
     }
 
     if (round.outcome === '🌑 Blackout' && blackoutRecord) {
-      const recovered = Number(blackoutRecord.guardRecovered || 0) +
-        Number(blackoutRecord.insuredRecovered || 0) +
-        Number(blackoutRecord.panelRefunded || 0)
-      moneyChange = -Math.max(0, Math.min(-moneyChange, Number(blackoutRecord.amount) - recovered))
+      const recovered = addRpgMoney(
+        addRpgMoney(blackoutRecord.guardRecovered || 0, blackoutRecord.insuredRecovered || 0),
+        blackoutRecord.panelRefunded || 0
+      )
+      const remainingLoss = maxRpgMoney(0, subtractRpgMoney(blackoutRecord.amount, recovered))
+      const lossToRefund = minRpgMoney(subtractRpgMoney(0, moneyChange), remainingLoss)
+      moneyChange = subtractRpgMoney(0, lossToRefund)
     }
 
-    if (!Number.isFinite(moneyChange) || moneyChange >= 0) {
+    if ((typeof moneyChange === 'number' && !Number.isFinite(moneyChange)) || compareRpgMoney(moneyChange, 0) >= 0) {
       return m.reply('❌ Ronde ini tidak memiliki kerugian uang yang dapat dikembalikan.')
     }
 
-    const refundMoney = -moneyChange
-    const profitLoss = Math.min(0, Number(round.profit) || 0)
-    wdb.money[who] = (Number(wdb.money[who]) || 0) + refundMoney
-    stats.profit = (Number(stats.profit) || 0) - profitLoss
+    const refundMoney = subtractRpgMoney(0, moneyChange)
+    const profitLoss = minRpgMoney(0, normalizeRpgMoney(round.profit))
+    wdb.money[who] = addRpgMoney(wdb.money[who] || 0, refundMoney)
+    stats.profit = subtractRpgMoney(stats.profit || 0, profitLoss)
     const gameStats = stats.byGame?.[round.game]
-    if (gameStats) gameStats.profit = (Number(gameStats.profit) || 0) - profitLoss
+    if (gameStats) gameStats.profit = subtractRpgMoney(gameStats.profit || 0, profitLoss)
     round.panelRefundedAt = Date.now()
     round.moneyChange = moneyChange
-    if (blackoutRecord) blackoutRecord.panelRefunded = (Number(blackoutRecord.panelRefunded) || 0) + refundMoney
+    if (blackoutRecord) blackoutRecord.panelRefunded = addRpgMoney(blackoutRecord.panelRefunded || 0, refundMoney)
     await saveDB(wdb)
     return m.reply(
       `✅ Kerugian ronde #${historyNumber} ${round.game} @${who.split('@')[0]} dikembalikan.\n` +
-      `> ↳ Uang kembali: Rp ${refundMoney.toLocaleString('id-ID')}\n` +
-      `> ↳ Profit casino dipulihkan: Rp ${(-profitLoss).toLocaleString('id-ID')}\n` +
-      `> ↳ Saldo sekarang: Rp ${(Number(wdb.money[who]) || 0).toLocaleString('id-ID')}`,
+      `> ↳ Uang kembali: ${formatRpgMoney(refundMoney)}\n` +
+      `> ↳ Profit casino dipulihkan: ${formatRpgMoney(subtractRpgMoney(0, profitLoss))}\n` +
+      `> ↳ Saldo sekarang: ${formatRpgMoney(wdb.money[who] || 0)}`,
       null,
       { mentions: [who] }
     )
   }
 
   if (['setcasinoprofit', 'casinoprofit'].includes(aksi)) {
-    const profit = Number(remaining[0])
-    if (!Number.isFinite(profit) || remaining[0] === undefined) {
-      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\nContoh: *${usedPrefix}rpgpanel setcasinoprofit @tag -5000*`)
+    const profit = parseRpgMoneySignedAmount(remaining[0])
+    if (profit === null || remaining[0] === undefined) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\nContoh: *${usedPrefix}rpgpanel setcasinoprofit @tag -5T*`)
     }
     user.casinoStats = user.casinoStats || { wins: 0, games: 0, profit: 0, byGame: {} }
     user.casinoStats.profit = profit
     saveDB(wdb)
-    return m.reply(`✅ Profit casino @${who.split('@')[0]} berhasil diatur menjadi *${profit}*.`, null, { mentions: [who] })
+    return m.reply(`✅ Profit casino @${who.split('@')[0]} berhasil diatur menjadi *${formatRpgMoney(profit)}*.`, null, { mentions: [who] })
   }
 
   if (['setrhprogress', 'setrehabprogress', 'setrehabilitasiprogress'].includes(aksi)) {
@@ -2358,7 +2374,7 @@ let handler = async (m, {
   if(['addmoney','addstellarcredit','addlevel','adduserlevel','addexp','adddarah','adddiamond','addiron','addgold','addstone','addwood','addsword','addarmor','addpickaxe','addfishingrod','addbotlevel','addbotxp','addbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
-    if(aksi === 'addmoney') wdb.money[who] += jumlah
+    if(aksi === 'addmoney') wdb.money[who] = addRpgMoney(wdb.money[who] || 0, jumlah)
     else if(aksi === 'addstellarcredit') user.stellarCredit = (Number(user.stellarCredit) || 0) + jumlah
     else if(aksi === 'adddarah') user.darah = Math.min(user.maxDarah, user.darah + jumlah)
     else if(['addlevel','adduserlevel','addbotlevel'].includes(aksi)){
@@ -2396,7 +2412,7 @@ let handler = async (m, {
   if(['delmoney','delstellarcredit','dellevel','deluserlevel','delexp','deldarah','deldiamond','deliron','delgold','delstone','delwood','delsword','delarmor','delpickaxe','delfishingrod','delbotlevel','delbotxp','delbotlimit'].includes(aksi)){
     if(jumlah < 1) return m.reply('❌ Jumlah minimal 1')
 
-    if(aksi === 'delmoney') wdb.money[who] = Math.max(0, wdb.money[who] - jumlah)
+    if(aksi === 'delmoney') wdb.money[who] = maxRpgMoney(0, subtractRpgMoney(wdb.money[who] || 0, jumlah))
     else if(aksi === 'delstellarcredit') user.stellarCredit = Math.max(0, (Number(user.stellarCredit) || 0) - jumlah)
     else if(aksi === 'deldarah') user.darah = Math.max(0, user.darah - jumlah)
     else if(['dellevel','deluserlevel','delbotlevel'].includes(aksi)){
@@ -2654,8 +2670,8 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     let cap = `*───「 INVENTORY @${who.split('@')[0]} 」───*\n\n`
     cap += `🆙 *Level:* ${user.level} (${user.exp}/${threshold} XP)\n`
     cap += `❤️ *Darah:* ${user.darah}/${user.maxDarah}\n`
-    cap += `💰 *Uang Saku:* Rp ${(Number(wdb.money[who]) || 0).toLocaleString()}\n`
-    cap += `🏦 *Saldo Bank:* Rp ${(Number(user.bank) || 0).toLocaleString()}\n\n`
+    cap += `💰 *Uang Saku:* ${formatRpgMoney(wdb.money[who])}\n`
+    cap += `🏦 *Saldo Bank:* ${formatRpgMoney(user.bank)}\n\n`
     cap += `*EQUIPMENT*\n🗡️ Sword: Lv.${user.sword}\n🛡️ Armor: Lv.${user.armor}\n⛏️ Pickaxe: Lv.${user.pickaxe}\n🎣 Fishingrod: Lv.${user.fishingrod}\n\n`
     cap += `*STORAGE RPG*\n💎 Diamond: ${Number(user.diamond) || 0}\n⛓️ Iron: ${Number(user.iron) || 0}\n✨ Gold: ${Number(user.gold) || 0}\n🪵 Wood: ${Number(user.wood) || 0}\n🪨 Stone: ${Number(user.stone) || 0}\n\n`
 
@@ -2808,15 +2824,15 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
 
     if(['setbank', 'addbank', 'delbank'].includes(aksi)){
       const amount = args[0] === '0' ? 0 : parseRpgMoneyAmount(args[0])
-      if (!Number.isInteger(amount) || (aksi !== 'setbank' && amount < 1)) {
+      if (amount === null || (aksi !== 'setbank' && compareRpgMoney(amount, 1) < 0)) {
         return m.reply(`Contoh: *${usedPrefix}rpgpanel ${aksi} @tag ${aksi === 'setbank' ? '100000000' : '1000000'}*`)
       }
-      const currentBank = Number(user.bank) || 0
+      const currentBank = normalizeRpgMoney(user.bank)
       user.bank = aksi === 'setbank'
-        ? Math.max(0, amount)
+        ? maxRpgMoney(0, amount)
         : aksi === 'addbank'
-          ? currentBank + amount
-          : Math.max(0, currentBank - amount)
+          ? addRpgMoney(currentBank, amount)
+          : maxRpgMoney(0, subtractRpgMoney(currentBank, amount))
       saveDB(wdb)
       return m.reply(`✅ Saldo bank @${who.split('@')[0]} ${aksi === 'setbank' ? 'di set' : aksi === 'addbank' ? 'ditambah' : 'dikurangi'} jadi Rp ${user.bank.toLocaleString()}`, null, {mentions: [who]})
     }
@@ -3315,7 +3331,7 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
       // kasih bonus sesuai ending
       if(end === 'Freedom'){ user.csm.blood += 50000; user.csm.title = 'Chainsaw Man' }
       if(end === 'Apocalypse'){ user.csm.devilsKilled += 100; user.csm.title = 'Horseman of Fear' }
-      if(end === 'Control'){ wdb.money[who] += 1000000; user.csm.title = 'Public Safety Dog' }
+      if(end === 'Control'){ wdb.money[who] = addRpgMoney(wdb.money[who], 1000000); user.csm.title = 'Public Safety Dog' }
       if(end === 'Sacrifice'){ user.csm.maxHealth -= 50; user.csm.title = 'Guardian Devil' }
       if(end === 'Love'){ user.csm.blood = 0; user.csm.title = 'Beloved Devil' }
       if(end === 'Revenge'){ user.csm.blood += 100000; user.csm.maxHealth += 50; user.csm.title = 'Vengeance Devil' }

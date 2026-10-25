@@ -6,7 +6,19 @@ import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/le
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
-import { formatRpgMoney, formatRpgNumber, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney,
+  formatRpgNumber,
+  getRpgMoneySuffixGuide,
+  maxRpgMoney,
+  minRpgMoney,
+  multiplyRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import { getRpgWibDateKey, getRpgWibWeekKey } from '../../lib/rpgTime.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
@@ -62,8 +74,11 @@ const GAME_COOLDOWN = 60000
 const aliases = Object.fromEntries(Object.entries(games).flatMap(([key, game]) => game.aliases.map(alias => [alias, key])))
 const pick = values => values[Math.floor(Math.random() * values.length)]
 const number = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
-const money = value => formatRpgMoney(Math.max(0, Number(value) || 0))
-const signedMoney = value => `${value >= 0 ? '+' : '-'}${formatRpgMoney(Math.abs(Number(value) || 0))}`
+const money = value => formatRpgMoney(maxRpgMoney(0, normalizeRpgMoney(value)))
+const signedMoney = value => {
+  const amount = normalizeRpgMoney(value)
+  return `${compareRpgMoney(amount, 0) >= 0 ? '+' : '-'}${formatRpgMoney(compareRpgMoney(amount, 0) < 0 ? subtractRpgMoney(0, amount) : amount)}`
+}
 const DAILY_LIMIT = 25
 const PREMIUM_DAILY_LIMIT = 50
 const CASINO_BLACKOUT_TARGET_COUNT = 5
@@ -154,9 +169,9 @@ function getPlayerCasinoRoom(wdb, jid) {
 
 function refundCasinoRoom(room, wdb) {
   for (const [jid, contribution] of Object.entries(room.contributions || {})) {
-  const amount = Number(contribution) || 0
-    if (Number.isSafeInteger(amount) && amount > 0) {
-      wdb.money[jid] = Number(wdb.money[jid] || 0) + amount
+    const amount = normalizeRpgMoney(contribution)
+    if (compareRpgMoney(amount, 0) > 0) {
+      wdb.money[jid] = addRpgMoney(wdb.money[jid] || 0, amount)
     }
   }
 }
@@ -195,17 +210,18 @@ function casinoWeekKey(now = Date.now()) {
 }
 
 function getBlackoutRecoveryAmount(blackout) {
-  const amount = Number(blackout?.amount) || 0
-  const recovered = Number(blackout?.guardRecovered || 0) +
-    Number(blackout?.insuredRecovered || 0) +
-    Number(blackout?.panelRefunded || 0)
-  return Math.max(0, amount - recovered)
+  const amount = normalizeRpgMoney(blackout?.amount)
+  const recovered = addRpgMoney(
+    addRpgMoney(blackout?.guardRecovered || 0, blackout?.insuredRecovered || 0),
+    blackout?.panelRefunded || 0
+  )
+  return maxRpgMoney(0, subtractRpgMoney(amount, recovered))
 }
 
 function getLatestRecoverableBlackout(user, weekKey = null) {
   const blackouts = Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : []
   return [...blackouts].reverse().find(blackout =>
-    (!weekKey || blackout.weekKey === weekKey) && getBlackoutRecoveryAmount(blackout) > 0
+    (!weekKey || blackout.weekKey === weekKey) && compareRpgMoney(getBlackoutRecoveryAmount(blackout), 0) > 0
   )
 }
 
@@ -252,7 +268,7 @@ function getCasinoStats(user) {
   user.casinoStats.dailyGames = Number(user.casinoStats.dailyGames || 0)
   user.casinoStats.games = Number(user.casinoStats.games || 0)
   user.casinoStats.wins = Number(user.casinoStats.wins || 0)
-  user.casinoStats.profit = Number(user.casinoStats.profit || 0)
+  user.casinoStats.profit = normalizeRpgMoney(user.casinoStats.profit)
   user.casinoStats.dailyResults = normalizeCasinoOutcomes(user.casinoStats.dailyResults)
   user.casinoStats.dailyHistory = Array.isArray(user.casinoStats.dailyHistory) ? user.casinoStats.dailyHistory : []
   const historyBlackouts = user.casinoStats.dailyHistory.filter(round => round?.outcome === '🌑 Blackout').length
@@ -322,9 +338,7 @@ function casinoHistoryText(stats, dailyLimit, usedPrefix) {
   const history = rounds.length
     ? rounds.map((round, index) => {
       const game = games[round.game]
-      const moneyChange = Number.isFinite(Number(round.moneyChange))
-        ? Number(round.moneyChange)
-        : Number(round.profit) || 0
+      const moneyChange = normalizeRpgMoney(round.moneyChange ?? round.profit)
       const time = new Date(round.at).toLocaleTimeString('id-ID', {
         timeZone: 'Asia/Jakarta',
         hour: '2-digit',
@@ -556,12 +570,12 @@ function getTopPlayers(wdb, limit = 20, conn) {
         nickname: String(rpg.casinoNickname || '').trim(),
         wins: Number(stats.wins || 0),
         games,
-        profit: Number(stats.profit || 0),
+        profit: normalizeRpgMoney(stats.profit),
         title: getCasinoTitle(games)
       }]
     })
   return filterLeaderboardUsers(players, conn, player => player.jid)
-    .sort((a, b) => b.profit - a.profit || b.wins - a.wins)
+    .sort((a, b) => compareRpgMoney(b.profit, a.profit) || b.wins - a.wins)
     .slice(0, limit)
 }
 
@@ -665,8 +679,8 @@ function casinoGuide(prefix) {
 
 function getPositivePlayerProfitTotal(wdb) {
   return Object.values(wdb.users || {}).reduce((total, account) => {
-    const profit = Number(account?.rpg?.casinoStats?.profit || 0)
-    return profit > 0 ? total + profit : total
+    const profit = normalizeRpgMoney(account?.rpg?.casinoStats?.profit)
+    return compareRpgMoney(profit, 0) > 0 ? addRpgMoney(total, profit) : total
   }, 0)
 }
 
@@ -796,8 +810,11 @@ function profile(user, sender, dailyLimit, showProfit = false) {
 }
 
 function formatFullProfit(value) {
-  const amount = Math.trunc(Number(value) || 0)
-  return `${amount >= 0 ? '+' : '-'}Rp ${Math.abs(amount).toLocaleString('id-ID')}`
+  const amount = normalizeRpgMoney(value)
+  const positive = compareRpgMoney(amount, 0) >= 0
+  const absolute = positive ? amount : subtractRpgMoney(0, amount)
+  const exact = typeof absolute === 'bigint' ? absolute.toLocaleString('id-ID') : absolute.toLocaleString('id-ID')
+  return `${positive ? '+' : '-'}Rp ${exact}`
 }
 
 function resolveProfitGame(selection) {
@@ -858,7 +875,7 @@ function casinoProfitSections(usedPrefix, page = 1) {
 function casinoProfitText(user, selection) {
   const stats = user.casinoStats || {}
   const byGame = stats.byGame || {}
-  const totalProfit = Number(stats.profit) || 0
+  const totalProfit = normalizeRpgMoney(stats.profit)
 
   if (selection !== 'all') {
     const game = games[selection]
@@ -949,15 +966,12 @@ function playCasinoRoomRound(room, wdb, stake) {
   room.contributions = room.contributions || {}
   const players = [...room.players]
   for (const jid of players) {
-    if (!wdb.users?.[jid]?.rpg || Number(wdb.money?.[jid] || 0) < stake) {
+    if (!wdb.users?.[jid]?.rpg || compareRpgMoney(wdb.money?.[jid] || 0, stake) < 0) {
       return { insufficientPlayer: jid }
     }
   }
 
-  const roundContribution = stake * players.length
-  if (!Number.isInteger(roundContribution) || !Number.isInteger((room.pot || 0) + roundContribution)) {
-    return { invalidPot: true }
-  }
+  const roundContribution = multiplyRpgMoney(stake, players.length)
 
   const scores = playRoomRound(room.game, players)
   const lowest = Math.min(...Object.values(scores))
@@ -965,11 +979,11 @@ function playCasinoRoomRound(room, wdb, stake) {
   const eliminated = lowestPlayers.length === 1 ? lowestPlayers[0] : null
 
   for (const jid of players) {
-    wdb.money[jid] = Number(wdb.money[jid] || 0) - stake
-    room.contributions[jid] = Number(room.contributions[jid] || 0) + stake
+    wdb.money[jid] = subtractRpgMoney(wdb.money[jid] || 0, stake)
+    room.contributions[jid] = addRpgMoney(room.contributions[jid] || 0, stake)
   }
 
-  room.pot = Number(room.pot || 0) + roundContribution
+  room.pot = addRpgMoney(room.pot || 0, roundContribution)
   room.players = eliminated ? players.filter(jid => jid !== eliminated) : [...players]
   room.round = Number(room.round || 0) + 1
   room.currentStake = stake
@@ -979,7 +993,7 @@ function playCasinoRoomRound(room, wdb, stake) {
 
   if (room.players.length === 1) {
     const winner = room.players[0]
-    wdb.money[winner] = Number(wdb.money[winner] || 0) + room.pot
+    wdb.money[winner] = addRpgMoney(wdb.money[winner] || 0, room.pot)
     return { ...result, winner, prize: room.pot }
   }
 
@@ -1043,7 +1057,7 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
 
   const stake = parseRpgMoneyAmount(args[2])
 
-  if (!Number.isInteger(stake) || stake < 100) {
+  if (stake === null || compareRpgMoney(stake, 100) < 0) {
     return m.reply(
       `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
       `│ ❌ *Format taruhan tidak valid.*\n` +
@@ -1054,7 +1068,7 @@ async function handleCasinoRoom(m, { conn, args, usedPrefix, wdb, user }) {
     )
   }
 
-  if (Number(wdb.money?.[m.sender] || 0) < stake) {
+  if (compareRpgMoney(wdb.money?.[m.sender] || 0, stake) < 0) {
     return m.reply(
       `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
       `│ ❌ *Uang saku tidak cukup.*\n` +
@@ -1181,7 +1195,7 @@ if (action === 'join') {
     return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   }
 
-  if (Number(wdb.money?.[m.sender] || 0) < room.stake) {
+  if (compareRpgMoney(wdb.money?.[m.sender] || 0, room.stake) < 0) {
     return m.reply(
       `╭─❏「 ❌ SALDO TIDAK CUKUP 」❏\n` +
       `│ ❌ *Uang saku untuk taruhan belum cukup.*\n` +
@@ -1288,8 +1302,8 @@ if (action === 'player' || action === 'players') {
     .join('\n')
 
   const prize = room.status === 'waiting'
-    ? room.players.length * Number(room.stake)
-    : Number(room.pot || 0)
+    ? multiplyRpgMoney(room.stake, room.players.length)
+    : normalizeRpgMoney(room.pot)
   const prizeLabel = room.status === 'waiting' ? 'Estimasi hadiah' : 'Pot saat ini'
 
   return replyWithImage(
@@ -1316,8 +1330,8 @@ if (action === 'status') {
       : 'Permainan sedang berlangsung'
 
   const prize = room.status === 'waiting'
-    ? room.players.length * Number(room.stake)
-    : Number(room.pot || 0)
+    ? multiplyRpgMoney(room.stake, room.players.length)
+    : normalizeRpgMoney(room.pot)
 
   return replyWithImage(
     `╭─❏「 🎰 CASINO ROOM 」❏\n` +
@@ -1340,8 +1354,8 @@ if (action === 'status') {
 
 if (action === 'info') {
   const prize = room.status === 'waiting'
-    ? room.players.length * Number(room.stake)
-    : Number(room.pot || 0)
+    ? multiplyRpgMoney(room.stake, room.players.length)
+    : normalizeRpgMoney(room.pot)
   const prizeLabel = room.status === 'waiting' ? 'Estimasi hadiah' : 'Pot saat ini'
 
   return replyWithImage(
@@ -1407,7 +1421,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
   }
 
   const requestedStake = action === 'set' ? parseRpgMoneyAmount(args[2]) : null
-  if (action === 'set' && (!Number.isInteger(requestedStake) || requestedStake < 100)) {
+  if (action === 'set' && (requestedStake === null || compareRpgMoney(requestedStake, 100) < 0)) {
     return m.reply(
       `╭─❏「 ❌ FORMAT SALAH 」❏\n` +
       `│ ❌ *Nominal taruhan tidak valid.*\n` +
@@ -1422,12 +1436,8 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
   const stake = action === 'set'
     ? requestedStake
     : isFirstRound || action === 'next'
-      ? Number(room.currentStake || room.stake)
-      : Number(room.currentStake || room.stake) * 2
-
-  if (!Number.isInteger(stake)) {
-    return m.reply(`Taruhan berikutnya melebihi batas aman saldo. Gunakan *.cs room next* untuk melanjutkan tanpa kenaikan.`)
-  }
+      ? normalizeRpgMoney(room.currentStake || room.stake)
+      : multiplyRpgMoney(room.currentStake || room.stake, 2)
 
   const result = playCasinoRoomRound(room, wdb, stake)
   if (result.insufficientPlayer) {
@@ -1693,19 +1703,16 @@ return m.reply(
       const blackout = (Array.isArray(user.casinoBlackouts) ? user.casinoBlackouts : [])
         .find(entry => entry.id === pending.blackoutId)
       const amount = getBlackoutRecoveryAmount(blackout)
-      const balance = Number(wdb.money[m.sender] || 0)
-      if (!blackout || !blackout.targets?.includes(pending.target) || amount <= 0) {
+      const balance = normalizeRpgMoney(wdb.money[m.sender])
+      if (!blackout || !blackout.targets?.includes(pending.target) || compareRpgMoney(amount, 0) <= 0) {
         delete user.casinoGuardPending
         saveDB(wdb)
         return m.reply('ℹ️ Kasus ini sudah ditutup. Tidak ada uang yang perlu diamankan.')
       }
-      const recoveredBalance = balance + amount
-      if (!Number.isFinite(recoveredBalance) || !Number.isInteger(recoveredBalance)) {
-        return m.reply('❌ Saldo hasil pemulihan tidak dapat dicatat karena nilainya tidak valid. Hubungi admin sebelum melanjutkan.')
-      }
+      const recoveredBalance = addRpgMoney(balance, amount)
 
       wdb.money[m.sender] = recoveredBalance
-      blackout.guardRecovered = Number(blackout.guardRecovered || 0) + amount
+      blackout.guardRecovered = addRpgMoney(blackout.guardRecovered || 0, amount)
       blackout.guardTarget = pending.target
       blackout.guardResolvedAt = Date.now()
       delete user.casinoGuardPending
@@ -1741,17 +1748,14 @@ return m.reply(
       }
       const blackout = getLatestRecoverableBlackout(user, weekKey)
       const amount = getBlackoutRecoveryAmount(blackout)
-      if (!blackout || amount <= 0) {
+      if (!blackout || compareRpgMoney(amount, 0) <= 0) {
         return m.reply(`🛡️ Belum ada kerugian blackout yang bisa diproteksi minggu ini. Proteksi direset otomatis setiap Senin.`)
       }
       if (['yes', 'confirm', 'ambil'].includes(String(args[2] || '').toLowerCase())) {
-        const balance = Number(wdb.money[m.sender] || 0)
-        const protectedBalance = balance + amount
-        if (!Number.isFinite(protectedBalance) || !Number.isInteger(protectedBalance)) {
-          return m.reply('❌ Saldo hasil perlindungan tidak dapat dicatat karena nilainya tidak valid. Hubungi admin sebelum melanjutkan.')
-        }
+        const balance = normalizeRpgMoney(wdb.money[m.sender])
+        const protectedBalance = addRpgMoney(balance, amount)
         wdb.money[m.sender] = protectedBalance
-        blackout.insuredRecovered = Number(blackout.insuredRecovered || 0) + amount
+        blackout.insuredRecovered = addRpgMoney(blackout.insuredRecovered || 0, amount)
         user.casinoBlackoutProtectionWeek = weekKey
         saveDB(wdb)
         return m.reply(
@@ -1944,9 +1948,9 @@ return m.reply(
   const legacyAll = input === 'all'
   const randomGame = input === 'random' || retryMode
   const randomBet = retryMode
-    ? Number(user.casinoReplay?.bet)
-    : args[1]?.toLowerCase() === 'all' ? Number(wdb.money[m.sender] || 0) : parseRpgMoneyAmount(args[1])
-  const eligibleGames = Object.keys(games).filter(key => games[key].minBet <= randomBet)
+    ? normalizeRpgMoney(user.casinoReplay?.bet)
+    : args[1]?.toLowerCase() === 'all' ? normalizeRpgMoney(wdb.money[m.sender] || 0) : parseRpgMoneyAmount(args[1])
+  const eligibleGames = Object.keys(games).filter(key => compareRpgMoney(games[key].minBet, randomBet) <= 0)
   let game = legacySlot
     ? 'slot'
     : legacyAll
@@ -1956,7 +1960,7 @@ return m.reply(
       : aliases[input]
 
   if (retryMode) {
-    if (!Number.isInteger(randomBet) || randomBet < 1) {
+    if (compareRpgMoney(randomBet, 1) < 0) {
       return m.reply('❌ Belum ada permainan sebelumnya yang bisa diulang.')
     }
     const cooldowns = getCooldowns(user)
@@ -1997,9 +2001,9 @@ return m.reply(
 }
 
 const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
-const bet = betInput === 'all' ? Math.floor(Number(wdb.money[m.sender]) || 0) : parseRpgMoneyAmount(betInput)
+const bet = betInput === 'all' ? normalizeRpgMoney(wdb.money[m.sender]) : parseRpgMoneyAmount(betInput)
 
-if (!Number.isInteger(bet) || bet < games[game].minBet) {
+if (bet === null || compareRpgMoney(bet, games[game].minBet) < 0) {
   return m.reply(
     `╭─❏「 ❌ TARUHAN 」❏\n` +
     `│ ❌ *Taruhan tidak valid.*\n` +
@@ -2011,7 +2015,7 @@ if (!Number.isInteger(bet) || bet < games[game].minBet) {
   )
 }
 
-if ((wdb.money[m.sender] || 0) < bet) {
+if (compareRpgMoney(wdb.money[m.sender] || 0, bet) < 0) {
   return m.reply(
     `╭─❏「 ❌ TARUHAN 」❏\n` +
     `│ 💸 *Uang di saku kamu tidak cukup!*\n` +
@@ -2043,7 +2047,7 @@ if (elapsed < cooldownDuration) {
     result.multiplier = 0
     result.text += '\n🛡️ Safety Net mengurangi peluang kemenangan selama event.'
   }
-  const balanceBefore = Number(wdb.money[m.sender]) || 0
+  const balanceBefore = normalizeRpgMoney(wdb.money[m.sender])
   let blackoutLoss = 0
   const winFactor = (isRpgEventActive('golden_hour') ? 1.2 : 1) *
     (isRpgEventActive('low_stakes') ? 0.5 : 1) *
@@ -2051,9 +2055,12 @@ if (elapsed < cooldownDuration) {
   let payout = result.payoutDenied
     ? 0
     : result.multiplier > 0
-    ? bet + Math.floor(scaleDifficultyIncome(user, Math.floor(bet * (result.multiplier - 1))) * winFactor)
+    ? addRpgMoney(bet, multiplyRpgMoney(
+      scaleDifficultyIncome(user, multiplyRpgMoney(bet, result.multiplier - 1)),
+      winFactor
+    ))
     : 0
-  let net = result.payoutDenied ? 0 : payout - bet
+  let net = result.payoutDenied ? 0 : subtractRpgMoney(payout, bet)
   if (result.payoutDenied) {
     payout = 0
   } else if (result.escaped) {
@@ -2064,28 +2071,28 @@ if (elapsed < cooldownDuration) {
     net = 0
   } else if (result.blackout) {
     payout = 0
-    blackoutLoss = Math.min(balanceBefore, bet * 2)
+    blackoutLoss = minRpgMoney(balanceBefore, multiplyRpgMoney(bet, 2))
     net = 0
   }
-  if (safetyNet && net < 0 && !result.blackout) {
+  if (safetyNet && compareRpgMoney(net, 0) < 0 && !result.blackout) {
     payout = bet
     net = 0
   }
   const cashbackEvent = global.db?.data?.rpgEvents?.cashback_hour
   let cashback = 0
-  if (isRpgEventActive('cashback_hour') && net < 0 && cashbackEvent) {
+  if (isRpgEventActive('cashback_hour') && compareRpgMoney(net, 0) < 0 && cashbackEvent) {
     if (user.cashbackHour?.startedAt !== cashbackEvent.startedAt) {
       user.cashbackHour = { startedAt: cashbackEvent.startedAt, total: 0 }
     }
-    cashback = Math.min(
-      Math.max(0, 1_000_000 - Number(user.cashbackHour.total || 0)),
-      Math.floor(-net * 0.25)
+    cashback = minRpgMoney(
+      maxRpgMoney(0, subtractRpgMoney(1_000_000, user.cashbackHour.total || 0)),
+      multiplyRpgMoney(subtractRpgMoney(0, net), 0.25)
     )
-    user.cashbackHour.total = Number(user.cashbackHour.total || 0) + cashback
+    user.cashbackHour.total = addRpgMoney(user.cashbackHour.total || 0, cashback)
   }
-  net += cashback
+  net = addRpgMoney(net, cashback)
 
-  wdb.money[m.sender] = balanceBefore + net - blackoutLoss
+  wdb.money[m.sender] = subtractRpgMoney(addRpgMoney(balanceBefore, net), blackoutLoss)
   cooldowns[game] = Date.now()
   user.casinoCooldownDurations = user.casinoCooldownDurations || {}
   user.casinoCooldownDurations[game] = getGameCooldownDuration(game, result.multiplier, user)
@@ -2094,14 +2101,14 @@ if (elapsed < cooldownDuration) {
   stats.dailyGames++
   stats.byGame[game] = stats.byGame[game] || { games: 0, wins: 0, profit: 0 }
   stats.byGame[game].games++
-  stats.byGame[game].profit = Number(stats.byGame[game].profit || 0) + net
+  stats.byGame[game].profit = addRpgMoney(stats.byGame[game].profit || 0, net)
 
   if (result.multiplier > 0 && !result.blackout) {
     stats.wins++
     stats.byGame[game].wins++
   }
 
-  stats.profit = Number(stats.profit || 0) + net
+  stats.profit = addRpgMoney(stats.profit || 0, net)
   incrementCasinoOutcome(stats.dailyResults, game, result)
   incrementCasinoOutcome(stats.recordResults, game, result)
   stats.dailyHistory.push({
@@ -2123,12 +2130,12 @@ if (elapsed < cooldownDuration) {
     bet,
     payout,
     profit: net,
-    moneyChange: net - blackoutLoss
+    moneyChange: subtractRpgMoney(net, blackoutLoss)
   })
   stats.dailyHistory = stats.dailyHistory.slice(-PREMIUM_DAILY_LIMIT)
   wdb.casinoStats = wdb.casinoStats || { totalWinnings: 0 }
   if (result.multiplier > 0 && !result.payoutDenied && !result.blackout) {
-    wdb.casinoStats.totalWinnings = Number(wdb.casinoStats.totalWinnings || 0) + payout
+    wdb.casinoStats.totalWinnings = addRpgMoney(wdb.casinoStats.totalWinnings || 0, payout)
   }
 
   if (result.blackout) {

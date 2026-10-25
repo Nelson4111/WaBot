@@ -9,8 +9,9 @@ import {
 import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { formatRpgMoney } from '../../lib/rpgMoney.js'
 
-const money = value => `Rp ${(Number(value) || 0).toLocaleString('id-ID')}`
+const money = value => formatRpgMoney(value)
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
 const displayName = item => `${item.emoji} ${item.name}`
 const collectionItems = [...MALL_CATEGORIES.koleksi.items, ...AUCTION_ITEMS, ...BANK_SPECIAL_ITEMS]

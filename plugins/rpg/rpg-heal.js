@@ -1,3 +1,4 @@
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { getDifficultyDeathHealCooldownRemaining, scaleDifficultyHealingCost } from '../../lib/rpgDifficulty.js'
@@ -26,11 +27,11 @@ function getHealPayment(payer, cost) {
 }
 
 function applyHeal(db, payerJid, payer, target, details, payment) {
-  const wallet = Number(db.money[payerJid]) || 0
-  if (wallet >= payment.amount) {
-    db.money[payerJid] = wallet - payment.amount
-  } else if (Number(payer.bank) >= payment.amount && !payer.kartuBeku) {
-    payer.bank -= payment.amount
+  const wallet = normalizeRpgMoney(db.money[payerJid])
+  if (compareRpgMoney(wallet, payment.amount) >= 0) {
+    db.money[payerJid] = subtractRpgMoney(wallet, payment.amount)
+  } else if (compareRpgMoney(payer.bank, payment.amount) >= 0 && !payer.kartuBeku) {
+    payer.bank = subtractRpgMoney(payer.bank, payment.amount)
     payer.riwayat ||= []
     payer.riwayat.unshift(`-Rp ${payment.amount.toLocaleString()} Biaya Heal`)
     payer.riwayat.length = Math.min(payer.riwayat.length, 20)
@@ -142,8 +143,8 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     if (details.missingHP <= 0) return m.reply(`❤️ HP target sudah penuh (${details.maxHP}/${details.maxHP}).`)
 
     const payment = getHealPayment(payer, details.cost)
-    const wallet = Number(wdb.money[m.sender]) || 0
-    if (wallet < payment.amount && ((Number(payer.bank) || 0) < payment.amount || payer.kartuBeku)) {
+    const wallet = normalizeRpgMoney(wdb.money[m.sender])
+    if (compareRpgMoney(wallet, payment.amount) < 0 && (compareRpgMoney(payer.bank, payment.amount) < 0 || payer.kartuBeku)) {
       return m.reply(
         `❌ Saldo kamu tidak cukup untuk menawarkan heal.\n` +
         `> ↳ Biaya : Rp ${payment.amount.toLocaleString()}`
@@ -222,7 +223,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
       `> ↳ 💰 Biaya : Rp ${details.cost.toLocaleString()}\n` +
       `> ↳ 🛡️ Asuransi : ${(payment.insurance * 100).toFixed(0)}%\n` +
       `> ↳ 💸 Bayar : Rp ${payment.amount.toLocaleString()}\n` +
-      `> ↳ 💵 Uangmu : Rp ${(Number(wdb.money[m.sender]) || 0).toLocaleString()}\n\n` +
+      `> ↳ 💵 Uangmu : ${formatRpgMoney(wdb.money[m.sender])}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }

@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { bibit } from './rpg-tanam.js'
@@ -26,7 +27,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   for (const key of ['uang', 'money']) {
     const amount = Number(user.inventory[key]) || 0
     if (amount > 0) {
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], amount)
       delete user.inventory[key]
       legacyMigrated = true
     }
@@ -218,7 +219,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       user.inventory[entry.item] -= entry.quantity
       if (user.inventory[entry.item] <= 0) delete user.inventory[entry.item]
     }
-    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + pending.total
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], pending.total)
     delete user.pendingKoperasiSell
     saveDB(wdb)
     return m.reply(
@@ -357,7 +358,7 @@ if (amount === 'all') {
   user.inventory[itemInput] -= jual
   if(user.inventory[itemInput] <= 0) delete user.inventory[itemInput]
   hasil = scaleDifficultyIncome(user, hasil)
-  wdb.money[m.sender] += hasil
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
   saveDB(wdb)
 
   return m.reply(

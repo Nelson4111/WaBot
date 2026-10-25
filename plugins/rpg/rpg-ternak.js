@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
@@ -242,7 +243,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let total = h.hargaBibit * jml
     if((wdb.money[m.sender] || 0) < total) return safeReply(`❌ Uang kurang: Rp ${total.toLocaleString()}`)
 
-    wdb.money[m.sender] -= total
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], total)
     let key = getHewanKey(hewan1) || hewan1
     user.ternak[key] = (user.ternak[key] || 0) + jml
     saveDB(wdb)
@@ -327,7 +328,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let total = hargaItem * jml
     user.inventory[item] -= jml
     if(user.inventory[item] <= 0) delete user.inventory[item]
-    wdb.money[m.sender] += total
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], total)
     saveDB(wdb)
 
     return safeReply(

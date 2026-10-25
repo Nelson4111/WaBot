@@ -1,3 +1,4 @@
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
@@ -82,7 +83,7 @@ let handler = async (m, { conn, text }) => {
   youtube.lastKolab = youtube.lastCollab
 
   if (!wdb.money) wdb.money = {}
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + moneyGain
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], moneyGain)
 
   const newLevel = Math.floor(youtube.subs / 10000) + 1
   if (newLevel > youtube.level) {

@@ -1,3 +1,4 @@
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, addRpgExp } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { canReceiveRareActivityRewards, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -271,7 +272,7 @@ if (missionAction === 'list') {
   player.inventory = player.inventory || {}
   for (const [item, amount] of Object.entries(executorRewardItems)) {
     executorLoot[item] = amount
-    if (item === 'money') wdb.money[m.sender] = (wdb.money[m.sender] || 0) + amount
+    if (item === 'money') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], amount)
     else if (item === 'gemstone') player.inventory.gemstone = (Number(player.inventory.gemstone) || 0) + amount
     else player[item] = (Number(player[item]) || 0) + amount
   }

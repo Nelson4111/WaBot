@@ -1,4 +1,5 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { addRpgMoney, normalizeRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn }) => {
   const wdb = loadDB()
@@ -20,7 +21,7 @@ let handler = async (m, { conn }) => {
   // Hitung saldo global dari wdb.money
   const moneyDB = wdb.money || {}
   users.forEach(([jid, data]) => {
-    totalMoney += Number(moneyDB[jid] ?? data.money ?? data.rpg?.money ?? 0)
+    totalMoney = addRpgMoney(totalMoney, normalizeRpgMoney(moneyDB[jid] ?? data.money ?? data.rpg?.money ?? 0))
   })
 
   // Hitung statistik material dan level

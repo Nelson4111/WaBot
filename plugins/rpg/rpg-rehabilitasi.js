@@ -3,6 +3,7 @@ import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, getActiveCrimeScore } from '../../lib/crimeHelper.js'
 import { REHABILITATION_ACTIVITY_STORIES } from '../../lib/rehabilitationStories.js'
 import { isPremiumUser } from './rpg-bank.js'
+import { compareRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import {
   applyRehabilitationPayment,
   completeRehabilitation,
@@ -435,9 +436,9 @@ if (action === 'bayar') {
     )
   }
 
-  const balance = Number(wdb.money[m.sender]) || 0
+  const balance = normalizeRpgMoney(wdb.money[m.sender])
 
-  if (balance < amount) {
+  if (compareRpgMoney(balance, amount) < 0) {
     return m.reply(
       `╭─❏「 ❌ PEMBAYARAN GAGAL 」❏\n` +
       `│ ❌ *SALDO TIDAK CUKUP*\n` +
@@ -447,7 +448,7 @@ if (action === 'bayar') {
     )
   }
 
-  wdb.money[m.sender] = balance - amount
+  wdb.money[m.sender] = subtractRpgMoney(balance, amount)
 
   const updatedPayment = applyRehabilitationPayment(process, amount)
 

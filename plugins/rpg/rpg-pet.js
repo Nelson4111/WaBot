@@ -6,7 +6,13 @@ import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
@@ -680,10 +686,10 @@ if (action === 'care') {
   }
   const cleanCost = user.pets.filter(pet => Number(pet.dirty) !== 0).length * 2000
   const totalCost = totalFeedCost + cleanCost
-  if ((Number(wdb.money[m.sender]) || 0) < totalCost) return safeReply(`❌ Uang tidak cukup. Care membutuhkan Rp ${totalCost.toLocaleString('id-ID')} untuk feed dan clean.`)
+  if (compareRpgMoney(wdb.money[m.sender], totalCost) < 0) return safeReply(`❌ Uang tidak cukup. Care membutuhkan ${formatRpgMoney(totalCost)} untuk feed dan clean.`)
 
   const now = Date.now()
-  wdb.money[m.sender] -= totalCost
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalCost)
   for (const pet of user.pets) {
     if (!isMesin(pet.tipe)) {
       const rarity = pets[pet.tipe]?.rarity || 'COMMON'
@@ -692,9 +698,9 @@ if (action === 'care') {
       pet.exp = (Number(pet.exp) || 0) + applyPetFestivalExp(expGain)
       pet.energy = Math.min(100, (Number(pet.energy) || 100) + 20 + (pet.tipe === 'mermaid' ? 10 : 0) + (skill.energyBonus || 0))
       pet.happy = Math.min(100, (Number(pet.happy) || 50) + 5 + (skill.happyBonus || 0))
-      if (pet.tipe === 'alien') wdb.money[m.sender] += totemIncome(1000 * (Number(pet.level) || 1))
-      if (pet.tipe === 'poop') wdb.money[m.sender] += totemIncome(2000)
-      if (skill.moneyBonus > 0) wdb.money[m.sender] += totemIncome(skill.moneyBonus)
+      if (pet.tipe === 'alien') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(1000 * (Number(pet.level) || 1)))
+      if (pet.tipe === 'poop') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(2000))
+      if (skill.moneyBonus > 0) wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(skill.moneyBonus))
       if (pet.exp >= 100) { pet.level = (Number(pet.level) || 1) + 1; pet.exp = 0 }
       pet.lastFeed = now
     }
@@ -768,7 +774,7 @@ if (action === 'all') {
     }
   })
 
-  wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + huntMoney
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], huntMoney)
   user.cooldown.pethunt = now
   user.cooldown.petdispatch = now
   user.cooldown.petall = now
@@ -1125,7 +1131,7 @@ for(let key in aliases){
     if (getPet(petName)) return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *KAMU SUDAH PUNYA*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n━━━━━━━━━━━`)
     let harga = pets[petName].harga
     if ((wdb.money[m.sender] || 0) < harga) return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
-    wdb.money[m.sender] -= harga
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], harga)
     user.pets.push({ tipe: petName, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
     saveDB(wdb)
     return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n✅ *ADOPSI BERHASIL*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n🌟 ${rarities[pets[petName].rarity].emoji} ${pets[petName].rarity}\n✨ Skill : ${pets[petName].skill || 'Tidak ada'}\n💰 Harga : -Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
@@ -1187,7 +1193,7 @@ for(let key in aliases){
   let pool = Object.entries(pets).filter(([k,v]) => v.rarity === rarity)
   let randomPet = pool[Math.floor(Math.random() * pool.length)][0]
 
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
 
   user.pets.push({
     tipe: randomPet,
@@ -1335,7 +1341,7 @@ if (action === 'feed') {
 
     if ((wdb.money[m.sender] || 0) < biayaMakan) return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${biayaMakan.toLocaleString()}.\n━━━━━━━━━━━`)
     
-    wdb.money[m.sender] -= biayaMakan
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biayaMakan)
     let naik = []
     organic.forEach(({ pet: p }) => {
       let rarity = pets[p.tipe]?.rarity || 'COMMON'
@@ -1351,9 +1357,9 @@ if (action === 'feed') {
       p.exp = (p.exp || 0) + expGain
       p.energy = Math.min(100, (p.energy || 100) + energyGain)
 
-      if(p.tipe === 'alien') wdb.money[m.sender] += totemIncome(1000 * p.level)
-      if(p.tipe === 'poop') wdb.money[m.sender] += totemIncome(2000)
-      if(feedSkill.moneyBonus > 0) wdb.money[m.sender] += totemIncome(feedSkill.moneyBonus)
+      if(p.tipe === 'alien') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(1000 * p.level))
+      if(p.tipe === 'poop') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(2000))
+      if(feedSkill.moneyBonus > 0) wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(feedSkill.moneyBonus))
 
       p.lastFeed = Date.now()
       if (p.exp >= 100) { p.level = (p.level || 1) + 1; p.exp = 0; naik.push(p) }
@@ -1424,7 +1430,7 @@ teks += `\n\n─━━━━━━━━━━━━━━─`
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
 
   machines.forEach(({ pet }) => {
     pet.energy = 100
@@ -1805,7 +1811,7 @@ if (action === 'clean') {
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
   selected.forEach(({ pet }) => {
     pet.dirty = 0
     pet.happy = Math.min(100, (pet.happy || 50) + 10)
@@ -1870,7 +1876,7 @@ if (action === 'heal') {
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
   p.energy = 100
   p.happy = 100
   p.dirty = 0
@@ -1940,7 +1946,7 @@ if (action === 'gift') {
       `╰─━━━━━━━━━━━━━━─`
     )
 
-    wdb.money[m.sender] -= 3000
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], 3000)
     p.happy = Math.min(100, (p.happy || 50) + 15)
     saveDB(wdb)
 
@@ -1966,7 +1972,7 @@ if (action === 'gift') {
       `╰─━━━━━━━━━━━━━━─`
     )
 
-    wdb.money[m.sender] -= 10000
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], 10000)
     p.happy = Math.min(100, (p.happy || 50) + 30)
     p.exp += applyPetFestivalExp(10)
     saveDB(wdb)
@@ -1994,7 +2000,7 @@ if (action === 'gift') {
       `─━━━━━━━━━━━━━━─`
     )
 
-    wdb.money[m.sender] -= 15000
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], 15000)
     p.energy = Math.min(100, (p.energy || 100) + 40)
     saveDB(wdb)
 
@@ -2110,7 +2116,7 @@ for(let key in aliases){
   )
 
   let refund = Math.floor(pets[petName].harga * 0.5)
-  wdb.money[m.sender] += refund
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], refund)
   user.pets.splice(index, 1)
   saveDB(wdb)
 
@@ -2196,7 +2202,7 @@ if (action === 'sell') {
     user.pets.splice(idx, 1)
   })
 
-  wdb.money[m.sender] += total
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], total)
   saveDB(wdb)
 
   return safeReply(
@@ -2282,7 +2288,7 @@ if (action === 'breed') {
     `─━━━━━━━━━━━━━━─`
   )
 
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
   p1.energy -= 50; p2.energy -= 50
   let berhasil = Math.random() < 0.5
 
@@ -2444,7 +2450,7 @@ if (action === 'battle') {
   if(taruhan > 0) cap += `\n💰 *TARUHAN*\n> ↳ Rp ${taruhan.toLocaleString()}\n`
 
   if(powerA > powerB){
-    if(taruhan > 0){ wdb.money[m.sender] += taruhan; wdb.money[target] -= taruhan }
+    if(taruhan > 0){ wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], taruhan); wdb.money[target] = subtractRpgMoney(wdb.money[target], taruhan })
     user.pets[idxA].exp += 40; userTarget.pets[idxB].exp += 10
 
     if(user.pets[idxA].exp >= 100){
@@ -2460,7 +2466,7 @@ if (action === 'battle') {
 
     if(taruhan > 0) cap += `\n> ↳ +Rp ${taruhan.toLocaleString()}`
   } else if(powerB > powerA){
-    if(taruhan > 0){ wdb.money[target] += taruhan; wdb.money[m.sender] -= taruhan }
+    if(taruhan > 0){ wdb.money[target] = addRpgMoney(wdb.money[target], taruhan); wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], taruhan })
     userTarget.pets[idxB].exp += 40; user.pets[idxA].exp += 10
 
     if(userTarget.pets[idxB].exp >= 100){
@@ -2521,7 +2527,7 @@ if (action === 'hunt') {
   let huntMoneyMulti = user.pets.reduce((acc, p) => acc * (applySkill(p, 'hunt').moneyMulti || 1), 1)
 
   hasil = totemIncome(Math.floor(hasil * huntMoneyMulti))
-  wdb.money[m.sender] += hasil
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
 
   user.pets.forEach(p => {
     let skill = applySkill(p, 'hunt')
@@ -2557,7 +2563,7 @@ if (action === 'dispatch') {
     const now = Date.now()
     const status = pendingDispatches.map((dispatch, index) => {
       const remaining = Math.max(0, Number(dispatch.readyAt) - now)
-      if (!remaining) return `${index + 1}. ✅ Siap diklaim: Rp ${Number(dispatch.money || 0).toLocaleString('id-ID')}`
+      if (!remaining) return `${index + 1}. ✅ Siap diklaim: ${formatRpgMoney(dispatch.money || 0)}`
       const minutes = Math.floor(remaining / 60000)
       const seconds = Math.floor((remaining % 60000) / 1000)
       return `${index + 1}. ⏳ ${minutes} menit ${seconds} detik lagi`
@@ -2570,13 +2576,13 @@ if (action === 'dispatch') {
     const now = Date.now()
     const completedDispatches = pendingDispatches.filter(dispatch => Number(dispatch.readyAt) <= now)
     if (!completedDispatches.length) return safeReply(`⏳ Dispatch belum selesai. Cek *${usedPrefix}pet dispatch info* untuk melihat durasinya.`)
-    const hasil = completedDispatches.reduce((total, dispatch) => total + Math.max(0, Number(dispatch.money) || 0), 0)
+    const hasil = completedDispatches.reduce((total, dispatch) => addRpgMoney(total, dispatch.money || 0), 0)
     const remainingDispatches = pendingDispatches.filter(dispatch => Number(dispatch.readyAt) > now)
     if (remainingDispatches.length) user.pendingPetDispatch = remainingDispatches
     else delete user.pendingPetDispatch
-    wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + hasil
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], hasil)
     saveDB(wdb)
-    return safeReply(`✅ *DISPATCH DIKLAIM*\n${completedDispatches.length} hasil dispatch diambil. Total: +Rp ${hasil.toLocaleString('id-ID')}.${remainingDispatches.length ? `\n📦 ${remainingDispatches.length} dispatch masih berlangsung; cek dengan *${usedPrefix}pet dispatch info*.` : ''}`)
+    return safeReply(`✅ *DISPATCH DIKLAIM*\n${completedDispatches.length} hasil dispatch diambil. Total: +${formatRpgMoney(hasil)}.${remainingDispatches.length ? `\n📦 ${remainingDispatches.length} dispatch masih berlangsung; cek dengan *${usedPrefix}pet dispatch info*.` : ''}`)
   }
 
   if (pendingDispatches.length) return safeReply(`📦 Dispatch masih tersimpan. Cek *${usedPrefix}pet dispatch info* atau klaim dengan *${usedPrefix}pet dispatch collect*.`)
@@ -2979,7 +2985,7 @@ if (action === 'claim') {
   )
 
   uang = totemIncome(uang)
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uang
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], uang)
   saveDB(wdb)
 
   let cap = `╭─❏「 🐾 AVELIA PET CENTER 」❏\n`

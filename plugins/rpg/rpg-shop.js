@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -32,7 +33,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   for (const key of ['uang', 'money']) {
     const amount = Number(user.inventory[key]) || 0
     if (amount > 0) {
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], amount)
       delete user.inventory[key]
       legacyMigrated = true
     }
@@ -222,7 +223,7 @@ if (mode === 'guide') {
       return m.reply(`❌ Uang kamu tidak cukup!\nButuh: Rp ${totalHarga.toLocaleString()}\nPunya: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}`)
     }
 
-    wdb.money[m.sender] -= totalHarga
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalHarga)
     user.inventory[item] = (user.inventory[item] || 0) + jumlah
     saveDB(wdb)
     return m.reply(`✅ *BERHASIL BELI!*\n\n${hargaBeli[item].emoji} ${formatNama(item)} x${jumlah}\n💸 -Rp ${totalHarga.toLocaleString()}`)
@@ -397,7 +398,7 @@ if (mode === 'guide') {
     }
 
     totalDapat = scaleDifficultyIncome(user, totalDapat)
-    wdb.money[m.sender] = (wdb.money[m.sender] || 0) + totalDapat
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totalDapat)
     user.jualAllConfirm = null
     saveDB(wdb)
     const earnedLines = []

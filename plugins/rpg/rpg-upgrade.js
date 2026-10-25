@@ -4,6 +4,7 @@ import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.j
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
+import { subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -252,7 +253,7 @@ if (!confirmYes) {
   })
 }
 
-wdb.money[m.sender] = Math.max(0, (wdb.money[m.sender] || 0) - totalMoney)
+wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender] || 0, totalMoney)
 consumeMaterial(user, 'iron', totalIron)
 consumeMaterial(user, 'stone', totalStone)
 consumeMaterial(user, 'wood', totalWood)

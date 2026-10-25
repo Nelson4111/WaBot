@@ -1,3 +1,4 @@
+import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, addRpgExp } from '../../lib/waifuHelper.js'
 import { adjustAbilityDropChance, adjustDifficultyFailureChance, getDifficultyProfile, scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodlineDrawback } from '../../lib/rpgCharacterData.js'
@@ -142,7 +143,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   totalExp = Math.floor(applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp)) * xpBuff)
   let uangDidapat = Math.floor(scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat) * incomeBuff)
-  wdb.money[m.sender] = (wdb.money[m.sender] || 0) + uangDidapat
+  wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], uangDidapat)
   addRpgExp(user, totalExp)
   user.lastMining = Date.now()
   await saveDB(wdb)

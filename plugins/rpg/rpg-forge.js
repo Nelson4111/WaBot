@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { miningOreKeys } from './rpg-mining.js'
@@ -107,7 +108,7 @@ return sendRpgMsg(
   }
 
   // Potong bahan & biaya
-  wdb.money[m.sender] -= totalCost
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalCost)
   for (let mat in recipe.req) {
     let needed = recipe.req[mat] * qty
     consumeMaterial(user, mat, needed)

@@ -2,7 +2,7 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isDifficultyRanked, scaleDifficultyDamage, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { addRpgMoney, compareRpgMoney, formatRpgMoney, maxRpgMoney, minRpgMoney, multiplyRpgMoney, normalizeRpgMoney, parseRpgMoneyAmount, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 const MODES = {
   jambak: { nama: 'Jambak', emoji: '💇', verb: 'dijambak' },
@@ -208,8 +208,9 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
 
     const statsA = initStats(playerA)
     const statsB = initStats(playerB)
-    const wager = Number(challenge.taruhan) || 0
-    if ((wdb.money[challenge.penantang] || 0) < wager || (wdb.money[challenge.target] || 0) < wager) {
+    const wager = normalizeRpgMoney(challenge.taruhan)
+    if (compareRpgMoney(wdb.money[challenge.penantang] || 0, wager) < 0 ||
+        compareRpgMoney(wdb.money[challenge.target] || 0, wager) < 0) {
       return m.reply('❌ Pertarungan dibatalkan karena saldo taruhan tidak mencukupi.')
     }
 
@@ -234,10 +235,10 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
       winner.arenaStats[modeKey].menang++
       loser.arenaStats[modeKey].kalah++
       winner.exp = (winner.exp || 0) + scaleDifficultyXP(winner, 50)
-      wdb.money[winnerJid] = (wdb.money[winnerJid] || 0) + wager
-      wdb.money[loserJid] = (wdb.money[loserJid] || 0) - wager
+      wdb.money[winnerJid] = addRpgMoney(wdb.money[winnerJid] || 0, wager)
+      wdb.money[loserJid] = subtractRpgMoney(wdb.money[loserJid] || 0, wager)
       const winnerTitle = getArenaTitle(winner.arenaStats[modeKey].menang, modeKey)
-      cap += `\n🏆 *PEMENANG*\n> ↳ @${winnerJid.split('@')[0]}\n> ↳ Title: *${winnerTitle}*\n> ↳ Hadiah: +Rp ${wager.toLocaleString()}\n> ↳ EXP: +50\n\n💸 *TRANSFER TARUHAN*\n> ↳ Yang kalah: -Rp ${wager.toLocaleString()}`
+      cap += `\n🏆 *PEMENANG*\n> ↳ @${winnerJid.split('@')[0]}\n> ↳ Title: *${winnerTitle}*\n> ↳ Hadiah: +${formatRpgMoney(wager)}\n> ↳ EXP: +50\n\n💸 *TRANSFER TARUHAN*\n> ↳ Yang kalah: -${formatRpgMoney(wager)}`
     }
 
     cap += `\n\n─━━━━━━━━━━━━━━─`
@@ -256,11 +257,12 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
 
   const taruhanText = (command === 'arena' || command === 'versus' || command === 'balap') ? args[2] : args[1]
   const taruhanInput = taruhanText === undefined ? null : parseRpgMoneyAmount(taruhanText)
-  const taruhanDefault = Math.max(1000, Math.floor(Math.min(wdb.money[sender] || 0, wdb.money[target] || 0) * 0.1))
+  const taruhanDefault = maxRpgMoney(1000, multiplyRpgMoney(minRpgMoney(wdb.money[sender] || 0, wdb.money[target] || 0), 0.1))
   if (taruhanText !== undefined && taruhanInput === null) return m.reply('❌ Nominal taruhan tidak valid. Contoh: 1M.')
   const taruhan = taruhanInput ?? taruhanDefault
-  if (taruhan < 1000) return m.reply('❌ Minimal taruhan Rp 1.000.')
-  if ((wdb.money[sender] || 0) < taruhan || (wdb.money[target] || 0) < taruhan) return m.reply('❌ Saldo salah satu pemain tidak cukup untuk taruhan.')
+  if (compareRpgMoney(taruhan, 1000) < 0) return m.reply('❌ Minimal taruhan Rp 1.000.')
+  if (compareRpgMoney(wdb.money[sender] || 0, taruhan) < 0 ||
+      compareRpgMoney(wdb.money[target] || 0, taruhan) < 0) return m.reply('❌ Saldo salah satu pemain tidak cukup untuk taruhan.')
 
   const challengeId = `${modeKey}_${Date.now()}_${sender}`
   global.arena[challengeId] = { type: modeKey, chat: m.chat, penantang: sender, target, taruhan, waktu: Date.now() }
@@ -271,7 +273,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
   }, 120000)
 
   const cap = `╭─❏「 ${mode.emoji} ARENA 」❏\n│ Mode: *${mode.nama}*\n╰─━━━━━━━━━━━━━━─\n\n` +
-    `👤 Penantang: @${sender.split('@')[0]}\n👤 Lawan: @${target.split('@')[0]}\n💰 Taruhan: Rp ${taruhan.toLocaleString()}\n\n` +
+    `👤 Penantang: @${sender.split('@')[0]}\n👤 Lawan: @${target.split('@')[0]}\n💰 Taruhan: ${formatRpgMoney(taruhan)}\n\n` +
     `> Terima: *${usedPrefix}${modeKey} terima*\n> Tolak: *${usedPrefix}${modeKey} tolak*\n> Berlaku selama 2 menit.`
   return conn.sendMessage(m.chat, { text: cap, mentions: [sender, target] }, { quoted: m })
 }

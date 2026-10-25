@@ -1,3 +1,4 @@
+import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
@@ -21,7 +22,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   if((wdb.money[m.sender] || 0) < data.biayaObat)
     return m.reply(`❌ Uang kurang: Rp ${data.biayaObat.toLocaleString()}`)
 
-  wdb.money[m.sender] -= data.biayaObat
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], data.biayaObat)
   user.ternak[data.h1] = (user.ternak[data.h1] || 0) + 1
   user.ternak[data.h2] = (user.ternak[data.h2] || 0) + 1
   delete global.icuTernak[m.sender]

@@ -1,6 +1,8 @@
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import { parseRpgMoneyAmount,
+  addRpgMoney,
+  subtractRpgMoney} from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -101,7 +103,7 @@ if (action === 'feed') {
     `> ↳ Butuh Rp ${biayaMakan.toLocaleString()}.`
   )
 
-  wdb.money[m.sender] -= biayaMakan
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biayaMakan)
 
   let naik = []
 
@@ -114,8 +116,8 @@ if (action === 'feed') {
       p.happy = Math.min(100, (p.happy || 50) + 5)
     }
 
-    if(p.tipe === 'alien') wdb.money[m.sender] += 1000 * p.level
-    if(p.tipe === 'poop') wdb.money[m.sender] += 2000
+    if(p.tipe === 'alien') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], 1000 * p.level)
+    if(p.tipe === 'poop') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], 2000)
 
     p.lastFeed = Date.now()
 
@@ -478,7 +480,7 @@ if (action === 'clean') {
     `> ↳ Semua pet kamu sudah bersih!`
   )
 
-  wdb.money[m.sender] -= biaya
+  wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], biaya)
 
   user.pets.forEach(p => {
     p.dirty = 0
@@ -623,8 +625,8 @@ if (action === 'battle') {
 
   if(powerA > powerB){
     if(taruhan > 0){
-      wdb.money[m.sender] += taruhan
-      wdb.money[target] -= taruhan
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], taruhan)
+      wdb.money[target] = subtractRpgMoney(wdb.money[target], taruhan)
     }
 
     user.pets[idxA].exp += 40
@@ -644,8 +646,8 @@ if (action === 'battle') {
     if(taruhan > 0) cap += `\n> ↳ +Rp ${taruhan.toLocaleString()}`
   } else if(powerB > powerA){
     if(taruhan > 0){
-      wdb.money[target] += taruhan
-      wdb.money[m.sender] -= taruhan
+      wdb.money[target] = addRpgMoney(wdb.money[target], taruhan)
+      wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], taruhan)
     }
 
     userTarget.pets[idxB].exp += 40

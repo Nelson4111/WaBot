@@ -1,3 +1,4 @@
+import { addRpgMoney, multiplyRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyHarvest, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
@@ -86,7 +87,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   for (const key of ['uang', 'money']) {
     const amount = Number(user.inventory[key]) || 0
     if (amount > 0) {
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + amount
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], amount)
       delete user.inventory[key]
       hasilLamaDimigrasikan = true
     }
@@ -126,7 +127,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     const amount = Math.max(0, Number(jumlah) || 0)
     if(item === 'money') {
       const incomeBuff = getGroupTotemBuff(wdb.data, m.chat, 'farming', 'income')
-      wdb.money[m.sender] = (Number(wdb.money[m.sender]) || 0) + Math.floor(scaleDifficultyIncome(user, amount) * incomeBuff)
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], multiplyRpgMoney(scaleDifficultyIncome(user, amount), incomeBuff))
     } else if(item === 'exp') {
       const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'farming', 'xp')
       user.exp = (Number(user.exp) || 0) + Math.floor(scaleDifficultyXP(user, amount) * xpBuff)

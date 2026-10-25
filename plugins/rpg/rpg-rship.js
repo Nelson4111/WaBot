@@ -6,7 +6,16 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
 import { registerPrisoner } from '../../lib/prisonHelper.js'
 import { createRpgCrimeRecord } from '../../lib/rpgCrimeAction.js'
-import { parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  divideRpgMoney,
+  formatRpgMoney,
+  minRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgQuickButton, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import {
   CHILD_ACTIVITIES,
@@ -228,7 +237,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const periodsDue = Math.floor((now - paidUntil) / config.feePeriod) + 1
     const amountDue = periodsDue * config.fee
     if (user.bank >= amountDue) {
-      user.bank -= amountDue
+      user.bank = subtractRpgMoney(user.bank, amountDue)
       facility.paidUntil = paidUntil + periodsDue * config.feePeriod
       delete facility.unpaidSince
       childStateChanged = true
@@ -506,7 +515,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       cewek: 'cewek', cewe: 'cewek', perempuan: 'cewek', female: 'cewek'
     }
     const gender = genderAliases[genderInput]
-    if (!nama || nama.length > 30 || !gender || !Number.isSafeInteger(mahar) || mahar < 1) {
+    if (!nama || nama.length > 30 || !gender || mahar === null || compareRpgMoney(mahar, 1) < 0) {
       return m.reply(
         `╭─❏「 💍 LAMARAN RSHIP 」❏
 │ 📋 FORMAT LAMARAN
@@ -557,20 +566,22 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 ─━━━━━━━━━━━━━━─`
       )
     }
-    if (user.bank < mahar) {
+    if (compareRpgMoney(user.bank, mahar) < 0) {
       return m.reply(
         `╭─❏「 💰 SALDO BANK RPG 」❏
 │ ⚠️ SALDO TIDAK MENCUKUPI
 ╰─━━━━━━━━━━━━━━─
 
 > ↳ Mahar: Rp ${mahar.toLocaleString('id-ID')}
-> ↳ Saldo saat ini: Rp ${Number(user.bank).toLocaleString('id-ID')}
+> ↳ Saldo saat ini: ${formatRpgMoney(user.bank)}
 
 ─━━━━━━━━━━━━━━─`
       )
     }
 
-    const acceptanceChance = Math.min(95, 10 + Math.floor(mahar / 100000))
+    const acceptanceChance = compareRpgMoney(mahar, 8500000) >= 0
+      ? 95
+      : 10 + Number(divideRpgMoney(mahar, 100000))
     if (Math.random() * 100 >= acceptanceChance) {
       return m.reply(
         `╭─❏「 💔 LAMARAN DITOLAK 」❏
@@ -589,7 +600,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       )
     }
 
-    user.bank -= mahar
+    user.bank = subtractRpgMoney(user.bank, mahar)
     user.harem.push({
       name: nama,
       gender,
@@ -2511,14 +2522,14 @@ const respondToChildTransfer = async response => {
     child.nama === offer.childName &&
     child.ortu === offer.parentName &&
     !child.facility) ?? -1
-  const amount = Number(offer.amount) || 0
-  if (!sourceUser || source?.isDummy || childIndex < 0 || !Number.isSafeInteger(amount) || amount < 0) {
+  const amount = normalizeRpgMoney(offer.amount)
+  if (!sourceUser || source?.isDummy || childIndex < 0 || compareRpgMoney(amount, 0) < 0) {
     clearChildTransferOffer(offer)
     delete user.pendingChildFosterOffer
     await saveDB(wdb)
     return m.reply(`Tawaran gagal karena data anak, nominal, atau permintaan pemilik sudah berubah.`)
   }
-  if ((Number(sourceUser.bank) || 0) < amount) {
+  if (compareRpgMoney(sourceUser.bank, amount) < 0) {
     clearChildTransferOffer(offer)
     delete user.pendingChildFosterOffer
     await saveDB(wdb)
@@ -2541,8 +2552,8 @@ const respondToChildTransfer = async response => {
   child.custody = { type: 'foster', guardianJid: m.sender }
   delete child.facility
   if (!Array.isArray(user.kids)) user.kids = []
-  sourceUser.bank = (Number(sourceUser.bank) || 0) - amount
-  user.bank = (Number(user.bank) || 0) + amount
+  sourceUser.bank = subtractRpgMoney(sourceUser.bank, amount)
+  user.bank = addRpgMoney(user.bank, amount)
   user.kids.push(child)
   delete sourceUser.pendingChildTransfer
   delete user.pendingChildFosterOffer
@@ -2571,10 +2582,10 @@ if (isChildAdoptionCommand) {
     const targetData = getUserRPG(wdb, targetJid)
     const targetUser = targetData?.rpg || targetData
     const amountTokens = args.slice(3).filter(token => !token.startsWith('@'))
-    const amountText = amountTokens.length === 1 ? amountTokens[0].replace(/[.,]/g, '') : '0'
-    const amount = amountTokens.length ? Number(amountText) : 0
+    const amountText = amountTokens.length === 1 ? amountTokens[0] : ''
+    const amount = amountTokens.length ? (amountText === '0' ? 0 : parseRpgMoneyAmount(amountText)) : 0
     if (!child || child.facility || child.pendingTransferId || targetJid === m.sender || !targetUser || targetData?.isDummy ||
-      amountTokens.length > 1 || !Number.isSafeInteger(amount) || amount < 0) {
+      amountTokens.length > 1 || amount === null || compareRpgMoney(amount, 0) < 0) {
       return m.reply(
         `Format: ${usedPrefix}rship kid adopt <no-anak> @user <biaya>\n` +
         `> ↳ Biaya opsional, dipotong dari bank pengirim dan diterima saat tawaran disetujui.\n` +
@@ -2604,7 +2615,7 @@ if (isChildAdoptionCommand) {
       clearChildTransferOffer(previousOffer)
       delete targetUser.pendingChildFosterOffer
     }
-    if ((Number(user.bank) || 0) < amount) {
+    if (compareRpgMoney(user.bank, amount) < 0) {
       return m.reply(`Saldo bank tidak cukup untuk biaya asuh Rp ${amount.toLocaleString('id-ID')}.`)
     }
 
@@ -3054,8 +3065,8 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'asuh') {
       )
     }
 
-    const amount = Number(offer.amount) || 0
-    if (!Number.isSafeInteger(amount) || amount < 0 || (Number(sourceUser.bank) || 0) < amount) {
+    const amount = normalizeRpgMoney(offer.amount)
+    if (compareRpgMoney(amount, 0) < 0 || compareRpgMoney(sourceUser.bank, amount) < 0) {
       clearSourceOffer(offer)
       delete user.pendingChildFosterOffer
       await saveDB(wdb)
@@ -3080,8 +3091,8 @@ if (action === 'anak' && args[1]?.toLowerCase() === 'asuh') {
     child.custody = { type: 'foster', guardianJid: m.sender }
     delete child.facility
     if (!Array.isArray(user.kids)) user.kids = []
-    sourceUser.bank = (Number(sourceUser.bank) || 0) - amount
-    user.bank = (Number(user.bank) || 0) + amount
+    sourceUser.bank = subtractRpgMoney(sourceUser.bank, amount)
+    user.bank = addRpgMoney(user.bank, amount)
     user.kids.push(child)
     delete sourceUser.pendingChildTransfer
     delete user.pendingChildFosterOffer
@@ -3277,7 +3288,7 @@ const kidSubcommand = action === 'kid' || action === 'urus' ||
       }
 
       const paidUntil = Math.max(now, Number(target.child.facility.paidUntil) || now)
-      user.bank -= total
+      user.bank = subtractRpgMoney(user.bank, total)
       target.child.facility.paidUntil = paidUntil + facility.feePeriod * days
       delete target.child.facility.unpaidSince
       await saveDB(wdb)
@@ -3783,7 +3794,7 @@ Silakan periksa saldo bank sebelum melakukan aktivitas.
 
   const completed = []
   const levelUps = new Map()
-  user.bank -= totalCost
+  user.bank = subtractRpgMoney(user.bank, totalCost)
   for (const target of eligible) {
     const { child, partner } = target
     for (const [name, rule] of actions) {
@@ -3951,19 +3962,20 @@ if (action === 'santet') {
     amountText = args[2]
   }
   const target = user.harem[targetNo]
-  const amount = Number(amountText)
+  const amount = parseRpgMoneyAmount(amountText)
   if (!target) return m.reply(`❌ Nomor pasangan tidak valid.`)
-  if (!Number.isSafeInteger(amount) || amount <= 0) return m.reply(`❌ Masukkan jumlah uang yang valid.`)
+  if (amount === null || compareRpgMoney(amount, 0) <= 0) return m.reply(`❌ Masukkan jumlah uang yang valid.`)
   if (cekCD('santet', 2 * 60 * 60 * 1000) > 0) return m.reply(`⏰ Santet masih cooldown. Tunggu 2 jam.`)
-  if (user.bank < amount) return m.reply(`❌ Saldo bank tidak cukup.`)
+  if (compareRpgMoney(user.bank, amount) < 0) return m.reply(`❌ Saldo bank tidak cukup.`)
 
-  user.bank -= amount
+  user.bank = subtractRpgMoney(user.bank, amount)
   user.cooldown.santet = Date.now()
-  const successChance = amount > 100000000
+  const chanceAmount = Number(minRpgMoney(amount, 100000000))
+  const successChance = compareRpgMoney(amount, 100000000) > 0
     ? 1
-    : amount < 10000000
-      ? Math.min(0.08, 0.01 + (amount / 10000000) * 0.07)
-      : 0.08 + ((amount - 10000000) / 90000000) * 0.92
+    : chanceAmount < 10000000
+      ? Math.min(0.08, 0.01 + (chanceAmount / 10000000) * 0.07)
+      : 0.08 + ((chanceAmount - 10000000) / 90000000) * 0.92
   const success = Math.random() < successChance
   if (success) {
     target.level = Math.max(20, target.level || 1)
@@ -4080,7 +4092,7 @@ if (action === 'all') {
   }
 
   const now = Date.now()
-  user.bank -= totalCost
+  user.bank = subtractRpgMoney(user.bank, totalCost)
   let totalIncome = 0
   const completedByPartner = new Map()
   let levelUps = 0
@@ -4098,7 +4110,7 @@ if (action === 'all') {
     if (activity === 'wohoo') user.dateStats.wohoo++
   }
   totalIncome = scaleDifficultyIncome(user, totalIncome)
-  user.bank += totalIncome
+  user.bank = addRpgMoney(user.bank, totalIncome)
   user.cooldown.all = now
   saveDB(wdb)
 
@@ -4249,10 +4261,10 @@ if (action === 'date') {
     `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Kencan dengan *${p.name}* (Lv.${p.level || 1}) butuh Rp ${biaya.toLocaleString('id-ID')}.\n` +
-    `> ↳ Saldo bank kamu: Rp ${Number(user.bank).toLocaleString('id-ID')}`
+    `> ↳ Saldo bank kamu: ${formatRpgMoney(user.bank)}`
   )
   
-  user.bank -= biaya
+  user.bank = subtractRpgMoney(user.bank, biaya)
   applyActivityLove(p, 10)
   let up = addExp(p, 20)
   user.dateStats.totalDate++
@@ -4329,7 +4341,7 @@ if (action === 'liburan') {
     `Petualangan singkat bersama *${p.name}* ${waktu.toLowerCase()}\n Capeknya hilang karena kalian menikmati semuanya berdua`,
   ]
 
-  user.bank -= biaya
+  user.bank = subtractRpgMoney(user.bank, biaya)
   applyActivityLove(p, 20)
   const up = addExp(p, 40)
   user.cooldown.liburan = Date.now()
@@ -4370,7 +4382,7 @@ if (action === 'makan') {
     `> ↳ Butuh Rp ${biaya.toLocaleString()}`
   )
   
-  user.bank -= biaya
+  user.bank = subtractRpgMoney(user.bank, biaya)
   applyActivityLove(p, 8)
   let up = addExp(p, 12)
   user.cooldown.makan = Date.now()
@@ -4590,7 +4602,7 @@ if (action === 'belanja') {
     `> ↳ Butuh Rp ${biaya.toLocaleString()}`
   )
 
-  user.bank -= biaya
+  user.bank = subtractRpgMoney(user.bank, biaya)
   applyActivityLove(p, 10)
   let up = addExp(p, 15)
   user.cooldown.belanja = Date.now()
@@ -4650,7 +4662,7 @@ if (action === 'kerja') {
 
   let gaji = Math.floor(Math.random() * 30000) + 15000
   gaji = scaleDifficultyIncome(user, gaji)
-  user.bank += gaji
+  user.bank = addRpgMoney(user.bank, gaji)
   applyActivityLove(p, 8)
   let up = addExp(p, 15)
   user.cooldown.kerja = Date.now()
@@ -4812,13 +4824,15 @@ if (action === 'gift') {
       ? GIFT_LIST.find(entry => entry.id === Number(draft.giftId))
       : null
     const quantity = Number(draft.quantity) || 1
-    const totalHarga = draft.kind === 'item' ? gift.harga * quantity : Number(draft.amount)
-    const totalExp = draft.kind === 'item' ? gift.exp * quantity : Math.floor(totalHarga / 1000)
+    const totalHarga = draft.kind === 'item' ? gift.harga * quantity : normalizeRpgMoney(draft.amount)
+    const totalExp = draft.kind === 'item'
+      ? gift.exp * quantity
+      : Number(minRpgMoney(divideRpgMoney(totalHarga, 1000), Number.MAX_SAFE_INTEGER))
     const totalLove = draft.kind === 'item'
       ? gift.love * quantity
-      : Math.min(100, Math.floor(totalHarga / 10000000))
-    const balance = Number(user.bank) || 0
-    const enoughBalance = balance >= totalHarga
+      : Number(minRpgMoney(divideRpgMoney(totalHarga, 10000000), 100))
+    const balance = normalizeRpgMoney(user.bank)
+    const enoughBalance = compareRpgMoney(balance, totalHarga) >= 0
     const giftName = draft.kind === 'item'
       ? `${quantity}x ${gift.desc} ${gift.emoji}`
       : `Uang Rp ${totalHarga.toLocaleString('id-ID')}`
@@ -4941,7 +4955,7 @@ if (action === 'gift') {
     }
     if (['uang', 'money'].includes(step)) {
       const amount = parseRpgMoneyAmount(args[3])
-      if (draft.stage !== 'moneyAmount' || !Number.isSafeInteger(amount) || amount <= 0) {
+      if (draft.stage !== 'moneyAmount' || amount === null || compareRpgMoney(amount, 0) <= 0) {
         return m.reply(`❌ Masukkan nominal positif. Contoh: *${usedPrefix}rship gift flow uang 5000000*`)
       }
       user.rshipGiftDraft = { ...draft, stage: 'review', kind: 'money', amount, createdAt: Date.now() }
@@ -4993,7 +5007,7 @@ if (action === 'gift') {
       if (draft.kind === 'item' && (!gift || !Number.isSafeInteger(gift.harga * Number(draft.quantity)))) {
         return m.reply(`❌ Detail kado tidak valid. Pilih ulang dari *${usedPrefix}rship gift*.`)
       }
-      if (draft.kind === 'money' && (!Number.isSafeInteger(Number(draft.amount)) || Number(draft.amount) <= 0)) {
+      if (draft.kind === 'money' && compareRpgMoney(draft.amount, 0) <= 0) {
         return m.reply(`❌ Nominal hadiah tidak valid. Pilih ulang dari *${usedPrefix}rship gift*.`)
       }
       if (!['item', 'money'].includes(draft.kind)) {
@@ -5042,7 +5056,7 @@ if (action === 'gift') {
     if (giftType === 'money' || giftType === 'uang') {
       const nominal = parseRpgMoneyAmount(args[4])
 
-      if (!nominal || nominal <= 0) return m.reply(
+      if (nominal === null || compareRpgMoney(nominal, 0) <= 0) return m.reply(
         `╭─❏「 ❌ FORMAT HADIAH 」❏\n` +
         `│ ❌ *FORMAT TIDAK VALID*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -5052,8 +5066,8 @@ if (action === 'gift') {
       giftName = 'Uang jajan'
       jumlah = nominal
       totalHarga = nominal
-      totalExp = Math.max(10, Math.floor(nominal / 1000))
-      totalLove = Math.max(1, Math.floor(nominal / 10000))
+      totalExp = Math.max(10, Number(minRpgMoney(divideRpgMoney(nominal, 1000), Number.MAX_SAFE_INTEGER)))
+      totalLove = Math.max(1, Number(minRpgMoney(divideRpgMoney(nominal, 10000), 100)))
 
     } else if (giftType === 'item') {
       const input = args[4]
@@ -5086,14 +5100,14 @@ if (action === 'gift') {
       )
     }
 
-    if (user.bank < totalHarga) return m.reply(
+    if (compareRpgMoney(user.bank, totalHarga) < 0) return m.reply(
       `╭─❏「 ❌ BANK KOSONG 」❏\n` +
       `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Butuh Rp ${totalHarga.toLocaleString()} di bank`
     )
 
-    user.bank -= totalHarga
+    user.bank = subtractRpgMoney(user.bank, totalHarga)
     child.love = Math.min(100, (child.love || 0) + totalLove)
     child.exp = (child.exp || 0) + totalExp
     saveDB(wdb)
@@ -5146,16 +5160,16 @@ if (action === 'gift') {
 
   // MODE 1: GIFT MONEY
   if(tipe === 'money' || tipe === 'uang'){
-    let jumlah = parseInt(args[2])
+    const jumlah = parseRpgMoneyAmount(args[2])
 
-    if(!jumlah || jumlah <= 0) return m.reply(
+    if (jumlah === null || compareRpgMoney(jumlah, 0) <= 0) return m.reply(
       `╭─❏「 ❌ SALAH 」❏\n` +
       `│ ❌ *FORMAT TIDAK VALID*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Contoh: .rship gift money 50000000`
     )
 
-    if (user.bank < jumlah) return m.reply(
+    if (compareRpgMoney(user.bank, jumlah) < 0) return m.reply(
       `╭─❏「 ❌ BANK KOSONG 」❏\n` +
       `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -5163,11 +5177,12 @@ if (action === 'gift') {
     )
 
     if (confirmedGiftDraft) delete user.rshipGiftDraft
-    let exp = Math.floor(jumlah / 1000)
-    let love = Math.min(100, Math.floor(jumlah / 10000000))
-    let cooldown = scaleDifficultyCooldown(user, Math.min(86400000, Math.floor(jumlah / 100000) * 60000))
+    const exp = Number(minRpgMoney(divideRpgMoney(jumlah, 1000), Number.MAX_SAFE_INTEGER))
+    const love = Number(minRpgMoney(divideRpgMoney(jumlah, 10000000), 100))
+    const cooldownAmount = Number(minRpgMoney(jumlah, 144000000))
+    const cooldown = scaleDifficultyCooldown(user, Math.floor(cooldownAmount / 100000) * 60000)
 
-    user.bank -= jumlah
+    user.bank = subtractRpgMoney(user.bank, jumlah)
     p.love = Math.min(100, p.love + love)
     const up = applyPartnerExp(p, exp) > 0
 
@@ -5271,7 +5286,7 @@ if (action === 'gift') {
     )
 
     if (confirmedGiftDraft) delete user.rshipGiftDraft
-    user.bank -= totalHarga
+    user.bank = subtractRpgMoney(user.bank, totalHarga)
     p.love = Math.min(100, p.love + totalLove)
     const up = applyPartnerExp(p, totalExp) > 0
 
@@ -5675,7 +5690,7 @@ if (action === 'kiss') {
 
     const biaya = 500000
     if (user.bank < biaya) return m.reply(`❌ Saldo bank tidak cukup. Butuh Rp ${biaya.toLocaleString()}.`)
-    user.bank -= biaya
+    user.bank = subtractRpgMoney(user.bank, biaya)
     applyActivityLove(p, 18)
     const up = addExp(p, 30)
     user.cooldown.staycation = Date.now()
@@ -5704,7 +5719,7 @@ if (action === 'kiss') {
 
     let hasil = Math.floor(Math.random() * 75001) + 25000
     hasil = scaleDifficultyIncome(user, hasil)
-    user.bank += hasil
+    user.bank = addRpgMoney(user.bank, hasil)
     applyActivityLove(p, -5)
     const up = addExp(p, 20)
     user.cooldown.rampok = Date.now()
@@ -5799,7 +5814,7 @@ if (action === 'kiss') {
     if (!ring) return m.reply(`Pilih jenis cincin dari ${usedPrefix}rship cincin.`)
     if (user.bank < ring.price) return m.reply(`╭─❏「 ❌ BANK 」❏\n\nButuh Rp ${ring.price.toLocaleString('id-ID')} di bank RPG.\n╰─━━━━━━━━━━━━━━─`)
 
-    user.bank -= ring.price
+    user.bank = subtractRpgMoney(user.bank, ring.price)
     p.cincin = ring.name
     saveDB(wdb)
 
@@ -5923,7 +5938,7 @@ if (action === 'kiss') {
     } else {
       let hadiah = Math.floor(Math.random() * 50000) + 25000
       hadiah = scaleDifficultyIncome(user, hadiah)
-      user.bank += hadiah
+      user.bank = addRpgMoney(user.bank, hadiah)
       applyActivityLove(p, 15)
       let up = addExp(p, 60)
       saveDB(wdb)

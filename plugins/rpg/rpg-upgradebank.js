@@ -2,6 +2,12 @@ import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS, formatBankLimit, formatBankTierFacility, getBankEffectiveSecurity, getBankPrice, isPremiumUser } from './rpg-bank.js'
 import { applyBankTierRewards } from '../../lib/rpg-bankData.js'
+import {
+  compareRpgMoney,
+  maxRpgMoney,
+  normalizeRpgMoney,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 
 export function formatUpgradeChanges(tier, tierLevel, previousTier) {
   const changedFacilities = tier.fasilitas
@@ -104,14 +110,14 @@ if (!isNaN(action)) {
   let tierBaru = BANK_TIERS[targetTier]
   let tierBaruPrice = getBankPrice(tierBaru.price, m.sender, wdb)
   let tierBaruNormalPrice = tierBaru.price
-  let walletNow = wdb.money[m.sender] || 0
-  let bankNow = user.bank || 0
-  let payFromBank = Math.max(0, tierBaruPrice - walletNow)
+  let walletNow = normalizeRpgMoney(wdb.money[m.sender])
+  let bankNow = normalizeRpgMoney(user.bank)
+  let payFromBank = maxRpgMoney(0, subtractRpgMoney(tierBaruPrice, walletNow))
   let confirmYes = ['yes', 'ya', 'ok', 'confirm'].includes(confirmArg)
   let confirmNo = ['no', 'tidak', 'batal', 'cancel', 'tolak'].includes(confirmArg)
 
   if (!confirmYes && !confirmNo) {
-    if (walletNow >= tierBaruPrice) {
+    if (compareRpgMoney(walletNow, tierBaruPrice) >= 0) {
       return sendUpgradeConfirmation(
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
@@ -127,7 +133,7 @@ if (!isNaN(action)) {
       )
     }
 
-    if (bankNow >= payFromBank && payFromBank > 0) {
+    if (compareRpgMoney(bankNow, payFromBank) >= 0 && compareRpgMoney(payFromBank, 0) > 0) {
       return sendUpgradeConfirmation(
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
@@ -159,11 +165,11 @@ if (!isNaN(action)) {
     return m.reply(`╭─❏「 💳 UPGRADE BANK 」❏\n│ ❌ *UPGRADE DIBATALKAN*\n╰─━━━━━━━━━━━━━━─`)
   }
 
-  if (walletNow >= tierBaruPrice) {
-    wdb.money[m.sender] -= tierBaruPrice
+  if (compareRpgMoney(walletNow, tierBaruPrice) >= 0) {
+    wdb.money[m.sender] = subtractRpgMoney(walletNow, tierBaruPrice)
   } else {
-    let bankNeed = tierBaruPrice - walletNow
-    if (bankNow < bankNeed) {
+    let bankNeed = subtractRpgMoney(tierBaruPrice, walletNow)
+    if (compareRpgMoney(bankNow, bankNeed) < 0) {
       return m.reply(
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
@@ -176,7 +182,7 @@ if (!isNaN(action)) {
       )
     }
     wdb.money[m.sender] = 0
-    user.bank -= bankNeed
+    user.bank = subtractRpgMoney(bankNow, bankNeed)
   }
 
   user.bankTier = targetTier
@@ -212,14 +218,14 @@ if (action === 'beli') {
 
   let nextTierPrice = getBankPrice(nextTier.price, m.sender, wdb)
   let nextTierNormalPrice = nextTier.price
-  let walletNow = wdb.money[m.sender] || 0
-  let bankNow = user.bank || 0
-  let payFromBank = Math.max(0, nextTierPrice - walletNow)
+  let walletNow = normalizeRpgMoney(wdb.money[m.sender])
+  let bankNow = normalizeRpgMoney(user.bank)
+  let payFromBank = maxRpgMoney(0, subtractRpgMoney(nextTierPrice, walletNow))
   let confirmYes = ['yes', 'ya', 'ok', 'confirm'].includes(confirmArg)
   let confirmNo = ['no', 'tidak', 'batal', 'cancel', 'tolak'].includes(confirmArg)
 
   if (!confirmYes && !confirmNo) {
-    if (walletNow >= nextTierPrice) {
+    if (compareRpgMoney(walletNow, nextTierPrice) >= 0) {
       return sendUpgradeConfirmation(
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
@@ -235,7 +241,7 @@ if (action === 'beli') {
       )
     }
 
-    if (bankNow >= payFromBank && payFromBank > 0) {
+    if (compareRpgMoney(bankNow, payFromBank) >= 0 && compareRpgMoney(payFromBank, 0) > 0) {
       return sendUpgradeConfirmation(
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
@@ -267,11 +273,11 @@ if (action === 'beli') {
     return m.reply(`╭─❏「 💳 UPGRADE BANK 」❏\n│ ❌ *UPGRADE DIBATALKAN*\n╰─━━━━━━━━━━━━━━─`)
   }
 
-  if (walletNow >= nextTierPrice) {
-    wdb.money[m.sender] -= nextTierPrice
+  if (compareRpgMoney(walletNow, nextTierPrice) >= 0) {
+    wdb.money[m.sender] = subtractRpgMoney(walletNow, nextTierPrice)
   } else {
-    let bankNeed = nextTierPrice - walletNow
-    if (bankNow < bankNeed) {
+    let bankNeed = subtractRpgMoney(nextTierPrice, walletNow)
+    if (compareRpgMoney(bankNow, bankNeed) < 0) {
       return m.reply(
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
@@ -284,7 +290,7 @@ if (action === 'beli') {
       )
     }
     wdb.money[m.sender] = 0
-    user.bank -= bankNeed
+    user.bank = subtractRpgMoney(bankNow, bankNeed)
   }
 
   user.bankTier += 1

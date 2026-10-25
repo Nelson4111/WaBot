@@ -5,7 +5,19 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDif
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES, BANK_TRANSACTION_LOCATIONS, BANK_NEW_FACILITIES, BANK_FACILITY_DESCRIPTIONS, claimBankCrown } from '../../lib/rpg-bankData.js'
 import { runRpgVault } from '../../lib/rpgVault.js'
-import { formatRpgMoney, getRpgMoneySuffixGuide, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
+import {
+  addRpgMoney,
+  compareRpgMoney,
+  formatRpgMoney,
+  getRpgMoneySuffixGuide,
+  maxRpgMoney,
+  minRpgMoney,
+  multiplyRpgMoney,
+  normalizeRpgMoney,
+  parseRpgMoneyAmount,
+  ratioPercentRpgMoney,
+  subtractRpgMoney
+} from '../../lib/rpgMoney.js'
 import {
   BANKRUPT_PROTECTION_RATE,
   claimBankruptProtection
@@ -98,7 +110,7 @@ export function getBankEffectiveSecurity(tier) {
 }
 
 export function calculateBankRobberyLoss(bankBalance, percentage, tier) {
-  return Math.floor(Math.max(10_000, bankBalance * percentage) * (1 - tier.asuransi))
+  return multiplyRpgMoney(maxRpgMoney(10_000, multiplyRpgMoney(bankBalance, percentage)), 1 - tier.asuransi)
 }
 
 export function canUseBankBulkDeposit(tier) {
@@ -110,7 +122,8 @@ export function formatBankLimit(limit) {
 }
 
 export function exceedsBankLimit(bankBalance, amount, tier) {
-  return Number.isFinite(tier.limit) && bankBalance + amount > tier.limit
+  return Number.isFinite(tier.limit) &&
+    compareRpgMoney(addRpgMoney(bankBalance, amount), tier.limit) > 0
 }
 
 export function getBankGuardName(tier) {
@@ -122,12 +135,12 @@ export function getBankGuardName(tier) {
 export function chargeBankMembership(userRPG, monthlyFee, now, description = 'Biaya Membership') {
   if (monthlyFee <= 0) return 'free'
   if (now - Number(userRPG.lastMembership || 0) < 2592000000) return 'not-due'
-  if (userRPG.bank < monthlyFee) {
+  if (compareRpgMoney(userRPG.bank, monthlyFee) < 0) {
     userRPG.kartuBeku = true
     return 'insufficient'
   }
 
-  userRPG.bank -= monthlyFee
+  userRPG.bank = subtractRpgMoney(userRPG.bank, monthlyFee)
   userRPG.lastMembership = now
   userRPG.kartuBeku = false
   userRPG.riwayat.unshift(`-Rp ${monthlyFee.toLocaleString()} ${description}`)
@@ -142,8 +155,8 @@ export function isPremiumUser(jid, db = global.db) {
 }
 
 function getTransferAdminFee(amount, jid) {
-  const standardFee = Math.max(1000, Math.min(500000, Math.floor(amount * 0.005)))
-  return isPremiumUser(jid) ? Math.max(500, Math.floor(standardFee * 0.5)) : standardFee
+  const standardFee = maxRpgMoney(1000, minRpgMoney(500_000, multiplyRpgMoney(amount, 0.005)))
+  return isPremiumUser(jid) ? maxRpgMoney(500, multiplyRpgMoney(standardFee, 0.5)) : standardFee
 }
 
 export function getBankDiscountRate(jid, db = global.db) {
@@ -177,6 +190,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (userRPG.bankTier === undefined) userRPG.bankTier = 0
   if (userRPG.lastBunga === undefined) userRPG.lastBunga = 0
   if (userRPG.totalBunga === undefined) userRPG.totalBunga = 0
+  userRPG.totalBunga = normalizeRpgMoney(userRPG.totalBunga)
   if (userRPG.riwayat === undefined) userRPG.riwayat = []
   if (userRPG.pinjaman === undefined) userRPG.pinjaman = { jumlah: 0, waktu: 0 }
   if (userRPG.lastMembership === undefined) userRPG.lastMembership = Date.now()
@@ -221,7 +235,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (action === 'bankrupt' || action === 'bankrupt-protection' || action === 'protection') {
-    const result = claimBankruptProtection(userRPG, Number(wdb.money[m.sender]) || 0, now)
+    const result = claimBankruptProtection(userRPG, normalizeRpgMoney(wdb.money[m.sender]), now)
     if (result.status === 'not-bankrupt') {
       return m.reply('❌ Proteksi hanya bisa diklaim saat uang saku dan saldo bank sama-sama Rp 0.')
     }
@@ -274,10 +288,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 // DENDA PINJAMAN TELAT 7 HARI
 if (userRPG.pinjaman.jumlah > 0 && now - userRPG.pinjaman.waktu > 604800000) {
-  let denda = Math.floor(userRPG.pinjaman.jumlah * 0.05)
+  let denda = multiplyRpgMoney(userRPG.pinjaman.jumlah, 0.05)
 
-  if (userRPG.bank >= denda) {
-    userRPG.bank -= denda
+  if (compareRpgMoney(userRPG.bank, denda) >= 0) {
+    userRPG.bank = subtractRpgMoney(userRPG.bank, denda)
     userRPG.riwayat.unshift(`-Rp ${denda.toLocaleString()} Denda Pinjaman`)
     automaticCharges.push(`Denda pinjaman: -Rp ${denda.toLocaleString()}`)
     await saveDB(wdb)
@@ -289,7 +303,7 @@ if (
   !membershipActions.includes(action) &&
   now - userRPG.lastMembership >= periodeMembership &&
   tier.biayaBulanan > 0 &&
-  (!userRPG.kartuBeku || userRPG.bank >= tier.biayaBulanan)
+  (!userRPG.kartuBeku || compareRpgMoney(userRPG.bank, tier.biayaBulanan) >= 0)
 ) {
   const paymentStatus = chargeBankMembership(userRPG, tier.biayaBulanan, now)
 
@@ -318,9 +332,11 @@ if (automaticCharges.length) {
 
   // BUNGA MINGGUAN
   let cdBunga = scaleDifficultyCooldown(userRPG, 604800000)
-  if(now - userRPG.lastBunga >= cdBunga && userRPG.bank > 0 &&!userRPG.kartuBeku){
-    let bunga = scaleDifficultyIncome(userRPG, Math.floor(userRPG.bank * tier.bunga))
-    userRPG.bank += bunga; userRPG.totalBunga += bunga; userRPG.lastBunga = now
+  if(now - userRPG.lastBunga >= cdBunga && compareRpgMoney(userRPG.bank, 0) > 0 &&!userRPG.kartuBeku){
+    let bunga = scaleDifficultyIncome(userRPG, multiplyRpgMoney(userRPG.bank, tier.bunga))
+    userRPG.bank = addRpgMoney(userRPG.bank, bunga)
+    userRPG.totalBunga = addRpgMoney(userRPG.totalBunga, bunga)
+    userRPG.lastBunga = now
     userRPG.riwayat.unshift(`+Rp ${bunga.toLocaleString()} Bunga Mingguan`)
     if(userRPG.riwayat.length > 20) userRPG.riwayat.pop()
     if (conn?.reply) conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
@@ -345,7 +361,7 @@ if (automaticCharges.length) {
     cap += `◈ INFORMASI SALDO ◈\n`
     cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
     cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
-    cap += `◆ Total Aset : Rp ${((wdb.money[m.sender] || 0) + userRPG.bank).toLocaleString()}\n\n`
+    cap += `◆ Total Aset : ${formatRpgMoney(addRpgMoney(wdb.money[m.sender] || 0, userRPG.bank))}\n\n`
     cap += `◈ KARTU BANK ◈\n`
     cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
     cap += `─━━━━━━━━━─\n\n`
@@ -375,7 +391,7 @@ if (automaticCharges.length) {
     cap += `💰 *SALDO & LIMIT*\n`
     cap += `> ↳ Saldo bank : Rp ${userRPG.bank.toLocaleString('id-ID')}\n`
     cap += `> ↳ Uang saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString('id-ID')}\n`
-    cap += `> ↳ Total aset : Rp ${(userRPG.bank + (wdb.money[m.sender] || 0)).toLocaleString('id-ID')}\n`
+    cap += `> ↳ Total aset : ${formatRpgMoney(addRpgMoney(userRPG.bank, wdb.money[m.sender] || 0))}\n`
     cap += `> ↳ Limit kartu : ${formatBankLimit(tier.limit)}\n`
     cap += `> ↳ Bunga : ${(tier.bunga * 100).toFixed(2)}%/minggu • ${sisaHari ? `${sisaHari} hari lagi` : 'siap diproses'}\n`
     cap += `> ↳ Total bunga diterima : Rp ${userRPG.totalBunga.toLocaleString('id-ID')}\n`
@@ -611,7 +627,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     const service = getBankCsService(tier)
     if (!service) return m.reply(`❌ ${tier.name} belum memiliki fasilitas Chat CS.`)
     const topic = args[1]?.toLowerCase() || 'bantuan'
-    const wallet = Number(wdb.money[m.sender]) || 0
+    const wallet = normalizeRpgMoney(wdb.money[m.sender])
 
     if (topic === 'bantuan') {
       const options = ['saldo', 'bantuan']
@@ -622,7 +638,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     }
 
     if (topic === 'saldo') {
-      return m.reply(`💬 *BANTUAN SALDO BANK*\nKartu: ${tier.color} ${tier.name} (${userRPG.kartuBeku ? 'Beku' : 'Aktif'})\nSaldo bank: Rp ${userRPG.bank.toLocaleString()}\nUang saku: Rp ${wallet.toLocaleString()}\nTotal aset: Rp ${(userRPG.bank + wallet).toLocaleString()}\nLimit: ${formatBankLimit(tier.limit)}\nGunakan *.bank simpan <jumlah>* atau *.bank tarik <jumlah>* untuk mengatur saldo.`)
+      return m.reply(`💬 *BANTUAN SALDO BANK*\nKartu: ${tier.color} ${tier.name} (${userRPG.kartuBeku ? 'Beku' : 'Aktif'})\nSaldo bank: ${formatRpgMoney(userRPG.bank)}\nUang saku: ${formatRpgMoney(wallet)}\nTotal aset: ${formatRpgMoney(addRpgMoney(userRPG.bank, wallet))}\nLimit: ${formatBankLimit(tier.limit)}\nGunakan *.bank simpan <jumlah>* atau *.bank tarik <jumlah>* untuk mengatur saldo.`)
     }
 
     if (topic === 'simpan' || topic === 'tarik') {
@@ -632,32 +648,32 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
       if (cooldownRemaining > 0) return m.reply(`⏳ Transaksi setor/tarik masih cooldown. Coba lagi dalam ${Math.ceil(cooldownRemaining / 60000)} menit.`)
       if (topic === 'simpan') {
-        if (wallet < amount) return m.reply('❌ Uang saku tidak cukup untuk setor melalui CS.')
-        if (exceedsBankLimit(userRPG.bank, amount, tier)) return m.reply(`❌ Setoran melebihi limit kartu. Sisa limit: Rp ${(tier.limit - userRPG.bank).toLocaleString()}.`)
-        wdb.money[m.sender] = wallet - amount
-        userRPG.bank += amount
-        userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Setor melalui CS`)
+        if (compareRpgMoney(wallet, amount) < 0) return m.reply('❌ Uang saku tidak cukup untuk setor melalui CS.')
+        if (exceedsBankLimit(userRPG.bank, amount, tier)) return m.reply(`❌ Setoran melebihi limit kartu. Sisa limit: ${formatRpgMoney(subtractRpgMoney(tier.limit, userRPG.bank))}.`)
+        wdb.money[m.sender] = subtractRpgMoney(wallet, amount)
+        userRPG.bank = addRpgMoney(userRPG.bank, amount)
+        userRPG.riwayat.unshift(`-${formatRpgMoney(amount)} Setor melalui CS`)
       } else {
-        if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup untuk penarikan melalui CS.')
-        wdb.money[m.sender] = wallet + amount
-        userRPG.bank -= amount
-        userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik melalui CS`)
+        if (compareRpgMoney(userRPG.bank, amount) < 0) return m.reply('❌ Saldo bank tidak cukup untuk penarikan melalui CS.')
+        wdb.money[m.sender] = addRpgMoney(wallet, amount)
+        userRPG.bank = subtractRpgMoney(userRPG.bank, amount)
+        userRPG.riwayat.unshift(`+${formatRpgMoney(amount)} Tarik melalui CS`)
       }
       userRPG.lastBankTransaction = now
       userRPG.riwayat.length = Math.min(userRPG.riwayat.length, 20)
       await saveDB(wdb)
-      return m.reply(`✅ Bantuan ${topic === 'simpan' ? 'setor' : 'tarik'} melalui ${service} berhasil.\nSaldo bank: ${formatRpgMoney(userRPG.bank)}\nUang saku: ${formatRpgMoney(Number(wdb.money[m.sender]) || 0)}`)
+      return m.reply(`✅ Bantuan ${topic === 'simpan' ? 'setor' : 'tarik'} melalui ${service} berhasil.\nSaldo bank: ${formatRpgMoney(userRPG.bank)}\nUang saku: ${formatRpgMoney(wdb.money[m.sender])}`)
     }
 
     if (topic === 'analisis') {
       if (!['Chat CS AI', 'Premium CS AI'].includes(service)) return m.reply('❌ Analisis hanya tersedia melalui Chat CS AI atau Premium CS AI.')
-      const totalAssets = userRPG.bank + wallet
-      const bankShare = totalAssets ? Math.floor(userRPG.bank / totalAssets * 100) : 0
-      const target = Number(userRPG.asistenBank?.target) || 0
+      const totalAssets = addRpgMoney(userRPG.bank, wallet)
+      const bankShare = ratioPercentRpgMoney(userRPG.bank, totalAssets)
+      const target = normalizeRpgMoney(userRPG.asistenBank?.target)
       const analysis = [
-        `Total aset tercatat Rp ${totalAssets.toLocaleString()}; ${bankShare}% berada di bank.`,
-        userRPG.pinjaman?.jumlah > 0 ? `Pinjaman aktif Rp ${userRPG.pinjaman.jumlah.toLocaleString()}.` : 'Tidak ada pinjaman aktif.',
-        target ? `Progres target tabungan: ${Math.min(100, Math.floor(userRPG.bank / target * 100))}% (Rp ${userRPG.bank.toLocaleString()} dari Rp ${target.toLocaleString()}).` : 'Belum ada target tabungan Personal Banking Manager.'
+        `Total aset tercatat ${formatRpgMoney(totalAssets)}; ${bankShare}% berada di bank.`,
+        compareRpgMoney(userRPG.pinjaman?.jumlah, 0) > 0 ? `Pinjaman aktif ${formatRpgMoney(userRPG.pinjaman.jumlah)}.` : 'Tidak ada pinjaman aktif.',
+        compareRpgMoney(target, 0) > 0 ? `Progres target tabungan: ${Math.min(100, ratioPercentRpgMoney(userRPG.bank, target))}% (${formatRpgMoney(userRPG.bank)} dari ${formatRpgMoney(target)}).` : 'Belum ada target tabungan Personal Banking Manager.'
       ]
       return m.reply(`💬 *ANALISIS ${service === 'Premium CS AI' ? 'PRIORITAS' : 'CS AI'}*\n${analysis.map(item => `• ${item}`).join('\n')}`)
     }
@@ -687,12 +703,12 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       assistant.autoSetor ||= { aktif: false, ambang: 1_000_000 }
       if (state === 'off') assistant.autoSetor.aktif = false
       else {
-        const threshold = args[4] === undefined ? Number(assistant.autoSetor.ambang) || 1_000_000 : parseRpgMoneyAmount(args[4])
-        if (!Number.isSafeInteger(threshold) || threshold <= 0) return m.reply('❌ Ambang harus berupa angka rupiah positif.')
+        const threshold = args[4] === undefined ? normalizeRpgMoney(assistant.autoSetor.ambang || 1_000_000) : parseRpgMoneyAmount(args[4])
+        if (threshold === null || compareRpgMoney(threshold, 0) <= 0) return m.reply('❌ Ambang harus berupa angka rupiah positif.')
         assistant.autoSetor = { aktif: true, ambang: threshold }
       }
       await saveDB(wdb)
-      return m.reply(`✅ CS Premium ${state === 'on' ? `mengaktifkan auto-setor mulai Rp ${Number(assistant.autoSetor.ambang).toLocaleString()}` : 'menonaktifkan auto-setor'} untuk akun kamu.`)
+      return m.reply(`✅ CS Premium ${state === 'on' ? `mengaktifkan auto-setor mulai ${formatRpgMoney(assistant.autoSetor.ambang)}` : 'menonaktifkan auto-setor'} untuk akun kamu.`)
     }
 
     return m.reply('Topik CS tidak dikenali. Gunakan *.bank cs bantuan* untuk melihat layanan yang tersedia.')
@@ -714,11 +730,11 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         await saveDB(wdb)
         return m.reply('✅ Auto-setor Asisten Pribadi dinonaktifkan.')
       }
-      const threshold = args[3] === undefined ? Number(assistant.autoSetor.ambang) || 1_000_000 : parseRpgMoneyAmount(args[3])
-      if (!Number.isSafeInteger(threshold) || threshold <= 0) return m.reply('❌ Ambang harus berupa angka rupiah positif.')
+      const threshold = args[3] === undefined ? normalizeRpgMoney(assistant.autoSetor.ambang || 1_000_000) : parseRpgMoneyAmount(args[3])
+      if (threshold === null || compareRpgMoney(threshold, 0) <= 0) return m.reply('❌ Ambang harus berupa angka rupiah positif.')
       assistant.autoSetor = { aktif: true, ambang: threshold }
       await saveDB(wdb)
-      return m.reply(`✅ Auto-setor aktif. Uang saku akan disimpan saat mencapai Rp ${threshold.toLocaleString()}, selama limit kartu masih tersedia.`)
+      return m.reply(`✅ Auto-setor aktif. Uang saku akan disimpan saat mencapai ${formatRpgMoney(threshold)}, selama limit kartu masih tersedia.`)
     }
 
     if (subAction === 'target') {
@@ -729,11 +745,11 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
         return m.reply('✅ Target tabungan dihapus.')
       }
       const target = parseRpgMoneyAmount(args[2])
-      if (!Number.isSafeInteger(target) || target <= 0) return m.reply('Gunakan *.bank asisten target <jumlah>* atau *.bank asisten target off*.')
+      if (target === null || compareRpgMoney(target, 0) <= 0) return m.reply('Gunakan *.bank asisten target <jumlah>* atau *.bank asisten target off*.')
       assistant.target = target
       assistant.targetTercapai = false
       await saveDB(wdb)
-      return m.reply(`✅ Target tabungan disetel ke Rp ${target.toLocaleString()}.`)
+      return m.reply(`✅ Target tabungan disetel ke ${formatRpgMoney(target)}.`)
     }
 
     if (subAction === 'pengingat') {
@@ -760,12 +776,15 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
       return m.reply('Gunakan *.bank asisten pengingat tambah YYYY-MM-DD HH:mm <pesan>*, *.bank asisten pengingat list*, atau *.bank asisten pengingat hapus <nomor>*.')
     }
 
-    const wallet = Number(wdb.money[m.sender]) || 0
-    const target = Number(assistant.target) || 0
+    const wallet = normalizeRpgMoney(wdb.money[m.sender])
+    const target = normalizeRpgMoney(assistant.target)
     const reminderList = assistant.pengingat.length
       ? assistant.pengingat.map((item, index) => `${index + 1}. ${new Date(item.waktu).toLocaleString('id-ID')} - ${item.judul}`).join('\n')
       : 'Tidak ada'
-    return m.reply(`👤 *PERSONAL BANKING MANAGER*\nSaldo bank: Rp ${userRPG.bank.toLocaleString()}\nUang saku: Rp ${wallet.toLocaleString()}\nTotal aset: Rp ${(userRPG.bank + wallet).toLocaleString()}\nTarget tabungan: ${target ? `Rp ${userRPG.bank.toLocaleString()} / Rp ${target.toLocaleString()} (${Math.min(100, Math.floor(userRPG.bank / target * 100))}%)` : 'Belum diatur'}\nAuto-setor: ${assistant.autoSetor.aktif ? `Aktif mulai Rp ${Number(assistant.autoSetor.ambang).toLocaleString()}` : 'Nonaktif'}\nPengingat:\n${reminderList}\n\nAtur: *.bank asisten target <jumlah>*, *.bank asisten auto on [ambang]*, *.bank asisten auto off*, *.bank asisten pengingat tambah YYYY-MM-DD HH:mm <pesan>*\nAutomasi diperiksa saat akun mengirim pesan ke bot.`)
+    const targetProgress = compareRpgMoney(target, 0) > 0
+      ? `${formatRpgMoney(userRPG.bank)} / ${formatRpgMoney(target)} (${Math.min(100, ratioPercentRpgMoney(userRPG.bank, target))}%)`
+      : 'Belum diatur'
+    return m.reply(`👤 *PERSONAL BANKING MANAGER*\nSaldo bank: ${formatRpgMoney(userRPG.bank)}\nUang saku: ${formatRpgMoney(wallet)}\nTotal aset: ${formatRpgMoney(addRpgMoney(userRPG.bank, wallet))}\nTarget tabungan: ${targetProgress}\nAuto-setor: ${assistant.autoSetor.aktif ? `Aktif mulai ${formatRpgMoney(assistant.autoSetor.ambang)}` : 'Nonaktif'}\nPengingat:\n${reminderList}\n\nAtur: *.bank asisten target <jumlah>*, *.bank asisten auto on [ambang]*, *.bank asisten auto off*, *.bank asisten pengingat tambah YYYY-MM-DD HH:mm <pesan>*\nAutomasi diperiksa saat akun mengirim pesan ke bot.`)
   }
 
   if (action === 'vault') {
@@ -774,7 +793,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
   if (userRPG.kartuBeku && !['tarik', 'simpan', 'all', ...membershipActions].includes(action)) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Kartu kamu sedang BEKU\nSetor saldo atau bayar biaya bulanan dengan *.bank bulanan*, *.bank monthly*, atau *.bank tagihan*\n─━━━━━━━━━─`)
 
-  let userMoney = wdb.money[m.sender] || 0
+  let userMoney = normalizeRpgMoney(wdb.money[m.sender])
 
   // LIST KARTU
   if (action === 'card' || action === 'kartu') {
@@ -860,16 +879,17 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     }
     if (args[1] === 'all' || action === 'all') {
       if (!canUseBankBulkDeposit(tier)) return m.reply('❌ Fitur setor semua hanya tersedia untuk kartu dengan akses Fast Track. Gunakan *.bank simpan <angka>* untuk setor manual.')
-      if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
+      if (compareRpgMoney(userMoney, 0) <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
       amount = userMoney
     } else amount = parseRpgMoneyAmount(args[1])
-    if (userMoney <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
-    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid. Gunakan nominal positif seperti 1K atau 1.5M.')
-    if (userMoney < amount) return m.reply('❌ Uang saku tidak cukup')
-    if (exceedsBankLimit(userRPG.bank, amount, tier)) return m.reply(`❌ Melebihi limit. Sisa: Rp ${(tier.limit - userRPG.bank).toLocaleString()}`)
+    if (compareRpgMoney(userMoney, 0) <= 0) return m.reply('💵 Uang saku kamu masih kosong. Isi saldo uang saku dulu sebelum menyimpan ke bank.')
+    if (!amount || compareRpgMoney(amount, 0) <= 0) return m.reply('❌ Jumlah tidak valid. Gunakan nominal positif seperti 1K atau 1.5M.')
+    if (compareRpgMoney(userMoney, amount) < 0) return m.reply('❌ Uang saku tidak cukup')
+    if (exceedsBankLimit(userRPG.bank, amount, tier)) return m.reply(`❌ Melebihi limit. Sisa: ${formatRpgMoney(subtractRpgMoney(tier.limit, userRPG.bank))}`)
     const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
     if (cooldownRemaining > 0) return m.reply(`⏳ Transaksi setor/tarik masih cooldown. Coba lagi dalam ${Math.ceil(cooldownRemaining / 60000)} menit.`)
-    wdb.money[m.sender] -= amount; userRPG.bank += amount
+    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], amount)
+    userRPG.bank = addRpgMoney(userRPG.bank, amount)
     userRPG.lastBankTransaction = now
     userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Simpan`)
     await saveDB(wdb)
@@ -881,11 +901,12 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   if (action === 'tarik') {
     if (args[1] === 'all') amount = userRPG.bank
     else amount = parseRpgMoneyAmount(args[1])
-    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid. Gunakan nominal positif seperti 1K atau 1.5M.')
-    if (userRPG.bank < amount) return m.reply('❌ Saldo bank tidak cukup')
+    if (!amount || compareRpgMoney(amount, 0) <= 0) return m.reply('❌ Jumlah tidak valid. Gunakan nominal positif seperti 1K atau 1.5M.')
+    if (compareRpgMoney(userRPG.bank, amount) < 0) return m.reply('❌ Saldo bank tidak cukup')
     const cooldownRemaining = getBankTransactionCooldownRemaining(userRPG, tier, now)
     if (cooldownRemaining > 0) return m.reply(`⏳ Transaksi setor/tarik masih cooldown. Coba lagi dalam ${Math.ceil(cooldownRemaining / 60000)} menit.`)
-    wdb.money[m.sender] += amount; userRPG.bank -= amount
+    wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], amount)
+    userRPG.bank = subtractRpgMoney(userRPG.bank, amount)
     userRPG.lastBankTransaction = now
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
     await saveDB(wdb)
@@ -908,20 +929,20 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     const transferAll = args.slice(1).some(argument => String(argument).toLowerCase() === 'all')
     if (transferAll) {
       biayaAdmin = getTransferAdminFee(userRPG.bank, m.sender)
-      amount = userRPG.bank - biayaAdmin
-      if(amount <= 0) return m.reply('❌ Saldo tidak cukup untuk biaya admin')
+      amount = subtractRpgMoney(userRPG.bank, biayaAdmin)
+      if(compareRpgMoney(amount, 0) <= 0) return m.reply('❌ Saldo tidak cukup untuk biaya admin')
     } else {
       amount = args.slice(1)
         .map(parseRpgMoneyAmount)
         .find(parsedAmount => parsedAmount !== null)
     }
 
-    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
+    if (!amount || compareRpgMoney(amount, 0) <= 0) return m.reply('❌ Jumlah tidak valid')
 
     if (!transferAll) biayaAdmin = getTransferAdminFee(amount, m.sender)
-    let totalPotong = amount + biayaAdmin
+    let totalPotong = addRpgMoney(amount, biayaAdmin)
 
-    if (userRPG.bank < totalPotong) return m.reply(`❌ Saldo bank tidak cukup\nButuh: Rp ${totalPotong.toLocaleString()} = Transfer + Admin Rp ${biayaAdmin.toLocaleString()}`)
+    if (compareRpgMoney(userRPG.bank, totalPotong) < 0) return m.reply(`❌ Saldo bank tidak cukup\nButuh: ${formatRpgMoney(totalPotong)} = Transfer + Admin ${formatRpgMoney(biayaAdmin)}`)
 
     let targetData = getUserRPG(wdb, who)
     let targetRPG = targetData?.rpg
@@ -930,7 +951,8 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     if (!Array.isArray(targetRPG.riwayat)) targetRPG.riwayat = []
     if (!Array.isArray(userRPG.riwayat)) userRPG.riwayat = []
 
-    userRPG.bank -= totalPotong; targetRPG.bank += amount
+    userRPG.bank = subtractRpgMoney(userRPG.bank, totalPotong)
+    targetRPG.bank = addRpgMoney(targetRPG.bank, amount)
     userRPG.riwayat.unshift(`-${formatRpgMoney(amount)} TF ke @${who.split('@')[0]} + Admin ${formatRpgMoney(biayaAdmin)}`)
     targetRPG.riwayat.unshift(`+${formatRpgMoney(amount)} TF dari @${m.sender.split('@')[0]}`)
     await saveDB(wdb)
@@ -942,24 +964,26 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   // PINJAM
   if (action === 'pinjam') {
     if (!tier.fasilitas.includes('Pinjaman Bank')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa pinjam\n─━━━━━━━━━─`)
-    if (userRPG.pinjaman.jumlah > 0) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Masih punya pinjaman aktif\nLunasi dulu\n─━━━━━━━━━─`)
-    if (!amount || amount <= 0) return m.reply('❌ Jumlah tidak valid')
-    if (Number.isFinite(tier.limit) && amount > tier.limit * 0.5) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Maksimal pinjam 50% limit\nMaks: Rp ${(tier.limit * 0.5).toLocaleString()}\n\n─━━━━━━━━━─`)
-    userRPG.pinjaman = { jumlah: amount, waktu: now }; userRPG.bank += amount
+    if (compareRpgMoney(userRPG.pinjaman.jumlah, 0) > 0) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Masih punya pinjaman aktif\nLunasi dulu\n─━━━━━━━━━─`)
+    if (!amount || compareRpgMoney(amount, 0) <= 0) return m.reply('❌ Jumlah tidak valid')
+    if (Number.isFinite(tier.limit) && compareRpgMoney(amount, multiplyRpgMoney(tier.limit, 0.5)) > 0) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Maksimal pinjam 50% limit\nMaks: ${formatRpgMoney(multiplyRpgMoney(tier.limit, 0.5))}\n\n─━━━━━━━━━─`)
+    userRPG.pinjaman = { jumlah: amount, waktu: now }
+    userRPG.bank = addRpgMoney(userRPG.bank, amount)
     userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Pinjaman`)
     await saveDB(wdb)
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PINJAMAN CAIR\n◈ PENGAJUAN PINJAMAN ◈\n◆ Jumlah : Rp ${amount.toLocaleString()}\n◆ Bunga : 10%\n◆ Total Bayar : Rp ${Math.floor(amount * 1.1).toLocaleString()}\n◆ Jangka Waktu : 7 Hari\n◆ Saldo Baru : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PINJAMAN CAIR\n◈ PENGAJUAN PINJAMAN ◈\n◆ Jumlah : ${formatRpgMoney(amount)}\n◆ Bunga : 10%\n◆ Total Bayar : ${formatRpgMoney(multiplyRpgMoney(amount, 1.1))}\n◆ Jangka Waktu : 7 Hari\n◆ Saldo Baru : ${formatRpgMoney(userRPG.bank)}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
 
   // BAYAR
   if (action === 'bayar') {
-    if (userRPG.pinjaman.jumlah === 0) return m.reply('❌ Tidak punya pinjaman')
-    let totalBayar = Math.floor(userRPG.pinjaman.jumlah * 1.1)
-    if (userRPG.bank < totalBayar) return m.reply(`❌ Saldo bank tidak cukup`)
-    userRPG.bank -= totalBayar; userRPG.riwayat.unshift(`-Rp ${totalBayar.toLocaleString()} Bayar Pinjaman`)
+    if (compareRpgMoney(userRPG.pinjaman.jumlah, 0) === 0) return m.reply('❌ Tidak punya pinjaman')
+    let totalBayar = multiplyRpgMoney(userRPG.pinjaman.jumlah, 1.1)
+    if (compareRpgMoney(userRPG.bank, totalBayar) < 0) return m.reply(`❌ Saldo bank tidak cukup`)
+    userRPG.bank = subtractRpgMoney(userRPG.bank, totalBayar)
+    userRPG.riwayat.unshift(`-${formatRpgMoney(totalBayar)} Bayar Pinjaman`)
     userRPG.pinjaman = { jumlah: 0, waktu: 0 }; await saveDB(wdb)
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PEMBAYARAN BERHASIL\n◈ PELUNASAN PINJAMAN ◈\n◆ Jumlah Bayar : Rp ${totalBayar.toLocaleString()}\n◆ Status : LUNAS\n◆ Saldo Tersisa : Rp ${userRPG.bank.toLocaleString()}\n\n─━━━━━━━━━─`
+    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PEMBAYARAN BERHASIL\n◈ PELUNASAN PINJAMAN ◈\n◆ Jumlah Bayar : ${formatRpgMoney(totalBayar)}\n◆ Status : LUNAS\n◆ Saldo Tersisa : ${formatRpgMoney(userRPG.bank)}\n\n─━━━━━━━━━─`
     return m.reply(msg)
   }
 
@@ -1025,30 +1049,30 @@ handler.all = async function (m, { conn }) {
   )
 
   if (assistant.autoSetor?.aktif && !changingAutoDeposit && !manualBankTransfer) {
-    const wallet = Number(wdb.money[m.sender]) || 0
-    const threshold = Math.max(1, Number(assistant.autoSetor.ambang) || 1_000_000)
-    const room = tier.limit === null ? wallet : Math.max(0, tier.limit - userRPG.bank)
+    const wallet = normalizeRpgMoney(wdb.money[m.sender])
+    const threshold = normalizeRpgMoney(assistant.autoSetor.ambang || 1_000_000)
+    const room = tier.limit === null ? wallet : maxRpgMoney(0, subtractRpgMoney(tier.limit, userRPG.bank))
     const cooldownReady = getBankTransactionCooldownRemaining(userRPG, tier) === 0
-    const deposit = wallet >= threshold && cooldownReady ? Math.min(wallet, room) : 0
-    if (deposit > 0) {
-      wdb.money[m.sender] = wallet - deposit
-      userRPG.bank += deposit
+    const deposit = compareRpgMoney(wallet, threshold) >= 0 && cooldownReady ? minRpgMoney(wallet, room) : 0
+    if (compareRpgMoney(deposit, 0) > 0) {
+      wdb.money[m.sender] = subtractRpgMoney(wallet, deposit)
+      userRPG.bank = addRpgMoney(userRPG.bank, deposit)
       userRPG.lastBankTransaction = Date.now()
       userRPG.riwayat ||= []
-      userRPG.riwayat.unshift(`-Rp ${deposit.toLocaleString()} Auto-setor Asisten Pribadi`)
+      userRPG.riwayat.unshift(`-${formatRpgMoney(deposit)} Auto-setor Asisten Pribadi`)
       userRPG.riwayat.length = Math.min(userRPG.riwayat.length, 20)
-      notifications.push(`Asisten menyimpan Rp ${deposit.toLocaleString()} dari uang saku ke bank.`)
-      if (deposit < wallet) notifications.push(`Sisa uang saku Rp ${(wallet - deposit).toLocaleString()} karena limit kartu.`)
+      notifications.push(`Asisten menyimpan ${formatRpgMoney(deposit)} dari uang saku ke bank.`)
+      if (compareRpgMoney(deposit, wallet) < 0) notifications.push(`Sisa uang saku ${formatRpgMoney(subtractRpgMoney(wallet, deposit))} karena limit kartu.`)
       changed = true
     }
   }
 
-  const target = Number(assistant.target) || 0
-  if (target && userRPG.bank >= target && !assistant.targetTercapai) {
-    notifications.push(`Target tabungan tercapai: saldo bank Rp ${userRPG.bank.toLocaleString()} dari target Rp ${target.toLocaleString()}.`)
+  const target = normalizeRpgMoney(assistant.target)
+  if (compareRpgMoney(target, 0) > 0 && compareRpgMoney(userRPG.bank, target) >= 0 && !assistant.targetTercapai) {
+    notifications.push(`Target tabungan tercapai: saldo bank ${formatRpgMoney(userRPG.bank)} dari target ${formatRpgMoney(target)}.`)
     assistant.targetTercapai = true
     changed = true
-  } else if (target && userRPG.bank < target && assistant.targetTercapai) {
+  } else if (compareRpgMoney(target, 0) > 0 && compareRpgMoney(userRPG.bank, target) < 0 && assistant.targetTercapai) {
     assistant.targetTercapai = false
     changed = true
   }
