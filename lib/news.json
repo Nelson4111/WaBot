@@ -766,5 +766,13 @@
     "content": "\u003e Avelia memiliki dua mode pemeliharaan: mode penuh menonaktifkan semua fitur bot, sedangkan mode RPG menjeda command dan aktivitas RPG, termasuk transaksi serta perubahan nominal, sementara fitur bot lainnya tetap bisa digunakan. Perintah yang dicoba selama maintenance akan mendapat pemberitahuan. Setelah bot aktif kembali, cek .news 1 untuk info terbaru.",
     "author": "Eza",
     "createdAt": 1792904553043
+  },
+  {
+    "id": "25.1",
+    "section": "RPG",
+    "title": "Pemulihan Ekonomi RPG & Dukungan Angka Besar",
+    "content": "\u003e Seluruh data saldo dan profit pemain yang sempat berkurang telah berhasil dipulihkan. Sistem adapter Supabase dan penanganan angka RPG kini telah diperbaiki sehingga sepenuhnya mendukung angka besar hingga skala Sextillion ke atas tanpa risiko terpotong, tereset, atau konflik format.",
+    "author": "Eza",
+    "createdAt": 1792942400000
   }
 ]

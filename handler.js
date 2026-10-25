@@ -29,6 +29,7 @@ import { normalizeRpgMoney } from './lib/rpgMoney.js'
  */
 const { proto } = (await import('@whiskeysockets/baileys')).default
 const isNumber = x => typeof x === 'number' && !isNaN(x)
+const isNumberOrBigInt = x => typeof x === 'bigint' || (typeof x === 'number' && !isNaN(x))
 const EXCLUSIVE_JAIL_BLOCKED_COMMAND_SET = new Set(EXCLUSIVE_JAIL_BLOCKED_COMMANDS)
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
 const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
@@ -421,7 +422,7 @@ async function processMessage(m, chatUpdate) {
             if (typeof user !== 'object')
                 global.db.data.users[m.sender] = {}
             if (user) {
-                if (!isNumber(user.exp)) user.exp = 0
+                if (!isNumberOrBigInt(user.exp)) user.exp = 0
                 if (!isNumber(user.level)) user.level = 0
                 syncUserLimit(user)
                 const freeDailyLimit = grantFreeDailyLimit(user)
@@ -438,7 +439,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('banReason' in user)) user.banReason = ''
                 if (!('role' in user)) user.role = 'Free user'
                 if (!('autolevelup' in user)) user.autolevelup = false
-                if (!isNumber(user.balance)) user.balance = 0
+                if (!isNumberOrBigInt(user.balance)) user.balance = 0
                 user.money = normalizeRpgMoney(user.money)
                 user.bank = normalizeRpgMoney(user.bank)
             } else {

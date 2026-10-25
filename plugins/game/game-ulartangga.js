@@ -313,7 +313,7 @@ async function sendTurnMessage(conn, m, room, promptText = '', boardBuffer = nul
     baseCard += `*╰───────────────*\n\n`;
 
     if (isBot) {
-        baseCard += `> 🤖 _Bot AI sedang memutar dadu keberuntungan..._`;
+        baseCard += `> _Bot AI sedang memutar dadu keberuntungan..._`;
     } else {
         baseCard += `> ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴍᴇɴɢᴏᴄᴏᴋ ᴅᴀᴅᴜ* ⊹ ˚ ｡\n` +
             `> _Atau ketik \`roll\` / \`r\` pada kolom chat._`;
