@@ -1,3 +1,5 @@
+import { addRpgMoney, normalizeRpgMoney } from '../../lib/rpgMoney.js'
+
 let handler = async (m, { conn }) => {
   let count = 0
   let users = global.db.data.users
@@ -20,14 +22,14 @@ let handler = async (m, { conn }) => {
       if (!users[cleanJid]) users[cleanJid] = {}
       
       // Migrate money if > 0
-      if (users[jid].money) users[cleanJid].money = (users[cleanJid].money || 0) + users[jid].money
+      if (users[jid].money) users[cleanJid].money = addRpgMoney(users[cleanJid].money || 0, normalizeRpgMoney(users[jid].money))
       if (users[jid].bank) {
         if (!users[cleanJid].rpg) users[cleanJid].rpg = {}
-        users[cleanJid].rpg.bank = (users[cleanJid].rpg.bank || 0) + users[jid].bank
+        users[cleanJid].rpg.bank = addRpgMoney(users[cleanJid].rpg.bank || 0, normalizeRpgMoney(users[jid].bank))
       }
       if (users[jid].rpg?.bank) {
         if (!users[cleanJid].rpg) users[cleanJid].rpg = {}
-        users[cleanJid].rpg.bank = (users[cleanJid].rpg.bank || 0) + users[jid].rpg.bank
+        users[cleanJid].rpg.bank = addRpgMoney(users[cleanJid].rpg.bank || 0, normalizeRpgMoney(users[jid].rpg.bank))
       }
       if (users[jid].exp) users[cleanJid].exp = (users[cleanJid].exp || 0) + users[jid].exp
       if (users[jid].balance) users[cleanJid].balance = (users[cleanJid].balance || 0) + users[jid].balance
@@ -38,7 +40,7 @@ let handler = async (m, { conn }) => {
       // Untuk akun normal yang tidak ganda, pastikan bank di root dipindah ke rpg.bank
       if (users[jid].bank) {
         if (!users[jid].rpg) users[jid].rpg = {}
-        users[jid].rpg.bank = (users[jid].rpg.bank || 0) + users[jid].bank
+        users[jid].rpg.bank = addRpgMoney(users[jid].rpg.bank || 0, normalizeRpgMoney(users[jid].bank))
         delete users[jid].bank // Hapus dari root setelah digabung
       }
     }

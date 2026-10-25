@@ -1,4 +1,5 @@
 import { loadDB } from '../../lib/waifuHelper.js'
+import { addRpgMoney, formatRpgMoney, compareRpgMoney, normalizeRpgMoney, parseRpgMoneyAmount } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -14,17 +15,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     amount = args[1]
   }
 
-  if (!/^[\d.,]+$/.test(amount || '')) return m.reply('❌ Masukkan jumlah angka yang valid.')
-  amount = Number(amount.replace(/[.,]/g, ''))
-  if (!Number.isSafeInteger(amount) || amount < 1) {
-    return m.reply('❌ Jumlah harus berupa bilangan bulat positif yang masih aman dihitung.')
-  }
+  amount = parseRpgMoneyAmount(amount)
+  if (amount === null || compareRpgMoney(amount, 1) < 0) return m.reply('❌ Masukkan jumlah rupiah positif yang valid.')
 
-  const currentBalance = Number(wdb.money[user]) || 0
-  const newBalance = currentBalance + amount
-  if (!Number.isSafeInteger(currentBalance) || currentBalance < 0 || !Number.isSafeInteger(newBalance)) {
-    return m.reply('❌ Saldo atau jumlah penambahan terlalu besar untuk dihitung dengan aman.')
-  }
+  const currentBalance = normalizeRpgMoney(wdb.money[user])
+  const newBalance = addRpgMoney(currentBalance, amount)
+  if (compareRpgMoney(currentBalance, 0) < 0) return m.reply('❌ Saldo user tidak valid.')
   if (typeof global.db.write !== 'function') {
     return m.reply('❌ Database belum siap menyimpan saldo. Coba lagi nanti.')
   }
@@ -34,8 +30,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let name = conn.getName(user) || user.split('@')[0]
   let cap = `*──「 ADD MONEY 」──*\n\n`
   cap += `👤 User: ${name}\n`
-  cap += `💰 Jumlah: +Rp ${amount.toLocaleString()}\n`
-  cap += `💳 Total Saldo: Rp ${wdb.money[user].toLocaleString()}`
+  cap += `💰 Jumlah: +${formatRpgMoney(amount)}\n`
+  cap += `💳 Total Saldo: ${formatRpgMoney(wdb.money[user])}`
 
   return m.reply(cap)
 }
