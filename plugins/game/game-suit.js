@@ -1,3 +1,5 @@
+import { addRpgMoney } from '../../lib/rpgMoney.js'
+
 let handler = async (m, { text, usedPrefix }) => {
     let salah = `Pilihan Yang Tersedia\n\nGunting, Kertas, Batu\n\n${usedPrefix}suit gunting\n\nKasih Spasi!`
     if (!text) throw salah
@@ -16,21 +18,21 @@ let handler = async (m, { text, usedPrefix }) => {
         m.reply(`Seri!\nkamu: ${text}\nBot: ${astro}`)
     } else if (text == 'batu') {
         if (astro == 'gunting') {
-            global.db.data.users[m.sender].money += 1000
+            global.db.data.users[m.sender].money = addRpgMoney(global.db.data.users[m.sender].money, 1000)
             m.reply(`Kamu Menang!\n+1000 Money\nKamu: ${text}\n Bot: ${astro}`)
         } else {
             m.reply(`Kamu Kalah!\nKamu: ${text}\nBot: ${astro}`)
         }
     } else if (text == 'gunting') {
         if (astro == 'kertas') {
-            global.db.data.users[m.sender].money += 1000
+            global.db.data.users[m.sender].money = addRpgMoney(global.db.data.users[m.sender].money, 1000)
             m.reply(`Kamu Menang!\n+1000 Money\nKamu: ${text}\nFangz Bot: ${astro}`)
         } else {
             m.reply(`Kamu Kalah!\nKamu: ${text}\nBot: ${astro}`)
         }
     } else if (text == 'kertas') {
         if (astro == 'batu') {
-            global.db.data.users[m.sender].money += 1000
+            global.db.data.users[m.sender].money = addRpgMoney(global.db.data.users[m.sender].money, 1000)
             m.reply(`Kamu Menang! \n+1000 Money\nKamu: ${text}\nFangz Bot: ${astro}`)
         } else {
             m.reply(`Kamu Kalah!\nKamu: ${text}\nBot: ${astro}`)
@@ -48,3 +50,4 @@ handler.private = false
 handler.limit = true
 
 export default handler
+import { addRpgMoney } from '../../lib/rpgMoney.js'

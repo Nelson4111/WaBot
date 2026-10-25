@@ -1,5 +1,6 @@
 import similarity from 'similarity'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { addRpgMoney, formatRpgMoney } from '../../lib/rpgMoney.js'
 
 const threshold = 0.72
 
@@ -41,7 +42,7 @@ export async function before(m) {
     delete this.game[id]
     const db = loadDB()
     if (!db.money) db.money = {}
-    db.money[m.sender] = (db.money[m.sender] || 0) + (data.reward || 1000)
+    db.money[m.sender] = addRpgMoney(db.money[m.sender], data.reward || 1000)
     saveDB(db)
     global.db.data.users[m.sender] = global.db.data.users[m.sender] || {}
     global.db.data.users[m.sender].limit = (global.db.data.users[m.sender].limit || 0) + (data.limit || 1)
@@ -52,7 +53,7 @@ export async function before(m) {
       `Hadiah:\n` +
       `• Rp ${(data.reward || 1000).toLocaleString('id-ID')}\n` +
       `• ${data.limit || 1} Limit\n\n` +
-      `Saldo: Rp ${db.money[m.sender].toLocaleString('id-ID')}\n` +
+      `Saldo: ${formatRpgMoney(db.money[m.sender])}\n` +
       `Limit: ${global.db.data.users[m.sender].limit}`
     )
     return true

@@ -33,6 +33,7 @@ import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib
 import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 const thumbNight = "https://user-images.githubusercontent.com/72728486/235316834-f9f84ba0-8df3-4444-81d8-db5270995e6d.jpg"
 const thumbMorning = "https://user-images.githubusercontent.com/72728486/235344562-4677d2ad-48ee-419d-883f-e0ca9ba1c7b8.jpg"
@@ -749,7 +750,7 @@ ${rosterText.trim()}
         if (!Number.isSafeInteger(wager) || wager < 0) return m.reply(status.error("Nominal taruhan room tidak valid. Buat ulang room tanpa taruhan atau dengan nominal yang benar."))
         if (!Number.isSafeInteger(wager * wagerPlayers.length)) return m.reply(status.error("Total pot taruhan terlalu besar."))
         const wdb = loadDB()
-        const playersWithoutFunds = wagerPlayers.filter((player) => Number(wdb.money[player.id]) < wager)
+        const playersWithoutFunds = wagerPlayers.filter((player) => compareRpgMoney(wdb.money[player.id], wager) < 0)
         if (playersWithoutFunds.length) {
             const playerNames = playersWithoutFunds.map(getDisplayPlayerLabel).join(', ')
             return m.reply(status.error(`Saldo taruhan Rp ${wager.toLocaleString('id-ID')} per pemain tidak mencukupi: ${playerNames}.`))
@@ -764,7 +765,7 @@ ${rosterText.trim()}
 
         if (wager > 0) {
             wagerPlayers.forEach((player) => {
-                wdb.money[player.id] = Number(wdb.money[player.id]) - wager
+                wdb.money[player.id] = subtractRpgMoney(wdb.money[player.id], wager)
             })
             ww[chat].wager = wager
             ww[chat].wagerPlayers = wagerPlayers.map((player) => player.id)
