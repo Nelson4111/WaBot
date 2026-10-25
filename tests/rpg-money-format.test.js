@@ -10,6 +10,7 @@ import {
   normalizeRpgMoney,
   normalizeRpgMoneyData,
   parseRpgMoneyAmount,
+  parseRpgMoneySignedAmount,
   serializeRpgBigInt
 } from '../lib/rpgMoney.js'
 
@@ -34,6 +35,14 @@ test('money parsing and arithmetic preserve arbitrary precision while keeping sa
   assert.equal(divideRpgMoney(large, 3), 3002399751580331n)
   assert.equal(multiplyRpgMoney(large, 1e-7), 900719925n)
   assert.equal(formatRpgMoney(large), 'Rp 9,01Qa')
+})
+
+test('money parser supports decimal-comma suffixes and grouped thousands without ambiguity', () => {
+  assert.equal(parseRpgMoneyAmount('1,5T'), 1_500_000_000_000)
+  assert.equal(parseRpgMoneyAmount('1.500.000'), 1_500_000)
+  assert.equal(parseRpgMoneyAmount('1,500,000'), 1_500_000)
+  assert.equal(parseRpgMoneySignedAmount('-1,5T'), -1_500_000_000_000)
+  assert.equal(parseRpgMoneyAmount('1,5'), null)
 })
 
 test('BigInt values serialize as tagged decimal strings and normalize on currency load', () => {
