@@ -21,7 +21,7 @@ import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimi
 import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
 import { isPlayerDead } from './lib/rpgDifficulty.js'
-import { formatMaintenanceMessage } from './lib/maintenance.js'
+import { formatMaintenanceMessage, isRpgCommand, isRpgPlugin } from './lib/maintenance.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -589,6 +589,7 @@ async function processMessage(m, chatUpdate) {
             isPremiumAccount(global.db.data.users[senderClean]) ||
             isPremiumAccount(global.db.data.users[m.sender])
         const maintenanceActive = Boolean(global.opts?.maintenance)
+        const rpgMaintenanceActive = Boolean(global.opts?.rpgMaintenance)
 
         // Options Check (Owner exempt)
         if (!isOwner && !maintenanceActive) {
@@ -697,11 +698,15 @@ async function processMessage(m, chatUpdate) {
             return
         }
 
-        if (maintenanceActive && !isOwner) {
+        if ((maintenanceActive && !isOwner) ||
+            (rpgMaintenanceActive && commandCandidate && isRpgCommand(commandCandidate.command, global.plugins))) {
             if (commandCandidate) {
                 const settings = global.db.data.settings?.bot || {}
-                const startedAt = global.opts.maintenanceStartedAt || settings.maintenanceStartedAt
-                await this.reply(m.chat, formatMaintenanceMessage(commandCandidate.usedPrefix, startedAt), m)
+                const mode = maintenanceActive && !isOwner ? 'all' : 'rpg'
+                const startedAt = mode === 'rpg'
+                    ? global.opts.rpgMaintenanceStartedAt || settings.rpgMaintenanceStartedAt
+                    : global.opts.maintenanceStartedAt || settings.maintenanceStartedAt
+                await this.reply(m.chat, formatMaintenanceMessage(commandCandidate.usedPrefix, startedAt, Date.now(), mode), m)
             }
             return
         }
@@ -866,6 +871,7 @@ async function processMessage(m, chatUpdate) {
         for (let name in global.plugins) {
             let plugin = global.plugins[name]
             if (!plugin || plugin.disabled) continue          
+            if (rpgMaintenanceActive && isRpgPlugin(name, plugin)) continue
             const __filename = join(___dirname, ...name.split('/'))
             if (typeof plugin.all === 'function') {
                 try {
