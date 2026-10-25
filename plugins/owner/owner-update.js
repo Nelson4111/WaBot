@@ -3,6 +3,66 @@ import { promisify } from 'util'
 
 const execPromise = promisify(exec)
 
+async function getHeadCommit() {
+  const { stdout } = await execPromise('git rev-parse HEAD')
+  const commit = stdout.trim()
+  if (!/^[a-f0-9]{40,64}$/i.test(commit)) {
+    throw new Error('Tidak dapat membaca commit Git saat ini.')
+  }
+  return commit
+}
+
+async function getUpdateSummary(before, after) {
+  if (before === after) return null
+
+  const { stdout } = await execPromise(`git diff --numstat ${before} ${after}`)
+  const files = []
+  let insertions = 0
+  let deletions = 0
+
+  for (const line of stdout.trim().split('\n').filter(Boolean)) {
+    const [added, removed, ...pathParts] = line.split('\t')
+    const file = pathParts.join('\t')
+    if (!file) continue
+
+    const isBinary = added === '-' || removed === '-'
+    if (!isBinary) {
+      insertions += Number(added) || 0
+      deletions += Number(removed) || 0
+    }
+    files.push({ file, added, removed, isBinary })
+  }
+
+  return { files, insertions, deletions }
+}
+
+function formatUpdateSummary(summary) {
+  if (!summary?.files.length) {
+    return '> Tidak ada perubahan file yang terdeteksi.'
+  }
+
+  const maxFilesToShow = 35
+  const fileLines = summary.files.slice(0, maxFilesToShow).flatMap(({ file, added, removed, isBinary }) => [
+    `> \`${file.replace(/[`]/g, '\\`')}\``,
+    isBinary
+      ? '> ↳ File biner berubah'
+      : `> ↳ +${added} insertions\n> ↳ -${removed} deletions`
+  ])
+  if (summary.files.length > maxFilesToShow) {
+    fileLines.push(`> ↳ ${summary.files.length - maxFilesToShow} file lainnya tidak ditampilkan`)
+  }
+
+  return [
+    '🗂️ *File yang berubah:*',
+    ...fileLines,
+    '',
+    '📊 *Ringkasan:*',
+    `> Files changed: ${summary.files.length}`,
+    `> ↳ +${summary.insertions} insertions`,
+    `> ↳ -${summary.deletions} deletions`
+  ].join('\n')
+}
+
 let handler = async (m, { conn, args, usedPrefix, command }) => {
   const p = usedPrefix || '.'
   const isForce = args && (args[0] === '--force' || args[0] === 'force' || args[0] === '-f')
@@ -11,16 +71,24 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   await m.reply(isForce ? '⚡ *Melakukan force update dari GitHub...*' : '🔄 *Menarik update terbaru dari GitHub...*')
 
   try {
-    const cmd = isForce
-      ? 'git fetch origin && git reset --hard origin/main && git clean -fd'
-      : 'git pull --rebase origin main'
-
-    const { stdout, stderr } = await execPromise(cmd)
-    const out = stdout.trim() || stderr.trim() || 'Selesai tanpa output tambahan.'
+    const before = await getHeadCommit()
+    let stdout = ''
+    if (isForce) {
+      await execPromise('git fetch origin')
+      await execPromise('git reset --hard origin/main')
+      await execPromise('git clean -fd')
+    } else {
+      const result = await execPromise('git pull --rebase origin main')
+      stdout = result.stdout
+    }
 
     if (!isForce && (stdout.includes('Already up to date.') || stdout.includes('Already up-to-date.'))) {
       await m.react('✅')
-      const msg = '✅ *Bot sudah berada di versi terbaru!*'
+      const msg = [
+        '✅ *Bot sudah berada di versi terbaru!*',
+        '',
+        '> Tidak ada file baru untuk diambil dari GitHub.'
+      ].join('\n')
       const buttons = [
         ['🔄 Cek Lagi', `${p + command}`],
         ['⚡ Force Update', `${p + command} --force`]
@@ -31,8 +99,16 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         await m.reply(msg)
       }
     } else {
+      const after = await getHeadCommit()
+      const summary = await getUpdateSummary(before, after)
       await m.react('🚀')
-      const msg = `🚀 *${isForce ? 'Force Update Berhasil' : 'Berhasil Diupdate'}!*\n\n📝 *Detail:*\n\`\`\`\n${out}\n\`\`\`\n\n_Catatan: Jika fitur baru belum muncul, silakan restart bot._`
+      const msg = [
+        `🚀 *${isForce ? 'Force Update Berhasil' : 'Berhasil Diupdate'}!*`,
+        '',
+        formatUpdateSummary(summary),
+        '',
+        '_Jika fitur baru belum muncul, silakan restart bot._'
+      ].join('\n')
       const buttons = [
         ['⚡ Restart Bot', `${p}restart`],
         ['📜 Menu Utama', `${p}menu`]
@@ -45,7 +121,23 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     }
   } catch (e) {
     await m.react('❌')
-    const errText = `❌ *Gagal Update!*\n\n⚠️ *Error:*\n\`\`\`\n${e.message}\n\`\`\`\n\n*Pilihan Aksi:*\n• Tekan tombol *Force Update* di bawah untuk menimpa perubahan lokal.\n• Tekan tombol *Coba Lagi* untuk mencoba kembali.\n\n*Perintah Manual:*\n\`git fetch origin && git reset --hard origin/main && git clean -fd\``
+    const errText = [
+      '❌ *Gagal Update!*',
+      '',
+      '⚠️ *Error:*',
+      `> ${String(e.message).replace(/\n/g, '\n> ')}`,
+      '',
+      '*Pilihan Aksi:*',
+      '> ↳ Force Update akan menimpa perubahan lokal.',
+      '> ↳ Coba Lagi akan mengulang proses update.',
+      '',
+      '*Perintah Manual:*',
+      '```',
+      'git fetch origin',
+      'git reset --hard origin/main',
+      'git clean -fd',
+      '```'
+    ].join('\n')
     const buttons = [
       ['⚡ Force Update', `${p + command} --force`],
       ['🔄 Coba Lagi', `${p + command}`]
