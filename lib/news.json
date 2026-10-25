@@ -763,7 +763,7 @@
     "id": "25.0",
     "section": "INFO",
     "title": "Mode Maintenance Bot",
-    "content": "\u003e Avelia dapat sementara tidak melayani perintah saat menjalani maintenance atau pemeliharaan sistem. Selama proses ini, fitur bot belum bisa digunakan dan pesan yang dikirim akan mendapat pemberitahuan maintenance. Cek .news 1 untuk membaca info terbaru setelah Avelia kembali aktif.",
+    "content": "\u003e Avelia memiliki dua mode pemeliharaan: mode penuh menonaktifkan semua fitur bot, sedangkan mode RPG menjeda command dan aktivitas RPG, termasuk transaksi serta perubahan nominal, sementara fitur bot lainnya tetap bisa digunakan. Perintah yang dicoba selama maintenance akan mendapat pemberitahuan. Setelah bot aktif kembali, cek .news 1 untuk info terbaru.",
     "author": "Eza",
     "createdAt": 1792904553043
   }
