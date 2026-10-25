@@ -431,7 +431,7 @@ let handler = async (m, {
   const statAliases = [
     'money', 'level', 'exp', 'darah', 'diamond', 'iron', 'gold', 'stone', 'wood', 'cont',
     'maxhp', 'armor', 'sword', 'pickaxe', 'fishingrod', 'limit', 'bank', 'banktier',
-    'stellarcredit', 'mallitem',
+    'stellarcredit', 'mallitem', 'casinoprofit',
     'advlevel', 'csm', 'contract', 'harem', 'anak', 'ikan', 'ore', 'masak', 'ternak', 'item', 'jadian'
   ]
   if (['set', 'add', 'del', 'tambah', 'kurang', 'reset'].includes(aksi) && remaining.length > 0) {
@@ -470,7 +470,8 @@ let handler = async (m, {
     'endauction', 'finishauction',
     'resetguard', 'resetavelia', 'resetaveliaguard', 'setcasinoprogress', 'setcasino',
     'casinoprogress', 'cshistoryrefund', 'refundcshistory', 'refundcasinohistory',
-    'setcasinoprofit', 'casinoprofit', 'setrhprogress', 'setrehabprogress',
+    'setcasinoprofit', 'addcasinoprofit', 'delcasinoprofit', 'casinoprofit',
+    'setrhprogress', 'setrehabprogress',
     'setrehabilitasiprogress', 'setburonan', 'setwanted', 'setwantedscore',
     'setcrime', 'setcriminal', 'setjeniskriminal', 'selesairh', 'finishrh',
     'finishrehab', 'forcerh', 'setpenjaraprogress', 'setprisonprogress', 'setpenjara',
@@ -880,7 +881,10 @@ let handler = async (m, {
   `─━━━━━━━━━━━━━━─\n\n` +
 
   `👤 *USER STAT*\n` +
-  `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del money @tag <nominal>*\n` +
+  `> ↳ Contoh set: *${usedPrefix}rpgpanel setmoney @tag 1,5T*\n` +
+  `> ↳ Contoh tambah: *${usedPrefix}rpgpanel addmoney @tag 2M*\n` +
+  `> ↳ Contoh kurang: *${usedPrefix}rpgpanel delmoney @tag 500K*\n` +
   `> ↳ *${usedPrefix}rpgpanel setjob @tag <nama pekerjaan>* - Ganti nama pekerjaan yang tampil saat bekerja\n` +
   `> ↳ *${usedPrefix}rpgpanel firejob @tag [nomor/nama job]* - Pecat user dari pekerjaan\n` +
   `> ↳ *${usedPrefix}rpgpanel applyjob @tag <nomor/nama job>* - Lamar/angkat user ke pekerjaan tertentu\n` +
@@ -892,7 +896,10 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel setcrime @tag <jenis> <jumlah>* - Atur jumlah tiap jenis kriminal (poin dihitung otomatis)\n` +
   `> ↳ Jenis: *${RPG_CRIME_TYPES.map(({ label }) => label.toLowerCase()).join('|')}*\n` +
   `> ↳ *${usedPrefix}rpgpanel selesairh @tag* - Paksa selesaikan rehabilitasi\n` +
-  `> ↳ *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del casinoprofit @tag <nominal>*\n` +
+  `> ↳ Contoh set: *${usedPrefix}rpgpanel setcasinoprofit @tag -1,5T*\n` +
+  `> ↳ Contoh tambah: *${usedPrefix}rpgpanel addcasinoprofit @tag 2M*\n` +
+  `> ↳ Contoh kurang: *${usedPrefix}rpgpanel delcasinoprofit @tag 500K*\n` +
   `> ↳ *${usedPrefix}rpgpanel cshistoryrefund @tag <nomor-riwayat>* - Kembalikan uang/profit dari ronde rugi di .cs history\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotlevel @tag <lvl>*\n` +
@@ -985,8 +992,12 @@ let handler = async (m, {
   `─━━━━━━━━━━━━━━─\n\n` +
 
   `🏦 *BANK*\n` +
-  `> ↳ *${usedPrefix}rpgpanel setbank @tag <jml>*\n` +
-  `> ↳ *${usedPrefix}rpgpanel addbank/delbank @tag <jml>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/del bank @tag <nominal>*\n` +
+  `> ↳ Contoh set: *${usedPrefix}rpgpanel setbank @tag 1,5T*\n` +
+  `> ↳ Contoh tambah: *${usedPrefix}rpgpanel addbank @tag 2M*\n` +
+  `> ↳ Contoh kurang: *${usedPrefix}rpgpanel delbank @tag 500K*\n` +
+  `> ↳ Suffix: *K* = ribu, *M* = juta, *B* = miliar, *T* = triliun. Koma desimal dipakai sebelum suffix, contoh *1,5T*.\n` +
+  `> ↳ Tanpa suffix, koma/titik hanya pemisah ribuan: *1.500.000* atau *1,500,000*. Jangan tulis *1,5* tanpa suffix.\n` +
   `> ↳ *${usedPrefix}rpgpanel setbanktier @tag <0-${MAX_BANK_TIER}>*\n` +
   `> ↳ *${usedPrefix}rpgpanel freezebank @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel unfreezebank @tag*\n\n` +
@@ -1967,15 +1978,43 @@ let handler = async (m, {
     )
   }
 
-  if (['setcasinoprofit', 'casinoprofit'].includes(aksi)) {
-    const profit = parseRpgMoneySignedAmount(remaining[0])
-    if (profit === null || remaining[0] === undefined) {
-      return m.reply(`❌ Format: *${usedPrefix}rpgpanel setcasinoprofit @tag <profit>*\nContoh: *${usedPrefix}rpgpanel setcasinoprofit @tag -5T*`)
+  if (['setcasinoprofit', 'addcasinoprofit', 'delcasinoprofit', 'casinoprofit'].includes(aksi)) {
+    const amountText = remaining[0]
+    const amount = aksi === 'setcasinoprofit' || aksi === 'casinoprofit'
+      ? parseRpgMoneySignedAmount(amountText)
+      : parseRpgMoneyAmount(amountText)
+    if (amount === null || amountText === undefined) {
+      return m.reply(
+        `❌ Nominal profit tidak valid.\n` +
+        `> ↳ Format: *${usedPrefix}rpgpanel set/add/del casinoprofit @tag <nominal>*\n` +
+        `> ↳ Contoh: *setcasinoprofit @tag -1,5T*, *addcasinoprofit @tag 2M*, *delcasinoprofit @tag 500K*`
+      )
     }
     user.casinoStats = user.casinoStats || { wins: 0, games: 0, profit: 0, byGame: {} }
-    user.casinoStats.profit = profit
-    saveDB(wdb)
-    return m.reply(`✅ Profit casino @${who.split('@')[0]} berhasil diatur menjadi *${formatRpgMoney(profit)}*.`, null, { mentions: [who] })
+    const currentProfit = normalizeRpgMoney(user.casinoStats.profit || 0)
+    const newProfit = aksi === 'addcasinoprofit'
+      ? addRpgMoney(currentProfit, amount)
+      : aksi === 'delcasinoprofit'
+        ? subtractRpgMoney(currentProfit, amount)
+        : amount
+    user.casinoStats.profit = newProfit
+    await saveDB(wdb)
+    const actionLabel = aksi === 'addcasinoprofit'
+      ? 'ditambah'
+      : aksi === 'delcasinoprofit'
+        ? 'dikurangi'
+        : 'diatur'
+    const changeLabel = aksi === 'addcasinoprofit'
+      ? `\n> ↳ Perubahan: +${formatRpgMoney(amount)}`
+      : aksi === 'delcasinoprofit'
+        ? `\n> ↳ Perubahan: -${formatRpgMoney(amount)}`
+        : ''
+    return m.reply(
+      `✅ Profit casino @${who.split('@')[0]} berhasil ${actionLabel}.\n` +
+      `> ↳ Total profit sekarang: *${formatRpgMoney(newProfit)}*${changeLabel}`,
+      null,
+      { mentions: [who] }
+    )
   }
 
   if (['setrhprogress', 'setrehabprogress', 'setrehabilitasiprogress'].includes(aksi)) {
@@ -2249,7 +2288,13 @@ let handler = async (m, {
   if (['setmoney', 'addmoney', 'delmoney'].includes(aksi)) {
     const moneyText = remaining.at(-1)
     const parsedMoney = moneyText === '0' ? 0 : parseRpgMoneyAmount(moneyText)
-    if (parsedMoney === null) return m.reply('❌ Nominal uang tidak valid. Contoh: 1T.')
+    if (parsedMoney === null) {
+      return m.reply(
+        `❌ Nominal uang tidak valid.\n` +
+        `> ↳ Contoh suffix: *1,5T*, *2M*, *500K*.\n` +
+        `> ↳ Tanpa suffix, gunakan pemisah ribuan seperti *1.500.000*; koma desimal perlu suffix.`
+      )
+    }
     jumlah = parsedMoney
   }
   let itemInput = remaining.find(a => isNaN(parseInt(a)))
@@ -2825,7 +2870,11 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
     if(['setbank', 'addbank', 'delbank'].includes(aksi)){
       const amount = args[0] === '0' ? 0 : parseRpgMoneyAmount(args[0])
       if (amount === null || (aksi !== 'setbank' && compareRpgMoney(amount, 1) < 0)) {
-        return m.reply(`Contoh: *${usedPrefix}rpgpanel ${aksi} @tag ${aksi === 'setbank' ? '100000000' : '1000000'}*`)
+        return m.reply(
+          `❌ Nominal bank tidak valid.\n` +
+          `> ↳ Contoh: *${usedPrefix}rpgpanel ${aksi} @tag ${aksi === 'setbank' ? '1,5T' : '500K'}*\n` +
+          `> ↳ Koma desimal harus memakai suffix, misalnya *1,5T*. Tanpa suffix gunakan pemisah ribuan: *1.500.000*.`
+        )
       }
       const currentBank = normalizeRpgMoney(user.bank)
       user.bank = aksi === 'setbank'
@@ -2834,7 +2883,13 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
           ? addRpgMoney(currentBank, amount)
           : maxRpgMoney(0, subtractRpgMoney(currentBank, amount))
       saveDB(wdb)
-      return m.reply(`✅ Saldo bank @${who.split('@')[0]} ${aksi === 'setbank' ? 'di set' : aksi === 'addbank' ? 'ditambah' : 'dikurangi'} jadi Rp ${user.bank.toLocaleString()}`, null, {mentions: [who]})
+      return m.reply(
+        `✅ Saldo bank @${who.split('@')[0]} ${aksi === 'setbank' ? 'diatur' : aksi === 'addbank' ? 'ditambah' : 'dikurangi'}.\n` +
+        `> ↳ Saldo sekarang: ${formatRpgMoney(user.bank)}\n` +
+        `> ↳ Nominal perubahan: ${formatRpgMoney(amount)}`,
+        null,
+        { mentions: [who] }
+      )
     }
 
     if(aksi === 'setbanktier'){
