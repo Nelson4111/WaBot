@@ -758,5 +758,13 @@
     "content": "\u003e Ikan kini memiliki ukuran, harga sesuai berat, favorit, dan leaderboard .topfish. Tersedia 60 totem termasuk 5 totem Casino dan 5 efek negatif all; aktif 1 jam, perpanjang dengan totem yang sama.",
     "author": "Eza",
     "createdAt": 1792600517000
+  },
+  {
+    "id": "25.0",
+    "section": "INFO",
+    "title": "Mode Maintenance Bot",
+    "content": "\u003e Avelia dapat sementara tidak melayani perintah saat menjalani maintenance atau pemeliharaan sistem. Selama proses ini, fitur bot belum bisa digunakan dan pesan yang dikirim akan mendapat pemberitahuan maintenance. Cek .news 1 untuk membaca info terbaru setelah Avelia kembali aktif.",
+    "author": "Eza",
+    "createdAt": 1792904553043
   }
 ]
