@@ -44,6 +44,25 @@ test('a single RPG action uses a Native Flow quick reply without a location head
   })
 })
 
+test('RPG guide and command replies use headerless Native Flow buttons', async () => {
+  const conn = makeConn()
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    quoted: { text: '.cs guide' },
+    text: 'Panduan casino.\n> ↳ .cs command\n> ↳ .cs games',
+    buttons: [
+      ['📋 Command', '.cs command'],
+      ['🎲 Daftar game', '.cs games']
+    ]
+  })
+
+  assert.equal(conn.sends.length, 1)
+  const interactive = conn.sends[0].content.interactiveMessage
+  assert.equal('header' in interactive, false)
+  assert.equal(interactive.nativeFlowMessage.buttons.length, 2)
+})
+
 test('image buffers are sent with the fallback action caption when Native Flow is unavailable', async () => {
   const conn = {
     sends: [],
