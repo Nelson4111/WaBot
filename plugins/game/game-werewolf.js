@@ -545,13 +545,28 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     if (isGameRolesCommand && !routedGameCategory) {
         const action = String(value || '').toLowerCase()
         if (!action) {
-            return m.reply(`*── ୨୧ ✧ GAME ROLES ✧ ୨୧ ──*\n\nGame Roles adalah permainan deduksi sosial berbasis role di grup. Pemain mendapat peran rahasia, menjalankan aksi sesuai perannya, lalu berusaha memenangkan tim atau kondisi menang masing-masing.\n\n> Buat room dengan memilih tema, misalnya *.gr ww create* atau *.gr mafia create*.\n> Taruhan (jika dipakai) langsung ditahan dari saldo saat pemain join.\n> Aksi rahasia hanya terlihat oleh pemain yang melakukan aksi.\n\n> Lihat tema: *.gr list*\n> Panduan: *.gr guide*\n> Daftar command: *.gr command*`)
+            const menuText = `*── ୨୧ ✧ GAME ROLES ✧ ୨୧ ──*
+
+🎭 *Game Roles* adalah kumpulan permainan deduksi sosial di grup. Setiap pemain mendapat peran rahasia, menyusun strategi, dan bekerja sama atau saling menebak untuk mencapai kemenangan.
+
+*╭ 〔 ✦ PILIH PETUALANGANMU 〕*
+> 🐺 Ada beberapa tema permainan dengan suasana dan antagonis berbeda.
+> 🔐 Aksi rahasia hanya terlihat oleh pemain yang melakukannya.
+> 💰 Jika memakai taruhan, saldo ditahan saat pemain bergabung.
+*╰───────────────*
+
+✨ Lihat daftar tema dengan *${usedPrefix}gr list*. Tekan tombol untuk panduan atau daftar perintah.`
+            const menuButtons = [
+                ['📖 Panduan Bermain', `${usedPrefix}gr guide`],
+                ['🧭 Jelajahi Perintah', `${usedPrefix}gr command`]
+            ]
+            return conn.sendButton(chat, menuText, 'Avelia • Game Roles', thumbNight, menuButtons, m)
         }
         if (action === 'list' || action === 'category' || action === 'kategori') {
             const categories = Object.values(GAME_CATEGORIES)
-                .map((entry) => `> 🎭 *${entry.name}* — ${usedPrefix}gr ${entry.id} create`)
+                .map((entry) => `> ${entry.antagonistEmoji} *${entry.name}*\n>   Buat room: *${usedPrefix}gr ${entry.id} create*`)
                 .join('\n')
-            return m.reply(`*── ୨୧ ✧ GAME ROLES ✧ ୨୧ ──*\n\n${categories}\n\n> Gunakan *.gr guide* untuk panduan, *.gr command* untuk daftar command, atau *.gr top* untuk leaderboard.`)
+            return m.reply(`*── ୨୧ ✧ PILIH TEMA GAME ROLES ✧ ୨୧ ──*\n\n${categories}\n\n📖 Panduan: *${usedPrefix}gr guide*\n🧭 Perintah: *${usedPrefix}gr command*\n🏆 Papan skor: *${usedPrefix}gr top*`)
         }
         if (action === 'guide') {
             return m.reply(`*── ✧ PANDUAN GAME ROLES ✧ ──*\n\n> 1. Pilih kategori, misalnya *.gr mafia create*.\n> 2. Tentukan taruhan saat membuat room, contoh *.gr mafia create 10k*.\n> 3. Peserta masuk memakai *.gr mafia join*; taruhan ditahan langsung saat bergabung.\n> 4. Owner room memulai dengan *.gr mafia start*.\n> 5. Gunakan kode aksi rahasia yang bot kirim di grup. Pesan aksi pribadi hanya terlihat oleh pemain yang bertindak.\n> 6. Pemain yang keluar sebelum permainan tetap kehilangan taruhannya; jika room dihapus, taruhan dikembalikan.\n> 7. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
@@ -581,8 +596,8 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                 return `*${(page - 1) * pageSize + index + 1}. ${game.name} · ${date}*\n> Role: ${roleTitles[entry.role] || entry.role}\n> Hasil: ${entry.result === 'win' ? 'Menang' : 'Kalah'} · Jumlah pemain: ${entry.players}\n> Skor didapat: ${entry.score}`
             }).join('\n\n') : 'Belum ada riwayat permainan.'
             const buttons = []
-            if (page > 1) buttons.push(['⬅️ Sebelumnya', `${usedPrefix}gr history ${page - 1}`])
-            if (page < pageCount) buttons.push(['Berikutnya ➡️', `${usedPrefix}gr history ${page + 1}`])
+            if (page > 1) buttons.push(['📜 Riwayat Sebelumnya', `${usedPrefix}gr history ${page - 1}`])
+            if (page < pageCount) buttons.push(['Riwayat Berikutnya 📜', `${usedPrefix}gr history ${page + 1}`])
             const caption = `*── ✧ RIWAYAT GAME ROLES · ${page}/${pageCount} ✧ ──*\n\n${text}`
             if (buttons.length) return conn.sendButton(chat, caption, 'Avelia • Game Roles', thumbNight, buttons, m)
             return conn.sendMessage(chat, { image: { url: thumbNight }, caption }, { quoted: m })
