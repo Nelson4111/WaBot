@@ -382,6 +382,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
   if (['command', 'commands'].includes(action)) {
     const rows = [
       { title: '📋 Lihat lowongan', description: 'Temukan pekerjaan yang sesuai dengan levelmu', id: `${usedPrefix}job list` },
+      { title: '🏅 Daftar title', description: 'Lihat nama jabatan yang tersedia', id: `${usedPrefix}job title` },
       { title: '📝 Ajukan pekerjaan', description: 'Pilih posisi yang ingin kamu tekuni', id: `${usedPrefix}job apply` },
       { title: '💬 Bicara dengan atasan', description: 'Bangun relasi dan buka peluang karier', id: `${usedPrefix}job talk` },
       { title: '💼 Mulai bekerja', description: 'Jalani giliran kerja dan kumpulkan hasil', id: `${usedPrefix}work` },
@@ -400,6 +401,27 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
       sections: [{ title: 'Perjalanan kerja', rows }],
       fallbackText: `╭─❏「 💼 MENU KARIER 」❏\n${rows.map(row => `> ${row.title}: *${row.id}* — ${row.description}`).join('\n')}\n╰─━━━━━━━━━━━━━━─`
     })
+  }
+
+  if (action === 'title' || action === 'titles') {
+    const titleList = (heading, titles) => [
+      `*${heading}*`,
+      ...titles.map(({ title }) => `> ✦ ${title}`)
+    ]
+    const caption = [
+      '╭─❏「 🏅 DAFTAR TITLE JOB 」❏',
+      '│ Pilihan jabatan yang tersedia',
+      '╰─━━━━━━━━━━━━━━─',
+      '',
+      ...titleList('💼 PEKERJAAN UMUM', JOB_TITLES),
+      '',
+      '─━━━━━━━━━━━━━━─',
+      '',
+      ...titleList('🧰 PEKERJAAN INDIVIDUAL', INDIVIDUAL_JOB_TITLES),
+      '',
+      '─━━━━━━━━━━━━━━─'
+    ].join('\n')
+    return m.reply(caption)
   }
 
   if (['guide', 'help'].includes(action)) {
@@ -1306,7 +1328,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
 > ↳ Gunakan *${usedPrefix}job guide* untuk melihat daftar command.`)
 }
 
-handler.help = ['job', 'job guide', 'job list', 'job info [nama/nomor]', 'job active <nama/nomor>', 'job profile', 'job performance', 'job work [all]', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk [all]', 'job leave', 'job return', 'job resign <nama/nomor>', 'work [all]', 'kerja [all]']
+handler.help = ['job', 'job guide', 'job list', 'job title', 'job info [nama/nomor]', 'job active <nama/nomor>', 'job profile', 'job performance', 'job work [all]', 'job apply <nama/nomor>', 'job salary <nama/nomor>', 'job talk [all]', 'job leave', 'job return', 'job resign <nama/nomor>', 'work [all]', 'kerja [all]']
 handler.tags = ['rpg']
 handler.command = /^(job|kerja|work)$/i
 handler.alias = ['job', 'kerja', 'work']
