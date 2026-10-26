@@ -97,7 +97,9 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   const premiumExpiry = Number(premiumTime) > 0 && Number.isFinite(Number(premiumTime))
     ? `${formatPremiumDuration(Number(premiumTime) - Date.now())} lagi`
     : 'Permanen'
-  const premiumStatus = isPremium ? `${prems} • ${premiumExpiry}` : prems
+  const premiumStatus = isPremium
+    ? `*┆* ⏱ ᴇxᴘɪʀᴇᴅ : *${premiumExpiry}*`
+    : ''
 
   // 3. Data Finansial & Ekonomi
   const wdb = loadDB()
@@ -255,8 +257,8 @@ ${spouseList}
 *┆* ✧ ɴᴏᴍᴏʀ     : *@${senderNumber}*
 *┆* ✦ ᴜᴍᴜʀ      : *${toSmallNum(age)} Tahun*
 *┆* ㋡ ʀᴏʟᴇ      : *${role}*
-*┆* ❖ ꜱᴛᴀᴛᴜꜱ    : *${premiumStatus}*
-*┆* ◈ ʀᴇɢɪꜱᴛᴇʀ  : *${registered ? 'ᴛᴇʀᴅᴀꜰᴛᴀʀ ㋡' : 'ʙᴇʟᴜᴍ ᴛᴇʀᴅᴀꜰᴛᴀʀ'}*
+*┆* ❖ ꜱᴛᴀᴛᴜꜱ    : *${prems}*
+${premiumStatus ? `${premiumStatus}\n` : ''}*┆* ◈ ʀᴇɢɪꜱᴛᴇʀ  : *${registered ? 'ᴛᴇʀᴅᴀꜰᴛᴀʀ ㋡' : 'ʙᴇʟᴜᴍ ᴛᴇʀᴅᴀꜰᴛᴀʀ'}*
 *╰──────────────────────*
 
 *╭  〔 ✮ ʟ ᴇ ᴠ ᴇ ʟ  ᴜ ᴛ ᴀ ᴍ ᴀ  (ᴀ ᴋ ᴜ ɴ) 〕*
