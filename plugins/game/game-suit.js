@@ -50,4 +50,3 @@ handler.private = false
 handler.limit = true
 
 export default handler
-import { addRpgMoney } from '../../lib/rpgMoney.js'
