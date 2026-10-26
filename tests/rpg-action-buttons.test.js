@@ -29,7 +29,6 @@ test('a single RPG action uses a Native Flow quick reply without a location head
     chat: 'test@g.us',
     text: 'Pilih aksi.',
     title: 'Aksi tunggal',
-    thumbnailUrl: 'https://example.invalid/location-thumbnail.jpg',
     buttons: [['🎯 Tangkap', '.pokemon catch abc']],
     preferV2: true
   })
@@ -43,6 +42,54 @@ test('a single RPG action uses a Native Flow quick reply without a location head
     display_text: '🎯 Tangkap',
     id: '.pokemon catch abc'
   })
+})
+
+test('image buffers are sent with the fallback action caption when Native Flow is unavailable', async () => {
+  const conn = {
+    sends: [],
+    async sendMessage(chat, content, options) {
+      this.sends.push({ chat, content, options })
+      return this.sends.at(-1)
+    }
+  }
+  const image = Buffer.from('fishing card')
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Hasil memancing.',
+    buffer: image,
+    buttons: [['🐠 Buka Aquarium', '.aquarium']],
+    quoted: { key: 'quoted-message' },
+    reply: async () => {
+      throw new Error('image fallback must send the media message')
+    }
+  })
+
+  assert.equal(conn.sends.length, 1)
+  assert.deepEqual(conn.sends[0].content.image, image)
+  assert.match(conn.sends[0].content.caption, /Hasil memancing\./)
+  assert.match(conn.sends[0].content.caption, /\.aquarium/)
+  assert.deepEqual(conn.sends[0].options, { quoted: { key: 'quoted-message' } })
+})
+
+test('thumbnail URLs are sent as media when Native Flow is unavailable', async () => {
+  const conn = {
+    sends: [],
+    async sendMessage(chat, content) {
+      this.sends.push({ chat, content })
+      return this.sends.at(-1)
+    }
+  }
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Hasil mining.',
+    thumbnailUrl: 'https://example.invalid/mining.jpg',
+    buttons: [['🎒 Buka Tas', '.bag']]
+  })
+
+  assert.deepEqual(conn.sends[0].content.image, { url: 'https://example.invalid/mining.jpg' })
+  assert.match(conn.sends[0].content.caption, /Hasil mining\./)
 })
 
 test('quick action helpers use Native Flow instead of ButtonV2', async () => {
