@@ -210,6 +210,37 @@ test('more than two RPG actions use a scrollable list', async () => {
   ])
 })
 
+test('a text-only category list can keep two quick replies without adding a media header', async () => {
+  const conn = makeConn()
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Profil pengguna.',
+    sections: [{
+      title: 'Kategori',
+      rows: [{ title: 'Games', id: '.menugame' }]
+    }],
+    buttons: [
+      ['Info Owner', '.owner'],
+      ['Donasi', '.donasi']
+    ],
+    keepButtonsWithSections: true
+  })
+
+  const interactive = conn.sends[0].content.interactiveMessage
+  assert.equal('header' in interactive, false)
+  assert.deepEqual(
+    interactive.nativeFlowMessage.buttons.map(button => button.name),
+    ['single_select', 'quick_reply', 'quick_reply']
+  )
+  assert.deepEqual(
+    interactive.nativeFlowMessage.buttons.slice(1).map(button =>
+      JSON.parse(button.buttonParamsJson).id
+    ),
+    ['.owner', '.donasi']
+  )
+})
+
 test('lists use the connection interactive sender without a location header', async () => {
   const conn = makeConn()
 
