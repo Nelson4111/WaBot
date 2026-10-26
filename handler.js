@@ -29,7 +29,6 @@ import { normalizeRpgMoney } from './lib/rpgMoney.js'
  */
 const { proto } = (await import('@whiskeysockets/baileys')).default
 const isNumber = x => typeof x === 'number' && !isNaN(x)
-const isNumberOrBigInt = x => typeof x === 'bigint' || (typeof x === 'number' && !isNaN(x))
 const EXCLUSIVE_JAIL_BLOCKED_COMMAND_SET = new Set(EXCLUSIVE_JAIL_BLOCKED_COMMANDS)
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms))
 const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
@@ -329,9 +328,7 @@ async function processMessage(m, chatUpdate) {
 
         const werewolfRoom = this.werewolf?.[m.chat]
         const deadWerewolfPlayer = werewolfRoom?.status && werewolfRoom.player?.find(player => player.id === m.sender && player.isdead)
-        const hunterShootCommand = /^[.\/#!](?:(?:ww|werewolf|gr|gameroles)\s+(?:(?:ww|werewolf|mafia|killer|assassin|assasin|assasins|impostor|imposter)\s+)?|(?:mafia|killer|assassin|assasin|assasins|impostor|imposter)\s+)shoot\b/i.test(m.text || '')
-        const allowedHunterResponse = deadWerewolfPlayer?.pendingHunter && hunterShootCommand
-        if (m.isGroup && deadWerewolfPlayer && !allowedHunterResponse) {
+        if (m.isGroup && deadWerewolfPlayer) {
             try {
                 await this.sendMessage(m.chat, { delete: m.key })
             } catch (error) {
@@ -424,7 +421,7 @@ async function processMessage(m, chatUpdate) {
             if (typeof user !== 'object')
                 global.db.data.users[m.sender] = {}
             if (user) {
-                if (!isNumberOrBigInt(user.exp)) user.exp = 0
+                if (!isNumber(user.exp)) user.exp = 0
                 if (!isNumber(user.level)) user.level = 0
                 syncUserLimit(user)
                 const freeDailyLimit = grantFreeDailyLimit(user)
@@ -441,7 +438,7 @@ async function processMessage(m, chatUpdate) {
                 if (!('banReason' in user)) user.banReason = ''
                 if (!('role' in user)) user.role = 'Free user'
                 if (!('autolevelup' in user)) user.autolevelup = false
-                if (!isNumberOrBigInt(user.balance)) user.balance = 0
+                if (!isNumber(user.balance)) user.balance = 0
                 user.money = normalizeRpgMoney(user.money)
                 user.bank = normalizeRpgMoney(user.bank)
             } else {
