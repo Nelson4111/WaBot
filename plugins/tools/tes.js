@@ -3,10 +3,15 @@ import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 let handler = async (m, { conn } = {}) => {
   const botName = global.namebot || 'Avelia'
   const text =
-    `╭─❏「 ✨ ${botName.toUpperCase()} 」❏\n` +
-    `│ 👋 Hai! Aku ${botName}, asisten WhatsApp yang siap membantu.\n` +
+    `╭─❏「 *A V E L I A* 」❏\n` +
+    `│ 🤖 *Avelia WA Companion*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `Pilih tombol di bawah untuk melihat fitur bot atau menghubungi owner.`
+    `👋 *Halo Semuanya!!*\n` +
+    `> ↳ Aku ${botName}, bot asisten aktif milik *'Owner Nenel dan Co-Owner Eza*.\n\n` +
+    `> ↳ Ketik *.menu* untuk melihat semua daftar fitur yang tersedia ✨\n\n` +
+    `> ↳ Chat *.owner* jika ingin Avelia ada di grup kamu juga ✨\n\n` +
+    `👇 *Tekan tombol di bawah untuk membuka menu atau menghubungi owner.*\n\n` +
+    `─━━━━━━━━━━━━━━─`
 
   return sendRpgButtons(conn, {
     chat: m.chat,
