@@ -96,6 +96,81 @@ function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
+function getResetCooldownOptions(account, user, wdb, who) {
+  const options = [
+    { id: 'all', title: '♻️ Semua Cooldown', description: 'Reset seluruh cooldown RPG user sekaligus.' },
+    { id: 'daily', title: '🎁 Daily', description: 'Reset klaim dan jeda daily saja.' },
+    { id: 'adventure', title: '🗺️ Adventure', description: 'Reset cooldown adventure.' },
+    { id: 'mining', title: '⛏️ Mining', description: 'Reset cooldown mining.' },
+    { id: 'dungeon', title: '🏰 Dungeon', description: 'Reset cooldown dungeon.' },
+    { id: 'fishing', title: '🎣 Fishing', description: 'Reset cooldown fishing.' },
+    { id: 'work', title: '💼 Kerja RPG', description: 'Reset cooldown seluruh pekerjaan.' },
+    { id: 'casino', title: '🎰 Casino', description: 'Reset cooldown casino.' },
+    { id: 'loan', title: '💳 Pinjaman', description: 'Reset waktu tunggu pinjaman.' }
+  ]
+  const stores = [...new Set([account, user, account.rpg].filter(Boolean))]
+  const groupedFields = new Set([
+    'lastdaily', 'dailycooldownduration', 'lastadventure', 'lastmining', 'lastdungeon',
+    'lastfishing', 'lastmancing', 'lastkerja', 'lastwork', 'jobworkcooldowns',
+    'lastcasino', 'casinocooldowns', 'cooldown'
+  ])
+  const fields = new Set(stores.flatMap(store => Object.keys(store)))
+  for (const field of fields) {
+    const normalized = field.toLowerCase()
+    if ((!normalized.startsWith('last') && !normalized.includes('cooldown')) ||
+      groupedFields.has(normalized) ||
+      !stores.some(store => {
+        const value = store[field]
+        return value && typeof value === 'object'
+          ? Object.keys(value).length > 0
+          : Number(value) > 0
+      })) continue
+    options.push({
+      id: `field:${encodeURIComponent(field)}`,
+      title: `⏱️ ${field.replace(/^last/i, '').replace(/([A-Z])/g, ' $1').trim()}`.slice(0, 24),
+      description: `Reset cooldown ${field}.`
+    })
+  }
+
+  const cooldownKeys = new Set(stores.flatMap(store =>
+    Object.keys(store.cooldown || {}).filter(key => Number(store.cooldown[key]) > 0)
+  ))
+  for (const key of cooldownKeys) {
+    options.push({
+      id: `cooldown:${encodeURIComponent(key)}`,
+      title: `🔄 ${key.replace(/[_-]/g, ' ')}`.slice(0, 24),
+      description: `Reset cooldown aktivitas ${key}.`
+    })
+  }
+
+  for (const [storeKey, store] of Object.entries(wdb)) {
+    if (!storeKey.toLowerCase().includes('cooldown') || !store || typeof store !== 'object' || !Object.hasOwn(store, who)) continue
+    options.push({
+      id: `global:${encodeURIComponent(storeKey)}`,
+      title: `🌐 ${storeKey}`.slice(0, 24),
+      description: `Reset data cooldown ${storeKey}.`
+    })
+  }
+  for (const key of ['fitnah', 'fitnahHukuman']) {
+    if (wdb[key] && Object.hasOwn(wdb[key], who)) {
+      options.push({
+        id: `global:${encodeURIComponent(key)}`,
+        title: `🌐 ${key}`.slice(0, 24),
+        description: `Reset cooldown ${key}.`
+      })
+    }
+  }
+  if (wdb.temp?.kawin?.[who]) {
+    options.push({
+      id: 'temp:kawin',
+      title: '🐄 Kawin Ternak',
+      description: 'Reset proses kawin ternak yang tertunda.'
+    })
+  }
+
+  return options
+}
+
 // TAMBAHIN INI DI BAWAHNYA
 function getAdvTitle(lvl){
   if(lvl >= 250) return '👑 DEWA PENJELAJAH'
@@ -545,9 +620,14 @@ let handler = async (m, {
     ...RPG_PANEL_CATEGORIES.flatMap(({ title, aliases }) => [title, ...aliases])
   ])
   const requestedCategory = normalizeRpgPanelCategory(rawArgs.join(' '))
+  const isResetCooldownAction = ['resetcd', 'resetcooldown', 'clearcd'].includes(aksi)
+  const resetCooldownSelectionProvided = remaining.some(arg =>
+    /^(?:all|daily|adventure|mining|dungeon|fishing|work|casino|loan|field:|cooldown:|global:|temp:)/i.test(arg)
+  )
   const autoLevelOptions = ['on', 'off', 'enable', 'disable', '1', '0', 'true', 'false', 'aktif', 'mati']
   const isAutoLevelStatusQuery = aksi === 'autolevelup' && !autoLevelOptions.includes(String(remaining[0] || '').toLowerCase())
   const isPanelReadOnlyAction = panelReadOnlyActions.has(aksi) ||
+    (isResetCooldownAction && !resetCooldownSelectionProvided) ||
     !aksi ||
     isAutoLevelStatusQuery ||
     /^(cek|check|lihat|show|list)/.test(aksi || '') ||
@@ -906,9 +986,10 @@ let handler = async (m, {
   const remainingWithoutTarget = remaining.filter((_, index) =>
     !targetResolution.consumedIndexes.includes(index)
   )
-  const requiresUserTarget = !isPanelReadOnlyAction &&
-    !targetlessPanelActions.has(aksi) &&
-    !isAllAccountAction
+  const requiresUserTarget = isResetCooldownAction ||
+    (!isPanelReadOnlyAction &&
+      !targetlessPanelActions.has(aksi) &&
+      !isAllAccountAction)
   const moneyMutation = ['setmoney', 'addmoney', 'delmoney'].includes(aksi)
   if (requiresUserTarget && !targetResolution.target) {
     if (moneyMutation) {
@@ -1230,7 +1311,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel clearmoneykey <key>*\n` +
   `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
-  `> ↳ *${usedPrefix}rpgpanel resetcd @tag*\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetcd @tag/reply* - Pilih satu cooldown untuk direset\n` +
   `> ↳ *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
@@ -3005,68 +3086,141 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   }
 
   if(aksi === 'resetcd' || aksi === 'resetcooldown' || aksi === 'clearcd'){
-    const resetCooldownFields = (store) => {
-      for (const key of Object.keys(store || {})) {
-        const normalizedKey = key.toLowerCase()
-        if (!normalizedKey.includes('cooldown') && !normalizedKey.startsWith('last')) continue
-        store[key] = store[key] && typeof store[key] === 'object' && !Array.isArray(store[key]) ? {} : 0
+    const resetOptionId = remaining[0] || ''
+    const options = getResetCooldownOptions(account, user, wdb, who)
+    if (!resetOptionId) {
+      const sections = []
+      for (let index = 0; index < options.length; index += 10) {
+        sections.push({
+          title: `Pilih cooldown ${Math.floor(index / 10) + 1}`,
+          rows: options.slice(index, index + 10).map(option => ({
+            title: option.title,
+            description: option.description,
+            id: `${usedPrefix}rp resetcd ${who} ${option.id}`
+          }))
+        })
+      }
+      const fallbackText = `╭─❏「 ⏱️ RESET COOLDOWN RPG 」❏\n` +
+        `│ Target: @${who.split('@')[0]}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Pilih cooldown yang ingin direset. Opsi Semua Cooldown akan mereset semuanya sekaligus:\n` +
+        options.map(option => `> ${option.title} — ${option.description}\n> Ketik: *${usedPrefix}rp resetcd ${who} ${option.id}*`).join('\n') +
+        `\n\n> Opsi lainnya hanya menghapus cooldown yang dipilih.`
+      return sendRpgButtons(conn, {
+        chat: responseChat,
+        message: sourceMessage,
+        quoted: sourceMessage,
+        text: `╭─❏「 ⏱️ RESET COOLDOWN RPG 」❏\n` +
+          `│ Target: @${who.split('@')[0]}\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Pilih cooldown yang ingin direset. Gunakan ♻️ Semua Cooldown untuk mereset semuanya sekaligus.\n\n` +
+          options.map(option => `> ${option.title} · ${option.description}`).join('\n'),
+        title: '⏱️ PILIH COOLDOWN',
+        subtitle: 'Pilih cooldown yang akan direset',
+        footer: 'AVELIA • RPG PANEL',
+        buttonText: '🎛️ PILIH COOLDOWN',
+        sections,
+        fallbackText,
+        sendInteractive: typeof conn.sendInteractive === 'function'
+          ? interactiveMessage => conn.sendInteractive(responseChat, interactiveMessage, { quoted: sourceMessage })
+          : undefined
+      })
+    }
+
+    const stores = [...new Set([account, user, account.rpg].filter(Boolean))]
+    let selectedOption = options.find(option => option.id === resetOptionId)
+    if (!selectedOption) {
+      return m.reply(`❌ Pilihan cooldown tidak valid atau sudah tidak tersedia. Jalankan *${usedPrefix}rp resetcd @tag* lagi.`)
+    }
+    const setFields = (fields, value = 0) => {
+      for (const store of stores) {
+        for (const field of fields) {
+          if (value === 0 && store[field] && typeof store[field] === 'object' && !Array.isArray(store[field])) {
+            store[field] = {}
+          } else {
+            store[field] = value
+          }
+        }
       }
     }
-    resetCooldownFields(user)
-    resetCooldownFields(account)
 
-    for (const [key, store] of Object.entries(wdb)) {
-      if (!key.toLowerCase().includes('cooldown') || !store || typeof store !== 'object') continue
+    if (resetOptionId === 'all') {
+      const groupedFields = new Set([
+        'lastdaily', 'dailycooldownduration', 'lastadventure', 'lastmining', 'lastdungeon',
+        'lastfishing', 'lastmancing', 'lastkerja', 'lastwork', 'jobworkcooldowns',
+        'lastcasino', 'casinocooldowns', 'cooldown'
+      ])
+      setFields([
+        'lastDaily', 'dailyCooldownDuration', 'lastAdventure', 'lastMining', 'lastDungeon',
+        'lastFishing', 'lastMancing', 'lastkerja', 'lastWork', 'jobWorkCooldowns',
+        'lastcasino', 'casinoCooldowns', 'cooldown'
+      ])
+      for (const store of stores) {
+        for (const key of Object.keys(store)) {
+          const normalizedKey = key.toLowerCase()
+          if ((!normalizedKey.startsWith('last') && !normalizedKey.includes('cooldown')) ||
+            groupedFields.has(normalizedKey)) continue
+          store[key] = store[key] && typeof store[key] === 'object' && !Array.isArray(store[key]) ? {} : 0
+        }
+        if (!store.pinjaman || typeof store.pinjaman !== 'object') store.pinjaman = { jumlah: 0, waktu: 0 }
+        store.pinjaman.waktu = 0
+      }
+      for (const [storeKey, store] of Object.entries(wdb)) {
+        if (!store || typeof store !== 'object') continue
+        if (storeKey.toLowerCase().includes('cooldown') || ['fitnah', 'fitnahHukuman'].includes(storeKey)) {
+          delete store[who]
+        }
+      }
+      if (wdb.temp?.kawin) delete wdb.temp.kawin[who]
+    } else if (resetOptionId === 'daily') {
+      setFields(['lastDaily', 'dailyCooldownDuration'])
+    } else if (resetOptionId === 'adventure') {
+      setFields(['lastAdventure'])
+    } else if (resetOptionId === 'mining') {
+      setFields(['lastMining'])
+    } else if (resetOptionId === 'dungeon') {
+      setFields(['lastDungeon'])
+    } else if (resetOptionId === 'fishing') {
+      setFields(['lastFishing', 'lastMancing'])
+    } else if (resetOptionId === 'work') {
+      setFields(['lastkerja', 'lastWork', 'jobWorkCooldowns'])
+    } else if (resetOptionId === 'casino') {
+      setFields(['lastcasino', 'casinoCooldowns'])
+    } else if (resetOptionId === 'loan') {
+      for (const store of stores) {
+        if (!store.pinjaman || typeof store.pinjaman !== 'object') store.pinjaman = { jumlah: 0, waktu: 0 }
+        store.pinjaman.waktu = 0
+      }
+    } else if (resetOptionId.startsWith('field:')) {
+      const field = decodeURIComponent(resetOptionId.slice('field:'.length))
+      setFields([field])
+      selectedOption = { ...selectedOption, title: field }
+    } else if (resetOptionId.startsWith('cooldown:')) {
+      const cooldownKey = decodeURIComponent(resetOptionId.slice('cooldown:'.length))
+      for (const store of stores) {
+        if (store.cooldown && typeof store.cooldown === 'object') delete store.cooldown[cooldownKey]
+      }
+      selectedOption = { ...selectedOption, title: cooldownKey }
+    } else if (resetOptionId.startsWith('global:')) {
+      const storeKey = decodeURIComponent(resetOptionId.slice('global:'.length))
+      const store = wdb[storeKey]
+      if (!store || typeof store !== 'object' || !Object.hasOwn(store, who)) {
+        return m.reply(`❌ Data cooldown ${storeKey} sudah tidak tersedia. Pilih ulang melalui *${usedPrefix}rp resetcd @tag*.`)
+      }
       delete store[who]
+    } else if (resetOptionId === 'temp:kawin') {
+      if (!wdb.temp?.kawin?.[who]) {
+        return m.reply(`❌ Data cooldown kawin ternak sudah tidak tersedia. Pilih ulang melalui *${usedPrefix}rp resetcd @tag*.`)
+      }
+      delete wdb.temp.kawin[who]
     }
 
-    user.cooldown = {}
-    account.cooldown = {}
-    user.casinoCooldowns = {}
-    account.casinoCooldowns = {}
-    user.lastcasino = 0
-    account.lastcasino = 0
-    user.lastkerja = 0
-    account.lastkerja = 0
-    user.lastWork = 0
-    account.lastWork = 0
-    user.lastRest = 0
-    account.lastRest = 0
-    user.lastGacha = 0
-    account.lastGacha = 0
-    user.lastVisit = 0
-    account.lastVisit = 0
-    user.lastLoveHeal = 0
-    account.lastLoveHeal = 0
-
-    const previousDayMs = Date.now() - 24 * 60 * 60 * 1000
-    const previousDayDate = getJakartaDate(previousDayMs)
-    user.lastDaily = previousDayMs
-    account.lastDaily = previousDayMs
-    user.dailyDate = previousDayDate
-    account.dailyDate = previousDayDate
-    user.dailySavedAt = previousDayMs
-    account.dailySavedAt = previousDayMs
-    user.lastAdventure = 0
-    account.lastAdventure = 0
-    user.lastMining = 0
-    account.lastMining = 0
-    user.lastDungeon = 0
-    account.lastDungeon = 0
-    user.lastFishing = 0
-    account.lastFishing = 0
-    user.lastMancing = 0
-    account.lastMancing = 0
-    user.pinjaman = user.pinjaman || { jumlah: 0, waktu: 0 }
-    account.pinjaman = account.pinjaman || { jumlah: 0, waktu: 0 }
-    user.pinjaman.waktu = 0
-    account.pinjaman.waktu = 0
-    if (wdb.temp?.kawin) delete wdb.temp.kawin[who]
-    for (const key of ['fitnah', 'fitnahHukuman']) {
-      if (wdb[key]) delete wdb[key][who]
-    }
-    saveDB(wdb)
-    return m.reply(`🔄 Semua cooldown RPG telah direset untuk @${who.split('@')[0]}`, null, {mentions: [who]})
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Cooldown *${selectedOption.title}* @${who.split('@')[0]} berhasil direset.`,
+      null,
+      { mentions: [who] }
+    )
   }
 
   if(aksi === 'resetstreak'){

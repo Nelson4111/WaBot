@@ -13,13 +13,6 @@ import {
 } from '../../lib/rpgDifficulty.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
-function formatDuration(ms) {
-  const days = Math.floor(ms / 86400000)
-  const hours = Math.floor((ms % 86400000) / 3600000)
-  const minutes = Math.floor((ms % 3600000) / 60000)
-  return [days && `${days} hari`, hours && `${hours} jam`, minutes && `${minutes} menit`].filter(Boolean).join(' ') || 'kurang dari 1 menit'
-}
-
 const DIFFICULTY_CHOICES = [
   { key: 'peaceful', emoji: '🌿', description: 'Santai, regen HP, tanpa kriminal atau leaderboard' },
   { key: 'easy', emoji: '🍃', description: 'Risiko dan cooldown lebih rendah, hadiah lebih kecil' },
@@ -30,6 +23,62 @@ const DIFFICULTY_CHOICES = [
 
 function formatMultiplier(value) {
   return `${Math.round(value * 100)}%`
+}
+
+function formatDifficultyTime(ms) {
+  if (!ms) return 'Tidak ada cooldown'
+  const totalSeconds = Math.ceil(ms / 1000)
+  if (totalSeconds < 60) return `${totalSeconds} detik`
+  const totalMinutes = Math.round(totalSeconds / 60)
+  if (totalMinutes < 60) return `${totalMinutes} menit`
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours < 24) return `${hours} jam${minutes ? ` ${minutes} menit` : ''}`
+  const days = Math.floor(hours / 24)
+  const remainingHours = hours % 24
+  return `${days} hari${remainingHours ? ` ${remainingHours} jam` : ''}`
+}
+
+function formatCrimeSuccess(profile) {
+  if (profile.crimeSuccess === 0) return 'Normal (±0 poin persentase)'
+  if (profile.crimeSuccess < 0) return `${profile.crimeSuccess * 100} poin persentase peluang sukses`
+  return `+${profile.crimeSuccess * 100} poin persentase peluang sukses`
+}
+
+function getDifficultyComparison(key) {
+  const profile = RPG_DIFFICULTIES[key]
+  const normal = RPG_DIFFICULTIES.normal
+  const percent = value => `${Math.round(value * 100)}%`
+  const crime = key === 'peaceful'
+    ? 'Dinonaktifkan'
+    : `${formatCrimeSuccess(normal.crimeSuccess)} → ${formatCrimeSuccess(profile.crimeSuccess)}`
+  const regeneration = key === 'peaceful'
+    ? 'Tidak ada → 1 HP/menit'
+    : 'Tidak ada → Tidak ada'
+  const rareRewards = canReceiveRareActivityRewards({ difficulty: key })
+    ? 'Tersedia → Tersedia'
+    : 'Tersedia → Tidak tersedia'
+  const leaderboard = profile.leaderboard
+    ? 'Masuk → Masuk'
+    : 'Masuk → Tidak masuk'
+
+  return [
+    `💰 Penghasilan: x${normal.income} → x${profile.income}`,
+    `✨ EXP: x${normal.xp} → x${profile.xp}`,
+    `💎 Drop rate: x${normal.dropRate} → x${profile.dropRate}`,
+    `⏱️ Cooldown aksi: x${normal.cooldown} → x${profile.cooldown}`,
+    `   Contoh cooldown normal 2 menit: ${formatDifficultyTime(2 * 60000)} → ${formatDifficultyTime(2 * 60000 * profile.cooldown)}`,
+    `🎁 Reset klaim Daily: Pukul 00.00 WIB → Pukul 00.00 WIB (tidak dipengaruhi difficulty)`,
+    `⚔️ Damage yang diberikan: ${percent(normal.damageDealt)} → ${percent(profile.damageDealt)}`,
+    `🛡️ Damage yang diterima: ${percent(normal.damageReceived)} → ${percent(profile.damageReceived)}`,
+    `💸 Kerugian uang saat jadi target kriminal: x${normal.crimeLoss} → x${profile.crimeLoss}`,
+    `🎲 Peluang gagal aktivitas: x${normal.activityFailure} → x${profile.activityFailure}`,
+    `🕵️ Peluang sukses kriminal: ${crime}`,
+    `🩹 Cooldown heal setelah mati: ${formatDifficultyTime(normal.deathHealCooldown)} → ${formatDifficultyTime(profile.deathHealCooldown)}`,
+    `❤️ Regenerasi HP otomatis: ${regeneration}`,
+    `🏅 Reward langka Guild/Dungeon: ${rareRewards}`,
+    `🏆 Leaderboard RPG: ${leaderboard}`
+  ].join('\n')
 }
 
 function getGuide() {
@@ -146,28 +195,20 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const remaining = premium
     ? getPremiumDifficultyChangesRemaining(user)
     : getDifficultyChangesRemaining(user, DIFFICULTY_CHANGES_PER_WEEK)
-  const crimeModifier = current === 'peaceful'
-    ? 'Nonaktif'
-    : profile.crimeSuccess === 0
-      ? 'Normal'
-      : `${profile.crimeSuccess > 0 ? '+' : ''}${profile.crimeSuccess * 100} poin peluang sukses`
-  const infoText = `🎚️ *DIFFICULTY SAAT INI: ${profile.name.toUpperCase()}*\n` +
-    `Sesuaikan tingkat tantangan RPG dengan gaya bermainmu.\n\n` +
-    `> 💰 Income: x${profile.income}\n` +
-    `> ✨ EXP: x${profile.xp}\n` +
-    `> 💎 Drop rate: x${profile.dropRate}\n` +
-    `> ⏱️ Cooldown aksi: x${profile.cooldown}\n` +
-    `> ⚔️ Damage keluar: x${profile.damageDealt}\n` +
-    `> 🛡️ Damage diterima: x${profile.damageReceived}\n` +
-    `> 💸 Uang hilang saat jadi target: x${profile.crimeLoss}\n` +
-    `> 🎲 Risiko gagal aktivitas: x${profile.activityFailure}\n` +
-    `> ❤️ Regen HP: ${current === 'peaceful' ? '1 HP/menit' : 'Tidak ada'}\n` +
-    `> 🩹 Heal setelah mati: ${profile.deathHealCooldown ? formatDuration(profile.deathHealCooldown) : 'Tidak ada cooldown'}\n` +
-    `> 🕵️ Peluang kriminal: ${crimeModifier}\n` +
-    `> 🎁 Reward langka misi & dungeon: ${canReceiveRareActivityRewards(user) ? 'Tersedia' : 'Tidak tersedia'}\n` +
-    `> 🏆 Masuk leaderboard: ${profile.leaderboard ? 'Ya' : 'Tidak'}\n` +
-    `> 🔄 Ganti mode: ${remaining}/${weeklyChangeLimit} perubahan tersisa minggu ini (reset Senin)\n\n` +
-    `Pelajari efek setiap mode sebelum memilih tantangan baru.`
+  const infoText = `🎚️ *PANDUAN LENGKAP DIFFICULTY RPG*\n` +
+    `Difficulty saat ini: *${profile.name.toUpperCase()}*\n\n` +
+    `Setiap bagian membandingkan nilai *Normal → tier tersebut*. Pengali x0,5 berarti separuh nilai Normal; x2 berarti dua kali nilai Normal.\n\n` +
+    Object.entries(RPG_DIFFICULTIES)
+      .map(([key, tier]) => {
+        const choice = DIFFICULTY_CHOICES.find(entry => entry.key === key)
+        return `╭─ ${choice.emoji} *${tier.name.toUpperCase()}*${key === current ? ' · AKTIF' : ''}\n${getDifficultyComparison(key)}\n╰───────────────`
+      })
+      .join('\n\n') +
+    `\n\n📌 *CARA MEMBACA*\n` +
+    `> Pengali cooldown diterapkan pada durasi dasar aktivitas RPG yang mendukungnya; contoh di atas memakai cooldown dasar 2 menit. Daily selalu reset pukul 00.00 WIB dan tidak dipengaruhi difficulty.\n` +
+    `> Pengali peluang gagal mengubah peluang gagal dasar, bukan menambah poin persentase. Peluang kriminal memakai perubahan poin persentase yang ditampilkan.\n` +
+    `> Modifier hanya berlaku pada aktivitas yang sudah terhubung ke sistem difficulty; bonus Premium dan Evonexus tetap dapat memodifikasi hasil.\n` +
+    `> Akun biasa: ${DIFFICULTY_CHANGES_PER_WEEK} perubahan per minggu. Premium: ${weeklyChangeLimit} perubahan. Reset setiap Senin WIB. Sisa kuota: ${remaining}/${weeklyChangeLimit}.`
   return sendRpgButtons(conn, {
     chat: m.chat,
     message: m,

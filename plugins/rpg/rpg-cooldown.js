@@ -40,17 +40,6 @@ const normalizeTimestamp = timestamp => {
   return value > 0 && value < 1e12 ? value * 1000 : value
 }
 
-const getJakartaDate = timestamp => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).formatToParts(new Date(timestamp))
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
-  return `${values.year}-${values.month}-${values.day}`
-}
-
 const getJakartaMidnight = timestamp => {
   const date = new Date(timestamp + 7 * 3600000)
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1) - 7 * 3600000
@@ -94,12 +83,9 @@ const handler = async (m, { usedPrefix }) => {
     }
   }
 
-  const dailyDuration = Number(user.dailyCooldownDuration || user.rpg?.dailyCooldownDuration) || 24 * 60 * 60 * 1000
-  if (account.lastDaily && account.dailyDate === getJakartaDate(now)) {
-    activeCooldowns.push({ label: 'Daily', remaining: Math.max(0, getJakartaMidnight(now) - now) })
-  } else {
-    addCooldown(activeCooldowns, 'Daily', account.lastDaily, dailyDuration)
-  }
+  const lastDaily = normalizeTimestamp(account.lastDaily || user.lastDaily)
+  const dailyRemaining = lastDaily ? getJakartaMidnight(lastDaily) - now : 0
+  if (dailyRemaining > 0) activeCooldowns.push({ label: 'Daily', remaining: dailyRemaining })
   const appliedJobs = Array.isArray(user.appliedJobs) ? user.appliedJobs : []
   const activeJobs = Array.isArray(user.activeJobNames)
     ? user.activeJobNames

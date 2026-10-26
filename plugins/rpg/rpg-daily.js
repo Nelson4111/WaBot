@@ -1,5 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { claimPremiumDailyLimit, getJakartaDate } from '../../lib/userLimit.js'
 import { isPremiumAccount, PREMIUM_DAILY_MIN_DONATION, PREMIUM_DAILY_REWARD } from '../../lib/rpgPremium.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
@@ -31,7 +31,6 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
   user.dailyStreak ??= rpgUser.dailyStreak
   user.dailyDate ??= rpgUser.dailyDate
   user.lastDaily ??= rpgUser.lastDaily
-  user.dailyCooldownDuration ??= rpgUser.dailyCooldownDuration
   user.dailyBrokenStreak ??= rpgUser.dailyBrokenStreak
   user.dailyRestreakOfferDate ??= rpgUser.dailyRestreakOfferDate
   user.dailyRestreakDate ??= rpgUser.dailyRestreakDate
@@ -135,18 +134,6 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
     )
   }
 
-  // Hitung waktu tepat hingga pergantian hari (pukul 00:00:00 WIB)
-  const getJakartaMidnightMs = (nowMs) => {
-    const wibDate = new Date(nowMs + 7 * 3600000)
-    const nextMidnightWib = new Date(Date.UTC(
-      wibDate.getUTCFullYear(),
-      wibDate.getUTCMonth(),
-      wibDate.getUTCDate() + 1,
-      0, 0, 0, 0
-    ))
-    return nextMidnightWib.getTime() - 7 * 3600000
-  }
-
   if (user.dailyRestreakOfferDate && user.dailyRestreakOfferDate !== today) {
     delete user.dailyBrokenStreak
     delete user.dailyRestreakOfferDate
@@ -157,26 +144,13 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
     await saveDB(wdb)
   }
 
-  if (user.lastDaily && user.dailyDate === today) {
-    const msUntilReset = Math.max(0, getJakartaMidnightMs(now) - now)
-    const sisaJam = Math.floor(msUntilReset / 3600000)
-    const sisaMenit = Math.floor((msUntilReset % 3600000) / 60000)
-    let cap = `╭─❏「 🎁 DAILY REWARD 」❏\n`
-    cap += `│ ✅ *Status*: Cooldown daily aktif\n`
-    cap += `│ ⏰ *Klaim lagi*: ${sisaJam} jam ${sisaMenit} menit\n`
-    cap += `│ 🔥 *Streak*: ${Number(user.dailyStreak) || 0} hari\n`
-    cap += `╰─━━━━━━━━━━━━━━─\n\n`
-    cap += `📌 *INFO*\n> ↳ Jeda klaim mengikuti difficulty RPG kamu.`
-    return m.reply(cap)
-  }
-
-  if (user.lastDaily) {
-    const savedCooldown = Number(user.dailyCooldownDuration || user.rpg?.dailyCooldownDuration) || 0
-    const remaining = savedCooldown - (now - user.lastDaily)
+  if (user.lastDaily && getJakartaDate(user.lastDaily) === today) {
+    const nextMidnight = Date.parse(`${today}T00:00:00+07:00`) + 24 * 60 * 60 * 1000
+    const remaining = Math.max(0, nextMidnight - now)
     if (remaining > 0) {
       const sisaJam = Math.floor(remaining / 3600000)
       const sisaMenit = Math.floor((remaining % 3600000) / 60000)
-      return m.reply(`⏳ Cooldown daily difficulty kamu masih aktif. Klaim lagi dalam *${sisaJam} jam ${sisaMenit} menit*.`)
+      return m.reply(`⏳ Daily sudah diklaim hari ini. Klaim lagi setelah reset pukul 00.00 WIB, sekitar *${sisaJam} jam ${sisaMenit} menit* lagi.`)
     }
   }
 
@@ -235,13 +209,11 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
 
   user.dailyDate = today
   user.lastDaily = now
-  user.dailyCooldownDuration = scaleDifficultyCooldown(rpgUser, getJakartaMidnightMs(now) - now)
   user.dailySavedAt = now
   if (user.rpg) {
     user.rpg.dailyStreak = user.dailyStreak
     user.rpg.dailyDate = today
     user.rpg.lastDaily = now
-    user.rpg.dailyCooldownDuration = user.dailyCooldownDuration
     user.rpg.dailyBrokenStreak = user.dailyBrokenStreak
     if (user.dailyRestreakOfferDate) user.rpg.dailyRestreakOfferDate = user.dailyRestreakOfferDate
     else delete user.rpg.dailyRestreakOfferDate
