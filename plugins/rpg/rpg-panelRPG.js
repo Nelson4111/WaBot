@@ -590,7 +590,8 @@ let handler = async (m, {
     'freezebank', 'unfreezebank', 'addharem', 'delharem', 'setharem', 'editharem', 'pindahanak',
     'asuhanak', 'kembalianak', 'resetnamaanak', 'addanak', 'delanak', 'setanak',
     'setcsm', 'addcsm', 'delcsm', 'setcontract', 'delcontract', 'resetcsm', 'giveending',
-    'setgrstat', 'addgrstat', 'delgrstat', 'addgrhistory', 'delgrhistory', 'setgrhistory'
+    'setgrstat', 'addgrstat', 'delgrstat', 'addgrhistory', 'delgrhistory', 'setgrhistory',
+    'forcegrjoin', 'forcegamejoin'
   ])
   if (!isPanelReadOnlyAction && !panelMutationActions.has(aksi)) {
     return m.reply(
@@ -1067,6 +1068,7 @@ let handler = async (m, {
   `> ↳ Contoh kurang: *${usedPrefix}rpgpanel delcasinoprofit @tag 500K*\n` +
   `> ↳ *${usedPrefix}rpgpanel cshistoryrefund @tag <nomor-riwayat>* - Kembalikan uang/profit dari ronde rugi di .cs history\n` +
   `> ↳ *${usedPrefix}rpgpanel set/add/delgrstat @tag <score|antagonist|protagonist|neutral> <jumlah>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel forcegrjoin @tag [JID-grup]* - Paksa user bergabung ke room Game Roles yang masih terbuka\n` +
   `> ↳ *${usedPrefix}rpgpanel addgrhistory @tag <kategori> <role> <win|loss> <pemain> <skor>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setgrhistory @tag <nomor> <category|role|result|players|score> <nilai>* / *delgrhistory @tag <nomor>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
@@ -1582,6 +1584,70 @@ let handler = async (m, {
 
   // ========== EDIT USER HARUS ADA TARGET ==========
   if (!who) return m.reply('❌ Tag / reply / masukkan nomor target dulu untuk edit user!')
+  if (['forcegrjoin', 'forcegamejoin'].includes(aksi)) {
+    const roomId = remaining[0] || responseChat
+    const room = conn.werewolf?.[roomId]
+    if (!roomId.endsWith('@g.us')) {
+      return m.reply(`❌ Room harus berupa JID grup. Format: *${usedPrefix}rpgpanel forcegrjoin @tag [JID-grup]*`)
+    }
+    if (!room || !Array.isArray(room.player)) {
+      return m.reply(`❌ Room Game Roles tidak ditemukan di grup tersebut: *${roomId}*.`)
+    }
+    if (room.status) return m.reply('❌ Pemain hanya dapat dipaksa join sebelum permainan dimulai.')
+    if (room.player.filter(player => !player.isDummy).length >= 15) {
+      return m.reply('❌ Room sudah mencapai kapasitas maksimal 15 pemain.')
+    }
+    if (room.player.some(player => player.id === who)) {
+      return m.reply(`❌ @${who.split('@')[0]} sudah bergabung di room ini.`, null, { mentions: [who] })
+    }
+    const otherRoom = Object.entries(conn.werewolf || {}).find(([id, game]) =>
+      id !== roomId && game?.player?.some(player => player.id === who)
+    )
+    if (otherRoom) {
+      return m.reply(`❌ @${who.split('@')[0]} sudah terdaftar di room lain.`, null, { mentions: [who] })
+    }
+    if (remaining.length > 1) {
+      return m.reply(`❌ Format: *${usedPrefix}rpgpanel forcegrjoin @tag [JID-grup]*`)
+    }
+
+    const wager = Number(room.wager) || 0
+    if (wager > 0) {
+      if (compareRpgMoney(wdb.money[who], wager) < 0) {
+        return m.reply(`❌ Saldo @${who.split('@')[0]} tidak cukup untuk escrow taruhan Rp ${wager.toLocaleString('id-ID')}.`, null, { mentions: [who] })
+      }
+      wdb.money[who] = subtractRpgMoney(wdb.money[who], wager)
+      room.wagerPlayers ||= []
+      room.wagerPlayers.push(who)
+      await saveDB(wdb)
+    }
+
+    room.player.push({
+      id: who,
+      number: room.player.length + 1,
+      sesi: roomId,
+      status: false,
+      role: false,
+      effect: [],
+      vote: 0,
+      isdead: false,
+      isvote: false,
+      isDummy: false,
+      displayName: conn.getName(who) || `@${who.split('@')[0]}`
+    })
+    room.player.forEach((player, index) => {
+      player.number = index + 1
+    })
+    await conn.sendMessage(roomId, {
+      text: `🎭 @${who.split('@')[0]} ditambahkan oleh RPG Panel ke room ${normalizeGameCategory(room.category)?.name || room.category || 'Game Roles'}.${wager > 0 ? ` Taruhan Rp ${wager.toLocaleString('id-ID')} sudah ditahan.` : ''}`,
+      mentions: [who]
+    })
+    return m.reply(
+      `✅ @${who.split('@')[0]} dipaksa bergabung ke room ${normalizeGameCategory(room.category)?.name || room.category || 'Game Roles'}.\n` +
+      (wager > 0 ? `💰 Taruhan Rp ${wager.toLocaleString('id-ID')} sudah ditahan dari saldo.` : '💰 Room ini tanpa taruhan.'),
+      null,
+      { mentions: [who] }
+    )
+  }
   if (['resetguard', 'resetavelia', 'resetaveliaguard'].includes(aksi) && !wdb.users[who]?.rpg) {
     return m.reply(`❌ @${who.split('@')[0]} belum memiliki akun RPG.`, null, { mentions: [who] })
   }
