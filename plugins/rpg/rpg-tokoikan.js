@@ -272,15 +272,31 @@ let handler = async (m, { conn, text, usedPrefix }) => {
         ? RPG_FISH_BAITS[Number(selection) - 1]
         : findRpgFishBait(selection)
       if (!bait) return m.reply(`Umpan tidak ditemukan. Lihat *${usedPrefix}pasar bait*.`)
-      return m.reply(
+      const infoText =
         `╭─❏「 ${bait.emoji} INFO UMPAN 」❏\n` +
         `│ *${bait.name}*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Efek: ${bait.description}\n` +
         `> ↳ Harga: Rp ${bait.price.toLocaleString('id-ID')} / buah\n` +
         `> ↳ Stokmu: ${Math.max(0, Math.floor(Number(user.fishBaits[bait.id]) || 0))}\n\n` +
-        `Beli: *${usedPrefix}pasar bait buy ${bait.id} [jumlah]*`
-      )
+        `Pilih jumlah pembelian cepat di bawah, atau gunakan *${usedPrefix}pasar bait buy ${bait.id} [jumlah]*.`
+      const quickAmounts = [1, 5, 10, 20, 50, 70, 100]
+      return sendRpgButtons(conn, {
+        chat: m.chat,
+        message: m,
+        quoted: m,
+        title: `${bait.emoji} ${bait.name.toUpperCase()}`,
+        subtitle: 'Pilih jumlah pembelian',
+        text: infoText,
+        buttons: quickAmounts.map(amount => [
+          `🪱 Beli ${amount}x`,
+          `${usedPrefix}pasar bait buy ${bait.id} ${amount}`
+        ]),
+        fallbackText:
+          `${infoText}\n\n📌 *BELI CEPAT*\n` +
+          quickAmounts.map(amount => `> ↳ ${amount}x: *${usedPrefix}pasar bait buy ${bait.id} ${amount}*`).join('\n'),
+        reply: fallback => m.reply(fallback)
+      })
     }
 
     if (['yes', 'ya', 'no', 'tidak'].includes(action)) {

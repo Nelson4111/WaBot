@@ -1004,19 +1004,37 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
   }
 
   // RIWAYAT
-  if (action === 'riwayat') {
-    if (!tier.fasilitas.includes('Riwayat Transaksi')) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ ${tier.name} belum bisa lihat riwayat\n─━━━━━━━━━─`)
-    if (userRPG.riwayat.length === 0) return m.reply('❌ Belum ada riwayat')
+
+if (action === 'riwayat') {
+    if (!tier.fasilitas.includes('Riwayat Transaksi')) return m.reply(
+      `╭─❏「 🏦 RPG BANK CENTER 」❏\n` +
+      `│ AKSES RIWAYAT TRANSAKSI\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ❌ Kartu ${tier.name} belum mendukung fasilitas riwayat transaksi.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+    if (userRPG.riwayat.length === 0) return m.reply(
+      `╭─❏「 🏦 RPG BANK CENTER 」❏\n` +
+      `│ RIWAYAT TRANSAKSI\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Belum ada riwayat transaksi.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
     let riwayat = userRPG.riwayat.slice(0, 10).map((entry, index) => {
       const compactEntry = String(entry).replace(/Rp\s*([\d.,]+)/g, (match, rawAmount) => {
         const amount = Number(rawAmount.replace(/[.,]/g, ''))
         return Number.isFinite(amount) ? formatRpgMoney(amount) : match
       })
-      return ` ${index + 1}. ${compactEntry}`
+      return `> ${index + 1}. ${compactEntry}`
     }).join('\n')
-    let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n◈ RIWAYAT TRANSAKSI ◈\n\n${riwayat}\n\n─━━━━━━━━━─`
+    let msg = `╭─❏「 🏦 RPG BANK CENTER 」❏\n` +
+      `│ RIWAYAT TRANSAKSI TERAKHIR\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `${riwayat}\n\n` +
+      `─━━━━━━━━━━━━━━─`
     return m.reply(msg)
   }
+
 
   await saveDB(wdb)
 }

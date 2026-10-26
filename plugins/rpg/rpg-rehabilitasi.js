@@ -182,7 +182,8 @@ let handler = async (m, { conn, args, usedPrefix }) => {
 }
 
 if (action === 'guide') {
-  return m.reply(
+  return conn.sendMessage(m.chat, {
+    text:
     `╭─❏「 📖 PANDUAN REHABILITASI 」❏\n` +
     `│ 📖 *PANDUAN REHABILITASI*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -197,7 +198,7 @@ if (action === 'guide') {
     `> ↳ 7. Tindak kriminal diblokir selama rehabilitasi. Membatalkan proses mengembalikan status buronan.\n\n` +
 
     `─━━━━━━━━━━━━━━─`
-  )
+  }, { quoted: m })
 }
 
 if (action === 'info') {
