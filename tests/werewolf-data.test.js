@@ -9,6 +9,7 @@ import {
   ROLE_DEATH_STORIES,
   getGameCategory,
   getRandomHideActions,
+  getSorcererFaction,
   isAntagonistRole,
   normalizeGameCategory
 } from '../lib/werewolfData.js'
@@ -19,10 +20,18 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(getGameCategory('unknown').id, 'werewolf')
   for (const category of Object.values(GAME_CATEGORIES)) {
     assert.equal(isAntagonistRole(category.id, category.antagonist), true)
-    assert.equal(isAntagonistRole(category.id, 'sorcerer'), true)
+    assert.equal(isAntagonistRole(category.id, 'sorcerer'), false)
     assert.equal(isAntagonistRole(category.id, 'seer'), false)
     assert.ok(category.description.length > 0)
   }
+})
+
+test('sorcerer faction follows potion choice but stays neutral without another antagonist', () => {
+  assert.equal(getSorcererFaction('poison', true), 'antagonist')
+  assert.equal(getSorcererFaction('revive', true), 'protagonist')
+  assert.equal(getSorcererFaction('skip', true), 'neutral')
+  assert.equal(getSorcererFaction('poison', false), 'neutral')
+  assert.equal(getSorcererFaction('revive', false), 'neutral')
 })
 
 test('editable action and attack narrative lists start with requested sizes', () => {
