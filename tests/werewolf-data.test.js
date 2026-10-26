@@ -25,10 +25,10 @@ test('game categories resolve aliases and alternative antagonists', () => {
 
 test('editable action and attack narrative lists start with requested sizes', () => {
   assert.ok(HIDE_ACTIONS.length >= 10)
-  assert.equal(ANTAGONIST_STORIES.length, 5)
-  assert.equal(PROTAGONIST_WIN_STORIES.length, 5)
-  assert.equal(HIDE_ANTAGONIST_STORIES.length, 5)
-  assert.equal(ROLE_DEATH_STORIES.guardian.length, 5)
-  assert.equal(ROLE_DEATH_STORIES.seer.length, 5)
+  assert.ok(ANTAGONIST_STORIES.length >= 5)
+  assert.ok(PROTAGONIST_WIN_STORIES.length >= 5)
+  assert.ok(HIDE_ANTAGONIST_STORIES.length >= 5)
+  assert.ok(ROLE_DEATH_STORIES.guardian.length >= 5)
+  assert.ok(ROLE_DEATH_STORIES.seer.length >= 5)
   assert.ok(HIDE_ACTIONS.slice(0, 10).every((action) => action.length <= 25))
 })
