@@ -17,12 +17,19 @@ import {
 test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(normalizeGameCategory('ww').id, 'werewolf')
   assert.equal(normalizeGameCategory('imposter').id, 'impostor')
+  assert.equal(normalizeGameCategory('alien').id, 'alien')
+  assert.equal(normalizeGameCategory('custom').id, 'custom')
   assert.equal(getGameCategory('unknown').id, 'werewolf')
   for (const category of Object.values(GAME_CATEGORIES)) {
-    assert.equal(isAntagonistRole(category.id, category.antagonist), true)
+    if (category.id !== 'custom') {
+      assert.equal(isAntagonistRole(category.id, category.antagonist), true)
+    }
     assert.equal(isAntagonistRole(category.id, 'sorcerer'), false)
     assert.equal(isAntagonistRole(category.id, 'seer'), false)
     assert.ok(category.description.length > 0)
+  }
+  for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien']) {
+    assert.equal(isAntagonistRole('custom', role), true)
   }
 })
 
