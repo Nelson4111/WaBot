@@ -8,6 +8,7 @@ import {
   PROTAGONIST_WIN_STORIES,
   ROLE_DEATH_STORIES,
   getGameCategory,
+  getRandomHideActions,
   isAntagonistRole,
   normalizeGameCategory
 } from '../lib/werewolfData.js'
@@ -20,6 +21,7 @@ test('game categories resolve aliases and alternative antagonists', () => {
     assert.equal(isAntagonistRole(category.id, category.antagonist), true)
     assert.equal(isAntagonistRole(category.id, 'sorcerer'), true)
     assert.equal(isAntagonistRole(category.id, 'seer'), false)
+    assert.ok(category.description.length > 0)
   }
 })
 
@@ -31,4 +33,20 @@ test('editable action and attack narrative lists start with requested sizes', ()
   assert.ok(ROLE_DEATH_STORIES.guardian.length >= 5)
   assert.ok(ROLE_DEATH_STORIES.seer.length >= 5)
   assert.ok(HIDE_ACTIONS.slice(0, 10).every((action) => action.length <= 25))
+})
+
+test('hide action choices are capped at five and exclude previously used actions', () => {
+  const firstChoices = getRandomHideActions()
+  assert.equal(firstChoices.actions.length, 5)
+  assert.equal(new Set(firstChoices.actions).size, 5)
+  assert.equal(firstChoices.reset, false)
+
+  const remainingActions = HIDE_ACTIONS.slice(0, 3)
+  const nextChoices = getRandomHideActions(HIDE_ACTIONS.filter((action) => !remainingActions.includes(action)))
+  assert.deepEqual(new Set(nextChoices.actions), new Set(remainingActions))
+  assert.equal(nextChoices.reset, false)
+
+  const freshCycle = getRandomHideActions(HIDE_ACTIONS)
+  assert.equal(freshCycle.actions.length, 5)
+  assert.equal(freshCycle.reset, true)
 })
