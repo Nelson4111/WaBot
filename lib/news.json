@@ -772,7 +772,15 @@
     "section": "RPG",
     "title": "Pemulihan Ekonomi RPG & Dukungan Angka Besar",
     "content": "\u003e Seluruh data saldo dan profit pemain yang sempat berkurang telah berhasil dipulihkan. Sistem adapter Supabase dan penanganan angka RPG kini telah diperbaiki sehingga sepenuhnya mendukung angka besar hingga skala Sextillion ke atas tanpa risiko terpotong, tereset, atau konflik format.",
-    "author": "Eza",
+    "author": "Nenel",
     "createdAt": 1792942400000
+  },
+  {
+    "id": "27.0",
+    "section": "GAME",
+    "title": "Game Roles: Pilihan Game Lebih Luas",
+    "content": "\u003e Fitur Werewolf kini diperluas menjadi Game Roles dengan pilihan tema Werewolf, Mafia, Killer, Assassin, dan Impostor. Ketik `.gr` untuk info.",
+    "author": "Eza",
+    "createdAt": 1793034000000
   }
 ]
