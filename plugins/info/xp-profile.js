@@ -1,8 +1,7 @@
 import { createHash } from 'crypto'
-import sharp from 'sharp'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { xpRange, getLevelRole } from '../../lib/levelling.js'
-import { getGreeting, getMenuThumbnail } from '../../lib/style.js'
+import { getGreeting } from '../../lib/style.js'
 import { getIntimacyRank, isPasanganHidden, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { addRpgMoney } from '../../lib/rpgMoney.js'
@@ -49,13 +48,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   }
   who = conn.decodeJid(who)
 
-  // 1. Ambil Foto Profil Pengguna Asli
-  let pp = null
-  try {
-    pp = await conn.profilePictureUrl(who, 'image')
-  } catch {}
-
-  // 2. Data Pengguna dari Database
+  // Data pengguna dari database
   let user = (global.db && global.db.data && global.db.data.users && global.db.data.users[who]) || {}
   let {
     name,
@@ -277,50 +270,36 @@ ${spouseList}
 ${hubunganCard}
 
 > Ⓟ = ᴘʀᴇᴍɪᴜᴍ   •   Ⓛ = ʟɪᴍɪᴛ
-> ｡˚ ⊹ *ᴛᴀᴘ ᴛᴏᴍʙᴏʟ ᴅɪ ʙᴀᴡᴀʜ ᴜɴᴛᴜᴋ ᴘɪʟɪʜ ᴋᴀᴛᴇɢᴏʀɪ* ⊹ ˚ ｡`.trim()
+> ✨ *Jelajahi fitur bot lewat tombol kategori di bawah.*\n> Pilih menu yang kamu butuhkan, atau gunakan tombol pintasan untuk info owner dan donasi.`.trim()
 
-  // 9. Susun 22 Kategori Menu Lengkap (Format single_select persis seperti menu.js)
-  let listButton = {
-    name: 'single_select',
-    buttonParamsJson: JSON.stringify({
-      title: '✦ PILIH KATEGORI',
-      sections: [
-        {
-          title: '✦ DAFTAR KATEGORI MENU',
-          highlight_label: 'Populer',
-          rows: [
-            { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: `${_p}allmenu` },
-            { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: `${_p}menuai` },
-            { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: `${_p}menuanime` },
-            { header: 'Audio', title: 'Manipulasi Audio', description: 'Sound effect, convert audio, TTS', id: `${_p}menuaudio` },
-            { header: 'RPG', title: 'Chainsaw Man RPG', description: 'Game RPG Chainsaw Man', id: `${_p}menucsm` },
-            { header: 'Downloader', title: 'Pengunduh Media', description: 'Download TikTok, IG, YT, dll', id: `${_p}menudownload` },
-            { header: 'Hiburan', title: 'Fitur Hiburan', description: 'Fitur seru-seruan & jokes', id: `${_p}menufun` },
-            { header: 'Games', title: 'Mini Games', description: 'Game tebak-tebakan, catur, dll', id: `${_p}menugame` },
-            { header: 'Arcade', title: 'In-Bubble Arcade', description: 'Game HTML5, GD, Block Blast, Tetris', id: `${_p}menuarcade` },
-            { header: 'Grup', title: 'Manajemen Grup', description: 'Admin tools & pengaturan grup', id: `${_p}menugroup` },
-            { header: 'Informasi', title: 'Informasi Bot', description: 'Info status sistem & bot', id: `${_p}menuinfo` },
-            { header: 'Internet', title: 'Pencarian Web', description: 'Google, Wikipedia, Cuaca, dll', id: `${_p}menuinternet` },
-            { header: 'Maker', title: 'Pembuat Gambar', description: 'Canvas maker, logo, quotes', id: `${_p}menumaker` },
-            { header: 'Keuangan', title: 'Catatan Keuangan', description: 'Money track & scanner struk', id: `${_p}menumoneytrack` },
-            { header: 'Owner', title: 'Khusus Owner', description: 'Perintah kendali owner', id: `${_p}menuowner` },
-            { header: 'Hubungan', title: 'Fitur Hubungan', description: 'Pernikahan, pasangan, dll', id: `${_p}menupasangan` },
-            { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: `${_p}menurpg` },
-            { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: `${_p}menusearch` },
-            { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: `${_p}menustalker` },
-            { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: `${_p}menusticker` },
-            { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: `${_p}menutools` },
-            { header: 'Apresiasi', title: 'Thanks To & Donatur', description: 'Kontributor & daftar donatur bot', id: `${_p}thanksto` }
-          ]
-        }
-      ]
-    })
-  }
+  const categories = [
+    { header: '🏠 Utama', title: 'Semua Perintah', description: 'Lihat seluruh fitur dan perintah bot', id: `${_p}allmenu` },
+    { header: '🤖 AI', title: 'AI & Chatbot', description: 'Ngobrol, bertanya, dan berkreasi dengan AI', id: `${_p}menuai` },
+    { header: '🎌 Anime', title: 'Anime & Waifu', description: 'Cari anime, karakter, dan gambar favorit', id: `${_p}menuanime` },
+    { header: '🎧 Audio', title: 'Audio & Musik', description: 'Putar musik, efek suara, dan olah audio', id: `${_p}menuaudio` },
+    { header: '🪚 CSM RPG', title: 'Chainsaw Man RPG', description: 'Petualangan dan fitur RPG Chainsaw Man', id: `${_p}menucsm` },
+    { header: '📥 Downloader', title: 'Unduh Media', description: 'Unduh video dan media dari berbagai platform', id: `${_p}menudownload` },
+    { header: '🎉 Hiburan', title: 'Hiburan & Fun', description: 'Jokes, konten seru, dan hiburan lainnya', id: `${_p}menufun` },
+    { header: '🎮 Games', title: 'Mini Games', description: 'Main kuis, tebak-tebakan, catur, dan lainnya', id: `${_p}menugame` },
+    { header: '🕹️ Arcade', title: 'Arcade', description: 'Main game arcade langsung di chat', id: `${_p}menuarcade` },
+    { header: '👥 Grup', title: 'Kelola Grup', description: 'Atur grup dan gunakan fitur admin', id: `${_p}menugroup` },
+    { header: 'ℹ️ Info', title: 'Informasi Bot', description: 'Lihat informasi, status, dan panduan bot', id: `${_p}menuinfo` },
+    { header: '🌐 Internet', title: 'Pencarian Internet', description: 'Cari informasi, cuaca, dan referensi web', id: `${_p}menuinternet` },
+    { header: '🎨 Maker', title: 'Kreasi Gambar', description: 'Buat gambar, logo, dan konten kreatif', id: `${_p}menumaker` },
+    { header: '💳 Keuangan', title: 'Catatan Keuangan', description: 'Kelola transaksi dan catatan keuangan', id: `${_p}menumoneytrack` },
+    { header: '🔑 Owner', title: 'Menu Owner', description: 'Perintah khusus pemilik bot', id: `${_p}menuowner` },
+    { header: '💞 Hubungan', title: 'Pasangan & Hubungan', description: 'Fitur pasangan, pernikahan, dan lainnya', id: `${_p}menupasangan` },
+    { header: '⚔️ RPG', title: 'RPG Petualangan', description: 'Jelajahi dunia RPG dan kembangkan karakter', id: `${_p}menurpg` },
+    { header: '🔎 Pencarian', title: 'Cari Data', description: 'Temukan informasi dari berbagai sumber', id: `${_p}menusearch` },
+    { header: '📱 Stalker', title: 'Cek Sosial Media', description: 'Lihat informasi akun media sosial', id: `${_p}menustalker` },
+    { header: '🏷️ Stiker', title: 'Pembuat Stiker', description: 'Ubah foto, teks, atau video menjadi stiker', id: `${_p}menusticker` },
+    { header: '🧰 Tools', title: 'Alat & Utilitas', description: 'Gunakan alat bantu praktis sehari-hari', id: `${_p}menutools` },
+    { header: '💝 Apresiasi', title: 'Terima Kasih', description: 'Lihat kontributor dan dukungan untuk bot', id: `${_p}thanksto` }
+  ]
 
   const mentionsData = Array.from(new Set(mentions))
   const footer = `${global.namebot} • User Profile System`
-
-  let contextInfo = {
+  const contextInfo = {
     mentionedJid: mentionsData,
     forwardingScore: 1,
     isForwarded: true,
@@ -330,24 +309,6 @@ ${hubunganCard}
     }
   }
 
-  // 10. Siapkan Thumbnail (Foto Profil User dikompres sharp atau fallback menu thumbnail)
-  let thumb = null
-  if (pp) {
-    try {
-      const file = await conn.getFile(pp)
-      if (file?.data) {
-        thumb = await sharp(file.data)
-          .resize(250, 250, { fit: 'cover' })
-          .jpeg({ quality: 70 })
-          .toBuffer()
-      }
-    } catch {}
-  }
-  if (!thumb) {
-    thumb = await getMenuThumbnail()
-  }
-
-  // 11. Pengiriman Pesan via ButtonV2 (Sesuai Standar menu.js)
   let sent = false
   if (typeof conn.ButtonV2 === 'function') {
     try {
@@ -356,53 +317,35 @@ ${hubunganCard}
       btn.setSubtitle(`ᴘʀᴏꜰɪʟ ᴘᴇɴɢɢᴜɴᴀ • ${username}`)
       btn.setBody(caption)
       btn.setFooter(footer)
-      if (thumb) btn.setRawThumbnail(thumb)
-
-      // 1. Tombol List Kategori Dropdown
       btn.addRawButton({
         buttonId: 'menu_select',
-        buttonText: { displayText: '✦ PILIH KATEGORI' },
+        buttonText: { displayText: '✦ JELAJAHI KATEGORI ✦' },
         type: 1,
         nativeFlowInfo: {
           name: 'single_select',
-          paramsJson: listButton.buttonParamsJson
+          paramsJson: JSON.stringify({
+            title: '✦ PILIH KATEGORI ✦',
+            sections: [{ title: '✨ Menu yang tersedia', rows: categories }]
+          })
         }
       })
-
-      // 2. Tombol Quick Reply Owner & Donasi
       btn.addButton('❖ Info Owner', `${_p}owner`)
-      btn.addButton('⟡ Donasi', `${_p}donasi`)
-
-      if (contextInfo) {
-        btn.setContextInfo(contextInfo)
-      }
-
+      btn.addButton('💝 Donasi', `${_p}donasi`)
+      btn.setContextInfo(contextInfo)
       await btn.send(m.chat)
       sent = true
     } catch (errBtnV2) {
       console.error('[ButtonV2 xp-profile.js error]:', errBtnV2?.message || errBtnV2)
-      sent = false
     }
   }
 
-  // 12. Fallback Pengiriman Standar jika ButtonV2 tidak tersedia
   if (!sent) {
-    if (thumb) {
-      await conn.sendMessage(m.chat, {
-        image: thumb,
-        caption,
-        footer,
-        mentions: mentionsData,
-        contextInfo
-      }, { quoted: m })
-    } else {
-      await conn.sendMessage(m.chat, {
-        text: caption,
-        footer,
-        mentions: mentionsData,
-        contextInfo
-      }, { quoted: m })
-    }
+    await conn.sendMessage(m.chat, {
+      text: caption,
+      footer,
+      mentions: mentionsData,
+      contextInfo
+    }, { quoted: m })
   }
 }
 
