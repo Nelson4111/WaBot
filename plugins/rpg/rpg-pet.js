@@ -2401,13 +2401,13 @@ if (action === 'battle') {
       `─━━━━━━━━━━━━━━─`
     )
 
-    if(uangUser < taruhan) return safeReply(
+    if (compareRpgMoney(uangUser, taruhan) < 0) return safeReply(
       `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
       `│ ❌ *UANG KAMU KURANG*\n` +
       `╰─━━━━━━━━━━━━━━─`
     )
 
-    if(uangTarget < taruhan) return safeReply(
+    if (compareRpgMoney(uangTarget, taruhan) < 0) return safeReply(
       `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
       `│ ❌ *UANG TARGET KURANG*\n` +
       `╰─━━━━━━━━━━━━━━─`
@@ -2450,7 +2450,7 @@ if (action === 'battle') {
   if(taruhan > 0) cap += `\n💰 *TARUHAN*\n> ↳ Rp ${taruhan.toLocaleString()}\n`
 
   if(powerA > powerB){
-    if(taruhan > 0){ wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], taruhan); wdb.money[target] = subtractRpgMoney(wdb.money[target], taruhan })
+    if(taruhan > 0){ wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], taruhan); wdb.money[target] = subtractRpgMoney(wdb.money[target], taruhan) }
     user.pets[idxA].exp += 40; userTarget.pets[idxB].exp += 10
 
     if(user.pets[idxA].exp >= 100){
@@ -2466,7 +2466,7 @@ if (action === 'battle') {
 
     if(taruhan > 0) cap += `\n> ↳ +Rp ${taruhan.toLocaleString()}`
   } else if(powerB > powerA){
-    if(taruhan > 0){ wdb.money[target] = addRpgMoney(wdb.money[target], taruhan); wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], taruhan })
+    if(taruhan > 0){ wdb.money[target] = addRpgMoney(wdb.money[target], taruhan); wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], taruhan) }
     userTarget.pets[idxB].exp += 40; user.pets[idxA].exp += 10
 
     if(userTarget.pets[idxB].exp >= 100){
@@ -2492,7 +2492,7 @@ if (action === 'battle') {
 
   user.cooldown.petbattle = Date.now()
   saveDB(wdb)
-  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg', [m.sender, target])
+  return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/54b79a9952b0.jpeg', { mentions: [m.sender, target] })
 }
 
 
