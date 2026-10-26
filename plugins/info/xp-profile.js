@@ -2,9 +2,9 @@ import { createHash } from 'crypto'
 import { loadDB } from '../../lib/waifuHelper.js'
 import { xpRange, getLevelRole } from '../../lib/levelling.js'
 import { getGreeting } from '../../lib/style.js'
-import { getIntimacyRank, isPasanganHidden, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
+import { getIntimacyRank, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
-import { addRpgMoney } from '../../lib/rpgMoney.js'
+import { addRpgMoney, formatRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 const toSmallNum = (str) => {
@@ -26,6 +26,20 @@ const formatDuration = (ms) => {
   if (days > 0) return `${toSmallNum(days)} Hari ${toSmallNum(hours % 24)} Jam`
   if (hours > 0) return `${toSmallNum(hours)} Jam ${toSmallNum(minutes % 60)} Menit`
   return `${toSmallNum(minutes)} Menit`
+}
+
+const formatPremiumDuration = ms => {
+  const totalMinutes = Math.floor(ms / 60000)
+  const totalHours = Math.floor(totalMinutes / 60)
+  const totalDays = Math.floor(totalHours / 24)
+  const totalMonths = Math.floor(totalDays / 30)
+  const totalYears = Math.floor(totalMonths / 12)
+
+  if (totalYears > 0) return `${toSmallNum(totalYears)} Tahun`
+  if (totalMonths > 0) return `${toSmallNum(totalMonths)} Bulan`
+  if (totalDays > 0) return `${toSmallNum(totalDays)} Hari`
+  if (totalHours > 0) return `${toSmallNum(totalHours)} Jam`
+  return `${toSmallNum(totalMinutes)} Menit`
 }
 
 const createProgressBar = (percent, length = 10) => {
@@ -80,10 +94,10 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
 
   let isPremium = isPremiumAccount(user)
   let prems = isPremium ? 'ᴘʀᴇᴍɪᴜᴍ Ⓟ' : 'ꜰʀᴇᴇ Ⓛ'
-  let premExpired = ''
-  if (isPremium && premiumTime) {
-    premExpired = `\n*┆* ⏱ ᴇxᴘɪʀᴇᴅ   : *${formatDuration(premiumTime - Date.now())} lagi*`
-  }
+  const premiumExpiry = Number(premiumTime) > 0 && Number.isFinite(Number(premiumTime))
+    ? `${formatPremiumDuration(Number(premiumTime) - Date.now())} lagi`
+    : 'Permanen'
+  const premiumStatus = isPremium ? `${prems} • ${premiumExpiry}` : prems
 
   // 3. Data Finansial & Ekonomi
   const wdb = loadDB()
@@ -118,7 +132,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
   if (rel.pasanganHidden) {
     hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *🔒 DIKUNCI*
-*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *Rahasia / disembunyikan*
+*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *Rahasia*
 *╰──────────────────────*`
   } else if (rel.hasRealPartner && rel.hasWaifu) {
     mentions.push(...rel.mentions)
@@ -126,7 +140,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
     if (rel.realPartners.length === 1) {
       let p = rel.realPartners[0]
       if (p.isHidden) {
-        partnerInfo = '*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: 🔒 DIKUNCI'
+        partnerInfo = '*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *Rahasia*'
       } else {
         let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
         let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
@@ -136,7 +150,7 @@ let handler = async (m, { conn, text, usedPrefix: _p }) => {
       }
     } else {
       partnerInfo = `*┆* ✧ ɪꜱᴛʀɪ/ꜱᴜᴀᴍɪ: *${toSmallNum(rel.realPartners.length)} Pasangan*\n` + rel.realPartners.map((p, i) => {
-        if (p.isHidden) return `*┆*    ⟡ [${toSmallNum(i + 1)}] 🔒 DIKUNCI`
+        if (p.isHidden) return `*┆*    ⟡ [${toSmallNum(i + 1)}] *Rahasia*`
         let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
         return `*┆*    ⟡ [${toSmallNum(i + 1)}] *@${partnerNum}*`
       }).join('\n')
@@ -160,7 +174,7 @@ ${partnerInfo}
       if (p.isHidden) {
         hubunganCard = `*╭  〔 ᰔ ʜ ᴜ ʙ ᴜ ɴ ɢ ᴀ ɴ 〕*
 *┆* ⟡ ꜱᴛᴀᴛᴜꜱ    : *${rel.statusText}*
-*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : 🔒 DIKUNCI
+*┆* ✧ ᴘᴀꜱᴀɴɢᴀɴ  : *Rahasia*
 *╰──────────────────────*`
       } else {
         let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
@@ -177,7 +191,7 @@ ${partnerInfo}
       }
     } else {
       let spouseList = rel.realPartners.map((p, i) => {
-        if (p.isHidden) return `*┆*   ⟡ [${toSmallNum(i + 1)}] 🔒 DIKUNCI`
+        if (p.isHidden) return `*┆*   ⟡ [${toSmallNum(i + 1)}] *Rahasia*`
         let partnerNum = (p.jid || '').split('@')[0].replace(/\D/g, '')
         let dur = formatDuration(Date.now() - (p.nikahTime || Date.now()))
         let ring = normalizeRingName(p.cincin || 'Silver Ring')
@@ -241,16 +255,16 @@ ${spouseList}
 *┆* ✧ ɴᴏᴍᴏʀ     : *@${senderNumber}*
 *┆* ✦ ᴜᴍᴜʀ      : *${toSmallNum(age)} Tahun*
 *┆* ㋡ ʀᴏʟᴇ      : *${role}*
-*┆* ❖ ꜱᴛᴀᴛᴜꜱ    : *${prems}*${premExpired}
+*┆* ❖ ꜱᴛᴀᴛᴜꜱ    : *${premiumStatus}*
 *┆* ◈ ʀᴇɢɪꜱᴛᴇʀ  : *${registered ? 'ᴛᴇʀᴅᴀꜰᴛᴀʀ ㋡' : 'ʙᴇʟᴜᴍ ᴛᴇʀᴅᴀꜰᴛᴀʀ'}*
-*┆* ⌬ ꜱɴ ᴋᴇʏ    : \`${sn}\`
 *╰──────────────────────*
 
 *╭  〔 ✮ ʟ ᴇ ᴠ ᴇ ʟ  ᴜ ᴛ ᴀ ᴍ ᴀ  (ᴀ ᴋ ᴜ ɴ) 〕*
 *┆* ⟡ ʟᴇᴠᴇʟ ʙᴏᴛ : *${toSmallNum(level)} (${role})*
 *┆* ✧ ᴛᴏᴛᴀʟ ᴇxᴘ : *${toSmallNum(exp.toLocaleString('id-ID'))} XP*
 *┆* ✦ xᴘ ᴋᴇ ʟᴠʟ : *${toSmallNum(remainingExp.toLocaleString('id-ID'))} EXP lagi*
-*┆* ◈ ᴘʀᴏɢʀᴇꜱ   : *[${progressBar}] (${toSmallNum(percent)}%)*
+*┆* ◈ ᴘʀᴏɢʀᴇꜱ   : *[${progressBar}]*
+*┆*    ⟡ ᴘᴇʀꜱᴇɴ : *${toSmallNum(percent)}%*
 *╰──────────────────────*
 
 *╭  〔 ⚔️ ʀ ᴘ ɢ  ᴘ ᴇ ᴛ ᴜ ᴀ ʟ ᴀ ɴ ɢ 〕*
@@ -258,17 +272,20 @@ ${spouseList}
 *┆* ✧ ᴇxᴘ ʀᴘɢ   : *${toSmallNum(rpgExp.toLocaleString('id-ID'))} / ${toSmallNum(rpgMaxExp.toLocaleString('id-ID'))} XP*
 *┆* ✦ ᴅᴀʀᴀʜ     : *${toSmallNum(rpgDarah)} / ${toSmallNum(rpgMaxDarah)} HP*
 *┆* ◈ ᴇǫᴜɪᴘ     : *🗡️ Lv.${toSmallNum(rpgSword)}* • *🛡️ Lv.${toSmallNum(rpgArmor)}*
-*┆* ⟡ ᴘʀᴏɢʀᴇꜱ   : *[${rpgBar}] (${toSmallNum(rpgPercent)}%)*
+*┆* ⟡ ᴘʀᴏɢʀᴇꜱ   : *[${rpgBar}]*
+*┆*    ◈ ᴘᴇʀꜱᴇɴ : *${toSmallNum(rpgPercent)}%*
 *╰──────────────────────*
 
 *╭  〔 ❖ ᴋ ᴇ ᴜ ᴀ ɴ ɢ ᴀ ɴ 〕*
-*┆* ⟡ ꜱᴀʟᴅᴏ     : *Rp ${toSmallNum(uang.toLocaleString('id-ID'))}*
-*┆* ✧ ᴛᴀʙᴜɴɢᴀɴ  : *Rp ${toSmallNum(bank.toLocaleString('id-ID'))}*
+*┆* ⟡ ꜱᴀʟᴅᴏ     : *${toSmallNum(formatRpgMoney(uang))}*
+*┆* ✧ ᴛᴀʙᴜɴɢᴀɴ  : *${toSmallNum(formatRpgMoney(bank))}*
 *┆* ✦ ʟɪᴍɪᴛ     : *${toSmallNum(limit)} Ⓛ*
-*┆* ◈ ᴛᴏᴛᴀʟ ᴀꜱᴇᴛ : *Rp ${toSmallNum(totalAset.toLocaleString('id-ID'))}*
+*┆* ◈ ᴛᴏᴛᴀʟ ᴀꜱᴇᴛ : *${toSmallNum(formatRpgMoney(totalAset))}*
 *╰──────────────────────*
 
 ${hubunganCard}
+
+*┆* ⌬ ꜱɴ ᴋᴇʏ : \`${sn}\`
 
 > Ⓟ = ᴘʀᴇᴍɪᴜᴍ   •   Ⓛ = ʟɪᴍɪᴛ
 > ✨ *Jelajahi fitur bot lewat tombol kategori di bawah.*\n> Pilih menu yang kamu butuhkan, atau gunakan tombol pintasan untuk info owner dan donasi.`.trim()
