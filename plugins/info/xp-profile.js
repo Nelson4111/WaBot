@@ -5,6 +5,7 @@ import { getGreeting } from '../../lib/style.js'
 import { getIntimacyRank, isPasanganHidden, normalizeRingName, getUserRelationship } from '../../lib/pasanganHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { addRpgMoney } from '../../lib/rpgMoney.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 
 const toSmallNum = (str) => {
   const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
@@ -309,44 +310,22 @@ ${hubunganCard}
     }
   }
 
-  let sent = false
-  if (typeof conn.ButtonV2 === 'function') {
-    try {
-      const btn = new conn.ButtonV2(conn)
-      btn.setTitle(`✧ ${global.namebot.toUpperCase()} ✧`)
-      btn.setSubtitle(`ᴘʀᴏꜰɪʟ ᴘᴇɴɢɢᴜɴᴀ • ${username}`)
-      btn.setBody(caption)
-      btn.setFooter(footer)
-      btn.addRawButton({
-        buttonId: 'menu_select',
-        buttonText: { displayText: '✦ JELAJAHI KATEGORI ✦' },
-        type: 1,
-        nativeFlowInfo: {
-          name: 'single_select',
-          paramsJson: JSON.stringify({
-            title: '✦ PILIH KATEGORI ✦',
-            sections: [{ title: '✨ Menu yang tersedia', rows: categories }]
-          })
-        }
-      })
-      btn.addButton('❖ Info Owner', `${_p}owner`)
-      btn.addButton('💝 Donasi', `${_p}donasi`)
-      btn.setContextInfo(contextInfo)
-      await btn.send(m.chat)
-      sent = true
-    } catch (errBtnV2) {
-      console.error('[ButtonV2 xp-profile.js error]:', errBtnV2?.message || errBtnV2)
-    }
-  }
-
-  if (!sent) {
-    await conn.sendMessage(m.chat, {
-      text: caption,
-      footer,
-      mentions: mentionsData,
-      contextInfo
-    }, { quoted: m })
-  }
+  await sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    text: caption,
+    title: '✦ PILIH KATEGORI ✦',
+    footer,
+    sections: [{ title: '✨ Menu yang tersedia', rows: categories }],
+    buttons: [
+      ['❖ Info Owner', `${_p}owner`],
+      ['💝 Donasi', `${_p}donasi`]
+    ],
+    keepButtonsWithSections: true,
+    mentions: mentionsData,
+    contextInfo,
+    quoted: m
+  })
 }
 
 handler.help = ['profile', 'me']
