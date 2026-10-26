@@ -1867,7 +1867,10 @@ return m.reply(
   }
 
   if (input === 'guide') {
-    return m.reply(casinoGuide(usedPrefix))
+    return conn.sendMessage(m.chat, {
+      image: { url: CASINO_IMAGE },
+      caption: casinoGuide(usedPrefix)
+    }, { quoted: m })
   }
 
   if (input === 'money') {

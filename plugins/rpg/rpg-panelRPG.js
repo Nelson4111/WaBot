@@ -45,6 +45,7 @@ import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords, setFishRecordSize } from '../../lib/rpg-fishSizes.js'
 import { normalizeRpgMaintenanceData, previewRpgMaintenanceNormalization } from '../../lib/rpgMaintenanceNormalizer.js'
 import { resolveRpgPanelTarget } from '../../lib/rpgPanelTarget.js'
+import { GAME_CATEGORIES, ROLE_DATA, normalizeGameCategory } from '../../lib/werewolfData.js'
 
 import fs from 'fs'
 
@@ -588,7 +589,8 @@ let handler = async (m, {
     'clearcd', 'resetstreak', 'setstreak', 'addstreak', 'setbank', 'addbank', 'delbank', 'setbanktier',
     'freezebank', 'unfreezebank', 'addharem', 'delharem', 'setharem', 'editharem', 'pindahanak',
     'asuhanak', 'kembalianak', 'resetnamaanak', 'addanak', 'delanak', 'setanak',
-    'setcsm', 'addcsm', 'delcsm', 'setcontract', 'delcontract', 'resetcsm', 'giveending'
+    'setcsm', 'addcsm', 'delcsm', 'setcontract', 'delcontract', 'resetcsm', 'giveending',
+    'setgrstat', 'addgrstat', 'delgrstat', 'addgrhistory', 'delgrhistory', 'setgrhistory'
   ])
   if (!isPanelReadOnlyAction && !panelMutationActions.has(aksi)) {
     return m.reply(
@@ -937,7 +939,13 @@ let handler = async (m, {
     applyjob: { count: 1, format: 'applyjob @tag <nomor/nama job>' },
     setjob: { count: 1, format: 'setjob @tag <nama pekerjaan>' },
     setcontract: { count: 1, format: 'setcontract @tag <nama>' },
-    giveending: { count: 1, format: 'giveending @tag <ending>' }
+    giveending: { count: 1, format: 'giveending @tag <ending>' },
+    setgrstat: { count: 2, format: 'setgrstat @tag <score|antagonist|protagonist|neutral> <jumlah>' },
+    addgrstat: { count: 2, format: 'addgrstat @tag <score|antagonist|protagonist|neutral> <jumlah>' },
+    delgrstat: { count: 2, format: 'delgrstat @tag <score|antagonist|protagonist|neutral> <jumlah>' },
+    addgrhistory: { count: 5, format: 'addgrhistory @tag <kategori> <role> <win|loss> <pemain> <skor>' },
+    delgrhistory: { count: 1, format: 'delgrhistory @tag <nomor-riwayat>' },
+    setgrhistory: { count: 3, format: 'setgrhistory @tag <nomor-riwayat> <field> <nilai>' }
   }
   const argumentRequirement = argumentRequirements[aksi]
   if (argumentRequirement && remainingWithoutTarget.length < argumentRequirement.count) {
@@ -1058,6 +1066,9 @@ let handler = async (m, {
   `> ↳ Contoh tambah: *${usedPrefix}rpgpanel addcasinoprofit @tag 2M*\n` +
   `> ↳ Contoh kurang: *${usedPrefix}rpgpanel delcasinoprofit @tag 500K*\n` +
   `> ↳ *${usedPrefix}rpgpanel cshistoryrefund @tag <nomor-riwayat>* - Kembalikan uang/profit dari ronde rugi di .cs history\n` +
+  `> ↳ *${usedPrefix}rpgpanel set/add/delgrstat @tag <score|antagonist|protagonist|neutral> <jumlah>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel addgrhistory @tag <kategori> <role> <win|loss> <pemain> <skor>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setgrhistory @tag <nomor> <category|role|result|players|score> <nilai>* / *delgrhistory @tag <nomor>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbot @tag <level|xp|limit> <nilai>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotlevel @tag <lvl>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setbotxp @tag <xp>*\n` +
@@ -1590,6 +1601,109 @@ let handler = async (m, {
     syncUserLimit({ ...account, rpg: user, limitHistory: [...(account.limitHistory || [])] })
   } else {
     syncUserLimit(account)
+  }
+
+  if (['setgrstat', 'addgrstat', 'delgrstat'].includes(aksi)) {
+    const fieldNames = {
+      score: 'score',
+      antagonist: 'antagonistWins',
+      antagonistwins: 'antagonistWins',
+      protagonist: 'protagonistWins',
+      protagonistwins: 'protagonistWins',
+      neutral: 'neutralWins',
+      neutralwins: 'neutralWins'
+    }
+    const field = fieldNames[String(remaining[0] || '').toLowerCase()]
+    const amount = Number(remaining[1])
+    if (!field || !Number.isSafeInteger(amount) || amount < 0 || remaining.length !== 2) {
+      return m.reply(`❌ Format: *${usedPrefix}rp ${aksi} @tag <score|antagonist|protagonist|neutral> <jumlah>*`)
+    }
+    const stats = account.werewolfStats && typeof account.werewolfStats === 'object'
+      ? account.werewolfStats
+      : (account.werewolfStats = {})
+    const previous = Number(stats[field]) || 0
+    const nextValue = aksi === 'setgrstat' ? amount
+      : aksi === 'addgrstat' ? previous + amount
+        : Math.max(0, previous - amount)
+    if (!Number.isSafeInteger(nextValue)) return m.reply('❌ Nilai statistik melebihi batas angka yang aman.')
+    stats[field] = nextValue
+    await saveDB(wdb)
+    return m.reply(`✅ Statistik Game Roles ${field} @${who.split('@')[0]}: *${previous} → ${stats[field]}*.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'addgrhistory') {
+    const [categoryInput, roleInput, resultInput, playerInput, scoreInput] = remaining
+    const category = normalizeGameCategory(categoryInput)
+    const role = String(roleInput || '').toLowerCase()
+    const result = String(resultInput || '').toLowerCase()
+    const players = Number(playerInput)
+    const score = Number(scoreInput)
+    if (!category || !Object.hasOwn(ROLE_DATA, role) || !['win', 'loss'].includes(result) ||
+      !Number.isSafeInteger(players) || players < 1 || !Number.isSafeInteger(score) || score < 0 ||
+      remaining.length !== 5) {
+      return m.reply(`❌ Format: *${usedPrefix}rp addgrhistory @tag <kategori> <role> <win|loss> <pemain> <skor>*`)
+    }
+    const stats = account.werewolfStats && typeof account.werewolfStats === 'object'
+      ? account.werewolfStats
+      : (account.werewolfStats = {})
+    if (!Array.isArray(stats.history)) stats.history = []
+    stats.history.unshift({
+      id: `manual-${Date.now()}`,
+      playedAt: Date.now(),
+      category: category.id,
+      role,
+      result,
+      winner: 'manual',
+      players,
+      score,
+      manual: true
+    })
+    stats.history = stats.history.slice(0, 100)
+    await saveDB(wdb)
+    return m.reply(`✅ Riwayat Game Roles ditambahkan untuk @${who.split('@')[0]}.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'delgrhistory') {
+    const number = Number(remaining[0])
+    const history = account.werewolfStats?.history
+    if (!Array.isArray(history) || !Number.isInteger(number) || number < 1 || number > history.length) {
+      return m.reply('❌ Nomor riwayat tidak valid. Nomor 1 adalah permainan terbaru.')
+    }
+    const [removed] = history.splice(number - 1, 1)
+    await saveDB(wdb)
+    return m.reply(`✅ Riwayat Game Roles nomor ${number} (${removed.category}) dihapus untuk @${who.split('@')[0]}.`, null, { mentions: [who] })
+  }
+
+  if (aksi === 'setgrhistory') {
+    const [indexInput, fieldInput, value] = remaining
+    const field = String(fieldInput || '').toLowerCase()
+    const number = Number(indexInput)
+    const history = account.werewolfStats?.history
+    const entry = Array.isArray(history) && Number.isInteger(number) && number > 0 ? history[number - 1] : null
+    if (!entry || remaining.length !== 3) return m.reply('❌ Nomor riwayat tidak valid. Nomor 1 adalah permainan terbaru.')
+    if (field === 'category') {
+      const category = normalizeGameCategory(value)
+      if (!category) return m.reply(`❌ Kategori tidak dikenal. Pilih: ${Object.values(GAME_CATEGORIES).map(item => item.id).join(', ')}.`)
+      entry.category = category.id
+    } else if (field === 'role') {
+      const role = String(value).toLowerCase()
+      if (!Object.hasOwn(ROLE_DATA, role)) return m.reply('❌ Role tidak dikenal.')
+      entry.role = role
+    } else if (field === 'result') {
+      const result = String(value).toLowerCase()
+      if (!['win', 'loss'].includes(result)) return m.reply('❌ Hasil hanya boleh win atau loss.')
+      entry.result = result
+    } else if (field === 'players' || field === 'score') {
+      const numeric = Number(value)
+      if (!Number.isSafeInteger(numeric) || numeric < 0 || (field === 'players' && numeric < 1)) {
+        return m.reply(`❌ Nilai ${field} harus bilangan bulat non-negatif${field === 'players' ? ' dan minimal 1' : ''}.`)
+      }
+      entry[field] = numeric
+    } else {
+      return m.reply('❌ Field yang bisa diubah: category, role, result, players, score.')
+    }
+    await saveDB(wdb)
+    return m.reply(`✅ Riwayat Game Roles nomor ${number} diperbarui untuk @${who.split('@')[0]}.`, null, { mentions: [who] })
   }
 
   if (aksi === 'firejob') {
