@@ -329,7 +329,9 @@ async function processMessage(m, chatUpdate) {
 
         const werewolfRoom = this.werewolf?.[m.chat]
         const deadWerewolfPlayer = werewolfRoom?.status && werewolfRoom.player?.find(player => player.id === m.sender && player.isdead)
-        if (m.isGroup && deadWerewolfPlayer) {
+        const hunterShootCommand = /^[.\/#!](?:ww|werewolf|gr|gameroles)\s+(?:(?:ww|werewolf|mafia|killer|assassin|assasin|impostor)\s+)?shoot\b/i.test(m.text || '')
+        const allowedHunterResponse = deadWerewolfPlayer?.pendingHunter && hunterShootCommand
+        if (m.isGroup && deadWerewolfPlayer && !allowedHunterResponse) {
             try {
                 await this.sendMessage(m.chat, { delete: m.key })
             } catch (error) {
