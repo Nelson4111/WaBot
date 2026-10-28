@@ -92,8 +92,8 @@
     },
     {
       "name": "family100",
-      "aliases": [],
-      "description": "Memulai game kuis Family 100",
+      "aliases": ["f100", "fam100", "fam"],
+      "description": "Memulai game Family 100, melihat skor dengan score/poin, atau melihat peringkat dengan top",
       "example": "[CMD:family100:]"
     },
     {

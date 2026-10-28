@@ -10,9 +10,9 @@
     "commands": "Obrolan AI: @pertanyaan (Grup) / langsung chat (Private), Tanya AI Khusus: .ai / .gemini / .claude, Edit Foto: .editimg [prompt], Generate Gambar: .flux [deskripsi]."
   },
   "game_fun": {
-    "keywords": ["game", "tebak", "family100", "caklontong", "susunkata", "tebakangka", "asahotak", "tebakkata", "blackjack", "slot", "kasino"],
+    "keywords": ["game", "tebak", "family100", "f100", "fam100", "fam", "score", "poin", "top", "caklontong", "susunkata", "tebakangka", "asahotak", "tebakkata", "blackjack", "slot", "kasino"],
     "menu": ".menugame",
-    "commands": "Tebak-tebakan: .tebakgambar, .family100, .caklontong, .susunkata, .tebakangka, .asahotak. Kasino/Kartu: .blackjack [taruhan], .slot."
+    "commands": "Tebak-tebakan: .tebakgambar, .family100 / .f100 / .fam100 / .fam, .fam score|poin, .fam top, .caklontong, .susunkata, .tebakangka, .asahotak. Kasino/Kartu: .blackjack [taruhan], .slot."
   },
   "sticker_media": {
     "keywords": ["stiker", "sticker", "meme", "smeme", "toimg", "tomp3", "brat"],
