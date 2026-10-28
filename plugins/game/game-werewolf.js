@@ -31,13 +31,13 @@ import {
     changeDay,
     pagii
 } from '../../lib/werewolf.js'
-import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { GAME_CATEGORIES, ROLE_DATA, validateCustomRoles, getGameCategory, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
 const thumbNight = "https://user-images.githubusercontent.com/72728486/235316834-f9f84ba0-8df3-4444-81d8-db5270995e6d.jpg"
 const thumbMorning = "https://user-images.githubusercontent.com/72728486/235344562-4677d2ad-48ee-419d-883f-e0ca9ba1c7b8.jpg"
@@ -73,10 +73,12 @@ const getRealPlayerCount = (room) => {
     return room.player.filter((p) => !p?.isDummy).length
 }
 
-const getDisplayPlayerLabel = (player) => {
+const getDisplayPlayerLabel = (player, conn) => {
     if (!player) return '—'
     if (player.isDummy) return `Warga ${toSmallNum(player.number)}`
-    return `@${player.id.replace(/@s\.whatsapp\.net$/, '')}`
+    const rawName = player.displayName || conn?.getName?.(player.id) || ''
+    const name = String(rawName).replace(/^@/, '').trim()
+    return name && !/^[+\d\s().-]+$/.test(name) ? name : `Pemain ${toSmallNum(player.number)}`
 }
 
 const createWargaPlayer = (room, order) => ({
@@ -133,11 +135,14 @@ const hasRpgPanelAccess = (sender = '') => {
     return false
 }
 
-/**
- * Mengirim 1 Stanza Grup untuk Fase Malam:
- * - Setiap pemain hidup menerima tombol Native Flow rahasia berisi kode unik.
- * - Penonton dan pemain mati menerima teks gembok murni tanpa tombol.
- */
+const sendPrivateGroupText = (conn, groupJid, playerJid, text) => sendDualGroupMessage(
+    conn,
+    groupJid,
+    playerJid,
+    { extendedTextMessage: { text } },
+    '> 🔒 _Detail aksi rahasia hanya terlihat oleh pemain terkait._'
+)
+
 const sendNightPhaseStanza = async (conn, chat, room) => {
     if (!room || !Array.isArray(room.player)) return
     const game = getGameCategory(room.category)
@@ -160,9 +165,7 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
     room.hunterTarget = null
 
     const alivePlayers = room.player.filter((p) => !p.isdead && !p.isDummy)
-    const aliveJids = alivePlayers.map((p) => p.id)
-    const playerMessagesMap = {}
-
+    const playerMessages = new Map()
     for (const p of alivePlayers) {
         const role = p.role || 'warga'
         const rEmoji = roleEmojis[role] || '🎭'
@@ -170,76 +173,22 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
         const rDesc = roleDescriptions[role] || 'Pilihlah tindakan malammu dengan bijak.'
 
         const secretCodes = p.secretCodes || {}
-        const actionRows = []
-        const cheatSheetLines = []
-        for (const [code, action] of Object.entries(secretCodes)) {
-            let actionEmoji = '✦'
-            let actionText = ''
-            if (action.type === 'kill') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                actionEmoji = game.antagonistEmoji
-                actionText = `Serang (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'check') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                actionEmoji = '🔮'
-                actionText = `Terawang (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'guard') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                actionEmoji = '🛡️'
-                actionText = `Lindungi (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'poison') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                actionEmoji = '☠️'
-                actionText = `Racuni (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'revive') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                actionEmoji = '⚰️'
-                actionText = `Hidupkan (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'hunter') {
-                const target = room.player.find((x) => x.number === action.targetNumber)
-                const tName = target ? (target.displayName || `@${target.id.split('@')[0]}`) : `#${action.targetNumber}`
-                actionEmoji = '🏹'
-                actionText = `Tembak (${toSmallNum(action.targetNumber)}) ${tName}`
-            } else if (action.type === 'skip') {
-                actionEmoji = '⏩'
-                actionText = action.label || 'Lewati Malam'
-            } else if (action.type === 'dummy') {
-                actionEmoji = '🌙'
-                actionText = action.label || 'Aktivitas Malam'
-            } else if (action.type === 'patrol') {
-                actionEmoji = '🚶'
-                actionText = action.label || 'Berkeliling'
-            } else {
-                actionText = action.label || 'Pilihan'
-            }
-
-            actionRows.push({
-                title: Array.from(`${actionEmoji} ${actionText}`).slice(0, 24).join(''),
-                id: `${room.commandBase || '.ww'} ${code}`
-            })
-            cheatSheetLines.push(`> 🔒 *${code}* — ${actionText}`)
-        }
-
-        const cheatSheetSection = cheatSheetLines.length
-            ? `*╭  〔 🔐 ᴋᴏᴅᴇ ᴀᴋsɪ ʀᴀʜᴀsɪᴀ 〕*\n${cheatSheetLines.join('\n')}\n*╰───────────────*\n\n`
-            : ''
+        const actionRows = Object.keys(secretCodes).map((code) => ({
+            title: code,
+            id: `${room.commandBase || '.ww'} action ${chat} ${code}`
+        }))
         const bodyCard = `*──  ୨୧ ✧ FASE MALAM TIBA ✧ ୨୧  ──*
 > 🌙 _Bulan purnama bersinar terang di atas langit desa..._
 
 *╭  〔 ${rEmoji} ʀᴏʟᴇ: ${rTitle} 〕*
-> ⟡ Pemain : *${p.displayName || `@${p.id.split('@')[0]}`}*
+> ⟡ Pemain : *${getDisplayPlayerLabel(p, conn)}*
 > ⟡ Nomor : *${toSmallNum(p.number)}*
 > ⟡ Petunjuk : *${rDesc}*
 *╰───────────────*
 
-${cheatSheetSection}*╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋsɪ 〕*
-> ⟡ Tekan tombol kode di bawah untuk bertindak.
-> ⟡ Kode acak menjamin kerahasiaan aksi malam-mu.
+*╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋsɪ 〕*
+> ⟡ Pilih salah satu kode rahasia pada tombol.
+> ⟡ Arti kode tidak ditampilkan kepada pemain lain.
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _Pilihanmu menentukan keselamatan desa saat fajar._`
@@ -253,10 +202,8 @@ ${cheatSheetSection}*╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋsɪ 〕*
                 id: action.id
             }))
         }
-
-        btn.setContextInfo({ mentionedJid: aliveJids })
-        const built = await btn.build(chat, {})
-        playerMessagesMap[p.id] = built.message
+        const built = await btn.build(chat)
+        playerMessages.set(p.id, built.message)
     }
 
     const spectatorText = `*──  ୨୧ ✧ ${game.name.toUpperCase()} · FASE MALAM ✧ ୨୧  ──*
@@ -270,9 +217,7 @@ ${cheatSheetSection}*╭  〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋsɪ 〕*
 · · ─ ─ ✦ ─ ─ · ·
 > 🔒 _[Fase Malam Berlangsung — Aksi rahasia hanya dapat diakses oleh pemain yang masih hidup]_`
 
-    await sendMultiParticipantGroupStanza(conn, chat, playerMessagesMap, spectatorText, {
-        contextInfo: { mentionedJid: aliveJids }
-    })
+    await sendMultiParticipantGroupStanza(conn, chat, playerMessages, spectatorText)
 
     // Pasang timer 90 detik untuk auto-advance jika ada pemain lambat
     if (room.phaseTimeout) clearTimeout(room.phaseTimeout)
@@ -328,7 +273,7 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
 > 🏹 _Hunter masih memiliki satu kesempatan sebelum benar-benar gugur._
 
 *╭  〔 🏹 ᴘɪʟɪʜ ᴛᴀʀɢᴇᴛ 〕*
-> ⟡ Pemain : *@${hunter.id.split('@')[0]}*
+> ⟡ Pemain : *${getDisplayPlayerLabel(hunter, conn)}*
 > ⟡ Pilih target dengan tombol atau ketik *${room.commandBase || '.ww'} shoot <nomor>*
 *╰───────────────*
 · · ─ ─ ✦ ─ ─ · ·
@@ -339,12 +284,18 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
     btn.setImage(thumbExecution)
     living.forEach((player) => {
         btn.addButton('quick_reply', JSON.stringify({
-            display_text: `🏹 (${toSmallNum(player.number)}) ${getDisplayPlayerLabel(player)}`.slice(0, 24),
-            id: `${room.commandBase || '.ww'} shoot ${player.number}`
+            display_text: `🏹 ${getDisplayPlayerLabel(player, conn)}`.slice(0, 24),
+            id: `${room.commandBase || '.ww'} shoot ${chat} ${player.number}`
         }))
     })
-    btn.setContextInfo({ mentionedJid: [hunter.id, ...living.map((player) => player.id)] })
-    await btn.send(chat)
+    const built = await btn.build(chat)
+    await sendDualGroupMessage(
+        conn,
+        chat,
+        hunter.id,
+        built.message,
+        '> 🔒 _Kesempatan tembakan Hunter hanya terlihat oleh pemain yang bersangkutan._'
+    )
     if (room.phaseTimeout) clearTimeout(room.phaseTimeout)
     room.phaseTimeout = setTimeout(async () => {
         try {
@@ -419,11 +370,9 @@ const startDayVoting = async (conn, chat, ww) => {
     clearAllVote(chat, ww)
 
     const livingPlayers = room.player.filter((p) => !p.isdead)
-    const mentions = livingPlayers.filter((p) => !p.isDummy).map((p) => p.id)
-
     let playerListText = ''
     livingPlayers.forEach((p) => {
-        const pLabel = p.displayName || `@${p.id.split('@')[0]}`
+        const pLabel = getDisplayPlayerLabel(p, conn)
         const protection = p.number === room.guardianVoteTarget ? ' 🛡️ *Dilindungi Guardian dari voting*' : ''
         playerListText += `> (${toSmallNum(p.number)}) ⟡ ${pLabel}${protection}\n`
     })
@@ -450,9 +399,9 @@ ${playerListText.trim()}
     btn.setImage(thumbVoting)
 
     const voteRows = livingPlayers.filter((p) => p.number !== room.guardianVoteTarget).map((p) => {
-        const pName = p.displayName || `@${p.id.split('@')[0]}`
+        const pName = getDisplayPlayerLabel(p, conn)
         return {
-            title: `🗳️ (${toSmallNum(p.number)}) ${pName}`.slice(0, 24),
+            title: `🗳️ ${pName}`.slice(0, 24),
             id: `${room.commandBase || '.ww'} vote ${p.number}`
         }
     })
@@ -469,7 +418,6 @@ ${playerListText.trim()}
         }))
     })
 
-    btn.setContextInfo({ mentionedJid: mentions })
     await btn.send(chat)
 
     if (room.phaseTimeout) clearTimeout(room.phaseTimeout)
@@ -513,14 +461,14 @@ const resolveDayVoting = async (conn, chat, ww) => {
         const killed = voteKill(chat, ww)
         const kRole = killed.role || 'warga'
         const kEmoji = roleEmojis[kRole] || '👱‍♂️'
-        const kTitle = roleTitles[kRole] || kRole.toUpperCase()
-        const kTag = `@${killed.id.split('@')[0]}`
+        const kTitle = roleTitles[kRole] || formatRoleTitle(kRole)
+        const killedName = getDisplayPlayerLabel(killed, conn)
 
         const execText = `*──  ୨୧ ✧ KEPUTUSAN EKSEKUSI ✧ ୨୧  ──*
 > ⚖️ _Warga desa telah sepakat menjatuhkan hukuman gantung!_
 
 *╭  〔 ☠️ ᴡᴀʀɢᴀ ʏᴀɴɢ ᴅɪᴇᴋꜱᴇᴋᴜꜱɪ 〕*
-> ⟡ Nama : *${kTag}*
+> ⟡ Nama : *${killedName}*
 > ⟡ Nomor : *${toSmallNum(killed.number)}*
 > ⟡ Identitas Asli : *${kTitle} ${kEmoji}*
 *╰───────────────*
@@ -529,8 +477,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 
         await conn.sendMessage(chat, {
             image: { url: thumbExecution },
-            caption: execText,
-            mentions: [killed.id]
+            caption: execText
         })
 
         if (killed.role === 'hunter') {
@@ -569,7 +516,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         args = args.slice(1)
     }
     const gameCommandBase = `${usedPrefix || '.'}${isGameRolesCommand ? `gr ${gameCategory.id}` : directGameCategory ? directGameCategory.aliases[0] : 'ww'}`
-    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "info", "role", "guide", "add", "del", "shoot", "autorole", "list"]
+    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "info", "role", "guide", "add", "del", "shoot", "action", "autorole", "list"]
     let value = args[0]
     const target = args[1]
     const normalizedValue = String(value || "").toLowerCase()
@@ -588,8 +535,18 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             detectedSecretCode = textRaw.toUpperCase()
         }
     }
+    const actionRoomId = ['action', 'shoot'].includes(normalizedValue) && args[1]?.endsWith('@g.us') ? args[1] : chat
+    const currentRoomPlayer = ww[actionRoomId]?.player?.find((player) => player.id === sender) || null
+    if (normalizedValue === 'action') {
+        const actionCode = /^[A-Z0-9]{4}$/i.test(String(args[2] || ''))
+            ? String(args[2]).toUpperCase()
+            : null
+        if (actionCode) detectedSecretCode = actionCode
+        if (!actionCode) {
+            return sendPrivateGroupText(conn, actionRoomId, sender, 'Pilihan aksi tidak valid atau sudah kedaluwarsa. Tunggu tombol aksi malam berikutnya.')
+        }
+    }
     const isSecretCode = Boolean(detectedSecretCode)
-    const currentRoomPlayer = ww[chat]?.player?.find((player) => player.id === sender) || null
     const isDeadInRoom = !!(currentRoomPlayer && currentRoomPlayer.isdead)
     const allowedDeadCommands = ["delete", "info", "role", "player", "create", "join", "start", "exit", "guide", "shoot"]
     if ((!isGameRolesCommand || routedGameCategory) && ww[chat] && value !== 'delete' && ww[chat].category && ww[chat].category !== gameCategory.id &&
@@ -645,7 +602,7 @@ Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
             return m.reply(`*── 🎭 DAFTAR SEMUA ROLE GAME ROLES ──*\n\n${roleSections}\n\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2*.\n> Gunakan *.custom autorole* untuk membagikan role otomatis dan *.custom list* untuk memeriksa pembagian role.`)
         }
         if (action === 'guide') {
-            return m.reply(`*── ✧ PANDUAN GAME ROLES ✧ ──*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, atau Custom Role.\n> 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur manual dengan *.custom role @pemain <role/nomor>*, dan periksa pembagian dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n> 6. Gunakan kode aksi rahasia yang bot kirim di grup. Detail aksi hanya terlihat oleh pemain yang bertindak.\n> 7. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 8. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
+            return m.reply(`*── ✧ PANDUAN GAME ROLES ✧ ──*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, atau Custom Role.\n> 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur manual dengan *.custom role @pemain <role/nomor>*, dan periksa pembagian dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n                        > 6. Kartu aksi dan balasan pribadi (termasuk konfirmasi sukses/gagal serta hasil ramalan) dikirim di grup melalui dual-stanza tanpa reply. Pemain terkait melihat detailnya; anggota lain hanya melihat teks pengunci. Pilihan Hunter dapat dilakukan lewat tombol atau perintah yang tercantum di pesan.\n> 7. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 8. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
         }
         if (['command', 'commands', 'cmd'].includes(action)) {
             const commandText = Object.values(GAME_CATEGORIES)
@@ -756,21 +713,20 @@ Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
     }
 
     // Penanganan Klik Tombol Kode Rahasia (.ww <KODE>)
-    if (ww[chat] && ww[chat].status && isSecretCode && !standardCommands.includes(normalizedValue)) {
-        const phase = ww[chat].time === "voting" ? "vote" : "night"
-        const result = resolveSecretCodeAction(chat, sender, detectedSecretCode || value, ww, phase)
+    if (ww[actionRoomId] && ww[actionRoomId].status && isSecretCode) {
+        const room = ww[actionRoomId]
+        const phase = room.time === "voting" ? "vote" : "night"
+        const result = resolveSecretCodeAction(actionRoomId, sender, detectedSecretCode || value, ww, phase)
 
         if (result.ok) {
-            await m.react('✅')
-
             const targetPlayer = result.targetNumber
-                ? ww[chat].player.find((entry) => entry.number === result.targetNumber)
+                ? room.player.find((entry) => entry.number === result.targetNumber)
                 : null
-            const targetLabel = targetPlayer ? getDisplayPlayerLabel(targetPlayer) : ''
+            const targetLabel = targetPlayer ? getDisplayPlayerLabel(targetPlayer, conn) : ''
             let privateText = ''
 
             if (phase === 'night' && result.action === 'check') {
-                const category = getGameCategory(ww[chat].category)
+                const category = getGameCategory(room.category)
                 const targetRole = targetPlayer?.role || 'warga'
                 const roleTitle = roleTitles[targetRole] || formatRoleTitle(targetRole === category.antagonist
                     ? category.antagonistName
@@ -783,7 +739,7 @@ Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
                     poison: `> ☠️ Berhasil memilih *${targetLabel}* untuk diracuni.`,
                     revive: `> ✨ Berhasil memilih *${targetLabel}* untuk dihidupkan kembali.`,
                     hunter: `> 🏹 Berhasil memilih *${targetLabel}* sebagai sasaran tembakan.`,
-                    dummy: `> 🌙 Kamu memilih *${result.choices?.label || 'aktivitas malam'}* untuk menghindari ${getGameCategory(ww[chat].category).antagonistName}.`,
+                    dummy: `> 🌙 Kamu memilih *${result.choices?.label || 'aktivitas malam'}* untuk menghindari ${getGameCategory(room.category).antagonistName}.`,
                     patrol: `> 🚶 Kamu memilih *${result.choices?.label || 'berkeliling'}* malam ini.`,
                     skip: `> ⏩ Aksi berhasil dilewati. Kemampuanmu tetap bisa digunakan pada ronde berikutnya.`,
                     vote: `> 🗳️ Suaramu berhasil diberikan${targetLabel ? ` kepada *${targetLabel}*` : ''}.`
@@ -791,44 +747,39 @@ Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
                 privateText = actionMessages[result.action] || '> ✅ Aksimu berhasil dicatat.'
             }
 
-            await sendDualGroupMessage(
-                conn,
-                chat,
-                sender,
-                { text: privateText },
-                '> 🔒 Aksi pemain telah dicatat. Pemain lain tidak dapat melihat detailnya.'
-            )
+            await sendPrivateGroupText(conn, actionRoomId, sender, privateText)
 
             // Simulasi instan untuk testMode
-            if (ww[chat].testMode && phase === "night") {
-                ww[chat].player.filter((p) => p.id !== sender).forEach((p) => {
+            if (room.testMode && phase === "night") {
+                room.player.filter((p) => p.id !== sender).forEach((p) => {
                     p.nightDone = true
                     p.lastNightAction = { type: "skip", label: "Simulasi" }
                 })
             }
 
             // Cek apakah seluruh pemain hidup telah beraksi
-            const progress = getNightProgress(ww[chat])
+            const progress = getNightProgress(room)
             if (progress.completed) {
-                await resolveNightToMorning(conn, chat, ww)
+                await resolveNightToMorning(conn, actionRoomId, ww)
             }
             return
         }
 
-        await m.react('❌')
+        await sendPrivateGroupText(conn, actionRoomId, sender, 'Aksi tidak dapat diproses. Pastikan giliranmu masih aktif dan gunakan tombol terbaru.')
         return
     }
 
     if (normalizedValue === 'shoot') {
-        const room = ww[chat]
+        const hunterRoomId = target?.endsWith('@g.us') ? target : chat
+        const room = ww[hunterRoomId]
         const hunter = room?.player?.find((player) => player.id === sender && player.pendingHunter)
         if (!room?.status || room.pendingHunter !== sender || !hunter) {
-            return m.reply(status.warning('Kamu tidak sedang memiliki kesempatan tembakan Hunter.'))
+            return sendPrivateGroupText(conn, hunterRoomId, sender, 'Kamu tidak sedang memiliki kesempatan tembakan Hunter.')
         }
-        const targetNumber = Number.parseInt(target, 10)
+        const targetNumber = Number.parseInt(target?.endsWith('@g.us') ? args[2] : target, 10)
         const targetPlayer = room.player.find((player) => player.number === targetNumber && !player.isdead && !player.isDummy)
         if (!targetPlayer || targetPlayer.id === sender) {
-            return m.reply(status.error(`Target tidak valid. Gunakan *${gameCommandBase} shoot <nomor pemain hidup>*.`))
+            return sendPrivateGroupText(conn, hunterRoomId, sender, `Target tidak valid. Gunakan tombol target atau *${gameCommandBase} shoot <nomor>*.`)
         }
         const resumePhase = room.pendingHunterPhase
         targetPlayer.isdead = true
@@ -850,24 +801,23 @@ Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
 > 🏹 _Sang Hunter telah melakukan aksi terakhirnya._
 
 *╭  〔 🎯 ᴛᴀʀɢᴇᴛ ᴛᴇᴍʙᴀᴋᴀɴ 〕*
-> ⟡ Hunter : *@${hunter.id.split('@')[0]}*
-> ⟡ Tertembak : *@${targetPlayer.id.split('@')[0]}*
+> ⟡ Hunter : *${getDisplayPlayerLabel(hunter, conn)}*
+> ⟡ Tertembak : *${getDisplayPlayerLabel(targetPlayer, conn)}*
 > ⟡ Nomor : *${toSmallNum(targetPlayer.number)}*
 > ⟡ Role : *${targetRole} ${roleEmojis[targetPlayer.role] || '🎭'}*
 *╰───────────────*
 ${targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
-        await conn.sendMessage(chat, {
+        await conn.sendMessage(hunterRoomId, {
             image: { url: thumbExecution },
-            caption: resultCard,
-            mentions: [hunter.id, targetPlayer.id]
+            caption: resultCard
         })
         if (targetPlayer.pendingHunter) {
-            await openHunterReaction(conn, chat, room, targetPlayer, resumePhase)
+            await openHunterReaction(conn, hunterRoomId, room, targetPlayer, resumePhase)
         } else if (resumePhase === 'morning') {
             room.pendingHunterMorningAnnounced = false
-            await publishMorning(conn, chat, room, ww, false)
+            await publishMorning(conn, hunterRoomId, room, ww, false)
         } else {
-            await resumeAfterHunterVote(conn, chat, room, ww)
+            await resumeAfterHunterVote(conn, hunterRoomId, room, ww)
         }
         return
     }
@@ -886,15 +836,18 @@ ${targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat
         room?.player.filter((player) => !player.isDummy).forEach((player) => {
             assignmentMap.set(player.id, room.customRoles?.[player.id] || player.role || null)
         })
-        const assignments = [...assignmentMap].map(([id, role]) => ({ id, role }))
-        const entries = assignments.map(({ id, role }) =>
-            `> @${String(id).split('@')[0]} — *${role ? formatRoleTitle(role) : 'Belum diatur'}* ${roleEmojis[role] || ''}`
-        )
-        return m.reply(
-            `*── ୨୧ ✧ DAFTAR ROLE CUSTOM ✧ ୨୧ ──*\n\n${entries.join('\n') || '> Belum ada role yang diatur.'}\n\n> Lihat role pemain dengan *${gameCommandBase} list*.`,
-            null,
-            { mentions: assignments.map(({ id }) => id) }
-        )
+        const assignments = [...assignmentMap].map(([id, role], index) => ({ id, role, index }))
+        const entries = assignments.map(({ id, role, index }) => {
+            const player = room?.player.find((entry) => entry.id === id) || {
+                id,
+                number: index + 1,
+                displayName: conn.getName(id)
+            }
+            return `> ${getDisplayPlayerLabel(player, conn)} — *${role ? formatRoleTitle(role) : 'Belum diatur'}* ${roleEmojis[role] || ''}`
+        })
+        return conn.sendMessage(chat, {
+            text: `*── ୨୧ ✧ DAFTAR ROLE CUSTOM ✧ ୨୧ ──*\n\n${entries.join('\n') || '> Belum ada role yang diatur.'}\n\n> Lihat role pemain dengan *${gameCommandBase} list*.`
+        })
     }
 
     if (gameCategory.id === 'custom' && value === 'autorole') {
@@ -957,7 +910,12 @@ ${targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat
             if (player) player.role = selectedRole
         }
         const roleData = ROLE_DATA[selectedRole]
-        return m.reply(status.success(`Role ${roleData.emoji} *${roleData.title}* berhasil ditetapkan untuk @${targetPlayerId.split('@')[0]} di mode Custom.`))
+        const rolePlayer = room?.player.find((player) => player.id === targetPlayerId) || {
+            id: targetPlayerId,
+            number: 1,
+            displayName: conn.getName(targetPlayerId)
+        }
+        return m.reply(status.success(`Role ${roleData.emoji} *${roleData.title}* berhasil ditetapkan untuk *${getDisplayPlayerLabel(rolePlayer, conn)}* di mode Custom.`))
 
     } else if (value === "create") {
         if (chat in ww) return m.reply(status.warning(`Grup masih dalam sesi permainan ${gameCategory.name}.`))
@@ -1014,7 +972,7 @@ ${gameCategory.id === 'custom' ? `\n> 🎭 Atur role dengan *${gameCommandBase} 
         ]
 
         await conn.sendButton(chat, createCard, `Avelia • ${gameCategory.name} Game`, null, createButtons, m, {
-            contextInfo: { mentionedJid: [sender] }
+            contextInfo: {}
         })
 
     } else if (value === "join") {
@@ -1054,10 +1012,9 @@ ${gameCategory.id === 'custom' ? `\n> 🎭 Atur role dengan *${gameCommandBase} 
         }
         ww[chat].player.push(newPlayer)
 
-        const jids = ww[chat].player.filter((p) => !p.isDummy).map((p) => p.id)
         let rosterText = ''
         ww[chat].player.forEach((p) => {
-            rosterText += `> (${toSmallNum(p.number)}) ⟡ ${getDisplayPlayerLabel(p)}\n`
+            rosterText += `> (${toSmallNum(p.number)}) ⟡ ${getDisplayPlayerLabel(p, conn)}\n`
         })
 
         const totalPlayers = ww[chat].player.length
@@ -1080,9 +1037,7 @@ ${rosterText.trim()}
         }
         joinButtons.push(['⚔️ Gabung Lagi', `${ww[chat].commandBase || gameCommandBase} join`])
 
-        await conn.sendButton(chat, joinCard, `Avelia • ${gameCategory.name} Game`, null, joinButtons, m, {
-            contextInfo: { mentionedJid: jids }
-        })
+        await conn.sendButton(chat, joinCard, `Avelia • ${gameCategory.name} Game`, null, joinButtons, m)
 
     } else if (value === "add" && (target === "warga" || target === "dummy" || target === "dummies")) {
         if (!ww[chat]) return m.reply(status.error("Belum ada sesi permainan."))
@@ -1317,14 +1272,13 @@ ${rosterText.trim()}
         if (room.status) {
             const players = room.player.filter((player) => !player.isDummy)
             const roster = room.player.map((player) => {
-                const title = roleTitles[player.role] || player.role
-                return `> (${toSmallNum(player.number)}) ${getDisplayPlayerLabel(player)} — *${title}*`
+                const title = formatRoleTitle(player.role)
+                return `> (${toSmallNum(player.number)}) ${getDisplayPlayerLabel(player, conn)} — *${title}*`
             }).join('\n')
             try {
                 await conn.sendMessage(chat, {
                     image: { url: thumbExecution },
                     caption: `*── ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ ──*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`,
-                    mentions: players.map((player) => player.id)
                 })
             } catch (error) {
                 console.error('[werewolf room delete role reveal failed]', error?.message)
@@ -1342,11 +1296,10 @@ ${rosterText.trim()}
     } else if (value === "player") {
         if (!ww[chat]) return m.reply(status.warning(`Tidak ada sesi permainan ${gameCategory.name} aktif.`))
         const game = getGameCategory(ww[chat].category)
-        const jids = ww[chat].player.filter((p) => !p.isDummy).map((p) => p.id)
         let text = `*── ୨୧ ✧ ${game.name.toUpperCase()} PLAYER LIST ✧ ୨୧ ──*\n> 📋 _Daftar status pemain saat ini:_\n\n*╭ 〔 ✦ STATUS PEMAIN 〕*\n`
         ww[chat].player.forEach((p, index) => {
             p.number = index + 1
-            const pLabel = getDisplayPlayerLabel(p)
+            const pLabel = getDisplayPlayerLabel(p, conn)
             const playerStatus = p.isdead ? '🔴' : '🟢'
             text += `> (${toSmallNum(p.number)}) ${pLabel} ${playerStatus}\n`
         })
@@ -1354,9 +1307,8 @@ ${rosterText.trim()}
 
         await conn.sendMessage(chat, {
             image: { url: thumbNight },
-            caption: text.trim(),
-            mentions: jids
-        }, { quoted: m })
+            caption: text.trim()
+        })
 
     } else if (value === "info") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
@@ -1364,11 +1316,9 @@ ${rosterText.trim()}
 > ${game.antagonistEmoji} _Permainan deduksi sosial, strategi, dan intrik._
 
 *╭  〔 ✦ ꜱɪꜱᴛᴇᴍ 𝟷𝟶𝟶% ɪɴ-ɢʀᴏᴜᴘ 〕*
-> ⟡ Detail aksi dikirim di grup, tetapi hanya terlihat oleh pemain yang bertindak.
-> ⟡ Semua role & tombol dikirim via 1 Dual Stanza grup
-> ⟡ Tombol aksi malam menggunakan tombol cepat Native Flow
-> ⟡ Penonton grup TIDAK menerima tombol apapun
-> ⟡ Aksi Seer langsung terungkap via Dual Message
+> ⟡ Kartu role dan tombol malam dikirim di grup melalui dual-stanza, tanpa reply.
+> ⟡ Hanya pemain yang bersangkutan dapat melihat aksi dan hasil pribadi.
+> ⟡ Voting dan hasil permainan tetap ditampilkan di grup.
 *╰───────────────*
 
 *╭  〔 ✦ ᴀʟᴜʀ ᴘᴇʀᴍᴀɪɴᴀɴ 〕*
