@@ -880,16 +880,21 @@ ${targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat
         if (room?.status) {
             return m.reply(status.warning('Daftar role disembunyikan selama permainan berlangsung.'))
         }
-        const assignments = room
-            ? room.player.filter((player) => !player.isDummy).map((player) => ({
-                id: player.id,
-                role: room.customRoles?.[player.id] || player.role
-            }))
-            : Object.entries(conn.werewolfCustomRoles?.[chat] || {}).map(([id, role]) => ({ id, role }))
+        const assignmentMap = new Map(Object.entries(
+            room?.customRoles || conn.werewolfCustomRoles?.[chat] || {}
+        ))
+        room?.player.filter((player) => !player.isDummy).forEach((player) => {
+            assignmentMap.set(player.id, room.customRoles?.[player.id] || player.role || null)
+        })
+        const assignments = [...assignmentMap].map(([id, role]) => ({ id, role }))
         const entries = assignments.map(({ id, role }) =>
             `> @${String(id).split('@')[0]} — *${role ? formatRoleTitle(role) : 'Belum diatur'}* ${roleEmojis[role] || ''}`
         )
-        return m.reply(`*── ୨୧ ✧ DAFTAR ROLE CUSTOM ✧ ୨୧ ──*\n\n${entries.join('\n') || '> Belum ada role yang diatur.'}\n\n> Lihat role pemain dengan *${gameCommandBase} list*.`)
+        return m.reply(
+            `*── ୨୧ ✧ DAFTAR ROLE CUSTOM ✧ ୨୧ ──*\n\n${entries.join('\n') || '> Belum ada role yang diatur.'}\n\n> Lihat role pemain dengan *${gameCommandBase} list*.`,
+            null,
+            { mentions: assignments.map(({ id }) => id) }
+        )
     }
 
     if (gameCategory.id === 'custom' && value === 'autorole') {
@@ -906,7 +911,7 @@ ${targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat
         if (!autoAssignCustomRoles(chat, ww)) {
             return m.reply(status.error('Role otomatis gagal dibagikan. Pastikan jumlah pemain dan room masih valid.'))
         }
-        return m.reply(status.success(`Role otomatis berhasil dibagikan kepada ${playerCount} pemain. Role Warga dan antagonis utama dapat berulang, tetapi hanya satu jenis antagonis utama yang digunakan. Cek dengan *${gameCommandBase} list*.`))
+        return m.reply(status.success(`Role otomatis selesai. Role yang sudah ditetapkan tidak diubah; hanya satu jenis antagonis utama yang digunakan. Cek dengan *${gameCommandBase} list*.`))
     }
 
     if (value === "role" && gameCategory.id === 'custom') {
