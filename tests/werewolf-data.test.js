@@ -11,7 +11,8 @@ import {
   getRandomHideActions,
   getSorcererFaction,
   isAntagonistRole,
-  normalizeGameCategory
+  normalizeGameCategory,
+  validateCustomRoles
 } from '../lib/werewolfData.js'
 
 test('game categories resolve aliases and alternative antagonists', () => {
@@ -65,4 +66,12 @@ test('hide action choices are capped at five and exclude previously used actions
   const freshCycle = getRandomHideActions(HIDE_ACTIONS)
   assert.equal(freshCycle.actions.length, 5)
   assert.equal(freshCycle.reset, true)
+})
+
+test('custom roles allow only one main antagonist type and unique special roles', () => {
+  assert.equal(validateCustomRoles(['mafia', 'mafia', 'warga', 'warga', 'seer']).valid, true)
+  assert.equal(validateCustomRoles(['werewolf', 'mafia', 'warga']).reason, 'multiple-antagonists')
+  assert.equal(validateCustomRoles(['alien', 'seer', 'seer']).reason, 'duplicate-role')
+  assert.equal(validateCustomRoles(['warga', 'seer'], { requireAntagonist: true }).reason, 'missing-antagonist')
+  assert.equal(validateCustomRoles(['mafia', 'sorcerer', 'jester'], { requireAntagonist: true }).valid, true)
 })
