@@ -1,16 +1,28 @@
+import pkg from '@whiskeysockets/baileys'
+
+const { downloadContentFromMessage } = pkg
+
 let handler = async (m, { conn }) => {
   if (!m.quoted) throw '❌ Reply ke pesan view once!'
 
   let q = m.quoted
-
-  // Pastikan yang direply adalah media view once
-  let mime = (q.msg || q).mimetype || ''
+  let mediaType = q.mediaType
+  let mediaMessage = mediaType ? q.mediaMessage?.[mediaType] : null
+  let mime = mediaMessage?.mimetype || (q.msg || q).mimetype || ''
   if (!mime) throw '❌ Itu bukan pesan media view once!'
+  if (!mediaMessage) throw '❌ Data media tidak ditemukan. Reply langsung ke pesan view once aslinya!'
+  if (!mediaMessage.mediaKey?.length) {
+    throw '❌ Media ini tidak memiliki kunci enkripsi (mediaKey), jadi tidak bisa diunduh. Pastikan kamu membalas pesan view once aslinya, bukan kutipan/forward yang metadata medianya tidak lengkap!'
+  }
 
-  let media = await q.download() // download media
-  if (!media) throw '❌ Gagal download media!'
+  let stream = await downloadContentFromMessage(mediaMessage, mediaType.replace(/message/i, ''))
+  let chunks = []
+  for await (let chunk of stream) chunks.push(chunk)
+  let media = Buffer.concat(chunks)
+  if (!media.length) throw '❌ Gagal download media!'
 
-  await conn.sendFile(m.chat, media, 'media.' + mime.split('/')[1], q.text || '', m)
+  let extension = mime.split('/')[1]?.split(';')[0] || 'bin'
+  await conn.sendFile(m.chat, media, 'media.' + extension, q.text || '', m)
 }
 
 handler.help = ['rvo']
