@@ -1,5 +1,6 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
-import { loadDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { formatCropWiltedAppreciation, getCropReadyDuration, removeWiltedCrops } from '../../lib/rpgFarming.js'
+import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { bibit } from './rpg-panen.js'
 
 function formatNama(nama) {
@@ -17,6 +18,8 @@ let handler = async (m, { conn, usedPrefix }) => {
   const sekarang = Date.now()
   let terisi = 0
   let siap = 0
+  const { crops: tanamanMati, appreciation } = removeWiltedCrops(user, wdb, m.sender, bibit, sekarang)
+  const mati = tanamanMati.length
   let listLadang = []
 
   for (let slot = 1; slot <= user.maxLadang; slot++) {
@@ -33,7 +36,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     }
 
     terisi++
-    const sisa = info.waktu - (sekarang - tanaman.waktuTanam)
+    const sisa = getCropReadyDuration(tanaman, info) - (sekarang - tanaman.waktuTanam)
 
     if (sisa <= 0) {
       siap++
@@ -55,17 +58,31 @@ let handler = async (m, { conn, usedPrefix }) => {
     }
   }
 
+  if (mati > 0) await saveDB(wdb)
+  const apresiasi = formatCropWiltedAppreciation(tanamanMati, appreciation, formatNama)
+
   if (terisi === 0) {
-    return m.reply(`╭─❏「 🏡 LADANG KOSONG 」❏\n│ _Belum ada tanaman yang ditanam._\n│ 🌱 Tanam: *${usedPrefix}tanam [bibit]*\n╰─━━━━━━━━━━━━━━─`)
+    if (mati === 0) {
+      return m.reply(`╭─❏「 🏡 LADANG KOSONG 」❏\n│ _Belum ada tanaman yang ditanam._\n│ 🌱 Tanam: *${usedPrefix}tanam [bibit]*\n╰─━━━━━━━━━━━━━━─`)
+    }
+
+    const cap = `╭─❏「 🏡 STATUS LADANG 」❏\n` +
+      `│ 🥀 Semua tanaman sudah layu\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `🌱 *LADANG KOSONG*\n` +
+      `> ↳ Tanam kembali dengan *${usedPrefix}tanam [bibit]*.\n\n` +
+      `${apresiasi}`
+    return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i181/UTTbZ.jpg')
   }
 
   let cap = `╭─❏「 🏡 STATUS LADANG 」❏\n`
   cap += `│ 👤 Owner : ${m.pushName || conn.getName(m.sender) || 'Pemilik'}\n`
   cap += `│ 📦 Terisi : ${terisi}/${user.maxLadang} Slot\n`
   cap += `│ ✅ Siap : ${siap} Slot\n`
+  if (mati > 0) cap += `│ 🥀 Layu : ${mati} tanaman\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
   cap += `🌱 *PROGRESS TANAMAN*\n`
-  cap += `> ↳ Cek waktu panen tiap slot ladang kamu.\n`
+  cap += `> ↳ Panen dalam 5 jam setelah tanaman siap agar tidak layu.\n`
 
   for (const item of listLadang) {
     if (item.kosong) {
@@ -87,6 +104,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   cap += `> 🌾 Panen: *${usedPrefix}panen [nomor]*\n`
   cap += `> 🌱 Tanam: *${usedPrefix}tanam [bibit]*`
 
+  if (apresiasi) cap += `\n\n${apresiasi}`
   return sendRpgMsg(conn, m, cap, 'https://c.termai.cc/i181/UTTbZ.jpg')
 }
 

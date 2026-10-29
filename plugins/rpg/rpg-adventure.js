@@ -8,6 +8,7 @@ import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
+import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -74,7 +75,7 @@ function rollItem(hance, bonus, advLvl, swordLvl, pickLvl, dropRate = 1){
   return {item: trash[Math.floor(Math.random() * trash.length)], tier: 'TRASH', exp: 20}
 }
 
-let handler = async (m, { conn, command, usedPrefix }) => {
+let handler = async (m, { conn, command, text, usedPrefix }) => {
   const wdb = loadDB()
   let data = getUserRPG(wdb, m.sender)
   let user = data.rpg
@@ -127,8 +128,14 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   const yieldBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'yield')
   const incomeBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'income')
   const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'xp')
+  const illegalText = String(text || '').trim().toLowerCase()
+  let illegalMultiplier = 1
+  let illegalResult = null
+  if (illegalText && illegalText !== 'ilegal') {
+    return m.reply(`Gunakan *${usedPrefix || '.'}adventure ilegal* untuk mencoba usaha ilegal adventure.`)
+  }
   let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * cooldownBuff)
-  if (Date.now() - (user.lastAdventure || 0) < cooldown) {
+  if (!illegalText && Date.now() - (user.lastAdventure || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastAdventure)) / 1000)
     return m.reply(`⏳ Tunggu ${sisa} detik lagi.`)
   }
@@ -141,6 +148,21 @@ let handler = async (m, { conn, command, usedPrefix }) => {
       footer: '',
       noThumbnail: true
     })
+  }
+  if (illegalText) {
+    illegalResult = attemptRpgIllegalAction({
+      db: wdb,
+      jid: m.sender,
+      user,
+      activity: 'adventure',
+      cooldownDuration: cooldown,
+      cooldownField: 'lastAdventure'
+    })
+    if (illegalResult.status !== 'success') {
+      if (['failed', 'caught', 'protected'].includes(illegalResult.status)) await saveFailedRpgIllegalAction(wdb)
+      return m.reply(formatRpgIllegalResult(illegalResult))
+    }
+    illegalMultiplier = illegalResult.rewardMultiplier
   }
 
   let advLvl = user.adventureLevel || 1
@@ -158,12 +180,12 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   let baseMoney = expeditionFailed ? 0 : Math.floor(Math.random() * 5000) + 1000
   let baseWood = expeditionFailed ? 0 : Math.floor(Math.random() * 10) + 5
   let baseIron = expeditionFailed ? 0 : Math.floor(Math.random() * 5) + 1
-  let jumlahLoot = expeditionFailed ? 0 : 2 + Math.floor(Math.random() * 3)
+  let jumlahLoot = expeditionFailed ? 0 : Math.ceil((2 + Math.floor(Math.random() * 3)) * illegalMultiplier)
 
   const urutanTier = ['TRASH','COMMON','UNCOMMON','RARE','EPIC','LEGENDARY','MYTHIC','SECRET']
   let hasilLoot = {}; let groupedLoot = {}; let totalExp = baseExp; let tierTertinggi = 'TRASH'
 
-  const woodQty = baseWood + Math.floor(pickLvl / 3)
+  const woodQty = Math.ceil((baseWood + Math.floor(pickLvl / 3)) * illegalMultiplier)
   const woodKey = 'kayu'
   hasilLoot[woodKey] = (hasilLoot[woodKey] || 0) + woodQty
   groupedLoot.COMMON = groupedLoot.COMMON || {}
@@ -196,15 +218,17 @@ let handler = async (m, { conn, command, usedPrefix }) => {
   }
   // 1. Masuk inventory buat.tas
   for(let item in hasilLoot){ user.inventory[item] = (user.inventory[item] || 0) + hasilLoot[item] }
-  user.inventory['iron'] = (user.inventory['iron'] || 0) + baseIron + Math.floor(pickLvl / 4)
+  const shortcutWood = woodQty
+  const shortcutIron = Math.ceil((baseIron + Math.floor(pickLvl / 4)) * illegalMultiplier)
+  user.inventory['iron'] = (user.inventory['iron'] || 0) + shortcutIron
 
   // 2. Masuk user.diamond dll biar nongol di.inventory
   if(hasilLoot['diamond']) user.diamond = (user.diamond || 0) + hasilLoot['diamond']
-  user.wood = (user.wood || 0) + baseWood + Math.floor(pickLvl / 3)
-  user.iron = (user.iron || 0) + baseIron + Math.floor(pickLvl / 4)
+  user.wood = (user.wood || 0) + shortcutWood
+  user.iron = (user.iron || 0) + shortcutIron
 
-  let money = multiplyRpgMoney(scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)), incomeBuff)
-  totalExp = Math.floor(scaleDifficultyXP(user, totalExp) * xpBuff)
+  let money = multiplyRpgMoney(scaleDifficultyIncome(user, baseMoney + (advLvl * 200) + (swordLvl * 100) + (pickLvl * 60)), incomeBuff * illegalMultiplier)
+  totalExp = Math.floor(scaleDifficultyXP(user, totalExp) * xpBuff * illegalMultiplier)
   totalExp = applyBloodlineBuff(user, 'xp', totalExp)
   addRpgExp(user, totalExp)
   user.adventureExp = (Number(user.adventureExp) || 0) + totalExp
@@ -231,14 +255,15 @@ cap += `│ 🏆 Title: ${getAdvTitle(user.adventureLevel)}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 if (expeditionFailed) cap += `> ↳ 🌪️ Ekspedisi gagal; tidak ada loot yang didapat.\n`
+if (illegalText) cap += `> ↳ ⚠️ Usaha ilegal: hasil ×${illegalMultiplier} | 💀 +1 poin kriminal (aktif ${illegalResult.activeCrimeScore})\n`
 cap += `> ↳ ${tierInfo[tierTertinggi].stars} ${tierTertinggi} ${tierInfo[tierTertinggi].icon}\n\n`
 
 cap += `🎒 *HASIL PENJELAJAHAN x${jumlahLoot}*\n`
 for (let item in hasilLoot) {
 cap += `> ↳ ${formatNama(item)} ×${hasilLoot[item].toLocaleString()}\n`
 }
-cap += `> ↳ Kayu ×${baseWood + Math.floor(pickLvl / 3)}\n`
-cap += `> ↳ Iron ×${baseIron + Math.floor(pickLvl / 4)}\n`
+cap += `> ↳ Kayu ×${shortcutWood}\n`
+cap += `> ↳ Iron ×${shortcutIron}\n`
 cap += `> ↳ Money +Rp ${money.toLocaleString()}\n`
 cap += `> ↳ XP +${totalExp}\n`
 

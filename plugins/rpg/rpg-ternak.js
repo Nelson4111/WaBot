@@ -2,9 +2,10 @@ import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { hewanList, dapatkanHasil, listHybrid, getHewan, getHewanKey, normalizeHasilKey, migrateHasilTernakInventory, getHasilDisplay, isHasilTernakKey } from '../../lib/rpg-libternakData.js'
-import { scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { processLivestockNeglect, processShelterCrime, recordLivestockCare } from '../../lib/rpgShelter.js'
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
@@ -15,6 +16,22 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   if(!user.ternak) user.ternak = {}
   if(!user.inventory) user.inventory = {}
+  if (!wdb.crime) wdb.crime = {}
+
+  const livestockNeglect = processLivestockNeglect(user)
+  const shelterCrime = processShelterCrime(user, wdb.crime, m.sender)
+  if (livestockNeglect.changed || shelterCrime.changed) await saveDB(wdb)
+  for (const entry of livestockNeglect.escapedLivestock) {
+    const animal = getHewan(entry.type)
+    safeReply(
+      `╭─❏「 🛟 TERNAK MASUK SHELTER 」❏\n` +
+      `│ 🐄 *HEWAN TERLANTAR*\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ ${animal?.nama || entry.type} ${animal?.emoji || '🐾'} ×${entry.count} kabur setelah kandang tidak diurus selama 7 hari.\n` +
+      `> ↳ Hewan di shelter tidak menghasilkan produk. Gunakan *${usedPrefix}shelter retrieve ternak <no>* untuk mencoba menjemputnya.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
 
   const hasilMigration = migrateHasilTernakInventory(user.inventory)
   user.inventory = hasilMigration.inventory
@@ -246,7 +263,8 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], total)
     let key = getHewanKey(hewan1) || hewan1
     user.ternak[key] = (user.ternak[key] || 0) + jml
-    saveDB(wdb)
+    recordLivestockCare(user, key)
+    await saveDB(wdb)
 
     return safeReply(
       `╭─❏「 🛒 PEMBELIAN BERHASIL 」❏\n` +
@@ -263,6 +281,17 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     if(!user.ternak[hewan1]) return safeReply('❌ Kamu tidak punya hewan itu') // cek dulu
     let h = getHewan(hewan1)
     if(!h) return safeReply('❌ Data hewan tidak ditemukan')
+    if (!user.lastLivestockHarvest || typeof user.lastLivestockHarvest !== 'object' || Array.isArray(user.lastLivestockHarvest)) {
+      user.lastLivestockHarvest = {}
+    }
+    const cooldown = Math.floor(
+      scaleDifficultyCooldown(user, 2 * 60 * 1000) *
+      getGroupTotemBuff(wdb.data, m.chat, 'livestock', 'cooldown')
+    )
+    const remaining = cooldown - (Date.now() - (Number(user.lastLivestockHarvest[hewan1]) || 0))
+    if (remaining > 0) {
+      return safeReply(`⏳ Hasil ${h.nama} berikutnya siap dalam ${Math.ceil(remaining / 1000)} detik. Coba lagi dengan *.farming* untuk mengambil hasil yang sudah siap.`)
+    }
     let hasil = dapatkanHasil(h).ambil
     const hasilDisplay = getHasilDisplay(hasil)
     const productivity = isRpgEventActive('livestock_disease') ? 0.7 : 1
@@ -270,9 +299,11 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'livestock', 'xp')
     const production = Math.max(1, Math.floor(user.ternak[hewan1] * productivity * yieldBuff))
     user.inventory[hasil] = (user.inventory[hasil] || 0) + production
+    user.lastLivestockHarvest[hewan1] = Date.now()
+    recordLivestockCare(user, hewan1)
     let exp = Math.floor(scaleDifficultyXP(user, h.exp * production) * xpBuff)
     user.exp += exp
-    saveDB(wdb)
+    await saveDB(wdb)
 
     return safeReply(
       `╭─❏「 🌾 HASIL TERNAK 」❏\n` +
@@ -280,6 +311,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ 🎁 Produk : ${hasilDisplay.emoji} ${hasilDisplay.nama} x${production}\n` +
       `> ↳ ✨ Exp : +${exp}\n` +
+      `> ↳ ⏳ Hasil berikutnya: ${Math.ceil(cooldown / 1000)} detik lagi\n` +
       `> ↳ 💚 Status : Hewan tetap hidup\n\n` +
       `─━━━━━━━━━━━━━━─`
     )

@@ -36,6 +36,15 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `> ↳ Istirahatkan pet yang lelah.\n`
     cap += `> *${usedPrefix}pet clean <nomor>*\n`
     cap += `> ↳ Mandikan pet yang kotor.\n`
+    cap += `> *${usedPrefix}shelter list*\n`
+    cap += `> ↳ Lihat anak dan pet yang berada di shelter.\n`
+    cap += `> *${usedPrefix}shelter retrieve pet <no>* / *retrieve anak <no>*\n`
+    cap += `> ↳ Coba jemput kembali penghuni shelter; peluang berhasil mengikuti aturan retrieve anak.\n`
+    cap += `> *${usedPrefix}shelter all* (premium)\n`
+    cap += `> ↳ Mencoba retrieve semua anak dan pet sekaligus; yang menolak tetap di shelter.\n`
+    cap += `> *${usedPrefix}shelter donate <jumlah>* / *donate item <nama> <jumlah>*\n`
+    cap += `> ↳ Donasi uang atau makanan/minuman dari kulkas; nilainya dijumlahkan.\n`
+    cap += `> ↳ Kondisi pet turun tiap 6 jam dan pet dapat kabur bila kondisi buruk dibiarkan selama 24 jam.\n`
 
     cap += `\n─━━━━━━━━━━━━━━─\n`
     cap += `💰 *INCOME & AKTIVITAS*\n`
@@ -118,6 +127,12 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `> ↳ Melihat hasil panen yang tersimpan.\n`
     cap += `> *${usedPrefix}panen*\n`
     cap += `> ↳ Melihat status dan memanen hasil kebun.\n`
+    cap += `> *${usedPrefix}farm*\n`
+    cap += `> ↳ Membaca panduan kebun dan peternakan.\n`
+    cap += `> *${usedPrefix}farming*\n`
+    cap += `> ↳ Memanen semua tanaman siap dan mengumpulkan hasil ternak; hasil ternak tersedia tiap 2 menit.\n`
+    cap += `> *${usedPrefix}farming ilegal*\n`
+    cap += `> ↳ Mengambil hasil secara ilegal: hasil ×1,5 dan +1 poin kriminal; berisiko gagal/tertangkap. Cooldown 2× lebih lama.\n`
     cap += `> *${usedPrefix}jualpanen*\n`
     cap += `> ↳ Menjual hasil panen ke koperasi.\n`
 
@@ -179,8 +194,19 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   cap += `> ↳ Taklukkan bos dungeon.\n`
   cap += `> *${usedPrefix}mancing*\n`
   cap += `> ↳ Menangkap ikan langka.\n`
+  cap += `> *${usedPrefix}mancing ilegal* (jaring listrik) / *${usedPrefix}mining ilegal* (ledakan)\n`
+  cap += `> ↳ Usaha ilegal memberi hasil ×1,5 dan +1 poin kriminal; ada risiko gagal atau tertangkap.\n`
+  cap += `> *${usedPrefix}diving* / *${usedPrefix}nyelam*\n`
+  cap += `> ↳ Menyelam untuk mencari harta laut dengan rarity bertingkat.\n`
+  cap += `> *${usedPrefix}diving ilegal* (peledakan bawah laut) / *${usedPrefix}logging ilegal* (pembalakan liar/bakar hutan)\n`
+  cap += `> ↳ Usaha ilegal memberi hasil ×1,5 dan +1 poin kriminal; ada risiko gagal atau tertangkap.\n`
+  cap += `> *${usedPrefix}logging* / *${usedPrefix}nebang*\n`
+  cap += `> ↳ Menebang pohon untuk memperoleh kayu dan material hutan.\n`
   cap += `> *${usedPrefix}mining* / *${usedPrefix}forge*\n`
   cap += `> ↳ Menambang dan melebur logam.\n`
+  cap += `> *${usedPrefix}adventure ilegal* / *${usedPrefix}explore ilegal*\n`
+  cap += `> ↳ Usaha ilegal memberi +1 poin kriminal dan bisa berujung gagal atau masuk penjara.\n`
+  cap += `> ↳ Cooldown usaha ilegal 2× lebih lama dari aktivitas biasa; peluang dasar gagal 20% dan tertangkap 5% (dapat berubah sesuai difficulty).\n`
   cap += `> *${usedPrefix}upgrade*\n`
   cap += `> ↳ Meningkatkan tier senjata dan zirah.\n`
   cap += `> *${usedPrefix}shop*\n`

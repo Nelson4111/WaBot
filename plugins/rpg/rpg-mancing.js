@@ -14,6 +14,7 @@ import {
   rollRpgFishBaitReward,
   RPG_FISHING_STORIES
 } from '../../lib/rpg-fishCatalog.js'
+import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -117,7 +118,7 @@ let uncommon = ['ikan_mas', 'ikan_nila', 'ikan_lele', 'ikan_patin', 'ikan_gurame
 let common = ['ikan_teri', 'ikan_pepetek', 'ikan_layang', 'ikan_kembung_kecil', 'ikan_selar', 'ikan_tembang', 'ikan_julung'];
 let trash = ['sampah_plastik', 'ban_bekas', 'botol_kaca', 'kaleng', 'kayu_hanyut', 'jaring_rusak', 'sepatu', 'botol', 'kantong_plastik', 'duri', 'batu', 'rumput', 'lumpur', 'daun', 'ranting', 'tali', 'kawat', 'pecahan_kaca', 'kaos_kaki', 'mie_instan', 'pakaian_dalam', 'gelas_plastik', 'sedotan', 'sumpit', 'piring', 'stik_es', 'serabut', 'cangkang', 'sandal', 'kapal_mainan', 'sisir_kayu', 'topi', 'tutup_botol'];
 
-let handler = async (m, { conn, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
@@ -128,6 +129,12 @@ let handler = async (m, { conn, usedPrefix }) => {
   user.fishBaits ||= {}
   const dailyBait = grantDailyNormalBait(user)
   const activeBait = getActiveRpgFishBait(user)
+  const illegalText = String(text || '').trim().toLowerCase()
+  let illegalMultiplier = 1
+  let illegalResult = null
+  if (illegalText && illegalText !== 'ilegal') {
+    return m.reply(`Gunakan *${usedPrefix || '.'}mancing ilegal* untuk mencoba usaha ilegal memancing.`)
+  }
   if (dailyBait) await saveDB(wdb)
 
   for (const ikanLama in user.ikan) {
@@ -151,7 +158,22 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (!activeBait) {
     return m.reply(`🎣 Umpanmu habis. Beli umpan di *${usedPrefix}pasar bait* lalu pilih lewat *${usedPrefix}fish bait*.`)
   }
-  if (Date.now() - (user.lastMancing || 0) < cooldown) {
+  if (illegalText) {
+    illegalResult = attemptRpgIllegalAction({
+      db: wdb,
+      jid: m.sender,
+      user,
+      activity: 'fishing',
+      cooldownDuration: cooldown,
+      cooldownField: 'lastMancing'
+    })
+    if (illegalResult.status !== 'success') {
+      if (['failed', 'caught', 'protected'].includes(illegalResult.status)) await saveFailedRpgIllegalAction(wdb)
+      return m.reply(formatRpgIllegalResult(illegalResult))
+    }
+    illegalMultiplier = illegalResult.rewardMultiplier
+  }
+  if (!illegalText && Date.now() - (user.lastMancing || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMancing)) / 1000)
     return m.reply(`Sabar, ikan belum makan umpan. Tunggu ${sisa} detik lagi`)
   }
@@ -172,7 +194,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     return effects.forcedSize || rolledSize
   }
 
-  if (!firstBait.effects.preventFailure && Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
+  if (!illegalText && !firstBait.effects.preventFailure && Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
     user.lastMancing = Date.now()
     await saveDB(wdb)
     return m.reply(`🎣 Ikan kabur dan tidak ada tangkapan. Umpan tidak berkurang; coba lagi setelah cooldown.`)
@@ -196,10 +218,10 @@ let handler = async (m, { conn, usedPrefix }) => {
     rare: pRare
   }
 
-  const fishCount = 2 + Math.floor(Math.random() * 3) +
+  const fishCount = Math.ceil((2 + Math.floor(Math.random() * 3) +
     (Number(firstBait.effects.extraCatch) || 0) +
     (Math.random() < (Number(firstBait.effects.extraCatchChance) || 0) ? 1 : 0) +
-    (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)
+    (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)) * illegalMultiplier)
   const draws = []
   const seen = new Set()
   let fishCaughtCount = 0
@@ -337,7 +359,10 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
   const highest = draws.reduce((best, current) => tierOrder.indexOf(current.tier) > tierOrder.indexOf(best) ? current.tier : best, 'TRASH')
-  const totalExp = applyBloodlineBuff(user, 'xp', Math.floor(scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0)) * xpBuff))
+  const totalExp = Math.floor(
+    applyBloodlineBuff(user, 'xp', Math.floor(scaleDifficultyXP(user, draws.reduce((sum, x) => sum + x.exp, 0)) * xpBuff)) *
+    illegalMultiplier
+  )
 
   for (const fish of draws) {
     const normalizedKey = normalizeFishKey(fish.ikan)
@@ -418,6 +443,7 @@ const baitSummary = [...baitUseCounts].map(([id, quantity]) =>
   `${findRpgFishBait(id).name} ×${quantity}`
 ).join(', ')
 caption += `> ↳ 🪱 Umpan: ${baitSummary || firstBait.name}\n`
+if(illegalText) caption += `> ↳ ⚠️ Usaha ilegal (jaring listrik): hasil ×${illegalMultiplier} | 💀 +1 poin kriminal (aktif ${illegalResult.activeCrimeScore})\n`
 if (baitRewards.size) {
   const rewardSummary = [...baitRewards].map(([id, quantity]) =>
     `${findRpgFishBait(id).name} ×${quantity}`

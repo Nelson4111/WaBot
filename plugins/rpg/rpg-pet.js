@@ -14,6 +14,7 @@ import {
   subtractRpgMoney
 } from '../../lib/rpgMoney.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
+import { processPetNeglect } from '../../lib/rpgPetNeglect.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -42,6 +43,7 @@ let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
     getGroupTotemBuff(wdb.data, m.chat, 'pet', 'income'))
   const petCooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'pet', 'cooldown')
   if (!user.pets) user.pets = []
+  if (!Array.isArray(user.shelterPets)) user.shelterPets = []
   const maxPetSlots = user.premium ? 15 : 10
 // init data baru
 if (!user.sanctuary) user.sanctuary = []
@@ -56,8 +58,21 @@ const getDebuff = (p) => ((p.dirty || 0) >= 80? 0.8 : (p.dirty || 0) >= 50? 0.9 
   (isRpgEventActive('pet_festival') ? 1.25 : 1)
 const applyPetFestivalExp = amount => Math.floor(amount * (isRpgEventActive('pet_festival') ? 1.5 : 1))
 
+const petNeglect = processPetNeglect(user)
+if (petNeglect.changed) saveDB(wdb)
+for (const pet of petNeglect.escapedPets) {
+  safeReply(
+    `╭─❏「 🛟 PET SHELTER 」❏\n` +
+    `│ 🐾 *PET KABUR*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ ${formatNama(pet)} kabur setelah kondisinya buruk terlalu lama.\n` +
+    `> ↳ Pet tetap aman di shelter. Gunakan *${usedPrefix}shelter retrieve pet <no>* untuk menjemputnya.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+  )
+}
+
 user.pets = user.pets.filter(p => {
-  if((p.energy || 100) <= 0 && (Date.now() - (p.lastActivity || 0) > 86400000)) {
+  if(Number(p.energy) <= 0 && !p.neglectStartedAt && (Date.now() - (p.lastActivity || 0) > 86400000)) {
     if(user.pets.some(x => x.tipe === 'malaikat')){
       p.energy = 50
 
@@ -3010,7 +3025,7 @@ if (action === 'claim') {
   return safeReply(`❌ Command tidak dikenal. Ketik *.pet* buat lihat menu`)
 }
 
-handler.help = ['pet', 'pet guide', 'pet command', 'pet care', 'petcare', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb']
+handler.help = ['pet', 'pet guide', 'pet command', 'pet care', 'petcare', 'pet all', 'pet list', 'pet shop', 'pet adopt', 'pet gacha', 'pet feed', 'pet charge', 'pet walk', 'pet play', 'pet train', 'pet rest', 'pet clean', 'pet heal', 'pet gift', 'pet rename', 'pet battle', 'pet hunt', 'pet dispatch', 'pet dispatch info', 'pet dispatch collect', 'pet status', 'pet sell', 'pet release', 'pet breed', 'pet playwith', 'pet transfer', 'pet kill', 'pet claim', 'pet sanctuary', 'pet revive', 'pet lb', 'shelter']
 handler.tags = ['rpg']
 handler.command = ['pet', 'petcare']
 handler.alias = ['pet']

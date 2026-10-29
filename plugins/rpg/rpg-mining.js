@@ -5,6 +5,7 @@ import { applyBloodlineBuff, applyBloodlineYield, getBloodlineBuff, getBloodline
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
+import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -59,12 +60,18 @@ function rollOre(hance, bonus, pickLvl, rareChanceFactor = 1){
   return {ore: common[Math.floor(Math.random() * common.length)], tier: 'COMMON', exp: 15}
 }
 
-let handler = async (m, { conn, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
   if (!user.ores) user.ores = {}
   if (user.pity_mining!== undefined) delete user.pity_mining
+  const illegalText = String(text || '').trim().toLowerCase()
+  let illegalMultiplier = 1
+  let illegalResult = null
+  if (illegalText && illegalText !== 'ilegal') {
+    return m.reply(`Gunakan *${usedPrefix || '.'}mining ilegal* untuk mencoba usaha ilegal mining.`)
+  }
 
   // COOLDOWN
   const mineralRush = isRpgEventActive('mineral_rush')
@@ -76,12 +83,27 @@ let handler = async (m, { conn, usedPrefix }) => {
   const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'mining', 'xp')
   const rareChanceFactor = (mineralRush ? 1.5 : 1) * (caveCollapse ? 0.75 : 1) * getDifficultyProfile(user).dropRate * rareBuff
   let cooldown = Math.floor(scaleDifficultyCooldown(user, 120000) * (caveCollapse ? 1.3 : 1) * cooldownBuff)
-  if (Date.now() - (user.lastMining || 0) < cooldown) {
+  if (illegalText) {
+    illegalResult = attemptRpgIllegalAction({
+      db: wdb,
+      jid: m.sender,
+      user,
+      activity: 'mining',
+      cooldownDuration: cooldown,
+      cooldownField: 'lastMining'
+    })
+    if (illegalResult.status !== 'success') {
+      if (['failed', 'caught', 'protected'].includes(illegalResult.status)) await saveFailedRpgIllegalAction(wdb)
+      return m.reply(formatRpgIllegalResult(illegalResult))
+    }
+    illegalMultiplier = illegalResult.rewardMultiplier
+  }
+  if (!illegalText && Date.now() - (user.lastMining || 0) < cooldown) {
     let sisa = Math.ceil((cooldown - (Date.now() - user.lastMining)) / 1000)
     return m.reply(`╭─❏「 ⛏️ MINING 」❏\n│ ⏰ LELAH\n│ Tunggu ${sisa} detik lagi agar energimu pulih.\n╰─━━━━━━━━━━━━━━─`)
   }
 
-  if (Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
+  if (!illegalText && Math.random() < adjustDifficultyFailureChance(user, 0.1)) {
     user.lastMining = Date.now()
     await saveDB(wdb)
     return m.reply('⛏️ Terowongan runtuh sebelum sempat menambang. Aktivitas gagal; coba lagi setelah cooldown.')
@@ -131,7 +153,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   for (const ore of Object.keys(hasilTambang)) {
     hasilTambang[ore] = applyBloodlineYield(user, 'miningYield', hasilTambang[ore])
-    hasilTambang[ore] = Math.floor(hasilTambang[ore] * yieldBuff)
+    hasilTambang[ore] = Math.floor(hasilTambang[ore] * yieldBuff * illegalMultiplier)
     if (caveCollapse) hasilTambang[ore] = Math.max(1, Math.floor(hasilTambang[ore] * 0.7))
   }
   totalOreDidapat = Object.values(hasilTambang).reduce((sum, amount) => sum + amount, 0)
@@ -141,8 +163,8 @@ let handler = async (m, { conn, usedPrefix }) => {
     user.ores[ore] = (user.ores[ore] || 0) + hasilTambang[ore]
   }
 
-  totalExp = Math.floor(applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp)) * xpBuff)
-  let uangDidapat = Math.floor(scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat) * incomeBuff)
+  totalExp = Math.floor(applyBloodlineBuff(user, 'xp', scaleDifficultyXP(user, totalExp)) * xpBuff * illegalMultiplier)
+  let uangDidapat = Math.floor(scaleDifficultyIncome(user, (Math.floor(Math.random() * 3) + 1 + Math.floor(pickLvl / 2)) * totalOreDidapat) * incomeBuff * illegalMultiplier)
   wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], uangDidapat)
   addRpgExp(user, totalExp)
   user.lastMining = Date.now()
@@ -173,6 +195,7 @@ caption += `\n─━━━━━━━━━━━━━━─\n\n`
 caption += `✨ *HASIL PENGALAMAN*\n`
 caption += `> ↳ ✨ Total XP: +${totalExp.toLocaleString()}\n`
 caption += `> ↳ 💰 Uang: +Rp ${uangDidapat.toLocaleString()}\n`
+if(illegalText) caption += `> ↳ ⚠️ Usaha ilegal (ledakan): hasil ×${illegalMultiplier} | 💀 +1 poin kriminal (aktif ${illegalResult.activeCrimeScore})\n`
 caption += `> ↳ ⛏️ Level Pickaxe: Lv.${pickLvl}\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Pick: +${bonus.toFixed(1)}%\n`
 const miningYieldEffect = getBloodlineBuff(user, 'miningYield') - getBloodlineDrawback(user).miningYieldPenalty

@@ -1,5 +1,6 @@
 import { addRpgMoney, formatRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { formatCropWiltedAppreciation, removeWiltedCrops } from '../../lib/rpgFarming.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -60,13 +61,15 @@ function formatNama(nama) {
 
 let handler = async (m, { conn, text, usedPrefix }) => {
   const ladangImageUrl = 'https://c.termai.cc/i181/UTTbZ.jpg'
+  let infoTanamanMati = ''
 
   const safeReply = async (text, options = {}) => {
+    const responseText = infoTanamanMati ? `${infoTanamanMati}\n\n${text}` : text
     try {
-      return await sendRpgMsg(conn, m, text, ladangImageUrl, options)
+      return await sendRpgMsg(conn, m, responseText, ladangImageUrl, options)
     } catch {
       const mentions = options.mentions || options.contextInfo?.mentionedJid || []
-      return conn.sendMessage(m.chat, { text, mentions: mentions.length ? mentions : undefined }, { quoted: m })
+      return conn.sendMessage(m.chat, { text: responseText, mentions: mentions.length ? mentions : undefined }, { quoted: m })
     }
   }
 
@@ -86,6 +89,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `│ ${isPrem ? '👑 Premium - Diskon 20%, maksimal 20 ladang' : '👤 User Normal'}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
     cap += `Fitur tanam digunakan untuk membeli bibit dan menanamnya di ladang. Hasil panen bisa dikumpulkan setelah waktunya selesai.\n\n`
+    cap += `🥀 Tanaman akan layu jika tidak dipanen dalam 5 jam setelah siap.\n\n`
     cap += `📌 *CARA TANAM*\n`
     cap += `> ↳ Lihat bibit dan harga: *${usedPrefix}tanam list*\n`
     cap += `> ↳ Tanam satu bibit: *${usedPrefix}tanam wortel*\n`
@@ -132,6 +136,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Jual hasil panen: *${usedPrefix}koperasi jual <no/nama> <jumlah/all>*\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
+  }
+
+  const { crops: tanamanMati, appreciation } = removeWiltedCrops(user, wdb, m.sender, bibit)
+  if (tanamanMati.length > 0) {
+    await saveDB(wdb)
+    infoTanamanMati = formatCropWiltedAppreciation(tanamanMati, appreciation, formatNama)
   }
 
   let slotKosong = []

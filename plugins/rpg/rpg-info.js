@@ -13,6 +13,9 @@ const CORE_COMMANDS = [
   ['.inv', 'Melihat inventory dan equipment'],
   ['.gudang', 'Melihat stok item'],
   ['.mining', 'Mencari ore'],
+  ['.diving / .nyelam', 'Menyelam untuk mencari harta bawah laut'],
+  ['.logging / .nebang', 'Menebang pohon untuk mendapatkan kayu dan material'],
+  ['.farm / .farming', 'Panduan farming; panen kebun dan kumpulkan hasil ternak'],
   ['.dungeon', 'Melawan monster dungeon'],
   ['.arena', 'Menantang pemain lain'],
   ['.kerja', 'Bekerja dan mendapatkan penghasilan'],
@@ -60,6 +63,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Cek perkembangan lewat *.inv*, *.rpgstat*, dan *.cooldown*.\n\n` +
       `⛏️ *AKTIVITAS & PERTARUNGAN*\n` +
       `> ↳ Cari material dan ore lewat *.mining*.\n` +
+      `> ↳ Cari harta laut lewat *.diving* dan kayu lewat *.logging*.\n` +
+      `> ↳ Usaha ilegal: *.mining ilegal* (ledakan), *.mancing ilegal* (jaring listrik), *.diving ilegal*, *.logging ilegal* (pembalakan liar/bakar hutan), *.adventure ilegal*, dan *.explore ilegal*.\n` +
+      `> ↳ Usaha ilegal memberi hasil ×1,5 dan +1 poin kriminal per percobaan; ada risiko gagal/tertangkap dan cooldown 2× aktivitas biasa.\n` +
       `> ↳ Lawan monster dan dapatkan reward lewat *.dungeon*.\n` +
       `> ↳ Ikuti lima arena: jambak, panco, dance, tampar, dan tinju.\n` +
       `> ↳ Ikuti aktivitas kriminal seperti copet, begal, rampok, jarah, culik, bunuh, fitnah, dan Aniaya dengan risiko poin kriminal serta penjara.\n\n` +
@@ -70,6 +76,9 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Gunakan *.casino* untuk berbagai permainan dengan batas harian dan cooldown per game.\n\n` +
       `🌾 *KEBUN, TERNAK & MASAKAN*\n` +
       `> ↳ Tanam dan panen tanaman lewat *.kebun*, *.tanam*, dan *.panen*.\n` +
+      `> ↳ Gunakan *.farm* untuk panduan atau *.farming* untuk mengambil panen dan hasil ternak sekaligus.\n` +
+      `> ↳ *.farming ilegal* memberi hasil ×1,5 dan +1 poin kriminal, dengan risiko gagal atau dipenjara; cooldown 2× lebih lama.\n` +
+      `> ↳ Hasil ternak bisa dikumpulkan kembali setiap 2 menit; hewan tetap hidup.\n` +
       `> ↳ Beli dan rawat hewan lewat *.ternak*, lalu ambil hasil atau sembelih.\n` +
       `> ↳ Kawinkan hewan dan temukan hybrid baru lewat *.kawin*.\n` +
       `> ↳ Masak resep lewat *.dapur* dan *.masak*, lalu simpan di *.kulkas* untuk digunakan lewat *.makan*.\n\n` +

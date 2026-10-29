@@ -1,6 +1,7 @@
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { computeCrimeScore, getActiveCrimeScore } from '../../lib/crimeHelper.js'
+import { processShelterCrime, resetShelterCrimeCounters } from '../../lib/rpgShelter.js'
 import { REHABILITATION_ACTIVITY_STORIES } from '../../lib/rehabilitationStories.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { compareRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
@@ -111,7 +112,12 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
 
   const process = userRPG?.rehabilitation
-  const crimeData = wdb.crime?.[m.sender]
+  if (!wdb.crime) wdb.crime = {}
+  const shelterCrime = userRPG
+    ? processShelterCrime(userRPG, wdb.crime, m.sender, now)
+    : { changed: false }
+  const crimeData = wdb.crime[m.sender]
+  if (shelterCrime.changed) await saveDB(wdb)
   const wantedScore = getActiveCrimeScore(crimeData)
 
   if (action === 'command' || action === 'commands' || action === 'cmd') {
@@ -266,6 +272,7 @@ if (action === 'mulai') {
     )
   }
 
+  resetShelterCrimeCounters(userRPG, now)
   await saveDB(wdb)
 
   return m.reply(
@@ -508,6 +515,7 @@ if (action === 'lapor') {
     return m.reply(`⏳ Rehabilitasi belum dapat diselesaikan.\n${waitingFor}`)
   }
   if (completeRehabilitation(userRPG, crimeData, now)) {
+    resetShelterCrimeCounters(userRPG, now)
     await saveDB(wdb)
     return m.reply(
       `╭─❏「 🎉 REHABILITASI BERHASIL 」❏\n` +

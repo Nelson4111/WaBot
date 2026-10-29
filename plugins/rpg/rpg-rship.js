@@ -22,9 +22,7 @@ import {
   CHILD_FACILITIES,
   CHILD_LOSS_STORIES,
   CHILD_NEGLECT,
-  CHILD_RETRIEVE_ACCEPT_STORIES,
   CHILD_RETRIEVE_CHANCE,
-  CHILD_RETRIEVE_REJECT_STORIES,
   CHILD_RUNAWAY_STORIES,
   CHILD_STAGES,
   RSHIP_COOLDOWN_NAMES as cooldownNames,
@@ -339,7 +337,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ *${child.nama} hilang.*\n` +
         `> ${story}\n\n` +
-        `> ↳ Anak dibawa ke shelter. Lihat ${usedPrefix}rship shelter list untuk status dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n` +
+        `> ↳ Anak dibawa ke shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.\n\n` +
         `─━━━━━━━━━━━━━━─\n` +
         `🚔 *STATUS HUKUM*\n\n` +
         `> ↳ Poin kriminal Aniaya: *+3 poin*.\n` +
@@ -359,7 +357,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       `> ${story}\n\n` +
       (returnedToOriginalParent
         ? `> ↳ Karena anak ini berstatus asuh, *${child.nama}* dikembalikan ke orang tua/pemilik asalnya, bukan ke shelter.\n\n`
-        : `> ↳ Anak berada di shelter. Lihat ${usedPrefix}rship shelter list dan coba ${usedPrefix}rship shelter retrieve <no>.\n\n`) +
+        : `> ↳ Anak berada di shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.\n\n`) +
       `─━━━━━━━━━━━━━━─\n` +
       `🚔 *STATUS HUKUM*\n\n` +
       `> ↳ Poin kriminal Aniaya: *+3 poin*.\n` +
@@ -681,105 +679,7 @@ ${entries.join('\n')}
   }
 
   if (action === 'shelter') {
-    const shelterAction = args[1]?.toLowerCase()
-    if (!shelterAction) {
-      return m.reply(
-        `╭─❏「 🛟 SHELTER ANAK 」❏\n` +
-        `│ 📖 PENJELASAN FITUR\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Shelter menampung anakmu yang hilang atau kabur karena kurang pengasuhan.\n` +
-        `> ↳ Anak tetap tercatat dan tidak terhapus dari data.\n` +
-        `> ↳ Lihat anak di shelter: ${usedPrefix}rship shelter list\n` +
-        `> ↳ Coba jemput anak: ${usedPrefix}rship shelter retrieve <no>\n` +
-        `> ↳ Peluang retrieve berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%; anak juga bisa menolak.\n` +
-        `> ↳ Setiap percobaan retrieve memiliki cooldown 30 menit; cek dengan ${usedPrefix}rship cd.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-    if (['list', 'daftar'].includes(shelterAction)) {
-      if (!user.shelterKids.length) {
-        return m.reply(
-          `╭─❏「 🛟 DAFTAR SHELTER 」❏\n` +
-          `│ BELUM ADA ANAK DI SHELTER\n` +
-          `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ↳ Anak yang hilang atau kabur akan tercatat di sini.\n` +
-          `> ↳ Lihat daftar dengan ${usedPrefix}rship shelter list.\n\n` +
-          `─━━━━━━━━━━━━━━─`
-        )
-      }
-      const entries = user.shelterKids.map((child, index) => {
-        const reason = child.shelterStatus?.reason === 'runaway' ? 'Kabur' : 'Hilang'
-        const stage = getChildStage(getChildCareCount(child)).name
-        return `> *${index + 1}. ${child.nama}* (${stage}, ${child.jenis || 'jenis tidak diketahui'}, umur ${Number(child.umur) || 0})\n` +
-          `> ↳ Status: ${reason}\n` +
-          `> ↳ Coba retrieve: ${usedPrefix}rship shelter retrieve ${index + 1}`
-      })
-      return m.reply(
-        `╭─❏「 🛟 DAFTAR SHELTER 」❏\n` +
-        `│ ANAK YANG DAPAT DICOBA RETRIEVE\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `${entries.join('\n\n')}\n\n` +
-        `> ↳ Peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%; anak dapat menolak dan tetap di shelter.\n` +
-        `> ↳ Cooldown retrieve: 30 menit. Cek waktu tersisa dengan ${usedPrefix}rship cd.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-    if (['retrieve', 'ambil', 'jemput'].includes(shelterAction)) {
-      const index = Number(args[2]) - 1
-      const child = Number.isInteger(index) && index >= 0 ? user.shelterKids[index] : null
-      if (!child) {
-        return m.reply(
-          `Nomor anak tidak valid. Lihat daftar shelter dengan ${usedPrefix}rship shelter list.`
-        )
-      }
-
-      const retrieveCooldown = cooldownNames.shelterRetrieve[1]
-      const retrieveCooldownRemaining = cekCD('shelterRetrieve', retrieveCooldown)
-      if (retrieveCooldownRemaining > 0) {
-        return m.reply(
-          `⏰ Kamu masih perlu menunggu *${formatRemaining(retrieveCooldownRemaining)}* sebelum mencoba menjemput anak lagi.`
-        )
-      }
-
-      user.cooldown.shelterRetrieve = Date.now()
-      const success = Math.random() < CHILD_RETRIEVE_CHANCE
-      const stories = success ? CHILD_RETRIEVE_ACCEPT_STORIES : CHILD_RETRIEVE_REJECT_STORIES
-      const story = stories[Math.floor(Math.random() * stories.length)]
-      if (!success) {
-        await saveDB(wdb)
-        return m.reply(
-          `╭─❏「 💔 RETRIEVE GAGAL 」❏\n` +
-          `│ *${child.nama}* BELUM MAU KEMBALI\n` +
-          `╰─━━━━━━━━━━━━━━─\n\n` +
-          `> ${story}\n` +
-          `> ↳ *${child.nama}* tetap berada di shelter. Kamu bisa mencoba lagi setelah cooldown jemput anak selesai.\n\n` +
-          `─━━━━━━━━━━━━━━─`
-        )
-      }
-
-      user.shelterKids.splice(index, 1)
-      delete child.shelterStatus
-      if (!Array.isArray(user.kids)) user.kids = []
-      user.kids.push(child)
-      child.lastKidActivityAt = now
-      child.lastCaredAt = now
-      child.lastNeglectCheckAt = now
-      await saveDB(wdb)
-      return m.reply(
-        `╭─❏「 💚 RETRIEVE BERHASIL 」❏\n` +
-        `│ *${child.nama}* BERSEDIA PULANG\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ${story}\n` +
-        `> ↳ *${child.nama}* kembali ke daftar anakmu.\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-    return m.reply(
-      `Gunakan ${usedPrefix}rship shelter untuk penjelasan atau:\n` +
-      `📌 *PERINTAH SHELTER*\n` +
-      `> ↳ Lihat daftar anak: ${usedPrefix}rship shelter list\n` +
-      `> ↳ Coba jemput anak: ${usedPrefix}rship shelter retrieve <no>`
-    )
+    return m.reply(`Pengelolaan shelter sekarang terpusat di *${usedPrefix}shelter*.\n> ↳ Daftar: ${usedPrefix}shelter list\n> ↳ Retrieve: ${usedPrefix}shelter retrieve anak <no>`)
   }
 
   if (action === 'balikan' || action === 'revive') {
@@ -1356,9 +1256,9 @@ ${options}
 > ↳ Terima atau tolak permintaan mengasuh anak foster.
 > *${usedPrefix}rship makam* / *revive <no>*
 > ↳ Lihat makam dan pulihkan dalam 7 hari.
-> *${usedPrefix}rship shelter list*
-> ↳ Lihat anak yang hilang/kabur di shelter.
-> *${usedPrefix}rship shelter retrieve <no>*
+> *${usedPrefix}shelter list*
+> ↳ Lihat anak dan pet yang hilang/kabur di shelter.
+> *${usedPrefix}shelter retrieve anak <no>*
 > ↳ Coba jemput anak; peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%, dengan cooldown 30 menit.
 
 ─━━━━━━━━━━━━━━─`
@@ -1389,7 +1289,7 @@ ${options}
         rows: [
           ['🪦 Makam pasangan', 'rship makam', 'Lihat status pasangan di makam'],
           ['💔 Mantan', 'rship mantan list', 'Lihat daftar mantan'],
-          ['🛟 Shelter anak', 'rship shelter list', 'Lihat status anak di shelter'],
+          ['🛟 Avelia Shelter', 'shelter list', 'Lihat anak dan pet di shelter'],
           ['📋 Semua command', 'rship command all', 'Tampilkan daftar command lengkap']
         ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
       }
@@ -1645,8 +1545,8 @@ ${options}
 > ↳ Memindahkan pasangan ke makam.
 > *${usedPrefix}rship makam* / *revive <no>*
 > ↳ Lihat dan pulihkan makam.
-> *${usedPrefix}rship shelter list* / *retrieve <no>*
-> ↳ Lihat dan ambil anak yang ada di shelter.
+> *${usedPrefix}shelter list* / *retrieve anak <no>*
+> ↳ Lihat dan jemput anak atau pet dari shelter.
 
 ─━━━━━━━━━━━━━━─`,
       all: `╭─❏「 📋 RSHIP COMMAND 」❏
@@ -5985,7 +5885,7 @@ if (action === 'kiss') {
 
 }
 
-handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship child info', 'rship kid guide', 'rship child guide', 'kidcare', 'childcare', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan list', 'rship makam list', 'rship shelter list', 'rship shelter retrieve <no>', 'rship exspouse/ex', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
+handler.help = ['rship', 'rship command', 'rship cd', 'rship lamar <nama> <gender> <mahar>', 'rship kid info', 'rship child info', 'rship kid guide', 'rship child guide', 'kidcare', 'childcare', 'rship kid adopt [list|<no>|yes|no]', 'rship kid adopt <no-anak> @user <biaya>', 'rship kid rename custody <no-anak> <nama>', 'rship kid return <no-anak>', 'rship anak adopsi <no-anak> @user <biaya>', 'rship anak asuh terima/tolak', 'rship all <no pasangan/all>', 'rship urus <pasangan/all> <anak/all>', 'rship mantan list', 'rship makam list', 'rship shelter', 'rship exspouse/ex', 'rship cerai/divorce <no>', 'rship custody <tipe> <anak> [@user]', 'rship balikan <no>', 'rship makam', 'rship revive <no>']
 handler.tags = ['rpg']
 handler.command = ['rship', 'rsh', 'kidcare', 'childcare']
 handler.group = true

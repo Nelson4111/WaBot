@@ -2,6 +2,8 @@ import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown } from '../../lib/rpgDifficulty.js'
 import { RPG_CRIME_ACTIONS } from '../../lib/rpgCrimeAction.js'
+import { RPG_ILLEGAL_COOLDOWN_MULTIPLIER } from '../../lib/rpgIlegal.js'
+import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 
 const COOLDOWN_TIMES = {
   kawin: 7 * 60 * 60 * 1000,
@@ -120,6 +122,25 @@ const handler = async (m, { usedPrefix }) => {
   addCooldown(activeCooldowns, 'Mining', user.lastMining, scaleDifficultyCooldown(user, COOLDOWN_TIMES.mining))
   addCooldown(activeCooldowns, 'Dungeon', user.lastDungeon, scaleDifficultyCooldown(user, COOLDOWN_TIMES.dungeon))
   addCooldown(activeCooldowns, 'Fishing', user.lastFishing || user.lastMancing, scaleDifficultyCooldown(user, COOLDOWN_TIMES.fishing))
+  const illegalActivities = {
+    Adventure: { label: 'Adventure', duration: COOLDOWN_TIMES.adventure, totem: 'adventure' },
+    Mining: { label: 'Mining', duration: COOLDOWN_TIMES.mining, totem: 'mining' },
+    Fishing: { label: 'Fishing', duration: COOLDOWN_TIMES.fishing, totem: 'fishing' },
+    Diving: { label: 'Diving', duration: 2 * 60 * 1000, totem: 'fishing' },
+    Logging: { label: 'Logging', duration: 2 * 60 * 1000, totem: 'mining' },
+    Explore: { label: 'Explore', duration: 15 * 60 * 1000, totem: 'explore' },
+    Farming: { label: 'Farming', duration: 2 * 60 * 1000, totem: 'livestock' }
+  }
+  for (const [activity, config] of Object.entries(illegalActivities)) {
+    addCooldown(
+      activeCooldowns,
+      `Usaha ilegal ${config.label}`,
+      user[`lastIllegal${activity}`] || user[`lastShortcut${activity}`],
+      scaleDifficultyCooldown(user, config.duration) *
+        getGroupTotemBuff(wdb.data, m.chat, config.totem, 'cooldown') *
+        RPG_ILLEGAL_COOLDOWN_MULTIPLIER
+    )
+  }
   for (const [action, config] of Object.entries(RPG_CRIME_ACTIONS)) {
     addCooldown(
       activeCooldowns,

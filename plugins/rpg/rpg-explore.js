@@ -10,15 +10,22 @@ import {
   rollInterstellarPlanet
 } from '../../lib/rpg-exploreData.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
+import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
 
 const EXPLORE_COOLDOWN = 15 * 60 * 1000
 
-let handler = async (m, { conn, usedPrefix }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const db = loadDB()
   const account = getUserRPG(db, m.sender)
   if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const rpg = account.rpg
+  const illegalText = String(text || '').trim().toLowerCase()
+  let illegalMultiplier = 1
+  let illegalResult = null
+  if (illegalText && illegalText !== 'ilegal') {
+    return m.reply(`Gunakan *${usedPrefix || '.'}explore ilegal* untuk mencoba usaha ilegal explore.`)
+  }
   const tier = BANK_TIERS[Number(rpg.bankTier)] || BANK_TIERS[0]
   if (!tier.fasilitas.includes('Interstellar Gateway')) {
     return m.reply('❌ Penjelajahan antarbintang membutuhkan fasilitas Interstellar Gateway dari Stellar Card.')
@@ -30,7 +37,26 @@ let handler = async (m, { conn, usedPrefix }) => {
   const yieldBuff = getGroupTotemBuff(db.data, m.chat, 'explore', 'yield')
   const cooldown = Math.floor(scaleDifficultyCooldown(rpg, EXPLORE_COOLDOWN) * cooldownBuff)
   const remaining = cooldown - (now - (Number(rpg.lastExplore) || 0))
-  if (remaining > 0) {
+  if (illegalText) {
+    illegalResult = attemptRpgIllegalAction({
+      db,
+      jid: m.sender,
+      user: rpg,
+      activity: 'explore',
+      cooldownDuration: cooldown,
+      cooldownField: 'lastExplore',
+      now
+    })
+    if (illegalResult.status !== 'success') {
+      if (['failed', 'caught', 'protected'].includes(illegalResult.status)) {
+        rpg.interstellarExplores = (Number(rpg.interstellarExplores) || 0) + 1
+        await saveFailedRpgIllegalAction(db)
+      }
+      return m.reply(formatRpgIllegalResult(illegalResult))
+    }
+    illegalMultiplier = illegalResult.rewardMultiplier
+  }
+  if (!illegalText && remaining > 0) {
     return m.reply(`⏳ Interstellar Gateway sedang mengisi ulang. Coba lagi dalam *${Math.ceil(remaining / 60000)} menit*.`)
   }
 
@@ -51,6 +77,7 @@ let handler = async (m, { conn, usedPrefix }) => {
       `│ ☄️ *PENJELAJAHAN GAGAL*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> Navigasi antarbintang terganggu; tidak ada item yang hilang dari inventory.\n` +
+      `${illegalText ? `> ⚠️ Usaha ilegal: +1 poin kriminal (aktif ${illegalResult.activeCrimeScore}); tidak ada hasil tambahan.\n` : ''}` +
       `> ⏳ Cooldown: ${Math.ceil(cooldown / 60000)} menit\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
@@ -70,6 +97,11 @@ let handler = async (m, { conn, usedPrefix }) => {
     (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)
   for (let i = 0; i < bonusCount; i++) {
     items.push(rollInterstellarItem(Math.random, tierMultipliers))
+  }
+  let illegalExtraItems = 0
+  if (illegalMultiplier > 1) {
+    illegalExtraItems = Math.ceil(items.length * (illegalMultiplier - 1))
+    for (let index = 0; index < illegalExtraItems; index++) items.push(rollInterstellarCommonItem())
   }
 
   const destination = rollInterstellarPlanet()
@@ -112,6 +144,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     `\n─━━━━━━━━━━━━━━─\n\n` +
     `📊 *STATUS PENJELAJAHAN*\n` +
     `> ↳ 🧭 Total penjelajahan: ${rpg.interstellarExplores}\n` +
+    `${illegalText ? `> ↳ ⚠️ Menerobos gateway ilegal: +${illegalExtraItems} temuan tambahan | 💀 +1 poin kriminal (aktif ${illegalResult.activeCrimeScore})\n` : ''}` +
     `> ↳ ⏳ Cooldown: ${Math.ceil(cooldown / 60000)} menit\n\n` +
     `─━━━━━━━━━━━━━━─`
   const image = Math.random() < 0.5

@@ -1,5 +1,6 @@
 import { addRpgMoney, multiplyRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { formatCropWiltedAppreciation, getCropReadyDuration, removeWiltedCrops } from '../../lib/rpgFarming.js'
 import { scaleDifficultyCooldown, scaleDifficultyHarvest, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
 import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -70,11 +71,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const ladangImageUrl = 'https://c.termai.cc/i181/UTTbZ.jpg'
 
   const safeReply = async (text, options = {}) => {
+    const responseText = infoTanamanMati ? `${text}\n\n${infoTanamanMati}` : text
     try {
-      return await sendRpgMsg(conn, m, text, ladangImageUrl, options)
+      return await sendRpgMsg(conn, m, responseText, ladangImageUrl, options)
     } catch {
       const mentions = options.mentions || options.contextInfo?.mentionedJid || []
-      return conn.sendMessage(m.chat, { text, mentions: mentions.length ? mentions : undefined }, { quoted: m })
+      return conn.sendMessage(m.chat, { text: responseText, mentions: mentions.length ? mentions : undefined }, { quoted: m })
     }
   }
 
@@ -122,6 +124,10 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     }
   }
   if (ladangDimigrasikan) await saveDB(wdb)
+
+  const { crops: tanamanMati, appreciation } = removeWiltedCrops(user, wdb, m.sender, bibit)
+  if (tanamanMati.length > 0) await saveDB(wdb)
+  const infoTanamanMati = formatCropWiltedAppreciation(tanamanMati, appreciation, formatNama)
 
   function addItem(user, item, jumlah) {
     const amount = Math.max(0, Number(jumlah) || 0)
@@ -189,7 +195,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       let l = user.ladang[i]
       let info = bibit[l.jenis]
       if(!info) continue
-      let sisa = (Number(l.waktuPanen) || scaleDifficultyCooldown(user, info.waktu)) - (Date.now() - l.waktuTanam)
+      let sisa = getCropReadyDuration(l, info, scaleDifficultyCooldown(user, info.waktu)) - (Date.now() - l.waktuTanam)
       let ready = sisa <= 0
       let status = ready? `✅ Siap Panen` : `🌱 ${Math.ceil(sisa / 60000)}m lagi`
 
@@ -199,6 +205,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   if(!adaIsi) cap += `> ↳ 🌱 Ladang kosong\n\n`
+  if (tanamanMati.length > 0) cap += `> ↳ 🥀 ${tanamanMati.length} tanaman mati dan menerima apresiasi.\n\n`
 
   cap += `─━━━━━━━━━━━━━━─\n\n`
 
@@ -224,7 +231,7 @@ if (text.toLowerCase() === 'all') {
       let l = user.ladang[i]
       let dataBibit = bibit[l.jenis]
       if(!dataBibit) continue
-      let sisaWaktu = (Number(l.waktuPanen) || scaleDifficultyCooldown(user, dataBibit.waktu)) - (Date.now() - l.waktuTanam)
+      let sisaWaktu = getCropReadyDuration(l, dataBibit, scaleDifficultyCooldown(user, dataBibit.waktu)) - (Date.now() - l.waktuTanam)
       if (sisaWaktu <= 0) {
         let h = dataBibit.hasil
         const harvested = applyFarmingYieldBonus(h.jumlah)
@@ -243,7 +250,10 @@ if (text.toLowerCase() === 'all') {
     `╭─❏「 🌾 PANEN MASSAL 」❏\n` +
     `│ ❌ *BELUM ADA PANEN*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Belum ada yang siap dipanen.\n\n` +
+    (tanamanMati.length > 0
+      ? `${infoTanamanMati}\n\n`
+      : `> ↳ Belum ada yang siap dipanen.\n`) +
+    `\n` +
     `─━━━━━━━━━━━━━━─`
   )
 
@@ -255,6 +265,9 @@ if (text.toLowerCase() === 'all') {
 
   let teks = `📊 *RINGKASAN PANEN*\n`
   teks += `> ↳ ✅ Berhasil: ${count} Slot\n\n`
+  if (tanamanMati.length > 0) {
+    teks += `${infoTanamanMati}\n\n`
+  }
 
   teks += `─━━━━━━━━━━━━━━─\n\n`
 
@@ -338,7 +351,7 @@ if(!dataBibit) return safeReply(
   `╰─━━━━━━━━━━━━━━─`
 )
 
-let sisaWaktu = (Number(l.waktuPanen) || scaleDifficultyCooldown(user, dataBibit.waktu)) - (Date.now() - l.waktuTanam)
+let sisaWaktu = getCropReadyDuration(l, dataBibit, scaleDifficultyCooldown(user, dataBibit.waktu)) - (Date.now() - l.waktuTanam)
 
 if (sisaWaktu <= 0) {
   let h = dataBibit.hasil
@@ -358,6 +371,9 @@ if (sisaWaktu <= 0) {
   teks += `📋 *INFORMASI PANEN*\n`
   teks += `> ↳ 📍 Slot: ${index}\n`
   teks += `> ↳ ☘️ Hasil: ${harvested}x ${dataBibit.emoji} ${formatNama(h.item)}\n\n`
+  if (tanamanMati.length > 0) {
+    teks += `${infoTanamanMati}\n\n`
+  }
 
   teks += `─━━━━━━━━━━━━━━─\n\n`
 
