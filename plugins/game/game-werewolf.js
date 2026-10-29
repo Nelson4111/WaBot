@@ -701,7 +701,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     const { sender, chat } = m
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
-    const isGameRolesCommand = ['gr', 'gameroles'].includes(String(command || '').toLowerCase())
+    const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(String(command || '').toLowerCase())
     const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(command) : null
     let gameCategory = directGameCategory || getGameCategory('ww')
     const routedGameCategory = isGameRolesCommand && Boolean(normalizeGameCategory(args[0]))
@@ -767,8 +767,8 @@ Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi.
 *🏆 TUJUAN PERMAINAN*
 Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
 
-*🕹️ CARA MULAI*
-Buat room dengan perintah kategori game, lalu pemain lain bergabung. Setelah jumlah pemain cukup, owner memulai permainan. Contoh: *.ww create* → *.ww join* → *.ww start*.
+*🕹️ MULAI BERMAIN*
+Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
 
 *╰━━━━━━━━━━━━━━━━━━━━━━╯*
 Pilih tombol di bawah untuk menjelajahi game dan role yang tersedia.`
@@ -1623,10 +1623,11 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
     }
 }
 
-handler.help = ['ww', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite', 'custom', 'gr']
+handler.help = ['ww', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite', 'custom', 'gr', 'rg']
 handler.tags = ['game']
 handler.command = [...new Set([
     'gr',
+    'rg',
     'gameroles',
     ...Object.values(GAME_CATEGORIES).flatMap((category) => category.aliases)
 ])]
