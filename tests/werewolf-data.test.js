@@ -22,7 +22,9 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(normalizeGameCategory('ww').id, 'werewolf')
   assert.equal(normalizeGameCategory('imposter').id, 'impostor')
   assert.equal(normalizeGameCategory('alien').id, 'alien')
+  assert.equal(normalizeGameCategory('parasite').id, 'parasite')
   assert.equal(normalizeGameCategory('custom').id, 'custom')
+  assert.equal(isAntagonistRole('parasite', 'parasite'), true)
   assert.equal(getGameCategory('unknown').id, 'werewolf')
   for (const category of Object.values(GAME_CATEGORIES)) {
     if (category.id !== 'custom') {
@@ -32,7 +34,7 @@ test('game categories resolve aliases and alternative antagonists', () => {
     assert.equal(isAntagonistRole(category.id, 'seer'), false)
     assert.ok(category.description.length > 0)
   }
-  for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien']) {
+  for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite']) {
     assert.equal(isAntagonistRole('custom', role), true)
   }
 })
@@ -49,13 +51,25 @@ test('Warden and Cipher roles are available with their intended protections and 
   assert.equal(ROLE_DATA.warden.title, 'Warden')
   assert.equal(ROLE_DATA.blacksmith, undefined)
   assert.equal(ROLE_DATA.cipher.title, 'Cipher')
+  assert.equal(ROLE_DATA.parasite.title, 'Parasite')
+  assert.equal(ROLE_DATA.fixer.title, 'Fixer')
   assert.equal(isNeutralRole('cipher'), true)
   assert.equal(isNeutralRole('jester'), true)
+  assert.equal(isNeutralRole('fixer'), true)
   assert.equal(isValidCipherMessage('H41'), true)
   assert.equal(isValidCipherMessage('H'), false)
   assert.equal(isValidCipherMessage('Hai'), false)
   assert.equal(isValidCipherMessage('H4i'), false)
   assert.equal(validateCustomRoles(['werewolf', 'warden', 'cipher', 'warga']).valid, true)
+})
+
+test('every role separates character flavor from its in-game effect', () => {
+  for (const [role, data] of Object.entries(ROLE_DATA)) {
+    assert.ok(data.description.length > 30, `${role} should explain the character`)
+    assert.ok(data.effect.length > 20, `${role} should explain its in-game effect`)
+  }
+  assert.match(ROLE_DATA.cipher.effect, /A, I, E, O, B, L, S, Q, atau G/)
+  assert.match(ROLE_DATA.warden.effect, /eksekusi voting/)
 })
 
 test('editable action and attack narrative lists start with requested sizes', () => {
@@ -87,7 +101,10 @@ test('hide action choices are capped at five and exclude previously used actions
 test('custom roles allow only one main antagonist type and unique special roles', () => {
   assert.equal(validateCustomRoles(['mafia', 'mafia', 'warga', 'warga', 'seer']).valid, true)
   assert.equal(validateCustomRoles(['werewolf', 'mafia', 'warga']).reason, 'multiple-antagonists')
+  assert.equal(validateCustomRoles(['parasite', 'werewolf', 'fixer']).reason, 'multiple-antagonists')
   assert.equal(validateCustomRoles(['alien', 'seer', 'seer']).reason, 'duplicate-role')
   assert.equal(validateCustomRoles(['warga', 'seer'], { requireAntagonist: true }).reason, 'missing-antagonist')
   assert.equal(validateCustomRoles(['mafia', 'sorcerer', 'jester', 'cipher'], { requireAntagonist: true }).valid, true)
+  assert.equal(validateCustomRoles(['parasite', 'fixer', 'warga'], { requireAntagonist: true }).valid, true)
+  assert.equal(validateCustomRoles(['parasite', 'fixer', 'fixer']).reason, 'duplicate-role')
 })

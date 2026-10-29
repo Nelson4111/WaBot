@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  assignFixerContracts,
   absorbWardenAttack,
   getWerewolfPlayerFaction,
   getWinner,
@@ -63,4 +64,43 @@ test('Warden armor helper only absorbs the first hit', () => {
   assert.equal(absorbWardenAttack(warden), true)
   assert.equal(absorbWardenAttack(warden), false)
   assert.equal(absorbWardenAttack({ role: 'warga', armor: true }), false)
+})
+
+test('Parasite is an antagonist and Fixer contract is assigned to another living player', () => {
+  const fixer = { id: 'fixer', number: 1, role: 'fixer', isdead: false }
+  const target = { id: 'target', number: 2, role: 'warga', isdead: false }
+  const dead = { id: 'dead', number: 3, role: 'warga', isdead: true }
+  const room = { category: 'parasite', player: [fixer, target, dead] }
+
+  assert.equal(getWerewolfPlayerFaction(room, { role: 'parasite' }), 'antagonist')
+  assert.equal(assignFixerContracts(room, () => 0), true)
+  assert.equal(fixer.contractTargetId, 'target')
+  assert.equal(fixer.contractTargetNumber, 2)
+  assert.notEqual(getWinner('test', { test: room }).status, 'fixer')
+})
+
+test('Fixer wins only when its target is dead and the Fixer is alive', () => {
+  const fixer = {
+    id: 'fixer',
+    role: 'fixer',
+    isdead: false,
+    contractTargetId: 'target'
+  }
+  const target = { id: 'target', role: 'warga', isdead: true }
+  const room = {
+    room: 'test',
+    category: 'werewolf',
+    player: [fixer, target],
+    voting: false
+  }
+
+  assert.deepEqual(getWinner('test', { test: room }), {
+    voting: false,
+    status: 'fixer',
+    winnerId: 'fixer'
+  })
+
+  fixer.isdead = true
+  delete room.fixerWinnerId
+  assert.notEqual(getWinner('test', { test: room }).status, 'fixer')
 })
