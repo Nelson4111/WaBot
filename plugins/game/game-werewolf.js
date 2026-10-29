@@ -19,6 +19,7 @@ import {
     voteStart,
     voteDone,
     buildRoleCodeMap,
+    absorbWardenAttack,
     resolveSecretCodeAction,
     getNightProgress,
     resolveNightActions,
@@ -195,6 +196,7 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
     room.hunterTarget = null
 
     const alivePlayers = room.player.filter((p) => !p.isdead && !p.isDummy)
+    const cipherIntroPlayers = []
     const playerMessages = new Map()
     for (const p of alivePlayers) {
         const role = p.role || 'warga'
@@ -210,6 +212,15 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
         const actionDescriptions = Object.entries(secretCodes)
             .map(([code, choice]) => describeNightChoice(code, choice, room, conn))
             .join('\n')
+        const cipherAntagonists = role === 'cipher'
+            ? room.player.filter((player) => !player.isdead && !player.isDummy && isAntagonistRole(room.category, player.role))
+            : []
+        const cipherIntro = role === 'cipher' && !p.cipherIntroSent
+            ? `\n\n*〔 🔎 ɪᴅᴇɴᴛɪᴛᴀꜱ ᴀɴᴛᴀɢᴏɴɪꜱ 〕*\n${cipherAntagonists.length
+                ? cipherAntagonists.map((player) => `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)} — ${formatRoleTitle(player.role)}`).join('\n')
+                : '> Tidak ada antagonis yang ditugaskan di room ini.'}`
+            : ''
+        if (role === 'cipher' && !p.cipherIntroSent) cipherIntroPlayers.push(p)
         const bodyCard = `*──  ୨୧ ✧ FASE MALAM TIBA ✧ ୨୧  ──*
 > 🌙 _Bulan purnama bersinar terang di atas langit desa..._
 
@@ -221,6 +232,7 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
 
 *〔 🔐 ᴋᴏᴅᴇ ᴀᴋsɪ ʀᴀʜᴀsɪᴀ 〕*
 ${actionDescriptions}
+${cipherIntro}
 *───────────────*
 
 *〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋsɪ 〕*
@@ -232,6 +244,9 @@ ${actionDescriptions}
 
         const btn = new Button(conn)
         btn.setBody(bodyCard)
+        if (cipherAntagonists.length) {
+            btn.setContextInfo({ mentionedJid: getPlayerMentions(cipherAntagonists) })
+        }
         btn.setFooter(`Avelia • ${game.name} Secret Night Phase`)
         for (const action of actionRows) {
             btn.addButton('quick_reply', JSON.stringify({
@@ -255,6 +270,9 @@ ${actionDescriptions}
 > 🔒 _[Fase Malam Berlangsung — Aksi rahasia hanya dapat diakses oleh pemain yang masih hidup]_`
 
     await sendMultiParticipantGroupStanza(conn, chat, playerMessages, spectatorText)
+    cipherIntroPlayers.forEach((player) => {
+        player.cipherIntroSent = true
+    })
 
     // Pasang timer 90 detik untuk auto-advance jika ada pemain lambat
     if (room.phaseTimeout) clearTimeout(room.phaseTimeout)
@@ -393,11 +411,14 @@ const finishHunterReaction = async (conn, chat, room, hunter, targetPlayer, ww) 
     }
 
     if (targetPlayer) {
-        targetPlayer.isdead = true
-        targetPlayer.deathNoticeSent = false
-        if (targetPlayer.role === 'hunter') {
-            targetPlayer.pendingHunter = true
-            targetPlayer.canShoot = true
+        const armorBlocked = absorbWardenAttack(targetPlayer)
+        if (!armorBlocked) {
+            targetPlayer.isdead = true
+            targetPlayer.deathNoticeSent = false
+            if (targetPlayer.role === 'hunter') {
+                targetPlayer.pendingHunter = true
+                targetPlayer.canShoot = true
+            }
         }
         const targetRole = formatRoleTitle(targetPlayer.role)
         const resultCard = `*──  ୨୧ ✧ HASIL TEMBAKAN HUNTER ✧ ୨୧  ──*
@@ -405,17 +426,19 @@ const finishHunterReaction = async (conn, chat, room, hunter, targetPlayer, ww) 
 
 *〔 🎯 ᴛᴀʀɢᴇᴛ ᴛᴇᴍʙᴀᴋᴀɴ 〕*
 > ⟡ Hunter : *${getDisplayPlayerLabel(hunter, conn)}*
-> ⟡ Tertembak : *${getDisplayPlayerLabel(targetPlayer, conn)}*
+> ⟡ Target : *${getDisplayPlayerLabel(targetPlayer, conn)}*
 > ⟡ Nomor : *${toSmallNum(targetPlayer.number)}*
-> ⟡ Role : *${targetRole} ${roleEmojis[targetPlayer.role] || '🎭'}*
+${armorBlocked
+        ? '> ⟡ Hasil : *Serangan tertahan oleh armor sekali pakai.*'
+        : `> ⟡ Gugur : *${targetRole} ${roleEmojis[targetPlayer.role] || '🎭'}*`}
 *───────────────*
-${targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
+${!armorBlocked && targetPlayer.role === 'hunter' ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
         await conn.sendMessage(chat, {
             image: { url: thumbExecution },
             caption: resultCard,
             mentions: getPlayerMentions([hunter, targetPlayer])
         })
-        if (targetPlayer.pendingHunter) {
+        if (!armorBlocked && targetPlayer.pendingHunter) {
             await openHunterReaction(conn, chat, room, targetPlayer, resumePhase)
             return
         }
@@ -565,7 +588,17 @@ const resolveDayVoting = async (conn, chat, ww) => {
         const kTitle = roleTitles[kRole] || formatRoleTitle(kRole)
         const killedName = getPlayerMentionLabel(killed, conn)
 
-        const execText = `*──  ୨୧ ✧ KEPUTUSAN EKSEKUSI ✧ ୨୧  ──*
+        const execText = killed.protected
+            ? `*──  ୨୧ ✧ SIDANG DESA ✧ ୨୧  ──*
+> ⚖️ _Warga desa telah sepakat menjatuhkan hukuman gantung!_
+
+*〔 🛡️ ᴇᴋsᴇᴋᴜsɪ ᴛᴇʀᴛᴀʜᴀɴ 〕*
+> ⟡ Target : *${killedName}*
+> ⟡ Armor satu kali berhasil menahan serangan. Target tetap hidup.
+*───────────────*
+· · ─ ─ ✦ ─ ─ · ·
+> 🌙 _Sidang usai. Bersiaplah menghadapi malam yang mencekam..._`
+            : `*──  ୨୧ ✧ KEPUTUSAN EKSEKUSI ✧ ୨୧  ──*
 > ⚖️ _Warga desa telah sepakat menjatuhkan hukuman gantung!_
 
 *〔 ☠️ ᴡᴀʀɢᴀ ʏᴀɴɢ ᴅɪᴇᴋꜱᴇᴋᴜꜱɪ 〕*
@@ -582,11 +615,11 @@ const resolveDayVoting = async (conn, chat, ww) => {
             mentions: getPlayerMentions([killed])
         })
 
-        if (killed.role === 'hunter') {
+        if (!killed.protected && killed.role === 'hunter') {
             await openHunterReaction(conn, chat, room, killed, 'voting')
             return
         }
-        if (killed.role === 'jester' || room.jesterWin) {
+        if (!killed.protected && (killed.role === 'jester' || room.jesterWin)) {
             return await win(room, 1, conn, ww)
         }
     }
@@ -1445,7 +1478,7 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
 > Bot otomatis mengirimkan pesan terenkripsi ke grup.
 > Hanya kamu yang bisa melihat role & tombol tokomu!
 > Jika room memakai taruhan, saldo dicek dan taruhan ditahan langsung saat join. Keluar dari room membuat taruhan tetap di pot; menghapus room mengembalikan taruhan.
-> Tim pemenang membagi pot, sedangkan Jester yang menang mengambil seluruh pot. Jika Jester kalah, taruhannya dikembalikan.
+> Tim pemenang membagi pot; Cipher yang masih hidup ikut menang dan mendapat bagian. Jester yang menang mengambil seluruh pot. Jika Jester kalah, taruhannya dikembalikan.
 *───────────────*
 
 *〔 ✦ 𝟹. ꜰᴀꜱᴇ ᴍᴀʟᴀᴍ 〕*
@@ -1477,11 +1510,12 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
 > 👼 *Guardian* : Melindungi 1 pemain dari terkaman dan voting; boleh melindungi diri sendiri.
 > 🏹 *Hunter* : Menembak 1 target jika dirinya gugur.
 > 👑 *Mayor* : Suara voting bernilai ganda (x𝟸).
-> ⚒️ *Blacksmith* : Memiliki armor penahan 𝟷 kali serangan.
+> ⚒️ *Warden* : Armor menahan satu serangan mematikan, termasuk eksekusi voting.
 *───────────────*
 
 *〔 ✦ ɪɴᴅᴇᴘᴇɴᴅᴇɴ 〕*
 > 🃏 *Jester* : Menang tunggal jika berhasil digantung warga.
+> 🔢 *Cipher* : Menang jika masih hidup saat warga atau antagonis menang. Pesan wajib memakai angka kode: A=4, I=1, E=3, O=0, B=8, L=7, S=5, Q=9, G=6. Huruf berkode tidak boleh ditulis; pesan tanpa angka akan dihapus. Cipher mengetahui antagonis dari kartu role pertamanya.
 *───────────────*
 · · ─ ─ ✦ ─ ─ · ·
 > _Setiap peran memiliki peran krusial dalam menentukan nasib desa!_`
