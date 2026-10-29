@@ -782,5 +782,37 @@
     "content": "\u003e Fitur Werewolf kini diperluas menjadi Game Roles dengan pilihan tema Werewolf, Mafia, Killer, Assassin, dan Impostor. Ketik `.gr` untuk info.",
     "author": "Eza",
     "createdAt": 1793034000000
+  },
+  {
+    "id": "29.0",
+    "section": "RPG",
+    "title": "Aktivitas Baru dan Usaha Ilegal RPG",
+    "content": "\u003e Coba .diving untuk menyelam, .logging untuk menebang, dan .farming untuk panen sekaligus mengambil hasil ternak. Usaha ilegal tersedia lewat .mancing/.nebang/.mining ilegal serta .diving/.adventure/.explore/.farming ilegal: hasil 1,5x, tetapi berisiko gagal atau dipenjara dan menambah poin kriminal. Cooldown-nya dua kali lebih lama.",
+    "author": "Eza",
+    "createdAt": 1793280719315
+  },
+  {
+    "id": "29.1",
+    "section": "RPG",
+    "title": "10 Event Bencana Baru",
+    "content": "\u003e Hadapi 10 bencana baru, termasuk Kebakaran Hutan, Pandemi COVID-19, dan Zombie Apocalypse. Setiap bencana membawa dampak negatif serta bonus sampingan. Lihat daftar lewat .ev list Bencana.",
+    "author": "Eza",
+    "createdAt": 1793281320000
+  },
+  {
+    "id": "29.2",
+    "section": "RPG",
+    "title": "Tanaman Layu & Apresiasi Avelia",
+    "content": "\u003e Panen tanaman maksimal 5 jam setelah siap agar tidak layu. Jika terlambat, Avelia memberi apresiasi uang sebesar setengah harga bibit dan slot ladang bisa digunakan kembali.",
+    "author": "Eza",
+    "createdAt": 1793281320001
+  },
+  {
+    "id": "29.3",
+    "section": "RPG",
+    "title": "Pembaruan Avelia Shelter",
+    "content": "\u003e Jemput anak, pet, dan ternak yang kabur lewat .shelter. Biaya meningkat setiap hari dan penjemputan bisa gagal; Premium dapat mencoba .shelter all. Donasikan uang atau makanan/minuman; semua donasi tercatat dan nilainya digabung. Ternak di shelter tidak menghasilkan produk. Setiap jenis penghuni menambah 2 poin kriminal per hari, maksimal 50 kali; penghitung direset saat rehab dimulai dan selesai.",
+    "author": "Eza",
+    "createdAt": 1793283817303
   }
 ]
