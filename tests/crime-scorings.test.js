@@ -15,6 +15,7 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
   kabur: 0,
   breakout: 0,
   aniaya: 0,
+  aksi_ilegal: 0,
   total: 21,
   weight: {
     rampok: 4,
@@ -25,7 +26,8 @@ assert.deepEqual(getCrimeScoreSummary({ rampok: 2, bunuh: 1, begal: 3, copet: 4 
     copet: 1,
     kabur: 5,
     breakout: 5,
-    aniaya: 3
+    aniaya: 3,
+    aksi_ilegal: 1
   }
 })
 assert.equal(computeCrimeScore({ aniaya: 2 }), 6)
@@ -40,8 +42,12 @@ assert.deepEqual(createRpgCrimeRecord({ penelantaran: 2 }), {
   kabur: 0,
   breakout: 0,
   aniaya: 2,
+  aksi_ilegal: 0,
   total: 0
 })
+assert.equal(computeCrimeScore({ aksi_ilegal: 3 }), 3)
+assert.equal(computeCrimeScore({ jalan_pintas: 3 }), 3)
+assert.equal(createRpgCrimeRecord({ jalan_pintas: 2 }).aksi_ilegal, 2)
 const configuredCrime = setCrimeCount({ copet: 1 }, 'aniaya', 2)
 assert.equal(configuredCrime.aniaya, 2)
 assert.equal('penelantaran' in configuredCrime, false)
@@ -62,6 +68,7 @@ assert.deepEqual(getCrimeScoreSummary({ penelantaran: 2 }), {
   kabur: 0,
   breakout: 0,
   aniaya: 2,
+  aksi_ilegal: 0,
   total: 6,
   weight: {
     rampok: 4,
@@ -72,7 +79,8 @@ assert.deepEqual(getCrimeScoreSummary({ penelantaran: 2 }), {
     copet: 1,
     kabur: 5,
     breakout: 5,
-    aniaya: 3
+    aniaya: 3,
+    aksi_ilegal: 1
   }
 })
 assert.equal(computeCrimeScore({ kabur: 1, breakout: 2 }), 15)
