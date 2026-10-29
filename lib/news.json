@@ -814,5 +814,21 @@
     "content": "\u003e Jemput anak, pet, dan ternak yang kabur lewat .shelter. Biaya meningkat setiap hari dan penjemputan bisa gagal; Premium dapat mencoba .shelter all. Donasikan uang atau makanan/minuman; semua donasi tercatat dan nilainya digabung. Ternak di shelter tidak menghasilkan produk. Setiap jenis penghuni menambah 2 poin kriminal per hari, maksimal 50 kali; penghitung direset saat rehab dimulai dan selesai.",
     "author": "Eza",
     "createdAt": 1793283817303
+  },
+  {
+    "id": "29.4",
+    "section": "GAME",
+    "title": "Pembaruan Game Roles",
+    "content": "\u003e Game Roles kini memiliki tema Parasite dan role Fixer: menangkan kontrak dengan membuat target gugur karena sebab apa pun selama kamu tetap hidup. Warden menahan satu serangan mematikan, termasuk eksekusi voting; role pemain yang gugur kini ditampilkan. Cipher mengetahui antagonis sejak pesan role pertama dan menang bersama warga atau antagonis jika tetap hidup. Pesannya wajib memuat angka dan tidak boleh memakai A, I, E, O, B, L, S, Q, atau G; pesan yang melanggar dihapus. Ketik .gr untuk panduan dan tombol daftar game/role, atau .gr role <nama> untuk detail role.",
+    "author": "Eza",
+    "createdAt": 1793292641766
+  },
+  {
+    "id": "29.5",
+    "section": "GAME",
+    "title": "Pembaruan Family100",
+    "content": "\u003e Family100 kini bisa dimainkan dengan .fam, .f100, atau .fam100. Jawaban benar mendapat 1 poin; cek poinmu dengan .fam score dan lihat 10 skor tertinggi lewat .fam top. Pemain dengan jawaban terbanyak mendapat bonus MVP +2 poin jika tidak seri. Untuk menyerah, dibutuhkan persetujuan minimal dua pertiga pemain yang sudah menjawab.",
+    "author": "Eza",
+    "createdAt": 1793311980000
   }
 ]
