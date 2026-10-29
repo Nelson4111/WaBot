@@ -6,11 +6,14 @@ import {
   HIDE_ACTIONS,
   HIDE_ANTAGONIST_STORIES,
   PROTAGONIST_WIN_STORIES,
+  ROLE_DATA,
   ROLE_DEATH_STORIES,
   getGameCategory,
   getRandomHideActions,
   getSorcererFaction,
   isAntagonistRole,
+  isNeutralRole,
+  isValidCipherMessage,
   normalizeGameCategory,
   validateCustomRoles
 } from '../lib/werewolfData.js'
@@ -40,6 +43,19 @@ test('sorcerer faction follows potion choice but stays neutral without another a
   assert.equal(getSorcererFaction('skip', true), 'neutral')
   assert.equal(getSorcererFaction('poison', false), 'neutral')
   assert.equal(getSorcererFaction('revive', false), 'neutral')
+})
+
+test('Warden and Cipher roles are available with their intended protections and cipher rules', () => {
+  assert.equal(ROLE_DATA.warden.title, 'Warden')
+  assert.equal(ROLE_DATA.blacksmith, undefined)
+  assert.equal(ROLE_DATA.cipher.title, 'Cipher')
+  assert.equal(isNeutralRole('cipher'), true)
+  assert.equal(isNeutralRole('jester'), true)
+  assert.equal(isValidCipherMessage('H41'), true)
+  assert.equal(isValidCipherMessage('H'), false)
+  assert.equal(isValidCipherMessage('Hai'), false)
+  assert.equal(isValidCipherMessage('H4i'), false)
+  assert.equal(validateCustomRoles(['werewolf', 'warden', 'cipher', 'warga']).valid, true)
 })
 
 test('editable action and attack narrative lists start with requested sizes', () => {
@@ -73,5 +89,5 @@ test('custom roles allow only one main antagonist type and unique special roles'
   assert.equal(validateCustomRoles(['werewolf', 'mafia', 'warga']).reason, 'multiple-antagonists')
   assert.equal(validateCustomRoles(['alien', 'seer', 'seer']).reason, 'duplicate-role')
   assert.equal(validateCustomRoles(['warga', 'seer'], { requireAntagonist: true }).reason, 'missing-antagonist')
-  assert.equal(validateCustomRoles(['mafia', 'sorcerer', 'jester'], { requireAntagonist: true }).valid, true)
+  assert.equal(validateCustomRoles(['mafia', 'sorcerer', 'jester', 'cipher'], { requireAntagonist: true }).valid, true)
 })
