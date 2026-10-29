@@ -23,6 +23,7 @@ import { BANK_TIERS } from './lib/rpg-bankData.js'
 import { isPlayerDead } from './lib/rpgDifficulty.js'
 import { formatMaintenanceMessage, isMaintenanceBlockingCommand, shouldSkipRpgPlugin } from './lib/maintenance.js'
 import { normalizeRpgMoney } from './lib/rpgMoney.js'
+import { isValidCipherMessage } from './lib/werewolfData.js'
 
 /**
  * @type {import('@whiskeysockets/baileys')}
@@ -338,6 +339,23 @@ async function processMessage(m, chatUpdate) {
                 console.error('[WEREWOLF DEAD MESSAGE DELETE FAILED]', error?.message)
             }
             return
+        }
+
+        const cipherPlayer = werewolfRoom?.status && !m.fromMe
+            ? werewolfRoom.player?.find(player => player.id === m.sender && player.role === 'cipher' && !player.isdead)
+            : null
+        if (m.isGroup && cipherPlayer) {
+            const cipherText = String(m.text || m.caption || m.msg?.caption || '').trim()
+            const gameCommandBase = String(werewolfRoom.commandBase || '.ww').trim()
+            const isCommand = (gameCommandBase && cipherText.startsWith(gameCommandBase)) || /^[./#!]/.test(cipherText)
+            if (!isCommand && !isValidCipherMessage(cipherText)) {
+                try {
+                    await this.sendMessage(m.chat, { delete: m.key })
+                } catch (error) {
+                    console.error('[CIPHER MESSAGE DELETE FAILED]', error?.message)
+                }
+                return
+            }
         }
         
         // JANGAN cache pesan yang belum terdekripsi (m.mtype kosong)
