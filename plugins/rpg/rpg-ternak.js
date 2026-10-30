@@ -356,16 +356,19 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     }
     let item = normalizeHasilKey(hewan1)
     if(!user.inventory[item]) return safeReply('❌ Item tidak ada di inventory')
+    const stock = Number(user.inventory[item]) || 0
+    const sold = Math.min(jml, stock)
+    const display = getHasilDisplay(item)
     let hargaItem = 1000
-    let total = hargaItem * jml
-    user.inventory[item] -= jml
+    let total = hargaItem * sold
+    user.inventory[item] -= sold
     if(user.inventory[item] <= 0) delete user.inventory[item]
     wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], total)
     saveDB(wdb)
 
     return safeReply(
       `╭─❏「 💰 PENJUALAN 」❏\n` +
-      `│ 📦 *${item}* x${jml}\n` +
+      `│ ${display.emoji} *${display.nama}* x${sold}\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ 💵 Hasil : +Rp ${total.toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`

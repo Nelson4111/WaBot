@@ -1,7 +1,7 @@
 import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
-import { hewanList, dapatkanHasil, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
+import { hewanList, dapatkanHasil, getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { masakanResep, normalizeMasakanKey, formatMasakanNama, resepEmoji, deskripsiMakanan } from '../../lib/rpg-masakanData.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 
@@ -33,6 +33,20 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         waktu: 180000,
         exp: Math.max(25, Math.floor(animal.exp * 1.5))
       }
+    }
+  }
+  for (const [resultKey, amount] of Object.entries(user.inventory)) {
+    if (Number(amount) <= 0 || !isHasilTernakKey(resultKey)) continue
+    const recipeKey = `olahan_${resultKey}`
+    if (resep[recipeKey]) continue
+    const display = getHasilDisplay(resultKey)
+    resep[recipeKey] = {
+      emoji: '🍲',
+      jual: Math.max(10000, Math.floor(display.harga * 0.8)),
+      bahan: { [resultKey]: 1 },
+      biaya: 0,
+      waktu: 180000,
+      exp: 25
     }
   }
 

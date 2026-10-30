@@ -15,7 +15,7 @@ const CORE_COMMANDS = [
   ['.mining', 'Mencari ore'],
   ['.diving / .nyelam', 'Menyelam untuk mencari harta bawah laut'],
   ['.logging / .nebang', 'Menebang pohon untuk mendapatkan kayu dan material'],
-  ['.farm / .farming', 'Panduan farming; panen kebun dan kumpulkan hasil ternak'],
+  ['.farm / .farm guide / .farming', 'Daftar command, panduan, dan panen kebun serta hasil ternak'],
   ['.dungeon', 'Melawan monster dungeon'],
   ['.arena', 'Menantang pemain lain'],
   ['.kerja', 'Bekerja dan mendapatkan penghasilan'],
@@ -76,7 +76,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Gunakan *.casino* untuk berbagai permainan dengan batas harian dan cooldown per game.\n\n` +
       `🌾 *KEBUN, TERNAK & MASAKAN*\n` +
       `> ↳ Tanam dan panen tanaman lewat *.kebun*, *.tanam*, dan *.panen*.\n` +
-      `> ↳ Gunakan *.farm* untuk panduan atau *.farming* untuk mengambil panen dan hasil ternak sekaligus.\n` +
+      `> ↳ Gunakan *.farm* untuk daftar command, *.farm guide* untuk panduan, atau *.farming* untuk mengambil panen dan hasil ternak sekaligus.\n` +
       `> ↳ *.farming ilegal* memberi hasil ×1,5 dan +1 poin kriminal, dengan risiko gagal atau dipenjara; cooldown 2× lebih lama.\n` +
       `> ↳ Hasil ternak bisa dikumpulkan kembali setiap 2 menit; hewan tetap hidup.\n` +
       `> ↳ Beli dan rawat hewan lewat *.ternak*, lalu ambil hasil atau sembelih.\n` +

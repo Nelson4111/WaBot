@@ -177,7 +177,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
     text: caption,
     title: '🪓 HASIL LOGGING',
     subtitle: 'Kayu dan material sudah masuk ke tasmu',
-    thumbnailUrl: 'https://c.termai.cc/i181/UTTbZ.jpg',
+    thumbnailUrl: 'https://c.termai.cc/i177/LoO7ov.jpg',
     buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
     quoted: m,
     reply: fallbackText => m.reply(fallbackText)

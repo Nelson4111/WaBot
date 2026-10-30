@@ -31,10 +31,59 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
   const prefix = usedPrefix || '.'
   const args = String(text || '').trim().toLowerCase().split(/\s+/).filter(Boolean)
   const illegalText = args[0] === 'ilegal' ? args[0] : ''
+  const isFarmCommand = command?.toLowerCase() === 'farm'
+  const isGuide = isFarmCommand && ['guide', 'panduan'].includes(args[0])
+  const isCommandList = isFarmCommand && (
+    args.length === 0 || ['command', 'commands', 'cmd', 'menu'].includes(args[0])
+  )
+
+  if (isCommandList) {
+    return m.reply(
+      `╭─❏「 📋 FARM COMMAND 」❏\n` +
+      `│ 🌾 FARM & KEBUN\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ${prefix}farm guide\n` +
+      `> ${prefix}farm command\n` +
+      `> ${prefix}farming\n` +
+      `> ${prefix}farm collect\n` +
+      `> ${prefix}farming ilegal\n` +
+      `> ${prefix}tanam <bibit>\n` +
+      `> ${prefix}tanam list\n` +
+      `> ${prefix}tanam guide\n` +
+      `> ${prefix}tanam command\n` +
+      `> ${prefix}tanam <bibit> ulang <jumlah>\n` +
+      `> ${prefix}ladang\n` +
+      `> ${prefix}panen\n` +
+      `> ${prefix}kebun\n` +
+      `> ${prefix}koperasi\n` +
+      `> ${prefix}koperasi jual <no/nama> <jumlah/all>\n\n` +
+      `🐄 TERNAK\n` +
+      `> ${prefix}peternakan\n` +
+      `> ${prefix}ternak kandang\n` +
+      `> ${prefix}ternak status\n` +
+      `> ${prefix}ternak list <dasar|langka|epik|legenda|all>\n` +
+      `> ${prefix}ternak hybrid\n` +
+      `> ${prefix}ternak command\n` +
+      `> ${prefix}ternak beli <hewan> <jumlah>\n` +
+      `> ${prefix}ternak ambil <hewan>\n` +
+      `> ${prefix}ternak sembelih <hewan> <jumlah>\n` +
+      `> ${prefix}ternak jual <item> <jumlah>\n` +
+      `> ${prefix}kawin <hewan1> <hewan2>\n` +
+      `> ${prefix}kawin proses / batal\n` +
+      `> ${prefix}kawin guide\n` +
+      `> ${prefix}icu [auto]\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
+
   const isCollect = command?.toLowerCase() === 'farming' ||
     ['collect', 'all', 'panen'].includes(args[0]) ||
     Boolean(illegalText)
 
+  if (isFarmCommand && args.length && !isGuide && !isCollect &&
+      !['command', 'commands', 'cmd', 'menu'].includes(args[0])) {
+    return m.reply(`Gunakan *${prefix}farm* untuk daftar command atau *${prefix}farm guide* untuk panduan farming.`)
+  }
   if ((command?.toLowerCase() === 'farming' || illegalText) && args.length && !illegalText &&
       !['collect', 'all', 'panen'].includes(args[0])) {
     return m.reply(`Gunakan *${prefix}farming ilegal* untuk mencoba usaha ilegal farming.`)
@@ -43,21 +92,30 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
     return m.reply(`Gunakan *${prefix}farming ilegal* untuk mencoba usaha ilegal farming.`)
   }
 
-  if (!isCollect) {
+  if (!isCollect || isGuide) {
     const guide =
       `╭─❏「 🌾 FARMING 」❏\n` +
       `│ 🌱 *KEBUN & PETERNAKAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `Farming mengurus dua usaha RPG sekaligus: memanen tanaman yang sudah siap dan mengumpulkan hasil dari semua ternak yang kamu miliki. Hewan tetap hidup setelah produknya diambil; hasil ternak tersedia kembali setelah jeda 2 menit.\n\n` +
+      `Farming mengurus kebun dan peternakan. Tanaman yang sudah matang dipanen, sementara ternak menghasilkan produk yang masuk ke inventory. Hasil ternak bisa dikumpulkan kembali setiap 2 menit; hewan tetap hidup saat hasilnya diambil.\n\n` +
       `📌 *CARA BERKEBUN*\n` +
       `> ↳ Tanam bibit: *${prefix}tanam wortel*\n` +
-      `> ↳ Cek ladang: *${prefix}ladang*\n\n` +
+      `> ↳ Cek tanaman: *${prefix}ladang*\n` +
+      `> ↳ Panen satu tanaman: *${prefix}panen*\n` +
+      `> ↳ Lihat hasil tersimpan: *${prefix}kebun*\n` +
+      `> ↳ Jual hasil kebun: *${prefix}koperasi jual all*\n\n` +
       `🐄 *CARA BETERNAK*\n` +
-      `> ↳ Beli dan rawat hewan: *${prefix}ternak*\n` +
+      `> ↳ Beli dan lihat hewan: *${prefix}ternak list*\n` +
+      `> ↳ Kawinkan hewan untuk menemukan hybrid: *${prefix}kawin <hewan1> <hewan2>*\n` +
+      `> ↳ Ambil hasil satu hewan: *${prefix}ternak ambil <hewan>*\n` +
+      `> ↳ Sembelih hewan: *${prefix}ternak sembelih <hewan> <jumlah>*\n` +
       `> ↳ Cek kandang: *${prefix}ternak kandang*\n\n` +
       `🌾 *KUMPULKAN HASIL*\n` +
-      `> ↳ Panen kebun dan ambil hasil semua ternak: *${prefix}farming*\n` +
-      `> ↳ Alternatif: *${prefix}farm collect*\n\n` +
+      `> ↳ Panen tanaman siap dan ambil hasil semua ternak: *${prefix}farming*\n` +
+      `> ↳ Alternatif: *${prefix}farm collect*\n` +
+      `> ↳ Hasil ternak dapat dijual lewat *${prefix}ternak jual <item> <jumlah>* atau *${prefix}restoran jual <item> <jumlah>*.\n` +
+      `> ↳ Bahan ternak yang tersedia bisa diolah lewat *${prefix}masak*; cek resep dengan *${prefix}dapur resep*.\n` +
+      `> ↳ Semua stok tersimpan di *${prefix}gudang*.\n\n` +
       `⚠️ *${prefix}farming ilegal* mengambil hasil secara ilegal, memberi hasil ×1,5 dan +1 poin kriminal; ada risiko gagal atau tertangkap.\n\n` +
       `─━━━━━━━━━━━━━━─`
     return sendRpgButtons(conn, {
@@ -311,7 +369,7 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
     text: resultText,
     title: '🌾 FARMING BERHASIL',
     subtitle: 'Panen dan hasil ternak sudah masuk inventory',
-    thumbnailUrl: 'https://c.termai.cc/i181/UTTbZ.jpg',
+    thumbnailUrl: 'https://c.termai.cc/i171/wYyN.jpg',
     sections: replantRows.length ? [{ title: '🌱 Tanam kembali bibit yang dipanen', rows: replantRows }] : undefined,
     buttons,
     fallbackText: [
@@ -325,7 +383,7 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
   })
 }
 
-handler.help = ['farm', 'farming']
+handler.help = ['farm', 'farm guide', 'farm command', 'farming', 'farm collect']
 handler.tags = ['rpg']
 handler.command = /^(farm|farming)$/i
 handler.group = true

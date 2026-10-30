@@ -1,7 +1,7 @@
 import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
-import { hewanList, dapatkanHasil, getHasilDisplay, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
+import { hewanList, dapatkanHasil, getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import {
@@ -58,6 +58,14 @@ const hargaBeli = { ...sharedHargaBeli }
     const recipeKey = `olahan_${animalKey}`
     if (!hargaBeli[recipeKey]) hargaBeli[recipeKey] = { emoji: '🍲', harga: Math.max(10000, Math.floor(animal.hargaJual * 0.8)) }
   }
+  for (const item of Object.keys(user.masakan)) {
+    if (!item.startsWith('olahan_') || hargaBeli[item]) continue
+    const display = getHasilDisplay(item.slice('olahan_'.length))
+    hargaBeli[item] = {
+      emoji: '🍲',
+      harga: Math.max(10000, Math.floor(display.harga * 0.8))
+    }
+  }
   const hargaJual = {}
   for(let k in hargaBeli){ hargaJual[k] = Math.floor(hargaBeli[k].harga * 0.7) }
   const hargaJualHasilTernak = {}
@@ -67,6 +75,11 @@ const hargaBeli = { ...sharedHargaBeli }
       const key = getHasilDisplay(hasil).key
       hargaJualHasilTernak[key] = Math.max(hargaJualHasilTernak[key] || 0, animal.hargaJual)
     }
+  }
+  for (const [item, amount] of Object.entries(user.inventory)) {
+    if (Number(amount) <= 0 || !isHasilTernakKey(item)) continue
+    const display = getHasilDisplay(item)
+    hargaJualHasilTernak[display.key] = Math.max(hargaJualHasilTernak[display.key] || 0, display.harga)
   }
   if (hasilMigration.changed) saveDB(wdb)
 
