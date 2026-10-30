@@ -45,6 +45,33 @@ const thumbMorning = "https://user-images.githubusercontent.com/72728486/2353445
 const thumbVoting = "https://user-images.githubusercontent.com/72728486/235344861-acdba7d1-8fce-41b8-adf6-337c818cda2b.jpg"
 const thumbExecution = "https://user-images.githubusercontent.com/72728486/235354619-6ad1cabd-216c-4c7c-b7c2-3a564836653a.jpg"
 
+const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
+    const menuText = `*╭━━━〔 🎭 GAME ROLES 〕━━━╮*
+
+Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada antagonis yang menyamar; cari tahu siapa mereka sebelum terlambat.
+
+*🌙 MALAM*
+Pemain menjalankan kemampuan role secara rahasia. Antagonis memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
+
+*☀️ SIANG*
+Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi. Role yang gugur akan terungkap.
+
+*🏆 TUJUAN PERMAINAN*
+Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
+
+*🕹️ MULAI BERMAIN*
+Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
+
+*╰━━━━━━━━━━━━━━━━━━━━━━╯*
+Pilih tombol di bawah untuk menjelajahi game dan role yang tersedia.`
+    const menuButtons = [
+        ['🎮 Daftar Game', `${usedPrefix}gr list`],
+        ['🎭 Daftar Role', `${usedPrefix}gr role`],
+        ['📖 Panduan Bermain', `${usedPrefix}gr guide`]
+    ]
+    return conn.sendButton(chat, menuText, 'Avelia • Game Roles', thumbNight, menuButtons, m)
+}
+
 const roleEmojis = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, data]) => [role, data.emoji]))
 const roleTitles = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, data]) => [
     role,
@@ -755,30 +782,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     if (isGameRolesCommand && !routedGameCategory) {
         const action = String(value || '').toLowerCase()
         if (!action) {
-            const menuText = `*╭━━━〔 🎭 GAME ROLES 〕━━━╮*
-
-Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada antagonis yang menyamar; cari tahu siapa mereka sebelum terlambat.
-
-*🌙 MALAM*
-Pemain menjalankan kemampuan role secara rahasia. Antagonis memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
-
-*☀️ SIANG*
-Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi. Role yang gugur akan terungkap.
-
-*🏆 TUJUAN PERMAINAN*
-Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
-
-*🕹️ MULAI BERMAIN*
-Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
-
-*╰━━━━━━━━━━━━━━━━━━━━━━╯*
-Pilih tombol di bawah untuk menjelajahi game dan role yang tersedia.`
-            const menuButtons = [
-                ['🎮 Daftar Game', `${usedPrefix}gr list`],
-                ['🎭 Daftar Role', `${usedPrefix}gr role`],
-                ['📖 Panduan Bermain', `${usedPrefix}gr guide`]
-            ]
-            return conn.sendButton(chat, menuText, 'Avelia • Game Roles', thumbNight, menuButtons, m)
+            return sendGameRolesMenu(conn, chat, usedPrefix, m)
         }
         if (action === 'list' || action === 'category' || action === 'kategori') {
             const categories = Object.values(GAME_CATEGORIES)
@@ -1598,6 +1602,8 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
             .join('\n')
         m.reply(`*── ✦ ROLE & EFEK ${game.name.toUpperCase()} ✦ ──*\n\n${roleSections}\n\n> Detail karakter: *${gameCommandBase} role <nama role>*. Contoh: *${gameCommandBase} role seer*.`)
 
+    } else if (isGameRolesCommand) {
+        return sendGameRolesMenu(conn, chat, usedPrefix, m)
     } else {
         const menuText = `*──  ୨୧ ✧ ${gameCategory.name.toUpperCase()} COMMANDS ✧ ୨୧  ──*
 > ${gameCategory.antagonistEmoji} _Perintah yang tersedia untuk permainan ${gameCategory.name}:_
