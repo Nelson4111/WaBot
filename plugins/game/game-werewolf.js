@@ -144,6 +144,16 @@ const getTotalPlayerCount = (room) => room?.player?.length || 0
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const getRandomItem = (items) => items[Math.floor(Math.random() * items.length)]
 
+const getAiNightActionCode = (player, actionType) => {
+    const actions = Object.entries(player.secretCodes || {})
+        .filter(([, choice]) => choice.type === actionType)
+        .map(([code]) => code)
+    if (actions.length) return getRandomItem(actions)
+    const availableCodes = Object.keys(player.secretCodes || {})
+    const activeCodes = availableCodes.filter((code) => player.secretCodes[code].type !== 'skip')
+    return getRandomItem(activeCodes.length ? activeCodes : availableCodes)
+}
+
 const getAiDiscussionMessage = (room, player, conn) => {
     const message = getRandomItem(WARGA_AI_MESSAGES)
     if (!message?.includes('{target}')) return message
@@ -160,9 +170,9 @@ const getPrivatePlayerName = (player, conn) => player.isAiCitizen
     ? getDisplayPlayerLabel(player, conn)
     : String(player.displayName || conn?.getName?.(player.id) || getDisplayPlayerLabel(player, conn)).replace(/^@/, '').trim()
 
-const sendAiCitizenStanzaStyleMessage = async (conn, chat, player, message) => {
+const sendAiCitizenStanzaStyleMessage = async (conn, chat, player) => {
     await conn.sendMessage(chat, {
-        text: `> 🔒 _Detail aksi rahasia hanya terlihat oleh pemain terkait, ${getPrivatePlayerName(player, conn)}._\n${formatAiCitizenMessage(player, message)}`
+        text: `> 🔒 _Detail aksi rahasia hanya terlihat oleh pemain terkait, ${getPrivatePlayerName(player, conn)}._`
     })
 }
 
@@ -259,13 +269,19 @@ const hasRpgPanelAccess = (sender = '') => {
     return false
 }
 
-const sendPrivateGroupText = (conn, groupJid, playerJid, text) => sendDualGroupMessage(
-    conn,
-    groupJid,
-    playerJid,
-    { extendedTextMessage: { text } },
-    '> 🔒 _Detail aksi rahasia hanya terlihat oleh pemain terkait._'
-)
+const sendPrivateGroupText = (conn, groupJid, playerJid, text) => {
+    const player = conn.werewolf?.[groupJid]?.player?.find((entry) => entry.id === playerJid)
+    const playerName = player
+        ? getPrivatePlayerName(player, conn)
+        : String(conn?.getName?.(playerJid) || getDisplayPlayerLabel({ id: playerJid }, conn)).replace(/^@/, '').trim()
+    return sendDualGroupMessage(
+        conn,
+        groupJid,
+        playerJid,
+        { extendedTextMessage: { text } },
+        `> 🔒 _Detail aksi rahasia hanya terlihat oleh pemain terkait, ${playerName}._`
+    )
+}
 
 const sendNightPhaseStanza = async (conn, chat, room) => {
     if (!room || !Array.isArray(room.player)) return
@@ -410,7 +426,7 @@ const runAiCitizenNightActions = async (conn, chat, room) => {
         await wait(650 + Math.floor(Math.random() * 600))
         if (conn.werewolf?.[chat] !== room || room.time !== 'malem' || player.isdead || player.nightDone) return
 
-        const code = getRandomItem(Object.keys(player.secretCodes || {}))
+        const code = getAiNightActionCode(player)
         const result = code
             ? resolveSecretCodeAction(chat, player.id, code, conn.werewolf, 'night')
             : { ok: false, reason: 'no-night-codes' }
@@ -420,7 +436,7 @@ const runAiCitizenNightActions = async (conn, chat, room) => {
         }
 
         try {
-            await sendAiCitizenStanzaStyleMessage(conn, chat, player, 'Aksi malam berhasil dipilih secara rahasia.')
+            await sendAiCitizenStanzaStyleMessage(conn, chat, player)
         } catch (error) {
             console.error(`[werewolf AI night acknowledgment failed] player=${player.displayName}`, error)
         }
@@ -478,7 +494,7 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
     }))
     if (hunter.isAiCitizen) {
         await wait(600 + Math.floor(Math.random() * 500))
-        const code = getRandomItem(Object.keys(hunter.secretCodes || {}))
+        const code = getAiNightActionCode(hunter, 'hunter')
         const result = code
             ? resolveSecretCodeAction(chat, hunter.id, code, conn.werewolf, 'hunter')
             : { ok: false, reason: 'no-hunter-actions' }
@@ -751,12 +767,6 @@ const runAiCitizenVotes = async (conn, chat, room) => {
             console.error(`[werewolf AI vote failed] player=${player.displayName} reason=${result.reason}`)
             continue
         }
-        try {
-            await sendAiCitizenStanzaStyleMessage(conn, chat, player, 'Suara berhasil diberikan secara rahasia.')
-        } catch (error) {
-            console.error(`[werewolf AI vote acknowledgment failed] player=${player.displayName}`, error)
-        }
-
         const allVoted = room.player
             .filter((entry) => !entry.isdead && !entry.isDummy)
             .every((entry) => entry.isvote)
@@ -780,15 +790,23 @@ const resolveDayVoting = async (conn, chat, ww) => {
     }
 
     const hasil_vote = voteResult(chat, ww)
+    const voteTally = room.player
+        .filter((player) => !player.isdead && (Number(player.voteCount) || 0) > 0)
+        .sort((left, right) => (Number(right.vote) || 0) - (Number(left.vote) || 0))
+    const voteTallyText = voteTally.length
+        ? `\n\n*━━━〔 📊 HASIL SUARA 〕━━━*\n${voteTally.map((player) =>
+            `> ${getDisplayPlayerLabel(player, conn)} — *${Number(player.voteCount) || 0} pemain* (${Number(player.vote) || 0} poin)`
+        ).join('\n')}\n*━━━━━━━━━━━━━━*`
+        : ''
 
     if (hasil_vote === 0) {
-        const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\nWarga desa tidak dapat mencapai kesepakatan dan pulang ke rumah masing-masing. Tidak ada yang dieksekusi hari ini.\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti desa..._`
+        const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\nWarga desa tidak dapat mencapai kesepakatan dan pulang ke rumah masing-masing. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti desa..._`
         await conn.sendMessage(chat, {
             image: { url: thumbNight },
             caption: text
         })
     } else if (hasil_vote === 1) {
-        const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.\n\n━━━━━━━━━━━━━━\n> 🌙 _Warga kembali ke kediaman masing-masing..._`
+        const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Warga kembali ke kediaman masing-masing..._`
         await conn.sendMessage(chat, {
             image: { url: thumbNight },
             caption: text
@@ -808,7 +826,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 > ⟡ Nama : *${killedName}*
 > ⟡ Role : *Hunter ${kEmoji}*
 > ⟡ Hunter akan menembak sebelum eksekusi diselesaikan.
-*━━━━━━━━━━━━━━*
+*━━━━━━━━━━━━━━*${voteTallyText}
 ━━━━━━━━━━━━━━
 > 🏹 _Kesempatan terakhir Hunter dimulai sekarang._`
             : `*━━━〔 ☠️ KEPUTUSAN EKSEKUSI 〕━━━*
@@ -818,7 +836,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 > ⟡ Nama : *${killedName}*
 > ⟡ Nomor : *${toSmallNum(killed.number)}*
 > ⟡ Identitas Asli : *${kTitle} ${kEmoji}*
-*━━━━━━━━━━━━━━*
+*━━━━━━━━━━━━━━*${voteTallyText}
 ━━━━━━━━━━━━━━
 > 🌙 _Senja telah usai. Bersiaplah menghadapi malam yang mencekam..._`
 
