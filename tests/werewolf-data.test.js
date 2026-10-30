@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   ANTAGONIST_STORIES,
+  CUSTOM_ANTAGONIST_ROLES,
   GAME_CATEGORIES,
   HIDE_ACTIONS,
   HIDE_ANTAGONIST_STORIES,
@@ -10,6 +11,7 @@ import {
   ROLE_DEATH_STORIES,
   WARGA_AI_MESSAGES,
   getGameCategory,
+  getRoleFaction,
   getRandomHideActions,
   getSorcererFaction,
   isAntagonistRole,
@@ -24,20 +26,28 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(normalizeGameCategory('imposter').id, 'impostor')
   assert.equal(normalizeGameCategory('alien').id, 'alien')
   assert.equal(normalizeGameCategory('parasite').id, 'parasite')
+  assert.equal(normalizeGameCategory('vigilante').id, 'vigilante')
+  assert.equal(normalizeGameCategory('mayhem').id, 'mayhem')
+  assert.notEqual(normalizeGameCategory('vigilante').antagonist, 'vigilante')
   assert.equal(normalizeGameCategory('custom').id, 'custom')
   assert.equal(isAntagonistRole('parasite', 'parasite'), true)
+  assert.equal(isAntagonistRole('vigilante', 'vigilante'), false)
+  assert.equal(isAntagonistRole('vigilante', 'parasite'), true)
+  assert.equal(isAntagonistRole('mayhem', 'mafia'), true)
   assert.equal(getGameCategory('unknown').id, 'werewolf')
   for (const category of Object.values(GAME_CATEGORIES)) {
-    if (category.id !== 'custom') {
+    if (!['custom', 'mayhem', 'vigilante'].includes(category.id)) {
       assert.equal(isAntagonistRole(category.id, category.antagonist), true)
     }
     assert.equal(isAntagonistRole(category.id, 'sorcerer'), false)
     assert.equal(isAntagonistRole(category.id, 'seer'), false)
     assert.ok(category.description.length > 0)
   }
+  assert.equal(new Set(Object.values(GAME_CATEGORIES).map((category) => category.location)).size, Object.keys(GAME_CATEGORIES).length)
   for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite']) {
     assert.equal(isAntagonistRole('custom', role), true)
   }
+  assert.deepEqual(CUSTOM_ANTAGONIST_ROLES.includes('parasite'), true)
 })
 
 test('sorcerer faction follows potion choice but stays neutral without another antagonist', () => {
@@ -57,6 +67,8 @@ test('Warden and Cipher roles are available with their intended protections and 
   assert.equal(isNeutralRole('cipher'), true)
   assert.equal(isNeutralRole('jester'), true)
   assert.equal(isNeutralRole('fixer'), true)
+  assert.equal(ROLE_DATA.vigilante.title, 'Vigilante')
+  assert.equal(ROLE_DATA.ghost.title, 'Ghost')
   assert.equal(isValidCipherMessage('H41'), true)
   assert.equal(isValidCipherMessage('H'), false)
   assert.equal(isValidCipherMessage('Hai'), false)
@@ -71,6 +83,24 @@ test('every role separates character flavor from its in-game effect', () => {
   }
   assert.match(ROLE_DATA.cipher.effect, /A, I, E, O, B, L, S, Q, atau G/)
   assert.match(ROLE_DATA.warden.effect, /tidak melindungi dari voting/)
+})
+
+test('all roles map to one of the antagonist, protagonist, or neutral lists', () => {
+  const factions = Object.fromEntries(
+    Object.keys(ROLE_DATA).map((role) => [role, getRoleFaction(role)])
+  )
+
+  assert.deepEqual(new Set(Object.values(factions)), new Set(['antagonist', 'protagonist', 'neutral']))
+  assert.deepEqual(
+    Object.keys(factions).filter((role) => factions[role] === 'antagonist').sort(),
+    [...CUSTOM_ANTAGONIST_ROLES].sort()
+  )
+  assert.deepEqual(
+    Object.keys(factions).filter((role) => factions[role] === 'neutral').sort(),
+    ['cipher', 'fixer', 'jester', 'sorcerer']
+  )
+  assert.equal(factions.vigilante, 'protagonist')
+  assert.equal(factions.ghost, 'protagonist')
 })
 
 test('editable action and attack narrative lists start with requested sizes', () => {

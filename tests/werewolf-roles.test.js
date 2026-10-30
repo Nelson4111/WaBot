@@ -3,15 +3,18 @@ import assert from 'node:assert/strict'
 import {
   assignFixerContracts,
   absorbWardenAttack,
+  buildRoleCodeMap,
   generateVoteCodeMap,
   getWerewolfPlayerFaction,
   getWinner,
   getNightProgress,
+  roleAmount,
   roleGenerator,
   resolveSecretCodeAction,
   resolveNightActions,
   voteKill
 } from '../lib/werewolf.js'
+import { CUSTOM_ANTAGONIST_ROLES } from '../lib/werewolfData.js'
 
 test('Warden armor absorbs one antagonist attack but not a vote execution', () => {
   const warden = { id: 'warden', number: 1, role: 'warden', armor: true, isdead: false, vote: 1 }
@@ -262,7 +265,7 @@ test('AI citizens receive protagonist roles and do not replace the required huma
   assert.equal(roleGenerator('test', rooms), true)
   assert.equal(players[0].role, 'werewolf')
   assert.equal(players.slice(1).every((player) =>
-    ['warga', 'seer', 'guardian', 'hunter', 'mayor', 'warden'].includes(player.role)
+    ['warga', 'seer', 'guardian', 'hunter', 'mayor', 'warden', 'ghost'].includes(player.role)
   ), true)
 
   const aiOnlyRoom = {
@@ -278,4 +281,134 @@ test('AI citizens receive protagonist roles and do not replace the required huma
     dead: []
   }
   assert.equal(roleGenerator('ai-only', { 'ai-only': aiOnlyRoom }), false)
+})
+
+test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
+  const players = [
+    { id: 'human', number: 1, role: false, isdead: false },
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: `ai-${index}`,
+      number: index + 2,
+      role: false,
+      isdead: false,
+      isAiCitizen: true
+    }))
+  ]
+  const room = { room: 'vigilante-test', category: 'vigilante', player: players, dead: [] }
+  const rooms = { [room.room]: room }
+
+  assert.equal(roleGenerator(room.room, rooms), true)
+  assert.equal(players[0].role, 'vigilante')
+  assert.equal(players.filter((player) => player.role === 'vigilante').length, 1)
+  assert.equal(players.slice(1).every((player) =>
+    getWerewolfPlayerFaction(room, player) === 'antagonist'
+  ), true)
+  assert.equal(roleAmount(room.room, rooms, undefined, players.length).vigilante, 1)
+})
+
+test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist attack independently', () => {
+  const players = Array.from({ length: 5 }, (_, index) => ({
+    id: `player-${index}`,
+    number: index + 1,
+    role: false,
+    isdead: false,
+    isAiCitizen: index > 0
+  }))
+  const room = { room: 'mayhem-setup', category: 'mayhem', player: players, dead: [] }
+  const rooms = { [room.room]: room }
+
+  assert.equal(roleGenerator(room.room, rooms), true)
+  const mayhemDistribution = roleAmount(room.room, rooms, undefined, players.length)
+  assert.equal(Object.entries(mayhemDistribution)
+    .filter(([role]) => role !== 'warga' && !CUSTOM_ANTAGONIST_ROLES.includes(role))
+    .every(([, amount]) => amount === 1), true)
+  const antagonists = players.filter((player) =>
+    getWerewolfPlayerFaction(room, player) === 'antagonist'
+  )
+  const protagonists = players.filter((player) =>
+    getWerewolfPlayerFaction(room, player) === 'protagonist'
+  )
+  assert.ok(antagonists.length > 0)
+  assert.ok(protagonists.length > antagonists.length)
+
+  const attackRoom = {
+    room: 'mayhem-attacks',
+    category: 'mayhem',
+    player: [
+      { id: 'wolf', number: 1, role: 'werewolf', isdead: false },
+      { id: 'mafia', number: 2, role: 'mafia', isdead: false },
+      { id: 'villager', number: 3, role: 'warga', isdead: false }
+    ],
+    dead: [],
+    nightActions: {
+      wolf: { type: 'kill', targetNumber: 2 },
+      mafia: { type: 'kill', targetNumber: 3 },
+      villager: { type: 'skip' }
+    }
+  }
+  const attackRooms = { [attackRoom.room]: attackRoom }
+
+  assert.equal(resolveNightActions(attackRoom.room, attackRooms), true)
+  assert.equal(attackRoom.player[1].isdead, true)
+  assert.equal(attackRoom.player[2].isdead, true)
+  assert.equal(attackRoom.activityLog.filter((entry) => entry.action === 'kill').length, 2)
+  assert.equal(attackRoom.activityLog.some((entry) => entry.action === 'skip'), false)
+})
+
+test('Mayhem antagonists can target one another while standard factions cannot', () => {
+  const mayhem = {
+    category: 'mayhem',
+    player: [
+      { id: 'wolf', number: 1, role: 'werewolf', isdead: false },
+      { id: 'mafia', number: 2, role: 'mafia', isdead: false },
+      { id: 'villager', number: 3, role: 'warga', isdead: false }
+    ]
+  }
+  const mayhemCodes = Object.values(buildRoleCodeMap(mayhem, mayhem.player[0]))
+    .filter((choice) => choice.type === 'kill')
+  assert.deepEqual(new Set(mayhemCodes.map((choice) => choice.targetNumber)), new Set([2, 3]))
+
+  const werewolf = {
+    category: 'werewolf',
+    player: [
+      { id: 'wolf', number: 1, role: 'werewolf', isdead: false },
+      { id: 'other-wolf', number: 2, role: 'werewolf', isdead: false },
+      { id: 'villager', number: 3, role: 'warga', isdead: false }
+    ]
+  }
+  const werewolfCodes = Object.values(buildRoleCodeMap(werewolf, werewolf.player[0]))
+    .filter((choice) => choice.type === 'kill')
+  assert.deepEqual(werewolfCodes.map((choice) => choice.targetNumber), [3])
+
+  const mayhemVigilante = {
+    category: 'mayhem',
+    player: [
+      { id: 'vigilante', number: 1, role: 'vigilante', isdead: false },
+      { id: 'antagonist', number: 2, role: 'mafia', isdead: false },
+      { id: 'protagonist', number: 3, role: 'warga', isdead: false }
+    ]
+  }
+  const vigilanteCodes = Object.values(buildRoleCodeMap(mayhemVigilante, mayhemVigilante.player[0]))
+    .filter((choice) => choice.type === 'kill')
+  assert.deepEqual(new Set(vigilanteCodes.map((choice) => choice.targetNumber)), new Set([2, 3]))
+})
+
+test('Vigilante wins after eliminating all antagonists and loses if eliminated first', () => {
+  const vigilante = { id: 'vigilante', number: 1, role: 'vigilante', isdead: false }
+  const antagonist = { id: 'antagonist', number: 2, role: 'mafia', isdead: false }
+  const room = {
+    room: 'vigilante-winner',
+    category: 'vigilante',
+    player: [vigilante, antagonist],
+    voting: false
+  }
+  const rooms = { [room.room]: room }
+
+  assert.equal(getWinner(room.room, rooms).status, null)
+  antagonist.isdead = true
+  vigilante.isdead = true
+  assert.equal(getWinner(room.room, rooms).status, true)
+
+  antagonist.isdead = false
+  assert.equal(getWinner(room.room, rooms).status, false)
 })
