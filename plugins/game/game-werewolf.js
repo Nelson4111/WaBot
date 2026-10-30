@@ -48,22 +48,22 @@ const thumbExecution = "https://user-images.githubusercontent.com/72728486/23535
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*╭━━━〔 🎭 GAME ROLES 〕━━━╮*
 
-Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada antagonis yang menyamar; cari tahu siapa mereka sebelum terlambat.
+> Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada antagonis yang menyamar; cari tahu siapa mereka sebelum terlambat.
 
 *🌙 MALAM*
-Pemain menjalankan kemampuan role secara rahasia. Antagonis memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
+> Pemain menjalankan kemampuan role secara rahasia. Antagonis memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
 
 *☀️ SIANG*
-Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi. Role yang gugur akan terungkap.
+> Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi. Role yang gugur akan terungkap.
 
 *🏆 TUJUAN PERMAINAN*
-Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
+> Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
 
 *🕹️ MULAI BERMAIN*
-Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
+> Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
 
 *╰━━━━━━━━━━━━━━━━━━━━━━╯*
-Pilih tombol di bawah untuk menjelajahi game dan role yang tersedia.`
+> Pilih tombol di bawah untuk menjelajahi game dan role yang tersedia.`
     const menuButtons = [
         ['🎮 Daftar Game', `${usedPrefix}gr list`],
         ['🎭 Daftar Role', `${usedPrefix}gr role`],
@@ -106,12 +106,16 @@ const formatRoleDetails = (role, game) => {
     const data = ROLE_DATA[role]
     if (!data) return null
     const title = role === game.antagonist ? game.antagonistName : data.title
-    const details = [`*${data.emoji} ${title}*`, data.description, `*Efek dalam game:* ${roleEffects[role]}`]
+    const details = [
+        `*${data.emoji} ${title}*`,
+        `> ${data.description}`,
+        `> *Efek dalam game:* ${roleEffects[role]}`
+    ]
     if (role === 'sorcerer') {
-        details.push('Jika ada antagonis lain, racun membuat Sorcerer berpihak kepada antagonis, revive membuatnya berpihak kepada warga, dan melewati aksi membuatnya tetap netral.')
+        details.push('> Jika ada antagonis lain, racun membuat Sorcerer berpihak kepada antagonis, revive membuatnya berpihak kepada warga, dan melewati aksi membuatnya tetap netral.')
     }
     if (role === 'cipher') {
-        details.push('Sandi huruf: A=4, I=1, E=3, O=0, B=8, L=7, S=5, Q=9, G=6. Pesan biasa harus mengandung angka dan tidak boleh memuat huruf-huruf tersebut.')
+        details.push('> Sandi huruf: A=4, I=1, E=3, O=0, B=8, L=7, S=5, Q=9, G=6. Pesan biasa harus mengandung angka dan tidak boleh memuat huruf-huruf tersebut.')
     }
     return details.join('\n\n')
 }
@@ -788,7 +792,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const categories = Object.values(GAME_CATEGORIES)
                 .map((entry) => `> ${entry.antagonistEmoji} *${entry.name}*\n>   ${entry.description}\n>   Buat room: *${usedPrefix}${entry.aliases[0]} create*${entry.id === 'custom' ? `\n>   Atur role: *${usedPrefix}custom role @pemain <role/nomor>* · autorole · list` : ''}`)
                 .join('\n')
-            return conn.sendButton(chat, `*╭━━━〔 🎮 PILIH GAME 〕━━━╮*\n\n${categories}\n\n*╰━━━━━━━━━━━━━━━━━━━━━━╯*\nPilih kategori untuk melihat detail atau langsung buat room.`, 'Avelia • Pilihan Game', thumbNight, [
+            return conn.sendButton(chat, `*╭━━━〔 🎮 PILIH GAME 〕━━━╮*\n\n${categories}\n\n*╰━━━━━━━━━━━━━━━━━━━━━━╯*\n> Pilih kategori untuk melihat detail atau langsung buat room.`, 'Avelia • Pilihan Game', thumbNight, [
                 ['📖 Panduan', `${usedPrefix}gr guide`],
                 ['🎭 Daftar Role', `${usedPrefix}gr role`],
                 ['🏠 Menu Utama', `${usedPrefix}gr`]
@@ -799,13 +803,13 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             if (!category) return m.reply(status.warning(`Pilih kategori: ${Object.values(GAME_CATEGORIES).map((entry) => entry.id).join(', ')}. Contoh: *${usedPrefix}gr info mafia*`))
             const infoText = `*── ${category.antagonistEmoji} INFO ${category.name.toUpperCase()} ──*
 
-📝 ${category.description}
+> 📝 ${category.description}
 
-🌙 Malam: pemain menjalankan aksi sesuai peran.
-⚖️ Siang: diskusi dan voting menentukan tersangka.
-🏆 Menang dengan mencapai kondisi kemenangan tim atau role masing-masing.
+> 🌙 Malam: pemain menjalankan aksi sesuai peran.
+> ⚖️ Siang: diskusi dan voting menentukan tersangka.
+> 🏆 Menang dengan mencapai kondisi kemenangan tim atau role masing-masing.
 
-Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
+> Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
             return m.reply(infoText)
         }
         if (action === 'role') {
@@ -822,14 +826,14 @@ Mulai room: *${usedPrefix}${category.aliases[0]} create [taruhan]*`
                     return `> *${index + 1}.* ${data.emoji} *${roleName}* — ${getRoleShortEffect(role, gameCategory)}`
                 })
                 .join('\n\n')
-            return conn.sendButton(chat, `*╭━━━〔 🎭 ROLE & EFEK 〕━━━╮*\n\n${roleSections}\n\n*╰━━━━━━━━━━━━━━━━━━━━━━╯*\nEfek di atas adalah ringkasan kemampuan saat bermain. Untuk membaca latar karakter dan penjelasan lengkap, ketik *.gr role <nama role>*.\nContoh: *.gr role seer* atau *.gr role cipher*.\n\nMode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2*.`, 'Avelia • Daftar Role', thumbNight, [
+            return conn.sendButton(chat, `*╭━━━〔 🎭 ROLE & EFEK 〕━━━╮*\n\n${roleSections}\n\n*╰━━━━━━━━━━━━━━━━━━━━━━╯*\n> Efek di atas adalah ringkasan kemampuan saat bermain.\n> Untuk membaca latar karakter dan penjelasan lengkap, ketik *.gr role <nama role>*.\n> Contoh: *.gr role seer* atau *.gr role cipher*.\n\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2*.`, 'Avelia • Daftar Role', thumbNight, [
                 ['🎮 Daftar Game', `${usedPrefix}gr list`],
                 ['📖 Panduan', `${usedPrefix}gr guide`],
                 ['🏠 Menu Utama', `${usedPrefix}gr`]
             ], m)
         }
         if (action === 'guide') {
-            return m.reply(`*── ✧ PANDUAN GAME ROLES ✧ ──*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, atau Custom Role.\n> 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur manual dengan *.custom role @pemain <role/nomor>*, dan periksa pembagian dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n                        > 6. Kartu aksi dan balasan pribadi (termasuk konfirmasi sukses/gagal serta hasil ramalan) dikirim di grup melalui dual-stanza tanpa reply. Pemain terkait melihat detailnya; anggota lain hanya melihat teks pengunci. Pilihan Hunter dapat dilakukan lewat tombol atau perintah yang tercantum di pesan.\n> 7. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 8. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
+            return m.reply(`*── ✧ PANDUAN GAME ROLES ✧ ──*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, atau Custom Role.\n> 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur manual dengan *.custom role @pemain <role/nomor>*, dan periksa pembagian dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n> 6. Kartu aksi dan balasan pribadi (termasuk konfirmasi sukses/gagal serta hasil ramalan) dikirim di grup melalui dual-stanza tanpa reply. Pemain terkait melihat detailnya; anggota lain hanya melihat teks pengunci. Pilihan Hunter dapat dilakukan lewat tombol atau perintah yang tercantum di pesan.\n> 7. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 8. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
         }
         if (['command', 'commands', 'cmd'].includes(action)) {
             const commandText = Object.values(GAME_CATEGORIES)
