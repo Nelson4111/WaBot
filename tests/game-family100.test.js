@@ -3,6 +3,7 @@ import test from 'node:test'
 import family100 from '../plugins/game/game-family100.js'
 import { before as handleFamily100Answer } from '../plugins/game/game-family100_ans.js'
 import { awardFamily100Mvp } from '../plugins/game/game-family100-score.js'
+import { FAMILY100_RESTART_COOLDOWN, getFamily100CooldownRemaining, startFamily100Cooldown } from '../plugins/game/game-family100-state.js'
 
 function createMessage(sender, text = '', pushName = sender) {
     const replies = []
@@ -64,6 +65,7 @@ test('correct answers award persistent points and only answerers can vote surren
         creator: 'creator@s.whatsapp.net',
         participants: [],
         surrenderVotes: [],
+        startedAt: Date.now() - 60_000,
         timeout
     }
 
@@ -102,13 +104,56 @@ test('three participants need two surrender votes', async () => {
         jawaban: ['satu', 'dua', 'tiga'],
         terjawab: ['player1@s.whatsapp.net', 'player2@s.whatsapp.net', 'player3@s.whatsapp.net'],
         participants: ['player1@s.whatsapp.net', 'player2@s.whatsapp.net', 'player3@s.whatsapp.net'],
-        surrenderVotes: []
+        surrenderVotes: [],
+        startedAt: Date.now() - 60_000
     }
 
     await handleFamily100Answer.call(conn, createMessage('player1@s.whatsapp.net', 'nyerah'))
     assert.ok(conn.game[roomId])
     await handleFamily100Answer.call(conn, createMessage('player2@s.whatsapp.net', 'nyerah'))
     assert.equal(conn.game[roomId], undefined)
+    assert.ok(getFamily100CooldownRemaining(conn.game, 'group@g.us') > 0)
+})
+
+test('surrender is blocked until one minute after the game starts', async () => {
+    const conn = createConnection()
+    const roomId = 'family100_' + 'group@g.us'
+    conn.game[roomId] = {
+        startedAt: Date.now() - 59_000,
+        creator: 'creator@s.whatsapp.net',
+        participants: ['player1@s.whatsapp.net'],
+        surrenderVotes: [],
+        terjawab: ['player1@s.whatsapp.net'],
+        jawaban: ['satu']
+    }
+
+    const earlyVote = createMessage('player1@s.whatsapp.net', 'nyerah')
+    await handleFamily100Answer.call(conn, earlyVote)
+    assert.match(earlyVote.replies[0], /Voting menyerah bisa dimulai/)
+    assert.deepEqual(conn.game[roomId].surrenderVotes, [])
+
+    conn.game[roomId].startedAt = Date.now() - 60_000
+    await handleFamily100Answer.call(conn, createMessage('player1@s.whatsapp.net', 'nyerah'))
+    assert.equal(conn.game[roomId], undefined)
+})
+
+test('restart cooldown lasts ten seconds', () => {
+    const game = {}
+    startFamily100Cooldown(game, 'group@g.us', 1_000)
+    assert.equal(getFamily100CooldownRemaining(game, 'group@g.us', 1_000), FAMILY100_RESTART_COOLDOWN)
+    assert.equal(getFamily100CooldownRemaining(game, 'group@g.us', 10_999), 1)
+    assert.equal(getFamily100CooldownRemaining(game, 'group@g.us', 11_000), 0)
+})
+
+test('Family100 command refuses to start during the restart cooldown', async () => {
+    const conn = createConnection()
+    startFamily100Cooldown(conn.game, 'group@g.us')
+
+    const message = createMessage('player@s.whatsapp.net')
+    await family100.call(conn, message, { args: [] })
+
+    assert.match(message.replies[0], /Tunggu 10 detik/)
+    assert.equal(conn.game['family100_group@g.us'], undefined)
 })
 
 test('unique top answerer receives two bonus points and is announced as MVP', async () => {

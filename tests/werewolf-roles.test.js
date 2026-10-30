@@ -464,6 +464,42 @@ test('Mayhem dawn uses one story and lists the victim while identifying the atta
   assert.doesNotMatch(morning, /Rin/)
 })
 
+test('regular game dawn separates each death story and shows the victim role', () => {
+  const morning = pagii({
+    category: 'werewolf',
+    day: 3,
+    guardian: [],
+    player: [
+      { id: 'mika', number: 1, role: 'warga', displayName: 'Mika', isAiCitizen: true },
+      { id: 'raka', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true }
+    ],
+    dead: [1, 2]
+  })
+
+  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 3)
+  assert.equal((morning.match(/> ↳/g) || []).length, 2)
+  assert.match(morning, /↳ Mika — \*Warga 👱‍♂️\*/)
+  assert.match(morning, /↳ Raka — \*Seer 👳\*/)
+  assert.doesNotMatch(morning, /\d+ player/)
+})
+
+test('dawn without deaths reports protected players in a separate section', () => {
+  const morning = pagii({
+    category: 'mafia',
+    day: 1,
+    guardian: [2],
+    player: [
+      { id: 'mafia', number: 1, role: 'mafia', displayName: 'Mika', isAiCitizen: true },
+      { id: 'guarded', number: 2, role: 'warga', displayName: 'Raka', isAiCitizen: true }
+    ],
+    dead: []
+  })
+
+  assert.match(morning, /Guardian melindungi Raka/)
+  assert.match(morning, /90 detik/)
+  assert.doesNotMatch(morning, /tidak ada korban malam ini/)
+})
+
 test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist attack independently', () => {
   const players = Array.from({ length: 5 }, (_, index) => ({
     id: `player-${index}`,
