@@ -702,6 +702,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
     const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(String(command || '').toLowerCase())
+    if (isGameRolesCommand && args.length === 1 && normalizeGameCategory(args[0])) args = []
     const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(command) : null
     let gameCategory = directGameCategory || getGameCategory('ww')
     const routedGameCategory = isGameRolesCommand && Boolean(normalizeGameCategory(args[0]))
