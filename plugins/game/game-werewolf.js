@@ -208,11 +208,6 @@ const resolveRoleChoice = (value) => {
     )?.[0] || null
 }
 
-const getRealPlayerCount = (room) => {
-    if (!room || !Array.isArray(room.player)) return 0
-    return room.player.filter((p) => !p?.isDummy && !p?.isAiCitizen).length
-}
-
 const getTotalPlayerCount = (room) => room?.player?.length || 0
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const getRandomItem = (items) => items[Math.floor(Math.random() * items.length)]
@@ -1341,7 +1336,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         if (room.owner !== sender && !hasRpgPanelAccess(sender)) {
             return m.reply(status.error('Hanya owner room atau moderator yang dapat membagikan role otomatis.'))
         }
-        const playerCount = getRealPlayerCount(room)
+        const playerCount = room.player.filter((player) => !player.isDummy).length
         if (playerCount < 5 || playerCount > 15) {
             return m.reply(status.warning(`Role otomatis membutuhkan 5–15 pemain (saat ini: ${playerCount}).`))
         }
@@ -1572,7 +1567,6 @@ ${rosterText.trim()}
     } else if (value === "start") {
         if (!ww[chat]) return m.reply(status.error("Belum ada sesi permainan."))
         if (args[1] !== undefined) return m.reply(status.warning(`Taruhan ditentukan saat membuat room. Gunakan *${gameCommandBase} create <taruhan>*; tanpa taruhan cukup *${gameCommandBase} create*.`))
-        if (getRealPlayerCount(ww[chat]) < 1) return m.reply(status.error("Minimal 1 pemain asli untuk memulai game."))
         if (getTotalPlayerCount(ww[chat]) < 5) return m.reply(status.warning(`Pemain belum mencukupi! Minimal 𝟻 pemain (saat ini: ${toSmallNum(getTotalPlayerCount(ww[chat]))}). Gunakan *${gameCommandBase} add warga* jika ingin menambah warga AI.`))
         if (ww[chat].status === true) return m.reply(status.warning("Permainan sudah berjalan."))
         if (ww[chat].owner !== sender && !hasRpgPanelAccess(sender)) {
@@ -1597,14 +1591,16 @@ ${rosterText.trim()}
 
         if (ww[chat].category === 'custom') {
             const unassignedPlayers = ww[chat].player.filter((player) =>
-                !player.isDummy && !player.isAiCitizen && !validRoleName(ww[chat].customRoles?.[player.id] || player.role)
+                !player.isDummy && !validRoleName(
+                    ww[chat].customRoles?.[player.id] || (player.isAiCitizen ? null : player.role)
+                )
             )
             if (unassignedPlayers.length) {
                 const names = unassignedPlayers.map(getDisplayPlayerLabel).join(', ')
                 return m.reply(status.warning(`Role custom belum diatur untuk: ${names}.\nAtur dengan *${gameCommandBase} role @pemain <role/nomor>* sebelum memulai.`))
             }
-            const customRoles = ww[chat].player.filter((player) => !player.isDummy && !player.isAiCitizen)
-                .map((player) => ww[chat].customRoles?.[player.id] || player.role)
+            const customRoles = ww[chat].player.filter((player) => !player.isDummy)
+                .map((player) => ww[chat].customRoles?.[player.id] || (player.isAiCitizen ? null : player.role))
             const validation = validateCustomRoles(customRoles, { requireAntagonist: true })
             if (!validation.valid) {
                 const reason = validation.reason === 'multiple-antagonists'
