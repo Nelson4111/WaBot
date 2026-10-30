@@ -8,6 +8,7 @@ import {
   PROTAGONIST_WIN_STORIES,
   ROLE_DATA,
   ROLE_DEATH_STORIES,
+  WARGA_AI_MESSAGES,
   getGameCategory,
   getRandomHideActions,
   getSorcererFaction,
@@ -80,6 +81,11 @@ test('editable action and attack narrative lists start with requested sizes', ()
   assert.ok(ROLE_DEATH_STORIES.guardian.length >= 5)
   assert.ok(ROLE_DEATH_STORIES.seer.length >= 5)
   assert.ok(HIDE_ACTIONS.slice(0, 10).every((action) => action.length <= 25))
+})
+
+test('AI citizen conversation includes suspicion messages with a dynamic target', () => {
+  assert.equal(WARGA_AI_MESSAGES.length, 10)
+  assert.equal(WARGA_AI_MESSAGES.filter((message) => message.includes('{target}')).length, 5)
 })
 
 test('hide action choices are capped at five and exclude previously used actions', () => {
