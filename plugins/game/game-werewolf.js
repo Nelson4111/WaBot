@@ -754,24 +754,16 @@ const startDayVoting = async (conn, chat, ww) => {
     clearAllVote(chat, ww)
 
     const livingPlayers = room.player.filter((p) => !p.isdead)
-    let playerListText = ''
-    livingPlayers.forEach((p) => {
-        const pLabel = getPlayerMentionLabel(p, conn)
-        playerListText += `> (${toSmallNum(p.number)}) ⟡ ${pLabel}\n`
-    })
 
     const game = getGameCategory(room.category)
     const votingCard = `*━━━〔 ${game.name.toUpperCase()} · SIDANG 〕━━━*
 > ⚖️ _Matahari tepat di atas kepala, warga berkumpul menentukan takdir..._
 
-*━━━〔 ✦ ᴅᴀꜰᴛᴀʀ ᴡᴀʀɢᴀ ʜɪᴅᴜᴘ 〕━━━*
-${playerListText.trim()}
-*━━━━━━━━━━━━━━*
-
 *━━━〔 ✦ ɪɴꜰᴏ ᴠᴏᴛɪɴɢ 〕━━━*
 > ⟡ Waktu : *𝟿𝟶 Detik*
 > ⟡ Pilihan dan kode voting bersifat rahasia untuk setiap pemain.
 > ⟡ Gunakan tombol 🔐 yang hanya terlihat olehmu.
+> ⟡ Jika tombol bermasalah, ketik *${room.commandBase || '.ww'} <kode>* di chat (contoh: *${room.commandBase || '.ww'} K7Z4*).
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
 > _Pilihlah dengan bijak, jangan biarkan ${game.antagonistName} memperdaya kalian!_`
@@ -787,8 +779,8 @@ ${playerListText.trim()}
             return {
                 code,
                 label: target
-                    ? `> 🔒 ${code} — Vote ${getDisplayPlayerLabel(target, conn)}`
-                    : `> 🔒 ${code} — Lewati voting`,
+                    ? `> (${toSmallNum(target.number)}) 🔒 ${code} — Vote ${getDisplayPlayerLabel(target, conn)}`
+                    : `> (—) 🔒 ${code} — Lewati voting`,
                 id: `${room.commandBase || '.ww'} ${code}`
             }
         })
