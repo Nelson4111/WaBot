@@ -542,9 +542,9 @@ ${morningBody}
 }
 
 const publishMorning = async (conn, chat, room, ww, announce = true) => {
+    if (announce) await sendMorningAnnouncement(conn, chat, room)
     const winner = getWinner(chat, ww)
     if (winner.status !== null) return await win(room, 1, conn, ww)
-    if (announce) await sendMorningAnnouncement(conn, chat, room)
     await startDayVoting(conn, chat, ww)
 }
 
@@ -720,10 +720,6 @@ const resolveNightToMorning = async (conn, chat, ww) => {
     shortPlayer(chat, ww)
     killww(chat, room.dead, ww)
     changeDay(chat, ww)
-
-    if (getWinner(chat, ww).status === 'fixer') {
-        return await win(room, 1, conn, ww)
-    }
 
     const pendingHunter = room.player.find((player) => player.pendingHunter)
     if (pendingHunter) {
