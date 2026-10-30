@@ -8,6 +8,7 @@ import {
   getWerewolfPlayerFaction,
   getWinner,
   getNightProgress,
+  getVigilanteCount,
   roleAmount,
   roleGenerator,
   resolveSecretCodeAction,
@@ -306,6 +307,62 @@ test('Vigilante mode assigns the sole Vigilante to a human and antagonists to ev
   assert.equal(roleAmount(room.room, rooms, undefined, players.length).vigilante, 1)
 })
 
+test('Vigilante count scales with room size and all Vigilantes capture instead of attack', () => {
+  assert.deepEqual([5, 7, 8, 10, 13, 15].map(getVigilanteCount), [1, 1, 2, 3, 4, 4])
+  for (const playerCount of [8, 13]) {
+    const room = {
+      room: `vigilante-count-${playerCount}`,
+      category: 'vigilante',
+      player: Array.from({ length: playerCount }, (_, index) => ({
+        id: `participant-${index}`,
+        number: index + 1,
+        isAiCitizen: index > 0,
+        isdead: false
+      }))
+    }
+    const roles = roleAmount(room.room, { [room.room]: room }, undefined, playerCount)
+    assert.equal(roles.vigilante, getVigilanteCount(playerCount))
+  }
+
+  const scaledRoom = {
+    room: 'vigilante-scaled-assignment',
+    category: 'vigilante',
+    player: Array.from({ length: 8 }, (_, index) => ({
+      id: `scaled-${index}`,
+      number: index + 1,
+      role: false,
+      isdead: false,
+      isAiCitizen: index > 0
+    })),
+    dead: []
+  }
+  assert.equal(roleGenerator(scaledRoom.room, { [scaledRoom.room]: scaledRoom }), true)
+  assert.equal(scaledRoom.player.filter((player) => player.role === 'vigilante').length, 2)
+  assert.equal(scaledRoom.player[0].role, 'vigilante')
+
+  const room = {
+    room: 'capture-test',
+    category: 'vigilante',
+    player: [
+      { id: 'vigilante', number: 1, role: 'vigilante', isdead: false },
+      { id: 'antagonist', number: 2, role: 'mafia', isdead: false, effect: ['guardian'] }
+    ],
+    dead: [],
+    guardian: [],
+    nightActions: {}
+  }
+  const rooms = { [room.room]: room }
+  const codes = buildRoleCodeMap(room, room.player[0])
+  const captureCode = Object.keys(codes).find((code) => codes[code].targetNumber === 2)
+
+  assert.equal(codes[captureCode].type, 'capture')
+  assert.equal(resolveSecretCodeAction(room.room, 'vigilante', captureCode, rooms).action, 'capture')
+  assert.equal(resolveNightActions(room.room, rooms), true)
+  assert.equal(room.player[1].isdead, true)
+  assert.equal(room.player[1].lastDeathCause, 'capture')
+  assert.equal(room.activityLog[0].action, 'capture')
+})
+
 test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist attack independently', () => {
   const players = Array.from({ length: 5 }, (_, index) => ({
     id: `player-${index}`,
@@ -330,6 +387,31 @@ test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist
   )
   assert.ok(antagonists.length > 0)
   assert.ok(protagonists.length > antagonists.length)
+
+  const mayhemAi = {
+    id: 'ai-antagonist',
+    number: 6,
+    role: 'mafia',
+    isAiCitizen: true,
+    isdead: false
+  }
+  const mayhemAiTarget = { id: 'target', number: 7, role: 'warga', isdead: false }
+  const mayhemAiRoom = {
+    room: 'mayhem-ai-skip',
+    category: 'mayhem',
+    player: [mayhemAi, mayhemAiTarget],
+    dead: [],
+    nightActions: {}
+  }
+  const aiCodes = buildRoleCodeMap(mayhemAiRoom, mayhemAi)
+  assert.deepEqual(Object.values(aiCodes), [{ type: 'skip', label: 'Lewati Malam' }])
+  const aiSkipCode = Object.keys(aiCodes)[0]
+  assert.equal(resolveSecretCodeAction(mayhemAiRoom.room, mayhemAi.id, aiSkipCode, {
+    [mayhemAiRoom.room]: mayhemAiRoom
+  }).action, 'skip')
+  assert.equal(resolveNightActions(mayhemAiRoom.room, { [mayhemAiRoom.room]: mayhemAiRoom }), true)
+  assert.equal(mayhemAiTarget.isdead, false)
+  assert.equal(mayhemAiRoom.activityLog.some((entry) => entry.action === 'kill'), false)
 
   const attackRoom = {
     room: 'mayhem-attacks',
