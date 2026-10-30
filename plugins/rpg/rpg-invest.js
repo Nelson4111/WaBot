@@ -1,5 +1,5 @@
-import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
+import { addRpgMoney, compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
@@ -234,12 +234,12 @@ const MARKET_NAMES = {
   recovery: 'Market Recovery', sideways: 'Sideways', run: 'Bull Run'
 }
 
-const money = value => `Rp ${Math.round(value).toLocaleString('id-ID')}`
+const money = value => `Rp ${typeof value === 'bigint' ? value.toLocaleString('id-ID') : Math.round(value).toLocaleString('id-ID')}`
 const number = value => Number(value).toLocaleString('id-ID', { maximumFractionDigits: 6 })
-const signedMoney = value => `${value >= 0 ? '+' : '-'}${money(Math.abs(value))}`
-const line = '─'.repeat(28)
-const title = text => `╭─「 ${text} 」─╮`
-const footer = () => `╰${line}╯`
+const signedMoney = value => `${value >= 0 ? '+' : '-'}${money(typeof value === 'bigint' ? (value < 0 ? -value : value) : Math.abs(value))}`
+const line = '─━━━━━━━━━━━━━━─'
+const title = text => `╭─❏「 📈 ${text} 」❏\n│ INVEST RPG\n╰─━━━━━━━━━━━━━━─`
+const footer = () => line
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 const random = (min, max) => min + Math.random() * (max - min)
@@ -259,7 +259,11 @@ function ensureMarket(db) {
 
 function getNewsImpact(news, symbol, item) {
   const impact = news?.impact || {}
-  return impact[symbol] || impact[item.category] || impact.all || 0
+  const normalizeKey = value => String(value).toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const symbolImpact = Object.entries(impact).find(([key]) => normalizeKey(key) === normalizeKey(symbol))?.[1] || 0
+  const categoryImpact = Object.entries(impact).find(([key]) => normalizeKey(key) === normalizeKey(item.category))?.[1] || 0
+  const generalImpact = Number(impact.all) || 0
+  return (Number(symbolImpact) || 0) + (Number(categoryImpact) || 0) + generalImpact
 }
 
 function chooseRegime() {
@@ -334,12 +338,13 @@ function formatChange(current, history) {
 }
 
 function statusIcon(value) {
-  return Number.isFinite(value) && value >= 0 ? 'UP' : 'DOWN'
+  if (!Number.isFinite(value)) return '•'
+  return value >= 0 ? '📈' : '📉'
 }
 
 function marketHeader(market) {
   const next = Math.max(0, Math.ceil((TICK_MS - (Date.now() - market.updatedAt)) / 60000))
-  return `MARKET: ${MARKET_NAMES[market.regime] || market.regime} | UPDATE: ${next}m`
+  return `Kondisi pasar\n${MARKET_NAMES[market.regime] || market.regime}\nPembaruan berikutnya\n${next} menit`
 }
 
 function portfolioValue(invest, market) {
@@ -352,8 +357,8 @@ function portfolioCost(invest) {
 
 function historyLine(entry) {
   const action = entry.side === 'BUY' ? 'BELI' : 'JUAL'
-  const extra = entry.side === 'SELL' && Number.isFinite(entry.realized) ? `\n   P/L: ${signedMoney(entry.realized)}` : ''
-  return `• ${action} ${entry.symbol} x${number(entry.qty)}\n   Harga: ${money(entry.price)} | Fee: ${money(entry.fee)}${extra}`
+  const extra = entry.side === 'SELL' && Number.isFinite(entry.realized) ? `\n   Untung/rugi: ${signedMoney(entry.realized)}` : ''
+  return `• ${action} ${entry.symbol}\n   Jumlah: ${number(entry.qty)}\n   Harga: ${money(entry.price)}\n   Biaya: ${money(entry.fee)}${extra}`
 }
 
 function getBankProfile(user) {
@@ -377,32 +382,108 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (changed) await saveDB(db)
 
   const args = (text || '').trim().split(/\s+/).filter(Boolean)
-  const action = (args[0] || 'market').toLowerCase()
+  const action = (args[0] || 'intro').toLowerCase()
   const prefix = usedPrefix || '.'
+  const replyInvest = (message, buttons, includeMenu = true) => sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    text: message,
+    footer: 'AVELIA • INVEST RPG',
+    sections: [{
+      title: 'Navigasi Invest',
+      rows: [
+        ...buttons.map(([label, command]) => ({ title: label, id: command })),
+        ...(includeMenu ? [{ title: '🏠 Menu Invest', id: `${prefix}invest menu` }] : [])
+      ]
+    }],
+    quoted: m,
+    reply: fallbackText => m.reply(fallbackText)
+  })
+
+  if (action === 'intro' || action === 'about' || action === 'tentang') {
+    const message =
+      `${title('MENGENAL INVESTASI')}\n\n` +
+      `Invest adalah fitur simulasi pasar di RPG. Kamu dapat membeli dan menjual aset, memantau perubahan harga, serta melihat nilai portofolio.\n\n` +
+      `Transaksi menggunakan saldo bank RPG. Harga aset bergerak secara berkala, jadi nilai investasi bisa naik maupun turun. Fitur ini hanya untuk permainan dan tidak menggunakan uang sungguhan.\n\n` +
+      `Mulai dengan membaca panduan atau lihat daftar command yang tersedia.\n\n` +
+      `${footer()}`
+    return replyInvest(message, [
+      ['📖 Buka Guide', `${prefix}invest guide`],
+      ['📚 Lihat Command', `${prefix}invest command`],
+      ['📊 Menu Invest', `${prefix}invest menu`]
+    ], false)
+  }
+
+  if (action === 'menu' || action === 'home') {
+    const holdings = Object.entries(invest.portfolio)
+    const floating = portfolioValue(invest, market) - portfolioCost(invest)
+    const message =
+      `${title('INVEST RPG')}\n\n` +
+      `◈ RINGKASAN INVEST ◈\n` +
+      `◆ Saldo bank : ${money(user.bank)}\n` +
+      `◆ Aset dimiliki : ${holdings.length} instrumen\n` +
+      `◆ Floating P/L : ${signedMoney(floating)}\n` +
+      `◆ Biaya transaksi : ${(FEE_RATE * 100).toFixed(2)}% saat beli dan jual\n\n` +
+      `◈ KONDISI MARKET ◈\n${marketHeader(market)}\n\n` +
+      `Pilih tombol atau ketik ${prefix}invest guide untuk mulai.\n${footer()}`
+    return replyInvest(message, [
+      ['📊 Lihat Market', `${prefix}invest market`],
+      ['📖 Panduan Invest', `${prefix}invest guide`]
+    ])
+  }
 
   if (action === 'help' || action === 'guide' || action === 'panduan') {
-    return m.reply(
-      `${title('INVEST RPG GUIDE')}\n` +
-      `${prefix}invest list\n` +
-      `${prefix}invest market [kategori]\n` +
-      `${prefix}invest price <symbol>\n` +
-      `${prefix}invest buy <symbol> <jumlah>\n` +
-      `${prefix}invest sell <symbol> <jumlah>\n` +
-      `${prefix}invest portfolio\n` +
-      `${prefix}invest news\n` +
-      `${prefix}invest chart <symbol>\n` +
-      `${prefix}invest watch add/del <symbol>\n` +
-      `${prefix}invest watch list\n` +
-      `${prefix}invest history\n\n` +
-      `Alur dasar:\n` +
-      `1. Cek ${prefix}invest market\n` +
-      `2. Baca ${prefix}invest news\n` +
-      `3. Beli dengan ${prefix}invest buy BTC 0.01\n` +
-      `4. Pantau ${prefix}invest portfolio\n` +
-      `5. Jual saat target tercapai\n\n` +
-      `Fee transaksi: ${(FEE_RATE * 100).toFixed(2)}%\n` +
-      `Semua transaksi memakai saldo bank RPG.\n${footer()}`
-    )
+    const message =
+      `${title('PANDUAN INVEST')}\n\n` +
+      `1️⃣ Siapkan saldo\n` +
+      `Transaksi memakai saldo bank RPG. Pastikan kartu bank aktif dan saldo cukup.\n\n` +
+      `2️⃣ Kenali aset dan harga\n` +
+      `Ketik ${prefix}invest list untuk melihat aset.\n` +
+      `Ketik ${prefix}invest price BTC untuk melihat harga, kategori, dan risiko.\n\n` +
+      `3️⃣ Beli aset\n` +
+      `Format: ${prefix}invest buy <symbol> <jumlah>\n` +
+      `Contoh: ${prefix}invest buy BTC 0.01\n` +
+      `Jumlah boleh pecahan. Saldo bank dipotong sesuai harga dan biaya transaksi.\n\n` +
+      `4️⃣ Pantau investasi\n` +
+      `Ketik ${prefix}invest portfolio untuk melihat nilai aset dan untung/rugi.\n` +
+      `Gunakan ${prefix}invest news untuk membaca berita market.\n\n` +
+      `5️⃣ Jual aset\n` +
+      `Format: ${prefix}invest sell <symbol> <jumlah>\n` +
+      `Contoh: ${prefix}invest sell BTC 0.01\n` +
+      `Jumlah jual tidak boleh melebihi aset yang kamu miliki.\n\n` +
+      `ℹ️ Catatan penting\n` +
+      `• Biaya transaksi ${(FEE_RATE * 100).toFixed(2)}% berlaku saat beli dan jual.\n` +
+      `• Harga bergerak setiap 10 menit dan diperbarui saat command Invest digunakan.\n` +
+      `• Harga bisa naik atau turun; keuntungan tidak dijamin.\n` +
+      `• Kamu bisa melihat contoh lengkap command di ${prefix}invest command.\n` +
+      `Semua saldo dan aset tersimpan di RPG.\n${footer()}`
+    return replyInvest(message, [
+      ['📚 Daftar Command', `${prefix}invest command`],
+      ['📊 Buka Market', `${prefix}invest market`]
+    ])
+  }
+
+  if (action === 'command' || action === 'commands' || action === 'cmd' || action === 'perintah') {
+    const message =
+      `${title('DAFTAR COMMAND INVEST')}\n\n` +
+      `🏠 Menu utama\n${prefix}invest\n\n` +
+      `📌 Ringkasan saldo & market\n${prefix}invest menu\n\n` +
+      `📖 Panduan pemula\n${prefix}invest guide\n\n` +
+      `📋 Daftar aset\n${prefix}invest list [kategori]\nContoh: ${prefix}invest list Crypto\n\n` +
+      `📊 Harga semua aset\n${prefix}invest market [kategori]\nContoh: ${prefix}invest market Stocks\n\n` +
+      `🔎 Detail satu aset\n${prefix}invest price <symbol>\nContoh: ${prefix}invest price BTC\n\n` +
+      `🛒 Beli aset\n${prefix}invest buy <symbol> <jumlah>\nContoh: ${prefix}invest buy BTC 0.01\n\n` +
+      `💰 Jual aset\n${prefix}invest sell <symbol> <jumlah>\nContoh: ${prefix}invest sell BTC 0.01\n\n` +
+      `🎒 Lihat aset & saldo\n${prefix}invest portfolio\n\n` +
+      `📰 Berita market\n${prefix}invest news\n\n` +
+      `📉 Grafik harga\n${prefix}invest chart <symbol>\nContoh: ${prefix}invest chart BTC\n\n` +
+      `⭐ Watchlist\n${prefix}invest watch add <symbol>\n${prefix}invest watch del <symbol>\n${prefix}invest watch list\n\n` +
+      `🧾 Riwayat transaksi\n${prefix}invest history\n\n` +
+      `Gunakan symbol dari daftar aset. Biaya transaksi ${(FEE_RATE * 100).toFixed(2)}% per transaksi.\n${footer()}`
+    return replyInvest(message, [
+      ['📖 Baca Panduan', `${prefix}invest guide`],
+      ['📊 Lihat Market', `${prefix}invest market`]
+    ])
   }
 
   if (action === 'list' || action === 'instrumen' || action === 'assets') {
@@ -417,14 +498,17 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       const rows = symbols.map((symbol, index) => `${index + 1}. ${symbol}`).join('\n')
       return `*${name}*\n${rows}`
     })
-    if (!sections.length) return m.reply('Kategori tidak ditemukan. Gunakan .invest list atau .invest guide.')
-    return m.reply(`${title('DAFTAR INSTRUMEN')}\n\n${sections.join(`\n\n${line}\n\n`)}\n\nGunakan *.invest market* untuk melihat harga.\n${footer()}`)
+    if (!sections.length) return m.reply(`Kategori tidak ditemukan. Gunakan ${prefix}invest list atau ${prefix}invest guide.`)
+    return replyInvest(`${title('DAFTAR INSTRUMEN')}\n\n${sections.join(`\n\n${line}\n\n`)}\n\nGunakan ${prefix}invest market untuk melihat harga.\n${footer()}`, [
+      ['📊 Lihat Market', `${prefix}invest market`],
+      ['📚 Daftar Command', `${prefix}invest command`]
+    ])
   }
 
   if (action === 'market' || action === 'harga') {
     const category = args.slice(1).join(' ').toLowerCase()
     const entries = Object.entries(INSTRUMENTS).filter(([, item]) => !category || item.category.toLowerCase() === category)
-    if (!entries.length) return m.reply('Kategori tidak ditemukan. Cek dengan .invest help.')
+    if (!entries.length) return m.reply(`Kategori tidak ditemukan. Cek dengan ${prefix}invest command.`)
     let message = `${title('MARKET')}\n${marketHeader(market)}\n\n`
     let currentCategory = ''
     let categoryIndex = 0
@@ -435,9 +519,12 @@ let handler = async (m, { conn, text, usedPrefix }) => {
         message += `\n*${currentCategory}*\n`
       }
       categoryIndex++
-      message += `${categoryIndex}. *${symbol}* ${item.name}\n   ${money(market.prices[symbol])} | ${statusIcon(market.prices[symbol] - market.history[symbol][market.history[symbol].length - 2])} ${formatChange(market.prices[symbol], market.history[symbol])}\n`
+      message += `${categoryIndex}. *${symbol}*\n   ${item.name}\n   Harga: ${money(market.prices[symbol])}\n   Perubahan: ${statusIcon(market.prices[symbol] - market.history[symbol][market.history[symbol].length - 2])} ${formatChange(market.prices[symbol], market.history[symbol])}\n\n`
     }
-    return m.reply(`${message.trim()}\n${footer()}`)
+    return replyInvest(`${message.trim()}\n${footer()}`, [
+      ['🎒 Portfolio', `${prefix}invest portfolio`],
+      ['📖 Panduan', `${prefix}invest guide`]
+    ])
   }
 
   if (action === 'price' || action === 'quote') {
@@ -445,84 +532,111 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     if (!symbol) return m.reply('Symbol tidak ditemukan. Contoh: .invest price BTC')
     const item = INSTRUMENTS[symbol]
     const current = market.prices[symbol]
-    return m.reply(
+    return replyInvest(
       `${title(`${symbol} • ${item.name}`)}\n` +
-      `Kategori  : ${item.category}\n` +
-      `Harga     : ${money(current)}\n` +
-      `Perubahan : ${formatChange(current, market.history[symbol])}\n` +
-      `Risiko    : ${item.risk}\n` +
-      `Volatilitas: ${(item.volatility * 100).toFixed(1)}% / tick\n` +
-      `${marketHeader(market)}\n${footer()}`
+      `\nKategori\n${item.category}\n\n` +
+      `Harga saat ini\n${money(current)}\n\n` +
+      `Perubahan terakhir\n${formatChange(current, market.history[symbol])}\n\n` +
+      `Tingkat risiko\n${item.risk}\n\n` +
+      `Volatilitas\n${(item.volatility * 100).toFixed(1)}% per pembaruan\n` +
+      `${marketHeader(market)}\n${footer()}`,
+      [
+        ['📚 Daftar Command', `${prefix}invest command`],
+        ['📊 Lihat Market', `${prefix}invest market`]
+      ]
     )
   }
 
   if (action === 'buy' || action === 'beli' || action === 'sell' || action === 'jual') {
     const symbol = resolveSymbol(args[1])
     const qty = Number(args[2])
-    if (!symbol || !Number.isFinite(qty) || qty <= 0) return m.reply(`Format: ${prefix}invest ${action} <symbol> <jumlah>`)
+    if (!symbol || !Number.isFinite(qty) || qty <= 0) {
+      return m.reply(`Format: ${prefix}invest ${action} <symbol> <jumlah>\nJumlah harus lebih dari 0.`)
+    }
     if (qty > 1000000000) return m.reply('Jumlah transaksi terlalu besar.')
     const item = INSTRUMENTS[symbol]
     const price = market.prices[symbol]
-    const gross = price * qty
+    const gross = Math.round(price * qty)
+    if (!Number.isSafeInteger(gross) || gross < 1) return m.reply('Nilai transaksi terlalu kecil atau terlalu besar.')
     const fee = Math.ceil(gross * FEE_RATE)
     const total = action === 'buy' || action === 'beli' ? gross + fee : gross - fee
+    if (!Number.isSafeInteger(total)) return m.reply('Nilai transaksi terlalu besar.')
     const holding = invest.portfolio[symbol] || { qty: 0, avgPrice: 0 }
 
     if (action === 'buy' || action === 'beli') {
       if (user.kartuBeku) return m.reply(`Kartu bank ${bankProfile.name} sedang beku. Aktifkan kembali melalui *.bank*.`)
-      if (user.bank < total) return m.reply(`Saldo bank tidak cukup. Butuh ${money(total)}.`)
+      if (compareRpgMoney(user.bank, total) < 0) return m.reply(`Saldo bank tidak cukup. Butuh ${money(total)}.`)
       user.bank = subtractRpgMoney(user.bank, total)
       const nextQty = holding.qty + qty
-      holding.avgPrice = ((holding.qty * holding.avgPrice) + gross) / nextQty
+      holding.avgPrice = ((holding.qty * holding.avgPrice) + total) / nextQty
       holding.qty = nextQty
       invest.portfolio[symbol] = holding
       invest.history.unshift({ side: 'BUY', symbol, qty, price, fee, at: Date.now() })
       invest.history = invest.history.slice(0, 30)
       await saveDB(db)
-      return m.reply(`${title('BELI BERHASIL')}\nAset       : *${symbol}*\nJumlah     : ${number(qty)}\nHarga      : ${money(price)}\nModal      : ${money(gross)}\nFee        : ${money(fee)}\nSaldo bank : ${money(user.bank)}\n${footer()}`)
+      return replyInvest(`${title('BELI BERHASIL')}\n\nAset\n*${symbol}* — ${item.name}\n\nJumlah\n${number(qty)}\n\nHarga per unit\n${money(price)}\n\nNilai aset\n${money(gross)}\n\nBiaya transaksi\n${money(fee)}\n\nTotal modal\n${money(total)}\n\nSisa saldo bank\n${money(user.bank)}\n${footer()}`, [
+        ['🎒 Lihat Portfolio', `${prefix}invest portfolio`],
+        ['📊 Lihat Market', `${prefix}invest market`]
+      ])
     }
 
     if (user.kartuBeku) return m.reply(`Kartu bank ${bankProfile.name} sedang beku. Aktifkan kembali melalui *.bank*.`)
-    if (holding.qty < qty) return m.reply(`Kepemilikan ${symbol} tidak cukup. Kamu punya ${number(holding.qty)}.`)
-    const cost = holding.avgPrice * qty
+    if (holding.qty + 1e-10 < qty) return m.reply(`Kepemilikan ${symbol} tidak cukup. Kamu punya ${number(holding.qty)}.`)
+    const soldAll = Math.abs(holding.qty - qty) < 1e-10
+    const cost = holding.avgPrice * (soldAll ? holding.qty : qty)
     const realized = (gross - fee) - cost
     const adjustedRealized = realized > 0 ? scaleDifficultyIncome(user, realized) : realized
     const saleProceeds = cost + adjustedRealized
     user.bank = addRpgMoney(user.bank, saleProceeds)
-    holding.qty -= qty
+    holding.qty = soldAll ? 0 : holding.qty - qty
     invest.realized += adjustedRealized
     if (holding.qty <= 0) delete invest.portfolio[symbol]
     else invest.portfolio[symbol] = holding
     invest.history.unshift({ side: 'SELL', symbol, qty, price, fee, realized: adjustedRealized, at: Date.now() })
     invest.history = invest.history.slice(0, 30)
     await saveDB(db)
-    return m.reply(`${title('JUAL BERHASIL')}\nAset       : *${symbol}*\nJumlah     : ${number(qty)}\nHarga      : ${money(price)}\nHasil bersih: ${money(saleProceeds)}\nRealized P/L: ${signedMoney(adjustedRealized)}\nSaldo bank : ${money(user.bank)}\n${footer()}`)
+    return replyInvest(`${title('JUAL BERHASIL')}\n\nAset\n*${symbol}* — ${item.name}\n\nJumlah\n${number(qty)}\n\nHarga per unit\n${money(price)}\n\nHasil bersih\n${money(saleProceeds)}\n\nUntung/rugi terealisasi\n${signedMoney(adjustedRealized)}\n\nSisa saldo bank\n${money(user.bank)}\n${footer()}`, [
+      ['🎒 Lihat Portfolio', `${prefix}invest portfolio`],
+      ['📊 Lihat Market', `${prefix}invest market`]
+    ])
   }
 
   if (action === 'portfolio' || action === 'portofolio' || action === 'pf') {
     const value = portfolioValue(invest, market)
     const cost = portfolioCost(invest)
     const floating = value - cost
-    let message = `${title('PORTFOLIO')}\n${marketHeader(market)}\n` +
-      `Bank       : ${bankProfile.color} ${bankProfile.name}${user.kartuBeku ? ' • BEKU' : ' • AKTIF'}\n` +
-      `Saldo bank  : ${money(user.bank)}\n` +
-      `Nilai aset  : ${money(value)}\n` +
-      `Floating P/L: ${signedMoney(floating)}\n` +
-      `Realized P/L: ${signedMoney(invest.realized)}\n`
+    let message = `${title('PORTFOLIO')}\n\n${marketHeader(market)}\n\n` +
+      `Bank\n${bankProfile.color} ${bankProfile.name}${user.kartuBeku ? ' • BEKU' : ' • AKTIF'}\n\n` +
+      `Saldo bank\n${money(user.bank)}\n\n` +
+      `Nilai aset\n${money(value)}\n\n` +
+      `Floating P/L\n${signedMoney(floating)}\n\n` +
+      `Realized P/L\n${signedMoney(invest.realized)}\n`
     const entries = Object.entries(invest.portfolio)
-    if (!entries.length) message += '\nBelum ada aset. Gunakan .invest buy <symbol> <jumlah>.'
+    if (!entries.length) message += '\nBelum ada aset.\nGunakan .invest market untuk melihat pilihan investasi.'
     entries.forEach(([symbol, holding], index) => {
       const current = market.prices[symbol]
+      const currentValue = current * holding.qty
       const pnl = (current - holding.avgPrice) * holding.qty
-      message += `\n${index + 1}. *${symbol}* x${number(holding.qty)}\n   Modal: ${money(holding.avgPrice)}\n   Nilai: ${money(current)} | P/L: ${signedMoney(pnl)}\n`
+      message += `\n${index + 1}. *${symbol}* — ${INSTRUMENTS[symbol]?.name || 'Aset'}\n` +
+        `Jumlah\n${number(holding.qty)}\n` +
+        `Harga rata-rata\n${money(holding.avgPrice)}\n` +
+        `Harga saat ini\n${money(current)}\n` +
+        `Nilai posisi\n${money(currentValue)}\n` +
+        `Untung/rugi\n${signedMoney(pnl)}\n`
     })
-    return m.reply(`${message.trim()}\n${footer()}`)
+    return replyInvest(`${message.trim()}\n${footer()}`, [
+      ['📊 Lihat Market', `${prefix}invest market`],
+      ['📚 Daftar Command', `${prefix}invest command`]
+    ])
   }
 
   if (action === 'news' || action === 'berita') {
     const news = market.news || []
     if (!news.length) return m.reply(`Belum ada berita market.\n${marketHeader(market)}`)
-    return m.reply(`${title('MARKET NEWS')}\n${marketHeader(market)}\n\n` + news.slice(0, 8).map((item, index) => `${index + 1}. ${item.text}`).join('\n\n') + `\n${footer()}`)
+    return replyInvest(`${title('MARKET NEWS')}\n\n${marketHeader(market)}\n\n` + news.slice(0, 8).map((item, index) => `${index + 1}. ${item.text}`).join('\n\n') + `\n${footer()}`, [
+      ['📊 Lihat Market', `${prefix}invest market`],
+      ['🎒 Portfolio', `${prefix}invest portfolio`]
+    ])
   }
 
   if (action === 'chart' || action === 'grafik') {
@@ -531,11 +645,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     const values = market.history[symbol]
     const min = Math.min(...values)
     const max = Math.max(...values)
-    const bars = values.slice(-20).map(value => {
-      const level = max === min ? 1 : Math.ceil(((value - min) / (max - min)) * 8)
-      return ' .:-=+*#@'[level]
-    }).join('')
-    return m.reply(`${title(`CHART ${symbol}`)}\n${bars}\n\nTerendah: ${money(min)}\nTertinggi: ${money(max)}\nSekarang: ${money(market.prices[symbol])}\n${footer()}`)
+    const points = values.slice(-10).map((value, index, history) => {
+      const previous = history[index - 1]
+      const direction = previous === undefined || value === previous ? '•' : value > previous ? '📈' : '📉'
+      return `${index + 1}. ${direction} ${money(value)}`
+    }).join('\n')
+    return replyInvest(`${title(`RIWAYAT HARGA ${symbol}`)}\n\n${points}\n\nTerendah\n${money(min)}\n\nTertinggi\n${money(max)}\n\nHarga saat ini\n${money(market.prices[symbol])}\n${footer()}`, [
+      ['🔎 Detail Aset', `${prefix}invest price ${symbol}`],
+      ['📊 Lihat Market', `${prefix}invest market`]
+    ])
   }
 
   if (action === 'watch' || action === 'watchlist') {
@@ -549,23 +667,42 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     }
     if (sub === 'del' || sub === 'remove' || sub === 'hapus') {
       const symbol = resolveSymbol(args[2])
+      if (!symbol) return m.reply('Symbol tidak ditemukan. Contoh: .invest watch del BTC')
       invest.watchlist = invest.watchlist.filter(item => item !== symbol)
       await saveDB(db)
-      return m.reply(`${symbol || 'Symbol'} dihapus dari watchlist.`)
+      return m.reply(`${symbol} dihapus dari watchlist.`)
     }
     if (!invest.watchlist.length) return m.reply('Watchlist kosong. Gunakan .invest watch add BTC')
-    return m.reply(`${title('WATCHLIST')}\n\n` + invest.watchlist.map((symbol, index) => `${index + 1}. *${symbol}*\n   ${money(market.prices[symbol])} | ${formatChange(market.prices[symbol], market.history[symbol])}`).join('\n\n') + `\n${footer()}`)
+    return replyInvest(`${title('WATCHLIST')}\n\n` + invest.watchlist.map((symbol, index) =>
+      `${index + 1}. *${symbol}*\nHarga\n${money(market.prices[symbol])}\nPerubahan\n${formatChange(market.prices[symbol], market.history[symbol])}`
+    ).join('\n\n') + `\n${footer()}`, [
+      ['📊 Lihat Market', `${prefix}invest market`],
+      ['🎒 Portfolio', `${prefix}invest portfolio`]
+    ])
   }
 
   if (action === 'history' || action === 'riwayat') {
     if (!invest.history.length) return m.reply('Belum ada riwayat transaksi.')
-    return m.reply(`${title('RIWAYAT TRANSAKSI')}\n\n` + invest.history.slice(0, 15).map(historyLine).join(`\n\n${line}\n\n`) + `\n${footer()}`)
+    return replyInvest(`${title('RIWAYAT TRANSAKSI')}\n\n` + invest.history.slice(0, 15).map(historyLine).join(`\n\n${line}\n\n`) + `\n${footer()}`, [
+      ['🎒 Portfolio', `${prefix}invest portfolio`],
+      ['📚 Daftar Command', `${prefix}invest command`]
+    ])
   }
 
   return m.reply(`Command tidak dikenal. Gunakan ${prefix}invest help.`)
 }
 
-handler.help = ['invest', 'invest market', 'invest buy <symbol> <jumlah>', 'invest sell <symbol> <jumlah>', 'invest portfolio']
+handler.help = [
+  'invest',
+  'invest guide',
+  'invest command',
+  'invest menu',
+  'invest list [kategori]',
+  'invest market [kategori]',
+  'invest buy <symbol> <jumlah>',
+  'invest sell <symbol> <jumlah>',
+  'invest portfolio'
+]
 handler.tags = ['rpg']
 handler.command = ['invest', 'trading']
 handler.group = true
