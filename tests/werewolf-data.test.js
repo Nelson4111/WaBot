@@ -44,7 +44,7 @@ test('sorcerer faction follows potion choice but stays neutral without another a
   assert.equal(getSorcererFaction('revive', true), 'protagonist')
   assert.equal(getSorcererFaction('skip', true), 'neutral')
   assert.equal(getSorcererFaction('poison', false), 'neutral')
-  assert.equal(getSorcererFaction('revive', false), 'neutral')
+  assert.equal(getSorcererFaction('revive', false), 'antagonist')
 })
 
 test('Warden and Cipher roles are available with their intended protections and cipher rules', () => {
@@ -69,7 +69,7 @@ test('every role separates character flavor from its in-game effect', () => {
     assert.ok(data.effect.length > 20, `${role} should explain its in-game effect`)
   }
   assert.match(ROLE_DATA.cipher.effect, /A, I, E, O, B, L, S, Q, atau G/)
-  assert.match(ROLE_DATA.warden.effect, /eksekusi voting/)
+  assert.match(ROLE_DATA.warden.effect, /tidak melindungi dari voting/)
 })
 
 test('editable action and attack narrative lists start with requested sizes', () => {

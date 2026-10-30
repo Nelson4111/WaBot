@@ -3,13 +3,16 @@ import assert from 'node:assert/strict'
 import {
   assignFixerContracts,
   absorbWardenAttack,
+  generateVoteCodeMap,
   getWerewolfPlayerFaction,
   getWinner,
+  roleGenerator,
+  resolveSecretCodeAction,
   resolveNightActions,
   voteKill
 } from '../lib/werewolf.js'
 
-test('Warden armor absorbs one night attack and one vote execution', () => {
+test('Warden armor absorbs one antagonist attack but not a vote execution', () => {
   const warden = { id: 'warden', number: 1, role: 'warden', armor: true, isdead: false, vote: 1 }
   const wolf = { id: 'wolf', number: 2, role: 'werewolf', isdead: false, vote: 0 }
   const room = {
@@ -29,13 +32,39 @@ test('Warden armor absorbs one night attack and one vote execution', () => {
   assert.deepEqual(room.dead, [])
 
   warden.armor = true
-  const protectedExecution = voteKill('test', rooms)
-  assert.equal(protectedExecution.protected, true)
-  assert.equal(warden.isdead, false)
-  assert.equal(warden.armor, false)
-
   const executed = voteKill('test', rooms)
-  assert.equal(executed.isdead, true)
+  assert.equal(executed, warden)
+  assert.equal(warden.isdead, true)
+  assert.equal(warden.armor, true)
+})
+
+test('Hunter gets a final reaction after being selected by voting', () => {
+  const hunter = { id: 'hunter', number: 1, role: 'hunter', isdead: false, vote: 2 }
+  const villager = { id: 'villager', number: 2, role: 'warga', isdead: false, vote: 0 }
+  const room = { room: 'test', player: [hunter, villager] }
+
+  assert.equal(voteKill('test', { test: room }), hunter)
+  assert.equal(hunter.isdead, true)
+  assert.equal(hunter.pendingHunter, true)
+  assert.equal(hunter.pendingExecution, true)
+})
+
+test('Sorcerer remains an antagonist after reviving someone with no other antagonist alive', () => {
+  const sorcerer = {
+    id: 'sorcerer',
+    number: 1,
+    role: 'sorcerer',
+    isdead: false,
+    nightDone: false,
+    secretCodes: { REVIVE: { type: 'revive', targetNumber: 2 } }
+  }
+  const target = { id: 'target', number: 2, role: 'warga', isdead: true }
+  const room = { room: 'test', category: 'werewolf', player: [sorcerer, target] }
+  const rooms = { test: room }
+
+  assert.equal(resolveSecretCodeAction('test', 'sorcerer', 'REVIVE', rooms).action, 'revive')
+  assert.equal(room.sorcererFaction, 'antagonist')
+  assert.equal(getWerewolfPlayerFaction(room, sorcerer), 'antagonist')
 })
 
 test('Cipher is neutral and remains alive for either faction victory', () => {
@@ -59,8 +88,19 @@ test('Cipher is neutral and remains alive for either faction victory', () => {
   assert.equal(getWinner('test', { test: room }).status, false)
 })
 
-test('Warden armor helper only absorbs the first hit', () => {
+test('Warden armor absorbs one attack or Hunter shot, but not a vote', () => {
   const warden = { role: 'warden', armor: true }
+  const voteRoom = {
+    room: 'vote-test',
+    player: [
+      { id: 'warden', number: 1, role: 'warden', armor: true, isdead: false, vote: 2 },
+      { id: 'other', number: 2, role: 'warga', isdead: false, vote: 0 }
+    ]
+  }
+  assert.equal(voteKill('vote-test', { 'vote-test': voteRoom }), voteRoom.player[0])
+  assert.equal(voteRoom.player[0].isdead, true)
+  assert.equal(voteRoom.player[0].armor, true)
+
   assert.equal(absorbWardenAttack(warden), true)
   assert.equal(absorbWardenAttack(warden), false)
   assert.equal(absorbWardenAttack({ role: 'warga', armor: true }), false)
@@ -103,4 +143,77 @@ test('Fixer wins only when its target is dead and the Fixer is alive', () => {
   fixer.isdead = true
   delete room.fixerWinnerId
   assert.notEqual(getWinner('test', { test: room }).status, 'fixer')
+})
+
+test('secret vote codes are private per player and resolve votes without revealing targets publicly', () => {
+  const players = [
+    { id: 'one', number: 1, role: 'warga', isdead: false, isvote: false, vote: 0 },
+    { id: 'two', number: 2, role: 'mayor', isdead: false, isvote: false, vote: 0 },
+    { id: 'three', number: 3, role: 'warga', isdead: false, isvote: false, vote: 0 },
+    { id: 'four', number: 4, role: 'warga', isdead: false, isvote: false, vote: 0 }
+  ]
+  const room = {
+    room: 'test',
+    category: 'werewolf',
+    time: 'voting',
+    guardianVoteTarget: 4,
+    player: players
+  }
+  const rooms = { test: room }
+  const usedCodes = new Set()
+  const oneCodes = generateVoteCodeMap(room, players[0], usedCodes)
+  const twoCodes = generateVoteCodeMap(room, players[1], usedCodes)
+
+  assert.equal(Object.values(oneCodes).some((choice) => choice.targetNumber === 4), true)
+  assert.equal(Object.values(twoCodes).some((choice) => choice.targetNumber === 4), true)
+  assert.equal(Object.keys(oneCodes).some((code) => Object.hasOwn(twoCodes, code)), false)
+
+  const oneTargetCode = Object.keys(oneCodes).find((code) => oneCodes[code].targetNumber === 4)
+  const voteResult = resolveSecretCodeAction('test', 'one', oneTargetCode, rooms, 'vote')
+  assert.deepEqual(voteResult, { ok: true, action: 'vote', targetNumber: 4, voteBoost: 1 })
+  assert.equal(players[3].vote, 1)
+  assert.equal(players[0].isvote, true)
+
+  const skipCode = Object.keys(twoCodes).find((code) => twoCodes[code].type === 'vote-skip')
+  assert.deepEqual(resolveSecretCodeAction('test', 'two', skipCode, rooms, 'vote'), {
+    ok: true,
+    action: 'vote-skip'
+  })
+  assert.equal(players[1].isvote, true)
+})
+
+test('AI citizens receive protagonist roles and do not replace the required human player', () => {
+  const players = [
+    { id: 'human', number: 1, role: false, isdead: false },
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: `ai-${index}`,
+      number: index + 2,
+      role: false,
+      isdead: false,
+      isAiCitizen: true,
+      displayName: `Warga ${index + 1}`
+    }))
+  ]
+  const room = { room: 'test', category: 'werewolf', player: players, dead: [] }
+  const rooms = { test: room }
+
+  assert.equal(roleGenerator('test', rooms), true)
+  assert.equal(players[0].role, 'werewolf')
+  assert.equal(players.slice(1).every((player) =>
+    ['warga', 'seer', 'guardian', 'hunter', 'mayor', 'warden'].includes(player.role)
+  ), true)
+
+  const aiOnlyRoom = {
+    room: 'ai-only',
+    category: 'werewolf',
+    player: Array.from({ length: 5 }, (_, index) => ({
+      id: `only-ai-${index}`,
+      number: index + 1,
+      isAiCitizen: true,
+      role: false,
+      isdead: false
+    })),
+    dead: []
+  }
+  assert.equal(roleGenerator('ai-only', { 'ai-only': aiOnlyRoom }), false)
 })
