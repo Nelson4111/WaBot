@@ -329,8 +329,8 @@ async function processMessage(m, chatUpdate) {
         }
 
         const werewolfRoom = this.werewolf?.[m.chat]
-        const deadWerewolfPlayer = werewolfRoom?.status && werewolfRoom.player?.find(player => player.id === m.sender && player.isdead)
-        const hunterShootCommand = /^[.\/#!](?:(?:ww|werewolf|gr|gameroles)\s+(?:(?:ww|werewolf|mafia|killer|assassin|assasin|assasins|impostor|imposter|alien|parasite|custom)\s+)?|(?:mafia|killer|assassin|assasin|assasins|impostor|imposter|alien|parasite|custom)\s+)shoot\b/i.test(m.text || '')
+        const deadWerewolfPlayer = werewolfRoom?.status && werewolfRoom.player?.find(player => player.id === m.sender && player.isdead && player.role !== 'ghost')
+        const hunterShootCommand = /^[.\/#!](?:(?:ww|werewolf|gr|gameroles)\s+(?:(?:ww|werewolf|mafia|killer|assassin|assasin|assasins|impostor|imposter|alien|parasite|vigilante|mayhem|custom)\s+)?|(?:mafia|killer|assassin|assasin|assasins|impostor|imposter|alien|parasite|vigilante|mayhem|custom)\s+)shoot\b/i.test(m.text || '')
         const allowedHunterResponse = deadWerewolfPlayer?.pendingHunter && hunterShootCommand
         if (m.isGroup && deadWerewolfPlayer && !allowedHunterResponse) {
             try {
