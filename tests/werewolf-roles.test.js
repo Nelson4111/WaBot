@@ -6,6 +6,7 @@ import {
   generateVoteCodeMap,
   getWerewolfPlayerFaction,
   getWinner,
+  getNightProgress,
   roleGenerator,
   resolveSecretCodeAction,
   resolveNightActions,
@@ -47,6 +48,66 @@ test('Hunter gets a final reaction after being selected by voting', () => {
   assert.equal(hunter.isdead, true)
   assert.equal(hunter.pendingHunter, true)
   assert.equal(hunter.pendingExecution, true)
+})
+
+test('AI Guardian protection and AI Mayor vote weight use normal role mechanics', () => {
+  const guardian = {
+    id: 'ai-guardian',
+    number: 1,
+    role: 'guardian',
+    isAiCitizen: true,
+    isdead: false,
+    nightDone: false,
+    secretCodes: { GUARD: { type: 'guard', targetNumber: 3 } }
+  }
+  const mayor = {
+    id: 'ai-mayor',
+    number: 2,
+    role: 'mayor',
+    isAiCitizen: true,
+    isdead: false,
+    isvote: false,
+    voteCodes: { VOTE: { type: 'vote', targetNumber: 3 } }
+  }
+  const target = { id: 'human', number: 3, role: 'warga', isdead: false, vote: 0 }
+  const wolf = { id: 'wolf', number: 4, role: 'werewolf', isdead: false }
+  const room = {
+    room: 'ai-role-test',
+    category: 'werewolf',
+    player: [guardian, mayor, target, wolf],
+    dead: [],
+    guardian: [],
+    nightTarget: 3
+  }
+  const rooms = { [room.room]: room }
+
+  assert.equal(resolveSecretCodeAction(room.room, guardian.id, 'GUARD', rooms).ok, true)
+  assert.equal(getNightProgress(room).total, 4)
+  resolveNightActions(room.room, rooms)
+  assert.equal(target.isdead, false)
+
+  assert.deepEqual(resolveSecretCodeAction(room.room, mayor.id, 'VOTE', rooms, 'vote'), {
+    ok: true,
+    action: 'vote',
+    targetNumber: 3,
+    voteBoost: 2
+  })
+  assert.equal(target.vote, 2)
+  assert.equal(target.voteCount, 1)
+
+  const secondAiVoter = {
+    id: 'ai-villager',
+    number: 5,
+    role: 'warga',
+    isAiCitizen: true,
+    isdead: false,
+    isvote: false,
+    voteCodes: { VOTE: { type: 'vote', targetNumber: 3 } }
+  }
+  room.player.push(secondAiVoter)
+  assert.equal(resolveSecretCodeAction(room.room, secondAiVoter.id, 'VOTE', rooms, 'vote').ok, true)
+  assert.equal(target.vote, 3)
+  assert.equal(target.voteCount, 2)
 })
 
 test('Sorcerer remains an antagonist after reviving someone with no other antagonist alive', () => {
@@ -172,6 +233,7 @@ test('secret vote codes are private per player and resolve votes without reveali
   const voteResult = resolveSecretCodeAction('test', 'one', oneTargetCode, rooms, 'vote')
   assert.deepEqual(voteResult, { ok: true, action: 'vote', targetNumber: 4, voteBoost: 1 })
   assert.equal(players[3].vote, 1)
+  assert.equal(players[3].voteCount, 1)
   assert.equal(players[0].isvote, true)
 
   const skipCode = Object.keys(twoCodes).find((code) => twoCodes[code].type === 'vote-skip')
