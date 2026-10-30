@@ -144,6 +144,28 @@ const getTotalPlayerCount = (room) => room?.player?.length || 0
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const getRandomItem = (items) => items[Math.floor(Math.random() * items.length)]
 
+const getAiDiscussionMessage = (room, player, conn) => {
+    const message = getRandomItem(WARGA_AI_MESSAGES)
+    if (!message?.includes('{target}')) return message
+    const targets = room.player.filter((entry) => entry.id !== player.id && !entry.isDummy)
+    const target = getRandomItem(targets)
+    return target
+        ? message.replace('{target}', getDisplayPlayerLabel(target, conn))
+        : 'Ada yang melihat gerak-gerik mencurigakan semalam?'
+}
+
+const formatAiCitizenMessage = (player, message) => `> ${player.displayName} :\n> ↳ ${message}`
+
+const getPrivatePlayerName = (player, conn) => player.isAiCitizen
+    ? getDisplayPlayerLabel(player, conn)
+    : String(player.displayName || conn?.getName?.(player.id) || getDisplayPlayerLabel(player, conn)).replace(/^@/, '').trim()
+
+const sendAiCitizenStanzaStyleMessage = async (conn, chat, player, message) => {
+    await conn.sendMessage(chat, {
+        text: `> 🔒 _Detail aksi rahasia hanya terlihat oleh pemain terkait, ${getPrivatePlayerName(player, conn)}._\n${formatAiCitizenMessage(player, message)}`
+    })
+}
+
 const getDisplayPlayerLabel = (player, conn) => {
     if (!player) return '—'
     if (player.isDummy) return `Warga ${toSmallNum(player.number)}`
@@ -300,14 +322,6 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
             : ''
         if (fixerTarget) fixerContractPlayers.push(p)
         if (p.isAiCitizen) {
-            const codes = Object.keys(secretCodes)
-            if (codes.length) {
-                const code = codes[Math.floor(Math.random() * codes.length)]
-                const result = resolveSecretCodeAction(chat, p.id, code, conn.werewolf, 'night')
-                if (!result.ok) {
-                    console.error(`[werewolf AI night action failed] player=${p.displayName} reason=${result.reason}`)
-                }
-            }
             continue
         }
         const bodyCard = `*━━━〔 🌙 FASE MALAM TIBA 〕━━━*
@@ -385,6 +399,37 @@ ${fixerContract}
             console.error('[werewolf night timeout error]', err)
         }
     }, 90000)
+    void runAiCitizenNightActions(conn, chat, room).catch((error) => {
+        console.error('[werewolf AI night action error]', error)
+    })
+}
+
+const runAiCitizenNightActions = async (conn, chat, room) => {
+    for (const player of room.player.filter((entry) => entry.isAiCitizen && !entry.isdead)) {
+        if (conn.werewolf?.[chat] !== room || room.time !== 'malem' || player.nightDone) return
+        await wait(650 + Math.floor(Math.random() * 600))
+        if (conn.werewolf?.[chat] !== room || room.time !== 'malem' || player.isdead || player.nightDone) return
+
+        const code = getRandomItem(Object.keys(player.secretCodes || {}))
+        const result = code
+            ? resolveSecretCodeAction(chat, player.id, code, conn.werewolf, 'night')
+            : { ok: false, reason: 'no-night-codes' }
+        if (!result.ok) {
+            console.error(`[werewolf AI night action failed] player=${player.displayName} reason=${result.reason}`)
+            continue
+        }
+
+        try {
+            await sendAiCitizenStanzaStyleMessage(conn, chat, player, 'Aksi malam berhasil dipilih secara rahasia.')
+        } catch (error) {
+            console.error(`[werewolf AI night acknowledgment failed] player=${player.displayName}`, error)
+        }
+        const progress = getNightProgress(room)
+        if (progress.completed) {
+            await resolveNightToMorning(conn, chat, conn.werewolf)
+            return
+        }
+    }
 }
 
 const sendMorningAnnouncement = async (conn, chat, room) => {
@@ -690,7 +735,9 @@ const runAiCitizenVotes = async (conn, chat, room) => {
         if (conn.werewolf?.[chat] !== room || room.time !== 'voting' || player.isdead || player.isvote) return
 
         try {
-            await conn.sendMessage(chat, { text: getRandomItem(WARGA_AI_MESSAGES) })
+            await conn.sendMessage(chat, {
+                text: formatAiCitizenMessage(player, getAiDiscussionMessage(room, player, conn))
+            })
         } catch (error) {
             console.error(`[werewolf AI discussion message failed] player=${player.displayName}`, error)
         }
@@ -703,6 +750,11 @@ const runAiCitizenVotes = async (conn, chat, room) => {
         if (!result.ok) {
             console.error(`[werewolf AI vote failed] player=${player.displayName} reason=${result.reason}`)
             continue
+        }
+        try {
+            await sendAiCitizenStanzaStyleMessage(conn, chat, player, 'Suara berhasil diberikan secara rahasia.')
+        } catch (error) {
+            console.error(`[werewolf AI vote acknowledgment failed] player=${player.displayName}`, error)
         }
 
         const allVoted = room.player
@@ -1353,21 +1405,30 @@ ${rosterText.trim()}
         const countInput = args[2]
         const requestedCount = Number(countInput)
         const hasCount = countInput !== undefined && /^\d+$/.test(String(countInput))
-        const addCount = hasCount && requestedCount > 0 ? requestedCount : 1
-        const nickname = args.slice(hasCount ? 3 : 2).join(' ').trim()
+        const nameInput = args.slice(hasCount ? 3 : 2).join(' ').trim()
+        const listedNames = !hasCount && nameInput
+            ? nameInput.split(/[,;|]/).map((name) => name.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
+            : []
+        const addCount = listedNames.length > 1
+            ? listedNames.length
+            : hasCount && requestedCount > 0 ? requestedCount : 1
+        const nickname = hasCount ? nameInput : listedNames.length === 1 ? listedNames[0] : ''
         if (getTotalPlayerCount(ww[chat]) + addCount > 15) {
             return m.reply(status.warning("Kapasitas room maksimal 15 pemain. Kurangi jumlah warga AI yang ditambahkan."))
         }
         const totalBefore = ww[chat].player.length
         for (let i = 0; i < addCount; i++) {
             const order = totalBefore + i + 1
-            const displayName = nickname ? (addCount > 1 ? `${nickname} ${i + 1}` : nickname) : undefined
+            const displayName = listedNames.length > 1
+                ? listedNames[i]
+                : nickname ? (hasCount && addCount > 1 ? `${nickname} ${i + 1}` : nickname) : undefined
             ww[chat].player.push(createWargaPlayer(ww[chat], order, displayName))
         }
         ww[chat].player.forEach((player, index) => {
             player.number = index + 1
         })
-        m.reply(status.success(`Berhasil menambahkan ${toSmallNum(addCount)} warga AI ke room.${nickname ? ` Nama julukan: ${nickname}.` : ''}`))
+        const addedNames = listedNames.length > 1 ? ` Nama: ${listedNames.join(', ')}.` : nickname ? ` Nama julukan: ${nickname}.` : ''
+        m.reply(status.success(`Berhasil menambahkan ${toSmallNum(addCount)} warga AI ke room.${addedNames}`))
 
     } else if (value === "del" && (target === "warga" || target === "dummy" || target === "dummies")) {
         if (!ww[chat]) return m.reply(status.error("Belum ada sesi permainan."))
@@ -1688,7 +1749,8 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
 > ⟡ *${gameCommandBase} info* : Ringkasan sistem in-group
 > ⟡ *${gameCommandBase} guide* : Panduan cara bermain
 > ⟡ *${gameCommandBase} role* : Daftar lengkap peran
-> ⟡ *${gameCommandBase} add warga <n> [julukan]* : Tambah warga AI
+> ⟡ *${gameCommandBase} add warga <n> [julukan]* : Tambah warga AI dengan jumlah
+> ⟡ *${gameCommandBase} add warga <nama1, nama2>* : Tambah beberapa warga AI dengan julukan
 > ⟡ *${gameCommandBase} del warga* : Hapus semua warga AI
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
