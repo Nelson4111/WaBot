@@ -192,6 +192,25 @@ const formatGameCategoryInfo = (game, usedPrefix) => {
 > Buat room: *${usedPrefix}${game.aliases[0]} create [taruhan]*`
 }
 
+const buildGameCategoryList = (usedPrefix, requestedPage = 1) => {
+    const categories = Object.values(GAME_CATEGORIES)
+    const pageSize = 4
+    const pageCount = Math.max(1, Math.ceil(categories.length / pageSize))
+    const page = Math.min(pageCount, Math.max(1, Number.parseInt(requestedPage, 10) || 1))
+    const entries = categories.slice((page - 1) * pageSize, page * pageSize)
+        .map((game, index) => {
+            const number = (page - 1) * pageSize + index + 1
+            return `*${String(number).padStart(2, '0')} · ${game.antagonistEmoji} ${game.name}*\n> ${game.description}\n> 📍 ${game.location}  ·  📖 *${usedPrefix}gr info ${game.id}*\n> 🚪 Buat room: *${usedPrefix}${game.aliases[0]} create*`
+        })
+    const text = `*━━━〔 🎮 PILIH GAME · ${page}/${pageCount} 〕━━━*\n\n${entries.join('\n\n━━━━━━━━━━━━━━\n\n')}\n\n━━━━━━━━━━━━━━\n> Buka detail kategori atau langsung buat room dengan command yang tertera.`
+    const buttons = []
+    if (page > 1) buttons.push(['⬅️ Sebelumnya', `${usedPrefix}gr list ${page - 1}`])
+    if (page < pageCount) buttons.push(['Selanjutnya ➡️', `${usedPrefix}gr list ${page + 1}`])
+    buttons.push(['🎭 Daftar Role', `${usedPrefix}gr role`])
+    buttons.push(['🏠 Menu Utama', `${usedPrefix}gr`])
+    return { text, buttons, page, pageCount }
+}
+
 const roleFactionButtons = (gameCommandBase) => [
     ['🔴 Antagonis', `${gameCommandBase} role antagonis`],
     ['🔵 Protagonis', `${gameCommandBase} role protagonis`],
@@ -1001,22 +1020,16 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             return sendGameRolesMenu(conn, chat, usedPrefix, m)
         }
         if (action === 'list' || action === 'category' || action === 'kategori') {
-            const categories = Object.values(GAME_CATEGORIES)
-                .map((entry) => `> ${entry.antagonistEmoji} *${entry.name}*\n>   ${entry.description}\n>   Detail kategori: *${usedPrefix}gr info ${entry.id}*\n>   Buat room: *${usedPrefix}${entry.aliases[0]} create*${entry.id === 'custom' ? `\n>   Atur role: *${usedPrefix}custom role @pemain <role/nomor>* · autorole · list` : ''}`)
-                .join('\n')
-            return conn.sendButton(chat, `*━━━〔 🎮 PILIH GAME 〕━━━*\n\n${categories}\n\n*━━━━━━━━━━━━━━*\n> Pilih kategori untuk melihat detail atau langsung buat room.`, 'Avelia • Pilihan Game', thumbNight, [
-                ['📖 Panduan', `${usedPrefix}gr guide`],
-                ['🎭 Daftar Role', `${usedPrefix}gr role`],
-                ['🏠 Menu Utama', `${usedPrefix}gr`]
-            ], m)
+            const gameList = buildGameCategoryList(usedPrefix, args[1])
+            return conn.sendButton(chat, gameList.text, `Avelia • Pilihan Game ${gameList.page}/${gameList.pageCount}`, thumbNight, gameList.buttons, m)
         }
         if (action === 'info') {
             const category = normalizeGameCategory(args[1])
             if (!category) {
                 const categoryList = Object.values(GAME_CATEGORIES)
-                    .map((entry) => `> ${entry.antagonistEmoji} *${entry.name}* — ${entry.description}\n> Detail: *${usedPrefix}gr info ${entry.id}*`)
-                    .join('\n')
-                return m.reply(`*━━━〔 🎮 INFO KATEGORI GAME 〕━━━*\n\n${categoryList}\n\n> Contoh: *${usedPrefix}gr info mafia*`)
+                    .map((entry, index) => `> ${String(index + 1).padStart(2, '0')} · ${entry.antagonistEmoji} *${entry.name}* — *${usedPrefix}gr info ${entry.id}*`)
+                    .join('\n━━━━━━━━━━━━━━\n')
+                return m.reply(`*━━━〔 🎮 DAFTAR KATEGORI 〕━━━*\n\n${categoryList}\n\n━━━━━━━━━━━━━━\n> Ketik *.gr list* untuk deskripsi game dan tombol navigasi.`)
             }
             return m.reply(formatGameCategoryInfo(category, usedPrefix))
         }

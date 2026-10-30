@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { awardFamily100Mvp } from './game-family100-score.js'
+import { getFamily100CooldownRemaining, startFamily100Cooldown } from './game-family100-state.js'
 
 const FAMILY100_IMAGE = 'https://c.termai.cc/i129/q4f.jpg'
 const winScore = 4999
@@ -39,6 +40,11 @@ async function handler(m, { args = [] }) {
             this.game[id].msg
         )
 
+    const cooldownRemaining = getFamily100CooldownRemaining(this.game, m.chat)
+    if (cooldownRemaining > 0) {
+        return m.reply(`⏳ Tunggu ${Math.ceil(cooldownRemaining / 1000)} detik sebelum memulai Family100 lagi.`)
+    }
+
     let src = JSON.parse(fs.readFileSync('./json/family100.json', 'utf-8'))
     let json = src[Math.floor(Math.random() * src.length)]
 
@@ -52,7 +58,8 @@ async function handler(m, { args = [] }) {
     caption += `📋 *INFORMASI PERMAINAN*\n`
     caption += `> ↳ Terdapat *${json.jawaban.length}* jawaban\n`
     caption += `> ↳ ⏱️ Waktu : *5 menit*\n`
-    caption += `> ↳ 🆘 Ketik *nyerah* untuk meminta menyerah (perlu persetujuan pemain)\n`
+    caption += `> ↳ 🆘 Voting *nyerah* tersedia setelah 1 menit dan perlu persetujuan pemain\n`
+    caption += `> ↳ ⏳ Tunggu 10 detik setelah game selesai untuk mulai lagi\n`
     caption += `> ↳ ⭐ +${answerPoint} poin dan +${winScore} XP tiap jawaban benar\n\n`
     caption += `> ↳ 🏆 MVP dengan jawaban terbanyak mendapat +2 poin (jika tidak seri)\n\n`
 
@@ -67,6 +74,7 @@ async function handler(m, { args = [] }) {
         if (!this.game[id]) return
 
         const mvp = awardFamily100Mvp(this.game[id])
+        startFamily100Cooldown(this.game, m.chat)
         this.reply(
             m.chat,
             `╭─❏「 ⏰ FAMILY 100 」❏\n` +
@@ -90,6 +98,7 @@ async function handler(m, { args = [] }) {
         terjawab: Array.from(json.jawaban, () => false),
         winScore,
         answerPoint,
+        startedAt: Date.now(),
         creator: m.sender,
         participants: [],
         surrenderVotes: [],

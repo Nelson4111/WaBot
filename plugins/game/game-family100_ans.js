@@ -1,5 +1,6 @@
 import similarity from 'similarity'
 import { awardFamily100Mvp } from './game-family100-score.js'
+import { FAMILY100_SURRENDER_DELAY, startFamily100Cooldown } from './game-family100-state.js'
 
 const threshold = 0.72 // semakin tinggi semakin mirip
 
@@ -25,6 +26,12 @@ export async function before(m) {
         const isParticipant = room.participants.includes(m.sender)
         if (!isCreator && !isParticipant) {
             await m.reply('Kamu belum menjawab di permainan ini, jadi tidak bisa ikut voting menyerah.')
+            return true
+        }
+
+        const timeLeft = FAMILY100_SURRENDER_DELAY - (Date.now() - (room.startedAt ?? Date.now()))
+        if (timeLeft > 0) {
+            await m.reply(`⏳ Voting menyerah bisa dimulai setelah ${Math.ceil(timeLeft / 1000)} detik lagi.`)
             return true
         }
 
@@ -108,6 +115,7 @@ export async function before(m) {
 
     if (isWin) {
         if (room.timeout) clearTimeout(room.timeout)
+        startFamily100Cooldown(this.game, m.chat)
         delete this.game[id]
     }
 
@@ -135,5 +143,6 @@ async function finishGame(m, id, room, isSurrender) {
     const quoted = global.forder || global.ftoko || m
     await this.sendMessage(m.chat, { text: caption, mentions }, { quoted })
     if (room.timeout) clearTimeout(room.timeout)
+    startFamily100Cooldown(this.game, m.chat)
     delete this.game[id]
 }
