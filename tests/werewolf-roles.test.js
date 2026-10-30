@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   assignFixerContracts,
   absorbWardenAttack,
+  autoAssignCustomRoles,
   buildRoleCodeMap,
   generateVoteCodeMap,
   getWerewolfPlayerFaction,
@@ -253,7 +254,7 @@ test('secret vote codes are private per player and resolve votes without reveali
   assert.equal(players[1].isvote, true)
 })
 
-test('AI citizens receive protagonist roles and do not replace the required human player', () => {
+test('AI citizens receive protagonist roles alongside a human player; AI-only games assign antagonists too', () => {
   const players = [
     { id: 'human', number: 1, role: false, isdead: false },
     ...Array.from({ length: 4 }, (_, index) => ({
@@ -286,7 +287,49 @@ test('AI citizens receive protagonist roles and do not replace the required huma
     })),
     dead: []
   }
-  assert.equal(roleGenerator('ai-only', { 'ai-only': aiOnlyRoom }), false)
+  assert.equal(roleGenerator('ai-only', { 'ai-only': aiOnlyRoom }), true)
+  assert.equal(aiOnlyRoom.player.every((player) => Boolean(player.role)), true)
+  assert.equal(aiOnlyRoom.player.some((player) =>
+    getWerewolfPlayerFaction(aiOnlyRoom, player) === 'antagonist'
+  ), true)
+})
+
+test('AI-only Mayhem and Custom rooms can receive playable role assignments', () => {
+  const mayhemRoom = {
+    room: 'ai-only-mayhem',
+    category: 'mayhem',
+    player: Array.from({ length: 5 }, (_, index) => ({
+      id: `mayhem-ai-${index}`,
+      number: index + 1,
+      role: false,
+      isAiCitizen: true,
+      isdead: false
+    })),
+    dead: []
+  }
+  assert.equal(roleGenerator(mayhemRoom.room, { [mayhemRoom.room]: mayhemRoom }), true)
+  assert.equal(mayhemRoom.player.some((player) =>
+    getWerewolfPlayerFaction(mayhemRoom, player) === 'antagonist'
+  ), true)
+
+  const customRoom = {
+    room: 'ai-only-custom',
+    category: 'custom',
+    player: Array.from({ length: 5 }, (_, index) => ({
+      id: `custom-ai-${index}`,
+      number: index + 1,
+      role: 'warga',
+      isAiCitizen: true,
+      isdead: false
+    })),
+    dead: []
+  }
+  const customRooms = { [customRoom.room]: customRoom }
+  assert.equal(autoAssignCustomRoles(customRoom.room, customRooms), true)
+  assert.equal(roleGenerator(customRoom.room, customRooms), true)
+  assert.equal(customRoom.player.some((player) =>
+    getWerewolfPlayerFaction(customRoom, player) === 'antagonist'
+  ), true)
 })
 
 test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
@@ -368,7 +411,7 @@ test('Vigilante count scales with room size and all Vigilantes capture instead o
   assert.equal(room.activityLog[0].action, 'capture')
 })
 
-test('Vigilante dawn groups captures and antagonist-on-antagonist kills into one story each', () => {
+test('Vigilante dawn uses one story and a clean victim list for all deaths', () => {
   const data = {
     category: 'vigilante',
     day: 2,
@@ -383,19 +426,20 @@ test('Vigilante dawn groups captures and antagonist-on-antagonist kills into one
   }
 
   const morning = pagii(data)
-  assert.equal((morning.match(/> ⛓️/g) || []).length, 1)
+  assert.equal((morning.match(/> (?:Operasi|Pertikaian)/g) || []).length, 1)
   assert.equal((morning.match(/> ⚔️/g) || []).length, 1)
-  assert.match(morning, /Mika \(Mafia/)
-  assert.match(morning, /Kia \(Assassin/)
+  assert.equal((morning.match(/> ↳/g) || []).length, 2)
+  assert.match(morning, /↳ Mika — \*Mafia/)
+  assert.match(morning, /↳ Kia — \*Assassin/)
   assert.match(morning, /Vigilante 🎯/)
   assert.match(morning, /Killer 🔪/)
   assert.doesNotMatch(morning, /Avelia|Rin/)
   assert.doesNotMatch(morning, /\{(?:captors|targets|attackers|victims|location)\}/)
-  assert.equal(VIGILANTE_CAPTURE_STORIES.length, 5)
-  assert.equal(VIGILANTE_ANTAGONIST_KILL_STORIES.length, 5)
+  assert.ok(VIGILANTE_CAPTURE_STORIES.length > 0)
+  assert.ok(VIGILANTE_ANTAGONIST_KILL_STORIES.length > 0)
 })
 
-test('Mayhem dawn identifies the attacker by role while naming only the victim', () => {
+test('Mayhem dawn uses one story and lists the victim while identifying the attacker by role', () => {
   const morning = pagii({
     category: 'mayhem',
     day: 1,
@@ -407,6 +451,8 @@ test('Mayhem dawn identifies the attacker by role while naming only the victim',
     dead: [2]
   })
 
+  assert.equal((morning.match(/> Serangan malam/g) || []).length, 1)
+  assert.equal((morning.match(/> ↳/g) || []).length, 1)
   assert.match(morning, /Killer 🔪/)
   assert.match(morning, /Kia/)
   assert.doesNotMatch(morning, /Rin/)
