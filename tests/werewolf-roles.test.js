@@ -19,8 +19,9 @@ import {
 } from '../lib/werewolf.js'
 import {
   CUSTOM_ANTAGONIST_ROLES,
-  VIGILANTE_ANTAGONIST_KILL_STORIES,
-  VIGILANTE_CAPTURE_STORIES
+  MAYHEM_ATTACK_SUMMARY_STORIES,
+  VIGILANTE_ATTACK_SUMMARY_STORIES,
+  VIGILANTE_CAPTURE_SUMMARY_STORIES
 } from '../lib/werewolfData.js'
 
 test('Warden armor absorbs one antagonist attack but not a vote execution', () => {
@@ -420,23 +421,27 @@ test('Vigilante dawn uses one story and a clean victim list for all deaths', () 
       { id: 'vigilante', number: 1, role: 'vigilante', displayName: 'Avelia', isAiCitizen: true },
       { id: 'captured', number: 2, role: 'mafia', displayName: 'Mika', isAiCitizen: true, lastDeathCause: 'capture', lastDeathActorId: 'vigilante' },
       { id: 'attacker', number: 3, role: 'killer', displayName: 'Rin', isAiCitizen: true },
-      { id: 'victim', number: 4, role: 'assassin', displayName: 'Kia', isAiCitizen: true, lastDeathCause: 'werewolf', lastDeathActorId: 'attacker' }
+      { id: 'victim', number: 4, role: 'assassin', displayName: 'Kia', isAiCitizen: true, lastDeathCause: 'werewolf', lastDeathActorId: 'attacker' },
+      { id: 'attacker2', number: 5, role: 'alien', displayName: 'Zed', isAiCitizen: true },
+      { id: 'victim2', number: 6, role: 'warga', displayName: 'Mona', isAiCitizen: true, lastDeathCause: 'werewolf', lastDeathActorId: 'attacker2' }
     ],
-    dead: [2, 4]
+    dead: [2, 4, 6]
   }
 
   const morning = pagii(data)
-  assert.equal((morning.match(/> (?:Operasi|Pertikaian)/g) || []).length, 1)
-  assert.equal((morning.match(/> ⚔️/g) || []).length, 1)
-  assert.equal((morning.match(/> ↳/g) || []).length, 2)
-  assert.match(morning, /↳ Mika — \*Mafia/)
-  assert.match(morning, /↳ Kia — \*Assassin/)
-  assert.match(morning, /Vigilante 🎯/)
-  assert.match(morning, /Killer 🔪/)
-  assert.doesNotMatch(morning, /Avelia|Rin/)
+  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 3)
+  assert.equal((morning.match(/> ↳/g) || []).length, 3)
+  assert.match(morning, /Antagonis yang tertangkap/)
+  assert.match(morning, /↳ Mika — \*Mafia 🕴️\*/)
+  assert.match(morning, /Korban/)
+  assert.match(morning, /↳ Kia — \*Assassin 🥷\*/)
+  assert.match(morning, /Vigilante.*1 player/)
+  assert.match(morning, /(?:2 player.*Killer, Alien|Killer, Alien.*2 player)/)
+  assert.doesNotMatch(morning, /Vigilante 🎯|Killer 🔪|Alien 👽/)
+  assert.doesNotMatch(morning, /Avelia|Rin|Zed/)
   assert.doesNotMatch(morning, /\{(?:captors|targets|attackers|victims|location)\}/)
-  assert.ok(VIGILANTE_CAPTURE_STORIES.length > 0)
-  assert.ok(VIGILANTE_ANTAGONIST_KILL_STORIES.length > 0)
+  assert.equal(VIGILANTE_CAPTURE_SUMMARY_STORIES.length, 5)
+  assert.equal(VIGILANTE_ATTACK_SUMMARY_STORIES.length, 5)
 })
 
 test('Mayhem dawn uses one story and lists the victim while identifying the attacker by role', () => {
@@ -451,9 +456,10 @@ test('Mayhem dawn uses one story and lists the victim while identifying the atta
     dead: [2]
   })
 
-  assert.equal((morning.match(/> Serangan malam/g) || []).length, 1)
+  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 2)
   assert.equal((morning.match(/> ↳/g) || []).length, 1)
-  assert.match(morning, /Killer 🔪/)
+  assert.match(morning, /Killer.*1 player/)
+  assert.equal(MAYHEM_ATTACK_SUMMARY_STORIES.length, 5)
   assert.match(morning, /Kia/)
   assert.doesNotMatch(morning, /Rin/)
 })
