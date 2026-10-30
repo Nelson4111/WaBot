@@ -9,13 +9,18 @@ import {
   getWinner,
   getNightProgress,
   getVigilanteCount,
+  pagii,
   roleAmount,
   roleGenerator,
   resolveSecretCodeAction,
   resolveNightActions,
   voteKill
 } from '../lib/werewolf.js'
-import { CUSTOM_ANTAGONIST_ROLES } from '../lib/werewolfData.js'
+import {
+  CUSTOM_ANTAGONIST_ROLES,
+  VIGILANTE_ANTAGONIST_KILL_STORIES,
+  VIGILANTE_CAPTURE_STORIES
+} from '../lib/werewolfData.js'
 
 test('Warden armor absorbs one antagonist attack but not a vote execution', () => {
   const warden = { id: 'warden', number: 1, role: 'warden', armor: true, isdead: false, vote: 1 }
@@ -361,6 +366,50 @@ test('Vigilante count scales with room size and all Vigilantes capture instead o
   assert.equal(room.player[1].isdead, true)
   assert.equal(room.player[1].lastDeathCause, 'capture')
   assert.equal(room.activityLog[0].action, 'capture')
+})
+
+test('Vigilante dawn groups captures and antagonist-on-antagonist kills into one story each', () => {
+  const data = {
+    category: 'vigilante',
+    day: 2,
+    guardian: [],
+    player: [
+      { id: 'vigilante', number: 1, role: 'vigilante', displayName: 'Avelia', isAiCitizen: true },
+      { id: 'captured', number: 2, role: 'mafia', displayName: 'Mika', isAiCitizen: true, lastDeathCause: 'capture', lastDeathActorId: 'vigilante' },
+      { id: 'attacker', number: 3, role: 'killer', displayName: 'Rin', isAiCitizen: true },
+      { id: 'victim', number: 4, role: 'assassin', displayName: 'Kia', isAiCitizen: true, lastDeathCause: 'werewolf', lastDeathActorId: 'attacker' }
+    ],
+    dead: [2, 4]
+  }
+
+  const morning = pagii(data)
+  assert.equal((morning.match(/> ⛓️/g) || []).length, 1)
+  assert.equal((morning.match(/> ⚔️/g) || []).length, 1)
+  assert.match(morning, /Mika \(Mafia/)
+  assert.match(morning, /Kia \(Assassin/)
+  assert.match(morning, /Vigilante 🎯/)
+  assert.match(morning, /Killer 🔪/)
+  assert.doesNotMatch(morning, /Avelia|Rin/)
+  assert.doesNotMatch(morning, /\{(?:captors|targets|attackers|victims|location)\}/)
+  assert.equal(VIGILANTE_CAPTURE_STORIES.length, 5)
+  assert.equal(VIGILANTE_ANTAGONIST_KILL_STORIES.length, 5)
+})
+
+test('Mayhem dawn identifies the attacker by role while naming only the victim', () => {
+  const morning = pagii({
+    category: 'mayhem',
+    day: 1,
+    guardian: [],
+    player: [
+      { id: 'attacker', number: 1, role: 'killer', displayName: 'Rin', isAiCitizen: true },
+      { id: 'victim', number: 2, role: 'warga', displayName: 'Kia', isAiCitizen: true, lastDeathCause: 'werewolf', lastDeathActorId: 'attacker' }
+    ],
+    dead: [2]
+  })
+
+  assert.match(morning, /Killer 🔪/)
+  assert.match(morning, /Kia/)
+  assert.doesNotMatch(morning, /Rin/)
 })
 
 test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist attack independently', () => {
