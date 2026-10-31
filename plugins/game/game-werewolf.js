@@ -199,6 +199,17 @@ const formatGameCategoryInfo = (game, usedPrefix) => {
 > Buat room: *${usedPrefix}${game.aliases[0]} create [taruhan]*`
 }
 
+const getGameCategoryImage = (game) => {
+    const role = game.id === 'vigilante'
+        ? 'vigilante'
+        : game.id === 'mayhem'
+            ? 'ghost'
+            : game.id === 'custom'
+                ? 'warga'
+                : game.antagonist
+    return getRoleImage(role, game.location) || thumbNight
+}
+
 const buildGameCategoryList = (usedPrefix, requestedPage = 1) => {
     const categories = Object.values(GAME_CATEGORIES)
     const pageSize = 4
@@ -1043,7 +1054,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     .join('\n━━━━━━━━━━━━━━\n')
                 return m.reply(`*━━━〔 🎮 DAFTAR KATEGORI 〕━━━*\n\n${categoryList}\n\n━━━━━━━━━━━━━━\n> Ketik *.gr list* untuk deskripsi game dan tombol navigasi.`)
             }
-            return m.reply(formatGameCategoryInfo(category, usedPrefix))
+            return conn.sendMessage(chat, {
+                image: { url: getGameCategoryImage(category) },
+                caption: formatGameCategoryInfo(category, usedPrefix)
+            }, { quoted: m })
         }
         if (action === 'role') {
             const requestedRole = args.slice(1).join(' ')
@@ -1821,7 +1835,10 @@ ${rosterText.trim()}
 *━━━〔 ✦ PRIVASI AKSI 〕━━━*
 > Kartu role dan tombol malam dikirim di grup melalui dual-stanza.
 > Aksi dan hasil pribadi hanya terlihat oleh pemain terkait.`
-        return m.reply(infoText)
+        return conn.sendMessage(chat, {
+            image: { url: getGameCategoryImage(game) },
+            caption: infoText
+        }, { quoted: m })
 
     } else if (value === "guide") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
