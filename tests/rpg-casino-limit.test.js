@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  getCasinoGamesUsed,
   getCasinoLimitPurchaseCap,
   getCasinoLimitUnitPrice
 } from '../plugins/rpg/rpg-casino.js'
@@ -17,4 +18,15 @@ test('casino limit pricing uses 5% of combined pocket and bank funds with a mini
 test('casino limit purchase caps differ for regular and Premium users', () => {
   assert.equal(getCasinoLimitPurchaseCap(false), 25)
   assert.equal(getCasinoLimitPurchaseCap(true), 50)
+})
+
+test('buying one casino limit restores one used chance without raising the daily cap', () => {
+  const stats = { dailyGames: 50, dailyLimitPurchased: 0 }
+
+  stats.dailyLimitPurchased += 1
+  assert.equal(getCasinoGamesUsed(stats), 49)
+  assert.equal(getCasinoLimitPurchaseCap(true), 50)
+
+  stats.dailyGames += 1
+  assert.equal(getCasinoGamesUsed(stats), 50)
 })
