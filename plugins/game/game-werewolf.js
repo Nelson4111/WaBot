@@ -1393,10 +1393,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             return m.reply(status.warning(`Role tidak valid. Gunakan nama role atau nomor dari *.gr role*.`))
         }
 
-        conn.werewolfCustomRoles ||= {}
+        if (!conn.werewolfCustomRoles) conn.werewolfCustomRoles = {}
         const customRoles = room
-            ? (room.customRoles ||= {})
-            : (conn.werewolfCustomRoles[chat] ||= {})
+            ? (room.customRoles || (room.customRoles = {}))
+            : (conn.werewolfCustomRoles[chat] || (conn.werewolfCustomRoles[chat] = {}))
         const proposedRoles = Object.entries(customRoles)
             .filter(([id]) => id !== targetPlayerId)
             .map(([, role]) => role)
@@ -1516,7 +1516,7 @@ ${gameCategory.id === 'custom' ? `\n> 🎭 Atur role dengan *${gameCommandBase} 
                 return m.reply(status.error(`Saldo tidak cukup untuk join. Taruhan Rp ${wager.toLocaleString('id-ID')} langsung ditahan saat bergabung.`))
             }
             wdb.money[sender] = subtractRpgMoney(wdb.money[sender], wager)
-            ww[chat].wagerPlayers ||= []
+            if (!ww[chat].wagerPlayers) ww[chat].wagerPlayers = []
             ww[chat].wagerPlayers.push(sender)
             await saveDB(wdb)
         }
@@ -1685,7 +1685,7 @@ ${rosterText.trim()}
         if (!ww[chat] || ww[chat].status) return m.reply(status.warning("Tidak dapat keluar saat permainan sedang berlangsung."))
         const room = ww[chat]
         if (!room.player.some((player) => player.id === sender)) return m.reply(status.error("Kamu belum terdaftar di room ini."))
-        conn.werewolfExitConfirmations ||= {}
+        if (!conn.werewolfExitConfirmations) conn.werewolfExitConfirmations = {}
         const confirmationKey = `${chat}:${sender}`
         const confirmation = conn.werewolfExitConfirmations[confirmationKey]
         const confirmAction = String(target || '').toLowerCase()
@@ -1727,7 +1727,7 @@ ${rosterText.trim()}
         const canDelete = room.owner === sender || hasRpgPanelAccess(sender)
         if (!canDelete) return m.reply(status.error("Hanya owner room atau moderator yang dapat menghapus room."))
 
-        conn.werewolfDeleteConfirmations ||= {}
+        if (!conn.werewolfDeleteConfirmations) conn.werewolfDeleteConfirmations = {}
         const confirmationKey = `${chat}:${sender}`
         const confirmation = conn.werewolfDeleteConfirmations[confirmationKey]
         const confirmAction = String(target || '').toLowerCase()
