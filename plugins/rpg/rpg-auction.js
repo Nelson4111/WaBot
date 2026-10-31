@@ -621,7 +621,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `│ 📖 *PANDUAN LELANG*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Pilih item dari tombol *PILIH ITEM / BID* pada *${prefix}ah*. Bot otomatis mengajukan bid Rp 500.000 di atas bid tertinggi, lalu meminta konfirmasi.\n` +
-      `> ↳ Untuk bid manual, ketik *${prefix}ah bid <nomor/nama> <nominal>*. Contoh: *${prefix}ah bid 1 2M*.\n` +
+      `> ↳ Untuk bid manual, ketik *${prefix}ah bid <nomor/nama> <nominal>*. Contoh: *${prefix}ah bid 1 2M* atau *${prefix}ah bid 1 2jt*.\n` +
       `> ↳ Daftar sufiks nominal: *${prefix}ah money*. Bid hanya dikirim setelah kamu menekan tombol konfirmasi; tekan batalkan jika tidak jadi.\n` +
       `> ↳ Saldo dipotong setelah konfirmasi. Dana bid dikembalikan jika kamu kalah; pemenang mengambil hadiah lewat *${prefix}ah vault* lalu *${prefix}ah claim <nomor/nama>*.\n` +
       `> ↳ Ikut bid membutuhkan *Auction Pass* dan kartu bank yang tidak beku. Lelang berlangsung 5 jam.\n\n` +
@@ -633,7 +633,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       `╭─❏「 💰 DAFTAR SUFIKS UANG 」❏\n` +
       `│ 💰 NOMINAL RINGKAS UNTUK TAMPILAN & BID\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `Gunakan sufiks langsung setelah angka, contoh: *${prefix}ah bid 1 19Qa*.\n` +
+      `Gunakan sufiks langsung setelah angka, contoh: *${prefix}ah bid 1 19Qa* atau *${prefix}ah bid 1 3milyar*.\n` +
       `Nominal bid dan saldo ditampilkan ringkas; nama di bawah menunjukkan nilai tiap sufiks.\n\n` +
       `${getRpgMoneySuffixGuide()}\n\n` +
       `─━━━━━━━━━━━━━━─`

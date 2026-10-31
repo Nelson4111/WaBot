@@ -81,6 +81,9 @@ const signedMoney = value => {
 }
 const DAILY_LIMIT = 25
 const PREMIUM_DAILY_LIMIT = 50
+const CASINO_LIMIT_PRICE_RATE = 0.2
+const CASINO_LIMIT_MIN_PRICE = 200_000
+const CASINO_LIMIT_CONFIRMATION_TTL = 2 * 60 * 1000
 const CASINO_BLACKOUT_TARGET_COUNT = 5
 const CASINO_GUARD_CONFIRMATION_TTL = 5 * 60 * 1000
 const MAX_CASINO_SIMULATION_BET = 1_000_000_000_000
@@ -201,6 +204,17 @@ function getDailyLimit(jid, wdb) {
   return isPremiumUser(jid, wdb) ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
 }
 
+export function getCasinoLimitUnitPrice(wallet, bank) {
+  const totalFunds = addRpgMoney(
+    maxRpgMoney(0, normalizeRpgMoney(wallet)),
+    maxRpgMoney(0, normalizeRpgMoney(bank))
+  )
+  return maxRpgMoney(
+    CASINO_LIMIT_MIN_PRICE,
+    multiplyRpgMoney(totalFunds, CASINO_LIMIT_PRICE_RATE, 'ceil')
+  )
+}
+
 function todayKey() {
   return getRpgWibDateKey()
 }
@@ -262,10 +276,18 @@ function getCasinoStats(user) {
   if (user.casinoStats.dailyDate !== todayKey()) {
     user.casinoStats.dailyDate = todayKey()
     user.casinoStats.dailyGames = 0
+    user.casinoStats.dailyLimitPurchased = 0
     user.casinoStats.dailyResults = emptyCasinoOutcomes()
     user.casinoStats.dailyHistory = []
   }
   user.casinoStats.dailyGames = Number(user.casinoStats.dailyGames || 0)
+  user.casinoStats.dailyLimitPurchased = Math.max(
+    0,
+    Math.min(
+      Number.MAX_SAFE_INTEGER - PREMIUM_DAILY_LIMIT,
+      Math.floor(Number(user.casinoStats.dailyLimitPurchased) || 0)
+    )
+  )
   user.casinoStats.games = Number(user.casinoStats.games || 0)
   user.casinoStats.wins = Number(user.casinoStats.wins || 0)
   user.casinoStats.profit = normalizeRpgMoney(user.casinoStats.profit)
@@ -599,6 +621,7 @@ function casinoCommands(prefix) {
     `> ↳ 📋 ${prefix}casino games`,
     `> ↳ 📖 ${prefix}casino guide`,
     `> ↳ 💰 ${prefix}casino money — daftar suffix nominal`,
+    `> ↳ 🎟️ ${prefix}casino limit guide/price/buy <jumlah> — panduan, harga, dan pembelian jatah tambahan`,
     `> ↳ 👤 ${prefix}casino profile`,
     `> ↳ 💰 ${prefix}cs profit <all/nama game/nomor>`,
     `> ↳ 🏆 ${prefix}casino top`,
@@ -656,13 +679,13 @@ function casinoGuide(prefix) {
 
     `📌 *CARA BERMAIN*\n` +
     `> ↳ Mainkan dengan ${prefix}casino <game> <taruhan>.\n` +
-    `> ↳ Nominal taruhan bisa memakai suffix seperti 1K, 2M, 1B, atau 1T; format tampilan saldo dan hasil juga ringkas.\n` +
+    `> ↳ Nominal taruhan bisa memakai suffix seperti 1K, 2M, 1B, atau 1T; versi Indonesia seperti 2jt dan 3milyar juga bisa dipakai.\n` +
     `> ↳ Lihat game dan minimum taruhan: ${prefix}casino games.\n` +
     `> ↳ Untuk game acak, gunakan ${prefix}casino random <taruhan>.\n` +
     `> ↳ Taruhan dapat berupa nominal atau *all* untuk memakai seluruh uang saku.\n` +
     `> ↳ Coba game tanpa memakai atau mendapatkan uang dengan ${prefix}casino simulation <game/random> [nominal] (alias: ${prefix}cs sl <game/random> [nominal]). Nominal bisa memakai suffix seperti 1K, 2M, atau 1B. Nominal acak selalu di atas 1B; nominal pilihan maksimal 1T.\n` +
     `> ↳ Hadiah dihitung dari taruhan dikali multiplier hasil.\n` +
-    `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x.\n\n` +
+    `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x. Jatah tambahan bisa dibeli lewat ${prefix}casino limit guide.\n\n` +
     `> ↳ Blackout memiliki peluang normal, tetapi maksimal hanya terjadi sekali per pengguna per hari.\n` +
     `> ↳ Kerugian blackout hanya mengurangi saldo, bukan profit casino. Pulihkan melalui ${prefix}cs guard.\n` +
     `> ↳ Premium dapat mengambil proteksi blackout sekali dalam minggu kalender melalui ${prefix}cs guard protect; kuota kembali setiap Senin.\n\n` +
@@ -674,6 +697,44 @@ function casinoGuide(prefix) {
 
     `> ↳ Gunakan ${prefix}cs room status untuk melihat kondisi room terbaru.\n\n` +
 
+    `─━━━━━━━━━━━━━━─`
+}
+
+function casinoLimitGuide(prefix) {
+  return `╭─❏「 🎟️ PANDUAN LIMIT CASINO 」❏\n` +
+    `│ TAMBAH KESEMPATAN BERMAIN HARI INI\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Lihat harga sesuai total uang saku + saldo bank kamu: *${prefix}casino limit price*.\n` +
+    `> ↳ Beli jatah tambahan: *${prefix}casino limit buy <jumlah>*.\n` +
+    `> ↳ Pembelian selalu meminta konfirmasi sebelum uang dipotong.\n` +
+    `> ↳ Harga satu limit = 20% total uang saku + bank, minimal ${money(CASINO_LIMIT_MIN_PRICE)}.\n` +
+    `> ↳ Contoh: total saldo ${money(1_000_000)} berarti 1 limit seharga ${money(200_000)}.\n` +
+    `> ↳ Harga dikunci saat konfirmasi diminta; pembayaran otomatis memakai uang saku dulu, lalu bank.\n` +
+    `> ↳ Limit tambahan hanya berlaku hari ini dan direset saat hari WIB berganti.\n` +
+    `> ↳ Panduan ini juga bisa dibuka manual kapan saja dengan *${prefix}casino limit guide*.\n\n` +
+    `─━━━━━━━━━━━━━━─`
+}
+
+function casinoLimitPriceList(prefix, wallet, bank) {
+  const unitPrice = getCasinoLimitUnitPrice(wallet, bank)
+  const totalFunds = addRpgMoney(
+    maxRpgMoney(0, normalizeRpgMoney(wallet)),
+    maxRpgMoney(0, normalizeRpgMoney(bank))
+  )
+  return `╭─❏「 💰 PRICELIST LIMIT CASINO 」❏\n` +
+    `│ HARGA PERSONAL BERDASARKAN SALDO SAAT INI\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `💳 *SALDO ACUAN*\n` +
+    `> ↳ Uang saku: ${money(wallet)}\n` +
+    `> ↳ Saldo bank: ${money(bank)}\n` +
+    `> ↳ Total: ${money(totalFunds)}\n\n` +
+    `🎟️ *HARGA LIMIT*\n` +
+    `> ↳ 1 limit: ${money(unitPrice)}\n` +
+    `> ↳ 2 limit: ${money(multiplyRpgMoney(unitPrice, 2))}\n` +
+    `> ↳ 5 limit: ${money(multiplyRpgMoney(unitPrice, 5))}\n` +
+    `> ↳ 10 limit: ${money(multiplyRpgMoney(unitPrice, 10))}\n\n` +
+    `> ↳ Tarif dihitung dari 20% total saldo, minimal ${money(CASINO_LIMIT_MIN_PRICE)} per limit.\n` +
+    `> ↳ Beli: *${prefix}casino limit buy <jumlah>*\n\n` +
     `─━━━━━━━━━━━━━━─`
 }
 
@@ -709,7 +770,8 @@ function menu(prefix, wdb, conn, groupMetadata) {
   text += `> ↳ User biasa\n`
   text += `> ↳ ${DAILY_LIMIT} permainan per hari\n`
   text += `> ↳ User Premium\n`
-  text += `> ↳ ${PREMIUM_DAILY_LIMIT} permainan per hari\n\n`
+  text += `> ↳ ${PREMIUM_DAILY_LIMIT} permainan per hari\n`
+  text += `> ↳ Jatah tambahan bisa dibeli: ${prefix}casino limit guide\n\n`
 
   text += `📌 *PERINTAH*\n`
   text += `> ↳ ${prefix}casino command\n`
@@ -1552,8 +1614,9 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
   }
   const casinoShutdown = isRpgEventActive('casino_shutdown')
   const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'money', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record', 'guard']
+  const limitReadOnlyAction = input === 'limit' && ['', 'guide', 'panduan', 'price', 'harga', 'pricelist'].includes(String(args[1] || '').toLowerCase())
   const roomReadOnlyActions = ['info', 'games', 'guide']
-  if (casinoShutdown && !readOnlyCasinoInputs.includes(input) &&
+  if (casinoShutdown && !readOnlyCasinoInputs.includes(input) && !limitReadOnlyAction &&
       !(input === 'room' && roomReadOnlyActions.includes(String(args[1] || '').toLowerCase()))) {
     return m.reply('🚫 *CASINO SHUTDOWN*\nSeluruh permainan Casino sedang ditutup. Saldo dan inventori tetap aman.')
   }
@@ -1650,7 +1713,139 @@ return m.reply(
   }
 
   const stats = getCasinoStats(user)
-  const dailyLimit = getDailyLimit(m.sender, wdb)
+  const dailyLimit = getDailyLimit(m.sender, wdb) + stats.dailyLimitPurchased
+
+  if (input === 'limit') {
+    const action = String(args[1] || 'guide').toLowerCase()
+    const wallet = maxRpgMoney(0, normalizeRpgMoney(wdb.money[m.sender]))
+    const bank = maxRpgMoney(0, normalizeRpgMoney(user.bank))
+    const maxAdditionalLimit = Number.MAX_SAFE_INTEGER - getDailyLimit(m.sender, wdb) - stats.dailyLimitPurchased
+
+    if (['guide', 'panduan'].includes(action)) {
+      return m.reply(casinoLimitGuide(usedPrefix))
+    }
+    if (['price', 'harga', 'pricelist'].includes(action)) {
+      return m.reply(casinoLimitPriceList(usedPrefix, wallet, bank))
+    }
+    if (['cancel', 'batal'].includes(action)) {
+      delete user.casinoLimitPurchasePending
+      await saveDB(wdb)
+      return m.reply('↩️ Pembelian limit casino dibatalkan. Saldo dan jatah bermain tidak berubah.')
+    }
+    if (['buy', 'beli'].includes(action)) {
+      const quantityInput = String(args[2] || '')
+      const quantity = /^\d+$/.test(quantityInput) ? Number(quantityInput) : 0
+      if (!Number.isSafeInteger(quantity) || quantity < 1 ||
+          quantity > maxAdditionalLimit) {
+        return m.reply(
+          `❌ Jumlah limit tidak valid.\n` +
+          `Gunakan *${usedPrefix}casino limit buy <jumlah>* dengan jumlah bilangan bulat positif.`
+        )
+      }
+
+      const unitPrice = getCasinoLimitUnitPrice(wallet, bank)
+      const totalPrice = multiplyRpgMoney(unitPrice, quantity)
+      if (compareRpgMoney(addRpgMoney(wallet, bank), totalPrice) < 0) {
+        return m.reply(
+          `╭─❏「 ❌ SALDO LIMIT CASINO 」❏\n` +
+          `│ SALDO TIDAK CUKUP\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Harga ${quantity.toLocaleString('id-ID')} limit: ${money(totalPrice)}.\n` +
+          `> ↳ Total uang saku + bank: ${money(addRpgMoney(wallet, bank))}.\n` +
+          `> ↳ Lihat rincian: *${usedPrefix}casino limit price*.\n\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
+      }
+
+      user.casinoLimitPurchasePending = {
+        date: todayKey(),
+        quantity,
+        unitPrice,
+        totalPrice,
+        createdAt: Date.now()
+      }
+      await saveDB(wdb)
+      return sendRpgConfirmButtons(conn, m, {
+        text: `╭─❏「 🎟️ KONFIRMASI LIMIT CASINO 」❏\n` +
+          `│ PERIKSA PEMBELIANMU\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Limit tambahan: *${quantity.toLocaleString('id-ID')}*\n` +
+          `> ↳ Harga per limit: ${money(unitPrice)}\n` +
+          `> ↳ Total pembayaran: *${money(totalPrice)}*\n` +
+          `> ↳ Total saldo dihitung dari uang saku + bank.\n` +
+          `> ↳ Pembayaran memakai uang saku lebih dulu, lalu saldo bank.\n` +
+          `> ↳ Jatah berlaku sampai hari WIB berganti.\n` +
+          `> ↳ Konfirmasi berlaku selama 2 menit.\n\n` +
+          `─━━━━━━━━━━━━━━─`,
+        title: '🎟️ KONFIRMASI PEMBELIAN LIMIT',
+        acceptText: '✅ Beli Limit',
+        acceptCommand: `${usedPrefix}casino limit confirm`,
+        cancelText: '↩️ Batalkan',
+        cancelCommand: `${usedPrefix}casino limit cancel`,
+        noThumbnail: true
+      })
+    }
+    if (['confirm', 'konfirmasi'].includes(action)) {
+      const pending = user.casinoLimitPurchasePending
+      if (!pending || pending.date !== todayKey() ||
+          Date.now() - Number(pending.createdAt || 0) > CASINO_LIMIT_CONFIRMATION_TTL) {
+        delete user.casinoLimitPurchasePending
+        await saveDB(wdb)
+        return m.reply(`⌛ Konfirmasi sudah tidak berlaku. Cek harga terbaru dengan *${usedPrefix}casino limit price*, lalu buat pembelian baru.`)
+      }
+      if (!Number.isSafeInteger(pending.quantity) || pending.quantity < 1 ||
+          pending.quantity > maxAdditionalLimit) {
+        delete user.casinoLimitPurchasePending
+        await saveDB(wdb)
+        return m.reply('❌ Data pembelian limit tidak valid. Buat ulang pembelian melalui menu limit casino.')
+      }
+
+      const quotedUnitPrice = normalizeRpgMoney(pending.unitPrice)
+      const totalPrice = normalizeRpgMoney(pending.totalPrice)
+      if (compareRpgMoney(quotedUnitPrice, 0) <= 0 ||
+          compareRpgMoney(totalPrice, 0) <= 0 ||
+          compareRpgMoney(multiplyRpgMoney(quotedUnitPrice, pending.quantity), totalPrice) !== 0) {
+        delete user.casinoLimitPurchasePending
+        await saveDB(wdb)
+        return m.reply('❌ Rincian pembelian limit tidak valid. Buat ulang pembelian melalui menu limit casino.')
+      }
+      const currentWallet = maxRpgMoney(0, normalizeRpgMoney(wdb.money[m.sender]))
+      const currentBank = maxRpgMoney(0, normalizeRpgMoney(user.bank))
+      if (compareRpgMoney(addRpgMoney(currentWallet, currentBank), totalPrice) < 0) {
+        delete user.casinoLimitPurchasePending
+        await saveDB(wdb)
+        return m.reply(`❌ Saldo berubah dan tidak cukup untuk membayar ${money(totalPrice)}. Cek harga terbaru dengan *${usedPrefix}casino limit price*.`)
+      }
+
+      const walletPayment = minRpgMoney(currentWallet, totalPrice)
+      const bankPayment = subtractRpgMoney(totalPrice, walletPayment)
+      wdb.money[m.sender] = subtractRpgMoney(currentWallet, walletPayment)
+      user.bank = subtractRpgMoney(currentBank, bankPayment)
+      stats.dailyLimitPurchased += pending.quantity
+      delete user.casinoLimitPurchasePending
+      await saveDB(wdb)
+      const updatedLimit = getDailyLimit(m.sender, wdb) + stats.dailyLimitPurchased
+      return m.reply(
+        `╭─❏「 ✅ LIMIT CASINO DIBELI 」❏\n` +
+        `│ PEMBELIAN BERHASIL\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Limit tambahan: *+${pending.quantity.toLocaleString('id-ID')}*\n` +
+        `> ↳ Total dibayar: ${money(totalPrice)}\n` +
+        `> ↳ Dari uang saku: ${money(walletPayment)}\n` +
+        `> ↳ Dari bank: ${money(bankPayment)}\n` +
+        `> ↳ Jatah casino hari ini: ${updatedLimit} permainan\n` +
+        `> ↳ Sisa saldo gabungan: ${money(addRpgMoney(wdb.money[m.sender], user.bank))}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+
+    return m.reply(
+      `🎟️ *MENU LIMIT CASINO*\n` +
+      `> ↳ Panduan: *${usedPrefix}casino limit guide*\n` +
+      `> ↳ Pricelist pribadi: *${usedPrefix}casino limit price*\n` +
+      `> ↳ Beli limit: *${usedPrefix}casino limit buy <jumlah>*`
+    )
+  }
   if (input === 'guard') {
     const action = String(args[1] || '').toLowerCase()
 
@@ -1878,7 +2073,7 @@ return m.reply(
       `╭─❏「 💰 DAFTAR SUFIKS UANG 」❏\n` +
       `│ 💰 NOMINAL RINGKAS CASINO\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `Gunakan suffix langsung setelah angka, contoh: *${usedPrefix}cs random 2M*.\n` +
+      `Gunakan suffix langsung setelah angka, contoh: *${usedPrefix}cs random 2M* atau *${usedPrefix}cs random 2jt*.\n` +
       `Nominal taruhan, saldo, profit, hadiah, dan hasil ditampilkan ringkas.\n\n` +
       `${getRpgMoneySuffixGuide()}\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -1991,16 +2186,30 @@ return m.reply(
   }
 
   if (stats.dailyGames >= dailyLimit) {
-  return m.reply(
+  const text =
     `╭─❏「 🛑 BATAS CASINO 」❏\n` +
     `│ 🛑 *Batas permainan tercapai.*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📊 *STATUS*\n` +
     `> ↳ Kamu sudah bermain ${dailyLimit}x hari ini.\n` +
-    `> ↳ Akses casino diblokir sampai hari berganti.\n\n` +
-    `⚠️ Istirahat dulu dan main secukupnya.\n\n` +
+    `> ↳ Jatah casino akan direset saat hari WIB berganti.\n\n` +
+    `🎟️ Kamu bisa membeli jatah tambahan dengan harga sesuai total uang saku + saldo bank.\n` +
+    `> ↳ Buka panduan atau lihat pricelist pribadimu di bawah.\n\n` +
+    `⚠️ Main secukupnya dan pastikan harga sesuai sebelum konfirmasi.\n\n` +
     `─━━━━━━━━━━━━━━─`
-  )
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    text,
+    buttons: [
+      ['📖 Panduan Beli Limit', `${usedPrefix}casino limit guide`],
+      ['💰 Pricelist Saya', `${usedPrefix}casino limit price`]
+    ],
+    noHeader: true,
+    footer: 'AVELIA • RPG CASINO',
+    reply: fallbackText => m.reply(fallbackText)
+  })
 }
 
 const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
