@@ -81,8 +81,8 @@ const signedMoney = value => {
 }
 const DAILY_LIMIT = 25
 const PREMIUM_DAILY_LIMIT = 50
-const CASINO_LIMIT_PRICE_RATE = 0.2
-const CASINO_LIMIT_MIN_PRICE = 200_000
+const CASINO_LIMIT_PRICE_RATE = 0.05
+const CASINO_LIMIT_MIN_PRICE = 50_000
 const CASINO_LIMIT_CONFIRMATION_TTL = 2 * 60 * 1000
 const CASINO_BLACKOUT_TARGET_COUNT = 5
 const CASINO_GUARD_CONFIRMATION_TTL = 5 * 60 * 1000
@@ -707,8 +707,8 @@ function casinoLimitGuide(prefix) {
     `> ↳ Lihat harga sesuai total uang saku + saldo bank kamu: *${prefix}casino limit price*.\n` +
     `> ↳ Beli jatah tambahan: *${prefix}casino limit buy <jumlah>*.\n` +
     `> ↳ Pembelian selalu meminta konfirmasi sebelum uang dipotong.\n` +
-    `> ↳ Harga satu limit = 20% total uang saku + bank, minimal ${money(CASINO_LIMIT_MIN_PRICE)}.\n` +
-    `> ↳ Contoh: total saldo ${money(1_000_000)} berarti 1 limit seharga ${money(200_000)}.\n` +
+    `> ↳ Harga satu limit = 5% total uang saku + bank, minimal ${money(CASINO_LIMIT_MIN_PRICE)}.\n` +
+    `> ↳ Contoh: total saldo ${money(1_000_000)} berarti 1 limit seharga ${money(50_000)}.\n` +
     `> ↳ Harga dikunci saat konfirmasi diminta; pembayaran otomatis memakai uang saku dulu, lalu bank.\n` +
     `> ↳ Limit tambahan hanya berlaku hari ini dan direset saat hari WIB berganti.\n` +
     `> ↳ Panduan ini juga bisa dibuka manual kapan saja dengan *${prefix}casino limit guide*.\n\n` +
@@ -733,7 +733,7 @@ function casinoLimitPriceList(prefix, wallet, bank) {
     `> ↳ 2 limit: ${money(multiplyRpgMoney(unitPrice, 2))}\n` +
     `> ↳ 5 limit: ${money(multiplyRpgMoney(unitPrice, 5))}\n` +
     `> ↳ 10 limit: ${money(multiplyRpgMoney(unitPrice, 10))}\n\n` +
-    `> ↳ Tarif dihitung dari 20% total saldo, minimal ${money(CASINO_LIMIT_MIN_PRICE)} per limit.\n` +
+    `> ↳ Tarif dihitung dari 5% total saldo, minimal ${money(CASINO_LIMIT_MIN_PRICE)} per limit.\n` +
     `> ↳ Beli: *${prefix}casino limit buy <jumlah>*\n\n` +
     `─━━━━━━━━━━━━━━─`
 }
@@ -1778,9 +1778,9 @@ return m.reply(
           `> ↳ Konfirmasi berlaku selama 2 menit.\n\n` +
           `─━━━━━━━━━━━━━━─`,
         title: '🎟️ KONFIRMASI PEMBELIAN LIMIT',
-        acceptText: '✅ Beli Limit',
+        acceptText: '🎟️✨ Ya, Beli Limit!',
         acceptCommand: `${usedPrefix}casino limit confirm`,
-        cancelText: '↩️ Batalkan',
+        cancelText: '↩️💸 Jangan Dulu',
         cancelCommand: `${usedPrefix}casino limit cancel`,
         noThumbnail: true
       })
@@ -2203,8 +2203,8 @@ return m.reply(
     quoted: m,
     text,
     buttons: [
-      ['📖 Panduan Beli Limit', `${usedPrefix}casino limit guide`],
-      ['💰 Pricelist Saya', `${usedPrefix}casino limit price`]
+      ['📖✨ Cara Beli Limit 🎟️', `${usedPrefix}casino limit guide`],
+      ['💰🔎 Cek Harga Limit 🧾', `${usedPrefix}casino limit price`]
     ],
     noHeader: true,
     footer: 'AVELIA • RPG CASINO',
