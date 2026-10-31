@@ -204,6 +204,10 @@ function getDailyLimit(jid, wdb) {
   return isPremiumUser(jid, wdb) ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
 }
 
+export function getCasinoLimitPurchaseCap(premium) {
+  return premium ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
+}
+
 export function getCasinoLimitUnitPrice(wallet, bank) {
   const totalFunds = addRpgMoney(
     maxRpgMoney(0, normalizeRpgMoney(wallet)),
@@ -1719,7 +1723,8 @@ return m.reply(
     const action = String(args[1] || 'guide').toLowerCase()
     const wallet = maxRpgMoney(0, normalizeRpgMoney(wdb.money[m.sender]))
     const bank = maxRpgMoney(0, normalizeRpgMoney(user.bank))
-    const maxAdditionalLimit = Number.MAX_SAFE_INTEGER - getDailyLimit(m.sender, wdb) - stats.dailyLimitPurchased
+    const purchaseCap = getCasinoLimitPurchaseCap(isPremiumUser(m.sender, wdb))
+    const remainingPurchases = Math.max(0, purchaseCap - stats.dailyLimitPurchased)
 
     if (['guide', 'panduan'].includes(action)) {
       return m.reply(casinoLimitGuide(usedPrefix))
@@ -1735,11 +1740,18 @@ return m.reply(
     if (['buy', 'beli'].includes(action)) {
       const quantityInput = String(args[2] || '')
       const quantity = /^\d+$/.test(quantityInput) ? Number(quantityInput) : 0
+      if (stats.dailyLimitPurchased >= purchaseCap) {
+        return m.reply(
+          `🎟️ Kamu sudah mencapai batas pembelian limit casino hari ini (${purchaseCap} limit tambahan). ` +
+          `Kesempatan pembelian akan kembali saat hari WIB berganti.`
+        )
+      }
       if (!Number.isSafeInteger(quantity) || quantity < 1 ||
-          quantity > maxAdditionalLimit) {
+          quantity > remainingPurchases) {
         return m.reply(
           `❌ Jumlah limit tidak valid.\n` +
-          `Gunakan *${usedPrefix}casino limit buy <jumlah>* dengan jumlah bilangan bulat positif.`
+          `Jumlah yang diminta melebihi jatah pembelian yang tersedia hari ini. ` +
+          `Cek sisa jatah dengan *${usedPrefix}casino limit price* atau coba jumlah yang lebih kecil.`
         )
       }
 
@@ -1806,10 +1818,16 @@ return m.reply(
         return m.reply(`⌛ Konfirmasi sudah tidak berlaku. Cek harga terbaru dengan *${usedPrefix}casino limit price*, lalu buat pembelian baru.`)
       }
       if (!Number.isSafeInteger(pending.quantity) || pending.quantity < 1 ||
-          pending.quantity > maxAdditionalLimit) {
+          pending.quantity > remainingPurchases) {
         delete user.casinoLimitPurchasePending
         await saveDB(wdb)
-        return m.reply('❌ Data pembelian limit tidak valid. Buat ulang pembelian melalui menu limit casino.')
+        if (stats.dailyLimitPurchased >= purchaseCap) {
+          return m.reply(
+            `🎟️ Kamu sudah mencapai batas pembelian limit casino hari ini (${purchaseCap} limit tambahan). ` +
+            `Kesempatan pembelian akan kembali saat hari WIB berganti.`
+          )
+        }
+        return m.reply('❌ Jumlah limit melebihi jatah pembelian yang tersedia hari ini. Buat ulang pembelian dengan jumlah yang lebih kecil.')
       }
 
       const quotedUnitPrice = normalizeRpgMoney(pending.unitPrice)
@@ -1837,6 +1855,7 @@ return m.reply(
       delete user.casinoLimitPurchasePending
       await saveDB(wdb)
       const updatedLimit = getDailyLimit(m.sender, wdb) + stats.dailyLimitPurchased
+      const purchaseCapReached = stats.dailyLimitPurchased >= purchaseCap
       return m.reply(
         `╭─❏「 ✅ LIMIT CASINO DIBELI 」❏\n` +
         `│ PEMBELIAN BERHASIL\n` +
@@ -1846,6 +1865,7 @@ return m.reply(
         `> ↳ Dari uang saku: ${money(walletPayment)}\n` +
         `> ↳ Dari bank: ${money(bankPayment)}\n` +
         `> ↳ Jatah casino hari ini: ${updatedLimit} permainan\n` +
+        `${purchaseCapReached ? `> ↳ Jatah pembelian limit hari ini sudah mencapai batas ${purchaseCap} limit tambahan.\n` : ''}` +
         `> ↳ Sisa saldo gabungan: ${money(addRpgMoney(wdb.money[m.sender], user.bank))}\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
