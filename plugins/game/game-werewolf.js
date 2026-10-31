@@ -1409,7 +1409,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             return m.reply(status.warning(`Role tidak valid. Gunakan nama role atau nomor dari *.gr role*.`))
         }
 
-        if (!conn.werewolfCustomRoles) conn.werewolfCustomRoles = {}
+        conn.werewolfCustomRoles = conn.werewolfCustomRoles || {}
         const customRoles = room
             ? (room.customRoles || (room.customRoles = {}))
             : (conn.werewolfCustomRoles[chat] || (conn.werewolfCustomRoles[chat] = {}))
