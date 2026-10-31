@@ -208,6 +208,12 @@ export function getCasinoLimitPurchaseCap(premium) {
   return premium ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
 }
 
+export function getCasinoGamesUsed(stats) {
+  const played = Math.max(0, Math.floor(Number(stats?.dailyGames) || 0))
+  const purchased = Math.max(0, Math.floor(Number(stats?.dailyLimitPurchased) || 0))
+  return Math.max(0, played - purchased)
+}
+
 export function getCasinoLimitUnitPrice(wallet, bank) {
   const totalFunds = addRpgMoney(
     maxRpgMoney(0, normalizeRpgMoney(wallet)),
@@ -385,7 +391,7 @@ function casinoHistoryText(stats, dailyLimit, usedPrefix) {
     `│ CATATAN PERMAINAN HARI INI\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📊 *RINGKASAN HASIL*\n` +
-    `> ↳ Kesempatan terpakai: ${stats.dailyGames}/${dailyLimit}x\n` +
+    `> ↳ Kesempatan terpakai: ${getCasinoGamesUsed(stats)}/${dailyLimit}x\n` +
     `${formatCasinoOutcomeSummary(stats.dailyResults)}\n\n` +
     `─━━━━━━━━━━━━━━─\n` +
     `🎲 *RONDE TERAKHIR HARI INI*\n\n` +
@@ -850,7 +856,7 @@ function profile(user, sender, dailyLimit, showProfit = false) {
 
   text += `📊 *RINGKASAN*\n`
   text += `> ↳ Total main : ${stats.games}x\n`
-  text += `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x\n`
+  text += `> ↳ Hari ini : ${getCasinoGamesUsed(stats)}/${dailyLimit}x\n`
   text += `> ↳ Menang : ${stats.wins}x\n`
 
   if (!showProfit) {
@@ -1717,7 +1723,7 @@ return m.reply(
   }
 
   const stats = getCasinoStats(user)
-  const dailyLimit = getDailyLimit(m.sender, wdb) + stats.dailyLimitPurchased
+  const dailyLimit = getDailyLimit(m.sender, wdb)
 
   if (input === 'limit') {
     const action = String(args[1] || 'guide').toLowerCase()
@@ -1740,6 +1746,7 @@ return m.reply(
     if (['buy', 'beli'].includes(action)) {
       const quantityInput = String(args[2] || '')
       const quantity = /^\d+$/.test(quantityInput) ? Number(quantityInput) : 0
+      const gamesUsed = getCasinoGamesUsed(stats)
       if (stats.dailyLimitPurchased >= purchaseCap) {
         return m.reply(
           `🎟️ Kamu sudah mencapai batas pembelian limit casino hari ini (${purchaseCap} limit tambahan). ` +
@@ -1747,11 +1754,11 @@ return m.reply(
         )
       }
       if (!Number.isSafeInteger(quantity) || quantity < 1 ||
-          quantity > remainingPurchases) {
+          quantity > remainingPurchases || quantity > gamesUsed) {
         return m.reply(
           `❌ Jumlah limit tidak valid.\n` +
-          `Jumlah yang diminta melebihi jatah pembelian yang tersedia hari ini. ` +
-          `Cek sisa jatah dengan *${usedPrefix}casino limit price* atau coba jumlah yang lebih kecil.`
+          `${quantity > gamesUsed && Number.isSafeInteger(quantity) ? `Kamu baru memakai ${gamesUsed} kesempatan, jadi belum bisa memulihkan ${quantity} kesempatan.\n` : ''}` +
+          `Coba jumlah lebih kecil setelah memakai kesempatan casino.`
         )
       }
 
@@ -1818,7 +1825,8 @@ return m.reply(
         return m.reply(`⌛ Konfirmasi sudah tidak berlaku. Cek harga terbaru dengan *${usedPrefix}casino limit price*, lalu buat pembelian baru.`)
       }
       if (!Number.isSafeInteger(pending.quantity) || pending.quantity < 1 ||
-          pending.quantity > remainingPurchases) {
+          pending.quantity > remainingPurchases ||
+          pending.quantity > getCasinoGamesUsed(stats)) {
         delete user.casinoLimitPurchasePending
         await saveDB(wdb)
         if (stats.dailyLimitPurchased >= purchaseCap) {
@@ -1827,7 +1835,10 @@ return m.reply(
             `Kesempatan pembelian akan kembali saat hari WIB berganti.`
           )
         }
-        return m.reply('❌ Jumlah limit melebihi jatah pembelian yang tersedia hari ini. Buat ulang pembelian dengan jumlah yang lebih kecil.')
+        return m.reply(
+          `❌ Pembelian dibatalkan karena jatah casino yang sudah dipakai tidak cukup untuk dipulihkan. ` +
+          `Pemakaian saat ini ${getCasinoGamesUsed(stats)}/${dailyLimit}.`
+        )
       }
 
       const quotedUnitPrice = normalizeRpgMoney(pending.unitPrice)
@@ -1854,17 +1865,16 @@ return m.reply(
       stats.dailyLimitPurchased += pending.quantity
       delete user.casinoLimitPurchasePending
       await saveDB(wdb)
-      const updatedLimit = getDailyLimit(m.sender, wdb) + stats.dailyLimitPurchased
       const purchaseCapReached = stats.dailyLimitPurchased >= purchaseCap
       return m.reply(
         `╭─❏「 ✅ LIMIT CASINO DIBELI 」❏\n` +
         `│ PEMBELIAN BERHASIL\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Limit tambahan: *+${pending.quantity.toLocaleString('id-ID')}*\n` +
+        `> ↳ Kesempatan dipulihkan: *${pending.quantity.toLocaleString('id-ID')}*\n` +
         `> ↳ Total dibayar: ${money(totalPrice)}\n` +
         `> ↳ Dari uang saku: ${money(walletPayment)}\n` +
         `> ↳ Dari bank: ${money(bankPayment)}\n` +
-        `> ↳ Jatah casino hari ini: ${updatedLimit} permainan\n` +
+        `> ↳ Kesempatan casino: ${getCasinoGamesUsed(stats)}/${dailyLimit}x\n` +
         `${purchaseCapReached ? `> ↳ Jatah pembelian limit hari ini sudah mencapai batas ${purchaseCap} limit tambahan.\n` : ''}` +
         `> ↳ Sisa saldo gabungan: ${money(addRpgMoney(wdb.money[m.sender], user.bank))}\n\n` +
         `─━━━━━━━━━━━━━━─`
@@ -2217,13 +2227,13 @@ return m.reply(
     return sendRpgMsg(conn, m, overview.text, CASINO_IMAGE, { mentions: overview.mentions })
   }
 
-  if (stats.dailyGames >= dailyLimit) {
+  if (getCasinoGamesUsed(stats) >= dailyLimit) {
   const text =
     `╭─❏「 🛑 BATAS CASINO 」❏\n` +
     `│ 🛑 *Batas permainan tercapai.*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📊 *STATUS*\n` +
-    `> ↳ Kamu sudah bermain ${dailyLimit}x hari ini.\n` +
+    `> ↳ Kesempatan bermain hari ini: ${getCasinoGamesUsed(stats)}/${dailyLimit}x.\n` +
     `> ↳ Jatah casino akan direset saat hari WIB berganti.\n\n` +
     `🎟️ Kamu bisa membeli jatah tambahan dengan harga sesuai total uang saku + saldo bank.\n` +
     `> ↳ Buka panduan atau lihat pricelist pribadimu di bawah.\n\n` +
@@ -2451,7 +2461,7 @@ if (result.blackout) {
       `💬 *Dialog*\n` +
       `> ↳ "${dialog}"\n\n` +
       `👮‍♀️ Kerugian blackout tidak masuk ke profit casino. Avelia Guard dapat membantu mengambilnya kembali.\n` +
-      `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`,
+      `> ↳ Hari ini : ${getCasinoGamesUsed(stats)}/${dailyLimit}x.`,
     buttons: blackoutButtons,
     noThumbnail: true,
     reply: fallbackText => m.reply(fallbackText)
@@ -2477,7 +2487,7 @@ return sendRpgQuickButton(conn, m, {
   `─━━━━━━━━━━━━━━─\n\n` +
   `⚠️ *PENGINGAT*\n` +
   `> ↳ Main secukupnya.\n` +
-  `> ↳ Hari ini : ${stats.dailyGames}/${dailyLimit}x.`,
+  `> ↳ Hari ini : ${getCasinoGamesUsed(stats)}/${dailyLimit}x.`,
   title: '🎲 SATU RONDE LAGI?',
   buttonText: '🎲 Main Lagi',
   command: `${usedPrefix}casino retry`,
