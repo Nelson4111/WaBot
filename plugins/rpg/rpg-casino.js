@@ -1777,6 +1777,18 @@ return m.reply(
           `> ↳ Jatah berlaku sampai hari WIB berganti.\n` +
           `> ↳ Konfirmasi berlaku selama 2 menit.\n\n` +
           `─━━━━━━━━━━━━━━─`,
+        fallbackText:
+          `╭─❏「 🎟️ KONFIRMASI LIMIT CASINO 」❏\n` +
+          `│ PERIKSA PEMBELIANMU\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Limit tambahan: *${quantity.toLocaleString('id-ID')}*\n` +
+          `> ↳ Harga per limit: ${money(unitPrice)}\n` +
+          `> ↳ Total pembayaran: *${money(totalPrice)}*\n` +
+          `> ↳ Jatah berlaku sampai hari WIB berganti.\n\n` +
+          `📌 *PILIHAN*\n` +
+          `> ↳ 🎟️✨ Ya, Beli Limit!\n` +
+          `> ↳ ↩️💸 Jangan Dulu\n\n` +
+          `Jika tombol tidak tampil, ketik *${usedPrefix}casino limit confirm* untuk membeli atau *${usedPrefix}casino limit cancel* untuk membatalkan.`,
         title: '🎟️ KONFIRMASI PEMBELIAN LIMIT',
         acceptText: '🎟️✨ Ya, Beli Limit!',
         acceptCommand: `${usedPrefix}casino limit confirm`,
@@ -2202,6 +2214,12 @@ return m.reply(
     message: m,
     quoted: m,
     text,
+    fallbackText:
+      `${text}\n\n` +
+      `📌 *PILIHAN*\n` +
+      `> ↳ 📖✨ Cara Beli Limit 🎟️\n` +
+      `> ↳ 💰🔎 Cek Harga Limit 🧾\n\n` +
+      `Jika tombol tidak tampil, ketik *${usedPrefix}casino limit guide* atau *${usedPrefix}casino limit price*.`,
     buttons: [
       ['📖✨ Cara Beli Limit 🎟️', `${usedPrefix}casino limit guide`],
       ['💰🔎 Cek Harga Limit 🧾', `${usedPrefix}casino limit price`]
