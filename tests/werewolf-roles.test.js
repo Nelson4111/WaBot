@@ -6,6 +6,7 @@ import {
   autoAssignCustomRoles,
   buildRoleCodeMap,
   collapseZombieVampireInfections,
+  formatFinalRoleRoster,
   generateVoteCodeMap,
   getWerewolfPlayerFaction,
   getWinner,
@@ -424,6 +425,66 @@ test('Zombie and Vampire infected players collapse after every original antagoni
     assert.equal(room.player[1].lastDeathCause, 'infection-collapse')
     assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
   }
+})
+
+test('Zombie and Vampire votes collapse infected players as soon as the last original antagonist is eliminated', () => {
+  for (const category of ['zombie', 'vampire']) {
+    const room = {
+      room: `vote-collapse-${category}`,
+      category,
+      voting: false,
+      player: [
+        { id: 'original-1', number: 1, role: category, isdead: true, vote: 0 },
+        { id: 'original-2', number: 2, role: category, isdead: false, vote: 1 },
+        { id: 'infected', number: 3, role: 'seer', infectionType: category, isdead: false, vote: 0 },
+        { id: 'citizen', number: 4, role: 'warga', isdead: false, vote: 0 }
+      ],
+      dead: [1]
+    }
+
+    assert.equal(voteKill(room.room, { [room.room]: room }), room.player[1])
+    assert.equal(room.player[2].isdead, true)
+    assert.equal(room.player[2].lastDeathCause, 'infection-collapse')
+    assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
+  }
+})
+
+test('Zombie and Vampire infections collapse after the last original antagonist is killed by a night action', () => {
+  for (const category of ['zombie', 'vampire']) {
+    const room = {
+      room: `action-collapse-${category}`,
+      category,
+      player: [
+        { id: 'sorcerer', number: 1, role: 'sorcerer', isdead: false },
+        { id: 'original', number: 2, role: category, isdead: false },
+        { id: 'infected', number: 3, role: 'warga', infectionType: category, isdead: false },
+        { id: 'citizen', number: 4, role: 'warga', isdead: false }
+      ],
+      dead: [],
+      nightActions: {
+        sorcerer: { type: 'poison', targetNumber: 2 }
+      },
+      poisonTarget: 2
+    }
+
+    assert.equal(resolveNightActions(room.room, { [room.room]: room }), true)
+    assert.equal(room.player[2].isdead, true)
+    assert.equal(room.player[2].lastDeathCause, 'infection-collapse')
+    assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
+  }
+})
+
+test('Final role roster puts status after role and distinguishes infected from uninfected players', () => {
+  const roster = formatFinalRoleRoster([
+    { id: 'clear', number: 1, role: 'warga', displayName: 'Sari', isAiCitizen: true, isdead: false },
+    { id: 'infected-zombie', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true, infectionType: 'zombie', isdead: true },
+    { id: 'infected-vampire', number: 3, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'vampire', isdead: false }
+  ], 'zombie')
+
+  assert.match(roster, /> Sari — \*Warga 👱‍♂️\* ⚪ 🟢/)
+  assert.match(roster, /> Raka — \*Seer 👳\* 🧟‍♂️ 🔴/)
+  assert.match(roster, /> Mira — \*Mayor 👑\* 🧛‍♂️ 🟢/)
+  assert.match(roster, /Tidak tertular.*Tertular Zombie.*Tertular Vampire.*Hidup.*Mati/)
 })
 
 test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
