@@ -7,10 +7,14 @@ import {
   HIDE_ACTIONS,
   HIDE_ANTAGONIST_STORIES,
   PROTAGONIST_WIN_STORIES,
+  ROLE_IMAGES,
   ROLE_DATA,
   ROLE_DEATH_STORIES,
+  VAMPIRE_INFECTION_STORIES,
+  ZOMBIE_INFECTION_STORIES,
   WARGA_AI_MESSAGES,
   getGameCategory,
+  getRoleImage,
   getRoleFaction,
   getRandomHideActions,
   getSorcererFaction,
@@ -26,6 +30,8 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(normalizeGameCategory('imposter').id, 'impostor')
   assert.equal(normalizeGameCategory('alien').id, 'alien')
   assert.equal(normalizeGameCategory('parasite').id, 'parasite')
+  assert.equal(normalizeGameCategory('zombie').id, 'zombie')
+  assert.equal(normalizeGameCategory('vampire').id, 'vampire')
   assert.equal(normalizeGameCategory('vigilante').id, 'vigilante')
   assert.equal(normalizeGameCategory('mayhem').id, 'mayhem')
   assert.notEqual(normalizeGameCategory('vigilante').antagonist, 'vigilante')
@@ -44,10 +50,25 @@ test('game categories resolve aliases and alternative antagonists', () => {
     assert.ok(category.description.length > 0)
   }
   assert.equal(new Set(Object.values(GAME_CATEGORIES).map((category) => category.location)).size, Object.keys(GAME_CATEGORIES).length)
-  for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite']) {
+  for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite', 'zombie', 'vampire']) {
     assert.equal(isAntagonistRole('custom', role), true)
   }
   assert.deepEqual(CUSTOM_ANTAGONIST_ROLES.includes('parasite'), true)
+  assert.equal(isAntagonistRole('zombie', 'zombie'), true)
+  assert.equal(isAntagonistRole('zombie', 'vampire'), false)
+  assert.equal(isAntagonistRole('vampire', 'vampire'), true)
+  assert.equal(isAntagonistRole('vampire', 'zombie'), false)
+  assert.equal(ROLE_DATA.zombie.title, 'Zombie')
+  assert.equal(ROLE_DATA.vampire.title, 'Vampire')
+  assert.equal(getRoleImage('warga', 'Desa Berkabut'), 'https://c.termai.cc/i114/m6d5Xr.png')
+  assert.equal(getRoleImage('warga', 'Distrik Pusat'), 'https://c.termai.cc/i131/BvT.png')
+  assert.equal(getRoleImage('warga', 'Pesawat Luar Angkasa'), 'https://c.termai.cc/i116/SQUH.png')
+  assert.equal(getRoleImage('mayor', 'Distrik Pusat'), 'https://c.termai.cc/i142/K3PH.png')
+  assert.equal(getRoleImage('mayor', 'Kota Tua'), 'https://c.termai.cc/i194/pj3wTj.png')
+  assert.ok(Object.keys(ROLE_DATA).every((role) => getRoleImage(role, 'Desa Berkabut')))
+  assert.equal(ROLE_IMAGES.werewolf.length, 3)
+  assert.equal(ZOMBIE_INFECTION_STORIES.length, 5)
+  assert.equal(VAMPIRE_INFECTION_STORIES.length, 5)
 })
 
 test('sorcerer faction follows potion choice but stays neutral without another antagonist', () => {

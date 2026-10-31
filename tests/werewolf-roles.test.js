@@ -333,6 +333,70 @@ test('AI-only Mayhem and Custom rooms can receive playable role assignments', ()
   ), true)
 })
 
+test('Zombie and Vampire rooms assign their own antagonist roles', () => {
+  for (const category of ['zombie', 'vampire']) {
+    const room = {
+      room: `ai-only-${category}`,
+      category,
+      player: Array.from({ length: 5 }, (_, index) => ({
+        id: `${category}-ai-${index}`,
+        number: index + 1,
+        role: false,
+        isAiCitizen: true,
+        isdead: false
+      })),
+      dead: []
+    }
+
+    assert.equal(roleGenerator(room.room, { [room.room]: room }), true)
+    assert.equal(room.player.some((player) => player.role === category), true)
+    assert.equal(room.player.some((player) =>
+      getWerewolfPlayerFaction(room, player) === 'antagonist'
+    ), true)
+  }
+})
+
+test('Zombie and Vampire infection keeps targets alive, anonymous at dawn, and limits them to hiding', () => {
+  for (const category of ['zombie', 'vampire']) {
+    const room = {
+      room: `infection-${category}`,
+      category,
+      day: 1,
+      player: [
+        { id: `${category}-original`, number: 1, role: category, isdead: false },
+        { id: `${category}-target`, number: 2, role: 'mayor', displayName: 'SecretTarget', isdead: false },
+        { id: `${category}-other`, number: 3, role: 'warga', displayName: 'Other', isdead: false }
+      ],
+      dead: [],
+      guardian: [],
+      nightActions: {}
+    }
+    const rooms = { [room.room]: room }
+    const actorCodes = buildRoleCodeMap(room, room.player[0])
+    const infectionCode = Object.keys(actorCodes).find((code) => actorCodes[code].targetNumber === 2)
+
+    assert.equal(actorCodes[infectionCode].type, 'infect')
+    assert.equal(resolveSecretCodeAction(room.room, room.player[0].id, infectionCode, rooms).action, 'infect')
+    assert.equal(resolveNightActions(room.room, rooms), true)
+    assert.equal(room.player[1].isdead, false)
+    assert.equal(room.player[1].infectionType, category)
+    assert.equal(getWerewolfPlayerFaction(room, room.player[1]), 'antagonist')
+    assert.equal(room.infectionsTonight, 1)
+    assert.equal(getWinner(room.room, rooms).status, false)
+
+    const infectedCodes = buildRoleCodeMap(room, room.player[1])
+    assert.ok(Object.values(infectedCodes).every((choice) => choice.type === 'dummy'))
+    const voteCodes = generateVoteCodeMap(room, room.player[1])
+    const voteCode = Object.keys(voteCodes).find((code) => voteCodes[code].targetNumber === 3)
+    const voteResult = resolveSecretCodeAction(room.room, room.player[1].id, voteCode, rooms, 'vote')
+    assert.equal(voteResult.action, 'vote')
+    assert.equal(voteResult.voteBoost, 1)
+    const morning = pagii(room)
+    assert.doesNotMatch(morning, /SecretTarget/)
+    assert.match(morning, new RegExp(category === 'zombie' ? 'Kota Mati' : 'Kastil Nosferatu'))
+  }
+})
+
 test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
   const players = [
     { id: 'human', number: 1, role: false, isdead: false },

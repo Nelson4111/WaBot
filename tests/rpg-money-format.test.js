@@ -45,6 +45,15 @@ test('money parser supports decimal-comma suffixes and grouped thousands without
   assert.equal(parseRpgMoneyAmount('1,5'), null)
 })
 
+test('money parser accepts Indonesian suffixes without changing English suffix values', () => {
+  assert.equal(parseRpgMoneyAmount('2rb'), 2_000)
+  assert.equal(parseRpgMoneyAmount('2jt'), 2_000_000)
+  assert.equal(parseRpgMoneyAmount('3milyar'), 3_000_000_000)
+  assert.equal(parseRpgMoneyAmount('4triliun'), 4_000_000_000_000)
+  assert.equal(parseRpgMoneyAmount('2M'), 2_000_000)
+  assert.equal(parseRpgMoneyAmount('3B'), 3_000_000_000)
+})
+
 test('BigInt values serialize as tagged decimal strings and normalize on currency load', () => {
   const serialized = JSON.stringify({ money: 9007199254740993n }, (_, value) =>
     typeof value === 'bigint' ? serializeRpgBigInt(value) : value
