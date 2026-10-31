@@ -157,6 +157,30 @@ test('button failures fall back to text instead of the legacy location-header bu
   assert.match(sentMessages[0].content.text, /\.casino retry/)
 })
 
+test('custom button fallback can show friendly labels without exposing command ids as button text', async () => {
+  const sentMessages = []
+  const conn = {
+    async sendMessage(chat, content) {
+      sentMessages.push({ chat, content })
+      return sentMessages.at(-1)
+    }
+  }
+
+  await sendRpgButtons(conn, {
+    chat: 'test@g.us',
+    text: 'Batas casino penuh.',
+    fallbackText: 'Batas casino penuh.\n📌 PILIHAN\n📖✨ Cara Beli Limit 🎟️\n💰🔎 Cek Harga Limit 🧾',
+    buttons: [
+      ['📖✨ Cara Beli Limit 🎟️', '.casino limit guide'],
+      ['💰🔎 Cek Harga Limit 🧾', '.casino limit price']
+    ]
+  })
+
+  assert.match(sentMessages[0].content.text, /📖✨ Cara Beli Limit 🎟️/)
+  assert.match(sentMessages[0].content.text, /💰🔎 Cek Harga Limit 🧾/)
+  assert.doesNotMatch(sentMessages[0].content.text, /\.casino limit (guide|price)/)
+})
+
 test('one-row sections collapse to a Native Flow quick reply', async () => {
   const conn = makeConn()
 

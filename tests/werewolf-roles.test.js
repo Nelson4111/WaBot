@@ -5,6 +5,7 @@ import {
   absorbWardenAttack,
   autoAssignCustomRoles,
   buildRoleCodeMap,
+  collapseZombieVampireInfections,
   generateVoteCodeMap,
   getWerewolfPlayerFaction,
   getWinner,
@@ -158,6 +159,13 @@ test('Cipher is neutral and remains alive for either faction victory', () => {
   room.player[0].isdead = false
   room.player[2].isdead = true
   assert.equal(getWinner('test', { test: room }).status, false)
+})
+
+test('Infected Cipher follows the infection faction instead of retaining neutral status', () => {
+  const cipher = { id: 'cipher', number: 2, role: 'cipher', infectionType: 'zombie', isdead: false }
+  const room = { category: 'zombie', player: [cipher] }
+
+  assert.equal(getWerewolfPlayerFaction(room, cipher), 'antagonist')
 })
 
 test('Warden armor absorbs one attack or Hunter shot, but not a vote', () => {
@@ -394,6 +402,27 @@ test('Zombie and Vampire infection keeps targets alive, anonymous at dawn, and l
     const morning = pagii(room)
     assert.doesNotMatch(morning, /SecretTarget/)
     assert.match(morning, new RegExp(category === 'zombie' ? 'Kota Mati' : 'Kastil Nosferatu'))
+  }
+})
+
+test('Zombie and Vampire infected players collapse after every original antagonist is eliminated', () => {
+  for (const category of ['zombie', 'vampire']) {
+    const room = {
+      room: `collapse-${category}`,
+      category,
+      voting: false,
+      player: [
+        { id: `${category}-original`, number: 1, role: category, isdead: true, infectionType: null },
+        { id: `${category}-infected`, number: 2, role: 'seer', isdead: false, infectionType: category },
+        { id: `${category}-citizen`, number: 3, role: 'warga', isdead: false }
+      ],
+      dead: [1]
+    }
+
+    assert.equal(collapseZombieVampireInfections(room), 1)
+    assert.equal(room.player[1].isdead, true)
+    assert.equal(room.player[1].lastDeathCause, 'infection-collapse')
+    assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
   }
 })
 
