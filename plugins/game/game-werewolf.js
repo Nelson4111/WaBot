@@ -7,6 +7,7 @@ import {
     dataPlayer,
     getPlayerById,
     killww,
+    collapseZombieVampireInfections,
     roleGenerator,
     addTimer,
     startGame,
@@ -697,6 +698,7 @@ const finishHunterReaction = async (conn, chat, room, hunter, targetPlayer, ww) 
         if (!armorBlocked) {
             targetPlayer.isdead = true
             targetPlayer.deathNoticeSent = false
+            collapseZombieVampireInfections(room)
             if (targetPlayer.role === 'hunter' && targetPlayer.infectionType !== room.category) {
                 targetPlayer.pendingHunter = true
                 targetPlayer.canShoot = true
