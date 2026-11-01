@@ -49,7 +49,7 @@ function getPrefixMatch(text, prefix) {
 }
 
 function normalizeCommandName(command) {
-    return String(command || '').toLowerCase().replace(/\/$/, '')
+    return String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
 }
 
 function getCommandCandidate(text, prefix) {
@@ -67,7 +67,7 @@ function pluginAcceptsCommand(plugin, command) {
             spec.lastIndex = 0
             return spec.test(command)
         }
-        return typeof spec === 'string' && spec.toLowerCase() === command
+        return typeof spec === 'string' && normalizeCommandName(spec) === command
     }
     return Array.isArray(plugin.command) ? plugin.command.some(accepts) : accepts(plugin.command)
 }
@@ -937,22 +937,22 @@ async function processMessage(m, chatUpdate) {
 
             if (typeof plugin !== 'function') continue
 
-                        if ((usedPrefix = (match[0] || '')[0])) {
-                let noPrefix = m.text.replace(usedPrefix, '')
-                let [command, ...args] = noPrefix.trim().split` `.filter(v => v)
+            if ((usedPrefix = (match[0] || '')[0])) {
+                let noPrefix = m.text.slice(usedPrefix.length)
+                let [parsedCommand, ...args] = noPrefix.trim().split(/\s+/).filter(Boolean)
                 if (global.opts['pconlyprem'] && !m.isGroup && !isPrems && !isOwner && !m.fromMe) {
                     this.reply(m.chat, `*╭  〔 Ⓟ ᴘ ʀ ᴇ ᴍ ɪ ᴜ ᴍ  ᴏ ɴ ʟ ʏ 〕*\n> Fitur chat pribadi bot saat ini hanya khusus user *PREMIUM*.\n> Silakan gunakan bot di dalam grup atau hubungi owner untuk upgrade premium.\n*╰───────────────*`, m)
                     return false 
                 }
                 args = args || []
-                let _args = noPrefix.trim().split` `.slice(1)
+                let _args = args
                 let text = _args.join` `
-                command = normalizeCommandName(command)
+                let command = !plugin.customPrefix && commandCandidate?.usedPrefix === usedPrefix
+                    ? commandCandidate.command
+                    : normalizeCommandName(parsedCommand)
                 let fail = plugin.fail || global.dfail
 
-                let isAccept = plugin.command instanceof RegExp ? plugin.command.test(command) :
-                    Array.isArray(plugin.command) ? plugin.command.some(cmd => cmd instanceof RegExp ? cmd.test(command) : cmd === command) :
-                    typeof plugin.command === 'string' ? plugin.command === command : false
+                let isAccept = pluginAcceptsCommand(plugin, command)
 
                 if (!isAccept) continue
 
