@@ -31,14 +31,7 @@ async function handler(m, { conn }) {
     await conn.sendMessage(m.chat, {
         text: caption,
         contextInfo: {
-            mentionedJid: [target],
-            externalAdReply: {
-                title: "Z E T A  S C A N N E R",
-                body: "System Scanning Complete",
-                thumbnailUrl: "https://files.cloudkuimages.guru/images/1afd7760db2c.jpeg",
-                mediaType: 1,
-                renderLargerThumbnail: true
-            }
+            mentionedJid: [target]
         }
     }, { quoted: m })
 }
