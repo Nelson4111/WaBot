@@ -1932,7 +1932,7 @@ const gameRoleCommands = [...new Set([
     'gameroles',
     ...Object.values(GAME_CATEGORIES).flatMap((category) => category.aliases)
 ])]
-handler.command = gameRoleCommands.flatMap((command) => [command, `${command}/`])
+handler.command = gameRoleCommands
 handler.group = true
 
 export default handler
