@@ -127,6 +127,32 @@ function formatNewsDate(timestamp) {
   }).format(new Date(Number(timestamp)))
 }
 
+function formatNewsListDate(timestamp) {
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: 'numeric'
+  }).format(new Date(Number(timestamp)))
+}
+
+function parseNewsMonth(value) {
+  if (/^\d{1,2}$/.test(value)) {
+    const month = Number(value)
+    return month >= 1 && month <= 12 ? month : null
+  }
+  const normalized = value.toLocaleLowerCase('id-ID')
+  for (let month = 1; month <= 12; month++) {
+    const date = new Date(Date.UTC(2026, month - 1, 15))
+    const names = [
+      new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'UTC' }).format(date),
+      new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'UTC' }).format(date)
+    ]
+    if (names.some(name => name.toLocaleLowerCase('id-ID').replace(/\.$/, '') === normalized.replace(/\.$/, ''))) {
+      return month
+    }
+  }
+  return null
+}
+
 function getSectionEmoji(section) {
   const emojis = {
     RPG: '🎮',
@@ -154,11 +180,16 @@ export function formatNewsDetail(entry) {
   return `╭─「 ${getSectionEmoji(entry.section)} NEWS ${entry.id} 」\n│ ${formatNewsDate(entry.createdAt)}\n╰──────────────\n\n*${entryTitle}*\n${getSectionEmoji(entry.section)} ${entry.section} · Oleh: ${author}\n\n${entry.content}`
 }
 
-export async function getNewsInfoText(targetId) {
-  const entry = getMonthlyNews(await loadNews()).find(item => item.id === targetId)
+export async function getNewsInfoText(targetId, month = null, year = null) {
+  const date = month === null || year === null
+    ? new Date()
+    : new Date(Date.UTC(Number(year), Number(month) - 1, 15, 12))
+  const entry = getMonthlyNews(await loadNews(), date).find(item => item.id === targetId)
   return entry
     ? formatNewsDetail(entry)
-    : `Nomor *${targetId}* tidak ditemukan di news bulan ini.`
+    : month === null || year === null
+      ? `Nomor *${targetId}* tidak ditemukan di news bulan ini.`
+      : `Nomor *${targetId}* tidak ditemukan pada news bulan ${month} tahun ${year}.`
 }
 
 function formatNewsPage(entries, { page, pageCount, monthName, section }) {
@@ -167,7 +198,7 @@ function formatNewsPage(entries, { page, pageCount, monthName, section }) {
   const body = pageEntries.map(entry => {
     const entryTitle = entry.title || `${entry.section} Update`
     const author = entry.author || 'Eza'
-    return `*${entry.id}* | ${formatNewsDate(entry.createdAt)}\n*${entryTitle}*\n${getSectionEmoji(entry.section)} ${entry.section} • Oleh: ${author}\n${entry.content}`
+    return `*${entry.id}* | Tanggal ${formatNewsListDate(entry.createdAt)}\n*${entryTitle}*\n${getSectionEmoji(entry.section)} ${entry.section} • Oleh: ${author}\n${entry.content}`
   }).join('\n\n')
 
   return `*${title}*\n\n${body}\n\nHalaman ${page}/${pageCount}`
@@ -183,18 +214,31 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
       `│ Daftar update dan detail perubahan Avelia.\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> Lihat daftar: ${usedPrefix}news list [halaman]\n` +
-      `> Buka detail: ${usedPrefix}news list info <nomor>`
+      `> Buka detail: ${usedPrefix}news detail <nomor> <bulan> <tahun>`
     )
   }
 
   if (normalizedAction === 'info') {
     const allNews = await loadNews()
     const monthlyCount = getMonthlyNews(allNews).length
-    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\nUpdate bulan ini: *${monthlyCount}*\n\nPerintah: ${usedPrefix}news list [halaman] | ${usedPrefix}news <bagian> [halaman]\nSemua judul: ${usedPrefix}news all\nDetail: ${usedPrefix}news list info <nomor>\nGuide: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\nUpdate bulan ini: *${monthlyCount}*\n\nPerintah: ${usedPrefix}news list [halaman] | ${usedPrefix}news <bagian> [halaman]\nSemua judul: ${usedPrefix}news all\nDetail: ${usedPrefix}news detail <nomor> <bulan> <tahun>\nGuide: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
   }
 
   if (normalizedAction === 'guide') {
-    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news list [halaman]\n${usedPrefix}news <halaman>\n${usedPrefix}news <bagian> [halaman]\n${usedPrefix}news all\n${usedPrefix}news list info <nomor>\n${usedPrefix}news info\n\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <nomor>\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news list [halaman]\n${usedPrefix}news <halaman>\n${usedPrefix}news <bagian> [halaman]\n${usedPrefix}news all\n${usedPrefix}news detail <nomor> <bulan> <tahun>\n${usedPrefix}news info\n\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <nomor>\n╰─━━━━━━━━━━━━━━─`)
+  }
+
+  if (normalizedAction === 'detail') {
+    if (params.length !== 3) {
+      return m.reply(`Format: ${usedPrefix}news detail <nomor> <bulan> <tahun>\nContoh: ${usedPrefix}news detail 29.5 Oktober 2026`)
+    }
+    const [targetId, monthInput, yearInput] = params
+    const month = parseNewsMonth(monthInput)
+    const year = Number(yearInput)
+    if (!/^\d{4}$/.test(yearInput) || !month || !Number.isSafeInteger(year) || year < 1) {
+      return m.reply(`Bulan atau tahun tidak valid. Contoh: ${usedPrefix}news detail 29.5 Oktober 2026`)
+    }
+    return m.reply(await getNewsInfoText(targetId, month, year))
   }
 
   if (normalizedAction === 'list') {
@@ -343,7 +387,7 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section }))
 }
 
-handler.help = ['news', 'news list [halaman]', 'news <halaman>', 'news <bagian> [halaman]', 'news all', 'news list info <nomor>', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <nomor>']
+handler.help = ['news', 'news list [halaman]', 'news <halaman>', 'news <bagian> [halaman]', 'news all', 'news detail <nomor> <bulan> <tahun>', 'news list info <nomor>', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <nomor>']
 handler.tags = ['info']
 handler.command = /^news$/i
 export default handler
