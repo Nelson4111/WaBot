@@ -48,13 +48,17 @@ function getPrefixMatch(text, prefix) {
     return (matches?.[0] || '')[0] || null
 }
 
+function normalizeCommandName(command) {
+    return String(command || '').toLowerCase().replace(/\/$/, '')
+}
+
 function getCommandCandidate(text, prefix) {
     const usedPrefix = getPrefixMatch(text, prefix)
     if (!usedPrefix) return null
     const noPrefix = text.replace(usedPrefix, '').trim()
     const [command] = noPrefix.split(/\s+/).filter(Boolean)
     if (!command) return null
-    return { usedPrefix, command: command.toLowerCase() }
+    return { usedPrefix, command: normalizeCommandName(command) }
 }
 
 function pluginAcceptsCommand(plugin, command) {
@@ -943,7 +947,7 @@ async function processMessage(m, chatUpdate) {
                 args = args || []
                 let _args = noPrefix.trim().split` `.slice(1)
                 let text = _args.join` `
-                command = (command || '').toLowerCase()
+                command = normalizeCommandName(command)
                 let fail = plugin.fail || global.dfail
 
                 let isAccept = plugin.command instanceof RegExp ? plugin.command.test(command) :
