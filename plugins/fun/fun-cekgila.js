@@ -1,3 +1,5 @@
+import { formatFunCheck } from '../../lib/funCheck.js'
+
 let handler = async (m, { conn, usedPrefix, command }) => {
   let who = m.quoted?.sender || m.mentionedJid?.[0] || m.sender;
   let name = await conn.getName(who);
@@ -14,14 +16,15 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   let percent = Math.floor(Math.random() * 100) + 1;
   let res = levelGila.find(l => percent <= l.max) || levelGila[levelGila.length - 1];
 
-  let caption = `
-🧠 *ANALISIS TINGKAT KEGILAIN* 🧠
-
-• *Target:* @${who.split('@')[0]}
-• *Tingkat Gila:* *${percent}%*
-• *Diagnosa:* *${res.title}*
-• *Keterangan:* _${res.desc}_
-`.trim();
+  let caption = formatFunCheck({
+    title: 'CEK GILA',
+    user: `@${who.split('@')[0]}`,
+    userLabel: 'Target',
+    score: percent,
+    scoreLabel: 'Tingkat Gila',
+    details: [{ label: 'Diagnosa', value: res.title }],
+    verdict: res.desc
+  })
 
   if (global.ftoko) {
     await conn.sendMessage(m.chat, { text: caption, mentions: [who] }, { quoted: global.ftoko });

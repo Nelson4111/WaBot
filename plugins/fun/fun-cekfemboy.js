@@ -1,10 +1,18 @@
+import { formatFunCheck } from '../../lib/funCheck.js'
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   let user = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : m.sender
   
   let hasil = pickRandom(femboy)
-  let caption = `*cek femboy*\n\n`
-  caption += `User: @${user.split('@')[0]}\n`
-  caption += `${hasil}`
+  let [, score] = hasil.match(/(-?\d+)%/) || []
+  let verdict = hasil.split('\n\n').slice(1).join(' ').trim()
+  let caption = formatFunCheck({
+    title: 'FEMBOY CHECK',
+    user: `@${user.split('@')[0]}`,
+    score,
+    scoreLabel: 'Femboy Level',
+    verdict
+  })
 
   conn.sendMessage(m.chat, { text: caption, mentions: [user] }, { quoted: m })
 }

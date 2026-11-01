@@ -1,11 +1,10 @@
+import { formatFunCheck } from '../../lib/funCheck.js'
+
 let handler = async (m, { conn, command, text }) => {
 	
     if (!text) return conn.reply(m.chat, '• *Contoh :* .cekkhodam Hilman', m)
-	
-  conn.reply(m.chat, `
-╭━━━━°「 *khodamnya ${text}* 」°
-┊• Nama : ${text}
-┃• khodam : ${pickRandom(['Curut Spbu', 'Naga Api', 'Raja Iblis', 'Laba laba Sunda', 'Curut kedelai', 'Sarden kaleng', 'Bakwan Jagung', 
+
+  let khodam = pickRandom(['Curut Spbu', 'Naga Api', 'Raja Iblis', 'Laba laba Sunda', 'Curut kedelai', 'Sarden kaleng', 'Bakwan Jagung', 
         'Belalang api', 'Tokek betawi', 'Ambatron', 'Kodok Spbu', 'Macan Sawah', 'Naga Es', 'Cicak Spbu', 
         'Kalajengking', 'Kupu kupu Api', 'Kaleng Cat Avian', 'Pipa Rucika', 'Botol Tupperware', 'Badut Mixue', 
         'Sabun GIV', 'Sandal Swallow', 'Jarjit', 'Ijat', 'Fizi', 'Mail', 'Ehsan', 'Upin', 'Ipin', 'sungut lele', 
@@ -18,9 +17,14 @@ let handler = async (m, { conn, command, text }) => {
         'Jus Alpukat', 'Alpukat Kocok', 'Es Kopyor', 'Es Jeruk', 'Cappucino Cincau', 'Jasjus Melon', 'Teajus Apel', 
         'Pop ice Mangga', 'Teajus Gulabatu', 'Air Selokan', 'Air Kobokan', 'TV Tabung', 'Keran Air', 'Tutup Panci', 
         'Kotak Amal', 'Tutup Termos', 'Tutup Botol', 'Kresek Item', 'Kepala Casan', 'Ban Serep', 'Kursi Lipat', 
-        'Kursi Goyang', 'Kulit Pisang', 'Warung Madura', 'Gorong-gorong'])}
-╰═┅═━––––––๑
-`.trim(), m)
+        'Kursi Goyang', 'Kulit Pisang', 'Warung Madura', 'Gorong-gorong'])
+  let caption = formatFunCheck({
+    title: `KHODAMNYA ${text.trim()}`,
+    user: text.trim(),
+    userLabel: 'Nama',
+    details: [{ label: 'Khodam', value: khodam }]
+  })
+  await conn.reply(m.chat, caption, m)
 }
 handler.help = ['cekkhodam *<name>*']
 handler.tags = ['fun']

@@ -1,27 +1,19 @@
-import PhoneNumber from 'awesome-phonenumber'
-import fetch from 'node-fetch'
+import { formatFunCheck } from '../../lib/funCheck.js'
 
-let handler = async (m, { conn, command }) => {
-
-  // ===============================
-  // AMBIL TARGET (REPLY > TAG > SELF)
-  // ===============================
-  let who =
-    m.quoted?.sender ||
-    m.mentionedJid?.[0] ||
-    m.sender
-
-  let name = await conn.getName(who)
-
-  // RANDOM PERSENTASE
-  let hasil = cek1[Math.floor(Math.random() * cek1.length)]
-
-  let teks = `
- _pertanyaan ${command.toUpperCase()}_
-
- Nama : @${who.split('@')[0]}
- Hasil : *${hasil}%*
-`.trim()
+let handler = async (m, { conn, command, text }) => {
+  let who = m.quoted?.sender || m.mentionedJid?.[0] || m.sender
+  let score = Number(cek1[Math.floor(Math.random() * cek1.length)])
+  let subject = text?.trim()
+  let isRate = command.toLowerCase() === 'rate'
+  let teks = formatFunCheck({
+    title: `PERTANYAAN ${command.toUpperCase()}`,
+    user: `@${who.split('@')[0]}`,
+    userLabel: 'Nama',
+    score,
+    subject: isRate ? subject : undefined,
+    details: [{ label: 'Hasil', value: `${score}%` }],
+    verdict: isRate && subject ? `Kata "${subject}" mendapat nilai ${score}%.` : undefined
+  })
 
   await conn.sendMessage(
     m.chat,
@@ -34,7 +26,7 @@ let handler = async (m, { conn, command }) => {
 }
 
 handler.tags = ['fun']
-handler.help = handler.command = [
+handler.command = [
   'goblokcek','jelekcek','gaycek','rate','lesbicek',
   'cantikcek','begocek','suhucek','pintercek','jagocek','nolepcek',
   'babicek','bebancek','baikcek','jahatcek','anjingcek','haramcek',
@@ -47,6 +39,7 @@ handler.help = handler.command = [
   'cekpakgirl','ceksange','cekbaper','cekfakboy','cekalim',
   'cekfakgirl','cekkeren','cekwibu','cekpasarkas','cekkul'
 ]
+handler.help = [...handler.command, 'rate <kata>']
 
 handler.limit = true
 export default handler

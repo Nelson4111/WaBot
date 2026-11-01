@@ -1,16 +1,19 @@
+import { formatFunCheck } from '../../lib/funCheck.js'
+
 let handler = async (m, { conn, command, text }) => {
 	
     if (!text) return conn.reply(m.chat, '• *Example :* .cektt elaina', m)
-	
-  conn.reply(m.chat, `
-╭━━━━°「 *TT nya ${text}* 」°
-┃
-┊• Nama : ${text}
-┃• TT : ${pickRandom(['Putih','Hitam','Putih mulus','Hytam banget','Karatan ☠️'])}
-┊• Pentil : ${pickRandom(['Hytam','Pink','kecil','Perfect'])}
-┃• Ukuran : ${pickRandom(['Tepos','Spek Nasi KFC','Tobrut','32','34','36'])}
-╰═┅═━––––––๑
-`.trim(), m)
+  let caption = formatFunCheck({
+    title: `TT NYA ${text.trim()}`,
+    user: text.trim(),
+    userLabel: 'Nama',
+    details: [
+      { label: 'TT', value: pickRandom(['Putih', 'Hitam', 'Putih mulus', 'Hytam banget', 'Karatan ☠️']) },
+      { label: 'Pentil', value: pickRandom(['Hytam', 'Pink', 'kecil', 'Perfect']) },
+      { label: 'Ukuran', value: pickRandom(['Tepos', 'Spek Nasi KFC', 'Tobrut', '32', '34', '36']) }
+    ]
+  })
+  await conn.reply(m.chat, caption, m)
 }
 handler.help = ['cektt *<name>*']
 handler.tags = ['fun']

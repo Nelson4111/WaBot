@@ -1,3 +1,5 @@
+import { formatFunCheck } from '../../lib/funCheck.js'
+
 let toM = a => '@' + a.split('@')[0]
 
 async function handler(m, { conn }) {
@@ -12,21 +14,12 @@ async function handler(m, { conn }) {
     else if (persentase >= 25) status = "Pas-pasan, Banyakin Skincare. 🧴"
     else status = "Diluar Nalar, Tolong Berhenti Ngaca! 💀"
 
-    let barCount = Math.floor(persentase / 10)
-    let bar = "█".repeat(barCount) + "░".repeat(10 - barCount)
-
-    let caption = `
-╭〔  *G A N T E N G  C H E C K* 〕
-│
-│  ◦ *User* : ${toM(target)}
-│  ◦ *Skor* : ${persentase}%
-│  ◦ *Bar* : [${bar}]
-│
-├─〔  *V E R D I C T* 〕
-│
-│  ◦ ${status}
-│
-╰──────────────────⬣`.trim()
+    let caption = formatFunCheck({
+        title: 'GANTENG CHECK',
+        user: toM(target),
+        score: persentase,
+        verdict: status
+    })
 
     await conn.sendMessage(m.chat, {
         text: caption,

@@ -1,5 +1,22 @@
+import { formatFunCheck } from '../../lib/funCheck.js'
+
 let handler  = async (m, { conn }) => {
-  conn.reply(m.chat,`${pickRandom(cantikk)}`, m)
+  let target = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
+  let result = pickRandom(cantikk)
+  let [, score] = result.match(/(\d+)%/) || []
+  let verdict = result.split('\n\n').slice(1).join(' ').trim()
+  let caption = formatFunCheck({
+    title: 'CANTIK CHECK',
+    user: `@${target.split('@')[0]}`,
+    score,
+    scoreLabel: 'Cantik Level',
+    verdict
+  })
+
+  await conn.sendMessage(m.chat, {
+    text: caption,
+    mentions: [target]
+  }, { quoted: m })
 }
 handler.help = ['cantikcek']
 handler.tags = ['fun']
