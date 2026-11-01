@@ -830,5 +830,29 @@
     "content": "\u003e Family100 kini bisa dimainkan dengan .fam, .f100, atau .fam100. Jawaban benar mendapat 1 poin; cek poinmu dengan .fam score dan lihat 10 skor tertinggi lewat .fam top. Pemain dengan jawaban terbanyak mendapat bonus MVP +2 poin jika tidak seri. Untuk menyerah, dibutuhkan persetujuan minimal dua pertiga pemain yang sudah menjawab.",
     "author": "Eza",
     "createdAt": 1793311980000
+  },
+  {
+    "id": "1.0",
+    "section": "GAME",
+    "title": "Mode Baru: Zombie dan Vampire",
+    "content": "\u003e Mulai dengan .zombie start atau .vampire start. Menangkan permainan dengan memperbanyak jumlah Zombie atau Vampire; mereka menularkan, bukan membunuh. Pemain tertular tetap bisa voting, tetapi malamnya hanya bersembunyi. Jika semua Zombie atau Vampire asli tersingkir, yang tertular ikut gugur. Cek .gr info zombie atau .gr info vampire untuk detail.",
+    "author": "Eza",
+    "createdAt": 1793497082566
+  },
+  {
+    "id": "1.1",
+    "section": "RPG",
+    "title": "Pembaruan Invest RPG",
+    "content": "\u003e Fitur Invest kini punya panduan, daftar command, dan menu ringkasan yang lebih mudah diakses. Cek harga dan berita market, beli atau jual aset, lalu pantau untung/rugi melalui portofolio. Transaksi memakai saldo bank RPG dengan biaya 0,5% dan harga dapat berubah setiap 10 menit. Mulai dengan .invest.",
+    "author": "Eza",
+    "createdAt": 1793497372500
+  },
+  {
+    "id": "1.2",
+    "section": "RPG",
+    "title": "Pembaruan Limit Casino dan Sufiks Uang",
+    "content": "\u003e Beli kesempatan casino yang sudah terpakai agar bisa bermain lagi tanpa mengubah batas harian. Harga menyesuaikan total uang saku dan bank; cek pricelist lewat .casino limit price, lalu konfirmasi pembelian. Casino dan lelang kini juga menerima sufiks Indonesia seperti 2jt dan 3milyar.",
+    "author": "Eza",
+    "createdAt": 1793497477079
   }
 ]
