@@ -48,17 +48,13 @@ function getPrefixMatch(text, prefix) {
     return (matches?.[0] || '')[0] || null
 }
 
-function normalizeCommandName(command) {
-    return String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
-}
-
 function getCommandCandidate(text, prefix) {
     const usedPrefix = getPrefixMatch(text, prefix)
     if (!usedPrefix) return null
     const noPrefix = text.replace(usedPrefix, '').trim()
     const [command] = noPrefix.split(/\s+/).filter(Boolean)
     if (!command) return null
-    return { usedPrefix, command: normalizeCommandName(command) }
+    return { usedPrefix, command: command.toLowerCase() }
 }
 
 function pluginAcceptsCommand(plugin, command) {
@@ -67,7 +63,7 @@ function pluginAcceptsCommand(plugin, command) {
             spec.lastIndex = 0
             return spec.test(command)
         }
-        return typeof spec === 'string' && normalizeCommandName(spec) === command
+        return typeof spec === 'string' && spec.toLowerCase() === command
     }
     return Array.isArray(plugin.command) ? plugin.command.some(accepts) : accepts(plugin.command)
 }
@@ -937,22 +933,22 @@ async function processMessage(m, chatUpdate) {
 
             if (typeof plugin !== 'function') continue
 
-            if ((usedPrefix = (match[0] || '')[0])) {
-                let noPrefix = m.text.slice(usedPrefix.length)
-                let [parsedCommand, ...args] = noPrefix.trim().split(/\s+/).filter(Boolean)
+                        if ((usedPrefix = (match[0] || '')[0])) {
+                let noPrefix = m.text.replace(usedPrefix, '')
+                let [command, ...args] = noPrefix.trim().split` `.filter(v => v)
                 if (global.opts['pconlyprem'] && !m.isGroup && !isPrems && !isOwner && !m.fromMe) {
                     this.reply(m.chat, `*╭  〔 Ⓟ ᴘ ʀ ᴇ ᴍ ɪ ᴜ ᴍ  ᴏ ɴ ʟ ʏ 〕*\n> Fitur chat pribadi bot saat ini hanya khusus user *PREMIUM*.\n> Silakan gunakan bot di dalam grup atau hubungi owner untuk upgrade premium.\n*╰───────────────*`, m)
                     return false 
                 }
                 args = args || []
-                let _args = args
+                let _args = noPrefix.trim().split` `.slice(1)
                 let text = _args.join` `
-                let command = !plugin.customPrefix && commandCandidate?.usedPrefix === usedPrefix
-                    ? commandCandidate.command
-                    : normalizeCommandName(parsedCommand)
+                command = (command || '').toLowerCase()
                 let fail = plugin.fail || global.dfail
 
-                let isAccept = pluginAcceptsCommand(plugin, command)
+                let isAccept = plugin.command instanceof RegExp ? plugin.command.test(command) :
+                    Array.isArray(plugin.command) ? plugin.command.some(cmd => cmd instanceof RegExp ? cmd.test(command) : cmd === command) :
+                    typeof plugin.command === 'string' ? plugin.command === command : false
 
                 if (!isAccept) continue
 
