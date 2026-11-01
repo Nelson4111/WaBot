@@ -988,7 +988,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     const { sender, chat } = m
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
-    const normalizedCommand = String(command || '').toLowerCase().replace(/\/$/, '')
+    const normalizedCommand = String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
     const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(normalizedCommand)
     if (isGameRolesCommand && args.length === 1 && normalizeGameCategory(args[0])) args = []
     const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(normalizedCommand) : null
