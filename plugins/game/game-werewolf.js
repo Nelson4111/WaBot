@@ -988,9 +988,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     const { sender, chat } = m
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
-    const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(String(command || '').toLowerCase())
+    const normalizedCommand = String(command || '').toLowerCase().replace(/\/$/, '')
+    const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(normalizedCommand)
     if (isGameRolesCommand && args.length === 1 && normalizeGameCategory(args[0])) args = []
-    const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(command) : null
+    const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(normalizedCommand) : null
     let gameCategory = directGameCategory || getGameCategory('ww')
     const routedGameCategory = isGameRolesCommand && Boolean(normalizeGameCategory(args[0]))
     if (routedGameCategory) {
@@ -1925,12 +1926,13 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
 
 handler.help = ['ww', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite', 'zombie', 'vampire', 'custom', 'gr', 'rg']
 handler.tags = ['game']
-handler.command = [...new Set([
+const gameRoleCommands = [...new Set([
     'gr',
     'rg',
     'gameroles',
     ...Object.values(GAME_CATEGORIES).flatMap((category) => category.aliases)
 ])]
+handler.command = gameRoleCommands.flatMap((command) => [command, `${command}/`])
 handler.group = true
 
 export default handler
