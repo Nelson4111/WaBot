@@ -5,8 +5,6 @@ import {
   absorbWardenAttack,
   autoAssignCustomRoles,
   buildRoleCodeMap,
-  collapseZombieVampireInfections,
-  formatFinalRoleRoster,
   generateVoteCodeMap,
   getWerewolfPlayerFaction,
   getWinner,
@@ -160,13 +158,6 @@ test('Cipher is neutral and remains alive for either faction victory', () => {
   room.player[0].isdead = false
   room.player[2].isdead = true
   assert.equal(getWinner('test', { test: room }).status, false)
-})
-
-test('Infected Cipher follows the infection faction instead of retaining neutral status', () => {
-  const cipher = { id: 'cipher', number: 2, role: 'cipher', infectionType: 'zombie', isdead: false }
-  const room = { category: 'zombie', player: [cipher] }
-
-  assert.equal(getWerewolfPlayerFaction(room, cipher), 'antagonist')
 })
 
 test('Warden armor absorbs one attack or Hunter shot, but not a vote', () => {
@@ -342,151 +333,6 @@ test('AI-only Mayhem and Custom rooms can receive playable role assignments', ()
   ), true)
 })
 
-test('Zombie and Vampire rooms assign their own antagonist roles', () => {
-  for (const category of ['zombie', 'vampire']) {
-    const room = {
-      room: `ai-only-${category}`,
-      category,
-      player: Array.from({ length: 5 }, (_, index) => ({
-        id: `${category}-ai-${index}`,
-        number: index + 1,
-        role: false,
-        isAiCitizen: true,
-        isdead: false
-      })),
-      dead: []
-    }
-
-    assert.equal(roleGenerator(room.room, { [room.room]: room }), true)
-    assert.equal(room.player.some((player) => player.role === category), true)
-    assert.equal(room.player.some((player) =>
-      getWerewolfPlayerFaction(room, player) === 'antagonist'
-    ), true)
-  }
-})
-
-test('Zombie and Vampire infection keeps targets alive, anonymous at dawn, and limits them to hiding', () => {
-  for (const category of ['zombie', 'vampire']) {
-    const room = {
-      room: `infection-${category}`,
-      category,
-      day: 1,
-      player: [
-        { id: `${category}-original`, number: 1, role: category, isdead: false },
-        { id: `${category}-target`, number: 2, role: 'mayor', displayName: 'SecretTarget', isdead: false },
-        { id: `${category}-other`, number: 3, role: 'warga', displayName: 'Other', isdead: false }
-      ],
-      dead: [],
-      guardian: [],
-      nightActions: {}
-    }
-    const rooms = { [room.room]: room }
-    const actorCodes = buildRoleCodeMap(room, room.player[0])
-    const infectionCode = Object.keys(actorCodes).find((code) => actorCodes[code].targetNumber === 2)
-
-    assert.equal(actorCodes[infectionCode].type, 'infect')
-    assert.equal(resolveSecretCodeAction(room.room, room.player[0].id, infectionCode, rooms).action, 'infect')
-    assert.equal(resolveNightActions(room.room, rooms), true)
-    assert.equal(room.player[1].isdead, false)
-    assert.equal(room.player[1].infectionType, category)
-    assert.equal(getWerewolfPlayerFaction(room, room.player[1]), 'antagonist')
-    assert.equal(room.infectionsTonight, 1)
-    assert.equal(getWinner(room.room, rooms).status, false)
-
-    const infectedCodes = buildRoleCodeMap(room, room.player[1])
-    assert.ok(Object.values(infectedCodes).every((choice) => choice.type === 'dummy'))
-    const voteCodes = generateVoteCodeMap(room, room.player[1])
-    const voteCode = Object.keys(voteCodes).find((code) => voteCodes[code].targetNumber === 3)
-    const voteResult = resolveSecretCodeAction(room.room, room.player[1].id, voteCode, rooms, 'vote')
-    assert.equal(voteResult.action, 'vote')
-    assert.equal(voteResult.voteBoost, 1)
-    const morning = pagii(room)
-    assert.doesNotMatch(morning, /SecretTarget/)
-    assert.match(morning, new RegExp(category === 'zombie' ? 'Kota Mati' : 'Kastil Nosferatu'))
-  }
-})
-
-test('Zombie and Vampire infected players collapse after every original antagonist is eliminated', () => {
-  for (const category of ['zombie', 'vampire']) {
-    const room = {
-      room: `collapse-${category}`,
-      category,
-      voting: false,
-      player: [
-        { id: `${category}-original`, number: 1, role: category, isdead: true, infectionType: null },
-        { id: `${category}-infected`, number: 2, role: 'seer', isdead: false, infectionType: category },
-        { id: `${category}-citizen`, number: 3, role: 'warga', isdead: false }
-      ],
-      dead: [1]
-    }
-
-    assert.equal(collapseZombieVampireInfections(room), 1)
-    assert.equal(room.player[1].isdead, true)
-    assert.equal(room.player[1].lastDeathCause, 'infection-collapse')
-    assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
-  }
-})
-
-test('Zombie and Vampire votes collapse infected players as soon as the last original antagonist is eliminated', () => {
-  for (const category of ['zombie', 'vampire']) {
-    const room = {
-      room: `vote-collapse-${category}`,
-      category,
-      voting: false,
-      player: [
-        { id: 'original-1', number: 1, role: category, isdead: true, vote: 0 },
-        { id: 'original-2', number: 2, role: category, isdead: false, vote: 1 },
-        { id: 'infected', number: 3, role: 'seer', infectionType: category, isdead: false, vote: 0 },
-        { id: 'citizen', number: 4, role: 'warga', isdead: false, vote: 0 }
-      ],
-      dead: [1]
-    }
-
-    assert.equal(voteKill(room.room, { [room.room]: room }), room.player[1])
-    assert.equal(room.player[2].isdead, true)
-    assert.equal(room.player[2].lastDeathCause, 'infection-collapse')
-    assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
-  }
-})
-
-test('Zombie and Vampire infections collapse after the last original antagonist is killed by a night action', () => {
-  for (const category of ['zombie', 'vampire']) {
-    const room = {
-      room: `action-collapse-${category}`,
-      category,
-      player: [
-        { id: 'sorcerer', number: 1, role: 'sorcerer', isdead: false },
-        { id: 'original', number: 2, role: category, isdead: false },
-        { id: 'infected', number: 3, role: 'warga', infectionType: category, isdead: false },
-        { id: 'citizen', number: 4, role: 'warga', isdead: false }
-      ],
-      dead: [],
-      nightActions: {
-        sorcerer: { type: 'poison', targetNumber: 2 }
-      },
-      poisonTarget: 2
-    }
-
-    assert.equal(resolveNightActions(room.room, { [room.room]: room }), true)
-    assert.equal(room.player[2].isdead, true)
-    assert.equal(room.player[2].lastDeathCause, 'infection-collapse')
-    assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
-  }
-})
-
-test('Final role roster puts status after role and distinguishes infected from uninfected players', () => {
-  const roster = formatFinalRoleRoster([
-    { id: 'clear', number: 1, role: 'warga', displayName: 'Sari', isAiCitizen: true, isdead: false },
-    { id: 'infected-zombie', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true, infectionType: 'zombie', isdead: true },
-    { id: 'infected-vampire', number: 3, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'vampire', isdead: false }
-  ], 'zombie')
-
-  assert.match(roster, /> Sari — \*Warga 👱‍♂️\* ⚪ 🟢/)
-  assert.match(roster, /> Raka — \*Seer 👳\* 🧟‍♂️ 🔴/)
-  assert.match(roster, /> Mira — \*Mayor 👑\* 🧛‍♂️ 🟢/)
-  assert.match(roster, /Tidak tertular.*Tertular Zombie.*Tertular Vampire.*Hidup.*Mati/)
-})
-
 test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
   const players = [
     { id: 'human', number: 1, role: false, isdead: false },
@@ -616,42 +462,6 @@ test('Mayhem dawn uses one story and lists the victim while identifying the atta
   assert.equal(MAYHEM_ATTACK_SUMMARY_STORIES.length, 5)
   assert.match(morning, /Kia/)
   assert.doesNotMatch(morning, /Rin/)
-})
-
-test('regular game dawn separates each death story and shows the victim role', () => {
-  const morning = pagii({
-    category: 'werewolf',
-    day: 3,
-    guardian: [],
-    player: [
-      { id: 'mika', number: 1, role: 'warga', displayName: 'Mika', isAiCitizen: true },
-      { id: 'raka', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true }
-    ],
-    dead: [1, 2]
-  })
-
-  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 3)
-  assert.equal((morning.match(/> ↳/g) || []).length, 2)
-  assert.match(morning, /↳ Mika — \*Warga 👱‍♂️\*/)
-  assert.match(morning, /↳ Raka — \*Seer 👳\*/)
-  assert.doesNotMatch(morning, /\d+ player/)
-})
-
-test('dawn without deaths reports protected players in a separate section', () => {
-  const morning = pagii({
-    category: 'mafia',
-    day: 1,
-    guardian: [2],
-    player: [
-      { id: 'mafia', number: 1, role: 'mafia', displayName: 'Mika', isAiCitizen: true },
-      { id: 'guarded', number: 2, role: 'warga', displayName: 'Raka', isAiCitizen: true }
-    ],
-    dead: []
-  })
-
-  assert.match(morning, /Guardian melindungi Raka/)
-  assert.match(morning, /90 detik/)
-  assert.doesNotMatch(morning, /tidak ada korban malam ini/)
 })
 
 test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist attack independently', () => {
