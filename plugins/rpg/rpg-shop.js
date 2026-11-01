@@ -7,6 +7,7 @@ import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, getFishPriceMultiplier, getFishRecords, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -225,6 +226,7 @@ if (mode === 'guide') {
 
     wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalHarga)
     user.inventory[item] = (user.inventory[item] || 0) + jumlah
+    recordTaxActivity(wdb.data, m.sender, 'purchase', totalHarga)
     saveDB(wdb)
     return m.reply(`✅ *BERHASIL BELI!*\n\n${hargaBeli[item].emoji} ${formatNama(item)} x${jumlah}\n💸 -Rp ${totalHarga.toLocaleString()}`)
   }

@@ -15,6 +15,7 @@ import {
 } from '../../lib/rpgMoney.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { processPetNeglect } from '../../lib/rpgPetNeglect.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -1148,6 +1149,7 @@ for(let key in aliases){
     if ((wdb.money[m.sender] || 0) < harga) return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *UANG TIDAK CUKUP*\nButuh Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
     wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], harga)
     user.pets.push({ tipe: petName, level: 1, exp: 0, energy: 100, happy: 50, dirty: 0, nickname: null, lastFeed: 0, lastActivity: 0, lastRest: 0, lastTrain: 0, revive: true })
+    recordTaxActivity(wdb.data, m.sender, 'purchase', harga)
     saveDB(wdb)
     return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n✅ *ADOPSI BERHASIL*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n🌟 ${rarities[pets[petName].rarity].emoji} ${pets[petName].rarity}\n✨ Skill : ${pets[petName].skill || 'Tidak ada'}\n💰 Harga : -Rp ${harga.toLocaleString()}\n━━━━━━━━━━━`)
   }

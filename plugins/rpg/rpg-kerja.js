@@ -4,6 +4,7 @@ import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } fro
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { getActiveCrimeScore } from '../../lib/crimeHelper.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 import { sendRpgButtons, sendRpgExpActivityList, sendRpgQuickButton } from '../../lib/rpgActionButtons.js'
 import {
   JOBS,
@@ -1198,6 +1199,7 @@ ${getPromotionProgressText(progress.promotionPoints, activeJob.job)}
     totalMoney = Math.floor(totalMoney * getGroupTotemBuff(wdb.data, m.chat, 'work', 'income'))
     totalExp = Math.floor(totalExp * getGroupTotemBuff(wdb.data, m.chat, 'work', 'xp'))
     wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totalMoney)
+    recordTaxActivity(wdb.data, m.sender, 'income', totalMoney)
     userRPG.exp = Number(userRPG.exp || 0) + totalExp
     userRPG.lastkerja = now
     const nextWorkReadyAt = now + jobCooldown

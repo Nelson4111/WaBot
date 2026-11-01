@@ -2,6 +2,7 @@ import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 import {
   MALL_CATEGORY_ALIASES,
   MALL_CATEGORIES
@@ -222,10 +223,27 @@ let handler = async (m, { conn, text = '', usedPrefix, command, groupMetadata })
   if (!['home', 'rumah'].includes(root)) return null
 const mode = String(tokens[0] || '').toLowerCase()
 const home = getHome(rpg)
+if (!home.garage || typeof home.garage !== 'object') home.garage = {}
 const capacity = HOME_BASE_FURNITURE_CAPACITY + (Number(home.level) || 0) * HOME_UPGRADE_FURNITURE_CAPACITY + (premium ? HOME_PREMIUM_FURNITURE_BONUS : 0)
 const residentCapacity = HOME_BASE_CAPACITY + (Number(home.level) || 0) * HOME_UPGRADE_CAPACITY + (premium ? HOME_PREMIUM_CAPACITY_BONUS : 0)
 const furnitureInventory = getCollection(rpg)
 const comfort = () => getHomeComfort(home, furnitureInventory)
+
+if (mode === 'garage' || mode === 'garasi') {
+  const vehicles = Object.entries(home.garage)
+    .map(([id, quantity]) => ({ item: findItem(id, 'kendaraan'), quantity: Number(quantity) || 0 }))
+    .filter(({ item, quantity }) => item && quantity > 0)
+  return m.reply(
+    `╭─❏「 🚗 GARASI RUMAH 」❏\n` +
+    `│ KOLEKSI KENDARAAN PRIBADI\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `${vehicles.length
+      ? vehicles.map(({ item, quantity }) => `> ↳ ${item.emoji} ${item.name} x${quantity}`).join('\n')
+      : '> ↳ Garasi masih kosong. Beli kendaraan melalui .mall kendaraan.'}\n\n` +
+    `> ↳ Kendaraan yang dibeli dari Mall otomatis dikirim ke garasi.\n` +
+    `╰─━━━━━━━━━━━━━━─`
+  )
+}
 
 const yes = ['yes', 'ya', 'iya', 'y', 'konfirmasi', 'setuju'].includes(normalize(tokens[1] || mode))
 const no = ['no', 'tidak', 'batal', 'cancel', 'tolak', 'n'].includes(normalize(tokens[1] || mode))
@@ -271,6 +289,7 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
       )
     }
     setWallet(subtractRpgMoney(wallet(), cost))
+    recordTaxActivity(db.data, sender, 'purchase', cost)
     home.level = currentLevel + 1
     home.security = getHomeLevel(home.level).security
     await saveDB(db)
@@ -790,6 +809,9 @@ if (mode === 'info') {
     `> ↳ Kenyamanan: *Level ${homeComfort.level}* (${homeComfort.points} poin)\n` +
     `> ↳ Kapasitas pasang: ${home.furniture.length}/${capacity}\n` +
     `> ↳ Pajangan koleksi: ${home.trophies.length}\n\n` +
+    `🚗 *KENDARAAN*\n` +
+    `> ↳ Jenis kendaraan di garasi: ${Object.values(home.garage).filter(quantity => Number(quantity) > 0).length}\n` +
+    `> ↳ Lihat kendaraan: ${prefix}home garage\n\n` +
     `📊 *STATISTIK RUMAH*\n` +
     `> ↳ Harmony: ${home.harmony}/100\n` +
     `> ↳ Security: ${getHomeSecurity(home)}/100\n` +
@@ -818,7 +840,8 @@ if (mode === 'guide') {
     `│ 📖 *PANDUAN HOME*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `> ↳ Atur privasi rumah, pasang barang dari inventori, undang teman, dan kunjungi rumah pemain lain.\n` +
-    `> ↳ Semua barang Mall selain fashion dapat dipasang/dilepas dengan *${prefix}home pasang/lepas <item>*.\n` +
+    `> ↳ Kendaraan yang dibeli di Mall otomatis disimpan di *${prefix}home garage*.\n` +
+    `> ↳ Barang Mall selain kendaraan dan fashion dapat dipasang/dilepas dengan *${prefix}home pasang/lepas <item>*.\n` +
     `> ↳ Koleksi juga dapat dipajang/disimpan dengan *${prefix}home pajang/simpan <item>*.\n` +
     `> ↳ Furniture bisa dibeli melalui *${prefix}mall kategori furniture*.\n` +
     `> ↳ Setiap 5 furniture di inventori/barang yang terpasang atau setiap upgrade menaikkan 1 level kenyamanan.\n` +
@@ -841,6 +864,7 @@ if (mode === 'command') {
     `> ↳ ${prefix}home guide — panduan rumah\n` +
     `> ↳ ${prefix}home command — daftar semua command\n` +
     `> ↳ ${prefix}home info — info rumah dan status\n` +
+    `> ↳ ${prefix}home garage — lihat kendaraan yang dikirim dari Mall\n` +
     `> ↳ ${prefix}home furniture — lihat barang yang terpasang\n` +
     `> ↳ ${prefix}home pasang/lepas <item> — pasang/lepas barang Mall selain fashion\n` +
     `> ↳ ${prefix}home pajangan — lihat koleksi yang dipajang\n` +

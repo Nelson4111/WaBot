@@ -11,6 +11,7 @@ import {
   MALL_PREMIUM_SELL_BONUS
 } from '../../lib/rpgMallData.js'
 import { addRpgMoney, compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 
 const money = value => formatRpgMoney(value)
 const normalize = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[\s-]+/g, '_')
@@ -105,8 +106,8 @@ if (mode === 'guide') {
     `> ↳ Mall adalah tempat untuk melihat, membeli, dan menjual barang RPG.\n` +
     `> ↳ Daftar di setiap kategori diurutkan dari harga beli termurah ke termahal.\n` +
     `> ↳ Rarity bintang mengikuti harga beli.\n` +
-    `> ↳ Semua barang selain fashion dapat dipasang/dilepas di rumah dengan *${prefix}home pasang/lepas <item>*.\n` +
-    `> ↳ Koleksi dapat dipajang/disimpan di rumah; fashion digunakan melalui wardrobe.\n\n` +
+    `> ↳ Kendaraan yang dibeli otomatis dikirim ke garasi: *${prefix}home garage*.\n` +
+    `> ↳ Barang selain kendaraan/fashion dapat dipasang; koleksi dipajang melalui Home dan fashion digunakan lewat wardrobe.\n\n` +
     `👑 *PREMIUM*\n` +
     `> ↳ Diskon beli : ${(MALL_PREMIUM_DISCOUNT * 100).toFixed(0)}%\n` +
     `> ↳ Bonus harga jual : ${(MALL_PREMIUM_SELL_BONUS * 100).toFixed(0)}%\n\n` +
@@ -356,7 +357,20 @@ if (!item) {
   )
 }
 
-const inventory = rpg.mallInventory || (rpg.mallInventory = {})
+const inventory = category === 'kendaraan'
+  ? (() => {
+    const home = rpg.home || (rpg.home = {})
+    const garage = home.garage || (home.garage = {})
+    for (const vehicle of MALL_CATEGORIES.kendaraan.items) {
+      const legacyQuantity = Number(rpg.mallInventory?.[vehicle.id]) || 0
+      if (legacyQuantity > 0) {
+        garage[vehicle.id] = (Number(garage[vehicle.id]) || 0) + legacyQuantity
+        delete rpg.mallInventory[vehicle.id]
+      }
+    }
+    return garage
+  })()
+  : (rpg.mallInventory || (rpg.mallInventory = {}))
 const amount = amountToken ? Number(amountToken) : 1
 
 if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000) {
@@ -380,7 +394,9 @@ if (action === 'info') {
     `> ↳ Rarity : ${rarity.stars} ${rarity.name}\n` +
     `> ↳ Harga : ${money(priceFor(item))}\n` +
     `> ↳ Harga jual kembali : ${money(Math.floor(item.sellPrice * (premium ? 1 + MALL_PREMIUM_SELL_BONUS : 1)))}\n` +
-    `${category !== 'fashion' ? `> ↳ Barang ini dapat dipasang/dilepas di rumah dengan *${prefix}home pasang/lepas <item>*.\n` : `> ↳ Fashion dipakai/dilepas melalui *${prefix}wardrobe*.\n`}` +
+    `${category === 'kendaraan'
+      ? `> ↳ Kendaraan yang dimiliki disimpan otomatis di garasi rumah. Lihat dengan *${prefix}home garage*.\n`
+      : category !== 'fashion' ? `> ↳ Barang ini dapat dipasang/dilepas di rumah dengan *${prefix}home pasang/lepas <item>*.\n` : `> ↳ Fashion dipakai/dilepas melalui *${prefix}wardrobe*.\n`}` +
     `${category === 'furniture' ? `> ↳ Furniture yang dimiliki atau dipasang membantu meningkatkan kenyamanan rumah.\n` : ''}\n` +
     `─━━━━━━━━━━━━━━─`
   )
@@ -404,6 +420,7 @@ if (action === 'beli') {
   setWallet(subtractRpgMoney(wallet(), total))
   inventory[item.id] = (Number(inventory[item.id]) || 0) + amount
   sales[item.id] = (Number(sales[item.id]) || 0) + amount
+  recordTaxActivity(db.data, sender, 'purchase', total)
 
   await saveDB(db)
 

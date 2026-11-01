@@ -4,6 +4,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../.
 import { hewanList, dapatkanHasil, getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 import {
   hargaBeli as sharedHargaBeli,
   masakanResep,
@@ -274,6 +275,7 @@ const hargaBeli = { ...sharedHargaBeli }
       let dataPaket = paket[dataKonfirmasi.paket]
       if((wdb.money[m.sender] || 0) < dataKonfirmasi.harga) return m.reply(`❌ Uang tidak cukup!`)
       wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], dataKonfirmasi.harga)
+      recordTaxActivity(wdb.data, m.sender, 'purchase', dataKonfirmasi.harga)
       let listDapat = []
       for(let item in dataPaket.isi){
         let jumlah = dataPaket.isi[item]
@@ -344,6 +346,7 @@ return m.reply(cap)
     let totalHarga = hargaSatuan * jumlah
     if((wdb.money[m.sender] || 0) < totalHarga) return m.reply(`❌ Uang tidak cukup! Butuh: Rp ${totalHarga.toLocaleString()}`)
     wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], totalHarga)
+    recordTaxActivity(wdb.data, m.sender, 'purchase', totalHarga)
     user.masakan[item] = (user.masakan[item] || 0) + jumlah
     saveDB(wdb)
 let cap = `╭─❏「 🛍️ TRANSAKSI SUKSES 」❏\n`

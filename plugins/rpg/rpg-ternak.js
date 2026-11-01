@@ -6,6 +6,7 @@ import { scaleDifficultyCooldown, scaleDifficultyXP } from '../../lib/rpgDifficu
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { processLivestockNeglect, processShelterCrime, recordLivestockCare } from '../../lib/rpgShelter.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
@@ -264,6 +265,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let key = getHewanKey(hewan1) || hewan1
     user.ternak[key] = (user.ternak[key] || 0) + jml
     recordLivestockCare(user, key)
+    recordTaxActivity(wdb.data, m.sender, 'purchase', total)
     await saveDB(wdb)
 
     return safeReply(

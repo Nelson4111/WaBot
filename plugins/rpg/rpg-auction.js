@@ -4,6 +4,7 @@ import { resolveLid } from '../../lib/simple.js'
 import { AUCTION_BIDDER_NAMES, AUCTION_ITEMS, getAuctionItemRarity } from '../../lib/rpg-auctionData.js'
 import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 import {
   addRpgMoney,
   compareRpgMoney,
@@ -379,6 +380,7 @@ function settleAuctionSession(db, session, now = Date.now(), { replaceSession = 
     if (!Array.isArray(account.rpg.auctionHistory)) account.rpg.auctionHistory = []
     account.rpg.auctionHistory.unshift(historyEntry)
     account.rpg.auctionHistory.length = Math.min(account.rpg.auctionHistory.length, AUCTION_HISTORY_LIMIT)
+    recordTaxActivity(db.data, bid.jid, 'transaction', bid.amount)
     addAuctionHistory(state, historyEntry)
   }
 

@@ -3,6 +3,7 @@ import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionBu
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { recordTaxActivity } from '../../lib/rpgTax.js'
 
 const FEE_RATE = 0.005
 const TICK_MS = 10 * 60 * 1000
@@ -590,6 +591,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     user.bank = addRpgMoney(user.bank, saleProceeds)
     holding.qty = soldAll ? 0 : holding.qty - qty
     invest.realized += adjustedRealized
+    if (adjustedRealized > 0) recordTaxActivity(db.data, m.sender, 'financial', Math.floor(adjustedRealized))
     if (holding.qty <= 0) delete invest.portfolio[symbol]
     else invest.portfolio[symbol] = holding
     invest.history.unshift({ side: 'SELL', symbol, qty, price, fee, realized: adjustedRealized, at: Date.now() })
