@@ -823,7 +823,7 @@ let handler = async (m, { text = '', usedPrefix, conn, groupMetadata }) => {
       fallbackText: auctionText,
       image: AUCTION_IMAGE,
       noHeader: true,
-      sendInteractive: typeof conn.sendInteractive === 'function'
+      sendInteractive: typeof conn?.sendInteractive === 'function'
         ? interactiveMessage => conn.sendInteractive(m.chat, interactiveMessage, { quoted: m })
         : undefined
     })

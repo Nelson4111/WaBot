@@ -1,5 +1,5 @@
 ---
-description:
+description: /feature
 ---
 
 # Feature Development Workflow

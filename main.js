@@ -195,12 +195,16 @@ global.db = new Low(
 )
 global.DATABASE = global.db // Backwards Compatibility
 global.loadDatabase = async function loadDatabase() {
-  if (db.READ) return new Promise((resolve) => setInterval(async function () {
-    if (!db.READ) {
-      clearInterval(this)
-      resolve(db.data == null ? global.loadDatabase() : db.data)
-    }
-  }, 1 * 1000))
+  if (db.READ) {
+    return new Promise((resolve) => {
+      const interval = setInterval(async () => {
+        if (!db.READ) {
+          clearInterval(interval)
+          resolve(db.data == null ? global.loadDatabase() : db.data)
+        }
+      }, 1000)
+    })
+  }
   if (db.data !== null) return db.data
   db.READ = true
   let readSuccess = false
@@ -213,11 +217,29 @@ global.loadDatabase = async function loadDatabase() {
     }
   } catch (err) {
     console.error(chalk.red('[DATABASE LOAD FAILED]:'), err?.message || err)
-    db.data = null
+    // Fallback: Coba muat dari database_backup/database.json atau database.json lokal
+    try {
+      const fsMod = await import('fs')
+      const pathMod = await import('path')
+      const backupPath = pathMod.default.resolve('database_backup/database.json')
+      const localPath = pathMod.default.resolve(dbFileName || 'database.json')
+      const fileToRead = fsMod.default.existsSync(backupPath) ? backupPath : (fsMod.default.existsSync(localPath) ? localPath : null)
+      if (fileToRead) {
+        console.log(chalk.yellow(`[DATABASE FALLBACK] Memuat data dari cadangan: ${fileToRead}`))
+        db.data = JSON.parse(fsMod.default.readFileSync(fileToRead, 'utf8'))
+        readSuccess = true
+      }
+    } catch (fallbackErr) {
+      console.error(chalk.red('[DATABASE FALLBACK FAILED]:'), fallbackErr?.message || fallbackErr)
+    }
+    if (!db.data) {
+      db.data = {}
+      readSuccess = true
+    }
   }
   db.READ = null
 
-  if (readSuccess) {
+  if (readSuccess || !db.data) {
     db.data = {
       users: {},
       chats: {},
