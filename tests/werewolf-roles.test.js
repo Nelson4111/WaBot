@@ -598,42 +598,6 @@ test('Vigilante dawn uses one story and a clean victim list for all deaths', () 
   assert.equal(VIGILANTE_ATTACK_SUMMARY_STORIES.length, 5)
 })
 
-test('regular game dawn separates each death story and shows the victim role', () => {
-  const morning = pagii({
-    category: 'werewolf',
-    day: 2,
-    guardian: [],
-    player: [
-      { id: 'wolf', number: 1, role: 'werewolf', displayName: 'Ari', isAiCitizen: true },
-      { id: 'victim-1', number: 2, role: 'seer', displayName: 'Mika', isAiCitizen: true, lastDeathCause: 'werewolf' },
-      { id: 'victim-2', number: 3, role: 'mayor', displayName: 'Rin', isAiCitizen: true, lastDeathCause: 'werewolf' }
-    ],
-    dead: [2, 3]
-  })
-
-  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 3)
-  assert.equal((morning.match(/> ↳/g) || []).length, 2)
-  assert.match(morning, /↳ Mika — \*Seer 👳\*/)
-  assert.match(morning, /↳ Rin — \*Mayor 👑\*/)
-})
-
-test('dawn without deaths reports protected players in a separate section', () => {
-  const morning = pagii({
-    category: 'werewolf',
-    day: 2,
-    guardian: [2],
-    player: [
-      { id: 'wolf', number: 1, role: 'werewolf', displayName: 'Ari', isAiCitizen: true },
-      { id: 'protected', number: 2, role: 'seer', displayName: 'Mika', isAiCitizen: true }
-    ],
-    dead: []
-  })
-
-  assert.match(morning, /Guardian melindungi Mika dari serangan malam ini/)
-  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 2)
-  assert.match(morning, /90 detik/)
-})
-
 test('Mayhem dawn uses one story and lists the victim while identifying the attacker by role', () => {
   const morning = pagii({
     category: 'mayhem',
@@ -652,6 +616,42 @@ test('Mayhem dawn uses one story and lists the victim while identifying the atta
   assert.equal(MAYHEM_ATTACK_SUMMARY_STORIES.length, 5)
   assert.match(morning, /Kia/)
   assert.doesNotMatch(morning, /Rin/)
+})
+
+test('regular game dawn separates each death story and shows the victim role', () => {
+  const morning = pagii({
+    category: 'werewolf',
+    day: 3,
+    guardian: [],
+    player: [
+      { id: 'mika', number: 1, role: 'warga', displayName: 'Mika', isAiCitizen: true },
+      { id: 'raka', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true }
+    ],
+    dead: [1, 2]
+  })
+
+  assert.equal((morning.match(/━━━━━━━━━━━━━━/g) || []).length, 3)
+  assert.equal((morning.match(/> ↳/g) || []).length, 2)
+  assert.match(morning, /↳ Mika — \*Warga 👱‍♂️\*/)
+  assert.match(morning, /↳ Raka — \*Seer 👳\*/)
+  assert.doesNotMatch(morning, /\d+ player/)
+})
+
+test('dawn without deaths reports protected players in a separate section', () => {
+  const morning = pagii({
+    category: 'mafia',
+    day: 1,
+    guardian: [2],
+    player: [
+      { id: 'mafia', number: 1, role: 'mafia', displayName: 'Mika', isAiCitizen: true },
+      { id: 'guarded', number: 2, role: 'warga', displayName: 'Raka', isAiCitizen: true }
+    ],
+    dead: []
+  })
+
+  assert.match(morning, /Guardian melindungi Raka/)
+  assert.match(morning, /90 detik/)
+  assert.doesNotMatch(morning, /tidak ada korban malam ini/)
 })
 
 test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist attack independently', () => {
