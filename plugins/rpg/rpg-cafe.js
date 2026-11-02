@@ -9,11 +9,24 @@ import {
   addCafeExpense,
   advanceCafeOperations,
   createCafe,
+  createCafeStaffMember,
   ensureCafe,
+  hasCafeStaffBeenTalkedTo,
+  getCafeStaffDialogue,
+  getCafeCctvStory,
+  getCafeVisitCooldownRemaining,
+  getCafeVisitors,
+  markCafeStaffTalkedTo,
+  markCafeVisitorTalked,
+  registerCafeVisit,
+  refreshCafeVisitors,
   transferCafeBalance
 } from '../../lib/rpgCafe.js'
+import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
   CAFE_DIALOGUE,
+  CAFE_CCTV_STORIES,
   CAFE_INGREDIENT_CATALOG,
   CAFE_INGREDIENT_PAGE_SIZE,
   CAFE_MENU_CATALOG,
@@ -21,8 +34,13 @@ import {
   CAFE_MENU_PRICE_MAX_BPS,
   CAFE_MENU_PRICE_MIN_BPS,
   CAFE_NPCS,
+  CAFE_MAX_CUSTOMERS_PER_SHIFT,
+  CAFE_MAX_STAFF_SALARY_MULTIPLIER,
+  CAFE_SHIFT_MS,
   CAFE_SETUP_COST,
   CAFE_STAFF,
+  CAFE_VISIT_COOLDOWN_MS,
+  CAFE_VISITOR_STAY_MS,
   CAFE_THEMES,
   CAFE_UPGRADES
 } from '../../lib/rpgCafeData.js'
@@ -67,9 +85,17 @@ function getProfit(cafe) {
   return BigInt(cafe.finance.income) - BigInt(cafe.finance.expenses)
 }
 
+function getWorkingStaff(cafe) {
+  if (cafe.status !== 'open' ||
+      Number(cafe.lastShift?.at || 0) < Number(cafe.lastOperatedAt || 0) ||
+      Date.now() - Number(cafe.lastShift?.at || 0) > CAFE_SHIFT_MS) return []
+  return cafe.lastShift?.staffOnDuty || []
+}
+
 function renderCafe(cafe, jid, prefix) {
   const enabledMenus = Object.entries(cafe.menu).filter(([, choice]) => choice.enabled)
   const activeStaff = Object.keys(cafe.staff).filter(id => CAFE_STAFF[id])
+  const workingStaff = getWorkingStaff(cafe)
   const profit = getProfit(cafe)
   return `╭─❏「 ☕ CAFE MANAGEMENT 」❏\n` +
     `│ KELOLA BISNIS CAFE PRIBADIMU\n` +
@@ -78,7 +104,9 @@ function renderCafe(cafe, jid, prefix) {
     `> ↳ Nama : ${cafe.name}\n` +
     `> ↳ Owner : @${jid.split('@')[0]}\n` +
     `> ↳ Level : ${cafe.level} (${cafe.exp} EXP)\n` +
+    `> ↳ Popularitas : ${cafe.popularity.toLocaleString('id-ID')} poin\n` +
     `> ↳ Reputasi : ${cafe.reputation}/100\n` +
+    `> ↳ Kapasitas : ${cafe.capacity}/${CAFE_MAX_CUSTOMERS_PER_SHIFT} pengunjung/shift\n` +
     `> ↳ Status : ${cafe.status === 'open' ? 'Open' : 'Closed'}\n\n` +
     `💰 *KEUANGAN BISNIS*\n` +
     `> ↳ Saldo : ${money(cafe.finance.balance)}\n` +
@@ -90,23 +118,44 @@ function renderCafe(cafe, jid, prefix) {
     `> ↳ Transaksi berhasil : ${cafe.finance.totalOrders}\n` +
     `> ↳ Kepuasan : ${cafe.finance.satisfaction}%\n` +
     `> ↳ Menu aktif : ${enabledMenus.length}\n` +
-    `> ↳ Karyawan : ${activeStaff.length}\n\n` +
+    `> ↳ Karyawan : ${activeStaff.length}\n` +
+    `> ↳ Sedang bertugas : ${workingStaff.map(employee => employee.name).join(', ') || 'Belum ada staff bertugas'}\n\n` +
     `📌 Gunakan *${prefix}cafe guide* dan *${prefix}cafe command*.\n` +
     `╰─━━━━━━━━━━━━━━─`
+}
+
+function sendCafePage(conn, m, text, buttons = [], fallbackText) {
+  return sendRpgButtons(conn, {
+    chat: m.chat,
+    message: m,
+    quoted: m,
+    text,
+    footer: '☕ AVELIA CAFE • RPG',
+    buttons,
+    fallbackText,
+    reply: content => m.reply(content),
+    noHeader: true
+  })
 }
 
 function renderShift(cafe, shifts) {
   const shift = cafe.lastShift
   if (!shifts || !shift) {
-    return `⏳ Belum ada shift baru. Operasional otomatis diproses setiap jam saat cafe buka.`
+    return `╭─❏「 ⏳ OPERASIONAL CAFE 」❏\n│ Belum ada shift baru\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Shift diproses otomatis setiap jam saat cafe buka.`
   }
   const visitors = shift.visitors.slice(0, 8)
-  return `✅ Operasional cafe selesai.\n` +
-    `> ↳ Shift diproses : ${shifts}\n` +
-    `> ↳ Pengunjung shift terakhir : ${shift.customers}\n` +
-    `> ↳ Berhasil dilayani : ${shift.served}\n` +
-    `> ↳ Pendapatan shift terakhir : ${money(shift.revenue)}\n\n` +
-    `${visitors.length ? visitors.map(visitor => `☕ *${visitor.name}:* ${visitor.message}`).join('\n') : CAFE_DIALOGUE.closed}`
+  const dialogueRows = visitors.flatMap(visitor => Array.isArray(visitor.dialogue)
+    ? visitor.dialogue.map(turn => `> ↳ ☕ *${turn.speaker} (${turn.role}):* “${turn.text}”`)
+    : [`> ↳ ☕ *${visitor.name} (Pelanggan):* “${visitor.message}”`])
+  return `╭─❏「 ✅ OPERASIONAL CAFE 」❏\n│ Laporan shift terbaru\n╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ 🕐 Shift diproses : ${shifts}\n` +
+    `> ↳ 👥 Pengunjung : ${shift.customers} · Dilayani : ${shift.served}\n` +
+    `> ↳ 💰 Pendapatan : ${money(shift.revenue)}\n` +
+    `> ↳ 👤 Staff bertugas : ${shift.staffOnDuty?.map(employee => employee.name).join(', ') || 'Tidak ada'}\n` +
+    `${shift.resigned?.length ? `> ↳ 👋 Resign : ${shift.resigned.join(', ')} (gaji tak terbayar)\n` : ''}\n` +
+    `${dialogueRows.length
+      ? `💬 *DIALOG PELANGGAN*\n${dialogueRows.join('\n')}`
+      : '> ↳ Belum ada dialog pelanggan pada shift ini.'}`
 }
 
 let cafeSchedulerStarted = false
@@ -145,7 +194,7 @@ function startCafeScheduler() {
   }, 60 * 1000).unref?.()
 }
 
-let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }) => {
+let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', conn }) => {
   const root = String(command || '').toLowerCase()
   if (root !== 'cafe' && root !== 'kafe') return null
   const db = loadDB()
@@ -169,50 +218,298 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
 
   if (mode === 'buy' || mode === 'beli') {
     if (cafe) return m.reply('❌ Kamu sudah memiliki cafe. Gunakan *.cafe info* untuk melihat bisnis kamu.')
-    if (compareRpgMoney(account.money || 0, CAFE_SETUP_COST) < 0) {
-      return m.reply(`❌ Modal pendirian cafe ${money(CAFE_SETUP_COST)}. Saldo kamu ${money(account.money || 0)}.`)
+    const action = normalize(words[0] || '')
+    if (action === 'cancel' || action === 'batal') {
+      delete account.rpg.pendingCafePurchase
+      await saveDB(db)
+      return m.reply('🧾 Konfirmasi pendirian cafe dibatalkan. Saldo kamu tidak berubah.')
     }
-    account.money = subtractRpgMoney(account.money || 0, CAFE_SETUP_COST)
-    cafe = createCafe(words.join(' '))
-    account.rpg.cafe = cafe
-    recordTaxActivity(db.data, jid, 'purchase', CAFE_SETUP_COST)
+    if (action === 'confirm' || action === 'konfirmasi') {
+      const pending = account.rpg.pendingCafePurchase
+      if (!pending || typeof pending.name !== 'string' || pending.name.trim().length < 3 ||
+          pending.name.trim().length > 40 || Date.now() - Number(pending.requestedAt) > 5 * 60 * 1000) {
+        delete account.rpg.pendingCafePurchase
+        await saveDB(db)
+        return m.reply(`⌛ Konfirmasi tidak ditemukan atau sudah kedaluwarsa. Mulai lagi dengan *${prefix}cafe buy <nama cafe> *.`)
+      }
+      if (compareRpgMoney(account.money || 0, CAFE_SETUP_COST) < 0) {
+        return m.reply(`💸 Saldo belum cukup untuk mendirikan cafe. Modal ${money(CAFE_SETUP_COST)}, saldo kamu ${money(account.money || 0)}.`)
+      }
+      account.money = subtractRpgMoney(account.money || 0, CAFE_SETUP_COST)
+      cafe = createCafe(pending.name)
+      account.rpg.cafe = cafe
+      delete account.rpg.pendingCafePurchase
+      recordTaxActivity(db.data, jid, 'purchase', CAFE_SETUP_COST)
+      await saveDB(db)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 🎉 CAFE RESMI DIBUKA 」❏\n│ *${cafe.name}* siap jadi destinasi favorit Avelia!\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ 🧾 Biaya pendirian : ${money(CAFE_SETUP_COST)}\n` +
+        `> ↳ 🏦 Saldo bisnis : ${money(cafe.finance.balance)}\n` +
+        `> ↳ 🪑 Kapasitas awal : ${cafe.capacity} pengunjung/shift\n\n` +
+        `💡 Setorkan modal bisnis, isi stok, lalu buka cafe agar operasional dimulai.`,
+        [
+          ['📦 Kelola stok', `${prefix}cafe stock`],
+          ['💰 Setor modal', `${prefix}cafe deposit`],
+          ['🏠 Lihat cafe', `${prefix}cafe`]
+        ]
+      )
+    }
+
+    const name = words.join(' ').trim()
+    if (name.length < 3 || name.length > 40) {
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 🏗️ DIRIKAN CAFE 」❏\n│ Tentukan nama bisnis impianmu\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Format : *${prefix}cafe buy <nama cafe>*\n` +
+        `> ↳ Nama : 3–40 karakter\n` +
+        `> ↳ Modal : ${money(CAFE_SETUP_COST)}\n` +
+        `> ↳ Pembelian selalu meminta konfirmasi terlebih dahulu.\n\n` +
+        `Contoh: *${prefix}cafe buy Senja di Avelia*`,
+        [['📖 Panduan Cafe', `${prefix}cafe guide`]]
+      )
+    }
+    if (compareRpgMoney(account.money || 0, CAFE_SETUP_COST) < 0) {
+      return m.reply(`💸 Saldo belum cukup untuk mendirikan cafe. Modal ${money(CAFE_SETUP_COST)}, saldo kamu ${money(account.money || 0)}.`)
+    }
+    account.rpg.pendingCafePurchase = { name, requestedAt: Date.now() }
     await saveDB(db)
-    return m.reply(`✅ Cafe berhasil didirikan.\n> ↳ Nama : ${cafe.name}\n> ↳ Biaya pendirian : ${money(CAFE_SETUP_COST)}\n> ↳ Modal awal bisnis : ${money(cafe.finance.balance)}\n\nSetor modal dengan *.cafe deposit <nominal>*, lalu beli bahan melalui *.cafe stock buy*.`)
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 🧾 KONFIRMASI PENDIRIAN 」❏\n│ Periksa detail sebelum membayar\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Nama cafe : *${name}*\n` +
+      `> ↳ Biaya : *${money(CAFE_SETUP_COST)}*\n` +
+      `> ↳ Saldo setelah transaksi : *${money(subtractRpgMoney(account.money, CAFE_SETUP_COST))}*\n\n` +
+      `Dana hanya dipotong setelah kamu memilih konfirmasi. Permintaan berlaku 5 menit.`,
+      [
+        ['✅ Konfirmasi & dirikan', `${prefix}cafe buy confirm`],
+        ['❌ Batalkan', `${prefix}cafe buy cancel`]
+      ]
+    )
   }
 
   if (mode === 'guide') {
-    return m.reply(
-      `╭─❏「 📖 CAFE GUIDE 」❏\n│ PANDUAN AVELIA CAFE\n╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Cafe menghasilkan transaksi NPC otomatis setiap jam saat berstatus Open.\n` +
-      `> ↳ Pengunjung dibatasi kapasitas, menu aktif, dan stok bahan baku.\n` +
-      `> ↳ Setor uang ke saldo bisnis sebelum membeli stok atau membayar biaya operasional.\n` +
-      `> ↳ Pendapatan berasal dari penjualan; biaya stok, gaji, dan operasional mengurangi laba bersih.\n` +
-      `> ↳ Business Tax dihitung dari laba bersih cafe, bukan omzet.\n` +
-      `> ↳ Pembelian bahan, upgrade, dan gaji tercatat sebagai pengeluaran bisnis.\n\n` +
-      `Gunakan *${prefix}cafe command* untuk melihat semua perintah.\n╰─━━━━━━━━━━━━━━─`
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 📖 PANDUAN LENGKAP CAFE 」❏\n│ Cara memulai, melayani tamu, dan mengembangkan bisnis\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `🏗️ *1. MEMILIKI CAFE*\n` +
+      `> ↳ Gunakan *${prefix}cafe buy <nama>* untuk memilih nama Cafe.\n` +
+      `> ↳ Bot menampilkan biaya dan saldo akhir; dana hanya dipotong setelah konfirmasi.\n` +
+      `> ↳ Setelah berdiri, setorkan modal dengan *${prefix}cafe deposit <nominal>*.\n\n` +
+      `🚪 *2. BUKA, KUNJUNGI, DAN BICARA*\n` +
+      `> ↳ *${prefix}cafe open* membuka bisnis; *${prefix}cafe close* menghentikan operasional.\n` +
+      `> ↳ *${prefix}cafe visit* menampilkan NPC roleplay dan staff yang sedang bertugas.\n` +
+      `> ↳ Visit menambah 1 popularitas dan memiliki cooldown ${Math.ceil(CAFE_VISIT_COOLDOWN_MS / 60000)} menit.\n` +
+      `> ↳ NPC hadir maksimal 30 menit; setiap NPC hanya bisa diajak bicara sekali per kunjungan.\n` +
+      `> ↳ Staff hanya bisa diajak bicara sekali per shift; Cafe tutup tidak menerima pengunjung.\n` +
+      `> ↳ Terpisah dari itu, NPC pelanggan bertransaksi otomatis tiap jam saat Cafe buka.\n` +
+      `> ↳ Pilih tombol dialog di halaman Visit atau gunakan *${prefix}cafe talk npc <nama>*.\n` +
+      `> ↳ Bicara dengan staff yang sedang bertugas melalui *${prefix}cafe talk staff <nama>*.\n` +
+      `> ↳ Talk menambah 1 popularitas. Dialog langsung tampil di balasan *talk* dengan label Kamu dan nama lawan bicara.\n` +
+      `> ↳ Dialog pesanan otomatis tercatat di laporan *${prefix}cafe operate* dan CCTV; nama pelanggan ditampilkan sebagai pembicara.\n\n` +
+      `🍽️ *3. MENU, BAHAN, DAN SHIFT*\n` +
+      `> ↳ *${prefix}cafe menu catalog* melihat menu resep makanan/minuman yang tersedia.\n` +
+      `> ↳ *${prefix}cafe menu add <id>* menambah menu; *menu price <id> <harga>* mengatur harga.\n` +
+      `> ↳ *${prefix}cafe supplier* melihat bahan; *${prefix}cafe stock buy <id> <jumlah>* membeli bahan.\n` +
+      `> ↳ NPC bertransaksi otomatis per jam ketika Cafe buka. Menu tanpa bahan tidak dapat dibuat.\n` +
+      `> ↳ Gunakan *${prefix}cafe operate* untuk memproses dan membaca shift yang sudah jatuh tempo.\n\n` +
+      `👥 *4. STAFF DAN KINERJA*\n` +
+      `> ↳ *${prefix}cafe staff* melihat nama, posisi, gaji, dan status staff.\n` +
+      `> ↳ *${prefix}cafe staff hire <posisi>* merekrut satu staff; Premium bisa *hire all*.\n` +
+      `> ↳ *${prefix}cafe staff salary <posisi> 2x* menaikkan gaji per shift hingga 100x.\n` +
+      `> ↳ Gaji dibayar dari saldo bisnis tiap shift. Tidak terbayar dua shift berturut-turut membuat staff resign.\n` +
+      `> ↳ *${prefix}cafe staff working* atau *${prefix}cafe cctv* melihat staff yang sedang bekerja.\n\n` +
+      `📈 *5. LEVEL, POPULARITAS, DAN KAPASITAS*\n` +
+      `> ↳ Transaksi berhasil memberi EXP; EXP yang cukup menaikkan level Cafe.\n` +
+      `> ↳ Pengunjung yang terlayani menaikkan popularitas; layanan gagal dapat menurunkannya.\n` +
+      `> ↳ Level dan popularitas meningkatkan permintaan NPC, tetapi tidak melewati kapasitas.\n` +
+      `> ↳ Kapasitas bertambah hanya lewat *${prefix}cafe upgrade capacity/kitchen* dan dibatasi maksimum 50 tamu per shift.\n\n` +
+      `💰 *6. KEUANGAN DAN PAJAK*\n` +
+      `> ↳ *${prefix}cafe report*, *balance*, *income*, *expense*, dan *history* untuk memeriksa kas.\n` +
+      `> ↳ *${prefix}cafe withdraw <nominal>* menarik saldo bisnis ke uang tunai.\n` +
+      `> ↳ Laba Business Tax adalah pendapatan dikurangi stok, rekrut, gaji, upgrade, tema, dan biaya operasional.\n` +
+      `> ↳ *${prefix}cafe tax* menampilkan estimasi pajak mingguan; tagihan final ada di *${prefix}tax bill*.\n\n` +
+      `📹 *7. FITUR TAMBAHAN*\n` +
+      `> ↳ *${prefix}cafe cctv* menampilkan salah satu dari 5 cerita kondisi Cafe.\n` +
+      `> ↳ *${prefix}cafe theme* mengganti tema; *${prefix}cafe name <nama>* mengganti nama Cafe.\n` +
+      `> ↳ Gunakan *${prefix}cafe command* untuk daftar command satu per baris.`,
+      [
+        ['📋 Semua command', `${prefix}cafe command`],
+        ['🚶 Kunjungi Cafe', `${prefix}cafe visit`],
+        ['👥 Kelola staff', `${prefix}cafe staff`],
+        ['📹 Pantau CCTV', `${prefix}cafe cctv`]
+      ]
     )
   }
   if (mode === 'command' || mode === 'commands') {
-    return m.reply(
-      `☕ *CAFE COMMAND*\n` +
-      `> ↳ info / profile / status / guide\n` +
-      `> ↳ buy / name <nama> / open / close\n` +
-      `> ↳ menu [list|catalog|add|remove|price]\n` +
-      `> ↳ supplier [halaman] / stock [buy <bahan> <jumlah>]\n` +
-      `> ↳ staff [list|hire|fire|salary]\n` +
-      `> ↳ upgrade <capacity|kitchen|service>\n` +
-      `> ↳ theme [nama] / talk [nama NPC]\n` +
-      `> ↳ operate / customers / satisfaction / reputation\n` +
-      `> ↳ balance / income / expense / profit / report / history / tax\n` +
-      `> ↳ deposit <nominal> / withdraw <nominal>\n\n` +
-      `Modal pendirian: ${money(CAFE_SETUP_COST)} · Alias: *.kafe*.`
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 🎛️ DAFTAR COMMAND CAFE 」❏\n│ Semua perintah tersusun ke bawah\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `🏗️ *PENDIRIAN & PANDUAN*\n` +
+      `> ↳ ${prefix}cafe\n` +
+      `> ↳ ${prefix}cafe guide\n` +
+      `> ↳ ${prefix}cafe buy <nama>\n` +
+      `> ↳ ${prefix}cafe buy confirm\n` +
+      `> ↳ ${prefix}cafe buy cancel\n` +
+      `> ↳ ${prefix}cafe name <nama>\n\n` +
+      `🚪 *KUNJUNGAN & OPERASIONAL*\n` +
+      `> ↳ ${prefix}cafe open\n` +
+      `> ↳ ${prefix}cafe close\n` +
+      `> ↳ ${prefix}cafe visit\n` +
+      `> ↳ ${prefix}cafe talk npc <nama>\n` +
+      `> ↳ ${prefix}cafe talk staff <nama>\n` +
+      `> ↳ ${prefix}cafe operate\n` +
+      `> ↳ ${prefix}cafe cctv\n\n` +
+      `🍽️ *MENU & BAHAN*\n` +
+      `> ↳ ${prefix}cafe menu\n` +
+      `> ↳ ${prefix}cafe menu catalog [halaman]\n` +
+      `> ↳ ${prefix}cafe menu add <id>\n` +
+      `> ↳ ${prefix}cafe menu remove <id>\n` +
+      `> ↳ ${prefix}cafe menu price <id> <harga>\n` +
+      `> ↳ ${prefix}cafe supplier [halaman]\n` +
+      `> ↳ ${prefix}cafe stock\n` +
+      `> ↳ ${prefix}cafe stock buy <id> <jumlah>\n\n` +
+      `👥 *STAFF & PENGEMBANGAN*\n` +
+      `> ↳ ${prefix}cafe staff\n` +
+      `> ↳ ${prefix}cafe staff hire <posisi>\n` +
+      `> ↳ ${prefix}cafe staff hire all (Premium)\n` +
+      `> ↳ ${prefix}cafe staff salary <posisi> <kali>x\n` +
+      `> ↳ ${prefix}cafe staff fire <posisi>\n` +
+      `> ↳ ${prefix}cafe staff working\n` +
+      `> ↳ ${prefix}cafe upgrade\n` +
+      `> ↳ ${prefix}cafe upgrade capacity\n` +
+      `> ↳ ${prefix}cafe upgrade kitchen\n` +
+      `> ↳ ${prefix}cafe upgrade service\n` +
+      `> ↳ ${prefix}cafe theme [nama]\n\n` +
+      `💰 *KEUANGAN & PAJAK*\n` +
+      `> ↳ ${prefix}cafe deposit <nominal>\n` +
+      `> ↳ ${prefix}cafe withdraw <nominal>\n` +
+      `> ↳ ${prefix}cafe balance\n` +
+      `> ↳ ${prefix}cafe income\n` +
+      `> ↳ ${prefix}cafe expense\n` +
+      `> ↳ ${prefix}cafe profit\n` +
+      `> ↳ ${prefix}cafe report\n` +
+      `> ↳ ${prefix}cafe history\n` +
+      `> ↳ ${prefix}cafe tax\n\n` +
+      `📊 *STATISTIK*\n` +
+      `> ↳ ${prefix}cafe customers\n` +
+      `> ↳ ${prefix}cafe satisfaction\n` +
+      `> ↳ ${prefix}cafe reputation\n` +
+      `> ↳ ${prefix}cafe popularity\n` +
+      `> ↳ ${prefix}cafe level\n` +
+      `> ↳ ${prefix}cafe achievement\n\n` +
+      `💡 Gunakan tombol di bawah untuk membuka bagian Cafe.`,
+      [
+        ['📊 Ringkasan', `${prefix}cafe`],
+        ['🚶 Visit Cafe', `${prefix}cafe visit`],
+        ['👥 Kelola staff', `${prefix}cafe staff`],
+        ['⬆️ Upgrade kapasitas', `${prefix}cafe upgrade`],
+        ['📹 Lihat CCTV', `${prefix}cafe cctv`],
+        ['📦 Menu & stok', `${prefix}cafe menu`],
+        ['💹 Laporan bisnis', `${prefix}cafe report`]
+      ]
     )
   }
 
   if (!cafe) {
-    return m.reply(`Kamu belum memiliki cafe. Dirikan dengan *${prefix}cafe buy [nama]* seharga ${money(CAFE_SETUP_COST)}.`)
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 ☕ AVELIA CAFE 」❏\n│ Wujudkan bisnis kuliner milikmu\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `Belum punya cafe? Pilih nama bisnis dan konfirmasi pendirian sebelum dana dipotong.\n\n` +
+      `> ↳ 🧾 Modal pendirian : ${money(CAFE_SETUP_COST)}\n` +
+      `> ↳ 🏗️ Nama cafe : wajib ditentukan\n` +
+      `> ↳ 🕹️ Perintah : *${prefix}cafe buy <nama cafe>*`,
+      [
+        ['🏗️ Cara mendirikan', `${prefix}cafe buy`],
+        ['📖 Baca panduan', `${prefix}cafe guide`],
+        ['📋 Lihat fitur', `${prefix}cafe command`]
+      ]
+    )
   }
-  if (!mode) return m.reply(renderCafe(cafe, jid, prefix))
+  if (!mode || mode === 'info' || mode === 'profile' || mode === 'status') {
+    return sendCafePage(conn, m, renderCafe(cafe, jid, prefix), [
+      ['📋 Menu & stok', `${prefix}cafe menu`],
+      ['👥 Tim cafe', `${prefix}cafe staff`],
+      ['📹 CCTV', `${prefix}cafe cctv`],
+      ['⬆️ Upgrade', `${prefix}cafe upgrade`],
+      ['📊 Laporan', `${prefix}cafe report`],
+      [cafe.status === 'open' ? '🔒 Tutup cafe' : '🔓 Buka cafe', `${prefix}cafe ${cafe.status === 'open' ? 'close' : 'open'}`]
+    ])
+  }
+
+  if (mode === 'visit' || mode === 'kunjungi') {
+    const now = Date.now()
+    if (cafe.status !== 'open') {
+      return m.reply(`🔒 *${cafe.name}* sedang tutup. Buka Cafe dengan *${prefix}cafe open* sebelum berkunjung.`)
+    }
+    const remainingCooldown = getCafeVisitCooldownRemaining(cafe, now)
+    if (remainingCooldown > 0) {
+      const remainingMinutes = Math.ceil(remainingCooldown / 60000)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 ⏳ WAKTU KUNJUNGAN 」❏\n│ Kunjungan berikutnya belum tersedia\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Kamu bisa berkunjung lagi dalam *${remainingMinutes} menit*.\n` +
+        `> ↳ Popularitas tidak bertambah selama cooldown.\n` +
+        `> ↳ Sambil menunggu, kamu masih bisa bicara dengan NPC/staff yang belum diajak bicara.`,
+        [
+          ['💬 Pilih teman bicara', `${prefix}cafe talk`],
+          ['☕ Ringkasan Cafe', `${prefix}cafe`]
+        ]
+      )
+    }
+    const visitors = refreshCafeVisitors(cafe, now)
+      .map(visitor => CAFE_NPCS.find(npc => npc.id === visitor.id))
+      .filter(Boolean)
+    const working = getWorkingStaff(cafe)
+    if (!registerCafeVisit(cafe, now)) {
+      return m.reply(`⏳ Tunggu sebelum berkunjung lagi. Gunakan *${prefix}cafe talk* untuk melanjutkan interaksi yang tersedia.`)
+    }
+    await saveDB(db)
+    const visitorRows = visitors.length
+      ? visitors.map(npc => {
+        const visitor = cafe.currentVisitors.find(entry => entry.id === npc.id)
+        const remainingMinutes = Math.min(
+          Math.ceil(CAFE_VISITOR_STAY_MS / 60000),
+          Math.max(1, Math.ceil((Number(visitor?.expiresAt) - now) / 60000))
+        )
+        return `> ↳ ☕ *${npc.name}* · ${visitor?.talked ? 'sudah diajak bicara' : `suka ${npc.preference}`} · di sini ${remainingMinutes} menit lagi`
+      }).join('\n')
+      : `> ↳ ${cafe.status === 'open' ? 'Belum ada pengunjung.' : 'Cafe sedang tutup; NPC tidak berkunjung.'}`
+    const staffRows = working.length
+      ? working.map(employee =>
+        `> ↳ 🧑‍🍳 *${employee.name}* · ${CAFE_STAFF[employee.id]?.name || employee.id} · ${hasCafeStaffBeenTalkedTo(cafe, employee.id) ? 'sudah diajak bicara' : 'sedang bertugas'}`
+      ).join('\n')
+      : '> ↳ Belum ada staff yang sedang bertugas.'
+    const talkButtons = [
+      ...visitors
+        .filter(npc => !cafe.currentVisitors.find(entry => entry.id === npc.id)?.talked)
+        .map(npc => [`💬 Bicara dengan ${npc.name}`, `${prefix}cafe talk npc ${npc.id}`]),
+      ...working
+        .filter(employee => !hasCafeStaffBeenTalkedTo(cafe, employee.id))
+        .map(employee => [`🧑‍🍳 Bicara dengan ${employee.name}`, `${prefix}cafe talk staff ${employee.id}`]),
+      ['📖 Cara kerja Cafe', `${prefix}cafe guide`],
+      ['📹 Pantau CCTV', `${prefix}cafe cctv`]
+    ]
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 🚶 KUNJUNGAN AVELIA CAFE 」❏\n│ ${cafe.name} · ${cafe.status === 'open' ? '🟢 Buka' : '🔴 Tutup'}\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `☕ *NPC YANG SEDANG BERKUNJUNG*\n${visitorRows}\n\n` +
+      `👥 *STAFF YANG SEDANG BEKERJA*\n${staffRows}\n\n` +
+      `> ↳ Pengunjung Cafe dibuat saat Visit dan bertahan maksimal 30 menit.\n` +
+      `> ↳ Shift bisnis berjalan otomatis tiap jam saat Cafe buka.\n` +
+      `> ↳ Popularitas +1 · cooldown Visit ${Math.ceil(CAFE_VISIT_COOLDOWN_MS / 60000)} menit.\n` +
+      `> ↳ Pilih tombol dialog, atau gunakan *${prefix}cafe talk npc/staff <nama>*.`,
+      talkButtons
+    )
+  }
 
   if (mode === 'name' || mode === 'rename') {
     const name = words.join(' ').trim()
@@ -240,10 +537,17 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
       const start = (page - 1) * CAFE_MENU_PAGE_SIZE
       const items = catalog.slice(start, start + CAFE_MENU_PAGE_SIZE)
       if (!items.length) return m.reply(`❌ Halaman katalog tidak tersedia. Total halaman: ${Math.ceil(catalog.length / CAFE_MENU_PAGE_SIZE)}.`)
-      return m.reply(
-        `📋 *KATALOG MENU CAFE* · Halaman ${page}/${Math.ceil(catalog.length / CAFE_MENU_PAGE_SIZE)}\n\n` +
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 📋 KATALOG MENU CAFE 」❏\n│ Halaman ${page}/${Math.ceil(catalog.length / CAFE_MENU_PAGE_SIZE)}\n╰─━━━━━━━━━━━━━━─\n\n` +
         items.map(item => `> ${item.emoji} ${item.id} — ${money(item.basePrice)} (${item.category})`).join('\n') +
-        `\n\nTambah menu: *${prefix}cafe menu add <id>*`
+        `\n\n> ↳ Tambahkan menu favoritmu: *${prefix}cafe menu add <id>*`,
+        [
+          ['🧾 Menu aktif', `${prefix}cafe menu`],
+          ['📦 Kelola stok', `${prefix}cafe stock`],
+          ['🏠 Cafe', `${prefix}cafe`]
+        ]
       )
     }
     if (action === 'add' || action === 'tambah') {
@@ -277,12 +581,19 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
       return m.reply(`✅ Harga ${item.name} diubah menjadi ${money(price)}.`)
     }
     const menus = Object.entries(cafe.menu).filter(([, choice]) => choice.enabled)
-    return m.reply(
-      `📋 *MENU ${cafe.name}*\n` +
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 📋 MENU ${cafe.name} 」❏\n│ Menu yang siap disajikan\n╰─━━━━━━━━━━━━━━─\n\n` +
       `${menus.length ? formatMenuRows(cafe, menus) : '> Belum ada menu aktif.'}\n\n` +
       `> ↳ Lihat katalog: ${prefix}cafe menu catalog\n` +
       `> ↳ Tambah/hapus menu: ${prefix}cafe menu add/remove <id>\n` +
-      `> ↳ Atur harga: ${prefix}cafe menu price <id> <harga>`
+      `> ↳ Atur harga: ${prefix}cafe menu price <id> <harga>`,
+      [
+        ['✨ Jelajahi katalog', `${prefix}cafe menu catalog`],
+        ['📦 Periksa stok', `${prefix}cafe stock`],
+        ['📊 Ringkasan cafe', `${prefix}cafe`]
+      ]
     )
   }
   if (mode === 'supplier' || (mode === 'stock' && normalize(words[0]) === 'supplier')) {
@@ -290,10 +601,17 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
     const ingredients = Object.values(CAFE_INGREDIENT_CATALOG)
     const start = (page - 1) * CAFE_INGREDIENT_PAGE_SIZE
     const items = ingredients.slice(start, start + CAFE_INGREDIENT_PAGE_SIZE)
-    return m.reply(
-      `📦 *SUPPLIER BAHAN BAKU* · Halaman ${page}/${Math.max(1, Math.ceil(ingredients.length / CAFE_INGREDIENT_PAGE_SIZE))}\n\n` +
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 📦 SUPPLIER BAHAN BAKU 」❏\n│ Halaman ${page}/${Math.max(1, Math.ceil(ingredients.length / CAFE_INGREDIENT_PAGE_SIZE))}\n╰─━━━━━━━━━━━━━━─\n\n` +
       `${items.map(item => `> ↳ ${item.id} — ${money(item.unitPrice)}/unit`).join('\n') || '> Halaman tidak tersedia.'}\n\n` +
-      `Beli dengan: *${prefix}cafe stock buy <id> <jumlah>*`
+      `🛒 Beli dengan: *${prefix}cafe stock buy <id> <jumlah>*`,
+      [
+        ['📦 Lihat stok', `${prefix}cafe stock`],
+        ['📋 Lihat menu', `${prefix}cafe menu`],
+        ['🏠 Cafe', `${prefix}cafe`]
+      ]
     )
   }
   if (mode === 'stock' && normalize(words[0]) === 'buy') {
@@ -313,62 +631,233 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
   }
   if (mode === 'stock' || mode === 'inventory') {
     const entries = Object.entries(cafe.stock).filter(([, quantity]) => Number(quantity) > 0)
-    return m.reply(
-      `📦 *STOK CAFE*\n` +
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 📦 INVENTARIS CAFE 」❏\n│ Bahan baku dan persediaan aktif\n╰─━━━━━━━━━━━━━━─\n\n` +
       `${entries.length
         ? entries.map(([id, quantity]) => `> ↳ ${CAFE_INGREDIENT_CATALOG[id]?.name || id} x${quantity}`).join('\n')
         : '> Belum ada bahan baku.'}\n\n` +
-      `> ↳ Supplier: ${prefix}cafe supplier`
+      `> ↳ Supplier: ${prefix}cafe supplier`,
+      [
+        ['🛒 Beli bahan', `${prefix}cafe supplier`],
+        ['🍽️ Atur menu', `${prefix}cafe menu`],
+        ['👥 Lihat staff', `${prefix}cafe staff`]
+      ]
     )
   }
   if (mode === 'staff') {
     const action = normalize(words[0] || 'list')
     if (action === 'hire' || action === 'rekrut') {
       const id = normalize(words[1])
+      if (id === 'all') {
+        if (!isPremiumAccount(account.rpg)) {
+          return m.reply(`👑 Fitur *hire all* khusus Premium. Rekrut satu per satu dengan *${prefix}cafe staff hire <posisi>*.`)
+        }
+        const available = Object.entries(CAFE_STAFF).filter(([staffId]) => !cafe.staff[staffId])
+        if (!available.length) return m.reply('✅ Semua posisi staff sudah terisi.')
+        const total = available.reduce((sum, [, staff]) => sum + BigInt(staff.hiringCost), 0n)
+        if (!addCafeExpense(cafe, db.data, jid, total, getTaxPeriod(), 'Rekrut semua staff')) {
+          return m.reply(`💸 Rekrut seluruh tim membutuhkan ${money(total.toString())}. Saldo bisnis: ${money(cafe.finance.balance)}.`)
+        }
+        for (const [staffId] of available) {
+          cafe.staff[staffId] = createCafeStaffMember(staffId, Date.now(), Math.random, cafe)
+        }
+        recordTaxActivity(db.data, jid, 'purchase', total)
+        await saveDB(db)
+        return sendCafePage(
+          conn,
+          m,
+          `╭─❏「 👥 TIM CAFE LENGKAP 」❏\n│ Seluruh posisi berhasil direkrut!\n╰─━━━━━━━━━━━━━━─\n\n` +
+          available.map(([staffId, staff]) => `> ↳ ✨ ${cafe.staff[staffId].name} · ${staff.name}`).join('\n') +
+          `\n\n> ↳ 💸 Biaya rekrut : ${money(total.toString())}`,
+          [
+            ['👥 Lihat jadwal', `${prefix}cafe staff working`],
+            ['📹 Pantau tim', `${prefix}cafe cctv`],
+            ['📊 Ringkasan cafe', `${prefix}cafe`]
+          ]
+        )
+      }
       const staff = CAFE_STAFF[id]
-      if (!staff) return m.reply(`Pilih staff: ${Object.entries(CAFE_STAFF).map(([key, item]) => `${key} (${item.name})`).join(', ')}.`)
+      if (!staff) {
+        const available = Object.entries(CAFE_STAFF).filter(([staffId]) => !cafe.staff[staffId])
+        return sendCafePage(
+          conn,
+          m,
+          `╭─❏「 ✨ REKRUT TIM CAFE 」❏\n│ Pilih posisi untuk memperkuat layanan\n╰─━━━━━━━━━━━━━━─\n\n` +
+          `${available.length
+            ? available.map(([staffId, item]) => `> ↳ ${item.name} · Biaya rekrut ${money(item.hiringCost)} · Gaji ${money(item.salary)}/shift`).join('\n')
+            : '> ↳ Semua posisi sudah terisi.'}\n\n` +
+          `👑 Premium dapat merekrut seluruh posisi sekaligus. Setiap staff mendapat nama acak dari daftar karakter Cafe.`,
+          [
+            ...available.map(([staffId, item]) => [`✨ ${item.name}`, `${prefix}cafe staff hire ${staffId}`]),
+            ...(isPremiumAccount(account.rpg) && available.length ? [['👑 Rekrut semua (Premium)', `${prefix}cafe staff hire all`]] : []),
+            ['👥 Lihat tim', `${prefix}cafe staff`]
+          ]
+        )
+      }
       if (cafe.staff[id]) return m.reply('Karyawan tersebut sudah bekerja di cafe kamu.')
       if (!addCafeExpense(cafe, db.data, jid, staff.hiringCost, getTaxPeriod(), `Rekrut ${staff.name}`)) {
         return m.reply(`❌ Saldo bisnis tidak cukup untuk biaya rekrut ${money(staff.hiringCost)}.`)
       }
       recordTaxActivity(db.data, jid, 'purchase', staff.hiringCost)
-      cafe.staff[id] = { hiredAt: Date.now() }
+      cafe.staff[id] = createCafeStaffMember(id, Date.now(), Math.random, cafe)
       await saveDB(db)
-      return m.reply(`✅ ${staff.name} berhasil direkrut. Gaji per shift: ${money(staff.salary)}.`)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 ✨ STAFF BERGABUNG 」❏\n│ Selamat datang di tim cafe!\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ 👤 Nama : ${cafe.staff[id].name}\n` +
+        `> ↳ 🧑‍🍳 Posisi : ${staff.name}\n` +
+        `> ↳ 💵 Gaji awal : ${money(staff.salary)}/shift (1x)\n` +
+        `> ↳ 📈 Tingkatkan kinerja : *${prefix}cafe staff salary ${id} 2x*`,
+        [
+          ['👥 Lihat semua staff', `${prefix}cafe staff`],
+          ['📹 CCTV cafe', `${prefix}cafe cctv`]
+        ]
+      )
     }
     if (action === 'fire' || action === 'pecat') {
       const id = normalize(words[1])
       if (!cafe.staff[id]) return m.reply('❌ Karyawan tersebut tidak bekerja di cafe kamu.')
-      const name = CAFE_STAFF[id]?.name || id
+      const name = cafe.staff[id].name || CAFE_STAFF[id]?.name || id
       delete cafe.staff[id]
       await saveDB(db)
-      return m.reply(`✅ ${name} diberhentikan. Gaji tidak lagi dibebankan pada shift berikutnya.`)
+      return m.reply(`👋 *${name}* (${CAFE_STAFF[id]?.name || id}) sudah diberhentikan. Gaji berhenti pada shift berikutnya.`)
     }
-    const staff = Object.entries(CAFE_STAFF).map(([id, item]) =>
-      `> ↳ ${item.name} (${id}) · ${cafe.staff[id] ? 'Aktif' : 'Belum direkrut'} · gaji ${money(item.salary)}/shift`
+    if (action === 'salary' || action === 'upah' || action === 'gaji') {
+      const id = normalize(words[1])
+      const employee = cafe.staff[id]
+      const rawMultiplier = String(words[2] || '').toLowerCase().replace(/x$/, '')
+      const multiplier = Number(rawMultiplier)
+      if (!employee || !CAFE_STAFF[id]) {
+        return m.reply(`Format: *${prefix}cafe staff salary <posisi> <kali>x*. Posisi: ${Object.keys(CAFE_STAFF).join(', ')}.`)
+      }
+      if (!Number.isSafeInteger(multiplier) || multiplier < 1 || multiplier > CAFE_MAX_STAFF_SALARY_MULTIPLIER) {
+        return m.reply(`⚠️ Nilai upah harus berupa kelipatan 1x–${CAFE_MAX_STAFF_SALARY_MULTIPLIER}x.`)
+      }
+      if (multiplier < Number(employee.salaryMultiplier || 1)) {
+        return m.reply('📉 Gaji hanya dapat dinaikkan. Untuk menurunkan kembali, rekrut ulang setelah memberhentikan staff.')
+      }
+      employee.salaryMultiplier = multiplier
+      await saveDB(db)
+      const salary = BigInt(CAFE_STAFF[id].salary) * BigInt(multiplier)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 💵 PENYESUAIAN GAJI 」❏\n│ Kinerja meningkat seiring apresiasi\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ 👤 ${employee.name} · ${CAFE_STAFF[id].name}\n` +
+        `> ↳ 💸 Upah baru : ${money(salary.toString())}/shift (${multiplier}x)\n` +
+        `> ↳ ⚡ Dampak : kinerja layanan dan pertumbuhan popularitas meningkat\n` +
+        `> ↳ 🧾 Gaji dibayarkan dari saldo cafe setiap shift.`,
+        [
+          ['👥 Daftar tim', `${prefix}cafe staff`],
+          ['📹 CCTV', `${prefix}cafe cctv`]
+        ]
+      )
+    }
+    if (action === 'working' || action === 'bertugas') {
+      const working = getWorkingStaff(cafe)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 🕒 JADWAL STAFF 」❏\n│ Siapa yang sedang bertugas?\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `${working.length
+          ? working.map(employee => `> ↳ 👤 ${employee.name} · ${CAFE_STAFF[employee.id]?.name || employee.id}`).join('\n')
+          : '> ↳ Belum ada catatan shift terbaru.'}\n\n` +
+        `> ↳ Status cafe : ${cafe.status === 'open' ? '🟢 Buka' : '🔴 Tutup'}\n` +
+        `> ↳ Jadwal diperbarui setiap shift operasional.`,
+        [['📹 Buka CCTV', `${prefix}cafe cctv`], ['👥 Daftar staff', `${prefix}cafe staff`]]
+      )
+    }
+    const working = new Set(getWorkingStaff(cafe).map(employee => employee.id))
+    const staffRows = Object.entries(CAFE_STAFF).map(([id, item]) => {
+      const employee = cafe.staff[id]
+      if (!employee) return `> ↳ ⬜ ${item.name} · Posisi tersedia`
+      const multiplier = Number(employee.salaryMultiplier) || 1
+      const salary = BigInt(item.salary) * BigInt(multiplier)
+      return `> ↳ ${working.has(id) ? '🟢' : '🟡'} *${employee.name}* · ${item.name} · ${working.has(id) ? 'Bertugas' : 'Menunggu shift'}\n` +
+        `   💵 ${money(salary.toString())}/shift (${multiplier}x) · Tunggakan shift: ${employee.unpaidShifts || 0}/2`
+    })
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 👥 TIM AVELIA CAFE 」❏\n│ Kelola staf, gaji, dan kinerja\n╰─━━━━━━━━━━━━━━─\n\n` +
+      staffRows.join('\n') +
+      `\n\n> ↳ Rekrut : *${prefix}cafe staff hire <posisi>*\n` +
+      `> ↳ Premium : *${prefix}cafe staff hire all*\n` +
+      `> ↳ Naikkan upah : *${prefix}cafe staff salary <posisi> 2x*\n` +
+      `> ↳ Yang bertugas : *${prefix}cafe staff working*\n` +
+      `> ↳ Gagal membayar dua shift berturut-turut dapat membuat staf resign.`,
+      [
+        ['✨ Rekrut staff', `${prefix}cafe staff hire`],
+        ['🕒 Lihat yang bertugas', `${prefix}cafe staff working`],
+        ['📹 Pantau CCTV', `${prefix}cafe cctv`]
+      ]
     )
-    return m.reply(`👥 *KARYAWAN CAFE*\n${staff.join('\n')}\n\nRekrut: ${prefix}cafe staff hire <id> · Berhentikan: ${prefix}cafe staff fire <id>`)
   }
   if (mode === 'upgrade') {
     const id = normalize(words[0])
     const upgrade = CAFE_UPGRADES[id]
     if (!upgrade) {
-      return m.reply(`⬆️ *UPGRADE CAFE*\n${Object.entries(CAFE_UPGRADES).map(([key, value]) => `> ↳ ${key} — ${value.name}, ${money(value.basePrice)} per level`).join('\n')}\n\nGunakan: ${prefix}cafe upgrade <kategori>`)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 ⬆️ KEMBANGKAN CAFE 」❏\n│ Tingkatkan kapasitas untuk menerima lebih banyak tamu\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ 🪑 Kapasitas saat ini : ${cafe.capacity}/${CAFE_MAX_CUSTOMERS_PER_SHIFT} tamu per shift\n` +
+        `> ↳ ⭐ Level : ${cafe.level} · Popularitas : ${cafe.popularity.toLocaleString('id-ID')} poin\n\n` +
+        Object.entries(CAFE_UPGRADES).map(([key, value]) =>
+          `> ↳ ${key === 'capacity' ? '🪑' : key === 'kitchen' ? '🍳' : '✨'} ${value.name} — ${money(value.basePrice)} per level${value.capacityBonus ? ` · +${value.capacityBonus} kapasitas` : ''}`
+        ).join('\n') +
+        `\n\nGunakan *${prefix}cafe upgrade <capacity|kitchen|service>* untuk memilih.`,
+        [
+          ['🪑 Upgrade kapasitas', `${prefix}cafe upgrade capacity`],
+          ['🍳 Upgrade dapur', `${prefix}cafe upgrade kitchen`],
+          ['✨ Upgrade layanan', `${prefix}cafe upgrade service`]
+        ]
+      )
     }
     cafe.upgrades[id] = Number(cafe.upgrades[id]) || 0
     const cost = upgrade.basePrice * (cafe.upgrades[id] + 1)
+    if (upgrade.capacityBonus && cafe.capacity >= CAFE_MAX_CUSTOMERS_PER_SHIFT) {
+      return m.reply(`🏆 Kapasitas cafe sudah mencapai batas ${CAFE_MAX_CUSTOMERS_PER_SHIFT} pengunjung per shift.`)
+    }
     if (!addCafeExpense(cafe, db.data, jid, cost, getTaxPeriod(), `Upgrade ${upgrade.name}`)) return m.reply(`❌ Saldo bisnis tidak cukup. Upgrade membutuhkan ${money(cost)}.`)
     recordTaxActivity(db.data, jid, 'purchase', cost)
     cafe.upgrades[id]++
-    if (upgrade.capacityBonus) cafe.capacity += upgrade.capacityBonus
+    if (upgrade.capacityBonus) cafe.capacity = Math.min(CAFE_MAX_CUSTOMERS_PER_SHIFT, cafe.capacity + upgrade.capacityBonus)
     if (upgrade.reputationBonus) cafe.reputation = Math.min(100, cafe.reputation + upgrade.reputationBonus)
     await saveDB(db)
-    return m.reply(`✅ Upgrade ${upgrade.name} mencapai level ${cafe.upgrades[id]}.\n> ↳ Kapasitas : ${cafe.capacity}\n> ↳ Saldo bisnis : ${money(cafe.finance.balance)}`)
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 ✅ UPGRADE BERHASIL 」❏\n│ ${upgrade.name} kini level ${cafe.upgrades[id]}\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 🪑 Kapasitas : ${cafe.capacity}/${CAFE_MAX_CUSTOMERS_PER_SHIFT} pengunjung/shift\n` +
+      `> ↳ 💰 Saldo bisnis : ${money(cafe.finance.balance)}\n` +
+      `> ↳ ⭐ Level cafe : ${cafe.level} · Popularitas : ${cafe.popularity.toLocaleString('id-ID')} poin`,
+      [
+        ['⬆️ Upgrade lagi', `${prefix}cafe upgrade`],
+        ['📹 Pantau CCTV', `${prefix}cafe cctv`],
+        ['📊 Lihat cafe', `${prefix}cafe`]
+      ]
+    )
   }
   if (mode === 'theme') {
     const themeId = normalize(words[0])
     if (!themeId) {
-      return m.reply(`🎨 *TEMA CAFE*\n${Object.entries(CAFE_THEMES).map(([id, theme]) => `> ↳ ${id} — ${theme.name} (${money(theme.price)})${cafe.theme === id ? ' · aktif' : ''}`).join('\n')}\n\nUbah: ${prefix}cafe theme <nama>`)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 🎨 TEMA AVELIA CAFE 」❏\n│ Pilih suasana favorit untuk bisnismu\n╰─━━━━━━━━━━━━━━─\n\n` +
+        Object.entries(CAFE_THEMES).map(([id, theme]) =>
+          `> ↳ ${cafe.theme === id ? '✅' : '🎨'} ${theme.name} · ${money(theme.price)}${cafe.theme === id ? ' · sedang digunakan' : ''}`
+        ).join('\n') +
+        `\n\n✨ Tema berbayar dicatat sebagai pengeluaran Cafe.`,
+        [
+          ...Object.entries(CAFE_THEMES).map(([id, theme]) => [`🎨 ${theme.name}`, `${prefix}cafe theme ${id}`]),
+          ['🏠 Cafe', `${prefix}cafe`]
+        ]
+      )
     }
     const theme = CAFE_THEMES[themeId]
     if (!theme) return m.reply('❌ Tema tidak tersedia.')
@@ -381,10 +870,140 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
     await saveDB(db)
     return m.reply(`✅ Tema cafe diubah menjadi *${theme.name}*.`)
   }
+  if (mode === 'cctv' || mode === 'camera' || mode === 'kamera') {
+    const story = getCafeCctvStory(cafe)
+    const recentVisitors = story.visitors.length
+      ? story.visitors.flatMap(visitor => Array.isArray(visitor.dialogue)
+        ? visitor.dialogue.map(turn => `> ↳ ☕ *${turn.speaker} (${turn.role}):* “${turn.text}”`)
+        : [`> ↳ ☕ *${visitor.name} (Pelanggan):* “${visitor.message}”`]).join('\n')
+      : '> ↳ Belum ada rekaman pengunjung pada shift terakhir.'
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 📹 CCTV AVELIA CAFE 」❏\n│ Rekaman kondisi operasional cafe\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `🎞️ *${story.title}*\n> ${story.story}\n\n` +
+      `> ↳ 🚦 Status cafe : ${story.status}\n` +
+      `> ↳ 👥 Staf bertugas : ${getWorkingStaff(cafe).map(employee => employee.name).join(', ') || 'Belum ada staff bertugas'}\n` +
+      `> ↳ 🧑‍🍳 Tim terdaftar : ${story.staff}\n` +
+      `> ↳ 🪑 Pengunjung shift terakhir : ${cafe.lastShift?.customers || 0}\n` +
+      `> ↳ ⭐ Level ${cafe.level} · Popularitas ${cafe.popularity.toLocaleString('id-ID')} poin\n` +
+      `> ↳ 🎬 Variasi cerita CCTV : ${CAFE_CCTV_STORIES.length}\n\n` +
+      `📼 *POTONGAN CERITA SHIFT TERAKHIR*\n${recentVisitors}`,
+      [
+        ['🔄 Ganti rekaman', `${prefix}cafe cctv`],
+        ['👥 Jadwal staff', `${prefix}cafe staff working`],
+        ['📊 Ringkasan', `${prefix}cafe`]
+      ]
+    )
+  }
   if (mode === 'talk' || mode === 'interact') {
-    const npc = findCatalogEntry(words.join(' '), Object.fromEntries(CAFE_NPCS.map(item => [item.id, item])))
-    if (!npc) return m.reply(`Pilih NPC: ${CAFE_NPCS.map(item => item.name).join(', ')}.`)
-    return m.reply(`☕ *${npc.name}*\n> ${npc.greeting}\n> ${npc.thanks}`)
+    const currentVisitorEntries = getCafeVisitors(cafe)
+    const currentVisitors = currentVisitorEntries
+      .map(visitor => CAFE_NPCS.find(npc => npc.id === visitor.id))
+      .filter(Boolean)
+    const working = getWorkingStaff(cafe)
+    const targetType = normalize(words[0] || '')
+    const isNpcTarget = targetType === 'npc' || targetType === 'pengunjung'
+    const isStaffTarget = targetType === 'staff' || targetType === 'karyawan'
+    const targetName = (isNpcTarget || isStaffTarget ? words.slice(1) : words).join(' ')
+    if (!targetName) {
+      const buttons = [
+        ...currentVisitors
+          .filter(npc => !currentVisitorEntries.find(entry => entry.id === npc.id)?.talked)
+          .map(npc => [`💬 ${npc.name}`, `${prefix}cafe talk npc ${npc.id}`]),
+        ...working
+          .filter(employee => !hasCafeStaffBeenTalkedTo(cafe, employee.id))
+          .map(employee => [`🧑‍🍳 ${employee.name}`, `${prefix}cafe talk staff ${employee.id}`]),
+        ['🚶 Lihat yang ada di Cafe', `${prefix}cafe visit`]
+      ]
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 💬 TEMAN NGOBROL CAFE 」❏\n│ Pilih pengunjung atau staff yang hadir\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `☕ *PENGUNJUNG*\n${currentVisitors.length
+          ? currentVisitors.map(npc => {
+            const visitor = currentVisitorEntries.find(entry => entry.id === npc.id)
+            return `> ↳ ${visitor?.talked ? '✅ Sudah diajak bicara' : '💬 Siap ngobrol'} · ${npc.name} · ${npc.preference}`
+          }).join('\n')
+          : '> ↳ Belum ada NPC di Cafe. Gunakan .cafe visit.'}\n\n` +
+        `👥 *STAFF BERTUGAS*\n${working.length
+          ? working.map(employee =>
+            `> ↳ ${hasCafeStaffBeenTalkedTo(cafe, employee.id) ? '✅ Sudah diajak bicara' : '💬 Siap ngobrol'} · ${employee.name} · ${CAFE_STAFF[employee.id]?.name || employee.id}`
+          ).join('\n')
+          : '> ↳ Belum ada staff bertugas saat ini.'}\n\n` +
+        `Setiap NPC hanya bisa diajak bicara sekali selama kunjungannya; staff sekali per shift.`,
+        buttons
+      )
+    }
+
+    const normalizedName = normalize(targetName)
+    const npc = !isStaffTarget
+      ? currentVisitors.find(character =>
+        normalize(character.id) === normalizedName || normalize(character.name) === normalizedName
+      )
+      : null
+    const employee = !isNpcTarget
+      ? working.find(member => {
+        const role = CAFE_STAFF[member.id]
+        return normalize(member.id) === normalizedName ||
+          normalize(member.name) === normalizedName ||
+          normalize(role?.name) === normalizedName
+      })
+      : null
+    if (npc) {
+      const visitor = currentVisitorEntries.find(entry => entry.id === npc.id)
+      if (visitor?.talked) {
+        return m.reply(`💬 Kamu sudah mengobrol dengan *${npc.name}* pada kunjungan ini. Coba NPC lain atau tunggu kunjungan berikutnya.`)
+      }
+      const dialogueIndex = Math.min(npc.talk.length - 1, Math.floor(Math.random() * npc.talk.length))
+      if (!markCafeVisitorTalked(cafe, npc.id)) {
+        return m.reply(`👀 *${npc.name}* sudah tidak tersedia untuk diajak bicara. Gunakan *${prefix}cafe visit* untuk melihat pengunjung.`)
+      }
+      await saveDB(db)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 💬 DIALOG CAFE 」❏\n│ Percakapan langsung dengan ${npc.name}\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `🙋 *Kamu (Pemilik Cafe):*\n“${CAFE_DIALOGUE.npcTalkPrompt.replace('{name}', npc.name)}”\n\n` +
+        `☕ *${npc.name} (Pengunjung):*\n“${npc.talk[dialogueIndex]}”\n\n` +
+        `⭐ Popularitas Cafe *+1* · Total ${cafe.popularity.toLocaleString('id-ID')} poin\n` +
+        `> ↳ Dialog ditampilkan di pesan ini. ${npc.name} hanya bisa diajak bicara sekali selama kunjungan ini.`,
+        [
+          ['💬 Teman ngobrol lain', `${prefix}cafe talk`],
+          ['🏠 Ringkasan Cafe', `${prefix}cafe`]
+        ]
+      )
+    }
+    if (employee) {
+      if (hasCafeStaffBeenTalkedTo(cafe, employee.id)) {
+        return m.reply(`💬 Kamu sudah mengobrol dengan *${employee.name}* pada shift ini. Staff bisa diajak bicara lagi setelah shift berikutnya.`)
+      }
+      const dialogue = getCafeStaffDialogue(employee.id)
+      if (!dialogue) return m.reply(`❌ Dialog untuk staff ${CAFE_STAFF[employee.id]?.name || employee.id} belum tersedia.`)
+      if (!markCafeStaffTalkedTo(cafe, employee.id)) {
+        return m.reply(`👀 *${employee.name}* sudah tidak bertugas. Gunakan *${prefix}cafe visit* untuk melihat keadaan Cafe.`)
+      }
+      await saveDB(db)
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 💬 DIALOG CAFE 」❏\n│ Percakapan langsung dengan ${employee.name}\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `🙋 *Kamu (Pemilik Cafe):*\n“${CAFE_DIALOGUE.staffTalkPrompt.replace('{name}', employee.name)}”\n\n` +
+        `🧑‍🍳 *${employee.name} (${CAFE_STAFF[employee.id].name}):*\n“${dialogue}”\n\n` +
+        `⭐ Popularitas Cafe *+1* · Total ${cafe.popularity.toLocaleString('id-ID')} poin\n` +
+        `> ↳ Dialog ditampilkan di pesan ini. Staff hanya bisa diajak bicara sekali selama shift ini.`,
+        [
+          ['💬 Teman ngobrol lain', `${prefix}cafe talk`],
+          ['🏠 Ringkasan Cafe', `${prefix}cafe`]
+        ]
+      )
+    }
+    const locationHint = isStaffTarget
+      ? 'Staff hanya bisa diajak bicara saat sedang bertugas.'
+      : isNpcTarget
+        ? 'NPC hanya bisa diajak bicara selama masih berada di Cafe.'
+        : 'Nama tersebut bukan NPC yang hadir atau staff yang sedang bertugas.'
+    return m.reply(`👀 ${locationHint} Gunakan *${prefix}cafe visit* untuk melihat siapa yang ada di Cafe.`)
   }
   if (mode === 'deposit' || mode === 'setor' || mode === 'withdraw' || mode === 'tarik') {
     const amount = parseRpgMoneyAmount(words[0])
@@ -398,12 +1017,28 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
         : `❌ Saldo cafe tidak cukup. Saldo bisnis: ${money(cafe.finance.balance)}.`)
     }
     await saveDB(db)
-    return m.reply(`✅ ${direction === 'deposit' ? 'Modal disetor' : 'Dana ditarik'} sebesar ${money(amount)}.\n> ↳ Saldo tunai : ${money(account.money || 0)}\n> ↳ Saldo bisnis : ${money(cafe.finance.balance)}`)
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 ${direction === 'deposit' ? '✅ MODAL DISETOR' : '✅ DANA DITARIK'} 」❏\n│ Keuangan cafe berhasil diperbarui\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 💸 Transaksi : ${money(amount)}\n` +
+      `> ↳ 👛 Saldo tunai : ${money(account.money || 0)}\n` +
+      `> ↳ 🏦 Saldo bisnis : ${money(cafe.finance.balance)}`,
+      [
+        ['💰 Setor modal', `${prefix}cafe deposit`],
+        ['📊 Laporan', `${prefix}cafe report`],
+        ['🏠 Ringkasan', `${prefix}cafe`]
+      ]
+    )
   }
   if (mode === 'operate' || mode === 'operasional') {
     const shifts = completedShifts || advanceCafeOperations(cafe, db.data, jid)
     await saveDB(db)
-    return m.reply(renderShift(cafe, shifts))
+    return sendCafePage(conn, m, renderShift(cafe, shifts), [
+      ['📹 Lihat CCTV', `${prefix}cafe cctv`],
+      ['👥 Jadwal staff', `${prefix}cafe staff working`],
+      ['📊 Laporan', `${prefix}cafe report`]
+    ])
   }
   if (mode === 'tax') {
     const period = getTaxPeriod()
@@ -412,32 +1047,57 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
     const taxableProfit = profit > 0n ? profit : 0n
     const state = ensureTaxState(db.data)
     const tax = taxableProfit * BigInt(state.config.rates.business || 0) / 10000n
-    return m.reply(`🧾 *CAFE BUSINESS TAX* · ${period}\n> ↳ Pendapatan : ${money(ledger.income)}\n> ↳ Pengeluaran : ${money(ledger.expenses)}\n> ↳ Laba bersih kena pajak : ${money(taxableProfit.toString())}\n> ↳ Tarif Business Tax : ${state.config.rates.business / 100}%\n> ↳ Estimasi pajak : ${money(tax.toString())}\n\nPajak final tercantum pada tagihan mingguan *.tax bill*.`)
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 🧾 CAFE BUSINESS TAX 」❏\n│ Estimasi pajak laba bersih · ${period}\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ 📥 Pendapatan : ${money(ledger.income)}\n` +
+      `> ↳ 📤 Pengeluaran : ${money(ledger.expenses)}\n` +
+      `> ↳ 💹 Laba kena pajak : ${money(taxableProfit.toString())}\n` +
+      `> ↳ 📊 Tarif : ${state.config.rates.business / 100}%\n` +
+      `> ↳ 💰 Estimasi pajak : ${money(tax.toString())}\n\n` +
+      `Pajak final tercantum pada tagihan mingguan.`,
+      [['🧾 Lihat tagihan', `${prefix}tax bill`], ['📊 Laporan bisnis', `${prefix}cafe report`]]
+    )
   }
   if (mode === 'history') {
     const history = cafe.finance.transactions.slice(0, 15)
-    return m.reply(`📜 *RIWAYAT CAFE*\n${history.length
-      ? history.map(item => `> ${item.id} · ${item.type} · ${money(item.amount)} · ${item.description || ''}`).join('\n')
-      : '> Belum ada transaksi.'}`)
+    return sendCafePage(
+      conn,
+      m,
+      `╭─❏「 📜 RIWAYAT CAFE 」❏\n│ 15 transaksi terakhir\n╰─━━━━━━━━━━━━━━─\n\n` +
+      `${history.length
+        ? history.map(item => `> ↳ ${item.type === 'sale' ? '🛍️' : '💸'} ${item.id} · ${item.type} · ${money(item.amount)} · ${item.description || ''}`).join('\n')
+        : '> ↳ Belum ada transaksi.'}`,
+      [['💹 Laporan', `${prefix}cafe report`], ['🏠 Ringkasan cafe', `${prefix}cafe`]]
+    )
   }
   if (['balance', 'income', 'expense', 'expenses', 'profit', 'report', 'info', 'profile', 'status', 'customers', 'satisfaction', 'reputation', 'popularity', 'level', 'exp', 'achievement'].includes(mode)) {
-    if (mode === 'balance') return m.reply(`💰 Saldo bisnis cafe: ${money(cafe.finance.balance)}.`)
-    if (mode === 'income') return m.reply(`📥 Total pendapatan cafe: ${money(cafe.finance.income)}.`)
-    if (mode === 'expense' || mode === 'expenses') return m.reply(`📤 Total pengeluaran cafe: ${money(cafe.finance.expenses)}.`)
-    if (mode === 'profit') return m.reply(`💹 Keuntungan bersih cafe: ${money(getProfit(cafe).toString())}.`)
-    if (mode === 'customers') return m.reply(`👥 Total pengunjung: ${cafe.finance.totalCustomers} · Transaksi berhasil: ${cafe.finance.totalOrders}.`)
-    if (mode === 'satisfaction') return m.reply(`😊 Kepuasan pelanggan: ${cafe.finance.satisfaction}%.`)
-    if (mode === 'reputation' || mode === 'popularity') return m.reply(`⭐ Reputasi cafe: ${cafe.reputation}/100.`)
-    if (mode === 'level' || mode === 'exp') return m.reply(`📈 Cafe Level ${cafe.level} · EXP ${cafe.exp}/${cafe.level * 100}.`)
-    if (mode === 'achievement') return m.reply(`🏅 Pencapaian cafe\n> ↳ Pengunjung : ${cafe.finance.totalCustomers}\n> ↳ Transaksi : ${cafe.finance.totalOrders}\n> ↳ Level : ${cafe.level}`)
+    if (mode === 'balance') return sendCafePage(conn, m, `╭─❏「 🏦 SALDO BISNIS 」❏\n│ ${cafe.name}\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Saldo cafe : *${money(cafe.finance.balance)}*`, [['💸 Setor modal', `${prefix}cafe deposit`], ['📊 Laporan', `${prefix}cafe report`]])
+    if (mode === 'income') return sendCafePage(conn, m, `╭─❏「 📥 PENDAPATAN CAFE 」❏\n│ Akumulasi seluruh penjualan\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Pendapatan : *${money(cafe.finance.income)}*`, [['📜 Riwayat', `${prefix}cafe history`], ['📊 Laporan', `${prefix}cafe report`]])
+    if (mode === 'expense' || mode === 'expenses') return sendCafePage(conn, m, `╭─❏「 📤 PENGELUARAN CAFE 」❏\n│ Operasional, stok, dan gaji\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Total pengeluaran : *${money(cafe.finance.expenses)}*`, [['📜 Riwayat', `${prefix}cafe history`], ['👥 Kelola staff', `${prefix}cafe staff`]])
+    if (mode === 'profit') return sendCafePage(conn, m, `╭─❏「 💹 LABA BERSIH CAFE 」❏\n│ Pendapatan dikurangi seluruh biaya\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Laba bersih : *${money(getProfit(cafe).toString())}*`, [['🧾 Estimasi pajak', `${prefix}cafe tax`], ['📊 Laporan', `${prefix}cafe report`]])
+    if (mode === 'customers') return sendCafePage(conn, m, `╭─❏「 👥 PENGUNJUNG CAFE 」❏\n│ Statistik layanan\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Total pengunjung : *${cafe.finance.totalCustomers}*\n> ↳ Transaksi berhasil : *${cafe.finance.totalOrders}*\n> ↳ Batas per shift : *${cafe.capacity}/${CAFE_MAX_CUSTOMERS_PER_SHIFT}*`, [['⬆️ Upgrade kapasitas', `${prefix}cafe upgrade`], ['📹 CCTV', `${prefix}cafe cctv`]])
+    if (mode === 'satisfaction') return sendCafePage(conn, m, `╭─❏「 😊 KEPUASAN PELANGGAN 」❏\n│ Pengalaman pengunjung Cafe\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Kepuasan : *${cafe.finance.satisfaction}%*\n> ↳ Reputasi : *${cafe.reputation}/100*`, [['📹 Pantau CCTV', `${prefix}cafe cctv`], ['👥 Kelola staff', `${prefix}cafe staff`]])
+    if (mode === 'reputation') return sendCafePage(conn, m, `╭─❏「 ⭐ REPUTASI CAFE 」❏\n│ Kepercayaan pengunjung\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Reputasi : *${cafe.reputation}/100*`, [['✨ Upgrade layanan', `${prefix}cafe upgrade service`], ['📹 CCTV', `${prefix}cafe cctv`]])
+    if (mode === 'popularity') return sendCafePage(conn, m, `╭─❏「 📣 POPULARITAS CAFE 」❏\n│ Poin popularitas mendatangkan pengunjung\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Popularitas : *${cafe.popularity.toLocaleString('id-ID')} poin*\n> ↳ Kapasitas : *${cafe.capacity}/${CAFE_MAX_CUSTOMERS_PER_SHIFT} tamu/shift*`, [['⬆️ Tambah kapasitas', `${prefix}cafe upgrade capacity`], ['📊 Ringkasan cafe', `${prefix}cafe`]])
+    if (mode === 'level' || mode === 'exp') return sendCafePage(conn, m, `╭─❏「 📈 LEVEL CAFE 」❏\n│ Tumbuh melalui transaksi yang berhasil\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Level : *${cafe.level}*\n> ↳ EXP : *${cafe.exp}/${cafe.level * 100}*\n> ↳ Popularitas : *${cafe.popularity.toLocaleString('id-ID')} poin*`, [['⬆️ Upgrade cafe', `${prefix}cafe upgrade`], ['📊 Laporan', `${prefix}cafe report`]])
+    if (mode === 'achievement') return sendCafePage(conn, m, `╭─❏「 🏅 PENCAPAIAN CAFE 」❏\n│ Perjalanan bisnis kulinermu\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Pengunjung : *${cafe.finance.totalCustomers}*\n> ↳ Transaksi : *${cafe.finance.totalOrders}*\n> ↳ Level : *${cafe.level}*\n> ↳ Popularitas : *${cafe.popularity.toLocaleString('id-ID')} poin*`, [['📹 CCTV', `${prefix}cafe cctv`], ['📊 Laporan', `${prefix}cafe report`]])
     if (mode === 'report') {
       const period = getTaxPeriod()
       const ledger = cafe.taxLedger[period] || { income: '0', expenses: '0' }
       const periodProfit = BigInt(ledger.income) - BigInt(ledger.expenses)
-      return m.reply(
-        `📊 *LAPORAN KEUANGAN CAFE*\n\n` +
-        `💰 *Keseluruhan*\n> ↳ Saldo : ${money(cafe.finance.balance)}\n> ↳ Pendapatan : ${money(cafe.finance.income)}\n> ↳ Pengeluaran : ${money(cafe.finance.expenses)}\n> ↳ Laba bersih : ${money(getProfit(cafe).toString())}\n\n` +
-        `📅 *${period}*\n> ↳ Pendapatan : ${money(ledger.income)}\n> ↳ Pengeluaran : ${money(ledger.expenses)}\n> ↳ Laba kena pajak : ${money((periodProfit > 0n ? periodProfit : 0n).toString())}\n> ↳ Pengunjung : ${cafe.finance.totalCustomers}\n> ↳ Transaksi : ${cafe.finance.totalOrders}`
+      return sendCafePage(
+        conn,
+        m,
+        `╭─❏「 📊 LAPORAN KEUANGAN CAFE 」❏\n│ Ringkasan bisnis dan periode ${period}\n╰─━━━━━━━━━━━━━━─\n\n` +
+        `💰 *KESELURUHAN*\n> ↳ Saldo : ${money(cafe.finance.balance)}\n> ↳ Pendapatan : ${money(cafe.finance.income)}\n> ↳ Pengeluaran : ${money(cafe.finance.expenses)}\n> ↳ Laba bersih : ${money(getProfit(cafe).toString())}\n\n` +
+        `📅 *PERIODE INI*\n> ↳ Pendapatan : ${money(ledger.income)}\n> ↳ Pengeluaran : ${money(ledger.expenses)}\n> ↳ Laba kena pajak : ${money((periodProfit > 0n ? periodProfit : 0n).toString())}\n> ↳ Pengunjung : ${cafe.finance.totalCustomers}\n> ↳ Transaksi : ${cafe.finance.totalOrders}`,
+        [
+          ['🧾 Estimasi pajak', `${prefix}cafe tax`],
+          ['📜 Riwayat', `${prefix}cafe history`],
+          ['🏠 Ringkasan cafe', `${prefix}cafe`]
+        ]
       )
     }
     return m.reply(renderCafe(cafe, jid, prefix))
@@ -445,7 +1105,21 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.' }
   return m.reply(`Command cafe tidak dikenal. Gunakan *${prefix}cafe command*.`)
 }
 
-handler.help = ['cafe', 'cafe buy', 'cafe menu', 'cafe stock', 'cafe report']
+handler.help = [
+  'cafe',
+  'cafe buy <nama>',
+  'cafe staff',
+  'cafe staff hire all',
+  'cafe staff salary <posisi> <kali>x',
+  'cafe cctv',
+  'cafe visit',
+  'cafe talk npc <nama>',
+  'cafe talk staff <nama>',
+  'cafe upgrade',
+  'cafe menu',
+  'cafe stock',
+  'cafe report'
+]
 handler.tags = ['rpg', 'economy']
 handler.command = /^(cafe|kafe)$/i
 handler.before = async function () {
