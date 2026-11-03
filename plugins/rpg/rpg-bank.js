@@ -35,7 +35,10 @@ export function calculateBankWeeklyInterest(bankBalance, tier, userRPG) {
 }
 
 export function formatBankFullMoney(amount) {
-  return `Rp. ${normalizeRpgMoney(amount).toLocaleString('id-ID')}`
+  const normalized = normalizeRpgMoney(amount)
+  const digits = String(normalized).replace(/^-/, '')
+  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return `Rp. ${normalized < 0 ? '-' : ''}${grouped}`
 }
 
 export function getBankTransactionCooldown(tier) {
@@ -1131,8 +1134,7 @@ if (action === 'riwayat') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank sitaan', 'bank sitaan ambil <nomor|nama>', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
-handler.help.push('money check', 'uang check')
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank sitaan', 'bank sitaan ambil <nomor|nama>', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money check', 'money suffix', 'uang', 'uang check', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {

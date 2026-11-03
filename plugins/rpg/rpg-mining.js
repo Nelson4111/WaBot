@@ -211,6 +211,7 @@ return sendRpgButtons(conn, {
   thumbnailUrl: 'https://c.termai.cc/i140/srjE7x6',
   buttons: [['🎒 Buka Tas', `${usedPrefix || '.'}bag`]],
   quoted: m,
+  preferV2: true,
   reply: fallbackText => m.reply(fallbackText)
 })
 }
