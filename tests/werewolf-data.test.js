@@ -2,13 +2,16 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   ANTAGONIST_STORIES,
+  CIPHER_AI_MESSAGES,
   CUSTOM_ANTAGONIST_ROLES,
   GAME_CATEGORIES,
+  GHOST_AI_MESSAGES,
   HIDE_ACTIONS,
   HIDE_ANTAGONIST_STORIES,
   PROTAGONIST_WIN_STORIES,
   ROLE_IMAGES,
   ROLE_DATA,
+  ROLE_GUIDES,
   ROLE_DEATH_STORIES,
   VAMPIRE_INFECTION_STORIES,
   ZOMBIE_INFECTION_STORIES,
@@ -18,6 +21,7 @@ import {
   getRoleFaction,
   getRandomHideActions,
   getSorcererFaction,
+  encodeCipherMessage,
   isAntagonistRole,
   isNeutralRole,
   isValidCipherMessage,
@@ -94,6 +98,16 @@ test('Warden and Cipher roles are available with their intended protections and 
   assert.equal(isValidCipherMessage('H'), false)
   assert.equal(isValidCipherMessage('Hai'), false)
   assert.equal(isValidCipherMessage('H4i'), false)
+  const cipherMessages = [
+    ...CIPHER_AI_MESSAGES.general,
+    ...CIPHER_AI_MESSAGES.target.map((message) =>
+      message.replace('{target}', encodeCipherMessage('Raka').toLowerCase())
+    )
+  ]
+  assert.ok(cipherMessages.every(isValidCipherMessage))
+  assert.ok(cipherMessages.every((message) => !/[A-Z]/.test(message.slice(1))))
+  assert.equal(encodeCipherMessage('Kamu aman?'), 'K4mu 4m4n?')
+  assert.equal(encodeCipherMessage('Makan?'), 'M4k4n?')
   assert.equal(validateCustomRoles(['werewolf', 'warden', 'cipher', 'warga']).valid, true)
 })
 
@@ -104,6 +118,17 @@ test('every role separates character flavor from its in-game effect', () => {
   }
   assert.match(ROLE_DATA.cipher.effect, /A, I, E, O, B, L, S, Q, atau G/)
   assert.match(ROLE_DATA.warden.effect, /tidak melindungi dari voting/)
+})
+
+test('every role has a detailed guide and Cipher guide explains valid messages', () => {
+  assert.deepEqual(Object.keys(ROLE_GUIDES).sort(), Object.keys(ROLE_DATA).sort())
+  for (const [role, guide] of Object.entries(ROLE_GUIDES)) {
+    assert.ok(guide.length >= 5, `${role} should have a detailed guide`)
+    assert.ok(guide.every((step) => step.length > 50), `${role} guide steps should be explanatory`)
+  }
+  assert.ok(ROLE_GUIDES.cipher.some((step) => step.includes('A=4, I=1, E=3')))
+  assert.ok(ROLE_GUIDES.cipher.some((step) => step.includes('K4mu 4m4n?')))
+  assert.ok(ROLE_GUIDES.cipher.some((step) => step.includes('M4k4n?')))
 })
 
 test('all roles map to one of the antagonist, protagonist, or neutral lists', () => {
@@ -137,6 +162,19 @@ test('editable action and attack narrative lists start with requested sizes', ()
 test('AI citizen conversation includes suspicion messages with a dynamic target', () => {
   assert.equal(WARGA_AI_MESSAGES.length, 10)
   assert.equal(WARGA_AI_MESSAGES.filter((message) => message.includes('{target}')).length, 5)
+  for (const [role, messages] of Object.entries({
+    Cipher: CIPHER_AI_MESSAGES,
+    Ghost: GHOST_AI_MESSAGES
+  })) {
+    assert.equal(messages.general.length, 5, `${role} should have five general messages`)
+    assert.equal(messages.target.length, 5, `${role} should have five target messages`)
+    assert.ok(messages.target.every((message) => message.includes('{target}')))
+    assert.equal(
+      new Set([...messages.general, ...messages.target]).size,
+      10,
+      `${role} messages should all be unique`
+    )
+  }
 })
 
 test('hide action choices are capped at five and exclude previously used actions', () => {

@@ -262,6 +262,13 @@ test('secret vote codes are private per player and resolve votes without reveali
     action: 'vote-skip'
   })
   assert.equal(players[1].isvote, true)
+
+  const runoffCodes = generateVoteCodeMap(room, players[0], new Set(), [3, 4])
+  assert.deepEqual(
+    new Set(Object.values(runoffCodes).map((choice) => choice.targetNumber)),
+    new Set([3, 4])
+  )
+  assert.equal(Object.values(runoffCodes).some((choice) => choice.type === 'vote-skip'), false)
 })
 
 test('AI citizens receive protagonist roles alongside a human player; AI-only games assign antagonists too', () => {
@@ -475,16 +482,20 @@ test('Zombie and Vampire infections collapse after the last original antagonist 
 })
 
 test('Final role roster puts status after role and distinguishes infected from uninfected players', () => {
-  const roster = formatFinalRoleRoster([
+  const zombieRoster = formatFinalRoleRoster([
     { id: 'clear', number: 1, role: 'warga', displayName: 'Sari', isAiCitizen: true, isdead: false },
-    { id: 'infected-zombie', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true, infectionType: 'zombie', isdead: true },
-    { id: 'infected-vampire', number: 3, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'vampire', isdead: false }
+    { id: 'infected-zombie', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true, infectionType: 'zombie', isdead: true }
   ], 'zombie')
 
-  assert.match(roster, /> Sari — \*Warga 👱‍♂️\* ⚪ 🟢/)
-  assert.match(roster, /> Raka — \*Seer 👳\* 🧟‍♂️ 🔴/)
-  assert.match(roster, /> Mira — \*Mayor 👑\* 🧛‍♂️ 🟢/)
-  assert.match(roster, /Tidak tertular.*Tertular Zombie.*Tertular Vampire.*Hidup.*Mati/)
+  assert.match(zombieRoster, /> Sari\n> Role: \*Warga 👱‍♂️\*\n> Status: Hidup/)
+  assert.match(zombieRoster, /> Raka\n> Role: \*Infected 🧟\*\n> Status: 💀 Mati/)
+  assert.doesNotMatch(zombieRoster, /⚪|🟢|🔴|Vampire|🧛/)
+
+  const vampireRoster = formatFinalRoleRoster([
+    { id: 'infected-vampire', number: 1, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'vampire', isdead: false }
+  ], 'vampire')
+  assert.match(vampireRoster, /> Mira\n> Role: \*Infected 🧛\*\n> Status: Hidup/)
+  assert.doesNotMatch(vampireRoster, /Zombie|🧟/)
 })
 
 test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
