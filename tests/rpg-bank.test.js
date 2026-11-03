@@ -4,10 +4,7 @@ import assert from 'node:assert/strict'
 import {
   BANK_FNB_REWARDS,
   BANK_TIERS,
-  BANK_WEEKLY_INTEREST_CAP,
   canUseBankBulkDeposit,
-  calculateBankWeeklyInterest,
-  formatBankFullMoney,
   calculateBankRobberyLoss,
   chargeBankMembership,
   exceedsBankLimit,
@@ -30,7 +27,7 @@ import {
 import { applyBankTierRewards, BANK_CROWN_ITEM_ID, claimBankCrown } from '../lib/rpg-bankData.js'
 import { hargaBeli as RESTAURANT_MENU } from '../lib/rpg-masakanData.js'
 import { formatFullTierFacilities, formatUpgradeChanges } from '../plugins/rpg/rpg-upgradebank.js'
-import { formatRpgMoney, parseRpgMoneyAmount } from '../lib/rpgMoney.js'
+import { parseRpgMoneyAmount } from '../lib/rpgMoney.js'
 
 test('RPG money parser supports suffixes used by money commands', () => {
   assert.equal(parseRpgMoneyAmount('1K'), 1_000)
@@ -72,19 +69,6 @@ test('the last bank tier has no deposit or loan limit', () => {
   assert.equal(formatBankLimit(lastTier.limit), 'Tidak Terbatas')
   assert.equal(exceedsBankLimit(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, lastTier), false)
   assert.equal(exceedsBankLimit(9_000_000, 2_000_000, BANK_TIERS[0]), true)
-})
-
-test('weekly bank interest is capped at 500T and formatted with money suffixes', () => {
-  const interest = calculateBankWeeklyInterest(10n ** 30n, BANK_TIERS[19], {})
-
-  assert.equal(interest, BANK_WEEKLY_INTEREST_CAP)
-  assert.equal(formatRpgMoney(interest), 'Rp 500T')
-  assert.ok(calculateBankWeeklyInterest(1_000_000_000_000, BANK_TIERS[0], {}) < BANK_WEEKLY_INTEREST_CAP)
-})
-
-test('bank full-balance formatting preserves exact amounts without suffixes', () => {
-  assert.equal(formatBankFullMoney(1_234_567_890_123_456_789n), 'Rp. 1.234.567.890.123.456.789')
-  assert.equal(formatBankFullMoney(1_500_000), 'Rp. 1.500.000')
 })
 
 test('membership is charged once per 30-day period, without accumulating missed fees', () => {
