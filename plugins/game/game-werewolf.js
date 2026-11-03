@@ -208,6 +208,8 @@ const formatGameCategoryInfo = (game, usedPrefix) => {
     let objective
     if (game.id === 'vigilante') {
         objective = 'Para Vigilante menang jika seluruh antagonis tertangkap; antagonis menang jika semua Vigilante gugur.'
+    } else if (['zombie', 'vampire'].includes(game.id)) {
+        objective = `${game.antagonistName} menang jika semua pemain hidup selain ${game.antagonistName} asli sudah tertular. Jika seluruh ${game.antagonistName} asli tersingkir, pemain tertular ikut gugur dan protagonis menang.`
     } else if (game.id === 'mayhem') {
         objective = 'Beragam antagonis dapat muncul dan menyerang sendiri, termasuk satu sama lain; antagonis lain tidak diketahui. Tiap tim mengikuti kondisi menang faksinya.'
     } else if (game.id === 'custom') {
@@ -1179,16 +1181,16 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const factionTitle = factionFilter
                 ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
                 : ''
-            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Efek di atas adalah ringkasan kemampuan saat bermain.\n> Untuk detail karakter, ketik *.gr role <nama role>*; tambahkan *guide* untuk panduan cara bermain.\n> Filter: *.gr role antagonis*, *.gr role protagonis*, atau *.gr role netral*.\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2*.`, 'Avelia • Daftar Role', thumbNight, [
+            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Efek di atas adalah ringkasan kemampuan saat bermain.\n> Untuk detail karakter, ketik *.gr role <nama role>*; tambahkan *guide* untuk panduan cara bermain.\n            > Filter: *.gr role antagonis*, *.gr role protagonis*, atau *.gr role netral*.\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2* atau AI nomor 3: *.custom role 3 mafia*.`, 'Avelia • Daftar Role', thumbNight, [
                 ...roleFactionButtons(`${usedPrefix}gr`)
             ], m)
         }
         if (action === 'guide') {
-            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n> 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur manual dengan *.custom role @pemain <role/nomor>*, dan periksa pembagian dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n> 6. Kartu aksi dan balasan pribadi (termasuk konfirmasi sukses/gagal serta hasil ramalan) dikirim di grup melalui dual-stanza tanpa reply. Pemain terkait melihat detailnya; anggota lain hanya melihat teks pengunci. Pilihan Hunter dapat dilakukan lewat tombol atau perintah yang tercantum di pesan.\n> 7. Lihat riwayat aktivitas game dengan *.mafia log*; voting dan aksi skip/bersembunyi tidak dicatat.\n> 8. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 9. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
+            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n            > 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur pemain dengan *.custom role @pemain <role/nomor>* atau warga AI dengan *.custom role <nomor pemain> <role/nomor>*, lalu periksa dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n> 6. Kartu aksi dan balasan pribadi (termasuk konfirmasi sukses/gagal serta hasil ramalan) dikirim di grup melalui dual-stanza tanpa reply. Pemain terkait melihat detailnya; anggota lain hanya melihat teks pengunci. Pilihan Hunter dapat dilakukan lewat tombol atau perintah yang tercantum di pesan.\n> 7. Lihat riwayat aktivitas game dengan *.mafia log*; voting dan aksi skip/bersembunyi tidak dicatat.\n> 8. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 9. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
         }
         if (['command', 'commands', 'cmd'].includes(action)) {
             const commandText = Object.values(GAME_CATEGORIES)
-                .map((entry) => `*${entry.antagonistEmoji} ${entry.name}*\n> ${usedPrefix}${entry.aliases[0]} create [taruhan] · join · start · vote · player/room/lobby · log · info · role · guide · exit · delete${entry.id === 'custom' ? `\n> ${usedPrefix}custom role @pemain <role/nomor> · autorole · list` : ''}`)
+                .map((entry) => `*${entry.antagonistEmoji} ${entry.name}*\n> ${usedPrefix}${entry.aliases[0]} create [taruhan] · join · start · vote · player/room/lobby · log · info · role · guide · exit · delete${entry.id === 'custom' ? `\n> ${usedPrefix}custom role @pemain <role/nomor> atau <nomor pemain> <role/nomor> · autorole · list` : ''}`)
                 .join('\n\n')
             return m.reply(`*━━━〔 ✧ COMMAND GAME ROLES ✧ 〕━━━*\n\n${commandText}\n\n*━━━〔 Statistik & Info 〕━━━*\n> ${usedPrefix}gr role\n> ${usedPrefix}gr info <kategori>\n> ${usedPrefix}gr top\n> ${usedPrefix}gr me\n> ${usedPrefix}gr history [halaman]`)
         }
@@ -1500,11 +1502,22 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             return m.reply(status.error("Hanya owner room atau moderator yang dapat mengatur role custom."))
         }
 
-        const targetPlayerId = m.mentionedJid?.[0] || m.quoted?.sender
-        if (!targetPlayerId) {
-            return m.reply(status.warning(`Tag pemain atau reply pesannya. Contoh: *${gameCommandBase} role @pemain seer*`))
+        let targetPlayerId = m.mentionedJid?.[0] || m.quoted?.sender
+        let roleArgs = args.slice(1)
+        if (!targetPlayerId && room && args.length >= 3) {
+            const targetNumber = Number(args[1])
+            const targetPlayer = room.player.find((player) =>
+                player.isAiCitizen && !player.isDummy && player.number === targetNumber
+            )
+            if (targetPlayer) {
+                targetPlayerId = targetPlayer.id
+                roleArgs = args.slice(2)
+            }
         }
-        const roleInput = args.slice(1).filter((arg) => !String(arg).startsWith('@')).join(' ')
+        if (!targetPlayerId) {
+            return m.reply(status.warning(`Tag pemain atau pilih nomor warga AI. Contoh: *${gameCommandBase} role @pemain seer* atau *${gameCommandBase} role 3 mafia*.`))
+        }
+        const roleInput = roleArgs.filter((arg) => !String(arg).startsWith('@')).join(' ')
         const selectedRole = resolveRoleChoice(roleInput)
         if (!selectedRole) {
             return m.reply(status.warning(`Role tidak valid. Gunakan nama role atau nomor dari *.gr role*.`))
@@ -1541,7 +1554,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         }
         return conn.sendMessage(chat, {
             text: status.success(`Role ${roleData.emoji} *${roleData.title}* berhasil ditetapkan untuk *${getPlayerMentionLabel(rolePlayer, conn)}* di mode Custom.`),
-            mentions: [targetPlayerId]
+            mentions: rolePlayer.isAiCitizen ? [] : [targetPlayerId]
         })
 
     } else if (value === "create") {
@@ -1590,7 +1603,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
 > ⟡ Minimal : *𝟻 Pemain*
 > ⟡ Maksimal : *𝟷𝟻 Pemain*
 ${wagerInfo}*━━━━━━━━━━━━━━*
-${gameCategory.id === 'custom' ? `\n> 🎭 Atur role dengan *${gameCommandBase} role @pemain <role/nomor>*, bagikan otomatis dengan *${gameCommandBase} autorole*, atau cek dengan *${gameCommandBase} list*.` : ''}
+${gameCategory.id === 'custom' ? `\n> 🎭 Atur role dengan *${gameCommandBase} role @pemain <role/nomor>* atau *${gameCommandBase} role <nomor pemain> <role/nomor>* untuk warga AI; bagikan otomatis dengan *${gameCommandBase} autorole*, atau cek dengan *${gameCommandBase} list*.` : ''}
 ━━━━━━━━━━━━━━
 > _Tekan tombol di bawah atau ketik *${gameCommandBase} join* untuk bergabung._`
 
@@ -1691,7 +1704,12 @@ ${rosterText.trim()}
             const displayName = listedNames.length > 1
                 ? listedNames[i]
                 : nickname ? (hasCount && addCount > 1 ? `${nickname} ${i + 1}` : nickname) : undefined
-            ww[chat].player.push(createWargaPlayer(ww[chat], order, displayName))
+            const addedPlayer = createWargaPlayer(ww[chat], order, displayName)
+            ww[chat].player.push(addedPlayer)
+            if (ww[chat].category === 'custom') {
+                ww[chat].customRoles ||= {}
+                ww[chat].customRoles[addedPlayer.id] = 'warga'
+            }
         }
         ww[chat].player.forEach((player, index) => {
             player.number = index + 1
@@ -1703,6 +1721,9 @@ ${rosterText.trim()}
         if (!ww[chat]) return m.reply(status.error("Belum ada sesi permainan."))
         const wargaPlayers = ww[chat].player.filter((player) => player.isAiCitizen || player.isDummy)
         if (!wargaPlayers.length) return m.reply(status.warning("Tidak ada warga simulasi di room ini."))
+        wargaPlayers.forEach((player) => {
+            if (ww[chat].customRoles) delete ww[chat].customRoles[player.id]
+        })
         ww[chat].player = ww[chat].player.filter((player) => !player.isAiCitizen && !player.isDummy)
         ww[chat].player.forEach((player, index) => {
             player.number = index + 1
@@ -1742,7 +1763,7 @@ ${rosterText.trim()}
             )
             if (unassignedPlayers.length) {
                 const names = unassignedPlayers.map(getDisplayPlayerLabel).join(', ')
-                return m.reply(status.warning(`Role custom belum diatur untuk: ${names}.\nAtur dengan *${gameCommandBase} role @pemain <role/nomor>* sebelum memulai.`))
+                return m.reply(status.warning(`Role custom belum diatur untuk: ${names}.\nAtur dengan *${gameCommandBase} role @pemain <role/nomor>* atau pilih AI memakai *${gameCommandBase} role <nomor pemain> <role/nomor>* sebelum memulai.`))
             }
             const customRoles = ww[chat].player.filter((player) => !player.isDummy)
                 .map((player) => ww[chat].customRoles?.[player.id] || (player.isAiCitizen ? null : player.role))
@@ -1950,7 +1971,7 @@ ${rosterText.trim()}
 
 *━━━〔 ✦ 𝟷. ᴍᴇᴍʙᴜᴀᴛ ʀᴏᴏᴍ 〕━━━*
 > Ketik *${gameCommandBase} create* untuk tanpa taruhan, atau *${gameCommandBase} create <taruhan>* (contoh: *${gameCommandBase} create 1jt*).
-${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <role/nomor>*, bagikan otomatis dengan *${gameCommandBase} autorole*, dan cek dengan *${gameCommandBase} list*.` : ''}
+${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <role/nomor>* atau *${gameCommandBase} role <nomor pemain> <role/nomor>* untuk warga AI; bagikan otomatis dengan *${gameCommandBase} autorole*, dan cek dengan *${gameCommandBase} list*.` : ''}
 > Pemain lain ketik *${gameCommandBase} join* (Minimal 𝟻, Maksimal 𝟷𝟻).
 *━━━━━━━━━━━━━━*
 
