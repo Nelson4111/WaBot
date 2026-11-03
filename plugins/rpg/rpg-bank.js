@@ -18,28 +18,12 @@ import {
   ratioPercentRpgMoney,
   subtractRpgMoney
 } from '../../lib/rpgMoney.js'
-import { ensureTaxState, getTaxPeriod } from '../../lib/rpgTax.js'
-import { restoreTaxSeizedAsset } from '../../lib/rpgTaxEnforcement.js'
 import {
   BANKRUPT_PROTECTION_RATE,
   claimBankruptProtection
 } from '../../lib/rpgBankruptProtection.js'
 import upgradeBankHandler from './rpg-upgradebank.js'
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
-
-export const BANK_WEEKLY_INTEREST_CAP = 500_000_000_000_000
-
-export function calculateBankWeeklyInterest(bankBalance, tier, userRPG) {
-  const interest = scaleDifficultyIncome(userRPG, multiplyRpgMoney(bankBalance, tier.bunga))
-  return minRpgMoney(interest, BANK_WEEKLY_INTEREST_CAP)
-}
-
-export function formatBankFullMoney(amount) {
-  const normalized = normalizeRpgMoney(amount)
-  const digits = String(normalized).replace(/^-/, '')
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  return `Rp. ${normalized < 0 ? '-' : ''}${grouped}`
-}
 
 export function getBankTransactionCooldown(tier) {
   if (tier.fasilitas.includes('Portal Bank')) return 0
@@ -222,70 +206,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let args = text.split(' ')
   let action = args[0]?.toLowerCase()
   if (action === 'setor') action = 'simpan'
-  if (action === 'sitaan' || action === 'sita') {
-    const seizedAssets = userRPG.taxSeizedAssets || []
-    if (args[1]?.toLowerCase() !== 'ambil') {
-      return m.reply(`╭─❏「 🏦 BANK · BARANG SITAAN 」❏\n│ PENYIMPANAN ASET SITAAN\n╰─━━━━━━━━━━━━━━─\n\n${seizedAssets.length\n                ? seizedAssets.map((asset, index) => `> ${index + 1}. ${asset.name}\n> ↳ Asal: ${asset.source} · Biaya tebus: ${formatRpgMoney(asset.redemptionFee)}`).join('\n\n')\n          : '> Tidak ada barang sitaan.'}\n\nGunakan *.bank sitaan ambil <nomor|nama barang>* untuk menebus barang (biaya 110% nilai taksir).\n╰─━━━━━━━━━━━━━━─`)
-    }
-
-    const selection = args.slice(2).join(' ').trim()
-    if (!selection) return m.reply('Gunakan *.bank sitaan ambil <nomor|nama barang>* sesuai daftar di *.bank sitaan*.')
-    const selectedNumber = /^\d+$/.test(selection) ? Number(selection) : 0
-    const normalizeAssetName = value => String(value || '')
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, ' ')
-    const assetIndex = selectedNumber > 0
-      ? selectedNumber - 1
-      : seizedAssets.findIndex(asset => normalizeAssetName(asset.name) === normalizeAssetName(selection))
-    if (assetIndex < 0 || assetIndex >= seizedAssets.length) {
-      return m.reply('❌ Barang sitaan tidak ditemukan. Pilih nomor atau nama persis dari daftar *.bank sitaan*.')
-    }
-    const asset = seizedAssets[assetIndex]
-    const fee = normalizeRpgMoney(asset.redemptionFee)
-    if (compareRpgMoney(fee, 0) <= 0) {
-      return m.reply('❌ Data biaya tebus barang sitaan tidak valid. Hubungi Owner agar data bank diperiksa.')
-    }
-    const available = addRpgMoney(wdb.money[m.sender] || 0, userRPG.bank || 0)
-    if (compareRpgMoney(available, fee) < 0) {
-      return m.reply(`❌ Saldo tidak cukup untuk menebus barang. Biaya: ${formatRpgMoney(fee)} · Tunai: ${formatRpgMoney(wdb.money[m.sender] || 0)} · Bank: ${formatRpgMoney(userRPG.bank || 0)}.`)
-    }
-
-    const taxState = ensureTaxState(wdb.data)
-    restoreTaxSeizedAsset(userRPG, asset)
-    const walletPayment = compareRpgMoney(wdb.money[m.sender] || 0, fee) >= 0
-      ? fee
-      : normalizeRpgMoney(wdb.money[m.sender] || 0)
-    wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender] || 0, walletPayment)
-    const bankPayment = subtractRpgMoney(fee, walletPayment)
-    if (compareRpgMoney(bankPayment, 0) > 0) {
-      userRPG.bank = subtractRpgMoney(userRPG.bank || 0, bankPayment)
-    }
-    seizedAssets.splice(assetIndex, 1)
-
-    taxState.treasury.balance = addRpgMoney(taxState.treasury.balance, fee)
-    taxState.treasury.income = addRpgMoney(taxState.treasury.income, fee)
-    taxState.treasury.revenueByTax.lateFees = addRpgMoney(taxState.treasury.revenueByTax.lateFees || 0, fee)
-    taxState.treasury.transactions.unshift({
-      id: `GT-${String(taxState.nextTransactionId++).padStart(8, '0')}`,
-      jid: m.sender,
-      taxId: taxState.taxpayers[m.sender]?.taxId || '',
-      billId: asset.id,
-      period: getTaxPeriod(new Date()),
-      amount: fee,
-      principal: '0',
-      penalty: fee,
-      revenueByTax: {},
-      at: Date.now(),
-      source: 'seized-asset-redemption',
-      assetId: asset.id
-    })
-    taxState.treasury.transactions.length = Math.min(taxState.treasury.transactions.length, 500)
-    await saveDB(wdb)
-    return m.reply(`✅ Barang sitaan berhasil ditebus.\n> ↳ Barang : ${asset.name}\n> ↳ Biaya : ${formatRpgMoney(fee)}\n> ↳ Disimpan kembali ke : ${asset.source}`)
-  }
   if (action === 'upgrade') {
     return upgradeBankHandler(m, {
       conn,
@@ -413,14 +333,14 @@ if (automaticCharges.length) {
   // BUNGA MINGGUAN
   let cdBunga = scaleDifficultyCooldown(userRPG, 604800000)
   if(now - userRPG.lastBunga >= cdBunga && compareRpgMoney(userRPG.bank, 0) > 0 &&!userRPG.kartuBeku){
-    let bunga = calculateBankWeeklyInterest(userRPG.bank, tier, userRPG)
+    let bunga = scaleDifficultyIncome(userRPG, multiplyRpgMoney(userRPG.bank, tier.bunga))
     userRPG.bank = addRpgMoney(userRPG.bank, bunga)
     userRPG.totalBunga = addRpgMoney(userRPG.totalBunga, bunga)
     userRPG.lastBunga = now
-    userRPG.riwayat.unshift(`+${formatRpgMoney(bunga)} Bunga Mingguan`)
+    userRPG.riwayat.unshift(`+Rp ${bunga.toLocaleString()} Bunga Mingguan`)
     if(userRPG.riwayat.length > 20) userRPG.riwayat.pop()
-    if (conn?.reply) conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+${formatRpgMoney(bunga)}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
-    else if (m?.reply) m.reply(`💸 *BUNGA MINGGUAN MASUK!*\n+${formatRpgMoney(bunga)}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`)
+    if (conn?.reply) conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
+    else if (m?.reply) m.reply(`💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`)
   }
 
   // === MENU MONEY / UANG ===
@@ -437,29 +357,15 @@ if (automaticCharges.length) {
       )
     }
     if (!canUseBankMoneyCommand(tier)) return m.reply(`❌ Perintah *.${command}* membutuhkan fasilitas Digital Access. Upgrade kartu untuk mengakses saldo digital.`)
-    const wallet = normalizeRpgMoney(wdb.money[m.sender] || 0)
-    const totalAssets = addRpgMoney(wallet, userRPG.bank)
-    if (action === 'check') {
-      return m.reply(
-        `─━━ 🏦 CEK SALDO RPG ━━─\n\n` +
-        `💵 *Uang Saku*\n` +
-        `> ↳ ${formatBankFullMoney(wallet)}\n\n` +
-        `🏦 *Saldo Bank*\n` +
-        `> ↳ ${formatBankFullMoney(userRPG.bank)}\n\n` +
-        `💰 *Total Aset*\n` +
-        `> ↳ ${formatBankFullMoney(totalAssets)}`
-      )
-    }
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
     cap += `◈ INFORMASI SALDO ◈\n`
-    cap += `◆ Uang Saku : ${formatRpgMoney(wallet)}\n`
-    cap += `◆ Saldo Bank : ${formatRpgMoney(userRPG.bank)}\n`
-    cap += `◆ Total Aset : ${formatRpgMoney(totalAssets)}\n\n`
+    cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+    cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
+    cap += `◆ Total Aset : ${formatRpgMoney(addRpgMoney(wdb.money[m.sender] || 0, userRPG.bank))}\n\n`
     cap += `◈ KARTU BANK ◈\n`
     cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
     cap += `─━━━━━━━━━─\n\n`
     cap += `Kelola saldo dengan cepat lewat tombol berikut.${canUseBankBulkDeposit(tier) ? '' : '\n> Setor semua memerlukan fasilitas Fast Track.'}`
-    if (!action) cap += `\n\n> Untuk cek detail keuangan dengan angka lengkap, gunakan *${usedPrefix || '.'}${command} check*.`
     return sendRpgButtons(conn, {
       chat: m.chat,
       quoted: m,
@@ -1134,7 +1040,7 @@ if (action === 'riwayat') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank sitaan', 'bank sitaan ambil <nomor|nama>', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money check', 'money suffix', 'uang', 'uang check', 'uang suffix']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {
