@@ -38,7 +38,7 @@ import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { GAME_CATEGORIES, ROLE_DATA, WARGA_AI_MESSAGES, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
+import { CIPHER_AI_MESSAGES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
@@ -82,6 +82,16 @@ const roleTitles = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, data
 const roleEffects = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, data]) => [role, data.effect]))
 const formatRoleTitle = (role) => roleTitles[role] || String(role || 'Warga').toLowerCase()
     .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => prefix + letter.toUpperCase())
+
+const getPlayerRolePresentation = (player, category) => {
+    const isInfected = ['zombie', 'vampire'].includes(category) &&
+        player?.infectionType === category
+    const role = isInfected ? category : player?.role
+    return {
+        title: isInfected ? 'Infected' : formatRoleTitle(role),
+        emoji: roleEmojis[role] || '🎭'
+    }
+}
 
 const getRoleShortEffect = (role, game) => {
     if (isAntagonistRole(game.id, role)) {
@@ -146,6 +156,28 @@ const formatRoleDetails = (role, game) => {
         details.push('> Sandi huruf: A=4, I=1, E=3, O=0, B=8, L=7, S=5, Q=9, G=6. Pesan biasa harus mengandung angka dan tidak boleh memuat huruf-huruf tersebut.')
     }
     return details.join('\n\n')
+}
+
+const formatRoleGuide = (role, game, usedPrefix) => {
+    const guide = ROLE_GUIDES[role] || []
+    const details = guide.map((paragraph) => `> ${paragraph}`)
+    details.push(
+        `> Game yang sedang dipilih: *${game.name}*. Efek dan target yang tersedia mengikuti mode ini serta kartu aksi yang kamu terima.`,
+        '> Baca kartu yang dikirim khusus kepadamu pada setiap fase. Jika role-mu memiliki aksi, gunakan tombol/kode rahasia yang tersedia; jangan bagikan kode aksi di chat umum.',
+        `> Untuk melihat ringkasan efek role ini, ketik *${usedPrefix}gr role ${role}*.`
+    )
+
+    if (role === 'vigilante' && game.id === 'mayhem') {
+        details.push('> Pada Mayhem, Vigilante tetap anggota protagonis; tugasnya menangkap pemain yang dicurigai, bukan mencari satu jenis antagonis tertentu.')
+    } else if (role === 'vigilante' && game.id !== 'vigilante') {
+        details.push('> Aturan jumlah Vigilante dan kemenangan menangkap semua antagonis berlaku khusus pada kategori Vigilante. Di kategori lain, ikuti kondisi faksi pada kartu game.')
+    }
+
+    if (role === 'cipher') {
+        details.push(`> Contoh command panduan ini: *${usedPrefix}gr role cipher guide*.`)
+    }
+
+    return `*━━━〔 📖 PANDUAN ${formatRoleTitle(role).toUpperCase()} 〕━━━*\n\n${details.join('\n\n')}`
 }
 
 const validRoleName = (value) => {
@@ -265,6 +297,33 @@ const getAiNightActionCode = (player, actionType, category) => {
 }
 
 const getAiDiscussionMessage = (room, player, conn) => {
+    const isCipher = player.role === 'cipher' && !player.infectionType
+    const roleMessages = isCipher
+        ? CIPHER_AI_MESSAGES
+        : player.role === 'ghost'
+            ? GHOST_AI_MESSAGES
+            : null
+    if (roleMessages) {
+        const targets = room.player.filter((entry) =>
+            entry.id !== player.id && !entry.isDummy && !entry.isdead
+        )
+        const useTargetMessage = targets.length > 0 && Math.random() < 0.5
+        const template = getRandomItem(useTargetMessage ? roleMessages.target : roleMessages.general)
+        const targetName = useTargetMessage
+            ? getDisplayPlayerLabel(getRandomItem(targets), conn)
+            : null
+        const encodedTargetName = isCipher && targetName
+            ? encodeCipherMessage(targetName).replace(/^[A-Z]/, (letter) => letter.toLowerCase())
+            : targetName
+        const formattedMessage = useTargetMessage
+            ? template.replace('{target}', encodedTargetName)
+            : template
+        if (isCipher && !isValidCipherMessage(formattedMessage)) {
+            throw new Error(`Invalid Cipher AI message: ${formattedMessage}`)
+        }
+        return formattedMessage
+    }
+
     const message = getRandomItem(WARGA_AI_MESSAGES)
     if (!message?.includes('{target}')) return message
     const targets = room.player.filter((entry) => entry.id !== player.id && !entry.isDummy)
@@ -423,7 +482,7 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
     for (const p of alivePlayers) {
         const role = p.infectionType === room.category ? p.infectionType : p.role || 'warga'
         const rEmoji = roleEmojis[role] || '🎭'
-        const rTitle = `${roleTitles[role] || formatRoleTitle(role === game.antagonist ? game.antagonistName : role)}${p.infectionType === room.category ? ' (Tertular)' : ''}`
+        const rTitle = getPlayerRolePresentation(p, room.category).title
         const rEffect = p.infectionType === room.category
             ? `Kamu telah tertular dan menjadi ${game.name}. Kemampuan role sebelumnya tidak berlaku; pada malam hari kamu hanya dapat bersembunyi. Kamu tetap dapat memberikan suara.`
             : getRoleShortEffect(role, game)
@@ -782,6 +841,9 @@ const resolveNightToMorning = async (conn, chat, ww) => {
 const startDayVoting = async (conn, chat, ww) => {
     const room = sesi(chat, ww)
     if (!room || !room.status) return
+    const runoffCandidateNumbers = Array.isArray(room.runoffCandidateNumbers)
+        ? room.runoffCandidateNumbers
+        : null
 
     room.time = 'voting'
     voteStart(chat, ww)
@@ -791,9 +853,13 @@ const startDayVoting = async (conn, chat, ww) => {
     const livingPlayers = room.player.filter((p) => !p.isdead)
 
     const game = getGameCategory(room.category)
+    const runoffNotice = runoffCandidateNumbers
+        ? '> ⚖️ Ini pemungutan suara ulang. Pilihan hanya pemain yang seri; tidak ada opsi untuk melewati voting.\n'
+        : ''
     const votingCard = `*━━━〔 ${game.name.toUpperCase()} · SIDANG 〕━━━*
 > ⚖️ _Matahari tepat di atas kepala, warga berkumpul menentukan takdir..._
 
+${runoffNotice}
 *━━━〔 ✦ ɪɴꜰᴏ ᴠᴏᴛɪɴɢ 〕━━━*
 > ⟡ Waktu : *𝟿𝟶 Detik*
 > ⟡ Pilihan dan kode voting bersifat rahasia untuk setiap pemain.
@@ -806,7 +872,7 @@ const startDayVoting = async (conn, chat, ww) => {
     const playerMessages = new Map()
     const usedVoteCodes = new Set()
     for (const player of livingPlayers.filter((entry) => !entry.isDummy)) {
-        const voteCodes = generateVoteCodeMap(room, player, usedVoteCodes)
+        const voteCodes = generateVoteCodeMap(room, player, usedVoteCodes, runoffCandidateNumbers)
         const voteRows = Object.entries(voteCodes).map(([code, choice]) => {
             const target = choice.targetNumber
                 ? room.player.find((entry) => entry.number === choice.targetNumber)
@@ -857,10 +923,14 @@ const startDayVoting = async (conn, chat, ww) => {
 }
 
 const runAiCitizenVotes = async (conn, chat, room) => {
-    for (const player of room.player.filter((entry) => entry.isAiCitizen && !entry.isdead)) {
+    const discussants = room.player.filter((entry) =>
+        entry.isAiCitizen && (!entry.isdead || entry.role === 'ghost')
+    )
+    for (const player of discussants) {
         if (conn.werewolf?.[chat] !== room || room.time !== 'voting' || player.isvote) return
         await wait(650 + Math.floor(Math.random() * 600))
-        if (conn.werewolf?.[chat] !== room || room.time !== 'voting' || player.isdead || player.isvote) return
+        if (conn.werewolf?.[chat] !== room || room.time !== 'voting' ||
+            (player.isdead && player.role !== 'ghost') || player.isvote) return
 
         try {
             await conn.sendMessage(chat, {
@@ -869,6 +939,8 @@ const runAiCitizenVotes = async (conn, chat, room) => {
         } catch (error) {
             console.error(`[werewolf AI discussion message failed] player=${player.displayName}`, error)
         }
+        if (player.isdead) continue
+
         await wait(250 + Math.floor(Math.random() * 350))
         const codes = Object.keys(player.voteCodes || {})
         const code = getRandomItem(codes)
@@ -910,6 +982,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
             `> ${getDisplayPlayerLabel(player, conn)} — *${Number(player.voteCount) || 0} pemain* (${Number(player.vote) || 0} poin)`
         ).join('\n')}\n*━━━━━━━━━━━━━━*`
         : ''
+    if (hasil_vote !== 1) room.runoffCandidateNumbers = null
 
     if (hasil_vote === 0) {
         const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\nWarga desa tidak dapat mencapai kesepakatan dan pulang ke rumah masing-masing. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti desa..._`
@@ -918,6 +991,25 @@ const resolveDayVoting = async (conn, chat, ww) => {
             caption: text
         })
     } else if (hasil_vote === 1) {
+        const highestVote = Math.max(0, ...voteTally.map((player) => Number(player.vote) || 0))
+        const tiedCandidates = voteTally.filter((player) =>
+            (Number(player.vote) || 0) === highestVote
+        )
+        if (tiedCandidates.length > 1) {
+            const candidateList = tiedCandidates.map((player) =>
+                `> ${getDisplayPlayerLabel(player, conn)}`
+            ).join('\n')
+            const text = `*━━━〔 ⚖️ HASIL VOTING SERI 〕━━━*\n> ⚖️ _Voting ulang dimulai sekarang._\n\nPilihan hanya tersedia untuk pemain yang memperoleh suara tertinggi dan seri:\n${candidateList}${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🔁 _Pilih salah satu kandidat di atas; pilihan lain tidak tersedia._`
+            await conn.sendMessage(chat, {
+                image: { url: thumbVoting },
+                caption: text,
+                mentions: getPlayerMentions(tiedCandidates)
+            })
+            room.runoffCandidateNumbers = tiedCandidates.map((player) => player.number)
+            await startDayVoting(conn, chat, ww)
+            return
+        }
+
         const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Warga kembali ke kediaman masing-masing..._`
         await conn.sendMessage(chat, {
             image: { url: thumbNight },
@@ -925,9 +1017,9 @@ const resolveDayVoting = async (conn, chat, ww) => {
         })
     } else if (hasil_vote && typeof hasil_vote === 'object') {
         const killed = voteKill(chat, ww)
-        const kRole = killed.role || 'warga'
-        const kEmoji = roleEmojis[kRole] || '👱‍♂️'
-        const kTitle = roleTitles[kRole] || formatRoleTitle(kRole)
+        const killedRole = getPlayerRolePresentation(killed, room.category)
+        const kEmoji = killedRole.emoji || '👱‍♂️'
+        const kTitle = killedRole.title
         const killedName = getPlayerMentionLabel(killed, conn)
 
         const execText = killed.pendingExecution
@@ -975,6 +1067,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
     clearAllVote(chat, ww)
     clearAll(chat, ww)
     clearAllSTATUS(chat, ww)
+    room.runoffCandidateNumbers = null
 
     const winner = getWinner(chat, ww)
     if (winner.status !== null) {
@@ -1063,23 +1156,30 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             }, { quoted: m })
         }
         if (action === 'role') {
-            const requestedRole = args.slice(1).join(' ')
+            const requestedRole = args.slice(1).join(' ').trim()
+            const showRoleGuide = /\s+(?:guide|panduan)$/i.test(requestedRole)
+            const roleInput = showRoleGuide
+                ? requestedRole.replace(/\s+(?:guide|panduan)$/i, '').trim()
+                : requestedRole
             const factionFilter = normalizeRoleFactionFilter(requestedRole)
-            if (requestedRole && !factionFilter) {
-                const selectedRole = resolveRoleChoice(requestedRole)
+            if (roleInput && !factionFilter) {
+                const selectedRole = resolveRoleChoice(roleInput)
                 if (!selectedRole) return m.reply(status.warning('Role tidak ditemukan. Gunakan nama role yang tercantum di *.gr role*.'))
                 const details = formatRoleDetails(selectedRole, gameCategory)
+                const guide = showRoleGuide
+                    ? `\n\n${formatRoleGuide(selectedRole, gameCategory, usedPrefix || '.')}`
+                    : ''
                 const roleImage = getRoleImage(selectedRole, game.location)
                 return conn.sendMessage(chat, {
                     image: { url: roleImage || thumbNight },
-                    caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}`
+                    caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
                 }, { quoted: m })
             }
             const roleSections = formatRoleList(gameCategory, factionFilter)
             const factionTitle = factionFilter
                 ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
                 : ''
-            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Efek di atas adalah ringkasan kemampuan saat bermain.\n> Untuk detail karakter, ketik *.gr role <nama role>*.\n> Filter: *.gr role antagonis*, *.gr role protagonis*, atau *.gr role netral*.\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2*.`, 'Avelia • Daftar Role', thumbNight, [
+            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Efek di atas adalah ringkasan kemampuan saat bermain.\n> Untuk detail karakter, ketik *.gr role <nama role>*; tambahkan *guide* untuk panduan cara bermain.\n> Filter: *.gr role antagonis*, *.gr role protagonis*, atau *.gr role netral*.\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2*.`, 'Avelia • Daftar Role', thumbNight, [
                 ...roleFactionButtons(`${usedPrefix}gr`)
             ], m)
         }
@@ -1791,8 +1891,8 @@ ${rosterText.trim()}
         if (room.status) {
             const players = room.player.filter((player) => !player.isDummy)
             const roster = room.player.map((player) => {
-                const title = formatRoleTitle(player.role)
-                return `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)} — *${title}*`
+                const role = getPlayerRolePresentation(player, room.category)
+                return `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)}\n> Role: *${role.title} ${role.emoji}*`
             }).join('\n')
             try {
                 await conn.sendMessage(chat, {
@@ -1892,7 +1992,7 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
         const factionTitle = factionFilter
             ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
             : ''
-        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n> Detail karakter: *${gameCommandBase} role <nama role>*.\n> Filter: *${gameCommandBase} role antagonis*, *protagonis*, atau *netral*.`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
+        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n> Detail karakter: *${gameCommandBase} role <nama role>*; tambahkan *guide* untuk panduan cara bermain.\n> Filter: *${gameCommandBase} role antagonis*, *protagonis*, atau *netral*.`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
 
     } else if (isGameRolesCommand) {
         return sendGameRolesMenu(conn, chat, usedPrefix, m)
