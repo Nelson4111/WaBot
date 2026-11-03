@@ -272,12 +272,21 @@ const roleFactionButtons = (gameCommandBase) => [
 
 const resolveRoleChoice = (value) => {
     const input = String(value || '').trim()
-    if (/^\d+$/.test(input)) return Object.keys(ROLE_DATA)[Number(input) - 1] || null
-    const normalized = input.toLowerCase().replace(/[^a-z0-9]/g, '')
-    return Object.entries(ROLE_DATA).find(([role, data]) =>
-        role.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized ||
-        data.title.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized
-    )?.[0] || null
+    const resolveSingleChoice = (choice) => {
+        if (/^\d+$/.test(choice)) return Object.keys(ROLE_DATA)[Number(choice) - 1] || null
+        const normalized = choice.toLowerCase().replace(/[^a-z0-9]/g, '')
+        return Object.entries(ROLE_DATA).find(([role, data]) =>
+            role.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized ||
+            data.title.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized
+        )?.[0] || null
+    }
+
+    const parts = input.split('/').map((part) => part.trim()).filter(Boolean)
+    for (const part of parts) {
+        const resolved = resolveSingleChoice(part)
+        if (resolved) return resolved
+    }
+    return resolveSingleChoice(input.replace(/\/+/g, '').trim())
 }
 
 const getTotalPlayerCount = (room) => room?.player?.length || 0
@@ -1181,12 +1190,12 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const factionTitle = factionFilter
                 ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
                 : ''
-            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Efek di atas adalah ringkasan kemampuan saat bermain.\n> Untuk detail karakter, ketik *.gr role <nama role>*; tambahkan *guide* untuk panduan cara bermain.\n            > Filter: *.gr role antagonis*, *.gr role protagonis*, atau *.gr role netral*.\n> Mode Custom dapat memilih role dengan nama atau nomor, contoh: *.custom role @pemain 2* atau AI nomor 3: *.custom role 3 mafia*.`, 'Avelia • Daftar Role', thumbNight, [
+            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n> Filter: *${usedPrefix}gr role antagonis*, *protagonis*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, 'Avelia • Daftar Role', thumbNight, [
                 ...roleFactionButtons(`${usedPrefix}gr`)
             ], m)
         }
         if (action === 'guide') {
-            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *.gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n            > 2. Buat room dengan command tema, contoh *.mafia create 10k*.\n> 3. Mode Custom: bagikan role otomatis dengan *.custom autorole*, atur pemain dengan *.custom role @pemain <role/nomor>* atau warga AI dengan *.custom role <nomor pemain> <role/nomor>*, lalu periksa dengan *.custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n> 4. Peserta masuk memakai *.mafia join*; taruhan ditahan langsung saat bergabung.\n> 5. Owner room memulai dengan *.mafia start*.\n> 6. Kartu aksi dan balasan pribadi (termasuk konfirmasi sukses/gagal serta hasil ramalan) dikirim di grup melalui dual-stanza tanpa reply. Pemain terkait melihat detailnya; anggota lain hanya melihat teks pengunci. Pilihan Hunter dapat dilakukan lewat tombol atau perintah yang tercantum di pesan.\n> 7. Lihat riwayat aktivitas game dengan *.mafia log*; voting dan aksi skip/bersembunyi tidak dicatat.\n> 8. Keluar dari room bertaruhan perlu konfirmasi; taruhan tetap di pot. Jika room dihapus, taruhan dikembalikan.\n> 9. Gunakan *.gr me*, *.gr history*, dan *.gr top* untuk statistik.`)
+            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *${usedPrefix}gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n\n> 2. Buat room dengan command tema, contoh *${usedPrefix}mafia create 10k*.\n\n> 3. Mode Custom: *${usedPrefix}custom autorole* untuk role acak, *${usedPrefix}custom role @pemain <role/nomor>* untuk pemain manusia, dan *${usedPrefix}custom role <nomor pemain> <role/nomor>* untuk warga AI. Periksa pilihan dengan *${usedPrefix}custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n\n> 4. Peserta masuk memakai *${usedPrefix}mafia join*; taruhan ditahan saat bergabung.\n\n> 5. Owner room memulai dengan *${usedPrefix}mafia start*.\n\n> 6. Kartu aksi dan informasi rahasia dikirim hanya kepada pemain terkait. Anggota lain hanya melihat teks pengunci.\n\n> 7. Lihat riwayat dengan *${usedPrefix}mafia log*. Voting dan aksi skip atau sembunyi tidak dicatat.\n\n> 8. Keluar dari room bertaruhan perlu konfirmasi dan taruhan tetap di pot. Menghapus room mengembalikan taruhan.\n\n> 9. Gunakan *${usedPrefix}gr me*, *${usedPrefix}gr history*, dan *${usedPrefix}gr top* untuk statistik.`)
         }
         if (['command', 'commands', 'cmd'].includes(action)) {
             const commandText = Object.values(GAME_CATEGORIES)
@@ -1998,22 +2007,30 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
 
     } else if (value === "role") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
-        const factionFilter = normalizeRoleFactionFilter(args.slice(1).join(' '))
+        const requestedRole = args.slice(1).join(' ').trim()
+        const showRoleGuide = /\s+(?:guide|panduan)$/i.test(requestedRole)
+        const roleInput = showRoleGuide
+            ? requestedRole.replace(/\s+(?:guide|panduan)$/i, '').trim()
+            : requestedRole
+        const factionFilter = normalizeRoleFactionFilter(requestedRole)
         if (target && !factionFilter) {
-            const selectedRole = resolveRoleChoice(args.slice(1).join(' '))
+            const selectedRole = resolveRoleChoice(roleInput)
             if (!selectedRole) return m.reply(status.warning('Role tidak ditemukan. Gunakan nama role yang tercantum di daftar role.'))
             const details = formatRoleDetails(selectedRole, game)
+            const guide = showRoleGuide
+                ? `\n\n${formatRoleGuide(selectedRole, game, usedPrefix || '.')}`
+                : ''
             const roleImage = getRoleImage(selectedRole, game.location)
             return conn.sendMessage(chat, {
                 image: { url: roleImage || thumbNight },
-                caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}`
+                caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
             }, { quoted: m })
         }
         const roleSections = formatRoleList(game, factionFilter)
         const factionTitle = factionFilter
             ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
             : ''
-        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n> Detail karakter: *${gameCommandBase} role <nama role>*; tambahkan *guide* untuk panduan cara bermain.\n> Filter: *${gameCommandBase} role antagonis*, *protagonis*, atau *netral*.`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
+        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n> Filter: *${gameCommandBase} role antagonis*, *protagonis*, atau *netral*`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
 
     } else if (isGameRolesCommand) {
         return sendGameRolesMenu(conn, chat, usedPrefix, m)
