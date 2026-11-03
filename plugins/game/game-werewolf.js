@@ -307,7 +307,7 @@ const getAiNightActionCode = (player, actionType, category) => {
     return getRandomItem(activeCodes.length ? activeCodes : availableCodes)
 }
 
-const getAiDiscussionMessage = (room, player, conn) => {
+const getAiDiscussionMessage = (room, player, conn, eligibleTargetNumbers = null) => {
     const isCipher = player.role === 'cipher' && !player.infectionType
     const roleMessages = isCipher
         ? CIPHER_AI_MESSAGES
@@ -317,6 +317,8 @@ const getAiDiscussionMessage = (room, player, conn) => {
     if (roleMessages) {
         const targets = room.player.filter((entry) =>
             entry.id !== player.id && !entry.isDummy && !entry.isdead
+        ).filter((entry) =>
+            !Array.isArray(eligibleTargetNumbers) || eligibleTargetNumbers.includes(Number(entry.number))
         )
         const useTargetMessage = targets.length > 0 && Math.random() < 0.5
         const template = getRandomItem(useTargetMessage ? roleMessages.target : roleMessages.general)
@@ -339,6 +341,9 @@ const getAiDiscussionMessage = (room, player, conn) => {
     if (!message?.includes('{target}')) return message
     const targets = room.player.filter((entry) => entry.id !== player.id && !entry.isDummy)
         .filter((entry) => !entry.isdead)
+        .filter((entry) =>
+            !Array.isArray(eligibleTargetNumbers) || eligibleTargetNumbers.includes(Number(entry.number))
+        )
     const target = getRandomItem(targets)
     return target
         ? message.replace('{target}', getDisplayPlayerLabel(target, conn))
@@ -945,7 +950,12 @@ const runAiCitizenVotes = async (conn, chat, room) => {
 
         try {
             await conn.sendMessage(chat, {
-                text: formatAiCitizenMessage(player, getAiDiscussionMessage(room, player, conn))
+                text: formatAiCitizenMessage(player, getAiDiscussionMessage(
+                    room,
+                    player,
+                    conn,
+                    Array.isArray(room.runoffCandidateNumbers) ? room.runoffCandidateNumbers : null
+                ))
             })
         } catch (error) {
             console.error(`[werewolf AI discussion message failed] player=${player.displayName}`, error)
