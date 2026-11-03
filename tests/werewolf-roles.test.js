@@ -8,6 +8,7 @@ import {
   collapseZombieVampireInfections,
   formatFinalRoleRoster,
   generateVoteCodeMap,
+  getAntagonistCount,
   getWerewolfPlayerFaction,
   getWinner,
   getNightProgress,
@@ -271,10 +272,24 @@ test('secret vote codes are private per player and resolve votes without reveali
   assert.equal(Object.values(runoffCodes).some((choice) => choice.type === 'vote-skip'), false)
 })
 
-test('AI citizens receive protagonist roles alongside a human player; AI-only games assign antagonists too', () => {
+test('antagonist count scales with room size and additional antagonists can be AI players', () => {
+  assert.deepEqual([5, 6, 7, 10, 11, 15].map(getAntagonistCount), [1, 1, 2, 2, 3, 3])
+  for (const category of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite', 'zombie', 'vampire']) {
+    for (const playerCount of [5, 6, 7, 10, 11, 15]) {
+      const room = { room: `${category}-${playerCount}`, category, player: [] }
+      const distribution = roleAmount(room.room, { [room.room]: room }, undefined, playerCount)
+      const antagonistTotal = Object.entries(distribution)
+        .filter(([role]) => role === category)
+        .reduce((total, [, amount]) => total + amount, 0)
+      assert.equal(antagonistTotal, getAntagonistCount(playerCount), `${category} with ${playerCount} players`)
+    }
+  }
+})
+
+test('AI citizens receive their share of scaled antagonist roles in mixed rooms', () => {
   const players = [
     { id: 'human', number: 1, role: false, isdead: false },
-    ...Array.from({ length: 4 }, (_, index) => ({
+    ...Array.from({ length: 9 }, (_, index) => ({
       id: `ai-${index}`,
       number: index + 2,
       role: false,
@@ -288,9 +303,15 @@ test('AI citizens receive protagonist roles alongside a human player; AI-only ga
 
   assert.equal(roleGenerator('test', rooms), true)
   assert.equal(players[0].role, 'werewolf')
-  assert.equal(players.slice(1).every((player) =>
+  assert.equal(players.filter((player) =>
+    getWerewolfPlayerFaction(room, player) === 'antagonist'
+  ).length, 2)
+  assert.equal(players.slice(1).filter((player) =>
+    getWerewolfPlayerFaction(room, player) === 'antagonist'
+  ).length, 1)
+  assert.equal(players.slice(1).filter((player) =>
     ['warga', 'seer', 'guardian', 'hunter', 'mayor', 'warden', 'ghost'].includes(player.role)
-  ), true)
+  ).length, 8)
 
   const aiOnlyRoom = {
     room: 'ai-only',
@@ -309,6 +330,9 @@ test('AI citizens receive protagonist roles alongside a human player; AI-only ga
   assert.equal(aiOnlyRoom.player.some((player) =>
     getWerewolfPlayerFaction(aiOnlyRoom, player) === 'antagonist'
   ), true)
+  assert.equal(aiOnlyRoom.player.filter((player) =>
+    getWerewolfPlayerFaction(aiOnlyRoom, player) === 'antagonist'
+  ).length, 1)
 })
 
 test('AI-only Mayhem and Custom rooms can receive playable role assignments', () => {
@@ -347,6 +371,30 @@ test('AI-only Mayhem and Custom rooms can receive playable role assignments', ()
   assert.equal(customRoom.player.some((player) =>
     getWerewolfPlayerFaction(customRoom, player) === 'antagonist'
   ), true)
+})
+
+test('Custom auto-assignment scales remaining antagonists without replacing manual assignments', () => {
+  const players = Array.from({ length: 10 }, (_, index) => ({
+    id: `custom-mixed-${index}`,
+    number: index + 1,
+    role: index === 0 ? 'mafia' : 'warga',
+    isAiCitizen: index > 0,
+    isdead: false
+  }))
+  const room = {
+    room: 'custom-scaled-auto',
+    category: 'custom',
+    player: players,
+    customRoles: { [players[0].id]: 'mafia' },
+    dead: []
+  }
+  const rooms = { [room.room]: room }
+
+  assert.equal(autoAssignCustomRoles(room.room, rooms), true)
+  assert.equal(players.filter((player) => CUSTOM_ANTAGONIST_ROLES.includes(player.role)).length, 2)
+  assert.equal(players[0].role, 'mafia')
+  assert.equal(new Set(players.filter((player) => CUSTOM_ANTAGONIST_ROLES.includes(player.role))
+    .map((player) => player.role)).size, 1)
 })
 
 test('Zombie and Vampire rooms assign their own antagonist roles', () => {
@@ -481,21 +529,25 @@ test('Zombie and Vampire infections collapse after the last original antagonist 
   }
 })
 
-test('Final role roster puts status after role and distinguishes infected from uninfected players', () => {
+test('Final role roster keeps original roles and shows only infection or death markers', () => {
   const zombieRoster = formatFinalRoleRoster([
     { id: 'clear', number: 1, role: 'warga', displayName: 'Sari', isAiCitizen: true, isdead: false },
-    { id: 'infected-zombie', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true, infectionType: 'zombie', isdead: true }
+    { id: 'infected-zombie', number: 2, role: 'seer', displayName: 'Raka', isAiCitizen: true, infectionType: 'zombie', isdead: false },
+    { id: 'dead-infected-zombie', number: 3, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'zombie', isdead: true }
   ], 'zombie')
 
-  assert.match(zombieRoster, /> Sari\n> Role: \*Warga 👱‍♂️\*\n> Status: Hidup/)
-  assert.match(zombieRoster, /> Raka\n> Role: \*Infected 🧟\*\n> Status: 💀 Mati/)
-  assert.doesNotMatch(zombieRoster, /⚪|🟢|🔴|Vampire|🧛/)
+  assert.match(zombieRoster, /> 1\. Sari — \*Warga 👱‍♂️\*/)
+  assert.match(zombieRoster, /> 2\. Raka — \*Seer 👳\* 🧟‍♂️/)
+  assert.match(zombieRoster, /> 3\. Mira — \*Mayor 👑\* 💀/)
+  assert.match(zombieRoster, /> 🧟‍♂️ Tertular · 💀 Mati/)
+  assert.doesNotMatch(zombieRoster, /⚪|🟢|🔴|Vampire|🧛|Hidup|Infected/)
 
   const vampireRoster = formatFinalRoleRoster([
     { id: 'infected-vampire', number: 1, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'vampire', isdead: false }
   ], 'vampire')
-  assert.match(vampireRoster, /> Mira\n> Role: \*Infected 🧛\*\n> Status: Hidup/)
-  assert.doesNotMatch(vampireRoster, /Zombie|🧟/)
+  assert.match(vampireRoster, /> 1\. Mira — \*Mayor 👑\* 🧛‍♂️/)
+  assert.match(vampireRoster, /> 🧛‍♂️ Tertular · 💀 Mati/)
+  assert.doesNotMatch(vampireRoster, /Zombie|🧟|Hidup|Infected/)
 })
 
 test('Vigilante mode assigns the sole Vigilante to a human and antagonists to everyone else', () => {
@@ -515,9 +567,12 @@ test('Vigilante mode assigns the sole Vigilante to a human and antagonists to ev
   assert.equal(roleGenerator(room.room, rooms), true)
   assert.equal(players[0].role, 'vigilante')
   assert.equal(players.filter((player) => player.role === 'vigilante').length, 1)
-  assert.equal(players.slice(1).every((player) =>
+  assert.equal(players.filter((player) =>
     getWerewolfPlayerFaction(room, player) === 'antagonist'
-  ), true)
+  ).length, 1)
+  assert.equal(players.filter((player) =>
+    getWerewolfPlayerFaction(room, player) === 'protagonist'
+  ).length > 1, true)
   assert.equal(roleAmount(room.room, rooms, undefined, players.length).vigilante, 1)
 })
 
@@ -536,6 +591,12 @@ test('Vigilante count scales with room size and all Vigilantes capture instead o
     }
     const roles = roleAmount(room.room, { [room.room]: room }, undefined, playerCount)
     assert.equal(roles.vigilante, getVigilanteCount(playerCount))
+    assert.equal(
+      Object.entries(roles)
+        .filter(([role]) => CUSTOM_ANTAGONIST_ROLES.includes(role))
+        .reduce((total, [, amount]) => total + amount, 0),
+      getAntagonistCount(playerCount)
+    )
   }
 
   const scaledRoom = {
@@ -678,6 +739,12 @@ test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist
 
   assert.equal(roleGenerator(room.room, rooms), true)
   const mayhemDistribution = roleAmount(room.room, rooms, undefined, players.length)
+  assert.equal(
+    Object.entries(mayhemDistribution)
+      .filter(([role]) => CUSTOM_ANTAGONIST_ROLES.includes(role))
+      .reduce((total, [, amount]) => total + amount, 0),
+    getAntagonistCount(players.length)
+  )
   assert.equal(Object.entries(mayhemDistribution)
     .filter(([role]) => role !== 'warga' && !CUSTOM_ANTAGONIST_ROLES.includes(role))
     .every(([, amount]) => amount === 1), true)

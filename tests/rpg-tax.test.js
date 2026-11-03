@@ -9,21 +9,31 @@ import {
   createCafeStaffMember,
   ensureCafe,
   getCafeVisitCooldownRemaining,
+  getCafeCctvCooldownRemaining,
+  getCafeThemePrice,
   getCafeCctvStory,
+  getCafeMenuLimit,
+  getCafeStaffCapacity,
+  getCafeStaffRole,
   getCafeStaffDialogue,
   getCafeVisitors,
   hasCafeStaffBeenTalkedTo,
   markCafeStaffTalkedTo,
   markCafeVisitorTalked,
   registerCafeVisit,
+  registerCafeCctvView,
   refreshCafeVisitors
 } from '../lib/rpgCafe.js'
 import {
   CAFE_CCTV_STORIES,
+  CAFE_CCTV_COOLDOWN_MS,
   CAFE_SHIFT_MS,
   CAFE_VISIT_COOLDOWN_MS,
   CAFE_VISITOR_STAY_MS,
-  CAFE_NPCS
+  CAFE_NPCS,
+  CAFE_MENU_CATALOG,
+  CAFE_THEME_PAGE_SIZE,
+  CAFE_THEMES
 } from '../lib/rpgCafeData.js'
 import {
   calculateProgressiveTax,
@@ -132,7 +142,7 @@ test('cafe shifts record customer sales and taxable net profit without double co
 
   assert.equal(advanceCafeOperations(cafe, data, playerJid, now, () => 0), 1)
   const period = getTaxPeriod(new Date(now))
-  assert.equal(cafe.lastShift.customers, 2)
+  assert.equal(cafe.lastShift.customers, 4)
   assert.equal(cafe.lastShift.served, 1)
   assert.equal(cafe.lastShift.visitors.every(visitor =>
     visitor.dialogue.length === 2 &&
@@ -147,7 +157,7 @@ test('cafe shifts record customer sales and taxable net profit without double co
   assert.equal(calculatePlayerTaxSnapshot(data.users[playerJid], data, period).business, '3000')
 })
 
-test('cafe staff names are randomized from library data and CCTV has five story variants', () => {
+test('cafe staff names are randomized and CCTV stories remain available without visitor transcripts', () => {
   const cafe = createCafe('Story Cafe')
   cafe.staff.cashier = createCafeStaffMember('cashier', 100, () => 0.25, cafe)
 
@@ -158,6 +168,7 @@ test('cafe staff names are randomized from library data and CCTV has five story 
   )
   assert.equal(new Set(stories.map(story => story.title)).size, 5)
   assert.match(stories[0].staff, /Niko/)
+  assert.equal(stories[0].visitors, undefined)
 })
 
 test('cafe visit creates a timed NPC roster and staff dialogue comes from the library catalog', () => {
@@ -207,7 +218,7 @@ test('cafe level and popularity raise demand without exceeding upgraded capacity
   const starterCafe = createCafe('Starter Cafe', now - CAFE_SHIFT_MS)
   starterCafe.finance.balance = '100000'
   assert.equal(advanceCafeOperations(starterCafe, data, playerJid, now, () => 0), 1)
-  assert.equal(starterCafe.lastShift.customers, 2)
+  assert.equal(starterCafe.lastShift.customers, 4)
 
   const famousCafe = createCafe('Famous Cafe', now - CAFE_SHIFT_MS)
   famousCafe.finance.balance = '100000'
@@ -227,7 +238,7 @@ test('cafe level and popularity raise demand without exceeding upgraded capacity
   assert.equal(cafe.capacity, 50)
 })
 
-test('legacy cafe capacity is preserved while future growth remains upgrade-based', () => {
+test('legacy cafe capacity is preserved and level adds capacity growth', () => {
   const legacyCafe = createCafe('Legacy Cafe')
   legacyCafe.capacity = 16
   legacyCafe.level = 6
@@ -235,15 +246,134 @@ test('legacy cafe capacity is preserved while future growth remains upgrade-base
   delete legacyCafe.capacityBase
 
   ensureCafe({ cafe: legacyCafe })
-  assert.equal(legacyCafe.capacity, 16)
+  assert.equal(legacyCafe.capacity, 18)
   assert.equal(legacyCafe.capacityBase, 12)
+})
+
+test('cafe level expands menu and staffing limits while same-role hires are supported', () => {
+  const cafe = createCafe('Growing Cafe')
+  const cashierOne = createCafeStaffMember('cashier', 100, () => 0, cafe)
+  const cashierTwo = createCafeStaffMember('cashier', 101, () => 0, cafe)
+  cafe.staff[cashierOne.id] = cashierOne
+  cafe.staff[cashierTwo.id] = cashierTwo
+
+  assert.notEqual(cashierOne.id, cashierTwo.id)
+  assert.notEqual(cashierOne.name, cashierTwo.name)
+  assert.equal(getCafeStaffRole(cashierOne), 'cashier')
+  assert.equal(getCafeStaffCapacity(cafe), 1)
+  assert.equal(getCafeMenuLimit(cafe), 8)
+
+  const firstShift = Date.UTC(2026, 10, 2, 12)
+  cafe.lastOperatedAt = firstShift - 1
+  cafe.finance.balance = '1000000'
+  assert.equal(advanceCafeOperations(cafe, makeDb().data, playerJid, firstShift, () => 0), 1)
+  const firstWorker = cafe.lastShift.staffOnDuty[0].id
+  assert.equal(advanceCafeOperations(cafe, makeDb().data, playerJid, firstShift + CAFE_SHIFT_MS, () => 0), 1)
+  assert.notEqual(cafe.lastShift.staffOnDuty[0].id, firstWorker)
+
+  cafe.level = 3
+  assert.equal(getCafeStaffCapacity(cafe), 3)
+  assert.equal(getCafeMenuLimit(cafe), 12)
+
+  const legacyCafe = createCafe('Legacy Staff Cafe')
+  legacyCafe.staff.cashier = { name: 'Alya', hiredAt: 1 }
+  legacyCafe.lastShift = { staffOnDuty: [{ id: 'cashier', name: 'Alya' }], talkedStaffIds: ['cashier'] }
+  ensureCafe({ cafe: legacyCafe })
+  const [migratedId] = Object.keys(legacyCafe.staff)
+  assert.equal(legacyCafe.staff[migratedId].role, 'cashier')
+  assert.equal(legacyCafe.lastShift.staffOnDuty[0].id, migratedId)
+  assert.deepEqual(legacyCafe.lastShift.talkedStaffIds, [migratedId])
+})
+
+test('cafe operates on Jakarta 07:00 and 19:00 boundaries', () => {
+  const data = makeDb().data
+  const morningStart = Date.UTC(2026, 10, 2, 0)
+  const cafe = createCafe('Round-the-clock Cafe', morningStart - 1)
+  cafe.finance.balance = '100000'
+
+  assert.equal(CAFE_SHIFT_MS, 12 * 60 * 60 * 1000)
+  assert.equal(advanceCafeOperations(cafe, data, playerJid, morningStart, () => 0), 1)
+  assert.equal(cafe.lastShift.at, morningStart)
+  const eveningStart = morningStart + CAFE_SHIFT_MS
+  assert.equal(advanceCafeOperations(cafe, data, playerJid, eveningStart, () => 0), 1)
+  assert.equal(cafe.lastShift.at, eveningStart)
+})
+
+test('Premium cafe auto-restock and auto-pay use the correct balances', () => {
+  const data = makeDb().data
+  const owner = data.users[playerJid]
+  owner.premium = true
+  const now = Date.UTC(2026, 10, 2, 12)
+  const restockCafe = createCafe('Auto Stock Cafe', now - 1)
+  restockCafe.finance.balance = '1000000'
+  restockCafe.autoRestock = true
+  assert.equal(advanceCafeOperations(restockCafe, data, playerJid, now, () => 0), 1)
+  assert.equal(restockCafe.lastShift.restocks.length > 0, true)
+  assert.equal(BigInt(restockCafe.finance.expenses) > 5000n, true)
+
+  const payrollCafe = createCafe('Auto Pay Cafe', now - 1)
+  payrollCafe.finance.balance = '5000'
+  payrollCafe.autoPay = true
+  const employee = createCafeStaffMember('cashier', now - 1, () => 0, payrollCafe)
+  payrollCafe.staff[employee.id] = employee
+  const previousMoney = BigInt(owner.money)
+  assert.equal(advanceCafeOperations(payrollCafe, data, playerJid, now, () => 0), 1)
+  assert.equal(BigInt(owner.money), previousMoney - 75000n)
+  assert.equal(payrollCafe.lastShift.staffOnDuty[0].name, employee.name)
+  assert.equal(payrollCafe.finance.expenses, '80000')
+})
+
+test('99 paid cafe themes rise by five times and scale with cafe level and assets', () => {
+  const emptyCafe = createCafe('Empty Cafe')
+  emptyCafe.menu = {}
+
+  assert.equal(CAFE_THEMES.garden.price, 2500000n)
+  assert.equal(CAFE_THEMES.modern.price, 12500000n)
+  assert.equal(CAFE_THEMES.rustic.price, 62500000n)
+  assert.equal(CAFE_THEMES.grandPalace.price, 500000n * 5n ** 99n)
+  assert.equal(Object.keys(CAFE_THEMES).length, 100)
+  assert.equal(CAFE_THEME_PAGE_SIZE, 7)
+  assert.deepEqual(getCafeThemePrice(emptyCafe, 'modern'), {
+    base: '12500000',
+    level: '0',
+    menu: '0',
+    staff: '0',
+    upgrades: '0',
+    total: '12500000'
+  })
+
+  const developedCafe = createCafe('Developed Cafe')
+  developedCafe.level = 5
+  developedCafe.menu = { coffee: { enabled: true }, tea: { enabled: true } }
+  developedCafe.staff = { 'staff-0001': {}, 'staff-0002': {} }
+  developedCafe.upgrades = { capacity: 2, kitchen: 1 }
+  assert.deepEqual(getCafeThemePrice(developedCafe, 'modern'), {
+    base: '12500000',
+    level: '5000000',
+    menu: '500000',
+    staff: '1250000',
+    upgrades: '3750000',
+    total: '23000000'
+  })
+})
+
+test('CCTV is rate-limited and cafe themes include benefits and drawbacks', () => {
+  const cafe = createCafe('CCTV Cafe')
+  const now = Date.UTC(2026, 10, 2, 12)
+
+  assert.equal(registerCafeCctvView(cafe, now), true)
+  assert.equal(getCafeCctvCooldownRemaining(cafe, now + 1), CAFE_CCTV_COOLDOWN_MS - 1)
+  assert.equal(registerCafeCctvView(cafe, now + 1), false)
+  assert.equal(Object.keys(CAFE_THEMES).length, 100)
+  assert.equal(Object.values(CAFE_THEMES).every(theme => theme.benefit && theme.drawback), true)
+  assert.equal(Object.keys(CAFE_MENU_CATALOG).length > 0, true)
 })
 
 test('staff multipliers increase payroll and repeated unpaid shifts trigger resignation', () => {
   const data = makeDb().data
   const now = Date.UTC(2026, 10, 2, 12)
   const paidCafe = createCafe('Well Paid Cafe', now - CAFE_SHIFT_MS)
-  paidCafe.finance.balance = '100000'
+  paidCafe.finance.balance = '200000'
   paidCafe.stock.kopi = 4
   paidCafe.level = 5
   paidCafe.staff.cashier = {
@@ -254,7 +384,7 @@ test('staff multipliers increase payroll and repeated unpaid shifts trigger resi
   }
 
   assert.equal(advanceCafeOperations(paidCafe, data, playerJid, now, () => 0), 1)
-  assert.equal(paidCafe.finance.expenses, '35000')
+  assert.equal(paidCafe.finance.expenses, '155000')
   assert.equal(paidCafe.lastShift.staffOnDuty[0].name, 'Alya')
   assert.equal(paidCafe.lastShift.served, 4)
   assert.equal(paidCafe.popularity, 5)
@@ -276,7 +406,7 @@ test('staff multipliers increase payroll and repeated unpaid shifts trigger resi
   }
   assert.equal(advanceCafeOperations(unpaidCafe, data, playerJid, now + CAFE_SHIFT_MS, () => 0), 2)
   assert.deepEqual(unpaidCafe.lastShift.resigned, ['Niko'])
-  assert.equal(unpaidCafe.staff.cashier, undefined)
+  assert.equal(Object.keys(unpaidCafe.staff).length, 0)
 })
 
 test('reenabling taxation resets the automatic collection boundary', async () => {
