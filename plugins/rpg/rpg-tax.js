@@ -14,10 +14,12 @@ import {
   getBillAmounts,
   getOrCreateTaxpayer,
   getTaxCategory,
+  getTaxDueAt,
   getTaxPeriod,
   parseTaxRateBps,
   TAX_CATEGORIES
 } from '../../lib/rpgTax.js'
+import { enforceOverdueTax } from '../../lib/rpgTaxEnforcement.js'
 
 const formatMoney = value => formatRpgMoney(value)
 const normalizeJid = jid => {
@@ -71,13 +73,13 @@ function formatBill(bill, state, now = Date.now()) {
     `│ Tax ID : ${bill.taxId}\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📅 Periode : ${bill.period}\n` +
-    `📋 Status : ${Date.now() > bill.dueAt && compareRpgMoney(amounts.total, 0) > 0 ? 'Overdue' : compareRpgMoney(amounts.total, 0) > 0 ? 'Unpaid' : 'Paid'}\n\n` +
+    `📋 Status : ${Date.now() >= bill.dueAt && compareRpgMoney(amounts.total, 0) > 0 ? 'Overdue' : compareRpgMoney(amounts.total, 0) > 0 ? 'Unpaid' : 'Paid'}\n\n` +
     `${lines.length ? lines.join('\n') : '> ↳ Tidak ada pajak terutang.'}\n\n` +
     `> ↳ Pokok tersisa : ${formatMoney(amounts.principal)}\n` +
     `> ↳ Denda berjalan : ${formatMoney(amounts.penalty)}\n` +
     `> ↳ Total tagihan : ${formatMoney(amounts.total)}\n` +
     `> ↳ Dibayar : ${formatMoney(bill.paidTotal || '0')}\n` +
-    `⏳ Jatuh tempo : ${new Date(bill.dueAt).toLocaleString('id-ID')}\n\n` +
+    `⏳ Jatuh tempo : ${new Date(bill.dueAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n\n` +
     `╰─━━━━━━━━━━━━━━─`
 }
 
@@ -93,7 +95,7 @@ function makeTaxBill(state, data, taxpayer, period, account, now) {
     taxId: taxpayer.taxId,
     period,
     issuedAt: now,
-    dueAt: now + state.config.dueDays * 24 * 60 * 60 * 1000,
+    dueAt: getTaxDueAt(period),
     principal,
     paidPrincipal: '0',
     paidPenalty: '0',
@@ -140,13 +142,19 @@ let taxSchedulerStarted = false
 async function runAutomaticTaxCollection(now = new Date()) {
   if (!global.db?.data) return
   const state = ensureTaxState(global.db.data)
-  if (!state.config.enabled) return
+  const enforced = enforceOverdueTax(global.db.data, state, now.getTime())
 
   const period = previousTaxPeriod(now)
-  if (period < state.config.activatedPeriod || state.collections[period]) return
+  if (!state.config.enabled || period < state.config.activatedPeriod || state.collections[period]) {
+    if (enforced) await persist()
+    return
+  }
 
   const result = collectTaxPeriod(state, global.db.data, period, now.getTime())
-  if (result.alreadyCollected) return
+  if (result.alreadyCollected) {
+    if (enforced) await persist()
+    return
+  }
   recordAudit(state, 'system', 'tax-auto-collect', `${period}: ${result.issued} bills`)
   await persist()
 }
@@ -322,41 +330,15 @@ function renderTaxList() {
 
 function renderTaxIntro(prefix) {
   return `╭─❏「 🏛️ TAX DEPARTMENT 」❏\n│ SISTEM PERPAJAKAN AVELIA\n╰─━━━━━━━━━━━━━━─\n\n` +
-    `🏛️ TAX SYSTEM\n\n> ↳ Pajak mingguan mencatat kewajiban, tagihan, pembayaran, dan pemasukan Treasury.\n\n📅 Periode : Weekly (7 Hari)\n📋 Jenis Pajak : ${TAX_CATEGORIES.length} Kategori\n\n` +
+    `🏛️ TAX SYSTEM\n\n> ↳ Periode pajak mengikuti kalender Senin–Minggu, dengan batas pembayaran setiap Senin.\n\n📅 Periode : Senin–Minggu (WIB)\n📋 Jenis Pajak : ${TAX_CATEGORIES.length} Kategori\n\n` +
     `─━━━━━━━━━━━━━━─\n\n💰 TAX CATEGORIES\n\n` +
     TAX_CATEGORIES.map((category, index) => `> ↳ ${index + 1}. ${category.name}`).join('\n') +
     `\n\n─━━━━━━━━━━━━━━─\n\n📌 Gunakan *${prefix}tax guide* untuk panduan lengkap.\n╰─━━━━━━━━━━━━━━─`
 }
 
-function renderGovernmentOverview(state, period) {
-  const taxpayers = Object.values(state.taxpayers)
-  let overdue = 0
-  let unpaid = 0
-  for (const taxpayer of taxpayers) {
-    if (formatTaxStatus(taxpayer, Date.now(), state.config.penaltyTiers) === 'Overdue') overdue++
-    if (hasOpenBalance(state, taxpayer)) unpaid++
-  }
-  const issued = Object.values(state.collections).reduce((total, collection) => total + collection.issued, 0)
-  const paid = Object.values(state.collections).reduce((total, collection) => total + collection.paid, 0)
-  return `╭─❏「 🏛️ AVELIA GOVERNMENT 」❏\n│ ADMINISTRASI PEMERINTAHAN AVELIA\n╰─━━━━━━━━━━━━━━─\n\n` +
-    `🏛️ GOVERNMENT OVERVIEW\n\n> ↳ Pemerintahan Avelia mengelola administrasi pajak dan penerimaan negara.\n\n` +
-    `─━━━━━━━━━━━━━━─\n\n💰 GOVERNMENT TREASURY\n\n> ↳ Saldo Kas : ${formatMoney(state.treasury.balance)}\n> ↳ Total Pemasukan : ${formatMoney(state.treasury.income)}\n> ↳ Pemasukan Periode Ini : ${formatMoney(state.collections[period]?.income || '0')}\n\n` +
-    `📊 TAX STATISTICS\n\n> ↳ Total Taxpayer : ${taxpayers.length}\n> ↳ Tagihan Diterbitkan : ${issued}\n> ↳ Tagihan Terbayar : ${paid}\n> ↳ Tagihan Tertunggak : ${unpaid}\n> ↳ Tagihan Overdue : ${overdue}\n\n─━━━━━━━━━━━━━━─\n\n📌 GOVERNMENT SERVICES\n\n> ↳ .government treasury\n> ↳ .government income\n> ↳ .government history\n> ↳ .government statistics\n\n╰─━━━━━━━━━━━━━━─`
-}
-
-function renderTreasury(state, period) {
-  const taxes = TAX_CATEGORIES.map(category =>
-    `> ↳ ${category.name} : ${formatMoney(state.treasury.revenueByTax[category.id] || '0')}`
-  ).join('\n')
-  return `╭─❏「 💰 GOVERNMENT TREASURY 」❏\n│ KAS PEMERINTAH AVELIA\n╰─━━━━━━━━━━━━━━─\n\n` +
-    `🏛️ TREASURY BALANCE\n\n> ↳ Saldo Kas : ${formatMoney(state.treasury.balance)}\n> ↳ Total Pemasukan : ${formatMoney(state.treasury.income)}\n> ↳ Total Pengeluaran : ${formatMoney(state.treasury.expenses)}\n\n─━━━━━━━━━━━━━━─\n\n📥 TAX REVENUE\n\n${taxes}\n> ↳ Denda : ${formatMoney(state.treasury.revenueByTax.lateFees || '0')}\n\n─━━━━━━━━━━━━━━─\n\n📅 Periode : ${period}\n╰─━━━━━━━━━━━━━━─`
-}
-
-let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', isOwner = false }) => {
+let handler = async (m, { args = [], text = '', usedPrefix = '.', isOwner = false }) => {
   loadDB()
   const state = ensureTaxState(global.db.data)
-  const root = String(command).toLowerCase()
-  const government = root === 'government' || root === 'gov'
   const prefix = usedPrefix || '.'
   const words = String(text || args.join(' ') || '').trim().split(/\s+/).filter(Boolean)
   const mode = String(words.shift() || '').toLowerCase()
@@ -364,41 +346,12 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', 
   const jid = normalizeJid(m.sender)
   const account = getAccount(jid)
 
-  if (government) {
-    if (mode === 'info') return m.reply('Avelia Government mengelola administrasi perpajakan dan pencatatan Government Treasury. Administrasi terbatas untuk Owner.')
-    if (mode === 'treasury') return m.reply(renderTreasury(state, period))
-    if (mode === 'income') {
-      const category = words.length && words.join(' ').toLowerCase() !== 'tax'
-        ? getTaxCategory(words.join(' '))
-        : null
-      if (words.length && !category) return m.reply('❌ Jenis pajak tidak dikenal. Gunakan *.government income tax* untuk daftar pemasukan per pajak.')
-      const rows = category
-        ? [`> ↳ ${category.name} : ${formatMoney(state.treasury.revenueByTax[category.id] || '0')}`]
-        : TAX_CATEGORIES.map(item => `> ↳ ${item.name} : ${formatMoney(state.treasury.revenueByTax[item.id] || '0')}`)
-      return m.reply(`╭─❏「 📥 GOVERNMENT INCOME 」❏\n│ LAPORAN PEMASUKAN NEGARA\n╰─━━━━━━━━━━━━━━─\n\n${rows.join('\n')}\n> ↳ Denda : ${formatMoney(state.treasury.revenueByTax.lateFees || '0')}\n\n💰 Total pemasukan : ${formatMoney(state.treasury.income)}\n╰─━━━━━━━━━━━━━━─`)
-    }
-    if (mode === 'history') {
-      const recent = state.treasury.transactions.slice(0, 15)
-      return m.reply(`╭─❏「 📜 GOVERNMENT HISTORY 」❏\n│ RIWAYAT PENERIMAAN TREASURY\n╰─━━━━━━━━━━━━━━─\n\n${recent.length ? recent.map(tx => `> ${tx.id} · ${tx.period}\n> ↳ ${tx.taxId} · ${formatMoney(tx.amount)} · ${new Date(tx.at).toLocaleString('id-ID')}`).join('\n\n') : '> Belum ada transaksi penerimaan.'}\n\n╰─━━━━━━━━━━━━━━─`)
-    }
-    if (mode === 'statistics' || mode === 'statistik') return m.reply(renderGovernmentOverview(state, period))
-    if (['config', 'audit'].includes(mode)) {
-      if (!isOwner) return m.reply('❌ Command administrasi Government hanya dapat digunakan Owner.')
-      if (mode === 'config') return m.reply(`Status pajak: ${state.config.enabled ? 'Aktif' : 'Nonaktif'}\nJatuh tempo: ${state.config.dueDays} hari\nGunakan *.tax config due <hari>* atau *.tax set on/off*.`)
-      return m.reply(`📋 Audit Government\n> ↳ Collection tercatat: ${Object.keys(state.collections).length}\n> ↳ Transaksi Treasury: ${state.treasury.transactions.length}\n> ↳ Perubahan administrasi: ${state.audit.length}\n\n${state.audit.slice(0, 10).map(entry => `> ${entry.action} · ${entry.detail} · ${new Date(entry.at).toLocaleString('id-ID')}`).join('\n') || '> Belum ada perubahan administrasi.'}`)
-    } else if (mode && mode !== 'collect') {
-      return m.reply(`Command Government: *.government info*, *.government treasury*, *.government income [tax]*, *.government history*, *.government statistics*, *.government collect*, *.government audit*, *.government config*.`)
-    } else {
-      return m.reply(renderGovernmentOverview(state, period))
-    }
-  }
-
   if (['', 'menu'].includes(mode)) return m.reply(renderTaxIntro(prefix))
   if (mode === 'guide') {
-    return m.reply(`╭─❏「 📖 TAX GUIDE 」❏\n│ PANDUAN PERPAJAKAN AVELIA\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Periode pajak berjalan mingguan berdasarkan kalender ISO.\n> ↳ Tagihan diterbitkan otomatis setelah periode berakhir; Owner juga dapat menjalankan *.tax collect*.\n> ↳ Periode sebelum sistem pertama kali aktif tidak ditagih.\n> ↳ Pembayaran menggunakan saldo tunai dan dapat dicicil.\n> ↳ Denda dihitung dari pokok tersisa setelah jatuh tempo ${state.config.dueDays} hari.\n> ↳ Seluruh penerimaan tercatat di Government Treasury.\n> ↳ Wealth Tax menggunakan uang, bank, investasi, rumah, koleksi, pet, dan ternak yang tervaluasi.\n> ↳ Income, Financial, Purchase, dan Transaction Tax menggunakan aktivitas yang tercatat selama periode berjalan.\n> ↳ Tarif dapat diatur Owner; Family Tax memakai nominal per anak. Data kendaraan dan keuntungan bisnis belum tersedia.\n\nGunakan *.tax bill*, *.tax pay*, dan *.tax status* untuk mengelola kewajiban.\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📖 TAX GUIDE 」❏\n│ PANDUAN PERPAJAKAN AVELIA\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Periode pajak berjalan Senin–Minggu berdasarkan kalender WIB.\n> ↳ Tagihan minggu sebelumnya diterbitkan pada Senin; pembayaran jatuh tempo Senin berikutnya.\n> ↳ Periode sebelum sistem pertama kali aktif tidak ditagih.\n> ↳ Pembayaran menggunakan saldo tunai dan dapat dicicil.\n> ↳ Setelah lewat batas Senin, saldo tunai/bank dipotong, aset dapat disita, dan denda berjalan.\n    > ↳ Barang sitaan tersimpan di bank; gunakan *.bank sitaan* untuk melihat dan *.bank sitaan ambil <nomor|nama barang>* untuk menebusnya (biaya 110% nilai taksir).\n> ↳ Jika saldo dan aset yang dapat disita tidak cukup, pemain dinyatakan bangkrut dan sisa harta RPG dikosongkan.\n> ↳ Seluruh penerimaan tercatat di Government Treasury.\n> ↳ Wealth Tax menggunakan uang, bank, investasi, rumah, koleksi, pet, dan ternak yang tervaluasi.\n> ↳ Income, Financial, Purchase, dan Transaction Tax menggunakan aktivitas yang tercatat selama periode berjalan.\n> ↳ Tarif dapat diatur Owner; Family Tax memakai nominal per anak.\n\nGunakan *.tax bill*, *.tax pay*, dan *.tax status* untuk mengelola kewajiban.\n╰─━━━━━━━━━━━━━━─`)
   }
   if (mode === 'command' || mode === 'commands') {
-    return m.reply(`╭─❏「 📋 TAX COMMAND 」❏\n│ DAFTAR COMMAND PERPAJAKAN\n╰─━━━━━━━━━━━━━━─\n\n👤 PEMAIN\n> ↳ .tax info / status / bill / assets\n> ↳ .tax pay <nominal|all>\n> ↳ .tax history / list / guide\n> ↳ .tax benefits / effects / leaderboard\n\n🏛️ OWNER\n> ↳ .tax set <on|off>\n> ↳ .tax rate [jenis] [tarif]\n> ↳ .tax collect\n> ↳ .tax waive <Tax ID|JID>\n> ↳ .tax config due <hari> / family <nominal>\n> ↳ .tax treasury\n\n🏛️ GOVERNMENT\n> ↳ .government treasury / income / history / statistics\n> ↳ .government collect / config / audit\n\nAlias: .pajak dan .gov\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📋 TAX COMMAND 」❏\n│ DAFTAR COMMAND PERPAJAKAN\n╰─━━━━━━━━━━━━━━─\n\n👤 PEMAIN\n> ↳ .tax info / status / bill / assets\n> ↳ .tax pay <nominal|all>\n> ↳ .tax history / list / guide\n> ↳ .tax benefits / effects / leaderboard\n\n🏛️ OWNER\n> ↳ .tax set <on|off>\n> ↳ .tax rate [jenis] [tarif]\n> ↳ .tax collect (tagih periode minggu sebelumnya)\n> ↳ .tax waive <Tax ID|JID>\n> ↳ .tax config family <nominal>\n\nAlias: .pajak\n╰─━━━━━━━━━━━━━━─`)
   }
   if (mode === 'list') {
     const query = words.join(' ').trim()
@@ -431,8 +384,8 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', 
         : `${state.config.rates[category.id] / 100}%`
     return m.reply(`╭─❏「 📋 ${category.name.toUpperCase()} 」❏\n│ DETAIL JENIS PAJAK\n╰─━━━━━━━━━━━━━━─\n\n> ↳ Nomor : ${TAX_CATEGORIES.indexOf(category) + 1}\n> ↳ Dasar : ${explanation}\n> ↳ Tarif : ${rate}\n╰─━━━━━━━━━━━━━━─`)
   }
-  if (mode === 'benefits') return m.reply('✅ Status Clear menjaga kepatuhan pajak dan menghindari denda. Sistem belum membatasi fasilitas RPG secara otomatis.')
-  if (mode === 'effects') return m.reply('⚠️ Tagihan yang melewati jatuh tempo berstatus Overdue dan dapat dikenai denda bertingkat. Pembatasan fasilitas dan penyitaan belum diterapkan.')
+  if (mode === 'benefits') return m.reply('✅ Membayar tagihan sebelum Senin mencegah denda, pemotongan saldo, penyitaan aset, dan risiko bangkrut.')
+  if (mode === 'effects') return m.reply('⚠️ Jika tagihan belum lunas saat batas Senin: saldo tunai/bank dipotong, aset rumah/inventaris/lelang disita ke bank, dan denda berjalan. Jika tidak ada aset yang cukup, akun masuk kondisi bangkrut.')
   if (mode === 'set') {
     if (!isOwner) return m.reply('❌ Command administrasi Tax hanya dapat digunakan Owner.')
     const setting = String(words[0] || '').toLowerCase()
@@ -480,31 +433,29 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', 
   }
   if (mode === 'config') {
     if (!isOwner) return m.reply('❌ Pengaturan pajak hanya dapat digunakan Owner.')
-    if (words[0] === 'due') {
-      const days = Number(words[1])
-      if (!Number.isInteger(days) || days < 1 || days > 30) return m.reply('Jatuh tempo harus berupa 1–30 hari.')
-      state.config.dueDays = days
-      recordAudit(state, jid, 'tax-config', `dueDays=${days}`)
-      await persist()
-    } else if (words[0] === 'family') {
+    if (words[0] === 'due') return m.reply('❌ Batas pajak selalu jatuh pada Senin (WIB), bukan hitungan 1–30 hari.')
+    if (words[0] === 'family') {
       const amount = parseRpgMoneyAmount(words[1])
       if (amount === null || compareRpgMoney(amount, 0) < 0) return m.reply('Format: *.tax config family <nominal-per-anak>*')
       state.config.familyPerDependent = String(amount)
       recordAudit(state, jid, 'tax-config', `familyPerDependent=${amount}`)
       await persist()
     }
-    return m.reply(`⚙️ Tax Configuration\n> ↳ Status : ${state.config.enabled ? 'Aktif' : 'Nonaktif'}\n> ↳ Periode : Weekly (7 hari)\n> ↳ Jatuh tempo : ${state.config.dueDays} hari\n> ↳ Denda : 0%, 5%, 10%, 15%, 20%\n> ↳ Family Tax : ${formatMoney(state.config.familyPerDependent)} per anak\n\nGunakan *.tax config due <1-30>* atau *.tax config family <nominal>*.`)
+    return m.reply(`⚙️ Tax Configuration\n> ↳ Status : ${state.config.enabled ? 'Aktif' : 'Nonaktif'}\n> ↳ Periode : Senin–Minggu (WIB)\n> ↳ Jatuh tempo : Setiap Senin\n> ↳ Denda : 0%, 5%, 10%, 15%, 20%\n> ↳ Family Tax : ${formatMoney(state.config.familyPerDependent)} per anak\n\nGunakan *.tax config family <nominal>*.`)
   }
   if (mode === 'collect') {
     if (!isOwner) return m.reply('❌ Penerbitan tagihan hanya dapat dijalankan Owner.')
     if (!state.config.enabled) return m.reply('❌ Tax System sedang nonaktif. Aktifkan dengan *.tax set on*.')
-    if (state.collections[period]) return m.reply(`❌ Tagihan periode ${period} sudah diterbitkan; proses ulang diblokir agar tidak terjadi tagihan ganda.`)
-
     const now = Date.now()
-    const result = collectTaxPeriod(state, global.db.data, period, now)
-    recordAudit(state, jid, 'tax-collect', `${period}: ${result.issued} bills`)
+    const closedPeriod = previousTaxPeriod(new Date(now))
+    if (closedPeriod < state.config.activatedPeriod) {
+      return m.reply(`❌ Periode ${closedPeriod} terjadi sebelum Tax System aktif dan tidak dapat ditagih.`)
+    }
+    if (state.collections[closedPeriod]) return m.reply(`❌ Tagihan periode ${closedPeriod} sudah diterbitkan; proses ulang diblokir agar tidak terjadi tagihan ganda.`)
+    const result = collectTaxPeriod(state, global.db.data, closedPeriod, now)
+    recordAudit(state, jid, 'tax-collect', `${closedPeriod}: ${result.issued} bills`)
     await persist()
-    return m.reply(`✅ Penerbitan tagihan ${period} selesai.\n> ↳ Tagihan diterbitkan : ${result.issued}\n> ↳ Total pokok : ${formatMoney(result.principal)}\n> ↳ Jatuh tempo : ${state.config.dueDays} hari\n> ↳ Pajak dihitung dari aktivitas dan kepemilikan yang sudah terintegrasi.`)
+    return m.reply(`✅ Penerbitan tagihan ${closedPeriod} selesai.\n> ↳ Tagihan diterbitkan : ${result.issued}\n> ↳ Total pokok : ${formatMoney(result.principal)}\n> ↳ Jatuh tempo : Senin, ${new Date(getTaxDueAt(closedPeriod)).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n> ↳ Pajak dihitung dari aktivitas dan kepemilikan yang sudah terintegrasi.`)
   }
   if (mode === 'waive') {
     if (!isOwner) return m.reply('❌ Penghapusan tagihan hanya dapat dilakukan Owner.')
@@ -526,10 +477,6 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', 
     await persist()
     return m.reply(`✅ Tagihan ${taxpayer.taxId} untuk periode ${bill.period} telah dihapus.\n> ↳ Alasan : ${detail}`)
   }
-  if (mode === 'treasury') {
-    if (!isOwner) return m.reply('❌ Informasi administrasi Treasury hanya dapat digunakan Owner.')
-    return m.reply(renderTreasury(state, period))
-  }
   if (mode === 'info' || mode === 'status' || mode === 'bill' || mode === 'assets' || mode === 'pay' || mode === 'history') {
     if (!account?.rpg) return m.reply('❌ Kamu belum memiliki data RPG yang terdaftar.')
     const taxpayer = getOrCreateTaxpayer(state, jid)
@@ -540,7 +487,7 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', 
       return m.reply(bill ? formatBill(bill, state) : '✅ Kamu tidak memiliki tagihan pajak aktif.')
     }
     if (mode === 'status') {
-      return m.reply(`🧾 TAX STATUS\n> ↳ Tax ID : ${taxpayer.taxId}\n> ↳ Status : ${formatTaxStatus(taxpayer, Date.now(), state.config.penaltyTiers)}\n> ↳ Tagihan terbuka : ${taxpayer.bills.filter(bill => hasOpenBalance(state, { bills: [bill] })).length}`)
+      return m.reply(`🧾 TAX STATUS\n> ↳ Tax ID : ${taxpayer.taxId}\n> ↳ Status : ${formatTaxStatus(taxpayer, Date.now(), state.config.penaltyTiers)}\n> ↳ Tagihan terbuka : ${taxpayer.bills.filter(bill => hasOpenBalance(state, { bills: [bill] })).length}\n> ↳ Barang sitaan : ${account.rpg.taxSeizedAssets?.length || 0}\n> ↳ Kondisi : ${account.rpg.taxBankruptAt ? 'Bangkrut' : 'Normal'}`)
     }
     if (mode === 'assets') {
       const snapshot = getTaxAccountSnapshot(account)
@@ -572,12 +519,12 @@ let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', 
       .slice(0, 10)
     return m.reply(`╭─❏「 🏆 TAX LEADERBOARD 」❏\n│ PEMBAYAR PAJAK TERBANYAK\n╰─━━━━━━━━━━━━━━─\n\n${rows.map((row, index) => `${index + 1}. @${row.jid.split('@')[0]}\n> ↳ ${formatMoney(row.paid.toString())}`).join('\n\n') || '> Belum ada pembayaran pajak.'}\n╰─━━━━━━━━━━━━━━─`)
   }
-  return m.reply(`Command tidak dikenal. Gunakan *.tax command* atau *.government*.\nContoh: *.tax info*, *.tax bill*, *.tax pay all*.`)
+  return m.reply(`Command tidak dikenal. Gunakan *.tax command*.\nContoh: *.tax info*, *.tax bill*, *.tax pay all*. Command government ada di plugin terpisah.`)
 }
 
-handler.help = ['tax', 'pajak', 'government', 'gov']
+handler.help = ['tax', 'pajak']
 handler.tags = ['rpg', 'economy']
-handler.command = /^(tax|pajak|government|gov)$/i
+handler.command = /^(tax|pajak)$/i
 handler.before = async function () {
   startTaxScheduler()
 }
