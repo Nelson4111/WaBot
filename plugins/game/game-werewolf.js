@@ -1180,7 +1180,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                 const guide = showRoleGuide
                     ? `\n\n${formatRoleGuide(selectedRole, gameCategory, usedPrefix || '.')}`
                     : ''
-                const roleImage = getRoleImage(selectedRole, game.location)
+                const roleImage = getRoleImage(selectedRole, gameCategory.location)
                 return conn.sendMessage(chat, {
                     image: { url: roleImage || thumbNight },
                     caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
