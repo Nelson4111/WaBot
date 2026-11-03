@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import taxHandler from '../plugins/rpg/rpg-tax.js'
+import governmentHandler from '../plugins/rpg/rpg-government.js'
 import {
   addCafePopularity,
   addCafeExpense,
@@ -39,12 +40,16 @@ import {
   calculateProgressiveTax,
   calculatePlayerTaxSnapshot,
   calculateTaxItems,
+  getTaxDueAt,
+  getTaxPeriodStart,
   getBillAmounts,
   getTaxableWealth,
+  getOrCreateTaxpayer,
   getTaxPeriod,
   ensureTaxState,
   recordTaxActivity
 } from '../lib/rpgTax.js'
+import { enforceOverdueTax, restoreTaxSeizedAsset } from '../lib/rpgTaxEnforcement.js'
 
 const ownerJid = '628111111111@s.whatsapp.net'
 const playerJid = '628222222222@s.whatsapp.net'
@@ -98,6 +103,92 @@ test('tax calculations use progressive brackets and large integer-safe values', 
 test('weekly tax period follows the ISO calendar', () => {
   assert.equal(getTaxPeriod(new Date('2026-11-02T00:00:00.000Z')), '2026-W45')
   assert.equal(getTaxPeriod(new Date('2026-01-01T00:00:00.000Z')), '2026-W01')
+  assert.equal(getTaxPeriod(new Date('2026-11-01T16:59:59.999Z')), '2026-W44')
+  assert.equal(getTaxPeriod(new Date('2026-11-01T17:00:00.000Z')), '2026-W45')
+  assert.equal(new Date(getTaxPeriodStart('2026-W45')).toISOString(), '2026-11-01T17:00:00.000Z')
+  assert.equal(new Date(getTaxDueAt('2026-W45')).toISOString(), '2026-11-15T17:00:00.000Z')
+
+  const data = makeDb().data
+  data.taxSystem = {
+    config: { weeklyDeadlineVersion: 0 },
+    taxpayers: {
+      [playerJid]: { bills: [{ period: '2026-W45', dueAt: 123 }] }
+    }
+  }
+  ensureTaxState(data)
+  assert.equal(data.taxSystem.taxpayers[playerJid].bills[0].dueAt, getTaxDueAt('2026-W45'))
+})
+
+test('overdue tax collects available balances and moves auction assets into bank seizure storage', () => {
+  const data = makeDb().data
+  const account = data.users[playerJid]
+  account.money = 10
+  account.rpg.bank = 5
+  account.rpg.auctionVault = { act_dawn_wings: 1 }
+  const state = ensureTaxState(data)
+  const taxpayer = getOrCreateTaxpayer(state, playerJid)
+  const now = Date.parse('2026-11-16T00:00:00+07:00')
+  taxpayer.bills.push({
+    id: `${taxpayer.taxId}-2026-W45`,
+    taxId: taxpayer.taxId,
+    period: '2026-W45',
+    issuedAt: now - 7 * 86400000,
+    dueAt: now - 1,
+    principal: '1000',
+    paidPrincipal: '0',
+    paidPenalty: '0',
+    paidTotal: '0',
+    items: { wealth: '1000' }
+  })
+
+  assert.equal(enforceOverdueTax(data, state, now), 1)
+  assert.equal(account.money, 0)
+  assert.equal(account.rpg.bank, 0)
+  assert.deepEqual(account.rpg.auctionVault, {})
+  assert.equal(account.rpg.taxSeizedAssets[0].source, 'auction')
+  assert.equal(account.rpg.taxSeizedAssets[0].itemId, 'act_dawn_wings')
+  assert.equal(account.rpg.taxSeizedAssets[0].redemptionFee, '137500000')
+  assert.equal(enforceOverdueTax(data, state, now + 1000), 0)
+
+  restoreTaxSeizedAsset(account.rpg, account.rpg.taxSeizedAssets[0])
+  assert.equal(account.rpg.auctionVault.act_dawn_wings, 1)
+})
+
+test('tax enforcement declares bankruptcy only after balances and eligible assets are exhausted', () => {
+  const data = makeDb().data
+  const account = data.users[playerJid]
+  account.money = 10
+  account.rpg.bank = 10
+  account.rpg.mallInventory = {}
+  account.rpg.auctionVault = {}
+  account.rpg.home = { level: 0, furniture: [], trophies: [], garage: {} }
+  account.rpg.invest = { portfolio: { AVEL: { qty: 1 } } }
+  const state = ensureTaxState(data)
+  const taxpayer = getOrCreateTaxpayer(state, playerJid)
+  const now = Date.parse('2026-11-16T00:00:00+07:00')
+  taxpayer.bills.push({
+    id: `${taxpayer.taxId}-bankrupt`,
+    taxId: taxpayer.taxId,
+    period: '2026-W45',
+    issuedAt: now - 7 * 86400000,
+    dueAt: now - 1,
+    principal: '1000',
+    paidPrincipal: '0',
+    paidPenalty: '0',
+    paidTotal: '0',
+    items: { wealth: '1000' }
+  })
+
+  assert.equal(enforceOverdueTax(data, state, now), 1)
+  assert.equal(account.money, '0')
+  assert.equal(account.rpg.bank, '0')
+  assert.equal(account.rpg.taxBankruptAt, now)
+  assert.deepEqual(account.rpg.invest.portfolio, {})
+})
+
+test('tax and government commands are registered in separate plugins', () => {
+  assert.deepEqual(taxHandler.command, /^(tax|pajak)$/i)
+  assert.deepEqual(governmentHandler.command, /^(government|gov)$/i)
 })
 
 test('purchase activity is accumulated and assessed using the configured rate', () => {
@@ -439,6 +530,7 @@ test('late fees are based on remaining principal and payment prevents repeat col
   global.db = makeDb()
   try {
     assert.match(await runCommand(ownerJid, 'set on', true), /diaktifkan/)
+    global.db.data.taxSystem.config.activatedPeriod = '2020-W01'
     assert.match(await runCommand(ownerJid, 'collect', true), /Penerbitan tagihan/)
 
     const state = global.db.data.taxSystem
