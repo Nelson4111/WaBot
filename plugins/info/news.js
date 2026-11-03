@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// News copy should be concise, plain Indonesian for regular users, and explain only what changed or is new.
 const ITEMS_PER_PAGE = 5
 const NEWS_FILE = fileURLToPath(new URL('../../lib/news.json', import.meta.url))
 const TEMP_FILE = `${NEWS_FILE}.tmp`
@@ -94,10 +95,10 @@ export function getMonthlyNews(news, now = new Date()) {
     const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
     const day = Number(date.day)
     const match = typeof entry.id === 'string' && entry.id.match(/^(\d+)\.(\d+)$/)
-    let id = match && Number(match[1]) === day ? entry.id : ''
+    const assigned = assignedIds.get(day) || new Set()
+    let id = match && Number(match[1]) === day && !assigned.has(entry.id) ? entry.id : ''
     if (!id) {
       const reserved = reservedIds.get(day) || new Set()
-      const assigned = assignedIds.get(day) || new Set()
       let sequence = 0
       while (reserved.has(`${day}.${sequence}`) || assigned.has(`${day}.${sequence}`)) sequence++
       id = `${day}.${sequence}`
@@ -106,6 +107,22 @@ export function getMonthlyNews(news, now = new Date()) {
     assignedIds.get(day).add(id)
     return { ...entry, id, sourceIndex: index }
   })
+}
+
+export function getAllNews(news) {
+  const groups = new Map()
+  for (const [sourceIndex, entry] of news.entries()) {
+    if (!entry || !Number.isFinite(Number(entry.createdAt))) continue
+    const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+    const key = `${date.year}-${date.month}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push({ entry, sourceIndex })
+  }
+
+  return [...groups.values()].flatMap(group => {
+    const normalized = getMonthlyNews(group.map(item => item.entry), new Date(Number(group[0].entry.createdAt)))
+    return normalized.map((entry, index) => ({ ...entry, sourceIndex: group[index].sourceIndex }))
+  }).sort((a, b) => Number(a.createdAt) - Number(b.createdAt) || a.sourceIndex - b.sourceIndex)
 }
 
 function getNextNewsId(news, now) {
@@ -127,10 +144,11 @@ function formatNewsDate(timestamp) {
   }).format(new Date(Number(timestamp)))
 }
 
-function formatNewsListDate(timestamp) {
+function formatNewsMonth(timestamp) {
   return new Intl.DateTimeFormat('id-ID', {
     timeZone: 'Asia/Jakarta',
-    day: 'numeric'
+    month: 'long',
+    year: 'numeric'
   }).format(new Date(Number(timestamp)))
 }
 
@@ -144,7 +162,9 @@ function parseNewsMonth(value) {
     const date = new Date(Date.UTC(2026, month - 1, 15))
     const names = [
       new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'UTC' }).format(date),
-      new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'UTC' }).format(date)
+      new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'UTC' }).format(date),
+      new Intl.DateTimeFormat('en', { month: 'long', timeZone: 'UTC' }).format(date),
+      new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' }).format(date)
     ]
     if (names.some(name => name.toLocaleLowerCase('id-ID').replace(/\.$/, '') === normalized.replace(/\.$/, ''))) {
       return month
@@ -167,11 +187,25 @@ function getSectionEmoji(section) {
 }
 
 export function formatNewsAll(entries, monthName) {
-  const body = entries.map(entry =>
-    `*${entry.id}* · ${entry.title || `${entry.section} Update`}`
-  ).join('\n')
+  const orderedEntries = [...entries].sort((a, b) =>
+    Number(b.createdAt || 0) - Number(a.createdAt || 0)
+  )
+  const body = orderedEntries.map(entry => {
+    const label = Number.isFinite(Number(entry.createdAt))
+      ? formatNewsMonth(entry.createdAt)
+      : monthName || 'Tanggal tidak tersedia'
+    return `*${entry.id}* · ${label} — ${entry.title || `${entry.section} Update`}`
+  }).join('\n')
 
-  return `╭─「 📰 NEWS ALL 」\n│ Total: *${entries.length} news*\n│ Periode: *${monthName}*\n╰──────────────\n\n${body}`
+  return `╭─「 📰 DAFTAR NEWS 」\n╰──────────────\n\n${body}`
+}
+
+export function formatNewsLog(entries) {
+  const body = [...entries]
+    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+    .map(entry => `*${entry.id}* · ${formatNewsMonth(entry.createdAt)} · ${entry.title || `${entry.section} Update`}`)
+    .join('\n')
+  return `╭─「 🧾 LOG ID NEWS 」\n│ Total: *${entries.length} perubahan*\n╰──────────────\n\n${body}`
 }
 
 export function formatNewsDetail(entry) {
@@ -180,26 +214,38 @@ export function formatNewsDetail(entry) {
   return `╭─「 ${getSectionEmoji(entry.section)} NEWS ${entry.id} 」\n│ ${formatNewsDate(entry.createdAt)}\n╰──────────────\n\n*${entryTitle}*\n${getSectionEmoji(entry.section)} ${entry.section} · Oleh: ${author}\n\n${entry.content}`
 }
 
-export async function getNewsInfoText(targetId, month = null, year = null) {
-  const date = month === null || year === null
-    ? new Date()
-    : new Date(Date.UTC(Number(year), Number(month) - 1, 15, 12))
-  const entry = getMonthlyNews(await loadNews(), date).find(item => item.id === targetId)
-  return entry
-    ? formatNewsDetail(entry)
-    : month === null || year === null
-      ? `Nomor *${targetId}* tidak ditemukan di news bulan ini.`
-      : `Nomor *${targetId}* tidak ditemukan pada news bulan ${month} tahun ${year}.`
+export function findNewsMatches(news, targetId, month = null, year = null) {
+  return getAllNews(news).filter(entry => {
+    if (entry.id !== targetId) return false
+    const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+    return (month === null || Number(date.month) === Number(month)) &&
+      (year === null || Number(date.year) === Number(year))
+  })
+}
+
+export async function getNewsInfoText(targetId, month = null, year = null, usedPrefix = '.') {
+  const matches = findNewsMatches(await loadNews(), targetId, month, year)
+  if (matches.length === 1) return formatNewsDetail(matches[0])
+  if (!matches.length) {
+    return month === null
+      ? `ID *${targetId}* tidak ditemukan. Cek daftar dengan ${usedPrefix}news.`
+      : `ID *${targetId}* tidak ditemukan pada bulan ${month}${year === null ? '' : ` tahun ${year}`}.`
+  }
+
+  const choices = matches.map(entry => {
+    const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+    const monthName = formatNewsMonth(entry.createdAt)
+    return `• ${monthName} — ${usedPrefix}news detail ${targetId} ${date.month} ${date.year}`
+  })
+  return `ID *${targetId}* ada di beberapa bulan. Pilih yang ingin dilihat:\n${choices.join('\n')}`
 }
 
 function formatNewsPage(entries, { page, pageCount, monthName, section }) {
   const title = section ? `NEWS • ${section.toUpperCase()}` : `NEWS UPDATE • ${monthName}`
   const pageEntries = entries.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-  const body = pageEntries.map(entry => {
-    const entryTitle = entry.title || `${entry.section} Update`
-    const author = entry.author || 'Eza'
-    return `*${entry.id}* | Tanggal ${formatNewsListDate(entry.createdAt)}\n*${entryTitle}*\n${getSectionEmoji(entry.section)} ${entry.section} • Oleh: ${author}\n${entry.content}`
-  }).join('\n\n')
+  const body = pageEntries.map(entry =>
+    `*${entry.id}* · ${entry.title || `${entry.section} Update`} — ${formatNewsMonth(entry.createdAt)}`
+  ).join('\n')
 
   return `*${title}*\n\n${body}\n\nHalaman ${page}/${pageCount}`
 }
@@ -209,74 +255,108 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   const normalizedAction = action.toLowerCase()
 
   if (!normalizedAction) {
-    return m.reply(
-      `╭─❏「 📰 FITUR NEWS 」❏\n` +
-      `│ Daftar update dan detail perubahan Avelia.\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> Lihat daftar: ${usedPrefix}news list [halaman]\n` +
-      `> Buka detail: ${usedPrefix}news detail <nomor> <bulan> <tahun>`
-    )
+    return m.reply(formatNewsAll(getAllNews(await loadNews())))
   }
 
   if (normalizedAction === 'info') {
-    const allNews = await loadNews()
-    const monthlyCount = getMonthlyNews(allNews).length
-    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\nUpdate bulan ini: *${monthlyCount}*\n\nPerintah: ${usedPrefix}news list [halaman] | ${usedPrefix}news <bagian> [halaman]\nSemua judul: ${usedPrefix}news all\nDetail: ${usedPrefix}news detail <nomor> <bulan> <tahun>\nGuide: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
+    const allNews = getAllNews(await loadNews())
+    return m.reply(`╭─❏「 📰 NEWS INFO 」❏\nTotal update tersimpan: *${allNews.length}*\n\nDaftar: ${usedPrefix}news\nDetail: ${usedPrefix}news detail <id> [bulan] [tahun]\nCari author: ${usedPrefix}news author <nama>\nLog ID: ${usedPrefix}news log [id]\nPanduan: ${usedPrefix}news guide\n╰─━━━━━━━━━━━━━━─`)
   }
 
   if (normalizedAction === 'guide') {
-    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news list [halaman]\n${usedPrefix}news <halaman>\n${usedPrefix}news <bagian> [halaman]\n${usedPrefix}news all\n${usedPrefix}news detail <nomor> <bulan> <tahun>\n${usedPrefix}news info\n\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <nomor>\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 📖 NEWS GUIDE 」❏\n${usedPrefix}news — daftar ID dan judul\n${usedPrefix}news detail <id> [bulan] [tahun]\n${usedPrefix}news author <nama>\n${usedPrefix}news log [id]\n${usedPrefix}news list <bulan> [tahun]\n${usedPrefix}news info\n\nContoh detail: ${usedPrefix}news detail 2.1 November 2026\nOwner: ${usedPrefix}news add <bagian> <isi>\nOwner: ${usedPrefix}news del <id>\n╰─━━━━━━━━━━━━━━─`)
   }
 
   if (normalizedAction === 'detail') {
-    if (params.length !== 3) {
-      return m.reply(`Format: ${usedPrefix}news detail <nomor> <bulan> <tahun>\nContoh: ${usedPrefix}news detail 29.5 Oktober 2026`)
+    if (params.length < 1 || params.length > 3) {
+      return m.reply(`Format: ${usedPrefix}news detail <id> [bulan] [tahun]\nContoh: ${usedPrefix}news detail 2.1 November 2026`)
     }
     const [targetId, monthInput, yearInput] = params
-    const month = parseNewsMonth(monthInput)
-    const year = Number(yearInput)
-    if (!/^\d{4}$/.test(yearInput) || !month || !Number.isSafeInteger(year) || year < 1) {
-      return m.reply(`Bulan atau tahun tidak valid. Contoh: ${usedPrefix}news detail 29.5 Oktober 2026`)
+    const month = monthInput ? parseNewsMonth(monthInput) : null
+    const year = yearInput ? Number(yearInput) : null
+    if ((monthInput && !month) || (yearInput && (!/^\d{4}$/.test(yearInput) || !Number.isSafeInteger(year) || year < 1))) {
+      return m.reply(`Bulan atau tahun tidak valid. Contoh: ${usedPrefix}news detail 2.1 November 2026`)
     }
-    return m.reply(await getNewsInfoText(targetId, month, year))
+    return m.reply(await getNewsInfoText(targetId, month, year, usedPrefix))
+  }
+
+  if (normalizedAction === 'author') {
+    const authorQuery = params.join(' ').trim().toLocaleLowerCase('id-ID')
+    if (!authorQuery) return m.reply(`Format: ${usedPrefix}news author <nama>\nContoh: ${usedPrefix}news author Eza`)
+    const entries = getAllNews(await loadNews()).filter(entry =>
+      String(entry.author || '').toLocaleLowerCase('id-ID').includes(authorQuery)
+    )
+    if (!entries.length) return m.reply(`News dari author *${params.join(' ')}* tidak ditemukan.`)
+    return m.reply(formatNewsAll(entries))
+  }
+
+  if (normalizedAction === 'log') {
+    if (params.length > 1) return m.reply(`Format: ${usedPrefix}news log [id]`)
+    const entries = getAllNews(await loadNews())
+    const filtered = params[0] ? entries.filter(entry => entry.id === params[0]) : entries
+    if (!filtered.length) return m.reply(`Log untuk ID *${params[0]}* tidak ditemukan.`)
+    return m.reply(formatNewsLog(filtered))
   }
 
   if (normalizedAction === 'list') {
     if (params[0]?.toLowerCase() === 'info') {
       if (params.length !== 2) {
-        return m.reply(`Format: ${usedPrefix}news list info <nomor>\nContoh: ${usedPrefix}news list info 1.0`)
+        return m.reply(`Format: ${usedPrefix}news list info <id>\nContoh: ${usedPrefix}news list info 2.1`)
       }
-      return m.reply(await getNewsInfoText(params[1]))
+      return m.reply(await getNewsInfoText(params[1], null, null, usedPrefix))
     }
 
-    const page = params.length ? Number(params[0]) : 1
-    if (params.length > 1 || !Number.isSafeInteger(page) || page < 1) {
-      return m.reply(`Format: ${usedPrefix}news list [halaman]`)
+    if (params.length > 2) return m.reply(`Format: ${usedPrefix}news list [bulan] [tahun]`)
+    let entries = getAllNews(await loadNews()).reverse()
+    let monthName = 'Semua bulan'
+    if (params.length && !/^\d+$/.test(params[0])) {
+      const month = parseNewsMonth(params[0])
+      const year = params[1] ? Number(params[1]) : null
+      if (!month || (params[1] && (!/^\d{4}$/.test(params[1]) || !Number.isSafeInteger(year) || year < 1))) {
+        return m.reply(`Bulan atau tahun tidak valid. Contoh: ${usedPrefix}news list November 2026`)
+      }
+      entries = entries.filter(entry => {
+        const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+        return Number(date.month) === month && (year === null || Number(date.year) === year)
+      })
+      monthName = params[1]
+        ? formatNewsMonth(new Date(Date.UTC(year, month - 1, 15, 12)))
+        : new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, month - 1, 15)))
     }
-    const now = new Date()
-    const monthName = new Intl.DateTimeFormat('id-ID', {
-      timeZone: 'Asia/Jakarta',
-      month: 'long',
-      year: 'numeric'
-    }).format(now)
-    const entries = getMonthlyNews(await loadNews()).reverse()
-    if (!entries.length) return m.reply(`Belum ada news untuk bulan ${monthName}.`)
-    const pageCount = Math.ceil(entries.length / ITEMS_PER_PAGE)
-    if (page > pageCount) return m.reply(`Halaman tidak tersedia. News maksimal ${pageCount} halaman.`)
-    return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section: '' }))
+    if (!entries.length) return m.reply(`Belum ada news untuk ${monthName}.`)
+    if (params.length === 1 && /^\d+$/.test(params[0])) {
+      const page = Number(params[0])
+      const pageCount = Math.ceil(entries.length / ITEMS_PER_PAGE)
+      if (!Number.isSafeInteger(page) || page < 1 || page > pageCount) {
+        return m.reply(`Halaman tidak tersedia. News maksimal ${pageCount} halaman.`)
+      }
+      return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section: '' }))
+    }
+    return m.reply(formatNewsAll(entries, monthName))
+  }
+
+  if (normalizedAction === 'month') {
+    if (params.length < 1 || params.length > 2) {
+      return m.reply(`Format: ${usedPrefix}news month <bulan> [tahun]`)
+    }
+    const month = parseNewsMonth(params[0])
+    const year = params[1] ? Number(params[1]) : null
+    if (!month || (params[1] && (!/^\d{4}$/.test(params[1]) || !Number.isSafeInteger(year) || year < 1))) {
+      return m.reply(`Bulan atau tahun tidak valid. Contoh: ${usedPrefix}news month November 2026`)
+    }
+    const entries = getAllNews(await loadNews()).filter(entry => {
+      const date = getJakartaDateParts(new Date(Number(entry.createdAt)))
+      return Number(date.month) === month && (year === null || Number(date.year) === year)
+    })
+    if (!entries.length) return m.reply('News untuk bulan tersebut tidak ditemukan.')
+    return m.reply(formatNewsAll(entries))
   }
 
   if (normalizedAction === 'all') {
     if (params.length) return m.reply(`Format: ${usedPrefix}news all`)
-    const now = new Date()
-    const monthName = new Intl.DateTimeFormat('id-ID', {
-      timeZone: 'Asia/Jakarta',
-      month: 'long',
-      year: 'numeric'
-    }).format(now)
-    const entries = getMonthlyNews(await loadNews())
-    if (!entries.length) return m.reply(`Belum ada news untuk bulan ${monthName}.`)
-    return m.reply(formatNewsAll(entries, monthName))
+    const entries = getAllNews(await loadNews())
+    if (!entries.length) return m.reply('Belum ada news yang tersimpan.')
+    return m.reply(formatNewsAll(entries))
   }
 
   if (normalizedAction === 'add') {
@@ -294,7 +374,11 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
     }
 
     const result = await updateNews(news => {
-      const now = Date.now()
+      const latestTimestamp = news.reduce((latest, entry) =>
+        Number.isFinite(Number(entry?.createdAt))
+          ? Math.max(latest, Number(entry.createdAt))
+          : latest, 0)
+      const now = Math.max(Date.now(), latestTimestamp + 60_000)
       const existing = news
         .map((entry, index) => ({ entry, index }))
         .filter(({ entry }) =>
@@ -348,7 +432,7 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
     month: 'long',
     year: 'numeric'
   }).format(now)
-  const monthlyEntries = getMonthlyNews(await loadNews())
+  const monthlyEntries = getAllNews(await loadNews())
 
   let section = ''
   let page = 1
@@ -387,7 +471,7 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
   return m.reply(formatNewsPage(entries, { page, pageCount, monthName, section }))
 }
 
-handler.help = ['news', 'news list [halaman]', 'news <halaman>', 'news <bagian> [halaman]', 'news all', 'news detail <nomor> <bulan> <tahun>', 'news list info <nomor>', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <nomor>']
+handler.help = ['news', 'news list [bulan] [tahun]', 'news detail <id> [bulan] [tahun]', 'news author <nama>', 'news log [id]', 'news month <bulan> [tahun]', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <id>']
 handler.tags = ['info']
 handler.command = /^news$/i
 export default handler
