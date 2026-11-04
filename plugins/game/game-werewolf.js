@@ -97,9 +97,11 @@ const getPhaseSedentaryName = (game) => {
 }
 
 const getPlayerRolePresentation = (player, category) => {
-    const isInfected = ['zombie', 'vampire'].includes(category) &&
-        player?.infectionType === category
-    const role = isInfected ? category : player?.role
+    const infectedType = player?.infectionType && ['zombie', 'vampire'].includes(player.infectionType)
+        ? player.infectionType
+        : null
+    const isInfected = Boolean(infectedType && (['zombie', 'vampire'].includes(category) || ['mayhem', 'custom', 'vigilante'].includes(category)))
+    const role = isInfected ? infectedType : player?.role
     return {
         title: isInfected ? 'Infected' : formatRoleTitle(role),
         emoji: roleEmojis[role] || '🎭'
