@@ -23,6 +23,18 @@ import {
   claimBankruptProtection
 } from '../../lib/rpgBankruptProtection.js'
 import upgradeBankHandler from './rpg-upgradebank.js'
+
+export const BANK_INTEREST_MAXIMUM = 500_000_000_000_000
+
+export function capBankInterest(amount) {
+  return minRpgMoney(normalizeRpgMoney(amount), BANK_INTEREST_MAXIMUM)
+}
+
+export function formatFullRpgMoney(value) {
+  const normalized = normalizeRpgMoney(value)
+  if (typeof normalized === 'bigint') return `Rp ${normalized.toLocaleString('id-ID')}`
+  return `Rp ${Number(normalized).toLocaleString('id-ID')}`
+}
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
 export function getBankTransactionCooldown(tier) {
@@ -333,14 +345,14 @@ if (automaticCharges.length) {
   // BUNGA MINGGUAN
   let cdBunga = scaleDifficultyCooldown(userRPG, 604800000)
   if(now - userRPG.lastBunga >= cdBunga && compareRpgMoney(userRPG.bank, 0) > 0 &&!userRPG.kartuBeku){
-    let bunga = scaleDifficultyIncome(userRPG, multiplyRpgMoney(userRPG.bank, tier.bunga))
+    let bunga = capBankInterest(scaleDifficultyIncome(userRPG, multiplyRpgMoney(userRPG.bank, tier.bunga)))
     userRPG.bank = addRpgMoney(userRPG.bank, bunga)
     userRPG.totalBunga = addRpgMoney(userRPG.totalBunga, bunga)
     userRPG.lastBunga = now
-    userRPG.riwayat.unshift(`+Rp ${bunga.toLocaleString()} Bunga Mingguan`)
+    userRPG.riwayat.unshift(`+${formatRpgMoney(bunga)} Bunga Mingguan`)
     if(userRPG.riwayat.length > 20) userRPG.riwayat.pop()
-    if (conn?.reply) conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
-    else if (m?.reply) m.reply(`💸 *BUNGA MINGGUAN MASUK!*\n+Rp ${bunga.toLocaleString()}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`)
+    if (conn?.reply) conn.reply(m.chat, `💸 *BUNGA MINGGUAN MASUK!*\n+${formatRpgMoney(bunga)}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`, m)
+    else if (m?.reply) m.reply(`💸 *BUNGA MINGGUAN MASUK!*\n+${formatRpgMoney(bunga)}\n${tier.color} *${tier.name}* ${(tier.bunga*100).toFixed(2)}%/minggu`)
   }
 
   // === MENU MONEY / UANG ===
@@ -357,14 +369,25 @@ if (automaticCharges.length) {
       )
     }
     if (!canUseBankMoneyCommand(tier)) return m.reply(`❌ Perintah *.${command}* membutuhkan fasilitas Digital Access. Upgrade kartu untuk mengakses saldo digital.`)
+    const wallet = normalizeRpgMoney(wdb.money[m.sender] || 0)
+    const totalAssets = addRpgMoney(wallet, userRPG.bank)
+    if (action === 'check') {
+      let detail = `─━━ 🏦 DETAIL KEUANGAN ━━─\n\n`
+      detail += `💵 Uang Saku\n> ↳ ${formatFullRpgMoney(wallet)}\n\n`
+      detail += `🏦 Saldo Bank\n> ↳ ${formatFullRpgMoney(userRPG.bank)}\n\n`
+      detail += `💎 Total Aset\n> ↳ ${formatFullRpgMoney(totalAssets)}\n\n`
+      detail += `─━━━━━━━━━━━━━━─`
+      return m.reply(detail)
+    }
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
     cap += `◈ INFORMASI SALDO ◈\n`
-    cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
-    cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
-    cap += `◆ Total Aset : ${formatRpgMoney(addRpgMoney(wdb.money[m.sender] || 0, userRPG.bank))}\n\n`
+    cap += `💵 Uang Saku\n> ↳ ${formatRpgMoney(wallet)}\n\n`
+    cap += `🏦 Saldo Bank\n> ↳ ${formatRpgMoney(userRPG.bank)}\n\n`
+    cap += `💎 Total Aset\n> ↳ ${formatRpgMoney(totalAssets)}\n\n`
     cap += `◈ KARTU BANK ◈\n`
     cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
     cap += `─━━━━━━━━━─\n\n`
+    cap += `Gunakan *${usedPrefix}${command} check* untuk melihat angka penuh.\n\n`
     cap += `Kelola saldo dengan cepat lewat tombol berikut.${canUseBankBulkDeposit(tier) ? '' : '\n> Setor semua memerlukan fasilitas Fast Track.'}`
     return sendRpgButtons(conn, {
       chat: m.chat,
@@ -1040,7 +1063,7 @@ if (action === 'riwayat') {
 }
 handler.command = ['bank', 'tabung', 'money', 'uang'];
 handler.tags = ['rpg']
-handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money suffix', 'uang', 'uang suffix']
+handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] [yes/no]', 'bank takecrown', 'bank bankrupt', 'bank all', 'bank simpan <jumlah|suffix>', 'bank tarik <jumlah|suffix>', 'bank cs', 'bank cs bantuan', 'bank cs saldo', 'bank cs simpan <jumlah|suffix>', 'bank cs tarik <jumlah|suffix>', 'bank cs analisis', 'bank cs fasilitas <level>', 'bank cs kontrol auto on/off', 'bank tf <jumlah|suffix|all>', 'bank pinjam', 'bank bayar', 'bank bulanan', 'bank monthly', 'bank tagihan', 'bank fnb', 'bank fnb list', 'bank asisten', 'bank vault list', 'bank vault simpan/ambil <item> [jumlah]', 'bank asisten target <jumlah|off>', 'bank asisten auto on [ambang]', 'bank asisten auto off', 'bank asisten pengingat', 'bank riwayat', 'bank card', 'bank benefits', 'bank benefits list', 'money', 'money check', 'money suffix', 'uang', 'uang check', 'uang suffix']
 handler.group = false
 
 handler.all = async function (m, { conn }) {
