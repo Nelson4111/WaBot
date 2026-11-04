@@ -381,13 +381,13 @@ if (automaticCharges.length) {
     }
     let cap = `─━━ 🏦 RPG BANK CENTER ━━─\n\n`
     cap += `◈ INFORMASI SALDO ◈\n`
-    cap += `💵 Uang Saku\n> ↳ ${formatRpgMoney(wallet)}\n\n`
-    cap += `🏦 Saldo Bank\n> ↳ ${formatRpgMoney(userRPG.bank)}\n\n`
-    cap += `💎 Total Aset\n> ↳ ${formatRpgMoney(totalAssets)}\n\n`
+    cap += `💵 Uang Saku : ${formatRpgMoney(wallet)}\n\n`
+    cap += `🏦 Saldo Bank : ${formatRpgMoney(userRPG.bank)}\n\n`
+    cap += `💎 Total Aset : ${formatRpgMoney(totalAssets)}\n\n`
     cap += `◈ KARTU BANK ◈\n`
     cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
     cap += `─━━━━━━━━━─\n\n`
-    cap += `Gunakan *${usedPrefix}${command} check* untuk melihat angka penuh.\n\n`
+    cap += `> Gunakan *${usedPrefix}${command} check* untuk melihat angka penuh.\n\n`
     cap += `Kelola saldo dengan cepat lewat tombol berikut.${canUseBankBulkDeposit(tier) ? '' : '\n> Setor semua memerlukan fasilitas Fast Track.'}`
     return sendRpgButtons(conn, {
       chat: m.chat,

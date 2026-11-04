@@ -1579,17 +1579,19 @@ if (!args[1]) {
 
   summary += `─━━━━━━━━━━━━━━─\n\n`
 
+  let blockNumber = 1
   for (let index = 0; index < 26; index++) {
     const letter = String.fromCharCode(65 + index)
     const count = wdb.penjara.filter(jid => {
       const cell = String(getRPG(jid)?.sel || '')
       return cell.startsWith(letter) && !(letter === 'V' && cell.startsWith('VIP'))
     }).length
-    summary += `*${letter}. BLOK SEL*\n`
+    if (!count) continue
+    summary += `*${blockNumber++}. Sel ${letter}*\n`
     summary += `> ↳ Tahanan: ${count} orang\n\n`
   }
   const vipCount = wdb.penjara.filter(jid => String(getRPG(jid)?.sel || '').startsWith('VIP')).length
-  summary += `*VIP. SEL EKSKLUSIF*\n> ↳ Tahanan: ${vipCount} orang\n\n`
+  if (vipCount) summary += `*${blockNumber++}. Sel VIP*\n> ↳ Tahanan: ${vipCount} orang\n\n`
 
   summary += `─━━━━━━━━━━━━━━─\n\n`
   summary += `📌 *CONTOH*\n`
