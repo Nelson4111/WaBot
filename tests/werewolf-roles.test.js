@@ -590,6 +590,20 @@ test('Final role roster keeps original roles and shows only infection or death m
   assert.match(zombieRoster, /> 🧟‍♂️ Tertular · 💀 Mati/)
   assert.doesNotMatch(zombieRoster, /⚪|🟢|🔴|Vampire|🧛|Hidup|Infected/)
 
+  const capturedRoster = formatFinalRoleRoster([
+    { id: 'captured', number: 1, role: 'mafia', displayName: 'Kia', isAiCitizen: true, isdead: true, lastDeathCause: 'capture' }
+  ], 'vigilante')
+  assert.match(capturedRoster, /> 1\. Kia — \*Mafia 🕴️\* ⛓️/)
+  assert.match(capturedRoster, /⛓️ Ditangkap · 💀 Mati/)
+
+  const flexibleRoster = formatFinalRoleRoster([
+    { id: 'infected-zombie', number: 1, role: 'warga', displayName: 'Ayu', isAiCitizen: true, infectionType: 'zombie', isdead: false },
+    { id: 'infected-vampire', number: 2, role: 'warga', displayName: 'Raka', isAiCitizen: true, infectionType: 'vampire', isdead: false }
+  ], 'mayhem')
+  assert.match(flexibleRoster, /> 1\. Ayu — \*Warga 👱‍♂️\* 🧟‍♂️/)
+  assert.match(flexibleRoster, /> 2\. Raka — \*Warga 👱‍♂️\* 🧛‍♂️/)
+  assert.match(flexibleRoster, /🧟‍♂️ 🧛‍♂️ Tertular/)
+
   const vampireRoster = formatFinalRoleRoster([
     { id: 'infected-vampire', number: 1, role: 'mayor', displayName: 'Mira', isAiCitizen: true, infectionType: 'vampire', isdead: false }
   ], 'vampire')
