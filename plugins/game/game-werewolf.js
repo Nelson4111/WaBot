@@ -115,8 +115,8 @@ const getRoleShortEffect = (role, game) => {
         fixer: 'Menang sendiri jika target kontrak gugur saat Fixer masih hidup.',
         vigilante: game.id === 'mayhem'
             ? 'Protagonis independen; pilih satu pemain untuk ditangkap setiap malam.'
-            : 'Tangkap antagonis tiap malam; para Vigilante menang jika seluruh antagonis tertangkap.',
-        ghost: 'Berpihak kepada protagonis dan tetap dapat mengobrol setelah gugur.'
+            : 'Tangkap antagonis tiap malam; para Vigilante menang jika seluruh antagonis tertangkap atau gugur.',
+        ghost: 'Saat masih hidup, rasuki satu pemain agar tidak dapat voting pada ronde berikutnya.'
     }
     return shortEffects[role] || roleEffects[role] || 'Tidak memiliki aksi khusus.'
 }
@@ -128,7 +128,7 @@ const formatRoleDetails = (role, game) => {
     const effect = role === 'vigilante' && game.id === 'mayhem'
         ? 'Pilih satu pemain hidup untuk ditangkap setiap malam; tetap berpihak kepada protagonis dan menang jika protagonis menang.'
         : role === 'vigilante' && game.id === 'vigilante'
-            ? 'Pilih satu antagonis hidup untuk ditangkap setiap malam. Jumlah Vigilante mengikuti jumlah peserta: 5–7 pemain: 1; 8–9: 2; 10–12: 3; 13–15: 4.'
+            ? 'Pilih satu antagonis hidup untuk ditangkap setiap malam. Jumlah Vigilante maksimal 4, bergantung pada jumlah peserta.'
             : ['mayhem', 'vigilante'].includes(game.id) && isAntagonistRole(game.id, role)
             ? 'Pilih satu pemain hidup untuk diserang setiap malam. Setiap antagonis bertindak sendiri dan dapat menyerang antagonis lain.'
             : role === game.id && ['zombie', 'vampire'].includes(game.id)
@@ -147,10 +147,10 @@ const formatRoleDetails = (role, game) => {
     if (role === 'vigilante') {
         details.push(game.id === 'mayhem'
             ? '> Pada mode Mayhem, Vigilante tetap berpihak kepada protagonis tetapi tidak mengetahui siapa antagonisnya; pilih pemain yang dicurigai untuk ditangkap.'
-            : '> Jumlah Vigilante: 1 untuk 5–7 peserta, 2 untuk 8–9, 3 untuk 10–12, dan 4 untuk 13–15 peserta. Para Vigilante menang jika seluruh antagonis tertangkap; antagonis menang jika semua Vigilante gugur.')
+            : '> Jumlah Vigilante maksimal 4. Para Vigilante menang jika seluruh antagonis tertangkap atau gugur; antagonis menang jika semua Vigilante gugur.')
     }
     if (role === 'ghost') {
-        details.push('> Pesan Ghost tetap dapat dikirim ke grup walaupun ia sudah gugur. Hak aksi dan voting tetap berakhir saat mati.')
+        details.push('> Saat hidup, Ghost dapat merasuki pemain yang belum pernah dirasuki agar pemain itu tidak dapat voting pada ronde berikutnya. Setelah mati, Ghost hanya dapat mengirim pesan.')
     }
     if (role === 'cipher') {
         details.push('> Sandi huruf: A=4, I=1, E=3, O=0, B=8, L=7, S=5, Q=9, G=6. Pesan biasa harus mengandung angka dan tidak boleh memuat huruf-huruf tersebut.')
@@ -482,6 +482,7 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
         p.lastNightAction = null
         p.secretCodes = {}
         p.voteCodes = {}
+        p.voteBlockedThisRound = false
         buildRoleCodeMap(room, p)
     })
     room.nightActions = {}
@@ -1386,6 +1387,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                 const actionMessages = {
                     kill: `> ✅ Target serangan berhasil dipilih: *${targetLabel}*.`,
                     capture: `> ⛓️ Target berhasil dipilih untuk ditangkap: *${targetLabel}*.`,
+                    possess: `> 👻 Target berhasil dipilih untuk dirasuki: *${targetLabel}*.`,
                     guard: `> 🛡️ Berhasil melindungi *${targetLabel}* dari serangan antagonis malam ini.`,
                     poison: `> ☠️ Berhasil memilih *${targetLabel}* untuk diracuni.`,
                     revive: `> ✨ Berhasil memilih *${targetLabel}* untuk dihidupkan kembali.`,
