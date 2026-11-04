@@ -83,6 +83,19 @@ const roleEffects = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, dat
 const formatRoleTitle = (role) => roleTitles[role] || String(role || 'Warga').toLowerCase()
     .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => prefix + letter.toUpperCase())
 
+const getPhaseParticipantName = (game) => {
+    if (game?.id === 'vigilante') return 'Para Vigilante'
+    if (game?.id === 'impostor' || game?.id === 'alien') return 'Para Crewmate'
+    return game?.protagonistName ? `Para ${game.protagonistName}` : 'Para warga'
+}
+
+const getPhaseSedentaryName = (game) => {
+    if (game?.id === 'vigilante') return 'markas Vigilante'
+    if (game?.id === 'impostor' || game?.id === 'alien') return 'kabin pesawat'
+    if (game?.id === 'mayhem') return 'tempat persembunyian masing-masing'
+    return 'kediaman masing-masing'
+}
+
 const getPlayerRolePresentation = (player, category) => {
     const isInfected = ['zombie', 'vampire'].includes(category) &&
         player?.infectionType === category
@@ -551,7 +564,7 @@ ${fixerContract}
 > ⟡ Kode dan artinya hanya terlihat olehmu.
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
-> 🔒 _Pilihanmu menentukan keselamatan desa saat fajar._`
+> 🔒 _Pilihanmu menentukan keselamatan ${game.protagonistName || 'pemain'} saat fajar._`
 
         const btn = new Button(conn)
         btn.setBody(bodyCard)
@@ -573,10 +586,10 @@ ${fixerContract}
     }
 
     const spectatorText = `*━━━〔 ${game.name.toUpperCase()} · FASE MALAM 〕━━━*
-> 🌙 _Bulan purnama bersinar terang di atas langit desa..._
+> 🌙 _Bulan purnama bersinar terang di atas ${game.location}..._
 
 *━━━〔 ✦ ꜱᴜᴀꜱᴀɴᴀ ᴍᴀʟᴀᴍ 〕━━━*
-> ⟡ Status : *Warga terlelap di kediaman masing-masing*
+> ⟡ Status : *${getPhaseParticipantName(game)} terlelap di ${getPhaseSedentaryName(game)}*
 > ⟡ Waktu Aksi : *𝟿𝟶 Detik*
 > ⟡ Suasana : *Mencekam & sunyi senyap*
 *━━━━━━━━━━━━━━*
@@ -651,7 +664,7 @@ const sendMorningAnnouncement = async (conn, chat, room) => {
 ${morningBody}
 
 ━━━━━━━━━━━━━━
-> ⚖️ _Sidang dimulai! Warga bersiap menentukan tersangka._`
+> ⚖️ _Sidang dimulai! ${getPhaseParticipantName(game)} bersiap menentukan tersangka._`
 
     await conn.sendMessage(chat, {
         image: { url: thumbMorning },
@@ -989,6 +1002,8 @@ const runAiCitizenVotes = async (conn, chat, room) => {
 const resolveDayVoting = async (conn, chat, ww) => {
     const room = sesi(chat, ww)
     if (!room || !room.status) return
+    const game = getGameCategory(room.category)
+    const participants = getPhaseParticipantName(game)
 
     if (room.phaseTimeout) {
         clearTimeout(room.phaseTimeout)
@@ -1007,7 +1022,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
     if (hasil_vote !== 1) room.runoffCandidateNumbers = null
 
     if (hasil_vote === 0) {
-        const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\nWarga desa tidak dapat mencapai kesepakatan dan pulang ke rumah masing-masing. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti desa..._`
+        const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\n${participants} tidak dapat mencapai kesepakatan dan kembali ke ${getPhaseSedentaryName(game)}. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti ${game.location}..._`
         await conn.sendMessage(chat, {
             image: { url: thumbNight },
             caption: text
@@ -1032,7 +1047,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
             return
         }
 
-        const text = `*━━━〔 ⚖️ SIDANG DESA BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Warga kembali ke kediaman masing-masing..._`
+        const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _${participants} kembali ke ${getPhaseSedentaryName(game)}..._`
         await conn.sendMessage(chat, {
             image: { url: thumbNight },
             caption: text
@@ -1045,8 +1060,8 @@ const resolveDayVoting = async (conn, chat, ww) => {
         const killedName = getPlayerMentionLabel(killed, conn)
 
         const execText = killed.pendingExecution
-            ? `*━━━〔 ⚖️ SIDANG DESA 〕━━━*
-> ⚖️ _Warga desa telah memilih Hunter untuk dieksekusi._
+            ? `*━━━〔 ⚖️ SIDANG 〕━━━*
+> ⚖️ _${participants} telah memilih Hunter untuk dieksekusi._
 
 *━━━〔 🏹 TEMBAKAN TERAKHIR 〕━━━*
 > ⟡ Nama : *${killedName}*
@@ -1056,7 +1071,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 ━━━━━━━━━━━━━━
 > 🏹 _Kesempatan terakhir Hunter dimulai sekarang._`
             : `*━━━〔 ☠️ KEPUTUSAN EKSEKUSI 〕━━━*
-> ⚖️ _Warga desa telah sepakat menjatuhkan hukuman gantung!_
+> ⚖️ _${participants} telah sepakat menjatuhkan hukuman gantung!_
 
 *━━━〔 ☠️ ᴡᴀʀɢᴀ ʏᴀɴɢ ᴅɪᴇᴋꜱᴇᴋᴜꜱɪ 〕━━━*
 > ⟡ Nama : *${killedName}*
