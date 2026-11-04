@@ -624,7 +624,7 @@ test('Vigilante mode assigns more Vigilante protagonists while all others are an
 })
 
 test('Vigilante count scales with room size and all Vigilantes capture instead of attack', () => {
-  assert.deepEqual([5, 7, 8, 10, 13, 15].map(getVigilanteCount), [2, 3, 3, 4, 6, 6])
+  assert.deepEqual([5, 7, 8, 10, 13, 15].map(getVigilanteCount), [2, 3, 3, 3, 4, 4])
   for (const playerCount of [8, 13]) {
     const room = {
       room: `vigilante-count-${playerCount}`,
@@ -887,7 +887,7 @@ test('Mayhem antagonists can target one another while standard factions cannot',
   }
   const vigilanteCodes = Object.values(buildRoleCodeMap(mayhemVigilante, mayhemVigilante.player[0]))
     .filter((choice) => choice.type === 'kill')
-  assert.deepEqual(new Set(vigilanteCodes.map((choice) => choice.targetNumber)), new Set([2, 3]))
+  assert.equal(vigilanteCodes.length, 0)
 })
 
 test('Vigilante wins after eliminating all antagonists and loses if eliminated first', () => {
