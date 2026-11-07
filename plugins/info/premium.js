@@ -358,7 +358,7 @@ if (/^(benefits?|manfaat)$/.test(action)) {
 
     `⚔️ *RPG & EKONOMI*\n` +
     `> ↳ Batas casino *50 permainan per hari* (user biasa 25).\n` +
-    `> ↳ Proteksi Blackout dapat memulihkan kerugian saldo yang masih memenuhi syarat *1 kali per minggu*; kuota reset setiap Senin. Gunakan *${usedPrefix}cs guard protect*.\n` +
+    `> ↳ Avelia Guard dan Proteksi Blackout memiliki total kuota *2 kali per minggu* untuk Premium; kuota reset setiap Senin. Gunakan *${usedPrefix}cs guard protect*.\n` +
     `> ↳ Diskon beli *20%* dan bonus harga jual *10%* di toko RPG yang mendukung Premium.\n` +
     `> ↳ Diskon *20%* untuk biaya uang pada *.upgrade*, diskon *25%* upgrade kartu bank, dan biaya admin transfer bank *50%* lebih murah.\n` +
     `> ↳ Cooldown berbagai aktivitas RPG *20% lebih singkat*; cek *.prem cd*. Cooldown Muncak *2 jam* (user biasa 5 jam), contoh *${usedPrefix}mt start*.\n` +
