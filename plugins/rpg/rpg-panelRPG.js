@@ -3096,9 +3096,11 @@ if(!who) return m.reply('❌ Tag target dulu untuk cek inv')
   if (['resetguard', 'resetavelia', 'resetaveliaguard'].includes(aksi)) {
     const hadUsedProtection = user.casinoBlackoutProtectionWeek !== undefined
     delete user.casinoBlackoutProtectionWeek
+    const hadUsedClaims = Number(user.casinoGuardClaims?.count) > 0
+    delete user.casinoGuardClaims
     saveDB(wdb)
     return m.reply(
-      `🛡️ Kuota klaim Proteksi Avelia Guard @${who.split('@')[0]} ${hadUsedProtection ? 'berhasil direset' : 'sudah tersedia'}.\n` +
+      `🛡️ Kuota klaim Avelia Guard @${who.split('@')[0]} ${hadUsedProtection || hadUsedClaims ? 'berhasil direset' : 'sudah tersedia'}.\n` +
       `> Target tetap harus Premium dan memiliki kerugian blackout yang belum dipulihkan untuk mengklaimnya.`,
       null,
       { mentions: [who] }

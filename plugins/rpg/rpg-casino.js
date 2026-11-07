@@ -233,6 +233,21 @@ function casinoWeekKey(now = Date.now()) {
   return getRpgWibWeekKey(now)
 }
 
+function getWeeklyGuardClaims(user, weekKey = casinoWeekKey()) {
+  const claims = user.casinoGuardClaims
+  const storedCount = claims?.week === weekKey ? Math.max(0, Number(claims.count) || 0) : 0
+  const legacyProtectionClaim = storedCount === 0 && user.casinoBlackoutProtectionWeek === weekKey ? 1 : 0
+  return storedCount || legacyProtectionClaim
+}
+
+function getWeeklyGuardClaimLimit(userId, wdb) {
+  return isPremiumUser(userId, wdb) ? 2 : 1
+}
+
+function addWeeklyGuardClaim(user, weekKey = casinoWeekKey()) {
+  user.casinoGuardClaims = { week: weekKey, count: getWeeklyGuardClaims(user, weekKey) + 1 }
+}
+
 function getBlackoutRecoveryAmount(blackout) {
   const amount = normalizeRpgMoney(blackout?.amount)
   const recovered = addRpgMoney(
@@ -530,7 +545,7 @@ function normalizeResult(result) {
 }
 
 function applyCasinoSpecialOutcome(result, allowBlackout = true) {
-  if (!result.payoutDenied && Math.random() < 0.02 && allowBlackout) {
+  if (!result.payoutDenied && !isRpgEventActive('fair_play') && Math.random() < 0.02 && allowBlackout) {
     result.blackout = true
     result.multiplier = 0
     result.text += '\n> ↳ 🌑 Blackout! Kamu pingsan dan uang taruhan dicuri.'
@@ -676,7 +691,7 @@ function casinoResults(prefix) {
     `🌑 *BLACKOUT*\n` +
     `> ↳ Uang hilang hingga maksimal 2x taruhan, dibatasi saldo yang tersedia. Maksimal satu blackout per pengguna per hari; kerugian ini tidak mengurangi profit casino.\n` +
     `> ↳ ${prefix}cs guard menampilkan pelaku virtual dan mengirim Avelia Guard untuk memulihkan saldo.\n` +
-    `> ↳ Premium dapat mengklaim proteksi satu kali per minggu kalender; kesempatan direset setiap Senin.\n\n` +
+    `> ↳ Premium punya 2 klaim Avelia Guard per minggu kalender; kesempatan direset setiap Senin.\n\n` +
     `🧪 *SIMULASI*\n` +
     `> ↳ ${prefix}cs sl <game/random> [nominal] menampilkan hasil virtual tanpa mengubah uang, cooldown, batas harian, atau statistik. Nominal bisa memakai suffix seperti 1K, 2M, atau 1B.\n\n` +
     `─━━━━━━━━━━━━━━─`
@@ -698,7 +713,7 @@ function casinoGuide(prefix) {
     `> ↳ Cooldown game mengikuti difficulty; batas harian 25x, premium 50x. Jatah tambahan bisa dibeli lewat ${prefix}casino limit guide.\n\n` +
     `> ↳ Blackout memiliki peluang normal, tetapi maksimal hanya terjadi sekali per pengguna per hari.\n` +
     `> ↳ Kerugian blackout hanya mengurangi saldo, bukan profit casino. Pulihkan melalui ${prefix}cs guard.\n` +
-    `> ↳ Premium dapat mengambil proteksi blackout sekali dalam minggu kalender melalui ${prefix}cs guard protect; kuota kembali setiap Senin.\n\n` +
+    `> ↳ Avelia Guard memiliki kuota 1x/minggu untuk Regular dan 2x/minggu untuk Premium melalui ${prefix}cs guard protect; kuota kembali setiap Senin.\n\n` +
     `> ↳ Casino room tidak terpengaruh batas/progres permainan reguler.\n\n` +
 
     `👥 *MULTIPLAYER*\n` +
@@ -1941,6 +1956,16 @@ return m.reply(
         .find(entry => entry.id === pending.blackoutId)
       const amount = getBlackoutRecoveryAmount(blackout)
       const balance = normalizeRpgMoney(wdb.money[m.sender])
+      const weekKey = casinoWeekKey()
+      const claimLimit = getWeeklyGuardClaimLimit(m.sender, wdb)
+      if (getWeeklyGuardClaims(user, weekKey) >= claimLimit) {
+        delete user.casinoGuardPending
+        saveDB(wdb)
+        return m.reply(
+          `🛡️ Kuota klaim Avelia Guard minggu ini sudah habis (${claimLimit}x).\n` +
+          `> Kesempatan baru terbuka kembali setiap Senin, mengikuti minggu kalender.`
+        )
+      }
       if (!blackout || !blackout.targets?.includes(pending.target) || compareRpgMoney(amount, 0) <= 0) {
         delete user.casinoGuardPending
         saveDB(wdb)
@@ -1952,6 +1977,7 @@ return m.reply(
       blackout.guardRecovered = addRpgMoney(blackout.guardRecovered || 0, amount)
       blackout.guardTarget = pending.target
       blackout.guardResolvedAt = Date.now()
+      addWeeklyGuardClaim(user, weekKey)
       delete user.casinoGuardPending
       saveDB(wdb)
       const guardStories = [
@@ -1980,8 +2006,9 @@ return m.reply(
         return m.reply(`🛡️ Proteksi Blackout tersedia khusus Premium. Avelia Guard tetap bisa dipanggil melalui *${usedPrefix}cs guard list*.`)
       }
       const weekKey = casinoWeekKey()
-      if (user.casinoBlackoutProtectionWeek === weekKey) {
-        return m.reply(`🛡️ Proteksi minggu ini sudah digunakan. Kesempatan berikutnya terbuka lagi pada hari Senin.`)
+      const claimLimit = getWeeklyGuardClaimLimit(m.sender, wdb)
+      if (getWeeklyGuardClaims(user, weekKey) >= claimLimit) {
+        return m.reply(`🛡️ Kuota klaim Avelia Guard minggu ini sudah habis (${claimLimit}x). Kesempatan berikutnya terbuka lagi pada hari Senin.`)
       }
       const blackout = getLatestRecoverableBlackout(user, weekKey)
       const amount = getBlackoutRecoveryAmount(blackout)
@@ -1989,11 +2016,15 @@ return m.reply(
         return m.reply(`🛡️ Belum ada kerugian blackout yang bisa diproteksi minggu ini. Proteksi direset otomatis setiap Senin.`)
       }
       if (['yes', 'confirm', 'ambil'].includes(String(args[2] || '').toLowerCase())) {
+        if (getWeeklyGuardClaims(user, weekKey) >= claimLimit) {
+          return m.reply(`🛡️ Kuota klaim Avelia Guard minggu ini sudah habis (${claimLimit}x). Kesempatan berikutnya terbuka lagi pada hari Senin.`)
+        }
         const balance = normalizeRpgMoney(wdb.money[m.sender])
         const protectedBalance = addRpgMoney(balance, amount)
         wdb.money[m.sender] = protectedBalance
         blackout.insuredRecovered = addRpgMoney(blackout.insuredRecovered || 0, amount)
         user.casinoBlackoutProtectionWeek = weekKey
+        addWeeklyGuardClaim(user, weekKey)
         saveDB(wdb)
         return m.reply(
           `╭─❏「 🛡️ PROTEKSI BLACKOUT 」❏\n` +
@@ -2010,7 +2041,7 @@ return m.reply(
           `│ PROTEKSI PREMIUM MINGGU INI\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
           `Kamu dapat mengambil kembali *${money(amount)}* dari kerugian blackout.\n\n` +
-          `> ↳ Bisa diklaim satu kali dalam minggu kalender.\n` +
+          `> ↳ Premium memiliki total kuota Avelia Guard 2 kali dalam minggu kalender.\n` +
           `> ↳ Kesempatan direset setiap Senin, bukan dihitung 7 hari.\n` +
           `> ↳ Klaim ini tidak mengubah profit casino.\n\n` +
           `─━━━━━━━━━━━━━━─`,
@@ -2035,7 +2066,8 @@ return m.reply(
         `│ TIDAK ADA KASUS BLACKOUT AKTIF\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `Saat terjadi blackout, daftar pelaku akan muncul di sini.\n` +
-        `> ↳ Premium: x1 per minggu.\n` +
+        `> ↳ Regular: x1 per minggu.\n` +
+        `> ↳ Premium: x2 per minggu.\n` +
         `> ↳ Reset proteksi: setiap Senin.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
@@ -2048,7 +2080,7 @@ return m.reply(
       id: `${usedPrefix}cs guard target ${index + 1}`
     }))
     const protectionAvailable = isPremiumUser(m.sender, wdb) &&
-      user.casinoBlackoutProtectionWeek !== casinoWeekKey() &&
+      getWeeklyGuardClaims(user, casinoWeekKey()) < getWeeklyGuardClaimLimit(m.sender, wdb) &&
       blackout.weekKey === casinoWeekKey()
     const fallbackText = `╭─❏「 👮‍♀️ AVELIA GUARD 」❏\n` +
       `│ DAFTAR PELAKU \n` +
@@ -2070,7 +2102,7 @@ return m.reply(
       text: `Avelia Guard sedang melacak pelaku virtual. Pilih satu nama untuk memulai penyelidikan.\n\n` +
         `> ↳ Profit casino tidak terpengaruh oleh blackout.\n` +
         `> ↳ ${isPremiumUser(m.sender, wdb)
-          ? `Proteksi Premium: ${usedPrefix}cs guard protect (klaim 1x/minggu, reset Senin).`
+          ? `Proteksi Premium: ${usedPrefix}cs guard protect (total kuota 2x/minggu, reset Senin).`
           : 'Proteksi asuransi tersedia untuk pengguna Premium.'}`,
       buttonText: '👮‍♀️ PILIH PELAKU',
       sections: menuSections,
