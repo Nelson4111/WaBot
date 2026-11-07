@@ -1,5 +1,3 @@
-import { shintoHeader, shintoCard, status, toSmallNum } from '../../lib/style.js'
-
 const COOLDOWN_MS = 5 * 60 * 1000
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -7,7 +5,31 @@ const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + mi
 const pick = items => items[Math.floor(Math.random() * items.length)]
 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 const alphanumeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-const passwordSymbols = '!@#$%_'
+const passwordSymbols = '=&.+-!@#$%_'
+
+function terminalHeader(title) {
+    return `╭─❏「 💻 ${title.toUpperCase()} 」❏
+╰─━━━━━━━━━━━━━━─`
+}
+
+function terminalSection(title, content) {
+    return `─━━━━━━━━━━━━━━─
+
+📂 ${title}
+
+${content}`
+}
+
+function infoCard(title, lines) {
+    return `${terminalHeader(title)}
+
+${lines}
+
+─━━━━━━━━━━━━━━─
+
+⚠️ CATATAN
+> ↳ Semua nama, data, dan alamat selain target adalah hasil acak.`
+}
 
 function ensureUserHack(user) {
     if (!user.hack || typeof user.hack !== 'object') {
@@ -45,13 +67,255 @@ function capitalize(value) {
     return value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : ''
 }
 
-function randomFullName() {
-    const syllables = [
-        'ael', 'ava', 'aze', 'bel', 'cal', 'dara', 'el', 'eve',
-        'fay', 'gia', 'har', 'ira', 'jin', 'kai', 'lve', 'lyra',
-        'mira', 'noa', 'ora', 're', 'sora', 'the', 'vane', 'zel'
+function randomFullName(username) {
+const names = [
+    // Indonesia
+    'Adiputra', 'Mahendra', 'Pratama', 'Wicaksana', 'Kusuma',
+    'Wijaya', 'Ramadhan', 'Firmansyah', 'Nugraha', 'Permana',
+    'Wibowo', 'Saputra', 'Hermawan', 'Kurniawan', 'Anggara',
+    'Pradipta', 'Wiratama', 'Ardiansyah', 'Suryanata', 'Pangestu',
+    'Abimanyu', 'Danendra', 'Wulandari', 'Puspitasari', 'Anggraini',
+
+    // Jepang
+    'Takahashi', 'Yamamoto', 'Nakamura', 'Kurosawa', 'Fujimoto',
+    'Matsumoto', 'Kobayashi', 'Watanabe', 'Ishikawa', 'Sakamoto',
+    'Shimizu', 'Tanaka', 'Mizushima', 'Hayashi', 'Kawasaki',
+    'Tachibana', 'Hoshino', 'Kanzaki', 'Akizuki', 'Hanazawa',
+
+    // Korea
+    'Kim', 'Park', 'Choi', 'Jung', 'Kang',
+    'Yoon', 'Han', 'Seo', 'Kwon', 'Shin',
+    'Baek', 'Moon', 'Hwang', 'Jang', 'Ryu',
+
+    // Barat dan Eropa
+    'Alexander', 'Anderson', 'Bennett', 'Montgomery', 'Harrington',
+    'Kingsley', 'Cunningham', 'Everhart', 'Sinclair', 'Whitmore',
+    'Sterling', 'Henderson', 'Callahan', 'Fitzgerald', 'Wellington',
+    'Blackwood', 'Kensington', 'Beaumont', 'Cavendish', 'Ashford',
+    'Valentine', 'Laurent', 'Moreau', 'Castillo', 'Romano',
+    'Bianchi', 'Ricci', 'Petrov', 'Volkov', 'Ivanov',
+    'Schneider', 'Weber', 'Mueller', 'Dubois', 'Thompson',
+    'Harrison', 'Donovan', 'Prescott', 'Westwood', 'Griffith',
+
+    // Naruto - Clan & Family
+    'Uchiha', 'Uzumaki', 'Hyuga', 'Senju', 'Namikaze',
+    'Hatake', 'Nara', 'Yamanaka', 'Akimichi', 'Aburame',
+    'Inuzuka', 'Sarutobi', 'Shimura', 'Kaguya', 'Otsutsuki',
+
+    // Attack on Titan
+    'Ackerman', 'Yeager', 'Reiss', 'Braun', 'Leonhart',
+    'Arlert', 'Kirschtein', 'Springer', 'Finger', 'Tybur',
+
+    // Spy x Family
+    'Forger', 'Desmond', 'Briar', 'Blackbell', 'Sherwood',
+
+    // Bleach
+    'Kurosaki', 'Kuchiki', 'Ishida', 'Shihouin', 'Hitsugaya',
+
+    // Fullmetal Alchemist
+    'Elric', 'Rockbell', 'Mustang', 'Armstrong',
+
+    // JoJo's Bizarre Adventure
+    'Joestar', 'Brando', 'Zeppeli', 'Higashikata', 'Kujo',
+
+    // Demon Slayer
+    'Kamado', 'Agatsuma', 'Hashibira', 'Tomioka', 'Rengoku',
+
+    // Jujutsu Kaisen
+    'Kugisaki', 'Zenin', 'Fushiguro', 'Itadori',
+
+    // One Piece
+    'Monkey', 'Roronoa', 'Vinsmoke', 'Donquixote', 'Charlotte',
+
+    // Death Note
+    'Yagami', 'Amane', 'Mikami', 'Near', 'Mello',
+
+    // Black Butler
+    'Phantomhive', 'Trancy', 'Midford', 'Michaelis', 'Sullivan',
+
+    // Campuran nama tambahan
+    'Aurelius', 'Aveline', 'Nathaniel', 'Evangeline', 'Celestine',
+    'Alessandra', 'Sebastian', 'Theodore', 'Maximilian', 'Isabelle',
+    'Rosalie', 'Arabella', 'Dominique', 'Frederick', 'Leonardo',
+    'Gabrielle', 'Seraphina', 'Juliette', 'Beatrice', 'Christopher',
+    'Vincent', 'Emerson', 'Oliver', 'Kenshiro', 'Himawari',
+    'Renji', 'Tsubasa', 'Hikaru', 'Yoshida', 'Kisaragi',
+    'Amamiya', 'Tsukishima', 'Kagami', 'Shinonome', 'Hoshikawa',
+    'Kazehaya', 'Miyazaki', 'Akiyama', 'Kurokawa', 'Shiratori',
+
+    // Indonesia
+    'Atmadja', 'Wirawan', 'Suhendra', 'Kusnandar', 'Sastrowardoyo',
+    'Hardiansyah', 'Daniswara', 'Prawira', 'Baskara', 'Adinata',
+
+    // Jepang
+    'Shiba', 'Inoue', 'Shiranui', 'Kanzawa', 'Mori',
+    'Onizuka', 'Kuroda', 'Fujikawa', 'Arisawa', 'Kamikawa',
+
+    // Korea
+    'Nam', 'Song', 'Lim', 'Bae', 'Oh',
+
+    // Barat dan Eropa
+    'Blackwell', 'Hawthorne', 'Lockwood', 'Ashbourne', 'Whitaker',
+    'Rutherford', 'Waverly', 'Holloway', 'Kingsford', 'Lancaster',
+
+    // Anime - Clan & Family
+    'Kamado', 'Shinazugawa', 'Tokito', 'Kanroji', 'Iguro',
+    'Himejima', 'Uzui', 'Kuroko', 'Kiryuu', 'Inumaki',
+    'Nanami', 'Okkotsu', 'Geto', 'Yorozuya', 'Katsura', 'Morningstar'
+]
+    const base = capitalize(username.replace(/[^a-zA-Z]/g, '') || 'Player')
+    const first = pick(names)
+    let second = pick(names)
+    while (second === first) second = pick(names)
+    const patterns = [
+        `${base} ${first} ${second}`,
+        `${first} ${base} ${second}`,
+        `${first} ${second} ${base}`
     ]
-    return `${capitalize(pick(syllables))} ${capitalize(pick(syllables))} ${capitalize(pick(syllables))}`
+    return pick(patterns)
+}
+
+function randomEmail() {
+    const localPart = randomString(randomInt(5, 10), letters).toLowerCase()
+    const domain = pick(['gmail.fake', 'yahoo.fake', 'outlook.fake', 'icloud.fake', 'proton.fake'])
+    return `${localPart}${randomInt(10, 999)}@${domain}`
+}
+
+function randomIp() {
+    return Array.from({ length: 4 }, () => randomInt(1, 254)).join('.')
+}
+
+function formatMoneyWithSuffix(value) {
+    const amount = Math.max(0, Number(value) || 0)
+    if (amount >= 1e12) return `${(amount / 1e12).toFixed(amount % 1e12 ? 2 : 0)}T`
+    if (amount >= 1e9) return `${(amount / 1e9).toFixed(amount % 1e9 ? 2 : 0)}B`
+    if (amount >= 1e6) return `${(amount / 1e6).toFixed(amount % 1e6 ? 2 : 0)}M`
+    if (amount >= 1e3) return `${(amount / 1e3).toFixed(amount % 1e3 ? 1 : 0)}K`
+    return String(amount)
+}
+
+function randomAddress() {
+const locations = [
+    ['Indonesia', 'Jakarta', 'Jl. Sakura'],
+    ['Indonesia', 'Bandung', 'Jl. Melati'],
+    ['Indonesia', 'Surabaya', 'Jl. Anggrek'],
+    ['Indonesia', 'Yogyakarta', 'Jl. Malioboro'],
+    ['Indonesia', 'Semarang', 'Jl. Pandanaran'],
+    ['Indonesia', 'Bali', 'Jl. Sunset Road'],
+    ['Indonesia', 'Medan', 'Jl. Merdeka'],
+    ['Indonesia', 'Makassar', 'Jl. Pettarani'],
+    ['Indonesia', 'Malang', 'Jl. Ijen'],
+    ['Indonesia', 'Palembang', 'Jl. Sudirman'],
+    ['Indonesia', 'Denpasar', 'Jl. Gatot Subroto'],
+    ['Indonesia', 'Bogor', 'Jl. Pajajaran'],
+    ['Indonesia', 'Solo', 'Jl. Slamet Riyadi'],
+    ['Indonesia', 'Balikpapan', 'Jl. Jenderal Sudirman'],
+    ['Indonesia', 'Manado', 'Jl. Sam Ratulangi'],
+
+    ['Japan', 'Tokyo', 'Sakura Street'],
+    ['Japan', 'Osaka', 'Dotonbori Avenue'],
+    ['Japan', 'Kyoto', 'Higashiyama Road'],
+    ['Japan', 'Yokohama', 'Minato Mirai Street'],
+    ['Japan', 'Sapporo', 'Odori Avenue'],
+    ['Japan', 'Nagoya', 'Meijo Street'],
+    ['Japan', 'Nara', 'Deer Park Road'],
+    ['Japan', 'Hiroshima', 'Peace Boulevard'],
+    ['Japan', 'Fukuoka', 'Tenjin Street'],
+    ['Japan', 'Kobe', 'Harborland Avenue'],
+
+    ['South Korea', 'Seoul', 'Han River Road'],
+    ['South Korea', 'Busan', 'Haeundae Beach Road'],
+    ['South Korea', 'Incheon', 'Central Park Avenue'],
+    ['South Korea', 'Daegu', 'Dongseong Street'],
+    ['South Korea', 'Jeju', 'Palm Tree Road'],
+    ['South Korea', 'Daejeon', 'Expo Street'],
+    ['South Korea', 'Gwangju', 'Mugunghwa Road'],
+
+    ['United States', 'New York', 'Maple Avenue'],
+    ['United States', 'Los Angeles', 'Sunset Boulevard'],
+    ['United States', 'Chicago', 'Michigan Avenue'],
+    ['United States', 'San Francisco', 'Golden Gate Street'],
+    ['United States', 'Las Vegas', 'Paradise Road'],
+    ['United States', 'Miami', 'Ocean Drive'],
+    ['United States', 'Seattle', 'Pine Street'],
+    ['United States', 'Boston', 'Beacon Street'],
+    ['United States', 'Washington DC', 'Pennsylvania Avenue'],
+    ['United States', 'San Diego', 'Harbor Drive'],
+    ['United States', 'Houston', 'Westheimer Road'],
+    ['United States', 'Honolulu', 'Kalakaua Avenue'],
+
+    ['United Kingdom', 'London', 'Rose Street'],
+    ['United Kingdom', 'Manchester', 'Oxford Road'],
+    ['United Kingdom', 'Liverpool', 'Hope Street'],
+    ['United Kingdom', 'Birmingham', 'Broad Street'],
+    ['United Kingdom', 'Edinburgh', 'Royal Mile'],
+    ['United Kingdom', 'Glasgow', 'Buchanan Street'],
+    ['United Kingdom', 'Oxford', 'High Street'],
+    ['United Kingdom', 'Cambridge', 'King Street'],
+
+    ['France', 'Paris', 'Champs Elysees'],
+    ['France', 'Marseille', 'La Canebiere'],
+    ['France', 'Lyon', 'Rue de la Republique'],
+    ['France', 'Nice', 'Promenade des Anglais'],
+    ['France', 'Bordeaux', 'Rue Sainte Catherine'],
+    ['France', 'Toulouse', 'Rue Saint Rome'],
+
+    ['Germany', 'Berlin', 'Unter den Linden'],
+    ['Germany', 'Munich', 'Maximilianstrasse'],
+    ['Germany', 'Hamburg', 'Reeperbahn'],
+    ['Germany', 'Frankfurt', 'Zeil Street'],
+    ['Germany', 'Cologne', 'Schildergasse'],
+    ['Germany', 'Dresden', 'Prager Strasse'],
+
+    ['Italy', 'Rome', 'Via del Corso'],
+    ['Italy', 'Milan', 'Via Montenapoleone'],
+    ['Italy', 'Venice', 'Calle Larga'],
+    ['Italy', 'Florence', 'Via Roma'],
+    ['Italy', 'Naples', 'Via Toledo'],
+    ['Italy', 'Turin', 'Via Garibaldi'],
+
+    ['Spain', 'Madrid', 'Gran Via'],
+    ['Spain', 'Barcelona', 'La Rambla'],
+    ['Spain', 'Seville', 'Calle Sierpes'],
+    ['Spain', 'Valencia', 'Calle Colon'],
+    ['Spain', 'Malaga', 'Calle Larios'],
+
+    ['Australia', 'Sydney', 'George Street'],
+    ['Australia', 'Melbourne', 'Collins Street'],
+    ['Australia', 'Brisbane', 'Queen Street'],
+    ['Australia', 'Perth', 'Hay Street'],
+    ['Australia', 'Adelaide', 'Rundle Street'],
+    ['Australia', 'Gold Coast', 'Cavill Avenue'],
+
+    ['Canada', 'Toronto', 'Yonge Street'],
+    ['Canada', 'Vancouver', 'Robson Street'],
+    ['Canada', 'Montreal', 'Saint Catherine Street'],
+    ['Canada', 'Ottawa', 'Elgin Street'],
+    ['Canada', 'Calgary', 'Stephen Avenue'],
+
+    ['Thailand', 'Bangkok', 'Sukhumvit Road'],
+    ['Thailand', 'Phuket', 'Patong Beach Road'],
+    ['Thailand', 'Chiang Mai', 'Nimmanhaemin Road'],
+    ['Thailand', 'Pattaya', 'Beach Road'],
+
+    ['Singapore', 'Singapore', 'Orchard Road'],
+    ['Malaysia', 'Kuala Lumpur', 'Jalan Bukit Bintang'],
+    ['Malaysia', 'Penang', 'Lebuh Chulia'],
+    ['Vietnam', 'Hanoi', 'Hang Gai Street'],
+    ['Vietnam', 'Ho Chi Minh City', 'Nguyen Hue Boulevard'],
+    ['China', 'Shanghai', 'Nanjing Road'],
+    ['China', 'Beijing', 'Wangfujing Street'],
+    ['China', 'Guangzhou', 'Beijing Road'],
+    ['India', 'Mumbai', 'Marine Drive'],
+    ['India', 'New Delhi', 'Connaught Place'],
+    ['Brazil', 'Rio de Janeiro', 'Copacabana Avenue'],
+    ['Brazil', 'Sao Paulo', 'Paulista Avenue'],
+    ['United Arab Emirates', 'Dubai', 'Sheikh Zayed Road'],
+    ['Turkey', 'Istanbul', 'Istiklal Avenue']
+]
+    const [country, city, street] = pick(locations)
+    const address = `${street} No. ${randomInt(1, 248)}, RT ${randomInt(1, 15)}/RW ${randomInt(1, 12)}`
+    return `${address}\n🏙️ City       : ${city}\n🗺️ Country    : ${country}\n✉️ Postal Code: ${randomInt(10000, 99999)}`
 }
 
 function randomBirthday() {
@@ -77,7 +341,7 @@ async function syntheticTarget(m, mentionedJid, conn) {
     const username = String(resolvedName || m.pushName || number || 'player')
         .replace(/[^a-zA-Z0-9_.-]/g, '')
         .replace(/^[/_.*]+/, '') || number
-    return { jid: raw, number, username }
+    return { jid: raw, number, username, profile: users[raw] || users[number] || null }
 }
 
 function randomSimulation(target) {
@@ -100,11 +364,11 @@ function randomSimulation(target) {
     }
 
     const base = target ? target.username : randomString(randomInt(4, 8), letters)
-    const email = `${randomString(randomInt(5, 8), letters).toLowerCase()}${randomInt(100, 999)}@mail.fake`
+    const email = randomEmail()
     const phone = target?.number
         ? `+${target.number.slice(0, 2)} ${target.number.slice(2, 6)}-${target.number.slice(6, 10)}-${target.number.slice(10)}`
         : `+62 8${randomInt(10, 99)}-${randomInt(100, 999)}-${randomInt(1000, 9999)}`
-    const ip = `192.0.2.${randomInt(1, 254)}`
+    const ip = randomIp()
     return {
         outcome,
         target: base,
@@ -112,9 +376,9 @@ function randomSimulation(target) {
         password: randomPassword(),
         phone,
         ip,
-        fullName: randomFullName(),
+        fullName: randomFullName(base),
         birthday: randomBirthday(),
-        balance: randomInt(100000, 245000000000),
+        balance: target?.profile?.rpg?.bank ?? randomInt(100000, 245000000000),
         bank: pick(['Avelia Bank', 'Nexus Bank', 'Zenith Bank', 'Moon Bank', 'Sakura Bank']),
         duration: randomInt(38, 167)
     }
@@ -122,61 +386,67 @@ function randomSimulation(target) {
 
 let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     const user = global.db?.data?.users?.[m.sender]
-    if (!user) return m.reply(status.error('Data pemain belum tersedia.'))
+    if (!user) return m.reply(infoCard('SYSTEM ERROR', '> ↳ Data pemain belum tersedia.'))
 
     const hack = ensureUserHack(user)
     const action = String(args?.[0] || text || '').trim().toLowerCase()
 
     if (action === 'status') {
         if (!hack.current) {
-            return m.reply(`${shintoHeader('ʜᴀᴄᴋ ᴇꜱᴛᴀᴛᴜꜱ')}\n\n${shintoCard('ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ', {
-                'ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ': 'Idle',
-                'ᴘ ᴏ ᴜ ᴋ': `${toSmallNum(hack.exp || 0)} EXP`
-            })}`)
+            return m.reply(infoCard('HACK STATUS', `⚙️ Status     : Idle\n✨ EXP        : ${hack.exp || 0}\n🎯 Percobaan  : ${hack.attempts || 0}\n🔓 Berhasil   : ${hack.successes || 0}`))
         }
         const active = hack.current
-        return m.reply(`${shintoHeader('ʜᴀᴄᴋ ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ')}\n\n${shintoCard('ᴘ ʀ ᴏ ꜱ ᴇ ꜱ', {
-            'ꜱ ᴛ ᴀ ᴛ ᴜ ꜱ': active.state || 'Processing',
-            'ᴛ ᴀ ʀ ɢ ᴇ ᴛ': active.target,
-            'ᴛ ᴀ ʜ ᴀ ᴘ': `${toSmallNum(active.step || 1)} / ${toSmallNum(5)}`
-        })}`)
+        return m.reply(infoCard('HACK STATUS', `⚙️ Status     : ${active.state || 'Processing'}\n🎯 Target     : @${active.target}\n⌬ Tahap      : ${active.step || 1} / 5`))
     }
 
     if (action === 'history') {
         if (!hack.history.length) {
-            return m.reply(status.info('Belum ada riwayat simulasi hacking.'))
+            return m.reply(infoCard('HACK HISTORY', '> ↳ Belum ada riwayat aktivitas hacking.'))
         }
         const lines = hack.history.slice(0, 8).map((item, index) =>
-            `${index + 1}. ${item.outcome} — ${item.target} · +${item.exp} EXP`
+            `${String(index + 1).padStart(2, '0')} ${item.outcome} — @${item.target} · +${item.exp} EXP`
         )
-        return m.reply(`${shintoHeader('ʜᴀᴄᴋ ʜɪꜱᴛᴏʀʏ')}\n\n${shintoCard('₈ ᴀ ᴋ ᴛ ɪ ᴠ ɪ ᴛ ᴀ ꜱ', {
-            'ʀɪᴡᴀʏᴀᴛ': lines.join('\n')
-        })}`)
+        return m.reply(infoCard('HACK HISTORY', lines.join('\n')))
+    }
+
+    if (!action) {
+        return m.reply(`${terminalHeader('HACK COMMAND')}
+
+🎯 Target wajib dipilih melalui tag atau reply pesan.
+
+${terminalSection('COMMAND LIST', `> ${usedPrefix}${command} @user
+> Reply pesan user, lalu ketik ${usedPrefix}${command}
+> ${usedPrefix}${command} status
+> ${usedPrefix}${command} history`)}`)
     }
 
     const now = Date.now()
     if (hack.cooldown && now < hack.cooldown) {
-        return m.reply(status.warning(`Cooldown aktif. Coba lagi dalam *${formatRemaining(hack.cooldown - now)}*.`))
+        return m.reply(infoCard('COOLDOWN ACTIVE', `⏱️ Sisa waktu : ${formatRemaining(hack.cooldown - now)}`))
     }
     if (hack.current?.state === 'Running') {
-        return m.reply(status.warning('Proses hacking sebelumnya masih berjalan. Gunakan `.hack status`.'))
+        return m.reply(infoCard('PROCESS ACTIVE', '> ↳ Proses sebelumnya masih berjalan.\n> ↳ Gunakan .hack status untuk melihat progress.'))
     }
 
     const target = await syntheticTarget(m, m.mentionedJid, conn)
-    const targetName = target?.username || randomString(randomInt(5, 9), letters)
+    if (!target) {
+        return m.reply(infoCard('TARGET REQUIRED', `> ↳ Gunakan tag atau reply pesan user.\n> ↳ Contoh: ${usedPrefix}${command} @user`))
+    }
+    const targetName = target.username
     hack.current = { state: 'Running', target: targetName, step: 1, startedAt: now }
     hack.cooldown = now + COOLDOWN_MS
 
-    const initial = `${shintoHeader('ʜᴀᴄᴋɪɴɢ ᴛᴇʀᴍɪɴᴀʟ')}
+    const initial = `${terminalHeader('HACKING TERMINAL')}
 
-> _SIMULATION_
 > INITIALIZING CONNECTION...
 
-[01] Scanning target network...
-[02] Searching security vulnerabilities...
-[03] Bypassing firewall...
-[04] Decrypting credentials...
-[05] Accessing database...`
+${terminalSection('PROCESS STATUS', [
+    '[01] Scanning target network...',
+    '[02] Searching security vulnerabilities...',
+    '[03] Bypassing firewall...',
+    '[04] Decrypting credentials...',
+    '[05] Accessing database...'
+].join('\n'))}`
     await m.reply(initial)
     await sleep(900)
 
@@ -189,19 +459,29 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     ]
     for (let index = 0; index < stages.length; index++) {
         hack.current.step = index + 1
-        await m.reply(`> ${stages[index]}`)
+        await m.reply(`${terminalHeader('PROCESS STATUS')}
+
+${terminalSection('HACKING PROGRESS', `> [${String(index + 1).padStart(2, '0')}] ${stages[index].replace(/^\[\d+\]\s*/, '')}`)}`)
         await sleep(index === 3 ? 1100 : 650)
     }
 
-    const data = randomSimulation({ username: targetName, number: target?.number })
+    const data = randomSimulation(target)
     let resultTitle = 'ᴀᴄᴄᴇꜱꜱ ɢʀᴀɴᴛᴇᴅ'
-    let resultLines = `👤 Username    : ${targetName}\n🪪 Full Name   : ${data.fullName}\n🎂 Birthday    : ${data.birthday}\n📧 Email       : ${data.email}\n🔑 Password    : ${data.password}\n📱 Phone       : ${data.phone}\n🌐 IP Address  : ${data.ip}\n💳 Bank        : ${data.bank}\n💰 Balance     : ${data.balance.toLocaleString('id-ID')}`
+    const addressLines = randomAddress()
+    let resultLines = `👤 Username    : ${targetName}\n🪪 Full Name   : ${data.fullName}\n🎂 Birthday    : ${data.birthday}\n📧 Email       : ${data.email}\n🔑 Password    : ${data.password}\n📱 Phone       : ${data.phone}\n🌐 IP Address  : ${data.ip}\n💳 Bank        : ${data.bank}\n🔢 PIN Bank    : ${String(randomInt(0, 9999)).padStart(4, '0')}\n💰 Balance     : Rp ${formatMoneyWithSuffix(data.balance)}\n🏠 Address     : ${addressLines}`
 
     if (data.outcome === 'Partial Access') {
-        resultLines = `👤 Username    : ${targetName}\n🪪 Full Name   : ${data.fullName}\n🎂 Birthday    : ${data.birthday}\n📧 Email       : ${data.email}\n🔑 Password    : ${randomString(randomInt(10, 14), '*')}\n📱 Phone       : ${data.phone}\n🌐 IP Address  : ${data.ip}`
+        resultLines = `👤 Username    : ${targetName}\n🪪 Full Name   : ${data.fullName}\n🎂 Birthday    : ${data.birthday}\n📧 Email       : ${data.email}\n🔑 Password    : ${data.password}\n📱 Phone       : ${data.phone}\n🌐 IP Address  : ${data.ip}`
     } else if (data.outcome !== 'Successful Hack') {
         resultTitle = data.outcome.toUpperCase()
-        resultLines = `> Sistem simulasi tidak menghasilkan ekstraksi lengkap.`
+        const failureReasons = {
+            'Partial Access': 'Akses hanya berhasil pada sebagian data target.',
+            'Firewall Blocked': 'Firewall target aktif dan semua koneksi diblokir.',
+            'Trace Detected': 'Jejak hacker terdeteksi sehingga proses dihentikan.',
+            'System Crashed': 'Server target mengalami crash saat sesi infiltration.',
+            'Counter Hack': 'Target membalas dengan serangan balik dan memutus sesi.'
+        }
+        resultLines = `> ${failureReasons[data.outcome] || 'Proses tidak berhasil mencapai data target.'}`
     }
 
     const exp = data.outcome === 'Successful Hack' ? 150 : data.outcome === 'Partial Access' ? 90 : 35
@@ -223,7 +503,6 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 
     const mentions = target?.jid ? [target.jid] : []
     const result = `╭─❏「 💻 HACKING RESULT 」❏
-│ SIMULATED DATA EXTRACTION
 ╰─━━━━━━━━━━━━━━─
 
 🎯 Target : @${targetName}
@@ -238,8 +517,8 @@ ${resultLines}
 
 ─━━━━━━━━━━━━━━─
 
-⚠️ SIMULATION ONLY
-> ↳ Seluruh data non-identitas dihasilkan secara acak.
+⚠️ CATATAN
+> ↳ Data selain target, nomor, dan username dibuat acak.
 > ↳ Tidak ada akun atau informasi asli yang diakses.
 > ↳ Gunakan ${usedPrefix + command} history untuk melihat riwayat.`
 
