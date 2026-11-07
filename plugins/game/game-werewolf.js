@@ -84,13 +84,13 @@ const formatRoleTitle = (role) => roleTitles[role] || String(role || 'Warga').to
     .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => prefix + letter.toUpperCase())
 
 const getPhaseParticipantName = (game) => {
-    if (game?.id === 'vigilante') return 'Para Vigilante'
+    if (game?.id === 'vigilante') return 'Para antagonis'
     if (game?.id === 'impostor' || game?.id === 'alien') return 'Para Crewmate'
     return game?.protagonistName ? `Para ${game.protagonistName}` : 'Para warga'
 }
 
 const getPhaseSedentaryName = (game) => {
-    if (game?.id === 'vigilante') return 'markas Vigilante'
+    if (game?.id === 'vigilante') return 'markas rahasia'
     if (game?.id === 'impostor' || game?.id === 'alien') return 'kabin pesawat'
     if (game?.id === 'mayhem') return 'tempat persembunyian masing-masing'
     return 'kediaman masing-masing'
@@ -101,10 +101,13 @@ const getPlayerRolePresentation = (player, category) => {
         ? player.infectionType
         : null
     const isInfected = Boolean(infectedType && (['zombie', 'vampire'].includes(category) || ['mayhem', 'custom', 'vigilante'].includes(category)))
-    const role = isInfected ? infectedType : player?.role
+    const originalRole = isInfected ? player?.infectionOriginalRole || player?.role : player?.role
+    const role = originalRole || 'warga'
     return {
-        title: isInfected ? 'Infected' : formatRoleTitle(role),
-        emoji: roleEmojis[role] || '🎭'
+        title: isInfected ? `${formatRoleTitle(role)} (Infected)` : formatRoleTitle(role),
+        emoji: isInfected
+            ? ({ zombie: '☣️', vampire: '🩸' }[infectedType] || roleEmojis[role] || '🎭')
+            : (roleEmojis[role] || '🎭')
     }
 }
 
@@ -1847,6 +1850,52 @@ ${rosterText.trim()}
         const voter = ww[chat].player.find((p) => p.id === sender)
         if (!voter || voter.isdead || voter.isDummy) {
             return m.reply(status.error("Hanya pemain yang masih hidup yang memiliki hak suara."))
+        }
+        const manualInput = String(args[1] || '').trim().toLowerCase()
+        if (['skip', 'lewati', 'none', '-'].includes(manualInput)) {
+            if (voter.isvote) {
+                return m.reply(status.warning("Kamu sudah memberikan suara pada sidang hari ini."))
+            }
+            const voteCode = Object.entries(voter.voteCodes && Object.keys(voter.voteCodes).length
+                ? voter.voteCodes
+                : generateVoteCodeMap(ww[chat], voter)).find(([, choice]) => choice.type === 'vote-skip')?.[0]
+            if (!voteCode) {
+                return m.reply(status.error("Pilihan melewati voting tidak tersedia."))
+            }
+            const result = resolveSecretCodeAction(chat, sender, voteCode, ww, 'vote')
+            if (!result.ok) {
+                return m.reply(status.error("Pilihan voting gagal dicatat."))
+            }
+            await m.reply(status.success("Kamu memilih melewati voting hari ini."))
+            if (ww[chat].player.filter((player) => !player.isdead && !player.isDummy).every((player) => player.isvote)) {
+                await resolveDayVoting(conn, chat, ww)
+            }
+            return
+        }
+        const manualTarget = Number.parseInt(manualInput, 10)
+        if (Number.isInteger(manualTarget)) {
+            if (voter.isvote) {
+                return m.reply(status.warning("Kamu sudah memberikan suara pada sidang hari ini."))
+            }
+            const voteCodes = voter.voteCodes && Object.keys(voter.voteCodes).length
+                ? voter.voteCodes
+                : generateVoteCodeMap(ww[chat], voter)
+            const voteCode = Object.entries(voteCodes).find(([, choice]) =>
+                choice.type === 'vote' && Number(choice.targetNumber) === manualTarget
+            )?.[0]
+            if (!voteCode) {
+                return m.reply(status.error("Nomor target voting tidak valid atau pemain sudah gugur."))
+            }
+            const result = resolveSecretCodeAction(chat, sender, voteCode, ww, 'vote')
+            if (!result.ok) {
+                return m.reply(status.error("Suara gagal dicatat. Coba lagi dengan tombol voting atau kode rahasia."))
+            }
+            const target = ww[chat].player.find((player) => player.number === manualTarget)
+            await m.reply(status.success(`Suaramu berhasil diberikan kepada ${getDisplayPlayerLabel(target, conn)}.`))
+            if (ww[chat].player.filter((player) => !player.isdead && !player.isDummy).every((player) => player.isvote)) {
+                await resolveDayVoting(conn, chat, ww)
+            }
+            return
         }
         return sendPrivateGroupText(
             conn,
