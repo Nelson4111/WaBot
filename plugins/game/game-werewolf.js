@@ -50,16 +50,16 @@ const thumbExecution = "https://user-images.githubusercontent.com/72728486/23535
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
 
-> Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada antagonis yang menyamar; cari tahu siapa mereka sebelum terlambat.
+> Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada Villain yang menyamar; cari tahu siapa mereka sebelum terlambat.
 
 *🌙 MALAM*
-> Pemain menjalankan kemampuan role secara rahasia. Antagonis memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
+> Pemain menjalankan kemampuan role secara rahasia. Villain memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
 
 *☀️ SIANG*
 > Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi. Role yang gugur akan terungkap.
 
 *🏆 TUJUAN PERMAINAN*
-> Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
+> Citizen menang dengan menemukan semua Villain. Villain menang saat jumlah mereka menyamai atau melebihi Citizen. Beberapa role punya kondisi kemenangan sendiri.
 
 *🕹️ MULAI BERMAIN*
 > Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
@@ -84,7 +84,7 @@ const formatRoleTitle = (role) => roleTitles[role] || String(role || 'Warga').to
     .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => prefix + letter.toUpperCase())
 
 const getPhaseParticipantName = (game) => {
-    if (game?.id === 'vigilante') return 'Para antagonis'
+    if (game?.id === 'vigilante') return 'Para Villain'
     if (game?.id === 'impostor' || game?.id === 'alien') return 'Para Crewmate'
     return game?.protagonistName ? `Para ${game.protagonistName}` : 'Para warga'
 }
@@ -118,22 +118,22 @@ const getRoleShortEffect = (role, game) => {
         }
         return ['werewolf', 'mafia'].includes(role) && !['mayhem', 'vigilante'].includes(game.id)
             ? `Pilih satu korban tiap malam bersama kelompok ${game.antagonistName}.`
-            : `Pilih satu pemain hidup untuk diserang tiap malam; antagonis bergerak sendiri.`
+            : `Pilih satu pemain hidup untuk diserang tiap malam; Villain bergerak sendiri.`
     }
     const shortEffects = {
         warga: 'Ikut voting untuk menentukan pemain yang dieksekusi.',
         seer: 'Sekali per game, periksa role satu pemain pada malam hari.',
-        guardian: 'Sekali per game, lindungi satu pemain dari serangan antagonis malam hari.',
+        guardian: 'Sekali per game, lindungi satu pemain dari serangan Villain malam hari.',
         sorcerer: 'Tiap malam, racuni satu pemain, bangkitkan pemain mati, atau lewati.',
         hunter: 'Saat gugur, tembak satu pemain hidup sebelum fase berlanjut.',
         mayor: 'Suara voting bernilai dua.',
         jester: 'Menang sendiri jika dieksekusi melalui voting.',
-        warden: 'Armor menahan satu serangan antagonis malam hari; voting tetap dapat mengeksekusinya.',
+        warden: 'Armor menahan satu serangan Villain malam hari; voting tetap dapat mengeksekusinya.',
         cipher: 'Menang bersama tim yang menang jika masih hidup; wajib bicara dengan sandi angka.',
         fixer: 'Menang sendiri jika target kontrak gugur saat Fixer masih hidup.',
         vigilante: game.id === 'mayhem'
-            ? 'Protagonis independen; pilih satu pemain untuk ditangkap setiap malam.'
-            : 'Tangkap antagonis tiap malam; para Vigilante menang jika seluruh antagonis tertangkap atau gugur.',
+            ? 'Citizen independen; pilih satu pemain untuk ditangkap setiap malam.'
+            : 'Tangkap Villain tiap malam; para Vigilante menang jika seluruh Villain tertangkap atau gugur.',
         ghost: 'Saat masih hidup, rasuki satu pemain agar tidak dapat voting pada ronde berikutnya.'
     }
     return shortEffects[role] || roleEffects[role] || 'Tidak memiliki aksi khusus.'
@@ -144,15 +144,15 @@ const formatRoleDetails = (role, game) => {
     if (!data) return null
     const title = role === game.antagonist ? game.antagonistName : data.title
     const effect = role === 'vigilante' && game.id === 'mayhem'
-        ? 'Pilih satu pemain hidup untuk ditangkap setiap malam; tetap berpihak kepada protagonis dan menang jika protagonis menang.'
+        ? 'Pilih satu pemain hidup untuk ditangkap setiap malam; tetap berpihak kepada Citizen dan menang jika Citizen menang.'
         : role === 'vigilante' && game.id === 'vigilante'
-            ? 'Pilih satu antagonis hidup untuk ditangkap setiap malam. Jumlah Vigilante maksimal 4, bergantung pada jumlah peserta.'
+            ? 'Pilih satu Villain hidup untuk ditangkap setiap malam. Jumlah Vigilante maksimal 4, bergantung pada jumlah peserta.'
             : ['mayhem', 'vigilante'].includes(game.id) && isAntagonistRole(game.id, role)
-            ? 'Pilih satu pemain hidup untuk diserang setiap malam. Setiap antagonis bertindak sendiri dan dapat menyerang antagonis lain.'
+            ? 'Pilih satu pemain hidup untuk diserang setiap malam. Setiap Villain bertindak sendiri dan dapat menyerang Villain lain.'
             : role === game.id && ['zombie', 'vampire'].includes(game.id)
                 ? `Tularkan ${game.name} kepada satu pemain hidup pada malam hari. Yang tertular tetap hidup dan bisa voting, tetapi kemampuan role lamanya dinonaktifkan dan ia hanya dapat bersembunyi saat malam. Kemenangan ditentukan ketika jumlah ${game.name} menyamai atau melebihi pemain lain.`
                 : role !== game.id && ['zombie', 'vampire'].includes(role) && game.id === 'custom'
-                    ? 'Dalam mode Custom, pilih satu pemain hidup untuk diserang setiap malam seperti antagonis lain.'
+                    ? 'Dalam mode Custom, pilih satu pemain hidup untuk diserang setiap malam seperti Villain lain.'
                 : roleEffects[role]
     const details = [
         `*${data.emoji} ${title}*`,
@@ -160,12 +160,12 @@ const formatRoleDetails = (role, game) => {
         `> *Efek dalam game:* ${effect}`
     ]
     if (role === 'sorcerer') {
-        details.push('> Jika ada antagonis lain, racun membuat Sorcerer berpihak kepada antagonis, revive membuatnya berpihak kepada warga, dan melewati aksi membuatnya tetap netral.')
+        details.push('> Jika ada Villain lain, racun membuat Sorcerer berpihak kepada Villain, revive membuatnya berpihak kepada Citizen, dan melewati aksi membuatnya tetap netral.')
     }
     if (role === 'vigilante') {
         details.push(game.id === 'mayhem'
-            ? '> Pada mode Mayhem, Vigilante tetap berpihak kepada protagonis tetapi tidak mengetahui siapa antagonisnya; pilih pemain yang dicurigai untuk ditangkap.'
-            : '> Jumlah Vigilante maksimal 4. Para Vigilante menang jika seluruh antagonis tertangkap atau gugur; antagonis menang jika semua Vigilante gugur.')
+            ? '> Pada mode Mayhem, Vigilante tetap berpihak kepada Citizen tetapi tidak mengetahui siapa Villain-nya; pilih pemain yang dicurigai untuk ditangkap.'
+            : '> Jumlah Vigilante maksimal 4. Para Vigilante menang jika seluruh Villain tertangkap atau gugur; Villain menang jika semua Vigilante gugur.')
     }
     if (role === 'ghost') {
         details.push('> Saat hidup, Ghost dapat merasuki pemain yang belum pernah dirasuki agar pemain itu tidak dapat voting pada ronde berikutnya. Setelah mati, Ghost hanya dapat mengirim pesan.')
@@ -186,9 +186,9 @@ const formatRoleGuide = (role, game, usedPrefix) => {
     )
 
     if (role === 'vigilante' && game.id === 'mayhem') {
-        details.push('> Pada Mayhem, Vigilante tetap anggota protagonis; tugasnya menangkap pemain yang dicurigai, bukan mencari satu jenis antagonis tertentu.')
+        details.push('> Pada Mayhem, Vigilante tetap anggota Citizen; tugasnya menangkap pemain yang dicurigai, bukan mencari satu jenis Villain tertentu.')
     } else if (role === 'vigilante' && game.id !== 'vigilante') {
-        details.push('> Aturan jumlah Vigilante dan kemenangan menangkap semua antagonis berlaku khusus pada kategori Vigilante. Di kategori lain, ikuti kondisi faksi pada kartu game.')
+        details.push('> Aturan jumlah Vigilante dan kemenangan menangkap semua Villain berlaku khusus pada kategori Vigilante. Di kategori lain, ikuti kondisi faksi pada kartu game.')
     }
 
     if (role === 'cipher') {
@@ -205,8 +205,8 @@ const validRoleName = (value) => {
 
 const normalizeRoleFactionFilter = (value) => {
     const filter = String(value || '').trim().toLowerCase()
-    if (['antagonis', 'antagonist', 'antagonists'].includes(filter)) return 'antagonist'
-    if (['protagonis', 'protagonist', 'protagonists'].includes(filter)) return 'protagonist'
+    if (['villain', 'antagonis', 'antagonist', 'antagonists'].includes(filter)) return 'antagonist'
+    if (['citizen', 'protagonis', 'protagonist', 'protagonists'].includes(filter)) return 'protagonist'
     if (['netral', 'neutral', 'neutrals'].includes(filter)) return 'neutral'
     return null
 }
@@ -225,15 +225,15 @@ const formatRoleList = (game, factionFilter = null) => {
 const formatGameCategoryInfo = (game, usedPrefix) => {
     let objective
     if (game.id === 'vigilante') {
-        objective = 'Para Vigilante menang jika seluruh antagonis tertangkap; antagonis menang jika semua Vigilante gugur.'
+        objective = 'Para Vigilante menang jika seluruh Villain tertangkap; Villain menang jika semua Vigilante gugur.'
     } else if (['zombie', 'vampire'].includes(game.id)) {
-        objective = `${game.antagonistName} menang jika semua pemain hidup selain ${game.antagonistName} asli sudah tertular. Jika seluruh ${game.antagonistName} asli tersingkir, pemain tertular ikut gugur dan protagonis menang.`
+        objective = `${game.antagonistName} menang jika semua pemain hidup selain ${game.antagonistName} asli sudah tertular. Jika seluruh ${game.antagonistName} asli tersingkir, pemain tertular ikut gugur dan Citizen menang.`
     } else if (game.id === 'mayhem') {
-        objective = 'Beragam antagonis dapat muncul dan menyerang sendiri, termasuk satu sama lain; antagonis lain tidak diketahui. Tiap tim mengikuti kondisi menang faksinya.'
+        objective = 'Beragam Villain dapat muncul dan menyerang sendiri, termasuk satu sama lain; Villain lain tidak diketahui. Tiap tim mengikuti kondisi menang faksinya.'
     } else if (game.id === 'custom') {
         objective = 'Pemain memakai role yang ditentukan untuk room. Kondisi menang mengikuti faksi dan kemampuan role yang dipilih.'
     } else {
-        objective = `${game.protagonistName} berusaha menemukan semua ${game.antagonistName}; antagonis menang saat jumlahnya menyamai atau melebihi protagonis.`
+        objective = `Citizen berusaha menemukan semua ${game.antagonistName}; Villain menang saat jumlahnya menyamai atau melebihi Citizen.`
     }
     return `*━━━〔 ${game.antagonistEmoji} INFO ${game.name.toUpperCase()} 〕━━━*
 
@@ -283,8 +283,8 @@ const buildGameCategoryList = (usedPrefix, requestedPage = 1) => {
 }
 
 const roleFactionButtons = (gameCommandBase) => [
-    ['🔴 Antagonis', `${gameCommandBase} role antagonis`],
-    ['🔵 Protagonis', `${gameCommandBase} role protagonis`],
+    ['🔴 Villain', `${gameCommandBase} role villain`],
+    ['🔵 Citizen', `${gameCommandBase} role citizen`],
     ['🟡 Netral', `${gameCommandBase} role netral`]
 ]
 
@@ -311,11 +311,7 @@ const getTotalPlayerCount = (room) => room?.player?.length || 0
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const getRandomItem = (items) => items[Math.floor(Math.random() * items.length)]
 
-const getAiNightActionCode = (player, actionType, category) => {
-    if (category === 'mayhem' && player.isAiCitizen) {
-        return Object.entries(player.secretCodes || {})
-            .find(([, choice]) => choice.type === 'skip')?.[0]
-    }
+const getAiNightActionCode = (player, actionType) => {
     const actions = Object.entries(player.secretCodes || {})
         .filter(([, choice]) => choice.type === actionType)
         .map(([code]) => code)
@@ -534,9 +530,9 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
             ? room.player.filter((player) => !player.isdead && !player.isDummy && isAntagonistRole(room.category, player.role))
             : []
         const cipherIntro = role === 'cipher' && room.category !== 'mayhem' && !p.cipherIntroSent
-            ? `\n\n*━━━〔 🔎 ɪᴅᴇɴᴛɪᴛᴀꜱ ᴀɴᴛᴀɢᴏɴɪꜱ 〕━━━*\n${cipherAntagonists.length
+            ? `\n\n*━━━〔 🔎 ɪᴅᴇɴᴛɪᴛᴀꜱ VILLAIN 〕━━━*\n${cipherAntagonists.length
                 ? cipherAntagonists.map((player) => `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)} — ${formatRoleTitle(player.role)}`).join('\n')
-                : '> Tidak ada antagonis yang ditugaskan di room ini.'}`
+                : '> Tidak ada Villain yang ditugaskan di room ini.'}`
             : ''
         if (role === 'cipher' && room.category !== 'mayhem' && !p.cipherIntroSent) cipherIntroPlayers.push(p)
         const fixerTarget = role === 'fixer' && !p.fixerContractShown
@@ -637,7 +633,7 @@ const runAiCitizenNightActions = async (conn, chat, room) => {
         await wait(650 + Math.floor(Math.random() * 600))
         if (conn.werewolf?.[chat] !== room || room.time !== 'malem' || player.isdead || player.nightDone) return
 
-        const code = getAiNightActionCode(player, undefined, room.category)
+        const code = getAiNightActionCode(player)
         const result = code
             ? resolveSecretCodeAction(chat, player.id, code, conn.werewolf, 'night')
             : { ok: false, reason: 'no-night-codes' }
@@ -705,7 +701,7 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
     }))
     if (hunter.isAiCitizen) {
         await wait(600 + Math.floor(Math.random() * 500))
-        const code = getAiNightActionCode(hunter, 'hunter', room.category)
+        const code = getAiNightActionCode(hunter, 'hunter')
         const result = code
             ? resolveSecretCodeAction(chat, hunter.id, code, conn.werewolf, 'hunter')
             : { ok: false, reason: 'no-hunter-actions' }
@@ -1219,14 +1215,14 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             }
             const roleSections = formatRoleList(gameCategory, factionFilter)
             const factionTitle = factionFilter
-                ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
+                ? ` · ${factionFilter === 'antagonist' ? 'VILLAIN' : factionFilter === 'protagonist' ? 'CITIZEN' : 'NETRAL'}`
                 : ''
-            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n> Filter: *${usedPrefix}gr role antagonis*, *protagonis*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, 'Avelia • Daftar Role', thumbNight, [
+            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n            > Filter: *${usedPrefix}gr role villain*, *citizen*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, 'Avelia • Daftar Role', thumbNight, [
                 ...roleFactionButtons(`${usedPrefix}gr`)
             ], m)
         }
         if (action === 'guide') {
-            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *${usedPrefix}gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n\n> 2. Buat room dengan command tema, contoh *${usedPrefix}mafia create 10k*.\n\n> 3. Mode Custom: *${usedPrefix}custom autorole* untuk role acak, *${usedPrefix}custom role @pemain <role/nomor>* untuk pemain manusia, dan *${usedPrefix}custom role <nomor pemain> <role/nomor>* untuk warga AI. Periksa pilihan dengan *${usedPrefix}custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n\n> 4. Peserta masuk memakai *${usedPrefix}mafia join*; taruhan ditahan saat bergabung.\n\n> 5. Owner room memulai dengan *${usedPrefix}mafia start*.\n\n> 6. Kartu aksi dan informasi rahasia dikirim hanya kepada pemain terkait. Anggota lain hanya melihat teks pengunci.\n\n> 7. Lihat riwayat dengan *${usedPrefix}mafia log*. Voting dan aksi skip atau sembunyi tidak dicatat.\n\n> 8. Keluar dari room bertaruhan perlu konfirmasi dan taruhan tetap di pot. Menghapus room mengembalikan taruhan.\n\n> 9. Gunakan *${usedPrefix}gr me*, *${usedPrefix}gr history*, dan *${usedPrefix}gr top* untuk statistik.`)
+            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *${usedPrefix}gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n\n> 2. Buat room dengan command tema, contoh *${usedPrefix}mafia create 10k*.\n\n> 3. Mode Custom: *${usedPrefix}custom autorole* untuk role acak, *${usedPrefix}custom role @pemain <role/nomor>* untuk pemain manusia, dan *${usedPrefix}custom role <nomor pemain> <role/nomor>* untuk warga AI. Periksa pilihan dengan *${usedPrefix}custom list*. Hanya satu jenis Villain utama dan tiap role khusus hanya untuk satu pemain.\n\n> 4. Peserta masuk memakai *${usedPrefix}mafia join*; taruhan ditahan saat bergabung.\n\n> 5. Owner room memulai dengan *${usedPrefix}mafia start*.\n\n> 6. Kartu aksi dan informasi rahasia dikirim hanya kepada pemain terkait. Anggota lain hanya melihat teks pengunci.\n\n> 7. Lihat riwayat dengan *${usedPrefix}mafia log*. Voting dan aksi skip atau sembunyi tidak dicatat.\n\n> 8. Keluar dari room bertaruhan perlu konfirmasi dan taruhan tetap di pot. Menghapus room mengembalikan taruhan.\n\n> 9. Gunakan *${usedPrefix}gr me*, *${usedPrefix}gr history*, dan *${usedPrefix}gr top* untuk statistik.`)
         }
         if (['command', 'commands', 'cmd'].includes(action)) {
             const commandText = Object.values(GAME_CATEGORIES)
@@ -1237,7 +1233,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         if (action === 'me' || action === 'stats' || action === 'stat') {
             const user = loadDB().users[sender] || {}
             const stats = user.werewolfStats || {}
-            return m.reply(`*━━━〔 ✧ STATISTIK GAME ROLES ✧ 〕━━━*\n\n> Skor antagonis: *${Number(stats.score) || 0}*\n> Menang antagonis: *${Number(stats.antagonistWins) || 0}x*\n> Menang protagonis: *${Number(stats.protagonistWins) || 0}x*\n> Menang netral: *${Number(stats.neutralWins) || 0}x*`)
+            return m.reply(`*━━━〔 ✧ STATISTIK GAME ROLES ✧ 〕━━━*\n\n> Skor Villain: *${Number(stats.score) || 0}*\n> Menang Villain: *${Number(stats.antagonistWins) || 0}x*\n> Menang Citizen: *${Number(stats.protagonistWins) || 0}x*\n> Menang netral: *${Number(stats.neutralWins) || 0}x*`)
         }
         if (action === 'history' || action === 'riwayat') {
             const user = loadDB().users[sender] || {}
@@ -1276,7 +1272,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const lines = entries.map(({ jid, stats }, index) => {
                 const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata: metadata })
                 if (identity.mention) mentions.push(identity.mention)
-                return `> *${index + 1}.* ${identity.display}\n> Skor: *${Number(stats.score) || 0}* · Antagonis: *${Number(stats.antagonistWins) || 0}x* · Protagonis: *${Number(stats.protagonistWins) || 0}x* · Netral: *${Number(stats.neutralWins) || 0}x*`
+                return `> *${index + 1}.* ${identity.display}\n> Skor: *${Number(stats.score) || 0}* · Villain: *${Number(stats.antagonistWins) || 0}x* · Citizen: *${Number(stats.protagonistWins) || 0}x* · Netral: *${Number(stats.neutralWins) || 0}x*`
             })
             return conn.sendMessage(chat, {
                 image: { url: thumbVoting },
@@ -1408,7 +1404,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     kill: `> ✅ Target serangan berhasil dipilih: *${targetLabel}*.`,
                     capture: `> ⛓️ Target berhasil dipilih untuk ditangkap: *${targetLabel}*.`,
                     possess: `> 👻 Target berhasil dipilih untuk dirasuki: *${targetLabel}*.`,
-                    guard: `> 🛡️ Berhasil melindungi *${targetLabel}* dari serangan antagonis malam ini.`,
+                    guard: `> 🛡️ Berhasil melindungi *${targetLabel}* dari serangan Villain malam ini.`,
                     poison: `> ☠️ Berhasil memilih *${targetLabel}* untuk diracuni.`,
                     revive: `> ✨ Berhasil memilih *${targetLabel}* untuk dihidupkan kembali.`,
                     hunter: `> 🏹 Berhasil memilih *${targetLabel}* sebagai sasaran tembakan.`,
@@ -1531,7 +1527,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         if (!autoAssignCustomRoles(chat, ww)) {
             return m.reply(status.error('Role otomatis gagal dibagikan. Pastikan jumlah pemain dan room masih valid.'))
         }
-        return m.reply(status.success(`Role otomatis selesai. Role yang sudah ditetapkan tidak diubah; hanya satu jenis antagonis utama yang digunakan. Cek dengan *${gameCommandBase} list*.`))
+        return m.reply(status.success(`Role otomatis selesai. Role yang sudah ditetapkan tidak diubah; hanya satu jenis Villain utama yang digunakan. Cek dengan *${gameCommandBase} list*.`))
     }
 
     if (value === "role" && gameCategory.id === 'custom') {
@@ -1575,7 +1571,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         const validation = validateCustomRoles(proposedRoles)
         if (!validation.valid) {
             if (validation.reason === 'multiple-antagonists') {
-                return m.reply(status.warning('Mode Custom hanya boleh memakai satu jenis antagonis utama. Hapus atau ganti role antagonis yang berbeda terlebih dahulu.'))
+                return m.reply(status.warning('Mode Custom hanya boleh memakai satu jenis Villain utama. Hapus atau ganti Villain yang berbeda terlebih dahulu.'))
             }
             if (validation.reason === 'duplicate-role') {
                 return m.reply(status.warning(`Role ${roleTitles[validation.role] || validation.role} hanya boleh diberikan kepada satu pemain.`))
@@ -1811,11 +1807,11 @@ ${rosterText.trim()}
             const validation = validateCustomRoles(customRoles, { requireAntagonist: true })
             if (!validation.valid) {
                 const reason = validation.reason === 'multiple-antagonists'
-                    ? 'Hanya boleh ada satu jenis antagonis utama dalam satu game Custom.'
+                    ? 'Hanya boleh ada satu jenis Villain utama dalam satu game Custom.'
                     : validation.reason === 'duplicate-role'
                         ? `Role ${roleTitles[validation.role] || validation.role} hanya boleh dimiliki satu pemain.`
                         : validation.reason === 'missing-antagonist'
-                            ? 'Tetapkan minimal satu antagonis utama (Werewolf/Mafia/Killer/Assassin/Impostor/Alien/Parasite/Zombie/Vampire).'
+                            ? 'Tetapkan minimal satu Villain utama (Werewolf/Mafia/Killer/Assassin/Impostor/Alien/Parasite/Zombie/Vampire).'
                             : 'Kombinasi role Custom tidak valid.'
                 return m.reply(status.warning(reason))
             }
@@ -2106,9 +2102,9 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
         }
         const roleSections = formatRoleList(game, factionFilter)
         const factionTitle = factionFilter
-            ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
+            ? ` · ${factionFilter === 'antagonist' ? 'VILLAIN' : factionFilter === 'protagonist' ? 'CITIZEN' : 'NETRAL'}`
             : ''
-        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n> Filter: *${gameCommandBase} role antagonis*, *protagonis*, atau *netral*`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
+        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n        > Filter: *${gameCommandBase} role villain*, *citizen*, atau *netral*`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
 
     } else if (isGameRolesCommand) {
         return sendGameRolesMenu(conn, chat, usedPrefix, m)
