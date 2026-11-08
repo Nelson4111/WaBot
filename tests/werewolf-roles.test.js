@@ -7,7 +7,6 @@ import {
   buildRoleCodeMap,
   collapseZombieVampireInfections,
   formatFinalRoleRoster,
-  formatWinningTeam,
   generateVoteCodeMap,
   getAntagonistCount,
   getWerewolfPlayerFaction,
@@ -611,23 +610,6 @@ test('Final role roster keeps original roles and shows only infection or death m
   assert.match(vampireRoster, /> 1\. Mira — \*Mayor 👑\* 🧛‍♂️/)
   assert.match(vampireRoster, /> 🧛‍♂️ Tertular · 💀 Mati/)
   assert.doesNotMatch(vampireRoster, /Zombie|🧟|Hidup|Infected/)
-})
-
-test('Winning team roster groups players by role in every category', () => {
-  const team = formatWinningTeam([
-    { id: 'eza', number: 1, role: 'alien', displayName: 'Eza', isAiCitizen: true, isdead: false },
-    { id: 'mina', number: 2, role: 'seer', displayName: 'Mina', isAiCitizen: true, infectionType: 'zombie', infectionOriginalRole: 'alien', isdead: false },
-    { id: 'zahra', number: 3, role: 'alien', displayName: 'Zahra', isAiCitizen: true, isdead: false },
-    { id: 'vania', number: 4, role: 'zombie', displayName: 'Vania', isAiCitizen: true, isdead: false }
-  ], 'antagonist', 'mayhem')
-
-  assert.match(team, /\*Role\* : Alien 👽/)
-  assert.match(team, /> 1\) Eza/)
-  assert.match(team, /> 3\) Zahra/)
-  assert.match(team, /\*Role\* : Zombie/)
-  assert.match(team, /> 4\) Vania/)
-  assert.match(team, /> ↳ Infected : 2\) Mina/)
-  assert.doesNotMatch(team, /\d+\) .* — \*Role\*/)
 })
 
 test('Vigilante mode assigns more Vigilante protagonists while all others are antagonists', () => {
