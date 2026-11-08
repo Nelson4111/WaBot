@@ -39,7 +39,7 @@ import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
+import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, ROLE_IMAGES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
@@ -1121,9 +1121,36 @@ const resolveDayVoting = async (conn, chat, ww) => {
 
 let handler = async (m, { conn, command, usedPrefix, args }) => {
     const { sender, chat } = m
+    const normalizedCommand = String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
+    if (normalizedCommand === 'gr') {
+        const pictAction = args?.[0]?.toLowerCase()
+        if (pictAction === 'pict') {
+            const senderPhone = normalizePhone(sender)
+            const ownerPhone = String(global.nomorown || '').replace(/\D/g, '')
+            const coOwnerPhone = String(global.nomorcoown || '').replace(/\D/g, '')
+            const hasOwnerAccess = senderPhone && [ownerPhone, coOwnerPhone].some((phone) => phone && senderPhone.endsWith(phone))
+            const hasOwnerDatabase = global.db?.data?.users?.[sender]?.isCoOwner
+            if (!hasOwnerAccess && !hasOwnerDatabase) return
+
+            const flattenRoleImages = (value) => {
+                if (Array.isArray(value)) return value
+                if (!value || typeof value !== 'object') return []
+                return Object.values(value).flatMap(flattenRoleImages)
+            }
+            const urls = [...new Set(Object.values(ROLE_IMAGES).flatMap(flattenRoleImages))]
+            for (let index = 0; index < urls.length; index++) {
+                try {
+                    await conn.sendMessage(chat, { image: { url: urls[index] } })
+                } catch (error) {
+                    console.warn(`[Game Roles] Failed to send asset picture ${index + 1}/${urls.length}: ${error.message}`)
+                }
+                if (index < urls.length - 1) await wait(3000)
+            }
+            return
+        }
+    }
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
-    const normalizedCommand = String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
     const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(normalizedCommand)
     if (isGameRolesCommand && args.length === 1 && normalizeGameCategory(args[0])) args = []
     const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(normalizedCommand) : null
