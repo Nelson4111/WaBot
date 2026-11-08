@@ -57,15 +57,18 @@ const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) =
                 footer: options.footer || 'Avelia • Game Roles',
                 buffer: image,
                 buttons: options.buttons || [],
-                contextInfo: options.contextInfo || (options.mentions?.length ? { mentionedJid: options.mentions } : undefined)
+                contextInfo: options.contextInfo || (options.mentions?.length ? { mentionedJid: options.mentions } : undefined),
+                noLocationHeader: false
             }, quoted)
         } catch (error) {
             console.warn(`[Game Roles] Thumbnail send failed: ${error.message}`)
         }
     }
-    return conn.sendMessage(jid, { text, ...(options.mentions?.length ? { mentions: options.mentions } : {}) }, { quoted })
+    return conn.sendMessage(jid, {
+        text,
+        ...(options.mentions?.length ? { mentions: options.mentions } : {})
+    }, { quoted })
 }
-
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
 
@@ -822,12 +825,16 @@ ${armorBlocked
         : `> ⟡ Gugur : *${targetRole} ${roleEmojis[targetPlayer.role] || '🎭'}*`}
 *━━━━━━━━━━━━━━*
 ${!armorBlocked && targetPlayer.role === 'hunter' && targetPlayer.infectionType !== room.category ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
-        await sendGameThumbnail(conn, chat, resultCard, thumbExecution, null, { mentions: getPlayerMentions([hunter, targetPlayer]) })
+        await sendGameThumbnail(conn, chat, resultCard, thumbExecution, null, {
+            mentions: getPlayerMentions([hunter, targetPlayer])
+        })
     }
     if (hunter.pendingExecution) {
         hunter.pendingExecution = false
         hunter.canShoot = false
-        await sendGameThumbnail(conn, chat, `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`, thumbExecution, null, { mentions: getPlayerMentions([hunter]) })
+        await sendGameThumbnail(conn, chat, `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`, thumbExecution, null, {
+            mentions: getPlayerMentions([hunter])
+        })
     }
 
     if (targetPlayer?.pendingHunter) {
@@ -1042,7 +1049,9 @@ const resolveDayVoting = async (conn, chat, ww) => {
                 `> ${getDisplayPlayerLabel(player, conn)}`
             ).join('\n')
             const text = `*━━━〔 ⚖️ HASIL VOTING SERI 〕━━━*\n> ⚖️ _Voting ulang dimulai sekarang._\n\nPilihan hanya tersedia untuk pemain yang memperoleh suara tertinggi dan seri:\n${candidateList}${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🔁 _Pilih salah satu kandidat di atas; pilihan lain tidak tersedia._`
-            await sendGameThumbnail(conn, chat, text, thumbVoting, null, { mentions: getPlayerMentions(tiedCandidates) })
+            await sendGameThumbnail(conn, chat, text, thumbVoting, null, {
+                mentions: getPlayerMentions(tiedCandidates)
+            })
             room.runoffCandidateNumbers = tiedCandidates.map((player) => player.number)
             await startDayVoting(conn, chat, ww)
             return
@@ -1079,7 +1088,9 @@ const resolveDayVoting = async (conn, chat, ww) => {
 ━━━━━━━━━━━━━━
 > 🌙 _Senja telah usai. Bersiaplah menghadapi malam yang mencekam..._`
 
-        await sendGameThumbnail(conn, chat, execText, thumbExecution, null, { mentions: getPlayerMentions([killed]) })
+        await sendGameThumbnail(conn, chat, execText, thumbExecution, null, {
+            mentions: getPlayerMentions([killed])
+        })
 
         if (killed.pendingExecution && killed.role === 'hunter' && killed.infectionType !== room.category) {
             await openHunterReaction(conn, chat, room, killed, 'voting')
@@ -1235,17 +1246,22 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                 const roleImage = getRoleImage(selectedRole, gameCategory.location)
                 const detailCaption = `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
                 if (typeof conn.sendButtonV2 === 'function') {
-                    return conn.sendButtonV2(chat, {
-                        title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
-                        subtitle: gameCategory.name,
-                        text: detailCaption,
-                        footer: 'Avelia • Game Roles',
-                        buffer: roleImage || thumbNight,
-                        buttons: [
-                            ['🎭 Daftar Role', `${usedPrefix}gr role`],
-                            ['📖 Panduan Game Roles', `${usedPrefix}gr guide`]
-                        ]
-                    }, m)
+                    try {
+                        return await conn.sendButtonV2(chat, {
+                            title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
+                            subtitle: gameCategory.name,
+                            text: detailCaption,
+                            footer: 'Avelia • Game Roles',
+                            buffer: roleImage || thumbNight,
+                            noLocationHeader: false,
+                            buttons: [
+                                ['🎭 Daftar Role', `${usedPrefix}gr role`],
+                                ['📖 Panduan Game Roles', `${usedPrefix}gr guide`]
+                            ]
+                        }, m)
+                    } catch (error) {
+                        console.warn(`[Game Roles] Role thumbnail failed: ${error.message}`)
+                    }
                 }
                 return conn.sendMessage(chat, {
                     text: detailCaption
@@ -2033,7 +2049,9 @@ ${rosterText.trim()}
                 return `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)}\n> Role: *${role.title} ${role.emoji}*`
             }).join('\n')
             try {
-                await sendGameThumbnail(conn, chat, `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`, thumbExecution, null, { mentions: getPlayerMentions(players) })
+                await sendGameThumbnail(conn, chat, `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`, thumbExecution, null, {
+                    mentions: getPlayerMentions(players)
+                })
             } catch (error) {
                 console.error('[werewolf room delete role reveal failed]', error?.message)
             }
@@ -2059,7 +2077,9 @@ ${rosterText.trim()}
         })
         text += `*━━━━━━━━━━━━━━*\n\n🟢 Hidup  ·  🔴 Mati\n> _Pemain gugur tidak dapat beraksi._`
 
-        await sendGameThumbnail(conn, chat, text.trim(), thumbNight, null, { mentions: getPlayerMentions(ww[chat].player) })
+        await sendGameThumbnail(conn, chat, text.trim(), thumbNight, null, {
+            mentions: getPlayerMentions(ww[chat].player)
+        })
 
     } else if (value === "info") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
@@ -2120,17 +2140,22 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
             const roleImage = getRoleImage(selectedRole, game.location)
             const detailCaption = `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
             if (typeof conn.sendButtonV2 === 'function') {
-                return conn.sendButtonV2(chat, {
-                    title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
-                    subtitle: game.name,
-                    text: detailCaption,
-                    footer: 'Avelia • Game Roles',
-                    buffer: roleImage || thumbNight,
-                    buttons: [
-                        ['🎭 Daftar Role', `${gameCommandBase} role`],
-                        ['📖 Panduan Game Roles', `${gameCommandBase} guide`]
-                    ]
-                }, m)
+                try {
+                    return await conn.sendButtonV2(chat, {
+                        title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
+                        subtitle: game.name,
+                        text: detailCaption,
+                        footer: 'Avelia • Game Roles',
+                        buffer: roleImage || thumbNight,
+                        noLocationHeader: false,
+                        buttons: [
+                            ['🎭 Daftar Role', `${gameCommandBase} role`],
+                            ['📖 Panduan Game Roles', `${gameCommandBase} guide`]
+                        ]
+                    }, m)
+                } catch (error) {
+                    console.warn(`[Game Roles] Role thumbnail failed: ${error.message}`)
+                }
             }
             return conn.sendMessage(chat, {
                 text: detailCaption
