@@ -329,19 +329,30 @@ function randomBirthday() {
 }
 
 async function syntheticTarget(m, mentionedJid, conn) {
-    const raw = mentionedJid?.[0] || m.quoted?.sender
+    const quoted = m.quoted
+    const quotedRaw = quoted?.sender
+        || quoted?.participant
+        || quoted?.key?.participant
+        || m.message?.extendedTextMessage?.contextInfo?.participant
+        || m.message?.extendedTextMessage?.contextInfo?.participantAlt
+    const rawMentioned = mentionedJid?.[0]
+    const raw = rawMentioned || quotedRaw
     if (!raw) return null
-    const number = raw.split('@')[0].replace(/\D/g, '')
+    const decoded = typeof conn?.decodeJid === 'function'
+        ? conn.decodeJid(raw)
+        : raw
+    const normalized = String(decoded || raw).replace(/:\d+(?=@)/, '')
+    const number = normalized.split('@')[0].replace(/\D/g, '')
     const users = global.db?.data?.users || {}
-    const storedName = users[raw]?.name || users[number]?.name
+    const storedName = users[normalized]?.name || users[raw]?.name || users[number]?.name
     let resolvedName = storedName
     try {
-        resolvedName = resolvedName || await conn.getName(raw)
+        resolvedName = resolvedName || await conn.getName(normalized)
     } catch {}
     const username = String(resolvedName || m.pushName || number || 'player')
         .replace(/[^a-zA-Z0-9_.-]/g, '')
         .replace(/^[/_.*]+/, '') || number
-    return { jid: raw, number, username, profile: users[raw] || users[number] || null }
+    return { jid: normalized, number, username, profile: users[normalized] || users[raw] || users[number] || null }
 }
 
 function randomSimulation(target) {

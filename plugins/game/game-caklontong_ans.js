@@ -40,8 +40,10 @@ handler.before = async function (m) {
         const rewardExp = session[2] || 1000
         global.db.data.users[m.sender] = global.db.data.users[m.sender] || {}
         global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + rewardExp
+        global.db.data.users[m.sender].caklontongScore = (Number(global.db.data.users[m.sender].caklontongScore) || 0) + (session[4] || 1)
+        global.db.data.users[m.sender].caklontongName = m.pushName || global.db.data.users[m.sender].caklontongName
 
-        await this.reply(m.chat, `🎉 *BENAR!* +${rewardExp} XP\n${json.deskripsi || ''}`, m)
+        await this.reply(m.chat, `╭─〔 🎉 B E N A R 〕\n> ✧ +${rewardExp} XP\n> ⟡ +${session[4] || 1} poin Cak Lontong\n> ${json.deskripsi || ''}\n╰───────────────\n\n🏆 Skor sekarang: *${global.db.data.users[m.sender].caklontongScore} poin*\nCek dengan *.caklontong score*`, m)
         clearTimeout(session[3])
         delete this.caklontong[id]
         return true
