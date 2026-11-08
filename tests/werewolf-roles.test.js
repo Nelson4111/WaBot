@@ -107,6 +107,19 @@ test('AI Guardian protection and AI Mayor vote weight use normal role mechanics'
     targetNumber: 3,
     voteBoost: 2
   })
+
+  test('Ghost possession blocks one vote and stays blocked until the next night starts', () => {
+    const ghost = { id: 'ghost', number: 1, role: 'ghost', isdead: false, possessedIds: [] }
+    const target = { id: 'target', number: 2, role: 'warga', isdead: false }
+    const room = { room: 'ghost-test', category: 'mayhem', player: [ghost, target], voting: false }
+    const codes = buildRoleCodeMap(room, ghost)
+    const possessCode = Object.entries(codes).find(([, choice]) => choice.type === 'possess')?.[0]
+    assert.ok(possessCode)
+    assert.equal(resolveSecretCodeAction(room.room, ghost.id, possessCode, { [room.room]: room }, 'night').action, 'possess')
+    assert.equal(resolveNightActions(room.room, { [room.room]: room }), true)
+    assert.equal(target.voteBlockedThisRound, true)
+    assert.equal(resolveSecretCodeAction(room.room, target.id, Object.entries(generateVoteCodeMap(room, target)).find(([, choice]) => choice.type === 'vote')?.[0], { [room.room]: room }, 'vote').reason, 'vote-possessed')
+  })
   assert.equal(target.vote, 2)
   assert.equal(target.voteCount, 1)
 
