@@ -9,6 +9,7 @@ import {
     killww,
     collapseZombieVampireInfections,
     roleGenerator,
+    roleAmount,
     addTimer,
     startGame,
     autoAssignCustomRoles,
@@ -38,7 +39,7 @@ import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { CIPHER_AI_MESSAGES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
+import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
@@ -46,6 +47,24 @@ const thumbNight = "https://user-images.githubusercontent.com/72728486/235316834
 const thumbMorning = "https://user-images.githubusercontent.com/72728486/235344562-4677d2ad-48ee-419d-883f-e0ca9ba1c7b8.jpg"
 const thumbVoting = "https://user-images.githubusercontent.com/72728486/235344861-acdba7d1-8fce-41b8-adf6-337c818cda2b.jpg"
 const thumbExecution = "https://user-images.githubusercontent.com/72728486/235354619-6ad1cabd-216c-4c7c-b7c2-3a564836653a.jpg"
+const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) => {
+    if (typeof conn.sendButtonV2 === 'function') {
+        try {
+            return await conn.sendButtonV2(jid, {
+                title: options.title || 'GAME ROLES',
+                subtitle: options.subtitle || '',
+                text,
+                footer: options.footer || 'Avelia • Game Roles',
+                buffer: image,
+                buttons: options.buttons || [],
+                contextInfo: options.contextInfo || (options.mentions?.length ? { mentionedJid: options.mentions } : undefined)
+            }, quoted)
+        } catch (error) {
+            console.warn(`[Game Roles] Thumbnail send failed: ${error.message}`)
+        }
+    }
+    return conn.sendMessage(jid, { text, ...(options.mentions?.length ? { mentions: options.mentions } : {}) }, { quoted })
+}
 
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
@@ -667,11 +686,7 @@ ${morningBody}
 ━━━━━━━━━━━━━━
 > ⚖️ _Sidang dimulai! ${getPhaseParticipantName(game)} bersiap menentukan tersangka._`
 
-    await conn.sendMessage(chat, {
-        image: { url: thumbMorning },
-        caption: morningCard,
-        mentions
-    })
+    await sendGameThumbnail(conn, chat, morningCard, thumbMorning, null, { mentions })
 }
 
 const publishMorning = async (conn, chat, room, ww, announce = true) => {
@@ -807,20 +822,12 @@ ${armorBlocked
         : `> ⟡ Gugur : *${targetRole} ${roleEmojis[targetPlayer.role] || '🎭'}*`}
 *━━━━━━━━━━━━━━*
 ${!armorBlocked && targetPlayer.role === 'hunter' && targetPlayer.infectionType !== room.category ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
-        await conn.sendMessage(chat, {
-            image: { url: thumbExecution },
-            caption: resultCard,
-            mentions: getPlayerMentions([hunter, targetPlayer])
-        })
+        await sendGameThumbnail(conn, chat, resultCard, thumbExecution, null, { mentions: getPlayerMentions([hunter, targetPlayer]) })
     }
     if (hunter.pendingExecution) {
         hunter.pendingExecution = false
         hunter.canShoot = false
-        await conn.sendMessage(chat, {
-            image: { url: thumbExecution },
-            caption: `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`,
-            mentions: getPlayerMentions([hunter])
-        })
+        await sendGameThumbnail(conn, chat, `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`, thumbExecution, null, { mentions: getPlayerMentions([hunter]) })
     }
 
     if (targetPlayer?.pendingHunter) {
@@ -1024,10 +1031,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 
     if (hasil_vote === 0) {
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\n${participants} tidak dapat mencapai kesepakatan dan kembali ke ${getPhaseSedentaryName(game)}. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti ${game.location}..._`
-        await conn.sendMessage(chat, {
-            image: { url: thumbNight },
-            caption: text
-        })
+        await sendGameThumbnail(conn, chat, text, thumbNight)
     } else if (hasil_vote === 1) {
         const highestVote = Math.max(0, ...voteTally.map((player) => Number(player.vote) || 0))
         const tiedCandidates = voteTally.filter((player) =>
@@ -1038,21 +1042,14 @@ const resolveDayVoting = async (conn, chat, ww) => {
                 `> ${getDisplayPlayerLabel(player, conn)}`
             ).join('\n')
             const text = `*━━━〔 ⚖️ HASIL VOTING SERI 〕━━━*\n> ⚖️ _Voting ulang dimulai sekarang._\n\nPilihan hanya tersedia untuk pemain yang memperoleh suara tertinggi dan seri:\n${candidateList}${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🔁 _Pilih salah satu kandidat di atas; pilihan lain tidak tersedia._`
-            await conn.sendMessage(chat, {
-                image: { url: thumbVoting },
-                caption: text,
-                mentions: getPlayerMentions(tiedCandidates)
-            })
+            await sendGameThumbnail(conn, chat, text, thumbVoting, null, { mentions: getPlayerMentions(tiedCandidates) })
             room.runoffCandidateNumbers = tiedCandidates.map((player) => player.number)
             await startDayVoting(conn, chat, ww)
             return
         }
 
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _${participants} kembali ke ${getPhaseSedentaryName(game)}..._`
-        await conn.sendMessage(chat, {
-            image: { url: thumbNight },
-            caption: text
-        })
+        await sendGameThumbnail(conn, chat, text, thumbNight)
     } else if (hasil_vote && typeof hasil_vote === 'object') {
         const killed = voteKill(chat, ww)
         const killedRole = getPlayerRolePresentation(killed, room.category)
@@ -1082,11 +1079,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 ━━━━━━━━━━━━━━
 > 🌙 _Senja telah usai. Bersiaplah menghadapi malam yang mencekam..._`
 
-        await conn.sendMessage(chat, {
-            image: { url: thumbExecution },
-            caption: execText,
-            mentions: getPlayerMentions([killed])
-        })
+        await sendGameThumbnail(conn, chat, execText, thumbExecution, null, { mentions: getPlayerMentions([killed]) })
 
         if (killed.pendingExecution && killed.role === 'hunter' && killed.infectionType !== room.category) {
             await openHunterReaction(conn, chat, room, killed, 'voting')
@@ -1130,7 +1123,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         args = args.slice(1)
     }
     const gameCommandBase = `${usedPrefix || '.'}${isGameRolesCommand ? `gr ${gameCategory.id}` : directGameCategory ? directGameCategory.aliases[0] : 'ww'}`
-    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "room", "lobby", "log", "info", "role", "guide", "add", "del", "shoot", "action", "autorole", "list"]
+    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "room", "lobby", "log", "info", "role", "guide", "add", "del", "shoot", "action", "autorole", "list", "rate", "spawnrate", "sr"]
     let value = args[0]
     const target = args[1]
     const normalizedValue = String(value || "").toLowerCase()
@@ -1188,10 +1181,42 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     .join('\n━━━━━━━━━━━━━━\n')
                 return m.reply(`*━━━〔 🎮 DAFTAR KATEGORI 〕━━━*\n\n${categoryList}\n\n━━━━━━━━━━━━━━\n> Ketik *.gr list* untuk deskripsi game dan tombol navigasi.`)
             }
-            return conn.sendMessage(chat, {
-                image: { url: getGameCategoryImage(category) },
-                caption: formatGameCategoryInfo(category, usedPrefix)
-            }, { quoted: m })
+            return sendGameThumbnail(conn, chat, formatGameCategoryInfo(category, usedPrefix), getGameCategoryImage(category), m)
+        }
+        if (['rate', 'spawnrate', 'sr'].includes(action)) {
+            const requestedCount = Number.parseInt(args[1], 10)
+            const playerCount = Number.isInteger(requestedCount) && requestedCount > 0
+                ? Math.min(requestedCount, 15)
+                : (ww[chat]?.player || []).filter((player) => !player.isDummy).length || 5
+            const category = gameCategory
+            const lines = [(() => {
+                const room = {
+                    category: category.id,
+                    player: Array.from({ length: playerCount }, (_, index) => ({ id: `rate-${index}`, number: index + 1, isDummy: false }))
+                }
+                const sampleRooms = { rate: room }
+                const samples = 2000
+                const totals = Object.create(null)
+                let villainTotal = 0
+                for (let sample = 0; sample < samples; sample++) {
+                    const distribution = roleAmount('rate', sampleRooms, undefined, playerCount)
+                    if (!distribution) continue
+                    for (const [role, amount] of Object.entries(distribution)) {
+                        totals[role] = (totals[role] || 0) + amount
+                    }
+                    villainTotal += Object.entries(distribution)
+                        .filter(([role]) => CUSTOM_ANTAGONIST_ROLES.includes(role))
+                        .reduce((total, [, amount]) => total + amount, 0)
+                }
+                const roles = Object.entries(totals)
+                    .sort(([roleA], [roleB]) => formatRoleTitle(roleA).localeCompare(formatRoleTitle(roleB)))
+                    .map(([role, amount]) => {
+                        const chance = amount / (samples * playerCount) * 100
+                        return `> ${formatRoleTitle(role)} ${roleEmojis[role] || '🎭'} · *${chance.toFixed(1)}%*`
+                    }).join('\n')
+                return `*${category.name}*\n> Pemain: *${playerCount}*\n> Villain: ~${(villainTotal / samples).toFixed(1)} pemain\n${roles}`
+            })()]
+            return m.reply(`*━━━〔 🎲 SPAWN RATE ROLE 〕━━━*\n\n${lines.join('\n\n━━━━━━━━━━━━━━\n\n')}\n\n> Angka dihitung dari ${2000} simulasi acak.`)
         }
         if (action === 'role') {
             const requestedRole = args.slice(1).join(' ').trim()
@@ -1208,9 +1233,22 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     ? `\n\n${formatRoleGuide(selectedRole, gameCategory, usedPrefix || '.')}`
                     : ''
                 const roleImage = getRoleImage(selectedRole, gameCategory.location)
+                const detailCaption = `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
+                if (typeof conn.sendButtonV2 === 'function') {
+                    return conn.sendButtonV2(chat, {
+                        title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
+                        subtitle: gameCategory.name,
+                        text: detailCaption,
+                        footer: 'Avelia • Game Roles',
+                        buffer: roleImage || thumbNight,
+                        buttons: [
+                            ['🎭 Daftar Role', `${usedPrefix}gr role`],
+                            ['📖 Panduan Game Roles', `${usedPrefix}gr guide`]
+                        ]
+                    }, m)
+                }
                 return conn.sendMessage(chat, {
-                    image: { url: roleImage || thumbNight },
-                    caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
+                    text: detailCaption
                 }, { quoted: m })
             }
             const roleSections = formatRoleList(gameCategory, factionFilter)
@@ -1253,7 +1291,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             if (page < pageCount) buttons.push(['Riwayat Berikutnya 📜', `${usedPrefix}gr history ${page + 1}`])
             const caption = `*━━━〔 ✧ RIWAYAT GAME ROLES · ${page}/${pageCount} ✧ 〕━━━*\n\n${text}`
             if (buttons.length) return conn.sendButton(chat, caption, 'Avelia • Game Roles', thumbNight, buttons, m)
-            return conn.sendMessage(chat, { image: { url: thumbNight }, caption }, { quoted: m })
+            return sendGameThumbnail(conn, chat, caption, thumbNight, m)
         }
         if (action === 'top' || action === 'leaderboard') {
             const data = loadDB().data
@@ -1274,11 +1312,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                 if (identity.mention) mentions.push(identity.mention)
                 return `> *${index + 1}.* ${identity.display}\n> Skor: *${Number(stats.score) || 0}* · Villain: *${Number(stats.antagonistWins) || 0}x* · Citizen: *${Number(stats.protagonistWins) || 0}x* · Netral: *${Number(stats.neutralWins) || 0}x*`
             })
-            return conn.sendMessage(chat, {
-                image: { url: thumbVoting },
-                caption: `*━━━〔 ✧ TOP 10 GAME ROLES ✧ 〕━━━*\n\n${lines.join('\n\n') || 'Belum ada skor yang tercatat.'}`,
-                mentions
-            })
+            return sendGameThumbnail(conn, chat, `*━━━〔 ✧ TOP 10 GAME ROLES ✧ 〕━━━*\n\n${lines.join('\n\n') || 'Belum ada skor yang tercatat.'}`, thumbVoting, null, { mentions })
         }
         return m.reply(status.warning(`Kategori/aksi tidak dikenal. Ketik *.gr* atau *.gr guide*.`))
     }
@@ -1999,11 +2033,7 @@ ${rosterText.trim()}
                 return `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)}\n> Role: *${role.title} ${role.emoji}*`
             }).join('\n')
             try {
-                await conn.sendMessage(chat, {
-                    image: { url: thumbExecution },
-                    caption: `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`,
-                    mentions: getPlayerMentions(players)
-                })
+                await sendGameThumbnail(conn, chat, `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`, thumbExecution, null, { mentions: getPlayerMentions(players) })
             } catch (error) {
                 console.error('[werewolf room delete role reveal failed]', error?.message)
             }
@@ -2029,11 +2059,7 @@ ${rosterText.trim()}
         })
         text += `*━━━━━━━━━━━━━━*\n\n🟢 Hidup  ·  🔴 Mati\n> _Pemain gugur tidak dapat beraksi._`
 
-        await conn.sendMessage(chat, {
-            image: { url: thumbNight },
-            caption: text.trim(),
-            mentions: getPlayerMentions(ww[chat].player)
-        })
+        await sendGameThumbnail(conn, chat, text.trim(), thumbNight, null, { mentions: getPlayerMentions(ww[chat].player) })
 
     } else if (value === "info") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
@@ -2042,10 +2068,7 @@ ${rosterText.trim()}
 *━━━〔 ✦ PRIVASI AKSI 〕━━━*
 > Kartu role dan tombol malam dikirim di grup melalui dual-stanza.
 > Aksi dan hasil pribadi hanya terlihat oleh pemain terkait.`
-        return conn.sendMessage(chat, {
-            image: { url: getGameCategoryImage(game) },
-            caption: infoText
-        }, { quoted: m })
+        return sendGameThumbnail(conn, chat, infoText, getGameCategoryImage(game), m)
 
     } else if (value === "guide") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
@@ -2095,9 +2118,22 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
                 ? `\n\n${formatRoleGuide(selectedRole, game, usedPrefix || '.')}`
                 : ''
             const roleImage = getRoleImage(selectedRole, game.location)
+            const detailCaption = `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
+            if (typeof conn.sendButtonV2 === 'function') {
+                return conn.sendButtonV2(chat, {
+                    title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
+                    subtitle: game.name,
+                    text: detailCaption,
+                    footer: 'Avelia • Game Roles',
+                    buffer: roleImage || thumbNight,
+                    buttons: [
+                        ['🎭 Daftar Role', `${gameCommandBase} role`],
+                        ['📖 Panduan Game Roles', `${gameCommandBase} guide`]
+                    ]
+                }, m)
+            }
             return conn.sendMessage(chat, {
-                image: { url: roleImage || thumbNight },
-                caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
+                text: detailCaption
             }, { quoted: m })
         }
         const roleSections = formatRoleList(game, factionFilter)
