@@ -1124,13 +1124,16 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
     const normalizedCommand = String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
     if (normalizedCommand === 'gr') {
         const pictAction = args?.[0]?.toLowerCase()
-        if (pictAction === 'pict') {
+        const hasOwnerOrCoOwnerAccess = () => {
             const senderPhone = normalizePhone(sender)
             const ownerPhone = String(global.nomorown || '').replace(/\D/g, '')
             const coOwnerPhone = String(global.nomorcoown || '').replace(/\D/g, '')
-            const hasOwnerAccess = senderPhone && [ownerPhone, coOwnerPhone].some((phone) => phone && senderPhone.endsWith(phone))
-            const hasOwnerDatabase = global.db?.data?.users?.[sender]?.isCoOwner
-            if (!hasOwnerAccess && !hasOwnerDatabase) return
+            const hasOwnerPhone = senderPhone && [ownerPhone, coOwnerPhone].some((phone) => phone && senderPhone.endsWith(phone))
+            const hasCoOwnerDatabase = Boolean(global.db?.data?.users?.[sender]?.isCoOwner)
+            return Boolean(hasOwnerPhone || hasCoOwnerDatabase)
+        }
+        if (pictAction === 'pict') {
+            if (!hasOwnerOrCoOwnerAccess()) return
 
             const flattenRoleImages = (value) => {
                 if (Array.isArray(value)) return value
@@ -1145,6 +1148,27 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     console.warn(`[Game Roles] Failed to send asset picture ${index + 1}/${urls.length}: ${error.message}`)
                 }
                 if (index < urls.length - 1) await wait(3000)
+            }
+            return
+        }
+        if (pictAction === 'scene') {
+            if (!hasOwnerOrCoOwnerAccess()) return
+
+            const sceneUrls = [
+                thumbNight,
+                thumbMorning,
+                thumbVoting,
+                thumbExecution,
+                'https://user-images.githubusercontent.com/72728486/235365156-cfab66ce-38b2-4bc7-90d7-7756fc320e06.jpg',
+                'https://user-images.githubusercontent.com/72728486/235365148-35b8def7-c1a2-451d-a2f2-6b6a911b37db.jpg'
+            ]
+            for (let index = 0; index < sceneUrls.length; index++) {
+                try {
+                    await conn.sendMessage(chat, { image: { url: sceneUrls[index] } })
+                } catch (error) {
+                    console.warn(`[Game Roles] Failed to send scene picture ${index + 1}/${sceneUrls.length}: ${error.message}`)
+                }
+                if (index < sceneUrls.length - 1) await wait(3000)
             }
             return
         }
