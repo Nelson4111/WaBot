@@ -95,7 +95,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   let hewan1 = null
   let jml = 1
   const hasMarketCategory = kategoriList[rawAnimalArgs[0]?.toLowerCase()]
-  const quantity = rawAnimalArgs.length > (hasMarketCategory ? 2 : 1) && /^\d+$/.test(rawAnimalArgs.at(-1)) ? Number(rawAnimalArgs.pop()) : 1
+  const quantity = rawAnimalArgs.length > (hasMarketCategory ? 2 : 1) && /^\d+$/.test(rawAnimalArgs.at(-1)) ? Number(rawAnimalArgs.at(-1)) : 1
   jml = quantity > 0 ? quantity : 1
 
   if (sub === 'command' || sub === 'commands' || sub === 'cmd') {
@@ -366,7 +366,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     const stock = Number(user.inventory[item]) || 0
     const sold = Math.min(jml, stock)
     const display = getHasilDisplay(item)
-    let hargaItem = 1000
+    let hargaItem = display.harga || 1000
     let total = hargaItem * sold
     user.inventory[item] -= sold
     if(user.inventory[item] <= 0) delete user.inventory[item]

@@ -252,8 +252,10 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   }
 
   wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], bayar)
-  user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
-  user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
+  if (h1 !== h2) {
+    user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
+    user.ternak[h2]--; if(user.ternak[h2] <= 0) delete user.ternak[h2]
+  }
   user.cooldown.kawin = sekarang
   user.kawinCooldownDuration = cd
   delete wdb.temp.kawin[m.sender]
@@ -263,16 +265,20 @@ let handler = async (m, { conn, args, usedPrefix }) => {
 
   if(gagal) {
     user.exp += scaleDifficultyXP(user, Math.floor(exp / 2))
+    if (h1 === h2 && !asuransi) {
+      user.ternak[h1]--; if(user.ternak[h1] <= 0) delete user.ternak[h1]
+    }
 
     if(asuransi) {
-      global.icuTernak[m.sender] = {h1, h2, d1, d2, biayaObat}
-
-      setTimeout(() => {
-        if(global.icuTernak[m.sender]) {
+      if (global.icuTernak[m.sender]?.timer) clearTimeout(global.icuTernak[m.sender].timer)
+      const icuEntry = { h1, h2, d1, d2, biayaObat }
+      icuEntry.timer = setTimeout(() => {
+        if(global.icuTernak[m.sender] === icuEntry) {
           const wdb2 = loadDB()
           let user2 = getUserRPG(wdb2, m.sender).rpg
           let data = global.icuTernak[m.sender]
 
+          if (!user2.inventory) user2.inventory = {}
           user2.inventory[dapatkanHasil(data.d1).sembelih] = (user2.inventory[dapatkanHasil(data.d1).sembelih] || 0) + 1
           user2.inventory[dapatkanHasil(data.d2).sembelih] = (user2.inventory[dapatkanHasil(data.d2).sembelih] || 0) + 1
           delete global.icuTernak[m.sender]
@@ -289,6 +295,7 @@ let handler = async (m, { conn, args, usedPrefix }) => {
           }, {quoted: m})
         }
       }, 30 * 60 * 1000)
+      global.icuTernak[m.sender] = icuEntry
 
       saveDB(wdb)
 

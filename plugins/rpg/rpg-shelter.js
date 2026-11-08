@@ -232,6 +232,10 @@ let handler = async (m, { text, usedPrefix }) => {
     const resident = collection[index]
     if (!resident) return m.reply(`Nomor ${isLivestock ? 'ternak' : isPet ? 'pet' : 'anak'} tidak valid. Cek *${usedPrefix}shelter list*.`)
 
+    if (isPet && user.pets.length >= (user.premium ? 15 : 10)) {
+      return m.reply(`❌ Slot pet kamu sudah penuh! Maksimal ${user.premium ? 15 : 10} pet. Kosongkan slot terlebih dahulu.`)
+    }
+
     const remaining = getRetrieveCooldown()
     if (remaining > 0) {
       const minutes = Math.ceil(remaining / 60000)

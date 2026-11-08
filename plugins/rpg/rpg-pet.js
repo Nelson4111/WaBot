@@ -16,6 +16,7 @@ import {
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { processPetNeglect } from '../../lib/rpgPetNeglect.js'
 import { recordTaxActivity } from '../../lib/rpgTax.js'
+import { rarities, pets, aliases } from '../../lib/rpg-petData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command, groupMetadata }) => {
   const petImageUrl = 'https://c.termai.cc/i173/LwJG.jpg'
@@ -148,397 +149,6 @@ user.pets = user.pets.filter(p => {
   let isMalam = jam >= 18 || jam < 6
   let waktu = isMalam? '🌙 Malam' : '☀️ Siang'
 
-    const rarities = {
-    COMMON: {stars: '★☆☆☆☆☆☆', emoji: '🤍', rate: 40},
-    UNCOMMON: {stars: '★★☆☆☆☆☆', emoji: '💙', rate: 25},
-    RARE: {stars: '★★★☆☆☆☆', emoji: '✨', rate: 15},
-    EPIC: {stars: '★★★★☆☆☆', emoji: '💎', rate: 10},
-    LEGENDARY: {stars: '★★★★★☆☆', emoji: '👑', rate: 7},
-    MYTHIC: {stars: '★★★★★★☆', emoji: '🌌', rate: 2.5},
-    SECRET: {stars: '★★★★★★★', emoji: '🔮', rate: 0.5}
-  }
-
-  const pets = {
-    // === COMMON 5K - 50K ===
-    'lalat': { emoji: '🪰', harga: 5000, rarity: 'COMMON' },
-    'nyamuk': { emoji: '🦟', harga: 7000, rarity: 'COMMON' },
-    'semut': { emoji: '🐜', harga: 10000, rarity: 'COMMON' },
-    'cacing': { emoji: '🪱', harga: 12000, rarity: 'COMMON' },
-    'kecoa': { emoji: '🪳', harga: 15000, rarity: 'COMMON' },
-    'tikus_got': { emoji: '🐀', harga: 20000, rarity: 'COMMON' },
-    'tikus_rumah': { emoji: '🐁', harga: 20000, rarity: 'COMMON' },
-    'tikus': { emoji: '🐭', harga: 25000, rarity: 'COMMON' },
-    'ulat': { emoji: '🐛', harga: 30000, rarity: 'COMMON' },
-    'siput': { emoji: '🐌', harga: 30000, rarity: 'COMMON' },
-    'belalang': { emoji: '🦗', harga: 40000, rarity: 'COMMON' },
-    'anak_ayam': { emoji: '🐥', harga: 50000, rarity: 'COMMON' },
-    'kumbang': { emoji: '🪲', harga: 50000, rarity: 'COMMON' },
-
-    // === UNCOMMON 75K - 200K ===
-    'hamster': { emoji: '🐹', harga: 75000, rarity: 'UNCOMMON' },
-    'ayam': { emoji: '🐔', harga: 80000, rarity: 'UNCOMMON' },
-    'burung': { emoji: '🐦', harga: 80000, rarity: 'UNCOMMON' },
-    'katak': { emoji: '🐸', harga: 90000, rarity: 'UNCOMMON' },
-    'kumbang_tanduk': { emoji: '🪲', harga: 100000, rarity: 'UNCOMMON' },
-    'ayam_jago': { emoji: '🐓', harga: 100000, rarity: 'UNCOMMON' },
-    'merpati': { emoji: '🕊️', harga: 120000, rarity: 'UNCOMMON' },
-    'lebah': { emoji: '🐝', harga: 120000, rarity: 'UNCOMMON' },
-    'kelinci': { emoji: '🐰', harga: 150000, rarity: 'UNCOMMON' },
-    'bebek': { emoji: '🦆', harga: 150000, rarity: 'UNCOMMON' },
-    'kupu': { emoji: '🦋', harga: 180000, rarity: 'UNCOMMON' },
-    'kelinci_liar': { emoji: '🐰', harga: 180000, rarity: 'UNCOMMON' },
-    'tupai': { emoji: '🐿️', harga: 200000, rarity: 'UNCOMMON' },
-    'burung_hitam': { emoji: '🐦‍⬛', harga: 200000, rarity: 'UNCOMMON' },
-    'angsa': { emoji: '🦢', harga: 200000, rarity: 'UNCOMMON' },
-    'ikan': { emoji: '🐟', harga: 200000, rarity: 'UNCOMMON' },
-    'laba': { emoji: '🕷️', harga: 200000, rarity: 'UNCOMMON' },
-    'monyet': { emoji: '🐒', harga: 200000, rarity: 'UNCOMMON' },
-    'kalkun': { emoji: '🦃', harga: 200000, rarity: 'UNCOMMON' },
-    'kelelawar': { emoji: '🦇', harga: 200000, rarity: 'UNCOMMON' },
-    'udang': { emoji: '🦐', harga: 200000, rarity: 'UNCOMMON' },
-    'kucing': { emoji: '🐱', harga: 200000, rarity: 'UNCOMMON' },
-    'anjing': { emoji: '🐶', harga: 200000, rarity: 'UNCOMMON' },
-    'kucing_hitam': { emoji: '🐈‍⬛', harga: 200000, rarity: 'UNCOMMON' },
-    'kepiting': { emoji: '🦀', harga: 200000, rarity: 'UNCOMMON' },
-    'babi_hutan': { emoji: '🐗', harga: 200000, rarity: 'UNCOMMON' },
-    'babi': { emoji: '🐷', harga: 200000, rarity: 'UNCOMMON' },
-    'penguin': { emoji: '🐧', harga: 200000, rarity: 'UNCOMMON' },
-    'kura': { emoji: '🐢', harga: 200000, rarity: 'UNCOMMON' },
-    'rakun': { emoji: '🦝', harga: 200000, rarity: 'UNCOMMON' },
-    'sigung': { emoji: '🦨', harga: 200000, rarity: 'UNCOMMON' },
-    'sapi': { emoji: '🐄', harga: 200000, rarity: 'UNCOMMON' },
-    'domba': { emoji: '🐑', harga: 200000, rarity: 'UNCOMMON' },
-    'ular': { emoji: '🐍', harga: 200000, rarity: 'UNCOMMON' },
-    'kadal': { emoji: '🦎', harga: 200000, rarity: 'UNCOMMON' },
-    'domba_jantan': { emoji: '🐏', harga: 200000, rarity: 'UNCOMMON' },
-    'buntal': { emoji: '🐡', harga: 200000, rarity: 'UNCOMMON' },
-    'rubah': { emoji: '🦊', harga: 200000, rarity: 'UNCOMMON' },
-    'angsa_putih': { emoji: '🦢', harga: 200000, rarity: 'UNCOMMON' },
-    'luwak': { emoji: '🦦', harga: 200000, rarity: 'UNCOMMON' },
-    'kalajengking': { emoji: '🦂', harga: 200000, rarity: 'UNCOMMON' },
-    'gajah': { emoji: '🐘', harga: 200000, rarity: 'UNCOMMON' },
-    'badak': { emoji: '🦏', harga: 200000, rarity: 'UNCOMMON' },
-    'paus': { emoji: '🐋', harga: 200000, rarity: 'UNCOMMON' },
-    'paus_biru': { emoji: '🐳', harga: 200000, rarity: 'UNCOMMON' },
-    'hiu': { emoji: '🦈', harga: 200000, rarity: 'UNCOMMON' },
-    'kuda_nil': { emoji: '🦛', harga: 200000, rarity: 'UNCOMMON' },
-    'gurita': { emoji: '🐙', harga: 200000, rarity: 'UNCOMMON' },
-    'merak': { emoji: '🦚', harga: 200000, rarity: 'UNCOMMON' },
-    'gorila': { emoji: '🦍', harga: 200000, rarity: 'UNCOMMON' },
-    'cumi': { emoji: '🦑', harga: 200000, rarity: 'UNCOMMON' },
-    'bison': { emoji: '🦬', harga: 200000, rarity: 'UNCOMMON' },
-    'jerapah': { emoji: '🦒', harga: 200000, rarity: 'UNCOMMON' },
-    'zebra': { emoji: '🦓', harga: 200000, rarity: 'UNCOMMON' },
-    'singa': { emoji: '🦁', harga: 200000, rarity: 'UNCOMMON' },
-    'harimau': { emoji: '🐅', harga: 200000, rarity: 'UNCOMMON' },
-    'macan': { emoji: '🐆', harga: 200000, rarity: 'UNCOMMON' },
-    'beruang': { emoji: '🐻', harga: 200000, rarity: 'UNCOMMON' },
-    'serigala': { emoji: '🐺', harga: 200000, rarity: 'UNCOMMON' },
-    'rusa': { emoji: '🦌', harga: 200000, rarity: 'UNCOMMON' },
-    'kanguru': { emoji: '🦘', harga: 200000, rarity: 'UNCOMMON' },
-    'koala': { emoji: '🐨', harga: 200000, rarity: 'UNCOMMON' },
-    'panda': { emoji: '🐼', harga: 200000, rarity: 'UNCOMMON' },
-    'orangutan': { emoji: '🦧', harga: 200000, rarity: 'UNCOMMON' },
-    'elang': { emoji: '🦅', harga: 200000, rarity: 'UNCOMMON' },
-    'flamingo': { emoji: '🦩', harga: 200000, rarity: 'UNCOMMON' },
-    'lumba': { emoji: '🐬', harga: 200000, rarity: 'UNCOMMON' },
-
-    // === RARE 14JT - 16JT ===
-    'skibidi': { emoji: '🚽', harga: 14000000, rarity: 'RARE', skill: 'toilet: buang semua debuff tim + musuh' },
-    'creeper': { emoji: '💚', harga: 15000000, rarity: 'RARE', skill: 'meledak: mati = damage area x3 ke semua' },
-    'drone': { emoji: '🚁', harga: 16000000, rarity: 'RARE', skill: 'pengintai: lihat stat musuh sebelum battle' },
-    'warden': { emoji: '🕳️', harga: 16000000, rarity: 'RARE', skill: 'getar: deteksi musuh invisible + damage x3' },
-
-    // === EPIC 17JT - 19JT ===
-    'komodo': { emoji: '🦎', harga: 17000000, rarity: 'EPIC', skill: 'racun: damage musuh -10 tiap detik selama 5 detik' },
-    'among_us': { emoji: '👨‍🚀', harga: 17000000, rarity: 'EPIC', skill: 'impostor: 30% chance kill 1 pet musuh pas menang' },
-    'jiangshi': { emoji: '🧟', harga: 17000000, rarity: 'EPIC', skill: 'loncat: heal 20% tiap kill' },
-    'woody': { emoji: '🤠', harga: 17000000, rarity: 'EPIC', skill: 'teman: tim +20 power pas bareng 2+' },
-    'jessie': { emoji: '👢', harga: 17000000, rarity: 'EPIC', skill: 'yeehaw: cooldown tim x0.5' },
-    'barongsai': { emoji: '🦁', harga: 18000000, rarity: 'EPIC', skill: 'tari: happy tim tidak pernah turun' },
-    'buzz_lightyear': { emoji: '🚀', harga: 18000000, rarity: 'EPIC', skill: 'to_infinity: skip cooldown 1x/hari' },
-    'cyclops': { emoji: '👁️', harga: 18000000, rarity: 'EPIC', skill: 'hantam: damage x2 tapi akurasi 70%' },
-    'wayang': { emoji: '🎭', harga: 19000000, rarity: 'EPIC', skill: 'dalang: bisa copy skill 1 pet tim' },
-    'centaur': { emoji: '🏹', harga: 19000000, rarity: 'EPIC', skill: 'pemanah: serang dari jauh, -30 energy musuh' },
-    'chucky': { emoji: '🔪', harga: 19000000, rarity: 'EPIC', skill: 'pisau: 40% chance kill pet lv < 5' },
-
-    // === LEGENDARY 20JT - 22JT ===
-    'nymph': { emoji: '🧚', harga: 20000000, rarity: 'LEGENDARY', skill: 'berkah_hutan: tiap jam energy tim +10 + happy +5' },
-    'mumi': { emoji: '🧻', harga: 20000000, rarity: 'LEGENDARY', skill: 'perban: revive 1x tiap 2 hari' },
-    'annabelle': { emoji: '👰', harga: 20000000, rarity: 'LEGENDARY', skill: 'kutukan: musuh -30% stat permanen' },
-    'slenderman': { emoji: '👤', harga: 21000000, rarity: 'LEGENDARY', skill: 'teleport: serangan pertama crit x2' },
-    'frankenstein': { emoji: '⚡', harga: 21000000, rarity: 'LEGENDARY', skill: 'listrik: stun 4 detik' },
-    'pegasus': { emoji: '🦄', harga: 22000000, rarity: 'LEGENDARY', skill: 'terbang: skip 1 misi/hari' },
-    'siren_head': { emoji: '📢', harga: 22000000, rarity: 'LEGENDARY', skill: 'teriakan: semua musuh -40 power + stun 2 detik' },
-    'titan': { emoji: '🗿', harga: 22000000, rarity: 'LEGENDARY', skill: 'power battle +50' },
-
-    // === SECRET 6.5JT - 25JT ===
-    'poop': { emoji: '💩', harga: 6500000, rarity: 'SECRET', skill: 'hasilkan uang pas feed' },
-    'batu': { emoji: '🪨', harga: 6500000, rarity: 'SECRET', skill: 'energy tak terbatas' },
-    'burung_hantu': { emoji: '🦉', harga: 6500000, rarity: 'SECRET', skill: 'hemat energy saat malam' },
-    'snowman': { emoji: '⛄', harga: 7000000, rarity: 'SECRET', skill: 'lemah saat siang' },
-    'jack_o_lantern': { emoji: '🎃', harga: 7500000, rarity: 'SECRET', skill: 'cooldown -10 detik' },
-    'ghost': { emoji: '👻', harga: 7500000, rarity: 'SECRET', skill: 'happy x2' },
-    'anjing_alpha': { emoji: '🐶', harga: 7500000, rarity: 'SECRET', skill: 'semua pet +10 exp' },
-    'meowy': { emoji: '🐱', harga: 7500000, rarity: 'SECRET', skill: 'kesayangan iblis: happy +15 tiap jam' },
-    'remy_ratatouille': { emoji: '🐀', harga: 7500000, rarity: 'SECRET', skill: 'koki: feed cost -50%' },
-    'robot': { emoji: '🤖', harga: 8000000, rarity: 'SECRET', skill: 'tidak makan' },
-    'orc': { emoji: '👹', harga: 8000000, rarity: 'SECRET', skill: 'exp +5 pas walk' },
-    'kucing_dewa': { emoji: '🐱', harga: 8000000, rarity: 'SECRET', skill: 'menghasilkan 1000/hari' },
-    'hello_kitty': { emoji: '🎀', harga: 8000000, rarity: 'SECRET', skill: 'imut: happy +5 tiap jam' },
-    'pompom_hsr': { emoji: '🧸', harga: 8500000, rarity: 'SECRET', skill: 'luck: gacha rate +5%' },
-    'wyvern': { emoji: '🐉', harga: 8500000, rarity: 'SECRET', skill: 'power battle +30' },
-    'kelpie': { emoji: '🐎', harga: 8500000, rarity: 'SECRET', skill: 'exp x1.5' },
-    'hellbound': { emoji: '🔥', harga: 9000000, rarity: 'SECRET', skill: 'power battle +40' },
-    'ogre': { emoji: '👹', harga: 9500000, rarity: 'SECRET', skill: 'damage +50' },
-    'troll': { emoji: '🤢', harga: 9500000, rarity: 'SECRET', skill: 'exp x1.5' },
-    'unicorn': { emoji: '🦄', harga: 8500000, rarity: 'SECRET', skill: 'exp x1.5' },
-    'skeleton': { emoji: '💀', harga: 8500000, rarity: 'SECRET', skill: 'exp x1.5' },
-    'fairy': { emoji: '🧚', harga: 8800000, rarity: 'SECRET', skill: 'happy +5 pas rest' },
-    'trotter_numby': { emoji: '🐷', harga: 9000000, rarity: 'SECRET', skill: 'banker: passive 2000/hari' },
-    'mermaid': { emoji: '🧜', harga: 9500000, rarity: 'SECRET', skill: 'energy +10 pas feed' },
-    'alien': { emoji: '👽', harga: 10000000, rarity: 'SECRET', skill: 'hasilkan uang' },
-    'trex': { emoji: '🦖', harga: 10000000, rarity: 'SECRET', skill: 'gigitan: damage +60 saat battle' },
-    'tom_jerry': { emoji: '🐱', harga: 10000000, rarity: 'SECRET', skill: 'duo chaos: drop item +2' },
-    'paimon': { emoji: '🧭', harga: 10000000, rarity: 'SECRET', skill: 'guide: exp hunt +50%' },
-    'vampir': { emoji: '🧛', harga: 11000000, rarity: 'SECRET', skill: 'kuat di malam hari' },
-    'jin': { emoji: '🧞', harga: 12000000, rarity: 'SECRET', skill: 'cooldown x0.5' },
-    'naga': { emoji: '🐉', harga: 12000000, rarity: 'SECRET', skill: 'power battle +20' },
-    'happy_ghast': { emoji: '👻', harga: 12000000, rarity: 'SECRET', skill: 'terbang: bisa skip 1 misi' },
-    'cerberus': { emoji: '🐺', harga: 12000000, rarity: 'SECRET', skill: 'tidak bisa dibunuh' },
-    'abby_wuwa': { emoji: '❄️', harga: 12000000, rarity: 'SECRET', skill: 'frost: musuh cooldown +2x' },
-    'sphinx': { emoji: '🦁', harga: 13000000, rarity: 'SECRET', skill: 'jual pet +20% harga' },
-    'totoro': { emoji: '🌳', harga: 13000000, rarity: 'SECRET', skill: 'hujan: energy tidak turun' },
-    'bond_forger': { emoji: '🕵️', harga: 13000000, rarity: 'SECRET', skill: 'spy: lihat pet musuh sebelum battle' },
-    'fenrir': { emoji: '🐺', harga: 14000000, rarity: 'SECRET', skill: 'howl: semua musuh -20 power' },
-    'shukaku': { emoji: '🦝', harga: 14000000, rarity: 'SECRET', skill: 'pasir: defense +30 saat malam' },
-    'matatabi': { emoji: '🐱', harga: 14000000, rarity: 'SECRET', skill: 'api biru: exp x1.5 saat hunt' },
-    'isobu': { emoji: '🐢', harga: 14000000, rarity: 'SECRET', skill: 'karang: energy tidak turun di air' },
-    'son_goku': { emoji: '🐒', harga: 14000000, rarity: 'SECRET', skill: 'lava: damage +40 saat battle' },
-    'kokuo': { emoji: '🐴', harga: 14000000, rarity: 'SECRET', skill: 'uap: cooldown x0.8' },
-    'saiken': { emoji: '🪼', harga: 14000000, rarity: 'SECRET', skill: 'asam: kurangi happy musuh 20' },
-    'chomei': { emoji: '🪲', harga: 14000000, rarity: 'SECRET', skill: 'terbang: walk tanpa energy' },
-    'toothless': { emoji: '🐉', harga: 15000000, rarity: 'SECRET', skill: 'terbang: cooldown x0.5' },
-    'naga_emas': { emoji: '🐉', harga: 15000000, rarity: 'SECRET', skill: 'drop uang +2x pas hunt' },
-    'gryphon': { emoji: '🦅', harga: 16000000, rarity: 'SECRET', skill: 'hunt dapat 2x hasil' },
-    'mickey_mouse': { emoji: '🐭', harga: 16000000, rarity: 'SECRET', skill: 'pesona: harga jual +15%' },
-    'malaikat': { emoji: '👼', harga: 17000000, rarity: 'SECRET', skill: 'happy tidak pernah turun' },
-    'doraemon': { emoji: '🤖', harga: 17000000, rarity: 'SECRET', skill: 'kantong ajaib: bawa item +10' },
-    'phoenix': { emoji: '🔥', harga: 18000000, rarity: 'SECRET', skill: 'revive 2x/hari' },
-    'garfield': { emoji: '🐱', harga: 18000000, rarity: 'SECRET', skill: 'makan: happy +20' },
-    'bumblebee': { emoji: '🚗', harga: 18000000, rarity: 'SECRET', skill: 'transform: speed +100%' },
-    'gyuki': { emoji: '🐙', harga: 18000000, rarity: 'SECRET', skill: '8 ekor: power battle +40' },
-    'iblis': { emoji: '😈', harga: 19000000, rarity: 'SECRET', skill: 'battle menang otomatis vs COMMON' },
-    'sonic': { emoji: '🦔', harga: 19000000, rarity: 'SECRET', skill: 'super speed: cooldown x0.2' },
-    'tigress': { emoji: '🐅', harga: 20000000, rarity: 'SECRET', skill: 'cakar: exp x2 saat hunt' },
-    'leviathan': { emoji: '🌊', harga: 20000000, rarity: 'SECRET', skill: 'energy tidak berkurang di laut' },
-    'kurama': { emoji: '🦊', harga: 20000000, rarity: 'SECRET', skill: 'bijuudama: exp x3 saat battle' },
-    'medusa': { emoji: '🐍', harga: 21000000, rarity: 'SECRET', skill: 'tatapan: musuh stun 1 turn penuh' },
-    'hydra': { emoji: '🐍', harga: 21000000, rarity: 'SECRET', skill: '1 pet = 3 kepala, exp x3' },
-    'master_shifu_po': { emoji: '🐼', harga: 21000000, rarity: 'SECRET', skill: 'kungfu panda: menang vs 2 pet' },
-    'pikachu': { emoji: '⚡', harga: 22000000, rarity: 'SECRET', skill: 'thunderbolt: stun musuh 3 detik' },
-    'garuda': { emoji: '🦅', harga: 22000000, rarity: 'SECRET', skill: 'pancasila: team battle +40% power' },
-    'kraken': { emoji: '🐙', harga: 23000000, rarity: 'SECRET', skill: 'curi 10% uang target saat battle' },
-    'SCP_173': { emoji: '🗿', harga: 23000000, rarity: 'SECRET', skill: 'kedip: gerak pas tidak dilihat, kill langsung' },
-    'mjolnir': { emoji: '🔨', harga: 23000000, rarity: 'SECRET', skill: 'petir: stun area 5 detik' },
-    'valkyrie': { emoji: '🛡️', harga: 24000000, rarity: 'SECRET', skill: 'team battle +30% power' },
-    'gundam': { emoji: '🤖', harga: 24000000, rarity: 'SECRET', skill: 'beam: ignore 100 defense' },
-    'king_kong': { emoji: '🦍', harga: 25000000, rarity: 'SECRET', skill: 'pukul: power battle +50' },
-    'godzilla': { emoji: '🦖', harga: 25000000, rarity: 'SECRET', skill: 'atomic breath: damage x3' },
-    'pochita': { emoji: '⛓️', harga: 25000000, rarity: 'SECRET', skill: 'chainsaw: damage x3 saat HP < 30%' },
-    'juubi': { emoji: '👁️', harga: 25000000, rarity: 'SECRET', skill: 'mugen tsukuyomi: menang otomatis vs SECRET' }
-}
-
-  const aliases = {
-    // === COMMON ===
-    'lalat': ['lalat', 'fly'],
-    'nyamuk': ['nyamuk', 'mosquito'],
-    'semut': ['semut', 'ant'],
-    'cacing': ['cacing', 'worm'],
-    'kecoa': ['kecoa', 'cockroach'],
-    'tikus_got': ['tikus got', 'tikusgot', 'rat got'],
-    'tikus_rumah': ['tikus rumah', 'tikusrumah', 'house rat'],
-    'tikus': ['tikus', 'mouse'],
-    'ulat': ['ulat', 'caterpillar'],
-    'siput': ['siput', 'snail'],
-    'belalang': ['belalang', 'grasshopper'],
-    'anak_ayam': ['anak ayam', 'anakayam', 'chick'],
-    'kumbang': ['kumbang', 'beetle'],
-
-    // === UNCOMMON ===
-    'hamster': ['hamster'],
-    'ayam': ['ayam', 'chicken'],
-    'burung': ['burung', 'bird'],
-    'katak': ['katak', 'frog'],
-    'kumbang_tanduk': ['kumbang tanduk', 'kumbangtanduk', 'horn beetle'],
-    'ayam_jago': ['ayam jago', 'ayamjago', 'rooster'],
-    'merpati': ['merpati', 'pigeon'],
-    'lebah': ['lebah', 'bee'],
-    'kelinci': ['kelinci', 'rabbit'],
-    'bebek': ['bebek', 'duck'],
-    'kupu': ['kupu', 'kupu kupu', 'butterfly'],
-    'kelinci_liar': ['kelinci liar', 'kelinciliarn', 'wild rabbit'],
-    'tupai': ['tupai', 'squirrel'],
-    'burung_hitam': ['burung hitam', 'burunghitam', 'black bird'],
-    'angsa': ['angsa', 'swan'],
-    'ikan': ['ikan', 'fish'],
-    'laba': ['laba', 'laba laba', 'spider'],
-    'monyet': ['monyet', 'monkey'],
-    'kalkun': ['kalkun', 'turkey'],
-    'kelelawar': ['kelelawar', 'bat'],
-    'udang': ['udang', 'shrimp'],
-    'kucing': ['kucing', 'cat'],
-    'anjing': ['anjing', 'dog'],
-    'kucing_hitam': ['kucing hitam', 'kucinghitam', 'black cat'],
-    'kepiting': ['kepiting', 'crab'],
-    'babi_hutan': ['babi hutan', 'babihutan', 'boar'],
-    'babi': ['babi', 'pig'],
-    'penguin': ['penguin'],
-    'kura': ['kura', 'kura kura', 'turtle'],
-    'rakun': ['rakun', 'raccoon'],
-    'sigung': ['sigung', 'skunk'],
-    'sapi': ['sapi', 'cow'],
-    'domba': ['domba', 'sheep'],
-    'ular': ['ular', 'snake'],
-    'kadal': ['kadal', 'lizard'],
-    'domba_jantan': ['domba jantan', 'dombajantan', 'ram'],
-    'buntal': ['buntal', 'pufferfish'],
-    'rubah': ['rubah', 'fox'],
-    'angsa_putih': ['angsa putih', 'angsaputih', 'white swan'],
-    'luwak': ['luwak', 'otter'],
-    'kalajengking': ['kalajengking', 'scorpion'],
-    'gajah': ['gajah', 'elephant'],
-    'badak': ['badak', 'rhino'],
-    'paus': ['paus', 'whale'],
-    'paus_biru': ['paus biru', 'pausbiru', 'blue whale'],
-    'hiu': ['hiu', 'shark'],
-    'kuda_nil': ['kuda nil', 'kudanil', 'hippo'],
-    'gurita': ['gurita', 'octopus'],
-    'merak': ['merak', 'peacock'],
-    'gorila': ['gorila', 'gorilla'],
-    'cumi': ['cumi', 'cumi cumi', 'squid'],
-    'bison': ['bison'],
-    'jerapah': ['jerapah', 'giraffe'],
-    'zebra': ['zebra'],
-    'singa': ['singa', 'lion'],
-    'harimau': ['harimau', 'tiger'],
-    'macan': ['macan', 'leopard'],
-    'beruang': ['beruang', 'bear'],
-    'serigala': ['serigala', 'wolf'],
-    'rusa': ['rusa', 'deer'],
-    'kanguru': ['kanguru', 'kangaroo'],
-    'koala': ['koala'],
-    'panda': ['panda'],
-    'orangutan': ['orangutan'],
-    'elang': ['elang', 'eagle'],
-    'flamingo': ['flamingo'],
-    'lumba': ['lumba', 'lumba lumba', 'dolphin'],
-
-    // === RARE ===
-    'skibidi': ['skibidi', 'skibidi toilet'],
-    'creeper': ['creeper', 'mc creeper'],
-    'drone': ['drone'],
-    'warden': ['warden', 'mc warden'],
-
-    // === EPIC ===
-    'komodo': ['komodo'],
-    'among_us': ['among us', 'amongus', 'impostor'],
-    'jiangshi': ['jiangshi', 'vampire china'],
-    'woody': ['woody', 'toy story woody'],
-    'jessie': ['jessie', 'toy story jessie'],
-    'barongsai': ['barongsai', 'lion dance'],
-    'buzz_lightyear': ['buzz lightyear', 'buzz'],
-    'cyclops': ['cyclops', 'mata satu'],
-    'wayang': ['wayang', 'shadow puppet'],
-    'centaur': ['centaur'],
-    'chucky': ['chucky', 'boneka chucky'],
-
-    // === LEGENDARY ===
-    'nymph': ['nymph', 'peri hutan'],
-    'mumi': ['mumi', 'mummy'],
-    'annabelle': ['annabelle', 'boneka annabelle'],
-    'slenderman': ['slenderman', 'slender'],
-    'frankenstein': ['frankenstein', 'frank'],
-    'pegasus': ['pegasus', 'kuda terbang'],
-    'siren_head': ['siren head', 'sirenhead'],
-    'titan': ['titan'],
-
-    // === SECRET ===
-    'poop': ['poop', 'tai', '💩'],
-    'batu': ['batu', 'rock', 'stone'],
-    'burung_hantu': ['burung hantu', 'burunghantu', 'owl'],
-    'snowman': ['snowman', 'manusia salju'],
-    'jack_o_lantern': ['jack o lantern', 'jackolantern', 'labu'],
-    'ghost': ['ghost', 'hantu'],
-    'anjing_alpha': ['anjing alpha', 'anjingalpha', 'alpha dog'],
-    'meowy': ['meowy', 'meong'],
-    'remy_ratatouille': ['remy', 'remy ratatouille', 'tikus koki'],
-    'robot': ['robot'],
-    'orc': ['orc'],
-    'kucing_dewa': ['kucing dewa', 'kucingdewa', 'god cat'],
-    'hello_kitty': ['hello kitty', 'hellokitty'],
-    'pompom_hsr': ['pompom', 'pompom hsr'],
-    'wyvern': ['wyvern', 'wyrm'],
-    'kelpie': ['kelpie', 'kuda air'],
-    'hellbound': ['hellbound', 'neraka'],
-    'ogre': ['ogre', 'titan kecil'],
-    'troll': ['troll', 'trolls'],
-    'unicorn': ['unicorn'],
-    'skeleton': ['skeleton', 'tengkorak'],
-    'fairy': ['fairy', 'peri'],
-    'trotter_numby': ['trotter numby', 'babi banker'],
-    'mermaid': ['mermaid', 'putri duyung'],
-    'alien': ['alien'],
-    'trex': ['trex', 't rex', 'tyrannosaurus', 'dino', 'dinosaurus'],
-    'tom_jerry': ['tom jerry', 'tomandjerry'],
-    'paimon': ['paimon', 'genshin paimon'],
-    'vampir': ['vampir', 'vampire'],
-    'jin': ['jin', 'genie'],
-    'naga': ['naga', 'dragon'],
-    'happy_ghast': ['happy ghast', 'ghast'],
-    'cerberus': ['cerberus', 'anjing 3 kepala'],
-    'abby_wuwa': ['abby', 'abby wuwa'],
-    'sphinx': ['sphinx'],
-    'totoro': ['totoro'],
-    'bond_forger': ['bond', 'bond forger', 'spy x family'],
-    'fenrir': ['fenrir', 'serigala fenrir'],
-    'shukaku': ['shukaku', 'ekor 1', '1ekor', 'ichibi'],
-    'matatabi': ['matatabi', 'ekor 2', '2ekor', 'nibi'],
-    'isobu': ['isobu', 'ekor 3', '3ekor', 'sanbi'],
-    'son_goku': ['son goku', 'goku', 'kera ekor 4', '4ekor', 'yonbi'],
-    'kokuo': ['kokuo', 'ekor 5', '5ekor', 'gobi'],
-    'saiken': ['saiken', 'ekor 6', '6ekor', 'rokubi'],
-    'chomei': ['chomei', 'ekor 7', '7ekor', 'nanabi'],
-    'toothless': ['toothless', 'night fury'],
-    'naga_emas': ['naga emas', 'nagaemas', 'golden dragon'],
-    'gryphon': ['gryphon', 'griffin'],
-    'mickey_mouse': ['mickey mouse', 'mickey'],
-    'malaikat': ['malaikat', 'angel'],
-    'doraemon': ['doraemon'],
-    'phoenix': ['phoenix', 'burung api'],
-    'garfield': ['garfield'],
-    'bumblebee': ['bumblebee', 'transformer'],
-    'gyuki': ['gyuki', 'ekor 8', '8ekor', 'hachibi'],
-    'iblis': ['iblis', 'devil', 'setan'],
-    'sonic': ['sonic'],
-    'tigress': ['tigress', 'kungfu panda tigress'],
-    'leviathan': ['leviathan'],
-    'kurama': ['kurama', 'ekor 9', '9ekor', 'kyubi'],
-    'medusa': ['medusa'],
-    'hydra': ['hydra'],
-    'master_shifu_po': ['shifu', 'po', 'kungfu panda'],
-    'pikachu': ['pikachu'],
-    'garuda': ['garuda'],
-    'kraken': ['kraken'],
-    'SCP_173': ['scp 173', 'scp173', 'patung'],
-    'mjolnir': ['mjolnir', 'palu thor'],
-    'valkyrie': ['valkyrie'],
-    'gundam': ['gundam'],
-    'king_kong': ['king kong', 'kong'],
-    'godzilla': ['godzilla'],
-    'pochita': ['pochita', 'pochi', 'chainsaw dog', 'woof'],
-    'juubi': ['juubi', 'ekor 10', '10ekor', 'jubi', 'shinju']
-}
 
 const applySkill = (p, type = 'general') => {
   const data = pets[p.tipe]
@@ -719,7 +329,7 @@ if (action === 'care') {
       if (pet.tipe === 'alien') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(1000 * (Number(pet.level) || 1)))
       if (pet.tipe === 'poop') wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(2000))
       if (skill.moneyBonus > 0) wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(skill.moneyBonus))
-      if (pet.exp >= 100) { pet.level = (Number(pet.level) || 1) + 1; pet.exp = 0 }
+      if (pet.exp >= 100) { pet.level = (Number(pet.level) || 1) + Math.floor(pet.exp / 100); pet.exp %= 100 }
       pet.lastFeed = now
     }
 
@@ -1134,16 +744,9 @@ if (action === 'adopt') {
     )
   }
 
-    petName = petName.replace(/ /g, '_').replace(/-/g, '_')
-    petName = petName.replace(/ /g, '_').replace(/-/g, '_')
-
-// CEK ALIAS DULU
-for(let key in aliases){
-  if(aliases[key].includes(petName)){
-    petName = key
-    break
-  }
-}
+    const resolvedAdoptType = resolvePetType(petName)
+    if (resolvedAdoptType) petName = resolvedAdoptType
+    else petName = petName.replace(/ /g, '_').replace(/-/g, '_')
 
     if (!pets[petName]) return safeReply(`❌ Pilih pet yang benar. Ketik ${usedPrefix}pet shop`)
     if (getPet(petName)) return safeReply(`╭──「 🐾 AVELIA PET CENTER 」──╮\n\n❌ *KAMU SUDAH PUNYA*\n${pets[petName].emoji} *${formatNamaAsli(petName).toUpperCase()}*\n━━━━━━━━━━━`)
@@ -1381,7 +984,7 @@ if (action === 'feed') {
       if(feedSkill.moneyBonus > 0) wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totemIncome(feedSkill.moneyBonus))
 
       p.lastFeed = Date.now()
-      if (p.exp >= 100) { p.level = (p.level || 1) + 1; p.exp = 0; naik.push(p) }
+      if (p.exp >= 100) { p.level = (Number(p.level) || 1) + Math.floor(p.exp / 100); p.exp %= 100; naik.push(p) }
     })
     saveDB(wdb)
     
@@ -1524,8 +1127,8 @@ if (action === 'train') {
     p.lastTrain = Date.now()
 
     if (p.exp >= 100) {
-      p.level += 1
-      p.exp = 0
+      p.level = (Number(p.level) || 1) + Math.floor(p.exp / 100)
+      p.exp %= 100
       naik.push(p)
     }
   })
@@ -1610,8 +1213,8 @@ if (action === 'walk') {
     p.lastActivity = Date.now()
 
     if (p.exp >= 100) {
-      p.level += 1
-      p.exp = 0
+      p.level = (Number(p.level) || 1) + Math.floor(p.exp / 100)
+      p.exp %= 100
       naik.push(p)
     }
   })
@@ -1701,8 +1304,8 @@ if (action === 'play') {
     p.lastActivity = Date.now()
 
     if (p.exp >= 100) {
-      p.level += 1
-      p.exp = 0
+      p.level = (Number(p.level) || 1) + Math.floor(p.exp / 100)
+      p.exp %= 100
       naik.push(p)
     }
   })
@@ -2113,16 +1716,9 @@ if (action === 'release') {
     `─━━━━━━━━━━━━━━─`
   )
 
-  petName = petName.replace(/ /g, '_').replace(/-/g, '_')
-  petName = petName.replace(/ /g, '_').replace(/-/g, '_')
-
-// CEK ALIAS DULU
-for(let key in aliases){
-  if(aliases[key].includes(petName)){
-    petName = key
-    break
-  }
-}
+  const resolvedReleaseType = resolvePetType(petName)
+  if (resolvedReleaseType) petName = resolvedReleaseType
+  else petName = petName.replace(/ /g, '_').replace(/-/g, '_')
 
   let index = user.pets.findIndex(p => p.tipe === petName)
 
@@ -2273,13 +1869,25 @@ if (action === 'breed') {
     `─━━━━━━━━━━━━━━─`
   )
 
-  let p1 =!isNaN(pet1)? user.pets[parseInt(pet1)-1] : user.pets.find(x => x.tipe === pet1.replace(/ /g,'_'))
-  let p2 =!isNaN(pet2)? user.pets[parseInt(pet2)-1] : user.pets.find(x => x.tipe === pet2.replace(/ /g,'_'))
+  const idx1 = !isNaN(pet1) ? parseInt(pet1) - 1 : user.pets.findIndex(x => x.tipe === pet1.replace(/ /g, '_'))
+  const idx2 = !isNaN(pet2) ? parseInt(pet2) - 1 : (typeof user.pets.findLastIndex === 'function' ? user.pets.findLastIndex(x => x.tipe === pet2.replace(/ /g, '_')) : user.pets.map(x => x.tipe).lastIndexOf(pet2.replace(/ /g, '_')))
 
-  if(!p1 ||!p2) return safeReply(
+  let p1 = user.pets[idx1]
+  let p2 = user.pets[idx2]
+
+  if(!p1 || !p2) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
     `│ ❌ *PET TIDAK DITEMUKAN*\n` +
     `╰─━━━━━━━━━━━━━━─`
+  )
+
+  if(idx1 === idx2 || p1 === p2) return safeReply(
+    `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
+    `│ ❌ *DUA PET BERBEDA DIBUTUHKAN*\n` +
+    `╰─━━━━━━━━━━━━━━─\n\n` +
+    `> ↳ Kamu harus memilih 2 ekor pet yang berbeda untuk dikawinkan.\n` +
+    `> ↳ Contoh: .pet breed 1 2\n\n` +
+    `─━━━━━━━━━━━━━━─`
   )
 
   if(p1.tipe!== p2.tipe) return safeReply(
@@ -2389,8 +1997,8 @@ if (action === 'battle') {
 
   let myPet = [...user.pets].sort((a,b) => b.level - a.level || b.exp - a.exp)[0]
   let enemyPet = [...userTarget.pets].sort((a,b) => b.level - a.level || b.exp - a.exp)[0]
-  let idxA = user.pets.findIndex(p => p.tipe === myPet.tipe)
-  let idxB = userTarget.pets.findIndex(p => p.tipe === enemyPet.tipe)
+  let idxA = user.pets.indexOf(myPet)
+  let idxB = userTarget.pets.indexOf(enemyPet)
 
   if((myPet.energy || 100) < 20) return safeReply(
     `╭─❏「 🐾 AVELIA PET CENTER 」❏\n` +
@@ -2406,7 +2014,8 @@ if (action === 'battle') {
     `╰─━━━━━━━━━━━━━━─`
   )
 
-  let taruhan = args[1] === undefined || args[1] === '0' ? Number(args[1] || 0) : parseRpgMoneyAmount(args[1])
+  const betArg = args[1] && (args[1].startsWith('@') || args[1].includes('@')) ? args[2] : (args[2] || args[1])
+  let taruhan = betArg === undefined || betArg === '0' ? 0 : parseRpgMoneyAmount(betArg)
   if (taruhan === null) return m.reply('❌ Nominal taruhan tidak valid. Gunakan nominal angka atau suffix seperti 1M.')
   let uangUser = wdb.money[m.sender] || 0
   let uangTarget = wdb.money[target] || 0
@@ -2473,8 +2082,8 @@ if (action === 'battle') {
     user.pets[idxA].exp += 40; userTarget.pets[idxB].exp += 10
 
     if(user.pets[idxA].exp >= 100){
-      user.pets[idxA].level++
-      user.pets[idxA].exp = 0
+      user.pets[idxA].level = (Number(user.pets[idxA].level) || 1) + Math.floor(user.pets[idxA].exp / 100)
+      user.pets[idxA].exp %= 100
       cap += `\n🎉 *LEVEL UP!*\n`
       cap += `> ↳ ${formatNama(myPet)}\n`
     }
@@ -2489,8 +2098,8 @@ if (action === 'battle') {
     userTarget.pets[idxB].exp += 40; user.pets[idxA].exp += 10
 
     if(userTarget.pets[idxB].exp >= 100){
-      userTarget.pets[idxB].level++
-      userTarget.pets[idxB].exp = 0
+      userTarget.pets[idxB].level = (Number(userTarget.pets[idxB].level) || 1) + Math.floor(userTarget.pets[idxB].exp / 100)
+      userTarget.pets[idxB].exp %= 100
       cap += `\n🎉 *LEVEL UP!*\n`
       cap += `> ↳ ${formatNama(enemyPet)}\n`
     }
@@ -2503,6 +2112,14 @@ if (action === 'battle') {
   } else {
     user.pets[idxA].exp += 20
     userTarget.pets[idxB].exp += 20
+    if(user.pets[idxA].exp >= 100){
+      user.pets[idxA].level = (Number(user.pets[idxA].level) || 1) + Math.floor(user.pets[idxA].exp / 100)
+      user.pets[idxA].exp %= 100
+    }
+    if(userTarget.pets[idxB].exp >= 100){
+      userTarget.pets[idxB].level = (Number(userTarget.pets[idxB].level) || 1) + Math.floor(userTarget.pets[idxB].exp / 100)
+      userTarget.pets[idxB].exp %= 100
+    }
     cap += `\n🤝 *HASIL: SERI*\n`
     cap += `> ↳ +20 Exp untuk keduanya`
   }
@@ -2553,7 +2170,7 @@ if (action === 'hunt') {
     let expGain = exp * skill.multi * getDebuff(p)
     p.exp += applyPetFestivalExp(expGain)
     p.energy -= 40
-    if(p.exp >= 100){p.level++; p.exp=0}
+    if (p.exp >= 100) { p.level = (Number(p.level) || 1) + Math.floor(p.exp / 100); p.exp %= 100 }
   })
 
   user.cooldown.pethunt = Date.now()
@@ -2745,6 +2362,11 @@ if (action === 'transfer') {
       return safeReply('❌ Transfer gagal karena pet sudah tidak dimiliki pengirim atau datanya berubah.')
     }
 
+    if (user.pets.length >= maxPetSlots) {
+      saveDB(wdb)
+      return safeReply(`❌ Slot pet kamu sudah penuh! Maksimal ${maxPetSlots} pet.`)
+    }
+
     user.pets.push(senderPets.splice(transferredIndex, 1)[0])
     saveDB(wdb)
     return safeReply(
@@ -2876,8 +2498,11 @@ if (action === 'sanctuary'){
 // === REVIVE ===
 if (action === 'revive'){
   if(user.pets.some(x => x.tipe === 'malaikat')){
+    const maxReviveCount = maxPetSlots - user.pets.length
+    if (maxReviveCount <= 0) return safeReply(`❌ Slot pet kamu sudah penuh! Maksimal ${maxPetSlots} pet.`)
+
     const indexes = args[1]?.toLowerCase() === 'all'
-      ? user.sanctuary.map((_, index) => index)
+      ? user.sanctuary.map((_, index) => index).slice(0, maxReviveCount)
       : [parseInt(args[1]) - 1]
 
     const revived = indexes

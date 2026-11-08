@@ -33,6 +33,7 @@ import {
 } from '../../lib/rpgRshipData.js'
 
 const RSHIP_IMAGE = 'https://c.termai.cc/i147/VLRPd.jpg'
+const archiveExpiry = 7 * 24 * 60 * 60 * 1000
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   m = setRpgFeatureImage(conn, m, RSHIP_IMAGE)
@@ -344,46 +345,48 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
   if (childStateChanged) {
     await saveDB(wdb)
-    if (childEvents.length)         const shelterIncidents = childEvents.filter(event => typeof event === 'object')
-    const informationalEvents = childEvents.filter(event => typeof event === 'string')
-    const runawayEvents = shelterIncidents.filter(event => event.type === 'runaway')
-    const lostEvents = shelterIncidents.filter(event => event.type === 'lost')
-    const shelterEvents = shelterIncidents.filter(event => !event.returnedToOriginalParent)
-    const sections = []
-    if (informationalEvents.length) sections.push(...informationalEvents)
-    if (runawayEvents.length) {
-      sections.push(
-        `❏「 🚨 ANAK KABUR 」❏\n` +
-        runawayEvents.map(event => `> ↳ *${event.name} kabur dari rumah.*`).join('\n') +
-        `\n> ${runawayEvents[0].story}`
+    if (childEvents.length) {
+      const shelterIncidents = childEvents.filter(event => typeof event === 'object')
+      const informationalEvents = childEvents.filter(event => typeof event === 'string')
+      const runawayEvents = shelterIncidents.filter(event => event.type === 'runaway')
+      const lostEvents = shelterIncidents.filter(event => event.type === 'lost')
+      const shelterEvents = shelterIncidents.filter(event => !event.returnedToOriginalParent)
+      const sections = []
+      if (informationalEvents.length) sections.push(...informationalEvents)
+      if (runawayEvents.length) {
+        sections.push(
+          `❏「 🚨 ANAK KABUR 」❏\n` +
+          runawayEvents.map(event => `> ↳ *${event.name} kabur dari rumah.*`).join('\n') +
+          `\n> ${runawayEvents[0].story}`
+        )
+      }
+      if (lostEvents.length) {
+        sections.push(
+          `❏「 💔 ANAK HILANG 」❏\n` +
+          lostEvents.map(event => `> ↳ *${event.name} hilang.*`).join('\n') +
+          `\n> ${lostEvents[0].story}`
+        )
+      }
+      if (shelterEvents.length) {
+        sections.push(`> Anak dibawa ke shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.`)
+      }
+      if (shelterIncidents.length) {
+        const representative = shelterIncidents[0]
+        sections.push(
+          `─━━━━━━━━━━━━━━─\n\n` +
+          `🚔 *STATUS HUKUM*\n` +
+          `> ↳ Poin kriminal Aniaya: *+${shelterIncidents.length * 3} poin*.\n` +
+          `> ↳ ${representative.legalStatus}\n` +
+          `─━━━━━━━━━━━━━━─`
+        )
+      }
+      await m.reply(
+        `╭─❏「 👶 KABAR ANAK 」❏\n` +
+        `│ 📋 INFORMASI PENGASUHAN\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        sections.join('\n\n')
       )
     }
-    if (lostEvents.length) {
-      sections.push(
-        `❏「 💔 ANAK HILANG 」❏\n` +
-        lostEvents.map(event => `> ↳ *${event.name} hilang.*`).join('\n') +
-        `\n> ${lostEvents[0].story}`
-      )
-    }
-    if (shelterEvents.length) {
-      sections.push(`> Anak dibawa ke shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.`)
-    }
-    if (shelterIncidents.length) {
-      const representative = shelterIncidents[0]
-      sections.push(
-        `─━━━━━━━━━━━━━━─\n\n` +
-        `🚔 *STATUS HUKUM*\n` +
-        `> ↳ Poin kriminal Aniaya: *+${shelterIncidents.length * 3} poin*.\n` +
-        `> ↳ ${representative.legalStatus}\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
-    }
-    await m.reply(
-      `╭─❏「 👶 KABAR ANAK 」❏\n` +
-      `│ 📋 INFORMASI PENGASUHAN\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      sections.join('\n\n')
-    )
   }
 
   const formatRemaining = seconds => {
@@ -1078,287 +1081,6 @@ ${options}
 ─━━━━━━━━━━━━━━─`)
   }
 
-
-  // === PANDUAN RSHIP ===
-  if (action === 'guide' || action === 'panduan') {
-    return m.reply(
-      `╭─❏「 📖 RSHIP GUIDE 」❏
-│ 💕 PANDUAN FITUR RELATIONSHIP
-╰─━━━━━━━━━━━━━━─
-
-💕 *DASAR RELATIONSHIP*
-> 1. Buat pasangan: ${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>
-> 2. Lamaran langsung menikah: ${usedPrefix}rship lamar <nama> <gender> <mahar>
-> 3. Lihat pasangan: ${usedPrefix}rship harem
-> 4. Jalankan aktivitas: ${usedPrefix}rship date <no>
-> 5. Cek level dan fitur: ${usedPrefix}rship status <no>
-> 6. Lihat cooldown: ${usedPrefix}rship cd
-> 7. Lihat daftar hadiah: ${usedPrefix}rship gift list
-
-─━━━━━━━━━━━━━━─
-
-📋 *INFORMASI TAMBAHAN*
-> ↳ Aktivitas memakai nomor pasangan dari menu harem.
-> ↳ Mahar lebih besar meningkatkan peluang lamaran diterima.
-> ↳ Lamaran langsung menikah pada Lv.1; fitur anak tetap butuh Lv.50.
-> ↳ Cooldown aktivitas berlaku untuk semua pasangan.
-> ↳ Gunakan ${usedPrefix}rship command untuk daftar command lengkap.
-> ↳ Gunakan ${usedPrefix}rship fitur untuk syarat level.
-
-─━━━━━━━━━━━━━━─`
-    )
-  }
-
-  // === DAFTAR COMMAND RSHIP ===
-  if (action === 'command' || action === 'commands' || action === 'cmd') {
-    let cap = `╭─❏「 📋 RSHIP COMMAND 」❏
-│ 💕 DAFTAR COMMAND RELATIONSHIP
-╰─━━━━━━━━━━━━━━─
-
-`
-
-    cap += `💕 *DASAR*
-> *${usedPrefix}rship tembak <nama> <cowok/cewek/pria/perempuan/male/female>*
-> ↳ Membuat pasangan baru.
-> *${usedPrefix}rship lamar <nama> <cowok/cewek> <mahar>*
-> ↳ Mahar dari bank RPG; peluang diterima meningkat seiring nominal. Jika diterima, langsung menikah pada Lv.1.
-> *${usedPrefix}rship harem*
-> ↳ Melihat semua pasangan.
-> *${usedPrefix}rship status <no>*
-> ↳ Melihat status pasangan.
-> *${usedPrefix}rship detail <no>*
-> ↳ Melihat detail pasangan.
-> *${usedPrefix}rship rename <no> <nama baru>*
-> ↳ Ganti nama pasangan dengan konfirmasi.
-> *${usedPrefix}rship fitur*
-> ↳ Melihat fitur yang terbuka berdasarkan level.
-> *${usedPrefix}rship cincin*
-> ↳ Melihat pilihan dan harga cincin.
-> *${usedPrefix}rship kid info*
-> ↳ Melihat daftar anak keluarga.
-> *${usedPrefix}rship kid guide/command*
-> ↳ Panduan dan daftar command pengasuhan.
-> *${usedPrefix}rship cd*
-> ↳ Melihat cooldown semua aktivitas pasangan dan anak.
-
-─━━━━━━━━━━━━━━─
-
-`
-
-    cap += `🎭 *AKTIVITAS PASANGAN*
-> *${usedPrefix}rship date <no>*
-> ↳ Pergi berkencan dengan pasangan.
-> *${usedPrefix}rship talk <no>*
-> ↳ Mengobrol dengan pasangan.
-> *${usedPrefix}rship makan <no>*
-> ↳ Makan bersama pasangan.
-> *${usedPrefix}rship liburan <no>*
-> ↳ Pergi liburan bersama pasangan.
-> *${usedPrefix}rship peluk <no>*
-> ↳ Memeluk pasangan.
-> *${usedPrefix}rship usil <no>*
-> ↳ Mengusili pasangan.
-> *${usedPrefix}rship prank <no>*
-> ↳ Mengerjai pasangan.
-> *${usedPrefix}rship debat <no>*
-> ↳ Berdebat dengan pasangan.
-> *${usedPrefix}rship maaf <no>*
-> ↳ Meminta maaf kepada pasangan.
-> *${usedPrefix}rship mandi <no>*
-> ↳ Melakukan aktivitas mandi bersama.
-> *${usedPrefix}rship tidur <no>*
-> ↳ Tidur bersama pasangan.
-> *${usedPrefix}rship nonton <no>*
-> ↳ Menonton bersama pasangan.
-> *${usedPrefix}rship swim <no>*
-> ↳ Berenang bersama pasangan.
-> *${usedPrefix}rship belanja <no>*
-> ↳ Berbelanja bersama pasangan.
-> *${usedPrefix}rship marah <no>*
-> ↳ Melampiaskan amarah kepada pasangan.
-> *${usedPrefix}rship rampok <no>*
-> ↳ Merampok pasangan dan mengambil uang.
-> *${usedPrefix}rship staycation <no>*
-> ↳ Staycation romantis bersama pasangan.
-> *${usedPrefix}rship santet <uang>*
-> ↳ Mencoba mendapatkan pasangan dengan ritual.
-> *${usedPrefix}rship kerja <no>*
-> ↳ Bekerja bersama pasangan.
-> *${usedPrefix}rship kiss <no>*
-> ↳ Mencium pasangan.
-> *${usedPrefix}rship wohoo <no>*
-> ↳ Aktivitas khusus pasangan level tinggi.
-
-─━━━━━━━━━━━━━━─
-
-`
-
-    cap += `💍 *KELUARGA & HADIAH*
-> *${usedPrefix}rship gift list*
-> ↳ Melihat daftar hadiah pasangan.
-> *${usedPrefix}rship gift item ...*
-> ↳ Memberikan item kepada pasangan.
-> *${usedPrefix}rship gift money ...*
-> ↳ Memberikan uang kepada pasangan.
-> *${usedPrefix}rship gift anak <no> item ...*
-> ↳ Memberikan item kepada anak.
-> *${usedPrefix}rship gift anak <no> money ...*
-> ↳ Memberikan uang kepada anak.
-> *${usedPrefix}rship gift <no/nama> item/money ...*
-> ↳ Memilih pasangan tertentu dengan nomor atau nama.
-> *${usedPrefix}rship belicincin <no> <silver|gold|topaz|amethyst|ruby|sapphire|emerald|platinum|diamond|jade>*
-> ↳ Membeli cincin pernikahan.
-> *${usedPrefix}rship nikah <no>*
-> ↳ Menikahi pasangan yang memenuhi syarat.
-> *${usedPrefix}rship anak <no>*
-> ↳ Memiliki anak bersama pasangan.
-> *${usedPrefix}rship kid adopt*
-> ↳ Panduan adopsi dari panti asuhan.
-> *${usedPrefix}rship kid adopt list*
-> ↳ Melihat anak orphaned yang tersedia untuk diadopsi.
-> *${usedPrefix}rship kid adopt <no>*
-> ↳ Memilih anak dari daftar; perpindahan memerlukan konfirmasi.
-> *${usedPrefix}rship anak adopsi <no-anak> @user*
-> ↳ Tawarkan anakmu ke pemain RPG; anak baru pindah setelah penerima menerima.
-> *${usedPrefix}rship anak asuh terima/tolak*
-> ↳ Penerima menerima atau menolak tawaran pengasuhan langsung.
-> *${usedPrefix}rship kid <aktivitas> <pasangan/all> <anak/all>*
-> ↳ Aktivitas: hibur, main, jalan, makan, tidur, mandi, peluk, puji, motivasi.
-> *${usedPrefix}rship urus <pasangan/all> <anak/all>*
-> ↳ Premium: menjalankan semua 9 aktivitas pengasuhan.
-> *${usedPrefix}rship kid rename <pasangan> <anak> <nama baru>*
-> ↳ Menampilkan nama sebelum/sesudah; nama baru diterapkan setelah konfirmasi tombol.
-> *${usedPrefix}rship kid daycare/orphanage <pasangan> <anak>*
-> ↳ Menitipkan anak dengan konfirmasi dan biaya berkala.
-> *${usedPrefix}rship kid moveout <pasangan> <anak>*
-> ↳ Anak dewasa pindah rumah dengan konfirmasi.
-> *${usedPrefix}rship duel <no>*
-> ↳ Mengajak pasangan untuk berduel.
-> *${usedPrefix}rship kill <no>*
-> ↳ Meminta konfirmasi untuk memindahkan pasangan ke makam.
-> *${usedPrefix}rship all <no pasangan/all>*
-> ↳ Premium: menjalankan semua aktivitas yang siap untuk pasangan pilihan; cooldown all 30 menit.
-> ↳ Batch: date, liburan, makan, peluk, mandi, tidur, belanja, kerja, usil, marah, maaf, talk, kiss, nonton, swim, wohoo, debat, prank, staycation, rampok.
-> ↳ Contoh: ${usedPrefix}rship all 1 atau ${usedPrefix}rship all all.
-
-─━━━━━━━━━━━━━━─
-
-`
-
-    cap += `💔 *LAINNYA*
-> *${usedPrefix}rship rename yes/konfirmasi/no/batal*
-> ↳ Konfirmasi atau batalkan perubahan nama.
-> *${usedPrefix}rship title <no> ya/tidak*
-> ↳ Mengatur title pasangan.
-> *${usedPrefix}rship putus <no>*
-> ↳ Alias: cerai/divorce. Meminta konfirmasi; pasangan masuk daftar mantan 7 hari.
-> *${usedPrefix}rship kill <no>*
-> ↳ Meminta konfirmasi; pasangan masuk makam 7 hari.
-> *${usedPrefix}rship putus/kill konfirmasi/batal*
-> ↳ Menyetujui atau membatalkan perpisahan/pemakaman.
-> *${usedPrefix}rship exspouse* / *ex* / *balikan <no>*
-> ↳ Lihat mantan dan balikan dalam 7 hari.
-> *${usedPrefix}rship custody <joint|sole|foster|spouse|orphaned> <anak> [@user]*
-> ↳ Atur hak asuh setelah putus; spouse tidak tersedia untuk kill.
-> *${usedPrefix}rship custody terima/tolak*
-> ↳ Terima atau tolak permintaan mengasuh anak foster.
-> *${usedPrefix}rship makam* / *revive <no>*
-> ↳ Lihat makam dan pulihkan dalam 7 hari.
-> *${usedPrefix}shelter list*
-> ↳ Lihat anak dan pet yang hilang/kabur di shelter.
-> *${usedPrefix}shelter retrieve anak <no>*
-> ↳ Coba jemput anak; peluang berhasil hanya ${Math.round(CHILD_RETRIEVE_CHANCE * 100)}%, dengan cooldown 30 menit.
-
-─━━━━━━━━━━━━━━─`
-
-    const commandSections = [
-      {
-        title: '💕 Dasar & pasangan',
-        rows: [
-          ['💞 Daftar pasangan', 'rship harem', 'Lihat status semua pasangan'],
-          ['📊 Status pasangan', 'rship status', 'Cek level dan hubungan'],
-          ['💬 Aktivitas pasangan', 'rship date', 'Pilih aktivitas hubungan'],
-          ['⏰ Cooldown pasangan', 'rship cd', 'Cek semua cooldown'],
-          ['💍 Fitur & cincin', 'rship fitur', 'Syarat level dan pilihan cincin']
-        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
-      },
-      {
-        title: '👶 Keluarga & anak',
-        rows: [
-          ['👶 Daftar anak', 'rship kid info', 'Lihat anak dalam keluarga'],
-          ['📚 Panduan anak', 'rship kid guide', 'Cara merawat anak'],
-          ['⏰ Cooldown anak', 'rship kid cd', 'Cek kapan aktivitas anak siap'],
-          ['🧸 Aktivitas anak', 'rship kid', 'Pilih aktivitas pengasuhan'],
-          ['🎁 Kirim hadiah', 'rship gift', 'Pilih pasangan dan hadiah secara interaktif']
-        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
-      },
-      {
-        title: '🏠 Fitur lainnya',
-        rows: [
-          ['🪦 Makam pasangan', 'rship makam', 'Lihat status pasangan di makam'],
-          ['💔 Mantan', 'rship mantan list', 'Lihat daftar mantan'],
-          ['🛟 Avelia Shelter', 'shelter list', 'Lihat anak dan pet di shelter'],
-          ['📋 Semua command', 'rship command all', 'Tampilkan daftar command lengkap']
-        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
-      }
-    ]
-    return sendRpgButtons(conn, {
-      chat: m.chat,
-      message: m,
-      quoted: m,
-      title: '💕 RSHIP • PILIH MENU',
-      subtitle: 'Akses fitur hubungan dan keluarga',
-      text: 'Pilih fitur yang ingin kamu buka.',
-      buttonText: '💕 BUKA MENU RSHIP',
-      sections: commandSections,
-      fallbackText: cap,
-      thumbnailUrl: RSHIP_IMAGE
-    })
-  }
-
-  // === MENU RINGKAS TANPA DAFTAR COMMAND ===
-  if (!action) {
-    let maxSlot = getMaxSlot()
-    let cap = `╭─❏「 💕 RELATIONSHIP 」❏
-│ 👤 PROFIL HUBUNGAN
-╰─━━━━━━━━━━━━━━─
-
-💰 *INFORMASI KEUANGAN*
-> 💳 Bank: Rp${(user.bank || 0).toLocaleString('id-ID')}
-> 💵 Uang: Rp${(wdb.money[m.sender] || 0).toLocaleString('id-ID')}
-> ⏰ Waktu: ${waktu} | ${jam}:00 WIB
-
-─━━━━━━━━━━━━━━─
-
-💕 *STATUS KELUARGA*
-> 💞 Pasangan: ${user.harem.length}/${maxSlot}
-> 👶 Anak: ${user.kids.length}
-
-`
-
-    if (user.harem.length > 0) {
-      cap += `💕 *DAFTAR PASANGAN*\n`
-
-      user.harem.forEach((p, i) => {
-        cap += `> *${i + 1}. ${getGenderEmoji(p.gender)} ${p.name}*\n`
-        cap += `> ↳ Lv.${p.level || 1}${p.menikah ? ' • 💍 Menikah' : ''}\n`
-      })
-    } else {
-      cap += `💔 *STATUS HUBUNGAN*
-> ↳ Kamu masih jomblo.
-`
-    }
-
-    cap += `
-─━━━━━━━━━━━━━━─
-📋 Ketik *${usedPrefix}rship command* untuk melihat semua fitur.
-
-─━━━━━━━━━━━━━━─`
-
-    return sendRpgMsg(conn, m, cap, RSHIP_IMAGE)
-  }
-
-
   const rshipGuideExp = () => `╭─❏「 📊 RSHIP EXP GUIDE 」❏
 │ 💕 STANDAR EXP PASANGAN & KELUARGA
 ╰─━━━━━━━━━━━━━━─
@@ -1679,9 +1401,54 @@ ${options}
       lainnya: 'lainnya', other: 'lainnya', lain: 'lainnya',
       hadiah: 'keluarga', gift: 'keluarga'
     }
-    const requestedCategory = (args[1] || 'all').toLowerCase()
-    const category = categoryMap[requestedCategory] || 'all'
-    return m.reply(buildRshipCommandBlock(category))
+    const requestedCategory = (args[1] || '').toLowerCase()
+    if (requestedCategory && categoryMap[requestedCategory]) {
+      return m.reply(buildRshipCommandBlock(categoryMap[requestedCategory]))
+    }
+
+    const commandSections = [
+      {
+        title: '💕 Dasar & pasangan',
+        rows: [
+          ['💞 Daftar pasangan', 'rship harem', 'Lihat status semua pasangan'],
+          ['📊 Status pasangan', 'rship status', 'Cek level dan hubungan'],
+          ['💬 Aktivitas pasangan', 'rship date', 'Pilih aktivitas hubungan'],
+          ['⏰ Cooldown pasangan', 'rship cd', 'Cek semua cooldown'],
+          ['💍 Fitur & cincin', 'rship fitur', 'Syarat level dan pilihan cincin']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      },
+      {
+        title: '👶 Keluarga & anak',
+        rows: [
+          ['👶 Daftar anak', 'rship kid info', 'Lihat anak dalam keluarga'],
+          ['📚 Panduan anak', 'rship kid guide', 'Cara merawat anak'],
+          ['⏰ Cooldown anak', 'rship kid cd', 'Cek kapan aktivitas anak siap'],
+          ['🧸 Aktivitas anak', 'rship kid', 'Pilih aktivitas pengasuhan'],
+          ['🎁 Kirim hadiah', 'rship gift', 'Pilih pasangan dan hadiah secara interaktif']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      },
+      {
+        title: '🏠 Fitur lainnya',
+        rows: [
+          ['🪦 Makam pasangan', 'rship makam', 'Lihat status pasangan di makam'],
+          ['💔 Mantan', 'rship mantan list', 'Lihat daftar mantan'],
+          ['🛟 Avelia Shelter', 'shelter list', 'Lihat anak dan pet di shelter'],
+          ['📋 Semua command', 'rship command all', 'Tampilkan daftar command lengkap']
+        ].map(([title, command, description]) => ({ title, description, id: `${usedPrefix}${command}` }))
+      }
+    ]
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '💕 RSHIP • PILIH MENU',
+      subtitle: 'Akses fitur hubungan dan keluarga',
+      text: 'Pilih fitur yang ingin kamu buka.',
+      buttonText: '💕 BUKA MENU RSHIP',
+      sections: commandSections,
+      fallbackText: buildRshipCommandBlock('all'),
+      thumbnailUrl: RSHIP_IMAGE
+    })
   }
 
   // === MENU RINGKAS TANPA DAFTAR COMMAND ===
@@ -2893,161 +2660,6 @@ ${lines.join('\n\n')}
     )
   }
 
-
-if (action === 'anak' && args[1]?.toLowerCase() === 'asuh') {
-  const response = args[2]?.toLowerCase()
-  const offer = user.pendingChildFosterOffer
-  const clearSourceOffer = pendingOffer => {
-    if (!pendingOffer?.sourceJid) return
-    const source = getUserRPG(wdb, pendingOffer.sourceJid)
-    const sourceUser = source?.rpg || source
-    if (sourceUser?.pendingChildTransfer?.id === pendingOffer.id) {
-      const sourceList = pendingOffer.sourceList === 'shelterKids' ? sourceUser.shelterKids : sourceUser.kids
-      const child = sourceList?.find(entry => entry.pendingTransferId === pendingOffer.id)
-      if (child) delete child.pendingTransferId
-      delete sourceUser.pendingChildTransfer
-    }
-  }
-
-  if (['terima', 'accept', 'yes', 'iya', 'ya', 'tolak', 'reject', 'no', 'tidak', 'batal'].includes(response)) {
-    if (!offer) return m.reply(
-      `╭─❏「 👶 PENGASUHAN ANAK 」❏
-│ ⚠️ TIDAK ADA TAWARAN MENUNGGU
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Tidak ada tawaran pengasuhan anak yang menunggu.
-> ↳ Orang tua anak dapat mengirim tawaran dengan:
-> ↳ ${usedPrefix}rship anak adopsi <no-anak> @user
-
-─━━━━━━━━━━━━━━─`
-    )
-    if (['tolak', 'reject', 'no', 'tidak', 'batal'].includes(response)) {
-      clearSourceOffer(offer)
-      delete user.pendingChildFosterOffer
-      await saveDB(wdb)
-      return m.reply(
-        `╭─❏「 👶 PENGASUHAN ANAK 」❏
-│ ❌ TAWARAN DITOLAK
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Anak tetap berada di daftar keluarga orang tua kandungnya.
-
-─━━━━━━━━━━━━━━─`
-      )
-    }
-    if (now - Number(offer.createdAt || 0) > 5 * 60 * 1000) {
-      clearSourceOffer(offer)
-      delete user.pendingChildFosterOffer
-      await saveDB(wdb)
-      return m.reply(
-        `╭─❏「 ⏰ PENGASUHAN ANAK 」❏
-│ TAWARAN SUDAH KEDALUWARSA
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Minta orang tua anak mengirim tawaran baru.
-
-─━━━━━━━━━━━━━━─`
-      )
-    }
-
-    const source = getUserRPG(wdb, offer.sourceJid)
-    const sourceUser = source?.rpg || source
-    const sourceList = offer.sourceList === 'shelterKids' ? sourceUser?.shelterKids : sourceUser?.kids
-    const childIndex = sourceList?.findIndex(child =>
-      child.pendingTransferId === offer.id &&
-      child.nama === offer.childName &&
-      child.ortu === offer.parentName &&
-      !child.facility) ?? -1
-    if (!sourceUser || source?.isDummy || childIndex < 0) {
-      clearSourceOffer(offer)
-      delete user.pendingChildFosterOffer
-      await saveDB(wdb)
-      return m.reply(
-        `╭─❏「 👶 PENGASUHAN ANAK 」❏
-│ ⚠️ TAWARAN TIDAK DAPAT DIPROSES
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Data anak atau permintaan dari orang tua sudah berubah.
-
-─━━━━━━━━━━━━━━─`
-      )
-    }
-
-    const amount = normalizeRpgMoney(offer.amount)
-    if (compareRpgMoney(amount, 0) < 0 || compareRpgMoney(sourceUser.bank, amount) < 0) {
-      clearSourceOffer(offer)
-      delete user.pendingChildFosterOffer
-      await saveDB(wdb)
-      return m.reply(`Tawaran pengasuhan dibatalkan karena saldo atau biaya asuh pemilik tidak valid.`)
-    }
-
-    const [child] = sourceList.splice(childIndex, 1)
-    delete child.pendingTransferId
-    if (offer.sourceList === 'shelterKids') {
-      child.originalShelterStatus = child.shelterStatus
-      child.originalOwnerLocation = 'shelterKids'
-      delete child.shelterStatus
-    } else {
-      child.biologicalParents = [...new Set([
-        ...(Array.isArray(child.biologicalParents) ? child.biologicalParents : []),
-        offer.sourceName,
-        offer.parentName
-      ].filter(Boolean))]
-      normalizeBiologicalParents(child)
-    }
-    child.originalOwnerJid ||= offer.sourceJid
-    child.custody = { type: 'foster', guardianJid: m.sender }
-    delete child.facility
-    if (!Array.isArray(user.kids)) user.kids = []
-    sourceUser.bank = subtractRpgMoney(sourceUser.bank, amount)
-    user.bank = addRpgMoney(user.bank, amount)
-    user.kids.push(child)
-    delete sourceUser.pendingChildTransfer
-    delete user.pendingChildFosterOffer
-    await saveDB(wdb)
-    return m.reply(
-      `╭─❏「 👶 PENGASUHAN ANAK 」❏
-│ ✅ TAWARAN PENGASUHAN DITERIMA
-╰─━━━━━━━━━━━━━━─
-
-👶 *DETAIL ANAK*
-> ↳ Nama: *${child.nama}*
-> ↳ Anak sekarang masuk daftar anakmu.
-> ↳ Biaya asuh diterima: Rp ${amount.toLocaleString('id-ID')}.
-
-─━━━━━━━━━━━━━━─
-
-📋 *PANDUAN*
-> ↳ Rawat dengan: ${usedPrefix}rship kid <aktivitas> custody <no-anak>
-> ↳ Orang tua kandung tercatat di: ${usedPrefix}rship kid info
-
-─━━━━━━━━━━━━━━─`
-    )
-  }
-
-  return m.reply(
-    `╭─❏「 👶 PENGASUHAN ANAK 」❏
-│ 📋 RESPONS TAWARAN
-╰─━━━━━━━━━━━━━━─
-
-> ↳ Terima tawaran: ${usedPrefix}rship anak asuh terima
-> ↳ Tolak tawaran: ${usedPrefix}rship anak asuh tolak
-
-─━━━━━━━━━━━━━━─
-
-📖 *KIRIM TAWARAN*
-> ↳ Orang tua anak menggunakan:
-> ↳ ${usedPrefix}rship anak adopsi <no-anak> @user
-
-─━━━━━━━━━━━━━━─`
-  )
-}
-if (action === 'urus') args = ['kid', 'urus', ...args.slice(1)]
-const kidSubcommand = action === 'kid' || action === 'urus' ||
-  (action === 'anak' && args[1] &&
-    !['adopsi', 'asuh', 'jual', 'jualanak', 'buang', 'buanganak', 'bunuh', 'bunuhanak'].includes(args[1].toLowerCase()) &&
-    !/^\d+$/.test(args[1]))
-
   if (facilityType) {
     const facility = CHILD_FACILITIES[facilityType]
     const verb = facilityType === 'daycare' ? 'daycare' : 'orphanage'
@@ -4133,25 +3745,27 @@ if (['putus', 'kill'].includes(action)) {
 }
 
 let no = parseInt(args[1]) - 1
-if (Number.isNaN(no) || !user.harem[no]) {
-  const available = user.harem
-    .map((partner, index) => ({ partner, index }))
-    .filter(({ partner }) => !activityCooldowns[action] || !cekCD(action, activityCooldowns[action]))
-  if (!available.length) {
-    return m.reply(
-      `╭─❏「 💞 RSHIP ${action.toUpperCase()} 」❏
+let p = null
+if (!['gift', 'belicincin', 'detail'].includes(action)) {
+  if (Number.isNaN(no) || !user.harem[no]) {
+    const available = user.harem
+      .map((partner, index) => ({ partner, index }))
+      .filter(({ partner }) => !activityCooldowns[action] || !cekCD(action, activityCooldowns[action]))
+    if (!available.length) {
+      return m.reply(
+        `╭─❏「 💞 RSHIP ${action.toUpperCase()} 」❏
 │ ❌ TIDAK ADA PASANGAN TERSEDIA
 ╰─━━━━━━━━━━━━━━─
 
 > ↳ Tidak ada pasangan yang siap untuk kegiatan *${action}*.
 
 ─━━━━━━━━━━━━━━─`
-    )
+      )
+    }
+    no = available[Math.floor(Math.random() * available.length)].index
   }
-  no = available[Math.floor(Math.random() * available.length)].index
+  p = user.harem[no]
 }
-
-let p = user.harem[no]
 
 
 // === DATE LV1 ===
@@ -5798,7 +5412,7 @@ if (action === 'kiss') {
     let err = cekLevel(p, 50, 'Anak')
     if(err) return m.reply(err)
     if (!p.menikah) return m.reply(`╭─❏「 ❌ NIKAH 」❏\n\nHarus nikah dulu\n╰─━━━━━━━━━━━━━━─`)
-    if (p.love < 70) return m.reply(`╭─❏「 ❌ LOVE 」❏\n\nLove minimal 90%\n╰─━━━━━━━━━━━━━━─`)
+    if (p.love < 70) return m.reply(`╭─❏「 ❌ LOVE 」❏\n\nLove minimal 70%\n╰─━━━━━━━━━━━━━━─`)
     if(cekCD('anak', 86400000) > 0) return m.reply(`╭─❏「 ⏰ COOLDOWN 」❏\n\nTunggu 24 jam\n╰─━━━━━━━━━━━━━━─`)
     let jenis = Math.random() < 0.5? 'Laki-laki' : 'Perempuan'
     let namaAnak = args.slice(2).join(' ') || `Bayi ${p.name}`

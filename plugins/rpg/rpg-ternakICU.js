@@ -1,8 +1,9 @@
 import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
+import { dapatkanHasil } from '../../lib/rpg-libternakData.js'
 
-let handler = async (m, { conn, args, usedPrefix }) => {
+let handler = async (m, { conn, args, usedPrefix, command }) => {
   if(!global.icuTernak || !global.icuTernak[m.sender])
     return m.reply(
       `╭─❏「 🏥 ICU TERNAK 」❏\n` +
@@ -16,6 +17,27 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   let user = userData?.rpg || userData
 
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Data RPG tidak ditemukan.')
+
+  if (data.timer) clearTimeout(data.timer)
+
+  if (command === 'abaikan') {
+    if (!user.inventory) user.inventory = {}
+    const hasil1 = dapatkanHasil(data.d1).sembelih
+    const hasil2 = dapatkanHasil(data.d2).sembelih
+    user.inventory[hasil1] = (user.inventory[hasil1] || 0) + 1
+    user.inventory[hasil2] = (user.inventory[hasil2] || 0) + 1
+    delete global.icuTernak[m.sender]
+    saveDB(wdb)
+
+    return m.reply(
+      `╭─❏「 🍖 ABAIKAN ICU 」❏\n` +
+      `│ 🧬 ${data.d1.nama} ${data.d1.emoji} + ${data.d2.nama} ${data.d2.emoji}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `> ↳ Hewan di ICU telah disembelih.\n` +
+      `> ↳ 🍖 Hasil daging: ${hasil1} x1 + ${hasil2} x1 telah masuk ke inventaris.\n\n` +
+      `─━━━━━━━━━━━━━━─`
+    )
+  }
 
   if(!user.ternak) user.ternak = {} // init jaga2
 
@@ -39,8 +61,8 @@ let handler = async (m, { conn, args, usedPrefix }) => {
   )
 }
 
-handler.help = ['icu']
+handler.help = ['icu', 'abaikan']
 handler.tags = ['rpg']
-handler.command = /^(icu|obati)$/i
+handler.command = /^(icu|obati|abaikan)$/i
 handler.group = true
 export default handler
