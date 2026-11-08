@@ -143,6 +143,23 @@ test('Sorcerer remains an antagonist after reviving someone with no other antago
   assert.equal(getWerewolfPlayerFaction(room, sorcerer), 'antagonist')
 })
 
+test('Voting out a neutral Sorcerer does not grant it a neutral victory', () => {
+  const sorcerer = { id: 'sorcerer', number: 1, role: 'sorcerer', isdead: false, vote: 2 }
+  const citizen = { id: 'citizen', number: 2, role: 'warga', isdead: false, vote: 0 }
+  const room = {
+    room: 'sorcerer-vote-test',
+    category: 'mayhem',
+    player: [sorcerer, citizen],
+    sorcererFaction: 'neutral',
+    voting: true
+  }
+
+  voteKill(room.room, { [room.room]: room })
+  assert.equal(sorcerer.isdead, true)
+  assert.notEqual(room.neutralWinner, sorcerer.id)
+  assert.equal(getWinner(room.room, { [room.room]: room }).status, true)
+})
+
 test('Cipher is neutral and remains alive for either faction victory', () => {
   const cipher = { id: 'cipher', number: 2, role: 'cipher', isdead: false }
   const room = {
@@ -846,14 +863,16 @@ test('Mayhem mode keeps protagonists ahead at setup and resolves each antagonist
     nightActions: {}
   }
   const aiCodes = buildRoleCodeMap(mayhemAiRoom, mayhemAi)
-  assert.deepEqual(Object.values(aiCodes), [{ type: 'skip', label: 'Lewati Malam' }])
-  const aiSkipCode = Object.keys(aiCodes)[0]
-  assert.equal(resolveSecretCodeAction(mayhemAiRoom.room, mayhemAi.id, aiSkipCode, {
+  const aiKillCodes = Object.entries(aiCodes).filter(([, choice]) => choice.type === 'kill')
+  assert.equal(aiKillCodes.length, 1)
+  assert.equal(aiKillCodes[0][1].targetNumber, 7)
+  const aiKillCode = aiKillCodes[0][0]
+  assert.equal(resolveSecretCodeAction(mayhemAiRoom.room, mayhemAi.id, aiKillCode, {
     [mayhemAiRoom.room]: mayhemAiRoom
-  }).action, 'skip')
+  }).action, 'kill')
   assert.equal(resolveNightActions(mayhemAiRoom.room, { [mayhemAiRoom.room]: mayhemAiRoom }), true)
-  assert.equal(mayhemAiTarget.isdead, false)
-  assert.equal(mayhemAiRoom.activityLog.some((entry) => entry.action === 'kill'), false)
+  assert.equal(mayhemAiTarget.isdead, true)
+  assert.equal(mayhemAiRoom.activityLog.some((entry) => entry.action === 'kill'), true)
 
   const attackRoom = {
     room: 'mayhem-attacks',
