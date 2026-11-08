@@ -545,21 +545,30 @@ let handler = async (m, {
         const end = performance.now();
         const latency = (end - start).toFixed(2);
 
-        const cpus = os.cpus();
+        const cpus = os.cpus() || [];
+        const cpuCores = cpus.length > 0 ? cpus.length : (typeof os.availableParallelism === 'function' ? os.availableParallelism() : 8);
+        const cpuModel = (cpus.length > 0 && cpus[0].model) ? cpus[0].model.trim() : (process.platform === 'android' ? 'Qualcomm Kryo / Snapdragon (ARM64)' : 'ARMv8 Processor');
+        const cpuSpeed = (cpus.length > 0 && cpus[0].speed) ? cpus[0].speed : 2200;
         const totalMem = os.totalmem();
         const freeMem = os.freemem();
-        const loadAvg = os.loadavg();
-        const cpuPercent = Math.min(100, (loadAvg[0] * 100) / cpus.length).toFixed(1);
+        const loadAvg = os.loadavg() || [0, 0, 0];
+        const cpuPercent = cpuCores > 0 ? Math.min(100, Math.max(0, ((loadAvg[0] || 0.1) * 100) / cpuCores)).toFixed(1) : "0.0";
 
         let diskTotal = 0,
             diskUsed = 0;
         try {
-            const df = execSync("df -k --output=size,used / 2>/dev/null").toString();
+            // Kompatibilitas Android Toybox df & Linux GNU df
+            const targetPath = process.platform === 'android' ? '/data' : '/';
+            const df = execSync(`df -k ${targetPath} 2>/dev/null`).toString();
             const lines = df.trim().split("\n");
             if (lines.length > 1) {
-                const [total, used] = lines[1].trim().split(/\s+/).map(Number);
-                diskTotal = total * 1024;
-                diskUsed = used * 1024;
+                const parts = lines[lines.length - 1].trim().split(/\s+/);
+                if (parts.length >= 4) {
+                    const totalK = parseInt(parts[1], 10) || 0;
+                    const usedK = parseInt(parts[2], 10) || 0;
+                    diskTotal = totalK * 1024;
+                    diskUsed = usedK * 1024;
+                }
             }
         } catch (e) {}
 
@@ -574,9 +583,9 @@ let handler = async (m, {
             nodeVersion: process.version,
             uptimeBot: formatTime(process.uptime()),
             uptimeServer: formatTime(os.uptime()),
-            cpuModel: cpus[0].model.trim(),
-            cpuSpeed: cpus[0].speed,
-            cpuCores: cpus.length,
+            cpuModel: cpuModel,
+            cpuSpeed: cpuSpeed,
+            cpuCores: cpuCores,
             cpuLoad: cpuPercent,
             ramTotal: totalMem,
             ramUsed: totalMem - freeMem,
