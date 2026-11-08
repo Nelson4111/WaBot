@@ -18,7 +18,7 @@ test('pet needs decline in six-hour steps without dropping below their limits', 
   assert.equal(user.pets[0].dirty, 8)
 })
 
-test('a pet that stays in poor condition for a day is moved to the shelter', () => {
+test('a pet that is cared after its first neglected day stays safe', () => {
   const now = 1_800_000_000_000
   const user = {
     pets: [{
@@ -35,9 +35,9 @@ test('a pet that stays in poor condition for a day is moved to the shelter', () 
   const result = processPetNeglect(user, now + 24 * 60 * 60 * 1000)
 
   assert.equal(result.changed, true)
-  assert.equal(result.escapedPets.length, 1)
-  assert.equal(user.pets.length, 0)
-  assert.equal(user.shelterPets[0].shelterStatus.reason, 'runaway')
+  assert.equal(result.escapedPets.length, 0)
+  assert.equal(user.pets.length, 1)
+  assert.equal(user.shelterPets.length, 0)
 })
 
 test('a long unattended period sends a pet to the shelter on its next check', () => {

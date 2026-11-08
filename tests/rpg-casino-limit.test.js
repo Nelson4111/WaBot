@@ -4,7 +4,10 @@ import assert from 'node:assert/strict'
 import {
   getCasinoGamesUsed,
   getCasinoLimitPurchaseCap,
-  getCasinoLimitUnitPrice
+  getCasinoLimitUnitPrice,
+  getCasinoCarryLimit,
+  getCasinoBlackoutChance,
+  decayCasinoAttentionWarnings
 } from '../plugins/rpg/rpg-casino.js'
 
 test('casino limit pricing uses 5% of combined pocket and bank funds with a minimum', () => {
@@ -29,4 +32,26 @@ test('buying one casino limit restores one used chance without raising the daily
 
   stats.dailyGames += 1
   assert.equal(getCasinoGamesUsed(stats), 50)
+})
+
+test('casino carry limit is four times the monthly bank fee', () => {
+  assert.equal(getCasinoCarryLimit(0), 0)
+  assert.equal(getCasinoCarryLimit(1), 500_000)
+  assert.equal(getCasinoCarryLimit(19), 10_000_000_000_000)
+})
+
+test('casino blackout chance grows with carried money and repeated no-pause warnings', () => {
+  const normal = getCasinoBlackoutChance(100_000_000, 5, 1)
+  const wealthy = getCasinoBlackoutChance(1_000_000_000, 5, 1)
+  const targeted = getCasinoBlackoutChance(1_000_000_000, 5, 5)
+
+  assert.ok(wealthy >= normal)
+  assert.ok(targeted > wealthy)
+})
+
+test('casino attention warning drops one star after a 30-minute pause', () => {
+  const user = { casinoAttentionWarnings: 4, casinoAttentionRestAt: 1000 }
+
+  assert.equal(decayCasinoAttentionWarnings(user, 1000 + (30 * 60 * 1000)), 3)
+  assert.equal(decayCasinoAttentionWarnings(user, 1000 + (60 * 60 * 1000)), 3)
 })
