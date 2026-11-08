@@ -1252,8 +1252,8 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                             subtitle: gameCategory.name,
                             text: detailCaption,
                             footer: 'Avelia • Game Roles',
-                            buffer: roleImage || thumbNight,
-                            noLocationHeader: false,
+                            image: roleImage || thumbNight,
+                            noLocationHeader: true,
                             buttons: [
                                 ['🎭 Daftar Role', `${usedPrefix}gr role`],
                                 ['📖 Panduan Game Roles', `${usedPrefix}gr guide`]
@@ -2146,8 +2146,8 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
                         subtitle: game.name,
                         text: detailCaption,
                         footer: 'Avelia • Game Roles',
-                        buffer: roleImage || thumbNight,
-                        noLocationHeader: false,
+                        image: roleImage || thumbNight,
+                        noLocationHeader: true,
                         buttons: [
                             ['🎭 Daftar Role', `${gameCommandBase} role`],
                             ['📖 Panduan Game Roles', `${gameCommandBase} guide`]
