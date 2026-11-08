@@ -172,7 +172,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     teks += `👤 Donatur: @${primaryJid.split('@')[0]}\n`
     teks += `💰 Nominal ${isSet ? 'Set' : 'Tambahan'}: *Rp ${amount.toLocaleString('id-ID')}*\n`
     teks += `📊 Total Donasi User: *Rp ${users[primaryJid].totalDonasi.toLocaleString('id-ID')}*\n`
-    teks += `👑 Premium: *Permanen aktif* (donasi seikhlasnya, tanpa minimum)\n`
+    teks += `👑 Premium: *Permanen aktif*\n`
     teks += `🌐 Total Donasi Global Bot: *Rp ${(settings.totalDonasi || 0).toLocaleString('id-ID')}*`
 
     conn.sendMessage(m.chat, { text: teks, mentions: [primaryJid] }, { quoted: m })
