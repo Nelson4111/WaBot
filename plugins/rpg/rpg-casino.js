@@ -1,6 +1,7 @@
 import { randomInt as cryptoRandomInt } from 'node:crypto'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isPremiumUser } from './rpg-bank.js'
+import { BANK_TIERS } from '../../lib/rpg-bankData.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { filterLeaderboardUsers, getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -9,6 +10,7 @@ import { AUCTION_BIDDER_NAMES } from '../../lib/rpg-auctionData.js'
 import {
   addRpgMoney,
   compareRpgMoney,
+  divideRpgMoney,
   formatRpgMoney,
   formatRpgNumber,
   getRpgMoneySuffixGuide,
@@ -206,6 +208,51 @@ function getDailyLimit(jid, wdb) {
 
 export function getCasinoLimitPurchaseCap(premium) {
   return premium ? PREMIUM_DAILY_LIMIT : DAILY_LIMIT
+}
+
+export function getCasinoCarryLimit(bankTier) {
+  const tier = BANK_TIERS[Number(bankTier)]
+  if (!tier) return null
+  return multiplyRpgMoney(Number(tier.biayaBulanan || 0), 4)
+}
+
+function resetDailyCasinoCarry(user, day = todayKey()) {
+  if (user.casinoCarryDate !== day) {
+    user.casinoCarryDate = day
+    user.casinoCarryWinnings = 0
+    user.casinoAttentionWarnings = 0
+  }
+  user.casinoCarryWinnings = normalizeRpgMoney(user.casinoCarryWinnings)
+}
+
+export function getCasinoAllowedCarry(user, bankTier, day = todayKey()) {
+  resetDailyCasinoCarry(user, day)
+  const limit = getCasinoCarryLimit(bankTier)
+  if (limit === null) return null
+  return addRpgMoney(limit, maxRpgMoney(0, normalizeRpgMoney(user.casinoCarryWinnings)))
+}
+
+export function decayCasinoAttentionWarnings(user, now = Date.now()) {
+  user.casinoAttentionWarnings = Math.min(5, Math.max(0, Number(user.casinoAttentionWarnings || 0)))
+  const restStarted = Number(user.casinoAttentionRestAt || now)
+  const elapsedIntervals = Math.floor(Math.max(0, now - restStarted) / (30 * 60 * 1000))
+  if (elapsedIntervals > 0) {
+    user.casinoAttentionWarnings = Math.max(0, user.casinoAttentionWarnings - elapsedIntervals)
+    user.casinoAttentionRestAt = restStarted + elapsedIntervals * 30 * 60 * 1000
+  }
+  return user.casinoAttentionWarnings
+}
+
+export function getCasinoBlackoutChance(wallet, bankTier, warningCount = 0) {
+  const carryLimit = getCasinoCarryLimit(bankTier)
+  if (carryLimit === null) return warningCount >= 5 ? 0.38 : 0.02
+  const ratio = compareRpgMoney(carryLimit, 0) > 0
+    ? Number(normalizeRpgMoney(divideRpgMoney(normalizeRpgMoney(wallet), carryLimit)))
+    : 1
+  const attentionChance = Math.min(0.08, Math.max(0, ratio) * 0.08)
+  return warningCount >= 5
+    ? Math.min(0.45, 0.35 + attentionChance)
+    : Math.min(0.12, 0.02 + attentionChance + Math.min(0.04, Math.max(0, warningCount - 1) * 0.01))
 }
 
 export function getCasinoGamesUsed(stats) {
@@ -544,8 +591,8 @@ function normalizeResult(result) {
   return result
 }
 
-function applyCasinoSpecialOutcome(result, allowBlackout = true) {
-  if (!result.payoutDenied && !isRpgEventActive('fair_play') && Math.random() < 0.02 && allowBlackout) {
+function applyCasinoSpecialOutcome(result, allowBlackout = true, blackoutChance = 0.02) {
+  if (!result.payoutDenied && !isRpgEventActive('fair_play') && Math.random() < blackoutChance && allowBlackout) {
     result.blackout = true
     result.multiplier = 0
     result.text += '\n> ↳ 🌑 Blackout! Kamu pingsan dan uang taruhan dicuri.'
@@ -1584,7 +1631,7 @@ return m.reply(
 )
 }
 
-let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
+let handler = async (m, { conn, args, usedPrefix, groupMetadata, isOwner }) => {
   const wdb = loadDB()
   const user = wdb.users?.[m.sender]?.rpg
   const input = (args[0] || '').toLowerCase()
@@ -1633,12 +1680,21 @@ let handler = async (m, { conn, args, usedPrefix, groupMetadata }) => {
     return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG.')
   }
 
+  if (input === 'jpluck') {
+    if (!isOwner) return m.reply('❌ Perintah ini tidak tersedia.')
+    const toggle = String(args[1] || '').toLowerCase()
+    if (!['on', 'off'].includes(toggle)) return m.reply('Gunakan format: jpluck on/off')
+    user.casinoJpLuck = toggle === 'on'
+    saveDB(wdb)
+    return m.reply(toggle === 'on' ? '✅ Jackpot berikutnya disiapkan.' : '✅ Jackpot terjadwal dinonaktifkan.')
+  }
+
   if (!wdb.money) wdb.money = {}
   if (user.casinoBlocked) {
     return m.reply(`╭─❏「 🚫 CASINO 」❏\n│ Akses casino kamu sedang diblokir oleh admin.\n╰─━━━━━━━━━━━━━━─`)
   }
   const casinoShutdown = isRpgEventActive('casino_shutdown')
-  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'money', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'hasil', 'history', 'record', 'guard']
+  const readOnlyCasinoInputs = ['', 'command', 'commands', 'guide', 'games', 'money', 'top', 'profile', 'profil', 'profit', 'cd', 'cooldown', 'star', 'stars', 'hasil', 'history', 'record', 'guard']
   const limitReadOnlyAction = input === 'limit' && ['', 'guide', 'panduan', 'price', 'harga', 'pricelist'].includes(String(args[1] || '').toLowerCase())
   const roomReadOnlyActions = ['info', 'games', 'guide']
   if (casinoShutdown && !readOnlyCasinoInputs.includes(input) && !limitReadOnlyAction &&
@@ -2215,6 +2271,33 @@ return m.reply(
     return m.reply(cooldownMenu(user, usedPrefix))
   }
 
+  if (input === 'star' || input === 'stars') {
+    resetDailyCasinoCarry(user)
+    decayCasinoAttentionWarnings(user)
+    const warnings = Math.min(5, Math.max(0, Number(user.casinoAttentionWarnings || 0)))
+    const carryLimit = getCasinoCarryLimit(user.bankTier)
+    const restAt = Number(user.casinoAttentionRestAt || 0)
+    const restRemaining = warnings > 0 && restAt
+      ? Math.max(0, restAt + (30 * 60 * 1000) - Date.now())
+      : 0
+    return m.reply(
+      `╭─❏「 ⭐ PENGAWASAN CASINO 」❏\n` +
+      `│ Status saat ini : ${'★'.repeat(warnings)}${'☆'.repeat(5 - warnings)} (${warnings}/5)\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📌 *APA ITU BINTANG?*\n` +
+      `> ★ bertambah saat kemenangan harian bersih melampaui batas aman tier bank.\n` +
+      `> Semakin tinggi bintang, semakin kuat perhatian pengunjung dan peluang blackout.\n` +
+      `> Setelah jeda 30 menit, 1 ★ akan berkurang.\n` +
+      `> Pada 5 ★, pemain menjadi target utama casino.\n\n` +
+      `📊 *STATUS HARI INI*\n` +
+      `> ↳ Akumulasi kemenangan: ${money(user.casinoCarryWinnings)}\n` +
+      `> ↳ Batas aman tier: ${money(carryLimit)}\n` +
+      `> ↳ Pengurangan berikutnya: ${warnings > 0 && restRemaining > 0 ? formatRemaining(restRemaining) : warnings > 0 ? 'Siap dihitung setelah aktivitas berikutnya' : 'Tidak ada'}\n\n` +
+      `⚠️ Star akan direset saat hari WIB berganti. Batas harian blackout tetap berlaku, kecuali status 5 ★ setelah pernah blackout.\n\n` +
+      `─━━━━━━━━━━━━━━━─`
+    )
+  }
+
   const retryMode = input === 'retry'
   const legacySlot = /^\d+$/.test(input) || parseRpgMoneyAmount(input) !== null
   const legacyAll = input === 'all'
@@ -2223,6 +2306,14 @@ return m.reply(
     ? normalizeRpgMoney(user.casinoReplay?.bet)
     : args[1]?.toLowerCase() === 'all' ? normalizeRpgMoney(wdb.money[m.sender] || 0) : parseRpgMoneyAmount(args[1])
   const eligibleGames = Object.keys(games).filter(key => compareRpgMoney(games[key].minBet, randomBet) <= 0)
+  const getReadyGames = candidates => {
+    const cooldowns = getCooldowns(user)
+    const now = Date.now()
+    return candidates.filter(key => {
+      const duration = Number(user.casinoCooldownDurations?.[key]) || getGameCooldownDuration(key, 2, user)
+      return now - (Number(cooldowns[key]) || 0) >= duration
+    })
+  }
   let game = legacySlot
     ? 'slot'
     : legacyAll
@@ -2235,12 +2326,7 @@ return m.reply(
     if (compareRpgMoney(randomBet, 1) < 0) {
       return m.reply('❌ Belum ada permainan sebelumnya yang bisa diulang.')
     }
-    const cooldowns = getCooldowns(user)
-    const now = Date.now()
-    const readyGames = eligibleGames.filter(key => {
-      const duration = Number(user.casinoCooldownDurations?.[key]) || getGameCooldownDuration(key, 2, user)
-      return now - (Number(cooldowns[key]) || 0) >= duration
-    })
+    const readyGames = getReadyGames(eligibleGames)
     if (!readyGames.length) {
       return m.reply(
         `╭─❏「 ⏳ MEJA CASINO 」❏\n` +
@@ -2250,6 +2336,14 @@ return m.reply(
         `> ↳ Coba lagi setelah cooldown salah satu permainan selesai.\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
+    }
+    game = pick(readyGames)
+  }
+
+  if (randomGame && !retryMode) {
+    const readyGames = getReadyGames(eligibleGames)
+    if (!readyGames.length) {
+      return m.reply('⌛ Belum ada permainan yang siap untuk taruhan tersebut. Coba lagi setelah cooldown selesai.')
     }
     game = pick(readyGames)
   }
@@ -2293,7 +2387,7 @@ return m.reply(
 }
 
 const betInput = retryMode ? String(randomBet) : legacySlot ? input : legacyAll ? 'all' : String(args[1] || '').toLowerCase()
-const bet = betInput === 'all' ? normalizeRpgMoney(wdb.money[m.sender]) : parseRpgMoneyAmount(betInput)
+let bet = betInput === 'all' ? normalizeRpgMoney(wdb.money[m.sender]) : parseRpgMoneyAmount(betInput)
 
 if (bet === null || compareRpgMoney(bet, games[game].minBet) < 0) {
   return m.reply(
@@ -2330,9 +2424,30 @@ if (elapsed < cooldownDuration) {
   )
 }
 
-  const result = applyCasinoSpecialOutcome(
-    normalizeResult(resultFor(game)),
-    stats.dailyResults.blackouts === 0
+const now = Date.now()
+const previousPlay = Number(user.casinoLastPlay || 0)
+const paceReset = previousPlay === 0 || now - previousPlay >= cooldownDuration
+user.casinoPaceWarnings = paceReset ? 0 : Math.min(5, Math.max(0, Number(user.casinoPaceWarnings || 0)) + 1)
+const paceWarning = user.casinoPaceWarnings
+user.casinoLastPlay = now
+
+  let result = normalizeResult(resultFor(game))
+  const hiddenJackpot = Boolean(user.casinoJpLuck)
+  if (hiddenJackpot) {
+    user.casinoJpLuck = false
+    result.multiplier = 10
+    result.payoutDenied = false
+    result.blackout = false
+    result.text += '\n> ↳ 🎟️ Jackpot terkonfirmasi untuk ronde ini.'
+  }
+  result = applyCasinoSpecialOutcome(
+    result,
+    (stats.dailyResults.blackouts === 0 || (
+      (user.casinoAttentionWarnings || 0) >= 5 &&
+      Array.isArray(user.casinoBlackouts) &&
+      user.casinoBlackouts.length > 0
+    )) && !hiddenJackpot,
+    getCasinoBlackoutChance(wdb.money[m.sender], user.bankTier, user.casinoAttentionWarnings || 0)
   )
   const safetyNet = isRpgEventActive('safety_net')
   if (safetyNet && result.multiplier > 0 && Math.random() < 0.5) {
@@ -2383,6 +2498,18 @@ if (elapsed < cooldownDuration) {
     user.cashbackHour.total = addRpgMoney(user.cashbackHour.total || 0, cashback)
   }
   net = addRpgMoney(net, cashback)
+  resetDailyCasinoCarry(user)
+  if (compareRpgMoney(net, 0) > 0) {
+    user.casinoCarryWinnings = addRpgMoney(user.casinoCarryWinnings, net)
+  }
+  const attentionLimit = getCasinoCarryLimit(user.bankTier)
+  decayCasinoAttentionWarnings(user, now)
+  if (compareRpgMoney(net, 0) > 0 &&
+      attentionLimit !== null &&
+      compareRpgMoney(user.casinoCarryWinnings, attentionLimit) > 0) {
+    user.casinoAttentionWarnings = Math.min(5, Number(user.casinoAttentionWarnings || 0) + 1)
+    if (!Number(user.casinoAttentionRestAt)) user.casinoAttentionRestAt = now
+  }
 
   wdb.money[m.sender] = subtractRpgMoney(addRpgMoney(balanceBefore, net), blackoutLoss)
   cooldowns[game] = Date.now()
@@ -2447,6 +2574,14 @@ if (elapsed < cooldownDuration) {
 
   user.casinoReplay = { bet }
   saveDB(wdb)
+
+  const attentionWarnings = Math.min(5, Math.max(0, Number(user.casinoAttentionWarnings || 0)))
+  if (attentionWarnings > 0) {
+    result.text += `\n> ↳ Perhatian casino : ${'★'.repeat(attentionWarnings)}${'☆'.repeat(5 - attentionWarnings)}`
+    if (attentionWarnings >= 5) {
+      result.text += '\n> ↳ Kamu menjadi target utama seluruh pengunjung casino.'
+    }
+  }
 
   const status = result.blackout
     ? `🌑 *BLACKOUT*`
@@ -2550,6 +2685,7 @@ handler.help = [
   'casino profit',
   'casino cd',
   'casino cooldown',
+  'cs star',
   'casino room create <taruhan>',
   'casino room join/leave/kick/player/start/next/up/delete/info/games',
   'casino room set <nominal>',

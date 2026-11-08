@@ -61,13 +61,15 @@ const applyPetFestivalExp = amount => Math.floor(amount * (isRpgEventActive('pet
 
 const petNeglect = processPetNeglect(user)
 if (petNeglect.changed) saveDB(wdb)
-for (const pet of petNeglect.escapedPets) {
+if (petNeglect.escapedPets.length) {
   safeReply(
-    `╭─❏「 🛟 PET SHELTER 」❏\n` +
-    `│ 🐾 *PET KABUR*\n` +
+    `╭─❏「 🐾 KABAR PET 」❏\n` +
+    `│ 📋 INFORMASI PERAWATAN\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ ${formatNama(pet)} kabur setelah kondisinya buruk terlalu lama.\n` +
-    `> ↳ Pet tetap aman di shelter. Gunakan *${usedPrefix}shelter retrieve pet <no>* untuk menjemputnya.\n\n` +
+    `❏「 🚨 PET KABUR 」❏\n` +
+    petNeglect.escapedPets.map(pet => `> ↳ *${formatNama(pet)} kabur dari rumah.*`).join('\n') +
+    `\n> Pet kabur setelah kondisinya buruk dan tidak mendapatkan perawatan.\n\n` +
+    `> Pet dibawa ke shelter. Gunakan *${usedPrefix}shelter retrieve pet <no>* untuk menjemputnya.\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }

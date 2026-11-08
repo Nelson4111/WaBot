@@ -279,7 +279,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     child.lastNeglectCheckAt = Math.max(eligibleAt, checkedAt) + elapsedPeriods * CHILD_NEGLECT.checkPeriod
     childStateChanged = true
 
-    const chance = adolescent ? CHILD_NEGLECT.adultEscapeChance : CHILD_NEGLECT.youngChildLossChance
+    const neglectedDays = Math.max(0, Math.floor((now - Number(child.lastCaredAt)) / CHILD_NEGLECT.checkPeriod))
+    if (neglectedDays < 1) continue
+    const baseChance = adolescent ? CHILD_NEGLECT.adultEscapeChance : CHILD_NEGLECT.youngChildLossChance
+    const chance = neglectedDays >= 4 ? 1 : baseChance * Math.max(0, neglectedDays - 1)
+    if (chance <= 0) continue
     if (Math.random() >= 1 - Math.pow(1 - chance, elapsedPeriods)) continue
 
     const runsAway = adolescent || (childStage && Math.random() < 0.5)
@@ -330,51 +334,55 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         : 'Laporan diproses, tetapi perlindungan atau rehabilitasi aktif mencegah penahanan.'
 
     if (!runsAway) {
-      const story = CHILD_LOSS_STORIES[Math.floor(Math.random() * CHILD_LOSS_STORIES.length)]
-      childEvents.push(
-        `╭─❏「 💔 ANAK HILANG 」❏\n` +
-        `│ 👶 STATUS ANAK\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ *${child.nama} hilang.*\n` +
-        `> ${story}\n\n` +
-        `> ↳ Anak dibawa ke shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.\n\n` +
-        `─━━━━━━━━━━━━━━─\n` +
-        `🚔 *STATUS HUKUM*\n\n` +
-        `> ↳ Poin kriminal Aniaya: *+3 poin*.\n` +
-        `> ↳ ${legalStatus}\n\n` +
-        `─━━━━━━━━━━━━━━─`
-      )
+      childEvents.push({ type: 'lost', name: child.nama, story: CHILD_LOSS_STORIES[Math.floor(Math.random() * CHILD_LOSS_STORIES.length)], legalStatus })
       childStateChanged = true
       continue
     }
-
-    const story = CHILD_RUNAWAY_STORIES[Math.floor(Math.random() * CHILD_RUNAWAY_STORIES.length)]
-    childEvents.push(
-      `╭─❏「 🚨 ANAK KABUR 」❏\n` +
-      `│ 👶 LAPORAN ANIAYA\n` +
-      `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ *${child.nama} kabur dari rumah.*\n` +
-      `> ${story}\n\n` +
-      (returnedToOriginalParent
-        ? `> ↳ Karena anak ini berstatus asuh, *${child.nama}* dikembalikan ke orang tua/pemilik asalnya, bukan ke shelter.\n\n`
-        : `> ↳ Anak berada di shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.\n\n`) +
-      `─━━━━━━━━━━━━━━─\n` +
-      `🚔 *STATUS HUKUM*\n\n` +
-      `> ↳ Poin kriminal Aniaya: *+3 poin*.\n` +
-      `> ↳ ${legalStatus}\n\n` +
-      `─━━━━━━━━━━━━━━─`
-    )
+    childEvents.push({ type: 'runaway', name: child.nama, story: CHILD_RUNAWAY_STORIES[Math.floor(Math.random() * CHILD_RUNAWAY_STORIES.length)], returnedToOriginalParent, legalStatus })
     childStateChanged = true
   }
 
   if (childStateChanged) {
     await saveDB(wdb)
-    if (childEvents.length) await m.reply(
+    if (childEvents.length)         const shelterIncidents = childEvents.filter(event => typeof event === 'object')
+    const informationalEvents = childEvents.filter(event => typeof event === 'string')
+    const runawayEvents = shelterIncidents.filter(event => event.type === 'runaway')
+    const lostEvents = shelterIncidents.filter(event => event.type === 'lost')
+    const shelterEvents = shelterIncidents.filter(event => !event.returnedToOriginalParent)
+    const sections = []
+    if (informationalEvents.length) sections.push(...informationalEvents)
+    if (runawayEvents.length) {
+      sections.push(
+        `❏「 🚨 ANAK KABUR 」❏\n` +
+        runawayEvents.map(event => `> ↳ *${event.name} kabur dari rumah.*`).join('\n') +
+        `\n> ${runawayEvents[0].story}`
+      )
+    }
+    if (lostEvents.length) {
+      sections.push(
+        `❏「 💔 ANAK HILANG 」❏\n` +
+        lostEvents.map(event => `> ↳ *${event.name} hilang.*`).join('\n') +
+        `\n> ${lostEvents[0].story}`
+      )
+    }
+    if (shelterEvents.length) {
+      sections.push(`> Anak dibawa ke shelter. Lihat ${usedPrefix}shelter list dan coba ${usedPrefix}shelter retrieve anak <no>.`)
+    }
+    if (shelterIncidents.length) {
+      const representative = shelterIncidents[0]
+      sections.push(
+        `─━━━━━━━━━━━━━━─\n\n` +
+        `🚔 *STATUS HUKUM*\n` +
+        `> ↳ Poin kriminal Aniaya: *+${shelterIncidents.length * 3} poin*.\n` +
+        `> ↳ ${representative.legalStatus}\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
+    await m.reply(
       `╭─❏「 👶 KABAR ANAK 」❏\n` +
       `│ 📋 INFORMASI PENGASUHAN\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `${childEvents.join('\n\n─━━━━━━━━━━━━━━─\n\n')}\n\n` +
-      `─━━━━━━━━━━━━━━─`
+      sections.join('\n\n')
     )
   }
 

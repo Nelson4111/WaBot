@@ -22,14 +22,19 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
   const livestockNeglect = processLivestockNeglect(user)
   const shelterCrime = processShelterCrime(user, wdb.crime, m.sender)
   if (livestockNeglect.changed || shelterCrime.changed) await saveDB(wdb)
-  for (const entry of livestockNeglect.escapedLivestock) {
-    const animal = getHewan(entry.type)
+  if (livestockNeglect.escapedLivestock.length) {
+    const groups = livestockNeglect.escapedLivestock.map(entry => {
+      const animal = getHewan(entry.type)
+      return `> ↳ ${animal?.nama || entry.type} ${animal?.emoji || '🐾'} ×${entry.count}`
+    })
     safeReply(
-      `╭─❏「 🛟 TERNAK MASUK SHELTER 」❏\n` +
-      `│ 🐄 *HEWAN TERLANTAR*\n` +
+      `╭─❏「 🐄 KABAR TERNAK 」❏\n` +
+      `│ 📋 INFORMASI KANDANG\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ ${animal?.nama || entry.type} ${animal?.emoji || '🐾'} ×${entry.count} kabur setelah kandang tidak diurus selama 7 hari.\n` +
-      `> ↳ Hewan di shelter tidak menghasilkan produk. Gunakan *${usedPrefix}shelter retrieve ternak <no>* untuk mencoba menjemputnya.\n\n` +
+      `❏「 🚨 TERNAK KABUR 」❏\n` +
+      `${groups.join('\n')}\n` +
+      `> Ternak kabur karena kandang tidak diurus hingga melewati batas aman.\n\n` +
+      `> Hewan dibawa ke shelter dan tidak menghasilkan produk. Gunakan *${usedPrefix}shelter retrieve ternak <no>* untuk menjemputnya.\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
