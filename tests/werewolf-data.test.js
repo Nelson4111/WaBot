@@ -15,6 +15,7 @@ import {
   ROLE_GUIDES,
   ROLE_DEATH_STORIES,
   SCENE_IMAGES,
+  TERMAI_ROLE_IMAGES,
   VAMPIRE_INFECTION_STORIES,
   ZOMBIE_INFECTION_STORIES,
   WARGA_AI_MESSAGES,
@@ -74,6 +75,10 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Pesawat Luar Angkasa')))
   assert.ok(Buffer.isBuffer(getRoleImage('mayor', 'Distrik Pusat')))
   assert.ok(ROLE_IMAGES.mayor.district[0].endsWith('IMG-20261108-WA01599.jpg'))
+  assert.ok(Object.values(TERMAI_ROLE_IMAGES).flatMap((images) =>
+    Array.isArray(images) ? images : Object.values(images).flat()
+  ).some((url) => url.startsWith('https://c.termai.cc/')))
+  assert.ok(getRoleImagePaths().every((imagePath) => !imagePath.startsWith('https://')))
   assert.ok(Object.keys(ROLE_DATA).every((role) => Buffer.isBuffer(getRoleImage(role, 'Desa Berkabut'))))
   assert.ok(getRoleImagePaths().every((imagePath) => fs.existsSync(imagePath)))
   assert.ok(getSceneImagePaths().every((imagePath) => fs.existsSync(imagePath)))
