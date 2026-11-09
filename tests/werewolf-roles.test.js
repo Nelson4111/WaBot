@@ -10,6 +10,7 @@ import {
   formatWinnerTeamRoster,
   generateVoteCodeMap,
   getAntagonistCount,
+  getWinnerImage,
   getWerewolfPlayerFaction,
   getWinner,
   getNightProgress,
@@ -25,7 +26,8 @@ import {
   CUSTOM_ANTAGONIST_ROLES,
   MAYHEM_ATTACK_SUMMARY_STORIES,
   VIGILANTE_ATTACK_SUMMARY_STORIES,
-  VIGILANTE_CAPTURE_SUMMARY_STORIES
+  VIGILANTE_CAPTURE_SUMMARY_STORIES,
+  getImagePath
 } from '../lib/werewolfData.js'
 
 test('Warden armor absorbs one antagonist attack but not a vote execution', () => {
@@ -52,6 +54,16 @@ test('Warden armor absorbs one antagonist attack but not a vote execution', () =
   assert.equal(executed, warden)
   assert.equal(warden.isdead, true)
   assert.equal(warden.armor, true)
+})
+
+test('neutral victory uses the same scene category as Citizen victory', () => {
+  const room = { category: 'werewolf', player: [] }
+  const neutralPath = getImagePath(getWinnerImage(room, 'neutral'))
+  const citizenPath = getImagePath(getWinnerImage(room, true))
+  const neutralScene = neutralPath.split(/[\\/]/).slice(-2)[0]
+  const citizenScene = citizenPath.split(/[\\/]/).slice(-2)[0]
+  assert.equal(neutralScene, 'citizen menang di desa')
+  assert.equal(neutralScene, citizenScene)
 })
 
 test('Hunter gets a final reaction after being selected by voting', () => {

@@ -60,6 +60,17 @@ test('game categories resolve aliases and alternative antagonists', () => {
     assert.equal(isAntagonistRole(category.id, 'seer'), false)
     assert.ok(category.description.length > 0)
   }
+  assert.equal(GAME_CATEGORIES.vigilante.antagonistName, 'Villain')
+  assert.equal(GAME_CATEGORIES.vigilante.protagonistName, 'Citizen')
+  assert.equal(GAME_CATEGORIES.mayhem.antagonistName, 'Villain')
+  assert.equal(GAME_CATEGORIES.mayhem.protagonistName, 'Citizen')
+  assert.equal(GAME_CATEGORIES.custom.antagonistName, 'Villain')
+  assert.equal(GAME_CATEGORIES.custom.protagonistName, 'Citizen')
+  const factionCopy = [
+    ...Object.values(ROLE_DATA).flatMap(({ description, effect }) => [description, effect]),
+    ...Object.values(ROLE_GUIDES).flat()
+  ].join(' ')
+  assert.doesNotMatch(factionCopy, /\b(?:protagonis|antagonis)\b/i)
   assert.equal(new Set(Object.values(GAME_CATEGORIES).map((category) => category.location)).size, Object.keys(GAME_CATEGORIES).length)
   for (const role of ['werewolf', 'mafia', 'killer', 'assassin', 'impostor', 'alien', 'parasite', 'zombie', 'vampire']) {
     assert.equal(isAntagonistRole('custom', role), true)
