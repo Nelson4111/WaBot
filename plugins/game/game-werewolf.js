@@ -36,12 +36,11 @@ import {
     changeDay,
     pagii
 } from '../../lib/werewolf.js'
-import { Button } from '@rexxhayanasi/elaina-baileys'
-import { getMenuThumbnail, toSmallNum, status } from '../../lib/style.js'
-import { sendGameRolesHeader } from '../../lib/game-roles-message.js'
+import { toSmallNum, status } from '../../lib/style.js'
+import { buildGameRolesHeaderMessage, sendGameRolesHeader } from '../../lib/game-roles-message.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getImagePath, getRoleFaction, getRoleImage, getRoleImagePaths, getSceneImage, getSceneImagePaths, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
+import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, getRoleImagePaths, getSceneImage, getSceneImagePaths, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
@@ -573,25 +572,15 @@ ${fixerContract}
 ━━━━━━━━━━━━━━
 > 🔒 _Pilihanmu menentukan keselamatan ${game.protagonistName || 'pemain'} saat fajar._`
 
-        const btn = new Button(conn)
-        btn.setBody(bodyCard)
         const roleImage = getRoleImage(role, game.location)
-        const roleThumbnail = getImagePath(roleImage)
-            ? await getMenuThumbnail(getImagePath(roleImage))
-            : roleImage
-        if (roleThumbnail) btn.setImage(roleThumbnail)
         const privateMentions = [...cipherAntagonists, ...(fixerTarget ? [fixerTarget] : [])]
-        if (privateMentions.length) {
-            btn.setContextInfo({ mentionedJid: getPlayerMentions(privateMentions) })
-        }
-        btn.setFooter(`Avelia • ${game.name} Secret Night Phase`)
-        for (const action of actionRows) {
-            btn.addButton('quick_reply', JSON.stringify({
-                display_text: action.title,
-                id: action.id
-            }))
-        }
-        const built = await btn.build(chat)
+        const built = await buildGameRolesHeaderMessage(conn, chat, bodyCard, roleImage, {
+            title: `${game.name} • ${rTitle}`,
+            subtitle: 'Secret Night Phase',
+            footer: `Avelia • ${game.name} Secret Night Phase`,
+            mentions: getPlayerMentions(privateMentions),
+            buttons: actionRows.map((action) => [action.title, action.id])
+        })
         playerMessages.set(p.id, built.message)
     }
 
@@ -606,7 +595,11 @@ ${fixerContract}
 ━━━━━━━━━━━━━━
 > 🔒 _[Fase Malam Berlangsung — Aksi rahasia hanya dapat diakses oleh pemain yang masih hidup]_`
 
-    await sendMultiParticipantGroupStanza(conn, chat, playerMessages, spectatorText)
+    const spectatorMessage = await buildGameRolesHeaderMessage(conn, chat, spectatorText, thumbNight, {
+        title: `${game.name} • FASE MALAM`,
+        subtitle: 'Aksi rahasia hanya terlihat oleh pemain'
+    })
+    await sendMultiParticipantGroupStanza(conn, chat, playerMessages, spectatorMessage.message)
     cipherIntroPlayers.forEach((player) => {
         player.cipherIntroSent = true
     })
@@ -730,24 +723,25 @@ ${actionRows.map((row) => `> 🔒 *${row.title.slice(3)}* — ${row.description}
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
 > _Tembak salah satu pemain atau pilih untuk tidak menembak. Nasib ${game.name} ada di tanganmu._`
-    const btn = new Button(conn)
-    btn.setBody(hunterCard)
-    btn.setFooter(`Avelia • ${game.name} Hunter Reaction`)
-    const executionThumbnail = await getMenuThumbnail(getImagePath(thumbExecution))
-    btn.setImage(executionThumbnail || thumbExecution)
-    for (const action of actionRows) {
-        btn.addButton('quick_reply', JSON.stringify({
-            display_text: action.title,
-            id: action.id
-        }))
-    }
-    const built = await btn.build(chat)
+    const built = await buildGameRolesHeaderMessage(conn, chat, hunterCard, thumbExecution, {
+        title: `${game.name} • HUNTER`,
+        subtitle: 'Tembakan terakhir',
+        footer: `Avelia • ${game.name} Hunter Reaction`,
+        buttons: actionRows.map((action) => [action.title, action.id])
+    })
+    const spectatorMessage = await buildGameRolesHeaderMessage(
+        conn,
+        chat,
+        '> 🔒 _Kesempatan tembakan Hunter hanya terlihat oleh pemain yang bersangkutan._',
+        thumbExecution,
+        { title: `${game.name} • HUNTER`, subtitle: 'Aksi rahasia' }
+    )
     await sendDualGroupMessage(
         conn,
         chat,
         hunter.id,
         built.message,
-        '> 🔒 _Kesempatan tembakan Hunter hanya terlihat oleh pemain yang bersangkutan._'
+        spectatorMessage.message
     )
     room.phaseTimeout = setTimeout(async () => {
         try {
@@ -920,19 +914,13 @@ ${runoffNotice}
         })
         if (player.isAiCitizen) continue
         const privateVotingCard = `${votingCard}\n\n*━━━〔 🔐 KODE VOTING RAHASIA 〕━━━*\n${voteRows.map((row) => row.label).join('\n')}`
-        const button = new Button(conn)
-        button.setBody(privateVotingCard)
-        button.setFooter(`Avelia • ${game.name} Secret Voting`)
-        const votingThumbnail = await getMenuThumbnail(getImagePath(thumbVoting))
-        button.setImage(votingThumbnail || thumbVoting)
-        button.setContextInfo({ mentionedJid: getPlayerMentions(livingPlayers) })
-        voteRows.forEach((row) => {
-            button.addButton('quick_reply', JSON.stringify({
-                display_text: `🔐 ${row.code}`,
-                id: row.id
-            }))
+        const built = await buildGameRolesHeaderMessage(conn, chat, privateVotingCard, thumbVoting, {
+            title: `${game.name} • VOTING`,
+            subtitle: 'Kode voting rahasia',
+            footer: `Avelia • ${game.name} Secret Voting`,
+            mentions: getPlayerMentions(livingPlayers),
+            buttons: voteRows.map((row) => [`🔐 ${row.code}`, row.id])
         })
-        const built = await button.build(chat)
         playerMessages.set(player.id, built.message)
     }
 
@@ -940,7 +928,11 @@ ${runoffNotice}
 > ⚖️ _Voting rahasia sedang berlangsung._
 > 🔒 Setiap pemain menerima tombol dan kode voting yang berbeda.
 > ⏳ Waktu voting: *𝟿𝟶 Detik*`
-    await sendMultiParticipantGroupStanza(conn, chat, playerMessages, spectatorText)
+    const spectatorMessage = await buildGameRolesHeaderMessage(conn, chat, spectatorText, thumbVoting, {
+        title: `${game.name} • SIDANG`,
+        subtitle: 'Voting rahasia sedang berlangsung'
+    })
+    await sendMultiParticipantGroupStanza(conn, chat, playerMessages, spectatorMessage.message)
     void runAiCitizenVotes(conn, chat, room).catch((error) => {
         console.error('[werewolf AI voting error]', error)
     })
