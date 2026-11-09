@@ -2,17 +2,18 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { sendGameRolesHeader } from '../lib/game-roles-message.js'
 
-test('Game Roles headers send directly through ButtonV2 and preserve list choices', async () => {
+test('Game Roles headers send directly through ButtonV2 and preserve quick reply buttons', async () => {
   const sent = { id: 'header-sent' }
-  const rawButtons = []
+  const buttons = []
   class MockButtonV2 {
     constructor() {}
     setTitle() {}
     setSubtitle() {}
     setBody() {}
     setFooter() {}
-    addRawButton(button) {
-      rawButtons.push(button)
+    setRawThumbnail() {}
+    addButton(label, id) {
+      buttons.push([label, id])
     }
     async send(jid) {
       assert.equal(jid, 'game@g.us')
@@ -29,21 +30,58 @@ test('Game Roles headers send directly through ButtonV2 and preserve list choice
     }
   }
   const options = {
-    listButton: {
-      id: 'vote',
-      label: 'Pilih Vote',
-      title: 'PILIH TARGET',
-      sections: [{
-        title: 'Kandidat',
-        rows: [{ title: 'Pemain 1', description: 'Kode A1', id: '.ww A1' }]
-      }]
+    buttons: [['🔐 A1B2', '.ww action game@g.us A1B2']]
+  }
+
+  const result = await sendGameRolesHeader(conn, 'game@g.us', 'Pilih kandidat', Buffer.from('thumbnail'), null, options)
+
+  assert.equal(result, sent)
+  assert.deepEqual(buttons, options.buttons)
+})
+
+test('Game Roles never falls back to sending a phase image as a standalone photo', async () => {
+  let sendMessageCalled = false
+  const conn = {
+    sendMessage() {
+      sendMessageCalled = true
     }
   }
 
-  const result = await sendGameRolesHeader(conn, 'game@g.us', 'Pilih kandidat', null, null, options)
+  await assert.rejects(
+    sendGameRolesHeader(conn, 'game@g.us', 'Pagi tiba', Buffer.from('scene'), null),
+    /ButtonV2 tidak tersedia/
+  )
+  assert.equal(sendMessageCalled, false)
+})
 
-  assert.equal(result, sent)
-  assert.equal(rawButtons.length, 1)
-  assert.equal(rawButtons[0].nativeFlowInfo.name, 'single_select')
-  assert.deepEqual(JSON.parse(rawButtons[0].nativeFlowInfo.paramsJson).sections[0].rows, options.listButton.sections[0].rows)
+test('Game Roles never falls back to a standalone photo when ButtonV2 sending fails', async () => {
+  let sendMessageCalled = false
+  const originalError = console.error
+  console.error = () => {}
+  class FailingButtonV2 {
+    constructor() {}
+    setTitle() {}
+    setBody() {}
+    setFooter() {}
+    setRawThumbnail() {}
+    async send() {
+      throw new Error('header send failed')
+    }
+  }
+  const conn = {
+    ButtonV2: FailingButtonV2,
+    sendMessage() {
+      sendMessageCalled = true
+    }
+  }
+
+  try {
+    await assert.rejects(
+      sendGameRolesHeader(conn, 'game@g.us', 'Pagi tiba', Buffer.from('scene'), null),
+      /header send failed/
+    )
+  } finally {
+    console.error = originalError
+  }
+  assert.equal(sendMessageCalled, false)
 })
