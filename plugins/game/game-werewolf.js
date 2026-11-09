@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import {
     emoji_role,
     sesi,
@@ -9,6 +10,7 @@ import {
     killww,
     collapseZombieVampireInfections,
     roleGenerator,
+    roleAmount,
     addTimer,
     startGame,
     autoAssignCustomRoles,
@@ -38,28 +40,63 @@ import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { CIPHER_AI_MESSAGES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
+import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getImagePath, getRoleFaction, getRoleImage, getRoleImagePaths, getSceneImage, getSceneImagePaths, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
-const thumbNight = "https://user-images.githubusercontent.com/72728486/235316834-f9f84ba0-8df3-4444-81d8-db5270995e6d.jpg"
-const thumbMorning = "https://user-images.githubusercontent.com/72728486/235344562-4677d2ad-48ee-419d-883f-e0ca9ba1c7b8.jpg"
-const thumbVoting = "https://user-images.githubusercontent.com/72728486/235344861-acdba7d1-8fce-41b8-adf6-337c818cda2b.jpg"
-const thumbExecution = "https://user-images.githubusercontent.com/72728486/235354619-6ad1cabd-216c-4c7c-b7c2-3a564836653a.jpg"
+const thumbNight = getSceneImage('aksi-malam')
+const thumbMorning = getSceneImage('fajar')
+const thumbVoting = getSceneImage('vote')
+const thumbExecution = getSceneImage('eksekusi benar')
+const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) => {
+    const buttons = options.buttons || []
+    const hasButtons = buttons.length > 0
+    const mentions = options.mentions?.length ? { mentions: options.mentions } : {}
+    const imagePath = getImagePath(image)
+    const imageSource = imagePath || image
 
+    if (hasButtons && typeof conn.sendButtonV2 === 'function') {
+        try {
+            return await conn.sendButtonV2(jid, {
+                title: options.title || 'GAME ROLES',
+                subtitle: options.subtitle || '',
+                text,
+                footer: options.footer || 'Avelia • Game Roles',
+                buffer: imageSource,
+                buttons,
+                contextInfo: options.contextInfo || (options.mentions?.length ? { mentionedJid: options.mentions } : undefined),
+                noLocationHeader: false
+            }, quoted)
+        } catch (error) {
+            console.warn(`[Game Roles] Thumbnail send failed: ${error.message}`)
+        }
+    }
+
+    if (hasButtons && typeof conn.sendButton === 'function') {
+        return conn.sendButton(jid, text, options.footer || 'Avelia • Game Roles', imageSource, buttons, quoted)
+    }
+    if (!image) {
+        return conn.sendMessage(jid, { text, ...mentions }, quoted ? { quoted } : {})
+    }
+    return conn.sendMessage(jid, {
+        image: typeof imageSource === 'string' ? { url: imageSource } : imageSource,
+        caption: text,
+        ...mentions
+    }, quoted ? { quoted } : {})
+}
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
 
-> Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada antagonis yang menyamar; cari tahu siapa mereka sebelum terlambat.
+> Game Roles adalah permainan deduksi sosial di grup. Setiap pemain mendapat identitas rahasia dengan kemampuan berbeda. Di antara kalian ada Villain yang menyamar; cari tahu siapa mereka sebelum terlambat.
 
 *🌙 MALAM*
-> Pemain menjalankan kemampuan role secara rahasia. Antagonis memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
+> Pemain menjalankan kemampuan role secara rahasia. Villain memilih target, sementara role lain bisa menyelidiki, melindungi, atau memakai kemampuan khusus.
 
 *☀️ SIANG*
 > Semua pemain berdiskusi lalu voting untuk menentukan siapa yang akan dieksekusi. Role yang gugur akan terungkap.
 
 *🏆 TUJUAN PERMAINAN*
-> Warga menang dengan menemukan semua antagonis. Antagonis menang saat jumlah mereka menyamai atau melebihi warga. Beberapa role punya kondisi kemenangan sendiri.
+> Citizen menang dengan menemukan semua Villain. Villain menang saat jumlah mereka menyamai atau melebihi Citizen. Beberapa role punya kondisi kemenangan sendiri.
 
 *🕹️ MULAI BERMAIN*
 > Pilih game dan role lewat tombol di bawah untuk melihat pilihan serta panduannya. Permainan berlangsung di grup bersama pemain lain.
@@ -71,7 +108,10 @@ const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
         ['🎭 Daftar Role', `${usedPrefix}gr role`],
         ['📖 Panduan Bermain', `${usedPrefix}gr guide`]
     ]
-    return conn.sendButton(chat, menuText, 'Avelia • Game Roles', thumbNight, menuButtons, m)
+    return sendGameThumbnail(conn, chat, menuText, thumbNight, m, {
+        buttons: menuButtons,
+        title: 'GAME ROLES'
+    })
 }
 
 const roleEmojis = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, data]) => [role, data.emoji]))
@@ -84,13 +124,13 @@ const formatRoleTitle = (role) => roleTitles[role] || String(role || 'Warga').to
     .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => prefix + letter.toUpperCase())
 
 const getPhaseParticipantName = (game) => {
-    if (game?.id === 'vigilante') return 'Para Vigilante'
+    if (game?.id === 'vigilante') return 'Para Villain'
     if (game?.id === 'impostor' || game?.id === 'alien') return 'Para Crewmate'
     return game?.protagonistName ? `Para ${game.protagonistName}` : 'Para warga'
 }
 
 const getPhaseSedentaryName = (game) => {
-    if (game?.id === 'vigilante') return 'markas Vigilante'
+    if (game?.id === 'vigilante') return 'markas rahasia'
     if (game?.id === 'impostor' || game?.id === 'alien') return 'kabin pesawat'
     if (game?.id === 'mayhem') return 'tempat persembunyian masing-masing'
     return 'kediaman masing-masing'
@@ -101,10 +141,13 @@ const getPlayerRolePresentation = (player, category) => {
         ? player.infectionType
         : null
     const isInfected = Boolean(infectedType && (['zombie', 'vampire'].includes(category) || ['mayhem', 'custom', 'vigilante'].includes(category)))
-    const role = isInfected ? infectedType : player?.role
+    const originalRole = isInfected ? player?.infectionOriginalRole || player?.role : player?.role
+    const role = originalRole || 'warga'
     return {
-        title: isInfected ? 'Infected' : formatRoleTitle(role),
-        emoji: roleEmojis[role] || '🎭'
+        title: isInfected ? `${formatRoleTitle(role)} (Infected)` : formatRoleTitle(role),
+        emoji: isInfected
+            ? ({ zombie: '☣️', vampire: '🩸' }[infectedType] || roleEmojis[role] || '🎭')
+            : (roleEmojis[role] || '🎭')
     }
 }
 
@@ -115,22 +158,22 @@ const getRoleShortEffect = (role, game) => {
         }
         return ['werewolf', 'mafia'].includes(role) && !['mayhem', 'vigilante'].includes(game.id)
             ? `Pilih satu korban tiap malam bersama kelompok ${game.antagonistName}.`
-            : `Pilih satu pemain hidup untuk diserang tiap malam; antagonis bergerak sendiri.`
+            : `Pilih satu pemain hidup untuk diserang tiap malam; Villain bergerak sendiri.`
     }
     const shortEffects = {
         warga: 'Ikut voting untuk menentukan pemain yang dieksekusi.',
         seer: 'Sekali per game, periksa role satu pemain pada malam hari.',
-        guardian: 'Sekali per game, lindungi satu pemain dari serangan antagonis malam hari.',
+        guardian: 'Sekali per game, lindungi satu pemain dari serangan Villain malam hari.',
         sorcerer: 'Tiap malam, racuni satu pemain, bangkitkan pemain mati, atau lewati.',
         hunter: 'Saat gugur, tembak satu pemain hidup sebelum fase berlanjut.',
         mayor: 'Suara voting bernilai dua.',
         jester: 'Menang sendiri jika dieksekusi melalui voting.',
-        warden: 'Armor menahan satu serangan antagonis malam hari; voting tetap dapat mengeksekusinya.',
+        warden: 'Armor menahan satu serangan Villain malam hari; voting tetap dapat mengeksekusinya.',
         cipher: 'Menang bersama tim yang menang jika masih hidup; wajib bicara dengan sandi angka.',
         fixer: 'Menang sendiri jika target kontrak gugur saat Fixer masih hidup.',
         vigilante: game.id === 'mayhem'
-            ? 'Protagonis independen; pilih satu pemain untuk ditangkap setiap malam.'
-            : 'Tangkap antagonis tiap malam; para Vigilante menang jika seluruh antagonis tertangkap atau gugur.',
+            ? 'Citizen independen; pilih satu pemain untuk ditangkap setiap malam.'
+            : 'Tangkap Villain tiap malam; para Vigilante menang jika seluruh Villain tertangkap atau gugur.',
         ghost: 'Saat masih hidup, rasuki satu pemain agar tidak dapat voting pada ronde berikutnya.'
     }
     return shortEffects[role] || roleEffects[role] || 'Tidak memiliki aksi khusus.'
@@ -141,15 +184,15 @@ const formatRoleDetails = (role, game) => {
     if (!data) return null
     const title = role === game.antagonist ? game.antagonistName : data.title
     const effect = role === 'vigilante' && game.id === 'mayhem'
-        ? 'Pilih satu pemain hidup untuk ditangkap setiap malam; tetap berpihak kepada protagonis dan menang jika protagonis menang.'
+        ? 'Pilih satu pemain hidup untuk ditangkap setiap malam; tetap berpihak kepada Citizen dan menang jika Citizen menang.'
         : role === 'vigilante' && game.id === 'vigilante'
-            ? 'Pilih satu antagonis hidup untuk ditangkap setiap malam. Jumlah Vigilante maksimal 4, bergantung pada jumlah peserta.'
+            ? 'Pilih satu Villain hidup untuk ditangkap setiap malam. Jumlah Vigilante maksimal 4, bergantung pada jumlah peserta.'
             : ['mayhem', 'vigilante'].includes(game.id) && isAntagonistRole(game.id, role)
-            ? 'Pilih satu pemain hidup untuk diserang setiap malam. Setiap antagonis bertindak sendiri dan dapat menyerang antagonis lain.'
+            ? 'Pilih satu pemain hidup untuk diserang setiap malam. Setiap Villain bertindak sendiri dan dapat menyerang Villain lain.'
             : role === game.id && ['zombie', 'vampire'].includes(game.id)
                 ? `Tularkan ${game.name} kepada satu pemain hidup pada malam hari. Yang tertular tetap hidup dan bisa voting, tetapi kemampuan role lamanya dinonaktifkan dan ia hanya dapat bersembunyi saat malam. Kemenangan ditentukan ketika jumlah ${game.name} menyamai atau melebihi pemain lain.`
                 : role !== game.id && ['zombie', 'vampire'].includes(role) && game.id === 'custom'
-                    ? 'Dalam mode Custom, pilih satu pemain hidup untuk diserang setiap malam seperti antagonis lain.'
+                    ? 'Dalam mode Custom, pilih satu pemain hidup untuk diserang setiap malam seperti Villain lain.'
                 : roleEffects[role]
     const details = [
         `*${data.emoji} ${title}*`,
@@ -157,12 +200,12 @@ const formatRoleDetails = (role, game) => {
         `> *Efek dalam game:* ${effect}`
     ]
     if (role === 'sorcerer') {
-        details.push('> Jika ada antagonis lain, racun membuat Sorcerer berpihak kepada antagonis, revive membuatnya berpihak kepada warga, dan melewati aksi membuatnya tetap netral.')
+        details.push('> Jika ada Villain lain, racun membuat Sorcerer berpihak kepada Villain, revive membuatnya berpihak kepada Citizen, dan melewati aksi membuatnya tetap netral.')
     }
     if (role === 'vigilante') {
         details.push(game.id === 'mayhem'
-            ? '> Pada mode Mayhem, Vigilante tetap berpihak kepada protagonis tetapi tidak mengetahui siapa antagonisnya; pilih pemain yang dicurigai untuk ditangkap.'
-            : '> Jumlah Vigilante maksimal 4. Para Vigilante menang jika seluruh antagonis tertangkap atau gugur; antagonis menang jika semua Vigilante gugur.')
+            ? '> Pada mode Mayhem, Vigilante tetap berpihak kepada Citizen tetapi tidak mengetahui siapa Villain-nya; pilih pemain yang dicurigai untuk ditangkap.'
+            : '> Jumlah Vigilante maksimal 4. Para Vigilante menang jika seluruh Villain tertangkap atau gugur; Villain menang jika semua Vigilante gugur.')
     }
     if (role === 'ghost') {
         details.push('> Saat hidup, Ghost dapat merasuki pemain yang belum pernah dirasuki agar pemain itu tidak dapat voting pada ronde berikutnya. Setelah mati, Ghost hanya dapat mengirim pesan.')
@@ -183,9 +226,9 @@ const formatRoleGuide = (role, game, usedPrefix) => {
     )
 
     if (role === 'vigilante' && game.id === 'mayhem') {
-        details.push('> Pada Mayhem, Vigilante tetap anggota protagonis; tugasnya menangkap pemain yang dicurigai, bukan mencari satu jenis antagonis tertentu.')
+        details.push('> Pada Mayhem, Vigilante tetap anggota Citizen; tugasnya menangkap pemain yang dicurigai, bukan mencari satu jenis Villain tertentu.')
     } else if (role === 'vigilante' && game.id !== 'vigilante') {
-        details.push('> Aturan jumlah Vigilante dan kemenangan menangkap semua antagonis berlaku khusus pada kategori Vigilante. Di kategori lain, ikuti kondisi faksi pada kartu game.')
+        details.push('> Aturan jumlah Vigilante dan kemenangan menangkap semua Villain berlaku khusus pada kategori Vigilante. Di kategori lain, ikuti kondisi faksi pada kartu game.')
     }
 
     if (role === 'cipher') {
@@ -202,8 +245,8 @@ const validRoleName = (value) => {
 
 const normalizeRoleFactionFilter = (value) => {
     const filter = String(value || '').trim().toLowerCase()
-    if (['antagonis', 'antagonist', 'antagonists'].includes(filter)) return 'antagonist'
-    if (['protagonis', 'protagonist', 'protagonists'].includes(filter)) return 'protagonist'
+    if (['villain', 'antagonis', 'antagonist', 'antagonists'].includes(filter)) return 'antagonist'
+    if (['citizen', 'protagonis', 'protagonist', 'protagonists'].includes(filter)) return 'protagonist'
     if (['netral', 'neutral', 'neutrals'].includes(filter)) return 'neutral'
     return null
 }
@@ -222,15 +265,15 @@ const formatRoleList = (game, factionFilter = null) => {
 const formatGameCategoryInfo = (game, usedPrefix) => {
     let objective
     if (game.id === 'vigilante') {
-        objective = 'Para Vigilante menang jika seluruh antagonis tertangkap; antagonis menang jika semua Vigilante gugur.'
+        objective = 'Para Vigilante menang jika seluruh Villain tertangkap; Villain menang jika semua Vigilante gugur.'
     } else if (['zombie', 'vampire'].includes(game.id)) {
-        objective = `${game.antagonistName} menang jika semua pemain hidup selain ${game.antagonistName} asli sudah tertular. Jika seluruh ${game.antagonistName} asli tersingkir, pemain tertular ikut gugur dan protagonis menang.`
+        objective = `${game.antagonistName} menang jika semua pemain hidup selain ${game.antagonistName} asli sudah tertular. Jika seluruh ${game.antagonistName} asli tersingkir, pemain tertular ikut gugur dan Citizen menang.`
     } else if (game.id === 'mayhem') {
-        objective = 'Beragam antagonis dapat muncul dan menyerang sendiri, termasuk satu sama lain; antagonis lain tidak diketahui. Tiap tim mengikuti kondisi menang faksinya.'
+        objective = 'Beragam Villain dapat muncul dan menyerang sendiri, termasuk satu sama lain; Villain lain tidak diketahui. Tiap tim mengikuti kondisi menang faksinya.'
     } else if (game.id === 'custom') {
         objective = 'Pemain memakai role yang ditentukan untuk room. Kondisi menang mengikuti faksi dan kemampuan role yang dipilih.'
     } else {
-        objective = `${game.protagonistName} berusaha menemukan semua ${game.antagonistName}; antagonis menang saat jumlahnya menyamai atau melebihi protagonis.`
+        objective = `Citizen berusaha menemukan semua ${game.antagonistName}; Villain menang saat jumlahnya menyamai atau melebihi Citizen.`
     }
     return `*━━━〔 ${game.antagonistEmoji} INFO ${game.name.toUpperCase()} 〕━━━*
 
@@ -280,8 +323,8 @@ const buildGameCategoryList = (usedPrefix, requestedPage = 1) => {
 }
 
 const roleFactionButtons = (gameCommandBase) => [
-    ['🔴 Antagonis', `${gameCommandBase} role antagonis`],
-    ['🔵 Protagonis', `${gameCommandBase} role protagonis`],
+    ['🔴 Villain', `${gameCommandBase} role villain`],
+    ['🔵 Citizen', `${gameCommandBase} role citizen`],
     ['🟡 Netral', `${gameCommandBase} role netral`]
 ]
 
@@ -308,11 +351,7 @@ const getTotalPlayerCount = (room) => room?.player?.length || 0
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const getRandomItem = (items) => items[Math.floor(Math.random() * items.length)]
 
-const getAiNightActionCode = (player, actionType, category) => {
-    if (category === 'mayhem' && player.isAiCitizen) {
-        return Object.entries(player.secretCodes || {})
-            .find(([, choice]) => choice.type === 'skip')?.[0]
-    }
+const getAiNightActionCode = (player, actionType) => {
     const actions = Object.entries(player.secretCodes || {})
         .filter(([, choice]) => choice.type === actionType)
         .map(([code]) => code)
@@ -531,9 +570,9 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
             ? room.player.filter((player) => !player.isdead && !player.isDummy && isAntagonistRole(room.category, player.role))
             : []
         const cipherIntro = role === 'cipher' && room.category !== 'mayhem' && !p.cipherIntroSent
-            ? `\n\n*━━━〔 🔎 ɪᴅᴇɴᴛɪᴛᴀꜱ ᴀɴᴛᴀɢᴏɴɪꜱ 〕━━━*\n${cipherAntagonists.length
+            ? `\n\n*━━━〔 🔎 ɪᴅᴇɴᴛɪᴛᴀꜱ VILLAIN 〕━━━*\n${cipherAntagonists.length
                 ? cipherAntagonists.map((player) => `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)} — ${formatRoleTitle(player.role)}`).join('\n')
-                : '> Tidak ada antagonis yang ditugaskan di room ini.'}`
+                : '> Tidak ada Villain yang ditugaskan di room ini.'}`
             : ''
         if (role === 'cipher' && room.category !== 'mayhem' && !p.cipherIntroSent) cipherIntroPlayers.push(p)
         const fixerTarget = role === 'fixer' && !p.fixerContractShown
@@ -634,7 +673,7 @@ const runAiCitizenNightActions = async (conn, chat, room) => {
         await wait(650 + Math.floor(Math.random() * 600))
         if (conn.werewolf?.[chat] !== room || room.time !== 'malem' || player.isdead || player.nightDone) return
 
-        const code = getAiNightActionCode(player, undefined, room.category)
+        const code = getAiNightActionCode(player)
         const result = code
             ? resolveSecretCodeAction(chat, player.id, code, conn.werewolf, 'night')
             : { ok: false, reason: 'no-night-codes' }
@@ -668,11 +707,7 @@ ${morningBody}
 ━━━━━━━━━━━━━━
 > ⚖️ _Sidang dimulai! ${getPhaseParticipantName(game)} bersiap menentukan tersangka._`
 
-    await conn.sendMessage(chat, {
-        image: { url: thumbMorning },
-        caption: morningCard,
-        mentions
-    })
+    await sendGameThumbnail(conn, chat, morningCard, thumbMorning, null, { mentions })
 }
 
 const publishMorning = async (conn, chat, room, ww, announce = true) => {
@@ -702,7 +737,7 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
     }))
     if (hunter.isAiCitizen) {
         await wait(600 + Math.floor(Math.random() * 500))
-        const code = getAiNightActionCode(hunter, 'hunter', room.category)
+        const code = getAiNightActionCode(hunter, 'hunter')
         const result = code
             ? resolveSecretCodeAction(chat, hunter.id, code, conn.werewolf, 'hunter')
             : { ok: false, reason: 'no-hunter-actions' }
@@ -808,18 +843,14 @@ ${armorBlocked
         : `> ⟡ Gugur : *${targetRole} ${roleEmojis[targetPlayer.role] || '🎭'}*`}
 *━━━━━━━━━━━━━━*
 ${!armorBlocked && targetPlayer.role === 'hunter' && targetPlayer.infectionType !== room.category ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
-        await conn.sendMessage(chat, {
-            image: { url: thumbExecution },
-            caption: resultCard,
+        await sendGameThumbnail(conn, chat, resultCard, thumbExecution, null, {
             mentions: getPlayerMentions([hunter, targetPlayer])
         })
     }
     if (hunter.pendingExecution) {
         hunter.pendingExecution = false
         hunter.canShoot = false
-        await conn.sendMessage(chat, {
-            image: { url: thumbExecution },
-            caption: `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`,
+        await sendGameThumbnail(conn, chat, `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`, thumbExecution, null, {
             mentions: getPlayerMentions([hunter])
         })
     }
@@ -1025,10 +1056,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
 
     if (hasil_vote === 0) {
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\n${participants} tidak dapat mencapai kesepakatan dan kembali ke ${getPhaseSedentaryName(game)}. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti ${game.location}..._`
-        await conn.sendMessage(chat, {
-            image: { url: thumbNight },
-            caption: text
-        })
+        await sendGameThumbnail(conn, chat, text, thumbNight)
     } else if (hasil_vote === 1) {
         const highestVote = Math.max(0, ...voteTally.map((player) => Number(player.vote) || 0))
         const tiedCandidates = voteTally.filter((player) =>
@@ -1039,9 +1067,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
                 `> ${getDisplayPlayerLabel(player, conn)}`
             ).join('\n')
             const text = `*━━━〔 ⚖️ HASIL VOTING SERI 〕━━━*\n> ⚖️ _Voting ulang dimulai sekarang._\n\nPilihan hanya tersedia untuk pemain yang memperoleh suara tertinggi dan seri:\n${candidateList}${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🔁 _Pilih salah satu kandidat di atas; pilihan lain tidak tersedia._`
-            await conn.sendMessage(chat, {
-                image: { url: thumbVoting },
-                caption: text,
+            await sendGameThumbnail(conn, chat, text, thumbVoting, null, {
                 mentions: getPlayerMentions(tiedCandidates)
             })
             room.runoffCandidateNumbers = tiedCandidates.map((player) => player.number)
@@ -1050,10 +1076,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
         }
 
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _${participants} kembali ke ${getPhaseSedentaryName(game)}..._`
-        await conn.sendMessage(chat, {
-            image: { url: thumbNight },
-            caption: text
-        })
+        await sendGameThumbnail(conn, chat, text, thumbNight)
     } else if (hasil_vote && typeof hasil_vote === 'object') {
         const killed = voteKill(chat, ww)
         const killedRole = getPlayerRolePresentation(killed, room.category)
@@ -1083,9 +1106,10 @@ const resolveDayVoting = async (conn, chat, ww) => {
 ━━━━━━━━━━━━━━
 > 🌙 _Senja telah usai. Bersiaplah menghadapi malam yang mencekam..._`
 
-        await conn.sendMessage(chat, {
-            image: { url: thumbExecution },
-            caption: execText,
+        const executionScene = !killed.pendingExecution && isAntagonistRole(room.category, killed.role)
+            ? getSceneImage('eksekusi benar')
+            : getSceneImage('eksekusi salah')
+        await sendGameThumbnail(conn, chat, execText, executionScene || thumbExecution, null, {
             mentions: getPlayerMentions([killed])
         })
 
@@ -1118,9 +1142,48 @@ const resolveDayVoting = async (conn, chat, ww) => {
 
 let handler = async (m, { conn, command, usedPrefix, args }) => {
     const { sender, chat } = m
+    const normalizedCommand = String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
+    if (normalizedCommand === 'gr') {
+        const pictAction = args?.[0]?.toLowerCase()
+        const hasOwnerOrCoOwnerAccess = () => {
+            const senderPhone = normalizePhone(sender)
+            const ownerPhone = String(global.nomorown || '').replace(/\D/g, '')
+            const coOwnerPhone = String(global.nomorcoown || '').replace(/\D/g, '')
+            const hasOwnerPhone = senderPhone && [ownerPhone, coOwnerPhone].some((phone) => phone && senderPhone.endsWith(phone))
+            const hasCoOwnerDatabase = Boolean(global.db?.data?.users?.[sender]?.isCoOwner)
+            return Boolean(hasOwnerPhone || hasCoOwnerDatabase)
+        }
+        if (pictAction === 'pict') {
+            if (!hasOwnerOrCoOwnerAccess()) return
+
+            const imagePaths = [...new Set(getRoleImagePaths())]
+            for (let index = 0; index < imagePaths.length; index++) {
+                try {
+                    await conn.sendMessage(chat, { image: { url: imagePaths[index] } })
+                } catch (error) {
+                    console.warn(`[Game Roles] Failed to send asset picture ${index + 1}/${imagePaths.length}: ${error.message}`)
+                }
+                if (index < imagePaths.length - 1) await wait(3000)
+            }
+            return
+        }
+        if (pictAction === 'scene') {
+            if (!hasOwnerOrCoOwnerAccess()) return
+
+            const scenePaths = getSceneImagePaths()
+            for (let index = 0; index < scenePaths.length; index++) {
+                try {
+                    await conn.sendMessage(chat, { image: { url: scenePaths[index] } })
+                } catch (error) {
+                    console.warn(`[Game Roles] Failed to send scene picture ${index + 1}/${scenePaths.length}: ${error.message}`)
+                }
+                if (index < scenePaths.length - 1) await wait(3000)
+            }
+            return
+        }
+    }
     conn.werewolf = conn.werewolf ? conn.werewolf : {}
     const ww = conn.werewolf
-    const normalizedCommand = String(command || '').toLowerCase().replace(/[/.!?]+$/, '')
     const isGameRolesCommand = ['gr', 'rg', 'gameroles'].includes(normalizedCommand)
     if (isGameRolesCommand && args.length === 1 && normalizeGameCategory(args[0])) args = []
     const directGameCategory = !isGameRolesCommand ? normalizeGameCategory(normalizedCommand) : null
@@ -1131,7 +1194,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         args = args.slice(1)
     }
     const gameCommandBase = `${usedPrefix || '.'}${isGameRolesCommand ? `gr ${gameCategory.id}` : directGameCategory ? directGameCategory.aliases[0] : 'ww'}`
-    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "room", "lobby", "log", "info", "role", "guide", "add", "del", "shoot", "action", "autorole", "list"]
+    const standardCommands = ["test", "create", "join", "start", "vote", "exit", "delete", "player", "room", "lobby", "log", "info", "role", "guide", "add", "del", "shoot", "action", "autorole", "list", "rate", "spawnrate", "sr"]
     let value = args[0]
     const target = args[1]
     const normalizedValue = String(value || "").toLowerCase()
@@ -1179,7 +1242,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         }
         if (action === 'list' || action === 'category' || action === 'kategori') {
             const gameList = buildGameCategoryList(usedPrefix, args[1])
-            return conn.sendButton(chat, gameList.text, `Avelia • Pilihan Game ${gameList.page}/${gameList.pageCount}`, thumbNight, gameList.buttons, m)
+            return sendGameThumbnail(conn, chat, gameList.text, thumbNight, m, {
+                title: `PILIHAN GAME ${gameList.page}/${gameList.pageCount}`,
+                buttons: gameList.buttons
+            })
         }
         if (action === 'info') {
             const category = normalizeGameCategory(args[1])
@@ -1189,10 +1255,42 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     .join('\n━━━━━━━━━━━━━━\n')
                 return m.reply(`*━━━〔 🎮 DAFTAR KATEGORI 〕━━━*\n\n${categoryList}\n\n━━━━━━━━━━━━━━\n> Ketik *.gr list* untuk deskripsi game dan tombol navigasi.`)
             }
-            return conn.sendMessage(chat, {
-                image: { url: getGameCategoryImage(category) },
-                caption: formatGameCategoryInfo(category, usedPrefix)
-            }, { quoted: m })
+            return sendGameThumbnail(conn, chat, formatGameCategoryInfo(category, usedPrefix), getGameCategoryImage(category), m)
+        }
+        if (['rate', 'spawnrate', 'sr'].includes(action)) {
+            const requestedCount = Number.parseInt(args[1], 10)
+            const playerCount = Number.isInteger(requestedCount) && requestedCount > 0
+                ? Math.min(requestedCount, 15)
+                : (ww[chat]?.player || []).filter((player) => !player.isDummy).length || 5
+            const category = gameCategory
+            const lines = [(() => {
+                const room = {
+                    category: category.id,
+                    player: Array.from({ length: playerCount }, (_, index) => ({ id: `rate-${index}`, number: index + 1, isDummy: false }))
+                }
+                const sampleRooms = { rate: room }
+                const samples = 2000
+                const totals = Object.create(null)
+                let villainTotal = 0
+                for (let sample = 0; sample < samples; sample++) {
+                    const distribution = roleAmount('rate', sampleRooms, undefined, playerCount)
+                    if (!distribution) continue
+                    for (const [role, amount] of Object.entries(distribution)) {
+                        totals[role] = (totals[role] || 0) + amount
+                    }
+                    villainTotal += Object.entries(distribution)
+                        .filter(([role]) => CUSTOM_ANTAGONIST_ROLES.includes(role))
+                        .reduce((total, [, amount]) => total + amount, 0)
+                }
+                const roles = Object.entries(totals)
+                    .sort(([roleA], [roleB]) => formatRoleTitle(roleA).localeCompare(formatRoleTitle(roleB)))
+                    .map(([role, amount]) => {
+                        const chance = amount / (samples * playerCount) * 100
+                        return `> ${formatRoleTitle(role)} ${roleEmojis[role] || '🎭'} · *${chance.toFixed(1)}%*`
+                    }).join('\n')
+                return `*${category.name}*\n> Pemain: *${playerCount}*\n> Villain: ~${(villainTotal / samples).toFixed(1)} pemain\n${roles}`
+            })()]
+            return m.reply(`*━━━〔 🎲 SPAWN RATE ROLE 〕━━━*\n\n${lines.join('\n\n━━━━━━━━━━━━━━\n\n')}\n\n> Angka dihitung dari ${2000} simulasi acak.`)
         }
         if (action === 'role') {
             const requestedRole = args.slice(1).join(' ').trim()
@@ -1209,21 +1307,28 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     ? `\n\n${formatRoleGuide(selectedRole, gameCategory, usedPrefix || '.')}`
                     : ''
                 const roleImage = getRoleImage(selectedRole, gameCategory.location)
-                return conn.sendMessage(chat, {
-                    image: { url: roleImage || thumbNight },
-                    caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
-                }, { quoted: m })
+                const detailCaption = `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
+                return sendGameThumbnail(conn, chat, detailCaption, roleImage || thumbNight, m, {
+                    title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
+                    subtitle: gameCategory.name,
+                    buttons: [
+                        ['🎭 Daftar Role', `${usedPrefix}gr role`],
+                        ['📖 Panduan Game Roles', `${usedPrefix}gr guide`]
+                    ]
+                })
             }
             const roleSections = formatRoleList(gameCategory, factionFilter)
             const factionTitle = factionFilter
-                ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
+                ? ` · ${factionFilter === 'antagonist' ? 'VILLAIN' : factionFilter === 'protagonist' ? 'CITIZEN' : 'NETRAL'}`
                 : ''
-            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n> Filter: *${usedPrefix}gr role antagonis*, *protagonis*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, 'Avelia • Daftar Role', thumbNight, [
-                ...roleFactionButtons(`${usedPrefix}gr`)
-            ], m)
+            return sendGameThumbnail(conn, chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n            > Filter: *${usedPrefix}gr role villain*, *citizen*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, thumbNight, m, {
+                title: 'DAFTAR ROLE',
+                footer: 'Avelia • Daftar Role',
+                buttons: roleFactionButtons(`${usedPrefix}gr`)
+            })
         }
         if (action === 'guide') {
-            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *${usedPrefix}gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n\n> 2. Buat room dengan command tema, contoh *${usedPrefix}mafia create 10k*.\n\n> 3. Mode Custom: *${usedPrefix}custom autorole* untuk role acak, *${usedPrefix}custom role @pemain <role/nomor>* untuk pemain manusia, dan *${usedPrefix}custom role <nomor pemain> <role/nomor>* untuk warga AI. Periksa pilihan dengan *${usedPrefix}custom list*. Hanya satu jenis antagonis utama dan tiap role khusus hanya untuk satu pemain.\n\n> 4. Peserta masuk memakai *${usedPrefix}mafia join*; taruhan ditahan saat bergabung.\n\n> 5. Owner room memulai dengan *${usedPrefix}mafia start*.\n\n> 6. Kartu aksi dan informasi rahasia dikirim hanya kepada pemain terkait. Anggota lain hanya melihat teks pengunci.\n\n> 7. Lihat riwayat dengan *${usedPrefix}mafia log*. Voting dan aksi skip atau sembunyi tidak dicatat.\n\n> 8. Keluar dari room bertaruhan perlu konfirmasi dan taruhan tetap di pot. Menghapus room mengembalikan taruhan.\n\n> 9. Gunakan *${usedPrefix}gr me*, *${usedPrefix}gr history*, dan *${usedPrefix}gr top* untuk statistik.`)
+            return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *${usedPrefix}gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n\n> 2. Buat room dengan command tema, contoh *${usedPrefix}mafia create 10k*.\n\n> 3. Mode Custom: *${usedPrefix}custom autorole* untuk role acak, *${usedPrefix}custom role @pemain <role/nomor>* untuk pemain manusia, dan *${usedPrefix}custom role <nomor pemain> <role/nomor>* untuk warga AI. Periksa pilihan dengan *${usedPrefix}custom list*. Hanya satu jenis Villain utama dan tiap role khusus hanya untuk satu pemain.\n\n> 4. Peserta masuk memakai *${usedPrefix}mafia join*; taruhan ditahan saat bergabung.\n\n> 5. Owner room memulai dengan *${usedPrefix}mafia start*.\n\n> 6. Kartu aksi dan informasi rahasia dikirim hanya kepada pemain terkait. Anggota lain hanya melihat teks pengunci.\n\n> 7. Lihat riwayat dengan *${usedPrefix}mafia log*. Voting dan aksi skip atau sembunyi tidak dicatat.\n\n> 8. Keluar dari room bertaruhan perlu konfirmasi dan taruhan tetap di pot. Menghapus room mengembalikan taruhan.\n\n> 9. Gunakan *${usedPrefix}gr me*, *${usedPrefix}gr history*, dan *${usedPrefix}gr top* untuk statistik.`)
         }
         if (['command', 'commands', 'cmd'].includes(action)) {
             const commandText = Object.values(GAME_CATEGORIES)
@@ -1234,7 +1339,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         if (action === 'me' || action === 'stats' || action === 'stat') {
             const user = loadDB().users[sender] || {}
             const stats = user.werewolfStats || {}
-            return m.reply(`*━━━〔 ✧ STATISTIK GAME ROLES ✧ 〕━━━*\n\n> Skor antagonis: *${Number(stats.score) || 0}*\n> Menang antagonis: *${Number(stats.antagonistWins) || 0}x*\n> Menang protagonis: *${Number(stats.protagonistWins) || 0}x*\n> Menang netral: *${Number(stats.neutralWins) || 0}x*`)
+            return m.reply(`*━━━〔 ✧ STATISTIK GAME ROLES ✧ 〕━━━*\n\n> Skor Villain: *${Number(stats.score) || 0}*\n> Menang Villain: *${Number(stats.antagonistWins) || 0}x*\n> Menang Citizen: *${Number(stats.protagonistWins) || 0}x*\n> Menang netral: *${Number(stats.neutralWins) || 0}x*`)
         }
         if (action === 'history' || action === 'riwayat') {
             const user = loadDB().users[sender] || {}
@@ -1253,8 +1358,11 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             if (page > 1) buttons.push(['📜 Riwayat Sebelumnya', `${usedPrefix}gr history ${page - 1}`])
             if (page < pageCount) buttons.push(['Riwayat Berikutnya 📜', `${usedPrefix}gr history ${page + 1}`])
             const caption = `*━━━〔 ✧ RIWAYAT GAME ROLES · ${page}/${pageCount} ✧ 〕━━━*\n\n${text}`
-            if (buttons.length) return conn.sendButton(chat, caption, 'Avelia • Game Roles', thumbNight, buttons, m)
-            return conn.sendMessage(chat, { image: { url: thumbNight }, caption }, { quoted: m })
+            if (buttons.length) return sendGameThumbnail(conn, chat, caption, thumbNight, m, {
+                title: 'GAME ROLES',
+                buttons
+            })
+            return sendGameThumbnail(conn, chat, caption, thumbNight, m)
         }
         if (action === 'top' || action === 'leaderboard') {
             const data = loadDB().data
@@ -1273,13 +1381,9 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const lines = entries.map(({ jid, stats }, index) => {
                 const identity = getLeaderboardUserIdentity(jid, { conn, groupMetadata: metadata })
                 if (identity.mention) mentions.push(identity.mention)
-                return `> *${index + 1}.* ${identity.display}\n> Skor: *${Number(stats.score) || 0}* · Antagonis: *${Number(stats.antagonistWins) || 0}x* · Protagonis: *${Number(stats.protagonistWins) || 0}x* · Netral: *${Number(stats.neutralWins) || 0}x*`
+                return `> *${index + 1}.* ${identity.display}\n> Skor: *${Number(stats.score) || 0}* · Villain: *${Number(stats.antagonistWins) || 0}x* · Citizen: *${Number(stats.protagonistWins) || 0}x* · Netral: *${Number(stats.neutralWins) || 0}x*`
             })
-            return conn.sendMessage(chat, {
-                image: { url: thumbVoting },
-                caption: `*━━━〔 ✧ TOP 10 GAME ROLES ✧ 〕━━━*\n\n${lines.join('\n\n') || 'Belum ada skor yang tercatat.'}`,
-                mentions
-            })
+            return sendGameThumbnail(conn, chat, `*━━━〔 ✧ TOP 10 GAME ROLES ✧ 〕━━━*\n\n${lines.join('\n\n') || 'Belum ada skor yang tercatat.'}`, thumbVoting, null, { mentions })
         }
         return m.reply(status.warning(`Kategori/aksi tidak dikenal. Ketik *.gr* atau *.gr guide*.`))
     }
@@ -1405,7 +1509,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     kill: `> ✅ Target serangan berhasil dipilih: *${targetLabel}*.`,
                     capture: `> ⛓️ Target berhasil dipilih untuk ditangkap: *${targetLabel}*.`,
                     possess: `> 👻 Target berhasil dipilih untuk dirasuki: *${targetLabel}*.`,
-                    guard: `> 🛡️ Berhasil melindungi *${targetLabel}* dari serangan antagonis malam ini.`,
+                    guard: `> 🛡️ Berhasil melindungi *${targetLabel}* dari serangan Villain malam ini.`,
                     poison: `> ☠️ Berhasil memilih *${targetLabel}* untuk diracuni.`,
                     revive: `> ✨ Berhasil memilih *${targetLabel}* untuk dihidupkan kembali.`,
                     hunter: `> 🏹 Berhasil memilih *${targetLabel}* sebagai sasaran tembakan.`,
@@ -1528,7 +1632,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         if (!autoAssignCustomRoles(chat, ww)) {
             return m.reply(status.error('Role otomatis gagal dibagikan. Pastikan jumlah pemain dan room masih valid.'))
         }
-        return m.reply(status.success(`Role otomatis selesai. Role yang sudah ditetapkan tidak diubah; hanya satu jenis antagonis utama yang digunakan. Cek dengan *${gameCommandBase} list*.`))
+        return m.reply(status.success(`Role otomatis selesai. Role yang sudah ditetapkan tidak diubah; hanya satu jenis Villain utama yang digunakan. Cek dengan *${gameCommandBase} list*.`))
     }
 
     if (value === "role" && gameCategory.id === 'custom') {
@@ -1572,7 +1676,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         const validation = validateCustomRoles(proposedRoles)
         if (!validation.valid) {
             if (validation.reason === 'multiple-antagonists') {
-                return m.reply(status.warning('Mode Custom hanya boleh memakai satu jenis antagonis utama. Hapus atau ganti role antagonis yang berbeda terlebih dahulu.'))
+                return m.reply(status.warning('Mode Custom hanya boleh memakai satu jenis Villain utama. Hapus atau ganti Villain yang berbeda terlebih dahulu.'))
             }
             if (validation.reason === 'duplicate-role') {
                 return m.reply(status.warning(`Role ${roleTitles[validation.role] || validation.role} hanya boleh diberikan kepada satu pemain.`))
@@ -1808,11 +1912,11 @@ ${rosterText.trim()}
             const validation = validateCustomRoles(customRoles, { requireAntagonist: true })
             if (!validation.valid) {
                 const reason = validation.reason === 'multiple-antagonists'
-                    ? 'Hanya boleh ada satu jenis antagonis utama dalam satu game Custom.'
+                    ? 'Hanya boleh ada satu jenis Villain utama dalam satu game Custom.'
                     : validation.reason === 'duplicate-role'
                         ? `Role ${roleTitles[validation.role] || validation.role} hanya boleh dimiliki satu pemain.`
                         : validation.reason === 'missing-antagonist'
-                            ? 'Tetapkan minimal satu antagonis utama (Werewolf/Mafia/Killer/Assassin/Impostor/Alien/Parasite/Zombie/Vampire).'
+                            ? 'Tetapkan minimal satu Villain utama (Werewolf/Mafia/Killer/Assassin/Impostor/Alien/Parasite/Zombie/Vampire).'
                             : 'Kombinasi role Custom tidak valid.'
                 return m.reply(status.warning(reason))
             }
@@ -1847,6 +1951,52 @@ ${rosterText.trim()}
         const voter = ww[chat].player.find((p) => p.id === sender)
         if (!voter || voter.isdead || voter.isDummy) {
             return m.reply(status.error("Hanya pemain yang masih hidup yang memiliki hak suara."))
+        }
+        const manualInput = String(args[1] || '').trim().toLowerCase()
+        if (['skip', 'lewati', 'none', '-'].includes(manualInput)) {
+            if (voter.isvote) {
+                return m.reply(status.warning("Kamu sudah memberikan suara pada sidang hari ini."))
+            }
+            const voteCode = Object.entries(voter.voteCodes && Object.keys(voter.voteCodes).length
+                ? voter.voteCodes
+                : generateVoteCodeMap(ww[chat], voter)).find(([, choice]) => choice.type === 'vote-skip')?.[0]
+            if (!voteCode) {
+                return m.reply(status.error("Pilihan melewati voting tidak tersedia."))
+            }
+            const result = resolveSecretCodeAction(chat, sender, voteCode, ww, 'vote')
+            if (!result.ok) {
+                return m.reply(status.error("Pilihan voting gagal dicatat."))
+            }
+            await m.reply(status.success("Kamu memilih melewati voting hari ini."))
+            if (ww[chat].player.filter((player) => !player.isdead && !player.isDummy).every((player) => player.isvote)) {
+                await resolveDayVoting(conn, chat, ww)
+            }
+            return
+        }
+        const manualTarget = Number.parseInt(manualInput, 10)
+        if (Number.isInteger(manualTarget)) {
+            if (voter.isvote) {
+                return m.reply(status.warning("Kamu sudah memberikan suara pada sidang hari ini."))
+            }
+            const voteCodes = voter.voteCodes && Object.keys(voter.voteCodes).length
+                ? voter.voteCodes
+                : generateVoteCodeMap(ww[chat], voter)
+            const voteCode = Object.entries(voteCodes).find(([, choice]) =>
+                choice.type === 'vote' && Number(choice.targetNumber) === manualTarget
+            )?.[0]
+            if (!voteCode) {
+                return m.reply(status.error("Nomor target voting tidak valid atau pemain sudah gugur."))
+            }
+            const result = resolveSecretCodeAction(chat, sender, voteCode, ww, 'vote')
+            if (!result.ok) {
+                return m.reply(status.error("Suara gagal dicatat. Coba lagi dengan tombol voting atau kode rahasia."))
+            }
+            const target = ww[chat].player.find((player) => player.number === manualTarget)
+            await m.reply(status.success(`Suaramu berhasil diberikan kepada ${getDisplayPlayerLabel(target, conn)}.`))
+            if (ww[chat].player.filter((player) => !player.isdead && !player.isDummy).every((player) => player.isvote)) {
+                await resolveDayVoting(conn, chat, ww)
+            }
+            return
         }
         return sendPrivateGroupText(
             conn,
@@ -1954,9 +2104,7 @@ ${rosterText.trim()}
                 return `> (${toSmallNum(player.number)}) ${getPlayerMentionLabel(player, conn)}\n> Role: *${role.title} ${role.emoji}*`
             }).join('\n')
             try {
-                await conn.sendMessage(chat, {
-                    image: { url: thumbExecution },
-                    caption: `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`,
+                await sendGameThumbnail(conn, chat, `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`, thumbExecution, null, {
                     mentions: getPlayerMentions(players)
                 })
             } catch (error) {
@@ -1984,9 +2132,7 @@ ${rosterText.trim()}
         })
         text += `*━━━━━━━━━━━━━━*\n\n🟢 Hidup  ·  🔴 Mati\n> _Pemain gugur tidak dapat beraksi._`
 
-        await conn.sendMessage(chat, {
-            image: { url: thumbNight },
-            caption: text.trim(),
+        await sendGameThumbnail(conn, chat, text.trim(), thumbNight, null, {
             mentions: getPlayerMentions(ww[chat].player)
         })
 
@@ -1997,10 +2143,7 @@ ${rosterText.trim()}
 *━━━〔 ✦ PRIVASI AKSI 〕━━━*
 > Kartu role dan tombol malam dikirim di grup melalui dual-stanza.
 > Aksi dan hasil pribadi hanya terlihat oleh pemain terkait.`
-        return conn.sendMessage(chat, {
-            image: { url: getGameCategoryImage(game) },
-            caption: infoText
-        }, { quoted: m })
+        return sendGameThumbnail(conn, chat, infoText, getGameCategoryImage(game), m)
 
     } else if (value === "guide") {
         const game = getGameCategory(ww[chat]?.category === gameCategory.id ? ww[chat].category : gameCategory.id)
@@ -2050,16 +2193,25 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
                 ? `\n\n${formatRoleGuide(selectedRole, game, usedPrefix || '.')}`
                 : ''
             const roleImage = getRoleImage(selectedRole, game.location)
-            return conn.sendMessage(chat, {
-                image: { url: roleImage || thumbNight },
-                caption: `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
-            }, { quoted: m })
+            const detailCaption = `*━━━〔 ✦ DETAIL ROLE ${formatRoleTitle(selectedRole).toUpperCase()} ✦ 〕━━━*\n\n${details}${guide}`
+            return sendGameThumbnail(conn, chat, detailCaption, roleImage || thumbNight, m, {
+                title: `✦ ${formatRoleTitle(selectedRole).toUpperCase()} ✦`,
+                subtitle: game.name,
+                buttons: [
+                    ['🎭 Daftar Role', `${gameCommandBase} role`],
+                    ['📖 Panduan Game Roles', `${gameCommandBase} guide`]
+                ]
+            })
         }
         const roleSections = formatRoleList(game, factionFilter)
         const factionTitle = factionFilter
-            ? ` · ${factionFilter === 'antagonist' ? 'ANTAGONIS' : factionFilter === 'protagonist' ? 'PROTAGONIS' : 'NETRAL'}`
+            ? ` · ${factionFilter === 'antagonist' ? 'VILLAIN' : factionFilter === 'protagonist' ? 'CITIZEN' : 'NETRAL'}`
             : ''
-        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n> Filter: *${gameCommandBase} role antagonis*, *protagonis*, atau *netral*`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
+        return sendGameThumbnail(conn, chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n        > Filter: *${gameCommandBase} role villain*, *citizen*, atau *netral*`, thumbNight, m, {
+            title: `${game.name} ROLE`,
+            footer: `Avelia • ${game.name} Role`,
+            buttons: roleFactionButtons(gameCommandBase)
+        })
 
     } else if (isGameRolesCommand) {
         return sendGameRolesMenu(conn, chat, usedPrefix, m)
