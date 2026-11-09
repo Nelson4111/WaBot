@@ -524,13 +524,11 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
             : getRoleShortEffect(role, game)
 
         const secretCodes = p.secretCodes || {}
-        const actionRows = Object.keys(secretCodes).map((code) => ({
+        const actionRows = Object.entries(secretCodes).map(([code, choice]) => ({
             title: `🔐 ${code}`,
+            description: describeNightChoice(code, choice, room, conn).replace(/^> 🔒 \*[^*]+\* — /, ''),
             id: `${room.commandBase || '.ww'} action ${chat} ${code}`
         }))
-        const actionDescriptions = Object.entries(secretCodes)
-            .map(([code, choice]) => describeNightChoice(code, choice, room, conn))
-            .join('\n')
         const cipherAntagonists = role === 'cipher' && room.category !== 'mayhem'
             ? room.player.filter((player) => !player.isdead && !player.isDummy && isAntagonistRole(room.category, player.role))
             : []
@@ -560,13 +558,13 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
 *━━━━━━━━━━━━━━*
 
 *━━━〔 🔐 ᴋᴏᴅᴇ ᴀᴋsɪ ʀᴀʜᴀsɪᴀ 〕━━━*
-${actionDescriptions}
+> Pilih aksi melalui daftar tombol di bawah.
 ${cipherIntro}
 ${fixerContract}
 *━━━━━━━━━━━━━━*
 
 *━━━〔 ✦ ɪɴꜱᴛʀᴜᴋꜱɪ ᴀᴋsɪ 〕━━━*
-> ⟡ Tekan tombol 🔐 berkode di bawah untuk bertindak.
+> ⟡ Tekan daftar 🔐 di bawah, lalu pilih aksi dan target yang sesuai.
 > ⟡ Kode dan artinya hanya terlihat olehmu.
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
@@ -579,7 +577,19 @@ ${fixerContract}
             subtitle: 'Secret Night Phase',
             footer: `Avelia • ${game.name} Secret Night Phase`,
             mentions: getPlayerMentions(privateMentions),
-            buttons: actionRows.map((action) => [action.title, action.id])
+            listButton: {
+                id: 'game_roles_night_action',
+                label: '🔐 Pilih Aksi Malam',
+                title: 'PILIH AKSI MALAM',
+                sections: [{
+                    title: 'Aksi yang tersedia',
+                    rows: actionRows.map((action) => ({
+                        title: action.title,
+                        description: action.description,
+                        id: action.id
+                    }))
+                }]
+            }
         })
         playerMessages.set(p.id, built.message)
     }
@@ -715,11 +725,11 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
 
 *━━━〔 🏹 ᴘɪʟɪʜ ᴀᴋsɪ ʜᴜɴᴛᴇʀ 〕━━━*
 > ⟡ Pemain : *${getDisplayPlayerLabel(hunter, conn)}*
-> ⟡ Pilih kode rahasia pada tombol atau ketik *${room.commandBase || '.ww'} <kode>*
+> ⟡ Pilih target dari daftar tombol atau ketik *${room.commandBase || '.ww'} <kode>*
 *━━━━━━━━━━━━━━*
  
 *━━━〔 🔐 ᴋᴏᴅᴇ ᴀᴋsɪ ʀᴀʜᴀsɪᴀ 〕━━━*
-${actionRows.map((row) => `> 🔒 *${row.title.slice(3)}* — ${row.description}`).join('\n')}
+> Pilih kode dan target melalui daftar tombol di bawah.
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
 > _Tembak salah satu pemain atau pilih untuk tidak menembak. Nasib ${game.name} ada di tanganmu._`
@@ -727,7 +737,19 @@ ${actionRows.map((row) => `> 🔒 *${row.title.slice(3)}* — ${row.description}
         title: `${game.name} • HUNTER`,
         subtitle: 'Tembakan terakhir',
         footer: `Avelia • ${game.name} Hunter Reaction`,
-        buttons: actionRows.map((action) => [action.title, action.id])
+        listButton: {
+            id: 'game_roles_hunter_action',
+            label: '🏹 Pilih Aksi Hunter',
+            title: 'AKSI TERAKHIR HUNTER',
+            sections: [{
+                title: 'Pilihan tembakan',
+                rows: actionRows.map((action) => ({
+                    title: action.title,
+                    description: action.description,
+                    id: action.id
+                }))
+            }]
+        }
     })
     const spectatorMessage = await buildGameRolesHeaderMessage(
         conn,
@@ -906,20 +928,33 @@ ${runoffNotice}
                 : null
             return {
                 code,
-                label: target
-                    ? `> (${toSmallNum(target.number)}) 🔒 ${code} — Vote ${getDisplayPlayerLabel(target, conn)}`
-                    : `> (—) 🔒 ${code} — Lewati voting`,
+                title: target ? `Pemain ${toSmallNum(target.number)}` : 'Lewati voting',
+                description: target
+                    ? `${getDisplayPlayerLabel(target, conn)} · Kode ${code}`
+                    : `Kode ${code}`,
                 id: `${room.commandBase || '.ww'} ${code}`
             }
         })
         if (player.isAiCitizen) continue
-        const privateVotingCard = `${votingCard}\n\n*━━━〔 🔐 KODE VOTING RAHASIA 〕━━━*\n${voteRows.map((row) => row.label).join('\n')}`
+        const privateVotingCard = `${votingCard}\n\n*━━━〔 🔐 PILIHAN VOTING 〕━━━*\n> Gunakan daftar di bawah untuk melihat semua kandidat dan kode rahasia.\n> Kode tetap bisa diketik: *${room.commandBase || '.ww'} <kode>*`
         const built = await buildGameRolesHeaderMessage(conn, chat, privateVotingCard, thumbVoting, {
             title: `${game.name} • VOTING`,
             subtitle: 'Kode voting rahasia',
             footer: `Avelia • ${game.name} Secret Voting`,
             mentions: getPlayerMentions(livingPlayers),
-            buttons: voteRows.map((row) => [`🔐 ${row.code}`, row.id])
+            listButton: {
+                id: 'game_roles_vote',
+                label: '🔐 Pilih Vote',
+                title: 'PILIH TARGET VOTING',
+                sections: [{
+                    title: 'Kandidat dan kode',
+                    rows: voteRows.map((row) => ({
+                        title: row.title,
+                        description: row.description,
+                        id: row.id
+                    }))
+                }]
+            }
         })
         playerMessages.set(player.id, built.message)
     }
