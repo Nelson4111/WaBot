@@ -1101,7 +1101,7 @@ async function processMessage(m, chatUpdate) {
                         if (e.name && !isReachoutRestricted && !isConnClosed && (this.ws?.isOpen || conn.ws?.isOpen)) {
                             const errorReport = `*🗂️ Plugin:* ${m.plugin}\n*👤 Sender:* ${m.sender}\n*💬 Chat:* ${m.chat}\n*💻 Command:* ${usedPrefix}${command} ${args.join(' ')}\n📄 *Error Logs:*\n\n\`\`\`${text}\`\`\``.trim()
                             const reportTargets = new Set(
-                                global.owner
+                                (Array.isArray(global.owner) ? global.owner : [])
                                     .filter(([number, _, isDeveloper]) => isDeveloper && number)
                                     .map(([number]) => `${number}`.replace(/\D/g, '') + '@s.whatsapp.net')
                             )
@@ -1110,8 +1110,14 @@ async function processMessage(m, chatUpdate) {
                                 try {
                                     const data = (await conn.onWhatsApp(jid.split('@')[0]))[0] || {}
                                     const reportJid = typeof data.jid === 'string' ? data.jid : jid
-                                    if (data.exists) m.reply(errorReport, reportJid).catch(() => {})
-                                } catch {}
+                                    if (!data.exists) {
+                                        console.warn(`[ERROR REPORT SKIPPED] Recipient is not registered on WhatsApp: ${jid}`)
+                                        continue
+                                    }
+                                    await conn.sendMessage(reportJid, { text: errorReport })
+                                } catch (reportError) {
+                                    console.error(`[ERROR REPORT DELIVERY FAILED] ${jid}:`, reportError)
+                                }
                             }
                         }
                         
