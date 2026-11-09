@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import {
   ANTAGONIST_STORIES,
   CIPHER_AI_MESSAGES,
@@ -13,11 +14,15 @@ import {
   ROLE_DATA,
   ROLE_GUIDES,
   ROLE_DEATH_STORIES,
+  SCENE_IMAGES,
   VAMPIRE_INFECTION_STORIES,
   ZOMBIE_INFECTION_STORIES,
   WARGA_AI_MESSAGES,
   getGameCategory,
   getRoleImage,
+  getRoleImagePaths,
+  getSceneImage,
+  getSceneImagePaths,
   getRoleFaction,
   getRandomHideActions,
   getSorcererFaction,
@@ -64,12 +69,17 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(isAntagonistRole('vampire', 'zombie'), false)
   assert.equal(ROLE_DATA.zombie.title, 'Zombie')
   assert.equal(ROLE_DATA.vampire.title, 'Vampire')
-  assert.ok(ROLE_IMAGES.warga.village.includes(getRoleImage('warga', 'Desa Berkabut')))
-  assert.ok(ROLE_IMAGES.warga.city.includes(getRoleImage('warga', 'Distrik Pusat')))
-  assert.ok(ROLE_IMAGES.warga.space.includes(getRoleImage('warga', 'Pesawat Luar Angkasa')))
-  assert.equal(getRoleImage('mayor', 'Distrik Pusat'), 'https://c.termai.cc/i142/K3PH.png')
-  assert.equal(getRoleImage('mayor', 'Kota Tua'), 'https://c.termai.cc/i194/pj3wTj.png')
-  assert.ok(Object.keys(ROLE_DATA).every((role) => getRoleImage(role, 'Desa Berkabut')))
+  assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Desa Berkabut')))
+  assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Distrik Pusat')))
+  assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Pesawat Luar Angkasa')))
+  assert.ok(Buffer.isBuffer(getRoleImage('mayor', 'Distrik Pusat')))
+  assert.ok(ROLE_IMAGES.mayor.district[0].endsWith('IMG-20261108-WA01599.jpg'))
+  assert.ok(Object.keys(ROLE_DATA).every((role) => Buffer.isBuffer(getRoleImage(role, 'Desa Berkabut'))))
+  assert.ok(getRoleImagePaths().every((imagePath) => fs.existsSync(imagePath)))
+  assert.ok(getSceneImagePaths().every((imagePath) => fs.existsSync(imagePath)))
+  assert.ok(Object.keys(SCENE_IMAGES).every((scene) => Buffer.isBuffer(getSceneImage(scene))))
+  assert.equal(getSceneImagePaths().length, 17)
+  assert.equal(SCENE_IMAGES['eksekusi benar'].length, 1)
   assert.equal(ROLE_IMAGES.werewolf.length, 3)
   assert.equal(ZOMBIE_INFECTION_STORIES.length, 5)
   assert.equal(VAMPIRE_INFECTION_STORIES.length, 5)
