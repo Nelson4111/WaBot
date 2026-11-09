@@ -20,6 +20,7 @@ import {
   ZOMBIE_INFECTION_STORIES,
   WARGA_AI_MESSAGES,
   getGameCategory,
+  getImagePath,
   getRoleImage,
   getRoleImagePaths,
   getSceneImage,
@@ -71,6 +72,7 @@ test('game categories resolve aliases and alternative antagonists', () => {
   assert.equal(ROLE_DATA.zombie.title, 'Zombie')
   assert.equal(ROLE_DATA.vampire.title, 'Vampire')
   assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Desa Berkabut')))
+  assert.ok(getRoleImagePaths().includes(getImagePath(getRoleImage('warga', 'Desa Berkabut'))))
   assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Distrik Pusat')))
   assert.ok(Buffer.isBuffer(getRoleImage('warga', 'Pesawat Luar Angkasa')))
   assert.ok(Buffer.isBuffer(getRoleImage('mayor', 'Distrik Pusat')))
