@@ -39,6 +39,37 @@ test('Game Roles headers send directly through ButtonV2 and preserve quick reply
   assert.deepEqual(buttons, options.buttons)
 })
 
+test('Game Roles headers without buttons send text instead of an invalid ButtonV2 card', async () => {
+  const sent = { id: 'morning-sent' }
+  const message = {
+    text: 'Fajar telah tiba',
+    mentions: ['player@s.whatsapp.net']
+  }
+  const quoted = { quoted: { key: { id: 'quoted-message' } } }
+  const conn = {
+    ButtonV2() {
+      throw new Error('ButtonV2 should not be used without buttons')
+    },
+    sendMessage(jid, content, options) {
+      assert.equal(jid, 'game@g.us')
+      assert.deepEqual(content, message)
+      assert.deepEqual(options, quoted)
+      return sent
+    }
+  }
+
+  const result = await sendGameRolesHeader(
+    conn,
+    'game@g.us',
+    message.text,
+    Buffer.from('scene'),
+    quoted.quoted,
+    { mentions: message.mentions }
+  )
+
+  assert.equal(result, sent)
+})
+
 test('Game Roles never falls back to sending a phase image as a standalone photo', async () => {
   let sendMessageCalled = false
   const conn = {
