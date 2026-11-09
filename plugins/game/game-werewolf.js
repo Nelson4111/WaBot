@@ -37,7 +37,8 @@ import {
     pagii
 } from '../../lib/werewolf.js'
 import { Button } from '@rexxhayanasi/elaina-baileys'
-import { toSmallNum, status } from '../../lib/style.js'
+import { getMenuThumbnail, toSmallNum, status } from '../../lib/style.js'
+import { sendGameRolesHeader } from '../../lib/game-roles-message.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getImagePath, getRoleFaction, getRoleImage, getRoleImagePaths, getSceneImage, getSceneImagePaths, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
@@ -48,42 +49,7 @@ const thumbNight = getSceneImage('aksi-malam')
 const thumbMorning = getSceneImage('fajar')
 const thumbVoting = getSceneImage('vote')
 const thumbExecution = getSceneImage('eksekusi benar')
-const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) => {
-    const buttons = options.buttons || []
-    const hasButtons = buttons.length > 0
-    const mentions = options.mentions?.length ? { mentions: options.mentions } : {}
-    const imagePath = getImagePath(image)
-    const imageSource = imagePath || image
-
-    if (hasButtons && typeof conn.sendButtonV2 === 'function') {
-        try {
-            return await conn.sendButtonV2(jid, {
-                title: options.title || 'GAME ROLES',
-                subtitle: options.subtitle || '',
-                text,
-                footer: options.footer || 'Avelia • Game Roles',
-                buffer: imageSource,
-                buttons,
-                contextInfo: options.contextInfo || (options.mentions?.length ? { mentionedJid: options.mentions } : undefined),
-                noLocationHeader: false
-            }, quoted)
-        } catch (error) {
-            console.warn(`[Game Roles] Thumbnail send failed: ${error.message}`)
-        }
-    }
-
-    if (hasButtons && typeof conn.sendButton === 'function') {
-        return conn.sendButton(jid, text, options.footer || 'Avelia • Game Roles', imageSource, buttons, quoted)
-    }
-    if (!image) {
-        return conn.sendMessage(jid, { text, ...mentions }, quoted ? { quoted } : {})
-    }
-    return conn.sendMessage(jid, {
-        image: typeof imageSource === 'string' ? { url: imageSource } : imageSource,
-        caption: text,
-        ...mentions
-    }, quoted ? { quoted } : {})
-}
+const sendGameThumbnail = sendGameRolesHeader
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
 
@@ -610,7 +576,10 @@ ${fixerContract}
         const btn = new Button(conn)
         btn.setBody(bodyCard)
         const roleImage = getRoleImage(role, game.location)
-        if (roleImage) btn.setImage(roleImage)
+        const roleThumbnail = getImagePath(roleImage)
+            ? await getMenuThumbnail(getImagePath(roleImage))
+            : roleImage
+        if (roleThumbnail) btn.setImage(roleThumbnail)
         const privateMentions = [...cipherAntagonists, ...(fixerTarget ? [fixerTarget] : [])]
         if (privateMentions.length) {
             btn.setContextInfo({ mentionedJid: getPlayerMentions(privateMentions) })
@@ -764,7 +733,8 @@ ${actionRows.map((row) => `> 🔒 *${row.title.slice(3)}* — ${row.description}
     const btn = new Button(conn)
     btn.setBody(hunterCard)
     btn.setFooter(`Avelia • ${game.name} Hunter Reaction`)
-    btn.setImage(thumbExecution)
+    const executionThumbnail = await getMenuThumbnail(getImagePath(thumbExecution))
+    btn.setImage(executionThumbnail || thumbExecution)
     for (const action of actionRows) {
         btn.addButton('quick_reply', JSON.stringify({
             display_text: action.title,
@@ -953,7 +923,8 @@ ${runoffNotice}
         const button = new Button(conn)
         button.setBody(privateVotingCard)
         button.setFooter(`Avelia • ${game.name} Secret Voting`)
-        button.setImage(thumbVoting)
+        const votingThumbnail = await getMenuThumbnail(getImagePath(thumbVoting))
+        button.setImage(votingThumbnail || thumbVoting)
         button.setContextInfo({ mentionedJid: getPlayerMentions(livingPlayers) })
         voteRows.forEach((row) => {
             button.addButton('quick_reply', JSON.stringify({
