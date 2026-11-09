@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import {
     emoji_role,
     sesi,
@@ -39,14 +40,14 @@ import { Button } from '@rexxhayanasi/elaina-baileys'
 import { toSmallNum, status } from '../../lib/style.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, ROLE_IMAGES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
+import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, getRoleImagePaths, getSceneImage, getSceneImagePaths, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
 import { getLeaderboardUserIdentity } from '../../lib/leaderboardPrivacy.js'
 import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib/dual-group-message.js'
 
-const thumbNight = "https://user-images.githubusercontent.com/72728486/235316834-f9f84ba0-8df3-4444-81d8-db5270995e6d.jpg"
-const thumbMorning = "https://user-images.githubusercontent.com/72728486/235344562-4677d2ad-48ee-419d-883f-e0ca9ba1c7b8.jpg"
-const thumbVoting = "https://user-images.githubusercontent.com/72728486/235344861-acdba7d1-8fce-41b8-adf6-337c818cda2b.jpg"
-const thumbExecution = "https://user-images.githubusercontent.com/72728486/235354619-6ad1cabd-216c-4c7c-b7c2-3a564836653a.jpg"
+const thumbNight = getSceneImage('aksi-malam')
+const thumbMorning = getSceneImage('fajar')
+const thumbVoting = getSceneImage('vote')
+const thumbExecution = getSceneImage('eksekusi benar')
 const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) => {
     if (typeof conn.sendButtonV2 === 'function') {
         try {
@@ -55,7 +56,7 @@ const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) =
                 subtitle: options.subtitle || '',
                 text,
                 footer: options.footer || 'Avelia • Game Roles',
-                buffer: image,
+                image,
                 buttons: options.buttons || [],
                 contextInfo: options.contextInfo || (options.mentions?.length ? { mentionedJid: options.mentions } : undefined),
                 noLocationHeader: false
@@ -64,10 +65,10 @@ const sendGameThumbnail = async (conn, jid, text, image, quoted, options = {}) =
             console.warn(`[Game Roles] Thumbnail send failed: ${error.message}`)
         }
     }
-    return conn.sendMessage(jid, {
-        text,
-        ...(options.mentions?.length ? { mentions: options.mentions } : {})
-    }, { quoted })
+    const message = image
+        ? { image, caption: text, ...(options.mentions?.length ? { mentions: options.mentions } : {}) }
+        : { text, ...(options.mentions?.length ? { mentions: options.mentions } : {}) }
+    return conn.sendMessage(jid, message, { quoted })
 }
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
@@ -93,7 +94,10 @@ const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
         ['🎭 Daftar Role', `${usedPrefix}gr role`],
         ['📖 Panduan Bermain', `${usedPrefix}gr guide`]
     ]
-    return conn.sendButton(chat, menuText, 'Avelia • Game Roles', thumbNight, menuButtons, m)
+    return sendGameThumbnail(conn, chat, menuText, thumbNight, m, {
+        buttons: menuButtons,
+        title: 'GAME ROLES'
+    })
 }
 
 const roleEmojis = Object.fromEntries(Object.entries(ROLE_DATA).map(([role, data]) => [role, data.emoji]))
@@ -1088,7 +1092,10 @@ const resolveDayVoting = async (conn, chat, ww) => {
 ━━━━━━━━━━━━━━
 > 🌙 _Senja telah usai. Bersiaplah menghadapi malam yang mencekam..._`
 
-        await sendGameThumbnail(conn, chat, execText, thumbExecution, null, {
+        const executionScene = !killed.pendingExecution && isAntagonistRole(room.category, killed.role)
+            ? getSceneImage('eksekusi benar')
+            : getSceneImage('eksekusi salah')
+        await sendGameThumbnail(conn, chat, execText, executionScene || thumbExecution, null, {
             mentions: getPlayerMentions([killed])
         })
 
@@ -1135,40 +1142,28 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         if (pictAction === 'pict') {
             if (!hasOwnerOrCoOwnerAccess()) return
 
-            const flattenRoleImages = (value) => {
-                if (Array.isArray(value)) return value
-                if (!value || typeof value !== 'object') return []
-                return Object.values(value).flatMap(flattenRoleImages)
-            }
-            const urls = [...new Set(Object.values(ROLE_IMAGES).flatMap(flattenRoleImages))]
-            for (let index = 0; index < urls.length; index++) {
+            const imagePaths = [...new Set(getRoleImagePaths())]
+            for (let index = 0; index < imagePaths.length; index++) {
                 try {
-                    await conn.sendMessage(chat, { image: { url: urls[index] } })
+                    await conn.sendMessage(chat, { image: fs.readFileSync(imagePaths[index]) })
                 } catch (error) {
-                    console.warn(`[Game Roles] Failed to send asset picture ${index + 1}/${urls.length}: ${error.message}`)
+                    console.warn(`[Game Roles] Failed to send asset picture ${index + 1}/${imagePaths.length}: ${error.message}`)
                 }
-                if (index < urls.length - 1) await wait(3000)
+                if (index < imagePaths.length - 1) await wait(3000)
             }
             return
         }
         if (pictAction === 'scene') {
             if (!hasOwnerOrCoOwnerAccess()) return
 
-            const sceneUrls = [
-                thumbNight,
-                thumbMorning,
-                thumbVoting,
-                thumbExecution,
-                'https://user-images.githubusercontent.com/72728486/235365156-cfab66ce-38b2-4bc7-90d7-7756fc320e06.jpg',
-                'https://user-images.githubusercontent.com/72728486/235365148-35b8def7-c1a2-451d-a2f2-6b6a911b37db.jpg'
-            ]
-            for (let index = 0; index < sceneUrls.length; index++) {
+            const scenePaths = getSceneImagePaths()
+            for (let index = 0; index < scenePaths.length; index++) {
                 try {
-                    await conn.sendMessage(chat, { image: { url: sceneUrls[index] } })
+                    await conn.sendMessage(chat, { image: fs.readFileSync(scenePaths[index]) })
                 } catch (error) {
-                    console.warn(`[Game Roles] Failed to send scene picture ${index + 1}/${sceneUrls.length}: ${error.message}`)
+                    console.warn(`[Game Roles] Failed to send scene picture ${index + 1}/${scenePaths.length}: ${error.message}`)
                 }
-                if (index < sceneUrls.length - 1) await wait(3000)
+                if (index < scenePaths.length - 1) await wait(3000)
             }
             return
         }
@@ -1233,7 +1228,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
         }
         if (action === 'list' || action === 'category' || action === 'kategori') {
             const gameList = buildGameCategoryList(usedPrefix, args[1])
-            return conn.sendButton(chat, gameList.text, `Avelia • Pilihan Game ${gameList.page}/${gameList.pageCount}`, thumbNight, gameList.buttons, m)
+            return sendGameThumbnail(conn, chat, gameList.text, thumbNight, m, {
+                title: `PILIHAN GAME ${gameList.page}/${gameList.pageCount}`,
+                buttons: gameList.buttons
+            })
         }
         if (action === 'info') {
             const category = normalizeGameCategory(args[1])
@@ -1303,7 +1301,7 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                             subtitle: gameCategory.name,
                             text: detailCaption,
                             footer: 'Avelia • Game Roles',
-                            buffer: roleImage || thumbNight,
+                            image: roleImage || thumbNight,
                             noLocationHeader: false,
                             buttons: [
                                 ['🎭 Daftar Role', `${usedPrefix}gr role`],
@@ -1315,16 +1313,19 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
                     }
                 }
                 return conn.sendMessage(chat, {
-                    text: detailCaption
+                    image: roleImage || thumbNight,
+                    caption: detailCaption
                 }, { quoted: m })
             }
             const roleSections = formatRoleList(gameCategory, factionFilter)
             const factionTitle = factionFilter
                 ? ` · ${factionFilter === 'antagonist' ? 'VILLAIN' : factionFilter === 'protagonist' ? 'CITIZEN' : 'NETRAL'}`
                 : ''
-            return conn.sendButton(chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n            > Filter: *${usedPrefix}gr role villain*, *citizen*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, 'Avelia • Daftar Role', thumbNight, [
-                ...roleFactionButtons(`${usedPrefix}gr`)
-            ], m)
+            return sendGameThumbnail(conn, chat, `*━━━〔 🎭 ROLE & EFEK${factionTitle} 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${usedPrefix}gr role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap, contoh: *${usedPrefix}gr role sorcerer guide*\n\n            > Filter: *${usedPrefix}gr role villain*, *citizen*, atau *netral*\n> Custom: *${usedPrefix}custom role @pemain <nama/nomor>*\n> Warga AI: *${usedPrefix}custom role <nomor pemain> <nama/nomor>*`, thumbNight, m, {
+                title: 'DAFTAR ROLE',
+                footer: 'Avelia • Daftar Role',
+                buttons: roleFactionButtons(`${usedPrefix}gr`)
+            })
         }
         if (action === 'guide') {
             return m.reply(`*━━━〔 ✧ PANDUAN GAME ROLES ✧ 〕━━━*\n\n> 1. Pilih tema lewat *${usedPrefix}gr list*, misalnya Werewolf, Alien, Vigilante, atau Mayhem.\n\n> 2. Buat room dengan command tema, contoh *${usedPrefix}mafia create 10k*.\n\n> 3. Mode Custom: *${usedPrefix}custom autorole* untuk role acak, *${usedPrefix}custom role @pemain <role/nomor>* untuk pemain manusia, dan *${usedPrefix}custom role <nomor pemain> <role/nomor>* untuk warga AI. Periksa pilihan dengan *${usedPrefix}custom list*. Hanya satu jenis Villain utama dan tiap role khusus hanya untuk satu pemain.\n\n> 4. Peserta masuk memakai *${usedPrefix}mafia join*; taruhan ditahan saat bergabung.\n\n> 5. Owner room memulai dengan *${usedPrefix}mafia start*.\n\n> 6. Kartu aksi dan informasi rahasia dikirim hanya kepada pemain terkait. Anggota lain hanya melihat teks pengunci.\n\n> 7. Lihat riwayat dengan *${usedPrefix}mafia log*. Voting dan aksi skip atau sembunyi tidak dicatat.\n\n> 8. Keluar dari room bertaruhan perlu konfirmasi dan taruhan tetap di pot. Menghapus room mengembalikan taruhan.\n\n> 9. Gunakan *${usedPrefix}gr me*, *${usedPrefix}gr history*, dan *${usedPrefix}gr top* untuk statistik.`)
@@ -1357,7 +1358,10 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             if (page > 1) buttons.push(['📜 Riwayat Sebelumnya', `${usedPrefix}gr history ${page - 1}`])
             if (page < pageCount) buttons.push(['Riwayat Berikutnya 📜', `${usedPrefix}gr history ${page + 1}`])
             const caption = `*━━━〔 ✧ RIWAYAT GAME ROLES · ${page}/${pageCount} ✧ 〕━━━*\n\n${text}`
-            if (buttons.length) return conn.sendButton(chat, caption, 'Avelia • Game Roles', thumbNight, buttons, m)
+            if (buttons.length) return sendGameThumbnail(conn, chat, caption, thumbNight, m, {
+                title: 'GAME ROLES',
+                buttons
+            })
             return sendGameThumbnail(conn, chat, caption, thumbNight, m)
         }
         if (action === 'top' || action === 'leaderboard') {
@@ -2197,7 +2201,7 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
                         subtitle: game.name,
                         text: detailCaption,
                         footer: 'Avelia • Game Roles',
-                        buffer: roleImage || thumbNight,
+                        image: roleImage || thumbNight,
                         noLocationHeader: false,
                         buttons: [
                             ['🎭 Daftar Role', `${gameCommandBase} role`],
@@ -2209,14 +2213,19 @@ ${game.id === 'custom' ? `> Atur role dengan *${gameCommandBase} role @pemain <r
                 }
             }
             return conn.sendMessage(chat, {
-                text: detailCaption
+                image: roleImage || thumbNight,
+                caption: detailCaption
             }, { quoted: m })
         }
         const roleSections = formatRoleList(game, factionFilter)
         const factionTitle = factionFilter
             ? ` · ${factionFilter === 'antagonist' ? 'VILLAIN' : factionFilter === 'protagonist' ? 'CITIZEN' : 'NETRAL'}`
             : ''
-        return conn.sendButton(chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n        > Filter: *${gameCommandBase} role villain*, *citizen*, atau *netral*`, `Avelia • ${game.name} Role`, thumbNight, roleFactionButtons(gameCommandBase), m)
+        return sendGameThumbnail(conn, chat, `*━━━〔 ✦ ROLE & EFEK ${game.name.toUpperCase()}${factionTitle} ✦ 〕━━━*\n\n${roleSections}\n\n*━━━━━━━━━━━━━━*\n> Detail role: *${gameCommandBase} role <nama/nomor>*\n> Tambahkan *guide* untuk panduan lengkap.\n\n        > Filter: *${gameCommandBase} role villain*, *citizen*, atau *netral*`, thumbNight, m, {
+            title: `${game.name} ROLE`,
+            footer: `Avelia • ${game.name} Role`,
+            buttons: roleFactionButtons(gameCommandBase)
+        })
 
     } else if (isGameRolesCommand) {
         return sendGameRolesMenu(conn, chat, usedPrefix, m)
