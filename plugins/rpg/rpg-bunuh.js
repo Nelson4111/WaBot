@@ -1,4 +1,4 @@
-import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { addRpgMoney, maxRpgMoney, minRpgMoney, multiplyRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isAfk } from '../../lib/afkHelper.js'
 import { computeCrimeScore } from '../../lib/crimeHelper.js'
@@ -159,7 +159,13 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   // SUKSES
   let persen = Math.floor(Math.random() * 16) + 5 // 5% - 20%
-  let hasil = Math.min(uangTarget, scaleDifficultyCrimeLoss(target, scaleDifficultyIncome(userRPG, Math.max(1000, Math.floor(uangTarget * (persen / 100))))))
+  let hasil = minRpgMoney(
+    uangTarget,
+    scaleDifficultyCrimeLoss(
+      target,
+      scaleDifficultyIncome(userRPG, maxRpgMoney(1000, multiplyRpgMoney(uangTarget, persen / 100)))
+    )
+  )
 
   const targetRevived = target.darah !== undefined
     ? reviveBloodline(target, Number(target.maxDarah) || 100)
