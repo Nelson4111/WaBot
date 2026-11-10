@@ -168,6 +168,43 @@ test('Sorcerer remains an antagonist after reviving someone with no other antago
   assert.equal(getWerewolfPlayerFaction(room, sorcerer), 'antagonist')
 })
 
+test('Sorcerer revival is announced to everyone at dawn', () => {
+  const room = {
+    room: 'sorcerer-revive-dawn',
+    category: 'werewolf',
+    day: 2,
+    player: [
+      {
+        id: 'sorcerer',
+        number: 1,
+        role: 'sorcerer',
+        isdead: false,
+        nightDone: true,
+        lastNightAction: { type: 'revive', targetNumber: 2 }
+      },
+      {
+        id: 'revived-player',
+        number: 2,
+        role: 'warga',
+        displayName: 'Raka',
+        isAiCitizen: true,
+        isdead: true,
+        lastDeathCause: 'werewolf'
+      }
+    ],
+    dead: [2],
+    nightActions: {
+      sorcerer: { type: 'revive', targetNumber: 2 }
+    },
+    reviveTarget: 2
+  }
+
+  assert.equal(resolveNightActions(room.room, { [room.room]: room }), true)
+  assert.deepEqual(room.revivedTonight, [2])
+  assert.equal(room.player[1].isdead, false)
+  assert.match(pagii(room), /Raka telah dibangkitkan kembali oleh Sorcerer/)
+})
+
 test('Voting out a neutral Sorcerer does not grant it a neutral victory', () => {
   const sorcerer = { id: 'sorcerer', number: 1, role: 'sorcerer', isdead: false, vote: 2 }
   const citizen = { id: 'citizen', number: 2, role: 'warga', isdead: false, vote: 0 }
