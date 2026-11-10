@@ -1,5 +1,5 @@
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
-import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { getDifficultyProfile, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { claimPremiumDailyLimit, getJakartaDate } from '../../lib/userLimit.js'
 import { isPremiumAccount, PREMIUM_DAILY_MIN_DONATION, PREMIUM_DAILY_REWARD } from '../../lib/rpgPremium.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
@@ -219,18 +219,34 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
     else delete user.rpg.dailyRestreakOfferDate
   }
 
-  let hadiah = scaleDifficultyIncome(rpgUser, 50000)
+  const dailyBase = 50000
+  const dailyDifficultyReward = multiplyRpgMoney(dailyBase, getDifficultyProfile(rpgUser).income)
+  const hadiah = scaleDifficultyIncome(rpgUser, dailyBase)
+  const dailyDifficultyAdjustment = subtractRpgMoney(dailyDifficultyReward, dailyBase)
+  const dailyAbilityAdjustment = subtractRpgMoney(hadiah, dailyDifficultyReward)
   let weekly = 0
+  let weeklyDifficultyAdjustment = 0
+  let weeklyAbilityAdjustment = 0
   let monthly = 0
+  let monthlyDifficultyAdjustment = 0
+  let monthlyAbilityAdjustment = 0
   let premiumDailyReward = 0
 
   wdb.money[senderKey] = addRpgMoney(wdb.money[senderKey] || 0, hadiah)
   if (user.dailyStreak % 7 === 0) {
-    weekly = scaleDifficultyIncome(rpgUser, 250000)
+    const weeklyBase = 250000
+    const weeklyDifficultyReward = multiplyRpgMoney(weeklyBase, getDifficultyProfile(rpgUser).income)
+    weekly = scaleDifficultyIncome(rpgUser, weeklyBase)
+    weeklyDifficultyAdjustment = subtractRpgMoney(weeklyDifficultyReward, weeklyBase)
+    weeklyAbilityAdjustment = subtractRpgMoney(weekly, weeklyDifficultyReward)
     wdb.money[senderKey] = addRpgMoney(wdb.money[senderKey], weekly)
   }
   if (user.dailyStreak % 30 === 0) {
-    monthly = scaleDifficultyIncome(rpgUser, 1500000)
+    const monthlyBase = 1500000
+    const monthlyDifficultyReward = multiplyRpgMoney(monthlyBase, getDifficultyProfile(rpgUser).income)
+    monthly = scaleDifficultyIncome(rpgUser, monthlyBase)
+    monthlyDifficultyAdjustment = subtractRpgMoney(monthlyDifficultyReward, monthlyBase)
+    monthlyAbilityAdjustment = subtractRpgMoney(monthly, monthlyDifficultyReward)
     wdb.money[senderKey] = addRpgMoney(wdb.money[senderKey], monthly)
   }
 
@@ -252,19 +268,41 @@ let handler = async (m, { conn, groupMetadata, usedPrefix, text = '' }) => {
 
   await saveDB(wdb)
 
-  let cap = `╭─❏「 🎁 DAILY REWARD 」❏\n`
-  cap += `│ 💰 *Daily* +Rp ${hadiah.toLocaleString()}\n`
-  if (freeDailyLimit) cap += `│ 🎁 *Limit Gratis* +${freeDailyLimit} limit\n`
-  if (premiumDailyReward) cap += `│ 👑 *Premium Daily* +${premiumDailyReward} limit\n`
-  cap += `│ 🔥 *Streak* ${user.dailyStreak} hari\n`
+  const incomeLines = [`│ 💰 *Daily* +${formatRpgMoney(dailyBase)}`]
+  const addAdjustmentLine = (source, label, adjustment) => {
+    if (compareRpgMoney(adjustment, 0) === 0) return
+    const isBonus = compareRpgMoney(adjustment, 0) > 0
+    const amount = isBonus ? adjustment : multiplyRpgMoney(adjustment, -1)
+    incomeLines.push(
+      `│ ↳ *${isBonus ? 'Bonus' : 'Penyesuaian'} ${source} (${label})* ` +
+      `${isBonus ? '+' : '-'}${formatRpgMoney(amount)}`
+    )
+  }
+  addAdjustmentLine('difficulty', 'Daily', dailyDifficultyAdjustment)
+  addAdjustmentLine('ability', 'Daily', dailyAbilityAdjustment)
 
   if (weekly) {
-    cap += `│ 🏆 *Weekly* +Rp ${weekly.toLocaleString()}\n`
+    incomeLines.push(`│ 🏆 *Weekly* +${formatRpgMoney(250000)}`)
+    addAdjustmentLine('difficulty', 'Weekly', weeklyDifficultyAdjustment)
+    addAdjustmentLine('ability', 'Weekly', weeklyAbilityAdjustment)
   }
 
   if (monthly) {
-    cap += `│ 👑 *Monthly* +Rp ${monthly.toLocaleString()}\n`
+    incomeLines.push(`│ 👑 *Monthly* +${formatRpgMoney(1500000)}`)
+    addAdjustmentLine('difficulty', 'Monthly', monthlyDifficultyAdjustment)
+    addAdjustmentLine('ability', 'Monthly', monthlyAbilityAdjustment)
   }
+
+  const totalIncome = addRpgMoney(addRpgMoney(hadiah, weekly), monthly)
+  const hasMultipleIncomeSources = incomeLines.length > 1
+  let cap = `╭─❏「 🎁 DAILY REWARD 」❏\n`
+  cap += `${incomeLines.join('\n')}\n`
+  if (hasMultipleIncomeSources) {
+    cap += `│ 💵 *Total Uang* ${formatRpgMoney(totalIncome)}\n`
+  }
+  if (freeDailyLimit) cap += `│ 🎁 *Limit Gratis* +${freeDailyLimit} limit\n`
+  if (premiumDailyReward) cap += `│ 👑 *Premium Daily* +${premiumDailyReward} limit\n`
+  cap += `│ 🔥 *Streak* ${user.dailyStreak} hari\n`
 
   cap += `╰─━━━━━━━━━━━━━━─${streakInfo}\n\n`
   cap += `📌 *INFO*\n`
