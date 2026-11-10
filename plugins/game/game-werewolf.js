@@ -49,6 +49,9 @@ const thumbMorning = getSceneImage('fajar')
 const thumbVoting = getSceneImage('vote')
 const thumbExecution = getSceneImage('eksekusi benar')
 const sendGameThumbnail = sendGameRolesHeader
+const getPlayerListButton = (room) => [
+    ['👥 Daftar Pemain', `${room.commandBase || '.ww'} player`]
+]
 const sendGameRolesMenu = (conn, chat, usedPrefix, m) => {
     const menuText = `*━━━〔 🎭 GAME ROLES 〕━━━*
 
@@ -526,6 +529,7 @@ const sendNightPhaseStanza = async (conn, chat, room) => {
         const secretCodes = p.secretCodes || {}
         const actionRows = Object.entries(secretCodes).map(([code, choice]) => ({
             title: `🔐 ${code}`,
+            buttonLabel: `🔐 ${code}`,
             description: describeNightChoice(code, choice, room, conn).replace(/^> 🔒 \*[^*]+\* — /, ''),
             id: `${room.commandBase || '.ww'} action ${chat} ${code}`
         }))
@@ -580,7 +584,7 @@ ${fixerContract}
             subtitle: 'Secret Night Phase',
             footer: `Avelia • ${game.name} Secret Night Phase`,
             mentions: getPlayerMentions(privateMentions),
-            buttons: actionRows.slice(0, 3).map((action) => [action.title, action.id])
+            buttons: actionRows.slice(0, 3).map((action) => [action.buttonLabel, action.id])
         })
         playerMessages.set(p.id, built.message)
     }
@@ -670,7 +674,10 @@ ${morningBody}
 ━━━━━━━━━━━━━━
 > ⚖️ _Sidang dimulai! ${getPhaseParticipantName(game)} bersiap menentukan tersangka._`
 
-    await sendGameThumbnail(conn, chat, morningCard, thumbMorning, null, { mentions })
+    await sendGameThumbnail(conn, chat, morningCard, thumbMorning, null, {
+        mentions,
+        buttons: getPlayerListButton(room)
+    })
 }
 
 const publishMorning = async (conn, chat, room, ww, announce = true) => {
@@ -690,6 +697,7 @@ const openHunterReaction = async (conn, chat, room, hunter, resumePhase) => {
     const game = getGameCategory(room.category)
     const actionRows = Object.entries(hunter.secretCodes || {}).map(([code, choice]) => ({
         title: `🔐 ${code}`,
+        buttonLabel: `🏹 ${code}`,
         id: `${room.commandBase || '.ww'} action ${chat} ${code}`,
         description: choice.type === 'skip'
             ? 'Tidak menembak siapa pun'
@@ -728,7 +736,7 @@ ${actionRows.map((row) => `> ${row.title} — ${row.description}`).join('\n') ||
         title: `${game.name} • HUNTER`,
         subtitle: 'Tembakan terakhir',
         footer: `Avelia • ${game.name} Hunter Reaction`,
-        buttons: actionRows.slice(0, 3).map((action) => [action.title, action.id])
+        buttons: actionRows.slice(0, 3).map((action) => [action.buttonLabel, action.id])
     })
     const spectatorMessage = await buildGameRolesHeaderMessage(
         conn,
@@ -809,14 +817,16 @@ ${armorBlocked
 *━━━━━━━━━━━━━━*
 ${!armorBlocked && targetPlayer.role === 'hunter' && targetPlayer.infectionType !== room.category ? '\n> 🏹 Hunter yang tertembak juga mendapat kesempatan membalas.' : ''}`
         await sendGameThumbnail(conn, chat, resultCard, thumbExecution, null, {
-            mentions: getPlayerMentions([hunter, targetPlayer])
+            mentions: getPlayerMentions([hunter, targetPlayer]),
+            buttons: getPlayerListButton(room)
         })
     }
     if (hunter.pendingExecution) {
         hunter.pendingExecution = false
         hunter.canShoot = false
         await sendGameThumbnail(conn, chat, `*━━━〔 ☠️ EKSEKUSI HUNTER 〕━━━*\n> 🏹 ${getDisplayPlayerLabel(hunter, conn)} telah menggunakan kesempatan terakhirnya.\n\n> ⟡ Role : *Hunter ${roleEmojis.hunter}*`, thumbExecution, null, {
-            mentions: getPlayerMentions([hunter])
+            mentions: getPlayerMentions([hunter]),
+            buttons: getPlayerListButton(room)
         })
     }
 
@@ -1020,7 +1030,9 @@ const resolveDayVoting = async (conn, chat, ww) => {
 
     if (hasil_vote === 0) {
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Terlalu bimbang menentukan pilihan..._\n\n${participants} tidak dapat mencapai kesepakatan dan kembali ke ${getPhaseSedentaryName(game)}. Tidak ada yang dieksekusi hari ini.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _Malam kembali tiba menyelimuti ${game.location}..._`
-        await sendGameThumbnail(conn, chat, text, thumbNight)
+        await sendGameThumbnail(conn, chat, text, thumbNight, null, {
+            buttons: getPlayerListButton(room)
+        })
     } else if (hasil_vote === 1) {
         const highestVote = Math.max(0, ...voteTally.map((player) => Number(player.vote) || 0))
         const tiedCandidates = voteTally.filter((player) =>
@@ -1032,7 +1044,8 @@ const resolveDayVoting = async (conn, chat, ww) => {
             ).join('\n')
             const text = `*━━━〔 ⚖️ HASIL VOTING SERI 〕━━━*\n> ⚖️ _Voting ulang dimulai sekarang._\n\nPilihan hanya tersedia untuk pemain yang memperoleh suara tertinggi dan seri:\n${candidateList}${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🔁 _Pilih salah satu kandidat di atas; pilihan lain tidak tersedia._`
             await sendGameThumbnail(conn, chat, text, thumbVoting, null, {
-                mentions: getPlayerMentions(tiedCandidates)
+                mentions: getPlayerMentions(tiedCandidates),
+                buttons: getPlayerListButton(room)
             })
             room.runoffCandidateNumbers = tiedCandidates.map((player) => player.number)
             await startDayVoting(conn, chat, ww)
@@ -1040,7 +1053,9 @@ const resolveDayVoting = async (conn, chat, ww) => {
         }
 
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _${participants} kembali ke ${getPhaseSedentaryName(game)}..._`
-        await sendGameThumbnail(conn, chat, text, thumbNight)
+        await sendGameThumbnail(conn, chat, text, thumbNight, null, {
+            buttons: getPlayerListButton(room)
+        })
     } else if (hasil_vote && typeof hasil_vote === 'object') {
         const killed = voteKill(chat, ww)
         const killedRole = getPlayerRolePresentation(killed, room.category)
@@ -1074,7 +1089,8 @@ const resolveDayVoting = async (conn, chat, ww) => {
             ? getSceneImage('eksekusi benar')
             : getSceneImage('eksekusi salah')
         await sendGameThumbnail(conn, chat, execText, executionScene || thumbExecution, null, {
-            mentions: getPlayerMentions([killed])
+            mentions: getPlayerMentions([killed]),
+            buttons: getPlayerListButton(room)
         })
 
         if (killed.pendingExecution && killed.role === 'hunter' && killed.infectionType !== room.category) {
@@ -2069,7 +2085,8 @@ ${rosterText.trim()}
             }).join('\n')
             try {
                 await sendGameThumbnail(conn, chat, `*━━━〔 ✧ ROOM ${roomGame.name.toUpperCase()} DIHAPUS ✧ 〕━━━*\n\nPermainan dihentikan oleh owner room. Berikut role yang dibagikan:\n\n${roster}${refundNotice}`, thumbExecution, null, {
-                    mentions: getPlayerMentions(players)
+                    mentions: getPlayerMentions(players),
+                    buttons: [['🎭 Daftar Role', `${room.commandBase || gameCommandBase} role`]]
                 })
             } catch (error) {
                 console.error('[werewolf room delete role reveal failed]', error?.message)
