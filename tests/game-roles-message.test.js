@@ -1,6 +1,46 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { sendGameRolesHeader } from '../lib/game-roles-message.js'
+import { buildGameRolesHeaderMessage, sendGameRolesHeader } from '../lib/game-roles-message.js'
+
+test('Game Roles list buttons expose every option without descriptions', async () => {
+  let listButton
+  class MockButtonV2 {
+    constructor() {}
+    setTitle() {}
+    setSubtitle() {}
+    setBody() {}
+    setFooter() {}
+    addRawButton(button) {
+      listButton = button
+    }
+    build(jid) {
+      assert.equal(jid, 'game@g.us')
+      return { interactive: true }
+    }
+  }
+  const rows = Array.from({ length: 15 }, (_, index) => ({
+    title: `🔐 A${String(index).padStart(3, '0')}`,
+    id: `.ww action game@g.us A${String(index).padStart(3, '0')}`
+  }))
+
+  const built = await buildGameRolesHeaderMessage(
+    { ButtonV2: MockButtonV2 },
+    'game@g.us',
+    'Pilihan aksi dan keterangannya tetap ada di teks.',
+    null,
+    {
+      list: { buttonText: '🔐', title: '🔐', rows }
+    }
+  )
+
+  assert.deepEqual(built, { interactive: true })
+  assert.equal(listButton.nativeFlowInfo.name, 'single_select')
+  const list = JSON.parse(listButton.nativeFlowInfo.paramsJson)
+  assert.deepEqual(list.sections[0].rows, rows)
+  assert.ok(list.sections[0].rows.every((row) =>
+    Object.keys(row).every((key) => ['title', 'id'].includes(key))
+  ))
+})
 
 test('Game Roles headers send directly through ButtonV2 and preserve quick reply buttons', async () => {
   const sent = { id: 'header-sent' }

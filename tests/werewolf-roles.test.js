@@ -8,6 +8,7 @@ import {
   collapseZombieVampireInfections,
   formatFinalRoleRoster,
   formatWinnerTeamRoster,
+  getRealPlayerMentions,
   generateVoteCodeMap,
   getAntagonistCount,
   getWinnerImage,
@@ -702,6 +703,21 @@ test('Winner teams are grouped by role and infection source', () => {
   const output = formatWinnerTeamRoster(roster, 'mayhem', 'antagonist')
   assert.match(output, /\*Role\* : Alien 👽\n> Eza, Zahra/)
   assert.match(output, /\*Role\* : Zombie 🧟\n> Vania/)
+})
+
+test('final winner mentions include all real participants but exclude AI and dummy players', () => {
+  const mentions = getRealPlayerMentions([
+    { id: 'winner@s.whatsapp.net', isdead: false },
+    { id: 'eliminated@s.whatsapp.net', isdead: true },
+    { id: 'ai@s.whatsapp.net', isAiCitizen: true },
+    { id: 'dummy', isDummy: true },
+    { id: 'winner@s.whatsapp.net', isdead: false }
+  ])
+
+  assert.deepEqual(mentions, [
+    'winner@s.whatsapp.net',
+    'eliminated@s.whatsapp.net'
+  ])
 })
 
 test('Vigilante mode assigns more Vigilante protagonists while all others are antagonists', () => {
