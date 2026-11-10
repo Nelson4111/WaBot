@@ -47,6 +47,7 @@ import { sendDualGroupMessage, sendMultiParticipantGroupStanza } from '../../lib
 const thumbNight = getSceneImage('aksi-malam')
 const thumbMorning = getSceneImage('fajar')
 const thumbVoting = getSceneImage('vote')
+const thumbTie = getSceneImage('seri')
 const thumbExecution = getSceneImage('eksekusi benar')
 const sendGameThumbnail = sendGameRolesHeader
 const getPlayerListButton = (room) => [
@@ -584,7 +585,11 @@ ${fixerContract}
             subtitle: 'Secret Night Phase',
             footer: `Avelia • ${game.name} Secret Night Phase`,
             mentions: getPlayerMentions(privateMentions),
-            buttons: actionRows.slice(0, 3).map((action) => [action.buttonLabel, action.id])
+            list: {
+                buttonText: '🔐',
+                title: '🔐',
+                rows: actionRows.map((action) => ({ title: action.buttonLabel, id: action.id }))
+            }
         })
         playerMessages.set(p.id, built.message)
     }
@@ -736,7 +741,11 @@ ${actionRows.map((row) => `> ${row.title} — ${row.description}`).join('\n') ||
         title: `${game.name} • HUNTER`,
         subtitle: 'Tembakan terakhir',
         footer: `Avelia • ${game.name} Hunter Reaction`,
-        buttons: actionRows.slice(0, 3).map((action) => [action.buttonLabel, action.id])
+        list: {
+            buttonText: '🏹',
+            title: '🏹',
+            rows: actionRows.map((action) => ({ title: action.buttonLabel, id: action.id }))
+        }
     })
     const spectatorMessage = await buildGameRolesHeaderMessage(
         conn,
@@ -902,7 +911,7 @@ ${runoffNotice}
 > ⟡ Waktu : *𝟿𝟶 Detik*
 > ⟡ Pilihan dan kode voting bersifat rahasia untuk setiap pemain.
 > ⟡ Ketik *${room.commandBase || '.ww'} <kode>* di grup untuk vote manual (contoh: *${room.commandBase || '.ww'} K7Z4*).
-> ⟡ Tombol hanya memuat beberapa kode; seluruh pilihan tetap tercantum di bawah.
+> ⟡ Seluruh pilihan tersedia pada tombol daftar dan tetap tercantum di bawah.
 *━━━━━━━━━━━━━━*
 ━━━━━━━━━━━━━━
 > _Pilihlah dengan bijak, jangan biarkan ${game.antagonistName} memperdaya kalian!_`
@@ -930,7 +939,11 @@ ${runoffNotice}
             subtitle: 'Kode voting rahasia',
             footer: `Avelia • ${game.name} Secret Voting`,
             mentions: getPlayerMentions(livingPlayers),
-            buttons: voteRows.slice(0, 3).map((row) => [`🗳️ ${row.code}`, row.id])
+            list: {
+                buttonText: '🗳️',
+                title: '🗳️',
+                rows: voteRows.map((row) => ({ title: `🗳️ ${row.code}`, id: row.id }))
+            }
         })
         playerMessages.set(player.id, built.message)
     }
@@ -1043,7 +1056,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
                 `> ${getDisplayPlayerLabel(player, conn)}`
             ).join('\n')
             const text = `*━━━〔 ⚖️ HASIL VOTING SERI 〕━━━*\n> ⚖️ _Voting ulang dimulai sekarang._\n\nPilihan hanya tersedia untuk pemain yang memperoleh suara tertinggi dan seri:\n${candidateList}${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🔁 _Pilih salah satu kandidat di atas; pilihan lain tidak tersedia._`
-            await sendGameThumbnail(conn, chat, text, thumbVoting, null, {
+            await sendGameThumbnail(conn, chat, text, thumbTie, null, {
                 mentions: getPlayerMentions(tiedCandidates),
                 buttons: getPlayerListButton(room)
             })
@@ -1053,7 +1066,7 @@ const resolveDayVoting = async (conn, chat, ww) => {
         }
 
         const text = `*━━━〔 ⚖️ SIDANG BERAKHIR 〕━━━*\n> ⚖️ _Hasil pemungutan suara berimbang!_\n\nSuara terbanyak diperoleh oleh lebih dari satu orang dengan jumlah yang sama. Eksekusi dibatalkan demi keadilan.${voteTallyText}\n\n━━━━━━━━━━━━━━\n> 🌙 _${participants} kembali ke ${getPhaseSedentaryName(game)}..._`
-        await sendGameThumbnail(conn, chat, text, thumbNight, null, {
+        await sendGameThumbnail(conn, chat, text, thumbTie, null, {
             buttons: getPlayerListButton(room)
         })
     } else if (hasil_vote && typeof hasil_vote === 'object') {
