@@ -22,7 +22,7 @@ import {
   canUseBankMoneyCommand,
   formatBankFacility,
   formatBankTierFacility,
-  formatFullRpgMoney,
+  formatBankMoney,
   resolveBankFnbTier,
   getBankTransactionCooldown,
   getBankTransactionCooldownRemaining
@@ -32,11 +32,12 @@ import { hargaBeli as RESTAURANT_MENU } from '../lib/rpg-masakanData.js'
 import { formatFullTierFacilities, formatUpgradeChanges } from '../plugins/rpg/rpg-upgradebank.js'
 import { parseRpgMoneyAmount } from '../lib/rpgMoney.js'
 
-test('bank interest is capped at 500T and detailed balances use full numbers', () => {
+test('bank interest is capped at 500T and bank displays compact money suffixes', () => {
   assert.equal(BANK_INTEREST_MAXIMUM, 500_000_000_000_000)
   assert.equal(capBankInterest(600_000_000_000_000), 500_000_000_000_000)
   assert.equal(capBankInterest(125_000_000_000_000), 125_000_000_000_000)
-  assert.equal(formatFullRpgMoney(1_500_000_000_000_000), 'Rp 1.500.000.000.000.000')
+  assert.equal(formatBankMoney(1_500_000_000_000_000), 'Rp 1,5Qa')
+  assert.equal(formatBankLimit(1_500_000), 'Rp 1,5M')
 })
 
 test('RPG money parser supports suffixes used by money commands', () => {
