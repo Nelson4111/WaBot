@@ -1,3 +1,4 @@
+import fs from 'fs'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { EPIC_SAGAS, EPIC_IMAGES, EPIC_SONGS, EPIC_LYRICS, EPIC_QUIZZES, EPIC_GUESSES, EPIC_ALL_QUIZZES, EPIC_QUOTES, EPIC_CHARACTERS, EXTRA_CHARACTERS, ALL_CHARACTERS, GODS, EPIC_QUOTE_COUNT, EPIC_STORY_EVENTS, HADES_REVIVAL_TEXT, stringTheBowStories, oracleStories } from '../../lib/epicData.js'
 
@@ -170,9 +171,35 @@ const epicImageFor = (sagaName, isSong = false) => {
   const imageName = sagaName.replace(/^The\s+/i, '').trim() + (isSong ? ' Song' : '')
   return EPIC_IMAGES.find(image => image.name.toLowerCase() === imageName.toLowerCase())?.url || null
 }
-const sendEpicImage = async (m, ctx, imageUrl, caption) => {
+const localEpicImageFor = imageUrl => {
+  if (!imageUrl) return null
+  const imageName = new URL(imageUrl).pathname.split('/').filter(Boolean).pop()
+  if (!imageName || !/^[\w-]+$/.test(imageName)) return null
+  const imagePath = new URL(`../../media/epic/${imageName}.jpg`, import.meta.url)
+  return fs.existsSync(imagePath) ? fs.readFileSync(imagePath) : null
+}
+const sendEpicImage = async (m, ctx, imageUrl, caption, options = {}) => {
   if (imageUrl && ctx.conn?.sendMessage) {
-    return ctx.conn.sendMessage(m.chat, { image: { url: imageUrl }, caption }, { quoted: m })
+    const image = localEpicImageFor(imageUrl)
+    const buttons = options.buttons || []
+    const footer = `${global.namebot || 'Avelia'} • EPIC Musical`
+    if (image && typeof ctx.conn.sendButtonV2 === 'function') {
+      return ctx.conn.sendButtonV2(m.chat, {
+        title: options.title || '🎭 EPIC MUSICAL',
+        subtitle: options.subtitle || 'Jelajahi kisah dan musik EPIC',
+        text: caption,
+        footer,
+        buffer: image,
+        buttons
+      }, m)
+    }
+    if (image && typeof ctx.conn.sendButton === 'function') {
+      return ctx.conn.sendButton(m.chat, caption, footer, image, buttons, m)
+    }
+    return ctx.conn.sendMessage(m.chat, {
+      image: image || { url: imageUrl },
+      caption
+    }, { quoted: m })
   }
   return m.reply(caption)
 }
@@ -593,7 +620,15 @@ if (cmd === 'saga') {
     ? `\n\n🎵 *Lagu dalam saga ini:*\n${songs.map((song, index) => `${index + 1}. ${song.name}`).join('\n')}`
     : ''
   const caption = framedDetail('SAGA DETAIL', `🎭 *${saga.name}*\n\n${saga.detail}${songList}`)
-  return sendEpicImage(m, ctx, epicImageFor(saga.name), caption)
+  const prefix = ctx.usedPrefix || '.'
+  return sendEpicImage(m, ctx, epicImageFor(saga.name), caption, {
+    title: `🎭 ${saga.name}`,
+    subtitle: 'Saga EPIC: The Musical',
+    buttons: [
+      ['🎵 Lagu Pertama', songs.length ? `${prefix}epic song ${songs[0].name}` : `${prefix}epic song`],
+      ['📚 Daftar Saga', `${prefix}epic saga`]
+    ]
+  })
 }
 
 if (cmd === 'lirik' || cmd === 'lyrics') {
@@ -606,7 +641,15 @@ if (cmd === 'lirik' || cmd === 'lyrics') {
 🔎 Coba fitur pencarian lirik bot:
 *${ctx.usedPrefix || '.'}lirik ${result.song.name}*`)
   const caption = framedDetail('EPIC LYRICS', `🎵 *${result.song.name}*\n\n📚 Saga: ${result.song.saga}\n\n${lyrics}`)
-  return sendEpicImage(m, ctx, epicImageFor(result.song.saga, true), caption)
+  const prefix = ctx.usedPrefix || '.'
+  return sendEpicImage(m, ctx, epicImageFor(result.song.saga, true), caption, {
+    title: `🎵 ${result.song.name}`,
+    subtitle: `${result.song.saga} • Lyrics`,
+    buttons: [
+      ['🎼 Info Lagu', `${prefix}epic song ${result.song.name}`],
+      ['📚 Lihat Saga', `${prefix}epic saga ${result.song.saga}`]
+    ]
+  })
 }
 
 if (cmd === 'song') {
@@ -614,7 +657,15 @@ if (cmd === 'song') {
   const song = findSong(args.join(' '))
   if (!song) return m.reply('❌ Lagu tidak ditemukan. Gunakan nomor atau nama lagu yang sesuai.')
   const caption = framedDetail('SONG DETAIL', `🎵 *${song.name}*\n\n📚 Saga: ${song.saga}\n\n${song.detail}`)
-  return sendEpicImage(m, ctx, epicImageFor(song.saga, true), caption)
+  const prefix = ctx.usedPrefix || '.'
+  return sendEpicImage(m, ctx, epicImageFor(song.saga, true), caption, {
+    title: `🎵 ${song.name}`,
+    subtitle: `${song.saga} • Song Detail`,
+    buttons: [
+      ['📝 Baca Lirik', `${prefix}epic lirik ${song.name}`],
+      ['📚 Lihat Saga', `${prefix}epic saga ${song.saga}`]
+    ]
+  })
 }
 
 if (cmd === 'char' || cmd === 'character') {
