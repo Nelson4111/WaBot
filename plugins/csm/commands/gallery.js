@@ -25,7 +25,7 @@ export async function handleGallery(ctx) {
   const pictureNumber = Number(pictureAction)
   if (Number.isInteger(pictureNumber) && pictureNumber >= 1 && pictureNumber <= galleryPictures.length) {
     const [name, picture] = galleryPictures[pictureNumber - 1]
-    return sendCsmReply(conn, m, wdb, header(`PICTURE ${pictureNumber}`) + `🖼️ ${name}\n━━━━━━━━━━━`, picture)
+    return sendCsmReply(conn, m, wdb, header(`PICTURE ${pictureNumber}`) + `🖼️ ${name}\n━━━━━━━━━━━`, picture, true)
   }
 
   let galleryText = header('CSM PICTURE GALLERY') +
