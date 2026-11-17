@@ -2,14 +2,12 @@ import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName, g
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 import { compareRpgMoney, formatRpgNumber, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
-import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
   getStorageCapacity,
   getStorageCount,
   getStorageDefinitions,
   getStorageEntries,
   getStorageLevel,
-  getRequiredStorageLevel,
   getStorageUpgradeCost,
   normalizeStorageType
 } from '../../lib/rpg-storage.js'
@@ -176,7 +174,6 @@ return m.reply(
     const level = getStorageLevel(user)
     const capacity = getStorageCapacity(user)
     const moneyNow = normalizeRpgMoney(wdb.money[m.sender] || 0)
-    const premium = isPremiumAccount(wdb.users[m.sender])
     const formatMoney = amount => amount.toLocaleString('id-ID')
     const formatNamaItem = nama => formatNama(String(nama))
     const countByType = Object.fromEntries(
@@ -280,7 +277,7 @@ return m.reply(
       return m.reply(text)
     }
 
-    const sendUpgradePrompt = async (targetLevel, isMaxUpgrade) => {
+    const sendUpgradePrompt = async targetLevel => {
       const cost = getStorageUpgradeCost(user.level, level, targetLevel)
       const accountBalance = moneyNow
       if (compareRpgMoney(accountBalance, cost) < 0) {
@@ -298,14 +295,13 @@ return m.reply(
         fromLevel: level,
         targetLevel,
         cost: String(cost),
-        isMaxUpgrade,
         expiresAt: Date.now() + 10 * 60 * 1000
       }
       await saveDB(wdb)
 
       let text =
         `╭─❏「 🆙 KONFIRMASI UPGRADE INVENTORY 」❏\n` +
-        `│ ${isMaxUpgrade ? '👑 Upgrade otomatis Premium' : '📦 Upgrade semua penyimpanan'}\n` +
+        `│ 📦 Upgrade semua penyimpanan satu level\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `> ↳ Level: *${level} → ${targetLevel}*\n` +
         `> ↳ Biaya: *Rp ${formatMoney(cost)}*\n` +
@@ -348,11 +344,10 @@ return m.reply(
           await saveDB(wdb)
           return m.reply('❌ Level kapasitas berubah. Periksa kembali status dengan *.inv level* lalu ajukan upgrade baru.')
         }
-        const currentMax = Math.max(...Object.keys(storageTypes).map(type => getStorageCount(user, type)))
-        if (pending.isMaxUpgrade && pending.targetLevel * 50 + 100 <= currentMax) {
+        if (!Number.isSafeInteger(pending.targetLevel) || pending.targetLevel !== pending.fromLevel + 1) {
           delete user.inventoryUpgradePending
           await saveDB(wdb)
-          return m.reply(`❌ Stok sudah berubah dan kapasitas belum cukup. Ajukan kembali dengan *${prefix}inv up max*.`)
+          return m.reply(`❌ Permintaan upgrade lama tidak valid. Ajukan upgrade manual kembali dengan *${prefix}inv up*.`)
         }
         const cost = BigInt(pending.cost)
         if (compareRpgMoney(wdb.money[m.sender] || 0, cost) < 0) {
@@ -387,20 +382,10 @@ return m.reply(
         })
       }
 
-      let targetLevel = level + 1
-      let isMaxUpgrade = false
-      if (confirmation === 'max') {
-        if (!premium) return m.reply('👑 Upgrade otomatis *max* hanya tersedia untuk pengguna Premium.')
-        const maxCount = Math.max(...Object.values(countByType))
-        targetLevel = getRequiredStorageLevel(maxCount, level)
-        if (targetLevel === level) {
-          return m.reply(`✅ Semua penyimpanan masih aman di bawah kapasitas ${capacity}. Upgrade *max* belum diperlukan.`)
-        }
-        isMaxUpgrade = true
-      } else if (confirmation) {
-        return m.reply(`Gunakan *${prefix}inv up*, *${prefix}inv up max* (Premium), atau *${prefix}inv up batal*.`)
+      if (confirmation) {
+        return m.reply(`Gunakan *${prefix}inv up* untuk mengajukan satu level, *${prefix}inv up ya* untuk konfirmasi, atau *${prefix}inv up batal*.`)
       }
-      return sendUpgradePrompt(targetLevel, isMaxUpgrade)
+      return sendUpgradePrompt(level + 1)
     }
 
     if (action === 'info') return renderStorageInfo()
@@ -525,7 +510,7 @@ cap += `─━━━━━━━━━━━━━━─`
 return sendRpgMsg(conn, m, cap)
 }
 
-handler.help = ['inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up [max]', 'inventory', 'equipment list']
+handler.help = ['inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up', 'inventory', 'equipment list']
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']
