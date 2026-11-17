@@ -6,6 +6,7 @@
  */
 
 import { saveDB } from '../../../lib/waifuHelper.js'
+import { resolveCsmMedia } from '../../../lib/csmMedia.js'
 import {
   WEAPON_LIST, ITEM_LIST, CHARACTER_LIST,
   MAIN_JOB_LIST, SIDE_JOB_LIST, MAIN_LOCATION_LIST, SIDE_LOCATION_LIST,
@@ -59,8 +60,9 @@ export const sendCsmReply = async (conn, m, wdb, caption, picture, preservePictu
   }
   if (!picturesEnabled(wdb) || !picture) return m.reply(caption)
   try {
+    const image = preservePicture ? picture : resolveCsmMedia(picture)
     return await conn.sendMessage(m.chat, {
-      image: { url: picture },
+      image: Buffer.isBuffer(image) ? image : { url: image },
       caption,
       jpegQuality: 100,
       mimetype: 'image/jpeg'
