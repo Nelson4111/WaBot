@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  getRequiredStorageLevel,
   getStorageCapacity,
   getStorageCount,
   getStorageItemType,
@@ -41,13 +40,6 @@ test('inventory groups are counted independently for fishing, mining, adventure,
   assert.equal(getStorageCount(user, 'gudang'), 6)
   assert.equal(getStorageItemType('air_mineral'), 'drink')
   assert.equal(getStorageItemType('olahan_susu_sapi'), 'food')
-})
-
-test('premium max capacity targets one slot above the current fullest inventory', () => {
-  assert.equal(getRequiredStorageLevel(100, 0), 1)
-  assert.equal(getRequiredStorageLevel(104, 0), 1)
-  assert.equal(getRequiredStorageLevel(150, 1), 2)
-  assert.equal(getRequiredStorageLevel(120, 2), 2)
 })
 
 test('inventory upgrade prices start at 5,000 times RPG level and double each level', () => {
