@@ -6,6 +6,7 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 function formatNama(ore) {
   return ore.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -65,6 +66,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
   if (!user.ores) user.ores = {}
+  if (isStorageFull(user, 'ore')) return sendStorageFullNotice(conn, m, user, 'ore', usedPrefix || '.')
   if (user.pity_mining!== undefined) delete user.pity_mining
   const illegalText = String(text || '').trim().toLowerCase()
   let illegalMultiplier = 1

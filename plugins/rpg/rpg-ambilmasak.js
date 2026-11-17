@@ -2,6 +2,7 @@ import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
+import { getStorageItemType, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
@@ -13,6 +14,11 @@ let handler = async (m, { conn, usedPrefix }) => {
   let sekarang = Date.now()
   let selesai = user.dapur.antrian.filter(item => item.selesai <= sekarang)
   if(selesai.length === 0) return m.reply('❌ Belum ada masakan yang selesai.')
+  const blockedType = selesai
+    .filter(item => sekarang - item.selesai <= 18000000)
+    .map(item => getStorageItemType(item.nama))
+    .find(type => (type === 'food' || type === 'drink') && isStorageFull(user, type))
+  if (blockedType) return sendStorageFullNotice(conn, m, user, blockedType, usedPrefix || '.')
 
   if(!user.masakan) user.masakan = {}
   let expTotal = 0

@@ -11,6 +11,7 @@ import {
 } from '../../lib/rpg-exploreData.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 const EXPLORE_COOLDOWN = 15 * 60 * 1000
 
@@ -20,6 +21,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const rpg = account.rpg
+  if (isStorageFull(rpg, 'stellar')) return sendStorageFullNotice(conn, m, rpg, 'stellar', usedPrefix || '.')
   const illegalText = String(text || '').trim().toLowerCase()
   let illegalMultiplier = 1
   let illegalResult = null

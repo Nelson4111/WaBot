@@ -8,6 +8,7 @@ import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { bibit } from './rpg-panen.js'
 import { adventureItemKeys } from './rpg-adventure.js'
 import { formatRpgNumber } from '../../lib/rpgMoney.js'
+import { getStorageCapacity } from '../../lib/rpg-storage.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -123,8 +124,9 @@ let handler = async (m, { conn, usedPrefix }) => {
     addItem('MASAKAN', formatNama(nama), '🍲', amount)
   }
 
+  const totalCapacity = getStorageCapacity(user) * 8
   if(totalJenis === 0)
-    return m.reply('╭─❏「 🎒 BACKPACK KOSONG 」❏\n│ Isi tasmu masih kosong.\n│ Mining atau Adventure dulu!\n╰─━━━━━━━━━━━━━━─')
+    return m.reply(`╭─❏「 🎒 BACKPACK KOSONG 」❏\n│ Isi tasmu masih kosong.\n│ 📦 Total: 0/${totalCapacity.toLocaleString()} item\n│ Mining atau Adventure dulu!\n╰─━━━━━━━━━━━━━━─`)
 
   for (const items of Object.values(grouped)) {
     items.sort((a, b) => b.jml - a.jml)
@@ -133,6 +135,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   let cap = `╭─❏「 🎒 BACKPACK 」❏\n`
 cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
 cap += `│ 📦 Total: ${formatRpgNumber(totalItem)} Item\n`
+cap += `│ 🎒 Kapasitas gabungan: ${formatRpgNumber(totalItem)}/${formatRpgNumber(totalCapacity)}\n`
 cap += `│ 🧬 Jenis: ${totalJenis}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 

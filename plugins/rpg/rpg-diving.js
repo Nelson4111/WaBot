@@ -5,6 +5,7 @@ import { applyBloodlineBuff } from '../../lib/rpgCharacterData.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 const COOLDOWN = 2 * 60 * 1000
 const TIERS = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
@@ -78,6 +79,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
   if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const user = account.rpg
+  if (isStorageFull(user, 'gudang')) return sendStorageFullNotice(conn, m, user, 'gudang', usedPrefix || '.')
   const now = Date.now()
   const illegalText = String(text || '').trim().toLowerCase()
   let illegalMultiplier = 1

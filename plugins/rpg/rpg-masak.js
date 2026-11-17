@@ -4,6 +4,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js
 import { hewanList, dapatkanHasil, getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { masakanResep, normalizeMasakanKey, formatMasakanNama, resepEmoji, deskripsiMakanan } from '../../lib/rpg-masakanData.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
+import { isStorageFull, sendStorageFullNotice, getStorageItemType } from '../../lib/rpg-storage.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -268,6 +269,11 @@ if(!resep[keyMasak]) return m.reply(
 )
 
 let r = resep[keyMasak]
+
+const storageType = getStorageItemType(keyMasak)
+if ((storageType === 'food' || storageType === 'drink') && isStorageFull(user, storageType)) {
+  return sendStorageFullNotice(conn, m, user, storageType, usedPrefix || '.')
+}
 
 if(user.dapur.antrian.length >= user.dapur.slot) return m.reply(
   `╭─❏「 👨‍🍳 MASAK 」❏\n` +

@@ -15,6 +15,7 @@ import {
   RPG_FISHING_STORIES
 } from '../../lib/rpg-fishCatalog.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -144,6 +145,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       delete user.ikan[ikanLama]
     }
   }
+  if (isStorageFull(user, 'fish')) return sendStorageFullNotice(conn, m, user, 'fish', usedPrefix || '.')
 
   const murkyWaters = isRpgEventActive('murky_waters')
   const luckyCatch = isRpgEventActive('lucky_catch')

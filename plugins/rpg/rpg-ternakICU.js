@@ -2,6 +2,7 @@ import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { dapatkanHasil } from '../../lib/rpg-libternakData.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
   if(!global.icuTernak || !global.icuTernak[m.sender])
@@ -17,6 +18,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   let user = userData?.rpg || userData
 
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Data RPG tidak ditemukan.')
+
+  if (command === 'abaikan' && isStorageFull(user, 'gudang')) {
+    return sendStorageFullNotice(conn, m, user, 'gudang', usedPrefix || '.')
+  }
 
   if (data.timer) clearTimeout(data.timer)
 

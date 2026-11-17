@@ -1,6 +1,7 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { jenisMasakan, resepEmoji as sharedResepEmoji } from '../../lib/rpg-masakanData.js'
+import { getStorageCapacity, getStorageCount } from '../../lib/rpg-storage.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -57,7 +58,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   }
 
   if(totalJenis === 0)
-    return m.reply(`╭─❏「 🧊 KULKAS KOSONG 」❏\n│ _Perut keroncongan... Masak dulu yuk!_\n│ 💡 Masak: *${usedPrefix}masak [nama]*\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 🧊 KULKAS KOSONG 」❏\n│ 📦 Makanan: 0/${getStorageCapacity(user)} · Minuman: 0/${getStorageCapacity(user)}\n│ _Perut keroncongan... Masak dulu yuk!_\n│ 💡 Masak: *${usedPrefix}masak [nama]*\n╰─━━━━━━━━━━━━━━─`)
 
   // URUTIN DARI PALING BANYAK
   listMasakan.sort((a,b) => b.jml - a.jml)
@@ -65,6 +66,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     let cap = `╭─❏「 🧊 KULKAS PRIBADI 」❏\n`
   cap += `│ 👤 Owner : ${m.pushName}\n`
   cap += `│ 📦 Total : ${totalItem.toLocaleString()} Porsi\n`
+  cap += `│ 🍽️ Makanan: ${getStorageCount(user, 'food').toLocaleString()}/${getStorageCapacity(user).toLocaleString()} · 🥤 Minuman: ${getStorageCount(user, 'drink').toLocaleString()}/${getStorageCapacity(user).toLocaleString()}\n`
   cap += `│ 🧬 Jenis : ${totalJenis} Macam\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 

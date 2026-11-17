@@ -8,6 +8,7 @@ import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, getFishPriceMultiplier, getFishRecords, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 import { recordTaxActivity } from '../../lib/rpgTax.js'
+import { getStorageItemType, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -216,6 +217,10 @@ if (mode === 'guide') {
 
     const itemName = hargaBeli[item] ? item : null
     if (!itemName) return m.reply('❌ Item ini tidak dijual di toko.')
+    const storageType = getStorageItemType(itemName)
+    if (isStorageFull(user, storageType)) {
+      return sendStorageFullNotice(conn, m, user, storageType, usedPrefix || '.')
+    }
 
     const hargaSatuan = Math.floor(hargaBeli[item].harga * buyDiskon)
     const totalHarga = hargaSatuan * jumlah

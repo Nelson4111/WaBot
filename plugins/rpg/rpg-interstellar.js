@@ -15,6 +15,7 @@ import {
   INTERSTELLAR_ITEMS,
   INTERSTELLAR_PLANETS
 } from '../../lib/rpg-exploreData.js'
+import { getStorageCapacity, getStorageCount } from '../../lib/rpg-storage.js'
 import { filterRpgPanelUsers, isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
 import {
   filterLeaderboardUsers,
@@ -38,10 +39,11 @@ function getOwnedItems(rpg) {
     .filter(item => item.quantity > 0)
 }
 
-function formatInventory(items, prefix, stellarCredit) {
+function formatInventory(items, prefix, stellarCredit, capacity, storedCount) {
   if (!items.length) {
     return `╭─❏「 🎒 INTERSTELLAR INVENTORY 」❏\n` +
       `│ 💠 Stellar Credit: ${stellarCredit.toLocaleString()}\n` +
+      `│ 📦 Kapasitas item: ${storedCount.toLocaleString()}/${capacity.toLocaleString()}\n` +
       `│ Inventory antarbintangmu masih kosong.\n` +
       `│ Gunakan *${prefix}explore* untuk mencari item.\n` +
       `╰─━━━━━━━━━━━━━━─`
@@ -50,6 +52,7 @@ function formatInventory(items, prefix, stellarCredit) {
   return `╭─❏「 🎒 INTERSTELLAR INVENTORY 」❏\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `💠 Stellar Credit: ${stellarCredit.toLocaleString()}\n\n` +
+    `📦 Kapasitas item: ${storedCount.toLocaleString()}/${capacity.toLocaleString()}\n\n` +
     items.map((item, index) =>
       `> ${index + 1}. ${item.name} ×${item.quantity}`
     ).join('\n\n') +
@@ -364,7 +367,13 @@ if (mode === 'exchange' || mode === 'tukar') {
   }
 
   if (mode === 'inventory') {
-    return m.reply(formatInventory(items, prefix, stellarCredit))
+    return m.reply(formatInventory(
+      items,
+      prefix,
+      stellarCredit,
+      getStorageCapacity(rpg),
+      getStorageCount(rpg, 'stellar')
+    ))
   }
 
   if (mode === 'credit') {

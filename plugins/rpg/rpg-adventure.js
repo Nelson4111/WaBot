@@ -9,6 +9,7 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -121,6 +122,8 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
     cap += `─━━━━━━━━━━━━━━─`
     return sendRpgMsg(conn, m, cap, 'https://files.cloudkuimages.guru/images/604a2923cef9.jpeg')
   }
+
+  if (isStorageFull(user, 'item')) return sendStorageFullNotice(conn, m, user, 'item', usedPrefix || '.')
 
   // COMMAND ADVENTURE
   const cooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'cooldown')

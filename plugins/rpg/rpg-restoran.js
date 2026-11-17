@@ -5,6 +5,7 @@ import { hewanList, dapatkanHasil, getHasilDisplay, isHasilTernakKey, migrateHas
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { recordTaxActivity } from '../../lib/rpgTax.js'
+import { getStorageItemType, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 import {
   hargaBeli as sharedHargaBeli,
   masakanResep,
@@ -273,6 +274,10 @@ const hargaBeli = { ...sharedHargaBeli }
       let dataKonfirmasi = user.paketKonfirmasi[m.sender]
       if(!dataKonfirmasi) return m.reply('❌ Tidak ada paket yang menunggu konfirmasi.')
       let dataPaket = paket[dataKonfirmasi.paket]
+      const blockedType = Object.keys(dataPaket.isi)
+        .map(getStorageItemType)
+        .find(type => (type === 'food' || type === 'drink') && isStorageFull(user, type))
+      if (blockedType) return sendStorageFullNotice(conn, m, user, blockedType, usedPrefix || '.')
       if((wdb.money[m.sender] || 0) < dataKonfirmasi.harga) return m.reply(`❌ Uang tidak cukup!`)
       wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], dataKonfirmasi.harga)
       recordTaxActivity(wdb.data, m.sender, 'purchase', dataKonfirmasi.harga)
@@ -342,6 +347,10 @@ return m.reply(cap)
     if(!itemInput) return m.reply(`❌ Contoh: *${usedPrefix}restoran beli 1 10*`)
     let item =!isNaN(itemInput)? nomorKeItemBeli[parseInt(itemInput)] : itemInput.replace(/ /g, '_')
     if(!hargaBeli[item]) return m.reply('❌ Menu tidak ada.')
+    const storageType = getStorageItemType(item)
+    if ((storageType === 'food' || storageType === 'drink') && isStorageFull(user, storageType)) {
+      return sendStorageFullNotice(conn, m, user, storageType, usedPrefix || '.')
+    }
     let hargaSatuan = Math.floor(hargaBeli[item].harga * buyDiskon)
     let totalHarga = hargaSatuan * jumlah
     if((wdb.money[m.sender] || 0) < totalHarga) return m.reply(`❌ Uang tidak cukup! Butuh: Rp ${totalHarga.toLocaleString()}`)

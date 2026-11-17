@@ -1,5 +1,18 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName, getEquipmentNameList } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
+import { compareRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import {
+  getStorageCapacity,
+  getStorageCount,
+  getStorageDefinitions,
+  getStorageEntries,
+  getStorageLevel,
+  getRequiredStorageLevel,
+  getStorageUpgradeCost,
+  normalizeStorageType
+} from '../../lib/rpg-storage.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -157,6 +170,220 @@ return m.reply(
 
   if(isChanged) saveDB(wdb)
 
+  if (command === 'inv') {
+    const storageTypes = getStorageDefinitions()
+    const prefix = usedPrefix || '.'
+    const level = getStorageLevel(user)
+    const capacity = getStorageCapacity(user)
+    const moneyNow = normalizeRpgMoney(wdb.money[m.sender] || 0)
+    const premium = isPremiumAccount(wdb.users[m.sender])
+    const formatMoney = amount => amount.toLocaleString('id-ID')
+    const formatNamaItem = nama => formatNama(String(nama))
+    const countByType = Object.fromEntries(
+      Object.keys(storageTypes).map(type => [type, getStorageCount(user, type)])
+    )
+
+    const renderStorageOverview = async () => {
+      let text =
+        `╭─❏「 🎒 INVENTORY CENTER 」❏\n` +
+        `│ 🆙 Level kapasitas: ${level}\n` +
+        `│ 📦 Kapasitas tiap penyimpanan: ${capacity.toLocaleString()} slot\n` +
+        `│ 💰 Upgrade berikutnya: Rp ${formatMoney(getStorageUpgradeCost(user.level, level, level + 1))}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n`
+      for (const [type, storage] of Object.entries(storageTypes)) {
+        text += `> ${storage.icon} ${storage.label}: *${countByType[type].toLocaleString()}/${capacity.toLocaleString()} item*\n`
+      }
+      text +=
+        `\n💡 Lihat: *.inv fish / ore / item / stellar / food / drink*\n` +
+        `> Kebun: *.inv kebun* · Ringkasan tas: *.inv bag* · Gudang lain: *.inv gudang*\n` +
+        `> Level: *.inv level* · Upgrade: *.inv up*`
+      return sendRpgButtons(conn, {
+        chat: m.chat,
+        message: m,
+        title: '🎒 INVENTORY CENTER',
+        text,
+        footer: 'AVELIA • RPG STORAGE',
+        buttons: [
+          ['🎒 Buka Bag', `${prefix}inv bag`],
+          ['🆙 Upgrade Slot', `${prefix}inv up`]
+        ],
+        quoted: m,
+        reply: fallbackText => m.reply(fallbackText)
+      })
+    }
+
+    const renderStorage = async type => {
+      const selectedTypes = type === 'bag'
+        ? ['ore', 'item', 'stellar']
+        : type === 'kulkas'
+          ? ['food', 'drink']
+          : [type]
+      let total = 0
+      let totalCapacity = 0
+      let text = `╭─❏「 🎒 INVENTORY ${type.toUpperCase()} 」❏\n`
+      text += `│ 🆙 Level: ${level}\n`
+      for (const selectedType of selectedTypes) {
+        const storage = storageTypes[selectedType]
+        const entries = getStorageEntries(user, selectedType)
+        const itemCount = Object.values(entries).reduce((sum, amount) => sum + amount, 0)
+        total += itemCount
+        totalCapacity += capacity
+        text += `│ ${storage.icon} ${storage.label}: ${itemCount.toLocaleString()}/${capacity.toLocaleString()} item\n`
+      }
+      text += `│ 📦 Total: ${total.toLocaleString()}/${totalCapacity.toLocaleString()} item\n`
+      text += `╰─━━━━━━━━━━━━━━─\n\n`
+
+      for (const selectedType of selectedTypes) {
+        const storage = storageTypes[selectedType]
+        const entries = Object.entries(getStorageEntries(user, selectedType))
+          .sort((a, b) => b[1] - a[1])
+        text += `${storage.icon} *${storage.label.toUpperCase()}*\n`
+        if (!entries.length) {
+          text += `> Belum ada item tersimpan.\n`
+        } else {
+          for (const [name, amount] of entries) {
+            text += `> ${formatNamaItem(name)} ×${amount.toLocaleString()}\n`
+          }
+        }
+        text += '\n'
+      }
+      text += `🆙 Upgrade kapasitas: *${prefix}inv up*`
+      return m.reply(text)
+    }
+
+    const sendUpgradePrompt = async (targetLevel, isMaxUpgrade) => {
+      const cost = getStorageUpgradeCost(user.level, level, targetLevel)
+      const accountBalance = moneyNow
+      if (compareRpgMoney(accountBalance, cost) < 0) {
+        return m.reply(
+          `╭─❏「 💸 UPGRADE INVENTORY 」❏\n` +
+          `│ ❌ Uang tidak cukup untuk upgrade.\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `> ↳ Level: ${level} → ${targetLevel}\n` +
+          `> ↳ Biaya: Rp ${formatMoney(cost)}\n` +
+          `> ↳ Saldo: Rp ${formatMoney(accountBalance)}`
+        )
+      }
+
+      user.inventoryUpgradePending = {
+        fromLevel: level,
+        targetLevel,
+        cost: String(cost),
+        isMaxUpgrade,
+        expiresAt: Date.now() + 10 * 60 * 1000
+      }
+      await saveDB(wdb)
+
+      let text =
+        `╭─❏「 🆙 KONFIRMASI UPGRADE INVENTORY 」❏\n` +
+        `│ ${isMaxUpgrade ? '👑 Upgrade otomatis Premium' : '📦 Upgrade semua penyimpanan'}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> ↳ Level: *${level} → ${targetLevel}*\n` +
+        `> ↳ Biaya: *Rp ${formatMoney(cost)}*\n` +
+        `> ↳ Saldo sekarang: Rp ${formatMoney(accountBalance)}\n\n` +
+        `📊 *KAPASITAS SEBELUM → SESUDAH*\n`
+      for (const [type, storage] of Object.entries(storageTypes)) {
+        text += `> ${storage.icon} ${storage.label}: ${countByType[type].toLocaleString()}/${capacity.toLocaleString()} → ${countByType[type].toLocaleString()}/${(100 + targetLevel * 50).toLocaleString()}\n`
+      }
+      text += `\nKonfirmasi upgrade? Biaya dibayar dari uang saku.`
+      return sendRpgConfirmButtons(conn, m, {
+        title: '🆙 KONFIRMASI UPGRADE INVENTORY',
+        text,
+        acceptText: '✅ Ya, Upgrade!',
+        acceptCommand: `${prefix}inv up ya`,
+        cancelText: '❌ Batalkan',
+        cancelCommand: `${prefix}inv up batal`,
+        footer: 'AVELIA • RPG STORAGE'
+      })
+    }
+
+    const args = String(text).trim().toLowerCase().split(/\s+/).filter(Boolean)
+    const action = args[0] || ''
+
+    if (action === 'up' || action === 'upgrade') {
+      const confirmation = args[1] || ''
+      if (['batal', 'no', 'tidak', 'cancel', 'tolak'].includes(confirmation)) {
+        delete user.inventoryUpgradePending
+        await saveDB(wdb)
+        return m.reply('❌ Upgrade kapasitas dibatalkan.')
+      }
+      if (['ya', 'yes', 'ok', 'confirm'].includes(confirmation)) {
+        const pending = user.inventoryUpgradePending
+        if (!pending || pending.expiresAt < Date.now()) {
+          delete user.inventoryUpgradePending
+          await saveDB(wdb)
+          return m.reply(`❌ Konfirmasi upgrade tidak ditemukan atau sudah kedaluwarsa. Mulai lagi dengan *${prefix}inv up*.`)
+        }
+        if (getStorageLevel(user) !== pending.fromLevel) {
+          delete user.inventoryUpgradePending
+          await saveDB(wdb)
+          return m.reply('❌ Level kapasitas berubah. Periksa kembali status dengan *.inv level* lalu ajukan upgrade baru.')
+        }
+        const currentMax = Math.max(...Object.keys(storageTypes).map(type => getStorageCount(user, type)))
+        if (pending.isMaxUpgrade && pending.targetLevel * 50 + 100 <= currentMax) {
+          delete user.inventoryUpgradePending
+          await saveDB(wdb)
+          return m.reply(`❌ Stok sudah berubah dan kapasitas belum cukup. Ajukan kembali dengan *${prefix}inv up max*.`)
+        }
+        const cost = BigInt(pending.cost)
+        if (compareRpgMoney(wdb.money[m.sender] || 0, cost) < 0) {
+          delete user.inventoryUpgradePending
+          await saveDB(wdb)
+          return m.reply(`❌ Saldo berubah dan tidak cukup. Biaya upgrade: Rp ${formatMoney(cost)}.`)
+        }
+        wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender] || 0, cost)
+        user.inventoryLevel = pending.targetLevel
+        delete user.inventoryUpgradePending
+        await saveDB(wdb)
+        const newCapacity = getStorageCapacity(user)
+        const successText =
+          `╭─❏「 🎉 UPGRADE INVENTORY BERHASIL 」❏\n` +
+          `│ 🆙 Level: ${pending.fromLevel} → ${pending.targetLevel}\n` +
+          `│ 📦 Kapasitas: ${capacity.toLocaleString()} → ${newCapacity.toLocaleString()} slot per penyimpanan\n` +
+          `│ 💸 Terpakai: Rp ${formatMoney(cost)}\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Semua penyimpanan sudah mendapat kapasitas baru.`
+        return sendRpgButtons(conn, {
+          chat: m.chat,
+          message: m,
+          text: successText,
+          title: '🎉 UPGRADE BERHASIL',
+          footer: 'AVELIA • RPG STORAGE',
+          buttons: [
+            ['🆙 Upgrade Lagi', `${prefix}inv up`],
+            ['📦 Lihat Inventory', `${prefix}inv`]
+          ],
+          quoted: m,
+          reply: fallbackText => m.reply(fallbackText)
+        })
+      }
+
+      let targetLevel = level + 1
+      let isMaxUpgrade = false
+      if (confirmation === 'max') {
+        if (!premium) return m.reply('👑 Upgrade otomatis *max* hanya tersedia untuk pengguna Premium.')
+        const maxCount = Math.max(...Object.values(countByType))
+        targetLevel = getRequiredStorageLevel(maxCount, level)
+        if (targetLevel === level) {
+          return m.reply(`✅ Semua penyimpanan masih aman di bawah kapasitas ${capacity}. Upgrade *max* belum diperlukan.`)
+        }
+        isMaxUpgrade = true
+      } else if (confirmation) {
+        return m.reply(`Gunakan *${prefix}inv up*, *${prefix}inv up max* (Premium), atau *${prefix}inv up batal*.`)
+      }
+      return sendUpgradePrompt(targetLevel, isMaxUpgrade)
+    }
+
+    if (action === 'level' || !action || action === 'all') return renderStorageOverview()
+
+    const selectedType = normalizeStorageType(action)
+    if (!selectedType) {
+      return m.reply(`Kategori tidak dikenal. Pilih: *fish, ore, item, stellar, food, drink, kebun, gudang,* atau *bag*.`)
+    }
+    if (selectedType === 'level' || selectedType === 'all') return renderStorageOverview()
+    return renderStorage(selectedType)
+  }
+
   let threshold = user.level * 500
   let armorLvl = user.armor || 0
   let maxHP = 100 + (armorLvl * 20) + (user.maxDarahBonus || 0)
@@ -256,6 +483,7 @@ if (totalKebun > 0) {
 
 cap += `\n─━━━━━━━━━━━━━━─\n`
 cap += `📚 *INVENTORY LAINNYA*\n`
+cap += `> 📦 Cek kapasitas & kategori: *.inv*\n`
 cap += `> 📦 Cek Semua: *.gudang*\n`
 cap += `> 🎒 Cek Material: *.bag*\n`
 cap += `> 🍖 Cek Makanan: *.kulkas*\n`
@@ -267,7 +495,7 @@ cap += `─━━━━━━━━━━━━━━─`
 return sendRpgMsg(conn, m, cap)
 }
 
-handler.help = ['inventory', 'inv', 'equipment list']
+handler.help = ['inv', 'inv <kategori>', 'inv level', 'inv up [max]', 'inventory', 'equipment list']
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']

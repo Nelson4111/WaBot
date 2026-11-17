@@ -18,6 +18,7 @@ import {
 } from '../../lib/rpg-libternakData.js'
 import { bibit } from './rpg-panen.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 function formatName(value) {
   return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
@@ -137,6 +138,8 @@ const handler = async (m, { conn, command, text, usedPrefix }) => {
   if (!account?.rpg) return sendRpgRegistrationPrompt(conn, m, prefix, '❌ Kamu belum memiliki data RPG. Mulai dengan *.adventure*.')
 
   const user = initLadang(account.rpg)
+  if (isStorageFull(user, 'garden')) return sendStorageFullNotice(conn, m, user, 'garden', prefix)
+  if (isStorageFull(user, 'gudang')) return sendStorageFullNotice(conn, m, user, 'gudang', prefix)
   user.inventory = user.inventory && typeof user.inventory === 'object' ? user.inventory : {}
   user.ternak = user.ternak && typeof user.ternak === 'object' ? user.ternak : {}
   let legacyMigrationChanged = false

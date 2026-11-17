@@ -1,5 +1,6 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { getStorageCapacity } from '../../lib/rpg-storage.js'
 
 function formatNama(nama) {
   return nama.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -66,9 +67,11 @@ let handler = async (m, { conn, usedPrefix }) => {
     }
   }
 
+  const capacity = getStorageCapacity(user)
   if (total === 0) { 
   return m.reply( 
     `╭─❏「 🌾 GUDANG KEBUN KOSONG 」❏\n` + 
+    `│ Kapasitas: 0/${capacity}\n` + 
     `│ Belum ada hasil panen yang tersimpan.\n` + 
     `│ ↳ Tanam: *${usedPrefix}tanam [bibit]*\n` + 
     `│ ↳ Panen: *${usedPrefix}panen*\n` + 
@@ -78,6 +81,7 @@ let handler = async (m, { conn, usedPrefix }) => {
  
 let cap = `╭─❏「 🌾 GUDANG KEBUN 」❏\n` 
 cap += `│ 📦 Total Item: ${total.toLocaleString()}\n` 
+cap += `│ 🌾 Kapasitas: ${total.toLocaleString()}/${capacity.toLocaleString()}\n` 
 cap += `╰─━━━━━━━━━━━━━━─\n\n` 
  
 cap += `🌾 *HASIL PANEN*\n` 

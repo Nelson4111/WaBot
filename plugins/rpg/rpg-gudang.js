@@ -4,6 +4,7 @@ import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
+import { getStorageCapacity } from '../../lib/rpg-storage.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -167,7 +168,8 @@ let handler = async (m, { conn, usedPrefix, args }) => {
     }
   }
 
-  if (totalJenis === 0) return m.reply(`╭─❏「 📦 GUDANG KOSONG 」❏\n│ Tanam, mancing, tambang, adventure, atau masak dulu\n╰─━━━━━━━━━━━━━━─`)
+  const totalCapacity = getStorageCapacity(user) * 8
+  if (totalJenis === 0) return m.reply(`╭─❏「 📦 GUDANG KOSONG 」❏\n│ Total: 0/${totalCapacity.toLocaleString()} item\n│ Tanam, mancing, tambang, adventure, atau masak dulu\n╰─━━━━━━━━━━━━━━─`)
 
   for (let kat in grouped) {
     grouped[kat].list.sort((a, b) => b.jml - a.jml)
@@ -201,6 +203,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
     let cap = `╭─❏「 📦 GUDANG KAMU 」❏\n`
 cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
 cap += `│ 📦 Total: ${totalItem.toLocaleString()} Item\n`
+cap += `│ 🏠 Kapasitas gabungan: ${totalItem.toLocaleString()}/${totalCapacity.toLocaleString()}\n`
 cap += `│ 🧬 Jenis: ${totalJenis}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 

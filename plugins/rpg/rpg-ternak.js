@@ -7,6 +7,7 @@ import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { processLivestockNeglect, processShelterCrime, recordLivestockCare } from '../../lib/rpgShelter.js'
 import { recordTaxActivity } from '../../lib/rpgTax.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 let handler = async (m, { conn, args, command, usedPrefix }) => {
   const ternakImageUrl = 'https://c.termai.cc/i100/jTBPgZh.webp'
@@ -305,6 +306,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     const yieldBuff = getGroupTotemBuff(wdb.data, m.chat, 'livestock', 'yield')
     const xpBuff = getGroupTotemBuff(wdb.data, m.chat, 'livestock', 'xp')
     const production = Math.max(1, Math.floor(user.ternak[hewan1] * productivity * yieldBuff))
+    if (isStorageFull(user, 'gudang')) return sendStorageFullNotice(conn, m, user, 'gudang', usedPrefix || '.')
     user.inventory[hasil] = (user.inventory[hasil] || 0) + production
     user.lastLivestockHarvest[hewan1] = Date.now()
     recordLivestockCare(user, hewan1)
@@ -338,6 +340,7 @@ let handler = async (m, { conn, args, command, usedPrefix }) => {
     let sembelih = Math.min(jml, punya)
     let hasil = dapatkanHasil(h).sembelih
     const hasilDisplay = getHasilDisplay(hasil)
+    if (isStorageFull(user, 'gudang')) return sendStorageFullNotice(conn, m, user, 'gudang', usedPrefix || '.')
     user.inventory[hasil] = (user.inventory[hasil] || 0) + sembelih
     user.ternak[hewan1] -= sembelih
     if(user.ternak[hewan1] <= 0) delete user.ternak[hewan1]

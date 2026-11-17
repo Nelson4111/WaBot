@@ -2,6 +2,7 @@ import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { ikanEmoji, RPG_FISH_TIERS as fishTiers, RPG_FISH_TIER_BY_NAME as fishTierByName } from '../../lib/rpg-fishCatalog.js'
 import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { ensureFishDetails, getAllFishRecords, isTrashFish, migrateAllFishDetails } from '../../lib/rpg-fishSizes.js'
+import { getStorageCapacity } from '../../lib/rpg-storage.js'
 
 function formatNama(name) {
   return String(name || '')
@@ -113,6 +114,7 @@ let handler = async (m, { conn, usedPrefix, text }) => {
   let cap = `╭─❏「 🐠 AQUARIUM 」❏\n`
   cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
   cap += `│ 📦 Total: ${formatRpgNumber(totalFish)} ikan\n`
+  cap += `│ 🐠 Kapasitas: ${formatRpgNumber(totalFish)}/${formatRpgNumber(getStorageCapacity(user))}\n`
   cap += `│ 🐟 Berukuran: ${formatRpgNumber(records.length)} · 🗑️ Sampah: ${formatRpgNumber(trashCount)}\n`
   if (hasTierFilter) cap += `│ 🔎 Tier: ${selectedTier.name}\n`
   cap += `│ 📄 Halaman: ${page}/${totalPages} · 25 item/halaman\n`

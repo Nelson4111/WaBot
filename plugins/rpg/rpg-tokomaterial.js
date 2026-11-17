@@ -4,6 +4,7 @@ import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../.
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { getStorageItemType, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 const PABRIK_IMAGE = 'https://c.termai.cc/i171/7HsD7Cq.jpg'
 
@@ -205,6 +206,11 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ Item tidak tersedia di toko material.`
     )
+
+    const storageType = getStorageItemType(item)
+    if (isStorageFull(user, storageType)) {
+      return sendStorageFullNotice(conn, m, user, storageType, usedPrefix || '.')
+    }
 
     let hargaSatuan = Math.floor(hargaBeli[item].harga * buyDiskon)
     let totalHarga = hargaSatuan * jumlah

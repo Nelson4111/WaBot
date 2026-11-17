@@ -10,6 +10,7 @@ import {
   formatMasakanNama
 } from '../../lib/rpg-masakanData.js'
 import { isPremiumUser } from './rpg-bank.js'
+import { getStorageItemType, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 const formatItem = item => `${resepEmoji[item] || hargaBeli[item].emoji} ${formatMasakanNama(item)}`
 const isValidMenu = menu =>
@@ -470,6 +471,10 @@ if (action === 'tukar' || action === 'swap') {
       const quantity = Number(user.masakan?.[item] || 0)
       if (!Number.isSafeInteger(quantity) || quantity < 0 || quantity > Number.MAX_SAFE_INTEGER - increment) {
         return m.reply('❌ Data stok masakanmu tidak valid. Silakan laporkan masalah ini ke admin.')
+      }
+      const storageType = getStorageItemType(item)
+      if ((storageType === 'food' || storageType === 'drink') && isStorageFull(user, storageType)) {
+        return sendStorageFullNotice(conn, m, user, storageType, usedPrefix || '.')
       }
     }
 

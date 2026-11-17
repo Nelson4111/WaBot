@@ -6,6 +6,7 @@ import { applyBloodlineBuff, applyBloodlineYield } from '../../lib/rpgCharacterD
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
+import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 
 // DATA BIBIT UNTUK TANAM & PANEN
 export const bibit = {
@@ -218,6 +219,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 
   return safeReply(cap)
 }
+
+if (isStorageFull(user, 'garden')) return sendStorageFullNotice(conn, m, user, 'garden', usedPrefix || '.')
 
 // PANEN ALL
 if (text.toLowerCase() === 'all') {
