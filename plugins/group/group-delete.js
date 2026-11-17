@@ -13,6 +13,7 @@ let handler = async (m, { conn, isAdmin, isOwner, text, usedPrefix, command }) =
       return m.reply(`Gunakan *${usedPrefix + command} <jumlah>* atau *${usedPrefix + command} all* tanpa reply.`)
     }
     if (!m.isGroup) return m.reply('Perintah jumlah atau *all* hanya dapat digunakan di grup.')
+    if (!isAdmin) return m.reply('Perintah jumlah atau *all* hanya dapat digunakan oleh Admin grup.')
 
     const now = Date.now()
     const chatJid = conn.decodeJid?.(m.chat) || m.chat
