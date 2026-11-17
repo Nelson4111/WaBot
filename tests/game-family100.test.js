@@ -26,6 +26,10 @@ function createConnection() {
         async sendMessage(chat, content) {
             this.sent.push({ chat, content })
             return { key: { id: `message-${this.sent.length}` } }
+        },
+        async sendButtonV2(chat, content) {
+            this.sent.push({ chat, content })
+            return { key: { id: `message-${this.sent.length}` } }
         }
     }
 }
@@ -94,6 +98,8 @@ test('correct answers award persistent points and only answerers can vote surren
     await handleFamily100Answer.call(conn, createMessage('player3@s.whatsapp.net', 'nyerah'))
     assert.equal(conn.game[roomId], undefined)
     assert.match(conn.sent.at(-1).content.text, /Suara pemain mencukupi/)
+    assert.ok(Buffer.isBuffer(conn.sent.at(-1).content.buffer))
+    assert.deepEqual(conn.sent.at(-1).content.buttons[0], ['🔄 Main Lagi', '.fam'])
 })
 
 test('three participants need two surrender votes', async () => {
@@ -156,6 +162,42 @@ test('Family100 command refuses to start during the restart cooldown', async () 
     assert.equal(conn.game['family100_group@g.us'], undefined)
 })
 
+test('Family100 start uses the local image and offers status and score buttons', async () => {
+    const conn = createConnection()
+    const message = createMessage('player@s.whatsapp.net')
+
+    await family100.call(conn, message, { args: [], conn, usedPrefix: '.' })
+
+    const sent = conn.sent[0].content
+    assert.ok(Buffer.isBuffer(sent.buffer))
+    assert.deepEqual(sent.buttons, [
+        ['📊 Cek Status', '.fam info'],
+        ['🏆 Cek Skor', '.fam score']
+    ])
+    clearTimeout(conn.game['family100_group@g.us'].timeout)
+    clearTimeout(conn.game['family100_group@g.us'].reminderTimeout)
+})
+
+test('Family100 info shows the question, revealed answers, and remaining time', async () => {
+    const conn = createConnection()
+    conn.game['family100_group@g.us'] = {
+        soal: 'Sebutkan warna',
+        jawaban: ['merah', 'biru', 'hijau'],
+        terjawab: ['player@s.whatsapp.net', false, false],
+        startedAt: Date.now() - 30_000
+    }
+    const message = createMessage('player@s.whatsapp.net')
+
+    await family100.call(conn, message, { args: ['info'], conn })
+
+    const status = conn.sent[0].content
+    assert.match(status.text, /Sebutkan warna/)
+    assert.match(status.text, /merah — @player/)
+    assert.match(status.text, /1\/3/)
+    assert.match(status.text, /4 menit 30 detik/)
+    assert.doesNotMatch(status.text, /biru|hijau/)
+})
+
 test('unique top answerer receives two bonus points and is announced as MVP', async () => {
     global.db = { data: { users: {} } }
     const conn = createConnection()
@@ -176,6 +218,8 @@ test('unique top answerer receives two bonus points and is announced as MVP', as
 
     assert.equal(global.db.data.users['player1@s.whatsapp.net'].family100Score, 4)
     assert.match(conn.sent.at(-1).content.text, /MVP: Pemain Satu \(\+2 poin\)/)
+    assert.ok(Buffer.isBuffer(conn.sent.at(-1).content.buffer))
+    assert.deepEqual(conn.sent.at(-1).content.buttons[0], ['🔄 Main Lagi', '.fam'])
 })
 
 test('MVP bonus is skipped for a solo player or a tie', () => {
