@@ -2,13 +2,19 @@ import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName, g
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 import { compareRpgMoney, formatRpgNumber, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { isPremiumAccount } from '../../lib/rpgPremium.js'
+import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import {
+  activateStorageBypass,
   getStorageCapacity,
   getStorageCount,
   getStorageDefinitions,
   getStorageEntries,
   getStorageLevel,
+  getStorageBypassStatus,
   getStorageUpgradeCost,
+  isStorageBypassActive,
+  RPG_STORAGE_BYPASS_DAILY_LIMIT,
   normalizeStorageType
 } from '../../lib/rpg-storage.js'
 
@@ -174,7 +180,7 @@ return m.reply(
     const level = getStorageLevel(user)
     const capacity = getStorageCapacity(user)
     const moneyNow = normalizeRpgMoney(wdb.money[m.sender] || 0)
-    const formatMoney = amount => amount.toLocaleString('id-ID')
+    const formatMoney = amount => formatRpgNumber(amount)
     const formatNamaItem = nama => formatNama(String(nama))
     const countByType = Object.fromEntries(
       Object.keys(storageTypes).map(type => [type, getStorageCount(user, type)])
@@ -250,6 +256,7 @@ return m.reply(
     const renderStorageInfo = async () => {
       const total = Object.values(countByType).reduce((sum, count) => sum + count, 0)
       const totalCapacity = capacity * Object.keys(storageTypes).length
+      const bypass = getStorageBypassStatus(user)
       let text =
         `╭─❏「 📊 KONDISI INVENTORY 」❏\n` +
         `│ 🆙 Level kapasitas: ${level}\n` +
@@ -263,6 +270,14 @@ return m.reply(
         `> Pemakaian gabungan: ${totalPercent}%\n` +
         `> Upgrade berikutnya: Rp ${formatMoney(getStorageUpgradeCost(user.level, level, level + 1))}\n\n` +
         `📊 *STATUS PER PENYIMPANAN*\n`
+      if (isRpgEventActive('inventory_bypass')) {
+        text += `🎉 Event bypass kapasitas aktif untuk semua pemain.\n\n`
+      } else if (isStorageBypassActive(user)) {
+        const remainingMinutes = Math.max(1, Math.ceil((bypass.expiresAt - Date.now()) / 60000))
+        text += `⏳ Bypass Premium aktif · sisa ${remainingMinutes} menit.\n\n`
+      } else if (isPremiumAccount(wdb.users[m.sender])) {
+        text += `👑 Sisa aktivasi bypass Premium hari ini: ${bypass.remainingUses}/${RPG_STORAGE_BYPASS_DAILY_LIMIT}.\n\n`
+      }
 
       for (const [type, storage] of Object.entries(storageTypes)) {
         const count = countByType[type]
@@ -334,6 +349,50 @@ return m.reply(
 
     const args = String(text).trim().toLowerCase().split(/\s+/).filter(Boolean)
     const action = args[0] || ''
+
+    if (action === 'bypass') {
+      const now = Date.now()
+      if (isRpgEventActive('inventory_bypass', now)) {
+        return m.reply('🎉 Event *Storage Freedom* sedang aktif. Semua pemain sudah mendapat bypass kapasitas; kamu tidak perlu memakai kuota Premium.')
+      }
+      if (!isPremiumAccount(wdb.users[m.sender], now)) {
+        return m.reply('👑 Fitur *.inv bypass* hanya tersedia untuk pengguna Premium. Saat event penyimpanan aktif, semua pemain bisa menggunakannya.')
+      }
+
+      const bypass = activateStorageBypass(user, now)
+      await saveDB(wdb)
+      const expiresAt = new Date(bypass.expiresAt).toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      if (bypass.status === 'active') {
+        const remainingMinutes = Math.max(1, Math.ceil((bypass.expiresAt - now) / 60000))
+        return m.reply(
+          `⏳ *BYPASS INVENTORY MASIH AKTIF*\n` +
+          `> Berlaku untuk semua penyimpanan hingga ${expiresAt} WIB.\n` +
+          `> Sisa waktu: sekitar ${remainingMinutes} menit.\n` +
+          `> Kuota hari ini: ${bypass.uses}/${RPG_STORAGE_BYPASS_DAILY_LIMIT} terpakai.`
+        )
+      }
+      if (bypass.status === 'limit') {
+        return m.reply(
+          `⏳ Kuota bypass hari ini sudah habis (${RPG_STORAGE_BYPASS_DAILY_LIMIT}/${RPG_STORAGE_BYPASS_DAILY_LIMIT}).\n` +
+          `> Kuota direset otomatis pukul 00.00 WIB.`
+        )
+      }
+      return m.reply(
+        `╭─❏「 ⏳ BYPASS INVENTORY AKTIF 」❏\n` +
+        `│ Semua penyimpanan bisa menerima item selama 1 jam.\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> Berakhir: ${expiresAt} WIB\n` +
+        `> Pemakaian hari ini: ${bypass.uses}/${RPG_STORAGE_BYPASS_DAILY_LIMIT}\n` +
+        `> Sisa aktivasi hari ini: ${bypass.remainingUses}\n` +
+        `> Kuota reset pukul 00.00 WIB.`
+      )
+    }
 
     if (action === 'up' || action === 'upgrade') {
       const confirmation = args[1] || ''
@@ -435,7 +494,7 @@ return m.reply(
 cap += `│ 👤 Pemain: ${m.pushName || 'Player'}\n`
 cap += `│ 🆙 Level: ${user.level} (${user.exp}/${threshold} XP)\n`
 cap += `│ ❤️ Darah: ${user.darah}/${maxHP}\n`
-cap += `│ 💰 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+cap += `│ 💰 Saldo: Rp ${formatRpgNumber(wdb.money[m.sender] || 0)}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `🛡️ *EQUIPMENT*\n`
@@ -536,7 +595,7 @@ cap += `─━━━━━━━━━━━━━━─`
 return sendRpgMsg(conn, m, cap)
 }
 
-handler.help = ['inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up', 'inventory', 'equipment list']
+handler.help = ['inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up', 'inv bypass', 'inventory', 'equipment list']
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']

@@ -30,10 +30,8 @@ export function capBankInterest(amount) {
   return minRpgMoney(normalizeRpgMoney(amount), BANK_INTEREST_MAXIMUM)
 }
 
-export function formatFullRpgMoney(value) {
-  const normalized = normalizeRpgMoney(value)
-  if (typeof normalized === 'bigint') return `Rp ${normalized.toLocaleString('id-ID')}`
-  return `Rp ${Number(normalized).toLocaleString('id-ID')}`
+export function formatBankMoney(value) {
+  return formatRpgMoney(value)
 }
 export { BANK_TIERS, BANK_FNB_REWARDS, BANK_CS_SERVICES, BANK_COMING_SOON_FACILITIES }
 
@@ -130,7 +128,7 @@ export function canUseBankBulkDeposit(tier) {
 }
 
 export function formatBankLimit(limit) {
-  return Number.isFinite(limit) ? `Rp ${limit.toLocaleString()}` : 'Tidak Terbatas'
+  return Number.isFinite(limit) ? formatRpgMoney(limit) : 'Tidak Terbatas'
 }
 
 export function exceedsBankLimit(bankBalance, amount, tier) {
@@ -155,7 +153,7 @@ export function chargeBankMembership(userRPG, monthlyFee, now, description = 'Bi
   userRPG.bank = subtractRpgMoney(userRPG.bank, monthlyFee)
   userRPG.lastMembership = now
   userRPG.kartuBeku = false
-  userRPG.riwayat.unshift(`-Rp ${monthlyFee.toLocaleString()} ${description}`)
+  userRPG.riwayat.unshift(`-${formatRpgMoney(monthlyFee)} ${description}`)
   return 'paid'
 }
 
@@ -304,8 +302,8 @@ if (userRPG.pinjaman.jumlah > 0 && now - userRPG.pinjaman.waktu > 604800000) {
 
   if (compareRpgMoney(userRPG.bank, denda) >= 0) {
     userRPG.bank = subtractRpgMoney(userRPG.bank, denda)
-    userRPG.riwayat.unshift(`-Rp ${denda.toLocaleString()} Denda Pinjaman`)
-    automaticCharges.push(`Denda pinjaman: -Rp ${denda.toLocaleString()}`)
+    userRPG.riwayat.unshift(`-${formatRpgMoney(denda)} Denda Pinjaman`)
+    automaticCharges.push(`Denda pinjaman: -${formatRpgMoney(denda)}`)
     await saveDB(wdb)
   }
 }
@@ -320,11 +318,11 @@ if (
   const paymentStatus = chargeBankMembership(userRPG, tier.biayaBulanan, now)
 
   if (paymentStatus === 'paid') {
-    automaticCharges.push(`Biaya membership bulanan dibayar otomatis: -Rp ${tier.biayaBulanan.toLocaleString()}`)
+    automaticCharges.push(`Biaya membership bulanan dibayar otomatis: -${formatRpgMoney(tier.biayaBulanan)}`)
   }
 
   if (paymentStatus === 'insufficient') {
-    automaticCharges.push(`Saldo tidak cukup untuk biaya membership Rp ${tier.biayaBulanan.toLocaleString()}; kartu dibekukan. Tidak ada denda tambahan.`)
+    automaticCharges.push(`Saldo tidak cukup untuk biaya membership ${formatRpgMoney(tier.biayaBulanan)}; kartu dibekukan. Tidak ada denda tambahan.`)
   }
 
   await saveDB(wdb)
@@ -337,7 +335,7 @@ if (automaticCharges.length) {
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `${automaticCharges.map(charge => `> ↳ ${charge}`).join('\n')}\n\n` +
     `🏦 *SALDO BANK*\n` +
-    `> ↳ Saldo sekarang: *Rp ${userRPG.bank.toLocaleString()}*\n\n` +
+    `> ↳ Saldo sekarang: *${formatRpgMoney(userRPG.bank)}*\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -373,9 +371,9 @@ if (automaticCharges.length) {
     const totalAssets = addRpgMoney(wallet, userRPG.bank)
     if (action === 'check') {
       let detail = `─━━ 🏦 DETAIL KEUANGAN ━━─\n\n`
-      detail += `💵 Uang Saku\n> ↳ ${formatFullRpgMoney(wallet)}\n\n`
-      detail += `🏦 Saldo Bank\n> ↳ ${formatFullRpgMoney(userRPG.bank)}\n\n`
-      detail += `💎 Total Aset\n> ↳ ${formatFullRpgMoney(totalAssets)}\n\n`
+      detail += `💵 Uang Saku\n> ↳ ${formatBankMoney(wallet)}\n\n`
+      detail += `🏦 Saldo Bank\n> ↳ ${formatBankMoney(userRPG.bank)}\n\n`
+      detail += `💎 Total Aset\n> ↳ ${formatBankMoney(totalAssets)}\n\n`
       detail += `─━━━━━━━━━━━━━━─`
       return m.reply(detail)
     }
@@ -387,7 +385,7 @@ if (automaticCharges.length) {
     cap += `◈ KARTU BANK ◈\n`
     cap += `${tier.color} *${tier.name}* ${userRPG.kartuBeku? '❌ BEKU': '✅ AKTIF'}\n`
     cap += `─━━━━━━━━━─\n\n`
-    cap += `> Gunakan *${usedPrefix}${command} check* untuk melihat angka penuh.\n\n`
+    cap += `> Gunakan *${usedPrefix}${command} check* untuk melihat rincian saldo.\n\n`
     cap += `Kelola saldo dengan cepat lewat tombol berikut.${canUseBankBulkDeposit(tier) ? '' : '\n> Setor semua memerlukan fasilitas Fast Track.'}`
     return sendRpgButtons(conn, {
       chat: m.chat,
@@ -412,19 +410,19 @@ if (automaticCharges.length) {
     cap += `│ ${tier.color} *${tier.name.toUpperCase()}* ${userRPG.kartuBeku ? '❌ BEKU' : '✅ AKTIF'}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
     cap += `💰 *SALDO & LIMIT*\n`
-    cap += `> ↳ Saldo bank : Rp ${userRPG.bank.toLocaleString('id-ID')}\n`
-    cap += `> ↳ Uang saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString('id-ID')}\n`
+    cap += `> ↳ Saldo bank : ${formatRpgMoney(userRPG.bank)}\n`
+    cap += `> ↳ Uang saku : ${formatRpgMoney(wdb.money[m.sender] || 0)}\n`
     cap += `> ↳ Total aset : ${formatRpgMoney(addRpgMoney(userRPG.bank, wdb.money[m.sender] || 0))}\n`
     cap += `> ↳ Limit kartu : ${formatBankLimit(tier.limit)}\n`
     cap += `> ↳ Bunga : ${(tier.bunga * 100).toFixed(2)}%/minggu • ${sisaHari ? `${sisaHari} hari lagi` : 'siap diproses'}\n`
-    cap += `> ↳ Total bunga diterima : Rp ${userRPG.totalBunga.toLocaleString('id-ID')}\n`
+    cap += `> ↳ Total bunga diterima : ${formatRpgMoney(userRPG.totalBunga)}\n`
     cap += `> ↳ Asuransi : ${(tier.asuransi * 100).toFixed(0)}% • Keamanan : Lv.${getBankEffectiveSecurity(tier)}\n`
     cap += `> ↳ Jaminan bankrupt : ${(BANKRUPT_PROTECTION_RATE * 100).toFixed(0)}% dari dana bankrupt tercatat (klaim mingguan, reset Senin)\n`
-    cap += `> ↳ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'jatuh tempo'} • Biaya Rp ${tier.biayaBulanan.toLocaleString('id-ID')}\n`
+    cap += `> ↳ Membership : ${sisaMembership > 0 ? `${sisaMembership} hari lagi` : 'jatuh tempo'} • Biaya ${formatRpgMoney(tier.biayaBulanan)}\n`
     cap += `> ↳ Cooldown setor/tarik : ${sisaTransaksi > 0 ? `${Math.ceil(sisaTransaksi / 60000)} menit` : 'siap'}\n`
     cap += `> ↳ Tempat transaksi : ${getBankTransactionLocation(tier)}\n`
     if (userRPG.pinjaman?.jumlah > 0) {
-      cap += `> ↳ Pinjaman berjalan : Rp ${Number(userRPG.pinjaman.jumlah).toLocaleString('id-ID')}\n`
+      cap += `> ↳ Pinjaman berjalan : ${formatRpgMoney(userRPG.pinjaman.jumlah)}\n`
     }
     if (csService) cap += `> ↳ ${csService} : ${BANK_CS_SERVICES[csService]}\n`
     cap += `\n🪪 *FASILITAS & MANFAAT*\n`
@@ -446,8 +444,8 @@ if (automaticCharges.length) {
 
   cap += `◈ ${tier.color} ${tier.name.toUpperCase()} ${userRPG.kartuBeku ? '❌ BEKU' : ''} ◈\n`
   cap += `◆ Status : ${isPremium ? '👑 PREMIUM - Diskon 25% dari harga normal' : '👤 USER BIASA'}\n`
-  cap += `◆ Saldo Bank : Rp ${userRPG.bank.toLocaleString()}\n`
-  cap += `◆ Uang Saku : Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n`
+  cap += `◆ Saldo Bank : ${formatRpgMoney(userRPG.bank)}\n`
+  cap += `◆ Uang Saku : ${formatRpgMoney(wdb.money[m.sender] || 0)}\n`
   cap += `◆ Limit Kartu : ${formatBankLimit(tier.limit)}\n\n`
 
   cap += `◈ INFO KARTU ◈\n`
@@ -486,12 +484,12 @@ if (automaticCharges.length) {
   }
 
   cap += `─━━━━━━━━━─\n`
-  cap += `◈ TOTAL BUNGA : Rp ${userRPG.totalBunga.toLocaleString()} ◈\n`
+  cap += `◈ TOTAL BUNGA : ${formatRpgMoney(userRPG.totalBunga)} ◈\n`
 
   if (userRPG.kartuBeku) {
     cap += `\n─━━━━━━━━━─\n`
     cap += `🚨 AKSI DIBUTUHKAN\n`
-    cap += ` Bayar Rp ${tier.biayaBulanan.toLocaleString()} dengan *.bank bulanan*, *.bank monthly*, atau *.bank tagihan*.\n`
+    cap += ` Bayar ${formatRpgMoney(tier.biayaBulanan)} dengan *.bank bulanan*, *.bank monthly*, atau *.bank tagihan*.\n`
     cap += `\n❌ FITUR NONAKTIF\n`
     cap += ` Bunga • Transfer • Pinjaman • Heal Bank\n`
   }
@@ -848,11 +846,11 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     cap += `◆ Bunga : ${(selectedCard.bunga * 100).toFixed(2)}%/minggu\n`
     cap += `◆ Cooldown setor/tarik : ${getBankTransactionCooldown(selectedCard) ? `${getBankTransactionCooldown(selectedCard) / 60000} menit` : 'Tanpa cooldown (Portal Bank)'}\n`
     cap += isPremium
-      ? `◆ Harga Upgrade Normal : Rp ${selectedCard.price.toLocaleString()}\n◆ Harga Upgrade Premium : Rp ${selectedPremiumPrice.toLocaleString()}\n`
-      : `◆ Harga Upgrade : Rp ${selectedCard.price.toLocaleString()}\n`
+      ? `◆ Harga Upgrade Normal : ${formatRpgMoney(selectedCard.price)}\n◆ Harga Upgrade Premium : ${formatRpgMoney(selectedPremiumPrice)}\n`
+      : `◆ Harga Upgrade : ${formatRpgMoney(selectedCard.price)}\n`
     cap += isPremium
-      ? `◆ Biaya Bulanan Normal : Rp ${selectedCard.biayaBulanan.toLocaleString()}\n◆ Biaya Bulanan Premium : Rp ${selectedPremiumMonthlyFee.toLocaleString()}\n`
-      : `◆ Biaya Bulanan : Rp ${selectedCard.biayaBulanan.toLocaleString()}\n`
+      ? `◆ Biaya Bulanan Normal : ${formatRpgMoney(selectedCard.biayaBulanan)}\n◆ Biaya Bulanan Premium : ${formatRpgMoney(selectedPremiumMonthlyFee)}\n`
+      : `◆ Biaya Bulanan : ${formatRpgMoney(selectedCard.biayaBulanan)}\n`
     cap += `◆ Keamanan : Lv.${getBankEffectiveSecurity(selectedCard)}\n`
     cap += `◆ Asuransi : ${(selectedCard.asuransi * 100).toFixed(0)}%\n`
     cap += `◆ Fasilitas :\n> ${selectedCard.fasilitas.map(formatBankFacility).join('\n> ')}`
@@ -914,7 +912,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], amount)
     userRPG.bank = addRpgMoney(userRPG.bank, amount)
     userRPG.lastBankTransaction = now
-    userRPG.riwayat.unshift(`-Rp ${amount.toLocaleString()} Simpan`)
+    userRPG.riwayat.unshift(`-${formatRpgMoney(amount)} Simpan`)
     await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ SETOR TUNAI ◈\n◆ Jumlah : ${formatRpgMoney(amount)}\n◆ Saldo Baru : ${formatRpgMoney(userRPG.bank)}\n◆ Tempat : ${getBankTransactionLocation(tier)}\n\n─━━━━━━━━━─`
     return m.reply(msg)
@@ -931,7 +929,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], amount)
     userRPG.bank = subtractRpgMoney(userRPG.bank, amount)
     userRPG.lastBankTransaction = now
-    userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Tarik`)
+    userRPG.riwayat.unshift(`+${formatRpgMoney(amount)} Tarik`)
     await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ TRANSAKSI BERHASIL\n◈ PENARIKAN TUNAI ◈\n◆ Jumlah : ${formatRpgMoney(amount)}\n◆ Saldo Tersisa : ${formatRpgMoney(userRPG.bank)}\n`
     msg += `◆ Tempat : ${getBankTransactionLocation(tier)}\n`
@@ -992,7 +990,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     if (Number.isFinite(tier.limit) && compareRpgMoney(amount, multiplyRpgMoney(tier.limit, 0.5)) > 0) return m.reply(`─━━ 🏦 RPG BANK CENTER ━━─\n\n❌ Maksimal pinjam 50% limit\nMaks: ${formatRpgMoney(multiplyRpgMoney(tier.limit, 0.5))}\n\n─━━━━━━━━━─`)
     userRPG.pinjaman = { jumlah: amount, waktu: now }
     userRPG.bank = addRpgMoney(userRPG.bank, amount)
-    userRPG.riwayat.unshift(`+Rp ${amount.toLocaleString()} Pinjaman`)
+    userRPG.riwayat.unshift(`+${formatRpgMoney(amount)} Pinjaman`)
     await saveDB(wdb)
     let msg = `─━━ 🏦 RPG BANK CENTER ━━─\n\n✅ PINJAMAN CAIR\n◈ PENGAJUAN PINJAMAN ◈\n◆ Jumlah : ${formatRpgMoney(amount)}\n◆ Bunga : 10%\n◆ Total Bayar : ${formatRpgMoney(multiplyRpgMoney(amount, 1.1))}\n◆ Jangka Waktu : 7 Hari\n◆ Saldo Baru : ${formatRpgMoney(userRPG.bank)}\n\n─━━━━━━━━━─`
     return m.reply(msg)
@@ -1019,11 +1017,11 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
     const paymentStatus = chargeBankMembership(userRPG, tier.biayaBulanan, now, 'Biaya Membership Manual')
     if (paymentStatus === 'insufficient') {
       await saveDB(wdb)
-      return m.reply(`❌ Saldo bank tidak cukup untuk membayar biaya bulanan Rp ${tier.biayaBulanan.toLocaleString()}. Kartu dibekukan sampai tagihan dibayar.`)
+      return m.reply(`❌ Saldo bank tidak cukup untuk membayar biaya bulanan ${formatRpgMoney(tier.biayaBulanan)}. Kartu dibekukan sampai tagihan dibayar.`)
     }
     if (paymentStatus !== 'paid') return m.reply('❌ Pembayaran biaya bulanan tidak berhasil. Coba lagi setelah jatuh tempo.')
     await saveDB(wdb)
-    return m.reply(`✅ PEMBAYARAN BULANAN BERHASIL\nBiaya: Rp ${tier.biayaBulanan.toLocaleString()}\nSaldo bank: Rp ${userRPG.bank.toLocaleString()}\nKartu: AKTIF`)
+    return m.reply(`✅ PEMBAYARAN BULANAN BERHASIL\nBiaya: ${formatRpgMoney(tier.biayaBulanan)}\nSaldo bank: ${formatRpgMoney(userRPG.bank)}\nKartu: AKTIF`)
   }
 
   // RIWAYAT

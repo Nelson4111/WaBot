@@ -101,12 +101,13 @@ function commandGuide(prefix) {
     `> ↳ Melihat nama event pada hari tertentu atau hari ini.\n` +
     `> 📋 ${prefix}ev info <nomor/nama>\n` +
     `> ↳ Melihat detail dan efek event.\n\n` +
+    `🔓 Admin grup juga dapat meluncurkan atau menghentikan event *Storage Freedom* untuk semua pemain.\n\n` +
     `─━━━━━━━━━━━━━━─\n` +
     `📖 *PANDUAN LENGKAP*\n` +
     `> ↳ ${prefix}ev command`
 }
 
-function commandList(prefix) {
+function commandList(prefix, isAdmin = false) {
   return `╭─❏「 📋 PERINTAH EVENT RPG 」❏\n` +
     `│ 🎮 DAFTAR COMMAND\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
@@ -133,15 +134,17 @@ function commandList(prefix) {
     `> ↳ Pisahkan target dengan koma; kategori atau hari meluncurkan semua event di dalamnya.\n` +
     `> 🛑 ${prefix}ev terminate <all/nama/nomor/kategori>\n` +
     `> ↳ Pisahkan target dengan koma untuk menghentikan beberapa event.\n` +
-    `> ↳ Alias: shutdown dan clear\n\n` +
+    `> ↳ Alias: shutdown dan clear\n` +
+    `> 🔓 Admin grup dapat meluncurkan atau menghentikan Storage Freedom saja.\n\n` +
     `📖 *CONTOH*\n` +
     `> ${prefix}ev launch Golden Hour, Safety Net 2h\n` +
     `> ${prefix}ev launch Casino 2h\n` +
     `> ${prefix}ev launch Senin 2h\n` +
-    `> ${prefix}ev terminate Casino`
+    `> ${prefix}ev terminate Casino\n` +
+    (isAdmin ? `> ${prefix}ev launch Storage Freedom 2h\n> ${prefix}ev terminate Storage Freedom` : '')
 }
 
-let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
+let handler = async (m, { conn, args, text = '', usedPrefix, isOwner, isAdmin }) => {
   const prefix = usedPrefix || '.'
   const root = String(args[0] || '').toLowerCase()
   const now = Date.now()
@@ -186,12 +189,12 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
       )
     }
 
-    if (!isOwner) {
+    if (!isOwner && !(isAdmin && legacyEvent.id === 'inventory_bypass')) {
       return m.reply(
         `╭─❏「 🔒 AKSES DITOLAK 」❏\n` +
         `│ 🚀 PELUNCURAN EVENT\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Hanya owner atau co-owner yang dapat meluncurkan event.`
+        `Owner/co-owner dapat meluncurkan semua event. Admin grup hanya dapat meluncurkan Storage Freedom.`
       )
     }
 
@@ -241,6 +244,9 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
       ...(isOwner ? [
         { title: '🚀 Luncurkan event', description: 'Aktifkan event untuk durasi tertentu', id: `${prefix}ev launch` },
         { title: '🛑 Hentikan event', description: 'Kelola event yang sedang berlangsung', id: `${prefix}ev terminate` }
+      ] : isAdmin ? [
+        { title: '📦 Luncurkan Storage Freedom', description: 'Bypass kapasitas untuk semua pemain', id: `${prefix}ev launch Storage Freedom 2h` },
+        { title: '🛑 Hentikan Storage Freedom', description: 'Akhiri bypass global lebih awal', id: `${prefix}ev terminate Storage Freedom` }
       ] : [])
     ]
     return sendRpgButtons(conn, {
@@ -252,7 +258,7 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
       text: 'Ikuti event aktif, lihat jadwal, dan temukan efek spesialnya.',
       buttonText: '🌟 JELAJAHI EVENT',
       sections: [{ title: 'Pusat event', rows }],
-      fallbackText: commandList(prefix)
+      fallbackText: commandList(prefix, isAdmin)
     })
   }
 
@@ -429,15 +435,6 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
   }
 
   if (['launch', 'enable'].includes(root)) {
-    if (!isOwner) {
-      return m.reply(
-        `╭─❏「 🔒 AKSES DITOLAK 」❏\n` +
-        `│ 🚀 PELUNCURAN EVENT\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Hanya owner atau co-owner yang dapat meluncurkan event.`
-      )
-    }
-
     const parsed = parseLaunchArguments(args.slice(1))
 
     if (!parsed?.eventInput || !parsed.duration) {
@@ -462,6 +459,16 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
         `│ Periksa kembali nama, nomor, atau kategori event.\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `📌 Gunakan *${prefix}ev list* untuk kategori dan *${prefix}ev list all* untuk event.`
+      )
+    }
+
+    const canLaunchStorageEvent = isAdmin && events.every(event => event.id === 'inventory_bypass')
+    if (!isOwner && !canLaunchStorageEvent) {
+      return m.reply(
+        `╭─❏「 🔒 AKSES DITOLAK 」❏\n` +
+        `│ 🚀 PELUNCURAN EVENT\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Owner/co-owner dapat meluncurkan semua event. Admin grup hanya dapat meluncurkan Storage Freedom.`
       )
     }
 
@@ -509,15 +516,6 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
   }
 
   if (['terminate', 'shutdown', 'clear'].includes(root)) {
-    if (!isOwner) {
-      return m.reply(
-        `╭─❏「 🔒 AKSES DITOLAK 」❏\n` +
-        `│ 🛑 PENGHENTIAN EVENT\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n` +
-        `Hanya owner atau co-owner yang dapat menghentikan event.`
-      )
-    }
-
     const target = args.slice(1).join(' ').trim() || (root === 'clear' ? 'all' : '')
 
     if (!target) {
@@ -535,6 +533,15 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
     const current = getActiveRpgEvents(now)
 
     if (target.toLowerCase() === 'all') {
+      if (!isOwner) {
+        return m.reply(
+          `╭─❏「 🔒 AKSES DITOLAK 」❏\n` +
+          `│ 🛑 PENGHENTIAN EVENT\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `Hanya owner atau co-owner yang dapat menghentikan semua event.`
+        )
+      }
+
       if (!current.length) {
         return m.reply(
           `╭─❏「 ℹ️ EVENT RPG 」❏\n` +
@@ -571,6 +578,16 @@ let handler = async (m, { conn, args, text = '', usedPrefix, isOwner }) => {
         `│ Periksa kembali nama, nomor, atau kategori event.\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         `📌 Gunakan *${prefix}ev list* untuk melihat kategori event.`
+      )
+    }
+
+    const canStopStorageEvent = isAdmin && events.every(event => event.id === 'inventory_bypass')
+    if (!isOwner && !canStopStorageEvent) {
+      return m.reply(
+        `╭─❏「 🔒 AKSES DITOLAK 」❏\n` +
+        `│ 🛑 PENGHENTIAN EVENT\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `Owner/co-owner dapat menghentikan semua event. Admin grup hanya dapat menghentikan Storage Freedom.`
       )
     }
 

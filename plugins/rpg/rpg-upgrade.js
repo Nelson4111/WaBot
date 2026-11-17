@@ -4,7 +4,7 @@ import { getMaterialCount, consumeMaterial } from '../../lib/rpg-libternakData.j
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { getDifficultyDeathHealCooldownRemaining } from '../../lib/rpgDifficulty.js'
-import { subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { formatRpgNumber, formatRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -52,14 +52,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   function formatUpgradeCost(cost) {
-    return `> ↳ 💰 Money : Rp ${cost.money.toLocaleString()}\n` +
-      `> ↳ ⛓️ Iron : ${cost.iron}\n` +
-      `> ↳ 🪨 Stone : ${cost.stone}${cost.stone ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 🪵 Wood : ${cost.wood}${cost.wood ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ ✨ Gold : ${cost.gold}${cost.gold ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 👜 Kulit : ${cost.kulit}${cost.kulit ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 🐉 Sisik : ${cost.sisik}${cost.sisik ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 💎 Diamond : ${cost.diamond}${cost.diamond ? '' : ' (tidak digunakan)'}\n`
+    return `> ↳ 💰 Money : ${formatRpgMoney(cost.money)}\n` +
+      `> ↳ ⛓️ Iron : ${formatRpgNumber(cost.iron)}\n` +
+      `> ↳ 🪨 Stone : ${formatRpgNumber(cost.stone)}${cost.stone ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 🪵 Wood : ${formatRpgNumber(cost.wood)}${cost.wood ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ ✨ Gold : ${formatRpgNumber(cost.gold)}${cost.gold ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 👜 Kulit : ${formatRpgNumber(cost.kulit)}${cost.kulit ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 🐉 Sisik : ${formatRpgNumber(cost.sisik)}${cost.sisik ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 💎 Diamond : ${formatRpgNumber(cost.diamond)}${cost.diamond ? '' : ' (tidak digunakan)'}\n`
   }
 
  if (item === 'guide' || item === 'panduan') {
@@ -166,7 +166,7 @@ if ((wdb.money[m.sender] || 0) < totalMoney) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *UANG TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh Rp ${totalMoney.toLocaleString()}\n\n` +
+    `> ↳ Butuh ${formatRpgMoney(totalMoney)}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }

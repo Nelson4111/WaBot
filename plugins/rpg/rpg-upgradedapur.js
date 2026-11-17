@@ -1,4 +1,4 @@
-import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { formatRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 
@@ -12,7 +12,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   let harga = user.dapur.slot * 5000000
   let userMoney = wdb.money[m.sender] || 0
-  if(userMoney < harga) return m.reply(`❌ Uang kurang! Upgrade ke slot ${user.dapur.slot + 1} butuh Rp ${harga.toLocaleString()}`)
+  if(userMoney < harga) return m.reply(`❌ Uang kurang! Upgrade ke slot ${user.dapur.slot + 1} butuh ${formatRpgMoney(harga)}`)
 
   wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], harga)
   user.dapur.slot += 1
@@ -21,8 +21,8 @@ let handler = async (m, { conn, usedPrefix }) => {
   let cap = `╭─❏「 👨‍🍳 UPGRADE DAPUR 」❏\n`
 cap += `│ 📦 *Slot Baru* : ${user.dapur.slot}/10\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
-cap += `> ↳ 💸 Biaya : Rp ${harga.toLocaleString()}\n`
-cap += `> ↳ 🔧 Upgrade Berikutnya : Rp ${(user.dapur.slot * 5000000).toLocaleString()}\n`
+cap += `> ↳ 💸 Biaya : ${formatRpgMoney(harga)}\n`
+cap += `> ↳ 🔧 Upgrade Berikutnya : ${formatRpgMoney(user.dapur.slot * 5000000)}\n`
 cap += `\n─━━━━━━━━━━━━━━─`
 
 return sendRpgButtons(conn, {

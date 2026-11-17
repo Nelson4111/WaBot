@@ -1,4 +1,4 @@
-import { addRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { formatRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 
 let handler = async (m, { conn }) => {
@@ -27,7 +27,7 @@ let handler = async (m, { conn }) => {
     return m.reply(
       `╭─❏「 ❌ UPGRADE LADANG 」❏\n` +
       `│ 💸 Uang tidak cukup.\n` +
-      `│ ↳ Harga ladang ke-${currentLadang + 1}: Rp ${hargaSewa.toLocaleString()}\n` +
+      `│ ↳ Harga ladang ke-${currentLadang + 1}: ${formatRpgMoney(hargaSewa)}\n` +
       `╰─━━━━━━━━━━━━━━─`
     )
   }
@@ -40,8 +40,8 @@ let handler = async (m, { conn }) => {
   return m.reply(
     `╭─❏「 🏡 UPGRADE LADANG 」❏\n` +
     `│ 🌱 Slot Baru: ${user.maxLadang}\n` +
-    `│ 💸 Biaya: -Rp ${hargaSewa.toLocaleString()}\n` +
-    `│ 🔧 Upgrade Berikutnya: Rp ${(user.maxLadang * 500000).toLocaleString()}\n` +
+    `│ 💸 Biaya: -${formatRpgMoney(hargaSewa)}\n` +
+    `│ 🔧 Upgrade Berikutnya: ${formatRpgMoney(user.maxLadang * 500000)}\n` +
     `╰─━━━━━━━━━━━━━━─`
   )
 }
