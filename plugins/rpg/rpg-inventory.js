@@ -312,11 +312,15 @@ return m.reply(
         `> ↳ Level: *${level} → ${targetLevel}*\n` +
         `> ↳ Biaya: *Rp ${formatMoney(cost)}*\n` +
         `> ↳ Saldo sekarang: Rp ${formatMoney(accountBalance)}\n\n` +
-        `📊 *KAPASITAS SEBELUM → SESUDAH*\n`
+        `📊 *PERUBAHAN KAPASITAS*\n`
       for (const [type, storage] of Object.entries(storageTypes)) {
-        text += `> ${storage.icon} ${storage.label}: ${formatRpgNumber(countByType[type])}/${formatRpgNumber(capacity)} → ${formatRpgNumber(countByType[type])}/${formatRpgNumber(100 + targetLevel * 50)}\n`
+        const count = countByType[type]
+        text +=
+          `${storage.icon} *${storage.label}*\n` +
+          `> Sebelum: ${formatRpgNumber(count)}/${formatRpgNumber(capacity)} slot\n` +
+          `> Sesudah: ${formatRpgNumber(count)}/${formatRpgNumber(100 + targetLevel * 50)} slot\n\n`
       }
-      text += `\nKonfirmasi upgrade? Biaya dibayar dari uang saku.`
+      text += `Konfirmasi upgrade? Biaya dibayar dari uang saku.`
       return sendRpgConfirmButtons(conn, m, {
         title: '🆙 KONFIRMASI UPGRADE INVENTORY',
         text,
