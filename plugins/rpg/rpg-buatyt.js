@@ -18,7 +18,7 @@ function normalizeYoutube(data = {}) {
   }
 }
 
-let handler = async (m, { text }) => {
+let handler = async (m, { text, usedPrefix }) => {
   const wdb = loadDB()
   if (!wdb.users) wdb.users = {}
   if (!wdb.users[m.sender]) wdb.users[m.sender] = {}
@@ -63,7 +63,13 @@ teks += `> ↳ *.liveyt judul* untuk mulai live.\n\n`
 
 teks += `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, teks, 'https://c.termai.cc/i189/AS4Mvv.webp')
+  return sendRpgMsg(conn, m, teks, 'https://c.termai.cc/i189/AS4Mvv.webp', {
+    usedPrefix,
+    buttons: [
+      ['🎬 Pilih Konten', `${usedPrefix}room content list`],
+      ['📺 Profil Channel', `${usedPrefix}akunyt`]
+    ]
+  })
 }
 
 handler.help = ['buatyt <nama>', 'createyt <nama>']

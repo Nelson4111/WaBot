@@ -340,7 +340,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
   if (!input || input === 'menu') {
     const menu = buildMenu(wdb, sender, usedPrefix)
-    return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, { mentions: menu.mentions })
+    return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, {
+      mentions: menu.mentions,
+      usedPrefix,
+      buttons: [
+        ['🎟️ Beli Tiket', `${usedPrefix}lottery buy 1`],
+        ['📊 Statistik', `${usedPrefix}lottery stats`]
+      ]
+    })
   }
 
   if (input === 'guide' || input === 'panduan') {
@@ -645,7 +652,14 @@ if (compareRpgMoney(saldo, totalHarga) < 0) {
   }
 
   const menu = buildMenu(wdb, sender, usedPrefix)
-  return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, { mentions: menu.mentions })
+  return sendRpgMsg(conn, m, menu.text, LOTTERY_IMAGE, {
+    mentions: menu.mentions,
+    usedPrefix,
+    buttons: [
+      ['🎟️ Beli Tiket', `${usedPrefix}lottery buy 1`],
+      ['📊 Statistik', `${usedPrefix}lottery stats`]
+    ]
+  })
 }
 
 handler.help = ['lottery', 'lottery guide', 'lottery info', 'lottery stats', 'lottery history', 'lottery buy <jumlah>', 'lottery buy yes/no', 'lottery claim', 'lottery giveaway']

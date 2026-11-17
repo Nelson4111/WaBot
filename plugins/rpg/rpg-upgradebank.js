@@ -28,8 +28,8 @@ export function formatFullTierFacilities(tier, tierLevel) {
 
 function formatPriceOptions(label, normalPrice, premiumPrice, isPremium) {
   const normal = formatRpgMoney(normalPrice)
-  if (!isPremium) return `> ↳ ${label} : ${normal}\n`
-  return `> ↳ ${label} Normal : ${normal}\n> ↳ ${label} Premium : ${formatRpgMoney(premiumPrice)}\n`
+  if (!isPremium) return `> ↳ ${label}\n   ${normal}\n`
+  return `> ↳ ${label} Normal\n   ${normal}\n> ↳ ${label} Premium\n   ${formatRpgMoney(premiumPrice)}\n`
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -103,7 +103,7 @@ if (!isNaN(action)) {
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ ❌ *UPGRADE HARUS BERURUTAN*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Tier kamu : ${user.bankTier} → ${user.bankTier + 1}\n\n` +
+      `> ↳ Tier kamu\n   ${user.bankTier} → ${user.bankTier + 1}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -123,11 +123,11 @@ if (!isNaN(action)) {
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Target : ${tierBaru.color} *${tierBaru.name}*\n` +
+        `> ↳ Target\n   ${tierBaru.color} *${tierBaru.name}*\n` +
         formatUpgradeChanges(tierBaru, targetTier, currentTier) +
         formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
-        `> ↳ Uang Saku : ${formatRpgMoney(walletNow)}\n` +
-        `> ↳ Saldo Bank : ${formatRpgMoney(bankNow)}\n\n` +
+        `> ↳ Uang Saku\n   ${formatRpgMoney(walletNow)}\n` +
+        `> ↳ Saldo Bank\n   ${formatRpgMoney(bankNow)}\n\n` +
         `Pastikan detail tier dan saldo sebelum melanjutkan.`,
         String(targetTier),
         tierBaru.name
@@ -139,12 +139,12 @@ if (!isNaN(action)) {
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Target : ${tierBaru.color} *${tierBaru.name}*\n` +
+        `> ↳ Target\n   ${tierBaru.color} *${tierBaru.name}*\n` +
         formatUpgradeChanges(tierBaru, targetTier, currentTier) +
         formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
-        `> ↳ Uang Saku : ${formatRpgMoney(walletNow)}\n` +
-        `> ↳ Saldo Bank : ${formatRpgMoney(bankNow)}\n` +
-        `> ↳ Otomatis pakai bank : ${formatRpgMoney(payFromBank)}\n\n` +
+        `> ↳ Uang Saku\n   ${formatRpgMoney(walletNow)}\n` +
+        `> ↳ Saldo Bank\n   ${formatRpgMoney(bankNow)}\n` +
+        `> ↳ Otomatis pakai bank\n   ${formatRpgMoney(payFromBank)}\n\n` +
         `Pastikan detail tier dan sumber pembayaran sebelum melanjutkan.`,
         String(targetTier),
         tierBaru.name
@@ -156,8 +156,8 @@ if (!isNaN(action)) {
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
-      `> ↳ Punya : ${formatRpgMoney(walletNow)}\n` +
-      `> ↳ Saldo Bank : ${formatRpgMoney(bankNow)}\n\n` +
+      `> ↳ Punya\n   ${formatRpgMoney(walletNow)}\n` +
+      `> ↳ Saldo Bank\n   ${formatRpgMoney(bankNow)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -176,9 +176,9 @@ if (!isNaN(action)) {
         `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         formatPriceOptions('Harga', tierBaruNormalPrice, tierBaruPrice, isPremium) +
-        `> ↳ Butuh : ${formatRpgMoney(tierBaruPrice)}\n` +
-        `> ↳ Uang Saku : ${formatRpgMoney(walletNow)}\n` +
-        `> ↳ Bank Tersedia : ${formatRpgMoney(bankNow)}\n\n` +
+        `> ↳ Butuh\n   ${formatRpgMoney(tierBaruPrice)}\n` +
+        `> ↳ Uang Saku\n   ${formatRpgMoney(walletNow)}\n` +
+        `> ↳ Bank Tersedia\n   ${formatRpgMoney(bankNow)}\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -196,9 +196,9 @@ if (!isNaN(action)) {
     `│ ${tierBaru.color} *${tierBaru.name}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     formatFullTierFacilities(tierBaru, targetTier) +
-    `> ↳ Limit : ${formatBankLimit(tierBaru.limit)}\n` +
-    `> ↳ Sisa Uang : ${formatRpgMoney(wdb.money[m.sender] || 0)}\n` +
-    `> ↳ Sisa Bank : ${formatRpgMoney(user.bank || 0)}\n\n` +
+    `> ↳ Limit\n   ${formatBankLimit(tierBaru.limit)}\n` +
+    `> ↳ Sisa Uang\n   ${formatRpgMoney(wdb.money[m.sender] || 0)}\n` +
+    `> ↳ Sisa Bank\n   ${formatRpgMoney(user.bank || 0)}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -212,7 +212,7 @@ if (action === 'beli') {
       `╭─❏「 💳 UPGRADE BANK 」❏\n` +
       `│ 🏆 *TIER TERTINGGI*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
-      `> ↳ Sudah tier tertinggi : *${currentTier.name}*\n\n` +
+      `> ↳ Sudah tier tertinggi\n   *${currentTier.name}*\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -231,11 +231,11 @@ if (action === 'beli') {
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI UPGRADE*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Target : ${nextTier.color} *${nextTier.name}*\n` +
+        `> ↳ Target\n   ${nextTier.color} *${nextTier.name}*\n` +
         formatUpgradeChanges(nextTier, user.bankTier + 1, currentTier) +
         formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
-        `> ↳ Uang Saku : ${formatRpgMoney(walletNow)}\n` +
-        `> ↳ Saldo Bank : ${formatRpgMoney(bankNow)}\n\n` +
+        `> ↳ Uang Saku\n   ${formatRpgMoney(walletNow)}\n` +
+        `> ↳ Saldo Bank\n   ${formatRpgMoney(bankNow)}\n\n` +
         `Pastikan detail tier dan saldo sebelum melanjutkan.`,
         'beli',
         nextTier.name
@@ -247,12 +247,12 @@ if (action === 'beli') {
         `╭─❏「 💳 UPGRADE BANK 」❏\n` +
         `│ ⚠️ *KONFIRMASI PEMAKAIAN BANK*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
-        `> ↳ Target : ${nextTier.color} *${nextTier.name}*\n` +
+        `> ↳ Target\n   ${nextTier.color} *${nextTier.name}*\n` +
         formatUpgradeChanges(nextTier, user.bankTier + 1, currentTier) +
         formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
-        `> ↳ Uang Saku : ${formatRpgMoney(walletNow)}\n` +
-        `> ↳ Saldo Bank : ${formatRpgMoney(bankNow)}\n` +
-        `> ↳ Otomatis pakai bank : ${formatRpgMoney(payFromBank)}\n\n` +
+        `> ↳ Uang Saku\n   ${formatRpgMoney(walletNow)}\n` +
+        `> ↳ Saldo Bank\n   ${formatRpgMoney(bankNow)}\n` +
+        `> ↳ Otomatis pakai bank\n   ${formatRpgMoney(payFromBank)}\n\n` +
         `Pastikan detail tier dan sumber pembayaran sebelum melanjutkan.`,
         'beli',
         nextTier.name
@@ -264,8 +264,8 @@ if (action === 'beli') {
       `│ ❌ *UANG TIDAK CUKUP*\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
-      `> ↳ Punya : ${formatRpgMoney(walletNow)}\n` +
-      `> ↳ Saldo Bank : ${formatRpgMoney(bankNow)}\n\n` +
+      `> ↳ Punya\n   ${formatRpgMoney(walletNow)}\n` +
+      `> ↳ Saldo Bank\n   ${formatRpgMoney(bankNow)}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
   }
@@ -284,9 +284,9 @@ if (action === 'beli') {
         `│ ❌ *SALDO BANK TIDAK CUKUP*\n` +
         `╰─━━━━━━━━━━━━━━─\n\n` +
         formatPriceOptions('Harga', nextTierNormalPrice, nextTierPrice, isPremium) +
-        `> ↳ Butuh : ${formatRpgMoney(nextTierPrice)}\n` +
-        `> ↳ Uang Saku : ${formatRpgMoney(walletNow)}\n` +
-        `> ↳ Bank Tersedia : ${formatRpgMoney(bankNow)}\n\n` +
+        `> ↳ Butuh\n   ${formatRpgMoney(nextTierPrice)}\n` +
+        `> ↳ Uang Saku\n   ${formatRpgMoney(walletNow)}\n` +
+        `> ↳ Bank Tersedia\n   ${formatRpgMoney(bankNow)}\n\n` +
         `─━━━━━━━━━━━━━━─`
       )
     }
@@ -304,9 +304,9 @@ if (action === 'beli') {
     `│ ${nextTier.color} *${nextTier.name}*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     formatFullTierFacilities(nextTier, user.bankTier + 1) +
-    `> ↳ Limit : ${formatBankLimit(nextTier.limit)}\n` +
-    `> ↳ Sisa Uang : ${formatRpgMoney(wdb.money[m.sender] || 0)}\n` +
-    `> ↳ Sisa Bank : ${formatRpgMoney(user.bank || 0)}\n\n` +
+    `> ↳ Limit\n   ${formatBankLimit(nextTier.limit)}\n` +
+    `> ↳ Sisa Uang\n   ${formatRpgMoney(wdb.money[m.sender] || 0)}\n` +
+    `> ↳ Sisa Bank\n   ${formatRpgMoney(user.bank || 0)}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -318,12 +318,12 @@ cap += `│ ${currentTier.color} *${currentTier.name}* [Lv.${user.bankTier}]\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
 cap += `📊 *INFORMASI BANK*\n`
-cap += `> ↳ Status : ${isPremium ? '👑 Premium (Diskon 25%)' : '👤 User Biasa'}\n`
-cap += `> ↳ Limit : ${formatBankLimit(currentTier.limit)}\n`
-cap += `> ↳ Bunga : ${(currentTier.bunga * 100).toFixed(2)}%/minggu\n`
-cap += `> ↳ Asuransi : ${(currentTier.asuransi * 100).toFixed(0)}%\n`
+cap += `> ↳ Status\n   ${isPremium ? '👑 Premium (Diskon 25%)' : '👤 User Biasa'}\n`
+cap += `> ↳ Limit\n   ${formatBankLimit(currentTier.limit)}\n`
+cap += `> ↳ Bunga\n   ${(currentTier.bunga * 100).toFixed(2)}%/minggu\n`
+cap += `> ↳ Asuransi\n   ${(currentTier.asuransi * 100).toFixed(0)}%\n`
 cap += formatPriceOptions('Biaya Bulanan', currentTier.biayaBulanan, getBankPrice(currentTier.biayaBulanan, m.sender, wdb), isPremium)
-cap += `> ↳ Keamanan : Lv.${getBankEffectiveSecurity(currentTier)} (${currentTier.fasilitas.find(f => f.includes('Penjaga')) || 'Standar'})\n`
+cap += `> ↳ Keamanan\n   Lv.${getBankEffectiveSecurity(currentTier)} (${currentTier.fasilitas.find(f => f.includes('Penjaga')) || 'Standar'})\n`
 cap += `> ↳ Fasilitas :\n`
 
 currentTier.fasilitas.forEach(f => {
@@ -336,7 +336,7 @@ if (nextTier) {
   const nextTierDiscountedPrice = getBankPrice(nextTier.price, m.sender, wdb)
   const nextTierDiscountedFee = getBankPrice(nextTier.biayaBulanan, m.sender, wdb)
   cap += `⬆️ *NEXT TIER*\n`
-  cap += `> ↳ ${nextTier.color} *${nextTier.name}* [Lv.${user.bankTier + 1}]\n`
+  cap += `> ↳ Kartu berikutnya\n   ${nextTier.color} *${nextTier.name}* [Lv.${user.bankTier + 1}]\n`
   cap += formatPriceOptions('Harga', nextTier.price, nextTierDiscountedPrice, isPremium)
   cap += formatPriceOptions('Biaya/Bulan', nextTier.biayaBulanan, nextTierDiscountedFee, isPremium)
   cap += `\n`

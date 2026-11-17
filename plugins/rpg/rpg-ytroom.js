@@ -112,6 +112,13 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const raw = typeof text === 'string' ? text.trim() : ''
   const args = raw ? raw.toLowerCase().split(/\s+/).filter(Boolean) : []
   const sub = (args[0] || '').trim()
+  const sendYoutubeMessage = (message, image = DEFAULT_YOUTUBE_IMAGE) => sendRpgMsg(conn, m, message, image, {
+    usedPrefix,
+    buttons: [
+      ['📺 Profil Channel', `${usedPrefix}akunyt`],
+      ['🎛️ Menu YT Room', `${usedPrefix}room`]
+    ]
+  })
 
   // no text: explain what this room/youtuber alternative is
   if (!text) {
@@ -131,7 +138,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `> ${usedPrefix || '.'}room live\n`
     cap += `> ${usedPrefix || '.'}room collab\n`
     cap += `─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+    return sendYoutubeMessage(cap)
   }
 
   // room setup routes
@@ -168,7 +175,7 @@ cap += `> ↳ Ketik: *${usedPrefix}room set gender male|female|none*\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+return sendYoutubeMessage(cap)
   }
 
   // edit/set gender flows
@@ -186,7 +193,7 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
     cap += `│ Gender: *${choice}*\n`
     cap += `│ Channel: *${y.name || 'Room'}*\n`
     cap += `╰─━━━━━━━━━━━━━━─`
-    return sendRpgMsg(conn, m, cap, img)
+    return sendYoutubeMessage(cap, img)
   }
 
   if (sub === 'edit' || sub === 'set') {
@@ -202,7 +209,7 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
       }
       y.gender = value
       saveDB(wdb)
-      return sendRpgMsg(conn, m, `✅ Gender room diubah ke *${value}*`, choicePic(value))
+      return sendYoutubeMessage(`✅ Gender room diubah ke *${value}*`, choicePic(value))
     }
 
     if (target === 'namayt' || target === 'name' || target === 'nama') {
@@ -242,13 +249,13 @@ return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
         cap += `╰─━━━━━━━━━━━━━━─\n\n`
         cap += `${content.desc}\n\n`
         cap += `Pilihan: *${key}*`
-        return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+        return sendYoutubeMessage(cap)
       }
 
       let cap = `╭─❏「 🎬 CONTENT LIST 」❏\n`
       cap += `${contentListText()}\n`
       cap += `╰─━━━━━━━━━━━━━━─`
-      return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+      return sendYoutubeMessage(cap)
     }
 
     if (!contentMap[what]) {
@@ -291,7 +298,7 @@ cap += `> ↳ Efek : income +${Math.round(cfg.bonus * 100)}%, view +${Math.round
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+return sendYoutubeMessage(cap)
  }
 
   if (sub === 'live') {
@@ -336,7 +343,7 @@ cap += `> ↳ Gaji : +Rp ${payout.toLocaleString()}\n\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+return sendYoutubeMessage(cap)
  }
 
   if (sub === 'collab' || sub === 'collabyt' || sub === 'collaboration') {
@@ -374,7 +381,7 @@ cap += `> ↳ Pendapatan : +Rp ${collabGain.toLocaleString()}\n\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, DEFAULT_YOUTUBE_IMAGE)
+return sendYoutubeMessage(cap)
  }
 
   // owner display route
@@ -397,7 +404,7 @@ cap += `> ↳ Income : Rp ${(y.income || 0).toLocaleString()}\n\n`
 
 cap += `─━━━━━━━━━━━━━━─`
 
-return sendRpgMsg(conn, m, cap, pickGenderImage(y.gender || 'none'))  }
+return sendYoutubeMessage(cap, pickGenderImage(y.gender || 'none'))  }
 
   // command aliases: ytr live, ytr collab, ytr info etc
   if (sub === 'live' || sub === 'collab' || sub === 'info' || sub === 'status' || sub === 'stats') {

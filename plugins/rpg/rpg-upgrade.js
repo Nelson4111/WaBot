@@ -52,14 +52,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   function formatUpgradeCost(cost) {
-    return `> ↳ 💰 Money : ${formatRpgMoney(cost.money)}\n` +
-      `> ↳ ⛓️ Iron : ${formatRpgNumber(cost.iron)}\n` +
-      `> ↳ 🪨 Stone : ${formatRpgNumber(cost.stone)}${cost.stone ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 🪵 Wood : ${formatRpgNumber(cost.wood)}${cost.wood ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ ✨ Gold : ${formatRpgNumber(cost.gold)}${cost.gold ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 👜 Kulit : ${formatRpgNumber(cost.kulit)}${cost.kulit ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 🐉 Sisik : ${formatRpgNumber(cost.sisik)}${cost.sisik ? '' : ' (tidak digunakan)'}\n` +
-      `> ↳ 💎 Diamond : ${formatRpgNumber(cost.diamond)}${cost.diamond ? '' : ' (tidak digunakan)'}\n`
+    return `> ↳ 💰 Money\n   ${formatRpgMoney(cost.money)}\n` +
+      `> ↳ ⛓️ Iron\n   ${formatRpgNumber(cost.iron)}\n` +
+      `> ↳ 🪨 Stone\n   ${formatRpgNumber(cost.stone)}${cost.stone ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 🪵 Wood\n   ${formatRpgNumber(cost.wood)}${cost.wood ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ ✨ Gold\n   ${formatRpgNumber(cost.gold)}${cost.gold ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 👜 Kulit\n   ${formatRpgNumber(cost.kulit)}${cost.kulit ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 🐉 Sisik\n   ${formatRpgNumber(cost.sisik)}${cost.sisik ? '' : ' (tidak digunakan)'}\n` +
+      `> ↳ 💎 Diamond\n   ${formatRpgNumber(cost.diamond)}${cost.diamond ? '' : ' (tidak digunakan)'}\n`
   }
 
  if (item === 'guide' || item === 'panduan') {
@@ -112,10 +112,10 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     listUpgrade += `${icon} *${currentName}*\n`
 
     if (lvl === 0) {
-      listUpgrade += `> ↳ Status : Belum dimiliki (.craft ${i})\n\n`
+      listUpgrade += `> ↳ Status\n   Belum dimiliki (.craft ${i})\n\n`
     } else {
-      listUpgrade += `> ↳ Next : ${nextName}\n`
-      listUpgrade += `> ↳ Efek : ${detailBonus}\n`
+      listUpgrade += `> ↳ Next\n   ${nextName}\n`
+      listUpgrade += `> ↳ Efek\n   ${detailBonus}\n`
       listUpgrade += formatUpgradeCost(cost) + `\n`
     }
   }
@@ -166,7 +166,7 @@ if ((wdb.money[m.sender] || 0) < totalMoney) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *UANG TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh ${formatRpgMoney(totalMoney)}\n\n` +
+    `> ↳ Butuh\n   ${formatRpgMoney(totalMoney)}\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -176,7 +176,7 @@ if (getMaterialCount(user, 'iron') < totalIron) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *IRON TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh ${totalIron} Iron\n\n` +
+    `> ↳ Butuh\n   ${totalIron} Iron\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -186,7 +186,7 @@ if (getMaterialCount(user, 'stone') < totalStone) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *STONE TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh ${totalStone} Stone\n\n` +
+    `> ↳ Butuh\n   ${totalStone} Stone\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -196,7 +196,7 @@ if (getMaterialCount(user, 'wood') < totalWood) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *WOOD TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh ${totalWood} Wood\n\n` +
+    `> ↳ Butuh\n   ${totalWood} Wood\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -206,17 +206,17 @@ if (getMaterialCount(user, 'gold') < totalGold) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *GOLD TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh ${totalGold} Gold\n\n` +
+    `> ↳ Butuh\n   ${totalGold} Gold\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
 
 if (getMaterialCount(user, 'kulit') < totalKulit) {
-  return m.reply(`❌ Kulit tidak cukup! Butuh ${totalKulit} Kulit.`)
+  return m.reply(`❌ Kulit tidak cukup.\n> ↳ Butuh\n   ${totalKulit} Kulit.`)
 }
 
 if (getMaterialCount(user, 'sisik') < totalSisik) {
-  return m.reply(`❌ Sisik tidak cukup! Butuh ${totalSisik} Sisik.`)
+  return m.reply(`❌ Sisik tidak cukup.\n> ↳ Butuh\n   ${totalSisik} Sisik.`)
 }
 
 if (getMaterialCount(user, 'diamond') < totalDiamond) {
@@ -224,7 +224,7 @@ if (getMaterialCount(user, 'diamond') < totalDiamond) {
     `╭─❏「 ⚙️ AVELIA UPGRADE 」❏\n` +
     `│ ❌ *DIAMOND TIDAK CUKUP*\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `> ↳ Butuh 💎${totalDiamond} Diamond\n\n` +
+    `> ↳ Butuh\n   💎${totalDiamond} Diamond\n\n` +
     `─━━━━━━━━━━━━━━─`
   )
 }
@@ -234,7 +234,8 @@ if (!confirmYes) {
   await saveDB(wdb)
   const confirmationText =
     `╭─❏「 ⚙️ KONFIRMASI UPGRADE 」❏\n` +
-    `│ ${oldName} ➜ ${getEquipmentName(item, lvl + 1)}\n` +
+    `│ Equipment saat ini\n> ${oldName}\n` +
+    `│ Upgrade berikutnya\n> ${getEquipmentName(item, lvl + 1)}\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
     `📌 *RINCIAN BIAYA*\n` +
     formatUpgradeCost(cost) + `\n` +
@@ -281,8 +282,9 @@ if (item === 'pickaxe') bonusMsg = `Hasil mining Gold akan lebih banyak!`
 if (item === 'fishingrod') bonusMsg = `Peluang dapat Ikan Langka meningkat!`
 
 let capSuccess = `╭─❏「 ✨ UPGRADE SUCCESS 」❏\n`
-capSuccess += `│ 🔥 *${oldName}* ➜ *${newName}* 🌟\n`
-capSuccess += `│ 📝 ${bonusMsg}\n`
+capSuccess += `│ Equipment sebelumnya\n> 🔥 *${oldName}*\n`
+capSuccess += `│ Equipment baru\n> 🌟 *${newName}*\n`
+capSuccess += `│ Efek\n> 📝 ${bonusMsg}\n`
 capSuccess += `╰─━━━━━━━━━━━━━━─\n\n`
 capSuccess += `📌 *RINCIAN BIAYA TERPAKAI*\n`
 capSuccess += formatUpgradeCost(cost)

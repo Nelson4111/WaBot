@@ -247,6 +247,24 @@ let handler = async (m, {
   const responseChat = m.chat
 
   const sendPanelResponse = async (content, options = {}) => {
+    if (content.image) {
+      return sendRpgButtons(conn, {
+        chat: responseChat,
+        message: sourceMessage,
+        quoted: sourceMessage,
+        title: '📊 RPG PANEL',
+        subtitle: 'Akses cepat ke fitur RPG',
+        text: content.caption || content.text || '',
+        footer: 'AVELIA • RPG PANEL',
+        image: content.image,
+        buttons: [
+          ['🧭 Menu RPG', `${usedPrefix}rpg`],
+          ['🎒 Buka Tas', `${usedPrefix}inv`]
+        ],
+        mentions: content.mentions || options.mentions || [],
+        contextInfo: content.contextInfo || options.contextInfo
+      })
+    }
     return conn.sendMessage(responseChat, content, { quoted: sourceMessage, ...options })
   }
 

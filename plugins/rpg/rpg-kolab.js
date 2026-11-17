@@ -20,7 +20,7 @@ function normalizeYoutube(data = {}) {
   }
 }
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
 
   let who = m.mentionedJid && m.mentionedJid[0]
@@ -133,7 +133,14 @@ let handler = async (m, { conn }) => {
     m,
     teks,
     'https://c.termai.cc/i165/qxnHa.jpg',
-    { mentions: [m.sender, who] }
+    {
+      mentions: [m.sender, who],
+      usedPrefix,
+      buttons: [
+        ['📺 Profil Channel', `${usedPrefix}akunyt`],
+        ['🎛️ Menu YT Room', `${usedPrefix}room`]
+      ]
+    }
   )
 }
 

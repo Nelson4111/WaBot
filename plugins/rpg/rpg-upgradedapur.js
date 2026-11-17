@@ -12,17 +12,23 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   let harga = user.dapur.slot * 5000000
   let userMoney = wdb.money[m.sender] || 0
-  if(userMoney < harga) return m.reply(`❌ Uang kurang! Upgrade ke slot ${user.dapur.slot + 1} butuh ${formatRpgMoney(harga)}`)
+  if(userMoney < harga) {
+    return m.reply(
+      `❌ Uang kurang.\n` +
+      `> ↳ Upgrade ke slot\n   ${user.dapur.slot + 1}\n` +
+      `> ↳ Butuh\n   ${formatRpgMoney(harga)}`
+    )
+  }
 
   wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender], harga)
   user.dapur.slot += 1
   saveDB(wdb)
 
   let cap = `╭─❏「 👨‍🍳 UPGRADE DAPUR 」❏\n`
-cap += `│ 📦 *Slot Baru* : ${user.dapur.slot}/10\n`
+cap += `│ 📦 *Slot Baru*\n> ${user.dapur.slot}/10\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
-cap += `> ↳ 💸 Biaya : ${formatRpgMoney(harga)}\n`
-cap += `> ↳ 🔧 Upgrade Berikutnya : ${formatRpgMoney(user.dapur.slot * 5000000)}\n`
+cap += `> ↳ 💸 Biaya\n   ${formatRpgMoney(harga)}\n`
+cap += `> ↳ 🔧 Upgrade Berikutnya\n   ${formatRpgMoney(user.dapur.slot * 5000000)}\n`
 cap += `\n─━━━━━━━━━━━━━━─`
 
 return sendRpgButtons(conn, {

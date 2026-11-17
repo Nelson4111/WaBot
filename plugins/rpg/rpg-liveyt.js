@@ -20,7 +20,7 @@ function normalizeYoutube(data = {}) {
   }
 }
 
-let handler = async (m, { conn, text }) => {
+let handler = async (m, { conn, text, usedPrefix }) => {
   const wdb = loadDB()
   if (!wdb.users) wdb.users = {}
   if (!wdb.users[m.sender]) wdb.users[m.sender] = {}
@@ -113,7 +113,13 @@ caption += `> ↳ ⏰ Live Selesai : ${new Date().toLocaleString('id-ID', { time
 
 caption += `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i165/qxnHa.jpg')
+  return sendRpgMsg(conn, m, caption, 'https://c.termai.cc/i165/qxnHa.jpg', {
+    usedPrefix,
+    buttons: [
+      ['📺 Profil Channel', `${usedPrefix}akunyt`],
+      ['🎛️ Menu YT Room', `${usedPrefix}room`]
+    ]
+  })
 }
 
 handler.help = ['liveyt <judul>', 'livestreamyt <judul>']

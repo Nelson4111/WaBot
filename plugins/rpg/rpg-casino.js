@@ -2194,10 +2194,19 @@ return m.reply(
 
   if (input === 'guide') {
     const guideImage = resolveRpgMedia(CASINO_IMAGE)
-    return conn.sendMessage(m.chat, {
+    return sendRpgButtons(conn, {
+      chat: m.chat,
+      message: m,
+      quoted: m,
+      title: '🎰 PANDUAN CASINO',
+      subtitle: 'Pilih aksi casino',
+      text: casinoGuide(usedPrefix),
       image: Buffer.isBuffer(guideImage) ? guideImage : { url: guideImage },
-      caption: casinoGuide(usedPrefix)
-    }, { quoted: m })
+      buttons: [
+        ['🎰 Menu Casino', `${usedPrefix}casino`],
+        ['📊 Riwayat', `${usedPrefix}cs history`]
+      ]
+    })
   }
 
   if (input === 'money') {

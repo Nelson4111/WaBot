@@ -20,7 +20,7 @@ function normalizeYoutube(data = {}) {
   }
 }
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   const userYT = normalizeYoutube(wdb.users?.[m.sender]?.youtube || {})
 
@@ -102,7 +102,13 @@ caption += `> ↳ 👥 Subscribers : ${userYT.subs.toLocaleString()}\n\n`
 
 caption += `─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i189/AS4Mvv.webp')
+  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i189/AS4Mvv.webp', {
+    usedPrefix,
+    buttons: [
+      ['🎛️ Kelola Channel', `${usedPrefix}room`],
+      ['🏆 Top YouTuber', `${usedPrefix}topyt`]
+    ]
+  })
 }
 
 handler.help = ['akunyt', 'channelyt']

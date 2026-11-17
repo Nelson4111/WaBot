@@ -20,7 +20,7 @@ function normalizeYoutube(data = {}) {
   }
 }
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   const wdb = loadDB()
   if (!wdb.users) return m.reply('KESALAHAN: Data tidak ditemukan.')
 
@@ -46,7 +46,13 @@ let handler = async (m, { conn }) => {
 
   caption += `\n─━━━━━━━━━━━━━━─`
 
-  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i189/AS4Mvv.webp')
+  return sendRpgMsg(conn, m, caption.trim(), 'https://c.termai.cc/i189/AS4Mvv.webp', {
+    usedPrefix,
+    buttons: [
+      ['📺 Profil Channel', `${usedPrefix}akunyt`],
+      ['🎛️ Menu YT Room', `${usedPrefix}room`]
+    ]
+  })
 }
 
 handler.help = ['topyt', 'rankyt']

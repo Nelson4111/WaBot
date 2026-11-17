@@ -36,7 +36,13 @@ const RSHIP_IMAGE = 'https://c.termai.cc/i147/VLRPd.jpg'
 const archiveExpiry = 7 * 24 * 60 * 60 * 1000
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  m = setRpgFeatureImage(conn, m, RSHIP_IMAGE)
+  m = setRpgFeatureImage(conn, m, RSHIP_IMAGE, {
+    usedPrefix,
+    buttons: [
+      ['💕 Menu Rship', `${usedPrefix}rship`],
+      ['⏰ Cooldown Rship', `${usedPrefix}rship cd`]
+    ]
+  })
   const wdb = loadDB()
   if (!wdb.users) wdb.users = {}
   if (!wdb.money) wdb.money = {}
