@@ -15,19 +15,24 @@ let handler = async (m, { conn, isAdmin, isOwner, text, usedPrefix, command }) =
     if (!m.isGroup) return m.reply('Perintah jumlah atau *all* hanya dapat digunakan di grup.')
 
     const now = Date.now()
-    const history = conn.chats?.[m.chat]?.botMessages
+    const chatJid = conn.decodeJid?.(m.chat) || m.chat
+    const history = conn.chats?.[chatJid]?.botMessages
     const eligibleMessages = (Array.isArray(history) ? history : [])
-      .filter(({ key, timestamp }) =>
-        key?.id &&
-        key.remoteJid === m.chat &&
-        timestamp <= now &&
-        now - timestamp < MAX_DELETE_AGE
-      )
+      .filter(message => {
+        const key = message?.key
+        const timestamp = Number(message?.timestamp)
+        return (
+          key?.id &&
+          key.remoteJid === chatJid &&
+          timestamp <= now &&
+          now - timestamp < MAX_DELETE_AGE
+        )
+      })
       .sort((a, b) => b.timestamp - a.timestamp)
     const targets = isAll ? eligibleMessages : eligibleMessages.slice(0, requestedCount)
 
     if (!targets.length) {
-      return m.reply('Tidak ada pesan bot terbaru yang masih tercatat dan dapat dihapus.')
+      return m.reply('Tidak ada pesan bot yang tercatat dalam 60 jam terakhir. Pesan yang dikirim sebelum fitur pencatatan aktif tidak tersedia untuk dihapus dengan jumlah.')
     }
 
     let deleted = 0
@@ -48,7 +53,7 @@ let handler = async (m, { conn, isAdmin, isOwner, text, usedPrefix, command }) =
     }
 
     if (history && deletedIds.size) {
-      conn.chats[m.chat].botMessages = history.filter(({ key }) => !deletedIds.has(key?.id))
+      conn.chats[chatJid].botMessages = history.filter(({ key }) => !deletedIds.has(key?.id))
     }
 
     const summary = deleted
