@@ -170,7 +170,7 @@ return m.reply(
 
   if(isChanged) saveDB(wdb)
 
-  if (command === 'inv') {
+  if (command === 'inv' && args.length > 0) {
     const storageTypes = getStorageDefinitions()
     const prefix = usedPrefix || '.'
     const level = getStorageLevel(user)
