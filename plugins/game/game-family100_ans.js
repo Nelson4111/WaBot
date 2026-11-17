@@ -1,7 +1,10 @@
+import fs from 'fs'
 import similarity from 'similarity'
 import { awardFamily100Mvp } from './game-family100-score.js'
 import { FAMILY100_SURRENDER_DELAY, startFamily100Cooldown } from './game-family100-state.js'
+import { sendGameResult } from './game-result.js'
 
+const FAMILY100_IMAGE = fs.readFileSync(new URL('../../media/games/q4f.jpg', import.meta.url))
 const threshold = 0.72 // semakin tinggi semakin mirip
 
 function clean(s = '') {
@@ -106,18 +109,34 @@ export async function before(m) {
     let mentions = room.terjawab.filter(Boolean).map(v => this.decodeJid ? this.decodeJid(v) : v)
 
     let q = global.forder || global.ftoko || m
-    let msg = await this.sendMessage(m.chat, {
-        text: caption,
-        mentions: mentions
-    }, { quoted: q })
-
-    room.msg = msg
-
     if (isWin) {
         if (room.timeout) clearTimeout(room.timeout)
+        if (room.reminderTimeout) clearTimeout(room.reminderTimeout)
         startFamily100Cooldown(this.game, m.chat)
         delete this.game[id]
     }
+
+    let msg = isWin
+        ? await sendGameResult(this, {
+            chat: m.chat,
+            text: caption,
+            image: FAMILY100_IMAGE,
+            title: '🎉 Family 100 Selesai',
+            subtitle: 'Semua jawaban sudah ditemukan!',
+            footer: `${global.namebot || 'Avelia'} • Family 100`,
+            buttons: [
+                ['🔄 Main Lagi', `${room.usedPrefix || '.'}fam`],
+                ['🏆 Cek Skor', `${room.usedPrefix || '.'}fam score`]
+            ],
+            quoted: q,
+            mentions
+        })
+        : await this.sendMessage(m.chat, {
+            text: caption,
+            mentions
+        }, { quoted: q })
+
+    room.msg = msg
 
     return true
 }
@@ -141,8 +160,22 @@ async function finishGame(m, id, room, isSurrender) {
         `─━━━━━━━━━━━━━━─`
 
     const quoted = global.forder || global.ftoko || m
-    await this.sendMessage(m.chat, { text: caption, mentions }, { quoted })
     if (room.timeout) clearTimeout(room.timeout)
+    if (room.reminderTimeout) clearTimeout(room.reminderTimeout)
     startFamily100Cooldown(this.game, m.chat)
     delete this.game[id]
+    await sendGameResult(this, {
+        chat: m.chat,
+        text: caption,
+        image: FAMILY100_IMAGE,
+        title: '🏁 Family 100 Selesai',
+        subtitle: isSurrender ? 'Permainan telah berakhir.' : 'Semua jawaban sudah ditemukan!',
+        footer: `${global.namebot || 'Avelia'} • Family 100`,
+        buttons: [
+            ['🔄 Main Lagi', `${room.usedPrefix || '.'}fam`],
+            ['🏆 Cek Skor', `${room.usedPrefix || '.'}fam score`]
+        ],
+        quoted,
+        mentions
+    })
 }

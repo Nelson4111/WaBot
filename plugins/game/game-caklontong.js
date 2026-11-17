@@ -1,10 +1,12 @@
 import fs from 'fs'
+import { sendGameResult } from './game-result.js'
 let timeout = 120000
 let poin = 4999
 const scorePoint = 1
-const CAKLONTONG_IMAGE = 'https://c.termai.cc/i128/pMx.jpg'
+const CAKLONTONG_IMAGE_BACKUP_URL = 'https://c.termai.cc/i128/pMx.jpg'
+const CAKLONTONG_IMAGE = fs.readFileSync(new URL('../../media/games/pMx.jpg', import.meta.url))
 
-let handler = async (m, { conn, usedPrefix, args = [] }) => {
+let handler = async (m, { conn, usedPrefix = '.', args = [] }) => {
     conn.caklontong = conn.caklontong ? conn.caklontong : {}
     let id = m.chat
 
@@ -51,7 +53,7 @@ let handler = async (m, { conn, usedPrefix, args = [] }) => {
             buttons
         }, m)
     } else {
-        msg = await conn.sendMessage(m.chat, { image: { url: CAKLONTONG_IMAGE }, caption }, { quoted: m })
+        msg = await conn.sendMessage(m.chat, { image: CAKLONTONG_IMAGE, caption }, { quoted: m })
     }
 
     conn.caklontong[id] = [
@@ -59,10 +61,25 @@ let handler = async (m, { conn, usedPrefix, args = [] }) => {
         json,
         poin,
         setTimeout(async () => {
-            if (conn.caklontong[id]) await conn.reply(m.chat, `╭─〔 ⏰ WAKTU HABIS 〕\n> Jawabannya adalah *${json.jawaban}*\n> ${json.deskripsi || ''}\n╰───────────────`, conn.caklontong[id][0])
+            const activeSession = conn.caklontong[id]
+            if (!activeSession) return
             delete conn.caklontong[id]
+            await sendGameResult(conn, {
+                chat: m.chat,
+                text: `╭─〔 ⏰ WAKTU HABIS 〕\n> Jawabannya adalah *${json.jawaban}*\n> ${json.deskripsi || ''}\n╰───────────────`,
+                image: CAKLONTONG_IMAGE,
+                title: '⏰ Cak Lontong Selesai',
+                subtitle: 'Terima kasih sudah bermain!',
+                footer: `${global.namebot || 'Avelia'} • Cak Lontong`,
+                buttons: [
+                    ['🔄 Main Lagi', `${usedPrefix}caklontong`],
+                    ['🏆 Cek Skor', `${usedPrefix}caklontong score`]
+                ],
+                quoted: activeSession[0]
+            })
         }, timeout),
-        scorePoint
+        scorePoint,
+        usedPrefix
     ]
 }
 handler.help = ['caklontong [score|top]']

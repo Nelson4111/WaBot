@@ -1,14 +1,59 @@
 import fs from 'fs'
 import { awardFamily100Mvp } from './game-family100-score.js'
 import { getFamily100CooldownRemaining, startFamily100Cooldown } from './game-family100-state.js'
+import { sendGameResult } from './game-result.js'
 
-const FAMILY100_IMAGE = 'https://c.termai.cc/i129/q4f.jpg'
+const FAMILY100_IMAGE_BACKUP_URL = 'https://c.termai.cc/i129/q4f.jpg'
+const FAMILY100_IMAGE = fs.readFileSync(new URL('../../media/games/q4f.jpg', import.meta.url))
 const winScore = 4999
 const answerPoint = 1
 const GAME_TIME = 1000 * 60 * 5
+const TIME_WARNING = 1000 * 60
 
-async function handler(m, { args = [] }) {
+function formatTimeRemaining(milliseconds) {
+    const seconds = Math.max(0, Math.ceil(milliseconds / 1000))
+    const minutes = Math.floor(seconds / 60)
+    return minutes ? `${minutes} menit ${seconds % 60} detik` : `${seconds} detik`
+}
+
+function getRoomStatus(room, now = Date.now()) {
+    const answered = room.terjawab
+        .map((answerer, index) => answerer ? { answer: room.jawaban[index], answerer, index } : null)
+        .filter(Boolean)
+    const remaining = Math.max(0, room.startedAt + GAME_TIME - now)
+    const answers = answered.length
+        ? answered.map(({ answer, answerer, index }) => {
+            const jid = typeof answerer === 'string' ? answerer : null
+            return `> ${index + 1}. ${answer}${jid ? ` — @${jid.split('@')[0]}` : ''}`
+        }).join('\n')
+        : '> Belum ada jawaban yang ditemukan.'
+
+    return `╭─❏「 📊 STATUS FAMILY 100 」❏\n` +
+           `│ ⏰ *Waktu habis!*\n` +
+           `╰─━━━━━━━━━━━━━━─\n\n` +
+        `> 🧩 *${room.soal}*\n` +
+        `─━━━━━━━━━━━━━━─\n\n` +
+        `⟡ Jawaban ditemukan: *${answered.length}/${room.jawaban.length}*\n` +
+        `⏱️ Waktu tersisa: *${formatTimeRemaining(remaining)}*\n\n` +
+        `📋 *JAWABAN TERJAWAB*\n${answers}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+}
+
+async function handler(m, { args = [], conn = this, usedPrefix = '.' }) {
     const subcommand = args[0]?.toLowerCase()
+
+    if (subcommand === 'info') {
+        const room = this.game?.['family100_' + m.chat]
+        if (!room) return m.reply('Tidak ada permainan Family 100 yang sedang berjalan di chat ini.')
+
+        const mentions = room.terjawab
+            .filter(Boolean)
+            .filter(answerer => typeof answerer === 'string')
+        return conn.sendMessage(m.chat, {
+            text: getRoomStatus(room),
+            mentions
+        }, { quoted: m })
+    }
 
     if (['score', 'poin'].includes(subcommand)) {
         const score = Number(global.db.data.users[m.sender]?.family100Score) || 0
@@ -65,29 +110,77 @@ async function handler(m, { args = [] }) {
 
     caption += `─━━━━━━━━━━━━━━─`
 
-    let msg = await this.sendMessage(m.chat, {
-        image: { url: FAMILY100_IMAGE },
-        caption
-    }, { quoted: m })
+    const buttons = [
+        ['📊 Cek Status', `${usedPrefix}fam info`],
+        ['🏆 Cek Skor', `${usedPrefix}fam score`]
+    ]
+    let msg
+    if (typeof conn.sendButtonV2 === 'function') {
+        msg = await conn.sendButtonV2(m.chat, {
+            title: '🧩 FAMILY 100',
+            subtitle: 'Temukan semua jawaban bersama!',
+            text: caption,
+            footer: `${global.namebot || 'Avelia'} • Family 100`,
+            buffer: FAMILY100_IMAGE,
+            buttons
+        }, m)
+    } else if (typeof conn.sendButton === 'function') {
+        msg = await conn.sendButton(
+            m.chat,
+            caption,
+            `${global.namebot || 'Avelia'} • Family 100`,
+            FAMILY100_IMAGE,
+            buttons,
+            m
+        )
+    } else {
+        msg = await this.sendMessage(m.chat, {
+            image: FAMILY100_IMAGE,
+            caption
+        }, { quoted: m })
+    }
 
-    let timeout = setTimeout(() => {
+    const reminderTimeout = setTimeout(() => {
         if (!this.game[id]) return
-
-        const mvp = awardFamily100Mvp(this.game[id])
-        startFamily100Cooldown(this.game, m.chat)
         this.reply(
             m.chat,
-            `╭─❏「 ⏰ FAMILY 100 」❏\n` +
-            `│ ⏰ *Waktu habis!*\n` +
+            `╭─❏「 ⏳ FAMILY 100 」❏\n` +
+            `│ ⏰ *Sisa Waktu!*\n` +
             `╰─━━━━━━━━━━━━━━─\n\n` +
-            `📋 *JAWABAN*\n` +
-            `> • ${json.jawaban.join('\n> • ')}\n\n` +
-            (mvp ? `🏆 *MVP:* ${mvp.name} (+2 poin)\n\n` : '') +
+            `> Jika tidak ada jawaban baru, permainan berakhir dalam *${formatTimeRemaining(TIME_WARNING)}*.\n` +
+            `> Ketik *${usedPrefix}fam info* untuk melihat status permainan.\n` +
             `─━━━━━━━━━━━━━━─`,
             msg
         )
+    }, GAME_TIME - TIME_WARNING)
 
+    let timeout = setTimeout(async () => {
+        const room = this.game[id]
+        if (!room) return
+
+        clearTimeout(room.reminderTimeout)
+        const mvp = awardFamily100Mvp(room)
+        startFamily100Cooldown(this.game, m.chat)
         delete this.game[id]
+        await sendGameResult(this, {
+            chat: m.chat,
+            text: `╭─❏「 ⏰ FAMILY 100 」❏\n` +
+                `│ ⏰ *Waktu habis!*\n` +
+                `╰─━━━━━━━━━━━━━━─\n\n` +
+                `📋 *JAWABAN*\n` +
+                `> • ${json.jawaban.join('\n> • ')}\n\n` +
+                (mvp ? `🏆 *MVP:* ${mvp.name} (+2 poin)\n\n` : '') +
+                `─━━━━━━━━━━━━━━─`,
+            image: FAMILY100_IMAGE,
+            title: '⏰ Family 100 Selesai',
+            subtitle: 'Terima kasih sudah bermain!',
+            footer: `${global.namebot || 'Avelia'} • Family 100`,
+            buttons: [
+                ['🔄 Main Lagi', `${usedPrefix}fam`],
+                ['🏆 Cek Skor', `${usedPrefix}fam score`]
+            ],
+            quoted: msg
+        })
     }, GAME_TIME)
 
     this.game[id] = {
@@ -99,14 +192,16 @@ async function handler(m, { args = [] }) {
         winScore,
         answerPoint,
         startedAt: Date.now(),
+        usedPrefix,
         creator: m.sender,
         participants: [],
         surrenderVotes: [],
+        reminderTimeout,
         timeout
     }
 }
 
-handler.help = ['family100', 'f100', 'fam100', 'fam'].map(v => `${v} [score|poin|top]`)
+handler.help = ['family100', 'f100', 'fam100', 'fam'].map(v => `${v} [info|score|poin|top]`)
 handler.tags = ['game']
 handler.command = /^(family100|f100|fam100|fam)$/i
 handler.onlyprem = true

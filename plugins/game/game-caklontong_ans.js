@@ -1,5 +1,9 @@
+import fs from 'fs'
 import similarity from 'similarity'
+import { sendGameResult } from './game-result.js'
 const threshold = 0.72
+
+const CAKLONTONG_IMAGE = fs.readFileSync(new URL('../../media/games/pMx.jpg', import.meta.url))
 
 function cleanText(str = '') {
     return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
@@ -32,20 +36,46 @@ handler.before = async function (m) {
     if (isSurrender) {
         clearTimeout(session[3])
         delete this.caklontong[id]
-        await m.reply(`*Yah Menyerah! :(*\nJawabannya: *${jawab}*\n${json.deskripsi || ''}`)
+        const usedPrefix = session[5] || '.'
+        await sendGameResult(this, {
+            chat: m.chat,
+            text: `╭─〔 🏳️ MENYERAH 〕\n> Jawabannya: *${jawab}*\n> ${json.deskripsi || ''}\n╰───────────────`,
+            image: CAKLONTONG_IMAGE,
+            title: '🏁 Cak Lontong Selesai',
+            subtitle: 'Coba lagi dengan soal baru!',
+            footer: `${global.namebot || 'Avelia'} • Cak Lontong`,
+            buttons: [
+                ['🔄 Main Lagi', `${usedPrefix}caklontong`],
+                ['🏆 Cek Skor', `${usedPrefix}caklontong score`]
+            ],
+            quoted: m
+        })
         return true
     }
 
     if (isCorrect) {
         const rewardExp = session[2] || 1000
+        const usedPrefix = session[5] || '.'
         global.db.data.users[m.sender] = global.db.data.users[m.sender] || {}
         global.db.data.users[m.sender].exp = (global.db.data.users[m.sender].exp || 0) + rewardExp
         global.db.data.users[m.sender].caklontongScore = (Number(global.db.data.users[m.sender].caklontongScore) || 0) + (session[4] || 1)
         global.db.data.users[m.sender].caklontongName = m.pushName || global.db.data.users[m.sender].caklontongName
 
-        await this.reply(m.chat, `╭─〔 🎉 B E N A R 〕\n> ✧ +${rewardExp} XP\n> ⟡ +${session[4] || 1} poin Cak Lontong\n> ${json.deskripsi || ''}\n╰───────────────\n\n🏆 Skor sekarang: *${global.db.data.users[m.sender].caklontongScore} poin*\nCek dengan *.caklontong score*`, m)
         clearTimeout(session[3])
         delete this.caklontong[id]
+        await sendGameResult(this, {
+            chat: m.chat,
+            text: `╭─〔 🎉 B E N A R 〕\n> ✧ +${rewardExp} XP\n> ⟡ +${session[4] || 1} poin Cak Lontong\n> ${json.deskripsi || ''}\n╰───────────────\n\n🏆 Skor sekarang: *${global.db.data.users[m.sender].caklontongScore} poin*\nCek dengan *.caklontong score*`,
+            image: CAKLONTONG_IMAGE,
+            title: '🎉 Cak Lontong Selesai',
+            subtitle: 'Jawabanmu benar!',
+            footer: `${global.namebot || 'Avelia'} • Cak Lontong`,
+            buttons: [
+                ['🔄 Main Lagi', `${usedPrefix}caklontong`],
+                ['🏆 Cek Skor', `${usedPrefix}caklontong score`]
+            ],
+            quoted: m
+        })
         return true
     } else if (isSimilar) {
         await m.reply('🔍 *Dikit Lagi!*')
