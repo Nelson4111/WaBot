@@ -1,5 +1,6 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg } from '../../lib/waifuHelper.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { getStorageCapacity } from '../../lib/rpg-storage.js'
 
 function formatNama(nama) {
@@ -71,7 +72,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   if (total === 0) { 
   return m.reply( 
     `╭─❏「 🌾 GUDANG KEBUN KOSONG 」❏\n` + 
-    `│ Kapasitas: 0/${capacity}\n` + 
+    `│ Kapasitas: 0/${formatRpgNumber(capacity)}\n` + 
     `│ Belum ada hasil panen yang tersimpan.\n` + 
     `│ ↳ Tanam: *${usedPrefix}tanam [bibit]*\n` + 
     `│ ↳ Panen: *${usedPrefix}panen*\n` + 
@@ -80,8 +81,8 @@ let handler = async (m, { conn, usedPrefix }) => {
 } 
  
 let cap = `╭─❏「 🌾 GUDANG KEBUN 」❏\n` 
-cap += `│ 📦 Total Item: ${total.toLocaleString()}\n` 
-cap += `│ 🌾 Kapasitas: ${total.toLocaleString()}/${capacity.toLocaleString()}\n` 
+cap += `│ 📦 Total Item: ${formatRpgNumber(total)}\n` 
+cap += `│ 🌾 Kapasitas: ${formatRpgNumber(total)}/${formatRpgNumber(capacity)}\n` 
 cap += `╰─━━━━━━━━━━━━━━─\n\n` 
  
 cap += `🌾 *HASIL PANEN*\n` 
@@ -90,7 +91,7 @@ cap += `> ↳ Daftar hasil panen yang tersimpan di kebun.\n`
 Object.entries(hasilKebun) 
   .sort((a, b) => b[1] - a[1]) 
   .forEach(([nama, jumlah]) => { 
-    cap += `> ${formatNama(nama)} ${bibit[nama].emoji} x${jumlah.toLocaleString()}\n` 
+    cap += `> ${formatNama(nama)} ${bibit[nama].emoji} x${formatRpgNumber(jumlah)}\n` 
   }) 
  
 cap += `\n─━━━━━━━━━━━━━━─\n` 

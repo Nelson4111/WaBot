@@ -1,7 +1,7 @@
 import { loadDB, saveDB, getUserRPG, initLadang, sendRpgMsg, getEquipmentName, getEquipmentNameList } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
-import { compareRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { compareRpgMoney, formatRpgNumber, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import {
   getStorageCapacity,
@@ -187,16 +187,17 @@ return m.reply(
       let text =
         `╭─❏「 🎒 INVENTORY CENTER 」❏\n` +
         `│ 🆙 Level kapasitas: ${level}\n` +
-        `│ 📦 Kapasitas tiap penyimpanan: ${capacity.toLocaleString()} slot\n` +
         `│ 💰 Upgrade berikutnya: Rp ${formatMoney(getStorageUpgradeCost(user.level, level, level + 1))}\n` +
         `╰─━━━━━━━━━━━━━━─\n\n`
       for (const [type, storage] of Object.entries(storageTypes)) {
-        text += `> ${storage.icon} ${storage.label}: *${countByType[type].toLocaleString()}/${capacity.toLocaleString()} item*\n`
+        text += `> ${storage.icon} ${storage.label}: *${formatRpgNumber(countByType[type])} item*\n`
       }
+      const total = Object.values(countByType).reduce((sum, count) => sum + count, 0)
       text +=
-        `\n💡 Lihat: *.inv fish / ore / item / stellar / food / drink*\n` +
+        `\n📦 *Total semua item: ${formatRpgNumber(total)}*\n\n` +
+        `💡 Lihat: *.inv fish / ore / item / stellar / food / drink*\n` +
         `> Kebun: *.inv kebun* · Ringkasan tas: *.inv bag* · Gudang lain: *.inv gudang*\n` +
-        `> Level: *.inv level* · Upgrade: *.inv up*`
+        `> Kondisi penyimpanan: *.inv info* · Level: *.inv level* · Upgrade: *.inv up*`
       return sendRpgButtons(conn, {
         chat: m.chat,
         message: m,
@@ -219,7 +220,6 @@ return m.reply(
           ? ['food', 'drink']
           : [type]
       let total = 0
-      let totalCapacity = 0
       let text = `╭─❏「 🎒 INVENTORY ${type.toUpperCase()} 」❏\n`
       text += `│ 🆙 Level: ${level}\n`
       for (const selectedType of selectedTypes) {
@@ -227,10 +227,9 @@ return m.reply(
         const entries = getStorageEntries(user, selectedType)
         const itemCount = Object.values(entries).reduce((sum, amount) => sum + amount, 0)
         total += itemCount
-        totalCapacity += capacity
-        text += `│ ${storage.icon} ${storage.label}: ${itemCount.toLocaleString()}/${capacity.toLocaleString()} item\n`
+        text += `│ ${storage.icon} ${storage.label}: ${formatRpgNumber(itemCount)} item\n`
       }
-      text += `│ 📦 Total: ${total.toLocaleString()}/${totalCapacity.toLocaleString()} item\n`
+      text += `│ 📦 Total semua item: ${formatRpgNumber(total)}\n`
       text += `╰─━━━━━━━━━━━━━━─\n\n`
 
       for (const selectedType of selectedTypes) {
@@ -242,12 +241,42 @@ return m.reply(
           text += `> Belum ada item tersimpan.\n`
         } else {
           for (const [name, amount] of entries) {
-            text += `> ${formatNamaItem(name)} ×${amount.toLocaleString()}\n`
+            text += `> ${formatNamaItem(name)} ×${formatRpgNumber(amount)}\n`
           }
         }
         text += '\n'
       }
       text += `🆙 Upgrade kapasitas: *${prefix}inv up*`
+      return m.reply(text)
+    }
+
+    const renderStorageInfo = async () => {
+      let total = 0
+      let totalCapacity = 0
+      let text =
+        `╭─❏「 📊 KONDISI INVENTORY 」❏\n` +
+        `│ 🆙 Level kapasitas: ${level}\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n`
+
+      for (const [type, storage] of Object.entries(storageTypes)) {
+        const count = countByType[type]
+        const percent = capacity > 0 ? Math.floor(count / capacity * 100) : 0
+        const status = count >= capacity
+          ? '🔴 Penuh'
+          : percent >= 80
+            ? '⚠️ Hampir penuh'
+            : '✅ Aman'
+        total += count
+        totalCapacity += capacity
+        text += `> ${storage.icon} ${storage.label}: ${formatRpgNumber(count)}/${formatRpgNumber(capacity)} (${percent}%) · ${status}\n`
+      }
+
+      const totalPercent = totalCapacity > 0 ? Math.floor(total / totalCapacity * 100) : 0
+      text +=
+        `\n📦 *Total tersimpan: ${formatRpgNumber(total)}/${formatRpgNumber(totalCapacity)} item*\n` +
+        `📈 *Kondisi keseluruhan: ${totalPercent}% terpakai*\n` +
+        `💰 Upgrade berikutnya: Rp ${formatMoney(getStorageUpgradeCost(user.level, level, level + 1))}\n\n` +
+        `> Tampilan ini hanya menunjukkan kondisi dan kapasitas, bukan daftar item.`
       return m.reply(text)
     }
 
@@ -283,7 +312,7 @@ return m.reply(
         `> ↳ Saldo sekarang: Rp ${formatMoney(accountBalance)}\n\n` +
         `📊 *KAPASITAS SEBELUM → SESUDAH*\n`
       for (const [type, storage] of Object.entries(storageTypes)) {
-        text += `> ${storage.icon} ${storage.label}: ${countByType[type].toLocaleString()}/${capacity.toLocaleString()} → ${countByType[type].toLocaleString()}/${(100 + targetLevel * 50).toLocaleString()}\n`
+        text += `> ${storage.icon} ${storage.label}: ${formatRpgNumber(countByType[type])}/${formatRpgNumber(capacity)} → ${formatRpgNumber(countByType[type])}/${formatRpgNumber(100 + targetLevel * 50)}\n`
       }
       text += `\nKonfirmasi upgrade? Biaya dibayar dari uang saku.`
       return sendRpgConfirmButtons(conn, m, {
@@ -339,7 +368,7 @@ return m.reply(
         const successText =
           `╭─❏「 🎉 UPGRADE INVENTORY BERHASIL 」❏\n` +
           `│ 🆙 Level: ${pending.fromLevel} → ${pending.targetLevel}\n` +
-          `│ 📦 Kapasitas: ${capacity.toLocaleString()} → ${newCapacity.toLocaleString()} slot per penyimpanan\n` +
+          `│ 📦 Kapasitas: ${formatRpgNumber(capacity)} → ${formatRpgNumber(newCapacity)} slot per penyimpanan\n` +
           `│ 💸 Terpakai: Rp ${formatMoney(cost)}\n` +
           `╰─━━━━━━━━━━━━━━─\n\n` +
           `Semua penyimpanan sudah mendapat kapasitas baru.`
@@ -374,6 +403,7 @@ return m.reply(
       return sendUpgradePrompt(targetLevel, isMaxUpgrade)
     }
 
+    if (action === 'info') return renderStorageInfo()
     if (action === 'level' || !action || action === 'all') return renderStorageOverview()
 
     const selectedType = normalizeStorageType(action)
@@ -422,22 +452,22 @@ cap += `> 🐾 Pet: ${petTertinggi ? `${petTertinggi.tipe.toUpperCase()} (Lv.${p
 
 cap += `\n─━━━━━━━━━━━━━━─\n`
 cap += `📦 *STORAGE*\n`
-cap += `> 💎 Diamond: ${totalDiamond.toLocaleString()}\n`
-cap += `> 🪙 Coin: ${totalCoin.toLocaleString()}\n`
-cap += `> 💚 Gemstone: ${totalGemstone.toLocaleString()}\n`
-cap += `> ⛓️ Iron: ${totalIron.toLocaleString()}\n`
-cap += `> ✨ Gold: ${totalGold.toLocaleString()}\n`
-cap += `> 🪵 Wood: ${totalWood.toLocaleString()}\n`
-cap += `> 🪨 Stone: ${totalStone.toLocaleString()}\n`
+cap += `> 💎 Diamond: ${formatRpgNumber(totalDiamond)}\n`
+cap += `> 🪙 Coin: ${formatRpgNumber(totalCoin)}\n`
+cap += `> 💚 Gemstone: ${formatRpgNumber(totalGemstone)}\n`
+cap += `> ⛓️ Iron: ${formatRpgNumber(totalIron)}\n`
+cap += `> ✨ Gold: ${formatRpgNumber(totalGold)}\n`
+cap += `> 🪵 Wood: ${formatRpgNumber(totalWood)}\n`
+cap += `> 🪨 Stone: ${formatRpgNumber(totalStone)}\n`
 cap += `> ↳ Lihat lengkap: *.bag*\n`
 
 if (user.ikan) {
   cap += `\n─━━━━━━━━━━━━━━─\n`
   cap += `🐟 *FISH TANK*\n`
-  cap += `> 🐟 Lele: ${user.ikan.lele || 0}\n`
-  cap += `> 🐠 Nila: ${user.ikan.nila || 0}\n`
-  cap += `> 🦈 Hiu: ${user.ikan.hiu || 0}\n`
-  cap += `> 🐡 Bawal: ${user.ikan.bawal || 0}\n`
+  cap += `> 🐟 Lele: ${formatRpgNumber(user.ikan.lele || 0)}\n`
+  cap += `> 🐠 Nila: ${formatRpgNumber(user.ikan.nila || 0)}\n`
+  cap += `> 🦈 Hiu: ${formatRpgNumber(user.ikan.hiu || 0)}\n`
+  cap += `> 🐡 Bawal: ${formatRpgNumber(user.ikan.bawal || 0)}\n`
   cap += `> ↳ Lihat lengkap: *.aquarium*\n`
 }
 
@@ -464,18 +494,18 @@ for (let i in cek) {
 if (totalKebun > 0) {
   cap += `\n─━━━━━━━━━━━━━━─\n`
   cap += `🌾 *GARDEN HARVEST*\n`
-  cap += `> 🌾 Padi: ${cek.padi.toLocaleString()}\n`
-  cap += `> 🌽 Jagung: ${cek.jagung.toLocaleString()}\n`
-  cap += `> 🍉 Semangka: ${cek.semangka.toLocaleString()}\n`
-  cap += `> 🍊 Jeruk: ${cek.jeruk.toLocaleString()}\n`
-  cap += `> 🥭 Mangga: ${cek.mangga.toLocaleString()}\n`
-  cap += `> 🍎 Apel: ${cek.apel.toLocaleString()}\n`
-  cap += `> 🌳 Durian: ${cek.durian.toLocaleString()}\n`
-  cap += `> 🌴 Sawit: ${cek.sawit.toLocaleString()}\n`
-  cap += `> ⚜️ Emas: ${cek.emas.toLocaleString()}\n`
+  cap += `> 🌾 Padi: ${formatRpgNumber(cek.padi)}\n`
+  cap += `> 🌽 Jagung: ${formatRpgNumber(cek.jagung)}\n`
+  cap += `> 🍉 Semangka: ${formatRpgNumber(cek.semangka)}\n`
+  cap += `> 🍊 Jeruk: ${formatRpgNumber(cek.jeruk)}\n`
+  cap += `> 🥭 Mangga: ${formatRpgNumber(cek.mangga)}\n`
+  cap += `> 🍎 Apel: ${formatRpgNumber(cek.apel)}\n`
+  cap += `> 🌳 Durian: ${formatRpgNumber(cek.durian)}\n`
+  cap += `> 🌴 Sawit: ${formatRpgNumber(cek.sawit)}\n`
+  cap += `> ⚜️ Emas: ${formatRpgNumber(cek.emas)}\n`
 
   if (cek.berlian > 0) {
-    cap += `> 💠 Berlian: ${cek.berlian.toLocaleString()}\n`
+    cap += `> 💠 Berlian: ${formatRpgNumber(cek.berlian)}\n`
   }
 
   cap += `> ↳ Lihat lengkap: *.kebun*\n`
@@ -495,7 +525,7 @@ cap += `─━━━━━━━━━━━━━━─`
 return sendRpgMsg(conn, m, cap)
 }
 
-handler.help = ['inv', 'inv <kategori>', 'inv level', 'inv up [max]', 'inventory', 'equipment list']
+handler.help = ['inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up [max]', 'inventory', 'equipment list']
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']

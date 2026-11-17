@@ -1,6 +1,7 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, sendRpgMsg, saveDB } from '../../lib/waifuHelper.js'
 import { migrateRpgCurrencies } from '../../lib/rpg-currency.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '../../lib/rpg-libternakData.js'
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
@@ -169,7 +170,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   }
 
   const totalCapacity = getStorageCapacity(user) * 8
-  if (totalJenis === 0) return m.reply(`╭─❏「 📦 GUDANG KOSONG 」❏\n│ Total: 0/${totalCapacity.toLocaleString()} item\n│ Tanam, mancing, tambang, adventure, atau masak dulu\n╰─━━━━━━━━━━━━━━─`)
+  if (totalJenis === 0) return m.reply(`╭─❏「 📦 GUDANG KOSONG 」❏\n│ Total: 0/${formatRpgNumber(totalCapacity)} item\n│ Tanam, mancing, tambang, adventure, atau masak dulu\n╰─━━━━━━━━━━━━━━─`)
 
   for (let kat in grouped) {
     grouped[kat].list.sort((a, b) => b.jml - a.jml)
@@ -202,8 +203,8 @@ let handler = async (m, { conn, usedPrefix, args }) => {
 
     let cap = `╭─❏「 📦 GUDANG KAMU 」❏\n`
 cap += `│ 👤 Owner: ${conn.getName(m.sender)}\n`
-cap += `│ 📦 Total: ${totalItem.toLocaleString()} Item\n`
-cap += `│ 🏠 Kapasitas gabungan: ${totalItem.toLocaleString()}/${totalCapacity.toLocaleString()}\n`
+cap += `│ 📦 Total: ${formatRpgNumber(totalItem)} Item\n`
+cap += `│ 🏠 Kapasitas gabungan: ${formatRpgNumber(totalItem)}/${formatRpgNumber(totalCapacity)}\n`
 cap += `│ 🧬 Jenis: ${totalJenis}\n`
 cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
@@ -213,7 +214,7 @@ for (let t of selectedCategories) {
     cap += `╰─━━━━━━━━━━━━━━─\n`
 
     grouped[t].list.forEach((v, i) => {
-      cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${v.jml.toLocaleString()}\n`
+      cap += `> *${i + 1}. ${formatNama(v.nama)} ${v.emoji}* x${formatRpgNumber(v.jml)}\n`
     })
 
     cap += `\n─━━━━━━━━━━━━━━─\n`

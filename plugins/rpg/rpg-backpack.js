@@ -126,7 +126,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
   const totalCapacity = getStorageCapacity(user) * 8
   if(totalJenis === 0)
-    return m.reply(`╭─❏「 🎒 BACKPACK KOSONG 」❏\n│ Isi tasmu masih kosong.\n│ 📦 Total: 0/${totalCapacity.toLocaleString()} item\n│ Mining atau Adventure dulu!\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 🎒 BACKPACK KOSONG 」❏\n│ Isi tasmu masih kosong.\n│ 📦 Total: 0/${formatRpgNumber(totalCapacity)} item\n│ Mining atau Adventure dulu!\n╰─━━━━━━━━━━━━━━─`)
 
   for (const items of Object.values(grouped)) {
     items.sort((a, b) => b.jml - a.jml)

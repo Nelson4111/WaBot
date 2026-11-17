@@ -7,6 +7,7 @@ import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import {
   compareRpgMoney,
   formatRpgMoney,
+  formatRpgNumber,
   normalizeRpgMoney,
   parseRpgMoneyAmount,
   subtractRpgMoney
@@ -42,8 +43,8 @@ function getOwnedItems(rpg) {
 function formatInventory(items, prefix, stellarCredit, capacity, storedCount) {
   if (!items.length) {
     return `╭─❏「 🎒 INTERSTELLAR INVENTORY 」❏\n` +
-      `│ 💠 Stellar Credit: ${stellarCredit.toLocaleString()}\n` +
-      `│ 📦 Kapasitas item: ${storedCount.toLocaleString()}/${capacity.toLocaleString()}\n` +
+      `│ 💠 Stellar Credit: ${formatRpgNumber(stellarCredit)}\n` +
+      `│ 📦 Kapasitas item: ${formatRpgNumber(storedCount)}/${formatRpgNumber(capacity)}\n` +
       `│ Inventory antarbintangmu masih kosong.\n` +
       `│ Gunakan *${prefix}explore* untuk mencari item.\n` +
       `╰─━━━━━━━━━━━━━━─`
@@ -51,10 +52,11 @@ function formatInventory(items, prefix, stellarCredit, capacity, storedCount) {
 
   return `╭─❏「 🎒 INTERSTELLAR INVENTORY 」❏\n` +
     `╰─━━━━━━━━━━━━━━─\n\n` +
-    `💠 Stellar Credit: ${stellarCredit.toLocaleString()}\n\n` +
-    `📦 Kapasitas item: ${storedCount.toLocaleString()}/${capacity.toLocaleString()}\n\n` +
+    `💠 Stellar Credit: ${formatRpgNumber(stellarCredit)}\n\n` +
+
+    `📦 Kapasitas item: ${formatRpgNumber(storedCount)}/${formatRpgNumber(capacity)}\n\n` +
     items.map((item, index) =>
-      `> ${index + 1}. ${item.name} ×${item.quantity}`
+      `> ${index + 1}. ${item.name} ×${formatRpgNumber(item.quantity)}`
     ).join('\n\n') +
     `\n\n💡 Jual dengan *${prefix}int sell <all/nomor/nama item>*.`
 }

@@ -1,6 +1,7 @@
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, getUserRPG, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { jenisMasakan, resepEmoji as sharedResepEmoji } from '../../lib/rpg-masakanData.js'
+import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { getStorageCapacity, getStorageCount } from '../../lib/rpg-storage.js'
 
 function formatNama(nama) {
@@ -58,15 +59,15 @@ let handler = async (m, { conn, usedPrefix }) => {
   }
 
   if(totalJenis === 0)
-    return m.reply(`╭─❏「 🧊 KULKAS KOSONG 」❏\n│ 📦 Makanan: 0/${getStorageCapacity(user)} · Minuman: 0/${getStorageCapacity(user)}\n│ _Perut keroncongan... Masak dulu yuk!_\n│ 💡 Masak: *${usedPrefix}masak [nama]*\n╰─━━━━━━━━━━━━━━─`)
+    return m.reply(`╭─❏「 🧊 KULKAS KOSONG 」❏\n│ 📦 Makanan: 0/${formatRpgNumber(getStorageCapacity(user))} · Minuman: 0/${formatRpgNumber(getStorageCapacity(user))}\n│ _Perut keroncongan... Masak dulu yuk!_\n│ 💡 Masak: *${usedPrefix}masak [nama]*\n╰─━━━━━━━━━━━━━━─`)
 
   // URUTIN DARI PALING BANYAK
   listMasakan.sort((a,b) => b.jml - a.jml)
 
     let cap = `╭─❏「 🧊 KULKAS PRIBADI 」❏\n`
   cap += `│ 👤 Owner : ${m.pushName}\n`
-  cap += `│ 📦 Total : ${totalItem.toLocaleString()} Porsi\n`
-  cap += `│ 🍽️ Makanan: ${getStorageCount(user, 'food').toLocaleString()}/${getStorageCapacity(user).toLocaleString()} · 🥤 Minuman: ${getStorageCount(user, 'drink').toLocaleString()}/${getStorageCapacity(user).toLocaleString()}\n`
+  cap += `│ 📦 Total : ${formatRpgNumber(totalItem)} Porsi\n`
+  cap += `│ 🍽️ Makanan: ${formatRpgNumber(getStorageCount(user, 'food'))}/${formatRpgNumber(getStorageCapacity(user))} · 🥤 Minuman: ${formatRpgNumber(getStorageCount(user, 'drink'))}/${formatRpgNumber(getStorageCapacity(user))}\n`
   cap += `│ 🧬 Jenis : ${totalJenis} Macam\n`
   cap += `╰─━━━━━━━━━━━━━━─\n\n`
 
@@ -81,7 +82,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     }
     const emoji = sharedResepEmoji[v.nama] || v.emoji
     const command = type.startsWith('🥤') ? 'minum' : 'makan'
-    cap += `> *${i + 1}. ${formatNama(v.nama)} ${emoji}* x${v.jml.toLocaleString()} — .${command}\n`
+    cap += `> *${i + 1}. ${formatNama(v.nama)} ${emoji}* x${formatRpgNumber(v.jml)} — .${command}\n`
   })
 
   cap += `\n─━━━━━━━━━━━━━━─\n`
