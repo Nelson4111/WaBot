@@ -16,6 +16,7 @@ import { AUCTION_ITEMS } from '../../lib/rpg-auctionData.js'
 import { finishAuctionNow } from './rpg-auction.js'
 import { BANK_SPECIAL_ITEMS } from '../../lib/rpg-bankData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
+import { resolveRpgMedia } from '../../lib/rpgMedia.js'
 import {
   getHomeLevel,
   HOME_MAX_UPGRADES,
@@ -1510,8 +1511,9 @@ let handler = async (m, {
     if (topYoutuber.length === 0) return m.reply('Belum ada YouTuber')
     let caption = `*───「 TOP YOUTUBER 」───*\n\n`
     topYoutuber.slice(0, 10).forEach((u, i) => { caption += `${i + 1}. ${u.name}\n *Subs*: ${u.subs.toLocaleString()}\n\n` })
-    return sendPanelResponse({ 
-      image: { url: 'https://c.termai.cc/i174/Uwc' }, 
+    const topYoutubeImage = resolveRpgMedia('https://c.termai.cc/i174/Uwc')
+    return sendPanelResponse({
+      image: Buffer.isBuffer(topYoutubeImage) ? topYoutubeImage : { url: topYoutubeImage },
       caption: caption.trim() 
     })
   }

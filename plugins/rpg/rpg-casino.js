@@ -23,6 +23,7 @@ import {
 } from '../../lib/rpgMoney.js'
 import { getRpgWibDateKey, getRpgWibWeekKey } from '../../lib/rpgTime.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
+import { resolveRpgMedia } from '../../lib/rpgMedia.js'
 
 const games = {
   slot: { name: 'Slot', emoji: '🎰', aliases: ['slot'], minBet: 10000 },
@@ -2192,8 +2193,9 @@ return m.reply(
   }
 
   if (input === 'guide') {
+    const guideImage = resolveRpgMedia(CASINO_IMAGE)
     return conn.sendMessage(m.chat, {
-      image: { url: CASINO_IMAGE },
+      image: Buffer.isBuffer(guideImage) ? guideImage : { url: guideImage },
       caption: casinoGuide(usedPrefix)
     }, { quoted: m })
   }
