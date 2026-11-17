@@ -248,12 +248,21 @@ return m.reply(
     }
 
     const renderStorageInfo = async () => {
-      let total = 0
-      let totalCapacity = 0
+      const total = Object.values(countByType).reduce((sum, count) => sum + count, 0)
+      const totalCapacity = capacity * Object.keys(storageTypes).length
       let text =
         `╭─❏「 📊 KONDISI INVENTORY 」❏\n` +
         `│ 🆙 Level kapasitas: ${level}\n` +
-        `╰─━━━━━━━━━━━━━━─\n\n`
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `📦 *RINGKASAN KESELURUHAN*\n`
+
+      const totalPercent = totalCapacity > 0 ? Math.floor(total / totalCapacity * 100) : 0
+      text +=
+        `> Total item: *${formatRpgNumber(total)}*\n` +
+        `> Total kapasitas: ${formatRpgNumber(totalCapacity)} slot\n` +
+        `> Pemakaian gabungan: ${totalPercent}%\n` +
+        `> Upgrade berikutnya: Rp ${formatMoney(getStorageUpgradeCost(user.level, level, level + 1))}\n\n` +
+        `📊 *STATUS PER PENYIMPANAN*\n`
 
       for (const [type, storage] of Object.entries(storageTypes)) {
         const count = countByType[type]
@@ -263,17 +272,14 @@ return m.reply(
           : percent >= 80
             ? '⚠️ Hampir penuh'
             : '✅ Aman'
-        total += count
-        totalCapacity += capacity
-        text += `> ${storage.icon} ${storage.label}: ${formatRpgNumber(count)}/${formatRpgNumber(capacity)} (${percent}%) · ${status}\n`
+        text +=
+          `${storage.icon} *${storage.label}*\n` +
+          `> Terisi: ${formatRpgNumber(count)}/${formatRpgNumber(capacity)} slot\n` +
+          `> Pemakaian: ${percent}%\n` +
+          `> Status: ${status}\n\n`
       }
 
-      const totalPercent = totalCapacity > 0 ? Math.floor(total / totalCapacity * 100) : 0
-      text +=
-        `\n📦 *Total tersimpan: ${formatRpgNumber(total)}/${formatRpgNumber(totalCapacity)} item*\n` +
-        `📈 *Kondisi keseluruhan: ${totalPercent}% terpakai*\n` +
-        `💰 Upgrade berikutnya: Rp ${formatMoney(getStorageUpgradeCost(user.level, level, level + 1))}\n\n` +
-        `> Tampilan ini hanya menunjukkan kondisi dan kapasitas, bukan daftar item.`
+      text += `> Info kondisi dan kapasitas saja; daftar item ada di *.inv <kategori>*.`
       return m.reply(text)
     }
 
@@ -494,6 +500,22 @@ if (totalKebun > 0) {
   }
 
   cap += `> ↳ Lihat lengkap: *.kebun*\n`
+}
+
+if (['inv', 'inventory'].includes(command)) {
+  const storageTypes = getStorageDefinitions()
+  const storageCounts = Object.fromEntries(
+    Object.keys(storageTypes).map(type => [type, getStorageCount(user, type)])
+  )
+  const totalStoredItems = Object.values(storageCounts).reduce((sum, count) => sum + count, 0)
+
+  cap += `\n─━━━━━━━━━━━━━━─\n`
+  cap += `🎒 *INVENTORY GABUNGAN*\n`
+  for (const [type, storage] of Object.entries(storageTypes)) {
+    cap += `> ${storage.icon} ${storage.label}: ${formatRpgNumber(storageCounts[type])} item\n`
+  }
+  cap += `> 📦 Total semua item: *${formatRpgNumber(totalStoredItems)}*\n`
+  cap += `> 📊 Kondisi: *${usedPrefix}inv info* · Upgrade: *${usedPrefix}inv up*\n`
 }
 
 cap += `\n─━━━━━━━━━━━━━━─\n`
