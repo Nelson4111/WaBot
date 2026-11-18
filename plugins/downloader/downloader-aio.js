@@ -48,6 +48,22 @@ async function blackhole(url) {
   return null
 }
 
+export async function downloadAio(url) {
+  let result = null
+  try {
+    result = await getAioViaRyzumi(url)
+  } catch (e) {
+    console.warn('[AIO Ryzumi failed]:', e.message)
+    result = await blackhole(url)
+  }
+
+  if (!result || !result.medias?.length) {
+    throw new Error('Semua provider gagal mengunduh media dari tautan ini.')
+  }
+
+  return result
+}
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const input = (text || (m.quoted ? m.quoted.text : ''))?.trim()
   if (!input) {
@@ -65,17 +81,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   await m.react('⏳')
 
   try {
-    let result = null
-    try {
-      result = await getAioViaRyzumi(url)
-    } catch (e) {
-      console.warn('[AIO Ryzumi failed]:', e.message)
-      result = await blackhole(url)
-    }
-
-    if (!result || !result.medias?.length) {
-      throw new Error('Semua provider gagal mengunduh media dari tautan ini.')
-    }
+    const result = await downloadAio(url)
 
     let cleanTitle = result.title || ''
     if (cleanTitle.length > 180) {
