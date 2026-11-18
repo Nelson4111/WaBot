@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
 import { EPIC_SAGAS, EPIC_IMAGES, EPIC_SONGS, EPIC_LYRICS, EPIC_QUIZZES, EPIC_GUESSES, EPIC_ALL_QUIZZES, EPIC_QUOTES, EPIC_CHARACTERS, EXTRA_CHARACTERS, ALL_CHARACTERS, GODS, EPIC_QUOTE_COUNT, EPIC_STORY_EVENTS, HADES_REVIVAL_TEXT, stringTheBowStories, oracleStories } from '../../lib/epicData.js'
 
 const random = arr => arr[Math.floor(Math.random() * arr.length)]
@@ -181,25 +182,21 @@ const localEpicImageFor = imageUrl => {
 const sendEpicImage = async (m, ctx, imageUrl, caption, options = {}) => {
   if (imageUrl && ctx.conn?.sendMessage) {
     const image = localEpicImageFor(imageUrl)
-    const buttons = options.buttons || []
+    const buttons = options.buttons?.length ? options.buttons : [
+      ['🎭 Menu EPIC', `${ctx.usedPrefix || '.'}epic`],
+      ['📜 Daftar Saga', `${ctx.usedPrefix || '.'}epic saga`]
+    ]
     const footer = `${global.namebot || 'Avelia'} • EPIC Musical`
-    if (image && typeof ctx.conn.sendButtonV2 === 'function') {
-      return ctx.conn.sendButtonV2(m.chat, {
-        title: options.title || '🎭 EPIC MUSICAL',
-        subtitle: options.subtitle || 'Jelajahi kisah dan musik EPIC',
-        text: caption,
-        footer,
-        buffer: image,
-        buttons
-      }, m)
-    }
-    if (image && typeof ctx.conn.sendButton === 'function') {
-      return ctx.conn.sendButton(m.chat, caption, footer, image, buttons, m)
-    }
-    return ctx.conn.sendMessage(m.chat, {
-      image: image || { url: imageUrl },
-      caption
-    }, { quoted: m })
+    return sendThumbnailButtonCard(ctx.conn, {
+      chat: m.chat,
+      title: options.title || '🎭 EPIC MUSICAL',
+      subtitle: options.subtitle || 'Jelajahi kisah dan musik EPIC',
+      text: caption,
+      footer,
+      thumbnail: image || imageUrl,
+      buttons,
+      quoted: m
+    })
   }
   return m.reply(caption)
 }
