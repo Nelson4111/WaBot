@@ -5,6 +5,7 @@ import { hewanList, dapatkanHasil, getHasilDisplay, isHasilTernakKey, migrateHas
 import { masakanResep, normalizeMasakanKey, formatMasakanNama, resepEmoji, deskripsiMakanan } from '../../lib/rpg-masakanData.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 import { isStorageFull, sendStorageFullNotice, getStorageItemType } from '../../lib/rpg-storage.js'
+import { migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const wdb = loadDB()
@@ -12,6 +13,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let user = data.rpg
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum memiliki data RPG. Mulailah dengan.adventure')
   if(!user.ikan) user.ikan = {}
+  const trashMigration = migrateRpgTrashToKarung(user)
+  if (trashMigration) await saveDB(wdb)
   ensureFishDetails(user)
   if(!user.inventory) user.inventory = {}
   if(!user.dapur) user.dapur = { slot: 1, antrian: [] }
@@ -67,11 +70,14 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
   function getItemCount(nama){
     nama = nama.replace(/ /g, '_')
-    return user.inventory[nama] || user.ikan[nama] || 0
+    return user.karung?.[nama] || user.inventory[nama] || user.ikan[nama] || 0
   }
   function kurangiItem(nama, jumlah){
     nama = nama.replace(/ /g, '_')
-    if(user.ikan[nama]!== undefined) {
+    if(user.karung?.[nama] !== undefined) {
+      user.karung[nama] -= jumlah
+      if (user.karung[nama] <= 0) delete user.karung[nama]
+    } else if(user.ikan[nama]!== undefined) {
       if (isTrashFish(nama)) {
         user.ikan[nama] -= jumlah
         if (user.ikan[nama] <= 0) delete user.ikan[nama]

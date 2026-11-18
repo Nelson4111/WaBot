@@ -11,6 +11,8 @@ import {
   MOUNT_TEAM_LIMIT,
   MOUNT_TRASH
 } from '../../lib/mountData.js'
+import { addRpgTrashToKarung, migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
+import { getStorageAvailableSpace, isStorageFull } from '../../lib/rpg-storage.js'
 
 const normalize = value => String(value || '')
   .normalize('NFKD')
@@ -725,6 +727,21 @@ if (action === 'start' || action === 'mulai') {
         participants = [...new Set(team.members.map(normalizeJid))]
     }
 
+    let migratedTrash = false
+    const participantRpgs = participants.map(jid => {
+        const rpg = getUserRPG(wdb, jid).rpg
+        migratedTrash = migrateRpgTrashToKarung(rpg) || migratedTrash
+        return { jid, rpg }
+    })
+    if (migratedTrash) await saveDB(wdb)
+    const fullKarung = participantRpgs.find(({ rpg }) => isStorageFull(rpg, 'karung'))
+    if (fullKarung) {
+        if (fullKarung.jid === senderJid) {
+            return m.reply(`🧺 Karung sampahmu penuh. Jual isinya dengan *${usedPrefix}pasar jual karung all* atau tingkatkan kapasitas lewat *${usedPrefix}inv up*.`)
+        }
+        return m.reply(`🧺 Karung sampah @${fullKarung.jid.split('@')[0]} penuh. Minta dia menjual isinya atau meningkatkan kapasitas sebelum pendakian.`, null, { mentions: [fullKarung.jid] })
+    }
+
     const now = Date.now()
     const waiting = participants
         .map(jid => {
@@ -769,9 +786,10 @@ if (action === 'start' || action === 'mulai') {
     for (const jid of participants) {
         const player = getUserMount(wdb.users[jid] || (wdb.users[jid] = {}))
         const rpg = getUserRPG(wdb, jid).rpg
-        rpg.inventory = rpg.inventory || {}
-        const trashAmount = 1 + Math.floor(Math.random() * 2)
-        rpg.inventory[trash.id] = (Number(rpg.inventory[trash.id]) || 0) + trashAmount
+        const requestedTrashAmount = 1 + Math.floor(Math.random() * 2)
+        const availableTrashSpace = getStorageAvailableSpace(rpg, 'karung')
+        const trashAmount = Math.min(requestedTrashAmount, availableTrashSpace)
+        if (trashAmount > 0) addRpgTrashToKarung(rpg, trash.id, trashAmount)
         addRpgExp(rpg, exp)
         player.summits += 1
         player.exp += exp
@@ -799,7 +817,7 @@ if (action === 'start' || action === 'mulai') {
         `🎒 *HASIL SETIAP PENDAKI*\n` +
         `${results.join('\n')}\n\n` +
         `📌 *INFORMASI*\n` +
-        `> ↳ Sampah sudah dimasukkan ke tas masing-masing. Terima kasih sudah menjaga gunung tetap bersih!\n` +
+        `> ↳ Sampah sudah dimasukkan ke karung masing-masing. Terima kasih sudah menjaga gunung tetap bersih!\n` +
         `> ↳ Cooldown reguler 5 jam (Premium 2 jam).\n` +
         `> ↳ Gunakan ${usedPrefix}mt profile untuk melihat progres.\n\n` +
         `─━━━━━━━━━━━━━━─`

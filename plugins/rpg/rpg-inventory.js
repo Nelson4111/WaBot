@@ -4,6 +4,7 @@ import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButton
 import { compareRpgMoney, formatRpgNumber, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
+import { migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
 import {
   activateStorageBypass,
   getStorageCapacity,
@@ -146,7 +147,7 @@ return m.reply(
   user.ores = normalizeUserMaterial(user.ores || {})
   user.items = normalizeUserMaterial(user.items || {})
 
-  let isChanged = false
+  let isChanged = migrateRpgTrashToKarung(user)
 
   // MIGRASI DATA LAMA: hasilKebun -> inventory biar sinkron sama kebun.js
   const itemKebun = ['padi','jagung','semangka','jeruk','mangga','apel_merah','apel_hijau','apel','durian','emas','berlian','diamond']
@@ -198,7 +199,7 @@ return m.reply(
       const total = Object.values(countByType).reduce((sum, count) => sum + count, 0)
       text +=
         `\n📦 *Total semua item: ${formatRpgNumber(total)}*\n\n` +
-        `💡 Lihat: *.inv fish / ore / item / stellar / food / drink*\n` +
+        `💡 Lihat: *.inv fish / ore / item / stellar / food / drink / karung*\n` +
         `> Kebun: *.inv kebun* · Ringkasan tas: *.inv bag* · Gudang lain: *.inv gudang*\n` +
         `> Kondisi penyimpanan: *.inv info* · Level: *.inv level* · Upgrade: *.inv up*`
       return sendRpgButtons(conn, {
@@ -462,7 +463,7 @@ return m.reply(
 
     const selectedType = normalizeStorageType(action)
     if (!selectedType) {
-      return m.reply(`Kategori tidak dikenal. Pilih: *fish, ore, item, stellar, food, drink, kebun, gudang,* atau *bag*.`)
+      return m.reply(`Kategori tidak dikenal. Pilih: *fish, ore, item, stellar, food, drink, karung, kebun, gudang,* atau *bag*.`)
     }
     if (selectedType === 'level' || selectedType === 'all') return renderStorageOverview()
     return renderStorage(selectedType)

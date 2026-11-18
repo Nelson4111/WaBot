@@ -15,7 +15,8 @@ import {
   RPG_FISHING_STORIES
 } from '../../lib/rpg-fishCatalog.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
-import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
+import { getStorageAvailableSpace, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
+import { addRpgTrashToKarung, migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
 
 function formatNama(ikan) {
   const key = normalizeFishKey(ikan)
@@ -124,6 +125,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   let user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
   if (!user.ikan) user.ikan = {}
+  if (migrateRpgTrashToKarung(user)) await saveDB(wdb)
 
   user.ikan = migrateLegacyFishInventory(user.ikan)
   ensureFishDetails(user)
@@ -146,6 +148,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     }
   }
   if (isStorageFull(user, 'fish')) return sendStorageFullNotice(conn, m, user, 'fish', usedPrefix || '.')
+  if (isStorageFull(user, 'karung')) return sendStorageFullNotice(conn, m, user, 'karung', usedPrefix || '.')
 
   const murkyWaters = isRpgEventActive('murky_waters')
   const luckyCatch = isRpgEventActive('lucky_catch')
@@ -224,7 +227,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     (Number(firstBait.effects.extraCatch) || 0) +
     (Math.random() < (Number(firstBait.effects.extraCatchChance) || 0) ? 1 : 0) +
     (Math.random() < Math.max(0, yieldBuff - 1) ? 1 : 0)) * illegalMultiplier)
-  const draws = []
+  let draws = []
   const seen = new Set()
   let fishCaughtCount = 0
   let attempts = 0
@@ -358,6 +361,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const releasedCount = baitEmpty
     ? Math.max(0, fishCount - fishCaughtCount) + (missedDoubleCatch ? 1 : 0)
     : 0
+  let availableTrashSpace = getStorageAvailableSpace(user, 'karung')
+  const trashBeforeStorageLimit = draws.filter(fish => fish.tier === 'TRASH').length
+  draws = draws.filter(fish => {
+    if (fish.tier !== 'TRASH') return true
+    if (availableTrashSpace <= 0) return false
+    availableTrashSpace--
+    return true
+  })
+  const discardedTrashCount = trashBeforeStorageLimit - draws.filter(fish => fish.tier === 'TRASH').length
 
   const tierOrder = ['TRASH', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'SECRET']
   const highest = draws.reduce((best, current) => tierOrder.indexOf(current.tier) > tierOrder.indexOf(best) ? current.tier : best, 'TRASH')
@@ -369,7 +381,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   for (const fish of draws) {
     const normalizedKey = normalizeFishKey(fish.ikan)
     if (fish.tier === 'TRASH') {
-      user.ikan[normalizedKey] = (user.ikan[normalizedKey] || 0) + 1
+      addRpgTrashToKarung(user, normalizedKey, 1)
     } else {
       fish.record = addFishRecord(
         user,
@@ -453,6 +465,7 @@ if (baitRewards.size) {
   caption += `> ↳ 🎁 Bait didapat: ${rewardSummary}\n`
 }
 if (releasedCount) caption += `> ↳ 🌊 ${releasedCount} tangkapan lepas karena umpan habis.\n`
+if (discardedTrashCount) caption += `> ↳ 🧺 ${discardedTrashCount} sampah tidak tersimpan karena karung hampir penuh.\n`
 if(bonus > 0) caption += `> ↳ 🍀 Bonus Rod: +${bonus.toFixed(1)}%\n`
 if(getBloodlineBuff(user, 'fishingRarity') > 0) caption += `> ↳ 🧬 Efek Bloodline: peluang tier tinggi +${getBloodlineBuff(user, 'fishingRarity') * 100}%\n`
 

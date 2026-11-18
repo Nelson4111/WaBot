@@ -9,7 +9,8 @@ import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { formatPremiumProtectionMessage, tryPremiumProtection } from '../../lib/rpgPremium.js'
 import { getGroupTotemBuff } from '../../lib/rpg-totemData.js'
 import { attemptRpgIllegalAction, formatRpgIllegalResult, saveFailedRpgIllegalAction } from '../../lib/rpgIlegal.js'
-import { isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
+import { getStorageAvailableSpace, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
+import { ADVENTURE_TRASH_IDS, ADVENTURE_TRASH_ITEMS, addRpgTrashToKarung, migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
 
 function formatNama(item) {
   return item.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -46,7 +47,7 @@ let epic = ['permata_biru', 'permata_merah', 'permata_hijau', 'peta_harta', 'voi
 let rare = ['diamond', 'koin_emas', 'ramuan_besar', 'pedang_baja', 'armor_kulit'];
 let uncommon = ['koin_perak', 'ramuan_sedang', 'belati_karat', 'perisai_kayu', 'ion_crystal', 'meteor_pearl', 'orbiting_seed'];
 let common = ['kayu', 'koin_tembaga', 'ramuan_kecil', 'tali'];
-let trash = ['tulang', 'batu', 'jamur', 'daun_kering', 'kain_lusuh', 'nebula_dust', 'lunar_alloy', 'comet_ice', 'starwood', 'stellar_credit'];
+let trash = ADVENTURE_TRASH_ITEMS.map(item => item.id)
 export const adventureItemKeys = new Set([...secret, ...mythic, ...legendary, ...epic, ...rare, ...uncommon, ...common, ...trash])
 
 const tierInfo = {
@@ -83,6 +84,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
   initLadang(user)
   if(!user.inventory) user.inventory = {}
   if(!user.adventureLevel) user.adventureLevel = 1
+  if (migrateRpgTrashToKarung(user)) await saveDB(wdb)
 
   // COMMAND TAS / BACKPACK - baca dari user.inventory
   if(command === 'tas' || command === 'backpack'){
@@ -124,6 +126,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
   }
 
   if (isStorageFull(user, 'item')) return sendStorageFullNotice(conn, m, user, 'item', usedPrefix || '.')
+  if (isStorageFull(user, 'karung')) return sendStorageFullNotice(conn, m, user, 'karung', usedPrefix || '.')
 
   // COMMAND ADVENTURE
   const cooldownBuff = getGroupTotemBuff(wdb.data, m.chat, 'adventure', 'cooldown')
@@ -220,7 +223,25 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
     }
   }
   // 1. Masuk inventory buat.tas
-  for(let item in hasilLoot){ user.inventory[item] = (user.inventory[item] || 0) + hasilLoot[item] }
+  let availableTrashSpace = getStorageAvailableSpace(user, 'karung')
+  let discardedTrashCount = 0
+  for(let item in hasilLoot) {
+    if (ADVENTURE_TRASH_IDS.has(item)) {
+      const amount = Math.min(hasilLoot[item], availableTrashSpace)
+      discardedTrashCount += hasilLoot[item] - amount
+      if (amount > 0) addRpgTrashToKarung(user, item, amount)
+      availableTrashSpace -= amount
+      if (amount === 0) {
+        delete hasilLoot[item]
+        for (const tierItems of Object.values(groupedLoot)) delete tierItems[item]
+      } else {
+        hasilLoot[item] = amount
+        for (const tierItems of Object.values(groupedLoot)) {
+          if (tierItems[item] !== undefined) tierItems[item] = amount
+        }
+      }
+    } else user.inventory[item] = (user.inventory[item] || 0) + hasilLoot[item]
+  }
   const shortcutWood = woodQty
   const shortcutIron = Math.ceil((baseIron + Math.floor(pickLvl / 4)) * illegalMultiplier)
   user.inventory['iron'] = (user.inventory['iron'] || 0) + shortcutIron
@@ -265,6 +286,7 @@ cap += `🎒 *HASIL PENJELAJAHAN x${jumlahLoot}*\n`
 for (let item in hasilLoot) {
 cap += `> ↳ ${formatNama(item)} ×${hasilLoot[item].toLocaleString()}\n`
 }
+if (discardedTrashCount) cap += `> ↳ 🧺 ${discardedTrashCount} sampah tidak tersimpan karena karung hampir penuh.\n`
 cap += `> ↳ Kayu ×${shortcutWood}\n`
 cap += `> ↳ Iron ×${shortcutIron}\n`
 cap += `> ↳ Money +Rp ${money.toLocaleString()}\n`

@@ -6,6 +6,7 @@ import { getHasilDisplay, isHasilTernakKey, migrateHasilTernakInventory } from '
 import { fishRenameMap, ikanEmoji, normalizeFishKey, migrateLegacyFishInventory } from '../../lib/rpg-fishCatalog.js'
 import { INTERSTELLAR_ITEM_BY_ID } from '../../lib/rpg-exploreData.js'
 import { getStorageCapacity } from '../../lib/rpg-storage.js'
+import { migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
 
 const materialAlias = { kayu: 'wood', batu: 'stone', emas: 'gold', berlian: 'diamond' }
 function normalizeMaterialKey(key) {
@@ -81,6 +82,7 @@ let handler = async (m, { conn, usedPrefix, args }) => {
   let user = wdb.users[m.sender]?.rpg
   if (!user) return sendRpgRegistrationPrompt(conn, m, usedPrefix, '❌ Kamu belum punya data RPG')
   if (migrateRpgCurrencies(user)) saveDB(wdb)
+  if (migrateRpgTrashToKarung(user)) saveDB(wdb)
 
   user.inventory = normalizeUserMaterial(user.inventory || {})
   user.ikan = user.ikan || {}

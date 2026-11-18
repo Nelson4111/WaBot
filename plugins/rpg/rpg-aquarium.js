@@ -3,6 +3,7 @@ import { ikanEmoji, RPG_FISH_TIERS as fishTiers, RPG_FISH_TIER_BY_NAME as fishTi
 import { formatRpgNumber } from '../../lib/rpgMoney.js'
 import { ensureFishDetails, getAllFishRecords, isTrashFish, migrateAllFishDetails } from '../../lib/rpg-fishSizes.js'
 import { getStorageCapacity } from '../../lib/rpg-storage.js'
+import { migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
 
 function formatNama(name) {
   return String(name || '')
@@ -29,13 +30,13 @@ let handler = async (m, { conn, usedPrefix, text }) => {
   const user = wdb.users[m.sender]?.rpg
   if (!user) return m.reply('Ketik #adventure dulu.')
 
-  let migrated = false
+  let migrated = migrateRpgTrashToKarung(user)
   if (!wdb.data.fishSizeMigrationV1) {
-    migrated = migrateAllFishDetails(wdb)
+    migrated = migrateAllFishDetails(wdb) || migrated
     wdb.data.fishSizeMigrationV1 = Date.now()
     migrated = true
   } else {
-    migrated = ensureFishDetails(user)
+    migrated = ensureFishDetails(user) || migrated
   }
 
   const records = getOrderedRecords(user)

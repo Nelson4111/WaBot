@@ -14,6 +14,7 @@ import { scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { MOUNT_TRASH } from '../../lib/mountData.js'
 import { RPG_CONFIRMATION_TTL } from '../../lib/rpgConfirmation.js'
 import { ensureFishDetails, getFishPriceMultiplier, getFishRecords, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
+import { migrateRpgTrashToKarung, RPG_KARUNG_ITEMS, RPG_KARUNG_ITEM_IDS } from '../../lib/rpg-karungData.js'
 
 const PASAR_IMAGE = 'https://c.termai.cc/i113/GBR.jpg'
 
@@ -38,7 +39,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   if (!user.inventory) user.inventory = {}
 
   user.ikan = migrateLegacyFishInventory(user.ikan)
-  if (ensureFishDetails(user)) await saveDB(wdb)
+  const migratedTrash = migrateRpgTrashToKarung(user)
+  if (migratedTrash || ensureFishDetails(user)) await saveDB(wdb)
 
   const isPrem = global.db.data.users[m.sender]?.premium
   const sellBonus = isPrem ? 1.1 : 1
@@ -196,7 +198,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     artefak_laut: { emoji: '🏺', harga: 2500000 },
     emas_pirate: { emoji: '💰', harga: 2500000 },
     air_mata_putri: { emoji: '💧', harga: 2500000 },
-    ...Object.fromEntries(MOUNT_TRASH.map(({ id, emoji, price }) => [id, { emoji, harga: price }]))
+    ...Object.fromEntries(MOUNT_TRASH.map(({ id, emoji, price }) => [id, { emoji, harga: price }])),
+    ...Object.fromEntries(RPG_KARUNG_ITEMS.map(({ id, emoji, price }) => [id, { emoji, harga: price }]))
   }).map(([key, value]) => [normalizeFishKey(key), value]))
 
   const keys = Object.keys(harga).sort((a, b) => harga[a].harga - harga[b].harga)
@@ -388,6 +391,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ${usedPrefix}pasar tier\n` +
       `> ${usedPrefix}pasar jual <no/nama> <jumlah/all>\n` +
       `> ${usedPrefix}pasar jual tier <kategori> [jumlah/all]\n` +
+      `> ${usedPrefix}pasar jual karung all\n` +
       `> ${usedPrefix}pasar jual all\n` +
       `> ${usedPrefix}pasar guide\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -396,7 +400,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       { title: '🪱 Beli umpan', description: 'Lihat umpan untuk memancing', id: `${usedPrefix}pasar bait` },
       { title: '🏷️ Jual berdasarkan tier', description: 'Pilih kategori ikan yang ingin dijual', id: `${usedPrefix}pasar tier` },
       { title: '🎣 Jual hasil mancing', description: 'Pilih item untuk ditukar menjadi uang', id: `${usedPrefix}pasar jual` },
-      { title: '📦 Jual seluruh stok', description: 'Jual semua ikan dan sampah pendakian', id: `${usedPrefix}pasar jual all` },
+      { title: '🧺 Jual semua sampah', description: 'Jual seluruh isi karung sampah', id: `${usedPrefix}pasar jual karung all` },
+      { title: '🐟 Jual semua ikan', description: 'Jual seluruh stok ikan yang bisa diperdagangkan', id: `${usedPrefix}pasar jual all` },
       { title: '🎣 Mulai memancing', description: 'Kumpulkan tangkapan baru untuk dijual', id: `${usedPrefix}mancing` },
       { title: '📖 Panduan pasar', description: 'Pelajari harga dan cara menjual hasil', id: `${usedPrefix}pasar guide` }
     ]
@@ -420,7 +425,8 @@ let handler = async (m, { conn, text, usedPrefix }) => {
       `> ↳ Beli umpan: *${usedPrefix}pasar bait*\n` +
       `> ↳ Jual item: *${usedPrefix}pasar jual <no/nama> <jumlah/all>*\n` +
       `> ↳ Jual ikan berdasarkan tier: *${usedPrefix}pasar jual tier <kategori> [jumlah/all]*\n` +
-      `> ↳ Jual semua ikan dan sampah pendakian: *${usedPrefix}pasar jual all*\n` +
+      `> ↳ Jual semua sampah dari karung: *${usedPrefix}pasar jual karung all*\n` +
+      `> ↳ Jual semua ikan: *${usedPrefix}pasar jual all*\n` +
       `> ↳ Daftar tier: *${usedPrefix}pasar tier*\n` +
       `> ↳ Mulai memancing: *${usedPrefix}mancing*\n\n` +
       `─━━━━━━━━━━━━━━─`
@@ -445,7 +451,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     cap += `│ 👤 ${isPrem ? 'Premium +10% jual' : 'User biasa'}\n`
     cap += `╰─━━━━━━━━━━━━━━─\n\n`
     cap += `🐟 *DAFTAR HARGA JUAL*\n`
-    cap += `> ↳ Daftar mencakup ikan dan sampah pendakian dari tas.\n\n`
+    cap += `> ↳ Daftar mencakup ikan dan sampah dari berbagai aktivitas.\n\n`
     keys.forEach((k, i) => {
       const hargaJual = Math.floor(harga[k].harga * sellBonus)
       cap += `*${i + 1}. ${formatNama(k)} ${harga[k].emoji}*\n`
@@ -474,11 +480,15 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     if (['batal', 'no'].includes(args[0])) {
       delete user.pendingPasarSell
       saveDB(wdb)
-      return m.reply('✅ Penjualan ikan dibatalkan. Stok dan saldo tidak berubah.')
+      return m.reply('✅ Penjualan dibatalkan. Stok dan saldo tidak berubah.')
     }
     if (pending.entries.some(entry => {
-      const inventory = entry.bucket === 'inventory' ? user.inventory : user.ikan
-      if (entry.bucket === 'inventory' || isTrashFish(entry.item)) {
+      const inventory = entry.bucket === 'inventory'
+        ? user.inventory
+        : entry.bucket === 'karung'
+          ? user.karung
+          : user.ikan
+      if (entry.bucket === 'inventory' || entry.bucket === 'karung' || isTrashFish(entry.item)) {
         return (Number(inventory[entry.item]) || 0) < entry.quantity
       }
       const records = getFishRecords(user, entry.item)
@@ -495,7 +505,11 @@ let handler = async (m, { conn, text, usedPrefix }) => {
         removeFishRecords(user, entry.item, entry.quantity, { ids: entry.fishIds })
         continue
       }
-      const inventory = entry.bucket === 'inventory' ? user.inventory : user.ikan
+      const inventory = entry.bucket === 'inventory'
+        ? user.inventory
+        : entry.bucket === 'karung'
+          ? user.karung
+          : user.ikan
       inventory[entry.item] -= entry.quantity
       if (inventory[entry.item] <= 0) delete inventory[entry.item]
     }
@@ -504,12 +518,56 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     saveDB(wdb)
     return m.reply(
       `╭─❏「 🎣 PENJUALAN PASAR BERHASIL 」❏\n` +
-      `│ ✅ ${pending.entries.length} jenis ikan terjual\n` +
+      `│ ✅ ${pending.entries.length} jenis barang terjual\n` +
       `╰─━━━━━━━━━━━━━━─\n\n` +
       `> ↳ 💰 Diterima: +Rp ${pending.total.toLocaleString()}\n` +
       `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
       `─━━━━━━━━━━━━━━─`
     )
+  }
+
+  if (args[0] === 'karung') {
+    if (args[1] !== 'all') {
+      return m.reply(`Gunakan *${usedPrefix}pasar jual karung all* untuk menjual seluruh sampah di karung.`)
+    }
+    const entries = Object.entries(user.karung || {})
+      .filter(([item, quantity]) =>
+        harga[item] &&
+        Number.isSafeInteger(Number(quantity)) &&
+        Number(quantity) > 0
+      )
+      .map(([item, quantity]) => ({
+        item,
+        quantity: Number(quantity),
+        bucket: 'karung',
+        itemTotal: Math.floor(harga[item].harga * sellBonus) * Number(quantity)
+      }))
+    if (!entries.length) return m.reply('🧺 Karung sampahmu kosong atau tidak memiliki item yang bisa dijual.')
+
+    const baseTotal = entries.reduce((total, entry) => total + entry.itemTotal, 0)
+    const total = scaleDifficultyIncome(user, baseTotal)
+    user.pendingPasarSell = { entries, total, expiresAt: Date.now() + RPG_CONFIRMATION_TTL }
+    await saveDB(wdb)
+    const list = entries.map(({ item, quantity }) =>
+      `> ↳ ${harga[item].emoji} ${formatNama(item)} ×${quantity}`
+    ).join('\n')
+    return sendRpgConfirmButtons(conn, m, {
+      text:
+        `╭─❏「 ⚠️ KONFIRMASI JUAL KARUNG 」❏\n` +
+        `│ 🧺 ${entries.length} jenis sampah akan dijual\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${list}\n\n` +
+        `> ↳ Perkiraan diterima: Rp ${total.toLocaleString('id-ID')}\n\n` +
+        `✅ Ketik *${usedPrefix}pasar jual ya* untuk lanjut\n` +
+        `❌ Ketik *${usedPrefix}pasar jual batal* untuk membatalkan\n` +
+        `⏳ Konfirmasi berlaku 5 menit.`,
+      title: '🧺 JUAL SEMUA SAMPAH',
+      subtitle: 'Periksa total sebelum menjual isi karung',
+      acceptText: '💰 Jual Semua',
+      acceptCommand: `${usedPrefix}pasar jual ya`,
+      cancelText: '↩️ Batalkan',
+      cancelCommand: `${usedPrefix}pasar jual batal`
+    })
   }
 
   if (args[0] === 'tier') {
@@ -680,8 +738,16 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   const rawLookup = (args || []).join(' ') || 'yang kamu masukkan'
   if (!itemInput || !harga[itemInput]) return m.reply(`❌ Item "${String(rawLookup).trim()}" tidak ada di list.\nLihat: *${usedPrefix}pasar list*`)
 
-  const bucket = MOUNT_TRASH.some(({ id }) => id === itemInput) ? 'inventory' : 'ikan'
-  const itemStock = bucket === 'inventory' ? user.inventory : user.ikan
+  const bucket = RPG_KARUNG_ITEM_IDS.has(itemInput)
+    ? 'karung'
+    : MOUNT_TRASH.some(({ id }) => id === itemInput)
+      ? 'inventory'
+      : 'ikan'
+  const itemStock = bucket === 'karung'
+    ? user.karung
+    : bucket === 'inventory'
+      ? user.inventory
+      : user.ikan
   const fishRecords = bucket === 'ikan' && !isTrashFish(itemInput) ? getAvailableFish(itemInput) : []
   let stok = bucket === 'ikan' && !isTrashFish(itemInput) ? fishRecords.length : itemStock[itemInput] || 0
   if (stok <= 0) return m.reply(`❌ Kamu tidak punya ${formatNama(itemInput)}`)
@@ -750,7 +816,7 @@ if (amount === 'all') {
   )
 }
 
-handler.help = ['pasar', 'pasar command', 'pasar list', 'pasar tier', 'pasar guide', 'pasar jual <no/nama> <jumlah/all>', 'pasar jual tier <kategori> [jumlah/all]', 'pasar jual all', 'tokoikan']
+handler.help = ['pasar', 'pasar command', 'pasar list', 'pasar tier', 'pasar guide', 'pasar jual <no/nama> <jumlah/all>', 'pasar jual tier <kategori> [jumlah/all]', 'pasar jual karung all', 'pasar jual all', 'tokoikan']
 handler.tags = ['rpg']
 handler.command = /^(pasar|tokoikan|jualikan)$/i
 handler.alias = ['pasar', 'tokoikan', 'jualikan']
