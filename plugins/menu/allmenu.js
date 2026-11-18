@@ -285,16 +285,7 @@ let handler = async (m, { conn, usedPrefix: _p }) => {
 
     if (!sent) {
       const menuText = text.trim()
-      if (menuThumb && Buffer.byteLength(menuText, 'utf8') <= 1024) {
-        await conn.sendMessage(m.chat, {
-          image: menuThumb,
-          caption: menuText,
-          footer,
-          contextInfo
-        }, { quoted: m })
-      } else {
-        await sendMenuText(conn, m.chat, menuText, { quoted: m, contextInfo })
-      }
+      await sendMenuText(conn, m.chat, menuText, { quoted: m, contextInfo })
     }
 
     if (audioMenu) {

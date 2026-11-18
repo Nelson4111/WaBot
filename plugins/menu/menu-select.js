@@ -135,16 +135,7 @@ let handler = async (m, { conn, usedPrefix: _p, command }) => {
       let cardText = `*╭  〔 ✦ ᴅ ᴀ ꜰ ᴛ ᴀ ʀ  ᴋ ᴀ ᴛ ᴇ ɢ ᴏ ʀ ɪ 〕*\n${listText}\n*╰───────────────*`
       let fallbackCaption = `${bodyText}\n\n${cardText}`
 
-      if (menuThumb && Buffer.byteLength(fallbackCaption, 'utf8') <= 1024) {
-        await conn.sendMessage(m.chat, {
-          image: menuThumb,
-          caption: fallbackCaption,
-          footer,
-          contextInfo
-        }, { quoted: m })
-      } else {
-        await sendMenuText(conn, m.chat, fallbackCaption, { quoted: m, contextInfo })
-      }
+      await sendMenuText(conn, m.chat, fallbackCaption, { quoted: m, contextInfo })
     }
   } catch (err) {
     console.error('[MENU-SELECT ERROR]:', err)

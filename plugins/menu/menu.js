@@ -256,17 +256,7 @@ ${donorText}
     }
 
     if (!sent) {
-      if (menuThumb && Buffer.byteLength(caption, 'utf8') <= 1024) {
-        await conn.sendMessage(m.chat, {
-          image: menuThumb,
-          caption,
-          footer,
-          mentions,
-          contextInfo
-        }, { quoted: m })
-      } else {
-        await sendMenuText(conn, m.chat, caption, { quoted: m, contextInfo, mentions })
-      }
+      await sendMenuText(conn, m.chat, caption, { quoted: m, contextInfo, mentions })
     }
 
     // Send Background Voice Note

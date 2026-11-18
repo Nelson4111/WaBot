@@ -514,17 +514,7 @@ let handler = async (m, { conn, usedPrefix: _p, command, text }) => {
   }
 
   if (!sent) {
-    if (menuThumb && Buffer.byteLength(caption, 'utf8') <= 1024) {
-      await conn.sendMessage(m.chat, {
-        image: menuThumb,
-        caption,
-        footer,
-        mentions: [m.sender],
-        contextInfo
-      }, { quoted: m })
-    } else {
-      await sendMenuText(conn, m.chat, caption, { quoted: m, contextInfo, mentions: [m.sender] })
-    }
+    await sendMenuText(conn, m.chat, caption, { quoted: m, contextInfo, mentions: [m.sender] })
   }
 }
 
