@@ -94,6 +94,7 @@ test('RPG media is sent as a ButtonV2 thumbnail instead of an image attachment',
   await sendRpgButtons(conn, {
     chat: 'test@g.us',
     text: 'Hasil memancing.',
+    subtitle: 'Hadiah untuk kegiatan memancing',
     buffer: image,
     buttons: [['🐠 Buka Aquarium', '.aquarium']],
     quoted: { key: 'quoted-message' },
@@ -103,6 +104,7 @@ test('RPG media is sent as a ButtonV2 thumbnail instead of an image attachment',
   })
 
   assert.equal(conn.sends.length, 1)
+  assert.equal(conn.sends[0].payload.subtitle, 'Hadiah untuk kegiatan memancing')
   assert.ok(Buffer.isBuffer(conn.sends[0].payload.thumbnail))
   const thumbnailMetadata = await sharp(conn.sends[0].payload.thumbnail).metadata()
   assert.ok(thumbnailMetadata.width <= 250)
