@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import sharp from 'sharp'
 import { sendRpgButtons, sendRpgQuickButton } from '../lib/rpgActionButtons.js'
 
 function makeConn() {
@@ -63,15 +64,32 @@ test('RPG guide and command replies use headerless Native Flow buttons', async (
   assert.equal(interactive.nativeFlowMessage.buttons.length, 2)
 })
 
-test('image buffers are sent with the fallback action caption when Native Flow is unavailable', async () => {
-  const conn = {
-    sends: [],
-    async sendMessage(chat, content, options) {
-      this.sends.push({ chat, content, options })
-      return this.sends.at(-1)
+test('RPG media is sent as a ButtonV2 thumbnail instead of an image attachment', async () => {
+  const image = await sharp({
+    create: { width: 640, height: 480, channels: 3, background: { r: 40, g: 90, b: 130 } }
+  }).png().toBuffer()
+  class ButtonV2 {
+    constructor(conn) {
+      this.conn = conn
+      this.payload = { buttons: [] }
+    }
+    setTitle(value) { this.payload.title = value }
+    setSubtitle(value) { this.payload.subtitle = value }
+    setBody(value) { this.payload.text = value }
+    setFooter(value) { this.payload.footer = value }
+    setRawThumbnail(value) { this.payload.thumbnail = value }
+    setContextInfo(value) { this.payload.contextInfo = value }
+    addButton(label, id) { this.payload.buttons.push([label, id]) }
+    addRawButton(button) { this.payload.buttons.push(button) }
+    async send(chat) {
+      this.conn.sends.push({ chat, payload: this.payload })
+      return this.conn.sends.at(-1)
     }
   }
-  const image = Buffer.from('fishing card')
+  const conn = {
+    sends: [],
+    ButtonV2
+  }
 
   await sendRpgButtons(conn, {
     chat: 'test@g.us',
@@ -80,22 +98,27 @@ test('image buffers are sent with the fallback action caption when Native Flow i
     buttons: [['🐠 Buka Aquarium', '.aquarium']],
     quoted: { key: 'quoted-message' },
     reply: async () => {
-      throw new Error('image fallback must send the media message')
+      throw new Error('ButtonV2 should send the thumbnail card')
     }
   })
 
   assert.equal(conn.sends.length, 1)
-  assert.deepEqual(conn.sends[0].content.image, image)
-  assert.match(conn.sends[0].content.caption, /Hasil memancing\./)
-  assert.match(conn.sends[0].content.caption, /\.aquarium/)
-  assert.deepEqual(conn.sends[0].options, { quoted: { key: 'quoted-message' } })
+  assert.ok(Buffer.isBuffer(conn.sends[0].payload.thumbnail))
+  const thumbnailMetadata = await sharp(conn.sends[0].payload.thumbnail).metadata()
+  assert.ok(thumbnailMetadata.width <= 250)
+  assert.ok(thumbnailMetadata.height <= 250)
+  assert.deepEqual(conn.sends[0].payload.buttons, [['🐠 Buka Aquarium', '.aquarium']])
+  assert.equal('image' in conn.sends[0].payload, false)
 })
 
-test('thumbnail URLs are sent as media when Native Flow is unavailable', async () => {
+test('RPG image fallback never sends a downloadable image attachment', async () => {
+  const image = await sharp({
+    create: { width: 4, height: 4, channels: 3, background: { r: 80, g: 50, b: 20 } }
+  }).png().toBuffer()
   const conn = {
     sends: [],
-    async sendMessage(chat, content) {
-      this.sends.push({ chat, content })
+    async sendMessage(chat, content, options) {
+      this.sends.push({ chat, content, options })
       return this.sends.at(-1)
     }
   }
@@ -103,12 +126,15 @@ test('thumbnail URLs are sent as media when Native Flow is unavailable', async (
   await sendRpgButtons(conn, {
     chat: 'test@g.us',
     text: 'Hasil mining.',
-    thumbnailUrl: 'https://example.invalid/mining.jpg',
-    buttons: [['🎒 Buka Tas', '.bag']]
+    buffer: image,
+    buttons: [['🎒 Buka Tas', '.bag']],
+    quoted: { key: 'quoted-message' }
   })
 
-  assert.deepEqual(conn.sends[0].content.image, { url: 'https://example.invalid/mining.jpg' })
-  assert.match(conn.sends[0].content.caption, /Hasil mining\./)
+  assert.equal('image' in conn.sends[0].content, false)
+  assert.match(conn.sends[0].content.text, /Hasil mining\./)
+  assert.match(conn.sends[0].content.text, /\.bag/)
+  assert.deepEqual(conn.sends[0].options, { quoted: { key: 'quoted-message' } })
 })
 
 test('quick action helpers use Native Flow instead of ButtonV2', async () => {
