@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
@@ -83,6 +84,7 @@ if (item.money) {
     )
   }
 
+  if (await rejectFrozenRpgAccounts(m, [m.sender, who], wdb.users)) return
   wdb.money[m.sender] = subtractRpgMoney(wdb.money[m.sender] || 0, count)
   wdb.money[who] = addRpgMoney(wdb.money[who] || 0, count)
 } else {
@@ -94,6 +96,7 @@ if (item.money) {
     )
   }
 
+  if (await rejectFrozenRpgAccounts(m, [m.sender, who], wdb.users)) return
   changeTransferBalance(wdb.users[m.sender].rpg, item, -count, wdb.users[m.sender])
   changeTransferBalance(wdb.users[who].rpg, item, count, wdb.users[who])
 }

@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isDifficultyRanked, scaleDifficultyDamage, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -194,6 +195,7 @@ let handler = async (m, { conn, text, usedPrefix, command, args, groupMetadata }
 
     if (!challengeId) return m.reply(`❌ Tidak ada tantangan ${mode.nama} yang menunggumu.`)
     const challenge = global.arena[challengeId]
+    if (await rejectFrozenRpgAccounts(m, [challenge.penantang, challenge.target], wdb.users)) return
     removeChallenge(challengeId)
 
     if (isReject) {

@@ -272,29 +272,36 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     if(asuransi) {
       if (global.icuTernak[m.sender]?.timer) clearTimeout(global.icuTernak[m.sender].timer)
       const icuEntry = { h1, h2, d1, d2, biayaObat }
-      icuEntry.timer = setTimeout(() => {
-        if(global.icuTernak[m.sender] === icuEntry) {
-          const wdb2 = loadDB()
-          let user2 = getUserRPG(wdb2, m.sender).rpg
-          let data = global.icuTernak[m.sender]
-
-          if (!user2.inventory) user2.inventory = {}
-          user2.inventory[dapatkanHasil(data.d1).sembelih] = (user2.inventory[dapatkanHasil(data.d1).sembelih] || 0) + 1
-          user2.inventory[dapatkanHasil(data.d2).sembelih] = (user2.inventory[dapatkanHasil(data.d2).sembelih] || 0) + 1
-          delete global.icuTernak[m.sender]
-          saveDB(wdb2)
-
-          conn.sendMessage(m.chat, {
-            text:
-              `╭─❏「 💀 WAKTU HABIS 」❏\n` +
-              `│ 🧬 ${data.d1.nama} ${data.d1.emoji} + ${data.d2.nama} ${data.d2.emoji}\n` +
-              `╰─━━━━━━━━━━━━━━─\n\n` +
-              `> ↳ Status : Mati\n` +
-              `> ↳ 🍖 Hasil : ${dapatkanHasil(data.d1).sembelih} x1 + ${dapatkanHasil(data.d2).sembelih} x1\n\n` +
-              `─━━━━━━━━━━━━━━─`
-          }, {quoted: m})
+      const finishIcuEntry = () => {
+        if (global.icuTernak[m.sender] !== icuEntry) return
+        const senderJid = conn.decodeJid?.(m.sender) || m.sender
+        const frozenAccount = global.db.data.users?.[senderJid] || global.db.data.users?.[m.sender]
+        if (Number(frozenAccount?.rpgFreeze?.startedAt) > 0) {
+          icuEntry.timer = setTimeout(finishIcuEntry, 60 * 1000)
+          return
         }
-      }, 30 * 60 * 1000)
+
+        const wdb2 = loadDB()
+        const user2 = getUserRPG(wdb2, m.sender).rpg
+        const data = global.icuTernak[m.sender]
+
+        if (!user2.inventory) user2.inventory = {}
+        user2.inventory[dapatkanHasil(data.d1).sembelih] = (user2.inventory[dapatkanHasil(data.d1).sembelih] || 0) + 1
+        user2.inventory[dapatkanHasil(data.d2).sembelih] = (user2.inventory[dapatkanHasil(data.d2).sembelih] || 0) + 1
+        delete global.icuTernak[m.sender]
+        saveDB(wdb2)
+
+        conn.sendMessage(m.chat, {
+          text:
+            `╭─❏「 💀 WAKTU HABIS 」❏\n` +
+            `│ 🧬 ${data.d1.nama} ${data.d1.emoji} + ${data.d2.nama} ${data.d2.emoji}\n` +
+            `╰─━━━━━━━━━━━━━━─\n\n` +
+            `> ↳ Status : Mati\n` +
+            `> ↳ 🍖 Hasil : ${dapatkanHasil(data.d1).sembelih} x1 + ${dapatkanHasil(data.d2).sembelih} x1\n\n` +
+            `─━━━━━━━━━━━━━━─`
+        }, {quoted: m})
+      }
+      icuEntry.timer = setTimeout(finishIcuEntry, 30 * 60 * 1000)
       global.icuTernak[m.sender] = icuEntry
 
       saveDB(wdb)

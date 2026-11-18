@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
@@ -383,6 +384,7 @@ if (mode === 'hadiah' || mode === 'tukar') {
       `─━━━━━━━━━━━━━━─`
     )
   }
+  if (await rejectFrozenRpgAccounts(m, [sender, target], db.users)) return
 
   const receiverBag = getCollection(targetUser.rpg)
 
@@ -506,6 +508,7 @@ if (mode === 'hadiah' || mode === 'tukar') {
 
 if (mode === 'terima' || mode === 'tolak') {
   const trade = rpg.collectionTrade
+  if (await rejectFrozenRpgAccounts(m, [sender, trade?.from], db.users)) return
 
   if (!trade || Date.now() - trade.createdAt > 600000) {
     delete rpg.collectionTrade

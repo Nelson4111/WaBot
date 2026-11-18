@@ -45,6 +45,7 @@ import { JOBS, JOB_MAX_APPLIED, getJobByIdentifier, getJobTitleByPoints } from '
 import { sendRpgButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, isTrashFish, removeFishRecords, setFishRecordSize } from '../../lib/rpg-fishSizes.js'
 import { normalizeRpgMaintenanceData, previewRpgMaintenanceNormalization } from '../../lib/rpgMaintenanceNormalizer.js'
+import { returnAllShelterResidents } from '../../lib/rpgShelter.js'
 import { resolveRpgPanelTarget } from '../../lib/rpgPanelTarget.js'
 import { GAME_CATEGORIES, ROLE_DATA, normalizeGameCategory } from '../../lib/werewolfData.js'
 
@@ -655,7 +656,7 @@ let handler = async (m, {
       normalizeRpgPanelCategory(title) === requestedCategory
     )
   const panelMutationActions = new Set([
-    'afk', 'forceafk', 'setafk', 'resetlevel', 'resetpokemon', 'resetpokemonlevel',
+    'afk', 'forceafk', 'setafk', 'setinvlevel', 'resetlevel', 'resetpokemon', 'resetpokemonlevel',
     'resetghost', 'resetghostlevel', 'clearmoneykey', 'setlottery', 'lotteryset',
     'autolevelup', 'setautolevelup', 'notiflevel', 'setnotiflevel', 'setlevelnotif', 'groupnotiflevel',
     'setgroupnotiflevel', 'firejob', 'applyjob', 'setjob', 'setevx', 'delevx',
@@ -690,7 +691,7 @@ let handler = async (m, {
     'asuhanak', 'kembalianak', 'resetnamaanak', 'addanak', 'delanak', 'setanak',
     'setcsm', 'addcsm', 'delcsm', 'setcontract', 'delcontract', 'resetcsm', 'giveending',
     'setgrstat', 'addgrstat', 'delgrstat', 'addgrhistory', 'delgrhistory', 'setgrhistory',
-    'forcegrjoin', 'forcegamejoin'
+    'forcegrjoin', 'forcegamejoin', 'kembalishelter'
   ])
   if (!isPanelReadOnlyAction && !panelMutationActions.has(aksi)) {
     return m.reply(
@@ -698,7 +699,8 @@ let handler = async (m, {
       `> ↳ Ketik *${usedPrefix}rp* untuk melihat kategori dan command yang benar.`
     )
   }
-  if (!isPanelReadOnlyAction && !remaining.length && !['endauction', 'finishauction'].includes(aksi)) {
+  if (!isPanelReadOnlyAction && !remaining.length &&
+      !['endauction', 'finishauction', 'kembalishelter'].includes(aksi)) {
     const examples = {
       setmoney: 'setmoney @tag/reply <nominal>',
       addmoney: 'addmoney @tag/reply <nominal>',
@@ -709,6 +711,7 @@ let handler = async (m, {
       setevxstat: 'setevxstat @tag <stat> <nilai>',
       applyjob: 'applyjob @tag <nomor/nama job>',
       setjob: 'setjob @tag <nama pekerjaan>',
+      setinvlevel: 'setinvlevel [@tag/reply] <level>',
       setcrime: 'setcrime @tag <jenis> <jumlah>',
       setpenjaraprogress: 'setpenjaraprogress @tag <routine> <talk>',
       setlottery: 'setlottery <jumlah hadiah>',
@@ -996,12 +999,21 @@ let handler = async (m, {
   const targetlessPanelActions = new Set([
     'setlottery', 'lotteryset', 'autolevelup', 'setautolevelup', 'notiflevel',
     'setnotiflevel', 'setlevelnotif', 'groupnotiflevel', 'setgroupnotiflevel',
-    'endauction', 'finishauction', 'clearmoneykey'
+    'endauction', 'finishauction', 'clearmoneykey', 'kembalishelter'
   ])
   const allAccountActions = ['heal', 'resetlevel', 'resetpokemon', 'resetghost']
   const isAllAccountAction = allAccountActions.includes(aksi) &&
     remaining.some(arg => arg.toLowerCase() === 'all')
-  const targetResolution = resolveRpgPanelTarget(remaining, sourceMessage, conn, global.db.data.users)
+  const panelTargetResolution = resolveRpgPanelTarget(remaining, sourceMessage, conn, global.db.data.users)
+  const targetResolution = aksi === 'setinvlevel' &&
+    !sourceMessage.mentionedJid?.length &&
+    !sourceMessage.quoted?.sender &&
+    !remaining.some(arg => /^@me$/i.test(arg))
+    ? {
+        target: resolveRpgPanelTarget(['@me'], sourceMessage, conn, wdb.users).target,
+        consumedIndexes: []
+      }
+    : panelTargetResolution
   const remainingWithoutTarget = remaining.filter((_, index) =>
     !targetResolution.consumedIndexes.includes(index)
   )
@@ -1023,6 +1035,11 @@ let handler = async (m, {
       `> ↳ Bisa juga pakai nomor WhatsApp, tanpa harus satu grup.`
     )
   }
+  if (aksi === 'setinvlevel' && !wdb.users[targetResolution.target]?.rpg) {
+    return m.reply(`❌ @${targetResolution.target.split('@')[0]} belum memiliki akun RPG.`, null, {
+      mentions: [targetResolution.target]
+    })
+  }
 
   const argumentRequirements = {
     setbot: { count: 2, format: 'setbot @tag <level|xp|limit> <nilai>' },
@@ -1031,6 +1048,7 @@ let handler = async (m, {
     sethome: { count: 2, format: 'sethome @tag <field> <nilai>' },
     setevx: { count: 2, format: 'setevx @tag <tipe> <nama SC Core>' },
     setevxstat: { count: 2, format: 'setevxstat @tag <rank|level|resonance|statpoints|explores> <nilai>' },
+    setinvlevel: { count: 1, format: 'setinvlevel [@tag/reply] <level>' },
     setcrime: { count: 2, format: 'setcrime @tag <jenis> <jumlah>' },
     setcriminal: { count: 2, format: 'setcrime @tag <jenis> <jumlah>' },
     setjeniskriminal: { count: 2, format: 'setcrime @tag <jenis> <jumlah>' },
@@ -1057,7 +1075,7 @@ let handler = async (m, {
   }
 
   const numericPanelActions = new Set([
-    'setstellarcredit', 'setmaxhp', 'setuserlevel', 'setbotlevel', 'setexp',
+    'setinvlevel', 'setstellarcredit', 'setmaxhp', 'setuserlevel', 'setbotlevel', 'setexp',
     'setbotxp', 'setbotlimit', 'setlevel', 'setdarah', 'setdiamond', 'setiron',
     'setgold', 'setstone', 'setwood', 'setarmor', 'setsword', 'setpickaxe',
     'setfishingrod', 'addstellarcredit', 'addlevel', 'adduserlevel', 'addexp',
@@ -1077,6 +1095,9 @@ let handler = async (m, {
         `❌ Format: *${usedPrefix}rp ${aksi} @tag <jumlah>*\n` +
         `> ↳ Contoh: *${usedPrefix}rp ${aksi} @tag 10* (bisa juga reply atau nomor WhatsApp).`
       )
+    }
+    if (aksi === 'setinvlevel' && !Number.isSafeInteger(Number(value))) {
+      return m.reply('❌ Level kapasitas inventory harus berupa bilangan bulat yang aman.')
     }
   }
 
@@ -1122,6 +1143,25 @@ let handler = async (m, {
     )
   }
 
+  if (aksi === 'kembalishelter') {
+    if (remaining.length) {
+      return m.reply(`Format: *${usedPrefix}rpgpanel kembalishelter*`)
+    }
+    const restored = returnAllShelterResidents(wdb, now)
+    if (!restored.children && !restored.pets && !restored.livestock) {
+      return m.reply('ℹ️ Tidak ada anak, pet, atau ternak di shelter yang perlu dikembalikan.')
+    }
+    await global.db.write()
+    return m.reply(
+      `✅ *PENGHUNI SHELTER DIKEMBALIKAN KE PEMILIK*\n\n` +
+      `> Pemilik terdampak: *${restored.owners}*\n` +
+      `> Anak: *${restored.children}*\n` +
+      `> Pet: *${restored.pets}*\n` +
+      `> Ternak: *${restored.livestock} ekor*\n\n` +
+      `Semua penghuni dikembalikan ke akun asal masing-masing tanpa biaya.`
+    )
+  }
+
  let panelText = (
   `╭─❏「 👑 RPG PANEL OWNER 」❏\n` +
   `│ 👑 *FITUR ADMIN RPG AVELIA*\n` +
@@ -1131,6 +1171,7 @@ let handler = async (m, {
 
   `📊 *GLOBAL*\n` +
   `> ↳ *${usedPrefix}rp maintenance normalize* / *${usedPrefix}rpgpanel maintenance normalize* - Pratinjau dan normalisasi RPG selama maintenance\n` +
+  `> ↳ *${usedPrefix}rpgpanel kembalishelter* - Kembalikan penghuni shelter semua akun ke pemilik masing-masing\n` +
   `> ↳ *${usedPrefix}rpgpanel rpgstat* - Ringkasan statistik seluruh RPG\n` +
   `> ↳ *${usedPrefix}rpgpanel setlottery <hadiah>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setautolevelup <level>*\n` +
@@ -1155,6 +1196,7 @@ let handler = async (m, {
   `> ↳ *${usedPrefix}rpgpanel firejob @tag [nomor/nama job]* - Pecat user dari pekerjaan\n` +
   `> ↳ *${usedPrefix}rpgpanel applyjob @tag <nomor/nama job>* - Lamar/angkat user ke pekerjaan tertentu\n` +
   `> ↳ *${usedPrefix}rpgpanel setuserlevel @tag <lvl>*\n` +
+  `> ↳ *${usedPrefix}rpgpanel setinvlevel [@tag/reply] <level>* - Tanpa target, level kapasitas akun sendiri\n` +
   `> ↳ *${usedPrefix}rpgpanel difficulty @tag <mode>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setcasinoprogress @tag <jml>*\n` +
   `> ↳ *${usedPrefix}rpgpanel setrhprogress @tag <jml>*\n` +
@@ -1331,6 +1373,7 @@ let handler = async (m, {
   `> ↳ Contoh hapus akun salah transfer: *${usedPrefix}rpgpanel clearmoneykey @*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetdiamond @tag*\n` +
   `> ↳ *${usedPrefix}rpgpanel resetcd @tag/reply* - Pilih satu cooldown untuk direset\n` +
+  `> ↳ *${usedPrefix}rpgpanel resetcd @tag/reply daily* - Reset klaim daily agar bisa diklaim ulang hari ini\n` +
   `> ↳ *${usedPrefix}rpgpanel setpenjaraprogress @tag <routine> <talk>*\n\n` +
 
   `─━━━━━━━━━━━━━━─\n\n` +
@@ -1788,6 +1831,22 @@ let handler = async (m, {
     syncUserLimit({ ...account, rpg: user, limitHistory: [...(account.limitHistory || [])] })
   } else {
     syncUserLimit(account)
+  }
+
+  if (aksi === 'setinvlevel') {
+    const level = Number(remainingWithoutTarget[0])
+    if (!Number.isSafeInteger(level) || level < 0) {
+      return m.reply(`❌ Level kapasitas harus bilangan bulat 0 atau lebih.\nContoh: *${usedPrefix}rpgpanel setinvlevel 3*`)
+    }
+
+    user.inventoryLevel = level
+    await saveDB(wdb)
+    return m.reply(
+      `✅ Level kapasitas inventory @${who.split('@')[0]} diatur ke *${level}*.\n` +
+      `📦 Kapasitas baru: *${(100 + level * 50).toLocaleString()} slot* untuk setiap penyimpanan.`,
+      null,
+      { mentions: [who] }
+    )
   }
 
   if (['setgrstat', 'addgrstat', 'delgrstat'].includes(aksi)) {

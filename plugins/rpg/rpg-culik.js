@@ -20,6 +20,7 @@ async function releaseInactiveKidnappedUsers() {
   for (const [jid, account] of Object.entries(db.users || {})) {
     const rpg = account?.rpg
     if (!rpg?.kidnappedBy) continue
+    if (Number(account.rpgFreeze?.startedAt) > 0) continue
 
     const escapeAttempt = rpg.kidnapEscapeAttempt
 

@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import {
   sendRpgButtons,
   sendRpgConfirmButtons,
@@ -389,7 +390,8 @@ if (mode === 'exchange' || mode === 'tukar') {
       return m.reply(`Format: *${prefix}int gift <sc/stellar/credit> <tag/reply> <nominal>*`)
     }
 
-    const target = m.mentionedJid?.[0] || m.quoted?.sender
+    const rawTarget = m.mentionedJid?.[0] || m.quoted?.sender
+    const target = rawTarget && conn.decodeJid ? conn.decodeJid(rawTarget) : rawTarget
     const amountInput = m.mentionedJid?.length
       ? giftArgs.slice(2).find(arg => !arg.startsWith('@'))
       : m.quoted
@@ -404,6 +406,7 @@ if (mode === 'exchange' || mode === 'tukar') {
       )
     }
     if (target === m.sender) return m.reply('❌ Tidak bisa mengirim Stellar Credit ke diri sendiri.')
+    if (await rejectFrozenRpgAccounts(m, [m.sender, target], db.users)) return
     const targetAccount = getUserRPG(db, target)
     if (!targetAccount?.rpg) return m.reply('❌ Target belum memiliki data RPG.')
     if (stellarCredit < amount) return m.reply('❌ Stellar Credit kamu tidak cukup.')

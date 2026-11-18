@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
@@ -1006,6 +1007,7 @@ ${childList}
 
 ─━━━━━━━━━━━━━━─`)
       }
+      if (await rejectFrozenRpgAccounts(m, [m.sender, targetJid], wdb.users)) return
       for (const entry of unselected) assignFallback(entry)
       targetUser.pendingRshipFosterOffer = {
         sourceJid: m.sender,

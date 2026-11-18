@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { addRpgMoney, compareRpgMoney, formatRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { BANK_TIERS } from './rpg-bank.js'
@@ -72,6 +73,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     const target = payer
     const offers = target.pendingHealOffers
     const offer = offers?.[offerId]
+    if (await rejectFrozenRpgAccounts(m, [m.sender, offer?.payerJid], wdb.users)) return
     if (!offer || Number(offer.expiresAt) <= Date.now()) {
       if (offer && offers) {
         delete offers[offerId]
@@ -133,6 +135,7 @@ let handler = async (m, { conn, usedPrefix, text = '' }) => {
     return m.reply(`🤖 Bot tidak bisa menjadi target heal. Gunakan *${prefix}heal me* untuk memulihkan diri sendiri, atau tag/reply pengguna lain.`)
   }
   if (decodedTarget && decodedTarget !== decodedSender) {
+    if (await rejectFrozenRpgAccounts(m, [decodedSender, decodedTarget], wdb.users)) return
     const target = getUserRPG(wdb, decodedTarget)?.rpg
     if (!target) return m.reply('❌ Target belum memiliki data RPG.')
 

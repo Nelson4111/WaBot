@@ -1,3 +1,4 @@
+import { isRpgFrozen } from '../../lib/rpgFreeze.js'
 import { addRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { scaleDifficultyCooldown, scaleDifficultyIncome, scaleDifficultyXP } from '../../lib/rpgDifficulty.js'
@@ -270,6 +271,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isOwner }) => {
     for (const account of Object.values(wdb.users)) {
       if (!account?.rpg || typeof account.rpg !== 'object') continue
 
+      if (isRpgFrozen(account)) continue
       const targetRPG = ensureRpgState(account.rpg)
       if (getActiveJob(targetRPG)) {
         alreadyWorking++

@@ -108,13 +108,59 @@ function makeTaxBill(state, data, taxpayer, period, account, now) {
   return bill
 }
 
+function collectDeferredTaxBills(state, data, now = Date.now()) {
+  let changed = false
+  let issued = 0
+  let principal = 0n
+
+  for (const [period, collection] of Object.entries(state.collections || {})) {
+    if (!Array.isArray(collection.deferredJids) || !collection.deferredJids.length) continue
+    const stillDeferred = []
+    let periodIssued = 0
+    let periodPrincipal = 0n
+
+    for (const jid of collection.deferredJids) {
+      const account = data.users?.[jid]
+      if (Number(account?.rpgFreeze?.startedAt) > 0) {
+        stillDeferred.push(jid)
+        continue
+      }
+      if (account?.rpg) {
+        const taxpayer = getOrCreateTaxpayer(state, jid)
+        const bill = makeTaxBill(state, data, taxpayer, period, account, now)
+        if (bill) {
+          bill.dueAt += Math.max(0, now - Number(collection.at || now))
+          periodIssued++
+          periodPrincipal += BigInt(bill.principal)
+        }
+      }
+      changed = true
+    }
+
+    collection.deferredJids = stillDeferred
+    if (periodIssued) {
+      collection.issued = (Number(collection.issued) || 0) + periodIssued
+      collection.principal = addRpgMoney(collection.principal || '0', periodPrincipal.toString())
+      issued += periodIssued
+      principal += periodPrincipal
+    }
+  }
+
+  return { changed, issued, principal: principal.toString() }
+}
+
 function collectTaxPeriod(state, data, period, now = Date.now()) {
-  if (state.collections[period]) return { alreadyCollected: true, issued: 0, principal: '0' }
+  if (state.collections[period]) return { alreadyCollected: true, issued: 0, deferred: 0, principal: '0' }
 
   let issued = 0
   let principal = 0n
+  const deferredJids = []
   for (const [jid, account] of Object.entries(data.users)) {
     if (!account?.rpg) continue
+    if (Number(account.rpgFreeze?.startedAt) > 0) {
+      deferredJids.push(jid)
+      continue
+    }
     const taxpayer = getOrCreateTaxpayer(state, jid)
     const bill = makeTaxBill(state, data, taxpayer, period, account, now)
     if (bill) {
@@ -127,9 +173,10 @@ function collectTaxPeriod(state, data, period, now = Date.now()) {
     issued,
     paid: 0,
     income: '0',
-    principal: principal.toString()
+    principal: principal.toString(),
+    deferredJids
   }
-  return { alreadyCollected: false, issued, principal: principal.toString() }
+  return { alreadyCollected: false, issued, deferred: deferredJids.length, principal: principal.toString() }
 }
 
 function previousTaxPeriod(now = new Date()) {
@@ -142,20 +189,32 @@ let taxSchedulerStarted = false
 async function runAutomaticTaxCollection(now = new Date()) {
   if (!global.db?.data) return
   const state = ensureTaxState(global.db.data)
+  const deferred = state.config.enabled
+    ? collectDeferredTaxBills(state, global.db.data, now.getTime())
+    : { changed: false, issued: 0, principal: '0' }
   const enforced = enforceOverdueTax(global.db.data, state, now.getTime())
 
   const period = previousTaxPeriod(now)
   if (!state.config.enabled || period < state.config.activatedPeriod || state.collections[period]) {
-    if (enforced) await persist()
+    if (deferred.changed) {
+      recordAudit(state, 'system', 'tax-deferred-collect', `${deferred.issued} bills after RPG freeze`)
+    }
+    if (enforced || deferred.changed) await persist()
     return
   }
 
   const result = collectTaxPeriod(state, global.db.data, period, now.getTime())
   if (result.alreadyCollected) {
-    if (enforced) await persist()
+    if (deferred.changed) {
+      recordAudit(state, 'system', 'tax-deferred-collect', `${deferred.issued} bills after RPG freeze`)
+    }
+    if (enforced || deferred.changed) await persist()
     return
   }
-  recordAudit(state, 'system', 'tax-auto-collect', `${period}: ${result.issued} bills`)
+  recordAudit(state, 'system', 'tax-auto-collect', `${period}: ${result.issued} bills; ${result.deferred} deferred`)
+  if (deferred.changed) {
+    recordAudit(state, 'system', 'tax-deferred-collect', `${deferred.issued} bills after RPG freeze`)
+  }
   await persist()
 }
 
@@ -339,6 +398,13 @@ function renderTaxIntro(prefix) {
 let handler = async (m, { args = [], text = '', usedPrefix = '.', isOwner = false }) => {
   loadDB()
   const state = ensureTaxState(global.db.data)
+  if (state.config.enabled) {
+    const deferred = collectDeferredTaxBills(state, global.db.data, Date.now())
+    if (deferred.changed) {
+      recordAudit(state, 'system', 'tax-deferred-collect', `${deferred.issued} bills after RPG freeze`)
+      await persist()
+    }
+  }
   const prefix = usedPrefix || '.'
   const words = String(text || args.join(' ') || '').trim().split(/\s+/).filter(Boolean)
   const mode = String(words.shift() || '').toLowerCase()
@@ -451,11 +517,24 @@ let handler = async (m, { args = [], text = '', usedPrefix = '.', isOwner = fals
     if (closedPeriod < state.config.activatedPeriod) {
       return m.reply(`❌ Periode ${closedPeriod} terjadi sebelum Tax System aktif dan tidak dapat ditagih.`)
     }
-    if (state.collections[closedPeriod]) return m.reply(`❌ Tagihan periode ${closedPeriod} sudah diterbitkan; proses ulang diblokir agar tidak terjadi tagihan ganda.`)
+    if (state.collections[closedPeriod]) {
+      const deferredCount = state.collections[closedPeriod].deferredJids?.length || 0
+      return m.reply(
+        `❌ Tagihan periode ${closedPeriod} sudah diterbitkan; proses ulang diblokir agar tidak terjadi tagihan ganda.` +
+        (deferredCount ? `\n> ↳ ${deferredCount} akun RPG beku masih menunggu unfreeze.` : '')
+      )
+    }
     const result = collectTaxPeriod(state, global.db.data, closedPeriod, now)
-    recordAudit(state, jid, 'tax-collect', `${closedPeriod}: ${result.issued} bills`)
+    recordAudit(state, jid, 'tax-collect', `${closedPeriod}: ${result.issued} bills; ${result.deferred} deferred`)
     await persist()
-    return m.reply(`✅ Penerbitan tagihan ${closedPeriod} selesai.\n> ↳ Tagihan diterbitkan : ${result.issued}\n> ↳ Total pokok : ${formatMoney(result.principal)}\n> ↳ Jatuh tempo : Senin, ${new Date(getTaxDueAt(closedPeriod)).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n> ↳ Pajak dihitung dari aktivitas dan kepemilikan yang sudah terintegrasi.`)
+    return m.reply(
+      `✅ Penerbitan tagihan ${closedPeriod} selesai.\n` +
+      `> ↳ Tagihan diterbitkan : ${result.issued}\n` +
+      `> ↳ Ditunda karena RPG Freeze : ${result.deferred} akun\n` +
+      `> ↳ Total pokok : ${formatMoney(result.principal)}\n` +
+      `> ↳ Jatuh tempo dasar : Senin, ${new Date(getTaxDueAt(closedPeriod)).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n` +
+      `> ↳ Jatuh tempo tagihan tertunda digeser setelah unfreeze.`
+    )
   }
   if (mode === 'waive') {
     if (!isOwner) return m.reply('❌ Penghapusan tagihan hanya dapat dilakukan Owner.')

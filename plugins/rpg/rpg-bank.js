@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, sendRpgMsg, getUserRPG } from '../../lib/waifuHelper.js'
 import { hargaBeli as MENU_RESTAURAN, formatMasakanNama } from '../../lib/rpg-masakanData.js'
@@ -986,6 +987,7 @@ if (action === 'command' || action === 'commands' || action === 'cmd') {
 
     if (compareRpgMoney(userRPG.bank, totalPotong) < 0) return m.reply(`❌ Saldo bank tidak cukup\nButuh: ${formatRpgMoney(totalPotong)} = Transfer + Admin ${formatRpgMoney(biayaAdmin)}`)
 
+    if (await rejectFrozenRpgAccounts(m, [m.sender, who], wdb.users)) return
     let targetData = getUserRPG(wdb, who)
     let targetRPG = targetData?.rpg
     if (!targetRPG || targetData?.isDummy) return m.reply('❌ Target belum punya data RPG')

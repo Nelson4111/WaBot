@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { sendRpgButtons, sendRpgConfirmButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionButtons.js'
 import { loadDB, saveDB, getUserRPG } from '../../lib/waifuHelper.js'
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
@@ -324,6 +325,7 @@ if ((yes || no) && (mode === 'yes' || mode === 'no' || ['yes', 'ya', 'iya', 'no'
 
   if (pending.type === 'invite' || pending.type === 'kick') {
     const target = normalizeJid(pending.target)
+    if (await rejectFrozenRpgAccounts(m, [m.sender, target], db.users)) return
     const targetAccount = getUser(db, target)
     if (!targetAccount?.rpg) {
       await saveDB(db)

@@ -83,7 +83,10 @@ function scheduleGiveawayEnd(conn, chat, giveaway) {
     global.giveawayTimers.delete(key)
     const state = getGiveawayState(chat)
     const current = state.active[giveaway.id]
-    if (current && current.endsAt <= Date.now()) await finishGiveaway(conn, chat, state, current)
+    if (current) {
+      if (current.endsAt <= Date.now()) await finishGiveaway(conn, chat, state, current)
+      else scheduleGiveawayEnd(conn, chat, current)
+    }
   }, Math.max(0, giveaway.endsAt - Date.now()))
   timer.unref?.()
   global.giveawayTimers.set(key, timer)
@@ -91,8 +94,15 @@ function scheduleGiveawayEnd(conn, chat, giveaway) {
 
 async function finishGiveaway(conn, chat, state, giveaway) {
   if (!state.active[giveaway.id]) return
-  delete state.active[giveaway.id]
   const participants = [...new Set(giveaway.participants || [])]
+  const involvedUsers = [giveaway.creator, ...participants]
+  if (involvedUsers.some(jid => Number(global.db.data.users[jid]?.rpgFreeze?.startedAt) > 0)) {
+    giveaway.endsAt = Date.now() + 60 * 1000
+    await saveDB(loadDB())
+    scheduleGiveawayEnd(conn, chat, giveaway)
+    return
+  }
+  delete state.active[giveaway.id]
   const winner = participants.length ? participants[Math.floor(Math.random() * participants.length)] : null
   state.history.unshift({
     id: giveaway.id,

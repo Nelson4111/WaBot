@@ -112,6 +112,18 @@ function getAuctionBids(db, session, itemId) {
   return [...byJid.values()]
 }
 
+function hasFrozenAuctionBidder(db, session) {
+  const itemIds = Array.isArray(session?.itemIds) ? session.itemIds : []
+  const frozenJids = new Set(
+    Object.entries(db.data.users || {})
+      .filter(([, user]) => Number(user?.rpgFreeze?.startedAt) > 0)
+      .map(([jid]) => normalizeJid(jid))
+  )
+  return itemIds.some(itemId =>
+    getAuctionBids(db, session, itemId).some(bid => frozenJids.has(normalizeJid(bid.jid)))
+  )
+}
+
 function getHighestBid(db, session, itemId) {
   const bids = getAuctionBids(db, session, itemId)
   return bids.reduce((highest, bid) =>
@@ -255,13 +267,13 @@ function settleOrphanedAuctionBids(db, now) {
   const currentSessionValid = currentSessionItemIds.length === AUCTION_ITEM_LIMIT &&
     new Set(currentSessionItemIds).size === AUCTION_ITEM_LIMIT &&
     currentSessionItemIds.every(id => AUCTION_ITEMS.some(item => item.id === id))
-  const currentSessionEndsAt = currentSessionValid ? Number(currentSession.endsAt) : NaN
   const orphaned = new Map()
 
   for (const [userJid, user] of Object.entries(db.data.users || {})) {
     for (const [itemId, bid] of Object.entries(user?.rpg?.auctionBids || {})) {
       const endsAt = Number(bid?.endsAt)
-      if (!Number.isFinite(endsAt) || endsAt > now || endsAt === currentSessionEndsAt) continue
+      if (!Number.isFinite(endsAt) || endsAt > now ||
+        (currentSessionValid && belongsToAuctionSession(bid, currentSession))) continue
       if (!AUCTION_ITEMS.some(item => item.id === itemId)) continue
       if (!isValidAuctionAmount(bid.amount)) continue
       let session = orphaned.get(endsAt)
@@ -282,10 +294,13 @@ function settleOrphanedAuctionBids(db, now) {
     }
   }
 
+  let settled = false
   for (const session of orphaned.values()) {
+    if (hasFrozenAuctionBidder(db, session)) continue
     settleAuctionSession(db, session, now, { replaceSession: false })
+    settled = true
   }
-  return orphaned.size > 0
+  return settled
 }
 
 function addAuctionHistory(state, entry) {
@@ -443,8 +458,12 @@ function scheduleAuctionClose(endsAt) {
       const db = loadDB()
       const session = db.data.auctionHouse
       if (session && Number(session.endsAt) <= Date.now()) {
-        if (session.bids && typeof session.bids === 'object') restoreAuctionBids(db, session)
-        settleAuctionSession(db, session)
+        if (hasFrozenAuctionBidder(db, session)) {
+          session.endsAt = Date.now() + 60 * 1000
+        } else {
+          if (session.bids && typeof session.bids === 'object') restoreAuctionBids(db, session)
+          settleAuctionSession(db, session)
+        }
         await persistAuctionDB()
       }
       if (db.data.auctionHouse?.endsAt) scheduleAuctionClose(db.data.auctionHouse.endsAt)
@@ -466,9 +485,13 @@ async function getAuctionSession(db, now = Date.now()) {
   let changed = false
 
   if (session && Number.isFinite(Number(session.endsAt)) && Number(session.endsAt) <= now && hasValidItems) {
-    if (session.bids && typeof session.bids === 'object') restoreAuctionBids(db, session)
-    settleAuctionSession(db, session, now)
-    session = data.auctionHouse
+    if (hasFrozenAuctionBidder(db, session)) {
+      session.endsAt = now + 60 * 1000
+    } else {
+      if (session.bids && typeof session.bids === 'object') restoreAuctionBids(db, session)
+      settleAuctionSession(db, session, now)
+      session = data.auctionHouse
+    }
     changed = true
   }
   if (settleOrphanedAuctionBids(db, now)) changed = true

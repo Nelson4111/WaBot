@@ -198,6 +198,7 @@ async function runCafeScheduler() {
     const now = Date.now()
     let changed = false
     for (const [jid, account] of Object.entries(db.data.users || {})) {
+      if (Number(account?.rpgFreeze?.startedAt) > 0) continue
       if (!account?.rpg?.cafe || account.rpg.cafe.status !== 'open') continue
       const cafe = ensureCafe(account.rpg)
       const previousLastShift = Number(cafe.lastShift?.at) || 0

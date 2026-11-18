@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { addRpgMoney, normalizeRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { loadDB, saveDB, getUserRPG, initLadang } from '../../lib/waifuHelper.js'
 import { isValidRpgUserId } from '../../lib/rpgLeaderboard.js'
@@ -253,6 +254,8 @@ if (action === 'deal') {
   if (!p1User || !p2User || p1Data?.isDummy || p2Data?.isDummy) {
     return m.reply('❌ Salah satu peserta trade belum memiliki data RPG.')
   }
+
+  if (await rejectFrozenRpgAccounts(m, [trade.p1, trade.p2], wdb.users)) return
 
   // cek stok lagi
   for (let [key, qty] of Object.entries(trade.p1Offer)) {

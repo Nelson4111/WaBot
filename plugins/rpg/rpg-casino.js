@@ -1,3 +1,4 @@
+import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { randomInt as cryptoRandomInt } from 'node:crypto'
 import { loadDB, saveDB, sendRpgMsg } from '../../lib/waifuHelper.js'
 import { isPremiumUser } from './rpg-bank.js'
@@ -183,18 +184,34 @@ function refundCasinoRoom(room, wdb) {
 }
 
 function cleanupExpiredCasinoRooms(wdb, now = Date.now()) {
-  let removed = false
+  let changed = false
   wdb.casinoRooms = wdb.casinoRooms || {}
 
   for (const [chat, room] of Object.entries(wdb.casinoRooms)) {
     const lastActivityAt = Number(room.lastActivityAt || room.createdAt || 0)
-    if (now - lastActivityAt < ROOM_IDLE_TIMEOUT) continue
+    const frozenAt = Object.keys(room.contributions || {})
+      .map(jid => Number(wdb.users[jid]?.rpgFreeze?.startedAt))
+      .filter(startedAt => Number.isFinite(startedAt) && startedAt > 0)
+    if (frozenAt.length) {
+      if (!(Number(room.rpgFreezePausedAt) > 0)) {
+        room.rpgFreezePausedAt = Math.max(lastActivityAt, Math.min(...frozenAt))
+        changed = true
+      }
+      continue
+    }
+    if (Number(room.rpgFreezePausedAt) > 0) {
+      const pauseStartedAt = Math.max(lastActivityAt, Number(room.rpgFreezePausedAt))
+      room.lastActivityAt = lastActivityAt + Math.max(0, now - pauseStartedAt)
+      delete room.rpgFreezePausedAt
+      changed = true
+    }
+    if (now - Number(room.lastActivityAt || room.createdAt || 0) < ROOM_IDLE_TIMEOUT) continue
     refundCasinoRoom(room, wdb)
     delete wdb.casinoRooms[chat]
-    removed = true
+    changed = true
   }
 
-  return removed
+  return changed
 }
 
 const casinoRoomCleanupTimer = setInterval(() => {
@@ -1554,6 +1571,7 @@ if (['start', 'up', 'next', 'set'].includes(action)) {
   if (isFirstRound && room.players.length < 2) {
     return m.reply(`Room membutuhkan minimal 2 pemain untuk memulai.`)
   }
+  if (await rejectFrozenRpgAccounts(m, room.players, wdb.users)) return
 
   const requestedStake = action === 'set' ? parseRpgMoneyAmount(args[2]) : null
   if (action === 'set' && (requestedStake === null || compareRpgMoney(requestedStake, 100) < 0)) {
