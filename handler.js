@@ -21,7 +21,18 @@ import { grantFreeDailyLimit, setUserLimit, syncUserLimit } from './lib/userLimi
 import { isPremiumAccount } from './lib/rpgPremium.js'
 import { BANK_TIERS } from './lib/rpg-bankData.js'
 import { isPlayerDead } from './lib/rpgDifficulty.js'
-import { formatMaintenanceMessage, isMaintenanceBlockingCommand, shouldSkipRpgPlugin } from './lib/maintenance.js'
+import {
+    formatMaintenanceMessage,
+    isMaintenanceBlockingCommand,
+    isRpgCommand,
+    isRpgPlugin,
+    shouldSkipRpgPlugin
+} from './lib/maintenance.js'
+import {
+    findFrozenRpgAccount,
+    formatRpgFreezeDuration,
+    getRpgFreezeRecord
+} from './lib/rpgFreeze.js'
 import { normalizeRpgMoney } from './lib/rpgMoney.js'
 import { isValidCipherMessage } from './lib/werewolfData.js'
 
@@ -612,6 +623,16 @@ async function processMessage(m, chatUpdate) {
             isPremiumAccount(global.db.data.users[m.sender])
         const maintenanceActive = Boolean(global.opts?.maintenance)
         const rpgMaintenanceActive = Boolean(global.opts?.rpgMaintenance)
+        const senderAccount = global.db.data.users[senderClean] || global.db.data.users[m.sender]
+        const senderRpgFreeze = getRpgFreezeRecord(senderAccount)
+        const mentionedTargets = [...(m.mentionedJid || []), m.quoted?.sender]
+            .filter(Boolean)
+            .map(jid => this.decodeJid?.(jid) || jid)
+        const frozenRpgTarget = findFrozenRpgAccount(mentionedTargets)
+        const isRpgPanelCommand = isOwner &&
+            ['rpgpanel', 'rpgowner', 'rp'].includes(commandCandidate?.command)
+        const isRpgFreezeControlCommand =
+            ['rpgfreeze', 'freezerpg'].includes(commandCandidate?.command)
 
         // Options Check (Owner exempt)
         if (!isOwner && !maintenanceActive) {
@@ -720,7 +741,7 @@ async function processMessage(m, chatUpdate) {
             return
         }
 
-        if (isMaintenanceBlockingCommand({
+        if (!isRpgFreezeControlCommand && isMaintenanceBlockingCommand({
             command: commandCandidate?.command,
             plugins: global.plugins,
             maintenanceActive,
@@ -735,6 +756,26 @@ async function processMessage(m, chatUpdate) {
                     : global.opts.maintenanceStartedAt || settings.maintenanceStartedAt
                 await this.reply(m.chat, formatMaintenanceMessage(commandCandidate.usedPrefix, startedAt, Date.now(), mode), m)
             }
+            return
+        }
+
+        if ((senderRpgFreeze || frozenRpgTarget) && commandCandidate &&
+            isRpgCommand(commandCandidate.command, global.plugins) &&
+            !isRpgFreezeControlCommand && !isRpgPanelCommand) {
+            const freezeRecord = senderRpgFreeze || frozenRpgTarget.record
+            const elapsed = Date.now() - Number(freezeRecord.startedAt)
+            const freezeMessage = senderRpgFreeze
+                ? `Akses RPG akunmu sedang dibekukan selama *${formatRpgFreezeDuration(elapsed)}*.\n` +
+                  `> ↳ Tunggu Owner/Co-owner membuka akses, atau gunakan *${commandCandidate.usedPrefix}rpgfreeze off* untuk mengaktifkan kembali akunmu.`
+                : `Aksi dibatalkan karena RPG @${frozenRpgTarget.jid.split('@')[0]} sedang dibekukan selama *${formatRpgFreezeDuration(elapsed)}*.\n` +
+                  `> ↳ Progress akun tersebut tetap dijeda sampai dibuka kembali.`
+            await this.reply(
+                m.chat,
+                `🧊 ${freezeMessage}`,
+                m,
+                frozenRpgTarget && !senderRpgFreeze ? { mentions: [frozenRpgTarget.jid] } : {}
+            )
+            botArbitrator.resolve(m.key?.id, this)
             return
         }
 
@@ -775,7 +816,7 @@ async function processMessage(m, chatUpdate) {
         const patrolArgs = commandCandidate
             ? m.text.slice(commandCandidate.usedPrefix.length).trim().split(/\s+/).slice(1)
             : []
-        if (commandCandidate && !isPatrolExemptCommand(commandCandidate.command, patrolArgs, {
+        if (!senderRpgFreeze && commandCandidate && !isPatrolExemptCommand(commandCandidate.command, patrolArgs, {
             hasMention: Boolean(m.mentionedJid?.length),
             hasQuotedMessage: Boolean(m.quoted)
         })) {
@@ -858,7 +899,7 @@ async function processMessage(m, chatUpdate) {
         }
 
         const senderRPG = global.db?.data?.users?.[m.sender]?.rpg
-        if (senderRPG?.kidnappedBy) {
+        if (!senderRpgFreeze && senderRPG?.kidnappedBy) {
             const now = Date.now()
             if (!Number(senderRPG.kidnappedUntil) && senderRPG.kasus === '🕶️ Culik' && senderRPG.penjara) {
                 const kidnappedAt = Number(senderRPG.kidnappedAt) || Number(senderRPG.penjara)
@@ -881,7 +922,10 @@ async function processMessage(m, chatUpdate) {
                 delete senderRPG.kidnapEscapeAttempt
                 delete senderRPG.kidnapEscapeCooldownAt
                 await saveDB(loadDB())
-            } else if (commandCandidate && commandCandidate.command !== 'kabur') {
+            } else if (commandCandidate &&
+                commandCandidate.command !== 'kabur' &&
+                !isRpgFreezeControlCommand &&
+                !isRpgPanelCommand) {
                 await this.reply(
                     m.chat,
                     '🚨 Kamu sedang diculik dan tidak dapat menggunakan command lain. Gunakan *.kabur* untuk mencoba melarikan diri.',
@@ -899,7 +943,20 @@ async function processMessage(m, chatUpdate) {
             let plugin = global.plugins[name]
             if (!plugin || plugin.disabled) continue          
             const skipRpgPlugin = shouldSkipRpgPlugin(name, plugin, rpgMaintenanceActive, isOwner)
-            if (skipRpgPlugin) continue
+            const pluginFile = path.basename(name)
+            const isRpgPanelPlugin = pluginFile === 'rpg-panelRPG.js' && isRpgPanelCommand
+            const skipFrozenRpgPlugin = Boolean(
+                senderRpgFreeze &&
+                isRpgPlugin(name, plugin) &&
+                !isRpgPanelPlugin &&
+                pluginFile !== 'rpg-freeze.js'
+            )
+            const skipFreezeCommandSideEffectPlugin = Boolean(
+                isRpgFreezeControlCommand &&
+                isRpgPlugin(name, plugin) &&
+                pluginFile !== 'rpg-freeze.js'
+            )
+            if (skipRpgPlugin || skipFrozenRpgPlugin || skipFreezeCommandSideEffectPlugin) continue
             const __filename = join(___dirname, ...name.split('/'))
             if (typeof plugin.all === 'function' && !skipRpgPlugin) {
                 try {
@@ -997,7 +1054,8 @@ async function processMessage(m, chatUpdate) {
                 // CEK STATUS PENJARA RPG
                 const isRpgPlugin = (plugin.tags && (plugin.tags.includes('rpg') || plugin.tags.includes('pasangan'))) || name.includes('/rpg/') || name.includes('\\rpg\\');
                 const isGuildRpgActivity = plugin.tags?.includes('rpg') || name.includes('/rpg/') || name.includes('\\rpg\\');
-                if (isRpgPlugin && !['penjara', 'tebus', 'bebasin', 'penjarain', 'statuspenjara'].includes(command)) {
+                if (isRpgPlugin && !isRpgPanelCommand && !isRpgFreezeControlCommand &&
+                    !['penjara', 'tebus', 'bebasin', 'penjarain', 'statuspenjara'].includes(command)) {
                     let userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
                     if (userRPG?.penjara) {
                         let now = Date.now();
@@ -1029,7 +1087,7 @@ async function processMessage(m, chatUpdate) {
                         }
                     }
                 }
-                if (isRpgPlugin && command !== 'heal') {
+                if (isRpgPlugin && !isRpgPanelCommand && !isRpgFreezeControlCommand && command !== 'heal') {
                     const userRPG = user?.rpg || global.db?.data?.users?.[m.sender]?.rpg;
                     if (isPlayerDead(userRPG)) {
                         this.reply(m.chat, '💀 Kamu masih mati dan tidak bisa menggunakan fitur RPG. Gunakan *.heal me* terlebih dahulu untuk pulih.', m);
