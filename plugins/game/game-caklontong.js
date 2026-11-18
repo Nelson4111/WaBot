@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { sendGameResult } from './game-result.js'
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
 let timeout = 120000
 let poin = 4999
 const scorePoint = 1
@@ -41,20 +42,17 @@ let handler = async (m, { conn, usedPrefix = '.', args = [] }) => {
     caption += `*╰───────────────*\n\n`
     caption += `> Jawab langsung dengan membalas pesan soal ini.`
 
-    let msg
     const buttons = [['🆘 Bantuan Cak Lontong', `${usedPrefix}calo`], ['🏆 Cek Skor', `${usedPrefix}caklontong score`]]
-    if (typeof conn.sendButtonV2 === 'function') {
-        msg = await conn.sendButtonV2(m.chat, {
-            title: '🎭 Cak Lontong',
-            subtitle: 'Teka-teki khas humor Indonesia',
-            text: caption,
-            footer: `${global.namebot || 'Avelia'} • Cak Lontong`,
-            buffer: CAKLONTONG_IMAGE,
-            buttons
-        }, m)
-    } else {
-        msg = await conn.sendMessage(m.chat, { image: CAKLONTONG_IMAGE, caption }, { quoted: m })
-    }
+    const msg = await sendThumbnailButtonCard(conn, {
+        chat: m.chat,
+        title: '🎭 Cak Lontong',
+        subtitle: 'Teka-teki khas humor Indonesia',
+        text: caption,
+        footer: `${global.namebot || 'Avelia'} • Cak Lontong`,
+        thumbnail: CAKLONTONG_IMAGE,
+        buttons,
+        quoted: m
+    })
 
     conn.caklontong[id] = [
         msg,

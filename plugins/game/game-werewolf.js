@@ -38,6 +38,7 @@ import {
 } from '../../lib/werewolf.js'
 import { toSmallNum, status } from '../../lib/style.js'
 import { buildGameRolesHeaderMessage, sendGameRolesHeader } from '../../lib/game-roles-message.js'
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
 import { loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { compareRpgMoney, subtractRpgMoney } from '../../lib/rpgMoney.js'
 import { CIPHER_AI_MESSAGES, CUSTOM_ANTAGONIST_ROLES, encodeCipherMessage, GAME_CATEGORIES, GHOST_AI_MESSAGES, ROLE_DATA, ROLE_GUIDES, WARGA_AI_MESSAGES, isValidCipherMessage, validateCustomRoles, getGameCategory, getRoleFaction, getRoleImage, getRoleImagePaths, getSceneImage, getSceneImagePaths, isAntagonistRole, normalizeGameCategory } from '../../lib/werewolfData.js'
@@ -1152,7 +1153,17 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const imagePaths = [...new Set(getRoleImagePaths())]
             for (let index = 0; index < imagePaths.length; index++) {
                 try {
-                    await conn.sendMessage(chat, { image: { url: imagePaths[index] } })
+                    await sendThumbnailButtonCard(conn, {
+                        chat,
+                        title: `🎭 ROLE IMAGE ${index + 1}/${imagePaths.length}`,
+                        text: `🖼️ Preview aset role ${index + 1} dari ${imagePaths.length}.`,
+                        footer: 'Avelia • Game Roles',
+                        thumbnail: fs.readFileSync(imagePaths[index]),
+                        buttons: [
+                            ['🎭 Daftar Role', `${usedPrefix}gr role`],
+                            ['🎮 Menu Game Roles', `${usedPrefix}gr`]
+                        ]
+                    })
                 } catch (error) {
                     console.warn(`[Game Roles] Failed to send asset picture ${index + 1}/${imagePaths.length}: ${error.message}`)
                 }
@@ -1166,7 +1177,17 @@ let handler = async (m, { conn, command, usedPrefix, args }) => {
             const scenePaths = getSceneImagePaths()
             for (let index = 0; index < scenePaths.length; index++) {
                 try {
-                    await conn.sendMessage(chat, { image: { url: scenePaths[index] } })
+                    await sendThumbnailButtonCard(conn, {
+                        chat,
+                        title: `🌆 SCENE IMAGE ${index + 1}/${scenePaths.length}`,
+                        text: `🖼️ Preview aset scene ${index + 1} dari ${scenePaths.length}.`,
+                        footer: 'Avelia • Game Roles',
+                        thumbnail: fs.readFileSync(scenePaths[index]),
+                        buttons: [
+                            ['🌙 Daftar Scene', `${usedPrefix}gr scene`],
+                            ['🎮 Menu Game Roles', `${usedPrefix}gr`]
+                        ]
+                    })
                 } catch (error) {
                     console.warn(`[Game Roles] Failed to send scene picture ${index + 1}/${scenePaths.length}: ${error.message}`)
                 }

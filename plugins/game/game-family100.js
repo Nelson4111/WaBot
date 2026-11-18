@@ -2,6 +2,7 @@ import fs from 'fs'
 import { awardFamily100Mvp } from './game-family100-score.js'
 import { getFamily100CooldownRemaining, startFamily100Cooldown } from './game-family100-state.js'
 import { sendGameResult } from './game-result.js'
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
 
 const FAMILY100_IMAGE_BACKUP_URL = 'https://c.termai.cc/i129/q4f.jpg'
 const FAMILY100_IMAGE = fs.readFileSync(new URL('../../media/games/q4f.jpg', import.meta.url))
@@ -114,31 +115,16 @@ async function handler(m, { args = [], conn = this, usedPrefix = '.' }) {
         ['📊 Cek Status', `${usedPrefix}fam info`],
         ['🏆 Cek Skor', `${usedPrefix}fam score`]
     ]
-    let msg
-    if (typeof conn.sendButtonV2 === 'function') {
-        msg = await conn.sendButtonV2(m.chat, {
-            title: '🧩 FAMILY 100',
-            subtitle: 'Temukan semua jawaban bersama!',
-            text: caption,
-            footer: `${global.namebot || 'Avelia'} • Family 100`,
-            buffer: FAMILY100_IMAGE,
-            buttons
-        }, m)
-    } else if (typeof conn.sendButton === 'function') {
-        msg = await conn.sendButton(
-            m.chat,
-            caption,
-            `${global.namebot || 'Avelia'} • Family 100`,
-            FAMILY100_IMAGE,
-            buttons,
-            m
-        )
-    } else {
-        msg = await this.sendMessage(m.chat, {
-            image: FAMILY100_IMAGE,
-            caption
-        }, { quoted: m })
-    }
+    const msg = await sendThumbnailButtonCard(conn, {
+        chat: m.chat,
+        title: '🧩 FAMILY 100',
+        subtitle: 'Temukan semua jawaban bersama!',
+        text: caption,
+        footer: `${global.namebot || 'Avelia'} • Family 100`,
+        thumbnail: FAMILY100_IMAGE,
+        buttons,
+        quoted: m
+    })
 
     const reminderTimeout = setTimeout(() => {
         if (!this.game[id]) return

@@ -1,3 +1,5 @@
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
+
 export async function sendGameResult(conn, {
     chat,
     text,
@@ -9,35 +11,18 @@ export async function sendGameResult(conn, {
     quoted,
     mentions = []
 }) {
-    const contextInfo = mentions.length ? { mentionedJid: mentions } : undefined
-
-    if (typeof conn.sendButtonV2 === 'function') {
-        return conn.sendButtonV2(chat, {
-            title,
-            subtitle,
-            text,
-            footer,
-            buffer: image,
-            buttons,
-            ...(contextInfo ? { contextInfo } : {})
-        }, quoted)
-    }
-
-    if (typeof conn.sendButton === 'function') {
-        return conn.sendButton(
-            chat,
-            text,
-            footer,
-            image,
-            buttons,
-            quoted,
-            contextInfo ? { contextInfo } : {}
-        )
-    }
-
-    return conn.sendMessage(chat, {
-        image,
-        caption: text,
+    return sendThumbnailButtonCard(conn, {
+        chat,
+        title,
+        subtitle,
+        text,
+        footer,
+        thumbnail: image,
+        buttons: buttons?.length ? buttons : [
+            ['🔄 Main Lagi', '.fam'],
+            ['🎮 Menu Games', '.menugame']
+        ],
+        quoted,
         mentions
-    }, { quoted })
+    })
 }

@@ -323,7 +323,6 @@ async function sendTurnMessage(conn, m, room, promptText = '', boardBuffer = nul
     const ButtonClass = await getButtonClass(conn);
     let sentSuccess = false;
 
-    // 1. Kirim 1 Pesan Terpadu Native Flow (Gambar Papan di Header + Status di Body + Tombol Dadu)
     if (ButtonClass && boardBuffer) {
         try {
             const btn = new ButtonClass(conn);
@@ -351,7 +350,6 @@ async function sendTurnMessage(conn, m, room, promptText = '', boardBuffer = nul
         }
     }
 
-    // 2. Fallback: Kirim 1 pesan gambar standar dengan caption teks lengkap
     if (!sentSuccess) {
         try {
             const payload = boardBuffer ? {
