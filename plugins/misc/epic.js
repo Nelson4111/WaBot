@@ -380,8 +380,9 @@ const diveNarration = profile => {
 }
 
 EPIC_STORY_EVENTS.forEach(event => {
-  const successChoice = event.choices.find(choice => choice.success)
-  const failureChoice = event.choices.find(choice => !choice.success)
+  const choices = Array.isArray(event.choices) ? event.choices : []
+  const successChoice = choices.find(choice => choice.success)
+  const failureChoice = choices.find(choice => !choice.success)
   event.success = successChoice ? successChoice.label.replace(/^✅\s*/, '') : 'Kamu berhasil melewati ujian ini.'
   event.failure = failureChoice ? failureChoice.label.replace(/^❌\s*/, '') : 'Nasib buruk menghentikan perjalananmu.'
   delete event.choices
