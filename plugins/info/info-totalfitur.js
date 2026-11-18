@@ -1,7 +1,8 @@
 import fs from 'fs'
 import fetch from 'node-fetch'
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   await m.react('🕒')
 
   let totalFitur = Object.values(global.plugins).filter(v => v.help && v.tags).length
@@ -35,19 +36,19 @@ let handler = async (m, { conn }) => {
 📖 *Total Command:* ${totalCommand}
 `.trim()
 
-  await conn.sendMessage(m.chat, {
+  await sendThumbnailButtonCard(conn, {
+    chat: m.chat,
+    title: '📊 STATUS AVELIA',
+    subtitle: `Created by ${global.author || 'Nenel'}`,
     text: caption,
-    contextInfo: {
-      externalAdReply: {
-        title: `${global.namebot || 'Avelia'} Status`,
-        body: `Created by ${global.author || 'Nenel'}`,
-        thumbnail: thumb,
-        mediaType: 1,
-        renderLargerThumbnail: true,
-        sourceUrl: global.ch || ""
-      }
-    }
-  }, { quoted: m })
+    footer: `${global.namebot || 'Avelia'} • Info`,
+    thumbnail: thumb,
+    buttons: [
+      ['📋 Semua Menu', `${usedPrefix}allmenu`],
+      ['🏠 Menu Utama', `${usedPrefix}menu`]
+    ],
+    quoted: m
+  })
 
   if (audioMenu) {
     try {

@@ -1,4 +1,5 @@
 import fs from 'fs'
+import { sendThumbnailButtonCard } from '../../lib/thumbnailButtonCard.js'
 
 const animeQuotes = [
   // Dragon Ball, FMA, Luffy, Levi
@@ -16,14 +17,13 @@ const animeQuotes = [
   '“Saat aku di panggung, aku merasa hidup.” – Hitori Gotou ✨'
 ]
 
-let handler = async (m, { conn }) => {
+let handler = async (m, { conn, usedPrefix }) => {
 
   let _muptime = process.uptime() * 1000
   let muptime = clockString(_muptime)
   let quote = animeQuotes[Math.floor(Math.random() * animeQuotes.length)]
 
-  await conn.sendMessage(m.chat, {
-    text:
+  const text =
 `🌸 *R U N T I M E  S T A T U S* 🌸
 
 ⏳ *Active Time:*
@@ -32,19 +32,20 @@ ${muptime}
 💬 *Anime Quote:*
 _${quote}_
 
-🍭 Powered by *${global.namebot || 'Avelia'}*`,
-
-    contextInfo: {
-      externalAdReply: {
-        title: `${global.namebot || 'Avelia'} — Runtime Status`,
-        body: 'Bot is running smoothly!',
-        mediaType: 1,
-        thumbnail: fs.readFileSync('./media/thumbnail.jpg'),
-        renderLargerThumbnail: true,
-        sourceUrl: global.ch || ''
-      }
-    }
-  }, { quoted: m })
+🍭 Powered by *${global.namebot || 'Avelia'}*`
+  await sendThumbnailButtonCard(conn, {
+    chat: m.chat,
+    title: '🌸 RUNTIME STATUS',
+    subtitle: 'Bot is running smoothly!',
+    text,
+    footer: `${global.namebot || 'Avelia'} • Runtime`,
+    thumbnail: fs.readFileSync('./media/thumbnail.jpg'),
+    buttons: [
+      ['🏠 Menu Utama', `${usedPrefix}menu`],
+      ['⚡ Cek Ping', `${usedPrefix}ping`]
+    ],
+    quoted: m
+  })
 }
 
 handler.help = ['runtime']
