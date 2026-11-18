@@ -7,6 +7,7 @@
 
 import { saveDB } from '../../../lib/waifuHelper.js'
 import { resolveCsmMedia } from '../../../lib/csmMedia.js'
+import { sendThumbnailButtonCard } from '../../../lib/thumbnailButtonCard.js'
 import {
   WEAPON_LIST, ITEM_LIST, CHARACTER_LIST,
   MAIN_JOB_LIST, SIDE_JOB_LIST, MAIN_LOCATION_LIST, SIDE_LOCATION_LIST,
@@ -61,6 +62,22 @@ export const sendCsmReply = async (conn, m, wdb, caption, picture, preservePictu
   if (!picturesEnabled(wdb) || !picture) return m.reply(caption)
   try {
     const image = preservePicture ? picture : resolveCsmMedia(picture)
+    if (!preservePicture) {
+      const prefix = String(m?.text || m?.body || '').match(/^[./#!]+/)?.[0] || '.'
+      return await sendThumbnailButtonCard(conn, {
+        chat: m.chat,
+        text: caption,
+        title: '⛓️ DEVIL HUNTER RPG',
+        subtitle: 'Pilih aksi CSM berikutnya',
+        footer: 'AVELIA • CSM',
+        thumbnail: image,
+        buttons: [
+          ['⛓️ Panel CSM', `${prefix}csm`],
+          ['📋 Command CSM', `${prefix}csm command`]
+        ],
+        quoted: m
+      })
+    }
     return await conn.sendMessage(m.chat, {
       image: Buffer.isBuffer(image) ? image : { url: image },
       caption,
