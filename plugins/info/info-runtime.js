@@ -23,16 +23,17 @@ let handler = async (m, { conn, usedPrefix }) => {
   let muptime = clockString(_muptime)
   let quote = animeQuotes[Math.floor(Math.random() * animeQuotes.length)]
 
-  const text =
-`🌸 *R U N T I M E  S T A T U S* 🌸
-
-⏳ *Active Time:*
-${muptime}
-
-💬 *Anime Quote:*
-_${quote}_
-
-🍭 Powered by *${global.namebot || 'Avelia'}*`
+  const text = [
+    '🌸 *R U N T I M E  S T A T U S* 🌸',
+    '',
+    '⏳ *Active Time:*',
+    muptime,
+    '',
+    '💬 *Anime Quote:*',
+    `_${quote}_`,
+    '',
+    `🍭 Powered by *${global.namebot || 'Avelia'}*`
+  ].join('\n')
   await sendThumbnailButtonCard(conn, {
     chat: m.chat,
     title: '🌸 RUNTIME STATUS',
