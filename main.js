@@ -78,7 +78,6 @@ const argv = yargs(hideBin(process.argv)).argv
 
 import { spawn } from 'child_process'
 import lodash from 'lodash'
-import syntaxerror from 'syntax-error'
 import chalk from 'chalk'
 import { tmpdir } from 'os'
 import readline from 'readline'
@@ -1112,12 +1111,7 @@ global.reload = async (_ev, filename) => {
         return delete global.plugins[filename]
       }
     } else conn.logger.info(`requiring new plugin '${filename}'`)
-    let err = syntaxerror(readFileSync(dir), filename, {
-      sourceType: 'module',
-      allowAwaitOutsideFunction: true
-    })
-    if (err) conn.logger.error(`syntax error while loading '${filename}'\n${format(err)}`)
-    else try {
+    try {
       const module = (await import(`${global.__filename(dir)}?update=${Date.now()}`))
       global.plugins[filename] = formatPluginModule(module, filename)
     } catch (e) {
