@@ -2464,10 +2464,9 @@ user.casinoLastPlay = now
   const hiddenJackpot = Boolean(user.casinoJpLuck)
   if (hiddenJackpot) {
     user.casinoJpLuck = false
-    result.multiplier = 10
+    result.multiplier = 5
     result.payoutDenied = false
     result.blackout = false
-    result.text += '\n> ↳ 🎟️ Jackpot terkonfirmasi untuk ronde ini.'
   }
   result = applyCasinoSpecialOutcome(
     result,
@@ -2481,7 +2480,7 @@ user.casinoLastPlay = now
   const safetyNet = isRpgEventActive('safety_net')
   if (safetyNet && result.multiplier > 0 && Math.random() < 0.5) {
     result.multiplier = 0
-    result.text += '\n🛡️ Safety Net mengurangi peluang kemenangan selama event.'
+    result.text += '\n> 🛡️ Safety Net mengurangi peluang kemenangan.'
   }
   const balanceBefore = normalizeRpgMoney(wdb.money[m.sender])
   let blackoutLoss = 0
@@ -2570,7 +2569,7 @@ user.casinoLastPlay = now
           ? '🏃 Berhasil kabur'
           : result.dealerMercy
             ? '🤝 Bandar berbaik hati'
-            : result.multiplier >= 10
+            : result.multiplier >= 5
               ? '🏆 Jackpot'
               : result.multiplier > 0
                 ? '🎉 Menang'
@@ -2620,7 +2619,7 @@ user.casinoLastPlay = now
         ? `🤝 *BANDAR BERBAIK HATI*`
         : result.payoutDenied
           ? `🎟️ *HADIAH TIDAK CAIR*`
-    : result.multiplier >= 10
+    : result.multiplier >= 5
       ? `🏆 *JACKPOT*`
       : result.multiplier > 0
         ? `🎉 *MENANG*`
