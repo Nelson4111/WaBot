@@ -5,18 +5,23 @@ import { compareRpgMoney, formatRpgNumber, normalizeRpgMoney, subtractRpgMoney }
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
 import { migrateRpgTrashToKarung } from '../../lib/rpg-karungData.js'
+import { RPG_FISH_TIER_BY_NAME, normalizeFishKey } from '../../lib/rpg-fishCatalog.js'
+import { getFishRecords } from '../../lib/rpg-fishSizes.js'
 import {
   activateStorageBypass,
   getStorageCapacity,
   getStorageCount,
   getStorageDefinitions,
   getStorageEntries,
+  getStorageFavoriteCount,
   getStorageLevel,
   getStorageBypassStatus,
   getStorageUpgradeCost,
+  isStorageFavorite,
   isStorageBypassActive,
   RPG_STORAGE_BYPASS_DAILY_LIMIT,
-  normalizeStorageType
+  normalizeStorageType,
+  setStorageFavorite
 } from '../../lib/rpg-storage.js'
 
 function formatNama(nama) {
@@ -186,6 +191,16 @@ return m.reply(
     const countByType = Object.fromEntries(
       Object.keys(storageTypes).map(type => [type, getStorageCount(user, type)])
     )
+    const favoriteCountByType = Object.fromEntries(
+      Object.keys(storageTypes).map(type => [type, getStorageFavoriteCount(user, type)])
+    )
+    if (storageTypes.fish) {
+      for (const [name] of Object.entries(user.ikan || {})) {
+        if (isStorageFavorite(user, 'fish', name)) continue
+        favoriteCountByType.fish += getFishRecords(user, name)
+          .filter(fish => fish.favorite === true).length
+      }
+    }
 
     const renderStorageOverview = async () => {
       let text =
@@ -197,10 +212,13 @@ return m.reply(
         text += `> ${storage.icon} ${storage.label}: *${formatRpgNumber(countByType[type])} item*\n`
       }
       const total = Object.values(countByType).reduce((sum, count) => sum + count, 0)
+      const favoriteTotal = Object.values(favoriteCountByType).reduce((sum, count) => sum + count, 0)
       text +=
-        `\n📦 *Total semua item: ${formatRpgNumber(total)}*\n\n` +
+        `\n📦 *Total semua item: ${formatRpgNumber(total)}*\n` +
+        `⭐ *Item favorit: ${formatRpgNumber(favoriteTotal)}*\n\n` +
         `💡 Lihat: *.inv fish / ore / item / stellar / food / drink / karung*\n` +
-        `> Kebun: *.inv kebun* · Ringkasan tas: *.inv bag* · Gudang lain: *.inv gudang*\n` +
+        `> Favorit: *.inv fav list / add / remove* · Kebun: *.inv kebun*\n` +
+        `> Ringkasan tas: *.inv bag* · Gudang lain: *.inv gudang*\n` +
         `> Kondisi penyimpanan: *.inv info* · Level: *.inv level* · Upgrade: *.inv up*`
       return sendRpgButtons(conn, {
         chat: m.chat,
@@ -231,7 +249,8 @@ return m.reply(
         const entries = getStorageEntries(user, selectedType)
         const itemCount = Object.values(entries).reduce((sum, amount) => sum + amount, 0)
         total += itemCount
-        text += `│ ${storage.icon} ${storage.label}: ${formatRpgNumber(itemCount)} item\n`
+        const favoriteCount = favoriteCountByType[selectedType] || 0
+        text += `│ ${storage.icon} ${storage.label}: ${formatRpgNumber(itemCount)} item · ⭐ ${formatRpgNumber(favoriteCount)} favorit\n`
       }
       text += `│ 📦 Total semua item: ${formatRpgNumber(total)}\n`
       text += `╰─━━━━━━━━━━━━━━─\n\n`
@@ -244,8 +263,11 @@ return m.reply(
         if (!entries.length) {
           text += `> Belum ada item tersimpan.\n`
         } else {
-          for (const [name, amount] of entries) {
-            text += `> ${formatNamaItem(name)} ×${formatRpgNumber(amount)}\n`
+          for (const [index, [name, amount]] of entries.entries()) {
+            const individualFishFavorite = selectedType === 'fish' &&
+              getFishRecords(user, name).some(fish => fish.favorite === true)
+            const favoriteMark = isStorageFavorite(user, selectedType, name) || individualFishFavorite ? '⭐ ' : ''
+            text += `> ${index + 1}. ${favoriteMark}${formatNamaItem(name)} ×${formatRpgNumber(amount)}\n`
           }
         }
         text += '\n'
@@ -350,6 +372,163 @@ return m.reply(
 
     const args = String(text).trim().toLowerCase().split(/\s+/).filter(Boolean)
     const action = args[0] || ''
+
+    if (action === 'fav' || action === 'favorite' || action === 'favorit') {
+      const operation = args[1] || 'list'
+      const typeAliases = {
+        all: Object.keys(storageTypes),
+        bag: ['ore', 'item', 'stellar'],
+        kulkas: ['food', 'drink']
+      }
+      if (['command', 'commands', 'cmd', 'perintah'].includes(operation)) {
+        return m.reply(
+          `╭─❏「 ⭐ COMMAND FAVORIT 」❏\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `📖 *Panduan*\n` +
+          `> ${prefix}inv fav guide\n\n` +
+          `📋 *Kelola favorit*\n` +
+          `> ${prefix}inv fav list\n` +
+          `> ${prefix}inv fav add <kategori> <nomor/nama/rarity>\n` +
+          `> ${prefix}inv fav remove <kategori> <nomor/nama/rarity>\n\n` +
+          `💰 *Jual berdasarkan favorit*\n` +
+          `> ${prefix}jual fav — jual item favorit\n` +
+          `> ${prefix}jual all — jual item nonfavorit\n` +
+          `> Konfirmasi: tombol atau ${prefix}jual ya / ${prefix}jual tidak`
+        )
+      }
+      if (['guide', 'panduan'].includes(operation)) {
+        return m.reply(
+          `╭─❏「 ⭐ PANDUAN FAVORIT INVENTORY 」❏\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n` +
+          `1️⃣ *Lihat daftar item*\n` +
+          `> Buka kategori, contoh: ${prefix}inv fish atau ${prefix}inv ore.\n\n` +
+          `2️⃣ *Tandai favorit*\n` +
+          `> Pakai nomor dari daftar kategori:\n` +
+          `> ${prefix}inv fav add fish 1\n` +
+          `> Atau pakai nama item: ${prefix}inv fav add ore copper\n` +
+          `> Untuk ikan, bisa juga pakai rarity: ${prefix}inv fav add fish rare\n\n` +
+          `3️⃣ *Lihat atau hapus favorit*\n` +
+          `> Lihat daftar: ${prefix}inv fav list\n` +
+          `> Hapus dengan nomor/nama: ${prefix}inv fav remove fish 1\n\n` +
+          `4️⃣ *Jual item pilihan*\n` +
+          `> ${prefix}jual fav untuk menjual item favorit.\n` +
+          `> ${prefix}jual all untuk menjual item nonfavorit.\n` +
+          `> Cek ringkasan asal dan jumlah, lalu tekan tombol konfirmasi/batal atau ketik ${prefix}jual ya / ${prefix}jual tidak.\n\n` +
+          `💡 Nomor mengikuti urutan di daftar kategori. Gunakan kategori seperti fish, ore, item, stellar, food, drink, karung, kebun, atau gudang.\n\n` +
+          `Ketik *${prefix}inv fav command* untuk melihat semua perintah favorit.`
+        )
+      }
+      const requestedType = normalizeStorageType(args[2])
+      const hasType = Boolean(
+        requestedType &&
+        (storageTypes[requestedType] || typeAliases[requestedType])
+      )
+      const selectedTypes = hasType
+        ? (typeAliases[requestedType] || [requestedType])
+        : Object.keys(storageTypes)
+
+      if (['list', 'daftar', 'lihat'].includes(operation)) {
+        let text =
+          `╭─❏「 ⭐ INVENTORY FAVORITES 」❏\n` +
+          `╰─━━━━━━━━━━━━━━─\n\n`
+        let favoriteTotal = 0
+        for (const type of Object.keys(storageTypes)) {
+          const storage = storageTypes[type]
+          const entries = Object.entries(getStorageEntries(user, type))
+            .sort((a, b) => b[1] - a[1])
+          const favorites = entries.flatMap(([name, amount], index) => {
+            const individualFish = type === 'fish' && !isStorageFavorite(user, type, name)
+              ? getFishRecords(user, name).filter(fish => fish.favorite === true).length
+              : 0
+            const quantity = isStorageFavorite(user, type, name) ? amount : individualFish
+            return quantity > 0 ? [{ name, quantity, index }] : []
+          })
+          const count = favorites.reduce((sum, entry) => sum + entry.quantity, 0)
+          favoriteTotal += count
+          text += `${storage.icon} *${storage.label}* · ${formatRpgNumber(count)} favorit\n`
+          if (!favorites.length) text += `> Belum ada item favorit.\n`
+          else {
+            for (const favorite of favorites) {
+              text += `> ${favorite.index + 1}. ${formatNama(favorite.name)} ×${formatRpgNumber(favorite.quantity)}\n`
+            }
+          }
+          text += '\n'
+        }
+        text +=
+          `⭐ *Total favorit: ${formatRpgNumber(favoriteTotal)} item*\n\n` +
+          `> Nomor mengikuti urutan daftar kategori di *.inv <kategori>*.\n` +
+          `💡 Tandai: *${prefix}inv fav add <kategori> <nomor/nama/rarity>*\n` +
+          `> Hapus: *${prefix}inv fav remove <kategori> <nomor/nama>*`
+        return m.reply(text)
+      }
+
+      if (!['add', 'tambah', 'remove', 'hapus', 'del', 'unfav'].includes(operation)) {
+        return m.reply(`Gunakan *${prefix}inv fav guide* atau *${prefix}inv fav command* untuk panduan dan daftar perintah favorit.`)
+      }
+
+      const isFavorite = ['add', 'tambah'].includes(operation)
+      const selector = (hasType ? args.slice(3) : args.slice(2)).join('_')
+      if (!selector) return m.reply(`Masukkan nomor, nama item, atau rarity ikan. Contoh: *${prefix}inv fav add fish 1*.`)
+      if (/^\d+$/.test(selector) && (!hasType || selectedTypes.length !== 1)) {
+        return m.reply(`Nomor hanya berlaku pada satu kategori. Contoh: *${prefix}inv fav add fish ${selector}*.`)
+      }
+
+      const fishTier = [...new Set(RPG_FISH_TIER_BY_NAME.values())]
+        .find(tier => tier === selector.toUpperCase())
+      let targets = []
+      if (fishTier) {
+        if (!selectedTypes.includes('fish')) {
+          return m.reply('Rarity hanya berlaku untuk kategori fish/aquarium.')
+        }
+        targets = Object.entries(getStorageEntries(user, 'fish'))
+          .filter(([name]) => RPG_FISH_TIER_BY_NAME.get(normalizeFishKey(name)) === fishTier)
+          .map(([item]) => ({ type: 'fish', item }))
+      } else if (/^\d+$/.test(selector)) {
+        const type = selectedTypes[0]
+        const entries = Object.entries(getStorageEntries(user, type))
+          .sort((a, b) => b[1] - a[1])
+        const selected = entries[Number(selector) - 1]
+        if (selected) targets = [{ type, item: selected[0] }]
+      } else {
+        const normalizedSelector = selector.replace(/\s+/g, '_')
+        for (const type of selectedTypes) {
+          for (const [item] of Object.entries(getStorageEntries(user, type))) {
+            const normalizedItem = type === 'fish' ? normalizeFishKey(item) : item.toLowerCase()
+            if (normalizedItem === normalizedSelector || normalizedItem.includes(normalizedSelector)) {
+              targets.push({ type, item })
+            }
+          }
+        }
+        const exactTargets = targets.filter(target => {
+          const name = target.type === 'fish' ? normalizeFishKey(target.item) : target.item.toLowerCase()
+          return name === normalizedSelector
+        })
+        if (exactTargets.length) targets = exactTargets
+      }
+
+      if (!targets.length) return m.reply('Tidak ada item yang cocok di penyimpananmu. Periksa kategori, nomor, nama, atau rarity.')
+      const uniqueTargets = [...new Map(targets.map(target => [`${target.type}:${target.item}`, target])).values()]
+      if (!hasType && uniqueTargets.length > 1) {
+        return m.reply(
+          `Nama tersebut ada di beberapa penyimpanan. Pilih kategori secara spesifik:\n` +
+          uniqueTargets.map(target => `> ${storageTypes[target.type]?.label || target.type}`).join('\n')
+        )
+      }
+
+      for (const target of uniqueTargets) {
+        setStorageFavorite(user, target.type, target.item, isFavorite)
+        if (!isFavorite && target.type === 'fish') {
+          for (const fish of getFishRecords(user, target.item)) fish.favorite = false
+        }
+      }
+      await saveDB(wdb)
+      const itemNames = uniqueTargets.map(target => formatNama(target.item)).join(', ')
+      return m.reply(
+        `${isFavorite ? '⭐ Ditambahkan ke' : '✅ Dihapus dari'} favorit:\n` +
+        `> ${itemNames}\n\n` +
+        `Lihat daftar: *${prefix}inv fav list*`
+      )
+    }
 
     if (action === 'bypass') {
       const now = Date.now()
@@ -572,6 +751,13 @@ if (['inv', 'inventory'].includes(command)) {
     Object.keys(storageTypes).map(type => [type, getStorageCount(user, type)])
   )
   const totalStoredItems = Object.values(storageCounts).reduce((sum, count) => sum + count, 0)
+  let totalFavoriteItems = Object.keys(storageTypes)
+    .reduce((sum, type) => sum + getStorageFavoriteCount(user, type), 0)
+  for (const [name] of Object.entries(user.ikan || {})) {
+    if (isStorageFavorite(user, 'fish', name)) continue
+    totalFavoriteItems += getFishRecords(user, name)
+      .filter(fish => fish.favorite === true).length
+  }
 
   cap += `\n─━━━━━━━━━━━━━━─\n`
   cap += `🎒 *INVENTORY GABUNGAN*\n`
@@ -579,6 +765,7 @@ if (['inv', 'inventory'].includes(command)) {
     cap += `> ${storage.icon} ${storage.label}: ${formatRpgNumber(storageCounts[type])} item\n`
   }
   cap += `> 📦 Total semua item: *${formatRpgNumber(totalStoredItems)}*\n`
+  cap += `> ⭐ Item favorit: *${formatRpgNumber(totalFavoriteItems)}*\n`
   cap += `> 📊 Kondisi: *${usedPrefix}inv info* · Upgrade: *${usedPrefix}inv up*\n`
 }
 
@@ -596,7 +783,12 @@ cap += `─━━━━━━━━━━━━━━─`
 return sendRpgMsg(conn, m, cap)
 }
 
-handler.help = ['inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up', 'inv bypass', 'inventory', 'equipment list']
+handler.help = [
+  'inv', 'inv <kategori>', 'inv info', 'inv level', 'inv up', 'inv bypass',
+  'inv fav guide', 'inv fav command', 'inv fav list',
+  'inv fav add <kategori> <nomor/nama/rarity>', 'inv fav remove <kategori> <nomor/nama/rarity>',
+  'inventory', 'equipment list'
+]
 handler.tags = ['rpg']
 handler.command = /^(inv|inventory|rpglevel|equipment|equip|blood|darah)$/i
 handler.alias = ['inv', 'inventory']

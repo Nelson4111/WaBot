@@ -8,7 +8,14 @@ import { INTERSTELLAR_ITEMS, STELLAR_CREDIT } from '../../lib/rpg-exploreData.js
 import { sendRpgButtons, sendRpgConfirmButtons } from '../../lib/rpgActionButtons.js'
 import { ensureFishDetails, getFishPriceMultiplier, getFishRecords, isTrashFish, removeFishRecords } from '../../lib/rpg-fishSizes.js'
 import { recordTaxActivity } from '../../lib/rpgTax.js'
-import { getStorageItemType, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
+import {
+  getStorageDefinitions,
+  getStorageItemType,
+  isStorageFavorite,
+  isStorageFull,
+  sendStorageFullNotice
+} from '../../lib/rpg-storage.js'
+import { RPG_KARUNG_ITEM_BY_ID } from '../../lib/rpg-karungData.js'
 
 const SHOP_IMAGE = 'https://c.termai.cc/i177/8Umy7c.jpg'
 
@@ -81,7 +88,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   const isBeli = mode === 'beli'
   const isSellCommand = directSell || mode === 'jual' || mode === 'sell'
   const sellAction = directSell ? mode : arg1
-  const isJualAll = isSellCommand && sellAction === 'all'
+  const isJualAll = isSellCommand && ['all', 'nonfav', 'nonfavorite', 'non-favorite', 'bukan-favorit'].includes(sellAction)
+  const isJualFavorite = isSellCommand && ['fav', 'favorite', 'favorites', 'favorit'].includes(sellAction)
   const isJualYa = isSellCommand && (sellAction === 'ya' || sellAction === 'yes')
   const isJualTidak = isSellCommand && (sellAction === 'tidak' || sellAction === 'batal' || sellAction === 'no')
 
@@ -94,18 +102,84 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     )
   }
 
-  function getAllItems() {
-    const semuaItem = {}
-    for (const item in user.inventory) if (!['uang', 'money'].includes(item) && (user.inventory[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.inventory[item]
-    for (const item in user.ikan) {
-      const quantity = isTrashFish(item)
-        ? Number(user.ikan[item]) || 0
-        : getFishRecords(user, item).filter(fish => !fish.favorite).length
-      if (quantity > 0) semuaItem[item] = (semuaItem[item] || 0) + quantity
+  function getSaleEntries(scope) {
+    const entries = []
+    const selected = favorite => scope === 'fav' ? favorite : !favorite
+    const sources = [
+      { bucket: 'inventory', data: user.inventory, getType: getStorageItemType },
+      { bucket: 'ores', data: user.ores, getType: () => 'ore' },
+      { bucket: 'items', data: user.items, getType: () => 'item' },
+      { bucket: 'masakan', data: user.masakan, getType: getStorageItemType },
+      { bucket: 'karung', data: user.karung, getType: () => 'karung' }
+    ]
+
+    for (const source of sources) {
+      for (const [item, rawAmount] of Object.entries(source.data || {})) {
+        const quantity = Math.max(0, Math.floor(Number(rawAmount) || 0))
+        if (!quantity || ['uang', 'money', 'exp'].includes(item)) continue
+        const type = source.getType(item)
+        const favorite = isStorageFavorite(user, type, item)
+        if (selected(favorite)) entries.push({ bucket: source.bucket, item, quantity, type })
+      }
     }
-    for (const item in user.ores) if ((user.ores[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.ores[item]
-    for (const item in user.masakan) if ((user.masakan[item] || 0) > 0) semuaItem[item] = (semuaItem[item] || 0) + user.masakan[item]
-    return semuaItem
+
+    for (const [rawItem, rawAmount] of Object.entries(user.ikan || {})) {
+      const item = normalizeFishKey(rawItem)
+      const type = 'fish'
+      const speciesFavorite = isStorageFavorite(user, type, item)
+      if (isTrashFish(item)) {
+        const quantity = Math.max(0, Math.floor(Number(rawAmount) || 0))
+        if (quantity && selected(speciesFavorite)) {
+          entries.push({ bucket: 'ikan', item, quantity, type })
+        }
+        continue
+      }
+
+      const records = getFishRecords(user, item)
+      const selectedFish = records.filter(fish => selected(speciesFavorite || fish.favorite === true))
+      if (selectedFish.length) {
+        entries.push({
+          bucket: 'ikan',
+          item,
+          quantity: selectedFish.length,
+          type,
+          fishIds: selectedFish.map(fish => fish.id)
+        })
+      }
+    }
+    return entries
+  }
+
+  function getSaleOriginSummary(entries) {
+    const counts = new Map()
+    const definitions = getStorageDefinitions()
+    for (const entry of entries) {
+      counts.set(entry.type, (counts.get(entry.type) || 0) + entry.quantity)
+    }
+    return [...counts].map(([type, quantity]) => {
+      const storage = definitions[type]
+      return `> ${storage?.icon || '📦'} ${storage?.label || type}: ${quantity.toLocaleString()} item`
+    })
+  }
+
+  function getEntryBucket(entry) {
+    return entry.bucket === 'ikan' ? user.ikan : user[entry.bucket]
+  }
+
+  function isEntryStillEligible(entry, scope) {
+    if (entry.bucket === 'ikan' && !isTrashFish(entry.item)) {
+      const records = getFishRecords(user, entry.item)
+      return (entry.fishIds || []).every(id => {
+        const fish = records.find(record => record.id === id)
+        if (!fish) return false
+        const favorite = isStorageFavorite(user, 'fish', entry.item) || fish.favorite === true
+        return scope === 'fav' ? favorite : !favorite
+      })
+    }
+    const bucket = getEntryBucket(entry)
+    if ((Number(bucket?.[entry.item]) || 0) < entry.quantity) return false
+    const favorite = isStorageFavorite(user, entry.type, entry.item)
+    return scope === 'fav' ? favorite : !favorite
   }
 
 if (mode === 'guide') {
@@ -137,6 +211,7 @@ if (mode === 'guide') {
   cap += `> ↳ ${usedPrefix || '.'}shop list\n`
   cap += `> ↳ ${usedPrefix || '.'}shop beli <item> <jumlah>\n`
   cap += `> ↳ ${usedPrefix || '.'}shop jual all\n`
+  cap += `> ↳ ${usedPrefix || '.'}jual fav / jual nonfav\n`
   cap += `\n`
   cap += `> ↳ Gunakan .pabrik/.pasar/.koperasi/.restoran guide untuk panduan toko terkait.\n\n`
 
@@ -150,7 +225,7 @@ if (mode === 'guide') {
        `╰─━━━━━━━━━━━━━━─\n\n` +
        `> ${usedPrefix || '.'}shop list\n` +
        `> ${usedPrefix || '.'}shop beli <item> <jumlah>\n` +
-       `> ${usedPrefix || '.'}shop jual all\n` +
+       `> ${usedPrefix || '.'}shop jual all / fav / nonfav\n` +
        `> ${usedPrefix || '.'}shop guide\n\n` +
        `> ${usedPrefix || '.'}pabrik command\n` +
        `> ${usedPrefix || '.'}pasar command\n` +
@@ -240,50 +315,51 @@ if (mode === 'guide') {
     if (user.jualAllConfirm) {
       delete user.jualAllConfirm
       saveDB(wdb)
-      return m.reply('✅ Penjualan semua item dibatalkan.')
+      return m.reply('✅ Penjualan dibatalkan. Stok dan saldo tidak berubah.')
     }
     return m.reply('❌ Tidak ada konfirmasi jual yang aktif.')
   }
 
-  if (isJualAll) {
-    const semuaItem = getAllItems()
-    if (Object.keys(semuaItem).length === 0) return m.reply('❌ Kamu tidak punya item yang bisa dijual.')
-    const fishIds = {}
-    for (const item of Object.keys(semuaItem)) {
-      if (!user.ikan[item] || isTrashFish(item)) continue
-      fishIds[item] = getFishRecords(user, item)
-        .filter(fish => !fish.favorite)
-        .map(fish => fish.id)
+  if (isJualAll || isJualFavorite) {
+    const scope = isJualFavorite ? 'fav' : 'nonfav'
+    const entries = getSaleEntries(scope)
+    if (!entries.length) {
+      return m.reply(scope === 'fav'
+        ? '⭐ Tidak ada item favorit yang bisa dijual.'
+        : '📦 Tidak ada item nonfavorit yang bisa dijual.')
     }
 
-    let cap = `╭─❏「 ⚠️ KONFIRMASI JUAL SEMUA 」❏\n`
-    cap += `│ 📦 Total jenis item: ${Object.keys(semuaItem).length}\n`
-    cap += `╰─━━━━━━━━━━━━━━─\n\n`
-    Object.keys(semuaItem).forEach(nama => {
-      cap += `> ↳ ${formatNama(nama)} x${semuaItem[nama].toLocaleString()}\n`
-    })
-    cap += `\n👑 Bonus premium: ${isPrem ? '+10%' : '0%'}\n\n`
-    cap += `✅ Ketik *${usedPrefix || '.'}jual ya* untuk konfirmasi\n`
-    cap += `❌ Ketik *${usedPrefix || '.'}jual tidak* untuk batal\n`
-    cap += `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
+    const totalItems = entries.reduce((sum, entry) => sum + entry.quantity, 0)
+    const origins = getSaleOriginSummary(entries)
+    const label = scope === 'fav' ? 'ITEM FAVORIT' : 'ITEM NONFAVORIT'
+    let cap =
+      `╭─❏「 ⚠️ KONFIRMASI JUAL ${label} 」❏\n` +
+      `│ 📦 Total item: ${totalItems.toLocaleString()}\n` +
+      `╰─━━━━━━━━━━━━━━─\n\n` +
+      `📍 *ASAL PENYIMPANAN & JUMLAH*\n` +
+      `${origins.join('\n')}\n\n` +
+      `👑 Bonus premium: ${isPrem ? '+10%' : '0%'}\n\n` +
+      `✅ Ketik *${usedPrefix || '.'}jual ya* untuk konfirmasi\n` +
+      `❌ Ketik *${usedPrefix || '.'}jual tidak* untuk batal\n` +
+      `⏳ Konfirmasi berlaku 5 menit.\n\n─━━━━━━━━━━━━━━─`
 
-    user.jualAllConfirm = { items: semuaItem, fishIds, time: Date.now() }
+    user.jualAllConfirm = { entries, scope, time: Date.now() }
     saveDB(wdb)
     return sendRpgConfirmButtons(conn, m, {
       text: cap,
       title: '🛍️ KEPUTUSAN PENJUALAN',
-      subtitle: 'Tentukan nasib seluruh barangmu',
+      subtitle: scope === 'fav' ? 'Lepas barang yang sudah kamu tandai' : 'Jual hanya barang yang tidak difavoritkan',
       buffer: SHOP_IMAGE,
-      acceptText: '💰 Jual Semua',
+      acceptText: scope === 'fav' ? '⭐ Jual Favorit' : '💰 Jual Nonfavorit',
       acceptCommand: `${usedPrefix || '.'}jual ya`,
-      cancelText: '📦 Simpan Barang',
+      cancelText: '↩️ Batalkan',
       cancelCommand: `${usedPrefix || '.'}jual tidak`
     })
   }
 
   if (isJualYa) {
     if (!user.jualAllConfirm || Date.now() - user.jualAllConfirm.time > RPG_CONFIRMATION_TTL) {
-      return m.reply('❌ Konfirmasi kadaluarsa. Ketik *' + (usedPrefix || '.') + 'jual all* lagi')
+      return m.reply('❌ Konfirmasi kadaluarsa. Ulangi perintah jual favorit atau nonfavorit.')
     }
 
     const interstellarSellMap = Object.fromEntries(
@@ -354,6 +430,69 @@ if (mode === 'guide') {
     }
 
     const hargaGabungNorm = Object.fromEntries(Object.entries(hargaGabung).map(([key, value]) => [normalizeFishKey(key), value]))
+
+    const pendingSale = user.jualAllConfirm
+    if (Array.isArray(pendingSale.entries)) {
+      const scope = pendingSale.scope === 'fav' ? 'fav' : 'nonfav'
+      if (pendingSale.entries.some(entry => !isEntryStillEligible(entry, scope))) {
+        delete user.jualAllConfirm
+        await saveDB(wdb)
+        return m.reply('❌ Stok atau status favorit berubah sejak konfirmasi dibuat. Tidak ada barang yang dijual; buat konfirmasi baru.')
+      }
+
+      let totalDapat = 0
+      let totalStellarCredit = 0
+      let terjual = 0
+      let jumlahTerjual = 0
+      for (const entry of pendingSale.entries) {
+        const cleanNama = normalizeFishKey(entry.item)
+        const interstellarPrice = interstellarSellMap[entry.item] || interstellarSellMap[cleanNama]
+        const unitPrice = interstellarPrice ??
+          RPG_KARUNG_ITEM_BY_ID.get(cleanNama)?.price ??
+          hargaGabungNorm[cleanNama] ??
+          hargaGabung[entry.item] ??
+          1000
+        let earned
+
+        if (entry.bucket === 'ikan' && entry.fishIds?.length) {
+          const fishById = new Map(getFishRecords(user, cleanNama).map(fish => [fish.id, fish]))
+          const selectedFish = entry.fishIds.map(id => fishById.get(id))
+          earned = selectedFish.reduce((sum, fish) =>
+            sum + Math.floor(unitPrice * sellBonus * getFishPriceMultiplier(fish.size)), 0)
+          removeFishRecords(user, cleanNama, entry.quantity, { ids: entry.fishIds })
+        } else {
+          earned = Math.floor(unitPrice * sellBonus) * entry.quantity
+          const source = getEntryBucket(entry)
+          source[entry.item] = (Number(source[entry.item]) || 0) - entry.quantity
+          if (source[entry.item] <= 0) delete source[entry.item]
+        }
+
+        if (interstellarPrice) totalStellarCredit += earned
+        else totalDapat += earned
+        terjual++
+        jumlahTerjual += entry.quantity
+      }
+
+      if (totalStellarCredit > 0) {
+        user.inventory[STELLAR_CREDIT.id] = (Number(user.inventory[STELLAR_CREDIT.id]) || 0) + totalStellarCredit
+      }
+      totalDapat = scaleDifficultyIncome(user, totalDapat)
+      wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], totalDapat)
+      user.jualAllConfirm = null
+      await saveDB(wdb)
+
+      const earnedLines = []
+      if (totalDapat > 0) earnedLines.push(`> ↳ 💰 Diterima: +Rp ${totalDapat.toLocaleString()}`)
+      if (totalStellarCredit > 0) earnedLines.push(`> ↳ 💠 Diterima: +${totalStellarCredit} ${STELLAR_CREDIT.name}`)
+      return m.reply(
+        `╭─❏「 🛍️ PENJUALAN BERHASIL 」❏\n` +
+        `│ ✅ ${jumlahTerjual.toLocaleString()} item dari ${terjual} jenis terjual\n` +
+        `╰─━━━━━━━━━━━━━━─\n\n` +
+        `${earnedLines.join('\n')}\n` +
+        `> ↳ 💵 Saldo: Rp ${(wdb.money[m.sender] || 0).toLocaleString()}\n\n` +
+        `─━━━━━━━━━━━━━━─`
+      )
+    }
 
     for (const [name, ids] of Object.entries(user.jualAllConfirm.fishIds || {})) {
      const records = getFishRecords(user, name)
@@ -433,7 +572,8 @@ if (mode === 'guide') {
     `> ↳ ${usedPrefix || '.'}pasar - 🎣 Ikan\n` +
     `> ↳ ${usedPrefix || '.'}restoran - 🍽️ Masakan\n\n` +
     `🛒 *TRANSAKSI*\n` +
-    `> ↳ ${usedPrefix || '.'}jual all - Jual Semua Item\n` +
+    `> ↳ ${usedPrefix || '.'}jual all - Jual Item Nonfavorit\n` +
+    `> ↳ ${usedPrefix || '.'}jual fav - Jual Item Favorit\n` +
     `> ↳ ${usedPrefix || '.'}gudang - Lihat Gudang\n` +
     `> ↳ ${usedPrefix || '.'}beli - Beli Item\n\n` +
     `> Lihat daftar command: *${usedPrefix || '.'}shop command*\n` +
@@ -443,7 +583,10 @@ if (mode === 'guide') {
   return sendRpgMsg(conn, m, cap, SHOP_IMAGE)
 }
 
-handler.help = ['shop', 'shop command', 'shop list', 'shop guide', 'market', 'toko', 'jual all', 'beli [item] [jumlah]']
+handler.help = [
+  'shop', 'shop command', 'shop list', 'shop guide', 'market', 'toko',
+  'jual all', 'jual fav', 'jual nonfav', 'beli [item] [jumlah]'
+]
 handler.tags = ['rpg']
 handler.command = /^(shop|market|toko|jual|sell|beli)$/i
 handler.alias = ['toko', 'shop', 'market', 'sell']
