@@ -43,6 +43,7 @@ test('a pet that is cared after its first neglected day stays safe', () => {
 test('a long unattended period sends a pet to the shelter on its next check', () => {
   const now = 1_800_000_000_000
   const user = {
+    difficulty: 'nightmare',
     pets: [{ tipe: 'kucing', energy: 100, happy: 50, dirty: 0, lastNeedsUpdateAt: now }],
     shelterPets: []
   }
@@ -52,4 +53,19 @@ test('a long unattended period sends a pet to the shelter on its next check', ()
   assert.equal(result.escapedPets.length, 1)
   assert.equal(user.pets.length, 0)
   assert.equal(user.shelterPets[0].shelterStatus.reason, 'runaway')
+})
+
+test('Peaceful keeps a long-neglected pet out of the shelter', () => {
+  const now = 1_800_000_000_000
+  const user = {
+    difficulty: 'peaceful',
+    pets: [{ tipe: 'kucing', energy: 100, happy: 50, dirty: 0, lastNeedsUpdateAt: now }],
+    shelterPets: []
+  }
+
+  const result = processPetNeglect(user, now + 5 * 24 * 60 * 60 * 1000)
+
+  assert.equal(result.escapedPets.length, 0)
+  assert.equal(user.pets.length, 1)
+  assert.equal(user.shelterPets.length, 0)
 })

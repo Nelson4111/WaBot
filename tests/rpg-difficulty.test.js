@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   adjustCrimeSuccessChance,
   adjustDifficultyFailureChance,
+  adjustDifficultyShelterChance,
   applyProtectedCrimeAttemptPenalty,
   canReceiveRareActivityRewards,
   DIFFICULTY_CHANGES_PER_WEEK,
@@ -69,6 +70,14 @@ test('combat and crime modifiers remain difficulty-specific', () => {
   assert.equal(scaleDifficultyXP({ difficulty: 'easy' }, 100), 50)
   assert.equal(adjustCrimeSuccessChance({ difficulty: 'easy' }, 0.4), 0.4)
   assert.equal(adjustCrimeSuccessChance({ difficulty: 'nightmare' }, 0.4), 0.2)
+})
+
+test('shelter risk is disabled in Peaceful and increases with difficulty', () => {
+  assert.equal(adjustDifficultyShelterChance({ difficulty: 'peaceful' }, 0.5), 0)
+  assert.equal(adjustDifficultyShelterChance({ difficulty: 'easy' }, 0.5), 0.25)
+  assert.equal(adjustDifficultyShelterChance({ difficulty: 'normal' }, 0.5), 0.5)
+  assert.equal(adjustDifficultyShelterChance({ difficulty: 'hardcore' }, 0.5), 0.75)
+  assert.equal(adjustDifficultyShelterChance({ difficulty: 'nightmare' }, 0.5), 1)
 })
 
 test('Peaceful blocks crimes and is excluded from leaderboards', () => {

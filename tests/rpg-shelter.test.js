@@ -15,6 +15,7 @@ import {
 test('unattended livestock is moved out of the producing pen and into the shelter', () => {
   const now = Date.parse('2026-10-29T12:00:00+07:00')
   const user = {
+    difficulty: 'nightmare',
     ternak: { AYAM: 3 },
     lastLivestockCareAt: { AYAM: now - LIVESTOCK_NEGLECT_TIMEOUT },
     lastLivestockHarvest: { AYAM: now - 1000 },
@@ -28,6 +29,23 @@ test('unattended livestock is moved out of the producing pen and into the shelte
   assert.equal(user.shelterLivestock[0].count, 3)
   assert.equal(user.shelterLivestock[0].shelterStatus.reason, 'runaway')
   assert.equal(user.lastLivestockHarvest.ayam, undefined)
+})
+
+test('Peaceful prevents neglected livestock from entering the shelter', () => {
+  const now = Date.parse('2026-10-29T12:00:00+07:00')
+  const user = {
+    difficulty: 'peaceful',
+    ternak: { ayam: 3 },
+    lastLivestockCareAt: { ayam: now - LIVESTOCK_NEGLECT_TIMEOUT },
+    lastLivestockHarvest: { ayam: now - 1000 },
+    shelterLivestock: []
+  }
+
+  const result = processLivestockNeglect(user, now)
+
+  assert.deepEqual(result.escapedLivestock, [])
+  assert.equal(user.ternak.ayam, 3)
+  assert.equal(user.shelterLivestock.length, 0)
 })
 
 test('shelter crime adds two points daily per species and stops after 50 daily ticks', () => {

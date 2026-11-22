@@ -500,6 +500,29 @@ test('staff multipliers increase payroll and repeated unpaid shifts trigger resi
   assert.equal(Object.keys(unpaidCafe.staff).length, 0)
 })
 
+test('cafe revenue and experience follow the owner RPG difficulty', () => {
+  const now = Date.UTC(2026, 10, 2, 12)
+  const runShift = difficulty => {
+    const data = makeDb().data
+    data.users[playerJid].rpg.difficulty = difficulty
+    const cafe = createCafe(`${difficulty} Cafe`, now - CAFE_SHIFT_MS)
+    cafe.finance.balance = '100000'
+    cafe.stock.kopi = 4
+    cafe.level = 5
+    advanceCafeOperations(cafe, data, playerJid, now, () => 0)
+    return cafe
+  }
+
+  const peaceful = runShift('peaceful')
+  const normal = runShift('normal')
+  const nightmare = runShift('nightmare')
+
+  assert.ok(BigInt(peaceful.finance.income) < BigInt(normal.finance.income))
+  assert.ok(BigInt(normal.finance.income) < BigInt(nightmare.finance.income))
+  assert.ok(peaceful.exp < normal.exp)
+  assert.ok(normal.exp < nightmare.exp)
+})
+
 test('reenabling taxation resets the automatic collection boundary', async () => {
   const previousDb = global.db
   global.db = makeDb()
