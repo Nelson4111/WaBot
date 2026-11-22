@@ -4,10 +4,13 @@ import {
   activateStorageBypass,
   getStorageCapacity,
   getStorageCount,
+  getStorageFavoriteCount,
   getStorageItemType,
   getStorageUpgradeCost,
+  isStorageFavorite,
   isStorageBypassActive,
-  isStorageFull
+  isStorageFull,
+  setStorageFavorite
 } from '../lib/rpg-storage.js'
 import { findRpgEvent } from '../lib/rpgEvents.js'
 
@@ -111,4 +114,22 @@ test('inventory upgrade prices start at 5,000 times RPG level and double each le
   assert.equal(getStorageUpgradeCost(4, 0, 1), 20000n)
   assert.equal(getStorageUpgradeCost(4, 1, 2), 40000n)
   assert.equal(getStorageUpgradeCost(4, 0, 3), 140000n)
+})
+
+test('inventory favorites are scoped to a storage type and counted by owned quantity', () => {
+  const user = {
+    ikan: { salmon: 2 },
+    ores: { copper: 4 },
+    inventory: { copper: 3 }
+  }
+
+  setStorageFavorite(user, 'fish', 'salmon')
+  setStorageFavorite(user, 'ore', 'copper')
+  assert.equal(isStorageFavorite(user, 'fish', 'salmon'), true)
+  assert.equal(isStorageFavorite(user, 'item', 'salmon'), false)
+  assert.equal(getStorageFavoriteCount(user, 'fish'), 2)
+  assert.equal(getStorageFavoriteCount(user, 'ore'), 4)
+
+  setStorageFavorite(user, 'ore', 'copper', false)
+  assert.equal(getStorageFavoriteCount(user, 'ore'), 0)
 })
