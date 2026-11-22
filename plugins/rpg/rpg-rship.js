@@ -1,6 +1,6 @@
 import { rejectFrozenRpgAccounts } from '../../lib/rpgFreeze.js'
 import { loadDB, saveDB, getUserRPG, sendRpgMsg, setRpgFeatureImage } from '../../lib/waifuHelper.js'
-import { scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
+import { adjustDifficultyShelterChance, scaleDifficultyCooldown, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 import { isPremiumUser } from './rpg-bank.js'
 import { CINCIN_SHOP, getRingIcon, normalizeRingName } from '../../lib/pasanganHelper.js'
 import { isRpgEventActive } from '../../lib/rpgEvents.js'
@@ -290,7 +290,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const neglectedDays = Math.max(0, Math.floor((now - Number(child.lastCaredAt)) / CHILD_NEGLECT.checkPeriod))
     if (neglectedDays < 1) continue
     const baseChance = adolescent ? CHILD_NEGLECT.adultEscapeChance : CHILD_NEGLECT.youngChildLossChance
-    const chance = neglectedDays >= 4 ? 1 : baseChance * Math.max(0, neglectedDays - 1)
+    const baseRisk = neglectedDays >= 4 ? 0.5 : baseChance * Math.max(0, neglectedDays - 1)
+    const chance = adjustDifficultyShelterChance(user, baseRisk)
     if (chance <= 0) continue
     if (Math.random() >= 1 - Math.pow(1 - chance, elapsedPeriods)) continue
 

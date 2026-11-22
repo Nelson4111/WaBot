@@ -1,6 +1,7 @@
-import { loadDB, saveDB } from '../../lib/waifuHelper.js'
+import { getUserRPG, loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { cancelPendingFitnahTimer, resolvePendingFitnah } from '../../lib/fitnahHelper.js'
 import { compareRpgMoney, normalizeRpgMoney, parseRpgMoneyAmount, subtractRpgMoney } from '../../lib/rpgMoney.js'
+import { adjustDifficultyFailureChance } from '../../lib/rpgDifficulty.js'
 
 function resolveJid(jid) {
   if (!jid) return jid
@@ -31,6 +32,7 @@ let handler = async (m, { args, usedPrefix, conn }) => {
     return m.reply('⏳ Waktu bantah sudah habis; proses fitnah telah berjalan.')
   }
   const wdb = loadDB()
+  const user = getUserRPG(wdb, target)?.rpg
   const balance = normalizeRpgMoney(wdb.money[target])
   if (compareRpgMoney(balance, amount) < 0) {
     return m.reply(`❌ Uang tidak cukup.\n💰 Punya: Rp ${formatMoney(balance)}\n💸 Butuh: Rp ${formatMoney(amount)}`)
@@ -41,7 +43,8 @@ let handler = async (m, { args, usedPrefix, conn }) => {
   const chance = compareRpgMoney(wager, 0) > 0
     ? Math.min(1, Number((BigInt(amount) * 1_000_000_000n) / BigInt(wager)) / 1_000_000_000)
     : 1
-  const berhasil = Math.random() < chance
+  const failureChance = adjustDifficultyFailureChance(user, 1 - chance)
+  const berhasil = Math.random() >= failureChance
 
   if (berhasil) {
     cancelPendingFitnahTimer(target)

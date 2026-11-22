@@ -48,8 +48,100 @@ const CORE_COMMANDS = [
   ['.guide', 'Membuka panduan detail RPG']
 ]
 
+const RPG_ACTIVITY_SECTIONS = [
+  {
+    title: '🧭 PETUALANGAN & EKSPLORASI',
+    activities: [
+      ['Petualangan', 'adventure', 'Mulai dan kembangkan progres petualangan RPG.'],
+      ['Pendakian gunung', 'mt', 'Pilih gunung, mendaki solo atau bersama tim.'],
+      ['Berburu makhluk', 'pokemon / ghost', 'Berburu dan bertarung melawan Pokémon atau hantu.'],
+      ['Jelajah antarbintang', 'explore', 'Jelajahi planet; perlu Interstellar Gateway dari Stellar Card.']
+    ]
+  },
+  {
+    title: '🌿 MENGUMPULKAN SUMBER DAYA',
+    activities: [
+      ['Memancing', 'mancing / fishing / pancing', 'Tangkap ikan dengan beragam ukuran dan tier.'],
+      ['Mining', 'mining / tambang', 'Cari ore dan material tambang.'],
+      ['Diving', 'diving / nyelam', 'Menyelam untuk mencari harta laut.'],
+      ['Logging', 'logging / nebang', 'Tebang pohon untuk mendapatkan kayu dan material.'],
+      ['Mulung', 'mulung / scavenge', 'Cari barang dan material.'],
+      ['Bertani', 'tanam / panen / farming', 'Tanam tanaman, panen, dan kumpulkan hasil kebun serta ternak.'],
+      ['Beternak', 'ternak / peternakan / kawin / icu', 'Kelola dan rawat hewan ternak, lalu kawinkan untuk mendapatkan hybrid.']
+    ]
+  },
+  {
+    title: '🛠️ PRODUKSI & KREASI',
+    activities: [
+      ['Crafting & peleburan', 'craft / forge', 'Buat item atau lebur material untuk kebutuhan crafting.'],
+      ['Masak', 'masak / dapur', 'Buat resep dari bahan yang tersedia.']
+    ]
+  },
+  {
+    title: '🐾 PET & KARAKTER',
+    activities: [
+      ['Merawat dan melatih pet', 'pet feed / pet walk / pet play / pet train / pet hunt / pet dispatch / pet battle / pet breed', 'Rawat, latih, ajak berburu, bertarung, atau kembangbiakkan pet.'],
+      ['Gym', 'gym', 'Berlatih untuk mendapatkan EXP dan meningkatkan statistik.'],
+      ['Aktivitas rumah', 'home act', 'Lakukan aktivitas di rumah dan dapatkan hasil sesuai fasilitas.']
+    ]
+  },
+  {
+    title: '⚔️ PERTARUNGAN & KRIMINAL',
+    activities: [
+      ['Dungeon', 'dungeon', 'Lawan monster dan dapatkan hadiah.'],
+      ['Arena & balapan', 'versus / balap / run / drift / jambak / panco / dance / tampar / tinju', 'Tantang pemain lain dalam duel, balapan, dan pertandingan.'],
+      ['Aksi kriminal', 'copet / begal / rampok / jarah / culik / bunuh / fitnah', 'Lakukan aksi kriminal dengan risiko dan konsekuensi RPG.'],
+      ['Aktivitas penjara', 'penjara routine / penjara talk / kabur', 'Jalani rutinitas penjara atau coba melarikan diri.'],
+      ['Rehabilitasi', 'rh mulai / rh kerja / rh sosial / rh ibadah / rh olahraga / rh belajar', 'Ikuti program rehabilitasi untuk memulihkan status kriminal.']
+    ]
+  },
+  {
+    title: '💼 PEKERJAAN & EKONOMI',
+    activities: [
+      ['Bekerja', 'job work', 'Kerjakan pekerjaan untuk mendapatkan penghasilan.'],
+      ['Investasi & trading', 'invest / trading', 'Kelola investasi dan aktivitas trading.'],
+      ['Casino', 'casino', 'Mainkan beragam permainan casino.'],
+      ['Lottery', 'lottery', 'Beli tiket dan ikuti lottery.'],
+      ['Koleksi & lelang', 'cl / lelang', 'Kumpulkan item dan ikuti lelang koleksi.'],
+      ['Kelola cafe', 'cafe', 'Bangun dan kelola stok, menu, serta staf cafe.'],
+      ['Restoran & masakan', 'restoran / dapur / masak', 'Kelola masakan serta transaksi restoran.'],
+      ['Simulasi YouTube', 'buatyt / room / liveyt / kolab', 'Buat channel, live streaming, dan kolaborasi.'],
+      ['Hadiah harian', 'daily', 'Klaim hadiah dan jaga streak harian.']
+    ]
+  },
+  {
+    title: '🤝 SOSIAL & AKTIVITAS TAMBAHAN',
+    activities: [
+      ['Misi & pesta guild', 'guild misi / guild party / misiguild / pestaguild', 'Jalankan misi dan aktivitas bersama anggota guild.'],
+      ['Latihan & perang guild', 'guild latihan / latihanguild / guildwar', 'Latih anggota atau ikuti perang antarguild.'],
+      ['Relationship & keluarga', 'rship date / rship kid', 'Jalankan aktivitas pasangan dan pengasuhan anak.'],
+      ['Mode RPG Chainsaw Man', 'csm about', 'Buka dunia RPG CSM yang terpisah dari Avelia RPG.']
+    ]
+  }
+]
+
 let handler = async (m, { conn, text, usedPrefix }) => {
   const action = text?.trim().toLowerCase()
+
+  if (['aktivitas', 'activity', 'activities'].includes(action)) {
+    let cap = `╭─❏「 🎮 AKTIVITAS RPG 」❏\n`
+    cap += `│ Pilih aktivitas untuk mulai bermain.\n`
+    cap += `╰─━━━━━━━━━━━━━━─\n\n`
+    for (const section of RPG_ACTIVITY_SECTIONS) {
+      cap += `*${section.title}*\n`
+      for (const [title, command, description] of section.activities) {
+        const commands = command.split(' / ').map(name => `${usedPrefix}${name}`).join(' / ')
+        cap += `> *${title}* — *${commands}*\n`
+        cap += `> ↳ ${description}\n`
+      }
+      cap += `\n`
+    }
+    cap += `─━━━━━━━━━━━━━━─\n`
+    cap += `💡 Sebagian aktivitas perlu akun RPG, item, fasilitas, cooldown, atau syarat grup tertentu.\n`
+    cap += `⚠️ Mining, mancing, diving, logging, farming, adventure, dan explore juga memiliki mode *ilegal* dengan risiko.\n`
+    cap += `Ketik *${usedPrefix}rpg command* untuk melihat command RPG lainnya.`
+    return m.reply(cap)
+  }
 
   if (action === 'info') {
     return m.reply(
@@ -142,7 +234,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
   )
 }
 
-handler.help = ['rpg', 'rpg command', 'rpg info']
+handler.help = ['rpg', 'rpg aktivitas', 'rpg activity', 'rpg command', 'rpg info']
 handler.tags = ['rpg']
 handler.command = /^rpg$/i
 handler.group = true

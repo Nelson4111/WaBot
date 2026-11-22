@@ -3,6 +3,7 @@ import { sendRpgButtons, sendRpgRegistrationPrompt } from '../../lib/rpgActionBu
 import { getStorageAvailableSpace, isStorageFull, sendStorageFullNotice } from '../../lib/rpg-storage.js'
 import { getUserRPG, loadDB, saveDB } from '../../lib/waifuHelper.js'
 import { addRpgTrashToKarung, migrateRpgTrashToKarung, RPG_KARUNG_ITEMS } from '../../lib/rpg-karungData.js'
+import { getDifficultyProfile, scaleDifficultyCooldown, scaleDifficultyDropChance, scaleDifficultyIncome } from '../../lib/rpgDifficulty.js'
 
 const COOLDOWN = 30 * 1000
 
@@ -18,20 +19,26 @@ const handler = async (m, { conn, text, usedPrefix }) => {
   }
 
   const user = account.rpg
+  const difficulty = getDifficultyProfile(user)
   if (migrateRpgTrashToKarung(user)) await saveDB(db)
   if (isStorageFull(user, 'karung')) return sendStorageFullNotice(conn, m, user, 'karung', usedPrefix || '.')
 
   const now = Date.now()
-  const remaining = COOLDOWN - (now - (Number(user.lastMulung) || 0))
+  const cooldown = scaleDifficultyCooldown(user, COOLDOWN)
+  const remaining = cooldown - (now - (Number(user.lastMulung) || 0))
   if (remaining > 0) {
     return m.reply(`🗑️ Kamu masih mengumpulkan sampah. Coba lagi dalam *${Math.ceil(remaining / 1000)} detik*.`)
   }
 
-  const typeCount = 3 + Math.floor(Math.random() * 4)
+  const typeCount = Math.min(
+    RPG_KARUNG_ITEMS.length,
+    Math.max(1, Math.floor((3 + Math.floor(Math.random() * 4)) * difficulty.dropRate))
+  )
   const found = new Map()
   while (found.size < typeCount) {
     const item = RPG_KARUNG_ITEMS[Math.floor(Math.random() * RPG_KARUNG_ITEMS.length)]
-    found.set(item.id, { item, quantity: 1 + Math.floor(Math.random() * 4) })
+    const quantity = 1 + Math.floor(Math.random() * 4)
+    found.set(item.id, { item, quantity: Math.max(1, Math.floor(quantity * difficulty.dropRate)) })
   }
 
   let availableSpace = getStorageAvailableSpace(user, 'karung')
@@ -46,7 +53,9 @@ const handler = async (m, { conn, text, usedPrefix }) => {
     total += storedQuantity
     availableSpace -= storedQuantity
   }
-  const moneyReward = Math.random() < 0.2 ? rollMulungMoneyReward() : 0
+  const moneyReward = Math.random() < scaleDifficultyDropChance(user, 20) / 100
+    ? scaleDifficultyIncome(user, rollMulungMoneyReward())
+    : 0
   if (moneyReward) wdb.money[m.sender] = addRpgMoney(wdb.money[m.sender], moneyReward)
   user.lastMulung = now
   await saveDB(db)
@@ -61,7 +70,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
     ).join('') +
     (total < requestedTotal ? `\n> ↳ Ruang karung hampir penuh; sebagian sampah tidak tersimpan.\n` : '') +
     (moneyReward ? `\n> ↳ 💵 Kamu juga menemukan uang: *+Rp ${moneyReward.toLocaleString('id-ID')}*\n` : '') +
-    `\n> ↳ ⏳ Cooldown: 30 detik\n\n` +
+    `\n> ↳ ⏳ Cooldown: ${Math.ceil(cooldown / 1000)} detik\n\n` +
     `─━━━━━━━━━━━━━━─`
 
   return sendRpgButtons(conn, {

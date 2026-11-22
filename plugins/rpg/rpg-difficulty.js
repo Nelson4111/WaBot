@@ -14,11 +14,11 @@ import {
 import { isPremiumAccount } from '../../lib/rpgPremium.js'
 
 const DIFFICULTY_CHOICES = [
-  { key: 'peaceful', emoji: '🌿', description: 'Santai, regen HP, tanpa kriminal atau leaderboard' },
-  { key: 'easy', emoji: '🍃', description: 'Risiko dan cooldown lebih rendah, hadiah lebih kecil' },
+  { key: 'peaceful', emoji: '🌿', description: 'Regen HP; tanpa kriminal, leaderboard, atau kehilangan penghuni ke shelter' },
+  { key: 'easy', emoji: '🍃', description: 'Risiko shelter dan cooldown lebih rendah, hadiah lebih kecil' },
   { key: 'normal', emoji: '⚔️', description: 'Tantangan dan hadiah standar' },
-  { key: 'hardcore', emoji: '🔥', description: 'Hadiah standar, combat dan risiko lebih berat' },
-  { key: 'nightmare', emoji: '💀', description: 'Hadiah lebih besar, risiko dan cooldown ekstrem' }
+  { key: 'hardcore', emoji: '🔥', description: 'Risiko shelter dan combat lebih berat' },
+  { key: 'nightmare', emoji: '💀', description: 'Hadiah lebih besar, risiko shelter dan cooldown ekstrem' }
 ]
 
 function formatMultiplier(value) {
@@ -63,42 +63,56 @@ function getDifficultyComparison(key) {
     : 'Masuk → Tidak masuk'
 
   return [
-    `💰 Penghasilan: x${normal.income} → x${profile.income}`,
-    `✨ EXP: x${normal.xp} → x${profile.xp}`,
-    `💎 Drop rate: x${normal.dropRate} → x${profile.dropRate}`,
-    `⏱️ Cooldown aksi: x${normal.cooldown} → x${profile.cooldown}`,
-    `   Contoh cooldown normal 2 menit: ${formatDifficultyTime(2 * 60000)} → ${formatDifficultyTime(2 * 60000 * profile.cooldown)}`,
-    `🎁 Reset klaim Daily: Pukul 00.00 WIB → Pukul 00.00 WIB (tidak dipengaruhi difficulty)`,
-    `⚔️ Damage yang diberikan: ${percent(normal.damageDealt)} → ${percent(profile.damageDealt)}`,
-    `🛡️ Damage yang diterima: ${percent(normal.damageReceived)} → ${percent(profile.damageReceived)}`,
-    `💸 Kerugian uang saat jadi target kriminal: x${normal.crimeLoss} → x${profile.crimeLoss}`,
-    `🎲 Peluang gagal aktivitas: x${normal.activityFailure} → x${profile.activityFailure}`,
-    `🕵️ Peluang sukses kriminal: ${crime}`,
-    `🩹 Cooldown heal setelah mati: ${formatDifficultyTime(normal.deathHealCooldown)} → ${formatDifficultyTime(profile.deathHealCooldown)}`,
-    `❤️ Regenerasi HP otomatis: ${regeneration}`,
-    `🏅 Reward langka Guild/Dungeon: ${rareRewards}`,
-    `🏆 Leaderboard RPG: ${leaderboard}`
-  ].join('\n')
+    `📦 *HADIAH & PROGRES*\n` +
+      `> 💰 Penghasilan: x${normal.income} → x${profile.income}\n` +
+      `> ✨ EXP: x${normal.xp} → x${profile.xp}\n` +
+      `> 💎 Drop rate: x${normal.dropRate} → x${profile.dropRate}`,
+    `⏳ *WAKTU*\n` +
+      `> Cooldown aksi: x${normal.cooldown} → x${profile.cooldown}\n` +
+      `> Contoh cooldown 2 menit: ${formatDifficultyTime(2 * 60000)} → ${formatDifficultyTime(2 * 60000 * profile.cooldown)}\n` +
+      `> Reset klaim Daily: pukul 00.00 WIB (tidak dipengaruhi difficulty)`,
+    `⚔️ *COMBAT & RISIKO*\n` +
+      `> Damage diberikan: ${percent(normal.damageDealt)} → ${percent(profile.damageDealt)}\n` +
+      `> Damage diterima: ${percent(normal.damageReceived)} → ${percent(profile.damageReceived)}\n` +
+      `> Peluang gagal aktivitas: x${normal.activityFailure} → x${profile.activityFailure}\n` +
+      `> Kerugian uang saat jadi target kriminal: x${normal.crimeLoss} → x${profile.crimeLoss}\n` +
+      `> Peluang sukses kriminal: ${crime}`,
+    `🛟 *PERLINDUNGAN & FITUR MODE*\n` +
+      `> Risiko penghuni masuk shelter: x${normal.shelterRisk} → x${profile.shelterRisk}\n` +
+      `> Cooldown heal setelah mati: ${formatDifficultyTime(normal.deathHealCooldown)} → ${formatDifficultyTime(profile.deathHealCooldown)}\n` +
+      `> Regenerasi HP otomatis: ${regeneration}\n` +
+      `> Reward langka Guild/Dungeon: ${rareRewards}\n` +
+      `> Leaderboard RPG: ${leaderboard}`
+  ].join('\n\n')
 }
 
 function getGuide() {
   const modeDescriptions = {
-    peaceful: 'Pemulihan otomatis 1 HP/menit; kriminal dinonaktifkan dan tidak masuk leaderboard.',
-    easy: 'Mode berisiko rendah; reward langka misi Guild/Dungeon tidak tersedia.',
+    peaceful: 'Pemulihan otomatis 1 HP/menit; kriminal dan risiko kehilangan penghuni ke shelter dinonaktifkan, serta tidak masuk leaderboard.',
+    easy: 'Mode berisiko rendah; peluang penghuni masuk shelter lebih rendah dan reward langka misi Guild/Dungeon tidak tersedia.',
     normal: 'Semua modifier berada di nilai standar.',
-    hardcore: 'Kriminal lebih sulit; heal setelah mati memiliki jeda 30 menit.',
-    nightmare: 'Kriminal jauh lebih sulit; heal setelah mati memiliki jeda 2 jam.'
+    hardcore: 'Risiko penghuni masuk shelter lebih tinggi; kriminal lebih sulit dan heal setelah mati memiliki jeda 30 menit.',
+    nightmare: 'Risiko penghuni masuk shelter paling tinggi; kriminal jauh lebih sulit dan heal setelah mati memiliki jeda 2 jam.'
   }
   const modes = DIFFICULTY_CHOICES.map(({ key, emoji }) => {
     const profile = RPG_DIFFICULTIES[key]
     const crime = key === 'peaceful'
       ? 'Kriminal: tidak bisa'
       : `Peluang kriminal: ${profile.crimeSuccess < 0 ? `${profile.crimeSuccess * 100} poin` : 'standar'}`
-    return `${emoji} *${profile.name.toUpperCase()}*\n` +
-      `> 💰 Income / EXP / drop: x${profile.income} / x${profile.xp} / x${profile.dropRate}\n` +
-      `> ⏱️ Cooldown: x${profile.cooldown} • ⚔️ Damage keluar/diterima: ${formatMultiplier(profile.damageDealt)} / ${formatMultiplier(profile.damageReceived)}\n` +
-      `> 💸 Uang hilang saat jadi target: x${profile.crimeLoss} • 🎲 Risiko gagal: x${profile.activityFailure}\n` +
-      `> ${crime} • ${modeDescriptions[key]}`
+    return `${emoji} *${profile.name.toUpperCase()}*\n\n` +
+      `📦 *HADIAH & PROGRES*\n` +
+      `> 💰 Penghasilan: x${profile.income}\n` +
+      `> ✨ EXP: x${profile.xp}\n` +
+      `> 💎 Drop rate: x${profile.dropRate}\n\n` +
+      `⚔️ *COMBAT & RISIKO*\n` +
+      `> Damage keluar / diterima: ${formatMultiplier(profile.damageDealt)} / ${formatMultiplier(profile.damageReceived)}\n` +
+      `> Risiko gagal: x${profile.activityFailure}\n` +
+      `> Kerugian uang saat jadi target: x${profile.crimeLoss}\n` +
+      `> Risiko penghuni masuk shelter: x${profile.shelterRisk}\n\n` +
+      `⏳ *WAKTU & FITUR MODE*\n` +
+      `> Cooldown aksi: x${profile.cooldown}\n` +
+      `> ${crime}\n` +
+      `> ${modeDescriptions[key]}`
   })
   return `🎚️ *PANDUAN DIFFICULTY RPG*\n\n` +
     `${modes.join('\n\n')}\n\n` +
@@ -106,8 +120,9 @@ function getGuide() {
     `💡 *CARA MEMBACA EFEK*\n` +
     `> ↳ Income memengaruhi uang dan jumlah hadiah; EXP dan drop rate memengaruhi progres dan peluang item.\n` +
     `> ↳ Uang hilang berlaku saat kamu menjadi target kriminal. Risiko gagal dan damage berlaku pada aktivitas/combat yang menerapkan modifier tersebut.\n` +
+    `> ↳ Risiko shelter mengatur peluang anak, pet, atau ternak masuk shelter karena kelalaian; Peaceful menonaktifkannya.\n` +
     `> ↳ Easy dan Peaceful tidak mendapat hadiah langka tertentu dari misi Guild/Dungeon. Hanya Peaceful dikecualikan dari leaderboard.\n` +
-    `> ↳ Modifier hanya berlaku pada aksi RPG yang terhubung ke sistem difficulty; tidak semua fitur RPG mengubah hasil berdasarkan mode.\n` +
+    `> ↳ Fitur informasi, kosmetik, dan pengelolaan akun tidak mengubah hasil berdasarkan mode; aktivitas gameplay memakai modifier yang sesuai dengan hadiahnya, cooldown, combat, atau risikonya.\n` +
     `> ↳ Akun biasa mendapat 1 perubahan per minggu; Premium 2 perubahan. Kuota semua akun reset setiap Senin (WIB).`
 }
 
