@@ -11,6 +11,7 @@ import path from 'path'
 import { PassThrough } from 'stream'
 import archiver from 'archiver'
 import sharp from 'sharp'
+import { extractTimeRange, getVideoDuration, trimVideoBuffer, formatTrimPrompt } from '../../lib/videoTrim.js'
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
   // function react lokal khusus di plugin ini
@@ -35,17 +36,62 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     await react('🕒') // reaction mulai
 
-    let [packname, ...authorArr] = args.join` `.split`|`
-    packname = packname || global.stickpack || 'Avelia Pack'
-    let author = authorArr.join`|` || global.stickauth || 'Avelia'
+    const timeRange = extractTimeRange(args.join(' '), 10)
+    let [packname, ...authorArr] = (timeRange?.cleanText || args.join(' ')).split('|')
+    packname = (packname && packname.trim()) || global.stickpack || 'Avelia Pack'
+    let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'
     let sent = 0
 
     // 1. Unduh seluruh media terlebih dahulu sebelum pesan dihapus agar buffer aman
     const downloadedMedia = []
+    let pendingTrimSession = null
+
     for (const media of mediaList) {
-      if (/video/g.test(media.mime) && media.seconds > 10) continue
+      const isVid = /video/g.test(media.mime)
+      let seconds = media.seconds || 0
       const img = await media.download?.()
-      if (img) downloadedMedia.push({ img, mime: media.mime })
+      if (!img) continue
+
+      if (isVid && !seconds) {
+        seconds = await getVideoDuration(img)
+      }
+
+      if (isVid && timeRange) {
+        try {
+          const trimmed = await trimVideoBuffer(img, timeRange.start, timeRange.duration)
+          downloadedMedia.push({ img: trimmed, mime: media.mime })
+        } catch (eTrim) {
+          console.error('[STICKER TRIM ERROR]', eTrim)
+          downloadedMedia.push({ img, mime: media.mime })
+        }
+      } else if (isVid && seconds > 10) {
+        pendingTrimSession = {
+          buffer: img,
+          type: 'sticker',
+          chat: m.chat,
+          seconds,
+          maxDuration: 10,
+          packname,
+          author
+        }
+      } else {
+        downloadedMedia.push({ img, mime: media.mime })
+      }
+    }
+
+    if (pendingTrimSession && !downloadedMedia.length) {
+      conn.videoTrimSession = conn.videoTrimSession || {}
+      if (conn.videoTrimSession[m.sender]?.timeout) {
+        clearTimeout(conn.videoTrimSession[m.sender].timeout)
+      }
+      conn.videoTrimSession[m.sender] = {
+        ...pendingTrimSession,
+        timeout: setTimeout(() => {
+          delete conn.videoTrimSession[m.sender]
+        }, 120000).unref()
+      }
+      await react('✂️')
+      return m.reply(formatTrimPrompt(pendingTrimSession.seconds, 10, command))
     }
 
     if (!downloadedMedia.length) {
@@ -207,7 +253,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['sticker [packname|author]']
+handler.help = ['sticker [packname|author]', 'sticker <start> <end>']
 handler.tags = ['sticker']
 handler.command = /^s(tic?ker)?(gif)?$/i
 handler.register = false
@@ -516,7 +562,7 @@ function toStickerMedia(conn, message) {
   }
 }
 
-async function createStickerFromMedia(img, mime, packname, author) {
+export async function createStickerFromMedia(img, mime, packname, author) {
   if (/video/g.test(mime)) {
     let stiker = false
     try {

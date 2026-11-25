@@ -3,6 +3,7 @@ import { Sticker } from 'wa-sticker-formatter'
 import { ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
 import { sendAudioSticker } from '../../lib/audioSticker.js'
 import { status } from '../../lib/style.js'
+import { extractTimeRange, getVideoDuration, trimVideoBuffer, formatTrimPrompt } from '../../lib/videoTrim.js'
 
 let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   conn.stickerSoundSession = conn.stickerSoundSession || {}
@@ -46,9 +47,12 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         } else if (isImage) {
           await processAndSendSoundSticker(conn, m, mediaBuffer, session.buffer, args, false, false)
         } else if (isVideo) {
-          let merged = await mergeAudioVideo(mediaBuffer, session.buffer, 'mp4', 'mp3', 'mp4')
-          await processAndSendSoundSticker(conn, m, merged.data, session.buffer, args, true, false)
-          merged.delete().catch(() => {})
+          let vidBuffer = mediaBuffer
+          const vidDur = (quoted.msg || quoted).seconds || await getVideoDuration(mediaBuffer)
+          if (vidDur > 10) {
+            vidBuffer = await trimVideoBuffer(mediaBuffer, 0, 10)
+          }
+          await processAndSendSoundSticker(conn, m, vidBuffer, session.buffer, args, true, false)
         }
       } catch (err) {
         console.error('[Sticker Sound Reverse Pairing Error]:', err)
@@ -76,10 +80,12 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
           // Stiker asli dipasangkan langsung dengan audio baru (tanpa re-encode)
           await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, session.isAnimated, true)
         } else if (session.type === 'video') {
-          // Gabungkan video dengan audio kustom
-          let merged = await mergeAudioVideo(session.buffer, audioBuffer, 'mp4', 'mp3', 'mp4')
-          await processAndSendSoundSticker(conn, m, merged.data, audioBuffer, args, true, false)
-          merged.delete().catch(() => {})
+          let vidBuffer = session.buffer
+          const vidDur = session.seconds || await getVideoDuration(session.buffer)
+          if (vidDur > 10) {
+            vidBuffer = await trimVideoBuffer(session.buffer, 0, 10)
+          }
+          await processAndSendSoundSticker(conn, m, vidBuffer, audioBuffer, args, true, false)
         } else {
           // Foto dipasangkan dengan audio kustom
           await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, false, false)
@@ -230,31 +236,59 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   // 8. KASUS VIDEO (Mode Langsung): Pengguna membalas video bersuara (Instant Video Sound Sticker)
   if (isVideo) {
     let seconds = (quoted.msg || quoted).seconds || 0
-    if (seconds > 15) {
-      return m.reply(
-        `*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n` +
-        `> Durasi video maksimal adalah *𝟷𝟻 detik* untuk stiker bersuara.\n` +
-        `*╰───────────────*`
-      )
-    }
+    const timeRange = extractTimeRange(args.join(' '), 15)
 
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
     let videoBuffer = await quoted.download()
     if (!videoBuffer) return m.reply(status.error('Gagal mengunduh video.'))
 
+    if (!seconds) {
+      seconds = await getVideoDuration(videoBuffer)
+    }
+
+    // Jika video > 15 detik dan pengguna TIDAK menyertakan argumen rentang waktu
+    if (seconds > 15 && !timeRange) {
+      conn.videoTrimSession = conn.videoTrimSession || {}
+      if (conn.videoTrimSession[m.sender]?.timeout) {
+        clearTimeout(conn.videoTrimSession[m.sender].timeout)
+      }
+      conn.videoTrimSession[m.sender] = {
+        buffer: videoBuffer,
+        type: 'ssound',
+        chat: m.chat,
+        seconds,
+        maxDuration: 15,
+        args,
+        timeout: setTimeout(() => {
+          delete conn.videoTrimSession[m.sender]
+        }, 120000).unref()
+      }
+      await conn.sendMessage(m.chat, { react: { text: '✂️', key: m.key } }).catch(() => {})
+      return m.reply(formatTrimPrompt(seconds, 15, command, true))
+    }
+
     try {
-      // Ekstrak audio dari video asli
+      let finalVideo = videoBuffer
+      if (timeRange) {
+        finalVideo = await trimVideoBuffer(videoBuffer, timeRange.start, timeRange.duration)
+      } else if (seconds > 10) {
+        finalVideo = await trimVideoBuffer(videoBuffer, 0, 10)
+      }
+
+      // Ekstrak audio dari video asli PENUH (videoBuffer)
+      // PENTING: Musik TIDAK dipotong dengan durasi video, musik tetap utuh sesuai lagu aslinya!
       let audioResult = await ffmpeg(videoBuffer, [
         '-vn',
         '-c:a', 'libopus',
         '-b:a', '128k',
         '-vbr', 'on',
         '-ac', '1',
-        '-ar', '48000'
+        '-ar', '48000',
+        '-t', '90'
       ], 'mp4', 'ogg')
 
-      await processAndSendSoundSticker(conn, m, videoBuffer, audioResult.data, args, true, false)
+      await processAndSendSoundSticker(conn, m, finalVideo, audioResult.data, args, true, false)
       audioResult.delete().catch(() => {})
     } catch (err) {
       console.error('[Sticker Sound Error]:', err)
@@ -285,7 +319,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 /**
  * Helper untuk konversi stiker dan pengiriman stiker bersuara asli
  */
-async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, isVideo = true, isDirectSticker = false) {
+export async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, isVideo = true, isDirectSticker = false) {
   let [packname, ...authorArr] = (args || []).join(' ').split('|')
   packname = (packname && packname.trim()) || global.stickpack || 'Avelia Sound'
   let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'
@@ -327,7 +361,7 @@ async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, arg
   await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
 }
 
-handler.help = ['stikersuara', 'ssound [pair]']
+handler.help = ['stikersuara [start end]', 'ssound [pair|start end]']
 handler.tags = ['sticker']
 handler.command = /^(stikersuara|stikersound|ssound)$/i
 handler.limit = true

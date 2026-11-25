@@ -918,5 +918,13 @@
         "content":  "\u003e Bot kini otomatis mengirim notifikasi konfirmasi ke obrolan begitu selesai melakukan restart atau update sistem (.restart / .update / .update --restart). Dilengkapi durasi waktu reboot, status koneksi WhatsApp, dan visual card Zen Shinto estetik agar pengguna tahu bot telah aktif kembali.",
         "author":  "Nenel",
         "createdAt":  1795623040000
+    },
+    {
+        "id":  "26.5",
+        "section":  "STICKER",
+        "title":  "Pemotong Durasi Video Stiker (.s & .ssound)",
+        "content":  "\u003e Buat stiker biasa (.s) atau stiker bersuara (.ssound) dari video berdurasi panjang tanpa harus repot memotong video di galeri HP! Pada stiker bersuara (.ssound), pemotongan hanya diterapkan pada visual video agar stiker berputar ringan dan stabil, sementara audio/musik tetap diputar penuh sesuai audio aslinya tanpa terpotong.",
+        "author":  "Nenel",
+        "createdAt":  1795623100000
     }
 ]
