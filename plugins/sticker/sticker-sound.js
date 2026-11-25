@@ -1,7 +1,7 @@
 import { sticker } from '../../lib/sticker.js'
 import { Sticker } from 'wa-sticker-formatter'
-import { toPTT, ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
-import { extractWaveform } from '../../lib/voice-noteData.js'
+import { ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
+import { sendAudioSticker } from '../../lib/audioSticker.js'
 import { status } from '../../lib/style.js'
 
 let handler = async (m, { conn, text, args, usedPrefix, command }) => {
@@ -111,11 +111,11 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       if (session.type === 'video') {
         // Gabungkan video dengan audio kustom
         let merged = await mergeAudioVideo(session.buffer, audioBuffer, 'mp4', 'mp3', 'mp4')
-        await processAndSendSoundSticker(conn, m, merged.data, audioBuffer, args)
+        await processAndSendSoundSticker(conn, m, merged.data, audioBuffer, args, true)
         merged.delete().catch(() => {})
       } else {
         // Foto dipasangkan dengan audio kustom
-        await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args)
+        await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, false)
       }
     } catch (err) {
       console.error('[Sticker Sound Merge Error]:', err)
@@ -152,7 +152,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         '-ar', '48000'
       ], 'mp4', 'ogg')
 
-      await processAndSendSoundSticker(conn, m, videoBuffer, audioResult.data, args)
+      await processAndSendSoundSticker(conn, m, videoBuffer, audioResult.data, args, true)
       audioResult.delete().catch(() => {})
     } catch (err) {
       console.error('[Sticker Sound Error]:', err)
@@ -171,20 +171,21 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     `*┆* › Balas foto atau video dengan *${usedPrefix + command} pair*\n` +
     `*┆* › Lalu balas audio/VN dengan *${usedPrefix + command}*\n` +
     `*╰───────────────*\n\n` +
-    `> Stiker akan dikirimkan beserta pesan suara berdenyut resmi WhatsApp!`
+    `> Stiker dikirimkan sebagai *Stiker Bersuara Asli (Native WhatsApp Sound Sticker)*!\n` +
+    `> _Suara otomatis tersemat di stiker dan dapat diputar saat stiker ditekan._`
 
   m.reply(guideText)
 }
 
 /**
- * Helper untuk konversi stiker dan pengiriman companion voice note
+ * Helper untuk konversi stiker dan pengiriman stiker bersuara asli
  */
-async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args) {
+async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, isVideo = true) {
   let [packname, ...authorArr] = (args || []).join(' ').split('|')
   packname = (packname && packname.trim()) || global.stickpack || 'Avelia Sound'
   let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'
 
-  // 1. Buat WebP Sticker (Gambar Statis atau Animasi)
+  // 1. Buat WebP Sticker (Gambar Statis atau Animasi) dengan EXIF
   let stiker = false
   try {
     stiker = await sticker(mediaBuffer, false, packname, author)
@@ -207,34 +208,14 @@ async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, arg
 
   if (!stiker) throw new Error('Gagal mengonversi media ke stiker.')
 
-  // 2. Siapkan Opus PTT & Waveform Dynamic (64 bar)
-  let pttData = await toPTT(audioBuffer, 'mp3').catch(async () => {
-    return ffmpeg(audioBuffer, [
-      '-vn',
-      '-c:a', 'libopus',
-      '-b:a', '128k',
-      '-vbr', 'on',
-      '-ac', '1',
-      '-ar', '48000'
-    ], 'ogg', 'ogg')
-  })
-
-  let waveform = await extractWaveform(pttData.data).catch(() => null)
-
-  // 3. Kirim stiker terlebih dahulu
-  let sentSticker = await conn.sendMessage(m.chat, {
-    sticker: stiker
-  }, { quoted: m })
-
-  // 4. Kirim companion Voice Note (PTT) yang me-quote stiker
-  await conn.sendMessage(m.chat, {
-    audio: pttData.data,
-    mimetype: 'audio/ogg; codecs=opus',
-    ptt: true,
-    waveform: waveform ? new Uint8Array(waveform) : undefined
-  }, { quoted: sentSticker })
-
-  if (pttData.delete) pttData.delete().catch(() => {})
+  // 2. Kirim Native Sound Sticker (Single Message Payload)
+  await sendAudioSticker(conn, m.chat, {
+    sticker: stiker,
+    audio: audioBuffer,
+    packname,
+    author,
+    isAnimated: isVideo
+  }, m)
 
   await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
 }

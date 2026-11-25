@@ -882,8 +882,8 @@
     {
         "id":  "26.0",
         "section":  "STICKER",
-        "title":  "Stiker Bersuara dan Audio Companion",
-        "content":  "\u003e Buat stiker WhatsApp bersuara via .stikersuara atau .ssound. Balas video pendek untuk stiker animasi dengan companion Voice Note bergelombang suara (waveform dinamis), atau balas foto/video dengan .ssound pair lalu balas audio/VN untuk memasangkan suara ke foto/video tersebut.",
+        "title":  "Stiker Bersuara Asli (Native Sound Sticker)",
+        "content":  "\u003e Buat stiker WhatsApp bersuara asli via .stikersuara atau .ssound. Menggunakan enkripsi protokol stiker audio WhatsApp native (single message payload) sehingga suara tersemat langsung di stiker tanpa mengirim voice note terpisah. Balas video bersuara langsung atau pasangkan audio ke foto/video dengan .ssound pair lalu balas audio/VN!",
         "author":  "Nenel",
         "createdAt":  1795622800000
     },
