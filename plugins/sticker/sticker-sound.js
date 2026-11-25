@@ -1,4 +1,4 @@
-import { sticker } from '../../lib/sticker.js'
+import { sticker, directVideoToSticker } from '../../lib/sticker.js'
 import { Sticker } from 'wa-sticker-formatter'
 import { ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
 import { sendAudioSticker } from '../../lib/audioSticker.js'
@@ -92,10 +92,11 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
           } else if (isImage) {
             await processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, false, false)
           } else if (isVideo) {
-            let vidBuffer = mediaBuffer
             const vidDur = (quoted.msg || quoted).seconds || await getVideoDuration(mediaBuffer)
-            if (vidDur > 10) vidBuffer = await trimVideoBuffer(mediaBuffer, 0, 10)
-            await processAndSendSoundSticker(conn, m, vidBuffer, audioBuffer, args, true, false)
+            const { packname, author } = getStickerWatermark(args)
+            const stikerWebp = await directVideoToSticker(mediaBuffer, { startSec: 0, durationSec: Math.min(vidDur || 10, 10), packname, author })
+            await sendAudioSticker(conn, m.chat, { sticker: stikerWebp, audio: audioBuffer, packname, author, isAnimated: true }, m)
+            await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
           }
           return
         }
@@ -108,10 +109,11 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
           if (session.type === 'sticker') {
             await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, session.isAnimated, true)
           } else if (session.type === 'video') {
-            let vidBuffer = session.buffer
             const vidDur = session.seconds || await getVideoDuration(session.buffer)
-            if (vidDur > 10) vidBuffer = await trimVideoBuffer(session.buffer, 0, 10)
-            await processAndSendSoundSticker(conn, m, vidBuffer, audioBuffer, args, true, false)
+            const { packname, author } = getStickerWatermark(args)
+            const stikerWebp = await directVideoToSticker(session.buffer, { startSec: 0, durationSec: Math.min(vidDur || 10, 10), packname, author })
+            await sendAudioSticker(conn, m.chat, { sticker: stikerWebp, audio: audioBuffer, packname, author, isAnimated: true }, m)
+            await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
           } else {
             await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, false, false)
           }
@@ -179,41 +181,58 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       const cleanArgsText = args.filter(a => !TIKTOK_URL_REGEX.test(a) && !/^(audio|suara|sound|mp3|lagu)$/i.test(a)).join(' ')
       const customTimeRange = extractTimeRange(cleanArgsText, 10)
 
-      let finalVideo = videoBuffer
+      let startSec = 0
+      let maxVisualSec = Math.min(vidDur || 10, 10)
       if (customTimeRange) {
-        finalVideo = await trimVideoBuffer(videoBuffer, customTimeRange.start, customTimeRange.duration)
-      } else {
-        // Otomatis dipotong dari detik 0 hingga maksimal 10 detik agar stiker langsung jadi tanpa perlu tanya/prompt lagi!
-        const maxVisualSec = Math.min(vidDur || 10, 10)
-        if (vidDur > 10 || vidDur === 0) {
-          finalVideo = await trimVideoBuffer(videoBuffer, 0, maxVisualSec)
+        startSec = customTimeRange.start
+        maxVisualSec = customTimeRange.duration
+      }
+
+      const { packname, author } = getStickerWatermark(args)
+
+      // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan tanpa transcode MP4)
+      const audioPromise = (async () => {
+        let audioBuffer = null
+        if (res.music) {
+          try {
+            audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
+          } catch (e) {
+            console.warn('[TikTok Music Fetch Failed, fallback to video audio]', e.message)
+          }
         }
-      }
-
-      // Ekstrak Audio TikTok Penuh (sampai 90 detik, musik tidak terpotong 10 detik!)
-      let audioBuffer = null
-      if (res.music) {
-        try {
-          audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
-        } catch (e) {
-          console.warn('[TikTok Music Fetch Failed, fallback to video audio]', e.message)
+        if (!audioBuffer) {
+          const audioResult = await ffmpeg(videoBuffer, [
+            '-vn',
+            '-c:a', 'libopus',
+            '-b:a', '128k',
+            '-vbr', 'on',
+            '-ac', '1',
+            '-ar', '48000',
+            '-t', '90'
+          ], 'mp4', 'ogg')
+          audioBuffer = audioResult.data
         }
-      }
+        return audioBuffer
+      })()
 
-      if (!audioBuffer) {
-        const audioResult = await ffmpeg(videoBuffer, [
-          '-vn',
-          '-c:a', 'libopus',
-          '-b:a', '128k',
-          '-vbr', 'on',
-          '-ac', '1',
-          '-ar', '48000',
-          '-t', '90'
-        ], 'mp4', 'ogg')
-        audioBuffer = audioResult.data
-      }
+      const stickerPromise = directVideoToSticker(videoBuffer, {
+        startSec,
+        durationSec: maxVisualSec,
+        packname,
+        author
+      })
 
-      await processAndSendSoundSticker(conn, m, finalVideo, audioBuffer, args, true, false)
+      const [audioBuffer, stikerWebp] = await Promise.all([audioPromise, stickerPromise])
+
+      await sendAudioSticker(conn, m.chat, {
+        sticker: stikerWebp,
+        audio: audioBuffer,
+        packname,
+        author,
+        isAnimated: true
+      }, m)
+
+      await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
       return
 
     } catch (err) {
@@ -240,12 +259,11 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         } else if (isImage) {
           await processAndSendSoundSticker(conn, m, mediaBuffer, session.buffer, args, false, false)
         } else if (isVideo) {
-          let vidBuffer = mediaBuffer
           const vidDur = (quoted.msg || quoted).seconds || await getVideoDuration(mediaBuffer)
-          if (vidDur > 10) {
-            vidBuffer = await trimVideoBuffer(mediaBuffer, 0, 10)
-          }
-          await processAndSendSoundSticker(conn, m, vidBuffer, session.buffer, args, true, false)
+          const { packname, author } = getStickerWatermark(args)
+          const stikerWebp = await directVideoToSticker(mediaBuffer, { startSec: 0, durationSec: Math.min(vidDur || 10, 10), packname, author })
+          await sendAudioSticker(conn, m.chat, { sticker: stikerWebp, audio: session.buffer, packname, author, isAnimated: true }, m)
+          await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
         }
       } catch (err) {
         console.error('[Sticker Sound Reverse Pairing Error]:', err)
@@ -273,12 +291,11 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
           // Stiker asli dipasangkan langsung dengan audio baru (tanpa re-encode)
           await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, session.isAnimated, true)
         } else if (session.type === 'video') {
-          let vidBuffer = session.buffer
           const vidDur = session.seconds || await getVideoDuration(session.buffer)
-          if (vidDur > 10) {
-            vidBuffer = await trimVideoBuffer(session.buffer, 0, 10)
-          }
-          await processAndSendSoundSticker(conn, m, vidBuffer, audioBuffer, args, true, false)
+          const { packname, author } = getStickerWatermark(args)
+          const stikerWebp = await directVideoToSticker(session.buffer, { startSec: 0, durationSec: Math.min(vidDur || 10, 10), packname, author })
+          await sendAudioSticker(conn, m.chat, { sticker: stikerWebp, audio: audioBuffer, packname, author, isAnimated: true }, m)
+          await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
         } else {
           // Foto dipasangkan dengan audio kustom
           await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, false, false)
@@ -462,27 +479,38 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     }
 
     try {
-      let finalVideo = videoBuffer
-      if (timeRange) {
-        finalVideo = await trimVideoBuffer(videoBuffer, timeRange.start, timeRange.duration)
-      } else if (seconds > 6) {
-        finalVideo = await trimVideoBuffer(videoBuffer, 0, 6)
-      }
+      let startSec = timeRange ? timeRange.start : 0
+      let durationSec = timeRange ? timeRange.duration : Math.min(seconds || 6, 6)
+      const { packname, author } = getStickerWatermark(args)
 
-      // Ekstrak audio dari video asli PENUH (videoBuffer)
-      // PENTING: Musik TIDAK dipotong dengan durasi video, musik tetap utuh sesuai lagu aslinya!
-      let audioResult = await ffmpeg(videoBuffer, [
-        '-vn',
-        '-c:a', 'libopus',
-        '-b:a', '128k',
-        '-vbr', 'on',
-        '-ac', '1',
-        '-ar', '48000',
-        '-t', '90'
-      ], 'mp4', 'ogg')
+      // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan tanpa transcode MP4)
+      const [audioBuffer, stikerWebp] = await Promise.all([
+        ffmpeg(videoBuffer, [
+          '-vn',
+          '-c:a', 'libopus',
+          '-b:a', '128k',
+          '-vbr', 'on',
+          '-ac', '1',
+          '-ar', '48000',
+          '-t', '90'
+        ], 'mp4', 'ogg').then(res => res.data),
+        directVideoToSticker(videoBuffer, {
+          startSec,
+          durationSec,
+          packname,
+          author
+        })
+      ])
 
-      await processAndSendSoundSticker(conn, m, finalVideo, audioResult.data, args, true, false)
-      audioResult.delete().catch(() => {})
+      await sendAudioSticker(conn, m.chat, {
+        sticker: stikerWebp,
+        audio: audioBuffer,
+        packname,
+        author,
+        isAnimated: true
+      }, m)
+
+      await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
     } catch (err) {
       console.error('[Sticker Sound Error]:', err)
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})

@@ -1,7 +1,9 @@
 import { ffmpeg } from '../../lib/converter.js'
 import { extractTimeRange, trimVideoBuffer } from '../../lib/videoTrim.js'
-import { processAndSendSoundSticker } from './sticker-sound.js'
+import { processAndSendSoundSticker, getStickerWatermark } from './sticker-sound.js'
 import { createStickerFromMedia } from './sticker-sticker.js'
+import { directVideoToSticker } from '../../lib/sticker.js'
+import { sendAudioSticker } from '../../lib/audioSticker.js'
 import { status, toSmallNum } from '../../lib/style.js'
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
@@ -105,27 +107,43 @@ handler.before = async function (m, { conn }) {
   await targetConn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
   try {
-    const trimmed = await trimVideoBuffer(session.buffer, range.start, range.duration)
-
     if (session.type === 'ssound') {
-      // Ekstrak audio PENUH dari video asli (session.buffer)
-      // Hanya video yang dipotong menjadi stiker animasi, musik tetap utuh sesuai lagu aslinya!
-      let audioResult = await ffmpeg(session.buffer, [
-        '-vn',
-        '-c:a', 'libopus',
-        '-b:a', '128k',
-        '-vbr', 'on',
-        '-ac', '1',
-        '-ar', '48000',
-        '-t', '90'
-      ], 'mp4', 'ogg')
+      const { packname, author } = getStickerWatermark(session.args || [])
+      // PARALEL: Audio penuh & Direct 1-Pass WebP
+      const [audioBuffer, stikerWebp] = await Promise.all([
+        ffmpeg(session.buffer, [
+          '-vn',
+          '-c:a', 'libopus',
+          '-b:a', '128k',
+          '-vbr', 'on',
+          '-ac', '1',
+          '-ar', '48000',
+          '-t', '90'
+        ], 'mp4', 'ogg').then(res => res.data),
+        directVideoToSticker(session.buffer, {
+          startSec: range.start,
+          durationSec: range.duration,
+          packname,
+          author
+        })
+      ])
 
-      await processAndSendSoundSticker(targetConn, m, trimmed, audioResult.data, session.args || [], true, false)
-      audioResult.delete().catch(() => {})
+      await sendAudioSticker(targetConn, m.chat, {
+        sticker: stikerWebp,
+        audio: audioBuffer,
+        packname,
+        author,
+        isAnimated: true
+      }, m)
       await targetConn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
     } else {
-      // Konversi video hasil potongan menjadi stiker biasa
-      const stiker = await createStickerFromMedia(trimmed, 'video/mp4', session.packname, session.author)
+      // Konversi video hasil potongan menjadi stiker biasa (Direct 1-Pass)
+      const stiker = await directVideoToSticker(session.buffer, {
+        startSec: range.start,
+        durationSec: range.duration,
+        packname: session.packname || global.stickpack || 'Avelia Pack',
+        author: session.author || global.stickauth || 'Avelia'
+      })
       if (stiker) {
         const isAnim = Buffer.isBuffer(stiker) && stiker.includes('ANIM')
         await targetConn.sendMessage(m.chat, { sticker: stiker, isAnimated: isAnim }, { quoted: m })

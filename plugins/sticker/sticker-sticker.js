@@ -1,4 +1,4 @@
-import { sticker, addExif } from '../../lib/sticker.js'
+import { sticker, addExif, directVideoToSticker } from '../../lib/sticker.js'
 import uploadFile from '../../lib/uploadFile.js'
 import { Sticker } from 'wa-sticker-formatter'
 import { sendDualGroupMessage } from '../../lib/dual-group-message.js'
@@ -58,8 +58,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
       if (isVid && timeRange) {
         try {
-          const trimmed = await trimVideoBuffer(img, timeRange.start, timeRange.duration)
-          downloadedMedia.push({ img: trimmed, mime: media.mime })
+          const directStiker = await directVideoToSticker(img, {
+            startSec: timeRange.start,
+            durationSec: timeRange.duration,
+            packname,
+            author
+          })
+          downloadedMedia.push({ img: directStiker, mime: 'image/webp', isPrebuiltSticker: true })
         } catch (eTrim) {
           console.error('[STICKER TRIM ERROR]', eTrim)
           downloadedMedia.push({ img, mime: media.mime })
@@ -300,7 +305,7 @@ async function sendStickerPack(conn, m, downloadedMedia, packname, author, targe
 
   for (let i = 0; i < downloadedMedia.length; i++) {
     const item = downloadedMedia[i]
-    const stiker = await createStickerFromMedia(item.img, item.mime, packname, author)
+    const stiker = item.isPrebuiltSticker ? item.img : await createStickerFromMedia(item.img, item.mime, packname, author)
     if (!stiker) continue
 
     const isAnimated = /video/g.test(item.mime) || isWebpAnimated(stiker)
@@ -437,7 +442,7 @@ async function sendStickerPack(conn, m, downloadedMedia, packname, author, targe
 async function sendIndividualStickers(conn, m, downloadedMedia, packname, author, targetJid, cleanTargetJid, userTag) {
   let sent = 0
   for (const item of downloadedMedia) {
-    const stiker = await createStickerFromMedia(item.img, item.mime, packname, author)
+    const stiker = item.isPrebuiltSticker ? item.img : await createStickerFromMedia(item.img, item.mime, packname, author)
     if (!stiker) continue
 
     const isAnim = /video/g.test(item.mime) || (Buffer.isBuffer(stiker) && stiker.includes('ANIM'))
