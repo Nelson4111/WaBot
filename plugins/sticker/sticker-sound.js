@@ -513,12 +513,35 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 }
 
 /**
+ * Helper untuk parsing watermark stiker (packname & author) secara bersih tanpa menyertakan URL atau keyword
+ */
+export function getStickerWatermark(args = []) {
+  const raw = Array.isArray(args) ? args.join(' ') : String(args || '')
+  let clean = raw
+    .replace(/(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?tiktok\.com\/[^\s]+/gi, '')
+    .replace(/https?:\/\/[^\s]+/gi, '')
+    .replace(/\b(audio|suara|sound|mp3|lagu|pair|custom|gabung)\b/gi, '')
+    .trim()
+
+  const tr = extractTimeRange(clean, 10)
+  if (tr && tr.cleanText !== undefined) {
+    clean = tr.cleanText.trim()
+  } else if (/^\d{1,2}(?:\s+\d{1,2}|[-~–]\d{1,2})?$/.test(clean)) {
+    clean = ''
+  }
+
+  let [packname, ...authorArr] = clean.split('|')
+  packname = (packname && packname.trim()) || global.stickpack || 'Avelia Sound'
+  let author = (authorArr.length && authorArr.join('|').trim()) || global.stickauth || 'Avelia'
+
+  return { packname, author }
+}
+
+/**
  * Helper untuk konversi stiker dan pengiriman stiker bersuara asli
  */
 export async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, isVideo = true, isDirectSticker = false) {
-  let [packname, ...authorArr] = (args || []).join(' ').split('|')
-  packname = (packname && packname.trim()) || global.stickpack || 'Avelia Sound'
-  let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'
+  const { packname, author } = getStickerWatermark(args)
 
   let stiker = mediaBuffer
   if (!isDirectSticker) {
