@@ -1,4 +1,5 @@
 import { sticker } from '../../lib/sticker.js'
+import { Sticker } from 'wa-sticker-formatter'
 import { toPTT, ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
 import { extractWaveform } from '../../lib/voice-noteData.js'
 import { status } from '../../lib/style.js'
@@ -19,46 +20,80 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   const quoted = m.quoted ? m.quoted : m
   const mime = (quoted.msg || quoted).mimetype || quoted.mediaType || ''
   const isVideo = /video|gif/.test(mime)
+  const isImage = /image/.test(mime) && !/webp/.test(mime)
   const isAudio = /audio/.test(mime)
 
-  // 2. Mode Pairing: Pengguna membalas video dengan argumen "pair" / "custom"
+  // 2. Mode Pairing: Pengguna membalas Video atau Foto dengan argumen "pair" / "custom"
   const isPairMode = (args[0] === 'pair' || args[0] === 'custom' || args[0] === 'gabung')
 
-  if (isVideo && isPairMode) {
-    let videoBuffer = await quoted.download()
-    if (!videoBuffer) return m.reply(status.error('Gagal mengunduh video.'))
+  if ((isVideo && isPairMode) || (isImage && isPairMode)) {
+    let mediaBuffer = await quoted.download()
+    if (!mediaBuffer) return m.reply(status.error(`Gagal mengunduh ${isVideo ? 'video' : 'foto'}.`))
 
     if (conn.stickerSoundSession[m.sender]) {
       clearTimeout(conn.stickerSoundSession[m.sender].timeout)
     }
 
     conn.stickerSoundSession[m.sender] = {
-      video: videoBuffer,
+      buffer: mediaBuffer,
+      type: isVideo ? 'video' : 'image',
       timeout: setTimeout(() => {
         delete conn.stickerSoundSession[m.sender]
-      }, 60000)
+      }, 60000).unref()
     }
 
+    const mediaLabel = isVideo ? 'ᴠ ɪ ᴅ ᴇ ᴏ' : 'ꜰ ᴏ ᴛ ᴏ'
     const caption = `*──  ୨୧ ✧ STIKER BERSUARA ✧ ୨୧  ──*\n\n` +
-      `*╭  〔 ⧗ ᴠ ɪ ᴅ ᴇ ᴏ  ᴛ ᴇ ʀ ꜱ ɪ ᴍ ᴘ ᴀ ɴ 〕*\n` +
+      `*╭  〔 ⧗ ${mediaLabel}  ᴛ ᴇ ʀ ꜱ ɪ ᴍ ᴘ ᴀ ɴ 〕*\n` +
       `*┆* ⟡ ꜱᴛᴀᴛᴜꜱ   : *Tersimpan Sementara* 𝜚\n` +
       `*┆* ⏱ ᴅᴜʀᴀꜱɪ   : *𝟼𝟶 Detik*\n` +
       `*┆* ✦ ᴘᴇᴛᴜɴᴊᴜᴋ : *Balas Audio / Voice Note*\n` +
       `*╰───────────────*\n\n` +
-      `> Silakan balas file audio atau Voice Note dengan perintah *${usedPrefix + command}* untuk memasangkan suaranya ke video ini!\n` +
+      `> Silakan balas file audio atau Voice Note dengan perintah *${usedPrefix + command}* untuk memasangkan suaranya ke ${isVideo ? 'video' : 'foto'} ini!\n` +
       `> _Ketik *${usedPrefix + command} batal* jika ingin membatalkan._`
 
     return m.reply(caption)
   }
 
-  // 3. Mode Pairing Step 2: Pengguna membalas audio saat ada video di session
+  // 3. Jika pengguna membalas Foto langsung tanpa keyword "pair"
+  // Karena foto statis tidak punya audio asli, otomatis simpan ke antrean pairing
+  if (isImage) {
+    let mediaBuffer = await quoted.download()
+    if (!mediaBuffer) return m.reply(status.error('Gagal mengunduh foto.'))
+
+    if (conn.stickerSoundSession[m.sender]) {
+      clearTimeout(conn.stickerSoundSession[m.sender].timeout)
+    }
+
+    conn.stickerSoundSession[m.sender] = {
+      buffer: mediaBuffer,
+      type: 'image',
+      timeout: setTimeout(() => {
+        delete conn.stickerSoundSession[m.sender]
+      }, 60000).unref()
+    }
+
+    const caption = `*──  ୨୧ ✧ STIKER BERSUARA ✧ ୨୧  ──*\n\n` +
+      `*╭  〔 ℹ ꜰ ᴏ ᴛ ᴏ  ᴛ ᴇ ʀ ꜱ ɪ ᴍ ᴘ ᴀ ɴ 〕*\n` +
+      `*┆* ⟡ ꜱᴛᴀᴛᴜꜱ   : *Tersimpan Otomatis* 𝜚\n` +
+      `*┆* ⏱ ᴅᴜʀᴀꜱɪ   : *𝟼𝟶 Detik*\n` +
+      `*┆* ✦ ᴘᴇᴛᴜɴᴊᴜᴋ : *Balas Audio / Voice Note*\n` +
+      `*╰───────────────*\n\n` +
+      `> Foto tidak memiliki audio asli, sehingga otomatis disimpan dalam antrean pairing.\n` +
+      `> Sekarang, silakan balas audio atau Voice Note dengan *${usedPrefix + command}* untuk memasangkan suaranya ke stiker foto ini!\n` +
+      `> _Ketik *${usedPrefix + command} batal* jika ingin membatalkan._`
+
+    return m.reply(caption)
+  }
+
+  // 4. Mode Pairing Step 2: Pengguna membalas audio saat ada video/foto di session
   if (isAudio) {
     const session = conn.stickerSoundSession[m.sender]
     if (!session) {
       return m.reply(
         `*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n` +
-        `> Kamu belum memilih video untuk dipasangkan dengan suara ini.\n` +
-        `> Silakan balas video terlebih dahulu dengan perintah:\n` +
+        `> Kamu belum memilih video atau foto untuk dipasangkan dengan suara ini.\n` +
+        `> Silakan balas video atau foto terlebih dahulu dengan perintah:\n` +
         `> › *${usedPrefix + command} pair*\n` +
         `*╰───────────────*`
       )
@@ -73,19 +108,24 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     if (!audioBuffer) return m.reply(status.error('Gagal mengunduh audio.'))
 
     try {
-      // Gabungkan video sesi dengan audio yang dibalas
-      let merged = await mergeAudioVideo(session.video, audioBuffer, 'mp4', 'mp3', 'mp4')
-      await processAndSendSoundSticker(conn, m, merged.data, audioBuffer, args)
-      merged.delete().catch(() => {})
+      if (session.type === 'video') {
+        // Gabungkan video dengan audio kustom
+        let merged = await mergeAudioVideo(session.buffer, audioBuffer, 'mp4', 'mp3', 'mp4')
+        await processAndSendSoundSticker(conn, m, merged.data, audioBuffer, args)
+        merged.delete().catch(() => {})
+      } else {
+        // Foto dipasangkan dengan audio kustom
+        await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args)
+      }
     } catch (err) {
       console.error('[Sticker Sound Merge Error]:', err)
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
-      m.reply(status.error('Gagal menggabungkan audio dengan video. Pastikan format didukung.'))
+      m.reply(status.error('Gagal memproses stiker bersuara. Pastikan format media didukung.'))
     }
     return
   }
 
-  // 4. Mode Langsung: Pengguna membalas video bersuara (Instant Sticker + Audio Companion)
+  // 5. Mode Langsung: Pengguna membalas video bersuara (Instant Sticker + Audio Companion)
   if (isVideo) {
     let seconds = (quoted.msg || quoted).seconds || 0
     if (seconds > 15) {
@@ -122,16 +162,16 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     return
   }
 
-  // 5. Pesan panduan jika command dipanggil tanpa media
+  // 6. Pesan panduan jika command dipanggil tanpa media
   const guideText = `*──  ୨୧ ✧ STIKER BERSUARA ✧ ୨୧  ──*\n\n` +
     `*╭  〔 ✦ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*\n` +
     `*┆* ⟡ ᴍᴏᴅᴇ 𝟷 : *Balas Video Bersuara*\n` +
     `*┆* › Ketik *${usedPrefix + command}*\n` +
-    `*┆* ⟡ ᴍᴏᴅᴇ 𝟸 : *Pasang Audio Kustom*\n` +
-    `*┆* › Balas video dengan *${usedPrefix + command} pair*\n` +
+    `*┆* ⟡ ᴍᴏᴅᴇ 𝟸 : *Pasang Suara ke Foto / Video*\n` +
+    `*┆* › Balas foto atau video dengan *${usedPrefix + command} pair*\n` +
     `*┆* › Lalu balas audio/VN dengan *${usedPrefix + command}*\n` +
     `*╰───────────────*\n\n` +
-    `> Stiker animasi akan dikirimkan beserta pesan suara berdenyut resmi WhatsApp!`
+    `> Stiker akan dikirimkan beserta pesan suara berdenyut resmi WhatsApp!`
 
   m.reply(guideText)
 }
@@ -139,14 +179,33 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 /**
  * Helper untuk konversi stiker dan pengiriman companion voice note
  */
-async function processAndSendSoundSticker(conn, m, videoBuffer, audioBuffer, args) {
+async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args) {
   let [packname, ...authorArr] = (args || []).join(' ').split('|')
   packname = (packname && packname.trim()) || global.stickpack || 'Avelia Sound'
   let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'
 
-  // 1. Buat WebP Animated Sticker
-  let stiker = await sticker(videoBuffer, false, packname, author)
-  if (!stiker) throw new Error('Gagal mengonversi video ke stiker.')
+  // 1. Buat WebP Sticker (Gambar Statis atau Animasi)
+  let stiker = false
+  try {
+    stiker = await sticker(mediaBuffer, false, packname, author)
+  } catch (e) {
+    // fallback jika gagal
+  }
+
+  if (!stiker) {
+    try {
+      stiker = await (new Sticker(mediaBuffer, {
+        type: 'full',
+        pack: packname,
+        author: author,
+        quality: 70
+      })).toBuffer()
+    } catch (e) {
+      console.error('Sticker fallback error:', e)
+    }
+  }
+
+  if (!stiker) throw new Error('Gagal mengonversi media ke stiker.')
 
   // 2. Siapkan Opus PTT & Waveform Dynamic (64 bar)
   let pttData = await toPTT(audioBuffer, 'mp3').catch(async () => {

@@ -883,7 +883,7 @@
         "id":  "26.0",
         "section":  "STICKER",
         "title":  "Stiker Bersuara dan Audio Companion",
-        "content":  "\u003e Buat stiker animasi WhatsApp bersuara via .stikersuara atau .ssound. Balas video pendek untuk stiker dengan companion Voice Note bergelombang suara (waveform dinamis), atau balas video dengan .ssound pair lalu balas audio/VN untuk menyatukan video dengan suara kustom.",
+        "content":  "\u003e Buat stiker WhatsApp bersuara via .stikersuara atau .ssound. Balas video pendek untuk stiker animasi dengan companion Voice Note bergelombang suara (waveform dinamis), atau balas foto/video dengan .ssound pair lalu balas audio/VN untuk memasangkan suara ke foto/video tersebut.",
         "author":  "Nenel",
         "createdAt":  1795622800000
     },
