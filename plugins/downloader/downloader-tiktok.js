@@ -581,4 +581,5 @@ handler.command = /^(tt|tiktok|ttsearch)$/i
 handler.limit = true
 handler.register = true
 
+export { getTikTok, downloadBuffer, expandUrl }
 export default handler

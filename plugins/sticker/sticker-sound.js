@@ -4,6 +4,9 @@ import { ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
 import { sendAudioSticker } from '../../lib/audioSticker.js'
 import { status } from '../../lib/style.js'
 import { extractTimeRange, getVideoDuration, trimVideoBuffer, formatTrimPrompt } from '../../lib/videoTrim.js'
+import { getTikTok, downloadBuffer } from '../downloader/downloader-tiktok.js'
+
+const TIKTOK_URL_REGEX = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?tiktok\.com\/[^\s]+/i
 
 let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   conn.stickerSoundSession = conn.stickerSoundSession || {}
@@ -30,7 +33,197 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   const isPairMode = (args[0] === 'pair' || args[0] === 'custom' || args[0] === 'gabung')
   const session = conn.stickerSoundSession[m.sender]
 
-  // 3. KASUS KHUSUS: Jika sesi aktif menyimpan AUDIO dan pengguna sekarang membalas Stiker, Foto, atau Video
+  // 3. DETEKSI LINK TIKTOK (Dari teks perintah maupun pesan yang di-quote)
+  const rawText = text || ''
+  const quotedText = m.quoted ? (m.quoted.text || '') : ''
+  const combinedText = [rawText, quotedText].filter(Boolean).join(' ')
+  const ttMatch = combinedText.match(TIKTOK_URL_REGEX)
+
+  if (ttMatch) {
+    let ttUrl = ttMatch[0].trim()
+    if (!/^https?:\/\//i.test(ttUrl)) ttUrl = 'https://' + ttUrl
+
+    // Cek apakah pengguna menginginkan HANYA audio TikTok (.ssound audio <link> / .ssound <link> audio)
+    const isAudioOnly = args.some(arg => /^(audio|suara|sound|mp3|lagu)$/i.test(arg))
+
+    await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
+
+    try {
+      const res = await getTikTok(ttUrl)
+
+      // ── Sub-kasus 3A: Mode Audio-Only TikTok ──────────────────────
+      if (isAudioOnly) {
+        let audioBuffer = null
+        if (res.music) {
+          try {
+            audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
+          } catch (e) {
+            console.warn('[TikTok Audio Direct Failed, will fallback to video audio]', e.message)
+          }
+        }
+
+        if (!audioBuffer && res.play) {
+          const vidBuf = await downloadBuffer(res.play, res.referer || 'https://www.tiktok.com/')
+          const audioResult = await ffmpeg(vidBuf, [
+            '-vn',
+            '-c:a', 'libopus',
+            '-b:a', '128k',
+            '-vbr', 'on',
+            '-ac', '1',
+            '-ar', '48000',
+            '-t', '90'
+          ], 'mp4', 'ogg')
+          audioBuffer = audioResult.data
+        }
+
+        if (!audioBuffer) {
+          await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+          return m.reply(status.error('Gagal mengambil audio dari tautan TikTok tersebut.'))
+        }
+
+        // 3A.1 Jika pengguna membalas Stiker / Foto / Video secara bersamaan
+        if (isSticker || isImage || isVideo) {
+          let mediaBuffer = await quoted.download()
+          if (!mediaBuffer) return m.reply(status.error('Gagal mengunduh media yang dibalas.'))
+
+          if (isSticker) {
+            const isAnimated = Boolean(quoted.msg?.isAnimated || mediaBuffer.includes('ANIM'))
+            await processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, isAnimated, true)
+          } else if (isImage) {
+            await processAndSendSoundSticker(conn, m, mediaBuffer, audioBuffer, args, false, false)
+          } else if (isVideo) {
+            let vidBuffer = mediaBuffer
+            const vidDur = (quoted.msg || quoted).seconds || await getVideoDuration(mediaBuffer)
+            if (vidDur > 10) vidBuffer = await trimVideoBuffer(mediaBuffer, 0, 10)
+            await processAndSendSoundSticker(conn, m, vidBuffer, audioBuffer, args, true, false)
+          }
+          return
+        }
+
+        // 3A.2 Jika sudah ada sesi media visual aktif di antrean
+        if (session && (session.type === 'sticker' || session.type === 'image' || session.type === 'video')) {
+          clearTimeout(session.timeout)
+          delete conn.stickerSoundSession[m.sender]
+
+          if (session.type === 'sticker') {
+            await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, session.isAnimated, true)
+          } else if (session.type === 'video') {
+            let vidBuffer = session.buffer
+            const vidDur = session.seconds || await getVideoDuration(session.buffer)
+            if (vidDur > 10) vidBuffer = await trimVideoBuffer(session.buffer, 0, 10)
+            await processAndSendSoundSticker(conn, m, vidBuffer, audioBuffer, args, true, false)
+          } else {
+            await processAndSendSoundSticker(conn, m, session.buffer, audioBuffer, args, false, false)
+          }
+          return
+        }
+
+        // 3A.3 Belum ada media: Simpan audio TikTok ke antrean sesi
+        if (conn.stickerSoundSession[m.sender]) {
+          clearTimeout(conn.stickerSoundSession[m.sender].timeout)
+        }
+
+        conn.stickerSoundSession[m.sender] = {
+          buffer: audioBuffer,
+          type: 'audio',
+          title: res.title,
+          timeout: setTimeout(() => {
+            delete conn.stickerSoundSession[m.sender]
+          }, 60000).unref()
+        }
+
+        const caption = `*──  ୨୧ ✧ STIKER BERSUARA ✧ ୨୧  ──*\n\n` +
+          `*╭  〔 🎵 ᴀ ᴜ ᴅ ɪ ᴏ  ᴛ ɪ ᴋ ᴛ ᴏ ᴋ 〕*\n` +
+          `*┆* ⟡ ᴊᴜᴅᴜʟ   : *${res.title || 'TikTok Audio'}*\n` +
+          `*┆* ⟡ ꜱᴛᴀᴛᴜꜱ   : *Tersimpan Otomatis* 𝜚\n` +
+          `*┆* ⏱ ᴅᴜʀᴀꜱɪ   : *𝟼𝟶 Detik*\n` +
+          `*┆* ✦ ᴘᴇᴛᴜɴᴊᴜᴋ : *Balas Stiker / Foto / Video*\n` +
+          `*╰───────────────*\n\n` +
+          `> Audio TikTok berhasil diunduh dan disimpan dalam antrean!\n` +
+          `> Sekarang, silakan balas stiker, foto, atau video dengan *${usedPrefix + command}* untuk memasangkan lagu ini menjadi Stiker Bersuara!\n` +
+          `> _Ketik *${usedPrefix + command} batal* jika ingin membatalkan._`
+
+        return m.reply(caption)
+      }
+
+      // ── Sub-kasus 3B: Mode Langsung Video TikTok → Stiker Bersuara ──
+      // Jika merupakan postingan Slide Foto TikTok
+      if (Array.isArray(res.images) && res.images.length > 0 && !res.play) {
+        const imgBuffer = await downloadBuffer(res.images[0], res.referer || 'https://www.tiktok.com/')
+        let audioBuffer = null
+        if (res.music) {
+          try {
+            audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
+          } catch (e) {
+            console.warn('[TikTok Slide Music DL Error]', e.message)
+          }
+        }
+        if (!audioBuffer) {
+          throw new Error('Slide foto TikTok tidak memiliki audio yang dapat diproses.')
+        }
+        await processAndSendSoundSticker(conn, m, imgBuffer, audioBuffer, args, false, false)
+        return
+      }
+
+      // Video TikTok biasa
+      if (!res.play) {
+        throw new Error('Tautan TikTok tidak memiliki media video atau foto yang dapat diunduh.')
+      }
+
+      const videoBuffer = await downloadBuffer(res.play, res.referer || 'https://www.tiktok.com/')
+      if (!videoBuffer) throw new Error('Gagal mengunduh buffer video TikTok.')
+
+      const vidDur = await getVideoDuration(videoBuffer)
+
+      // Cek apakah ada argumen pemotongan kustom dari pengguna (misal: .ssound <url> 5 12)
+      const cleanArgsText = args.filter(a => !TIKTOK_URL_REGEX.test(a) && !/^(audio|suara|sound|mp3|lagu)$/i.test(a)).join(' ')
+      const customTimeRange = extractTimeRange(cleanArgsText, 10)
+
+      let finalVideo = videoBuffer
+      if (customTimeRange) {
+        finalVideo = await trimVideoBuffer(videoBuffer, customTimeRange.start, customTimeRange.duration)
+      } else {
+        // Otomatis dipotong dari detik 0 hingga maksimal 10 detik agar stiker langsung jadi tanpa perlu tanya/prompt lagi!
+        const maxVisualSec = Math.min(vidDur || 10, 10)
+        if (vidDur > 10 || vidDur === 0) {
+          finalVideo = await trimVideoBuffer(videoBuffer, 0, maxVisualSec)
+        }
+      }
+
+      // Ekstrak Audio TikTok Penuh (sampai 90 detik, musik tidak terpotong 10 detik!)
+      let audioBuffer = null
+      if (res.music) {
+        try {
+          audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
+        } catch (e) {
+          console.warn('[TikTok Music Fetch Failed, fallback to video audio]', e.message)
+        }
+      }
+
+      if (!audioBuffer) {
+        const audioResult = await ffmpeg(videoBuffer, [
+          '-vn',
+          '-c:a', 'libopus',
+          '-b:a', '128k',
+          '-vbr', 'on',
+          '-ac', '1',
+          '-ar', '48000',
+          '-t', '90'
+        ], 'mp4', 'ogg')
+        audioBuffer = audioResult.data
+      }
+
+      await processAndSendSoundSticker(conn, m, finalVideo, audioBuffer, args, true, false)
+      return
+
+    } catch (err) {
+      console.error('[Sticker Sound TikTok Error]:', err)
+      await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+      return m.reply(status.error(`Gagal memproses tautan TikTok:\n> ${err?.message || err}`))
+    }
+  }
+
+  // 4. KASUS KHUSUS: Jika sesi aktif menyimpan AUDIO dan pengguna sekarang membalas Stiker, Foto, atau Video
   if (session && session.type === 'audio') {
     if (isSticker || isImage || isVideo) {
       await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
@@ -63,9 +256,9 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     }
   }
 
-  // 4. KASUS AUDIO: Jika pengguna membalas Audio / Voice Note
+  // 5. KASUS AUDIO: Jika pengguna membalas Audio / Voice Note
   if (isAudio) {
-    // 4a. Jika ada sesi aktif yang menyimpan visual media (Stiker, Foto, atau Video)
+    // 5a. Jika ada sesi aktif yang menyimpan visual media (Stiker, Foto, atau Video)
     if (session && (session.type === 'sticker' || session.type === 'image' || session.type === 'video')) {
       await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
@@ -98,7 +291,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       return
     }
 
-    // 4b. Jika belum ada visual media, tetapi pengguna membalas Audio dengan "pair" -> simpan audio dulu
+    // 5b. Jika belum ada visual media, tetapi pengguna membalas Audio dengan "pair" -> simpan audio dulu
     if (isPairMode) {
       let audioBuffer = await quoted.download()
       if (!audioBuffer) return m.reply(status.error('Gagal mengunduh audio.'))
@@ -128,7 +321,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       return m.reply(caption)
     }
 
-    // 4c. Jika membalas audio tanpa ada visual media dan tanpa keyword pair
+    // 5c. Jika membalas audio tanpa ada visual media dan tanpa keyword pair
     return m.reply(
       `*╭  〔 ⚠ ᴘ ᴇ ʀ ɪ ɴ ɢ ᴀ ᴛ ᴀ ɴ 〕*\n` +
       `> Kamu belum memilih stiker, foto, atau video untuk dipasangkan dengan audio ini.\n` +
@@ -138,7 +331,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     )
   }
 
-  // 5. KASUS STIKER: Pengguna membalas Stiker (baik dengan "pair" maupun langsung .ssound)
+  // 6. KASUS STIKER: Pengguna membalas Stiker (baik dengan "pair" maupun langsung .ssound)
   // Karena stiker tidak memiliki suara bawaan, otomatis simpan ke antrean pairing
   if (isSticker) {
     let mediaBuffer = await quoted.download()
@@ -174,7 +367,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     return m.reply(caption)
   }
 
-  // 6. KASUS FOTO: Pengguna membalas Foto (baik dengan "pair" maupun langsung .ssound)
+  // 7. KASUS FOTO: Pengguna membalas Foto (baik dengan "pair" maupun langsung .ssound)
   if (isImage) {
     let mediaBuffer = await quoted.download()
     if (!mediaBuffer) return m.reply(status.error('Gagal mengunduh foto.'))
@@ -204,7 +397,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     return m.reply(caption)
   }
 
-  // 7. KASUS VIDEO (Mode Pairing): Pengguna membalas Video dengan keyword "pair"
+  // 8. KASUS VIDEO (Mode Pairing): Pengguna membalas Video dengan keyword "pair"
   if (isVideo && isPairMode) {
     let mediaBuffer = await quoted.download()
     if (!mediaBuffer) return m.reply(status.error('Gagal mengunduh video.'))
@@ -233,10 +426,10 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     return m.reply(caption)
   }
 
-  // 8. KASUS VIDEO (Mode Langsung): Pengguna membalas video bersuara (Instant Video Sound Sticker)
+  // 9. KASUS VIDEO (Mode Langsung): Pengguna membalas video bersuara (Instant Video Sound Sticker)
   if (isVideo) {
     let seconds = (quoted.msg || quoted).seconds || 0
-    const timeRange = extractTimeRange(args.join(' '), 15)
+    const timeRange = extractTimeRange(args.join(' '), 6)
 
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
@@ -247,8 +440,8 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       seconds = await getVideoDuration(videoBuffer)
     }
 
-    // Jika video > 15 detik dan pengguna TIDAK menyertakan argumen rentang waktu
-    if (seconds > 15 && !timeRange) {
+    // Jika video > 7 detik dan pengguna TIDAK menyertakan argumen rentang waktu
+    if (seconds > 7 && !timeRange) {
       conn.videoTrimSession = conn.videoTrimSession || {}
       if (conn.videoTrimSession[m.sender]?.timeout) {
         clearTimeout(conn.videoTrimSession[m.sender].timeout)
@@ -258,22 +451,22 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         type: 'ssound',
         chat: m.chat,
         seconds,
-        maxDuration: 15,
+        maxDuration: 6,
         args,
         timeout: setTimeout(() => {
           delete conn.videoTrimSession[m.sender]
         }, 120000).unref()
       }
       await conn.sendMessage(m.chat, { react: { text: '✂️', key: m.key } }).catch(() => {})
-      return m.reply(formatTrimPrompt(seconds, 15, command, true))
+      return m.reply(formatTrimPrompt(seconds, 6, command, true))
     }
 
     try {
       let finalVideo = videoBuffer
       if (timeRange) {
         finalVideo = await trimVideoBuffer(videoBuffer, timeRange.start, timeRange.duration)
-      } else if (seconds > 10) {
-        finalVideo = await trimVideoBuffer(videoBuffer, 0, 10)
+      } else if (seconds > 6) {
+        finalVideo = await trimVideoBuffer(videoBuffer, 0, 6)
       }
 
       // Ekstrak audio dari video asli PENUH (videoBuffer)
@@ -298,17 +491,20 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     return
   }
 
-  // 9. Pesan panduan jika command dipanggil tanpa media
+  // 10. Pesan panduan jika command dipanggil tanpa media atau tautan
   const guideText = `*──  ୨୧ ✧ STIKER BERSUARA ✧ ୨୧  ──*\n\n` +
     `*╭  〔 ✦ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*\n` +
-    `*┆* ⟡ ᴍᴏᴅᴇ 𝟷 : *Balas Video Bersuara*\n` +
-    `*┆* › Ketik *${usedPrefix + command}*\n` +
-    `*┆* ⟡ ᴍᴏᴅᴇ 𝟸 : *Pasang Suara ke Stiker / Foto / Video*\n` +
-    `*┆* › Balas stiker, foto, atau video dengan *${usedPrefix + command}*\n` +
-    `*┆* › Lalu balas audio/VN dengan *${usedPrefix + command}*\n` +
-    `*┆* ⟡ ᴍᴏᴅᴇ 𝟹 : *Audio Dahulu Baru Visual*\n` +
-    `*┆* › Balas audio/VN dengan *${usedPrefix + command} pair*\n` +
-    `*┆* › Lalu balas stiker/foto/video dengan *${usedPrefix + command}*\n` +
+    `*┆* ⟡ ᴍᴏᴅᴇ 𝟷 : *Tautan TikTok Langsung*\n` +
+    `*┆* › Ketik *${usedPrefix + command} <link tiktok>*\n` +
+    `*┆* › _Otomatis dipotong 0–10 detik dengan audio penuh!_\n` +
+    `*┆* ⟡ ᴍᴏᴅᴇ 𝟸 : *Audio TikTok Saja*\n` +
+    `*┆* › Ketik *${usedPrefix + command} audio <link tiktok>*\n` +
+    `*┆* ⟡ ᴍᴏᴅᴇ 𝟹 : *Balas Video Bersuara*\n` +
+    `*┆* › Balas video dengan *${usedPrefix + command}*\n` +
+    `*┆* ⟡ ᴍᴏᴅᴇ 𝟺 : *Pasang Suara ke Stiker / Foto*\n` +
+    `*┆* › Balas stiker/foto dengan *${usedPrefix + command}*, lalu balas audio/VN\n` +
+    `*┆* ⟡ ᴍᴏᴅᴇ 𝟻 : *Audio Dahulu Baru Visual*\n` +
+    `*┆* › Balas audio/VN dengan *${usedPrefix + command} pair*, lalu balas stiker/foto\n` +
     `*╰───────────────*\n\n` +
     `> Stiker dikirimkan sebagai *Stiker Bersuara Asli (Native WhatsApp Sound Sticker)*!\n` +
     `> _Suara otomatis tersemat di stiker dan dapat diputar saat stiker ditekan._`
@@ -361,9 +557,9 @@ export async function processAndSendSoundSticker(conn, m, mediaBuffer, audioBuff
   await conn.sendMessage(m.chat, { react: { text: '🔊', key: m.key } }).catch(() => {})
 }
 
-handler.help = ['stikersuara [start end]', 'ssound [pair|start end]']
+handler.help = ['stikersuara [link/time]', 'ssound [link/pair/time]', 'ssound audio <link>']
 handler.tags = ['sticker']
-handler.command = /^(stikersuara|stikersound|ssound)$/i
+handler.command = /^(stikersuara|stikersound|ssound|sssound)$/i
 handler.limit = true
 handler.register = true
 

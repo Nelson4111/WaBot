@@ -926,5 +926,13 @@
         "content":  "\u003e Buat stiker biasa (.s) atau stiker bersuara (.ssound) dari video berdurasi panjang tanpa harus repot memotong video di galeri HP! Pada stiker bersuara (.ssound), pemotongan hanya diterapkan pada visual video agar stiker berputar ringan dan stabil, sementara audio/musik tetap diputar penuh sesuai audio aslinya tanpa terpotong.",
         "author":  "Nenel",
         "createdAt":  1795623100000
+    },
+    {
+        "id":  "26.6",
+        "section":  "STICKER",
+        "title":  "Stiker Bersuara Tautan TikTok (.ssound <link>)",
+        "content":  "\u003e Kini .ssound mendukung tautan TikTok langsung! Cukup kirim .ssound <link tiktok>, bot akan otomatis mengunduh video dan memotong visual 0-10 detik secara instan tanpa perlu konfirmasi manual, serta menyematkan audio TikTok aslinya secara utuh ke stiker bersuara. Tersedia juga mode audio via .ssound audio <link tiktok> untuk dipasangkan ke stiker/foto pilihanmu.",
+        "author":  "Nenel",
+        "createdAt":  1795629600000
     }
 ]

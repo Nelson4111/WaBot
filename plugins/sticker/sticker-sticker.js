@@ -36,7 +36,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     await react('🕒') // reaction mulai
 
-    const timeRange = extractTimeRange(args.join(' '), 10)
+    const timeRange = extractTimeRange(args.join(' '), 6)
     let [packname, ...authorArr] = (timeRange?.cleanText || args.join(' ')).split('|')
     packname = (packname && packname.trim()) || global.stickpack || 'Avelia Pack'
     let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'
@@ -64,13 +64,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
           console.error('[STICKER TRIM ERROR]', eTrim)
           downloadedMedia.push({ img, mime: media.mime })
         }
-      } else if (isVid && seconds > 10) {
+      } else if (isVid && seconds > 7) {
         pendingTrimSession = {
           buffer: img,
           type: 'sticker',
           chat: m.chat,
           seconds,
-          maxDuration: 10,
+          maxDuration: 6,
           packname,
           author
         }
@@ -91,7 +91,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         }, 120000).unref()
       }
       await react('✂️')
-      return m.reply(formatTrimPrompt(pendingTrimSession.seconds, 10, command))
+      return m.reply(formatTrimPrompt(pendingTrimSession.seconds, 6, command))
     }
 
     if (!downloadedMedia.length) {
@@ -440,12 +440,14 @@ async function sendIndividualStickers(conn, m, downloadedMedia, packname, author
     const stiker = await createStickerFromMedia(item.img, item.mime, packname, author)
     if (!stiker) continue
 
+    const isAnim = /video/g.test(item.mime) || (Buffer.isBuffer(stiker) && stiker.includes('ANIM'))
+
     if (m.isGroup) {
       const stickerSpectatorText = `> 🔒 _[Stiker Terkunci - Khusus @${userTag}]_`
       const mentions = cleanTargetJid.endsWith('@s.whatsapp.net') ? [cleanTargetJid] : []
 
       try {
-        const playerMessage = await generateWAMessageContent({ sticker: stiker }, { upload: conn.waUploadToServer })
+        const playerMessage = await generateWAMessageContent({ sticker: stiker, isAnimated: isAnim }, { upload: conn.waUploadToServer })
         await sendDualGroupMessage(conn, m.chat, targetJid, playerMessage, stickerSpectatorText, {
           contextInfo: { mentionedJid: mentions }
         })
@@ -453,13 +455,13 @@ async function sendIndividualStickers(conn, m, downloadedMedia, packname, author
         console.warn('[DUAL STIKER ERROR, FALLBACK]:', errDual?.message)
         await conn.sendMessage(m.chat, { text: stickerSpectatorText, mentions }).catch(() => {})
         try {
-          await conn.sendFile(targetJid, stiker, 'sticker.webp', '', null)
+          await conn.sendMessage(targetJid, { sticker: stiker, isAnimated: isAnim })
         } catch {
-          await conn.sendFile(m.chat, stiker, 'sticker.webp', '', null)
+          await conn.sendMessage(m.chat, { sticker: stiker, isAnimated: isAnim })
         }
       }
     } else {
-      await conn.sendFile(m.chat, stiker, 'sticker.webp', '', m)
+      await conn.sendMessage(m.chat, { sticker: stiker, isAnimated: isAnim }, { quoted: m })
     }
     sent++
   }

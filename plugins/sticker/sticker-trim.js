@@ -71,7 +71,7 @@ handler.before = async function (m, { conn }) {
   if (/^[./#!]/.test(rawText)) return false
 
   // 3. Cek apakah pesan merupakan input rentang waktu
-  const range = extractTimeRange(m.text, session.maxDuration || 10)
+  const range = extractTimeRange(m.text, session.maxDuration || 6)
   if (!range) {
     // Jika user me-reply pesan prompt tetapi formatnya salah
     if (m.quoted && m.quoted.sender === botJid) {
@@ -127,7 +127,8 @@ handler.before = async function (m, { conn }) {
       // Konversi video hasil potongan menjadi stiker biasa
       const stiker = await createStickerFromMedia(trimmed, 'video/mp4', session.packname, session.author)
       if (stiker) {
-        await targetConn.sendFile(m.chat, stiker, 'sticker.webp', '', m)
+        const isAnim = Buffer.isBuffer(stiker) && stiker.includes('ANIM')
+        await targetConn.sendMessage(m.chat, { sticker: stiker, isAnimated: isAnim }, { quoted: m })
         await targetConn.sendMessage(m.chat, { react: { text: '✨', key: m.key } }).catch(() => {})
       } else {
         await m.reply(status.error('Gagal mengonversi video hasil potongan menjadi stiker.'))
