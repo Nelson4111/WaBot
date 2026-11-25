@@ -172,6 +172,7 @@ ${donorText}
           highlight_label: 'Populer',
           rows: [
             { header: 'Utama', title: 'Semua Perintah', description: 'Tampilkan seluruh menu bot', id: `${_p}allmenu` },
+            { header: 'Update', title: 'Info Pembaruan (News)', description: 'Stiker suara, PTV video bulat, teks sekali lihat', id: `${_p}news` },
             { header: 'AI', title: 'AI & ChatBot', description: 'Fitur ChatGPT, Claude, AI Edit, dll', id: `${_p}menuai` },
             { header: 'Anime', title: 'Anime & Wibu', description: 'Fitur Anime, Waifu, Gambar Anime', id: `${_p}menuanime` },
             { header: 'Audio', title: 'Audio & Soundboard', description: '20+ efek suara, VN, sound meme, toaudio', id: `${_p}menuaudio` },
@@ -193,8 +194,8 @@ ${donorText}
             { header: 'RPG', title: 'Roleplay Game', description: 'Game RPG petualangan klasik', id: `${_p}menurpg` },
             { header: 'Pencarian', title: 'Pencarian Data', description: 'Search data & scraper', id: `${_p}menusearch` },
             { header: 'Stalker', title: 'Stalker Sosmed', description: 'Stalk akun Instagram, TikTok, dll', id: `${_p}menustalker` },
-            { header: 'Stiker', title: 'Pembuat Stiker', description: 'Buat stiker foto, teks, video', id: `${_p}menusticker` },
-            { header: 'Alat', title: 'Alat & Utilitas', description: 'Tools pembantu sehari-hari', id: `${_p}menutools` },
+            { header: 'Stiker', title: 'Pembuat Stiker', description: 'Stiker foto, video, & stiker bersuara (.ssound)', id: `${_p}menusticker` },
+            { header: 'Alat', title: 'Alat & Utilitas', description: 'Video bulat (.ptv), teks sekali lihat (.vo), dll', id: `${_p}menutools` },
             { header: 'Waifu', title: 'Virtual Waifu Anime', description: 'Simulasi & rawat karakter MyAnimeList', id: `${_p}menuwaifu` },
             { header: 'Apresiasi', title: 'Thanks To & Donatur', description: 'Kontributor & daftar donatur bot', id: `${_p}thanksto` }
           ]

@@ -878,5 +878,37 @@
         "content":  "\u003e Pembacaan perintah dan pengelolaan data RPG diperbarui. Jika data utama gagal dibaca, bot mencoba memulihkannya dari cadangan. Tombol RPG dan lelang kini punya balasan teks saat pesan interaktif tidak tersedia, dan tampilan beberapa hasil game dirapikan.",
         "author":  "Nenel",
         "createdAt":  1793666551481
+    },
+    {
+        "id":  "26.0",
+        "section":  "STICKER",
+        "title":  "Stiker Bersuara dan Audio Companion",
+        "content":  "\u003e Buat stiker animasi WhatsApp bersuara via .stikersuara atau .ssound. Balas video pendek untuk stiker dengan companion Voice Note bergelombang suara (waveform dinamis), atau balas video dengan .ssound pair lalu balas audio/VN untuk menyatukan video dengan suara kustom.",
+        "author":  "Nenel",
+        "createdAt":  1795622800000
+    },
+    {
+        "id":  "26.1",
+        "section":  "TOOLS",
+        "title":  "Video Note Bulat (PTV)",
+        "content":  "\u003e Ubah video biasa menjadi pesan video lingkaran berputar khas WhatsApp lewat .toptv, .ptv, atau .videonote. Video otomatis di-crop persegi 1:1 sempurna dengan kualitas audio AAC jernih.",
+        "author":  "Nenel",
+        "createdAt":  1795622860000
+    },
+    {
+        "id":  "26.2",
+        "section":  "TOOLS",
+        "title":  "Pesan Teks Sekali Lihat",
+        "content":  "\u003e Kirim pesan rahasia sekali lihat yang otomatis terhapus setelah dibaca lewat .votext \u003cteks\u003e atau .vo \u003cteks/media\u003e. Di dalam grup, perintah dan pesan teks pengirim otomatis dihapus demi menjaga privasi.",
+        "author":  "Nenel",
+        "createdAt":  1795622920000
+    },
+    {
+        "id":  "26.3",
+        "section":  "RPG",
+        "title":  "Audit dan Perbaikan Sistem RPG",
+        "content":  "\u003e Seluruh bug pada sistem Relationship (.rship), Pet (.pet), Shelter (.shelter), dan Peternakan (.ternak) telah diperbaiki: penanganan kapasitas shelter, kalkulasi penyakit ternak, sinkronisasi inventory, dan penyesuaian cooldown aktivitas.",
+        "author":  "Nenel",
+        "createdAt":  1795622980000
     }
 ]
