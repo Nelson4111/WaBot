@@ -883,7 +883,7 @@
         "id":  "26.0",
         "section":  "STICKER",
         "title":  "Stiker Bersuara Asli (Native Sound Sticker)",
-        "content":  "\u003e Buat stiker WhatsApp bersuara asli via .stikersuara atau .ssound. Menggunakan enkripsi protokol stiker audio WhatsApp native (single message payload) sehingga suara tersemat langsung di stiker tanpa mengirim voice note terpisah. Balas video bersuara langsung atau pasangkan audio ke foto/video dengan .ssound pair lalu balas audio/VN!",
+        "content":  "\u003e Buat stiker WhatsApp bersuara asli via .stikersuara atau .ssound. Menggunakan enkripsi protokol stiker audio WhatsApp native (single message payload) sehingga suara tersemat langsung di stiker tanpa mengirim voice note terpisah. Mendukung video bersuara langsung, pasang suara ke stiker (.webp statis/animasi), foto, atau sebaliknya via .ssound pair!",
         "author":  "Nenel",
         "createdAt":  1795622800000
     },
@@ -899,7 +899,7 @@
         "id":  "26.2",
         "section":  "TOOLS",
         "title":  "Pesan Teks Sekali Lihat",
-        "content":  "\u003e Kirim pesan rahasia sekali lihat yang otomatis terhapus setelah dibaca lewat .votext \u003cteks\u003e atau .vo \u003cteks/media\u003e. Di dalam grup, perintah dan pesan teks pengirim otomatis dihapus demi menjaga privasi.",
+        "content":  "\u003e Kirim pesan rahasia sekali lihat yang berlogo \u2460 Foto resmi WhatsApp lewat .votext <teks> atau .vo <teks/media>. Teks rahasia di-render otomatis menjadi kartu gelap estetik anti-screenshot yang terkunci dan hangus permanen setelah dibuka. Di dalam grup, perintah pengirim otomatis dihapus demi menjaga kerahasiaan.",
         "author":  "Nenel",
         "createdAt":  1795622920000
     },
@@ -910,5 +910,13 @@
         "content":  "\u003e Seluruh bug pada sistem Relationship (.rship), Pet (.pet), Shelter (.shelter), dan Peternakan (.ternak) telah diperbaiki: penanganan kapasitas shelter, kalkulasi penyakit ternak, sinkronisasi inventory, dan penyesuaian cooldown aktivitas.",
         "author":  "Nenel",
         "createdAt":  1795622980000
+    },
+    {
+        "id":  "26.4",
+        "section":  "SYSTEM",
+        "title":  "Notifikasi Bot Online Pasca Restart & Update",
+        "content":  "\u003e Bot kini otomatis mengirim notifikasi konfirmasi ke obrolan begitu selesai melakukan restart atau update sistem (.restart / .update / .update --restart). Dilengkapi durasi waktu reboot, status koneksi WhatsApp, dan visual card Zen Shinto estetik agar pengguna tahu bot telah aktif kembali.",
+        "author":  "Nenel",
+        "createdAt":  1795623040000
     }
 ]

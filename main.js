@@ -863,6 +863,62 @@ async function connectionUpdate(update) {
       /* E2EE Warmup skipped */
     }
 
+    // Notifikasi Sistem Aktif Pasca Restart / Update
+    setTimeout(async () => {
+      try {
+        const stateFile = path.resolve('./tmp/restart-state.json')
+        if (existsSync(stateFile)) {
+          const raw = readFileSync(stateFile, 'utf8')
+          unlinkSync(stateFile) // Segera hapus agar tidak terkirim ganda
+          const state = JSON.parse(raw)
+          // Validasi rentang waktu (maksimal 15 menit agar tidak mengeksekusi state usang)
+          if (state?.chat && (Date.now() - (state.timestamp || 0) < 15 * 60 * 1000)) {
+            const duration = ((Date.now() - (state.timestamp || Date.now())) / 1000).toFixed(1)
+            const toSmallNum = (str) => {
+              const map = { '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿' }
+              return String(str).replace(/[0-9]/g, d => map[d] || d)
+            }
+            const typeLabel = state.type === 'update' 
+              ? 'Pembaruan Sistem (Update)' 
+              : (state.type === 'clearsesi' ? 'Pembersihan Sesi (Clear Cache)' : 'Mulai Ulang (Restart)')
+
+            const msg = [
+              `*──  ୨୧ ✧ SISTEM AKTIF ✧ ୨୧  ──*`,
+              ``,
+              `> *こんにちわ!* (ʜᴇʟʟᴏ!)`,
+              `> _Sistem bot telah selesai dimuat ulang dan kembali aktif!_`,
+              ``,
+              `*╭  〔 🚀 ʙ ᴏ ᴛ  ᴏ ɴ ʟ ɪ ɴ ᴇ 〕*`,
+              `*┆* ⟡ ꜱᴛᴀᴛᴜꜱ   : *Online & Siap Digunakan* 𝜚`,
+              `*┆* ⏱ ᴅᴜʀᴀꜱɪ   : *${toSmallNum(duration)} Detik*`,
+              `*┆* ⚙ ᴋᴏɴᴇᴋꜱɪ : *WhatsApp Socket Connected*`,
+              `*┆* ◈ ᴛɪᴘᴇ     : *${typeLabel}*`,
+              `*╰───────────────*`,
+              ``,
+              `> ｡˚ ⊹ *Silakan gunakan perintah seperti biasa.* ⊹ ˚ ｡`
+            ].join('\n')
+
+            const sendOptions = {}
+            if (state.key) {
+              sendOptions.quoted = {
+                key: state.key,
+                message: { conversation: state.type === 'update' ? 'Update' : 'Restart' }
+              }
+            }
+
+            if (conn.ws?.isOpen) {
+              await conn.sendMessage(state.chat, { text: msg }, sendOptions).catch(async () => {
+                await conn.sendMessage(state.chat, { text: msg }).catch(() => {})
+              })
+              console.log(chalk.green(`✅ [RESTART NOTIFY] Pesan notifikasi aktif berhasil dikirim ke ${state.chat} (${duration}s)`))
+            }
+          }
+        }
+      } catch (errRestartNotify) {
+        console.error(chalk.red('[RESTART NOTIFY ERROR]'), errRestartNotify?.message || errRestartNotify)
+      }
+    }, 2500)
+
     if (!conn.sewaInit) {
       initSewaCheck(conn)
       conn.sewaInit = true

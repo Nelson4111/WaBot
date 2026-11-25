@@ -1,5 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import fs from 'fs'
+import path from 'path'
 
 const execPromise = promisify(exec)
 
@@ -65,7 +67,9 @@ function formatUpdateSummary(summary) {
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
   const p = usedPrefix || '.'
-  const isForce = args && (args[0] === '--force' || args[0] === 'force' || args[0] === '-f')
+  const rawArgs = Array.isArray(args) ? args : []
+  const isForce = rawArgs.some(a => a === '--force' || a === 'force' || a === '-f')
+  const isAutoRestart = rawArgs.some(a => a === '--restart' || a === 'restart' || a === '-r')
 
   await m.react('⏳')
   await m.reply(isForce ? '⚡ *Melakukan force update dari GitHub...*' : '🔄 *Menarik update terbaru dari GitHub...*')
@@ -107,16 +111,50 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         '',
         formatUpdateSummary(summary),
         '',
-        '_Jika fitur baru belum muncul, silakan restart bot._'
+        isAutoRestart ? '_Memulai ulang sistem bot sekarang..._' : '_Jika fitur baru belum muncul, silakan restart bot._'
       ].join('\n')
       const buttons = [
-        ['⚡ Restart Bot', `${p}restart`],
+        ['⚡ Restart Bot', `${p}restart update`],
         ['📜 Menu Utama', `${p}menu`]
       ]
       if (typeof conn.sendButton === 'function') {
         await conn.sendButton(m.chat, msg, `${global.namebot || 'Avelia'} • System Update`, null, buttons, m)
       } else {
         await m.reply(msg)
+      }
+
+      if (isAutoRestart) {
+        try {
+          const stateDir = path.resolve('./tmp')
+          if (!fs.existsSync(stateDir)) fs.mkdirSync(stateDir, { recursive: true })
+          fs.writeFileSync(
+            path.join(stateDir, 'restart-state.json'),
+            JSON.stringify({
+              chat: m.chat,
+              sender: m.sender,
+              timestamp: Date.now(),
+              type: 'update',
+              key: m.key,
+              reason: 'Update Git Auto-Restart'
+            })
+          )
+        } catch (errState) {
+          console.error('[UPDATE RESTART STATE ERROR]', errState)
+        }
+
+        try {
+          if (global.opts['autobio'] && global.conn) {
+            await global.conn.updateProfileStatus('Bot sedang merestart 🔄. Tunggu sebentar.').catch(() => {})
+          }
+          if (global.db && global.db.data) {
+            console.log('[UPDATE AUTO-RESTART] Menyimpan database ke Supabase sebelum restart...')
+            await global.db.write()
+            console.log('[UPDATE AUTO-RESTART] Database berhasil disimpan.')
+          }
+        } catch (e) {
+          console.error('[UPDATE AUTO-RESTART DB ERROR]', e)
+        }
+        process.exit(1)
       }
     }
   } catch (e) {
@@ -150,7 +188,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['update', 'update --force', 'gitpull']
+handler.help = ['update', 'update --restart', 'update --force', 'gitpull']
 handler.tags = ['owner']
 handler.command = /^(update|gitpull)$/i
 handler.owner = true

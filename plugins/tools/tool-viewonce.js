@@ -1,5 +1,117 @@
-import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+import { createCanvas } from '@napi-rs/canvas'
 import { status } from '../../lib/style.js'
+
+/**
+ * Render teks rahasia ke dalam kartu gambar estetik berdesain Dark Celestial
+ * agar dapat dikirim sebagai Foto Sekali Lihat resmi (View Once ①).
+ *
+ * @param {string} text - Teks rahasia yang akan ditampilkan
+ * @returns {Promise<Buffer>} - Buffer gambar PNG
+ */
+async function renderSecretCard(text) {
+  const width = 960
+  const padding = 55
+  const maxTextWidth = width - (padding * 2)
+
+  // Pengukuran baris teks secara dinamis
+  const tempCanvas = createCanvas(100, 100)
+  const tempCtx = tempCanvas.getContext('2d')
+  tempCtx.font = '26px sans-serif'
+
+  // Mendukung pemisahan paragraf / baris baru dari pesan pengguna
+  const paragraphs = text.split('\n')
+  const lines = []
+
+  for (const para of paragraphs) {
+    if (!para.trim()) {
+      lines.push('')
+      continue
+    }
+    const words = para.split(' ')
+    let currentLine = ''
+    for (const word of words) {
+      const testLine = currentLine ? currentLine + ' ' + word : word
+      if (tempCtx.measureText(testLine).width > maxTextWidth) {
+        if (currentLine) lines.push(currentLine)
+        currentLine = word
+      } else {
+        currentLine = testLine
+      }
+    }
+    if (currentLine) lines.push(currentLine)
+  }
+
+  const lineHeight = 40
+  const headerHeight = 150
+  const footerHeight = 85
+  const contentHeight = Math.max(lines.length * lineHeight, 80)
+  const height = Math.max(headerHeight + contentHeight + footerHeight, 460)
+
+  const canvas = createCanvas(width, height)
+  const ctx = canvas.getContext('2d')
+
+  // Latar belakang gradasi gelap celestial
+  const bgGrad = ctx.createLinearGradient(0, 0, width, height)
+  bgGrad.addColorStop(0, '#0c1017')
+  bgGrad.addColorStop(0.5, '#121824')
+  bgGrad.addColorStop(1, '#090d14')
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, width, height)
+
+  // Bingkai luar bertekstur
+  ctx.strokeStyle = '#232d3f'
+  ctx.lineWidth = 4
+  ctx.strokeRect(18, 18, width - 36, height - 36)
+
+  // Garis aksen emas dalam
+  ctx.strokeStyle = '#c9a96e'
+  ctx.lineWidth = 1.5
+  ctx.strokeRect(26, 26, width - 52, height - 52)
+
+  // Pita judul header estetik
+  ctx.fillStyle = '#c9a96e'
+  ctx.font = 'bold 22px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('──  ୨୧ ✧ PESAN SEKALI LIHAT ✧ ୨୧  ──', width / 2, 70)
+
+  ctx.fillStyle = '#8b9bb4'
+  ctx.font = '16px sans-serif'
+  ctx.fillText('🔒 Pesan Rahasia Otomatis Hangus Setelah Dibaca', width / 2, 102)
+
+  // Garis pemisah emas
+  ctx.strokeStyle = '#c9a96e'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(padding, 122)
+  ctx.lineTo(width - padding, 122)
+  ctx.stroke()
+
+  // Konten teks rahasia
+  ctx.fillStyle = '#f0f6fc'
+  ctx.font = '26px sans-serif'
+  ctx.textAlign = 'left'
+  let y = headerHeight + 25
+  for (const line of lines) {
+    if (line) ctx.fillText(line, padding, y)
+    y += lineHeight
+  }
+
+  // Garis pemisah footer
+  ctx.strokeStyle = '#232d3f'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(padding, height - footerHeight + 15)
+  ctx.lineTo(width - padding, height - footerHeight + 15)
+  ctx.stroke()
+
+  // Teks footer
+  ctx.fillStyle = '#7a889b'
+  ctx.font = 'italic 15px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('🛡️ Terenkripsi • Anti-Screenshot Protected • Avelia Bot', width / 2, height - 35)
+
+  return canvas.toBuffer('image/png')
+}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const quoted = m.quoted
@@ -15,31 +127,20 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (hasTextParam || hasQuotedText) {
     const rawSecret = (hasTextParam ? text.trim() : quoted.text).trim()
 
-    const formattedSecret = `*──  ୨୧ ✧ PESAN SEKALI LIHAT ✧ ୨୧  ──*\n\n` +
-      `*╭  〔 🔒 ʀ ᴀ ʜ ᴀ ꜱ ɪ ᴀ 〕*\n` +
-      `> ${rawSecret}\n` +
-      `*╰───────────────*\n\n` +
-      `> 🛡️ _Pesan rahasia ini terenkripsi dan otomatis hancur setelah dibaca._`
+    await m.react('⏳').catch(() => {})
 
     try {
-      // Buat pesan viewOnceMessage tingkat rendah (Protobuf) dengan extendedTextMessage
-      const viewOnceMsg = generateWAMessageFromContent(m.chat, {
-        viewOnceMessage: {
-          message: {
-            messageContextInfo: {
-              deviceListMetadata: {},
-              deviceListMetadataVersion: 2
-            },
-            extendedTextMessage: {
-              text: formattedSecret
-            }
-          }
-        }
-      }, { userJid: conn.user?.id || m.sender })
+      // Bypass native View Once: Render teks ke dalam kartu gambar rahasia berdesain estetik
+      const cardBuffer = await renderSecretCard(rawSecret)
 
-      await conn.relayMessage(m.chat, viewOnceMsg.message, { messageId: viewOnceMsg.key.id })
+      // Kirim sebagai foto sekali lihat resmi WhatsApp (memunculkan gelembung ① Foto)
+      await conn.sendMessage(m.chat, {
+        image: cardBuffer,
+        caption: '🔒 Pesan Rahasia (Sekali Lihat)',
+        viewOnce: true
+      }, { quoted: m })
 
-      // Jika di dalam grup, hapus pesan perintah pengguna agar teks rahasia tidak tertinggal di riwayat chat
+      // Jika di dalam grup, hapus pesan perintah pengguna agar teks rahasia tidak bocor di chat log
       if (m.isGroup) {
         await conn.sendMessage(m.chat, { delete: m.key }).catch(() => {})
       }
@@ -48,7 +149,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       return
     } catch (errText) {
       console.error('[ViewOnce Text Error]:', errText)
-      return m.reply(status.error(`Gagal mengirim pesan teks sekali lihat:\n> ${errText?.message || errText}`))
+      return m.reply(status.error(`Gagal memproses pesan rahasia sekali lihat:\n> ${errText?.message || errText}`))
     }
   }
 
@@ -90,7 +191,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     `*┆* ⟡ ᴍᴇᴅɪᴀ ꜱᴇᴋᴀʟɪ ʟɪʜᴀᴛ :\n` +
     `*┆* › Balas foto atau video dengan *${usedPrefix + command}*\n` +
     `*╰───────────────*\n\n` +
-    `> 🔒 _Pesan teks di grup akan otomatis dihapus demi menjaga privasi._`
+    `> 🔒 _Pesan teks otomatis dijadikan kartu gambar sekali lihat berlogo ① yang anti-screenshot dan hangus setelah dibaca._`
 
   return m.reply(helpText)
 }

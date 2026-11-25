@@ -103,6 +103,24 @@ let handler = async (m, {
             quoted: m
         });
 
+        try {
+            const stateDir = './tmp';
+            if (!fs.existsSync(stateDir)) fs.mkdirSync(stateDir, { recursive: true });
+            fs.writeFileSync(
+                './tmp/restart-state.json',
+                JSON.stringify({
+                    chat: m.chat,
+                    sender: m.sender,
+                    timestamp: Date.now(),
+                    type: 'clearsesi',
+                    key: m.key,
+                    reason: 'Clear Session Cache'
+                })
+            );
+        } catch (eState) {
+            console.error('[CLEARSESI STATE ERROR]', eState);
+        }
+
         if (global.db && global.db.data) {
             await global.db.write().catch(err => console.error('[CLEARSESI DB WRITE ERROR]', err));
         }
