@@ -573,13 +573,27 @@ export async function createStickerFromMedia(img, mime, packname, author) {
   if (/video/g.test(mime)) {
     let stiker = false
     try {
-      stiker = await sticker(img, false, global.stickpack, global.stickauth)
+      // Direct 1-Pass video to sticker dengan auto-detect crop batas hitam & proteksi ukuran < 850 KB
+      stiker = await directVideoToSticker(img, {
+        startSec: 0,
+        durationSec: 6,
+        packname: packname || global.stickpack,
+        author: author || global.stickauth
+      })
     } catch (e) {
-      console.error(e)
-    } finally {
-      if (!stiker) {
+      console.warn('[createStickerFromMedia directVideoToSticker failed, fallback to sticker()]:', e?.message || e)
+      try {
+        stiker = await sticker(img, false, packname || global.stickpack, author || global.stickauth)
+      } catch (e2) {
+        console.error(e2)
+      }
+    }
+    if (!stiker) {
+      try {
         let out = await uploadFile(img)
-        stiker = await sticker(false, out, global.stickpack, global.stickauth)
+        stiker = await sticker(false, out, packname || global.stickpack, author || global.stickauth)
+      } catch (e3) {
+        console.error(e3)
       }
     }
     return stiker
@@ -601,13 +615,22 @@ export async function createStickerFromMedia(img, mime, packname, author) {
 
 // function bikin stiker manual
 async function createSticker(img, url, packName, authorName, quality = 70) {
+  let input = img || url
+  if (Buffer.isBuffer(img)) {
+    try {
+      // Auto-trim batas gelap (black borders / letterbox) pada gambar statis
+      input = await sharp(img).trim({ threshold: 25 }).toBuffer()
+    } catch {
+      input = img
+    }
+  }
   let stickerMetadata = {
     type: 'full',
     pack: packName,
     author: authorName,
     quality
   }
-  return (new Sticker(img ? img : url, stickerMetadata)).toBuffer()
+  return (new Sticker(input, stickerMetadata)).toBuffer()
 }
 
 /**
