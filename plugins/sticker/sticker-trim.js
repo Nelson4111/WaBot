@@ -119,7 +119,7 @@ handler.before = async function (m, { conn }) {
           '-ac', '1',
           '-ar', '48000',
           '-t', '90'
-        ], 'mp4', 'ogg').then(res => res.data),
+        ], 'mp4', 'ogg').then(res => res.data).catch(() => null),
         directVideoToSticker(session.buffer, {
           startSec: range.start,
           durationSec: range.duration,
@@ -127,6 +127,12 @@ handler.before = async function (m, { conn }) {
           author
         })
       ])
+
+      if (!audioBuffer) {
+        await targetConn.sendMessage(m.chat, { sticker: stikerWebp, isAnimated: true }, { quoted: m })
+        await targetConn.sendMessage(m.chat, { react: { text: '✨', key: m.key } }).catch(() => {})
+        return true
+      }
 
       await sendAudioSticker(targetConn, m.chat, {
         sticker: stikerWebp,

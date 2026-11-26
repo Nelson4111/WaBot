@@ -36,7 +36,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     await react('🕒') // reaction mulai
 
-    const timeRange = extractTimeRange(args.join(' '), 6)
+    const timeRange = extractTimeRange(args.join(' '), 60)
     let [packname, ...authorArr] = (timeRange?.cleanText || args.join(' ')).split('|')
     packname = (packname && packname.trim()) || global.stickpack || 'Avelia Pack'
     let author = authorArr.join('|').trim() || global.stickauth || 'Avelia'

@@ -450,57 +450,70 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
-    let videoBuffer = await quoted.download()
-    if (!videoBuffer) return m.reply(status.error('Gagal mengunduh video.'))
-
-    if (!seconds) {
-      seconds = await getVideoDuration(videoBuffer)
-    }
-
-    // Jika video > 10 detik dan pengguna TIDAK menyertakan argumen rentang waktu
-    if (seconds > 10 && !timeRange) {
-      conn.videoTrimSession = conn.videoTrimSession || {}
-      if (conn.videoTrimSession[m.sender]?.timeout) {
-        clearTimeout(conn.videoTrimSession[m.sender].timeout)
-      }
-      conn.videoTrimSession[m.sender] = {
-        buffer: videoBuffer,
-        type: 'ssound',
-        chat: m.chat,
-        seconds,
-        maxDuration: 60,
-        args,
-        timeout: setTimeout(() => {
-          delete conn.videoTrimSession[m.sender]
-        }, 120000).unref()
-      }
-      await conn.sendMessage(m.chat, { react: { text: '✂️', key: m.key } }).catch(() => {})
-      return m.reply(formatTrimPrompt(seconds, 60, command, true))
-    }
-
     try {
+      let videoBuffer = await quoted.download()
+      if (!videoBuffer) {
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+        return m.reply(status.error('Gagal mengunduh video dari pesan WhatsApp.'))
+      }
+
+      if (!seconds) {
+        seconds = await getVideoDuration(videoBuffer)
+      }
+
+      // Jika video > 10 detik dan pengguna TIDAK menyertakan argumen rentang waktu
+      if (seconds > 10 && !timeRange) {
+        conn.videoTrimSession = conn.videoTrimSession || {}
+        if (conn.videoTrimSession[m.sender]?.timeout) {
+          clearTimeout(conn.videoTrimSession[m.sender].timeout)
+        }
+        conn.videoTrimSession[m.sender] = {
+          buffer: videoBuffer,
+          type: 'ssound',
+          chat: m.chat,
+          seconds,
+          maxDuration: 60,
+          args,
+          timeout: setTimeout(() => {
+            delete conn.videoTrimSession[m.sender]
+          }, 120000).unref()
+        }
+        await conn.sendMessage(m.chat, { react: { text: '✂️', key: m.key } }).catch(() => {})
+        return m.reply(formatTrimPrompt(seconds, 60, command, true))
+      }
+
       let startSec = timeRange ? timeRange.start : 0
       let durationSec = timeRange ? timeRange.duration : Math.min(seconds || 10, 10)
       const { packname, author } = getStickerWatermark(args)
 
       // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan tanpa transcode MP4)
-      const [audioBuffer, stikerWebp] = await Promise.all([
-        ffmpeg(videoBuffer, [
-          '-vn',
-          '-c:a', 'libopus',
-          '-b:a', '128k',
-          '-vbr', 'on',
-          '-ac', '1',
-          '-ar', '48000',
-          '-t', '90'
-        ], 'mp4', 'ogg').then(res => res.data),
-        directVideoToSticker(videoBuffer, {
-          startSec,
-          durationSec,
-          packname,
-          author
-        })
-      ])
+      const audioPromise = ffmpeg(videoBuffer, [
+        '-vn',
+        '-c:a', 'libopus',
+        '-b:a', '128k',
+        '-vbr', 'on',
+        '-ac', '1',
+        '-ar', '48000',
+        '-t', '90'
+      ], 'mp4', 'ogg')
+        .then(res => res.data)
+        .catch(() => null)
+
+      const stickerPromise = directVideoToSticker(videoBuffer, {
+        startSec,
+        durationSec,
+        packname,
+        author
+      })
+
+      const [audioBuffer, stikerWebp] = await Promise.all([audioPromise, stickerPromise])
+
+      if (!audioBuffer) {
+        // Fallback jika video tanpa track audio: kirim stiker video biasa
+        await conn.sendMessage(m.chat, { sticker: stikerWebp, isAnimated: true }, { quoted: m })
+        await conn.sendMessage(m.chat, { react: { text: '✨', key: m.key } }).catch(() => {})
+        return
+      }
 
       await sendAudioSticker(conn, m.chat, {
         sticker: stikerWebp,
@@ -514,7 +527,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     } catch (err) {
       console.error('[Sticker Sound Error]:', err)
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
-      m.reply(status.error('Gagal memproses stiker bersuara dari video.'))
+      m.reply(status.error(`Gagal memproses stiker bersuara dari video:\n> ${err?.message || err}`))
     }
     return
   }
