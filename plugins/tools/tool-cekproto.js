@@ -1,14 +1,44 @@
 import fs from 'fs'
 import path from 'path'
+import { decodeAIRich } from '../../lib/aiRichMessage.js'
+
+function findOriginalUnflattenedMessage(conn, chatJid, quotedId) {
+    if (!chatJid || !quotedId) return null
+    try {
+        // 1. Cek di global.memoryStore Baileys (menyimpan raw WebMessageInfo asli sebelum di-flatten quote)
+        const storeChat = global.memoryStore?.messages?.[chatJid]
+        if (storeChat) {
+            if (typeof storeChat.get === 'function') {
+                const found = storeChat.get(quotedId)
+                if (found?.message) return found.message
+            } else if (Array.isArray(storeChat.array)) {
+                const found = storeChat.array.find(item => item?.key?.id === quotedId)
+                if (found?.message) return found.message
+            } else if (storeChat[quotedId]?.message) {
+                return storeChat[quotedId].message
+            }
+        }
+        // 2. Cek di conn.chats[chatJid].messages
+        const connMsg = conn?.chats?.[chatJid]?.messages?.[quotedId]
+        if (connMsg?.message) return connMsg.message
+    } catch {}
+    return null
+}
 
 let handler = async (m, { conn, usedPrefix, command }) => {
     // Deteksi mode stealth (.tes / .cekproto2 / jika dijalankan di dalam grup)
     const isStealth = /^(tes|cekproto2|stealthproto)$/i.test(command) || m.isGroup
     const targetChat = isStealth ? m.sender : m.chat
 
-    // 1. Tentukan target pesan: reply (m.quoted) atau pesan itu sendiri
+    // 1. Tentukan target pesan: prioritaskan pesan ASLI dari memoryStore agar botForwardedMessage / richResponseMessage
+    // tidak tergencet (flattened) menjadi extendedTextMessage oleh contextInfo.quotedMessage WhatsApp client!
     const q = m.quoted ? m.quoted : m
-    const rawQuoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage ||
+    const quotedId = m.quoted?.id || m.quoted?.key?.id || m.msg?.contextInfo?.stanzaId
+    const unflattenedOriginal = m.quoted ? findOriginalUnflattenedMessage(conn, m.chat, quotedId) : null
+
+    const rawQuoted = unflattenedOriginal ||
+                      (m.quoted?.vM?.message && !m.quoted.vM.message.extendedTextMessage ? m.quoted.vM.message : null) ||
+                      m.message?.extendedTextMessage?.contextInfo?.quotedMessage ||
                       m.msg?.contextInfo?.quotedMessage ||
                       m.quoted?.messages ||
                       m.quoted?.message ||
@@ -93,13 +123,24 @@ let handler = async (m, { conn, usedPrefix, command }) => {
         }
 
         const contextInfo = targetMsg[mtype]?.contextInfo || interactive?.contextInfo || listMsg?.contextInfo || buttonsMsg?.contextInfo || q.contextInfo || null
+        const decodedRich = typeof decodeAIRich === 'function' ? decodeAIRich(rawJson) : null
 
         // 4. Susun ringkasan analisis
         let summary = `🕵️‍♂️ *[STEALTH PROTOBUF INSPECTOR]* 📦\n\n`
         if (m.isGroup) summary += `• *Asal Grup:* \`${m.chat}\`\n`
         summary += `• *MType Utama:* \`${mtype}\`\n`
+        summary += `• *Sumber Data:* \`${unflattenedOriginal ? 'Original Store (Unflattened)' : 'Quoted Stanza'}\`\n`
         summary += `• *Pengirim Asli:* @${(q.sender || '').split('@')[0]}\n`
         summary += `• *ID Pesan:* \`${q.id || q.key?.id || '-'}\`\n\n`
+
+        if (decodedRich) {
+            summary += `✨ *AI RICH RESPONSE DETECTED!* (Tampilan ala ChatGPT/Gemini)\n`
+            summary += `• *Response ID:* \`${decodedRich.responseId || '-'}\`\n`
+            summary += `• *Layouts:* \`${(decodedRich.layouts || []).join(', ') || '-'}\`\n`
+            summary += `• *Primitives:* \`${(decodedRich.typenames || []).join(', ') || '-'}\`\n`
+            summary += `• *Submessages:* ${decodedRich.submessages?.length || 0} blok\n\n`
+            rawJson._decodedAIRichUnifiedResponse = decodedRich.unified
+        }
 
         if (listMsg) {
             summary += `✨ *LIST MESSAGE DETECTED!*\n`
