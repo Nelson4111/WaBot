@@ -179,13 +179,13 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 
       // Cek apakah ada argumen pemotongan kustom dari pengguna (misal: .ssound <url> 5 12 atau .ssound <url> 0 20)
       const cleanArgsText = args.filter(a => !TIKTOK_URL_REGEX.test(a) && !/^(audio|suara|sound|mp3|lagu)$/i.test(a)).join(' ')
-      const customTimeRange = extractTimeRange(cleanArgsText, 30)
+      const customTimeRange = extractTimeRange(cleanArgsText, 60)
 
       let startSec = 0
-      let maxVisualSec = Math.min(vidDur || 10, 10)
+      let maxVisualSec = Math.min(vidDur || 35, 35)
       if (customTimeRange) {
         startSec = customTimeRange.start
-        maxVisualSec = Math.min(customTimeRange.duration, vidDur || 30)
+        maxVisualSec = Math.min(customTimeRange.duration, vidDur || 60)
       }
 
       const { packname, author } = getStickerWatermark(args)
@@ -446,7 +446,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   // 9. KASUS VIDEO (Mode Langsung): Pengguna membalas video bersuara (Instant Video Sound Sticker)
   if (isVideo) {
     let seconds = (quoted.msg || quoted).seconds || 0
-    const timeRange = extractTimeRange(args.join(' '), 30)
+    const timeRange = extractTimeRange(args.join(' '), 60)
 
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
@@ -468,14 +468,14 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         type: 'ssound',
         chat: m.chat,
         seconds,
-        maxDuration: 20,
+        maxDuration: 60,
         args,
         timeout: setTimeout(() => {
           delete conn.videoTrimSession[m.sender]
         }, 120000).unref()
       }
       await conn.sendMessage(m.chat, { react: { text: '✂️', key: m.key } }).catch(() => {})
-      return m.reply(formatTrimPrompt(seconds, 20, command, true))
+      return m.reply(formatTrimPrompt(seconds, 60, command, true))
     }
 
     try {
@@ -524,7 +524,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     `*╭  〔 ✦ ᴄ ᴀ ʀ ᴀ  ᴘ ᴇ ɴ ɢ ɢ ᴜ ɴ ᴀ ᴀ ɴ 〕*\n` +
     `*┆* ⟡ ᴍᴏᴅᴇ 𝟷 : *Tautan TikTok Langsung*\n` +
     `*┆* › Ketik *${usedPrefix + command} <link tiktok>*\n` +
-    `*┆* › _Otomatis dipotong 0–10 detik dengan audio penuh!_\n` +
+    `*┆* › _Otomatis visual hingga 35 detik dengan audio penuh!_\n` +
     `*┆* ⟡ ᴍᴏᴅᴇ 𝟸 : *Audio TikTok Saja*\n` +
     `*┆* › Ketik *${usedPrefix + command} audio <link tiktok>*\n` +
     `*┆* ⟡ ᴍᴏᴅᴇ 𝟹 : *Balas Video Bersuara*\n` +
