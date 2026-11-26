@@ -68,7 +68,7 @@ async function getTikTokViaRyzumi(url) {
   const { data } = await axios.get(
     `https://api.ryzumi.net/api/downloader/tiktok?url=${encodeURIComponent(url)}`,
     {
-      timeout: 20000,
+      timeout: 8000,
       headers: {
         'accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
@@ -170,7 +170,7 @@ async function getTikTokViaWM(url) {
     'https://www.tikwm.com/api/',
     new URLSearchParams({ url, hd: '1' }),
     {
-      timeout: 20000,
+      timeout: 8000,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
@@ -334,48 +334,98 @@ async function getTikTokViaMDown(url) {
   }
 }
 
-// ─── Wrapper utama: expand URL → coba API satu per satu ─────────────────────
+// ─── API Direct: Self-Scraper Langsung ke Web TikTok + Tiklydown ────────────
+async function getTikTokViaTiklydown(url) {
+  const { data } = await axios.get(
+    `https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(url)}`,
+    {
+      timeout: 8000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+      }
+    }
+  )
+  const play = data?.video?.noWatermark || data?.video?.watermark || null
+  const images = Array.isArray(data?.images) && data.images.length > 0
+    ? data.images.map(img => typeof img === 'string' ? img : img?.url).filter(Boolean)
+    : null
+  if (!play && (!images || !images.length)) throw new Error('tiklydown: no media')
+  return {
+    title: data?.title || 'TikTok Video',
+    play,
+    playUrl: play,
+    music: data?.music?.play_url || null,
+    images,
+    needBuffer: false
+  }
+}
+
+// ─── Wrapper utama: expand URL → Parallel Race (Promise.any) agar instan ────
 async function getTikTok(inputUrl) {
-  let url = inputUrl
-  if (/vm\.tiktok|vt\.tiktok|bit\.ly|tiktok\.com\/t\//.test(inputUrl)) {
+  // Bersihkan query tracker panjang (?is_from_webapp=1&sender_device=pc) agar tidak ditolak parser API
+  let cleanInput = inputUrl.trim()
+  if (/tiktok\.com\/@[^/]+\/(?:video|photo)\/\d+/i.test(cleanInput)) {
+    cleanInput = cleanInput.split('?')[0]
+  }
+
+  let url = cleanInput
+  if (/vm\.tiktok|vt\.tiktok|bit\.ly|tiktok\.com\/t\//.test(cleanInput)) {
     try {
-      url = await expandUrl(inputUrl)
+      url = await expandUrl(cleanInput)
+      if (/tiktok\.com\/@[^/]+\/(?:video|photo)\/\d+/i.test(url)) {
+        url = url.split('?')[0]
+      }
       console.log(`[TikTok] URL expanded: ${url}`)
     } catch {
-      url = inputUrl
+      url = cleanInput
     }
   }
 
-  const apis = [
-    { name: 'ryzumi', fn: () => getTikTokViaRyzumi(url) },
-    { name: 'ryzumi-original', fn: () => getTikTokViaRyzumi(inputUrl) },
-    { name: 'tikwm (POST)', fn: () => getTikTokViaWM(url) },
-    { name: 'tikwm-original', fn: () => getTikTokViaWM(inputUrl) },
-    { name: 'snaptik', fn: () => getTikTokViaSnapTik(url) },
-    { name: 'ssstik', fn: () => getTikTokViaSSST(url) },
-    { name: 'musicaldown', fn: () => getTikTokViaMDown(url) },
-  ]
+  const wrapProvider = async (name, fn) => {
+    const result = await fn()
+    if (result && (result.play || (Array.isArray(result.images) && result.images.length > 0))) {
+      console.log(`[TikTok] ✅ Berhasil via ${name}`)
+      return result
+    }
+    throw new Error(`${name}: respons kosong`)
+  }
 
-  let lastMsg = ''
-  for (const api of apis) {
-    try {
-      const result = await api.fn()
-      if (result && (result.play || result.images)) {
-        console.log(`[TikTok] ✅ Berhasil via ${api.name}`)
-        return result
+  // Tier 1: Balapan Paralel (Promise.any) antara provider tercepat
+  // Siapa pun yang merespons sukses pertama kali dalam 1-2 detik langsung dipakai tanpa menunggu server yang timeout!
+  try {
+    return await Promise.any([
+      wrapProvider('ssstik', () => getTikTokViaSSST(url)),
+      wrapProvider('tiklydown', () => getTikTokViaTiklydown(url)),
+      wrapProvider('tikwm', () => getTikTokViaWM(url)),
+      wrapProvider('ryzumi', () => getTikTokViaRyzumi(url))
+    ])
+  } catch (aggErr) {
+    // Tier 2 Fallback jika Tier 1 gagal semua
+    const fallbacks = [
+      { name: 'musicaldown', fn: () => getTikTokViaMDown(url) },
+      { name: 'snaptik', fn: () => getTikTokViaSnapTik(url) }
+    ]
+    if (url !== inputUrl) {
+      fallbacks.push({ name: 'ssstik-original', fn: () => getTikTokViaSSST(inputUrl) })
+    }
+
+    let lastMsg = aggErr?.errors?.map(e => e.message).join(' | ') || ''
+    for (const api of fallbacks) {
+      try {
+        return await wrapProvider(api.name, api.fn)
+      } catch (e) {
+        lastMsg = e.message || String(e)
+        console.log(`[TikTok] ❌ ${api.name}: ${lastMsg}`)
       }
-      console.log(`[TikTok] ⚠️ ${api.name}: respons kosong`)
-    } catch (e) {
-      lastMsg = e.message || String(e)
-      console.log(`[TikTok] ❌ ${api.name}: ${lastMsg}`)
     }
-  }
 
-  throw new Error(
-    `❌ Semua server download TikTok sedang bermasalah.\n` +
-    `Coba lagi nanti atau gunakan URL langsung dari aplikasi TikTok.\n` +
-    `*(Error: ${lastMsg})*`
-  )
+    throw new Error(
+      `❌ Semua server download TikTok sedang bermasalah.\n` +
+      `Coba lagi nanti atau gunakan URL langsung dari aplikasi TikTok.\n` +
+      `*(Error: ${lastMsg})*`
+    )
+  }
 }
 
 // ─── Search TikTok ────────────────────────────────────────────────────────────
