@@ -1088,9 +1088,23 @@ handler.help = ['bank', 'bank info', 'bank command', 'bank upgrade [beli|angka] 
 handler.group = false
 
 handler.all = async function (m, { conn }) {
-  if (!m.sender) return
+  if (!m.sender || m.fromMe || m.isBaileys) return
+  // Fast pre-check tanpa mengalokasikan 9 Proxy loadDB() atau memicu saveDB() pada obrolan biasa
+  let rawJid = m.sender
+  if (rawJid.endsWith('@lid')) {
+    rawJid = global.lids?.[rawJid] || global.db?.data?.lids?.[rawJid] || rawJid
+  }
+  if (rawJid.includes('@s.whatsapp.net')) {
+    rawJid = rawJid.split('@')[0].split(':')[0] + '@s.whatsapp.net'
+  }
+  const rawUser = global.db?.data?.users?.[rawJid] || global.db?.data?.users?.[m.sender]
+  const rawRpg = rawUser?.rpg
+  if (!rawRpg?.asistenBank) return
+  const rawTier = BANK_TIERS[rawRpg.bankTier]
+  if (!rawTier?.fasilitas?.includes('Asisten Pribadi')) return
+
   const wdb = loadDB()
-  const userRPG = getUserRPG(wdb, m.sender)?.rpg
+  const userRPG = getUserRPG(wdb, rawJid)?.rpg
   const tier = BANK_TIERS[userRPG?.bankTier]
   if (!userRPG || !tier?.fasilitas.includes('Asisten Pribadi')) return
 

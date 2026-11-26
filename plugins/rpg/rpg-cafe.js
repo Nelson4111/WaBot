@@ -217,11 +217,16 @@ async function runCafeScheduler() {
 function startCafeScheduler() {
   if (cafeSchedulerStarted) return
   cafeSchedulerStarted = true
-  setInterval(() => {
+  global.__aveliaSchedulers = global.__aveliaSchedulers || {}
+  if (global.__aveliaSchedulers.cafe) {
+    clearInterval(global.__aveliaSchedulers.cafe)
+  }
+  global.__aveliaSchedulers.cafe = setInterval(() => {
     runCafeScheduler().catch(error => {
       console.error('[cafe] Automatic operations failed:', error)
     })
-  }, 60 * 1000).unref?.()
+  }, 60 * 1000)
+  global.__aveliaSchedulers.cafe.unref?.()
 }
 
 let handler = async (m, { args = [], text = '', command = '', usedPrefix = '.', conn }) => {

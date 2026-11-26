@@ -240,8 +240,13 @@ export async function before() {
   if (started) return
   started = true
 
-  setTimeout(() => broadcastReligiousGreeting(this).catch(() => {}), 5000)
-  setInterval(() => broadcastReligiousGreeting(this).catch(() => {}), 30 * 60 * 1000)
+  global.__aveliaSchedulers = global.__aveliaSchedulers || {}
+  if (global.__aveliaSchedulers.religiousGreeting) {
+    clearInterval(global.__aveliaSchedulers.religiousGreeting)
+  }
+  setTimeout(() => broadcastReligiousGreeting(this).catch(() => {}), 5000).unref?.()
+  global.__aveliaSchedulers.religiousGreeting = setInterval(() => broadcastReligiousGreeting(this).catch(() => {}), 30 * 60 * 1000)
+  global.__aveliaSchedulers.religiousGreeting.unref?.()
 }
 
 export const disabled = false

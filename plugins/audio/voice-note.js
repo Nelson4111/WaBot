@@ -14,16 +14,29 @@ const buildVoiceNotes = (chatId) => Object.fromEntries(
     .flatMap(({ files, commands }) => commands.map(command => [command, files.length === 1 ? files[0] : files]))
 )
 
+const keywordRegexCache = new Map()
+
+function getKeywordRegex(normalizedKeyword) {
+  let re = keywordRegexCache.get(normalizedKeyword)
+  if (!re) {
+    const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    re = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapedKeyword}(?:$|[^\\p{L}\\p{N}])`, 'u')
+    keywordRegexCache.set(normalizedKeyword, re)
+  }
+  return re
+}
+
 const findVoiceMatches = (text, chatId) => {
   const normalizedText = (text || '').trim().toLowerCase()
+  if (!normalizedText) return []
   const groups = VOICE_NOTE_GROUPS.filter(group => group.enabled !== false && isVoiceCategoryEnabled(chatId, group.category))
   const matches = []
 
   for (const group of groups) {
     for (const keyword of group.commands || []) {
       const normalizedKeyword = String(keyword).toLowerCase()
-      const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const keywordPattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapedKeyword}(?:$|[^\\p{L}\\p{N}])`, 'u')
+      if (!normalizedText.includes(normalizedKeyword)) continue
+      const keywordPattern = getKeywordRegex(normalizedKeyword)
       if (keywordPattern.test(normalizedText)) {
         matches.push({ keyword: normalizedKeyword, files: group.files || [], category: group.category })
       }
@@ -472,11 +485,8 @@ handler.before = async function (m, { match, ...context }) {
     return true
   }
 
-  const matchedKeyword = findVoiceCommand(m.text, m.chat)
+  const matchedKeyword = matches[0]?.keyword || null
   if (!matchedKeyword) return false
-
-  if (isVoiceDisabledForChat(m.chat, m.isGroup)) return false
-  if (isUserMuted(m.sender)) return false
 
   const sent = await sendVoiceAudioFromKeyword(m, this, matchedKeyword)
   if (!sent) {

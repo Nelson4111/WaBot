@@ -109,17 +109,21 @@ handler.before = async function (m, { conn }) {
   try {
     if (session.type === 'ssound') {
       const { packname, author } = getStickerWatermark(session.args || [])
-      // PARALEL: Audio penuh & Direct 1-Pass WebP
+      const audioArgs = []
+      if (range.start > 0) audioArgs.push('-ss', String(range.start))
+      audioArgs.push(
+        '-vn',
+        '-c:a', 'libopus',
+        '-b:a', '96k',
+        '-vbr', 'on',
+        '-compression_level', '5',
+        '-ac', '1',
+        '-ar', '48000',
+        '-t', String(Math.min(range.duration || 60, 90))
+      )
+      // PARALEL: Audio sinkron dengan potongan detik & Direct 1-Pass WebP
       const [audioBuffer, stikerWebp] = await Promise.all([
-        ffmpeg(session.buffer, [
-          '-vn',
-          '-c:a', 'libopus',
-          '-b:a', '128k',
-          '-vbr', 'on',
-          '-ac', '1',
-          '-ar', '48000',
-          '-t', '90'
-        ], 'mp4', 'ogg').then(res => res.data).catch(() => null),
+        ffmpeg(session.buffer, audioArgs, 'mp4', 'ogg').then(res => res.data).catch(() => null),
         directVideoToSticker(session.buffer, {
           startSec: range.start,
           durationSec: range.duration,

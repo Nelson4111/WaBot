@@ -190,27 +190,33 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 
       const { packname, author } = getStickerWatermark(args)
 
-      // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan tanpa transcode MP4)
+      // OPTIMASI DIRECT 1-PASS (Paralel: Ekstrak OGG Opus langsung dari videoBuffer agar hemat 1 HTTP download & sinkron dengan trim)
       const audioPromise = (async () => {
         let audioBuffer = null
-        if (res.music) {
+        try {
+          const ttAudioArgs = []
+          if (startSec > 0) ttAudioArgs.push('-ss', String(startSec))
+          ttAudioArgs.push(
+            '-vn',
+            '-c:a', 'libopus',
+            '-b:a', '96k',
+            '-vbr', 'on',
+            '-compression_level', '5',
+            '-ac', '1',
+            '-ar', '48000',
+            '-t', String(customTimeRange ? Math.min(maxVisualSec, 90) : 90)
+          )
+          const audioResult = await ffmpeg(videoBuffer, ttAudioArgs, 'mp4', 'ogg')
+          audioBuffer = audioResult.data
+        } catch {
+          audioBuffer = null
+        }
+        if (!audioBuffer && res.music) {
           try {
             audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
           } catch (e) {
-            console.warn('[TikTok Music Fetch Failed, fallback to video audio]', e.message)
+            console.warn('[TikTok Music Fallback Failed]', e.message)
           }
-        }
-        if (!audioBuffer) {
-          const audioResult = await ffmpeg(videoBuffer, [
-            '-vn',
-            '-c:a', 'libopus',
-            '-b:a', '128k',
-            '-vbr', 'on',
-            '-ac', '1',
-            '-ar', '48000',
-            '-t', '90'
-          ], 'mp4', 'ogg')
-          audioBuffer = audioResult.data
         }
         return audioBuffer
       })()
@@ -483,19 +489,23 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       }
 
       let startSec = timeRange ? timeRange.start : 0
-      let durationSec = timeRange ? timeRange.duration : Math.min(seconds || 10, 10)
+      let durationSec = timeRange ? timeRange.duration : Math.min(seconds || 10, 60)
       const { packname, author } = getStickerWatermark(args)
 
-      // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan tanpa transcode MP4)
-      const audioPromise = ffmpeg(videoBuffer, [
+      // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan & sinkron durasinya)
+      const audioArgs = []
+      if (startSec > 0) audioArgs.push('-ss', String(startSec))
+      audioArgs.push(
         '-vn',
         '-c:a', 'libopus',
-        '-b:a', '128k',
+        '-b:a', '96k',
         '-vbr', 'on',
+        '-compression_level', '5',
         '-ac', '1',
         '-ar', '48000',
-        '-t', '90'
-      ], 'mp4', 'ogg')
+        '-t', String(Math.min(durationSec || 60, 90))
+      )
+      const audioPromise = ffmpeg(videoBuffer, audioArgs, 'mp4', 'ogg')
         .then(res => res.data)
         .catch(() => null)
 

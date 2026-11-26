@@ -111,6 +111,11 @@ export async function before() {
   if (started) return
   started = true
 
-  setTimeout(() => sendTwilyBirthdayReminder(this).catch(() => {}), 5000)
-  setInterval(() => sendTwilyBirthdayReminder(this).catch(() => {}), 60 * 1000)
+  global.__aveliaSchedulers = global.__aveliaSchedulers || {}
+  if (global.__aveliaSchedulers.twilyBirthday) {
+    clearInterval(global.__aveliaSchedulers.twilyBirthday)
+  }
+  setTimeout(() => sendTwilyBirthdayReminder(this).catch(() => {}), 5000).unref?.()
+  global.__aveliaSchedulers.twilyBirthday = setInterval(() => sendTwilyBirthdayReminder(this).catch(() => {}), 60 * 1000)
+  global.__aveliaSchedulers.twilyBirthday.unref?.()
 }

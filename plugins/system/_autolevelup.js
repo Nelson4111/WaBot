@@ -7,11 +7,5 @@ export async function before(m) {
     if (!user || user.autolevelup === false) return
     if (chat && typeof chat.autolevelup !== 'boolean') chat.autolevelup = true
     if (chat && typeof chat.autolevelupLevel !== 'number') chat.autolevelupLevel = 0
-    if (chat && chat.autolevelup === false) return
-
-    try {
-        await checkLevelUp(m, this)
-    } catch (e) {
-        console.error('[_autolevelup Error]:', e?.message || e)
-    }
+    // Eksekusi checkLevelUp dilakukan terpusat di handler.js (finally block) setelah user.exp += m.exp
 }

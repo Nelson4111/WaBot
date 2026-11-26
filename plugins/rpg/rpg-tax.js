@@ -221,11 +221,16 @@ async function runAutomaticTaxCollection(now = new Date()) {
 function startTaxScheduler() {
   if (taxSchedulerStarted) return
   taxSchedulerStarted = true
+  global.__aveliaSchedulers = global.__aveliaSchedulers || {}
+  if (global.__aveliaSchedulers.tax) {
+    clearInterval(global.__aveliaSchedulers.tax)
+  }
   const run = () => runAutomaticTaxCollection().catch(error => {
     console.error('[tax] Automatic weekly collection failed:', error)
   })
   setTimeout(run, 5000).unref?.()
-  setInterval(run, 60 * 1000).unref?.()
+  global.__aveliaSchedulers.tax = setInterval(run, 60 * 1000)
+  global.__aveliaSchedulers.tax.unref?.()
 }
 
 function sumPaymentHistory(payments) {

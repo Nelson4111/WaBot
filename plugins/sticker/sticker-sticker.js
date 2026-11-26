@@ -69,13 +69,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
           console.error('[STICKER TRIM ERROR]', eTrim)
           downloadedMedia.push({ img, mime: media.mime })
         }
-      } else if (isVid && seconds > 7) {
+      } else if (isVid && seconds > 10) {
         pendingTrimSession = {
           buffer: img,
           type: 'sticker',
           chat: m.chat,
           seconds,
-          maxDuration: 6,
+          maxDuration: 60,
           packname,
           author
         }
@@ -96,7 +96,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         }, 120000).unref()
       }
       await react('✂️')
-      return m.reply(formatTrimPrompt(pendingTrimSession.seconds, 6, command))
+      return m.reply(formatTrimPrompt(pendingTrimSession.seconds, 60, command))
     }
 
     if (!downloadedMedia.length) {

@@ -3,24 +3,39 @@ import fetch from 'node-fetch'
 import moment from 'moment-timezone'
 const fallbackThumb = "https://qu.ax/mgyIh"
 
+let cachedThumbBuffer = null
+let cachedThumbList = null
+let lastThumbCacheAt = 0
+
+function getCachedThumbAssets() {
+    const now = Date.now()
+    if (!cachedThumbBuffer || !cachedThumbList || now - lastThumbCacheAt > 300000) {
+        try {
+            cachedThumbBuffer = fs.readFileSync('./media/thumbnail.jpg')
+        } catch {
+            if (!cachedThumbBuffer) cachedThumbBuffer = Buffer.from([])
+        }
+        try {
+            const parsed = JSON.parse(fs.readFileSync('./media/thumb.json', 'utf8'))
+            if (Array.isArray(parsed) && parsed.length > 0) cachedThumbList = parsed
+        } catch {
+            if (!cachedThumbList) cachedThumbList = [fallbackThumb]
+        }
+        lastThumbCacheAt = now
+    }
+    const thumbUrl = cachedThumbList?.length
+        ? cachedThumbList[Math.floor(Math.random() * cachedThumbList.length)]
+        : fallbackThumb
+    return { thumbBuffer: cachedThumbBuffer, thumbUrl }
+}
+
 let handler = m => m
 
 handler.all = async function (m) {
     global.wm = global.namebot || "Avelia"
 
-    // === Thumbnail Buffer Loader ===
-    let thumbBuffer
-    try {
-        thumbBuffer = fs.readFileSync('./media/thumbnail.jpg')
-    } catch {
-        thumbBuffer = Buffer.from([])
-    }
-
-    let thumbUrl = fallbackThumb
-    try {
-        const listThumb = JSON.parse(fs.readFileSync('./media/thumb.json'))
-        thumbUrl = listThumb[Math.floor(Math.random() * listThumb.length)]
-    } catch {}
+    // === Thumbnail Buffer Loader (In-Memory Cached) ===
+    const { thumbBuffer, thumbUrl } = getCachedThumbAssets()
 
     // === Fake Verified Text Message ===
     global.finteractive = {
