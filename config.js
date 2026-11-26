@@ -45,7 +45,7 @@ global.owner = [
 ]
 
 // Owner Rahasia / Khusus Akses (TIDAK ditampilkan di .owner, info bot, ataupun vCard kontak, tetapi memiliki FULL AKSES Owner)
-global.hiddenowner = ['6281241100804']    
+global.hiddenowner = ['6281241100804', '6283170999122']
 // Masukkan nomor di sini (tanpa tanda +), contoh:
 // '6281234567890',
 
