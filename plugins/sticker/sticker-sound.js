@@ -177,15 +177,15 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
 
       const vidDur = await getVideoDuration(videoBuffer)
 
-      // Cek apakah ada argumen pemotongan kustom dari pengguna (misal: .ssound <url> 5 12)
+      // Cek apakah ada argumen pemotongan kustom dari pengguna (misal: .ssound <url> 5 12 atau .ssound <url> 0 20)
       const cleanArgsText = args.filter(a => !TIKTOK_URL_REGEX.test(a) && !/^(audio|suara|sound|mp3|lagu)$/i.test(a)).join(' ')
-      const customTimeRange = extractTimeRange(cleanArgsText, 10)
+      const customTimeRange = extractTimeRange(cleanArgsText, 30)
 
       let startSec = 0
       let maxVisualSec = Math.min(vidDur || 10, 10)
       if (customTimeRange) {
         startSec = customTimeRange.start
-        maxVisualSec = customTimeRange.duration
+        maxVisualSec = Math.min(customTimeRange.duration, vidDur || 30)
       }
 
       const { packname, author } = getStickerWatermark(args)
@@ -446,7 +446,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
   // 9. KASUS VIDEO (Mode Langsung): Pengguna membalas video bersuara (Instant Video Sound Sticker)
   if (isVideo) {
     let seconds = (quoted.msg || quoted).seconds || 0
-    const timeRange = extractTimeRange(args.join(' '), 6)
+    const timeRange = extractTimeRange(args.join(' '), 30)
 
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
@@ -457,8 +457,8 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       seconds = await getVideoDuration(videoBuffer)
     }
 
-    // Jika video > 7 detik dan pengguna TIDAK menyertakan argumen rentang waktu
-    if (seconds > 7 && !timeRange) {
+    // Jika video > 10 detik dan pengguna TIDAK menyertakan argumen rentang waktu
+    if (seconds > 10 && !timeRange) {
       conn.videoTrimSession = conn.videoTrimSession || {}
       if (conn.videoTrimSession[m.sender]?.timeout) {
         clearTimeout(conn.videoTrimSession[m.sender].timeout)
@@ -468,19 +468,19 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         type: 'ssound',
         chat: m.chat,
         seconds,
-        maxDuration: 6,
+        maxDuration: 20,
         args,
         timeout: setTimeout(() => {
           delete conn.videoTrimSession[m.sender]
         }, 120000).unref()
       }
       await conn.sendMessage(m.chat, { react: { text: '✂️', key: m.key } }).catch(() => {})
-      return m.reply(formatTrimPrompt(seconds, 6, command, true))
+      return m.reply(formatTrimPrompt(seconds, 20, command, true))
     }
 
     try {
       let startSec = timeRange ? timeRange.start : 0
-      let durationSec = timeRange ? timeRange.duration : Math.min(seconds || 6, 6)
+      let durationSec = timeRange ? timeRange.duration : Math.min(seconds || 10, 10)
       const { packname, author } = getStickerWatermark(args)
 
       // OPTIMASI DIRECT 1-PASS (Paralel: Audio & WebP Stiker diproses simultan tanpa transcode MP4)
