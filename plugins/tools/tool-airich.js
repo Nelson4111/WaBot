@@ -1,7 +1,7 @@
 import { status } from '../../lib/style.js'
 
-// Cache-buster agar saat plugin ini di-reload oleh watcher main.js,
-// modul lib/aiRichMessage.js & lib/audioSticker.js terbaru ikut dimuat ulang tanpa harus restart bot!
+// Cache-buster v3 agar saat plugin ini di-reload oleh watcher main.js,
+// modul lib/aiRichMessage.js & lib/audioSticker.js terbaru langsung aktif tanpa restart bot!
 const MODULE_VERSION = Date.now()
 let _aiRichModulePromise = null
 
@@ -113,8 +113,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
       if (cmd === 'setsreact' && customEntry) {
         const soundInfo = customEntry.hasAudio
-          ? `🔊 *Mode Stiker Bersuara (Sound Sticker):* Aktif!`
-          : `🔇 *Mode Stiker:* Tanpa Suara (Tips: kamu juga bisa reply *Stiker Bersuara*, *Video*, atau *Audio/VN* dengan *${usedPrefix}setsreact* agar stiker reaksimu ada suaranya!)`
+          ? `🔊 *Mode Stiker Bersuara (Sound Sticker):* Aktif! (Audio Opus berhasil dikunci ke stiker reaksi)`
+          : `🔇 *Mode Stiker:* Tanpa Suara\n> ⚠️ *Catatan:* Jika kamu barusan me-reply stiker lama, WhatsApp memotong jalur audio di paket quote-nya. Agar suaranya ikut masuk ke reaksi, buat ulang stiker itu sekali lewat *${usedPrefix}ssound* lalu reply dengan *${usedPrefix}setsreact*, ATAU reply langsung *Video / Audio VN*-nya dengan *${usedPrefix}setsreact*!`
         return m.reply(
           status.success(
             `Stiker Reaksi favorit kamu berhasil diperbarui!\n` +

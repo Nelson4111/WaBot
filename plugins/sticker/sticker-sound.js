@@ -5,6 +5,7 @@ import { status } from '../../lib/style.js'
 import { extractTimeRange, getVideoDuration, trimVideoBuffer, formatTrimPrompt } from '../../lib/videoTrim.js'
 import { getTikTok, downloadBuffer } from '../downloader/downloader-tiktok.js'
 
+// Cache-buster v3 untuk sinkronisasi global.audioStickerCache dengan .setsreact / .sreact
 const AUDIO_STICKER_VER = Date.now()
 let _audioStickerModPromise = null
 async function sendAudioSticker(conn, jid, params, quoted) {
