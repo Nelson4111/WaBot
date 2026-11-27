@@ -1,7 +1,7 @@
 import { status } from '../../lib/style.js'
 
 // Cache-buster agar saat plugin ini di-reload oleh watcher main.js,
-// modul lib/aiRichMessage.js terbaru ikut dimuat ulang tanpa harus restart bot!
+// modul lib/aiRichMessage.js & lib/audioSticker.js terbaru ikut dimuat ulang tanpa harus restart bot!
 const MODULE_VERSION = Date.now()
 let _aiRichModulePromise = null
 
@@ -46,48 +46,79 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     sendAIRichMessage,
     sendStickerReaction,
     setUserReactionSticker,
+    extractStickerAudioData,
     ensureAIRichProto
   } = await getAIRichModule()
 
   ensureAIRichProto()
 
   // ── Mode 1: Sticker Reaction / Sticker Annotation ("1 stiker ditambahkan", associationType: 11) ──
-  // Cara pakai super simpel (1 langkah, TIDAK perlu reply 2 pesan sekaligus!):
-  // 1. Ketik .sreact langsung atau reply pesan apa saja (teks/foto/video/dll) dengan .sreact
-  //    -> Bot langsung menempelkan reaksi "✅" + Stiker Reaksi ke pesan tersebut!
-  // 2. Jika user me-reply sebuah Stiker dengan .sreact (atau .setsreact):
-  //    -> Bot otomatis menyimpan stiker itu sebagai Stiker Reaksi favorit user SEKALIGUS langsung menempelkannya!
+  // Mendukung penuh:
+  // 1. Ketik .sreact atau reply pesan apa saja dengan .sreact -> Tempelkan reaksi "✅" + Stiker Reaksi!
+  // 2. Reply Stiker Biasa atau Stiker Bersuara (Sound Sticker) dengan .setsreact / .sreact:
+  //    -> Menyimpan visual WebP SEKALIGUS stream suaranya (audioMessage/Opus)!
+  // 3. Reply sebuah Audio / Voice Note dengan .setsreact:
+  //    -> Memasangkan suara Audio/VN tersebut ke Stiker Reaksi milikmu agar stiker reaksimu bersuara!
   if (cmd === 'sreact' || cmd === 'setsreact' || cmd === 'reactsticker' || cmd === 'stickerreact') {
     const targetMsg = m.quoted || m
     const quotedMime = m.quoted ? ((m.quoted.msg || m.quoted).mimetype || m.quoted.mediaType || '') : ''
     const selfMime = (m.msg || m).mimetype || m.mediaType || ''
 
     try {
-      let customBuffer = null
+      let customEntry = null
 
-      // Jika pesan yang dikirim atau yang di-reply adalah Stiker (atau Gambar saat menggunakan .setsreact)
-      if (/webp/i.test(quotedMime) || (cmd === 'setsreact' && /webp|image/i.test(quotedMime))) {
+      // Kasus A: User me-reply sebuah Audio / Voice Note dengan .setsreact (tambahkan suara ke stiker reaksi)
+      if (cmd === 'setsreact' && /audio/i.test(quotedMime)) {
+        const audioBuf = await m.quoted.download()
+        if (Buffer.isBuffer(audioBuf) && audioBuf.length > 32) {
+          customEntry = await setUserReactionSticker(m.sender, null, {
+            audioBuffer: audioBuf
+          })
+        }
+      }
+      // Kasus B: User me-reply sebuah Stiker (atau Gambar/Video saat .setsreact)
+      else if (/webp/i.test(quotedMime) || (cmd === 'setsreact' && /webp|image|video/i.test(quotedMime))) {
         const dl = await m.quoted.download()
         if (Buffer.isBuffer(dl) && dl.length > 16) {
-          customBuffer = await setUserReactionSticker(m.sender, dl)
+          // Ekstrak audioMessage jika stiker yang di-reply adalah Sound Sticker ( atau jika video, ambil audionya )
+          let audioData = await extractStickerAudioData(conn, m, m.quoted, dl)
+          let rawAudioBuf = null
+          if (!audioData && /video/i.test(quotedMime)) {
+            rawAudioBuf = dl
+          }
+          customEntry = await setUserReactionSticker(m.sender, dl, {
+            audioBuffer: rawAudioBuf,
+            audioData
+          })
         }
-      } else if (/webp/i.test(selfMime) || (cmd === 'setsreact' && /webp|image/i.test(selfMime))) {
+      }
+      // Kasus C: User mengirim gambar/stiker langsung dengan caption .setsreact / .sreact
+      else if (/webp/i.test(selfMime) || (cmd === 'setsreact' && /webp|image|video/i.test(selfMime))) {
         const dl = await m.download()
         if (Buffer.isBuffer(dl) && dl.length > 16) {
-          customBuffer = await setUserReactionSticker(m.sender, dl)
+          const audioData = await extractStickerAudioData(conn, m, m, dl)
+          const rawAudioBuf = (!audioData && /video/i.test(selfMime)) ? dl : null
+          customEntry = await setUserReactionSticker(m.sender, dl, {
+            audioBuffer: rawAudioBuf,
+            audioData
+          })
         }
       }
 
-      // Berikan reaksi emoji ✅ terlebih dahulu seperti pada bot referensi, lalu tempelkan Sticker Reaction!
+      // Berikan reaksi emoji ✅ terlebih dahulu, lalu tempelkan Sticker Reaction!
       await targetMsg.react('✅')
-      await sendStickerReaction(conn, m.chat, targetMsg, customBuffer, {
+      await sendStickerReaction(conn, m.chat, targetMsg, customEntry, {
         sender: m.sender
       })
 
-      if (cmd === 'setsreact' && customBuffer) {
+      if (cmd === 'setsreact' && customEntry) {
+        const soundInfo = customEntry.hasAudio
+          ? `🔊 *Mode Stiker Bersuara (Sound Sticker):* Aktif!`
+          : `🔇 *Mode Stiker:* Tanpa Suara (Tips: kamu juga bisa reply *Stiker Bersuara*, *Video*, atau *Audio/VN* dengan *${usedPrefix}setsreact* agar stiker reaksimu ada suaranya!)`
         return m.reply(
           status.success(
             `Stiker Reaksi favorit kamu berhasil diperbarui!\n` +
+            `> ${soundInfo}\n` +
             `> Sekarang cukup balas pesan mana saja dengan *${usedPrefix}sreact* untuk menempelkan stiker ini.`
           )
         )
@@ -121,7 +152,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['airich [markdown]', 'rich [markdown]', 'sreact (reply pesan / stiker)', 'setsreact (reply stiker)']
+handler.help = ['airich [markdown]', 'rich [markdown]', 'sreact (reply pesan / stiker)', 'setsreact (reply stiker / video / vn)']
 handler.tags = ['tools']
 handler.command = /^(airich|rich|tesrich|richui|sreact|setsreact|reactsticker|stickerreact)$/i
 

@@ -1,10 +1,19 @@
 import { sticker, directVideoToSticker } from '../../lib/sticker.js'
 import { Sticker } from 'wa-sticker-formatter'
 import { ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
-import { sendAudioSticker } from '../../lib/audioSticker.js'
 import { status } from '../../lib/style.js'
 import { extractTimeRange, getVideoDuration, trimVideoBuffer, formatTrimPrompt } from '../../lib/videoTrim.js'
 import { getTikTok, downloadBuffer } from '../downloader/downloader-tiktok.js'
+
+const AUDIO_STICKER_VER = Date.now()
+let _audioStickerModPromise = null
+async function sendAudioSticker(conn, jid, params, quoted) {
+  if (!_audioStickerModPromise) {
+    _audioStickerModPromise = import(`../../lib/audioSticker.js?v=${AUDIO_STICKER_VER}`)
+  }
+  const mod = await _audioStickerModPromise
+  return mod.sendAudioSticker(conn, jid, params, quoted)
+}
 
 const TIKTOK_URL_REGEX = /(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?tiktok\.com\/[^\s]+/i
 
