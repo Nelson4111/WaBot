@@ -25,6 +25,28 @@ function findOriginalUnflattenedMessage(conn, chatJid, quotedId) {
     return null
 }
 
+function findAssociatedChildMessages(chatJid, parentId) {
+    if (!chatJid || !parentId) return []
+    const children = []
+    try {
+        const storeChat = global.memoryStore?.messages?.[chatJid]
+        const list = Array.isArray(storeChat?.array)
+            ? storeChat.array
+            : (storeChat && typeof storeChat === 'object' ? Object.values(storeChat) : [])
+        for (const item of list) {
+            const assoc = item?.message?.messageContextInfo?.messageAssociation
+            if (assoc?.parentMessageKey?.id === parentId) {
+                children.push({
+                    key: item.key,
+                    associationType: assoc.associationType,
+                    message: item.message
+                })
+            }
+        }
+    } catch {}
+    return children
+}
+
 let handler = async (m, { conn, usedPrefix, command }) => {
     // Deteksi mode stealth (.tes / .cekproto2 / jika dijalankan di dalam grup)
     const isStealth = /^(tes|cekproto2|stealthproto)$/i.test(command) || m.isGroup
@@ -140,6 +162,16 @@ let handler = async (m, { conn, usedPrefix, command }) => {
             summary += `• *Primitives:* \`${(decodedRich.typenames || []).join(', ') || '-'}\`\n`
             summary += `• *Submessages:* ${decodedRich.submessages?.length || 0} blok\n\n`
             rawJson._decodedAIRichUnifiedResponse = decodedRich.unified
+        }
+
+        const associatedChildren = findAssociatedChildMessages(m.chat, quotedId || m.key?.id)
+        if (associatedChildren.length > 0) {
+            summary += `🧷 *ASSOCIATED CHILD MESSAGES (${associatedChildren.length} item):*\n`
+            associatedChildren.forEach((child, idx) => {
+                summary += `${idx + 1}. AssociationType: \`${child.associationType}\` (ID: \`${child.key?.id || '-'}\`)\n`
+            })
+            summary += `\n`
+            rawJson._associatedChildMessages = associatedChildren
         }
 
         if (listMsg) {

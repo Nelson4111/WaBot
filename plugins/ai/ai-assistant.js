@@ -1,6 +1,29 @@
-import { AIService } from '../../lib/ai/core/AIService.js';
+// Cache-buster agar saat plugin ini di-reload oleh watcher main.js,
+// modul AIService.js, PromptBuilder.js, dan aiRichMessage.js terbaru ikut dimuat ulang!
+const MODULE_VERSION = Date.now();
+let _aiServicePromise = null;
 
-const aiService = new AIService();
+async function getAIService() {
+    if (!_aiServicePromise) {
+        _aiServicePromise = (async () => {
+            const [{ AIService }, richMod, { PromptBuilder }] = await Promise.all([
+                import(`../../lib/ai/core/AIService.js?v=${MODULE_VERSION}`),
+                import(`../../lib/aiRichMessage.js?v=${MODULE_VERSION}`),
+                import(`../../lib/ai/core/PromptBuilder.js?v=${MODULE_VERSION}`)
+            ]);
+            if (typeof richMod.ensureAIRichProto === 'function') {
+                richMod.ensureAIRichProto();
+            }
+            const svc = new AIService({
+                sendAIRichMessage: richMod.sendAIRichMessage,
+                shouldUseAIRich: richMod.shouldUseAIRich
+            });
+            svc.promptBuilder = new PromptBuilder(svc.knowledge);
+            return svc;
+        })();
+    }
+    return _aiServicePromise;
+}
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     let qText = text || m.text;
@@ -9,6 +32,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let isVN = /^(aivn|vnai)$/i.test(command) || text?.includes('--vn');
     let cleanPrompt = text?.replace(/--vn/gi, '').trim() || qText;
     
+    const aiService = await getAIService();
     await aiService.processMessage(conn, m, cleanPrompt, isVN);
 };
 
@@ -43,6 +67,7 @@ handler.all = async function (m) {
     let isVN = text.includes('--vn');
     let cleanPrompt = text.replace(/--vn/gi, '').trim();
 
+    const aiService = await getAIService();
     await aiService.processMessage(this, m, cleanPrompt, isVN);
 };
 

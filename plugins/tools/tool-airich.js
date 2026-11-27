@@ -1,5 +1,16 @@
-import { sendAIRichMessage, sendStickerReaction } from '../../lib/aiRichMessage.js'
 import { status } from '../../lib/style.js'
+
+// Cache-buster agar saat plugin ini di-reload oleh watcher main.js,
+// modul lib/aiRichMessage.js terbaru ikut dimuat ulang tanpa harus restart bot!
+const MODULE_VERSION = Date.now()
+let _aiRichModulePromise = null
+
+function getAIRichModule() {
+  if (!_aiRichModulePromise) {
+    _aiRichModulePromise = import(`../../lib/aiRichMessage.js?v=${MODULE_VERSION}`)
+  }
+  return _aiRichModulePromise
+}
 
 const DEMO_MARKDOWN = `# Avelia Rich UI Engine
 Tampilan ini menggunakan protokol native **AIRichResponseMessage** di WhatsApp (setara dengan tampilan platform AI modern seperti ChatGPT & Gemini).
@@ -8,8 +19,6 @@ Tampilan ini menggunakan protokol native **AIRichResponseMessage** di WhatsApp (
 * **Ukuran Font Dinamis:** Mendukung Heading besar (\`#\`, \`##\`, \`###\`) langsung di gelembung chat.
 * **Tanpa Potongan "Baca Selengkapnya":** Pesan panjang langsung tampil utuh dari atas ke bawah dalam satu gelembung chat tanpa terpotong tombol *Read more*.
 * **Kotak Kode Interaktif:** Dilengkapi *Syntax Highlighting* berwarna, tombol **Salin (Copy)** sekali sentuh, dan layar **Full Preview** saat ditekan.
-
----
 
 ### 2. Contoh Kotak Kode (Klik untuk Full Preview / Salin)
 \`\`\`javascript
@@ -33,34 +42,56 @@ export async function renderCodeCard(conn, m) {
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   const cmd = command.toLowerCase()
+  const {
+    sendAIRichMessage,
+    sendStickerReaction,
+    setUserReactionSticker,
+    ensureAIRichProto
+  } = await getAIRichModule()
 
-  // ── Mode 1: Eksperimen Sticker Reaction / Sticker Annotation (associationType: 11) ──
-  if (cmd === 'sreact' || cmd === 'reactsticker' || cmd === 'stickerreact') {
-    if (!m.quoted) {
-      return m.reply(
-        status.warning(
-          `Balas (reply) pesan target sambil mengirim stiker/gambar, atau balas stiker dengan perintah:\n` +
-          `> › *${usedPrefix + command}*`
-        )
-      )
-    }
+  ensureAIRichProto()
 
-    // Jika user mengirim gambar/stiker sambil me-reply pesan target, atau me-reply stiker
-    const mediaSource = (m.mtype === 'stickerMessage' || m.mtype === 'imageMessage') ? m : m.quoted
-    const mime = (mediaSource.msg || mediaSource).mimetype || mediaSource.mediaType || ''
+  // ── Mode 1: Sticker Reaction / Sticker Annotation ("1 stiker ditambahkan", associationType: 11) ──
+  // Cara pakai super simpel (1 langkah, TIDAK perlu reply 2 pesan sekaligus!):
+  // 1. Ketik .sreact langsung atau reply pesan apa saja (teks/foto/video/dll) dengan .sreact
+  //    -> Bot langsung menempelkan reaksi "✅" + Stiker Reaksi ke pesan tersebut!
+  // 2. Jika user me-reply sebuah Stiker dengan .sreact (atau .setsreact):
+  //    -> Bot otomatis menyimpan stiker itu sebagai Stiker Reaksi favorit user SEKALIGUS langsung menempelkannya!
+  if (cmd === 'sreact' || cmd === 'setsreact' || cmd === 'reactsticker' || cmd === 'stickerreact') {
+    const targetMsg = m.quoted || m
+    const quotedMime = m.quoted ? ((m.quoted.msg || m.quoted).mimetype || m.quoted.mediaType || '') : ''
+    const selfMime = (m.msg || m).mimetype || m.mediaType || ''
 
-    if (!/webp|image|video/i.test(mime)) {
-      return m.reply(status.warning(`Pesan yang dipilih harus berupa *Stiker* atau *Gambar* untuk dijadikan Sticker Reaction.`))
-    }
-
-    await m.react('⏳')
     try {
-      const mediaBuf = await mediaSource.download()
-      if (!mediaBuf) throw new Error('Gagal mengunduh media stiker.')
+      let customBuffer = null
 
-      const targetMsg = (mediaSource === m && m.quoted) ? m.quoted : m.quoted
-      await sendStickerReaction(conn, m.chat, targetMsg, mediaBuf)
-      await m.react('✨')
+      // Jika pesan yang dikirim atau yang di-reply adalah Stiker (atau Gambar saat menggunakan .setsreact)
+      if (/webp/i.test(quotedMime) || (cmd === 'setsreact' && /webp|image/i.test(quotedMime))) {
+        const dl = await m.quoted.download()
+        if (Buffer.isBuffer(dl) && dl.length > 16) {
+          customBuffer = await setUserReactionSticker(m.sender, dl)
+        }
+      } else if (/webp/i.test(selfMime) || (cmd === 'setsreact' && /webp|image/i.test(selfMime))) {
+        const dl = await m.download()
+        if (Buffer.isBuffer(dl) && dl.length > 16) {
+          customBuffer = await setUserReactionSticker(m.sender, dl)
+        }
+      }
+
+      // Berikan reaksi emoji ✅ terlebih dahulu seperti pada bot referensi, lalu tempelkan Sticker Reaction!
+      await targetMsg.react('✅')
+      await sendStickerReaction(conn, m.chat, targetMsg, customBuffer, {
+        sender: m.sender
+      })
+
+      if (cmd === 'setsreact' && customBuffer) {
+        return m.reply(
+          status.success(
+            `Stiker Reaksi favorit kamu berhasil diperbarui!\n` +
+            `> Sekarang cukup balas pesan mana saja dengan *${usedPrefix}sreact* untuk menempelkan stiker ini.`
+          )
+        )
+      }
     } catch (err) {
       console.error('[Sticker Reaction Error]:', err)
       await m.react('❌')
@@ -90,8 +121,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['airich [markdown]', 'rich [markdown]', 'sreact (reply stiker)']
+handler.help = ['airich [markdown]', 'rich [markdown]', 'sreact (reply pesan / stiker)', 'setsreact (reply stiker)']
 handler.tags = ['tools']
-handler.command = /^(airich|rich|tesrich|richui|sreact|reactsticker|stickerreact)$/i
+handler.command = /^(airich|rich|tesrich|richui|sreact|setsreact|reactsticker|stickerreact)$/i
 
 export default handler
