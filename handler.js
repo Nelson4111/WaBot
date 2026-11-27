@@ -1127,11 +1127,36 @@ async function processMessage(m, chatUpdate) {
                     const commandUser = global.db.data.users[m.sender]
                     if (commandUser) commandUser.lastGuildRpgActivityAt = Date.now()
                 }
+                const cmdStartTs = Date.now()
                 try {
-                    await plugin.call(this, m, extra)
+                    const richMod = global.__aveliaRichModule || await import('./lib/aiRichMessage.js')
+                    if (typeof richMod.installAutoReactionSocketHooks === 'function') {
+                        richMod.installAutoReactionSocketHooks(this)
+                    }
+                    if (typeof richMod.registerActiveCommandMessage === 'function') {
+                        richMod.registerActiveCommandMessage(m)
+                    }
+                    try {
+                        await plugin.call(this, m, extra)
+                    } finally {
+                        if (typeof richMod.unregisterActiveCommandMessage === 'function') {
+                            richMod.unregisterActiveCommandMessage(m)
+                        }
+                    }
                     syncUserLimit(user)
                     m.limit = m.limit || plugin.limit || false
                     botArbitrator.resolve(m.key?.id, this)
+
+                    // Trigger penanda proses selesai otomatis (Random Audio-Sticker Reaction dari koleksi Owner)
+                    // untuk plugin pemrosesan berat (.ssound, stiker, downloader, maker, audio, AI, dll)
+                    if (typeof richMod.triggerCompletionStickerReaction === 'function') {
+                        const elapsedMs = Date.now() - cmdStartTs
+                        richMod.triggerCompletionStickerReaction(this, m, {
+                            pluginName: name,
+                            command,
+                            elapsedMs
+                        }).catch(() => {})
+                    }
                 } catch (e) {
                     // Error occured
                     m.error = e
