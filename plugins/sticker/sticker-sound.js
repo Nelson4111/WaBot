@@ -3,7 +3,7 @@ import { Sticker } from 'wa-sticker-formatter'
 import { ffmpeg, mergeAudioVideo } from '../../lib/converter.js'
 import { status } from '../../lib/style.js'
 import { extractTimeRange, getVideoDuration, trimVideoBuffer, formatTrimPrompt } from '../../lib/videoTrim.js'
-import { getTikTok, downloadBuffer } from '../downloader/downloader-tiktok.js'
+import { getTikTok, downloadBuffer, getTikTokViaWM } from '../downloader/downloader-tiktok.js'
 
 // Cache-buster v3 untuk sinkronisasi global.audioStickerCache dengan .setsreact / .sreact
 const AUDIO_STICKER_VER = Date.now()
@@ -59,40 +59,100 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
     await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
 
     try {
-      const res = await getTikTok(ttUrl)
+      // Prioritaskan provider yang memiliki track musik original (128kbps stereo MP3)
+      let res = await getTikTok(ttUrl, { preferMusic: true }).catch(() => null)
+      if (!res) {
+        res = await getTikTok(ttUrl)
+      }
 
-      // ── Sub-kasus 3A: Mode Audio-Only TikTok ──────────────────────
-      if (isAudioOnly) {
-        let audioBuffer = null
+      // Pastikan res.music terisi jika provider tercepat belum memilikinya
+      if (!res.music) {
+        try {
+          const wmRes = await getTikTokViaWM(ttUrl)
+          if (wmRes?.music) {
+            res.music = wmRes.music
+            if (!res.title || res.title === 'TikTok Video') res.title = wmRes.title
+          }
+        } catch {}
+      }
+
+      // Deteksi custom time range jika ada (misal: .ssound <url> 5 15)
+      const cleanArgsText = args.filter(a => !TIKTOK_URL_REGEX.test(a) && !/^(audio|suara|sound|mp3|lagu)$/i.test(a)).join(' ')
+      const customTimeRange = extractTimeRange(cleanArgsText, 60)
+      const startSec = customTimeRange ? customTimeRange.start : 0
+      const durationSec = customTimeRange ? customTimeRange.duration : 90
+
+      // Helper untuk mengambil audio kualitas studio jernih (Utamakan dedicated 128kbps stream daripada 32kbps track video)
+      const fetchCleanAudio = async (seekSec = startSec, durSec = durationSec) => {
+        let audioBuf = null
+
+        // 1. Prioritas Utama: Dedicated 128kbps TikTok Music Track
         if (res.music) {
           try {
-            audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
+            const rawMusic = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
+            if (rawMusic && rawMusic.length > 0) {
+              const opusArgs = []
+              if (seekSec > 0) opusArgs.push('-ss', String(seekSec))
+              opusArgs.push(
+                '-vn',
+                '-c:a', 'libopus',
+                '-b:a', '96k',
+                '-vbr', 'on',
+                '-compression_level', '5',
+                '-ac', '1',
+                '-ar', '48000',
+                '-t', String(durSec || 90)
+              )
+              const resOpus = await ffmpeg(rawMusic, opusArgs, 'mp3', 'ogg')
+              audioBuf = resOpus?.data || rawMusic
+            }
           } catch (e) {
-            console.warn('[TikTok Audio Direct Failed, will fallback to video audio]', e.message)
+            console.warn('[TikTok Clean Music Fetch Error]:', e.message)
+            audioBuf = null
           }
         }
 
-        if (!audioBuffer && res.play) {
-          const vidBuf = await downloadBuffer(res.play, res.referer || 'https://www.tiktok.com/')
-          const audioResult = await ffmpeg(vidBuf, [
-            '-vn',
-            '-c:a', 'libopus',
-            '-b:a', '128k',
-            '-vbr', 'on',
-            '-ac', '1',
-            '-ar', '48000',
-            '-t', '90'
-          ], 'mp4', 'ogg')
-          audioBuffer = audioResult.data
+        // 2. Fallback: Ekstrak dari video buffer jika dedicated music tidak tersedia
+        if (!audioBuf && res.play) {
+          try {
+            const vidBuf = await downloadBuffer(res.play, res.referer || 'https://www.tiktok.com/')
+            const opusArgs = []
+            if (seekSec > 0) opusArgs.push('-ss', String(seekSec))
+            opusArgs.push(
+              '-vn',
+              '-af', 'aresample=48000:first_pts=0,pan=mono|c0=0.5*c0+0.5*c1',
+              '-c:a', 'libopus',
+              '-b:a', '128k',
+              '-vbr', 'on',
+              '-compression_level', '5',
+              '-ac', '1',
+              '-ar', '48000',
+              '-t', String(durSec || 90)
+            )
+            const resOpus = await ffmpeg(vidBuf, opusArgs, 'mp4', 'ogg')
+            audioBuf = resOpus?.data
+          } catch (e) {
+            console.warn('[TikTok Video Audio Extraction Error]:', e.message)
+            audioBuf = null
+          }
         }
 
+        return audioBuf
+      }
+
+      // KASUS A: Pengguna MEMBALAS Media (Stiker, Foto, atau Video) ATAU Memiliki Sesi Visual Aktif
+      // Baik pengguna mengetik .ssound <url> maupun .ssound audio <url>, media yang dibalas dipasangkan dengan lagu TikTok!
+      const hasQuotedMedia = Boolean(m.quoted && (isSticker || isImage || isVideo))
+      const hasVisualSession = Boolean(session && (session.type === 'sticker' || session.type === 'image' || session.type === 'video'))
+
+      if (hasQuotedMedia || hasVisualSession) {
+        const audioBuffer = await fetchCleanAudio(startSec, durationSec)
         if (!audioBuffer) {
           await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
-          return m.reply(status.error('Gagal mengambil audio dari tautan TikTok tersebut.'))
+          return m.reply(status.error('Gagal mengambil audio jernih dari tautan TikTok tersebut.'))
         }
 
-        // 3A.1 Jika pengguna membalas Stiker / Foto / Video secara bersamaan
-        if (isSticker || isImage || isVideo) {
+        if (hasQuotedMedia) {
           let mediaBuffer = await quoted.download()
           if (!mediaBuffer) return m.reply(status.error('Gagal mengunduh media yang dibalas.'))
 
@@ -111,8 +171,7 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
           return
         }
 
-        // 3A.2 Jika sudah ada sesi media visual aktif di antrean
-        if (session && (session.type === 'sticker' || session.type === 'image' || session.type === 'video')) {
+        if (hasVisualSession) {
           clearTimeout(session.timeout)
           delete conn.stickerSoundSession[m.sender]
 
@@ -129,8 +188,17 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
           }
           return
         }
+      }
 
-        // 3A.3 Belum ada media: Simpan audio TikTok ke antrean sesi
+      // KASUS B: Mode Audio-Only (.ssound audio <link>) tanpa media yang dibalas
+      // Simpan audio TikTok ke antrean sesi agar pengguna bisa balas stiker berikutnya
+      if (isAudioOnly) {
+        const audioBuffer = await fetchCleanAudio(startSec, durationSec)
+        if (!audioBuffer) {
+          await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+          return m.reply(status.error('Gagal mengambil audio jernih dari tautan TikTok tersebut.'))
+        }
+
         if (conn.stickerSoundSession[m.sender]) {
           clearTimeout(conn.stickerSoundSession[m.sender].timeout)
         }
@@ -158,18 +226,11 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
         return m.reply(caption)
       }
 
-      // ── Sub-kasus 3B: Mode Langsung Video TikTok → Stiker Bersuara ──
+      // KASUS C: Mode Langsung Video/Foto TikTok → Stiker Bersuara
       // Jika merupakan postingan Slide Foto TikTok
       if (Array.isArray(res.images) && res.images.length > 0 && !res.play) {
         const imgBuffer = await downloadBuffer(res.images[0], res.referer || 'https://www.tiktok.com/')
-        let audioBuffer = null
-        if (res.music) {
-          try {
-            audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
-          } catch (e) {
-            console.warn('[TikTok Slide Music DL Error]', e.message)
-          }
-        }
+        const audioBuffer = await fetchCleanAudio(startSec, durationSec)
         if (!audioBuffer) {
           throw new Error('Slide foto TikTok tidak memiliki audio yang dapat diproses.')
         }
@@ -186,51 +247,15 @@ let handler = async (m, { conn, text, args, usedPrefix, command }) => {
       if (!videoBuffer) throw new Error('Gagal mengunduh buffer video TikTok.')
 
       const vidDur = await getVideoDuration(videoBuffer)
-
-      // Cek apakah ada argumen pemotongan kustom dari pengguna (misal: .ssound <url> 5 12 atau .ssound <url> 0 20)
-      const cleanArgsText = args.filter(a => !TIKTOK_URL_REGEX.test(a) && !/^(audio|suara|sound|mp3|lagu)$/i.test(a)).join(' ')
-      const customTimeRange = extractTimeRange(cleanArgsText, 60)
-
-      let startSec = 0
       let maxVisualSec = Math.min(vidDur || 35, 35)
       if (customTimeRange) {
-        startSec = customTimeRange.start
         maxVisualSec = Math.min(customTimeRange.duration, vidDur || 60)
       }
 
       const { packname, author } = getStickerWatermark(args)
 
-      // OPTIMASI DIRECT 1-PASS (Paralel: Ekstrak OGG Opus langsung dari videoBuffer agar hemat 1 HTTP download & sinkron dengan trim)
-      const audioPromise = (async () => {
-        let audioBuffer = null
-        try {
-          const ttAudioArgs = []
-          if (startSec > 0) ttAudioArgs.push('-ss', String(startSec))
-          ttAudioArgs.push(
-            '-vn',
-            '-c:a', 'libopus',
-            '-b:a', '96k',
-            '-vbr', 'on',
-            '-compression_level', '5',
-            '-ac', '1',
-            '-ar', '48000',
-            '-t', String(customTimeRange ? Math.min(maxVisualSec, 90) : 90)
-          )
-          const audioResult = await ffmpeg(videoBuffer, ttAudioArgs, 'mp4', 'ogg')
-          audioBuffer = audioResult.data
-        } catch {
-          audioBuffer = null
-        }
-        if (!audioBuffer && res.music) {
-          try {
-            audioBuffer = await downloadBuffer(res.music, res.referer || 'https://www.tiktok.com/')
-          } catch (e) {
-            console.warn('[TikTok Music Fallback Failed]', e.message)
-          }
-        }
-        return audioBuffer
-      })()
-
+      // Jalankan download & encode audio kualitas studio secara paralel bersama konversi stiker video!
+      const audioPromise = fetchCleanAudio(startSec, maxVisualSec)
       const stickerPromise = directVideoToSticker(videoBuffer, {
         startSec,
         durationSec: maxVisualSec,

@@ -228,10 +228,13 @@ async function getTikTokViaSnapTik(url) {
 
   if (!videoUrl) throw new Error('snaptik: no video link found')
 
+  const mp3Match = resp.data.match(/href="(https?:\/\/[^"]+\.mp3[^"]*)"/i)
+    || resp.data.match(/href="(https?:\/\/[^"]+)"[^>]*>(?:[^<]*(?:Download|Unduh)\s+(?:Audio|MP3|Music))/i)
+
   return {
     title: 'TikTok Video',
     play: videoUrl.replace(/&amp;/g, '&'),
-    music: null,
+    music: mp3Match ? mp3Match[1].replace(/&amp;/g, '&') : null,
     images: null,
     needBuffer: true,  // snaptik perlu download buffer
     referer: 'https://snaptik.app/'
@@ -261,16 +264,27 @@ async function getTikTokViaSSST(url) {
   const allLinks = [...data.matchAll(/href="(https?:\/\/[^"]+)"[^>]*(?:download|dl)[^>]*/gi)]
   const cleanLinks = allLinks
     .map(m => m[1].replace(/&amp;/g, '&'))
-    .filter(l => !l.includes('ssstik.io') && !l.includes('javascript'))
+    .filter(l => !l.includes('ssstik.io') && !l.includes('javascript') && !l.includes('/ssstik/m/'))
+
+  // Ambil link audio MP3 original jernih jika tersedia
+  const musicMatch = data.match(/href=["'](https?:\/\/[^"']+(?:\/ssstik\/m\/|\.mp3)[^"']*)["']/i)
+    || data.match(/<a[^>]+href=["']([^"']+)["'][^>]*>(?:[\s\S]*?(?:mp3|audio|music|suara)[\s\S]*?)<\/a>/i)
+  const music = musicMatch ? musicMatch[1].replace(/&amp;/g, '&') : null
+
+  // Ambil judul/caption video
+  const titleMatch = data.match(/<p class=["']maintext["']>([^<]+)<\/p>/i)
+    || data.match(/<div class=["']ssr-caption["']>([^<]+)<\/div>/i)
+    || data.match(/<h2>([^<]+)<\/h2>/i)
+  const title = titleMatch ? titleMatch[1].trim() : 'TikTok Video'
 
   if (!cleanLinks.length) {
     // Coba cari link apapun yang mengandung tiktok CDN
     const cdnMatch = data.match(/https?:\/\/[^"'\s]+(?:cdn-cf|v19|v26|v29|muscdn|tiktok)[^"'\s]+/i)
     if (cdnMatch) {
       return {
-        title: 'TikTok Video',
+        title,
         play: cdnMatch[0].replace(/&amp;/g, '&'),
-        music: null,
+        music,
         images: null,
         needBuffer: true,
         referer: 'https://ssstik.io/'
@@ -280,9 +294,9 @@ async function getTikTokViaSSST(url) {
   }
 
   return {
-    title: 'TikTok Video',
+    title,
     play: cleanLinks[0],
-    music: null,
+    music,
     images: null,
     needBuffer: true,  // WAJIB download buffer dulu
     referer: 'https://ssstik.io/'
@@ -324,10 +338,13 @@ async function getTikTokViaMDown(url) {
     || resp.data.match(/href="(https?:\/\/[^"]+)"[^>]*download[^>]*>\s*(?:HD|MP4|Download)/i)
   if (!videoMatch) throw new Error('musicaldown: no link found')
 
+  const musicMatch = resp.data.match(/href="(https?:\/\/[^"]+\.mp3[^"]*)"/i)
+    || resp.data.match(/href="(https?:\/\/[^"]+)"[^>]*download[^>]*>\s*(?:Audio|MP3|Music)/i)
+
   return {
     title: 'TikTok Video',
     play: videoMatch[1].replace(/&amp;/g, '&'),
-    music: null,
+    music: musicMatch ? musicMatch[1].replace(/&amp;/g, '&') : null,
     images: null,
     needBuffer: true,
     referer: 'https://musicaldown.com/'
@@ -362,7 +379,7 @@ async function getTikTokViaTiklydown(url) {
 }
 
 // ─── Wrapper utama: expand URL → Parallel Race (Promise.any) agar instan ────
-async function getTikTok(inputUrl) {
+async function getTikTok(inputUrl, options = {}) {
   // Bersihkan query tracker panjang (?is_from_webapp=1&sender_device=pc) agar tidak ditolak parser API
   let cleanInput = inputUrl.trim()
   if (/tiktok\.com\/@[^/]+\/(?:video|photo)\/\d+/i.test(cleanInput)) {
@@ -385,6 +402,9 @@ async function getTikTok(inputUrl) {
   const wrapProvider = async (name, fn) => {
     const result = await fn()
     if (result && (result.play || (Array.isArray(result.images) && result.images.length > 0))) {
+      if (options?.preferMusic && !result.music) {
+        throw new Error(`${name}: tidak memiliki track music`)
+      }
       console.log(`[TikTok] ✅ Berhasil via ${name}`)
       return result
     }
@@ -631,7 +651,7 @@ handler.command = /^(tt|tiktok|ttsearch)$/i
 handler.limit = true
 handler.register = true
 
-export { getTikTok, downloadBuffer, expandUrl }
+export { getTikTok, downloadBuffer, expandUrl, getTikTokViaWM, getTikTokViaTiklydown, getTikTokViaSSST, getTikTokViaRyzumi }
 handler.desc = 'Mengunduh video TikTok tanpa watermark dan audio secara otomatis.'
 handler.tutorial = [
   '.tt <link>',
