@@ -25,3 +25,7 @@ backup_db/
 local-lavalink-test/
 scratch/
 lib/database/
+database/reaction_stickers/*.webp
+database/reaction_stickers/*.ogg
+database/reaction_stickers/manifest.json
+!database/reaction_stickers/.gitkeep

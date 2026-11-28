@@ -80,7 +80,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (isForce) {
       await execPromise('git fetch origin')
       await execPromise('git reset --hard origin/main')
-      await execPromise('git clean -fd')
+      await execPromise('git clean -fd -e database/ -e database.json -e *_database.json -e sessions/ -e tmp/ -e backup_db/ -e database_backup/')
     } else {
       const result = await execPromise('git pull --rebase origin main')
       stdout = result.stdout
