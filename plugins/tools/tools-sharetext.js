@@ -27,6 +27,12 @@ handler.tags = ['tools'];
 handler.command = /^(shareteks|bagiteks)$/i;
 handler.limit = true;
 
+handler.desc = 'Alat utilitas praktis untuk memproses sharetext.'
+handler.tutorial = [
+  '.shareteks <input>',
+  'Ketik .shareteks diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;
 
 const bikinLink = async (teks) => {

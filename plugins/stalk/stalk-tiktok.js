@@ -127,4 +127,10 @@ handler.tags = ['stalk']
 handler.command = /^(ttstalk|tiktokstalk)$/i
 handler.limit = true
 
+handler.desc = 'Melihat profil, statistik followers, dan bio akun TikTok publik.'
+handler.tutorial = [
+  '.ttstalk <username>',
+  'Contoh: .ttstalk mrbeast'
+]
+
 export default handler

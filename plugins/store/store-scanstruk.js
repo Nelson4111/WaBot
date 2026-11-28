@@ -225,4 +225,9 @@ handler.help = ['scanstruk <reply gambar>', 'simpanstruk <id>', 'detailstruk <id
 handler.tags = ['moneytrack']
 handler.command = /^(scanstruk|simpanstruk|detailstruk|batalstruk)$/i
 
+handler.desc = 'Menjalankan perintah scanstruk untuk layanan scanstruk.'
+handler.tutorial = [
+  '.scanstruk'
+]
+
 export default handler

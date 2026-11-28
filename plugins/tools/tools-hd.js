@@ -144,4 +144,10 @@ handler.tags = ['tools', 'ai']
 handler.command = /^(hd|remini|upscale)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses hd.'
+handler.tutorial = [
+  '.hd <input>',
+  'Ketik .hd diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

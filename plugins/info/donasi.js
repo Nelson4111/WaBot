@@ -178,4 +178,9 @@ handler.help = ['donasi']
 handler.tags = ['main', 'info']
 handler.command = /^(donasi|donate)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai donasi.'
+handler.tutorial = [
+  '.donasi'
+]
+
 export default handler

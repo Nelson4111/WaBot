@@ -64,4 +64,11 @@ handler.tags = ['tools']
 handler.command = /^(carbon|carboncode)$/i
 handler.limit = true
 
+handler.desc = 'Mengubah potongan kode program menjadi gambar screenshot estetik tema Dracula.'
+handler.tutorial = [
+  '.carbon <kode program>',
+  'Contoh: .carbon console.log("Hello World")',
+  'Atau balas pesan berisi teks kode'
+]
+
 export default handler

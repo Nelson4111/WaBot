@@ -15,4 +15,10 @@ let handler = async (m, { conn }) => {
 handler.help = ['listblacklist']
 handler.tags = ['owner']
 handler.command = /^listblacklist$/i
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur listblacklist.'
+handler.tutorial = [
+  '.listblacklist',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

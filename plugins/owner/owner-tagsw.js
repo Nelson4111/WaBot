@@ -161,4 +161,10 @@ handler.tags = ['owner'];
 handler.command = /^(upswimage|upswvideo|upswtext|upswaudio|upsw)$/i;
 handler.owner = true;
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur tagsw.'
+handler.tutorial = [
+  '.upswimage',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler;

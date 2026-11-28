@@ -23,6 +23,11 @@ handler.command = /^(dare)$/i
 
 handler.register = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema dare.'
+handler.tutorial = [
+  '.dare'
+]
+
 export default handler
 
 function ucapan() {

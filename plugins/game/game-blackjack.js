@@ -381,4 +381,11 @@ handler.command = ['blackjack'];
 handler.tags = ['game'];
 handler.help = ['blackjack'];
 
+handler.desc = 'Bermain kartu Blackjack (21) melawan dealer/bot.'
+handler.tutorial = [
+  '.blackjack <taruhan>',
+  '.hit (tambah kartu)',
+  '.stand (tutup kartu)'
+]
+
 export default handler;

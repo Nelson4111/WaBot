@@ -10,4 +10,10 @@ handler.command = /^(getdb)$/i
 
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur getdb.'
+handler.tutorial = [
+  '.getdb',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

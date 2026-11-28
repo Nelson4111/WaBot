@@ -27,6 +27,11 @@ handler.tags = ["internet"]
 handler.command = /^(infoloker)$/i
 handler.register = true
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai infoloker.'
+handler.tutorial = [
+  '.infoloker <pencarian>'
+]
+
 export default handler
 
 /* New Line */

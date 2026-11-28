@@ -18,4 +18,9 @@ handler.help = ['fanart']
 handler.limit = false
 handler.premium = false
 handler.register = true
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime fanart.'
+handler.tutorial = [
+  '.fanart'
+]
+
 export default handler

@@ -42,4 +42,10 @@ handler.tags = ['game']
 handler.command = ['tebakhewan']
 handler.limit = true
 
+handler.desc = 'Memulai permainan kuis interaktif tebakhewan di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakhewan',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

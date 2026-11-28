@@ -87,4 +87,10 @@ handler.help = ['kencan']
 handler.tags = ['pasangan']
 handler.command = /^(kencan)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk kencan.'
+handler.tutorial = [
+  '.kencan @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

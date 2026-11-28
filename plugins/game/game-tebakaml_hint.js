@@ -9,4 +9,10 @@ let handler = async (m, { conn }) => {
 }
 handler.command = /^emel$/i
 handler.limit = true
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakaml.'
+handler.tutorial = [
+  '.emel',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakaml di grup'
+]
+
 export default handler

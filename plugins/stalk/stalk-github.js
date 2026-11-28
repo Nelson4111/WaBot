@@ -78,4 +78,10 @@ handler.tags = ['stalk']
 handler.command = /^(ghstalk|githubstalk)$/i
 handler.limit = true
 
+handler.desc = 'Melihat profil akun GitHub, repository publik, dan followers.'
+handler.tutorial = [
+  '.ghstalk <username>',
+  'Contoh: .ghstalk torvalds'
+]
+
 export default handler

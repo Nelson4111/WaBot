@@ -54,4 +54,10 @@ function clearMemory() {
     }
 }
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur clearram.'
+handler.tutorial = [
+  '.clearram',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

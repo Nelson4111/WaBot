@@ -99,4 +99,9 @@ handler.help = ['fetch', 'get'].map(v => v + ' <url>')
 handler.tags = ['internet']
 handler.command = /^(fetch|get)$/i
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai fetch.'
+handler.tutorial = [
+  '.fetch <pencarian>'
+]
+
 export default handler

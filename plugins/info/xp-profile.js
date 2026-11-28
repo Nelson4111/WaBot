@@ -351,4 +351,9 @@ handler.help = ['profile', 'me']
 handler.tags = ['main', 'info']
 handler.command = /^(profile|me|profil)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai profile.'
+handler.tutorial = [
+  '.profile'
+]
+
 export default handler

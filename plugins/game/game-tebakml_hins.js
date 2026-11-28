@@ -17,4 +17,10 @@ let handler = async (m, { conn }) => {
 
 handler.limit = true
 handler.command = /^hgml$/i
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakml.'
+handler.tutorial = [
+  '.hgml',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakml di grup'
+]
+
 export default handler

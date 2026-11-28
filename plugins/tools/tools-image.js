@@ -57,4 +57,10 @@ handler.command = ['imgtools']
 handler.limit = true 
 handler.register = true 
 
+handler.desc = 'Alat utilitas praktis untuk memproses image.'
+handler.tutorial = [
+  '.imgtools <input>',
+  'Ketik .imgtools diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

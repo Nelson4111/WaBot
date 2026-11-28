@@ -178,4 +178,10 @@ handler.tags = ['tools']
 handler.command = /^(promptcode|detectbug|convertcode|explaincode|imagesolve)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses codepromt.'
+handler.tutorial = [
+  '.promptcode <input>',
+  'Ketik .promptcode diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

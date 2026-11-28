@@ -69,4 +69,10 @@ handler.tags = ['downloader', 'anime']
 handler.command = /^(danbooru|danboorudl)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan DANBOORU secara otomatis.'
+handler.tutorial = [
+  '.danbooru <link danbooru>',
+  'Kirim tautan danbooru dengan perintah .danbooru'
+]
+
 export default handler

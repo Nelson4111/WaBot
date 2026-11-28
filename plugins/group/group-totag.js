@@ -24,4 +24,10 @@ handler.command = /^(totag|tag)$/i
 handler.admin = true
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk totag.'
+handler.tutorial = [
+  '.totag',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

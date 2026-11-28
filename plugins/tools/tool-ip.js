@@ -110,4 +110,10 @@ handler.command = /^(ip(location|lookup)?)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses ip.'
+handler.tutorial = [
+  '.iplocation <input>',
+  'Ketik .iplocation diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

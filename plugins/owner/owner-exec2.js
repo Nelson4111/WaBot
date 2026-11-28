@@ -167,4 +167,10 @@ handler.customPrefix = /^(=?>|~>|([.#!](eval|js)\b))\s*/
 handler.command = new RegExp
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur exec2.'
+handler.tutorial = [
+  '.new regexp',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

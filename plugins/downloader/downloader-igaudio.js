@@ -166,4 +166,10 @@ handler.command = /^(instaaudio|igaudio|inastagramaudio)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Mengekstrak dan mengunduh file audio dari postingan atau reels Instagram.'
+handler.tutorial = [
+  '.igaudio <link instagram>',
+  'Kirim link reels/post Instagram untuk mengunduh audionya'
+]
+
 export default handler

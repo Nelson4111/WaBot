@@ -23,4 +23,10 @@ handler.tags = ['fun']
 handler.command = /^ramal$/i
 handler.limit = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk ramalan.'
+handler.tutorial = [
+  '.ramal <teks/pertanyaan>',
+  'Ketik .ramal diikuti nama atau pertanyaan'
+]
+
 export default handler

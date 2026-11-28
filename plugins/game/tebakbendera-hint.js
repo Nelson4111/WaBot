@@ -7,4 +7,10 @@ let handler = async (m, { conn }) => {
 }
 handler.command = /^tebe$/i
 handler.limit = true
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak .'
+handler.tutorial = [
+  '.tebe',
+  'Gunakan perintah ini saat kesulitan menjawab kuis  di grup'
+]
+
 export default handler

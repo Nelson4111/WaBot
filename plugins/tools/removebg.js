@@ -136,4 +136,10 @@ handler.tags = ['tools', 'ai']
 handler.command = /^(removebg|nobg)$/i
 handler.limit = true
 
+handler.desc = 'Menghapus latar belakang (background) foto secara otomatis menjadi transparan.'
+handler.tutorial = [
+  '.removebg (balas foto)',
+  'Kirim atau balas foto dengan perintah .removebg'
+]
+
 export default handler

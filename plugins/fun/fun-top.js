@@ -145,4 +145,10 @@ handler.tags = ['fun']
 handler.command = /^top$/i
 handler.group = true
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk top.'
+handler.tutorial = [
+  '.top <teks/pertanyaan>',
+  'Ketik .top diikuti nama atau pertanyaan'
+]
+
 export default handler

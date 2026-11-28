@@ -97,4 +97,10 @@ handler.tags = ['ai', 'tools']
 handler.command = /^(colorize|warnai)$/i
 handler.limit = true
 
+handler.desc = 'Mewarnai foto hitam putih secara otomatis menggunakan kecerdasan buatan.'
+handler.tutorial = [
+  '.colorize (balas foto)',
+  'Kirim atau balas foto hitam putih dengan perintah .colorize'
+]
+
 export default handler

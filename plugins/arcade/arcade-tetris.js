@@ -30,4 +30,10 @@ handler.help = ['tetris', 'tetrismini', 'gametetris']
 handler.tags = ['arcade']
 handler.command = /^(tetris|tetrismini|gametetris)$/i
 
+handler.desc = 'Bermain mini game arcade interaktif HTML5 tetris langsung di obrolan.'
+handler.tutorial = [
+  '.tetris',
+  'Membuka game arcade di dalam gelembung obrolan WhatsApp'
+]
+
 export default handler

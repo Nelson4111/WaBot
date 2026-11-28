@@ -52,6 +52,12 @@ handler.command = /^telestick$/i
 handler.limit = false;
 handler.premium = true
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk telegram.'
+handler.tutorial = [
+  '.telestick (balas stiker/media)',
+  'Kirim perintah .telestick dengan membalas stiker atau gambar target'
+]
+
 export default handler
 
 function delay(ms) {

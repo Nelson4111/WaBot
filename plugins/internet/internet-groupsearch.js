@@ -48,4 +48,9 @@ handler.tags = ['internet', 'premium']
 handler.command = ['groupsearch']
 handler.premium = true
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai groupsearch.'
+handler.tutorial = [
+  '.groupsearch <pencarian>'
+]
+
 export default handler

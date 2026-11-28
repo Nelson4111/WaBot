@@ -21,4 +21,10 @@ let handler = async (m, { conn }) => {
 handler.limit = true
 handler.command = /^hlagu$/i
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebaklagu.'
+handler.tutorial = [
+  '.hlagu',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebaklagu di grup'
+]
+
 export default handler

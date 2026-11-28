@@ -150,4 +150,9 @@ handler.help = ['daftar']
 handler.tags = ['main']
 handler.command = /^(daftar|verify|reg(ister)?)$/i
 
+handler.desc = 'Menjalankan perintah daftar untuk layanan daftar.'
+handler.tutorial = [
+  '.daftar'
+]
+
 export default handler

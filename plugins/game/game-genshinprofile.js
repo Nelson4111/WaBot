@@ -50,4 +50,10 @@ handler.command = /^(genshinprofile)$/i;
 handler.tags = ["game"]
 handler.limit = false;
 
+handler.desc = 'Memulai permainan kuis interaktif genshinprofile di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.genshinprofile',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler;

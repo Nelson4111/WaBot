@@ -11,5 +11,10 @@ handler.customPrefix = /^(assalamualaikum|assalam|salam|asalamualaikum|assalamua
 
 handler.command = new RegExp;
 
+handler.desc = 'Menjalankan perintah new regexp untuk layanan waalaikumsalam2.'
+handler.tutorial = [
+  '.new regexp'
+]
+
 export default handler;
 

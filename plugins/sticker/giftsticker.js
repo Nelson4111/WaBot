@@ -102,4 +102,10 @@ handler.help = ['gifsticker <query>,<jumlah>'];
 handler.command = ['gifsticker'];
 handler.tags = ['sticker'];
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk giftsticker.'
+handler.tutorial = [
+  '.gifsticker (balas stiker/media)',
+  'Kirim perintah .gifsticker dengan membalas stiker atau gambar target'
+]
+
 export default handler;

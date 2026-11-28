@@ -67,4 +67,10 @@ handler.help = ['gemini'];
 handler.command = ['gemini'];
 handler.tags = ['ai'];
 
+handler.desc = 'Menjawab pertanyaan dan memberikan wawasan cerdas menggunakan Google Gemini AI.'
+handler.tutorial = [
+  '.gemini <pertanyaan>',
+  'Contoh: .gemini jelaskan perbedaan astronomi dan astrologi'
+]
+
 export default handler;

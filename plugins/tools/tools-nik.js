@@ -36,6 +36,12 @@ const handler = async (m, { args, usedPrefix, command }) => {
 handler.help = ['nik <nomor>']
 handler.tags = ['tools']
 handler.command = /^nik$/i
+handler.desc = 'Alat utilitas praktis untuk memproses nik.'
+handler.tutorial = [
+  '.nik <input>',
+  'Ketik .nik diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler
 
 // === Fungsi Utama (Mandiri) ===

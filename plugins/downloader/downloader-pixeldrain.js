@@ -65,4 +65,10 @@ handler.tags = ['downloader']
 handler.command = /^(pixeldrain|pds)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan PIXELDRAIN secara otomatis.'
+handler.tutorial = [
+  '.pixeldrain <link pixeldrain>',
+  'Kirim tautan pixeldrain dengan perintah .pixeldrain'
+]
+
 export default handler

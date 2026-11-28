@@ -47,4 +47,9 @@ handler.help = ['elfaria']
 handler.tags = ['anime']
 handler.command = /^(elfaria)$/i
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime elfaria.'
+handler.tutorial = [
+  '.elfaria'
+]
+
 export default handler

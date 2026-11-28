@@ -532,4 +532,10 @@ handler.command = /^(ig(dl)?|instagram(dl)?|reels?)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Mengunduh postingan foto, video, carousel, atau reels dari Instagram.'
+handler.tutorial = [
+  '.ig <link instagram>',
+  'Kirim atau balas link Instagram dengan perintah .ig'
+]
+
 export default handler

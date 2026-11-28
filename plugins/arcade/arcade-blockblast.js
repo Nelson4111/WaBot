@@ -30,4 +30,10 @@ handler.help = ['blockblast', 'bbmini', 'bb', 'blockgame']
 handler.tags = ['arcade']
 handler.command = /^(blockblast|bbmini|bb|blockgame)$/i
 
+handler.desc = 'Bermain mini game arcade interaktif HTML5 blockblast langsung di obrolan.'
+handler.tutorial = [
+  '.blockblast',
+  'Membuka game arcade di dalam gelembung obrolan WhatsApp'
+]
+
 export default handler

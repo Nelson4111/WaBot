@@ -55,4 +55,9 @@ handler.tags = ['info']
 handler.help = ['listredeem']
 handler.register = true
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai listredeem.'
+handler.tutorial = [
+  '.listredeem'
+]
+
 export default handler

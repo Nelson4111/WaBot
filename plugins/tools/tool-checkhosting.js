@@ -66,4 +66,10 @@ handler.tags = ['tools']
 handler.command = /^(checkhost|hosting|cekhost)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses checkhosting.'
+handler.tutorial = [
+  '.checkhost <input>',
+  'Ketik .checkhost diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

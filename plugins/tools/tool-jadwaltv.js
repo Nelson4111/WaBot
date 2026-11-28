@@ -14,6 +14,12 @@ handler.command = /^jadwaltv$/i
 
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses jadwaltv.'
+handler.tutorial = [
+  '.jadwaltv <input>',
+  'Ketik .jadwaltv diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler
 
 async function jadwalTV(name) {

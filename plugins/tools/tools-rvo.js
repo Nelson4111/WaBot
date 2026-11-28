@@ -30,4 +30,10 @@ handler.tags = ['tools']
 handler.command = /^rvo$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses rvo.'
+handler.tutorial = [
+  '.rvo <input>',
+  'Ketik .rvo diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

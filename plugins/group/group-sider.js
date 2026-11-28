@@ -69,6 +69,12 @@ handler.command = /^(sider|gcsider|getsider)$/i
 handler.group = true
 handler.admin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk sider.'
+handler.tutorial = [
+  '.sider',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler
 
 function formatOffTime(ms) {

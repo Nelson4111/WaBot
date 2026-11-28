@@ -206,4 +206,10 @@ handler.tags = ['group']
 handler.command = /^(security|sc)$/i
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk security.'
+handler.tutorial = [
+  '.security',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

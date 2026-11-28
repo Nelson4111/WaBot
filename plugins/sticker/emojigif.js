@@ -31,4 +31,10 @@ handler.tags = ['sticker']
 handler.command = /^emojigif$/i
 handler.limit = true
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk emojigif.'
+handler.tutorial = [
+  '.emojigif (balas stiker/media)',
+  'Kirim perintah .emojigif dengan membalas stiker atau gambar target'
+]
+
 export default handler

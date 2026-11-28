@@ -121,4 +121,10 @@ handler.tags = ['owner']
 handler.command = /^(addthanks|tambahthanks|delthanks|hapusthanks|deletethanks|rmthanks|listthanks|daftarthanks)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur thanks.'
+handler.tutorial = [
+  '.addthanks',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

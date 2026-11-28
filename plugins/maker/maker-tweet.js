@@ -97,4 +97,10 @@ handler.tags = ['maker']
 handler.help = ['tweet <teks>', 'faketweet <nama>,<username>,<teks>']
 handler.limit = true
 
+handler.desc = 'Membuat gambar grafis kustom efek tweet.'
+handler.tutorial = [
+  '.tweet <teks>',
+  'Kirim perintah .tweet disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

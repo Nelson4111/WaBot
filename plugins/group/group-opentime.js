@@ -85,4 +85,10 @@ handler.group = true
 handler.botAdmin = true
 handler.admin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk opentime.'
+handler.tutorial = [
+  '.opentime',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

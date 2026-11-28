@@ -316,4 +316,10 @@ handler.help = [
 handler.tags = ['tools', 'owner']
 handler.command = /^(airich|rich|tesrich|richui|sreact|setsreact|addreact|delreact|removereact|listreact|reactlist|autoreact|reactsticker|stickerreact)$/i
 
+handler.desc = 'Mengirim teks dalam format AI Rich Card khusus (kotak kode salin rapi).'
+handler.tutorial = [
+  '.rich <teks>',
+  'Ketik .rich teks atau balas pesan untuk diformat ke gaya rich message'
+]
+
 export default handler

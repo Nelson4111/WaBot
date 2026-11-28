@@ -1274,4 +1274,9 @@ handler.command = ['avg', 'avelia', 'avelia-gacha']
 handler.alias = ['avg', 'avelia']
 handler.group = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime gacha.'
+handler.tutorial = [
+  '.avg'
+]
+
 export default handler

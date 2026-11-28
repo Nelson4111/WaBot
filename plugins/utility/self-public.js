@@ -17,4 +17,9 @@ handler.rowner = true
 
 handler.command = /^(self|public)/i
 
+handler.desc = 'Menjalankan perintah self untuk layanan public.'
+handler.tutorial = [
+  '.self'
+]
+
 export default handler

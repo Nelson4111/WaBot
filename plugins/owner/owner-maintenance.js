@@ -44,4 +44,10 @@ handler.tags = ['owner']
 handler.command = /^maintenance$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur maintenance.'
+handler.tutorial = [
+  '.maintenance',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

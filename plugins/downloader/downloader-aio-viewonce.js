@@ -82,4 +82,10 @@ handler.command = /^aiovo$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Mengunduh file media dari tautan AIO VIEWONCE secara otomatis.'
+handler.tutorial = [
+  '.aiovo <link aio viewonce>',
+  'Kirim tautan aio viewonce dengan perintah .aiovo'
+]
+
 export default handler

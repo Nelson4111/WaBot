@@ -32,4 +32,10 @@ handler.tags = ['fun']
 handler.command = /^kematian$/i
 handler.limit = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk kematian.'
+handler.tutorial = [
+  '.kematian <teks/pertanyaan>',
+  'Ketik .kematian diikuti nama atau pertanyaan'
+]
+
 export default handler

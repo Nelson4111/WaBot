@@ -66,4 +66,10 @@ handler.tags = ['tools', 'info']
 handler.command = /^(cekpajak|pajak)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekpajak.'
+handler.tutorial = [
+  '.cekpajak <input>',
+  'Ketik .cekpajak diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

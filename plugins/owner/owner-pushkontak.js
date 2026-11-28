@@ -9,4 +9,10 @@ handler.owner = true
 handler.group = true
 handler.disabled = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur pushkontak.'
+handler.tutorial = [
+  '.pushkontak',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

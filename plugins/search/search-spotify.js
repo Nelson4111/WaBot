@@ -115,4 +115,10 @@ handler.help = ['spotifys <query>']
 handler.tags = ['search']
 handler.command = /^(spotifys|spotifysearch)$/i
 
+handler.desc = 'Mencari informasi atau media spotify berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.spotifys <kata kunci>',
+  'Contoh: .spotifys pencarian'
+]
+
 export default handler

@@ -46,4 +46,10 @@ handler.help = ['afk <alasan>'];
 handler.tags = ['main'];
 handler.command = /^afk$/i;
 
+handler.desc = 'Menandai status Anda sebagai AFK sehingga bot memberitahu orang yang menandai (tag) Anda.'
+handler.tutorial = [
+  '.afk <alasan>',
+  'Contoh: .afk sedang makan'
+]
+
 export default handler;

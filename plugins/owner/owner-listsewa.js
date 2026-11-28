@@ -30,6 +30,12 @@ handler.tags = ['owner']
 handler.command = /^(listsewa)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur listsewa.'
+handler.tutorial = [
+  '.listsewa',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler
 
 function msToDate(ms) {

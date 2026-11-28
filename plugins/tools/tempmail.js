@@ -155,4 +155,10 @@ handler.tags = ['tools']
 handler.command = /^(tempmail|cekmail|pesanmail)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses tempmail.'
+handler.tutorial = [
+  '.tempmail <input>',
+  'Ketik .tempmail diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

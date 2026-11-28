@@ -68,4 +68,10 @@ handler.tags = ['owner']
 handler.command = /^(d(el)?(ete)?u(ser)?|ha?pu?su(ser)?)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur deluser.'
+handler.tutorial = [
+  '.deleteuser',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

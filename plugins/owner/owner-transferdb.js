@@ -74,4 +74,10 @@ handler.tags = ['owner']
 handler.command = /^(transferdb|tfdb|move)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur transferdb.'
+handler.tutorial = [
+  '.transferdb',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

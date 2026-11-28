@@ -43,4 +43,10 @@ handler.help = ['togura']
 handler.tags = ['maker']
 handler.command = /^(togura)$/i
 
+handler.desc = 'Mengubah foto menjadi gaya gura menggunakan filter efek visual.'
+handler.tutorial = [
+  '.togura (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .togura'
+]
+
 export default handler

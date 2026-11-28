@@ -60,4 +60,10 @@ handler.command = ['toimg']
 handler.register = true
 handler.limit = true
 
+handler.desc = 'Mengubah stiker WhatsApp menjadi gambar foto biasa (JPG/PNG).'
+handler.tutorial = [
+  '.toimg (balas stiker)',
+  'Balas stiker WhatsApp yang ingin diubah menjadi gambar'
+]
+
 export default handler

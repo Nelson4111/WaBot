@@ -32,4 +32,10 @@ handler.command = /^link(grup|gc)?$/i
 handler.group = true
 handler.botAdmin = true
 
+handler.desc = 'Mengambil tautan undangan untuk bergabung ke dalam grup WhatsApp saat ini.'
+handler.tutorial = [
+  '.linkgroup',
+  'Bot akan mengirimkan link undangan grup'
+]
+
 export default handler

@@ -100,4 +100,10 @@ handler.help = ['hadiah <tipe> <jumlah>']
 handler.tags = ['pasangan']
 handler.command = /^(hadiah)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk hadiah.'
+handler.tutorial = [
+  '.hadiah @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

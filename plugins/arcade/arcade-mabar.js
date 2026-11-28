@@ -101,4 +101,10 @@ handler.help = ['mabar [nama_room]', 'arena [nama_room]', 'stararena']
 handler.tags = ['arcade']
 handler.command = /^(mabar|arena|stararena)$/i
 
+handler.desc = 'Bermain mini game arcade interaktif HTML5 mabar langsung di obrolan.'
+handler.tutorial = [
+  '.mabar',
+  'Membuka game arcade di dalam gelembung obrolan WhatsApp'
+]
+
 export default handler

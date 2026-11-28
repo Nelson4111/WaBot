@@ -21,6 +21,12 @@ handler.help = ['femboycek', 'cekfemboy']
 handler.tags = ['fun']
 handler.command = /^(femboycek|cekfemboy)$/i
 
+handler.desc = 'Mengukur atau mengecek tingkat femboy seru-seruan secara acak.'
+handler.tutorial = [
+  '.femboycek <nama/@user>',
+  'Contoh: .femboycek @user'
+]
+
 export default handler
 
 function pickRandom(list) {

@@ -116,4 +116,10 @@ handler.tags = ['maker']
 handler.command = /^(hitamkan|tohitam)$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar grafis kustom efek hitam.'
+handler.tutorial = [
+  '.hitamkan <teks>',
+  'Kirim perintah .hitamkan disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

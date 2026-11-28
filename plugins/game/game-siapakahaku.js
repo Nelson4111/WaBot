@@ -30,4 +30,10 @@ handler.command = /^siapa(kah)?aku$/i
 handler.onlyprem = true
 handler.game = true
 
+handler.desc = 'Memulai teka-teki tebak profil atau identitas benda/profesi misterius.'
+handler.tutorial = [
+  '.siapakahaku',
+  'Jawab langsung di obrolan'
+]
+
 export default handler

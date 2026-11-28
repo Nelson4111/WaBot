@@ -39,4 +39,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk settings.'
+handler.tutorial = [
+  '.group',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

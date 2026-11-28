@@ -18,4 +18,10 @@ function resetLimit() {
     }
 }
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur resetlimit.'
+handler.tutorial = [
+  '.resetlimit',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

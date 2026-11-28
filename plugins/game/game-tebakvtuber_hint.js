@@ -8,4 +8,10 @@ let handler = async (m, { conn }) => {
 handler.command = /^hvtuber$/i
 handler.limit = true
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakvtuber.'
+handler.tutorial = [
+  '.hvtuber',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakvtuber di grup'
+]
+
 export default handler

@@ -48,5 +48,11 @@ handler.tags = ['sticker']
 handler.command = /(brcolor|bratcolor)$/i
 handler.limit = true
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk bratcolor.'
+handler.tutorial = [
+  '.brcolor (balas stiker/media)',
+  'Kirim perintah .brcolor dengan membalas stiker atau gambar target'
+]
+
 export default handler
 // https://velyn.mom/api/maker/bratcolor?text=

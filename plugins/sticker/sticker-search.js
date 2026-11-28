@@ -54,4 +54,10 @@ handler.tags = ['sticker']
 handler.command = /^stickersearch$/i
 handler.limit = true
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk search.'
+handler.tutorial = [
+  '.stickersearch (balas stiker/media)',
+  'Kirim perintah .stickersearch dengan membalas stiker atau gambar target'
+]
+
 export default handler

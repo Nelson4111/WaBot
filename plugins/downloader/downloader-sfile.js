@@ -59,6 +59,12 @@ handler.command = /^(sfile)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Mengunduh file media dari tautan SFILE secara otomatis.'
+handler.tutorial = [
+  '.sfile <link sfile>',
+  'Kirim tautan sfile dengan perintah .sfile'
+]
+
 export default handler
 
 async function sfileSearch(query, page = 1) {

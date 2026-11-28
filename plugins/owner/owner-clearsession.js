@@ -140,4 +140,10 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur clearsession.'
+handler.tutorial = [
+  '.delsesi',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler;

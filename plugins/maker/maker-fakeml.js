@@ -46,4 +46,10 @@ handler.tags = ['maker']
 handler.command = /^(fakeml|mlfake|mlcard)$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar screenshot palsu ML untuk keperluan meme atau hiburan.'
+handler.tutorial = [
+  '.fakeml <teks>',
+  'Contoh: .fakeml Nama|Username|Komentar'
+]
+
 export default handler

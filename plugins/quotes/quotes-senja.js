@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^senja$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema senja.'
+handler.tutorial = [
+  '.senja'
+]
+
 export default handler

@@ -28,6 +28,12 @@ handler.command = /^(chord)$/i;
 handler.register = true;
 handler.limit = true;
 
+handler.desc = 'Alat utilitas praktis untuk memproses chord.'
+handler.tutorial = [
+  '.chord <input>',
+  'Ketik .chord diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;
 
 export async function chord(query) {

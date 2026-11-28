@@ -11,4 +11,10 @@ handler.tags = ['tools']
 handler.command = /^qr(code)?$/i
 
 
+handler.desc = 'Membuat kode QR dari teks atau tautan URL.'
+handler.tutorial = [
+  '.qrcode <teks/link>',
+  'Contoh: .qrcode https://google.com'
+]
+
 export default handler

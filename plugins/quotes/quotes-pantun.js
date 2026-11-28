@@ -21,6 +21,11 @@ handler.command = /^(pantun)$/i
 
 handler.register = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema pantun.'
+handler.tutorial = [
+  '.pantun'
+]
+
 export default handler
 
 function ucapan() {

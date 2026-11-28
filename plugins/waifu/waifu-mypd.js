@@ -101,4 +101,9 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['mywaifu', 'myhusbu']
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk mypd.'
+handler.tutorial = [
+  '.mywaifu'
+]
+
 export default handler

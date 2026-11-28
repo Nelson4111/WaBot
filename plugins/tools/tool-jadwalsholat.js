@@ -69,4 +69,10 @@ handler.tags = ['tools', 'islamic']
 handler.command = /^(jadwalsholat|sholat)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses jadwalsholat.'
+handler.tutorial = [
+  '.jadwalsholat <input>',
+  'Ketik .jadwalsholat diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

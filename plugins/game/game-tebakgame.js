@@ -81,4 +81,10 @@ handler.before = async (m, { conn }) => {
     }
 }
 
+handler.desc = 'Memulai permainan kuis interaktif tebakgame di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakgame',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

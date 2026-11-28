@@ -43,4 +43,10 @@ handler.help = ['tofigure']
 handler.tags = ['maker']
 handler.command = /^(tofigure)$/i
 
+handler.desc = 'Mengubah foto menjadi gaya figure menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tofigure (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tofigure'
+]
+
 export default handler

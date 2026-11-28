@@ -60,4 +60,10 @@ handler.tags = ['maker']
 handler.command = /^(fakestory|fakestatus|fs)$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar screenshot palsu STORY untuk keperluan meme atau hiburan.'
+handler.tutorial = [
+  '.fakestory <teks>',
+  'Contoh: .fakestory Nama|Username|Komentar'
+]
+
 export default handler

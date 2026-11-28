@@ -42,4 +42,10 @@ handler.tags = ['game']
 handler.command = ['tebakgenshin']
 handler.limit = false
 
+handler.desc = 'Memulai permainan kuis interaktif tebakgenshin di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakgenshin',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

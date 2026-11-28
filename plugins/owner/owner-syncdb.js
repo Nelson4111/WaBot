@@ -81,4 +81,10 @@ handler.tags = ['owner']
 handler.command = /^(syncdb|syncsupabase)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur syncdb.'
+handler.tutorial = [
+  '.syncdb',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

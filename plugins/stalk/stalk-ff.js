@@ -147,4 +147,10 @@ handler.tags = ['stalk']
 handler.command = /^(ffstalk|freestalk|stalkff)$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun FF publik.'
+handler.tutorial = [
+  '.ffstalk <username/id>',
+  'Contoh: .ffstalk target'
+]
+
 export default handler

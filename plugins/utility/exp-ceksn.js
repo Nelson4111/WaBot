@@ -11,4 +11,9 @@ handler.help = ['ceksn']
 handler.tags = ['info']
 handler.command = /^(ceksn)$/i
 handler.register = true
+handler.desc = 'Menjalankan perintah ceksn untuk layanan ceksn.'
+handler.tutorial = [
+  '.ceksn'
+]
+
 export default handler

@@ -113,4 +113,10 @@ handler.command = /^carigrup$/i
 handler.limit = true
 handler.premium = true
 
+handler.desc = 'Mencari informasi atau media carigrup berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.carigrup <kata kunci>',
+  'Contoh: .carigrup pencarian'
+]
+
 export default handler

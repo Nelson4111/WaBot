@@ -7,4 +7,10 @@ let handler = async (m, { conn }) => {
 }
 handler.command = /^hlogo$/i
 handler.limit = true
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebaklogo.'
+handler.tutorial = [
+  '.hlogo',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebaklogo di grup'
+]
+
 export default handler

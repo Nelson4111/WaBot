@@ -31,4 +31,10 @@ handler.tags = ['game']
 handler.command = /^tebakbendera/i
 handler.register = true
 
+handler.desc = 'Memulai permainan kuis interaktif tebakbendera di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakbendera',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

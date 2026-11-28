@@ -54,4 +54,10 @@ handler.tags = ['tools', 'info']
 handler.command = /^(hargaemas|emas)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses hargaemas.'
+handler.tutorial = [
+  '.hargaemas <input>',
+  'Ketik .hargaemas diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

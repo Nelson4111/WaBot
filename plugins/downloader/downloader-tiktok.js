@@ -632,4 +632,11 @@ handler.limit = true
 handler.register = true
 
 export { getTikTok, downloadBuffer, expandUrl }
+handler.desc = 'Mengunduh video TikTok tanpa watermark dan audio secara otomatis.'
+handler.tutorial = [
+  '.tt <link>',
+  '.ttsearch <kata kunci>',
+  'Kirim link video TikTok dengan perintah .tt atau cari video dengan .ttsearch'
+]
+
 export default handler

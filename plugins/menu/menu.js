@@ -32,7 +32,21 @@ const formatDuration = (ms) => {
     return `${minutes} Menit`
 }
 
-let handler = async (m, { conn, usedPrefix: _p }) => {
+let handler = async (m, { conn, text, usedPrefix: _p, command, isOwner }) => {
+  // Jika user mengetik .help <nama_fitur / kata_kunci> (atau .? <fitur>),
+  // ambil tutorial & penjelasan langsung dari file plugin terkait (Single Source of Truth)!
+  if (text && text.trim() && /^(help|\?|menu)$/i.test(command)) {
+    const query = text.trim()
+    // Jangan intercept jika argumennya adalah sub-menu kategori yang ditangani plugin lain
+    if (!/^(all|utama|main)$/i.test(query)) {
+      const { pluginKnowledgeIndex } = await import('../../lib/ai/knowledge/PluginKnowledgeIndex.js')
+      const helpCard = pluginKnowledgeIndex.formatHelpLookupResponse(query, _p, { isOwner })
+      if (helpCard) {
+        return m.reply(helpCard)
+      }
+    }
+  }
+
   if (await replyIfMenuDisabled(conn, m)) return
 
   let name = m.pushName || await conn.getName(m.sender)
@@ -280,8 +294,14 @@ ${donorText}
   }
 }
 
-handler.help = ['menu']
+handler.help = ['menu', 'help [nama_fitur]']
 handler.tags = ['main']
+handler.desc = 'Menampilkan menu utama bot atau mencari panduan tutorial lengkap dari suatu fitur/command (contoh: .help ssound atau .help sticker).'
+handler.tutorial = [
+  'Ketik .menu untuk membuka daftar menu utama',
+  'Ketik .help <nama_command> (contoh: .help ssound) untuk melihat fungsi & tutorial cara pakai fitur tertentu',
+  'Ketik .help <topik> (contoh: .help stiker suara) untuk mencari fitur yang mendekati'
+]
 handler.command = /^(menu|help|\?)$/i
 handler.limit = false
 

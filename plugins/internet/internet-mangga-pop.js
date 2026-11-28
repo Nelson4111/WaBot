@@ -77,4 +77,9 @@ handler.command = /^mangalist$/i;
 handler.tags = ["internet"]
 handler.limit = false;
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai mangga pop.'
+handler.tutorial = [
+  '.mangalist <pencarian>'
+]
+
 export default handler;

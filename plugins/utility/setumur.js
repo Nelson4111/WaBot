@@ -32,4 +32,9 @@ let handler = async (m, { conn, text }) => {
 handler.help = ['setumur <umur>']
 handler.tags = ['main']
 handler.command = /^setumur$/i
+handler.desc = 'Menjalankan perintah setumur untuk layanan setumur.'
+handler.tutorial = [
+  '.setumur'
+]
+
 export default handler

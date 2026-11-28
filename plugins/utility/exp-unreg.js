@@ -13,4 +13,9 @@ handler.tags = ['main']
 handler.command = /^unreg(ister)?$/i
 handler.register = true
 
+handler.desc = 'Menjalankan perintah unregister untuk layanan unreg.'
+handler.tutorial = [
+  '.unregister'
+]
+
 export default handler

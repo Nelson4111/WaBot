@@ -38,4 +38,10 @@ handler.command = /^imgprompt$/i
 handler.limit = true 
 handler.register = true 
 
+handler.desc = 'Alat utilitas praktis untuk memproses imgprompt.'
+handler.tutorial = [
+  '.imgprompt <input>',
+  'Ketik .imgprompt diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

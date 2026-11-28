@@ -20,4 +20,10 @@ let handler = async (m, { conn }) => {
 handler.limit = true
 handler.command = /^hff$/i
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakff.'
+handler.tutorial = [
+  '.hff',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakff di grup'
+]
+
 export default handler

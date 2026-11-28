@@ -6,6 +6,12 @@ let handler = async(m, { conn, text }) => {
 handler.help = ['tebakumur'].map(v => v + ' <name>')
 handler.tags = ['fun']
 handler.command = /^(tebakumur)$/i
+handler.desc = 'Fitur hiburan dan keseruan santai untuk tebakumur.'
+handler.tutorial = [
+  '.tebakumur <teks/pertanyaan>',
+  'Ketik .tebakumur diikuti nama atau pertanyaan'
+]
+
 export default handler
 
 const umur = [

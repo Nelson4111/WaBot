@@ -35,4 +35,10 @@ handler.help = ['cekidch2 <link>'];
 handler.tags = ['tools'];
 handler.command = ['cekidch2', 'idch2']
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekidch2.'
+handler.tutorial = [
+  '.cekidch2 <input>',
+  'Ketik .cekidch2 diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

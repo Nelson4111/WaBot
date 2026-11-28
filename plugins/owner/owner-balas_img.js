@@ -44,4 +44,10 @@ handler.command = /^(balas-img|reply-img)/i
 handler.owner = true
 handler.fail = null
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur balas img.'
+handler.tutorial = [
+  '.balas-img',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

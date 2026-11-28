@@ -202,4 +202,10 @@ handler.command = /^(vo|viewonce|votext|sekalilihat)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses viewonce.'
+handler.tutorial = [
+  '.vo <input>',
+  'Ketik .vo diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

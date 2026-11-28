@@ -11,4 +11,10 @@ let handler = async (m, { conn }) => {
 handler.command = ['hhewan']
 handler.limit = true
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakhewan.'
+handler.tutorial = [
+  '.hhewan',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakhewan di grup'
+]
+
 export default handler

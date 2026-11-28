@@ -100,4 +100,9 @@ handler.command = /^(waifuhtm|waifufilterlist)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk waifuhtm.'
+handler.tutorial = [
+  '.waifuhtm'
+]
+
 export default handler

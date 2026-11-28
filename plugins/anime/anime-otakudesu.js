@@ -142,4 +142,9 @@ handler.tags = ['anime']
 handler.command = /^(otakudesu|jadwalanime|genreanime)$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime otakudesu.'
+handler.tutorial = [
+  '.otakudesu'
+]
+
 export default handler

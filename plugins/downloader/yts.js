@@ -60,4 +60,10 @@ handler.tags = ['tools', 'downloader']
 handler.command = /^(yt|yts|ytsearch)$/i
 handler.limit = true
 
+handler.desc = 'Mencari video dan channel di YouTube berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.yts <kata kunci>',
+  'Contoh: .yts lirik lagu komang'
+]
+
 export default handler

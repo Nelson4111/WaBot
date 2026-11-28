@@ -81,4 +81,10 @@ handler.tags = ['game']
 handler.command = /^tebakanime$/i
 handler.register = true
 
+handler.desc = 'Memulai permainan kuis interaktif tebakanime di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakanime',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

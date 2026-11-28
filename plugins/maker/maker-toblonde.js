@@ -32,6 +32,12 @@ handler.tags = ['maker']
 handler.command = /^(toblonde)$/i
 handler.limit = true
 
+handler.desc = 'Mengubah foto menjadi gaya blonde menggunakan filter efek visual.'
+handler.tutorial = [
+  '.toblonde (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .toblonde'
+]
+
 export default handler
 
 async function uploadUguu(buffer, ext) {

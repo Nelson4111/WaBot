@@ -46,4 +46,9 @@ handler.tags = ['info']
 handler.command = /^(toplimit)$/i
 handler.limit = false
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai toplimit.'
+handler.tutorial = [
+  '.toplimit'
+]
+
 export default handler

@@ -70,4 +70,10 @@ handler.tags = ['internet']
 handler.command = /^(pinterestlens|pinlens)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media pinlens berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.pinterestlens <kata kunci>',
+  'Contoh: .pinterestlens pencarian'
+]
+
 export default handler

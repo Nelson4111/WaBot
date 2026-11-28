@@ -71,4 +71,10 @@ handler.tags = ['maker']
 handler.command = /^(nulis)$/i
 handler.register = true
 
+handler.desc = 'Membuat gambar grafis kustom efek nulis.'
+handler.tutorial = [
+  '.nulis <teks>',
+  'Kirim perintah .nulis disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

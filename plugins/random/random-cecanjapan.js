@@ -15,4 +15,9 @@ handler.tags = ['random']
 handler.command = /^cecanjapan$/i
 handler.limit = true
 
+handler.desc = 'Menjalankan perintah cecanjapan untuk layanan cecanjapan.'
+handler.tutorial = [
+  '.cecanjapan'
+]
+
 export default handler

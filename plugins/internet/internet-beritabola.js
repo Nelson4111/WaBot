@@ -31,4 +31,9 @@ handler.tags = ['internet']
 handler.command = /^beritabola$/i
 handler.limit = true
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai beritabola.'
+handler.tutorial = [
+  '.beritabola <pencarian>'
+]
+
 export default handler

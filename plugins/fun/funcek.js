@@ -42,6 +42,12 @@ handler.command = [
 handler.help = [...handler.command, 'rate <kata>']
 
 handler.limit = true
+handler.desc = 'Fitur hiburan dan keseruan santai untuk funcek.'
+handler.tutorial = [
+  '.handlercommand <teks/pertanyaan>',
+  'Ketik .handlercommand diikuti nama atau pertanyaan'
+]
+
 export default handler
 
 // ===============================

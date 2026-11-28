@@ -19,6 +19,12 @@ handler.help = ['cektt *<name>*']
 handler.tags = ['fun']
 handler.command = /^cekpentil|cektt/i
 
+handler.desc = 'Mengukur atau mengecek tingkat tt seru-seruan secara acak.'
+handler.tutorial = [
+  '.cekpentil <nama/@user>',
+  'Contoh: .cekpentil @user'
+]
+
 export default handler
 
 function pickRandom(list) {

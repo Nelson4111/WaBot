@@ -17,4 +17,10 @@ handler.tags = ['tools']
 handler.command = /^ekspedisilist$/i
 handler.limit = false
 
+handler.desc = 'Alat utilitas praktis untuk memproses ekspedisilist.'
+handler.tutorial = [
+  '.ekspedisilist <input>',
+  'Ketik .ekspedisilist diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

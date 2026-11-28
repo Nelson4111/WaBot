@@ -120,4 +120,10 @@ handler.tags = ['search', 'tools']
 handler.command = /^(lens|googlelens)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media lens berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.lens <kata kunci>',
+  'Contoh: .lens pencarian'
+]
+
 export default handler

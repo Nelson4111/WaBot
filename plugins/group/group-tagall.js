@@ -88,4 +88,10 @@ handler.command = /^(tagall|tagsemua|everyone|all)$/i
 handler.admin = true
 handler.group = true
 
+handler.desc = 'Menandai (mention) seluruh anggota grup WhatsApp secara bersamaan dalam satu pesan.'
+handler.tutorial = [
+  '.tagall <pesan>',
+  'Ketik .tagall untuk memanggil semua member grup'
+]
+
 export default handler

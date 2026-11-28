@@ -69,4 +69,10 @@ handler.tags = ['search', 'info']
 handler.command = /^(cuaca|weather)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media weather berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.cuaca <kata kunci>',
+  'Contoh: .cuaca pencarian'
+]
+
 export default handler

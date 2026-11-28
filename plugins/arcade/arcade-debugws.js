@@ -78,4 +78,10 @@ handler.help = ['tesws', 'debugws', 'cekws']
 handler.tags = ['arcade', 'tools']
 handler.command = /^(tesws|debugws|cekws|wsdebug)$/i
 
+handler.desc = 'Bermain mini game arcade interaktif HTML5 debugws langsung di obrolan.'
+handler.tutorial = [
+  '.tesws',
+  'Membuka game arcade di dalam gelembung obrolan WhatsApp'
+]
+
 export default handler

@@ -1,15 +1,23 @@
-// Cache-buster agar saat plugin ini di-reload oleh watcher main.js,
-// modul AIService.js, PromptBuilder.js, dan aiRichMessage.js terbaru ikut dimuat ulang!
+// Cache-buster v5 agar saat plugin ini di-reload oleh watcher main.js,
+// modul AIService.js, PromptBuilder.js, KnowledgeRetriever.js, dan PluginKnowledgeIndex.js terbaru ikut dimuat ulang!
 const MODULE_VERSION = Date.now();
 let _aiServicePromise = null;
 
 async function getAIService() {
     if (!_aiServicePromise) {
         _aiServicePromise = (async () => {
-            const [{ AIService }, richMod, { PromptBuilder }] = await Promise.all([
+            const [
+                { AIService },
+                richMod,
+                { PromptBuilder },
+                { KnowledgeRetriever },
+                { ContextBuilder }
+            ] = await Promise.all([
                 import(`../../lib/ai/core/AIService.js?v=${MODULE_VERSION}`),
                 import(`../../lib/aiRichMessage.js?v=${MODULE_VERSION}`),
-                import(`../../lib/ai/core/PromptBuilder.js?v=${MODULE_VERSION}`)
+                import(`../../lib/ai/core/PromptBuilder.js?v=${MODULE_VERSION}`),
+                import(`../../lib/ai/knowledge/KnowledgeRetriever.js?v=${MODULE_VERSION}`),
+                import(`../../lib/ai/core/ContextBuilder.js?v=${MODULE_VERSION}`)
             ]);
             if (typeof richMod.ensureAIRichProto === 'function') {
                 richMod.ensureAIRichProto();
@@ -18,6 +26,8 @@ async function getAIService() {
                 sendAIRichMessage: richMod.sendAIRichMessage,
                 shouldUseAIRich: richMod.shouldUseAIRich
             });
+            svc.knowledge = new KnowledgeRetriever();
+            svc.contextBuilder = new ContextBuilder(svc.recentMemory, svc.ltMemory, svc.knowledge);
             svc.promptBuilder = new PromptBuilder(svc.knowledge);
             return svc;
         })();
@@ -27,7 +37,7 @@ async function getAIService() {
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     let qText = text || m.text;
-    if (!qText) return m.reply(`Masukkan pertanyaan!\n\nContoh: *${usedPrefix + command} cara buat stiker* atau *${usedPrefix}aivn ceritakan lelucon*`);
+    if (!qText) return m.reply(`Masukkan pertanyaan!\n\nContoh: *${usedPrefix + command} cara buat stiker suara* atau *${usedPrefix}aivn ceritakan lelucon*`);
     
     let isVN = /^(aivn|vnai)$/i.test(command) || text?.includes('--vn');
     let cleanPrompt = text?.replace(/--vn/gi, '').trim() || qText;
@@ -73,6 +83,12 @@ handler.all = async function (m) {
 
 handler.help = ['ai <pertanyaan>', 'groq <pertanyaan>', 'aivn <pertanyaan>'];
 handler.tags = ['ai'];
+handler.desc = 'Asisten AI pintar Avelia yang memahami seluruh fitur bot secara otomatis sekaligus mampu menjawab pertanyaan umum, koding, dan voice note.';
+handler.tutorial = [
+    'Di grup: cukup tag @bot diikuti pertanyaanmu, atau reply pesan balasan AI',
+    'Command langsung: ketik .ai <pertanyaan> (contoh: .ai gimana cara pakai fitur ssound?)',
+    'Mode suara (Voice Note): ketik .aivn <pertanyaan> atau tambahkan --vn'
+];
 handler.command = /^(ai|groq|aiassistant|aivn|vnai)$/i;
 
 export default handler;

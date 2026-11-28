@@ -56,4 +56,10 @@ handler.tags = ['ai']
 handler.command = /^openai$/i
 handler.limit = true
 
+handler.desc = 'Memanfaatkan kecerdasan buatan (AI) untuk openai.'
+handler.tutorial = [
+  '.openai <pertanyaan/prompt>',
+  'Ketik .openai diikuti perintah atau pertanyaan yang ingin diajukan'
+]
+
 export default handler

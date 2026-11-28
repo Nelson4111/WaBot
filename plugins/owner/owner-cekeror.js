@@ -48,4 +48,10 @@ handler.tags = ['owner']
 handler.command = /^checkerror$/i
 handler.rowner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur cekeror.'
+handler.tutorial = [
+  '.checkerror',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

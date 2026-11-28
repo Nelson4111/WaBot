@@ -62,4 +62,10 @@ handler.game = true
 handler.group = true
 handler.register = true
 
+handler.desc = 'Memulai permainan menyusun huruf-huruf acak menjadi sebuah kata yang benar.'
+handler.tutorial = [
+  '.susunkata',
+  'Ketik kata yang terbentuk dari huruf acak'
+]
+
 export default handler

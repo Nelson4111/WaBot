@@ -30,4 +30,10 @@ handler.tags = ['owner']
 handler.command = /^delprem$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur delprem.'
+handler.tutorial = [
+  '.delprem',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

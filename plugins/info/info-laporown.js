@@ -12,4 +12,9 @@ handler.help = ["lapor"];
 handler.tags = ["info"];
 handler.command = /^lapor$/i;
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai laporown.'
+handler.tutorial = [
+  '.lapor'
+]
+
 export default handler;

@@ -63,4 +63,9 @@ handler.help = ['worldtime', 'waktuglobal'];
 handler.command = ['worldtime', 'waktuglobal'];
 handler.tags  = ['internet'];
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai wordltime.'
+handler.tutorial = [
+  '.worldtime <pencarian>'
+]
+
 export default handler;

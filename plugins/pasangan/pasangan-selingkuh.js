@@ -42,4 +42,10 @@ handler.help = ['selingkuh @user']
 handler.tags = ['pasangan']
 handler.command = /^(selingkuh)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk selingkuh.'
+handler.tutorial = [
+  '.selingkuh @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

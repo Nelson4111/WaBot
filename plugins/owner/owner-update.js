@@ -193,4 +193,10 @@ handler.tags = ['owner']
 handler.command = /^(update|gitpull)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur update.'
+handler.tutorial = [
+  '.update',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

@@ -72,4 +72,10 @@ handler.command = /^(removeafk|unafk|setafk)$/i;
 handler.admin = true;
 handler.group = true;
 
+handler.desc = 'Menandai status Anda sebagai AFK sehingga bot memberitahu orang yang menandai (tag) Anda.'
+handler.tutorial = [
+  '.removeafk <alasan>',
+  'Contoh: .removeafk sedang makan'
+]
+
 export default handler;

@@ -34,4 +34,10 @@ handler.help = ['quote <teks> | <ppUrl>'];
 handler.tags = ['quotes'];
 handler.command = /^quote$/i;
 
+handler.desc = 'Membuat gambar grafis kustom efek maker.'
+handler.tutorial = [
+  '.quote <teks>',
+  'Kirim perintah .quote disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler;

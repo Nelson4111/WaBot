@@ -28,4 +28,10 @@ handler.tags = ['owner']
 handler.command = /^(clearafk|resetafk)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur clearafk.'
+handler.tutorial = [
+  '.clearafk',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

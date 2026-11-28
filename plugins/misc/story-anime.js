@@ -6,6 +6,11 @@ handler.tags = ['anime']
 handler.command = /^(stor(i|y)a?nime|a?nimestor(i|y))$/i
 handler.limit = true
 
+handler.desc = 'Menjalankan perintah stori untuk layanan anime.'
+handler.tutorial = [
+  '.stori'
+]
+
 export default handler
 
 const dir = [

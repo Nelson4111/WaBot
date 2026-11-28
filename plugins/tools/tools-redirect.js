@@ -30,4 +30,10 @@ handler.tags = ['tools']
 handler.command = /^redirect$/i
 handler.limit = false
 
+handler.desc = 'Alat utilitas praktis untuk memproses redirect.'
+handler.tutorial = [
+  '.redirect <input>',
+  'Ketik .redirect diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

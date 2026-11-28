@@ -164,4 +164,10 @@ handler.tags = ['downloader']
 handler.command = ['twitter', 'x']
 handler.limit = true
 
+handler.desc = 'Mengunduh media video atau foto dari postingan Twitter / X.'
+handler.tutorial = [
+  '.twitter <link twitter/x>',
+  'Kirim link postingan Twitter / X'
+]
+
 export default handler

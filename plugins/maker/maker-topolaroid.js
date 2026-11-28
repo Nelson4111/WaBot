@@ -32,6 +32,12 @@ handler.tags = ['maker']
 handler.command = /^(topolaroid)$/i
 handler.limit = true
 
+handler.desc = 'Mengubah foto menjadi gaya polaroid menggunakan filter efek visual.'
+handler.tutorial = [
+  '.topolaroid (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .topolaroid'
+]
+
 export default handler
 
 async function uploadUguu(buffer, ext) {

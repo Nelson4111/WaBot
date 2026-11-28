@@ -67,4 +67,10 @@ handler.tags = ['downloader']
 handler.command = /^(soundcloud|scdl)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh musik atau audio dari platform SoundCloud.'
+handler.tutorial = [
+  '.soundcloud <link soundcloud>',
+  'Kirim link track SoundCloud'
+]
+
 export default handler

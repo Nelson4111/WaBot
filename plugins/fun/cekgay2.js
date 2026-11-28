@@ -35,4 +35,10 @@ handler.help = ['cekgay2']
 handler.tags = ['fun']
 handler.command = /^(cekgay2)$/i
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk cekgay2.'
+handler.tutorial = [
+  '.cekgay2 <teks/pertanyaan>',
+  'Ketik .cekgay2 diikuti nama atau pertanyaan'
+]
+
 export default handler

@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^syairminangkabau$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema syairminangkabau.'
+handler.tutorial = [
+  '.syairminangkabau'
+]
+
 export default handler

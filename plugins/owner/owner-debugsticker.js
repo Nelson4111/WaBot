@@ -89,4 +89,10 @@ handler.tags = ['owner']
 handler.command = /^(ceksticker|debugsticker|inspectsticker)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur debugsticker.'
+handler.tutorial = [
+  '.ceksticker',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

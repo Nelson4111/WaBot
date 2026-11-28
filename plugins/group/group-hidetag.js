@@ -45,4 +45,10 @@ handler.command = /^(hidetag|htag|h)$/i
 handler.group = true
 handler.admin = true
 
+handler.desc = 'Mengirimkan pengumuman penting dengan menandai seluruh anggota grup secara tersembunyi.'
+handler.tutorial = [
+  '.hidetag <pesan>',
+  'Kirim teks pengumuman atau balas media dengan perintah .hidetag'
+]
+
 export default handler

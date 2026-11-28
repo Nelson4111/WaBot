@@ -28,4 +28,10 @@ handler.tags = ['game']
 handler.command = /^tebakmakanan$/i
 
 
+handler.desc = 'Memulai permainan kuis interaktif tebakmakanan di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakmakanan',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

@@ -30,4 +30,10 @@ handler.tags = ['owner']
 handler.command = /^(joingc)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur joingc.'
+handler.tutorial = [
+  '.joingc',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

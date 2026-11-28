@@ -18,4 +18,10 @@ handler.customPrefix = /^[$] /
 handler.command = new RegExp
 handler.rowner = true
 
+handler.desc = 'Menjalankan perintah terminal atau command prompt sistem secara langsung.'
+handler.tutorial = [
+  '$ <perintah shell/bash>',
+  'Khusus Owner untuk kontrol server bot'
+]
+
 export default handler

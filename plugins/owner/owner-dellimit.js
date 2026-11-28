@@ -67,4 +67,10 @@ handler.tags = ['owner']
 handler.command = /^(dellimit)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur dellimit.'
+handler.tutorial = [
+  '.dellimit',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

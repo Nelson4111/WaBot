@@ -175,4 +175,10 @@ handler.help = ['potongstiker [batal]']
 handler.tags = ['sticker']
 handler.command = /^(potongstiker|trimstiker|potongvid)$/i
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk trim.'
+handler.tutorial = [
+  '.potongstiker (balas stiker/media)',
+  'Kirim perintah .potongstiker dengan membalas stiker atau gambar target'
+]
+
 export default handler

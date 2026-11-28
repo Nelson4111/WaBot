@@ -161,6 +161,12 @@ handler.tags = ['sticker', 'maker']
 handler.command = /^(brat)$/i
 handler.limit = true
 
+handler.desc = 'Membuat stiker atau gambar teks bergaya album Brat dengan font khas hijau/putih.'
+handler.tutorial = [
+  '.brat <teks>',
+  'Contoh: .brat kamu cantik banget hari ini'
+]
+
 export default handler
 
 async function createSticker(img, url, packName, authorName, quality) {

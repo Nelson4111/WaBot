@@ -10,6 +10,12 @@ handler.command = /^(spoiler|hidetext|readmore|selengkapnya)$/i
 
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses readmore.'
+handler.tutorial = [
+  '.spoiler <input>',
+  'Ketik .spoiler diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler
 
 const more = String.fromCharCode(8206)

@@ -103,4 +103,9 @@ handler.tags = ['info', 'main']
 handler.command = /^(limit|ceklimit)$/i
 handler.limit = false
 
+handler.desc = 'Menjalankan perintah limit untuk layanan limit.'
+handler.tutorial = [
+  '.limit'
+]
+
 export default handler

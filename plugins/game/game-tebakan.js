@@ -30,4 +30,10 @@ handler.command = /^tebaktebakan$/i
 handler.onlyprem = true
 handler.game = true
 
+handler.desc = 'Memulai permainan kuis interaktif tebakan di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebaktebakan',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

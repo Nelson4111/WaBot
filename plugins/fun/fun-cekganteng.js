@@ -33,4 +33,10 @@ handler.help = ['cekganteng']
 handler.tags = ['fun']
 handler.command = /^(cekganteng|gantengcek)$/i
 
+handler.desc = 'Mengukur atau mengecek tingkat ganteng seru-seruan secara acak.'
+handler.tutorial = [
+  '.cekganteng <nama/@user>',
+  'Contoh: .cekganteng @user'
+]
+
 export default handler

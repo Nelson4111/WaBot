@@ -42,4 +42,10 @@ handler.help = ['tebakkota']
 handler.tags = ['game']
 handler.command = ['tebakkota']
 
+handler.desc = 'Memulai permainan kuis interaktif tebakkota di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebakkota',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

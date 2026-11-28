@@ -61,4 +61,10 @@ handler.tags = ['tools', 'info']
 handler.command = /^(gempa|bmkg|infogempa)$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi gempa bumi terkini dan prakiraan cuaca dari BMKG.'
+handler.tutorial = [
+  '.bmkg',
+  'Menampilkan data gempa bumi terbaru yang dirilis oleh BMKG'
+]
+
 export default handler

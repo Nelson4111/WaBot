@@ -16,4 +16,10 @@ handler.help = ['autotyping [on/off]']
 handler.tags = ['owner']
 handler.command = /^autotyping$/i
 handler.owner = true
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur autotyping.'
+handler.tutorial = [
+  '.autotyping',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

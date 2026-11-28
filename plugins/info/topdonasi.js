@@ -55,4 +55,9 @@ handler.help = ['topdonasi']
 handler.tags = ['main']
 handler.command = /^(topdonasi)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai topdonasi.'
+handler.tutorial = [
+  '.topdonasi'
+]
+
 export default handler

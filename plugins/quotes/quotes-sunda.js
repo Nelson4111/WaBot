@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^syairsunda$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema sunda.'
+handler.tutorial = [
+  '.syairsunda'
+]
+
 export default handler

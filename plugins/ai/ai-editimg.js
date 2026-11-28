@@ -27,6 +27,12 @@ handler.help = ['editimg']
 handler.tags = ['ai']
 handler.command = ['editimg']
 
+handler.desc = 'Memanfaatkan kecerdasan buatan (AI) untuk editimg.'
+handler.tutorial = [
+  '.editimg <pertanyaan/prompt>',
+  'Ketik .editimg diikuti perintah atau pertanyaan yang ingin diajukan'
+]
+
 export default handler
 
 async function uploadByUguu(buffer) {

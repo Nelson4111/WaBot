@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^gombal$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema gombal.'
+handler.tutorial = [
+  '.gombal'
+]
+
 export default handler

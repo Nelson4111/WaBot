@@ -63,4 +63,10 @@ handler.tags = ['tools']
 handler.command = /^(tinyurl|shortlink|bypassouo|ouobypass|ouo)$/i
 handler.limit = true
 
+handler.desc = 'Memendekkan tautan URL yang panjang menjadi ringkas (TinyURL / Shortlink).'
+handler.tutorial = [
+  '.shortlink <url>',
+  'Contoh: .shortlink https://example.com/very/long/url'
+]
+
 export default handler

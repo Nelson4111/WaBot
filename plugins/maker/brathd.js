@@ -143,6 +143,12 @@ handler.limit = true
 handler.register = false
 handler.group = false
 
+handler.desc = 'Membuat gambar teks Brat dengan kualitas resolusi tinggi (HD).'
+handler.tutorial = [
+  '.brathd <teks>',
+  'Contoh: .brathd aesthetic text hd'
+]
+
 export default handler
 
 async function createSticker(img, url, packName, authorName, quality) {

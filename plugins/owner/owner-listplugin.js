@@ -36,4 +36,10 @@ handler.tags = ['owner']
 handler.command = /^listplugin$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur listplugin.'
+handler.tutorial = [
+  '.listplugin',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

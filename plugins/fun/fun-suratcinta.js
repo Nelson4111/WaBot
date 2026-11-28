@@ -39,4 +39,10 @@ handler.tags = ['fun']
 handler.command = /^suratcinta$/i
 handler.limit = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk suratcinta.'
+handler.tutorial = [
+  '.suratcinta <teks/pertanyaan>',
+  'Ketik .suratcinta diikuti nama atau pertanyaan'
+]
+
 export default handler

@@ -99,4 +99,10 @@ handler.tags = ['ai']
 handler.command = /^(vision|tanyafoto|aivision)$/i
 handler.limit = true
 
+handler.desc = 'Menganalisis dan mendeskripsikan konten yang ada di dalam gambar menggunakan AI.'
+handler.tutorial = [
+  '.aivision <pertanyaan> (balas foto)',
+  'Balas foto dan tanyakan apa yang ada di dalamnya'
+]
+
 export default handler

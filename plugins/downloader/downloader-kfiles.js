@@ -65,4 +65,10 @@ handler.tags = ['downloader']
 handler.command = /^(kraken|krakendl|kfiles)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan KFILES secara otomatis.'
+handler.tutorial = [
+  '.kraken <link kfiles>',
+  'Kirim tautan kfiles dengan perintah .kraken'
+]
+
 export default handler

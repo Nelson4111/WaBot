@@ -30,4 +30,10 @@ handler.command = /^pixelglitch$/i;
 handler.premium = false;
 handler.limit = false;
 
+handler.desc = 'Membuat gambar grafis kustom efek pixelglitch.'
+handler.tutorial = [
+  '.pixelglitch <teks>',
+  'Kirim perintah .pixelglitch disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler;

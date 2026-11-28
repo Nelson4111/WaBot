@@ -29,4 +29,10 @@ handler.help = ['iqc jam|batre|pesan']
 handler.tags = ['maker']
 handler.command = ['iqc']
 
+handler.desc = 'Alat utilitas praktis untuk memproses iqc.'
+handler.tutorial = [
+  '.iqc <input>',
+  'Ketik .iqc diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

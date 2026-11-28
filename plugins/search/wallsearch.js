@@ -39,6 +39,12 @@ handler.help = ['wallsearch <query>', 'wallrating <new|popular|top_rated>', 'wal
 handler.tags = ['internet']
 handler.command = /^wall(search|rating|cat)$/i
 handler.limit = true
+handler.desc = 'Mencari informasi atau media wallsearch berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.wallsearch <kata kunci>',
+  'Contoh: .wallsearch pencarian'
+]
+
 export default handler
 
 // --- Fungsi scrape ---

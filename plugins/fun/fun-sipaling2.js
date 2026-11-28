@@ -39,4 +39,10 @@ handler.tags = ['fun']
 
 handler.group = true
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk sipaling2.'
+handler.tutorial = [
+  '.sipaling <teks/pertanyaan>',
+  'Ketik .sipaling diikuti nama atau pertanyaan'
+]
+
 export default handler

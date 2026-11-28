@@ -318,4 +318,10 @@ handler.tags = ['fun']
 handler.command = /^(tarot|oracle)$/i
 handler.limit = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk tarot oracle.'
+handler.tutorial = [
+  '.tarot <teks/pertanyaan>',
+  'Ketik .tarot diikuti nama atau pertanyaan'
+]
+
 export default handler

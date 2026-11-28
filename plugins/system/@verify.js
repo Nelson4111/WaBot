@@ -13,4 +13,9 @@ handler.tags = ['main']
 handler.customPrefix = /^(@verify)$/i
 handler.command = new RegExp
 
+handler.desc = 'Menjalankan perintah new regexp untuk layanan @verify.'
+handler.tutorial = [
+  '.new regexp'
+]
+
 export default handler

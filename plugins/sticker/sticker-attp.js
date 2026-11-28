@@ -179,4 +179,10 @@ handler.command = /^(ttp|attp)$/i;
 handler.tags = ["sticker"]
 handler.limit = false;
 
+handler.desc = 'Membuat stiker teks animasi bergerak dengan warna-warni dinamis.'
+handler.tutorial = [
+  '.attp <teks>',
+  'Contoh: .attp Halo Dunia'
+]
+
 export default handler;

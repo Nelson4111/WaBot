@@ -171,4 +171,10 @@ handler.help = ['pasangan [@user]', 'ceknikah [@user]', 'istri', 'suami', 'pasan
 handler.tags = ['pasangan']
 handler.command = /^(pasangan|hubungan|ceknikah|istri|suami|pasangan\s+(hide|unhide))$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk info.'
+handler.tutorial = [
+  '.pasangan @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

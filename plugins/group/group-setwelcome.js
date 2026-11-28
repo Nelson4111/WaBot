@@ -25,4 +25,10 @@ handler.command = /^(setwelcome|setw)$/i
 handler.group = true
 handler.admin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk setwelcome.'
+handler.tutorial = [
+  '.setwelcome',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

@@ -84,4 +84,10 @@ handler.command = ['yt5so']
 handler.tags = ['downloader']
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan YT5SO secara otomatis.'
+handler.tutorial = [
+  '.yt5so <link yt5so>',
+  'Kirim tautan yt5so dengan perintah .yt5so'
+]
+
 export default handler

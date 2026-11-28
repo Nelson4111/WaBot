@@ -25,4 +25,10 @@ handler.tags = ['fun']
 handler.command = /^seberapagila$/i
 handler.limit = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk seberapagila.'
+handler.tutorial = [
+  '.seberapagila <teks/pertanyaan>',
+  'Ketik .seberapagila diikuti nama atau pertanyaan'
+]
+
 export default handler

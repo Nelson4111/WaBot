@@ -60,4 +60,10 @@ handler.help = ['moveon']
 handler.tags = ['fun']
 handler.command = /^moveon$/i
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk moveon.'
+handler.tutorial = [
+  '.moveon <teks/pertanyaan>',
+  'Ketik .moveon diikuti nama atau pertanyaan'
+]
+
 export default handler

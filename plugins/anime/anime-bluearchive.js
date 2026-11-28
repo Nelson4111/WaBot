@@ -33,4 +33,9 @@ handler.tags = ['anime', 'random']
 handler.command = /^bluearchive$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime bluearchive.'
+handler.tutorial = [
+  '.bluearchive'
+]
+
 export default handler

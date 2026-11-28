@@ -295,4 +295,10 @@ handler.help = ['catur', 'chess'];
 handler.tags = ['game'];
 handler.command = /^(catur|chess|ct)$/i;
 
+handler.desc = 'Memulai permainan kuis interaktif catur di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.catur',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler;

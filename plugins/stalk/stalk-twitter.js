@@ -98,4 +98,10 @@ handler.tags = ['stalk']
 handler.command = /^(twitterstalk|xstalk|twstalk)$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun TWITTER publik.'
+handler.tutorial = [
+  '.twitterstalk <username/id>',
+  'Contoh: .twitterstalk target'
+]
+
 export default handler

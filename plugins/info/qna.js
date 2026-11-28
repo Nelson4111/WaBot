@@ -98,4 +98,9 @@ handler.help = ['qna', 'qna list [halaman]', 'qna <nomor>']
 handler.tags = ['info']
 handler.command = /^qna$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai qna.'
+handler.tutorial = [
+  '.qna'
+]
+
 export default handler

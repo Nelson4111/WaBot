@@ -95,4 +95,11 @@ handler.tags = ['tools']
 handler.command = /^(tran(slate)?|tr)$/i
 handler.limit = true
 
+handler.desc = 'Menerjemahkan teks antar bahasa secara instan.'
+handler.tutorial = [
+  '.translate <kode bahasa> <teks>',
+  'Contoh: .translate en Selamat pagi',
+  'Atau balas pesan dengan perintah .tr id'
+]
+
 export default handler

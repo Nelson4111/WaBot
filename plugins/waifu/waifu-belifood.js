@@ -134,4 +134,9 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['waifufood [nomor]', 'husbufood [nomor]']
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk belifood.'
+handler.tutorial = [
+  '.waifufood'
+]
+
 export default handler

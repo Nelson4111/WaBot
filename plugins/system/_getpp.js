@@ -17,4 +17,9 @@ handler.help = ['getpp <@tag/reply>']
 handler.tags = ['group']
 handler.command = /^(getpp)$/i
 
+handler.desc = 'Menjalankan perintah getpp untuk layanan  getpp.'
+handler.tutorial = [
+  '.getpp'
+]
+
 export default handler

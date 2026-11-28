@@ -55,4 +55,10 @@ handler.tags = ['downloader']
 handler.command = /^ytpost$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan YTPOST secara otomatis.'
+handler.tutorial = [
+  '.ytpost <link ytpost>',
+  'Kirim tautan ytpost dengan perintah .ytpost'
+]
+
 export default handler

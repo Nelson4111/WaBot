@@ -77,4 +77,9 @@ handler.help = ['liburnas']
 handler.tags = ['info']
 handler.command = /^liburnas$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai liburnasional.'
+handler.tutorial = [
+  '.liburnas'
+]
+
 export default handler

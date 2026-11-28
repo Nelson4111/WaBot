@@ -64,4 +64,10 @@ handler.tags = ['anime', 'search']
 handler.command = /^(wpmoe|wallpaperanime|wpanime)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media wallpaper berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.wpmoe <kata kunci>',
+  'Contoh: .wpmoe pencarian'
+]
+
 export default handler

@@ -13,4 +13,9 @@ handler.tags = ['random']
 handler.command = /^cecanthai$/i
 handler.limit = true
 
+handler.desc = 'Menjalankan perintah cecanthai untuk layanan cecanthailand.'
+handler.tutorial = [
+  '.cecanthai'
+]
+
 export default handler

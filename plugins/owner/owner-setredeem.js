@@ -79,4 +79,10 @@ handler.tags = ['owner']
 handler.command = /^(setredeem|delredeem)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur setredeem.'
+handler.tutorial = [
+  '.setredeem',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

@@ -90,4 +90,10 @@ handler.command = ["upch", "setchid", "addchid", "getchid"];
 handler.tags = ["owner"];
 handler.owner = true;
 
+handler.desc = 'Alat utilitas praktis untuk memproses upch.'
+handler.tutorial = [
+  '.upch <input>',
+  'Ketik .upch diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

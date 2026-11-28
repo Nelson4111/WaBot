@@ -136,4 +136,10 @@ handler.tags = ['stalk']
 handler.command = /^stalkyt|ytstalk$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun YTSTALK publik.'
+handler.tutorial = [
+  '.stalkyt <username/id>',
+  'Contoh: .stalkyt target'
+]
+
 export default handler

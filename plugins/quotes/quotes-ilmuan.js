@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^quotesilmuan$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema ilmuan.'
+handler.tutorial = [
+  '.quotesilmuan'
+]
+
 export default handler

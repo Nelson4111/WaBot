@@ -93,4 +93,10 @@ handler.command = /^(gdrive)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Mengunduh file publik dari Google Drive.'
+handler.tutorial = [
+  '.gdrive <link gdrive>',
+  'Kirim link Google Drive yang dibagikan secara publik'
+]
+
 export default handler

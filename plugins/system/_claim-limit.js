@@ -26,4 +26,9 @@ handler.command = /^(claimlimit)$/i
 handler.cooldown = cooldown
 handler.disable = true
 
+handler.desc = 'Menjalankan perintah claimlimit untuk layanan  claim limit.'
+handler.tutorial = [
+  '.claimlimit'
+]
+
 export default handler

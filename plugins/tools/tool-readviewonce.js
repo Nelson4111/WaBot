@@ -24,5 +24,11 @@ handler.command = /^read/i
 
 handler.register = true
 
+handler.desc = 'Membuka dan menyimpan kembali media pesan sekali lihat (view-once).'
+handler.tutorial = [
+  '.rvo (balas pesan view-once)',
+  'Balas pesan foto/video sekali lihat dengan perintah .rvo'
+]
+
 export default handler
 

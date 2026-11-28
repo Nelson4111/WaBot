@@ -64,4 +64,9 @@ handler.command = ['animefinder']
 handler.help = ['animefinder']
 handler.tags = ['tools']
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime animefinder.'
+handler.tutorial = [
+  '.animefinder'
+]
+
 export default handler

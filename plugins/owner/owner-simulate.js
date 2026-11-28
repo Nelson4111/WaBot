@@ -41,4 +41,10 @@ handler.tags = ['owner']
 handler.rowner = true
 
 handler.command = /^(simulate|simulasi)$/i
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur simulate.'
+handler.tutorial = [
+  '.simulate',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

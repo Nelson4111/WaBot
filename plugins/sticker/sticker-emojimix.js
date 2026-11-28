@@ -24,4 +24,10 @@ handler.command = /^(emojimix|emix)$/i
 handler.register = true
 handler.limit = true 
 
+handler.desc = 'Menggabungkan dua emoji menjadi satu stiker unik baru.'
+handler.tutorial = [
+  '.emojimix 😭+😎',
+  'Contoh: .emojimix 😂+🥺'
+]
+
 export default handler

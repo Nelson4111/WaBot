@@ -47,4 +47,10 @@ handler.tags = ['internet']
 handler.register = true
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media pinterestgeser berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.pin2 <kata kunci>',
+  'Contoh: .pin2 pencarian'
+]
+
 export default handler

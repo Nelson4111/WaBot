@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^ngasal$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema ngasal.'
+handler.tutorial = [
+  '.ngasal'
+]
+
 export default handler

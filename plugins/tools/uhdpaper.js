@@ -46,4 +46,10 @@ handler.tags = ['internet']
 handler.command = /^uhdpaper$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses uhdpaper.'
+handler.tutorial = [
+  '.uhdpaper <input>',
+  'Ketik .uhdpaper diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

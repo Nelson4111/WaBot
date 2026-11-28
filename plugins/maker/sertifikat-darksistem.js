@@ -28,4 +28,10 @@ handler.tags = ['maker']
 handler.command = /^srtdarksistem$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar sertifikat lelucon bertema darksistem.'
+handler.tutorial = [
+  '.srtdarksistem <nama>',
+  'Contoh: .srtdarksistem Budi Santoso'
+]
+
 export default handler

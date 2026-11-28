@@ -109,4 +109,10 @@ handler.tags = ['stalk']
 handler.command = /^(igstalk|stalkig)$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil, jumlah postingan, dan bio akun Instagram.'
+handler.tutorial = [
+  '.igstalk <username>',
+  'Contoh: .igstalk cristiano'
+]
+
 export default handler

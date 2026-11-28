@@ -46,4 +46,10 @@ handler.tags = ['audio', 'tools'];
 handler.command = /^transcibe$/i;
 handler.limit = true;
 
+handler.desc = 'Memproses efek audio atau memutar suara efek transcibe.'
+handler.tutorial = [
+  '.transcibe (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .transcibe'
+]
+
 export default handler;

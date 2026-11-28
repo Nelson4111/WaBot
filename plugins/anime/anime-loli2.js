@@ -27,4 +27,9 @@ handler.tags = ['anime']
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime loli2.'
+handler.tutorial = [
+  '.loli2'
+]
+
 export default handler

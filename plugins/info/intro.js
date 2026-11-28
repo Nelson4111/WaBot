@@ -39,4 +39,9 @@ let anu = `
 handler.customPrefix = /^(intro)$/i
 handler.command = /^(intro)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai intro.'
+handler.tutorial = [
+  '.intro'
+]
+
 export default handler

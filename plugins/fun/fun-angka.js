@@ -28,6 +28,12 @@ handler.command = /^angka/i
 handler.tigame = true
 handler.fail = null
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk angka.'
+handler.tutorial = [
+  '.angka <teks/pertanyaan>',
+  'Ketik .angka diikuti nama atau pertanyaan'
+]
+
 export default handler 
 
 function pickRandom(list) {

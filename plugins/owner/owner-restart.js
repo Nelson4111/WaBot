@@ -44,4 +44,10 @@ handler.command = /^(res(tart)?)$/i
 
 handler.rowner = true
 
+handler.desc = 'Merestart proses aplikasi bot secara aman.'
+handler.tutorial = [
+  '.restart',
+  'Khusus Owner: memuat ulang sistem bot'
+]
+
 export default handler

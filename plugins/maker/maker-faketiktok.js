@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^faketiktok|tiktokfake$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar screenshot palsu postingan TikTok yang realistis.'
+handler.tutorial = [
+  '.fakett <nama>|<username>|<komentar>',
+  'Contoh: .fakett Budi|@budi|Halo semua'
+]
+
 export default handler

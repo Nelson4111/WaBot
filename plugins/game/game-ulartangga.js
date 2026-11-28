@@ -737,4 +737,10 @@ handler.help = ['ulartangga'];
 handler.tags = ['game'];
 handler.command = /^(ular(tangga)?|ladders|snak(e)?)$/i;
 
+handler.desc = 'Memulai permainan kuis interaktif ulartangga di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.ulartangga',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler;

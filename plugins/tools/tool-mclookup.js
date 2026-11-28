@@ -78,4 +78,10 @@ handler.tags = ['tools']
 handler.command = /^(mclookup|mcserver|mcstatus)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses mclookup.'
+handler.tutorial = [
+  '.mclookup <input>',
+  'Ketik .mclookup diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

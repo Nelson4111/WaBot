@@ -30,4 +30,10 @@ handler.tags = ['internet']
 handler.command = /^fontsearch$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media fontsearch berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.fontsearch <kata kunci>',
+  'Contoh: .fontsearch pencarian'
+]
+
 export default handler

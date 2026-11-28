@@ -14,4 +14,10 @@ let handler = async (m, { conn, text }) => {
 }
 handler.command = /^(debuglid)$/i
 handler.owner = true
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur debuglid.'
+handler.tutorial = [
+  '.debuglid',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

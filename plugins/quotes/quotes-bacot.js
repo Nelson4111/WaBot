@@ -22,6 +22,11 @@ handler.command = /^(bacot)$/i
 
 handler.register = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema bacot.'
+handler.tutorial = [
+  '.bacot'
+]
+
 export default handler
 
 function ucapan() {

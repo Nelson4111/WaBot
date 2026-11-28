@@ -62,4 +62,10 @@ handler.tags = ['tools']
 handler.command = /^(urlpreview|ogpreview|previewlink)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses urlpreview.'
+handler.tutorial = [
+  '.urlpreview <input>',
+  'Ketik .urlpreview diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

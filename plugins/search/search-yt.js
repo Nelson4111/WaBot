@@ -76,4 +76,10 @@ handler.tags = ['search']
 handler.command = /^(ytsearch|yts)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media yt berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.ytsearch <kata kunci>',
+  'Contoh: .ytsearch pencarian'
+]
+
 export default handler

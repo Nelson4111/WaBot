@@ -20,4 +20,10 @@ handler.help = ['claude']
 handler.tags = ['ai']
 handler.command = ['claude']
 
+handler.desc = 'Berdiskusi dan menganalisis masalah kompleks dengan model AI Claude.'
+handler.tutorial = [
+  '.claude <pertanyaan>',
+  'Contoh: .claude review kode ini'
+]
+
 export default handler

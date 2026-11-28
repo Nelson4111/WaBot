@@ -193,4 +193,10 @@ handler.command = /^(family100|f100|fam100|fam)$/i
 handler.onlyprem = true
 handler.game = true
 
+handler.desc = 'Memulai permainan kuis survei Family 100 bersama anggota grup lainnya.'
+handler.tutorial = [
+  '.family100',
+  'Jawab survei bersama-sama di grup'
+]
+
 export default handler

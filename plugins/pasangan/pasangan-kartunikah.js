@@ -233,4 +233,10 @@ handler.help = ['kartunikah', 'bukunikah']
 handler.tags = ['pasangan']
 handler.command = /^(kartunikah|bukunikah)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk kartunikah.'
+handler.tutorial = [
+  '.kartunikah @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

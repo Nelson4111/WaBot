@@ -10,4 +10,10 @@ handler.command = /^(g(et)?ses?si(on)?(data.json)?)$/i
 
 handler.rowner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur sesi.'
+handler.tutorial = [
+  '.getsessiondatajson',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

@@ -96,4 +96,10 @@ handler.command = ['perplexity', 'plx']
 
 handler.tags = ['ai']
 
+handler.desc = 'Memanfaatkan kecerdasan buatan (AI) untuk perplexity.'
+handler.tutorial = [
+  '.perplexity <pertanyaan/prompt>',
+  'Ketik .perplexity diikuti perintah atau pertanyaan yang ingin diajukan'
+]
+
 export default handler

@@ -11,4 +11,9 @@ handler.help = ['setname <nama>']
 handler.tags = ['main']
 handler.command = /^set(name|nama)$/i
 
+handler.desc = 'Menjalankan perintah setname untuk layanan setname.'
+handler.tutorial = [
+  '.setname'
+]
+
 export default handler

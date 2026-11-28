@@ -46,4 +46,9 @@ handler.help = ['jadwalsholat kota'];
 handler.tags = ['internet'];
 handler.command = ['jadwalsholat', 'sholat'];
 handler.register = false;
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai jadwalsholat.'
+handler.tutorial = [
+  '.jadwalsholat'
+]
+
 export default handler;

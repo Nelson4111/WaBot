@@ -103,4 +103,10 @@ handler.tags = ['group']
 handler.command = /^(del|delete|unsend?)$/i
 handler.limit = false
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk delete.'
+handler.tutorial = [
+  '.del',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

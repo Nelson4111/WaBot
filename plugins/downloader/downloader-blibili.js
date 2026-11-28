@@ -172,4 +172,10 @@ handler.tags = ['downloader']
 handler.command = /^(bili|blibli|bilibili)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan BLIBILI secara otomatis.'
+handler.tutorial = [
+  '.bili <link blibili>',
+  'Kirim tautan blibili dengan perintah .bili'
+]
+
 export default handler

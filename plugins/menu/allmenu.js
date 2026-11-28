@@ -312,6 +312,11 @@ handler.help = ['allmenu']
 handler.tags = ['main']
 handler.command = /^(allmenu)$/i
 
+handler.desc = 'Menjalankan perintah allmenu untuk layanan allmenu.'
+handler.tutorial = [
+  '.allmenu'
+]
+
 export default handler
 
 const more = String.fromCharCode(8206)

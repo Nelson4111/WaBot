@@ -44,4 +44,10 @@ handler.tags = ["internet"]
 handler.command = /^(iplookup)$/i;
 handler.limit = false;
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekweb.'
+handler.tutorial = [
+  '.iplookup <input>',
+  'Ketik .iplookup diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

@@ -64,4 +64,10 @@ handler.tags = ['owner']
 handler.command = /^addlimit$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur addlimit.'
+handler.tutorial = [
+  '.addlimit',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

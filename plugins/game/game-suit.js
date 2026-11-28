@@ -49,4 +49,10 @@ handler.register = true
 handler.private = false
 handler.limit = true
 
+handler.desc = 'Bermain suit batu gunting kertas melawan bot atau teman.'
+handler.tutorial = [
+  '.suit batu/gunting/kertas',
+  'Contoh: .suit batu'
+]
+
 export default handler

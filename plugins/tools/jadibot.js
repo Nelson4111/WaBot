@@ -222,4 +222,10 @@ handler.help = ['jadibot <nomor/me>', 'stopjadibot [nomor]', 'listjadibot']
 handler.tags = ['jadibot', 'tools']
 handler.command = /^(jadibot|subbot|clonebot|stopjadibot|delsesi|stopbot|listjadibot|jadibotlist)$/i
 
+handler.desc = 'Alat utilitas praktis untuk memproses jadibot.'
+handler.tutorial = [
+  '.jadibot <input>',
+  'Ketik .jadibot diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

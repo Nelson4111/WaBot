@@ -26,4 +26,10 @@ handler.help = ['blacklist <reply|nomor>']
 handler.tags = ['owner']
 handler.command = /^blacklist$/i
 handler.group = true
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur blacklist.'
+handler.tutorial = [
+  '.blacklist',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

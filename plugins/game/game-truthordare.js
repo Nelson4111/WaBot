@@ -124,4 +124,10 @@ handler.help = ['truthordare']
 handler.tags = ['game']
 handler.command = /^(truthordare|tod)$/i
 handler.group = true
+handler.desc = 'Memulai permainan kuis interaktif truthordare di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.truthordare',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler;

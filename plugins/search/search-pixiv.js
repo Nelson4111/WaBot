@@ -77,4 +77,10 @@ handler.tags = ['anime', 'search']
 handler.command = /^(pixiv|pixivsearch)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media pixiv berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.pixiv <kata kunci>',
+  'Contoh: .pixiv pencarian'
+]
+
 export default handler

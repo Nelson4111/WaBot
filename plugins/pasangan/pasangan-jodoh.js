@@ -86,4 +86,10 @@ handler.help = ['jodoh', 'jodohku', 'jodohin @u1 @u2', 'cekjodoh @u1 @u2']
 handler.tags = ['pasangan']
 handler.command = /^(jodoh|jodohku|jodohin|cekjodoh)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk jodoh.'
+handler.tutorial = [
+  '.jodoh @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

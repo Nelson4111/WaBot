@@ -13,4 +13,10 @@ handler.tags = ['group']
 handler.command = /^tagme$/i
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk tagme.'
+handler.tutorial = [
+  '.tagme',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

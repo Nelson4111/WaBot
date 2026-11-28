@@ -131,4 +131,10 @@ async function sendQuestion(conn, m) {
   session.lastQuestionId = sentMsg.key.id
 }
 
+handler.desc = 'Memulai permainan kuis interaktif cerdascermat di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.cerdascermat',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

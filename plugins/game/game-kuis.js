@@ -24,6 +24,12 @@ handler.tags = ['game']
 handler.command = /^(kuis)$/i
 handler.disable = true
 
+handler.desc = 'Memulai permainan kuis interaktif kuis di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.kuis',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler
 
 function pickRandom(list) {

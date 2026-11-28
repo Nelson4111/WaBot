@@ -183,4 +183,10 @@ handler.tags = ['owner']
 handler.command = /^(adddonasi|tambahdonasi|setdonasi|deldonasi|hapusdonasi|deletedonasi|rmdonasi|resetdonasi|cleardonasi)$/i
 handler.owner = false
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur adddonasi.'
+handler.tutorial = [
+  '.adddonasi',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

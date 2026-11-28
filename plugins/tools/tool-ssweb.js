@@ -73,4 +73,10 @@ handler.tags = ['tools']
 handler.command = /^(ssweb|sspc|sshp)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses ssweb.'
+handler.tutorial = [
+  '.ssweb <input>',
+  'Ketik .ssweb diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

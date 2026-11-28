@@ -91,4 +91,10 @@ handler.tags = ['audio', 'sound', 'fun']
 handler.command = /^soundmeme$/i
 handler.limit = true
 
+handler.desc = 'Memproses efek audio atau memutar suara efek soundmeme.'
+handler.tutorial = [
+  '.soundmeme (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .soundmeme'
+]
+
 export default handler

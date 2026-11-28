@@ -117,4 +117,9 @@ handler.tags = ['internet']
 handler.command = /^toproblox$/i
 handler.limit = false
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai roblox.'
+handler.tutorial = [
+  '.toproblox <pencarian>'
+]
+
 export default handler

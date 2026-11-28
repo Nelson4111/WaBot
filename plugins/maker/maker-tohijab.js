@@ -44,4 +44,10 @@ handler.help = ['tohijab']
 handler.tags = ['maker']
 handler.command = /^(tohijab)$/i
 
+handler.desc = 'Mengubah foto menjadi gaya hijab menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tohijab (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tohijab'
+]
+
 export default handler

@@ -77,4 +77,10 @@ handler.taga = ['tools']
 handler.command = ['pornhublogo'];
 handler.limit = false;
 
+handler.desc = 'Alat utilitas praktis untuk memproses logopronhub.'
+handler.tutorial = [
+  '.pornhublogo <input>',
+  'Ketik .pornhublogo diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

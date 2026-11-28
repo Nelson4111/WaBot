@@ -11,4 +11,10 @@ let handler = async (m, { conn }) => {
 handler.command = /^calo$/i
 handler.limit = true
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak caklontong.'
+handler.tutorial = [
+  '.calo',
+  'Gunakan perintah ini saat kesulitan menjawab kuis caklontong di grup'
+]
+
 export default handler

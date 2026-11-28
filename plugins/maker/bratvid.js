@@ -155,4 +155,10 @@ handler.tags = ['sticker', 'maker']
 handler.command = /^(bratvid|bratgif)$/i
 handler.limit = true
 
+handler.desc = 'Membuat stiker video animasi teks mengetik bertahap gaya Brat.'
+handler.tutorial = [
+  '.bratvid <teks>',
+  'Contoh: .bratvid menunggu kepastianmu'
+]
+
 export default handler

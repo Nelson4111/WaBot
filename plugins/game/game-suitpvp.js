@@ -32,4 +32,10 @@ handler.help = ['suitpvp']
 handler.tags = ['fun']
 handler.command = /^suitpvp$/i
 handler.group = true
+handler.desc = 'Memulai permainan kuis interaktif suitpvp di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.suitpvp',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

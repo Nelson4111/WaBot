@@ -525,4 +525,9 @@ handler.command = new RegExp(`^(${uniqueAliases.join('|')})$`, 'i')
 handler.help = uniqueAliases.filter(cmd => cmd.startsWith('menu'))
 handler.tags = ['main']
 
+handler.desc = 'Menjalankan perintah new regexp(^(${uniquealiases.join(|)})$, i) untuk layanan category.'
+handler.tutorial = [
+  '.new regexp(^(${uniquealiases.join(|)})$, i)'
+]
+
 export default handler

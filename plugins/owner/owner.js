@@ -38,4 +38,10 @@ handler.help = ['owner', 'creator']
 handler.tags = ['info', 'owner']
 handler.command = /^(owner|creator|listowner)$/i
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur owner.'
+handler.tutorial = [
+  '.owner',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

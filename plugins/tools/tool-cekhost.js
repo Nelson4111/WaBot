@@ -299,4 +299,10 @@ handler.tags = ['tools']
 handler.command = ['checkhost', 'cekhost', 'check']
 handler.limit = false
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekhost.'
+handler.tutorial = [
+  '.checkhost <input>',
+  'Ketik .checkhost diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

@@ -73,4 +73,10 @@ handler.tags = ['tools']
 handler.command = /^(cekrek|cekrekening)$/i
 handler.limit = true
 
+handler.desc = 'Memeriksa nomor rekening bank atau e-wallet untuk mengecek validitas nama pemilik.'
+handler.tutorial = [
+  '.cekrek <bank> <nomor rekening>',
+  'Contoh: .cekrek bca 1234567890'
+]
+
 export default handler

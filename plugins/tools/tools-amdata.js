@@ -57,4 +57,10 @@ handler.help = ['amdata']
 handler.command = ['amdata', 'presetam']
 handler.tags = ['tools']
 
+handler.desc = 'Alat utilitas praktis untuk memproses amdata.'
+handler.tutorial = [
+  '.amdata <input>',
+  'Ketik .amdata diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

@@ -143,4 +143,9 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['waifusetpp (reply gambar)', 'husbusetpp (reply gambar)']
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk setpdpp.'
+handler.tutorial = [
+  '.waifusetpp'
+]
+
 export default handler

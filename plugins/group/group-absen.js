@@ -236,4 +236,11 @@ handler.tags = ['group']
 handler.command = /^(absen|mulaiabsen|cekabsen|rekapabsen|hapusabsen|hadir|sakit|izin|alpha)$/i
 handler.group = true
 
+handler.desc = 'Membuat dan mengelola daftar absensi kehadiran anggota grup.'
+handler.tutorial = [
+  '.absen (mulai/absen)',
+  '.hadir (konfirmasi hadir)',
+  '.cekabsen (lihat daftar)'
+]
+
 export default handler

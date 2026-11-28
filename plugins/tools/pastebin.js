@@ -40,4 +40,10 @@ handler.help = ['pastebin <url>'];
 handler.tags = ['internet'];
 handler.command = ['pastebin'];
 
+handler.desc = 'Alat utilitas praktis untuk memproses pastebin.'
+handler.tutorial = [
+  '.pastebin <input>',
+  'Ketik .pastebin diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

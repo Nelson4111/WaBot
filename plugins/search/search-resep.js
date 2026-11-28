@@ -42,4 +42,10 @@ handler.help = ['resep'].map(v => v + ' <query>');
 handler.command = /^(resep)$/i;
 handler.limit = false;
 
+handler.desc = 'Mencari informasi atau media resep berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.resep <kata kunci>',
+  'Contoh: .resep pencarian'
+]
+
 export default handler;

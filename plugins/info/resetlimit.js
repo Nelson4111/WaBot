@@ -10,6 +10,11 @@ handler.tags = ['owner']
 handler.command = /^(resetlimit)$/i
 
 handler.owner = true
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai resetlimit.'
+handler.tutorial = [
+  '.resetlimit'
+]
+
 export default handler 
 
 function isNumber(x = 0) {

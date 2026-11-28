@@ -74,4 +74,10 @@ handler.tags = ['tools', 'info']
 handler.command = /^(cekpln|pln)$/i
 handler.limit = true
 
+handler.desc = 'Memeriksa tagihan listrik atau ID pelanggan PLN.'
+handler.tutorial = [
+  '.cekpln <id pelanggan>',
+  'Contoh: .cekpln 51234567890'
+]
+
 export default handler

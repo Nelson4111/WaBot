@@ -55,4 +55,10 @@ handler.command = /^(jarak)$/i
 
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses gmaps.'
+handler.tutorial = [
+  '.jarak <input>',
+  'Ketik .jarak diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

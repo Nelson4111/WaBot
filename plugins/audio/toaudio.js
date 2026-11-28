@@ -61,4 +61,10 @@ handler.tags = ["audio", "tools"]
 handler.command = ["toaudio"]
 handler.limit = true
 
+handler.desc = 'Memproses efek audio atau memutar suara efek toaudio.'
+handler.tutorial = [
+  '.toaudio (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .toaudio'
+]
+
 export default handler

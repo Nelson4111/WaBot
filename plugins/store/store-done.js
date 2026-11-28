@@ -165,4 +165,9 @@ handler.help = ['done <nomor|nama|nominal|metode>']
 handler.tags = ['moneytrack']
 handler.command = /^done$/i
 
+handler.desc = 'Menjalankan perintah done untuk layanan done.'
+handler.tutorial = [
+  '.done'
+]
+
 export default handler

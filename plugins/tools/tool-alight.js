@@ -58,4 +58,10 @@ handler.tags = ['tools']
 handler.command = /^(alight|alightactivator)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses alight.'
+handler.tutorial = [
+  '.alight <input>',
+  'Ketik .alight diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

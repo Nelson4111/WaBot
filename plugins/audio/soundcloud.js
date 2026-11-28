@@ -89,4 +89,10 @@ handler.command = ['soundcloud', 'plays']
 handler.tags = ['downloader']
 handler.limit = true 
 
+handler.desc = 'Memproses efek audio atau memutar suara efek soundcloud.'
+handler.tutorial = [
+  '.soundcloud (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .soundcloud'
+]
+
 export default handler

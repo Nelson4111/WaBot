@@ -92,4 +92,10 @@ handler.tags = ['downloader']
 handler.command = ['xhs']
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan XHS secara otomatis.'
+handler.tutorial = [
+  '.xhs <link Xhs>',
+  'Kirim tautan Xhs dengan perintah .xhs'
+]
+
 export default handler

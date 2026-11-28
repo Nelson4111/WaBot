@@ -26,4 +26,10 @@ handler.tags = ['tools', 'sound']
 handler.command = /^mikutalk$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses mikutalk.'
+handler.tutorial = [
+  '.mikutalk <input>',
+  'Ketik .mikutalk diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

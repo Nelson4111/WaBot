@@ -28,4 +28,9 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['waifulistpp', 'husbulistpp']
 handler.owner = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk listpp.'
+handler.tutorial = [
+  '.waifulistpp'
+]
+
 export default handler

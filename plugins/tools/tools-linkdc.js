@@ -61,4 +61,10 @@ handler.help = ['linkdc', 'unlinkdc', 'statuslink'];
 handler.tags = ['tools'];
 handler.command = /^(linkdc|tautkandiscord|unlinkdc|hapuslinkdiscord|statuslink|ceklink)$/i;
 
+handler.desc = 'Alat utilitas praktis untuk memproses linkdc.'
+handler.tutorial = [
+  '.linkdc <input>',
+  'Ketik .linkdc diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

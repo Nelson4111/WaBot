@@ -36,4 +36,10 @@ handler.tags = ['tools'];
 handler.command = ['unblur'];
 handler.limit = true 
 
+handler.desc = 'Alat utilitas praktis untuk memproses unblur.'
+handler.tutorial = [
+  '.unblur <input>',
+  'Ketik .unblur diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

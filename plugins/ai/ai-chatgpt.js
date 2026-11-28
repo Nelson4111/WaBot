@@ -20,4 +20,10 @@ handler.help = ['chatgpt']
 handler.tags = ['ai']
 handler.command = ['chatgpt']
 
+handler.desc = 'Tanya jawab cerdas dan konsultasi pengetahuan dengan model ChatGPT.'
+handler.tutorial = [
+  '.chatgpt <pertanyaan>',
+  'Contoh: .chatgpt bagaimana cara kerja internet'
+]
+
 export default handler

@@ -29,4 +29,9 @@ handler.tags = ['internet']
 handler.command = /^kompas$/i
 handler.limit = true
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai kompas.'
+handler.tutorial = [
+  '.kompas <pencarian>'
+]
+
 export default handler

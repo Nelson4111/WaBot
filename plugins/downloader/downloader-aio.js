@@ -129,4 +129,10 @@ handler.tags = ['downloader']
 handler.command = /^aio$/i
 handler.limit = true
 
+handler.desc = 'Pengunduh All-In-One serbaguna dari berbagai platform sosial media secara otomatis.'
+handler.tutorial = [
+  '.aio <link media>',
+  'Kirim link media dari TikTok, IG, FB, Twitter, dll'
+]
+
 export default handler

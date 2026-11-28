@@ -146,4 +146,10 @@ handler.command = /^(setlist|addlist|store)$/i
 handler.group = true
 handler.admin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk setlist.'
+handler.tutorial = [
+  '.setlist',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

@@ -23,4 +23,10 @@ handler.command = /^(setbye)$/i
 handler.group = true
 handler.admin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk setbye.'
+handler.tutorial = [
+  '.setbye',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

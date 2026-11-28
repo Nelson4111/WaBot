@@ -30,4 +30,10 @@ handler.command = /^lengkapikalimat$/i
 handler.onlyprem = true
 handler.game = true
 
+handler.desc = 'Memulai permainan kuis interaktif lengkapikalimat di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.lengkapikalimat',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

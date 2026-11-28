@@ -56,4 +56,10 @@ handler.tags = ['tools']
 handler.command = /^enhance$/i
 handler.limit = false
 
+handler.desc = 'Alat utilitas praktis untuk memproses enhance.'
+handler.tutorial = [
+  '.enhance <input>',
+  'Ketik .enhance diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

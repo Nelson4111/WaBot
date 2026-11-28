@@ -13,6 +13,12 @@ handler.tags = ['fun']
 handler.command = /^kapankah$/i
 handler.owner = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk kapankah.'
+handler.tutorial = [
+  '.kapankah <teks/pertanyaan>',
+  'Ketik .kapankah diikuti nama atau pertanyaan'
+]
+
 export default handler
 
 function pickRandom(list) {

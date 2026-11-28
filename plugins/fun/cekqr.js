@@ -49,4 +49,10 @@ handler.tags = ['tools']
 handler.command = /^cekqr$/i
 handler.limit = true
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk cekqr.'
+handler.tutorial = [
+  '.cekqr <teks/pertanyaan>',
+  'Ketik .cekqr diikuti nama atau pertanyaan'
+]
+
 export default handler

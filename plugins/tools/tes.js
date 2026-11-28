@@ -31,4 +31,10 @@ let handler = async (m, { conn } = {}) => {
 handler.customPrefix = /^(tes|avelia|nelbot|test|bot)$/i
 handler.command = new RegExp
 
+handler.desc = 'Alat utilitas praktis untuk memproses tes.'
+handler.tutorial = [
+  '.new regexp <input>',
+  'Ketik .new regexp diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

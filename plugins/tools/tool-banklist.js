@@ -53,4 +53,10 @@ handler.tags = ['tools', 'info']
 handler.command = /^(listbank|kodebank|listewallet|kodeewallet)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses banklist.'
+handler.tutorial = [
+  '.listbank <input>',
+  'Ketik .listbank diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

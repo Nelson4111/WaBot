@@ -15,4 +15,10 @@ handler.tags = ['fun']
 
 handler.command = /^(kulit)?kerang(ajaib)?$/i
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk kerangajaib.'
+handler.tutorial = [
+  '.kulitkerangajaib <teks/pertanyaan>',
+  'Ketik .kulitkerangajaib diikuti nama atau pertanyaan'
+]
+
 export default handler

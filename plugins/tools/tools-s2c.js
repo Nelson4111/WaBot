@@ -75,4 +75,10 @@ handler.command = ['screenshot2code', 's2c'];
 handler.tags = ['tools'];
 handler.limit = false;
 
+handler.desc = 'Alat utilitas praktis untuk memproses s2c.'
+handler.tutorial = [
+  '.screenshot2code <input>',
+  'Ketik .screenshot2code diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

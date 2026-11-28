@@ -42,6 +42,12 @@ handler.help = ['fakektp']
 handler.tags = ['tools']
 handler.command = /^(fakektp|ektp)$/i
 
+handler.desc = 'Membuat gambar screenshot palsu KTP untuk keperluan meme atau hiburan.'
+handler.tutorial = [
+  '.fakektp <teks>',
+  'Contoh: .fakektp Nama|Username|Komentar'
+]
+
 export default handler
 
 async function uploadUguu(buffer, ext) {

@@ -21,4 +21,9 @@ handler.tags = ['anime']
 handler.command = /^(waifu3)$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime waifu3.'
+handler.tutorial = [
+  '.waifu3'
+]
+
 export default handler

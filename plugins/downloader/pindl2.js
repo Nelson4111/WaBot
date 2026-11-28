@@ -81,4 +81,10 @@ handler.command = ['pindl2']
 handler.tags = ['downloader']
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan PINDL2 secara otomatis.'
+handler.tutorial = [
+  '.pindl2 <link pindl2>',
+  'Kirim tautan pindl2 dengan perintah .pindl2'
+]
+
 export default handler

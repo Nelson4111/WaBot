@@ -124,4 +124,10 @@ handler.command = /^(tricheck)$/i;
 handler.limit = false;
 handler.register = false; // true kan jika ada fitur register atau daftar di bot mu.
 
+handler.desc = 'Alat utilitas praktis untuk memproses tricheck.'
+handler.tutorial = [
+  '.tricheck <input>',
+  'Ketik .tricheck diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

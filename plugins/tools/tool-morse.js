@@ -62,4 +62,10 @@ handler.tags = ['fun', 'tools'];
 handler.command = /^(morse|demorse)$/i;
 handler.limit = false;
 
+handler.desc = 'Alat utilitas praktis untuk memproses morse.'
+handler.tutorial = [
+  '.morse <input>',
+  'Ketik .morse diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

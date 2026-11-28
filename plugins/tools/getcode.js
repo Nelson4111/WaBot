@@ -30,4 +30,10 @@ handler.help = ['getcode <url>']
 handler.tags = ['tools']
 handler.command = /^getcode$/i
 
+handler.desc = 'Alat utilitas praktis untuk memproses getcode.'
+handler.tutorial = [
+  '.getcode <input>',
+  'Ketik .getcode diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

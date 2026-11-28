@@ -498,4 +498,10 @@ handler.before = async function (m, { match, ...context }) {
 
 }
 
+handler.desc = 'Memproses efek audio atau memutar suara efek note.'
+handler.tutorial = [
+  '.voice (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .voice'
+]
+
 export default handler

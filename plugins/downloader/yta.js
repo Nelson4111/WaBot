@@ -80,4 +80,10 @@ handler.tags = ['downloader']
 handler.command = /^(yta|ytmp3|ytv|ytmp4)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh dan mengekstrak audio lagu MP3 dari video YouTube.'
+handler.tutorial = [
+  '.yta <link youtube>',
+  'Kirim link YouTube untuk diunduh sebagai file MP3'
+]
+
 export default handler

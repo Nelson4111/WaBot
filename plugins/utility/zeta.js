@@ -102,4 +102,9 @@ handler.command = ["zetavoice"];
 handler.tags = ["audio"];
 handler.premium = false;
 
+handler.desc = 'Menjalankan perintah zetavoice untuk layanan zeta.'
+handler.tutorial = [
+  '.zetavoice'
+]
+
 export default handler;

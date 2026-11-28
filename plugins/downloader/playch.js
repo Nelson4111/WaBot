@@ -103,4 +103,10 @@ handler.command = /^playch$/i
 handler.limit = false
 handler.owner = true
 
+handler.desc = 'Mengunduh file media dari tautan PLAYCH secara otomatis.'
+handler.tutorial = [
+  '.playch <link playch>',
+  'Kirim tautan playch dengan perintah .playch'
+]
+
 export default handler

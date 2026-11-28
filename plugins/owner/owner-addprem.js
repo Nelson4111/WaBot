@@ -68,6 +68,12 @@ handler.tags = ['owner']
 handler.command = /^addprem$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur addprem.'
+handler.tutorial = [
+  '.addprem',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler
 
 function ms(str) {

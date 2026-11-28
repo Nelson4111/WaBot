@@ -27,4 +27,10 @@ const handler = async (m, { text }) => {
 handler.help = ["cekidch"]
 handler.tags = ["tools"]
 handler.command = ["cekidch", "idch"];
+handler.desc = 'Alat utilitas praktis untuk memproses cekidch.'
+handler.tutorial = [
+  '.cekidch <input>',
+  'Ketik .cekidch diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

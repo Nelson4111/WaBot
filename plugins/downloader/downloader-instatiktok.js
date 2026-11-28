@@ -92,4 +92,10 @@ handler.tags = ['downloader']
 handler.command = /^dlit$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan INSTATIKTOK secara otomatis.'
+handler.tutorial = [
+  '.dlit <link instatiktok>',
+  'Kirim tautan instatiktok dengan perintah .dlit'
+]
+
 export default handler

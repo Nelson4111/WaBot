@@ -122,5 +122,11 @@ handler.tags = ['owner']
 handler.command = /^(bc|bcgc|bcall)$/i
 handler.owner = true
 
+handler.desc = 'Mengirimkan pesan siaran (broadcast) ke seluruh obrolan atau grup yang terdaftar.'
+handler.tutorial = [
+  '.bc <pesan>',
+  'Khusus Owner: menyiarkan pengumuman bot ke seluruh pengguna'
+]
+
 export default handler
 

@@ -125,4 +125,10 @@ handler.command = ['threads']
 handler.tags = ['downloader']
 handler.limit = true
 
+handler.desc = 'Mengunduh media video atau foto dari postingan Threads Instagram.'
+handler.tutorial = [
+  '.threads <link threads>',
+  'Kirim tautan postingan Threads'
+]
+
 export default handler

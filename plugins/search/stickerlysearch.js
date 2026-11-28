@@ -39,4 +39,10 @@ handler.tags = ['sticker']
 handler.command = /^(stickerlysearch|stickerly2)$/i
 handler.limit = false
 
+handler.desc = 'Mencari informasi atau media stickerlysearch berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.stickerlysearch <kata kunci>',
+  'Contoh: .stickerlysearch pencarian'
+]
+
 export default handler

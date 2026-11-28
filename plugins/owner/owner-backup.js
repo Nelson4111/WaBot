@@ -50,4 +50,10 @@ handler.tags = ['owner']
 handler.command = ['backup', 'backupsc']
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur backup.'
+handler.tutorial = [
+  '.backup',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

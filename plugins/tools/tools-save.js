@@ -38,4 +38,10 @@ handler.help = ['save <nama_file>']
 handler.tags = ['tools']
 handler.command = /^(save)$/i
 
+handler.desc = 'Alat utilitas praktis untuk memproses save.'
+handler.tutorial = [
+  '.save <input>',
+  'Ketik .save diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

@@ -38,4 +38,9 @@ handler.help = ['dafont <nama>'];
 handler.tags = ['internet'];
 handler.command = /^dafont$/i;
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai dafont.'
+handler.tutorial = [
+  '.dafont <pencarian>'
+]
+
 export default handler;

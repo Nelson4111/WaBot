@@ -67,4 +67,10 @@ handler.tags = ['tools']
 handler.command = /^(kalender|calendar)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses calendar.'
+handler.tutorial = [
+  '.kalender <input>',
+  'Ketik .kalender diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

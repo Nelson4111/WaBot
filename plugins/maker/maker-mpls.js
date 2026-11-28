@@ -34,4 +34,10 @@ handler.tags = ['maker']
 handler.command = /^mpls$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar grafis kustom efek mpls.'
+handler.tutorial = [
+  '.mpls <teks>',
+  'Kirim perintah .mpls disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

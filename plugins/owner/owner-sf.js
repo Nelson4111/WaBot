@@ -65,4 +65,10 @@ handler.command = /^(sf|saveplugin|sp)$/i
 
 handler.rowner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur sf.'
+handler.tutorial = [
+  '.sf',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

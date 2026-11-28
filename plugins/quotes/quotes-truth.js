@@ -23,6 +23,11 @@ handler.command = /^(truth)$/i
 
 handler.register = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema truth.'
+handler.tutorial = [
+  '.truth'
+]
+
 export default handler
 
 function ucapan() {

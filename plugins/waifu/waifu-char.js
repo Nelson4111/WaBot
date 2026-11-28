@@ -61,5 +61,10 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['waifuchar <nama|uid>', 'husbuchar <nama|uid>']
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk char.'
+handler.tutorial = [
+  '.waifuchar'
+]
+
 export default handler
 

@@ -163,4 +163,10 @@ handler.tags = ['game', 'info']
 handler.command = ['leaderboard', 'lb']
 handler.register = true
 
+handler.desc = 'Memulai permainan kuis interaktif leaderboard di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.leaderboard',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

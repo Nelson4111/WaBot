@@ -48,6 +48,12 @@ handler.tags = ['stalk']
 handler.command = /^robloxstalk$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun ROBLOX publik.'
+handler.tutorial = [
+  '.robloxstalk <username/id>',
+  'Contoh: .robloxstalk target'
+]
+
 export default handler
 
 async function robloxStalk(username) {

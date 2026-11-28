@@ -28,4 +28,10 @@ handler.help = ['wanted <image_url>']
 handler.tags = ['maker']
 handler.command = /^wanted$/i
 
+handler.desc = 'Membuat gambar grafis kustom efek wanted.'
+handler.tutorial = [
+  '.wanted <teks>',
+  'Kirim perintah .wanted disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

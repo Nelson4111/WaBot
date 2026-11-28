@@ -95,4 +95,10 @@ handler.tags = ['search']
 handler.command = /^(google|gsearch)$/i
 handler.limit = true
 
+handler.desc = 'Melakukan pencarian artikel dan informasi di mesin pencari Google.'
+handler.tutorial = [
+  '.google <pencarian>',
+  'Contoh: .google resep nasi goreng'
+]
+
 export default handler

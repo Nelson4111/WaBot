@@ -21,4 +21,9 @@ handler.tags = ['fun']
 handler.command = /^pantun$/i
 handler.limit = false
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema pantun.'
+handler.tutorial = [
+  '.pantun'
+]
+
 export default handler

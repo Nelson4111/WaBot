@@ -321,4 +321,10 @@ handler.command = ['fstik', 'stickerinfo']
 handler.tags = ['tools']
 handler.premium = true
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk fstik.'
+handler.tutorial = [
+  '.fstik (balas stiker/media)',
+  'Kirim perintah .fstik dengan membalas stiker atau gambar target'
+]
+
 export default handler

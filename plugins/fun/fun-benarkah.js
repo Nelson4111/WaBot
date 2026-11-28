@@ -12,6 +12,12 @@ handler.tags = ['fun']
 handler.command = /^benarkah/i
 handler.owner = false
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk benarkah.'
+handler.tutorial = [
+  '.benarkah <teks/pertanyaan>',
+  'Ketik .benarkah diikuti nama atau pertanyaan'
+]
+
 export default handler
 
 function pickRandom(list) {

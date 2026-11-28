@@ -218,4 +218,9 @@ handler.help = ['addtransaksi <tipe|kategori|nominal|akun>', 'edittransaksi <id>
 handler.tags = ['moneytrack']
 handler.command = /^(addtransaksi|edittransaksi|hapustransaksi)$/i
 
+handler.desc = 'Menjalankan perintah addtransaksi untuk layanan addtransaksi.'
+handler.tutorial = [
+  '.addtransaksi'
+]
+
 export default handler

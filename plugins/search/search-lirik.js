@@ -52,4 +52,10 @@ handler.help = ['lirik <judul>']
 handler.tags = ['search']
 handler.command = /^(lirik|lyrics)$/i
 
+handler.desc = 'Mencari informasi atau media lirik berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.lirik <kata kunci>',
+  'Contoh: .lirik pencarian'
+]
+
 export default handler

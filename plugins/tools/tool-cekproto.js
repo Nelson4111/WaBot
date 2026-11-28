@@ -328,4 +328,10 @@ handler.tags = ['tools', 'owner']
 handler.command = /^(tes|cekproto2|stealthproto|cekproto|inspectmsg|rawproto|bedahpesan|inspect|dumpmsg)$/i
 handler.unreg = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekproto.'
+handler.tutorial = [
+  '.tes <input>',
+  'Ketik .tes diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

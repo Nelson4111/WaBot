@@ -41,4 +41,10 @@ handler.command = /^(tosdmtinggi|sdmtinggi)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Membuat gambar grafis kustom efek sdmtinggi.'
+handler.tutorial = [
+  '.tosdmtinggi <teks>',
+  'Kirim perintah .tosdmtinggi disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

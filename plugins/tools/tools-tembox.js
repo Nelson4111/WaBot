@@ -74,4 +74,10 @@ handler.tags = ['tools']
 handler.command = /^tembox(cek)?$|^copy$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses tembox.'
+handler.tutorial = [
+  '.temboxcek <input>',
+  'Ketik .temboxcek diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

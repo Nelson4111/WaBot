@@ -136,4 +136,9 @@ handler.tags = ['anime', 'tools']
 handler.command = /^(whatanime|wait|animefind)$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime whatanime.'
+handler.tutorial = [
+  '.whatanime'
+]
+
 export default handler

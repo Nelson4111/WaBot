@@ -65,4 +65,10 @@ handler.tags = ['downloader']
 handler.command = /^(megadl|mega)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh file dari penyimpanan awan Mega.nz.'
+handler.tutorial = [
+  '.mega <link mega>',
+  'Kirim tautan file Mega.nz'
+]
+
 export default handler

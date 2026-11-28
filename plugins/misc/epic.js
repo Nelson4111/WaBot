@@ -1645,4 +1645,9 @@ handler.help = ['epic']
 handler.tags = ['misc']
 handler.command = /^epic$/i
 
+handler.desc = 'Menjalankan perintah epic untuk layanan epic.'
+handler.tutorial = [
+  '.epic'
+]
+
 export default handler

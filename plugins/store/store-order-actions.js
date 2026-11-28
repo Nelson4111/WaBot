@@ -73,4 +73,9 @@ handler.help = ['bayar <invoice>', 'komplain <invoice>', 'detailorder <invoice>'
 handler.tags = ['moneytrack']
 handler.command = /^(bayar|komplain|detailorder)$/i
 
+handler.desc = 'Menjalankan perintah bayar untuk layanan order actions.'
+handler.tutorial = [
+  '.bayar'
+]
+
 export default handler

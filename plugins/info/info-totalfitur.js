@@ -73,4 +73,9 @@ handler.help = ['totalfitur']
 handler.tags = ['info']
 handler.command = ['totalfitur']
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai totalfitur.'
+handler.tutorial = [
+  '.totalfitur'
+]
+
 export default handler

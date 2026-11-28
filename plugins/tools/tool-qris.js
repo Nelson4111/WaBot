@@ -111,4 +111,10 @@ handler.tags = ['tools']
 handler.command = /^(qris|qrisconvert|dynamicqris)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses qris.'
+handler.tutorial = [
+  '.qris <input>',
+  'Ketik .qris diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

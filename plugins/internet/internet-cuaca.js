@@ -172,4 +172,9 @@ handler.help = ['cuaca']
 handler.command = ['cuaca', 'weather']
 handler.tags = ['tools']
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai cuaca.'
+handler.tutorial = [
+  '.cuaca <pencarian>'
+]
+
 export default handler

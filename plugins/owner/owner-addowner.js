@@ -37,4 +37,10 @@ handler.tags = ['owner']
 handler.command = /^addowner$/i
 handler.rowner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur addowner.'
+handler.tutorial = [
+  '.addowner',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

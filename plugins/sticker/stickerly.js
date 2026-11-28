@@ -49,4 +49,10 @@ handler.tags = ['sticker']
 handler.command = /^(stickerly|stickerdownload)$/i
 handler.limit = 2
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk stickerly.'
+handler.tutorial = [
+  '.stickerly (balas stiker/media)',
+  'Kirim perintah .stickerly dengan membalas stiker atau gambar target'
+]
+
 export default handler

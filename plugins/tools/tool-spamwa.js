@@ -8,5 +8,11 @@ handler.command = /^spam(wa)?$/i
 handler.owner = true
 handler.disabled = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses spamwa.'
+handler.tutorial = [
+  '.spamwa <input>',
+  'Ketik .spamwa diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler
 

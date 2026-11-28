@@ -104,4 +104,10 @@ handler.tags = ['group']
 handler.command = /^(cap|uncap|listcap)$/i
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk cap.'
+handler.tutorial = [
+  '.cap',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

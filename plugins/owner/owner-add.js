@@ -92,4 +92,10 @@ handler.owner = true
 handler.group = true
 handler.botAdmin = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur add.'
+handler.tutorial = [
+  '.oadd',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

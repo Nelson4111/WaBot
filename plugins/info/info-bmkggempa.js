@@ -40,4 +40,9 @@ handler.tags = ['info']
 handler.command = /^bmkggempa$/i
 handler.limit = false
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai bmkggempa.'
+handler.tutorial = [
+  '.bmkggempa'
+]
+
 export default handler

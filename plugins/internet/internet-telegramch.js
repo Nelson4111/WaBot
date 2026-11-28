@@ -87,4 +87,9 @@ handler.tags = ['internet']
 handler.command = /^tgram$/i
 handler.limit = true
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai telegramch.'
+handler.tutorial = [
+  '.tgram <pencarian>'
+]
+
 export default handler

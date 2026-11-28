@@ -66,4 +66,10 @@ handler.help = ['mcaddon'];
 handler.tags = ['search']
 handler.command = ['mcaddon'];
 
+handler.desc = 'Mencari informasi atau media mcaddon berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.mcaddon <kata kunci>',
+  'Contoh: .mcaddon pencarian'
+]
+
 export default handler;

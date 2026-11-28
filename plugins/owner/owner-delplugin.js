@@ -39,4 +39,10 @@ handler.tags = ['owner']
 handler.command = /^(deleteplugin|delplugin)$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur delplugin.'
+handler.tutorial = [
+  '.deleteplugin',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

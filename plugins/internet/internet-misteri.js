@@ -49,4 +49,9 @@ handler.tags = ['internet']
 handler.command = ['misteri'];
 handler.limit = false;
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai misteri.'
+handler.tutorial = [
+  '.misteri <pencarian>'
+]
+
 export default handler;

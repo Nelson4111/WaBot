@@ -624,4 +624,9 @@ handler.help = ["ping"];
 handler.tags = ["info"];
 handler.command = ["ping"];
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai ping.'
+handler.tutorial = [
+  '.ping'
+]
+
 export default handler;

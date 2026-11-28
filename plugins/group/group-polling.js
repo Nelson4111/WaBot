@@ -32,4 +32,10 @@ handler.tags = ['group']
 handler.command = /^(poll|polling)$/i
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk polling.'
+handler.tutorial = [
+  '.poll',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

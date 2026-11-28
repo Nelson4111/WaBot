@@ -8,4 +8,10 @@ handler.command = /^(menfess|menfes|confess|confes)$/i
 handler.private = true
 handler.disabled = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses menfess.'
+handler.tutorial = [
+  '.menfess <input>',
+  'Ketik .menfess diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

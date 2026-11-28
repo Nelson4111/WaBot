@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^(tojepang)$/i
 handler.premium = true
 
+handler.desc = 'Mengubah foto menjadi gaya jepang menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tojepang (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tojepang'
+]
+
 export default handler

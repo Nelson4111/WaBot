@@ -76,4 +76,10 @@ handler.help = ['belicincin <silver|gold|topaz|amethyst|ruby|sapphire|emerald|pl
 handler.tags = ['pasangan']
 handler.command = /^(belicincin|cincin)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk cincin.'
+handler.tutorial = [
+  '.belicincin @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

@@ -77,4 +77,9 @@ handler.help = ['order <nomor pembeli | item|qty|harga>']
 handler.tags = ['moneytrack']
 handler.command = /^(order)$/i
 
+handler.desc = 'Menjalankan perintah order untuk layanan order.'
+handler.tutorial = [
+  '.order'
+]
+
 export default handler

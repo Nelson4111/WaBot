@@ -19,4 +19,9 @@ handler.tags = ['random']
 handler.command = /^papayang$/i
 handler.limit = true
 
+handler.desc = 'Menjalankan perintah papayang untuk layanan papayang.'
+handler.tutorial = [
+  '.papayang'
+]
+
 export default handler

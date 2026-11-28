@@ -99,4 +99,10 @@ handler.help = ["ptv"]
 handler.tags = ["search"]
 handler.command = /^(ptv)$/i
 
+handler.desc = 'Mencari informasi atau media ptv berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.ptv <kata kunci>',
+  'Contoh: .ptv pencarian'
+]
+
 export default handler

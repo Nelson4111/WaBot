@@ -164,4 +164,9 @@ handler.help = ['enable <option>', 'disable <option>']
 handler.tags = ['group', 'owner']
 handler.command = /^(enable|disable|on|off|1|0)$/i
 
+handler.desc = 'Menjalankan perintah enable untuk layanan enable.'
+handler.tutorial = [
+  '.enable'
+]
+
 export default handler

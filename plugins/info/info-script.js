@@ -9,4 +9,9 @@ let handler = async (m, { conn }) => {
 
 handler.command = /^(sc|script)$/i
 handler.tags = ['info']
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai script.'
+handler.tutorial = [
+  '.sc'
+]
+
 export default handler

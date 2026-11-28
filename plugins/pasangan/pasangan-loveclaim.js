@@ -67,4 +67,10 @@ handler.help = ['loveclaim', 'berkahnikah', 'hadiahpasangan']
 handler.tags = ['pasangan']
 handler.command = /^(loveclaim|berkahnikah|hadiahpasangan)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk loveclaim.'
+handler.tutorial = [
+  '.loveclaim @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

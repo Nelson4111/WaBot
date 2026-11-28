@@ -40,4 +40,9 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['waifuputus', 'husbuputus']
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk putus.'
+handler.tutorial = [
+  '.waifuputus'
+]
+
 export default handler

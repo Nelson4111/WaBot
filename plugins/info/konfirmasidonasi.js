@@ -52,4 +52,9 @@ handler.help = ['konfirmasidonasi <nominal> | <nama>']
 handler.tags = ['info']
 handler.command = /^(konfirmasidonasi|buktidonasi|paydonasi)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai konfirmasidonasi.'
+handler.tutorial = [
+  '.konfirmasidonasi'
+]
+
 export default handler

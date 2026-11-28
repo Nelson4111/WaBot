@@ -88,4 +88,10 @@ handler.help = ["bratspongebob"]
 handler.tags = ["maker"]
 handler.command = /^(bratspongebob|spongebob)$/i
 
+handler.desc = 'Membuat gambar grafis kustom efek bratspongbob.'
+handler.tutorial = [
+  '.bratspongebob <teks>',
+  'Kirim perintah .bratspongebob disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

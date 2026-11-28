@@ -28,4 +28,10 @@ handler.tags = ['owner']
 handler.command = /^(getplugin|gp)$/i
 handler.rowner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur gp.'
+handler.tutorial = [
+  '.getplugin',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

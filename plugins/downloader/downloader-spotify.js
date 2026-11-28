@@ -84,4 +84,11 @@ handler.tags = ['downloader']
 handler.command = /^(spotify|plays)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh lagu dari Spotify berdasarkan judul atau link track.'
+handler.tutorial = [
+  '.spotify <judul/link>',
+  'Contoh: .spotify komang',
+  'Kirim link Spotify untuk mengunduh audio'
+]
+
 export default handler

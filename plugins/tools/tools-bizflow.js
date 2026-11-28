@@ -84,4 +84,10 @@ handler.help = ['bizflow [teks]', 'bizflow btn <teks>|<tombol>|<cmd>']
 handler.tags = ['tools', 'info']
 handler.command = /^(bizflow|bizmsg|flowmsg|relaybiz)$/i
 
+handler.desc = 'Alat utilitas praktis untuk memproses bizflow.'
+handler.tutorial = [
+  '.bizflow <input>',
+  'Ketik .bizflow diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

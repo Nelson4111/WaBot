@@ -115,4 +115,10 @@ handler.tags = ['tools'];
 handler.command = /^(setbridge|delbridge|unlinkbridge|statusbridge|checkbridge)$/i;
 handler.group = true;
 
+handler.desc = 'Alat utilitas praktis untuk memproses bridge.'
+handler.tutorial = [
+  '.setbridge <input>',
+  'Ketik .setbridge diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

@@ -42,4 +42,10 @@ handler.tags = ['owner']
 handler.premium = true
 handler.mods = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk msgch.'
+handler.tutorial = [
+  '.msgch',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

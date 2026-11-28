@@ -647,4 +647,11 @@ handler.command = /^(stikersuara|stikersound|ssound|sssound)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Membuat stiker WhatsApp bersuara (Sound Sticker) yang memutar audio saat dibuka.'
+handler.tutorial = [
+  '.ssound (balas stiker + audio)',
+  '.ssound <link audio>',
+  'Balas stiker atau gabungkan file audio dengan stiker'
+]
+
 export default handler

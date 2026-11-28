@@ -53,6 +53,11 @@ handler.help = ['runtime']
 handler.tags = ['info']
 handler.command = ['runtime', 'rt']
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai runtime.'
+handler.tutorial = [
+  '.runtime'
+]
+
 export default handler
 
 function clockString(ms) {

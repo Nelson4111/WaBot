@@ -11,4 +11,10 @@ handler.command = /^who$/i
 
 handler.limit = true
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak siapakahaku.'
+handler.tutorial = [
+  '.who',
+  'Gunakan perintah ini saat kesulitan menjawab kuis siapakahaku di grup'
+]
+
 export default handler

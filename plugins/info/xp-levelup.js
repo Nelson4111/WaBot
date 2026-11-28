@@ -316,5 +316,10 @@ handler.tags = ['info', 'game']
 handler.command = /^(level|levelup|lvlup|autolevelup)$/i
 handler.register = true
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai levelup.'
+handler.tutorial = [
+  '.level'
+]
+
 export default handler
 import { addUserLimit } from '../../lib/userLimit.js'

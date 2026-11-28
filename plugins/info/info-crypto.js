@@ -43,4 +43,9 @@ handler.help = ['crypto']
 handler.tags = ['info']
 handler.command = /^crypto$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai crypto.'
+handler.tutorial = [
+  '.crypto'
+]
+
 export default handler

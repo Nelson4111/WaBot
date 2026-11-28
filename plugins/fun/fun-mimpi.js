@@ -193,4 +193,10 @@ handler.group = true;
 handler.limit = 1;
 handler.register = true;
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk mimpi.'
+handler.tutorial = [
+  '.dreamworld <teks/pertanyaan>',
+  'Ketik .dreamworld diikuti nama atau pertanyaan'
+]
+
 export default handler

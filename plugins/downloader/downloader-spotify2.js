@@ -83,4 +83,10 @@ handler.command = ['spotify2']
 handler.tags = ['downloader']
 handler.limit = true
 
+handler.desc = 'Mengunduh file audio lagu langsung dari tautan Spotify.'
+handler.tutorial = [
+  '.spotify2 <link spotify>',
+  'Kirim tautan track Spotify'
+]
+
 export default handler

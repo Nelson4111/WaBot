@@ -51,4 +51,9 @@ handler.command = /^(animesearch)$/i
 handler.register = true
 handler.limit = false
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime imagesearch.'
+handler.tutorial = [
+  '.animesearch'
+]
+
 export default handler

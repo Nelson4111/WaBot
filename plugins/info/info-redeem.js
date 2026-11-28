@@ -54,4 +54,9 @@ handler.tags = ['info']
 handler.help = ['redeem <kode>']
 handler.register = true
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai redeem.'
+handler.tutorial = [
+  '.redeem'
+]
+
 export default handler

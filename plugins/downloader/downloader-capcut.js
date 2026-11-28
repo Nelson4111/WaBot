@@ -52,4 +52,10 @@ handler.tags = ['downloader']
 handler.command = /^(capcut)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh video template CapCut tanpa watermark.'
+handler.tutorial = [
+  '.capcut <link capcut>',
+  'Kirim link template CapCut untuk diunduh videonya'
+]
+
 export default handler

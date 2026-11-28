@@ -36,4 +36,9 @@ handler.help = ['setnamadonasi <nama/nomor>']
 handler.tags = ['info']
 handler.command = /^(setnamadonasi|setdonasiname|namadonasi)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai setnamadonasi.'
+handler.tutorial = [
+  '.setnamadonasi'
+]
+
 export default handler

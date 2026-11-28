@@ -34,6 +34,11 @@ handler.help = ['rrsearch <judul>', 'rrdetail <url>', 'rrlatest', 'rrprofile <ur
 handler.tags = ['novel', 'internet']
 handler.command = /^rr(search|detail|latest|profile)$/i
 
+handler.desc = 'Menjalankan perintah rrsearch untuk layanan royalroad.'
+handler.tutorial = [
+  '.rrsearch'
+]
+
 export default handler
 
 // === Handler Implementations ===

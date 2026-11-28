@@ -106,4 +106,10 @@ handler.help = ['gsmarena <nama hp>'];
 handler.command = ['gsmarena', 'gsmspek', 'hpspek'];
 handler.tags = ['tools', 'internet'];
 
+handler.desc = 'Alat utilitas praktis untuk memproses gsmarena.'
+handler.tutorial = [
+  '.gsmarena <input>',
+  'Ketik .gsmarena diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

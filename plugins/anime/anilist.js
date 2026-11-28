@@ -273,4 +273,9 @@ handler.command = /^(anilist)$/i;
 handler.tags = ['anime']
 handler.limit = false;
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime anilist.'
+handler.tutorial = [
+  '.anilist'
+]
+
 export default handler;

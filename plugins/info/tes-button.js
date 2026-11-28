@@ -914,4 +914,9 @@ handler.tags = ['info', 'tools']
 handler.command = /^(tesbutton|buttonlab|buttoncheck|cekbutton|akians)$/i
 handler.unreg = true
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai button.'
+handler.tutorial = [
+  '.tesbutton'
+]
+
 export default handler

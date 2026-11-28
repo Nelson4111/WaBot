@@ -47,4 +47,9 @@ handler.tags = ['info']
 handler.command = /^(apistatus|ryzumiserver|serverapi)$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai ryzumi.'
+handler.tutorial = [
+  '.apistatus'
+]
+
 export default handler

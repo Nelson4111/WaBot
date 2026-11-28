@@ -33,4 +33,10 @@ m.reply(`${err}`)
 handler.command = ['ocr']
 handler.tags = ['tools']
 handler.help = ['ocr']
+handler.desc = 'Mengekstrak dan membaca teks dari gambar menggunakan Optical Character Recognition (OCR).'
+handler.tutorial = [
+  '.ocr (balas gambar)',
+  'Kirim gambar dengan caption .ocr atau balas gambar yang berisi teks'
+]
+
 export default handler

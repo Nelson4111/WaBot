@@ -97,4 +97,10 @@ handler.tags = ['search', 'info']
 handler.command = /^(mahasiswa|pddikti)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media mahasiswa berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.mahasiswa <kata kunci>',
+  'Contoh: .mahasiswa pencarian'
+]
+
 export default handler

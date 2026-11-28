@@ -64,4 +64,10 @@ handler.tags = ['ai']
 handler.command = /^(flux|txt2img|fluxai)$/i
 handler.limit = true
 
+handler.desc = 'Menghasilkan gambar ilustrasi berkualitas tinggi dari prompt teks menggunakan model Flux AI.'
+handler.tutorial = [
+  '.flux <deskripsi gambar>',
+  'Contoh: .flux anime girl with white hair in the garden'
+]
+
 export default handler

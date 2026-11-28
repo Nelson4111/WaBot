@@ -90,4 +90,9 @@ handler.help = ['waifulamar <nama|uid>', 'husbulamar <nama|uid>']
 
 handler.register = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk lamar.'
+handler.tutorial = [
+  '.waifulamar'
+]
+
 export default handler

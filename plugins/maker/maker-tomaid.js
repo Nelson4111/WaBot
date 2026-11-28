@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^(tomaid)$/i
 handler.premium = true
 
+handler.desc = 'Mengubah foto menjadi gaya maid menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tomaid (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tomaid'
+]
+
 export default handler

@@ -24,4 +24,10 @@ handler.help = ['hilih <teks>', 'halah <teks>', 'huluh <teks>', 'heleh <teks>', 
 handler.tags = ['fun']
 handler.command = /^(hilih|halah|huluh|heleh|holoh)$/i
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk hilih.'
+handler.tutorial = [
+  '.hilih <teks/pertanyaan>',
+  'Ketik .hilih diikuti nama atau pertanyaan'
+]
+
 export default handler

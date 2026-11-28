@@ -55,4 +55,9 @@ handler.tags = ['anime']
 handler.command = /^animequotes$/i
 handler.limit = false
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime animequotes.'
+handler.tutorial = [
+  '.animequotes'
+]
+
 export default handler

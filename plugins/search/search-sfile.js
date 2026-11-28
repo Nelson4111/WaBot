@@ -33,4 +33,10 @@ handler.tags = ['search']
 handler.command = ['sfilesearch']
 handler.register = true
 
+handler.desc = 'Mencari informasi atau media sfile berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.sfilesearch <kata kunci>',
+  'Contoh: .sfilesearch pencarian'
+]
+
 export default handler

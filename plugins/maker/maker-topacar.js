@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^(topacar)$/i
 handler.premium = true
 
+handler.desc = 'Mengubah foto menjadi gaya pacar menggunakan filter efek visual.'
+handler.tutorial = [
+  '.topacar (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .topacar'
+]
+
 export default handler

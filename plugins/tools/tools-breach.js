@@ -86,4 +86,10 @@ handler.tags = ['tools']
 handler.command = /^breach$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses breach.'
+handler.tutorial = [
+  '.breach <input>',
+  'Ketik .breach diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

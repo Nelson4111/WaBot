@@ -40,4 +40,9 @@ handler.tags = ['anime']
 handler.limit = true 
 handler.register = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime anicenseri.'
+handler.tutorial = [
+  '.anichinseri'
+]
+
 export default handler

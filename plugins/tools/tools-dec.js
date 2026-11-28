@@ -61,4 +61,10 @@ handler.tags = ['tools']
 handler.command = ['encode', 'decode']
 handler.limit = false
 
+handler.desc = 'Alat utilitas praktis untuk memproses dec.'
+handler.tutorial = [
+  '.encode <input>',
+  'Ketik .encode diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

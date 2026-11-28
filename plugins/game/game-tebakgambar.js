@@ -69,4 +69,10 @@ handler.command = /^tebakgambar$/i
 handler.onlyprem = true
 handler.game = true
 
+handler.desc = 'Memulai permainan tebak susunan kata berdasarkan petunjuk potongan gambar.'
+handler.tutorial = [
+  '.tebakgambar',
+  'Ketik jawaban langsung di chat atau minta petunjuk dengan .hgam'
+]
+
 export default handler

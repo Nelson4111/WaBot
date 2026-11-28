@@ -73,4 +73,10 @@ handler.command = /^(wiki|wikipedia)$/i;
 handler.tags = ["search"]
 handler.limit = false;
 
+handler.desc = 'Mencari informasi atau media wiki berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.wiki <kata kunci>',
+  'Contoh: .wiki pencarian'
+]
+
 export default handler;

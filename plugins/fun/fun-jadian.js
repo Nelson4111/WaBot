@@ -68,4 +68,10 @@ handler.tags = ['fun']
 handler.command = ['jadian']
 handler.group = true
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk jadian.'
+handler.tutorial = [
+  '.jadian <teks/pertanyaan>',
+  'Ketik .jadian diikuti nama atau pertanyaan'
+]
+
 export default handler

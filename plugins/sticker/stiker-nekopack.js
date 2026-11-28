@@ -40,4 +40,10 @@ handler.command = /^(smug|woof|gasm|8ball|goose|cuddle|avatar|slap|v3|pat|gecg|f
 handler.tags = ['sticker']
 handler.help = ['smug', 'woof', 'gasm', '8ball', 'goose', 'cuddle', 'avatar', 'slap', 'v3', 'pat', 'gecg', 'feed', 'fox_girl', 'lizard', 'neko', 'hug', 'meow', 'kiss', 'wallpaper', 'tickle', 'spank', 'waifu', 'lewd', 'ngif']
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk nekopack.'
+handler.tutorial = [
+  '.smug (balas stiker/media)',
+  'Kirim perintah .smug dengan membalas stiker atau gambar target'
+]
+
 export default handler

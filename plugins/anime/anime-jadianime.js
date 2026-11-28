@@ -62,4 +62,9 @@ handler.tags = ['maker']
 handler.command = /^(toanime|animeconv|animeconvert)$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime jadianime.'
+handler.tutorial = [
+  '.toanime'
+]
+
 export default handler

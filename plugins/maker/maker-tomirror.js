@@ -51,4 +51,10 @@ handler.help = ['tomirror']
 handler.tags = ['maker']
 handler.command = /^(tomirror)$/i
 
+handler.desc = 'Mengubah foto menjadi gaya mirror menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tomirror (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tomirror'
+]
+
 export default handler

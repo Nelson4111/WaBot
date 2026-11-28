@@ -77,4 +77,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
+handler.desc = 'Menurunkan jabatan Admin grup menjadi anggota biasa.'
+handler.tutorial = [
+  '.demote @admin',
+  'Balas pesan atau tag admin yang ingin diturunkan jabatannya'
+]
+
 export default handler

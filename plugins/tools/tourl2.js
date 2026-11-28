@@ -51,4 +51,10 @@ handler.tags = ['tools']
 handler.command = ['upload'];
 handler.limit = false;
 
+handler.desc = 'Alat utilitas praktis untuk memproses tourl2.'
+handler.tutorial = [
+  '.upload <input>',
+  'Ketik .upload diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

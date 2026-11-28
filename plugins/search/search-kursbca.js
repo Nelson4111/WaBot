@@ -50,4 +50,10 @@ handler.tags = ['tools', 'info']
 handler.command = /^(kursbca)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media kursbca berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.kursbca <kata kunci>',
+  'Contoh: .kursbca pencarian'
+]
+
 export default handler

@@ -107,4 +107,10 @@ handler.tags = ['sticker'];
 handler.command = /^(qc2)$/i;
 handler.limit = true;
 
+handler.desc = 'Membuat gambar grafis kustom efek qc2.'
+handler.tutorial = [
+  '.qc2 <teks>',
+  'Kirim perintah .qc2 disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler;

@@ -44,4 +44,10 @@ handler.help = ["bomb"];
 handler.tags = ["game"];
 handler.command = /^(bomb)$/i;
 
+handler.desc = 'Memulai permainan kuis interaktif bom di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.bomb',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler;

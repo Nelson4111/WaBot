@@ -63,4 +63,10 @@ handler.command = /^(toptv|ptv|videonote)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses toptv.'
+handler.tutorial = [
+  '.toptv <input>',
+  'Ketik .toptv diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

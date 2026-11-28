@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^(tomangu)$/i
 handler.premium = true
 
+handler.desc = 'Mengubah foto menjadi gaya mangu menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tomangu (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tomangu'
+]
+
 export default handler

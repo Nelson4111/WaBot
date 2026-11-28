@@ -73,4 +73,10 @@ handler.tags = ['tools']
 handler.command = /^(kurs|currency|konversiuang)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses currency.'
+handler.tutorial = [
+  '.kurs <input>',
+  'Ketik .kurs diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

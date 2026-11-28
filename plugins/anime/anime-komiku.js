@@ -348,4 +348,9 @@ handler.help = ['komiku search <judul>', 'komiku terbaru', 'komiku populer', 'ko
 handler.tags = ['anime']
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime komiku.'
+handler.tutorial = [
+  '.komiku'
+]
+
 export default handler

@@ -22,6 +22,11 @@ handler.command = /^(q-bucin)$/i
 
 handler.register = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema bucin.'
+handler.tutorial = [
+  '.q-bucin'
+]
+
 export default handler
 
 function ucapan() {

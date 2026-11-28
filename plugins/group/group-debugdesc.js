@@ -54,4 +54,10 @@ handler.tags = ['group']
 handler.command = /^(debugdesc)$/i
 handler.group = true
 handler.admin = true
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk debugdesc.'
+handler.tutorial = [
+  '.debugdesc',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

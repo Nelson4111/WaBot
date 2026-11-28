@@ -22,4 +22,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk setppgc.'
+handler.tutorial = [
+  '.setppgc',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

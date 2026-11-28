@@ -19,6 +19,12 @@ handler.help = ['cekmemek *<name>*']
 handler.tags = ['fun']
 handler.command = /^cekmemek|cekmmk/i
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk cekmemek.'
+handler.tutorial = [
+  '.cekmemek <teks/pertanyaan>',
+  'Ketik .cekmemek diikuti nama atau pertanyaan'
+]
+
 export default handler
 
 function pickRandom(list) {

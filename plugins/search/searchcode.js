@@ -52,4 +52,10 @@ handler.tags = ['tools']
 handler.command = /^searchcode$/i
 handler.limit = false
 
+handler.desc = 'Mencari informasi atau media searchcode berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.searchcode <kata kunci>',
+  'Contoh: .searchcode pencarian'
+]
+
 export default handler

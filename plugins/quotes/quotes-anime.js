@@ -25,4 +25,9 @@ handler.tags = ['quotes']
 handler.command = /^quotesanime$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema anime.'
+handler.tutorial = [
+  '.quotesanime'
+]
+
 export default handler

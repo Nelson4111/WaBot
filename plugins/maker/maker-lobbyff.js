@@ -72,4 +72,10 @@ handler.help = ['lobbyff']
 handler.tags = ['maker']
 handler.command = /^(lobbyff|lobyff)$/i
 
+handler.desc = 'Membuat gambar grafis kustom efek lobbyff.'
+handler.tutorial = [
+  '.lobbyff <teks>',
+  'Kirim perintah .lobbyff disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

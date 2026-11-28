@@ -10,4 +10,10 @@ handler.command = /^(banchat|bnc)$/i
 
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur banchat.'
+handler.tutorial = [
+  '.banchat',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

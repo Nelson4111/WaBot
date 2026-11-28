@@ -135,4 +135,10 @@ handler.tags = ['sticker']
 handler.command = /^(?:wm|swm)$/i
 handler.register = true
 
+handler.desc = 'Mengubah watermark nama pack dan author pada stiker WhatsApp.'
+handler.tutorial = [
+  '.wm <packname>|<author>',
+  'Balas stiker yang ingin diubah watermark-nya'
+]
+
 export default handler

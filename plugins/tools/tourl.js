@@ -62,6 +62,12 @@ handler.command = ["tourl"]
 handler.help = ["tourl"]
 handler.tags = ["tools"]
 
+handler.desc = 'Mengunggah file media (gambar/video/audio) ke server internet dan menghasilkan link URL publik.'
+handler.tutorial = [
+  '.tourl (balas media)',
+  'Balas media yang ingin diupload ke link URL'
+]
+
 export default handler
 
 function getTourlMediaList(conn, m) {

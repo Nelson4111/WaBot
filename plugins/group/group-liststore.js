@@ -32,4 +32,10 @@ handler.tags = ['group']
 handler.command = /^(liststore|storelist|listcmd|list)$/i
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk liststore.'
+handler.tutorial = [
+  '.liststore',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

@@ -119,4 +119,10 @@ handler.tags = ['downloader']
 handler.command = ['ytv2', 'yta2']
 handler.limit = true
 
+handler.desc = 'Mengunduh video dari YouTube dengan kualitas resolusi terbaik.'
+handler.tutorial = [
+  '.ytv <link youtube>',
+  'Kirim link YouTube dengan perintah .ytv'
+]
+
 export default handler

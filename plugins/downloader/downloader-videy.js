@@ -69,4 +69,10 @@ handler.tags = ['downloader']
 handler.command = ['videy', 'videydl']
 handler.limit = true
 
+handler.desc = 'Mengunduh file media dari tautan VIDEY secara otomatis.'
+handler.tutorial = [
+  '.videy <link videy>',
+  'Kirim tautan videy dengan perintah .videy'
+]
+
 export default handler

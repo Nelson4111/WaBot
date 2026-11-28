@@ -39,4 +39,10 @@ handler.tags = ['sound']
 handler.command = /^sad$/i
 handler.limit = true
 
+handler.desc = 'Memproses efek audio atau memutar suara efek sad.'
+handler.tutorial = [
+  '.sad (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .sad'
+]
+
 export default handler

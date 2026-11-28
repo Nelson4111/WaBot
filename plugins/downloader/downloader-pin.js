@@ -264,4 +264,10 @@ handler.tags = ['downloader', 'internet']
 handler.command = /^(pin|pinterest)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh gambar atau video dari tautan Pinterest.'
+handler.tutorial = [
+  '.pindl <link pinterest>',
+  'Kirim tautan pin Pinterest untuk mengunduh medianya'
+]
+
 export default handler

@@ -32,6 +32,12 @@ handler.tags = ['maker']
 handler.command = /^(tokacamata)$/i
 handler.limit = true
 
+handler.desc = 'Mengubah foto menjadi gaya kacamata menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tokacamata (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tokacamata'
+]
+
 export default handler
 
 async function uploadUguu(buffer, ext) {

@@ -59,4 +59,10 @@ handler.tags = ['fun', 'maker']
 handler.command = /^sertifikatlemot$/i
 handler.limit = false
 
+handler.desc = 'Membuat gambar sertifikat lelucon bertema lemot.'
+handler.tutorial = [
+  '.sertifikatlemot <nama>',
+  'Contoh: .sertifikatlemot Budi Santoso'
+]
+
 export default handler

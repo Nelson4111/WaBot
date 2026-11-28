@@ -1006,4 +1006,9 @@ handler.before = async function (m, { match }) {
   return true
 }
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai twily.'
+handler.tutorial = [
+  '.twily'
+]
+
 export default handler

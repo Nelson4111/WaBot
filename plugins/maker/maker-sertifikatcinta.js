@@ -63,4 +63,10 @@ handler.tags = ['maker', 'fun']
 handler.command = /^sertifikatcinta$/i
 handler.limit = false
 
+handler.desc = 'Membuat gambar sertifikat lelucon bertema cinta.'
+handler.tutorial = [
+  '.sertifikatcinta <nama>',
+  'Contoh: .sertifikatcinta Budi Santoso'
+]
+
 export default handler

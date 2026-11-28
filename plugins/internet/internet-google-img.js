@@ -39,4 +39,9 @@ handler.tags = ['search']
 handler.command = ['googleimg'];
 handler.limit = false;
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai google img.'
+handler.tutorial = [
+  '.googleimg <pencarian>'
+]
+
 export default handler;

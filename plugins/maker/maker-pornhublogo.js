@@ -47,4 +47,10 @@ handler.help = ['phlogo <text1>|<text2>']
 handler.tags = ['maker']
 handler.command = /^phlogo$/i
 
+handler.desc = 'Membuat gambar grafis kustom efek pornhublogo.'
+handler.tutorial = [
+  '.phlogo <teks>',
+  'Kirim perintah .phlogo disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

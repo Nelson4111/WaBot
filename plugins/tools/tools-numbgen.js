@@ -90,4 +90,10 @@ handler.command = /^numbgen$/i
 handler.limit = false
 handler.pemium = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses numbgen.'
+handler.tutorial = [
+  '.numbgen <input>',
+  'Ketik .numbgen diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

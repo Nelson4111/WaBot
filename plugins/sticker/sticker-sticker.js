@@ -263,6 +263,12 @@ handler.tags = ['sticker']
 handler.command = /^s(tic?ker)?(gif)?$/i
 handler.register = false
 
+handler.desc = 'Membuat stiker WhatsApp dari gambar, foto, atau video singkat.'
+handler.tutorial = [
+  '.s (balas foto/video)',
+  'Kirim foto atau video pendek (maks 10 detik) dengan caption .s atau balas media tersebut'
+]
+
 export default handler
 
 /**

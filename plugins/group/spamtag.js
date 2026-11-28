@@ -36,4 +36,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = false
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk spamtag.'
+handler.tutorial = [
+  '.spamtag',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

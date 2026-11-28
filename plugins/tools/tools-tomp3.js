@@ -102,4 +102,10 @@ handler.command = ['tomp3']
 handler.tags = ['tools']
 handler.limit = true 
 
+handler.desc = 'Alat utilitas praktis untuk memproses tomp3.'
+handler.tutorial = [
+  '.tomp3 <input>',
+  'Ketik .tomp3 diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

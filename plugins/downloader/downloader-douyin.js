@@ -58,4 +58,10 @@ handler.tags = ['downloader']
 handler.command = /^(douyin|douyindl)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh video Douyin (TikTok versi China) tanpa watermark.'
+handler.tutorial = [
+  '.douyin <link douyin>',
+  'Kirim link video Douyin'
+]
+
 export default handler

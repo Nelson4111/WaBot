@@ -11,4 +11,10 @@ handler.command = ['o-tagall']
 handler.owner = true
 handler.group = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur tagall.'
+handler.tutorial = [
+  '.o-tagall',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

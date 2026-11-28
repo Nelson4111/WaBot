@@ -103,4 +103,9 @@ handler.help = ['thanksto', 'tqto', 'credits']
 handler.tags = ['thanksto', 'main', 'info']
 handler.command = /^(thanksto|tqto|credits|menutqto|menuthanksto)$/i
 
+handler.desc = 'Menjalankan perintah thanksto untuk layanan thanksto.'
+handler.tutorial = [
+  '.thanksto'
+]
+
 export default handler

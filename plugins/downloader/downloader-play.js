@@ -56,6 +56,13 @@ handler.command = /^(play)$/i
 handler.limit = false
 handler.register = false
 
+handler.desc = 'Mencari dan memutar audio lagu dari YouTube secara instan di obrolan.'
+handler.tutorial = [
+  '.play <judul lagu>',
+  'Contoh: .play komang',
+  'Bot akan mengirimkan file audio lagu yang dicari'
+]
+
 export default handler
 
 function formatNumber(num) {

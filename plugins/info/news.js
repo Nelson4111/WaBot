@@ -474,4 +474,9 @@ let handler = async (m, { text = '', usedPrefix, isOwner }) => {
 handler.help = ['news', 'news list [bulan] [tahun]', 'news detail <id> [bulan] [tahun]', 'news author <nama>', 'news log [id]', 'news month <bulan> [tahun]', 'news info', 'news guide', 'news add <bagian> <isi>', 'news del <id>']
 handler.tags = ['info']
 handler.command = /^news$/i
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai news.'
+handler.tutorial = [
+  '.news'
+]
+
 export default handler

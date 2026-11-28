@@ -34,4 +34,9 @@ handler.help = ['dashboard']
 handler.tags = ['main']
 handler.command = /^(dashboard)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai dash.'
+handler.tutorial = [
+  '.dashboard'
+]
+
 export default handler

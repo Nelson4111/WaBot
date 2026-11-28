@@ -7,4 +7,10 @@ let handler = async (m, { conn }) => {
 }
 handler.command = /^hgamb$/i
 handler.limit = true
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakgambar.'
+handler.tutorial = [
+  '.hgamb',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakgambar di grup'
+]
+
 export default handler

@@ -613,4 +613,9 @@ handler.before = async function (m, { conn, isAdmin, isOwner, isBotAdmin }) {
   return true
 }
 
+handler.desc = 'Menjalankan perintah antitoxic untuk layanan  antitoxic.'
+handler.tutorial = [
+  '.antitoxic'
+]
+
 export default handler

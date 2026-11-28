@@ -73,4 +73,10 @@ handler.tags = ['ai']
 handler.command = ['dopple'];
 handler.limit = true;
 handler.register = true 
+handler.desc = 'Memanfaatkan kecerdasan buatan (AI) untuk dopple.'
+handler.tutorial = [
+  '.dopple <pertanyaan/prompt>',
+  'Ketik .dopple diikuti perintah atau pertanyaan yang ingin diajukan'
+]
+
 export default handler;

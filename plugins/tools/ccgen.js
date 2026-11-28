@@ -56,4 +56,10 @@ let handler = async (m, { text, args }) => {
 handler.help = ['ccgen <type> <jumlah>'];
 handler.command = ['ccgen'];
 handler.tags = ['tools']
+handler.desc = 'Alat utilitas praktis untuk memproses ccgen.'
+handler.tutorial = [
+  '.ccgen <input>',
+  'Ketik .ccgen diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

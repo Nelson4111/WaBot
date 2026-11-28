@@ -352,4 +352,9 @@ handler.command = handler.help = [
 ]
 handler.tags = ['anime']
 handler.limit = true
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime random.'
+handler.tutorial = [
+  '.handler.help = ['
+]
+
 export default handler

@@ -18,6 +18,12 @@ handler.botAdmin = false
 
 handler.fail = null
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk bisakah.'
+handler.tutorial = [
+  '.bisakah <teks/pertanyaan>',
+  'Ketik .bisakah diikuti nama atau pertanyaan'
+]
+
 export default handler 
 
 function pickRandom(list) {

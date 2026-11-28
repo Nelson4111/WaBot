@@ -49,4 +49,10 @@ handler.tags = ['owner']
 handler.command = ['addmoney', 'adduang']
 handler.owner = true 
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur addmoney.'
+handler.tutorial = [
+  '.addmoney',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

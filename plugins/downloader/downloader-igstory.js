@@ -69,4 +69,10 @@ handler.tags = ['downloader']
 handler.command = /^(igst|igstory)$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh story Instagram publik berdasarkan username akun.'
+handler.tutorial = [
+  '.igstory <username>',
+  'Contoh: .igstory instagram'
+]
+
 export default handler

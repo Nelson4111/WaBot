@@ -81,4 +81,10 @@ handler.tags = ['tools', 'sticker']
 handler.command = /^(stickertele|telesticker|stickerg)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses stickertele.'
+handler.tutorial = [
+  '.stickertele <input>',
+  'Ketik .stickertele diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

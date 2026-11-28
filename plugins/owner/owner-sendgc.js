@@ -70,4 +70,10 @@ handler.tags = ['owner']
 handler.command = /^sendgc$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur sendgc.'
+handler.tutorial = [
+  '.sendgc',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

@@ -65,4 +65,10 @@ handler.tags = ["sticker"]
 handler.limit = true 
 handler.register = true
 
+handler.desc = 'Membuat stiker quote chat estetik menyerupai gelembung chat WhatsApp.'
+handler.tutorial = [
+  '.qc <teks>',
+  'Ketik .qc teks atau balas pesan chat seseorang dengan perintah .qc'
+]
+
 export default handler

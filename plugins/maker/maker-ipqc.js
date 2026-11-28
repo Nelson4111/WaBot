@@ -65,4 +65,10 @@ handler.tags = ['maker']
 handler.command = /^(iqc|iphoneqc)$/i
 handler.limit = true
 
+handler.desc = 'Membuat gambar grafis kustom efek ipqc.'
+handler.tutorial = [
+  '.iqc <teks>',
+  'Kirim perintah .iqc disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

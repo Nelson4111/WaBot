@@ -140,4 +140,10 @@ handler.command = ['pinterest2', 'pin2'];
 handler.tags = ['search']
 handler.limit = 1
 
+handler.desc = 'Alat utilitas praktis untuk memproses pin2.'
+handler.tutorial = [
+  '.pinterest2 <input>',
+  'Ketik .pinterest2 diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

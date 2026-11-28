@@ -64,4 +64,9 @@ handler.tags = ['waifu', 'husbu']
 handler.help = ['waifuterimapp <uid>', 'husbuterimapp <uid>']
 handler.owner = true
 
+handler.desc = 'Fitur interaksi karakter waifu virtual untuk terimapp.'
+handler.tutorial = [
+  '.waifuterimapp'
+]
+
 export default handler

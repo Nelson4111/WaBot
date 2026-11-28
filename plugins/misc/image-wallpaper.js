@@ -19,5 +19,10 @@ handler.help = ['wallpaper' + ' <query>']
 handler.tags = ['downloader']
 handler.command = /^wallpaper$/i
 
+handler.desc = 'Menjalankan perintah wallpaper untuk layanan wallpaper.'
+handler.tutorial = [
+  '.wallpaper'
+]
+
 export default handler
 

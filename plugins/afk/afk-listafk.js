@@ -62,4 +62,9 @@ handler.tags = ['main'];
 handler.command = /^listafk$/i;
 handler.group = true;
 
+handler.desc = 'Menampilkan daftar anggota grup yang sedang berstatus AFK beserta alasannya.'
+handler.tutorial = [
+  '.listafk'
+]
+
 export default handler;

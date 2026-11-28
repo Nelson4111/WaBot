@@ -36,6 +36,12 @@ handler.help = ['premlist', 'cekprem']
 handler.tags = ['info']
 handler.command = /^(premlist|cekprem|listprem)$/i
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur listprem.'
+handler.tutorial = [
+  '.premlist',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler
 
 function clockString(ms) {

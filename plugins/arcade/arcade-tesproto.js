@@ -352,4 +352,10 @@ handler.help = ['tesproto', 'protows', 'wstest']
 handler.tags = ['arcade', 'tools']
 handler.command = /^(tesproto|rawproto|protows|wstest)$/i
 
+handler.desc = 'Bermain mini game arcade interaktif HTML5 tesproto langsung di obrolan.'
+handler.tutorial = [
+  '.tesproto',
+  'Membuka game arcade di dalam gelembung obrolan WhatsApp'
+]
+
 export default handler

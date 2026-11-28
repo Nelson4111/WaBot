@@ -43,6 +43,11 @@ let handler = async (m, { conn }) => {
   }, { quoted: m });
 };
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai infogempa.'
+handler.tutorial = [
+  '.infogempa'
+]
+
 export default handler;
 
 handler.command = ['infogempa'];

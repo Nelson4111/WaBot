@@ -21,4 +21,10 @@ let handler = async (m, { conn, args }) => {
   handler.owner = true
   handler.command = /^(clearchat)$/i
 
-  export default handler
+  handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur clearchat.'
+handler.tutorial = [
+  '.clearchat',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
+export default handler

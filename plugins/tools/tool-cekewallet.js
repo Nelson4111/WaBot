@@ -96,4 +96,10 @@ handler.tags = ['tools']
 handler.command = /^(cekewallet|cekdana|cekgopay|cekovo|cekshopeepay)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekewallet.'
+handler.tutorial = [
+  '.cekewallet <input>',
+  'Ketik .cekewallet diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

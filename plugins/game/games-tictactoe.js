@@ -76,4 +76,10 @@ handler.help = ['tictactoe']
 handler.tags = ['game']
 handler.command = /^(tictactoe|t{3})$/
 
+handler.desc = 'Memulai permainan kuis interaktif tictactoe di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tictactoe',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

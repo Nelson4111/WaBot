@@ -128,4 +128,10 @@ handler.command = /^(uptodown)$/i;
 handler.tags = ["search"]
 handler.limit = false;
 
+handler.desc = 'Mencari informasi atau media uptodown berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.uptodown <kata kunci>',
+  'Contoh: .uptodown pencarian'
+]
+
 export default handler;

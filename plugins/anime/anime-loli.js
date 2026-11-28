@@ -14,4 +14,9 @@ handler.help = ['loli']
 
 handler.register = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime loli.'
+handler.tutorial = [
+  '.loli'
+]
+
 export default handler

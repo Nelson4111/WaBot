@@ -53,4 +53,10 @@ handler.tags = ['tools']
 handler.command = /^(whois|whoisdomain)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses whois.'
+handler.tutorial = [
+  '.whois <input>',
+  'Ketik .whois diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

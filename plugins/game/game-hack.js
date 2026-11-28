@@ -542,4 +542,10 @@ handler.command = /^hack$/i
 handler.register = true
 handler.limit = false
 
+handler.desc = 'Memulai permainan kuis interaktif hack di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.hack',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

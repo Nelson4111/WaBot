@@ -36,4 +36,10 @@ handler.tags = ['owner']
 handler.command = /^(addcoowner|addmoderator|setcoowner)$/i
 handler.rowner = true 
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur addcoowner.'
+handler.tutorial = [
+  '.addcoowner',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

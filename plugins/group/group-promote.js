@@ -77,4 +77,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
+handler.desc = 'Menaikkan jabatan anggota grup menjadi Admin grup.'
+handler.tutorial = [
+  '.promote @user',
+  'Balas pesan atau tag anggota yang ingin dijadikan admin'
+]
+
 export default handler

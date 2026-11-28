@@ -37,4 +37,10 @@ handler.tags = ['group']
 handler.command = /^tagadmin$/i
 handler.group = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk tagadmin.'
+handler.tutorial = [
+  '.tagadmin',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

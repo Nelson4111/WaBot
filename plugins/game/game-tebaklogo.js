@@ -82,4 +82,10 @@ handler.command = /^tebaklogo$/i
 handler.game = true
 handler.onlyprem = true
 
+handler.desc = 'Memulai permainan kuis interaktif tebaklogo di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.tebaklogo',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

@@ -50,4 +50,10 @@ handler.help = ['fakexnxx <nama> | <quote>']
 handler.tags = ['maker']
 handler.command = /^fakexnxx$/i
 
+handler.desc = 'Membuat gambar screenshot palsu XNXX untuk keperluan meme atau hiburan.'
+handler.tutorial = [
+  '.fakexnxx <teks>',
+  'Contoh: .fakexnxx Nama|Username|Komentar'
+]
+
 export default handler

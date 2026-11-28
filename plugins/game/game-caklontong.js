@@ -85,4 +85,10 @@ handler.tags = ['game']
 handler.command = /^caklontong$/i
 handler.onlyprem = true
 handler.game = true
+handler.desc = 'Memulai permainan kuis interaktif caklontong di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.caklontong',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

@@ -30,4 +30,10 @@ handler.help = ['geometrydash', 'gdmini', 'gd']
 handler.tags = ['arcade']
 handler.command = /^(geometrydash|gdmini|gd|geometrygame)$/i
 
+handler.desc = 'Bermain mini game arcade interaktif HTML5 geometrydash langsung di obrolan.'
+handler.tutorial = [
+  '.geometrydash',
+  'Membuka game arcade di dalam gelembung obrolan WhatsApp'
+]
+
 export default handler

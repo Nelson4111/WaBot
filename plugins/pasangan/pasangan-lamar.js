@@ -195,4 +195,10 @@ handler.before = async function (m, { conn }) {
   }
 }
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk lamar.'
+handler.tutorial = [
+  '.lamar @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

@@ -104,4 +104,10 @@ handler.tags = ['stalk']
 handler.command = /^(genshinstalk|gistalk|stalkgi)$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun GENSHIN publik.'
+handler.tutorial = [
+  '.genshinstalk <username/id>',
+  'Contoh: .genshinstalk target'
+]
+
 export default handler

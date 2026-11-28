@@ -28,4 +28,10 @@ handler.command = /^ngl$/i;
 handler.help = ['ngl <title>|<text>'];
 handler.tags = ['maker'];
 
+handler.desc = 'Membuat gambar grafis kustom efek ngl.'
+handler.tutorial = [
+  '.ngl <teks>',
+  'Kirim perintah .ngl disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler;

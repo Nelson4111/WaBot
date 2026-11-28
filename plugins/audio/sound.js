@@ -18,4 +18,10 @@ handler.command = /^(sound1|sound2|sound3|sound4|sound5|sound6|sound7|sound8|sou
 handler.owner = false
 handler.limit = true
 
+handler.desc = 'Memproses efek audio atau memutar suara efek sound.'
+handler.tutorial = [
+  '.sound1 (balas audio/vn)',
+  'Balas pesan audio atau voice note dengan perintah .sound1'
+]
+
 export default handler

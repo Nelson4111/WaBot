@@ -40,6 +40,12 @@ handler.tags = ['sticker']
 handler.command = /^stikwiki$/i
 handler.limit = true
 
+handler.desc = 'Fitur pengolah stiker WhatsApp untuk stikwiki.'
+handler.tutorial = [
+  '.stikwiki (balas stiker/media)',
+  'Kirim perintah .stikwiki dengan membalas stiker atau gambar target'
+]
+
 export default handler
 
 // === SCRAPER ===

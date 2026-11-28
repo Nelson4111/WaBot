@@ -69,6 +69,12 @@ handler.tags = ['owner']
 handler.command = /^addsewa$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur addsewa.'
+handler.tutorial = [
+  '.addsewa',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler
 
 function parseMs(str) {

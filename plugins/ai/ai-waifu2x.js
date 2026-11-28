@@ -97,4 +97,10 @@ handler.tags = ['ai', 'tools']
 handler.command = /^(waifu2x|enhanceanime)$/i
 handler.limit = true
 
+handler.desc = 'Memanfaatkan kecerdasan buatan (AI) untuk waifu2x.'
+handler.tutorial = [
+  '.waifu2x <pertanyaan/prompt>',
+  'Ketik .waifu2x diikuti perintah atau pertanyaan yang ingin diajukan'
+]
+
 export default handler

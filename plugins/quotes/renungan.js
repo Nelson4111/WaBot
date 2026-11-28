@@ -11,6 +11,11 @@ handler.register = true
 handler.fail = null
 
 handler.limit = true
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema renungan.'
+handler.tutorial = [
+  '.renungan'
+]
+
 export default handler
 
 function pickRandom(list) {

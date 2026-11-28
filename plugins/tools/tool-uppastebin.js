@@ -33,4 +33,10 @@ handler.command = /^(up-pb|uppastebin)$/i;
 handler.owner = true;
 handler.limit = false
 
+handler.desc = 'Alat utilitas praktis untuk memproses uppastebin.'
+handler.tutorial = [
+  '.up-pb <input>',
+  'Ketik .up-pb diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

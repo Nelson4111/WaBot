@@ -37,4 +37,10 @@ handler.tags = ['random']
 handler.command = /^lahelu$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses lahelu.'
+handler.tutorial = [
+  '.lahelu <input>',
+  'Ketik .lahelu diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

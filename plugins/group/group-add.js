@@ -124,4 +124,10 @@ handler.admin = true
 handler.group = true
 handler.botAdmin = true
 
+handler.desc = 'Menambahkan anggota baru ke dalam grup WhatsApp menggunakan nomor telepon.'
+handler.tutorial = [
+  '.add 628xxx',
+  'Masukkan nomor lengkap dengan kode negara'
+]
+
 export default handler

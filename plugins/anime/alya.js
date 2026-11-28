@@ -197,4 +197,9 @@ handler.help = ['alya']
 handler.tags = ['ai']
 handler.command = ['alya', 'alyaai']
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime alya.'
+handler.tutorial = [
+  '.alya'
+]
+
 export default handler

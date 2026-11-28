@@ -21,4 +21,10 @@ handler.tags = ['owner']
 handler.command = /^banned(user)?$/i
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur banuser.'
+handler.tutorial = [
+  '.banneduser',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

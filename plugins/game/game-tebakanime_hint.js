@@ -21,4 +21,10 @@ let handler = async (m, { conn }) => {
 handler.limit = true
 handler.command = /^hanime$/i
 
+handler.desc = 'Memberikan petunjuk atau bocoran huruf untuk kuis tebak tebakanime.'
+handler.tutorial = [
+  '.hanime',
+  'Gunakan perintah ini saat kesulitan menjawab kuis tebakanime di grup'
+]
+
 export default handler

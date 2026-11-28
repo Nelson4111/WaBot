@@ -16,6 +16,12 @@ handler.command = /^(cekwarn)$/i
 
 handler.register = true
 
+handler.desc = 'Mengukur atau mengecek tingkat warn seru-seruan secara acak.'
+handler.tutorial = [
+  '.cekwarn <nama/@user>',
+  'Contoh: .cekwarn @user'
+]
+
 export default handler
 
 const more = String.fromCharCode(8206)

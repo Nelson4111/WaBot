@@ -161,4 +161,10 @@ handler.tags = ['downloader']
 handler.command = /^fb|facebook$/i
 handler.limit = true
 
+handler.desc = 'Mengunduh video publik dari Facebook (Reels, Watch, atau post video).'
+handler.tutorial = [
+  '.fb <link facebook>',
+  'Kirim atau balas link video Facebook dengan perintah .fb'
+]
+
 export default handler

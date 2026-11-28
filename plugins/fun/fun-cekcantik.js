@@ -22,6 +22,12 @@ handler.help = ['cantikcek']
 handler.tags = ['fun']
 handler.command = /^(cantikcek|cekcantik)$/i
 
+handler.desc = 'Mengukur atau mengecek tingkat cantik seru-seruan secara acak.'
+handler.tutorial = [
+  '.cantikcek <nama/@user>',
+  'Contoh: .cantikcek @user'
+]
+
 export default handler
 
 function pickRandom(list) {

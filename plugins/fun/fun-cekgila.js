@@ -37,4 +37,10 @@ handler.help = ['cekgila'];
 handler.tags = ['fun'];
 handler.command = /^(cekgila|gilacek)$/i;
 
+handler.desc = 'Mengukur atau mengecek tingkat gila seru-seruan secara acak.'
+handler.tutorial = [
+  '.cekgila <nama/@user>',
+  'Contoh: .cekgila @user'
+]
+
 export default handler;

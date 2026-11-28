@@ -63,4 +63,9 @@ handler.tags = ['internet']
 handler.command = /^ss(web)?$/i
 handler.limit = true
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai ssweb.'
+handler.tutorial = [
+  '.ssweb <pencarian>'
+]
+
 export default handler

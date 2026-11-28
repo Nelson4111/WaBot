@@ -59,6 +59,11 @@ handler.tags = ['info']
 handler.command = ['tflimit', 'transferlimit', 'sendlimit']
 handler.limit = false
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai tflimit.'
+handler.tutorial = [
+  '.tflimit'
+]
+
 export default handler
 
 async function resolveJid(conn, jid) {

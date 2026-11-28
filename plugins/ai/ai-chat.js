@@ -72,4 +72,10 @@ handler.tags = ['ai']
 handler.command = /^(ryzumiai|ryzumi|aireset|resetai)$/i
 handler.limit = true
 
+handler.desc = 'Berinteraksi dan mengobrol santai dengan model AI Ryzumi.'
+handler.tutorial = [
+  '.ryzumiai <pesan>',
+  '.aireset (mereset sesi chat)'
+]
+
 export default handler

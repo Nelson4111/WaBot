@@ -2269,4 +2269,10 @@ const gameRoleCommands = [...new Set([
 handler.command = gameRoleCommands
 handler.group = true
 
+handler.desc = 'Memulai permainan kuis interaktif werewolf di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.gamerolecommands',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

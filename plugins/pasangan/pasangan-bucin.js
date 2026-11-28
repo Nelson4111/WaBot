@@ -127,4 +127,10 @@ handler.help = ['bucin']
 handler.tags = ['pasangan']
 handler.command = /^(bucin)$/i
 
+handler.desc = 'Fitur hubungan cinta dan pernikahan virtual (pasangan) untuk bucin.'
+handler.tutorial = [
+  '.bucin @user',
+  'Gunakan bersama pasangan virtual Anda di grup'
+]
+
 export default handler

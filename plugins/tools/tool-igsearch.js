@@ -93,4 +93,10 @@ handler.help = ['igsearch <query>'];
 handler.tags = ['search', 'internet'];
 handler.command = /^(igsearch|igfind|instagramsearch)$/i;
 
+handler.desc = 'Alat utilitas praktis untuk memproses igsearch.'
+handler.tutorial = [
+  '.igsearch <input>',
+  'Ketik .igsearch diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler;

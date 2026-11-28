@@ -109,4 +109,9 @@ handler.tags = ['internet']
 handler.command = ["surah"];
 handler.limit = false;
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai surah.'
+handler.tutorial = [
+  '.surah <pencarian>'
+]
+
 export default handler;

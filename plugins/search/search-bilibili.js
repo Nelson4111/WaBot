@@ -75,4 +75,10 @@ handler.tags = ['search', 'anime']
 handler.command = /^(bilibilisearch|bstation|bilibilis)$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media bilibili berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.bilibilisearch <kata kunci>',
+  'Contoh: .bilibilisearch pencarian'
+]
+
 export default handler

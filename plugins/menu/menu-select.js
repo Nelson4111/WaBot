@@ -147,4 +147,9 @@ handler.help = ['menu_select', 'menulist', 'listmenu']
 handler.tags = ['main']
 handler.command = /^(menu_select|menulist|listmenu)$/i
 
+handler.desc = 'Menjalankan perintah menu_select untuk layanan select.'
+handler.tutorial = [
+  '.menu_select'
+]
+
 export default handler

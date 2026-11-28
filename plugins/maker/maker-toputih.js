@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^(toputih)$/i
 handler.premium = true
 
+handler.desc = 'Mengubah foto menjadi gaya putih menggunakan filter efek visual.'
+handler.tutorial = [
+  '.toputih (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .toputih'
+]
+
 export default handler

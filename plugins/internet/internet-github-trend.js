@@ -57,4 +57,9 @@ handler.tags = ['internet']
 handler.command = ["githubtrend"];
 handler.limit = false;
 
+handler.desc = 'Mengambil dan menampilkan informasi dari internet mengenai github trend.'
+handler.tutorial = [
+  '.githubtrend <pencarian>'
+]
+
 export default handler;

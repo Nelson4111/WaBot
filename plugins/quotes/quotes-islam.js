@@ -20,6 +20,11 @@ handler.tags = ['quotes']
 handler.command = /^(q-islam)$/i
 handler.register = true
 
+handler.desc = 'Menampilkan kutipan kata-kata mutiara dan inspirasi bertema islam.'
+handler.tutorial = [
+  '.q-islam'
+]
+
 export default handler
 
 function ucapan() {

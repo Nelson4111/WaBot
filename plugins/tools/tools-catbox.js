@@ -36,4 +36,10 @@ handler.tags = ['tools']
 handler.command = /^catbox$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses catbox.'
+handler.tutorial = [
+  '.catbox <input>',
+  'Ketik .catbox diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

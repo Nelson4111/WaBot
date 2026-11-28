@@ -44,6 +44,12 @@ handler.command = /^(set(botpp|ppbot))$/i
 
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur setppbot.'
+handler.tutorial = [
+  '.setbotpp',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler
 
 async function pepe(media) {

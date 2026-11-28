@@ -28,4 +28,10 @@ handler.command = ['tovideo', 'tomp4']
 handler.register = true
 handler.limit = 2
 
+handler.desc = 'Mengubah stiker animasi bergerak menjadi video MP4.'
+handler.tutorial = [
+  '.tovideo (balas stiker bergerak)',
+  'Balas stiker animasi yang ingin diubah menjadi video'
+]
+
 export default handler

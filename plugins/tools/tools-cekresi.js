@@ -159,4 +159,10 @@ handler.tags = ['tools']
 handler.command = /^cekresi$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekresi.'
+handler.tutorial = [
+  '.cekresi <input>',
+  'Ketik .cekresi diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

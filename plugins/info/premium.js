@@ -480,4 +480,9 @@ handler.help = [
 handler.tags = ['info']
 handler.command = /^(premium|prem)$/i
 
+handler.desc = 'Menampilkan informasi dan statistik sistem mengenai premium.'
+handler.tutorial = [
+  '.premium'
+]
+
 export default handler

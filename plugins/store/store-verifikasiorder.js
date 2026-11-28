@@ -89,4 +89,9 @@ handler.help = ['veriforder <invoice>', 'lunasorder <invoice>', 'tolakorder <inv
 handler.tags = ['moneytrack']
 handler.command = /^(veriforder|lunasorder|tolakorder|hubungiorder)$/i
 
+handler.desc = 'Menjalankan perintah veriforder untuk layanan verifikasiorder.'
+handler.tutorial = [
+  '.veriforder'
+]
+
 export default handler

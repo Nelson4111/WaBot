@@ -110,4 +110,10 @@ handler.tags = ['tools']
 handler.command = /^(ceknsfw|nsfwcheck|nsfw)$/i
 handler.limit = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses nsfwchecker.'
+handler.tutorial = [
+  '.ceknsfw <input>',
+  'Ketik .ceknsfw diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

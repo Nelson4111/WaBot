@@ -81,4 +81,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk tutupjam bukajam.'
+handler.tutorial = [
+  '.tutupjam',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

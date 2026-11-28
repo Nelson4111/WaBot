@@ -50,4 +50,10 @@ handler.command = /^(cekml|checkml|mlcheck)$/i
 
 handler.register = true
 
+handler.desc = 'Alat utilitas praktis untuk memproses cekml.'
+handler.tutorial = [
+  '.cekml <input>',
+  'Ketik .cekml diikuti input yang diperlukan atau balas pesan target'
+]
+
 export default handler

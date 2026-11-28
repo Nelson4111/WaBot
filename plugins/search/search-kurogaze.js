@@ -42,4 +42,10 @@ handler.tags = ['anime', 'search']
 handler.command = /^kurogaze$/i
 handler.limit = true
 
+handler.desc = 'Mencari informasi atau media kurogaze berdasarkan kata kunci pencarian.'
+handler.tutorial = [
+  '.kurogaze <kata kunci>',
+  'Contoh: .kurogaze pencarian'
+]
+
 export default handler

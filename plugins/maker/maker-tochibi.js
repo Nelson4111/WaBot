@@ -32,6 +32,12 @@ handler.tags = ['maker']
 handler.command = /^(tochibi)$/i
 handler.limit = true
 
+handler.desc = 'Mengubah foto menjadi gaya chibi menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tochibi (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tochibi'
+]
+
 export default handler
 
 async function uploadUguu(buffer, ext) {

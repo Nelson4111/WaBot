@@ -79,4 +79,11 @@ handler.admin = true
 handler.group = true
 handler.botAdmin = true
 
+handler.desc = 'Mengeluarkan anggota dari grup WhatsApp.'
+handler.tutorial = [
+  '.kick @user',
+  '.kick 628xxx',
+  'Balas pesan anggota atau tag orang yang ingin dikeluarkan'
+]
+
 export default handler

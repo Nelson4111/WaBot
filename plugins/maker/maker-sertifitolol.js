@@ -29,4 +29,10 @@ handler.help = ['sertiftolol']
 handler.tags = ['maker']
 handler.command = /^sertiftolol|sertifikattolol$/i
 
+handler.desc = 'Membuat gambar grafis kustom efek sertifitolol.'
+handler.tutorial = [
+  '.sertiftolol <teks>',
+  'Kirim perintah .sertiftolol disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler

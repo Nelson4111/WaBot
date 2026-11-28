@@ -52,4 +52,10 @@ handler.tags = ['maker']
 handler.command = /^(tobersama)$/i
 handler.premium = true
 
+handler.desc = 'Mengubah foto menjadi gaya bersama menggunakan filter efek visual.'
+handler.tutorial = [
+  '.tobersama (balas foto)',
+  'Kirim atau balas foto wajah dengan perintah .tobersama'
+]
+
 export default handler

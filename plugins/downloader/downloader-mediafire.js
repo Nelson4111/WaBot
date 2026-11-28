@@ -92,4 +92,10 @@ handler.command = /^(mediafire|mf(dl)?)$/i
 handler.limit = true
 handler.register = true
 
+handler.desc = 'Mengunduh file dari tautan MediaFire secara langsung.'
+handler.tutorial = [
+  '.mediafire <link mediafire>',
+  'Kirim link file MediaFire untuk diunduh'
+]
+
 export default handler

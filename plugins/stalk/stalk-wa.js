@@ -24,4 +24,10 @@ handler.command = /^(wa|whatsapp)stalk$/i
 
 handler.register = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun WA publik.'
+handler.tutorial = [
+  '.wa <username/id>',
+  'Contoh: .wa target'
+]
+
 export default handler

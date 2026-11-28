@@ -23,4 +23,10 @@ handler.command = /^resetchat$/i
 handler.group = true
 handler.admin = true
 
+handler.desc = 'Fitur administrasi dan manajemen grup WhatsApp untuk resetchat.'
+handler.tutorial = [
+  '.resetchat',
+  'Perintah khusus digunakan di dalam grup WhatsApp'
+]
+
 export default handler

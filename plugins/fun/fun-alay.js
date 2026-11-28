@@ -20,4 +20,10 @@ handler.tags = ['fun']
 handler.command = ['alay']
 handler.limit = true
 
+handler.desc = 'Fitur hiburan dan keseruan santai untuk alay.'
+handler.tutorial = [
+  '.alay <teks/pertanyaan>',
+  'Ketik .alay diikuti nama atau pertanyaan'
+]
+
 export default handler 

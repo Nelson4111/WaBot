@@ -10,4 +10,10 @@ let handler = async (m, { usedPrefix }) => {
 handler.command = /^((ww|werewolf)pc)$/i
 handler.private = true
 
+handler.desc = 'Memulai permainan kuis interaktif wwpc di dalam grup WhatsApp.'
+handler.tutorial = [
+  '.ww',
+  'Ketik jawaban langsung di obrolan setelah soal dikirimkan oleh bot'
+]
+
 export default handler

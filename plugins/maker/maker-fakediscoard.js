@@ -73,4 +73,10 @@ handler.tags = ['maker'];
 handler.help = ['fdc <username|pesan|url>', 'fakediscoard'];
 handler.limit = true;
 
+handler.desc = 'Membuat gambar screenshot palsu DISCOARD untuk keperluan meme atau hiburan.'
+handler.tutorial = [
+  '.fdc <teks>',
+  'Contoh: .fdc Nama|Username|Komentar'
+]
+
 export default handler;

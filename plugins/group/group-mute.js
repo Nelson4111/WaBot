@@ -62,4 +62,10 @@ handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
+handler.desc = 'Membungkam bot agar sementara waktu tidak merespon pesan di dalam grup ini.'
+handler.tutorial = [
+  '.mute',
+  '.unmute (untuk mengaktifkan kembali bot di grup)'
+]
+
 export default handler

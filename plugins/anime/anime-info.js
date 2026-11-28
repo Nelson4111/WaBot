@@ -94,4 +94,9 @@ handler.tags = ['anime']
 handler.command = /^(animeinfo|mangainfo|anime|manga)$/i
 handler.limit = true
 
+handler.desc = 'Menampilkan informasi, gambar karakter, atau media anime info.'
+handler.tutorial = [
+  '.animeinfo'
+]
+
 export default handler

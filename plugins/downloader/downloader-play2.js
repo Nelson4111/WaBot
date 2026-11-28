@@ -50,4 +50,10 @@ handler.tags = ['downloader']
 handler.command = ['play2']
 handler.limit = true
 
+handler.desc = 'Mencari dan mengunduh video klip musik dari YouTube.'
+handler.tutorial = [
+  '.play2 <judul lagu>',
+  'Contoh: .play2 komang'
+]
+
 export default handler

@@ -159,4 +159,10 @@ handler.tags = ['tools'];
 handler.limit = true;
 handler.premium = true;
 
+handler.desc = 'Membuat gambar grafis kustom efek hdvid.'
+handler.tutorial = [
+  '.hdvid <teks>',
+  'Kirim perintah .hdvid disertai teks atau balas gambar yang diinginkan'
+]
+
 export default handler;

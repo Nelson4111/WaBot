@@ -9,4 +9,10 @@ handler.command = /^(out|leavegc)$/i
 
 handler.owner = true
 
+handler.desc = 'Perintah khusus Owner bot untuk mengelola dan mengatur leavegc.'
+handler.tutorial = [
+  '.out',
+  'Hanya dapat dijalankan oleh Owner bot'
+]
+
 export default handler

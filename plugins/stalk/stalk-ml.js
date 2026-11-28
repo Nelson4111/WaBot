@@ -116,4 +116,10 @@ handler.tags = ['stalk']
 handler.command = /^(mlstalk|stalkml)$/i
 handler.limit = true
 
+handler.desc = 'Melihat informasi profil dan statistik akun ML publik.'
+handler.tutorial = [
+  '.mlstalk <username/id>',
+  'Contoh: .mlstalk target'
+]
+
 export default handler

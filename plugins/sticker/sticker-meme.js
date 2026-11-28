@@ -185,6 +185,12 @@ handler.help = ["smeme <teks atas>|<teks bawah>"]
 handler.tags = ["sticker"]
 handler.command = /^(smeme)$/i
 handler.limit = true
+handler.desc = 'Membuat stiker meme dengan teks atas dan bawah pada gambar.'
+handler.tutorial = [
+  '.smeme <teks atas>|<teks bawah>',
+  'Balas foto dengan caption .smeme teks atas|teks bawah'
+]
+
 export default handler
 
 async function createSticker(img, url, packName, authorName, quality) {
